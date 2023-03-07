@@ -488,51 +488,6 @@ class Purchases internal constructor(
     }
 
     /**
-     * Purchase a subscription [StoreProduct]'s [SubscriptionOption].
-     * @param [activity] Current activity
-     * @param [subscriptionOption] Your choice of [SubscriptionOption]s available for a subscription StoreProduct
-     * @param [upgradeInfo] The upgradeInfo you wish to upgrade from, containing the oldProductId and the optional
-     * prorationMode. Amazon Appstore doesn't support changing products so upgradeInfo is ignored for Amazon purchases.
-     * @param [listener] The PurchaseCallback that will be called when purchase completes.
-     */
-    @Deprecated(
-        "Use purchase() and PurchaseParams.Builder instead",
-        ReplaceWith("purchase()")
-    )
-    fun purchaseSubscriptionOption(
-        activity: Activity,
-        subscriptionOption: SubscriptionOption,
-        upgradeInfo: UpgradeInfo,
-        listener: ProductChangeCallback
-    ) {
-        val purchaseOptionBuilder =
-            PurchaseParams.Builder(subscriptionOption, activity).oldProductId(upgradeInfo.oldSku)
-                // TODO fix proration
-                .googleProrationMode(GoogleProrationMode.IMMEDIATE_WITHOUT_PRORATION)
-        purchase(purchaseOptionBuilder.build(), listener as NewPurchaseCallback)
-    }
-
-    /**
-     * Purchase a subscription [StoreProduct]'s [SubscriptionOption].
-     * @param [activity] Current activity
-     * @param [subscriptionOption] Your choice of [SubscriptionOption]s available for a subscription StoreProduct
-     * @param [callback] The PurchaseCallback that will be called when purchase completes
-     */
-    @Deprecated(
-        "Use purchase() and PurchaseParams.Builder instead",
-        ReplaceWith("purchase()")
-    )
-
-    fun purchaseSubscriptionOption(
-        activity: Activity,
-        subscriptionOption: SubscriptionOption,
-        callback: PurchaseCallback
-    ) {
-        val purchase = PurchaseParams.Builder(subscriptionOption, activity).build()
-        purchaseNonUpgradeWithDeprecatedCallback(purchase, callback)
-    }
-
-    /**
      * Purchases a [Package].
      * If [packageToPurchase] represents a subscription, upgrades from the subscription specified by [upgradeInfo]'s
      * [oldProductId]and chooses the default [SubscriptionOption] from [packageToPurchase].

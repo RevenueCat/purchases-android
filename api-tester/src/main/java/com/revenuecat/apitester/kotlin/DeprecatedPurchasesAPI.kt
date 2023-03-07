@@ -14,7 +14,6 @@ import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.purchasePackageWith
 import com.revenuecat.purchases.purchaseProductWith
-import com.revenuecat.purchases.purchaseSubscriptionOptionWith
 
 @Suppress("unused")
 private class DeprecatedPurchasesAPI {
@@ -41,14 +40,6 @@ private class DeprecatedPurchasesAPI {
         purchases.purchasePackage(activity, packageToPurchase, upgradeInfo, purchaseChangeCallback)
         purchases.purchasePackage(activity, packageToPurchase, purchaseCallback)
 
-        purchases.purchaseSubscriptionOption(
-            activity,
-            subscriptionOption,
-            upgradeInfo,
-            purchaseChangeCallback
-        )
-        purchases.purchaseSubscriptionOption(activity, subscriptionOption, purchaseCallback)
-
         purchases.purchaseProductWith(
             activity,
             storeProduct,
@@ -74,19 +65,6 @@ private class DeprecatedPurchasesAPI {
             packageToPurchase,
             onError = { _: PurchasesError, _: Boolean -> },
             onSuccess = { _: StoreTransaction, _: CustomerInfo -> }
-        )
-        purchases.purchaseSubscriptionOptionWith(
-            activity,
-            subscriptionOption,
-            onError = { _: PurchasesError, _: Boolean -> },
-            onSuccess = { _: StoreTransaction, _: CustomerInfo -> }
-        )
-        purchases.purchaseSubscriptionOptionWith(
-            activity,
-            subscriptionOption,
-            upgradeInfo,
-            onError = { _: PurchasesError, _: Boolean -> },
-            onSuccess = { _: StoreTransaction?, _: CustomerInfo -> }
         )
 
         purchases.allowSharingPlayStoreAccount = true

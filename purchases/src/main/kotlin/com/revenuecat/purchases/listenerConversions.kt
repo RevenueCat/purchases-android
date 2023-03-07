@@ -170,55 +170,6 @@ fun Purchases.purchaseProductWith(
     purchaseWith(purchaseProductBuilder.build(), onError, onSuccess)
 }
 
-/**
- * Purchase a subscription [StoreProduct]'s [SubscriptionOption].
- * @param [activity] Current activity
- * @param [subscriptionOption] Your choice of [SubscriptionOption]s available for a subscription StoreProduct
- * @param [onSuccess] Will be called after the purchase has completed
- * @param [onError] Will be called if there was an error with the purchase
- */
-@Deprecated(
-    "Use purchase() and PurchaseParams.Builder instead",
-    ReplaceWith("purchase()")
-)
-fun Purchases.purchaseSubscriptionOptionWith(
-    activity: Activity,
-    subscriptionOption: SubscriptionOption,
-    onError: (error: PurchasesError, userCancelled: Boolean) -> Unit = ON_PURCHASE_ERROR_STUB,
-    onSuccess: (purchase: StoreTransaction, customerInfo: CustomerInfo) -> Unit
-) {
-    val purchase = PurchaseParams.Builder(subscriptionOption, activity).build()
-    purchaseNonUpgradeWithDeprecatedCallback(
-        purchase,
-        purchaseCompletedCallback(onSuccess, onError)
-    )
-}
-
-/**
- * Purchase a subscription [StoreProduct]'s [SubscriptionOption], upgrading from an old product.
- * @param [activity] Current activity
- * @param [subscriptionOption] Your choice of [SubscriptionOption]s available for a subscription StoreProduct
- * @param [upgradeInfo] The upgradeInfo you wish to upgrade from, containing the oldSku and the optional prorationMode.
- * Amazon Appstore doesn't support changing products so upgradeInfo is ignored for Amazon purchases.
- * @param [onSuccess] Will be called after the purchase has completed
- * @param [onError] Will be called if there was an error with the purchase
- */
-@Suppress("LongParameterList")
-@Deprecated(
-    "Use purchaseWith and PurchaseParams.Builder instead",
-    ReplaceWith("purchaseWith()")
-)
-fun Purchases.purchaseSubscriptionOptionWith(
-    activity: Activity,
-    subscriptionOption: SubscriptionOption,
-    upgradeInfo: UpgradeInfo,
-    onError: (error: PurchasesError, userCancelled: Boolean) -> Unit = ON_PURCHASE_ERROR_STUB,
-    onSuccess: (purchase: StoreTransaction?, customerInfo: CustomerInfo) -> Unit
-) {
-    val purchaseOptionBuilder =
-        PurchaseParams.Builder(subscriptionOption, activity).oldProductId(upgradeInfo.oldSku)
-    // TODO BC5 figure out proration mode
-//            .googleProrationMode(upgradeInfo.googleProrationMode)
     purchaseWith(purchaseOptionBuilder.build(), onError, onSuccess)
 }
 

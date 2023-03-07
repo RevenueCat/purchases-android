@@ -15,7 +15,6 @@ import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 import org.junit.runner.RunWith
-import kotlin.math.exp
 
 // endregion
 @RunWith(AndroidJUnit4::class)
