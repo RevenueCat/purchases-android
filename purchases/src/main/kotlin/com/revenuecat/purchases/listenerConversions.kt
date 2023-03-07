@@ -3,7 +3,6 @@ package com.revenuecat.purchases
 import android.app.Activity
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
 import com.revenuecat.purchases.interfaces.LogInCallback
-import com.revenuecat.purchases.interfaces.NewPurchaseCallback
 import com.revenuecat.purchases.interfaces.ProductChangeCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
@@ -44,9 +43,9 @@ internal fun productChangeCompletedListener(
 internal fun purchaseCompletedCallback(
     onSuccess: (transaction: StoreTransaction?, customerInfo: CustomerInfo) -> Unit,
     onError: (error: PurchasesError, userCancelled: Boolean) -> Unit
-) = object : NewPurchaseCallback {
-    override fun onCompleted(transaction: StoreTransaction?, customerInfo: CustomerInfo) {
-        onSuccess(transaction, customerInfo)
+) = object : PurchaseCallback {
+    override fun onCompleted(storeTransaction: StoreTransaction, customerInfo: CustomerInfo) {
+        onSuccess(storeTransaction, customerInfo)
     }
 
     override fun onError(error: PurchasesError, userCancelled: Boolean) {

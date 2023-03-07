@@ -18,6 +18,7 @@ import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingFlowParams
 import com.android.billingclient.api.BillingResult
+import com.android.billingclient.api.Purchase
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BillingAbstract
@@ -40,14 +41,12 @@ import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.interfaces.Callback
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
 import com.revenuecat.purchases.interfaces.LogInCallback
-import com.revenuecat.purchases.interfaces.NewPurchaseCallback
 import com.revenuecat.purchases.interfaces.ProductChangeCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.interfaces.PurchaseErrorCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
-import com.revenuecat.purchases.interfaces.toNewPurchaseCallback
 import com.revenuecat.purchases.models.BillingFeature
 import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.PurchaseState
@@ -400,7 +399,7 @@ class Purchases internal constructor(
      */
     fun purchase(
         purchaseParams: PurchaseParams,
-        callback: NewPurchaseCallback
+        callback: PurchaseCallback
     ) {
         with(purchaseParams) {
             oldProductId?.let { productId ->
@@ -457,7 +456,7 @@ class Purchases internal constructor(
             null,
             upgradeInfo.oldSku,
             upgradeInfo.prorationMode,
-            listener as NewPurchaseCallback
+            listener
         )
     }
 
@@ -486,7 +485,7 @@ class Purchases internal constructor(
             activity,
             storeProduct.purchasingData,
             null,
-            callback.toNewPurchaseCallback()
+            callback
         )
     }
 
@@ -524,7 +523,7 @@ class Purchases internal constructor(
             packageToPurchase.offering,
             upgradeInfo.oldSku,
             upgradeInfo.prorationMode,
-            callback as NewPurchaseCallback
+            callback
         )
     }
 
@@ -553,7 +552,7 @@ class Purchases internal constructor(
             activity,
             packageToPurchase.product.purchasingData,
             packageToPurchase.offering,
-            listener.toNewPurchaseCallback()
+            listener
         )
     }
 
@@ -1263,7 +1262,7 @@ class Purchases internal constructor(
                                 } ?: false
                             }
                         } else {
-                            storeProducts.firstOrNull() { product ->
+                            storeProducts.firstOrNull { product ->
                                 product.id == purchase.productIds.firstOrNull()
                             }
                         }
@@ -1394,17 +1393,7 @@ class Purchases internal constructor(
         }
     }
 
-    internal fun purchaseNonUpgradeWithDeprecatedCallback(
-        purchaseParams: PurchaseParams,
-        listener: PurchaseCallback
-    ) {
-        purchase(
-            purchaseParams,
-            listener.toNewPurchaseCallback()
-        )
-    }
-
-    private fun getPurchaseCallback(productId: String): NewPurchaseCallback? {
+    private fun getPurchaseCallback(productId: String): PurchaseCallback? {
         return state.purchaseCallbacksByProductId[productId].also {
             state = state.copy(
                 purchaseCallbacksByProductId = state.purchaseCallbacksByProductId.filterNot { it.key == productId }
@@ -1412,7 +1401,7 @@ class Purchases internal constructor(
         }
     }
 
-    private fun getAndClearProductChangeCallback(): NewPurchaseCallback? {
+    private fun getAndClearProductChangeCallback(): ProductChangeCallback? {
         return state.productChangeCallback.also {
             state = state.copy(productChangeCallback = null)
         }
@@ -1423,7 +1412,7 @@ class Purchases internal constructor(
             override fun onPurchasesUpdated(purchases: List<StoreTransaction>) {
                 val productChangeInProgress: Boolean
                 val callbackPair: Pair<SuccessfulPurchaseCallback, ErrorPurchaseCallback>
-                val productChangeListener: NewPurchaseCallback?
+                val productChangeListener: ProductChangeCallback?
 
                 synchronized(this@Purchases) {
                     productChangeInProgress = state.productChangeCallback != null
@@ -1487,7 +1476,7 @@ class Purchases internal constructor(
     }
 
     private fun getProductChangeCompletedCallbacks(
-        productChangeListener: NewPurchaseCallback?
+        productChangeListener: ProductChangeCallback?
     ): Pair<SuccessfulPurchaseCallback, ErrorPurchaseCallback> {
         val onSuccess: SuccessfulPurchaseCallback = { storeTransaction, info ->
             productChangeListener?.let { productChangeCallback ->
@@ -1515,7 +1504,7 @@ class Purchases internal constructor(
         activity: Activity,
         purchasingData: PurchasingData,
         presentedOfferingIdentifier: String?,
-        listener: NewPurchaseCallback
+        listener: PurchaseCallback
     ) {
         log(
             LogIntent.PURCHASE, PurchaseStrings.PURCHASE_STARTED.format(
@@ -1557,8 +1546,9 @@ class Purchases internal constructor(
         offeringIdentifier: String?,
         oldProductId: String,
         @BillingFlowParams.ProrationMode googleProrationMode: Int?,
-        listener: NewPurchaseCallback
+        listener: ProductChangeCallback
     ) {
+        // TODO BC5 can i make this function handle either type of callback?
         if (purchasingData.productType != ProductType.SUBS) {
             getAndClearProductChangeCallback()
             listener.dispatch(PurchasesError(

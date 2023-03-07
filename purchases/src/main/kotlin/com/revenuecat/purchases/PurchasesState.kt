@@ -1,11 +1,12 @@
 package com.revenuecat.purchases
 
-import com.revenuecat.purchases.interfaces.NewPurchaseCallback
+import com.revenuecat.purchases.interfaces.ProductChangeCallback
+import com.revenuecat.purchases.interfaces.PurchaseCallback
 
 internal data class PurchasesState(
     val allowSharingPlayStoreAccount: Boolean? = null,
-    val purchaseCallbacksByProductId: Map<String, NewPurchaseCallback> = emptyMap(),
-    val productChangeCallback: NewPurchaseCallback? = null,
+    val purchaseCallbacksByProductId: Map<String, PurchaseCallback> = emptyMap(),
+    val productChangeCallback: ProductChangeCallback? = null,
     val appInBackground: Boolean = true,
     val firstTimeInForeground: Boolean = true
 )

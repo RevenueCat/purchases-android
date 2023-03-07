@@ -19,7 +19,6 @@ import com.revenuecat.purchases.PurchasesError;
 import com.revenuecat.purchases.UpgradeInfo;
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback;
 import com.revenuecat.purchases.interfaces.LogInCallback;
-import com.revenuecat.purchases.interfaces.NewPurchaseCallback;
 import com.revenuecat.purchases.interfaces.ProductChangeCallback;
 import com.revenuecat.purchases.interfaces.PurchaseCallback;
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback;
@@ -115,7 +114,7 @@ final class PurchasesAPI {
                                 final StoreProduct storeProduct,
                                 final Package packageToPurchase,
                                 final SubscriptionOption subscriptionOption) {
-        final NewPurchaseCallback purchaseCallback = new NewPurchaseCallback() {
+        final PurchaseCallback purchaseCallback = new PurchaseCallback() {
             @Override
             public void onCompleted(@Nullable StoreTransaction storeTransaction, @NonNull CustomerInfo customerInfo) {
             }
