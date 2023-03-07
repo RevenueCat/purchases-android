@@ -11,6 +11,7 @@ import com.revenuecat.purchases.models.StoreTransaction
 /**
  * Interface to be implemented when upgrading or downgrading a purchase.
  */
+// TODO BC5 deprecate and/or rename
 interface ProductChangeCallback : PurchaseErrorCallback {
     /**
      * Will be called after the product change has been completed
