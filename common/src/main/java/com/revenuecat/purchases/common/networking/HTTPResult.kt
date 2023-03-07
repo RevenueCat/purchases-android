@@ -2,16 +2,19 @@ package com.revenuecat.purchases.common.networking
 
 import com.revenuecat.purchases.VerificationResult
 import org.json.JSONObject
+import java.util.Date
 
 private const val SERIALIZATION_NAME_RESPONSE_CODE = "responseCode"
 private const val SERIALIZATION_NAME_PAYLOAD = "payload"
 private const val SERIALIZATION_NAME_ORIGIN = "origin"
+private const val SERIALIZATION_NAME_REQUEST_DATE = "requestDate"
 private const val SERIALIZATION_NAME_VERIFICATION_RESULT = "verificationResult"
 
 data class HTTPResult(
     val responseCode: Int,
     val payload: String,
     val origin: Origin,
+    val requestDate: Date?,
     val verificationResult: VerificationResult
 ) {
     companion object {
@@ -28,12 +31,17 @@ data class HTTPResult(
             } else {
                 Origin.CACHE
             }
+            val requestDate: Date? = if (jsonObject.has(SERIALIZATION_NAME_REQUEST_DATE)) {
+                Date(jsonObject.getLong(SERIALIZATION_NAME_REQUEST_DATE))
+            } else {
+                null
+            }
             val verificationResult: VerificationResult = if (jsonObject.has(SERIALIZATION_NAME_VERIFICATION_RESULT)) {
                 VerificationResult.valueOf(jsonObject.getString(SERIALIZATION_NAME_VERIFICATION_RESULT))
             } else {
                 VerificationResult.NOT_REQUESTED
             }
-            return HTTPResult(responseCode, payload, origin, verificationResult)
+            return HTTPResult(responseCode, payload, origin, requestDate, verificationResult)
         }
     }
 
@@ -48,6 +56,7 @@ data class HTTPResult(
             put(SERIALIZATION_NAME_RESPONSE_CODE, responseCode)
             put(SERIALIZATION_NAME_PAYLOAD, payload)
             put(SERIALIZATION_NAME_ORIGIN, origin.name)
+            put(SERIALIZATION_NAME_REQUEST_DATE, requestDate?.time)
             put(SERIALIZATION_NAME_VERIFICATION_RESULT, verificationResult.name)
         }
         return jsonObject.toString()

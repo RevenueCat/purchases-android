@@ -193,6 +193,7 @@ class HTTPClient(
             getETagHeader(connection),
             urlPathWithVersion,
             refreshETag,
+            getRequestDateHeader(connection),
             verificationResult
         )
     }
@@ -302,10 +303,21 @@ class HTTPClient(
             signature = connection.getHeaderField(HTTPResult.SIGNATURE_HEADER_NAME),
             nonce = nonce,
             body = payload,
-            requestTime = connection.getHeaderField(HTTPResult.REQUEST_TIME_HEADER_NAME),
+            requestTime = getRequestTimeHeader(connection),
             eTag = getETagHeader(connection),
         )
     }
 
     private fun getETagHeader(connection: URLConnection) = connection.getHeaderField(HTTPResult.ETAG_HEADER_NAME)
+    private fun getRequestTimeHeader(connection: URLConnection): String? {
+        return connection.getHeaderField(HTTPResult.REQUEST_TIME_HEADER_NAME)?.takeIf { it.isNotBlank() }
+    }
+    private fun getRequestDateHeader(connection: URLConnection): Date? {
+        val requestTimeMillis = getRequestTimeHeader(connection)?.toLong()
+        return if (requestTimeMillis == null) {
+            null
+        } else {
+            Date(requestTimeMillis)
+        }
+    }
 }

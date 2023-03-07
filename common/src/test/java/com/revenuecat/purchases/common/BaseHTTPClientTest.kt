@@ -16,6 +16,7 @@ import okhttp3.mockwebserver.MockWebServer
 import org.junit.After
 import org.junit.Before
 import java.net.URL
+import java.util.Date
 import java.util.Locale
 
 abstract class BaseHTTPClientTest {
@@ -79,7 +80,8 @@ abstract class BaseHTTPClientTest {
     protected fun enqueue(
         endpoint: Endpoint,
         expectedResult: HTTPResult,
-        verificationResult: VerificationResult = VerificationResult.NOT_REQUESTED
+        verificationResult: VerificationResult = VerificationResult.NOT_REQUESTED,
+        requestDateHeader: Date? = null
     ) {
         every {
             mockETagManager.getHTTPResultFromCacheOrBackend(
@@ -88,10 +90,18 @@ abstract class BaseHTTPClientTest {
                 eTagHeader = any(),
                 "/v1${endpoint.getPath()}",
                 refreshETag = false,
+                requestDate = requestDateHeader,
                 verificationResult = verificationResult
             )
         } returns expectedResult
-        val response = MockResponse().setBody(expectedResult.payload).setResponseCode(expectedResult.responseCode)
+        val response = MockResponse()
+            .setBody(expectedResult.payload)
+            .setResponseCode(expectedResult.responseCode)
+            .apply {
+                if (requestDateHeader != null) {
+                    setHeader(HTTPResult.REQUEST_TIME_HEADER_NAME, requestDateHeader.time)
+                }
+            }
         server.enqueue(response)
     }
 

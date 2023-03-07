@@ -127,6 +127,33 @@ class DeviceCacheTest {
     }
 
     @Test
+    fun `given a valid purchaser info without request date, the JSON is parsed correctly`() {
+        val deprecatedValidCachedCustomerInfo by lazy {
+            JSONObject(Responses.validFullPurchaserResponse).apply {
+                put("schema_version", PURCHASER_INFO_SCHEMA_VERSION)
+            }.toString()
+        }
+        mockString(cache.customerInfoCacheKey(appUserID), deprecatedValidCachedCustomerInfo)
+        val info = cache.getCachedCustomerInfo(appUserID)
+        assertThat(info).`as`("info is not null").isNotNull
+        assertThat(info?.requestDate?.time).isEqualTo(1565951442000L)
+    }
+
+    @Test
+    fun `given a valid purchaser info with request date, the JSON is parsed correctly`() {
+        val deprecatedValidCachedCustomerInfo by lazy {
+            JSONObject(Responses.validFullPurchaserResponse).apply {
+                put("schema_version", PURCHASER_INFO_SCHEMA_VERSION)
+                put("customer_info_request_date", 1234567890L)
+            }.toString()
+        }
+        mockString(cache.customerInfoCacheKey(appUserID), deprecatedValidCachedCustomerInfo)
+        val info = cache.getCachedCustomerInfo(appUserID)
+        assertThat(info).`as`("info is not null").isNotNull
+        assertThat(info?.requestDate?.time).isEqualTo(1234567890L)
+    }
+
+    @Test
     fun `given a invalid purchaser info, the information is null`() {
         mockString(cache.customerInfoCacheKey(appUserID), "not json")
         val info = cache.getCachedCustomerInfo(appUserID)
@@ -166,7 +193,7 @@ class DeviceCacheTest {
             mockEditor.putLong(cache.customerInfoLastUpdatedCacheKey(appUserID), any())
         } returns mockEditor
 
-        val info = createCustomerInfo(Responses.validFullPurchaserResponse, VerificationResult.SUCCESS)
+        val info = createCustomerInfo(Responses.validFullPurchaserResponse, null, VerificationResult.SUCCESS)
         val infoJSONSlot = slot<String>()
 
         every {
@@ -197,6 +224,25 @@ class DeviceCacheTest {
         val cachedJSON = JSONObject(infoJSONSlot.captured)
         assertThat(cachedJSON.has("schema_version")).isTrue
         assertThat(cachedJSON.getInt("schema_version")).isEqualTo(PURCHASER_INFO_SCHEMA_VERSION)
+    }
+
+    @Test
+    fun `given a purchaser info, the information is cached with a request date`() {
+        every {
+            mockEditor.putLong(cache.customerInfoLastUpdatedCacheKey(appUserID), any())
+        } returns mockEditor
+
+        val info = createCustomerInfo(Responses.validFullPurchaserResponse)
+        val infoJSONSlot = slot<String>()
+
+        every {
+            mockEditor.putString(any(), capture(infoJSONSlot))
+        } returns mockEditor
+        cache.cacheCustomerInfo(appUserID, info)
+
+        val cachedJSON = JSONObject(infoJSONSlot.captured)
+        assertThat(cachedJSON.has("customer_info_request_date")).isTrue
+        assertThat(cachedJSON.getLong("customer_info_request_date")).isEqualTo(1565951442000L)
     }
 
     @Test

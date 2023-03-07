@@ -16,6 +16,7 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
+import java.util.Date
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
@@ -166,6 +167,7 @@ class HTTPClientVerificationTest: BaseHTTPClientTest() {
                 eTagHeader = any(),
                 "/v1${endpoint.getPath()}",
                 refreshETag = false,
+                requestDate = Date(1234567890L),
                 verificationResult = VerificationResult.SUCCESS
             )
         } returns expectedResult
@@ -252,7 +254,7 @@ class HTTPClientVerificationTest: BaseHTTPClientTest() {
 
         assertThat(thrownCorrectException).isTrue
         verify(exactly = 0) {
-            mockETagManager.getHTTPResultFromCacheOrBackend(any(), any(), any(), any(), any(), any())
+            mockETagManager.getHTTPResultFromCacheOrBackend(any(), any(), any(), any(), any(), any(), any())
         }
     }
 

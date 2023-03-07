@@ -7,6 +7,7 @@ import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.strings.NetworkStrings
 import org.json.JSONObject
+import java.util.Date
 
 private const val SERIALIZATION_NAME_ETAG = "eTag"
 private const val SERIALIZATION_NAME_HTTPRESULT = "httpResult"
@@ -51,16 +52,26 @@ class ETagManager(
         eTagHeader: String?,
         urlPathWithVersion: String,
         refreshETag: Boolean,
+        requestDate: Date?,
         verificationResult: VerificationResult
     ): HTTPResult? {
-        val resultFromBackend = HTTPResult(responseCode, payload, HTTPResult.Origin.BACKEND, verificationResult)
+        val resultFromBackend = HTTPResult(
+            responseCode,
+            payload,
+            HTTPResult.Origin.BACKEND,
+            requestDate,
+            verificationResult
+        )
         eTagHeader?.let { eTagInResponse ->
             if (shouldUseCachedVersion(responseCode)) {
                 // This assumes we won't store verification failures in the cache and we will clear the cache when
                 // enabling verification.
                 val storedResult = getStoredResult(urlPathWithVersion)
-                    ?.copy(verificationResult = verificationResult)
-                return storedResult
+                val transformedResult = storedResult?.copy(
+                    verificationResult = verificationResult,
+                    requestDate = requestDate ?: storedResult.requestDate
+                )
+                return transformedResult
                     ?: if (refreshETag) {
                         log(LogIntent.WARNING, NetworkStrings.ETAG_CALL_ALREADY_RETRIED.format(resultFromBackend))
                         resultFromBackend
