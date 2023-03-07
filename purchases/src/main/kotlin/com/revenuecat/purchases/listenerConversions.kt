@@ -4,6 +4,7 @@ import android.app.Activity
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
 import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.interfaces.NewPurchaseCallback
+import com.revenuecat.purchases.interfaces.ProductChangeCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback
@@ -20,6 +21,19 @@ internal fun purchaseCompletedCallback(
 ) = object : PurchaseCallback {
     override fun onCompleted(storeTransaction: StoreTransaction, customerInfo: CustomerInfo) {
         onSuccess(storeTransaction, customerInfo)
+    }
+
+    override fun onError(error: PurchasesError, userCancelled: Boolean) {
+        onError(error, userCancelled)
+    }
+}
+
+internal fun productChangeCompletedListener(
+    onSuccess: (purchase: StoreTransaction?, customerInfo: CustomerInfo) -> Unit,
+    onError: (error: PurchasesError, userCancelled: Boolean) -> Unit
+) = object : ProductChangeCallback {
+    override fun onCompleted(purchase: StoreTransaction?, customerInfo: CustomerInfo) {
+        onSuccess(purchase, customerInfo)
     }
 
     override fun onError(error: PurchasesError, userCancelled: Boolean) {
@@ -136,11 +150,7 @@ fun Purchases.purchaseProductWith(
     onError: (error: PurchasesError, userCancelled: Boolean) -> Unit = ON_PURCHASE_ERROR_STUB,
     onSuccess: (purchase: StoreTransaction, customerInfo: CustomerInfo) -> Unit
 ) {
-    val purchase = PurchaseParams.Builder(storeProduct, activity).build()
-    purchaseNonUpgradeWithDeprecatedCallback(
-        purchase,
-        purchaseCompletedCallback(onSuccess, onError)
-    )
+    purchaseProduct(activity, storeProduct, purchaseCompletedCallback(onSuccess, onError))
 }
 
 /**
@@ -164,13 +174,7 @@ fun Purchases.purchaseProductWith(
     onError: (error: PurchasesError, userCancelled: Boolean) -> Unit = ON_PURCHASE_ERROR_STUB,
     onSuccess: (purchase: StoreTransaction?, customerInfo: CustomerInfo) -> Unit
 ) {
-    val purchaseProductBuilder = PurchaseParams.Builder(storeProduct, activity).oldProductId(upgradeInfo.oldSku)
-    // TODO BC5 figure out proration mode
-//        .googleProrationMode(upgradeInfo.prorationMode)
-    purchaseWith(purchaseProductBuilder.build(), onError, onSuccess)
-}
-
-    purchaseWith(purchaseOptionBuilder.build(), onError, onSuccess)
+    purchaseProduct(activity, storeProduct, upgradeInfo, productChangeCompletedListener(onSuccess, onError))
 }
 
 /**
@@ -194,12 +198,7 @@ fun Purchases.purchasePackageWith(
     onError: (error: PurchasesError, userCancelled: Boolean) -> Unit = ON_PURCHASE_ERROR_STUB,
     onSuccess: (purchase: StoreTransaction?, customerInfo: CustomerInfo) -> Unit
 ) {
-    val purchasePackageBuilder =
-        PurchaseParams.Builder(packageToPurchase, activity)
-            .oldProductId(upgradeInfo.oldSku)
-    // TODO BC5 figure out proration mode
-//            .googleProrationMode(upgradeInfo.googleProrationMode)
-    purchaseWith(purchasePackageBuilder.build(), onError, onSuccess)
+    purchasePackage(activity, packageToPurchase, upgradeInfo, productChangeCompletedListener(onSuccess, onError))
 }
 
 /**
@@ -219,11 +218,7 @@ fun Purchases.purchasePackageWith(
     onError: (error: PurchasesError, userCancelled: Boolean) -> Unit = ON_PURCHASE_ERROR_STUB,
     onSuccess: (purchase: StoreTransaction, customerInfo: CustomerInfo) -> Unit
 ) {
-    val purchase = PurchaseParams.Builder(packageToPurchase, activity).build()
-    purchaseNonUpgradeWithDeprecatedCallback(
-        purchase,
-        purchaseCompletedCallback(onSuccess, onError)
-    )
+    purchasePackage(activity, packageToPurchase, purchaseCompletedCallback(onSuccess, onError))
 }
 
 /**
