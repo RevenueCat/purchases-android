@@ -159,7 +159,7 @@ class ETagManagerTest {
         val eTag = "eTag"
 
         val resultFromBackend = HTTPResult.createResult(
-            verificationResult = VerificationResult.ERROR,
+            verificationResult = VerificationResult.FAILED,
             payload = Responses.validEmptyPurchaserResponse
         )
 
@@ -224,7 +224,7 @@ class ETagManagerTest {
             eTagHeader = eTagInResponse,
             urlPathWithVersion = path,
             refreshETag = false,
-            verificationResult = VerificationResult.NOT_VERIFIED
+            verificationResult = VerificationResult.NOT_REQUESTED
         )
 
         assertStoredResponse(path, eTagInResponse, responsePayload)
@@ -245,7 +245,7 @@ class ETagManagerTest {
             eTagHeader = eTagInResponse,
             urlPathWithVersion = path,
             refreshETag = false,
-            verificationResult = VerificationResult.NOT_VERIFIED
+            verificationResult = VerificationResult.NOT_REQUESTED
         )
 
         assertThat(slotPutStringSharedPreferencesKey.isCaptured).isFalse
@@ -268,7 +268,7 @@ class ETagManagerTest {
             eTagHeader = eTagInResponse,
             urlPathWithVersion = path,
             refreshETag = false,
-            verificationResult = VerificationResult.NOT_VERIFIED
+            verificationResult = VerificationResult.NOT_REQUESTED
         )
 
         assertThat(result).isNull()
@@ -292,7 +292,7 @@ class ETagManagerTest {
             eTagHeader = eTagInResponse,
             urlPathWithVersion = path,
             refreshETag = true,
-            verificationResult = VerificationResult.NOT_VERIFIED
+            verificationResult = VerificationResult.NOT_REQUESTED
         )
 
         assertThat(result).isNotNull
@@ -315,7 +315,7 @@ class ETagManagerTest {
             eTagHeader = eTagInResponse,
             urlPathWithVersion = path,
             refreshETag = false,
-            verificationResult = VerificationResult.NOT_VERIFIED
+            verificationResult = VerificationResult.NOT_REQUESTED
         )
 
         assertThat(result).isNotNull
@@ -338,7 +338,7 @@ class ETagManagerTest {
             eTagHeader = eTagInResponse,
             urlPathWithVersion = path,
             refreshETag = true,
-            verificationResult = VerificationResult.NOT_VERIFIED
+            verificationResult = VerificationResult.NOT_REQUESTED
         )
 
         assertThat(result).isNotNull

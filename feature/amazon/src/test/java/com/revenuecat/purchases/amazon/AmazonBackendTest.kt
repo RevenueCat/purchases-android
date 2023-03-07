@@ -66,7 +66,7 @@ class AmazonBackendTest {
         responseCode = 200,
         payload = successfulRVSResponse(),
         origin = HTTPResult.Origin.BACKEND,
-        verificationResult = VerificationResult.NOT_VERIFIED
+        verificationResult = VerificationResult.NOT_REQUESTED
     )
     private var unsuccessfulResult = HTTPResult(
         responseCode = 401,
@@ -77,7 +77,7 @@ class AmazonBackendTest {
                 }
             """.trimIndent(),
         origin = HTTPResult.Origin.BACKEND,
-        verificationResult = VerificationResult.NOT_VERIFIED
+        verificationResult = VerificationResult.NOT_REQUESTED
     )
 
     @Test

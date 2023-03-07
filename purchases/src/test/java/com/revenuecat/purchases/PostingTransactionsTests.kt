@@ -62,7 +62,7 @@ class PostingTransactionsTests {
     internal data class PostReceiptCompletionContainer(
         val info: CustomerInfo = CustomerInfoFactory.buildCustomerInfo(
             JSONObject(Responses.validFullPurchaserResponse),
-            VerificationResult.NOT_VERIFIED
+            VerificationResult.NOT_REQUESTED
         ),
         val body: JSONObject = JSONObject(Responses.validFullPurchaserResponse)
     )

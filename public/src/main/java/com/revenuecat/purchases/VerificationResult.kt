@@ -18,7 +18,7 @@ enum class VerificationResult {
      * 1. Verification is not enabled in PurchasesConfiguration
      * 2. Data was cached in an older version of the SDK not supporting verification
      */
-    NOT_VERIFIED,
+    NOT_REQUESTED,
 
     /**
      * Entitlements were verified with our server.
@@ -28,5 +28,5 @@ enum class VerificationResult {
     /**
      * Entitlement verification failed, possibly due to a MiTM attack.
      */
-    ERROR
+    FAILED
 }

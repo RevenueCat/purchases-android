@@ -33,23 +33,23 @@ class HTTPResultTest {
             200,
             "{\"test-key\":\"test-value\"}",
             HTTPResult.Origin.BACKEND,
-            VerificationResult.ERROR
+            VerificationResult.FAILED
         )
         val result = HTTPResult.deserialize("{" +
             "\"responseCode\":200," +
             "\"payload\":\"{\\\"test-key\\\":\\\"test-value\\\"}\"," +
             "\"origin\":\"BACKEND\"," +
-            "\"verificationResult\":\"ERROR\"}")
+            "\"verificationResult\":\"FAILED\"}")
         assertThat(result).isEqualTo(expectedResult)
     }
 
     @Test
-    fun `result defaults to CACHE origin and NOT_VERIFIED verification result if not part of serialized string`() {
+    fun `result defaults to CACHE origin and NOT_REQUESTED verification result if not part of serialized string`() {
         val expectedResult = HTTPResult(
             200,
             "{\"test-key\":\"test-value\"}",
             HTTPResult.Origin.CACHE,
-            VerificationResult.NOT_VERIFIED
+            VerificationResult.NOT_REQUESTED
         )
         val result = HTTPResult.deserialize("{" +
             "\"responseCode\":200," +

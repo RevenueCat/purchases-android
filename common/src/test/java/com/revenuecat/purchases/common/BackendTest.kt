@@ -485,7 +485,7 @@ class BackendTest {
 
     @Test
     fun `gets updated subscriber after post`() {
-        val verificationResult = VerificationResult.NOT_VERIFIED
+        val verificationResult = VerificationResult.NOT_REQUESTED
         val initialInfo = createCustomerInfo(Responses.validFullPurchaserResponse)
         val updatedInfo = createCustomerInfo(Responses.validEmptyPurchaserResponse)
 

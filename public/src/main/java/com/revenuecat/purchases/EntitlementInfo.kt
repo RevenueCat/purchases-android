@@ -83,7 +83,7 @@ data class EntitlementInfo constructor(
         billingIssueDetectedAt,
         ownershipType,
         jsonObject,
-        VerificationResult.NOT_VERIFIED
+        VerificationResult.NOT_REQUESTED
     )
 
     @IgnoredOnParcel

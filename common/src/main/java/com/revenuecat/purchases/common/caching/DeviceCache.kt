@@ -105,7 +105,7 @@ open class DeviceCache(
                     val schemaVersion = cachedJSONObject.optInt(CUSTOMER_INFO_SCHEMA_VERSION_KEY)
                     val verificationResultString = if (cachedJSONObject.has(CUSTOMER_INFO_VERIFICATION_RESULT_KEY)) {
                         cachedJSONObject.getString(CUSTOMER_INFO_VERIFICATION_RESULT_KEY)
-                    } else VerificationResult.NOT_VERIFIED.name
+                    } else VerificationResult.NOT_REQUESTED.name
                     cachedJSONObject.remove(CUSTOMER_INFO_SCHEMA_VERSION_KEY)
                     cachedJSONObject.remove(CUSTOMER_INFO_VERIFICATION_RESULT_KEY)
                     val verificationResult = VerificationResult.valueOf(verificationResultString)

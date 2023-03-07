@@ -438,5 +438,5 @@ class SubscriberAttributesPosterTests {
     private fun createResult(
         responseCode: Int,
         responseBody: String
-    ) = HTTPResult(responseCode, responseBody, HTTPResult.Origin.BACKEND, VerificationResult.NOT_VERIFIED)
+    ) = HTTPResult(responseCode, responseBody, HTTPResult.Origin.BACKEND, VerificationResult.NOT_REQUESTED)
 }

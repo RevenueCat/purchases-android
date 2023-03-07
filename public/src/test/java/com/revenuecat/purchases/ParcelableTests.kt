@@ -23,7 +23,7 @@ class ParcelableTests {
     fun `EntitlementInfos is Parcelable`() = testParcelization(
         EntitlementInfos(
             mapOf("an_identifier" to getEntitlementInfo(identifier = "an_identifier")),
-            verification = VerificationResult.NOT_VERIFIED
+            verification = VerificationResult.NOT_REQUESTED
         )
     )
 
@@ -80,7 +80,7 @@ class ParcelableTests {
             billingIssueDetectedAt = null,
             ownershipType = OwnershipType.UNKNOWN,
             jsonObject = JSONObject(Responses.validFullPurchaserResponse),
-            verification = VerificationResult.NOT_VERIFIED
+            verification = VerificationResult.NOT_REQUESTED
         )
     }
 }

@@ -816,7 +816,7 @@ class PurchasesTest {
 
         val mockInfo = CustomerInfoFactory.buildCustomerInfo(
             JSONObject(Responses.validFullPurchaserResponse),
-            VerificationResult.NOT_VERIFIED
+            VerificationResult.NOT_REQUESTED
         )
         every {
             mockBackend.postReceiptData(
