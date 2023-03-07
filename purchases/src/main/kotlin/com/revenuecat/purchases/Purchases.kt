@@ -456,7 +456,8 @@ class Purchases internal constructor(
             null,
             upgradeInfo.oldSku,
             upgradeInfo.prorationMode,
-            listener
+            listener,
+            null
         )
     }
 
@@ -523,7 +524,8 @@ class Purchases internal constructor(
             packageToPurchase.offering,
             upgradeInfo.oldSku,
             upgradeInfo.prorationMode,
-            callback
+            callback,
+            null
         )
     }
 
@@ -1443,12 +1445,7 @@ class Purchases internal constructor(
                             PurchasesErrorCode.StoreProblemError,
                             PurchaseStrings.NULL_TRANSACTION_ON_PURCHASE_ERROR
                         )
-                        synchronized(this@Purchases) {
-                            state.purchaseCallbacksByProductId.let { purchaseCallbacks ->
-                                state = state.copy(purchaseCallbacksByProductId = emptyMap())
-                                purchaseCallbacks.values.forEach { it.dispatch(nullTransactionError) }
-                            }
-                        }
+                        errorAllPurchaseCallbacks(nullTransactionError)
                     }
                     return
                 }
@@ -1466,11 +1463,17 @@ class Purchases internal constructor(
             override fun onPurchasesFailedToUpdate(purchasesError: PurchasesError) {
                 synchronized(this@Purchases) {
                     getAndClearProductChangeCallback()?.dispatch(purchasesError)
-                        ?: state.purchaseCallbacksByProductId.let { purchaseCallbacks ->
-                            state = state.copy(purchaseCallbacksByProductId = emptyMap())
-                            purchaseCallbacks.values.forEach { it.dispatch(purchasesError) }
-                        }
+                        ?: errorAllPurchaseCallbacks(purchasesError)
                 }
+            }
+        }
+    }
+
+    private fun errorAllPurchaseCallbacks(purchasesError: PurchasesError) {
+        synchronized(this@Purchases) {
+            state.purchaseCallbacksByProductId.let { purchaseCallbacks ->
+                state = state.copy(purchaseCallbacksByProductId = emptyMap())
+                purchaseCallbacks.values.forEach { it.dispatch(purchasesError) }
             }
         }
     }
@@ -1561,13 +1564,15 @@ class Purchases internal constructor(
         offeringIdentifier: String?,
         oldProductId: String,
         @BillingFlowParams.ProrationMode googleProrationMode: Int?,
-        deprecatedProductChangeCallback: ProductChangeCallback? = null,
-        purchaseCallback: PurchaseCallback? = null
+        deprecatedProductChangeCallback: ProductChangeCallback?,
+        purchaseCallback: PurchaseCallback?
     ) {
-        // todo error instead of return
-        val callbackToUse = purchaseCallback ?: deprecatedProductChangeCallback ?: return
+        val callbackToUse = purchaseCallback ?: deprecatedProductChangeCallback ?: run {
+            errorLog(PurchaseStrings.INVALID_CALLBACK_TYPE_INTERNAL_ERROR)
+            return
+        }
+
         if (purchasingData.productType != ProductType.SUBS) {
-            getAndClearProductChangeCallback() // TODO also clear purchase callback?
             callbackToUse.dispatch(PurchasesError(
                 PurchasesErrorCode.PurchaseNotAllowedError,
                 PurchaseStrings.UPGRADING_INVALID_TYPE
@@ -1592,16 +1597,15 @@ class Purchases internal constructor(
             }
             if (callbackToUse is ProductChangeCallback && state.deprecatedProductChangeCallback == null) {
                 state = state.copy(deprecatedProductChangeCallback = deprecatedProductChangeCallback)
-                userPurchasing = identityManager.currentAppUserID
             } else if (callbackToUse is PurchaseCallback) {
                 if (!state.purchaseCallbacksByProductId.containsKey(purchasingData.productId)) {
                     val mapOfProductIdToListener = mapOf(purchasingData.productId to callbackToUse)
                     state = state.copy(
                         purchaseCallbacksByProductId = state.purchaseCallbacksByProductId + mapOfProductIdToListener
                     )
-                    userPurchasing = identityManager.currentAppUserID
                 }
             }
+            userPurchasing = identityManager.currentAppUserID
         }
         userPurchasing?.let { appUserID ->
             replaceOldPurchaseWithNewProduct(
@@ -1631,11 +1635,12 @@ class Purchases internal constructor(
         listener: PurchaseErrorCallback
     ) {
         if (purchasingData.productType != ProductType.SUBS) {
-            getAndClearProductChangeCallback() // TODO also clear normal callback?
-            listener.dispatch(PurchasesError(
+            val invalidProductChangeTypeError = PurchasesError(
                 PurchasesErrorCode.PurchaseNotAllowedError,
                 PurchaseStrings.UPGRADING_INVALID_TYPE
-            ).also { errorLog(it) })
+            ).also { errorLog(it) }
+            getAndClearProductChangeCallback()?.dispatch(invalidProductChangeTypeError)
+            errorAllPurchaseCallbacks(invalidProductChangeTypeError)
             return
         }
 
