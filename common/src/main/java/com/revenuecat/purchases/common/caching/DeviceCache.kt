@@ -24,7 +24,7 @@ import java.util.Date
 private const val CACHE_REFRESH_PERIOD_IN_FOREGROUND = 60000 * 5
 private const val CACHE_REFRESH_PERIOD_IN_BACKGROUND = 60000 * 60 * 25
 private const val SHARED_PREFERENCES_PREFIX = "com.revenuecat.purchases."
-internal const val PURCHASER_INFO_SCHEMA_VERSION = 3
+internal const val CUSTOMER_INFO_SCHEMA_VERSION = 3
 
 open class DeviceCache(
     private val preferences: SharedPreferences,
@@ -114,7 +114,7 @@ open class DeviceCache(
                     cachedJSONObject.remove(CUSTOMER_INFO_VERIFICATION_RESULT_KEY)
                     cachedJSONObject.remove(CUSTOMER_INFO_REQUEST_DATE_KEY)
                     val verificationResult = VerificationResult.valueOf(verificationResultString)
-                    return if (schemaVersion == PURCHASER_INFO_SCHEMA_VERSION) {
+                    return if (schemaVersion == CUSTOMER_INFO_SCHEMA_VERSION) {
                         CustomerInfoFactory.buildCustomerInfo(cachedJSONObject, requestDate, verificationResult)
                     } else {
                         null
@@ -128,7 +128,7 @@ open class DeviceCache(
     @Synchronized
     fun cacheCustomerInfo(appUserID: String, info: CustomerInfo) {
         val jsonObject = info.rawData.also {
-            it.put(CUSTOMER_INFO_SCHEMA_VERSION_KEY, PURCHASER_INFO_SCHEMA_VERSION)
+            it.put(CUSTOMER_INFO_SCHEMA_VERSION_KEY, CUSTOMER_INFO_SCHEMA_VERSION)
             it.put(CUSTOMER_INFO_VERIFICATION_RESULT_KEY, info.entitlements.verification.name)
             it.put(CUSTOMER_INFO_REQUEST_DATE_KEY, info.requestDate.time)
         }
