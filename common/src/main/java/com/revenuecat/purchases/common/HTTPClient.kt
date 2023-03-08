@@ -59,18 +59,7 @@ class HTTPClient(
 
     @Throws(IOException::class)
     private fun readFully(inputStream: InputStream): String {
-        return readFully(buffer(inputStream))
-    }
-
-    @Throws(IOException::class)
-    private fun readFully(reader: BufferedReader): String {
-        val sb = StringBuilder()
-        var line = reader.readLine()
-        while (line != null) {
-            sb.append(line)
-            line = reader.readLine()
-        }
-        return sb.toString()
+        return buffer(inputStream).readText()
     }
 
     @Suppress("TooGenericExceptionCaught")

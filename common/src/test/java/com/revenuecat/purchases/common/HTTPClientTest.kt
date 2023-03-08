@@ -326,6 +326,20 @@ class HTTPClientTest: BaseHTTPClientTest() {
         }
     }
 
+    @Test
+    fun `payload is returned with trailing new lines`() {
+        enqueue(
+            Endpoint.LogIn,
+            expectedResult = HTTPResult.createResult(payload = "{}\n")
+        )
+
+        val result = client.performRequest(baseURL, Endpoint.LogIn, null, emptyMap())
+
+        server.takeRequest()
+
+        assertThat(result.payload).isEqualTo("{}\n")
+    }
+
     // region trackHttpRequestPerformed
 
     @Test
