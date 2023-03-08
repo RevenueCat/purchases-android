@@ -483,9 +483,9 @@ class PurchasesTest {
 
         var callCount = 0
         // use deprecated version of function because deferred upgrades not allowed with new version
-        purchases.purchaseSubscriptionOptionWith(
+        purchases.purchaseProductWith(
             mockActivity,
-            receiptInfo.storeProduct!!.subscriptionOptions!!.first(),
+            receiptInfo.storeProduct!!,
             UpgradeInfo(oldPurchase.productIds[0]),
             onError = { _, _ ->
                 fail("should be success")

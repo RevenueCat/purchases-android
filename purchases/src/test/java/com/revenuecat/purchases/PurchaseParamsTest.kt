@@ -16,7 +16,6 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 import org.junit.runner.RunWith
 
-// endregion
 @RunWith(AndroidJUnit4::class)
 class PurchaseParamsTest {
 

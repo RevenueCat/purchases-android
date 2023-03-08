@@ -29,7 +29,8 @@
 
 ### StoreProduct changes
 
-StoreProduct has been made an interface, which `GoogleStoreProduct` and `AmazonStoreProduct` implement.
+`StoreProduct` has been made an interface, which `GoogleStoreProduct` and `AmazonStoreProduct` implement. 
+`StoreProduct` is no longer `Parcelable`.
 
 | Previous                      | New                                                                           |
 |-------------------------------|-------------------------------------------------------------------------------|
@@ -131,9 +132,9 @@ When passing a `Package` or `StoreProduct` to `purchase()`, the SDK will use the
 
 For more control, create your `PurchaseParams.Builder` with the desired `SubscriptionOption`.
 
-| New                                         |
-|---------------------------------------------|
-| `purchase(PurchaseParams, PurchaseCallback` |
+| New                                          |
+|----------------------------------------------|
+| `purchase(PurchaseParams, PurchaseCallback)` |
 
 Replaces all of the following: 
 

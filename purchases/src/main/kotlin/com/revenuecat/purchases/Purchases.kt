@@ -1592,9 +1592,8 @@ class Purchases internal constructor(
                 state = state.copy(
                     purchaseCallbacksByProductId = state.purchaseCallbacksByProductId + mapOfProductIdToListener
                 )
+                userPurchasing = identityManager.currentAppUserID
             }
-
-            userPurchasing = identityManager.currentAppUserID
         }
         userPurchasing?.let { appUserID ->
             replaceOldPurchaseWithNewProduct(
