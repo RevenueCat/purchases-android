@@ -14,7 +14,6 @@ import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.purchasePackageWith
 import com.revenuecat.purchases.purchaseProductWith
-import com.revenuecat.purchases.purchaseSubscriptionOptionWith
 
 @Suppress("unused")
 private class DeprecatedPurchasesAPI {
@@ -41,27 +40,27 @@ private class DeprecatedPurchasesAPI {
         purchases.purchasePackage(activity, packageToPurchase, upgradeInfo, purchaseChangeCallback)
         purchases.purchasePackage(activity, packageToPurchase, purchaseCallback)
 
-        purchases.purchaseSubscriptionOption(
+        purchases.purchaseProductWith(
             activity,
-            subscriptionOption,
-            upgradeInfo,
-            purchaseChangeCallback
+            storeProduct,
+            onError = { _: PurchasesError, _: Boolean -> },
+            onSuccess = { _: StoreTransaction, _: CustomerInfo -> }
         )
-        purchases.purchaseSubscriptionOption(activity, subscriptionOption, purchaseCallback)
+        purchases.purchaseProductWith(
+            activity,
+            storeProduct) { _: StoreTransaction, _: CustomerInfo -> }
+        purchases.purchaseProductWith(
+            activity,
+            storeProduct,
+            upgradeInfo,
+            onError = { _: PurchasesError, _: Boolean -> },
+            onSuccess = { _: StoreTransaction?, _: CustomerInfo -> }
+        )
+        purchases.purchaseProductWith(
+            activity,
+            storeProduct,
+            upgradeInfo) { _: StoreTransaction?, _: CustomerInfo -> }
 
-        purchases.purchaseProductWith(
-            activity,
-            storeProduct,
-            onError = { _: PurchasesError, _: Boolean -> },
-            onSuccess = { _: StoreTransaction, _: CustomerInfo -> }
-        )
-        purchases.purchaseProductWith(
-            activity,
-            storeProduct,
-            upgradeInfo,
-            onError = { _: PurchasesError, _: Boolean -> },
-            onSuccess = { _: StoreTransaction?, _: CustomerInfo -> }
-        )
         purchases.purchasePackageWith(
             activity,
             packageToPurchase,
@@ -72,22 +71,18 @@ private class DeprecatedPurchasesAPI {
         purchases.purchasePackageWith(
             activity,
             packageToPurchase,
+            upgradeInfo) { _: StoreTransaction?, _: CustomerInfo -> }
+
+        purchases.purchasePackageWith(
+            activity,
+            packageToPurchase,
             onError = { _: PurchasesError, _: Boolean -> },
             onSuccess = { _: StoreTransaction, _: CustomerInfo -> }
         )
-        purchases.purchaseSubscriptionOptionWith(
+
+        purchases.purchasePackageWith(
             activity,
-            subscriptionOption,
-            onError = { _: PurchasesError, _: Boolean -> },
-            onSuccess = { _: StoreTransaction, _: CustomerInfo -> }
-        )
-        purchases.purchaseSubscriptionOptionWith(
-            activity,
-            subscriptionOption,
-            upgradeInfo,
-            onError = { _: PurchasesError, _: Boolean -> },
-            onSuccess = { _: StoreTransaction?, _: CustomerInfo -> }
-        )
+            packageToPurchase) { _: StoreTransaction, _: CustomerInfo -> }
 
         purchases.allowSharingPlayStoreAccount = true
         purchases.getSubscriptionSkusWith(

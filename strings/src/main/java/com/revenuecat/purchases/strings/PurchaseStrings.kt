@@ -38,6 +38,8 @@ object PurchaseStrings {
     const val INVALID_PURCHASE_TYPE = "Purchase for a %s purchase must be a %s."
     const val INVALID_STORE_PRODUCT_TYPE = "StoreProduct for a %s purchase must be a %s."
     const val INVALID_PRODUCT_NO_PRICE = "Error finding a price for %s."
+    const val INVALID_CALLBACK_TYPE_INTERNAL_ERROR = "Internal SDK error -- invalid callback type passed to " +
+        "startProductChange."
     const val NULL_TRANSACTION_ON_PURCHASE_ERROR = "Error purchasing. Null transaction returned from a succcessful " +
         "non-upgrade purchase."
 }

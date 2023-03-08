@@ -16,7 +16,7 @@ import com.revenuecat.purchases.getCustomerInfoWith
 import com.revenuecat.purchases.getOfferingsWith
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
 import com.revenuecat.purchases.interfaces.LogInCallback
-import com.revenuecat.purchases.interfaces.NewPurchaseCallback
+import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
@@ -91,8 +91,8 @@ private class PurchasesAPI {
         packageToPurchase: Package,
         subscriptionOption: SubscriptionOption
     ) {
-        val purchaseCallback = object : NewPurchaseCallback {
-            override fun onCompleted(storeTransaction: StoreTransaction?, customerInfo: CustomerInfo) {}
+        val purchaseCallback = object : PurchaseCallback {
+            override fun onCompleted(storeTransaction: StoreTransaction, customerInfo: CustomerInfo) {}
             override fun onError(error: PurchasesError, userCancelled: Boolean) {}
         }
 
@@ -155,6 +155,8 @@ private class PurchasesAPI {
             onError = { _: PurchasesError, _: Boolean -> },
             onSuccess = { _: StoreTransaction?, _: CustomerInfo -> }
         )
+        purchases.purchaseWith(
+            purchaseParams) { _: StoreTransaction?, _: CustomerInfo -> }
     }
 
     fun check(purchases: Purchases, attributes: Map<String, String>) {

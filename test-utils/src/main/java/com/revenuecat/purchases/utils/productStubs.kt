@@ -2,6 +2,10 @@ package com.revenuecat.purchases.utils
 
 import android.os.Parcel
 import com.android.billingclient.api.ProductDetails
+import com.revenuecat.purchases.Offering
+import com.revenuecat.purchases.Offerings
+import com.revenuecat.purchases.Package
+import com.revenuecat.purchases.PackageType
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.common.MICROS_MULTIPLIER
 import com.revenuecat.purchases.models.Price
@@ -20,6 +24,16 @@ private data class StubPurchasingData(
     override val productType: ProductType
         get() = ProductType.SUBS
 }
+
+const val STUB_OFFERING_IDENTIFIER = "offering_a"
+const val STUB_PRODUCT_IDENTIFIER = "monthly_freetrial"
+const val ONE_OFFERINGS_RESPONSE = "{'offerings': [" +
+    "{'identifier': '$STUB_OFFERING_IDENTIFIER', " +
+    "'description': 'This is the base offering', " +
+    "'packages': [" +
+    "{'identifier': '\$rc_monthly','platform_product_identifier': '$STUB_PRODUCT_IDENTIFIER'," +
+    "'platform_product_plan_identifier': 'p1m'}]}]," +
+    "'current_offering_id': '$STUB_OFFERING_IDENTIFIER'}"
 
 @SuppressWarnings("EmptyFunctionBlock")
 fun stubStoreProduct(
@@ -136,3 +150,27 @@ fun stubPricingPhase(
     billingCycleCount,
     Price(if (price == 0.0) "Free" else "${'$'}$price", price.times(MICROS_MULTIPLIER).toLong(), priceCurrencyCodeValue)
 )
+
+fun stubOfferings(storeProduct: StoreProduct): Pair<StoreProduct, Offerings> {
+    val packageObject = Package(
+        "\$rc_monthly",
+        PackageType.MONTHLY,
+        storeProduct,
+        STUB_OFFERING_IDENTIFIER
+    )
+    val offering = Offering(
+        STUB_OFFERING_IDENTIFIER,
+        "This is the base offering",
+        listOf(packageObject)
+    )
+    val offerings = Offerings(
+        offering,
+        mapOf(offering.identifier to offering)
+    )
+    return Pair(storeProduct, offerings)
+}
+
+fun stubOfferings(productId: String): Pair<StoreProduct, Offerings> {
+    val storeProduct = stubStoreProduct(productId)
+    return stubOfferings(storeProduct)
+}

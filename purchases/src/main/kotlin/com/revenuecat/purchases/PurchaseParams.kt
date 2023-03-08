@@ -6,7 +6,7 @@ import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.SubscriptionOption
 
-open class PurchaseParams(builder: Builder) {
+data class PurchaseParams(val builder: Builder) {
 
     val isPersonalizedPrice: Boolean
     val oldProductId: String?
@@ -74,7 +74,7 @@ open class PurchaseParams(builder: Builder) {
          * for more info.
          *
          * Default is false.
-         *  Ignored for Amazon Appstore purchases.
+         * Ignored for Amazon Appstore purchases.
          */
         fun isPersonalizedPrice(isPersonalizedPrice: Boolean) = apply {
             this.isPersonalizedPrice = isPersonalizedPrice
