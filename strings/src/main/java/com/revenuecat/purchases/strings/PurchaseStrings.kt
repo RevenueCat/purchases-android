@@ -33,4 +33,6 @@ object PurchaseStrings {
     const val NOT_RECOGNIZED_PRODUCT_TYPE = "Type of product not recognized."
     const val SKIPPING_AUTOMATIC_SYNC = "Skipping automatic synchronization."
     const val INVALID_PRODUCT_TYPE = "Invalid product type passed to %s."
+    const val ENTITLEMENT_EXPIRED_OUTSIDE_GRACE_PERIOD = "Entitlement %s is no longer active (expired %s) " +
+        "and it's outside grace period window (last updated %s)"
 }

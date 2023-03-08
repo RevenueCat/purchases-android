@@ -1,9 +1,15 @@
 package com.revenuecat.purchases.utils
 
 import org.json.JSONObject
+import java.util.Date
 
 object Responses {
-    val validFullPurchaserResponse = """
+    @Suppress("LongMethod")
+    fun createFullPurchaserResponse(
+        oneMonthFreeTrialExpirationDate: Date? = Iso8601Utils.parse("2100-04-06T20:54:45.975000Z"),
+        threeMonthFreeTrialExpirationDate: Date? = Iso8601Utils.parse("1990-08-30T02:40:36Z")
+    ): String {
+        return """
                 {
                   "request_date": "2019-08-16T10:30:42Z",
                   "request_date_ms": 1565951442879,
@@ -63,7 +69,7 @@ object Responses {
                         "purchase_date": "2019-07-26T23:45:40Z",
                         "store": "app_store",
                         "unsubscribe_detected_at": null,
-                        "expires_date": "2100-04-06T20:54:45.975000Z",
+                        "expires_date": "${Iso8601Utils.format(oneMonthFreeTrialExpirationDate)}",
                         "period_type": "normal"
                       },
                       "threemonth_freetrial": {
@@ -74,7 +80,7 @@ object Responses {
                         "store": "app_store",
                         "unsubscribe_detected_at": null,
                         "period_type": "normal",
-                        "expires_date": "1990-08-30T02:40:36Z"
+                        "expires_date": "${Iso8601Utils.format(threeMonthFreeTrialExpirationDate)}"
                       }
                     },
                     "entitlements": {
@@ -98,6 +104,9 @@ object Responses {
                   }
                 }
             """.removeJSONFormatting()
+    }
+
+    val validFullPurchaserResponse = createFullPurchaserResponse()
 
     val validEmptyPurchaserResponse = """
                 {

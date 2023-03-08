@@ -14,30 +14,13 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import java.util.Date
+import kotlin.time.Duration.Companion.days
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
 class EntitlementInfosTests {
 
     private var response = JSONObject()
-
-    private fun stubResponse(
-        entitlements: JSONObject = JSONObject(),
-        nonSubscriptions: JSONObject = JSONObject(),
-        subscriptions: JSONObject = JSONObject()
-    ) {
-        response = JSONObject().apply {
-            put("request_date", "2019-08-26T23:29:50Z")
-            put("subscriber", JSONObject().apply {
-                put("entitlements", entitlements)
-                put("first_seen", "2019-07-26T23:29:50Z")
-                put("non_subscriptions", nonSubscriptions)
-                put("original_app_user_id", "cesarsandbox1")
-                put("original_application_version", "1.0")
-                put("subscriptions", subscriptions)
-            })
-        }
-    }
 
     @Test
     fun `multiple entitlements`() {
@@ -1179,6 +1162,104 @@ class EntitlementInfosTests {
         verifyOwnershipType(OwnershipType.UNKNOWN)
     }
 
+    // region EntitlementInfo active with grace periods
+
+    @Test
+    fun `entitlementInfo is active if within grace period`() {
+        stubResponse(
+            entitlements = JSONObject().apply {
+                put("pro_cat", JSONObject().apply {
+                    put("expires_date", Iso8601Utils.format(1.days.ago()))
+                    put("product_identifier", "monthly_freetrial")
+                    put("purchase_date", "2019-07-26T23:45:40Z")
+                })
+            },
+            subscriptions = JSONObject().apply {
+                put("monthly_freetrial", JSONObject().apply {
+                    put("billing_issues_detected_at", JSONObject.NULL)
+                    put("expires_date", "2200-07-26T23:50:40Z")
+                    put("is_sandbox", false)
+                    put("original_purchase_date", "2019-07-26T23:30:41Z")
+                    put("period_type", "normal")
+                    put("purchase_date", "2019-07-26T23:45:40Z")
+                    put("store", "app_store")
+                    put("unsubscribe_detected_at", JSONObject.NULL)
+                })
+            },
+            requestDate = 2.days.ago()
+        )
+
+        val customerInfo = createCustomerInfo(response)
+        assertThat(customerInfo.entitlements.all.size).isEqualTo(1)
+        assertThat(customerInfo.entitlements.all.containsKey("pro_cat")).isTrue
+        assertThat(customerInfo.entitlements.all["pro_cat"]?.isActive).isTrue
+    }
+
+    @Test
+    fun `entitlementInfo is not active if past grace period`() {
+        stubResponse(
+            entitlements = JSONObject().apply {
+                put("pro_cat", JSONObject().apply {
+                    put("expires_date", Iso8601Utils.format(1.days.ago()))
+                    put("product_identifier", "monthly_freetrial")
+                    put("purchase_date", "2019-07-26T23:45:40Z")
+                })
+            },
+            subscriptions = JSONObject().apply {
+                put("monthly_freetrial", JSONObject().apply {
+                    put("billing_issues_detected_at", JSONObject.NULL)
+                    put("expires_date", "2200-07-26T23:50:40Z")
+                    put("is_sandbox", false)
+                    put("original_purchase_date", "2019-07-26T23:30:41Z")
+                    put("period_type", "normal")
+                    put("purchase_date", "2019-07-26T23:45:40Z")
+                    put("store", "app_store")
+                    put("unsubscribe_detected_at", JSONObject.NULL)
+                })
+            },
+            requestDate = 5.days.ago()
+        )
+
+        val customerInfo = createCustomerInfo(response)
+        assertThat(customerInfo.entitlements.all.size).isEqualTo(1)
+        assertThat(customerInfo.entitlements.all.containsKey("pro_cat")).isTrue
+        assertThat(customerInfo.entitlements.all["pro_cat"]?.isActive).isFalse
+    }
+
+    @Test
+    fun `entitlementInfo is active if expiration time in the future`() {
+        stubResponse(
+            entitlements = JSONObject().apply {
+                put("pro_cat", JSONObject().apply {
+                    put("expires_date", Iso8601Utils.format(1.days.fromNow()))
+                    put("product_identifier", "monthly_freetrial")
+                    put("purchase_date", "2019-07-26T23:45:40Z")
+                })
+            },
+            subscriptions = JSONObject().apply {
+                put("monthly_freetrial", JSONObject().apply {
+                    put("billing_issues_detected_at", JSONObject.NULL)
+                    put("expires_date", "2200-07-26T23:50:40Z")
+                    put("is_sandbox", false)
+                    put("original_purchase_date", "2019-07-26T23:30:41Z")
+                    put("period_type", "normal")
+                    put("purchase_date", "2019-07-26T23:45:40Z")
+                    put("store", "app_store")
+                    put("unsubscribe_detected_at", JSONObject.NULL)
+                })
+            },
+            requestDate = 5.days.ago()
+        )
+
+        val customerInfo = createCustomerInfo(response)
+        assertThat(customerInfo.entitlements.all.size).isEqualTo(1)
+        assertThat(customerInfo.entitlements.all.containsKey("pro_cat")).isTrue
+        assertThat(customerInfo.entitlements.all["pro_cat"]?.isActive).isTrue
+    }
+
+    // endregion
+
+    // region Helpers
 
     private fun verifySubscriberInfo() {
         val subscriberInfo = createCustomerInfo(response)
@@ -1270,4 +1351,25 @@ class EntitlementInfosTests {
         assertThat(proCat.expirationDate).isEqualTo(expirationDate)
         assertThat(proCat.productIdentifier).isEqualTo(identifier)
     }
+
+    private fun stubResponse(
+        entitlements: JSONObject = JSONObject(),
+        nonSubscriptions: JSONObject = JSONObject(),
+        subscriptions: JSONObject = JSONObject(),
+        requestDate: Date = Iso8601Utils.parse("2019-08-26T23:29:50Z")
+    ) {
+        response = JSONObject().apply {
+            put("request_date", Iso8601Utils.format(requestDate))
+            put("subscriber", JSONObject().apply {
+                put("entitlements", entitlements)
+                put("first_seen", "2019-07-26T23:29:50Z")
+                put("non_subscriptions", nonSubscriptions)
+                put("original_app_user_id", "cesarsandbox1")
+                put("original_application_version", "1.0")
+                put("subscriptions", subscriptions)
+            })
+        }
+    }
+
+    // endregion
 }
