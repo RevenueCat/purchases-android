@@ -93,8 +93,7 @@ private fun JSONObject.parseDates(jsonKey: String): HashMap<String, Date?> {
     val it = keys()
     while (it.hasNext()) {
         val productId = it.next()
-        val basePlanId = getJSONObject(productId).optString("product_plan_identifier")
-            .takeIf { it.isNotEmpty() }?.split(":")?.firstOrNull()
+        val basePlanId = getJSONObject(productId).optString("product_plan_identifier").takeIf { it.isNotEmpty() }
 
         val expirationObject = getJSONObject(productId)
 
