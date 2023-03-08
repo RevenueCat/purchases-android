@@ -16,6 +16,7 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
+import java.util.Date
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
@@ -224,6 +225,7 @@ class ETagManagerTest {
             eTagHeader = eTagInResponse,
             urlPathWithVersion = path,
             refreshETag = false,
+            requestDate = null,
             verificationResult = VerificationResult.NOT_REQUESTED
         )
 
@@ -245,6 +247,7 @@ class ETagManagerTest {
             eTagHeader = eTagInResponse,
             urlPathWithVersion = path,
             refreshETag = false,
+            requestDate = null,
             verificationResult = VerificationResult.NOT_REQUESTED
         )
 
@@ -268,6 +271,7 @@ class ETagManagerTest {
             eTagHeader = eTagInResponse,
             urlPathWithVersion = path,
             refreshETag = false,
+            requestDate = null,
             verificationResult = VerificationResult.NOT_REQUESTED
         )
 
@@ -292,6 +296,7 @@ class ETagManagerTest {
             eTagHeader = eTagInResponse,
             urlPathWithVersion = path,
             refreshETag = true,
+            requestDate = null,
             verificationResult = VerificationResult.NOT_REQUESTED
         )
 
@@ -315,6 +320,7 @@ class ETagManagerTest {
             eTagHeader = eTagInResponse,
             urlPathWithVersion = path,
             refreshETag = false,
+            requestDate = null,
             verificationResult = VerificationResult.NOT_REQUESTED
         )
 
@@ -338,6 +344,7 @@ class ETagManagerTest {
             eTagHeader = eTagInResponse,
             urlPathWithVersion = path,
             refreshETag = true,
+            requestDate = null,
             verificationResult = VerificationResult.NOT_REQUESTED
         )
 
@@ -357,6 +364,7 @@ class ETagManagerTest {
             eTagHeader = "etag",
             urlPathWithVersion = "/v1/subscribers/appUserID",
             refreshETag = false,
+            requestDate = null,
             verificationResult = VerificationResult.SUCCESS
         )
 
@@ -376,10 +384,49 @@ class ETagManagerTest {
             eTagHeader = "etag",
             urlPathWithVersion = "/v1/subscribers/appUserID",
             refreshETag = false,
+            requestDate = null,
             verificationResult = VerificationResult.FAILED
         )
 
         assertThat(result?.verificationResult).isEqualTo(VerificationResult.FAILED)
+    }
+
+    @Test
+    fun `getHTTPResultFromCacheOrBackend should use requestDate from header when no cached version exists`() {
+        val expectedDate = Date(1234567890)
+        mockCachedHTTPResult(expectedETag = null, "/v1/subscribers/appUserID")
+        val result = underTest.getHTTPResultFromCacheOrBackend(
+            responseCode = RCHTTPStatusCodes.SUCCESS,
+            payload = "",
+            eTagHeader = "etag",
+            urlPathWithVersion = "/v1/subscribers/appUserID",
+            refreshETag = false,
+            requestDate = expectedDate,
+            verificationResult = VerificationResult.NOT_REQUESTED
+        )
+
+        assertThat(result?.requestDate).isEqualTo(expectedDate)
+    }
+
+    @Test
+    fun `getHTTPResultFromCacheOrBackend should use requestDate from header even if cached is different`() {
+        val expectedDate = Date(1234567890)
+        val cachedHttpResult = HTTPResult.createResult(
+            origin = HTTPResult.Origin.CACHE,
+            requestDate = Date(1000)
+        )
+        mockCachedHTTPResult("etag", "/v1/subscribers/appUserID", cachedHttpResult)
+        val result = underTest.getHTTPResultFromCacheOrBackend(
+            responseCode = RCHTTPStatusCodes.SUCCESS,
+            payload = "",
+            eTagHeader = "etag",
+            urlPathWithVersion = "/v1/subscribers/appUserID",
+            refreshETag = false,
+            requestDate = expectedDate,
+            verificationResult = VerificationResult.NOT_REQUESTED
+        )
+
+        assertThat(result?.requestDate).isEqualTo(expectedDate)
     }
 
     private fun mockCachedHTTPResult(

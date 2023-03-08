@@ -12,6 +12,7 @@ import com.revenuecat.purchases.utils.parsePurchaseDates
 import org.json.JSONException
 import org.json.JSONObject
 import java.util.Collections.emptyMap
+import java.util.Date
 
 /**
  * Builds a CustomerInfo
@@ -20,11 +21,15 @@ import java.util.Collections.emptyMap
 object CustomerInfoFactory {
     @Throws(JSONException::class)
     fun buildCustomerInfo(httpResult: HTTPResult): CustomerInfo {
-        return buildCustomerInfo(httpResult.body, httpResult.verificationResult)
+        return buildCustomerInfo(httpResult.body, httpResult.requestDate, httpResult.verificationResult)
     }
 
     @Throws(JSONException::class)
-    fun buildCustomerInfo(body: JSONObject, verificationResult: VerificationResult): CustomerInfo {
+    fun buildCustomerInfo(
+        body: JSONObject,
+        overrideRequestDate: Date?,
+        verificationResult: VerificationResult
+    ): CustomerInfo {
         val subscriber = body.getJSONObject("subscriber")
 
         val nonSubscriptions = subscriber.getJSONObject("non_subscriptions")
@@ -47,7 +52,7 @@ object CustomerInfoFactory {
 
         val entitlements = subscriber.optJSONObject("entitlements")
 
-        val requestDate = Iso8601Utils.parse(body.getString("request_date"))
+        val requestDate = overrideRequestDate ?: Iso8601Utils.parse(body.getString("request_date"))
 
         val firstSeen = Iso8601Utils.parse(subscriber.getString("first_seen"))
 

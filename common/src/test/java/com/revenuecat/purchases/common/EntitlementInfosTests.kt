@@ -86,7 +86,7 @@ class EntitlementInfosTests {
             }
         )
 
-        val subscriberInfo = createCustomerInfo(response, VerificationResult.SUCCESS)
+        val subscriberInfo = createCustomerInfo(response, null, VerificationResult.SUCCESS)
         assertThat(subscriberInfo.entitlements.all).hasSize(2)
         assertThat(subscriberInfo.entitlements.verification).isEqualTo(VerificationResult.SUCCESS)
         subscriberInfo.entitlements.all.onEach { entry ->
@@ -139,7 +139,7 @@ class EntitlementInfosTests {
             }
         )
 
-        val subscriberInfo = createCustomerInfo(response, VerificationResult.FAILED)
+        val subscriberInfo = createCustomerInfo(response, null, VerificationResult.FAILED)
         assertThat(subscriberInfo.entitlements.verification).isEqualTo(VerificationResult.FAILED)
         assertThat(subscriberInfo.entitlements["pro_cat"]?.verification).isEqualTo(VerificationResult.FAILED)
     }
