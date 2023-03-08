@@ -8,7 +8,6 @@ import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.common.MICROS_MULTIPLIER
-import com.revenuecat.purchases.common.createOfferings
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.PricingPhase
 import com.revenuecat.purchases.models.PurchasingData
@@ -17,8 +16,6 @@ import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.SubscriptionOptions
 import com.revenuecat.purchases.models.toRecurrenceMode
-import io.mockk.every
-import org.json.JSONObject
 
 @SuppressWarnings("MatchingDeclarationName")
 private data class StubPurchasingData(
@@ -155,7 +152,6 @@ fun stubPricingPhase(
 )
 
 fun stubOfferings(storeProduct: StoreProduct): Pair<StoreProduct, Offerings> {
-    val jsonObject = JSONObject(ONE_OFFERINGS_RESPONSE)
     val packageObject = Package(
         "\$rc_monthly",
         PackageType.MONTHLY,
@@ -171,9 +167,6 @@ fun stubOfferings(storeProduct: StoreProduct): Pair<StoreProduct, Offerings> {
         offering,
         mapOf(offering.identifier to offering)
     )
-    every {
-        jsonObject.createOfferings(any())
-    } returns offerings
     return Pair(storeProduct, offerings)
 }
 
