@@ -1253,7 +1253,10 @@ class Purchases internal constructor(
         productIds: Set<String>,
         types: Set<ProductType>,
         callback: GetStoreProductsCallback
-    ) = getProductsOfTypes(productIds, types, emptyList(), callback)
+    ) {
+        val validTypes = types.filter { it != ProductType.UNKNOWN }.toSet()
+        getProductsOfTypes(productIds, validTypes, emptyList(), callback)
+    }
 
     private fun getProductsOfTypes(
         productIds: Set<String>,
@@ -1261,7 +1264,7 @@ class Purchases internal constructor(
         collectedStoreProducts: List<StoreProduct>,
         callback: GetStoreProductsCallback
     ) {
-        val typesRemaining = types.filter { it != ProductType.UNKNOWN }.toMutableSet()
+        val typesRemaining = types.toMutableSet()
         val type = typesRemaining.firstOrNull()?.also { typesRemaining.remove(it) }
 
         type?.let {
