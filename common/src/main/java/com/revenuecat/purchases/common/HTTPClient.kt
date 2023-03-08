@@ -40,7 +40,7 @@ class HTTPClient(
     private val appConfig: AppConfig,
     private val eTagManager: ETagManager,
     private val diagnosticsTrackerIfEnabled: DiagnosticsTracker?,
-    private val signingManager: SigningManager,
+    val signingManager: SigningManager,
     private val dateProvider: DateProvider = DefaultDateProvider()
 ) {
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
