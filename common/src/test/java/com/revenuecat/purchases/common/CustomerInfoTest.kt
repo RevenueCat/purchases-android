@@ -21,7 +21,7 @@ import org.robolectric.annotation.Config
 class CustomerInfoTest {
 
     private val fullCustomerInfo: CustomerInfo by lazy {
-        JSONObject(Responses.validFullPurchaserBC5Response).buildCustomerInfo()
+        JSONObject(Responses.validFullPurchaserResponse).buildCustomerInfo()
     }
 
     @Test(expected = JSONException::class)
