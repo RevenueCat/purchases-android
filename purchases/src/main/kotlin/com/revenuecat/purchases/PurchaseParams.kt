@@ -44,13 +44,13 @@ data class PurchaseParams(val builder: Builder) {
     ) {
         constructor(packageToPurchase: Package, activity: Activity) :
             this(
-                packageToPurchase.product.defaultOption?.purchasingData ?: packageToPurchase.product.purchasingData,
+                packageToPurchase.product.purchasingData,
                 activity,
                 packageToPurchase.offering
             )
 
         constructor(storeProduct: StoreProduct, activity: Activity) :
-            this(storeProduct.defaultOption?.purchasingData ?: storeProduct.purchasingData, activity)
+            this(storeProduct.purchasingData, activity)
 
         constructor(subscriptionOption: SubscriptionOption, activity: Activity) :
             this(subscriptionOption.purchasingData, activity)

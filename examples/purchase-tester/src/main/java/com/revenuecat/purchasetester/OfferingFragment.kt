@@ -18,7 +18,6 @@ import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PurchaseParams
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
-import com.revenuecat.purchases.UpgradeInfo
 import com.revenuecat.purchases.getCustomerInfoWith
 import com.revenuecat.purchases.models.GoogleProrationMode
 import com.revenuecat.purchases.models.StoreProduct
@@ -103,11 +102,12 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
     ) {
         toggleLoadingIndicator(true)
         if (isUpgrade) {
-            promptForUpgradeInfo { upgradeInfo ->
-                upgradeInfo?.let {
-                    purchaseProductBuilder.oldProductId(upgradeInfo.oldSku)
-                    // TODO BC5 figure out proration mode
-//                        .googleProrationMode(upgradeInfo.prorationMode)
+            promptForProductChangeInfo { oldProductId, prorationMode ->
+                oldProductId?.let {
+                    purchaseProductBuilder.oldProductId(it)
+                }
+                prorationMode?.let {
+                    purchaseProductBuilder.googleProrationMode(prorationMode)
                 }
                 Purchases.sharedInstance.purchaseWith(
                     purchaseProductBuilder.build(),
@@ -124,21 +124,19 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
         }
     }
 
-    private fun promptForUpgradeInfo(callback: (UpgradeInfo?) -> Unit) {
+    private fun promptForProductChangeInfo(callback: (String?, GoogleProrationMode?) -> Unit) {
         showOldSubIdPicker { subId ->
             subId?.let {
                 showProrationModePicker { prorationMode, error ->
                     if (error == null) {
                         prorationMode?.let {
-//                            callback(UpgradeInfo(subId, prorationMode))
-                            // TODO BC5 figure out proration mode
-                            callback(UpgradeInfo(subId))
-                        } ?: callback(UpgradeInfo(subId))
+                            callback(subId, it)
+                        } ?: callback(subId, null)
                     } else {
-                        callback(null)
+                        callback(null, null)
                     }
                 }
-            } ?: callback(null)
+            } ?: callback(null, null)
         }
     }
 
