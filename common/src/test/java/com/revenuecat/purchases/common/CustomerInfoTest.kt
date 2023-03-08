@@ -21,7 +21,7 @@ import org.robolectric.annotation.Config
 class CustomerInfoTest {
 
     private val fullCustomerInfo: CustomerInfo by lazy {
-        JSONObject(Responses.validFullPurchaserResponse).buildCustomerInfo()
+        JSONObject(Responses.validFullPurchaserBC5Response).buildCustomerInfo()
     }
 
     @Test(expected = JSONException::class)
@@ -69,7 +69,7 @@ class CustomerInfoTest {
         val actives = info.activeSubscriptions
 
         assertThat(actives.size).isEqualTo(1)
-        assertThat(actives).contains("onemonth_freetrial")
+        assertThat(actives).contains("pro:monthly")
     }
 
     @Test
@@ -79,9 +79,9 @@ class CustomerInfoTest {
         val purchasedSkus = info.allPurchasedProductIds
 
         assertThat(purchasedSkus.size).isEqualTo(5)
-        assertThat(purchasedSkus).contains("onemonth_freetrial")
+        assertThat(purchasedSkus).contains("pro:monthly")
         assertThat(purchasedSkus).contains("100_coins_pack")
-        assertThat(purchasedSkus).contains("threemonth_freetrial")
+        assertThat(purchasedSkus).contains("basic:monthly")
         assertThat(purchasedSkus).contains("7_extra_lives")
         assertThat(purchasedSkus).contains("lifetime_access")
     }
@@ -102,10 +102,10 @@ class CustomerInfoTest {
     fun `Given a full purchase info, expiration date is de-serialized properly`() {
         val info = fullCustomerInfo
 
-        val oneMonthDate = info.getExpirationDateForProductId("onemonth_freetrial")
-        val threeMonthDate = info.getExpirationDateForProductId("threemonth_freetrial")
+        val pro = info.getExpirationDateForProductId("pro:monthly")
+        val basic = info.getExpirationDateForProductId("basic:monthly")
 
-        assertThat(oneMonthDate!!.after(threeMonthDate)).`as`("$oneMonthDate is after $threeMonthDate")
+        assertThat(pro!!.after(basic)).`as`("$pro is after $basic")
             .isTrue
     }
 
@@ -122,9 +122,9 @@ class CustomerInfoTest {
         val info = fullCustomerInfo
 
         val pro = info.getExpirationDateForEntitlement("pro")
-        val oldPro = info.getExpirationDateForEntitlement("old_pro")
+        val basic = info.getExpirationDateForEntitlement("basic")
 
-        assertThat(pro!!.after(oldPro)).`as`("$pro is after $oldPro").isTrue()
+        assertThat(pro!!.after(basic)).`as`("$pro is after $basic").isTrue()
     }
 
     @Test
@@ -281,5 +281,26 @@ class CustomerInfoTest {
         assertThat(
             (fullCustomerInfo.nonSubscriptionTransactions).distinctBy { it.transactionIdentifier }.size
         ).isEqualTo(5)
+    }
+
+    @Test
+    fun `Test allExpirationDatesByProduct`() {
+        assertThat(fullCustomerInfo.allExpirationDatesByProduct).isNotEmpty
+        assertThat(fullCustomerInfo.allExpirationDatesByProduct.size).isEqualTo(2)
+
+        assertThat(fullCustomerInfo.allExpirationDatesByProduct["pro:monthly"]).isNotNull
+        assertThat(fullCustomerInfo.allExpirationDatesByProduct["basic:monthly"]).isNotNull
+    }
+
+    @Test
+    fun `Test allPurchaseDatesByProduct`() {
+        assertThat(fullCustomerInfo.allPurchaseDatesByProduct).isNotEmpty
+        assertThat(fullCustomerInfo.allPurchaseDatesByProduct.size).isEqualTo(5)
+
+        assertThat(fullCustomerInfo.allPurchaseDatesByProduct["pro:monthly"]).isNotNull
+        assertThat(fullCustomerInfo.allPurchaseDatesByProduct["basic:monthly"]).isNotNull
+        assertThat(fullCustomerInfo.allPurchaseDatesByProduct["100_coins_pack"]).isNotNull
+        assertThat(fullCustomerInfo.allPurchaseDatesByProduct["7_extra_lives"]).isNotNull
+        assertThat(fullCustomerInfo.allPurchaseDatesByProduct["lifetime_access"]).isNotNull
     }
 }
