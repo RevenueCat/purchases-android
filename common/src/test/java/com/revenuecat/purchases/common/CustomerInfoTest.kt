@@ -8,7 +8,6 @@ package com.revenuecat.purchases.common
 import android.net.Uri
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.CustomerInfo
-import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.utils.Responses
 import org.assertj.core.api.Assertions.assertThat
 import org.json.JSONException
@@ -77,7 +76,7 @@ class CustomerInfoTest {
 
     @Test
     fun `active subscriptions returns expired subscriptions in grace period`() {
-        val response = Responses.createFullPurchaserResponse(
+        val response = Responses.createFullCustomerResponse(
             oneMonthFreeTrialExpirationDate = 3.days.ago(),
             threeMonthFreeTrialExpirationDate = 1.days.ago()
         )
@@ -90,7 +89,7 @@ class CustomerInfoTest {
 
     @Test
     fun `active subscriptions returns multiple non expired subscriptions in grace period`() {
-        val response = Responses.createFullPurchaserResponse(
+        val response = Responses.createFullCustomerResponse(
             oneMonthFreeTrialExpirationDate = 1.days.ago(),
             threeMonthFreeTrialExpirationDate = 1.days.ago()
         )
@@ -103,7 +102,7 @@ class CustomerInfoTest {
 
     @Test
     fun `active subscriptions returns nothing if no subscriptions in grace period`() {
-        val response = Responses.createFullPurchaserResponse(
+        val response = Responses.createFullCustomerResponse(
             oneMonthFreeTrialExpirationDate = 1.days.ago(),
             threeMonthFreeTrialExpirationDate = 1.days.ago()
         )
@@ -115,7 +114,7 @@ class CustomerInfoTest {
 
     @Test
     fun `active subscriptions returns non-expired subscriptions`() {
-        val response = Responses.createFullPurchaserResponse(
+        val response = Responses.createFullCustomerResponse(
             oneMonthFreeTrialExpirationDate = 1.days.fromNow(),
             threeMonthFreeTrialExpirationDate = 2.days.ago()
         )
