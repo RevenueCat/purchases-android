@@ -63,7 +63,7 @@ class SigningManager(
         return if (verificationResult) {
             VerificationResult.SUCCESS
         } else {
-            errorLog(NetworkStrings.VERIFICATION_ERROR)
+            errorLog(NetworkStrings.VERIFICATION_ERROR.format(urlPath))
             VerificationResult.FAILED
         }
     }
