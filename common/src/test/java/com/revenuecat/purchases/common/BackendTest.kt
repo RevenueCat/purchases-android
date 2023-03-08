@@ -490,7 +490,7 @@ class BackendTest {
         val updatedInfo = createCustomerInfo(Responses.validEmptyPurchaserResponse)
 
         assertThat(initialInfo).isEqualTo(
-            CustomerInfoFactory.buildCustomerInfo(initialInfo.rawData, verificationResult)
+            CustomerInfoFactory.buildCustomerInfo(initialInfo.rawData, null, verificationResult)
         )
 
         mockResponse(

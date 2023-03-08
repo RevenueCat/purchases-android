@@ -244,6 +244,7 @@ class HTTPClientTest: BaseHTTPClientTest() {
                 eTagHeader = any(),
                 urlPathWithVersion,
                 refreshETag = false,
+                requestDate = null,
                 verificationResult = VerificationResult.NOT_REQUESTED
             )
         } returns null
@@ -255,6 +256,7 @@ class HTTPClientTest: BaseHTTPClientTest() {
                 eTagHeader = any(),
                 urlPathWithVersion,
                 refreshETag = true,
+                requestDate = null,
                 verificationResult = VerificationResult.NOT_REQUESTED
             )
         } returns expectedResult
@@ -291,6 +293,37 @@ class HTTPClientTest: BaseHTTPClientTest() {
 
         val recordedRequest = server.takeRequest()
         assertThat(recordedRequest.getHeader("X-Nonce")).isNull()
+    }
+
+    @Test
+    fun `performRequest uses request time header if present when getting result from etag cache`() {
+        val endpoint = Endpoint.LogIn
+        enqueue(
+            endpoint = endpoint,
+            expectedResult = HTTPResult.createResult(),
+            requestDateHeader = Date(1234567890)
+        )
+
+        client.performRequest(
+            baseURL,
+            endpoint,
+            body = null,
+            requestHeaders = emptyMap()
+        )
+
+        server.takeRequest()
+
+        verify(exactly = 1) {
+            mockETagManager.getHTTPResultFromCacheOrBackend(
+                RCHTTPStatusCodes.SUCCESS,
+                "{}",
+                eTagHeader = null,
+                any(),
+                false,
+                Date(1234567890),
+                VerificationResult.NOT_REQUESTED
+            )
+        }
     }
 
     // region trackHttpRequestPerformed
@@ -371,6 +404,7 @@ class HTTPClientTest: BaseHTTPClientTest() {
                 eTagHeader = any(),
                 "/v1${endpoint.getPath()}",
                 refreshETag = false,
+                requestDate = null,
                 verificationResult = VerificationResult.NOT_REQUESTED
             )
         } throws JSONException("bad json")

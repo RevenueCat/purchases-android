@@ -816,6 +816,7 @@ class PurchasesTest {
 
         val mockInfo = CustomerInfoFactory.buildCustomerInfo(
             JSONObject(Responses.validFullPurchaserResponse),
+            null,
             VerificationResult.NOT_REQUESTED
         )
         every {
