@@ -1442,7 +1442,7 @@ class Purchases internal constructor(
                             PurchasesErrorCode.StoreProblemError,
                             PurchaseStrings.NULL_TRANSACTION_ON_PURCHASE_ERROR
                         )
-                        errorAllPurchaseCallbacks(nullTransactionError)
+                        getAndClearAllPurchaseCallbacks().forEach { it.dispatch(nullTransactionError) }
                     }
                     return
                 }
@@ -1460,17 +1460,17 @@ class Purchases internal constructor(
             override fun onPurchasesFailedToUpdate(purchasesError: PurchasesError) {
                 synchronized(this@Purchases) {
                     getAndClearProductChangeCallback()?.dispatch(purchasesError)
-                        ?: errorAllPurchaseCallbacks(purchasesError)
+                        ?: getAndClearAllPurchaseCallbacks().forEach { it.dispatch(purchasesError) }
                 }
             }
         }
     }
 
-    private fun errorAllPurchaseCallbacks(purchasesError: PurchasesError) {
+    private fun getAndClearAllPurchaseCallbacks(): List<PurchaseCallback> {
         synchronized(this@Purchases) {
             state.purchaseCallbacksByProductId.let { purchaseCallbacks ->
                 state = state.copy(purchaseCallbacksByProductId = emptyMap())
-                purchaseCallbacks.values.forEach { it.dispatch(purchasesError) }
+                return@getAndClearAllPurchaseCallbacks purchaseCallbacks.values.toList()
             }
         }
     }
@@ -1606,9 +1606,10 @@ class Purchases internal constructor(
                 purchaseCallback
             )
         } ?: run {
-            errorAllPurchaseCallbacks(PurchasesError(PurchasesErrorCode.OperationAlreadyInProgressError).also {
+            val operationInProgressError = PurchasesError(PurchasesErrorCode.OperationAlreadyInProgressError).also {
                 errorLog(it)
-            })
+            }
+            getAndClearAllPurchaseCallbacks().forEach { it.dispatch(operationInProgressError) }
         }
     }
 
@@ -1680,7 +1681,7 @@ class Purchases internal constructor(
                 PurchaseStrings.UPGRADING_INVALID_TYPE
             ).also { errorLog(it) }
             getAndClearProductChangeCallback()?.dispatch(invalidProductChangeTypeError)
-            errorAllPurchaseCallbacks(invalidProductChangeTypeError)
+            getAndClearAllPurchaseCallbacks().forEach { it.dispatch(invalidProductChangeTypeError) }
             return
         }
 
@@ -1702,6 +1703,7 @@ class Purchases internal constructor(
             onError = { error ->
                 log(LogIntent.GOOGLE_ERROR, error.toString())
                 getAndClearProductChangeCallback()
+                getAndClearAllPurchaseCallbacks()
                 listener.dispatch(error)
             })
     }
