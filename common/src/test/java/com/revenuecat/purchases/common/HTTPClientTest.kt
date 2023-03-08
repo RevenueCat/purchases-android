@@ -333,7 +333,7 @@ class HTTPClientTest: BaseHTTPClientTest() {
         client = createClient(diagnosticsTracker = diagnosticsTracker, dateProvider = dateProvider)
 
         val endpoint = Endpoint.LogIn
-        val responseCode = 400
+        val responseCode = RCHTTPStatusCodes.BAD_REQUEST
         val requestStartTime = 1676379370000L // Tuesday, February 14, 2023 12:56:10:000 PM GMT
         val requestEndTime = 1676379370123L // Tuesday, February 14, 2023 12:56:10:123 PM GMT
         val responseTime = (requestEndTime - requestStartTime).milliseconds
@@ -362,11 +362,11 @@ class HTTPClientTest: BaseHTTPClientTest() {
         client = createClient(diagnosticsTracker = diagnosticsTracker, dateProvider = dateProvider)
 
         val endpoint = Endpoint.LogIn
-        val responseCode = 400
+        val responseCode = RCHTTPStatusCodes.BAD_REQUEST
 
         every {
             mockETagManager.getHTTPResultFromCacheOrBackend(
-                400,
+                RCHTTPStatusCodes.BAD_REQUEST,
                 "not uh json",
                 eTagHeader = any(),
                 "/v1${endpoint.getPath()}",
