@@ -3,15 +3,11 @@ package com.revenuecat.purchasetester
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.RadioButton
-import androidx.core.view.children
 import androidx.recyclerview.widget.RecyclerView
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.models.googleProduct
-import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases_sample.databinding.PackageCardBinding
 
@@ -36,8 +32,6 @@ class DeprecatedPackageCardAdapter(
     inner class PackageViewHolder(private val binding: PackageCardBinding) :
         RecyclerView.ViewHolder(binding.root) {
 
-        private val nothingCheckedIndex = -1
-
         fun bind(currentPackage: Package) {
             val product = currentPackage.product
             binding.currentPackage = currentPackage
@@ -52,6 +46,8 @@ class DeprecatedPackageCardAdapter(
                 )
             }
 
+            binding.packageBuyButton.text = "Buy package (deprecated)"
+
             binding.productBuyButton.setOnClickListener {
                 listener.onPurchaseProductClicked(
                     binding.root,
@@ -59,6 +55,10 @@ class DeprecatedPackageCardAdapter(
                     binding.isUpgradeCheckbox.isChecked
                 )
             }
+            binding.productBuyButton.text = "Buy product (deprecated)"
+
+            binding.optionBuyButton.visibility = View.INVISIBLE
+            binding.packageSubscriptionOptionGroup.visibility = View.INVISIBLE
 
             binding.packageType.detail = if (currentPackage.packageType == PackageType.CUSTOM) {
                 "custom -> ${currentPackage.packageType.identifier}"
@@ -68,50 +68,11 @@ class DeprecatedPackageCardAdapter(
 
             binding.packageDetailsJsonObject.detail = product.googleProduct?.productDetails?.toString() ?: "TODO Amazon"
 
-            bindSubscriptionOptions(product)
-
             binding.root.setOnClickListener {
                 with(binding.packageDetailsContainer) {
                     visibility = if (visibility == View.GONE) View.VISIBLE else View.GONE
                 }
             }
-        }
-
-        private fun bindSubscriptionOptions(product: StoreProduct) {
-            binding.packageSubscriptionOptionGroup.removeAllViews()
-            val numberOfSubscriptionOptions = product.subscriptionOptions?.size ?: 0
-            val defaultOption = product.defaultOption
-            product.subscriptionOptions?.forEach { subscriptionOption ->
-                val radioButton = RadioButton(binding.root.context).apply {
-                    text = subscriptionOption.toButtonString(subscriptionOption == defaultOption)
-                    tag = subscriptionOption
-                }
-                binding.packageSubscriptionOptionGroup.addView(radioButton)
-                if (numberOfSubscriptionOptions == 1) binding.packageSubscriptionOptionGroup.check(radioButton.id)
-            }
-        }
-
-        private fun getSelectedSubscriptionOption(): SubscriptionOption? {
-            val selectedButtonId = binding.packageSubscriptionOptionGroup.checkedRadioButtonId
-            return binding.packageSubscriptionOptionGroup.children
-                .filter { it.id == selectedButtonId }
-                .firstOrNull()
-                ?.tag as? SubscriptionOption
-        }
-
-        private fun validateStartPurchase(product: StoreProduct): String? {
-            if (product.type == ProductType.SUBS &&
-                binding.packageSubscriptionOptionGroup.checkedRadioButtonId == nothingCheckedIndex) {
-                return "Please choose subscription option first"
-            }
-            return null
-        }
-
-        private fun showErrorMessage(errorMessage: String) {
-            MaterialAlertDialogBuilder(binding.root.context)
-                .setMessage(errorMessage)
-                .setPositiveButton("OK") { dialog, _ -> dialog.dismiss() }
-                .show()
         }
     }
 
