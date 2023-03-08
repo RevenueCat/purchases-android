@@ -7,9 +7,7 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.Backend
-import com.revenuecat.purchases.common.CustomerInfoFactory
 import com.revenuecat.purchases.common.caching.DeviceCache
-import com.revenuecat.purchases.common.networking.ETagManager
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesCache
@@ -36,7 +34,6 @@ class IdentityManagerTests {
     private lateinit var mockSubscriberAttributesCache: SubscriberAttributesCache
     private lateinit var mockSubscriberAttributesManager: SubscriberAttributesManager
     private lateinit var mockBackend: Backend
-    private lateinit var mockETagManager: ETagManager
     private lateinit var identityManager: IdentityManager
     private val stubAnonymousID = "\$RCAnonymousID:ff68f26e432648369a713849a9f93b58"
 
@@ -58,7 +55,6 @@ class IdentityManagerTests {
         mockSubscriberAttributesManager = mockk()
 
         mockBackend = mockk()
-        mockETagManager = mockk()
         identityManager = createIdentityManager()
     }
 
@@ -434,7 +430,7 @@ class IdentityManagerTests {
             mockDeviceCache.clearCustomerInfoCache(userId)
         }
         verify(exactly = 1) {
-            mockETagManager.clearCaches()
+            mockBackend.clearCaches()
         }
     }
 
@@ -452,7 +448,7 @@ class IdentityManagerTests {
             mockDeviceCache.clearCustomerInfoCache(userId)
         }
         verify(exactly = 1) {
-            mockETagManager.clearCaches()
+            mockBackend.clearCaches()
         }
     }
 
@@ -470,7 +466,7 @@ class IdentityManagerTests {
             mockDeviceCache.clearCustomerInfoCache(userId)
         }
         verify(exactly = 0) {
-            mockETagManager.clearCaches()
+            mockBackend.clearCaches()
         }
     }
 
@@ -488,7 +484,7 @@ class IdentityManagerTests {
             mockDeviceCache.clearCustomerInfoCache(userId)
         }
         verify(exactly = 0) {
-            mockETagManager.clearCaches()
+            mockBackend.clearCaches()
         }
     }
 
@@ -496,13 +492,14 @@ class IdentityManagerTests {
     fun `we don't invalidate customer info and etag caches if no customer info cached`() {
         val userId = "test-app-user-id"
         every { mockDeviceCache.getCachedCustomerInfo(userId) } returns null
-        identityManager = createIdentityManager(verificationMode = SignatureVerificationMode.Informational(mockk()))
+        every { mockBackend.verificationMode } returns SignatureVerificationMode.Informational(mockk())
+        identityManager = createIdentityManager()
         identityManager.configure(userId)
         verify(exactly = 0) {
             mockDeviceCache.clearCustomerInfoCache(userId)
         }
         verify(exactly = 0) {
-            mockETagManager.clearCaches()
+            mockBackend.clearCaches()
         }
     }
 
@@ -522,9 +519,10 @@ class IdentityManagerTests {
         every { mockDeviceCache.getCachedCustomerInfo(userId) } returns mockCustomerInfo
         if (shouldClearCustomerInfoAndETagCaches) {
             every { mockDeviceCache.clearCustomerInfoCache(userId) } just Runs
-            every { mockETagManager.clearCaches() } just Runs
+            every { mockBackend.clearCaches() } just Runs
         }
-        identityManager = createIdentityManager(verificationMode = verificationMode)
+        every { mockBackend.verificationMode } returns verificationMode
+        identityManager = createIdentityManager()
     }
 
     private fun mockIdentifiedUser(identifiedUserID: String) {
@@ -589,12 +587,10 @@ class IdentityManagerTests {
         deviceCache: DeviceCache = mockDeviceCache,
         subscriberAttributesCache: SubscriberAttributesCache = mockSubscriberAttributesCache,
         subscriberAttributesManager: SubscriberAttributesManager = mockSubscriberAttributesManager,
-        backend: Backend = mockBackend,
-        eTagManager: ETagManager = mockETagManager,
-        verificationMode: SignatureVerificationMode = SignatureVerificationMode.Disabled
+        backend: Backend = mockBackend
     ): IdentityManager {
         return IdentityManager(
-            deviceCache, subscriberAttributesCache, subscriberAttributesManager, backend, eTagManager, verificationMode
+            deviceCache, subscriberAttributesCache, subscriberAttributesManager, backend
         )
     }
 

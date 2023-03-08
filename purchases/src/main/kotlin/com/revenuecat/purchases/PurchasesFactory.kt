@@ -109,9 +109,7 @@ internal class PurchasesFactory(
                 cache,
                 subscriberAttributesCache,
                 subscriberAttributesManager,
-                backend,
-                eTagManager,
-                signatureVerificationMode
+                backend
             )
 
             val customerInfoHelper = CustomerInfoHelper(cache, backend, identityManager)

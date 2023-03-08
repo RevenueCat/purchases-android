@@ -11,6 +11,7 @@ import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
+import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import com.revenuecat.purchases.strings.NetworkStrings
 import com.revenuecat.purchases.utils.filterNotNullValues
 import org.json.JSONArray
@@ -46,6 +47,9 @@ class Backend(
     private val httpClient: HTTPClient
 ) {
     internal val authenticationHeaders = mapOf("Authorization" to "Bearer ${this.apiKey}")
+
+    val verificationMode: SignatureVerificationMode
+        get() = httpClient.signingManager.signatureVerificationMode
 
     @get:Synchronized @set:Synchronized
     @Volatile var callbacks = mutableMapOf<CallbackCacheKey, MutableList<CustomerInfoCallback>>()

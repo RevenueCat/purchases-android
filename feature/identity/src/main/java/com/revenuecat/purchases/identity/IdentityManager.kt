@@ -8,8 +8,8 @@ import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.errorLog
+import com.revenuecat.purchases.common.infoLog
 import com.revenuecat.purchases.common.log
-import com.revenuecat.purchases.common.networking.ETagManager
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import com.revenuecat.purchases.strings.IdentityStrings
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
@@ -21,9 +21,7 @@ class IdentityManager(
     private val deviceCache: DeviceCache,
     private val subscriberAttributesCache: SubscriberAttributesCache,
     private val subscriberAttributesManager: SubscriberAttributesManager,
-    private val backend: Backend,
-    private val eTagManager: ETagManager,
-    private val signatureVerificationMode: SignatureVerificationMode
+    private val backend: Backend
 ) {
 
     val currentAppUserID: String
@@ -126,16 +124,16 @@ class IdentityManager(
     private fun invalidateCustomerInfoAndETagCacheIfNeeded(appUserID: String) {
         val cachedCustomerInfo = deviceCache.getCachedCustomerInfo(appUserID)
         if (shouldInvalidateCustomerInfoAndETagCache(cachedCustomerInfo)) {
-            log(LogIntent.USER, IdentityStrings.INVALIDATING_CACHED_CUSTOMER_INFO)
+            infoLog(IdentityStrings.INVALIDATING_CACHED_CUSTOMER_INFO)
             deviceCache.clearCustomerInfoCache(appUserID)
-            eTagManager.clearCaches()
+            backend.clearCaches()
         }
     }
 
     private fun shouldInvalidateCustomerInfoAndETagCache(customerInfo: CustomerInfo?): Boolean {
         return customerInfo != null &&
             customerInfo.entitlements.verification == VerificationResult.NOT_REQUESTED &&
-            signatureVerificationMode != SignatureVerificationMode.Disabled
+            backend.verificationMode != SignatureVerificationMode.Disabled
     }
 
     private fun isUserIDAnonymous(appUserID: String): Boolean {
