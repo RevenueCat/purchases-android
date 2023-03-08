@@ -4,6 +4,8 @@ import java.util.Date
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
 
+data class DateActive(val isActive: Boolean, val inGracePeriod: Boolean)
+
 class DateHelper private constructor() {
     companion object {
         private val ENTITLEMENT_GRACE_PERIOD = 3.days
@@ -16,12 +18,12 @@ class DateHelper private constructor() {
             expirationDate: Date?,
             requestDate: Date,
             gracePeriod: Duration = ENTITLEMENT_GRACE_PERIOD
-        ): Boolean {
-            if (expirationDate == null) return true
+        ): DateActive {
+            if (expirationDate == null) return DateActive(isActive = true, inGracePeriod = true)
 
             val inGracePeriod = (Date().time - requestDate.time) <= gracePeriod.inWholeMilliseconds
             val referenceDate = if (inGracePeriod) requestDate else Date()
-            return expirationDate.after(referenceDate)
+            return DateActive(isActive = expirationDate.after(referenceDate), inGracePeriod = inGracePeriod)
         }
     }
 }

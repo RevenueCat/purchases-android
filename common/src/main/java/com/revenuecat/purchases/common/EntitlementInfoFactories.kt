@@ -104,13 +104,13 @@ private fun isDateActive(
     expirationDate: Date?,
     requestDate: Date
 ): Boolean {
-    val isActive = DateHelper.isDateActive(expirationDate, requestDate)
-    if (!isActive) {
+    val dateActive = DateHelper.isDateActive(expirationDate, requestDate)
+    if (!dateActive.isActive && !dateActive.inGracePeriod) {
         warnLog(
             PurchaseStrings.ENTITLEMENT_EXPIRED_OUTSIDE_GRACE_PERIOD.format(identifier, expirationDate, requestDate)
         )
     }
-    return isActive
+    return dateActive.isActive
 }
 
 private fun getWillRenew(

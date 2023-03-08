@@ -140,7 +140,9 @@ data class CustomerInfo constructor(
         get() = jsonObject
 
     private fun activeIdentifiers(expirations: Map<String, Date?>): Set<String> {
-        return expirations.filterValues { expirationDate -> DateHelper.isDateActive(expirationDate, requestDate) }.keys
+        return expirations.filterValues {
+                expirationDate -> DateHelper.isDateActive(expirationDate, requestDate).isActive
+        }.keys
     }
 
     @IgnoredOnParcel
