@@ -29,6 +29,8 @@ import java.util.Date
  * @property billingIssueDetectedAt The date a billing issue was detected. Can be `null` if there is
  * no billing issue or an issue has been resolved. Note: Entitlement may still be active even if
  * there is a billing issue. Check the `isActive` property.
+ * @property verification If entitlement verification was enabled, the result of that verification.
+ * If not, [VerificationResult.NOT_REQUESTED]
  */
 @Parcelize
 @TypeParceler<JSONObject, JSONObjectParceler>()

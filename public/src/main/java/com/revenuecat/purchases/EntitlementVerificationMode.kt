@@ -12,20 +12,17 @@ enum class EntitlementVerificationMode {
     /**
      * Enable entitlement verification.
      *
-     * If verification fails, this will be indicated with [VerificationResult.FAILED]
-     * but parsing will not fail.
+     * If verification fails, this will be indicated with [VerificationResult.FAILED] in
+     * the [EntitlementInfos.verification] and [EntitlementInfo.verification] properties but parsing will not fail
+     * (i.e. Entitlements will still be granted).
      *
-     * This can be useful if you want to handle validation failures but still grant access.
+     * This can be useful if you want to handle verification failures to display an error/warning to the user
+     * or to track this situation but still grant access.
      */
-    INFORMATIONAL,
+    INFORMATIONAL;
 
-    /**
-     * Enable entitlement verification.
-     *
-     * If verification fails when fetching [CustomerInfo] and/or [EntitlementInfos]
-     * the request will fail.
-     */
-    ENFORCED;
+    // Hidden ENFORCED mode during feature beta
+    // ENFORCED;
 
     companion object {
         /**
