@@ -6,6 +6,8 @@ import com.revenuecat.purchases.OwnershipType
 import com.revenuecat.purchases.PeriodType
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.VerificationResult
+import com.revenuecat.purchases.strings.PurchaseStrings
+import com.revenuecat.purchases.utils.DateHelper
 import com.revenuecat.purchases.utils.getDate
 import com.revenuecat.purchases.utils.optDate
 import org.json.JSONObject
@@ -14,7 +16,7 @@ import java.util.Date
 internal fun JSONObject.buildEntitlementInfos(
     subscriptions: JSONObject,
     nonSubscriptionsLatestPurchases: JSONObject,
-    requestDate: Date?,
+    requestDate: Date,
     verificationResult: VerificationResult
 ): EntitlementInfos {
     val all = mutableMapOf<String, EntitlementInfo>()
@@ -68,7 +70,7 @@ internal fun JSONObject.optOwnershipType(name: String) = when (optString(name)) 
 internal fun JSONObject.buildEntitlementInfo(
     identifier: String,
     productData: JSONObject,
-    requestDate: Date?,
+    requestDate: Date,
     verificationResult: VerificationResult
 ): EntitlementInfo {
     val expirationDate = optDate("expires_date")
@@ -79,7 +81,7 @@ internal fun JSONObject.buildEntitlementInfo(
 
     return EntitlementInfo(
         identifier = identifier,
-        isActive = expirationDate == null || expirationDate.after(requestDate ?: Date()),
+        isActive = isDateActive(identifier, expirationDate, requestDate),
         willRenew = getWillRenew(store, expirationDate, unsubscribeDetectedAt,
             billingIssueDetectedAt),
         periodType = productData.optPeriodType("period_type"),
@@ -95,6 +97,20 @@ internal fun JSONObject.buildEntitlementInfo(
         jsonObject = this,
         verification = verificationResult
     )
+}
+
+private fun isDateActive(
+    identifier: String,
+    expirationDate: Date?,
+    requestDate: Date
+): Boolean {
+    val dateActive = DateHelper.isDateActive(expirationDate, requestDate)
+    if (!dateActive.isActive && !dateActive.inGracePeriod) {
+        warnLog(
+            PurchaseStrings.ENTITLEMENT_EXPIRED_OUTSIDE_GRACE_PERIOD.format(identifier, expirationDate, requestDate)
+        )
+    }
+    return dateActive.isActive
 }
 
 private fun getWillRenew(

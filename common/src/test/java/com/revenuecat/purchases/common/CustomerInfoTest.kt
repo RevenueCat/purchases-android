@@ -8,7 +8,6 @@ package com.revenuecat.purchases.common
 import android.net.Uri
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.CustomerInfo
-import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.utils.Responses
 import org.assertj.core.api.Assertions.assertThat
 import org.json.JSONException
@@ -16,6 +15,7 @@ import org.json.JSONObject
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
+import kotlin.time.Duration.Companion.days
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
@@ -72,6 +72,57 @@ class CustomerInfoTest {
 
         assertThat(actives.size).isEqualTo(1)
         assertThat(actives).contains("onemonth_freetrial")
+    }
+
+    @Test
+    fun `active subscriptions returns expired subscriptions in grace period`() {
+        val response = Responses.createFullCustomerResponse(
+            oneMonthFreeTrialExpirationDate = 3.days.ago(),
+            threeMonthFreeTrialExpirationDate = 1.days.ago()
+        )
+        val info = createCustomerInfo(response, 2.days.ago())
+        val actives = info.activeSubscriptions
+
+        assertThat(actives.size).isEqualTo(1)
+        assertThat(actives.first()).isEqualTo("threemonth_freetrial")
+    }
+
+    @Test
+    fun `active subscriptions returns multiple non expired subscriptions in grace period`() {
+        val response = Responses.createFullCustomerResponse(
+            oneMonthFreeTrialExpirationDate = 1.days.ago(),
+            threeMonthFreeTrialExpirationDate = 1.days.ago()
+        )
+        val info = createCustomerInfo(response, 2.days.ago())
+        val actives = info.activeSubscriptions
+
+        assertThat(actives.size).isEqualTo(2)
+        assertThat(actives).containsAll(listOf("onemonth_freetrial", "threemonth_freetrial"))
+    }
+
+    @Test
+    fun `active subscriptions returns nothing if no subscriptions in grace period`() {
+        val response = Responses.createFullCustomerResponse(
+            oneMonthFreeTrialExpirationDate = 1.days.ago(),
+            threeMonthFreeTrialExpirationDate = 1.days.ago()
+        )
+        val info = createCustomerInfo(response, 5.days.ago())
+        val actives = info.activeSubscriptions
+
+        assertThat(actives.size).isEqualTo(0)
+    }
+
+    @Test
+    fun `active subscriptions returns non-expired subscriptions`() {
+        val response = Responses.createFullCustomerResponse(
+            oneMonthFreeTrialExpirationDate = 1.days.fromNow(),
+            threeMonthFreeTrialExpirationDate = 2.days.ago()
+        )
+        val info = createCustomerInfo(response, 1.days.ago())
+        val actives = info.activeSubscriptions
+
+        assertThat(actives.size).isEqualTo(1)
+        assertThat(actives.first()).isEqualTo("onemonth_freetrial")
     }
 
     @Test
