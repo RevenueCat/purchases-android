@@ -69,6 +69,6 @@ class SigningManager(
     }
 
     private fun getSignatureMessage(responseCode: Int, body: String?, eTag: String?): String? {
-        return if (responseCode == RCHTTPStatusCodes.NOT_MODIFIED) eTag else body?.let { "$it\n" }
+        return if (responseCode == RCHTTPStatusCodes.NOT_MODIFIED) eTag else body
     }
 }
