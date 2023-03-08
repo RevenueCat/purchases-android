@@ -408,7 +408,6 @@ class Purchases internal constructor(
                     presentedOfferingIdentifier,
                     productId,
                     googleProrationMode.playBillingClientMode,
-                    null,
                     callback
                 )
             } ?: run {
@@ -450,14 +449,13 @@ class Purchases internal constructor(
         upgradeInfo: UpgradeInfo,
         listener: ProductChangeCallback
     ) {
-        startProductChange(
+        startDeprecatedProductChange(
             activity,
             storeProduct.purchasingData,
             null,
             upgradeInfo.oldSku,
             upgradeInfo.prorationMode,
-            listener,
-            null
+            listener
         )
     }
 
@@ -518,14 +516,13 @@ class Purchases internal constructor(
         upgradeInfo: UpgradeInfo,
         callback: ProductChangeCallback
     ) {
-        startProductChange(
+        startDeprecatedProductChange(
             activity,
             packageToPurchase.product.purchasingData,
             packageToPurchase.offering,
             upgradeInfo.oldSku,
             upgradeInfo.prorationMode,
-            callback,
-            null
+            callback
         )
     }
 
@@ -1564,16 +1561,10 @@ class Purchases internal constructor(
         offeringIdentifier: String?,
         oldProductId: String,
         @BillingFlowParams.ProrationMode googleProrationMode: Int?,
-        deprecatedProductChangeCallback: ProductChangeCallback?,
-        purchaseCallback: PurchaseCallback?
+        purchaseCallback: PurchaseCallback
     ) {
-        val callbackToUse = purchaseCallback ?: deprecatedProductChangeCallback ?: run {
-            errorLog(PurchaseStrings.INVALID_CALLBACK_TYPE_INTERNAL_ERROR)
-            return
-        }
-
         if (purchasingData.productType != ProductType.SUBS) {
-            callbackToUse.dispatch(PurchasesError(
+            purchaseCallback.dispatch(PurchasesError(
                 PurchasesErrorCode.PurchaseNotAllowedError,
                 PurchaseStrings.UPGRADING_INVALID_TYPE
             ).also { errorLog(it) })
@@ -1595,16 +1586,14 @@ class Purchases internal constructor(
             if (!appConfig.finishTransactions) {
                 log(LogIntent.WARNING, PurchaseStrings.PURCHASE_FINISH_TRANSACTION_FALSE)
             }
-            if (callbackToUse is ProductChangeCallback && state.deprecatedProductChangeCallback == null) {
-                state = state.copy(deprecatedProductChangeCallback = deprecatedProductChangeCallback)
-            } else if (callbackToUse is PurchaseCallback) {
-                if (!state.purchaseCallbacksByProductId.containsKey(purchasingData.productId)) {
-                    val mapOfProductIdToListener = mapOf(purchasingData.productId to callbackToUse)
-                    state = state.copy(
-                        purchaseCallbacksByProductId = state.purchaseCallbacksByProductId + mapOfProductIdToListener
-                    )
-                }
+
+            if (!state.purchaseCallbacksByProductId.containsKey(purchasingData.productId)) {
+                val mapOfProductIdToListener = mapOf(purchasingData.productId to purchaseCallback)
+                state = state.copy(
+                    purchaseCallbacksByProductId = state.purchaseCallbacksByProductId + mapOfProductIdToListener
+                )
             }
+
             userPurchasing = identityManager.currentAppUserID
         }
         userPurchasing?.let { appUserID ->
@@ -1615,13 +1604,65 @@ class Purchases internal constructor(
                 activity,
                 appUserID,
                 offeringIdentifier,
-                callbackToUse
+                purchaseCallback
+            )
+        } ?: run {
+            errorAllPurchaseCallbacks(PurchasesError(PurchasesErrorCode.OperationAlreadyInProgressError).also {
+                errorLog(it)
+            })
+        }
+    }
+
+    private fun startDeprecatedProductChange(
+        activity: Activity,
+        purchasingData: PurchasingData,
+        offeringIdentifier: String?,
+        oldProductId: String,
+        @BillingFlowParams.ProrationMode googleProrationMode: Int?,
+        listener: ProductChangeCallback
+    ) {
+        if (purchasingData.productType != ProductType.SUBS) {
+            getAndClearProductChangeCallback()
+            listener.dispatch(PurchasesError(
+                PurchasesErrorCode.PurchaseNotAllowedError,
+                PurchaseStrings.UPGRADING_INVALID_TYPE
+            ).also { errorLog(it) })
+            return
+        }
+
+        log(
+            LogIntent.PURCHASE, PurchaseStrings.PRODUCT_CHANGE_STARTED.format(
+                " $purchasingData ${
+                    offeringIdentifier?.let {
+                        PurchaseStrings.OFFERING + "$offeringIdentifier"
+                    }
+                } oldProductId: $oldProductId googleProrationMode $googleProrationMode"
+
+            )
+        )
+        var userPurchasing: String? = null // Avoids race condition for userid being modified before purchase is made
+        synchronized(this@Purchases) {
+            if (!appConfig.finishTransactions) {
+                log(LogIntent.WARNING, PurchaseStrings.PURCHASE_FINISH_TRANSACTION_FALSE)
+            }
+            if (state.deprecatedProductChangeCallback == null) {
+                state = state.copy(deprecatedProductChangeCallback = listener)
+                userPurchasing = identityManager.currentAppUserID
+            }
+        }
+        userPurchasing?.let { appUserID ->
+            replaceOldPurchaseWithNewProduct(
+                purchasingData,
+                oldProductId,
+                googleProrationMode,
+                activity,
+                appUserID,
+                offeringIdentifier,
+                listener
             )
         } ?: run {
             getAndClearProductChangeCallback()
-            callbackToUse.dispatch(PurchasesError(PurchasesErrorCode.OperationAlreadyInProgressError).also {
-                errorLog(it)
-            })
+            listener.dispatch(PurchasesError(PurchasesErrorCode.OperationAlreadyInProgressError).also { errorLog(it) })
         }
     }
 
