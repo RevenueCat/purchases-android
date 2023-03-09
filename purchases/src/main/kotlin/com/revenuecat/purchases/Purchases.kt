@@ -372,7 +372,7 @@ class Purchases internal constructor(
     /**
      * Gets the StoreProduct(s) for the given list of product ids of type [type]
      * @param [productIds] List of productIds
-     * @param [type] A product type to filter by
+     * @param [type] A product type to filter (no filtering applied if null)
      * @param [callback] Response callback
      */
     fun getProducts(
