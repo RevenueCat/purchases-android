@@ -115,7 +115,7 @@ The `Period.Unit` enum can be one of the following:
 
 Purchases are now configured using `PurchaseParams.Builder()`. The builder is constructed with either a `Package`,
 `Product`, or `SubscriptionOption` and an `Activity`. The builder then has methods for setting the product change
-parameters (`oldProductId` and `googleProrationMode`), as well as the `isPersonalizedPrice` option.
+parameters (`oldProductId` and `googleProrationMode`).
 
 To initiate a purchase, simply pass the built `PurchaseParams` and your `PurchaseCallback` to the `purchase()` method.
 
