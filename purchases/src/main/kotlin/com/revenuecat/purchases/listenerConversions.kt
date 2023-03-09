@@ -288,7 +288,7 @@ fun Purchases.getCustomerInfoWith(
 }
 
 /**
- * Gets the StoreProduct for the given list of subscription and non-subscription productIds.
+ * Gets the StoreProduct(s) for the given list of product ids for all product types.
  * @param [productIds] List of productIds
  * @param [onError] Will be called if there was an error with the purchase
  * @param [onGetStoreProducts] Will be called after fetching StoreProducts
@@ -300,6 +300,23 @@ fun Purchases.getProductsWith(
     onGetStoreProducts: (storeProducts: List<StoreProduct>) -> Unit
 ) {
     getProducts(productIds, getStoreProductsCallback(onGetStoreProducts, onError))
+}
+
+/**
+ * Gets the StoreProduct(s) for the given list of product ids of type [type]
+ * @param [productIds] List of productIds
+ * @param [type] A product type to filter by
+ * @param [onError] Will be called if there was an error with the purchase
+ * @param [onGetStoreProducts] Will be called after fetching StoreProducts
+ */
+@Suppress("unused")
+fun Purchases.getProductsWith(
+    productIds: List<String>,
+    type: ProductType?,
+    onError: (error: PurchasesError) -> Unit = ON_ERROR_STUB,
+    onGetStoreProducts: (storeProducts: List<StoreProduct>) -> Unit
+) {
+    getProducts(productIds, type, getStoreProductsCallback(onGetStoreProducts, onError))
 }
 
 // region Deprecated
@@ -319,7 +336,7 @@ fun Purchases.getSubscriptionSkusWith(
     onError: (error: PurchasesError) -> Unit = ON_ERROR_STUB,
     onReceiveSkus: (storeProducts: List<StoreProduct>) -> Unit
 ) {
-    getProducts(skus, getStoreProductsCallback(onReceiveSkus, onError))
+    getProducts(skus, ProductType.SUBS, getStoreProductsCallback(onReceiveSkus, onError))
 }
 
 /**
@@ -337,7 +354,7 @@ fun Purchases.getNonSubscriptionSkusWith(
     onError: (error: PurchasesError) -> Unit,
     onReceiveSkus: (storeProducts: List<StoreProduct>) -> Unit
 ) {
-    getProducts(skus, getStoreProductsCallback(onReceiveSkus, onError))
+    getProducts(skus, ProductType.INAPP, getStoreProductsCallback(onReceiveSkus, onError))
 }
 
 // endregion

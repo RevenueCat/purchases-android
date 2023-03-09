@@ -19,6 +19,7 @@ private class EntitlementInfoAPI {
             val expirationDate: Date? = expirationDate
             val store: Store = store
             val productIdentifier: String = productIdentifier
+            val productPlanIdentifier: String? = productPlanIdentifier
             val sandbox: Boolean = isSandbox
             val unsubscribeDetectedAt: Date? = unsubscribeDetectedAt
             val billingIssueDetectedAt: Date? = billingIssueDetectedAt

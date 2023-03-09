@@ -12,6 +12,7 @@ import com.revenuecat.purchases.LogHandler;
 import com.revenuecat.purchases.LogLevel;
 import com.revenuecat.purchases.Offerings;
 import com.revenuecat.purchases.Package;
+import com.revenuecat.purchases.ProductType;
 import com.revenuecat.purchases.PurchaseParams;
 import com.revenuecat.purchases.Purchases;
 import com.revenuecat.purchases.PurchasesConfiguration;
@@ -85,6 +86,7 @@ final class PurchasesAPI {
         purchases.syncPurchases();
         purchases.getOfferings(receiveOfferingsListener);
         purchases.getProducts(productIds, productResponseListener);
+        purchases.getProducts(productIds, ProductType.SUBS, productResponseListener);
         purchases.restorePurchases(receiveCustomerInfoListener);
 
         purchases.logIn("", logInCallback);
@@ -128,17 +130,17 @@ final class PurchasesAPI {
         Boolean isPersonalizedPrice = true;
 
         PurchaseParams.Builder purchaseProductBuilder = new PurchaseParams.Builder(storeProduct, activity);
-        purchaseProductBuilder.oldProductId(oldProductId).isPersonalizedPrice(true).googleProrationMode(prorationMode);
+        purchaseProductBuilder.oldProductId(oldProductId).googleProrationMode(prorationMode);
         PurchaseParams purchaseProductParams = purchaseProductBuilder.build();
         purchases.purchase(purchaseProductParams, purchaseCallback);
 
         PurchaseParams.Builder purchaseOptionBuilder = new PurchaseParams.Builder(subscriptionOption, activity);
-        purchaseOptionBuilder.oldProductId(oldProductId).isPersonalizedPrice(true).googleProrationMode(prorationMode);
+        purchaseOptionBuilder.oldProductId(oldProductId).googleProrationMode(prorationMode);
         PurchaseParams purchaseOptionParams = purchaseOptionBuilder.build();
         purchases.purchase(purchaseOptionParams, purchaseCallback);
 
         PurchaseParams.Builder purchasePackageBuilder = new PurchaseParams.Builder(packageToPurchase, activity);
-        purchasePackageBuilder.oldProductId(oldProductId).isPersonalizedPrice(true).googleProrationMode(prorationMode);
+        purchasePackageBuilder.oldProductId(oldProductId).googleProrationMode(prorationMode);
         PurchaseParams purchasePackageParams = purchasePackageBuilder.build();
         purchases.purchase(purchasePackageParams, purchaseCallback);
 

@@ -8,12 +8,14 @@ import com.revenuecat.purchases.LogHandler
 import com.revenuecat.purchases.LogLevel
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.Package
+import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchaseParams
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesConfiguration
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.getCustomerInfoWith
 import com.revenuecat.purchases.getOfferingsWith
+import com.revenuecat.purchases.getProductsWith
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
 import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
@@ -59,6 +61,7 @@ private class PurchasesAPI {
         purchases.getOfferings(receiveOfferingsCallback)
 
         purchases.getProducts(productIds, productsResponseCallback)
+        purchases.getProducts(productIds, ProductType.SUBS, productsResponseCallback)
 
         purchases.restorePurchases(receiveCustomerInfoCallback)
         purchases.logIn("", logInCallback)
@@ -102,19 +105,16 @@ private class PurchasesAPI {
 
         val purchasePackageBuilder: PurchaseParams.Builder = PurchaseParams.Builder(packageToPurchase, activity)
         purchasePackageBuilder.oldProductId(oldProductId).googleProrationMode(prorationMode)
-            .isPersonalizedPrice(isPersonalizedPrice)
         val purchasePackageParams: PurchaseParams = purchasePackageBuilder.build()
         purchases.purchase(purchasePackageParams, purchaseCallback)
 
         val purchaseProductBuilder: PurchaseParams.Builder = PurchaseParams.Builder(storeProduct, activity)
         purchaseProductBuilder.oldProductId(oldProductId).googleProrationMode(prorationMode)
-            .isPersonalizedPrice(isPersonalizedPrice)
         val purchaseProductParams: PurchaseParams = purchaseProductBuilder.build()
         purchases.purchase(purchaseProductParams, purchaseCallback)
 
         val purchaseOptionBuilder: PurchaseParams.Builder = PurchaseParams.Builder(subscriptionOption, activity)
         purchaseOptionBuilder.oldProductId(oldProductId).googleProrationMode(prorationMode)
-            .isPersonalizedPrice(isPersonalizedPrice)
         val purchaseOptionsParams: PurchaseParams = purchaseOptionBuilder.build()
         purchases.purchase(purchaseOptionsParams, purchaseCallback)
     }
@@ -127,6 +127,17 @@ private class PurchasesAPI {
         purchases.getOfferingsWith(
             onError = { _: PurchasesError -> },
             onSuccess = { _: Offerings -> }
+        )
+        purchases.getProductsWith(
+            listOf(""),
+            onError = { _: PurchasesError -> },
+            onGetStoreProducts = { _: List<StoreProduct> -> }
+        )
+        purchases.getProductsWith(
+            listOf(""),
+            ProductType.SUBS,
+            onError = { _: PurchasesError -> },
+            onGetStoreProducts = { _: List<StoreProduct> -> }
         )
         purchases.restorePurchasesWith(
             onError = { _: PurchasesError -> },
