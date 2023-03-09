@@ -105,19 +105,16 @@ private class PurchasesAPI {
 
         val purchasePackageBuilder: PurchaseParams.Builder = PurchaseParams.Builder(packageToPurchase, activity)
         purchasePackageBuilder.oldProductId(oldProductId).googleProrationMode(prorationMode)
-            .isPersonalizedPrice(isPersonalizedPrice)
         val purchasePackageParams: PurchaseParams = purchasePackageBuilder.build()
         purchases.purchase(purchasePackageParams, purchaseCallback)
 
         val purchaseProductBuilder: PurchaseParams.Builder = PurchaseParams.Builder(storeProduct, activity)
         purchaseProductBuilder.oldProductId(oldProductId).googleProrationMode(prorationMode)
-            .isPersonalizedPrice(isPersonalizedPrice)
         val purchaseProductParams: PurchaseParams = purchaseProductBuilder.build()
         purchases.purchase(purchaseProductParams, purchaseCallback)
 
         val purchaseOptionBuilder: PurchaseParams.Builder = PurchaseParams.Builder(subscriptionOption, activity)
         purchaseOptionBuilder.oldProductId(oldProductId).googleProrationMode(prorationMode)
-            .isPersonalizedPrice(isPersonalizedPrice)
         val purchaseOptionsParams: PurchaseParams = purchaseOptionBuilder.build()
         purchases.purchase(purchaseOptionsParams, purchaseCallback)
     }

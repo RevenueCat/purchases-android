@@ -130,17 +130,17 @@ final class PurchasesAPI {
         Boolean isPersonalizedPrice = true;
 
         PurchaseParams.Builder purchaseProductBuilder = new PurchaseParams.Builder(storeProduct, activity);
-        purchaseProductBuilder.oldProductId(oldProductId).isPersonalizedPrice(true).googleProrationMode(prorationMode);
+        purchaseProductBuilder.oldProductId(oldProductId).googleProrationMode(prorationMode);
         PurchaseParams purchaseProductParams = purchaseProductBuilder.build();
         purchases.purchase(purchaseProductParams, purchaseCallback);
 
         PurchaseParams.Builder purchaseOptionBuilder = new PurchaseParams.Builder(subscriptionOption, activity);
-        purchaseOptionBuilder.oldProductId(oldProductId).isPersonalizedPrice(true).googleProrationMode(prorationMode);
+        purchaseOptionBuilder.oldProductId(oldProductId).googleProrationMode(prorationMode);
         PurchaseParams purchaseOptionParams = purchaseOptionBuilder.build();
         purchases.purchase(purchaseOptionParams, purchaseCallback);
 
         PurchaseParams.Builder purchasePackageBuilder = new PurchaseParams.Builder(packageToPurchase, activity);
-        purchasePackageBuilder.oldProductId(oldProductId).isPersonalizedPrice(true).googleProrationMode(prorationMode);
+        purchasePackageBuilder.oldProductId(oldProductId).googleProrationMode(prorationMode);
         PurchaseParams purchasePackageParams = purchasePackageBuilder.build();
         purchases.purchase(purchasePackageParams, purchaseCallback);
 
