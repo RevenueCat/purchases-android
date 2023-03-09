@@ -1,15 +1,11 @@
+### Breaking Changes
+* Purchase.Builder (#825) (#850) via beylmk (@beylmk)
 ### New Features
-* New SubscriptionOptions model  (#816) via Josh Holtz (@joshdholtz)
-* StoreProduct id improvements (#810) via Josh Holtz (@joshdholtz)
-* New Period and Unit classes to represent ISO8601 period strings (#806) via Josh Holtz (@joshdholtz)
-* Price API improvements (#794) via Josh Holtz (@joshdholtz)
+* Add/use productPlanIdentifier to EntitlementInfo and CustomerInfo (#849) via Josh Holtz (@joshdholtz)
 ### Bugfixes
-* Found and fixed logMissingProducts bug where never any missing products (#813) via Josh Holtz (@joshdholtz)
-* Fix where recurring and prepaid subs of same duration where considered same StoreProduct (#814) via Josh Holtz (@joshdholtz)
-* Fix period serialization (#818) via swehner (@swehner)
-* Fix value of NON_RECURRING from 0 to 3 (#797) via Josh Holtz (@joshdholtz)
-* Fix callback error issue (#732) via beylmk (@beylmk)
+* New API for getting products by type, properly filter deprecated functions, reworked logic (#843) via Josh Holtz (@joshdholtz)
 ### Other Changes
-* Small doc change for StoreProduct.title explaining why duplicate titles when using base plans on same subscription (#815) via Josh Holtz (@joshdholtz)
-* Migration guide updates for API improvements (#829) via Josh Holtz (@joshdholtz)
-* Fix serialization of period (#818) via Stefan Wehner (@swehner)
+* Hide isPersonalizedPrice (#858) via beylmk (@beylmk)
+* Always use purchasingData property directly on the StoreProduct when purchasing (#847) via Josh Holtz (@joshdholtz)
+* Remove use of UpgradeInfo from Purchase Tester (#846) via Josh Holtz (@joshdholtz)
+* Update MagicWeather and Purchase Tester with 6.0.0-alpha.4 APIs (#834) via Josh Holtz (@joshdholtz)
