@@ -1,3 +1,7 @@
+## 5.8.2
+### Bugfixes
+* Fix issue posting receipts to backend (#857) via Toni Rico (@tonidero)
+
 ## 5.8.1
 ### Bugfixes
 * Fix docs deployment (#836) via Toni Rico (@tonidero)
