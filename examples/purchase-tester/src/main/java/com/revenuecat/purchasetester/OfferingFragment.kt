@@ -105,15 +105,16 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
             promptForProductChangeInfo { oldProductId, prorationMode ->
                 oldProductId?.let {
                     purchaseProductBuilder.oldProductId(it)
+
+                    prorationMode?.let {
+                        purchaseProductBuilder.googleProrationMode(prorationMode)
+                    }
+                    Purchases.sharedInstance.purchaseWith(
+                        purchaseProductBuilder.build(),
+                        purchaseErrorCallback,
+                        successfulPurchaseCallback
+                    )
                 }
-                prorationMode?.let {
-                    purchaseProductBuilder.googleProrationMode(prorationMode)
-                }
-                Purchases.sharedInstance.purchaseWith(
-                    purchaseProductBuilder.build(),
-                    purchaseErrorCallback,
-                    successfulPurchaseCallback
-                )
             }
         } else {
             Purchases.sharedInstance.purchaseWith(
@@ -183,7 +184,7 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
                 toggleLoadingIndicator(false)
                 callback(null)
             }
-            .setOnDismissListener {
+            .setOnCancelListener {
                 toggleLoadingIndicator(false)
                 callback(null)
             }
@@ -209,7 +210,7 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
                 toggleLoadingIndicator(false)
                 callback(null, Error("Purchase cancelled"))
             }
-            .setOnDismissListener {
+            .setOnCancelListener {
                 toggleLoadingIndicator(false)
                 callback(null, Error("Selection dismissed"))
             }
