@@ -23,7 +23,7 @@ import java.util.Date
  * @property store The store where this entitlement was unlocked from. Either: APP_STORE,
  * MAC_APP_STORE, PLAY_STORE, STRIPE, PROMOTIONAL or UNKNOWN_STORE.
  * @property productIdentifier The product identifier that unlocked this entitlement.
- * @property productPlanIdentifier The product plan identifier that unlocked this entitlement.
+ * @property productPlanIdentifier The product plan identifier that unlocked this entitlement (Google only).
  * @property isSandbox False if this entitlement is unlocked via a production purchase.
  * @property unsubscribeDetectedAt The date an unsubscribe was detected. Can be `null`.
  * Note: Entitlement may still be active even if user has unsubscribed. Check the `isActive` property.
