@@ -20,7 +20,7 @@ class EndpointTest {
     @Test
     fun `PostReceipt has correct path`() {
         val endpoint = Endpoint.PostReceipt
-        val expectedPath = "/receipt"
+        val expectedPath = "/receipts"
         assertThat(endpoint.getPath()).isEqualTo(expectedPath)
     }
 
