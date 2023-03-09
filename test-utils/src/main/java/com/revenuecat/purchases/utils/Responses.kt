@@ -56,21 +56,23 @@ object Responses {
                       ]
                     },
                     "subscriptions": {
-                      "onemonth_freetrial": {
+                      "pro": {
                         "billing_issues_detected_at": null,
                         "is_sandbox": true,
                         "original_purchase_date": "2019-07-26T23:30:41Z",
                         "purchase_date": "2019-07-26T23:45:40Z",
+                        "product_plan_identifier": "monthly",
                         "store": "app_store",
                         "unsubscribe_detected_at": null,
                         "expires_date": "2100-04-06T20:54:45.975000Z",
                         "period_type": "normal"
                       },
-                      "threemonth_freetrial": {
+                      "basic": {
                         "billing_issues_detected_at": null,
                         "is_sandbox": true,
                         "original_purchase_date": "2019-07-26T23:30:41Z",
                         "purchase_date": "2019-07-26T23:45:40Z",
+                        "product_plan_identifier": "monthly",
                         "store": "app_store",
                         "unsubscribe_detected_at": null,
                         "period_type": "normal",
@@ -80,12 +82,14 @@ object Responses {
                     "entitlements": {
                       "pro": {
                         "expires_date": "2100-04-06T20:54:45.975000Z",
-                        "product_identifier": "onemonth_freetrial",
+                        "product_identifier": "pro",
+                        "product_plan_identifier": "monthly",
                         "purchase_date": "2018-10-26T23:17:53Z"
                       },
-                      "old_pro": {
+                      "basic": {
                         "expires_date": "1990-08-30T02:40:36Z",
-                        "product_identifier": "threemonth_freetrial",
+                        "product_identifier": "basic",
+                        "product_plan_identifier": "monthly",
                         "purchase_date": "1990-06-30T02:40:36Z"
                       },
                       "forever_pro": {

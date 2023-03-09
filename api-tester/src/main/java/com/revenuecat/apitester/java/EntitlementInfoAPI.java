@@ -19,6 +19,7 @@ final class EntitlementInfoAPI {
         final Date expirationDate = entitlementInfo.getExpirationDate();
         final Store store = entitlementInfo.getStore();
         final String productIdentifier = entitlementInfo.getProductIdentifier();
+        final String productPlanIdentifier = entitlementInfo.getProductPlanIdentifier();
         final boolean sandbox = entitlementInfo.isSandbox();
         final Date unsubscribeDetectedAt = entitlementInfo.getUnsubscribeDetectedAt();
         final Date billingIssueDetectedAt = entitlementInfo.getBillingIssueDetectedAt();
