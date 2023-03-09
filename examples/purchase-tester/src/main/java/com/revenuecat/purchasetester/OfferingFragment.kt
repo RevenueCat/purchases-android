@@ -105,34 +105,29 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
             promptForProductChangeInfo { oldProductId, prorationMode ->
                 oldProductId?.let {
                     purchaseParamsBuilder.oldProductId(it)
-                }
-                prorationMode?.let {
-                    purchaseParamsBuilder.googleProrationMode(prorationMode)
-                }
 
-                showPersonalizedPricePicker { personalizedPrice, _ ->
-                    personalizedPrice?.let {
-                        purchaseParamsBuilder.isPersonalizedPrice(it)
+                    prorationMode?.let {
+                        purchaseParamsBuilder.googleProrationMode(prorationMode)
                     }
-                    Purchases.sharedInstance.purchaseWith(
-                        purchaseParamsBuilder.build(),
-                        purchaseErrorCallback,
-                        successfulPurchaseCallback
-                    )
+                    showPersonalizedPricePicker { personalizedPrice, _ ->
+                        personalizedPrice?.let {
+                            purchaseParamsBuilder.isPersonalizedPrice(it)
+                        }
+                        Purchases.sharedInstance.purchaseWith(
+                            purchaseParamsBuilder.build(),
+                            purchaseErrorCallback,
+                            successfulPurchaseCallback
+                        )
+                    }
                 }
             }
         } else {
-            showPersonalizedPricePicker { personalizedPrice, _ ->
-                personalizedPrice?.let {
-                    purchaseParamsBuilder.isPersonalizedPrice(it)
-                }
-                Purchases.sharedInstance.purchaseWith(
-                    purchaseParamsBuilder.build(),
-                    purchaseErrorCallback,
-                    successfulPurchaseCallback
-                )
-            }
-        }
+        Purchases.sharedInstance.purchaseWith(
+            purchaseParamsBuilder.build(),
+            purchaseErrorCallback,
+            successfulPurchaseCallback
+        )
+    }
     }
 
     private fun promptForProductChangeInfo(callback: (String?, GoogleProrationMode?) -> Unit) {
@@ -194,7 +189,7 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
                 toggleLoadingIndicator(false)
                 callback(null)
             }
-            .setOnDismissListener {
+            .setOnCancelListener {
                 toggleLoadingIndicator(false)
                 callback(null)
             }
@@ -220,7 +215,7 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
                 toggleLoadingIndicator(false)
                 callback(null, Error("Purchase cancelled"))
             }
-            .setOnDismissListener {
+            .setOnCancelListener {
                 toggleLoadingIndicator(false)
                 callback(null, Error("Selection dismissed"))
             }
