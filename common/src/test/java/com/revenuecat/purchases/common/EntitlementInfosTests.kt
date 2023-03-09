@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.common
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.EntitlementInfos
 import com.revenuecat.purchases.OwnershipType
 import com.revenuecat.purchases.PeriodType
 import com.revenuecat.purchases.Store
@@ -1161,6 +1162,27 @@ class EntitlementInfosTests {
 
         verifyOwnershipType(OwnershipType.UNKNOWN)
     }
+
+    // region Equality tests
+
+    @Test
+    fun `same entitlement infos with different verifications are not equal`() {
+        val entitlementInfos1 = EntitlementInfos(emptyMap(), VerificationResult.NOT_REQUESTED)
+        val entitlementInfos2 = EntitlementInfos(emptyMap(), VerificationResult.SUCCESS)
+        val entitlementInfos3 = EntitlementInfos(emptyMap(), VerificationResult.FAILED)
+        assertThat(entitlementInfos1).isNotEqualTo(entitlementInfos2)
+        assertThat(entitlementInfos1).isNotEqualTo(entitlementInfos3)
+        assertThat(entitlementInfos2).isNotEqualTo(entitlementInfos3)
+    }
+
+    @Test
+    fun `same entitlement infos with same verifications are equal`() {
+        val entitlementInfos1 = EntitlementInfos(emptyMap(), VerificationResult.NOT_REQUESTED)
+        val entitlementInfos2 = EntitlementInfos(emptyMap(), VerificationResult.NOT_REQUESTED)
+        assertThat(entitlementInfos1).isEqualTo(entitlementInfos2)
+    }
+
+    // endregion
 
     // region EntitlementInfo active with grace periods
 
