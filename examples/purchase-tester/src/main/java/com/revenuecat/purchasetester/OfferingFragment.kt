@@ -98,29 +98,40 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
 
     private fun startPurchase(
         isUpgrade: Boolean,
-        purchaseProductBuilder: PurchaseParams.Builder
+        purchaseParamsBuilder: PurchaseParams.Builder
     ) {
         toggleLoadingIndicator(true)
         if (isUpgrade) {
             promptForProductChangeInfo { oldProductId, prorationMode ->
                 oldProductId?.let {
-                    purchaseProductBuilder.oldProductId(it)
+                    purchaseParamsBuilder.oldProductId(it)
                 }
                 prorationMode?.let {
-                    purchaseProductBuilder.googleProrationMode(prorationMode)
+                    purchaseParamsBuilder.googleProrationMode(prorationMode)
+                }
+
+                showPersonalizedPricePicker { personalizedPrice, _ ->
+                    personalizedPrice?.let {
+                        purchaseParamsBuilder.isPersonalizedPrice(it)
+                    }
+                    Purchases.sharedInstance.purchaseWith(
+                        purchaseParamsBuilder.build(),
+                        purchaseErrorCallback,
+                        successfulPurchaseCallback
+                    )
+                }
+            }
+        } else {
+            showPersonalizedPricePicker { personalizedPrice, _ ->
+                personalizedPrice?.let {
+                    purchaseParamsBuilder.isPersonalizedPrice(it)
                 }
                 Purchases.sharedInstance.purchaseWith(
-                    purchaseProductBuilder.build(),
+                    purchaseParamsBuilder.build(),
                     purchaseErrorCallback,
                     successfulPurchaseCallback
                 )
             }
-        } else {
-            Purchases.sharedInstance.purchaseWith(
-                purchaseProductBuilder.build(),
-                purchaseErrorCallback,
-                successfulPurchaseCallback
-            )
         }
     }
 
@@ -210,6 +221,32 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
                 callback(null, Error("Purchase cancelled"))
             }
             .setOnDismissListener {
+                toggleLoadingIndicator(false)
+                callback(null, Error("Selection dismissed"))
+            }
+            .show()
+    }
+
+    private fun showPersonalizedPricePicker(callback: (Boolean?, Error?) -> Unit) {
+        val personalizedPriceOptions = arrayOf(true, false, null)
+        var selectedPersonalizedPrice: Boolean? = null
+
+        val personalizedPriceNames = arrayOf("True", "False", "Null")
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle("setIsPersonalizedPrice?")
+            .setSingleChoiceItems(personalizedPriceNames, -1) { _, selectedIndex ->
+                selectedPersonalizedPrice = personalizedPriceOptions.elementAt(selectedIndex)
+            }
+            .setPositiveButton("Start purchase") { dialog, _ ->
+                dialog.dismiss()
+                callback(selectedPersonalizedPrice, null)
+            }
+            .setNegativeButton("Cancel purchase") { dialog, _ ->
+                dialog.dismiss()
+                toggleLoadingIndicator(false)
+                callback(null, Error("Purchase cancelled"))
+            }
+            .setOnCancelListener {
                 toggleLoadingIndicator(false)
                 callback(null, Error("Selection dismissed"))
             }
