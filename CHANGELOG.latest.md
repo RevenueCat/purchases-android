@@ -2,8 +2,11 @@
 
 ⚠️ ⚠️ ⚠️ ⚠️ 
 
-Android SDK versions 5.8.0 and 5.8.1 have a major bug that prevents sending purchase tokens to RevenueCat. Users will get charged but won't receive entitlements. An automatic refund will occur after 72 hours unless an unaffected SDK version is used. Downgrade to 5.7.1 or upgrade to 5.8.2 or later to avoid this bug.
-Users who got charged while using 5.8.0 and 5.8.1 will be able to access their purchases automatically upon opening an app that uses 5.7.1 or lower, or 5.8.2 or higher.
+Our Android SDK versions 5.8.0 and 5.8.1 introduced a bug that prevented new purchase tokens from being sent to RevenueCat for validation between the above dates.
+
+Users who made new purchases were charged by Google but did not receive entitlements during that time. We've already shipped a backend fix, so affected users can recover their purchases simply by opening the app again. If the purchases aren’t recovered by the users within 72 hours from their purchase date, Google will automatically refund their purchase. No further action is required from you at this time.
+
+Users with pre-existing purchases are not affected.
 
 ⚠️ ⚠️ ⚠️ ⚠️
 
