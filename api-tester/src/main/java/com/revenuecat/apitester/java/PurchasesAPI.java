@@ -12,6 +12,7 @@ import com.revenuecat.purchases.LogHandler;
 import com.revenuecat.purchases.LogLevel;
 import com.revenuecat.purchases.Offerings;
 import com.revenuecat.purchases.Package;
+import com.revenuecat.purchases.ProductType;
 import com.revenuecat.purchases.PurchaseParams;
 import com.revenuecat.purchases.Purchases;
 import com.revenuecat.purchases.PurchasesConfiguration;
@@ -85,6 +86,7 @@ final class PurchasesAPI {
         purchases.syncPurchases();
         purchases.getOfferings(receiveOfferingsListener);
         purchases.getProducts(productIds, productResponseListener);
+        purchases.getProducts(productIds, ProductType.SUBS, productResponseListener);
         purchases.restorePurchases(receiveCustomerInfoListener);
 
         purchases.logIn("", logInCallback);
