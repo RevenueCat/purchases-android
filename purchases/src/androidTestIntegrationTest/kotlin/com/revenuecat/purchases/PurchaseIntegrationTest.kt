@@ -18,9 +18,12 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import kotlin.time.Duration.Companion.seconds
 
 @RunWith(AndroidJUnit4::class)
 class PurchaseIntegrationTest {
+
+    private val testTimeout = 5.seconds
 
     @get:Rule
     var activityScenarioRule = activityScenarioRule<MainActivity>()
@@ -67,7 +70,7 @@ class PurchaseIntegrationTest {
                 lock.countDown()
             }
         }
-        lock.await(5, TimeUnit.SECONDS)
+        lock.await(testTimeout.inWholeSeconds, TimeUnit.SECONDS)
         assertThat(lock.count).isZero
     }
 
@@ -96,7 +99,7 @@ class PurchaseIntegrationTest {
                 }
             )
         }
-        lock.await(5, TimeUnit.SECONDS)
+        lock.await(testTimeout.inWholeSeconds, TimeUnit.SECONDS)
         assertThat(lock.count).isZero
     }
 
@@ -163,7 +166,7 @@ class PurchaseIntegrationTest {
                 }
             )
         }
-        lock.await(500000, TimeUnit.SECONDS)
+        lock.await(testTimeout.inWholeSeconds, TimeUnit.SECONDS)
         assertThat(lock.count).isZero
     }
 }
