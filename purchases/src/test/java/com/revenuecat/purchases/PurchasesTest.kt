@@ -608,7 +608,8 @@ class PurchasesTest {
                 eq(appUserId),
                 storeProduct.subscriptionOptions!!.first().purchasingData,
                 null,
-                null
+                null,
+                any()
             )
         }
     }
@@ -627,7 +628,8 @@ class PurchasesTest {
                 eq(appUserId),
                 storeProduct.purchasingData,
                 null,
-                null
+                null,
+                any()
             )
         }
     }
@@ -647,7 +649,8 @@ class PurchasesTest {
                 eq(appUserId),
                 packageToPurchase.product.defaultOption!!.purchasingData,
                 null,
-                STUB_OFFERING_IDENTIFIER
+                STUB_OFFERING_IDENTIFIER,
+                any()
             )
         }
     }
@@ -668,7 +671,8 @@ class PurchasesTest {
                 eq(appUserId),
                 storeProduct.subscriptionOptions!!.first().purchasingData,
                 null,
-                expectedOfferingIdentifier
+                expectedOfferingIdentifier,
+                any()
             )
         }
     }
@@ -692,7 +696,8 @@ class PurchasesTest {
                 eq(appUserId),
                 storeProduct.defaultOption!!.purchasingData,
                 ReplaceProductInfo(oldPurchase, ProrationMode.IMMEDIATE_WITHOUT_PRORATION),
-                STUB_OFFERING_IDENTIFIER
+                STUB_OFFERING_IDENTIFIER,
+                any()
             )
         }
     }
@@ -1045,7 +1050,8 @@ class PurchasesTest {
                 appUserId,
                 expectedDefaultSubscriptionOption.purchasingData,
                 null,
-                null
+                null,
+                any()
             )
         }
     }
@@ -1082,7 +1088,8 @@ class PurchasesTest {
                 appUserId,
                 expectedDefaultSubscriptionOption.purchasingData,
                 null,
-                STUB_OFFERING_IDENTIFIER
+                STUB_OFFERING_IDENTIFIER,
+                any()
             )
         }
     }
@@ -1245,7 +1252,8 @@ class PurchasesTest {
                 eq(appUserId),
                 storeProduct.subscriptionOptions!!.first().purchasingData,
                 ReplaceProductInfo(oldPurchase, ProrationMode.IMMEDIATE_WITHOUT_PRORATION),
-                STUB_OFFERING_IDENTIFIER
+                STUB_OFFERING_IDENTIFIER,
+                any()
             )
         }
         assertThat(receivedError).isNotNull
@@ -1304,7 +1312,8 @@ class PurchasesTest {
                 eq(appUserId),
                 storeProduct.subscriptionOptions!!.first().purchasingData,
                 ReplaceProductInfo(oldPurchase, ProrationMode.IMMEDIATE_WITHOUT_PRORATION),
-                STUB_OFFERING_IDENTIFIER
+                STUB_OFFERING_IDENTIFIER,
+                any()
             )
         }
         assertThat(receivedError).isNotNull

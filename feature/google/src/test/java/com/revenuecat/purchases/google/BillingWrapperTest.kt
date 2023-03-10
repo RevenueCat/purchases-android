@@ -507,7 +507,7 @@ class BillingWrapperTest {
     @Test
     fun `properly sets billingFlowParams for inapp purchase`() {
         mockkStatic(BillingFlowParams::class)
-        mockkStatic(BillingFlowParams.SubscriptionUpdateParams::class)
+        mockkStatic(BillingFlowParams.ProductDetailsParams::class)
 
         val mockBuilder = mockk<BillingFlowParams.Builder>(relaxed = true)
         every {
@@ -520,7 +520,7 @@ class BillingWrapperTest {
         } returns mockBuilder
 
         every {
-            mockBuilder.setIsOfferPersonalized(any())
+            mockBuilder.setObfuscatedAccountId(any())
         } returns mockBuilder
 
         val isPersonalizedPriceSlot = slot<Boolean>()
@@ -530,12 +530,17 @@ class BillingWrapperTest {
 
         val productId = "product_a"
 
+        val oneTimePurchaseOfferDetails = mockOneTimePurchaseOfferDetails()
         val productDetails = mockProductDetails(
             productId = productId,
             type = inAppGoogleProductType,
-            oneTimePurchaseOfferDetails = mockOneTimePurchaseOfferDetails(),
+            oneTimePurchaseOfferDetails = oneTimePurchaseOfferDetails,
             subscriptionOfferDetails = null
         )
+        every {
+            oneTimePurchaseOfferDetails.zza()
+        } returns productId
+        
         val storeProduct = productDetails.toInAppStoreProduct()!!
         val isPersonalizedPrice = true
 
@@ -543,12 +548,6 @@ class BillingWrapperTest {
         every {
             mockClient.launchBillingFlow(eq(mockActivity), capture(slot))
         } answers {
-            val capturedProductDetailsParams = productDetailsParamsSlot.captured
-
-            assertThat(1).isEqualTo(capturedProductDetailsParams.size)
-            assertThat(productId).isEqualTo(capturedProductDetailsParams[0].zza().productId)
-            assertThat(inAppGoogleProductType).isEqualTo(capturedProductDetailsParams[0].zza().productType)
-
             assertThat(isPersonalizedPrice).isEqualTo(isPersonalizedPriceSlot.captured)
             billingClientOKResult
         }
@@ -618,7 +617,6 @@ class BillingWrapperTest {
     fun `properly sets ProductDetailsParams for inapp product`() {
         mockkStatic(BillingFlowParams::class)
         mockkStatic(BillingFlowParams.ProductDetailsParams::class)
-        mockkStatic(BillingFlowParams.SubscriptionUpdateParams::class)
 
         val mockProductDetailsBuilder = mockk<ProductDetailsParams.Builder>(relaxed = true)
         every {
