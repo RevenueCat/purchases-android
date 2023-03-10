@@ -358,6 +358,10 @@ class BillingWrapperTest {
             mockBuilder.setProductDetailsParamsList(capture(productDetailsParamsSlot))
         } returns mockBuilder
 
+        every {
+            mockBuilder.setIsOfferPersonalized(any())
+        } returns mockBuilder
+
         val mockSubscriptionUpdateParamsBuilder =
             mockk<BillingFlowParams.SubscriptionUpdateParams.Builder>(relaxed = true)
         every {
@@ -374,6 +378,11 @@ class BillingWrapperTest {
             mockSubscriptionUpdateParamsBuilder.setReplaceProrationMode(capture(prorationModeSlot))
         } returns mockSubscriptionUpdateParamsBuilder
 
+        val isPersonalizedPriceSlot = slot<Boolean>()
+        every {
+            mockBuilder.setIsOfferPersonalized(capture(isPersonalizedPriceSlot))
+        } returns mockBuilder
+
         val productId = "product_a"
 
         val upgradeInfo = mockReplaceSkuInfo()
@@ -381,6 +390,7 @@ class BillingWrapperTest {
         val storeProduct = productDetails.toStoreProduct(
             productDetails.subscriptionOfferDetails!!
         )!!
+        val isPersonalizedPrice = true
 
         val slot = slot<BillingFlowParams>()
         every {
@@ -394,6 +404,8 @@ class BillingWrapperTest {
 
             assertThat(upgradeInfo.oldPurchase.purchaseToken).isEqualTo(oldPurchaseTokenSlot.captured)
             assertThat(upgradeInfo.prorationMode).isEqualTo(prorationModeSlot.captured)
+
+            assertThat(isPersonalizedPrice).isEqualTo(isPersonalizedPriceSlot.captured)
             billingClientOKResult
         }
 
@@ -403,7 +415,8 @@ class BillingWrapperTest {
             appUserId,
             storeProduct.subscriptionOptions!!.first().purchasingData,
             upgradeInfo,
-            null
+            null,
+            isPersonalizedPrice
         )
     }
 
