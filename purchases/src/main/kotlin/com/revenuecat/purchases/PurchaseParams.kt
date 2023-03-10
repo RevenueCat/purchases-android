@@ -85,7 +85,7 @@ data class PurchaseParams(val builder: Builder) {
          *
          * Product changes are only available in the Play Store. Ignored for Amazon Appstore purchases.
          */
-        fun oldProductId(oldProductId: String?) = apply {
+        fun oldProductId(oldProductId: String) = apply {
             this.oldProductId = oldProductId
         }
 

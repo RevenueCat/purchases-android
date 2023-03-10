@@ -122,12 +122,17 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
                 }
             }
         } else {
-        Purchases.sharedInstance.purchaseWith(
-            purchaseParamsBuilder.build(),
-            purchaseErrorCallback,
-            successfulPurchaseCallback
-        )
-    }
+            showPersonalizedPricePicker { personalizedPrice, _ ->
+                personalizedPrice?.let {
+                    purchaseParamsBuilder.isPersonalizedPrice(it)
+                }
+                Purchases.sharedInstance.purchaseWith(
+                    purchaseParamsBuilder.build(),
+                    purchaseErrorCallback,
+                    successfulPurchaseCallback
+                )
+            }
+        }
     }
 
     private fun promptForProductChangeInfo(callback: (String?, GoogleProrationMode?) -> Unit) {
