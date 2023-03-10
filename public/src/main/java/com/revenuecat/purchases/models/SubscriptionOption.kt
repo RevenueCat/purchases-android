@@ -1,11 +1,9 @@
 package com.revenuecat.purchases.models
 
-import android.os.Parcelable
-
 /**
  * A purchase-able entity for a subscription product.
  */
-interface SubscriptionOption : Parcelable {
+interface SubscriptionOption {
     /**
      * For Google subscriptions:
      * If this SubscriptionOption represents a base plan, this will be the basePlanId.

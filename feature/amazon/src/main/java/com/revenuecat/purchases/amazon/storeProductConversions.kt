@@ -1,19 +1,15 @@
 package com.revenuecat.purchases.amazon
 
-import android.os.Parcelable
 import com.amazon.device.iap.model.Product
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.MICROS_MULTIPLIER
 import com.revenuecat.purchases.common.log
-import com.revenuecat.purchases.models.PurchasingData
-import com.revenuecat.purchases.models.SubscriptionOption
-import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.Period
+import com.revenuecat.purchases.models.PurchasingData
+import com.revenuecat.purchases.models.StoreProduct
+import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.models.SubscriptionOptions
-import com.revenuecat.purchases.utils.JSONObjectParceler
-import kotlinx.parcelize.Parcelize
-import kotlinx.parcelize.TypeParceler
 import org.json.JSONObject
 import java.math.BigDecimal
 import java.util.regex.Pattern
@@ -29,8 +25,6 @@ sealed class AmazonPurchasingData : PurchasingData {
     }
 }
 
-@Parcelize
-@TypeParceler<JSONObject, JSONObjectParceler>()
 data class AmazonStoreProduct(
     override val id: String,
     override val type: ProductType,
@@ -44,7 +38,7 @@ data class AmazonStoreProduct(
     val iconUrl: String,
     val originalJson: JSONObject,
     val amazonProduct: Product,
-) : StoreProduct, Parcelable {
+) : StoreProduct {
 
     override val purchasingData: AmazonPurchasingData
         get() = AmazonPurchasingData.Product(this)

@@ -3,6 +3,9 @@ package com.revenuecat.purchases
 import android.net.Uri
 import android.os.Parcel
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.models.PurchaseState
+import com.revenuecat.purchases.models.PurchaseType
+import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.utils.JSONObjectParceler
 import com.revenuecat.purchases.utils.JSONObjectParceler.write
 import com.revenuecat.purchases.utils.Responses
@@ -39,6 +42,28 @@ class ParcelableTests {
             originalPurchaseDate = Date(System.currentTimeMillis())
         )
     )
+
+    @Test
+    fun `StoreTransaction is parcelable`() {
+        testParcelization(
+            StoreTransaction(
+                "orderId",
+                listOf("productId1", "productId2"),
+                ProductType.UNKNOWN,
+                0L,
+                "purchaseToken",
+                PurchaseState.PENDING,
+                true,
+                null,
+                JSONObject("originalJson"),
+                "offering_a",
+                "userId",
+                PurchaseType.GOOGLE_PURCHASE,
+                null,
+                "optionId"
+            )
+        )
+    }
 
     @Test
     fun `JSONObjectParceler works`() {

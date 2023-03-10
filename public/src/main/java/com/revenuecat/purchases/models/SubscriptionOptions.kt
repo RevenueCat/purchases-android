@@ -1,13 +1,10 @@
 package com.revenuecat.purchases.models
 
-import android.os.Parcelable
 import androidx.annotation.VisibleForTesting
-import kotlinx.parcelize.Parcelize
 
-@Parcelize
 class SubscriptionOptions(
     private val subscriptionOptions: List<SubscriptionOption>
-    ) : List<SubscriptionOption> by subscriptionOptions, Parcelable {
+    ) : List<SubscriptionOption> by subscriptionOptions {
 
     /**
      * The base plan [SubscriptionOption].
