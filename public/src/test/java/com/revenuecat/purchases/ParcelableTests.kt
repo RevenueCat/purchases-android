@@ -55,7 +55,7 @@ class ParcelableTests {
                 PurchaseState.PENDING,
                 true,
                 null,
-                JSONObject("originalJson"),
+                JSONObject(emptyMap<String, String>()),
                 "offering_a",
                 "userId",
                 PurchaseType.GOOGLE_PURCHASE,
