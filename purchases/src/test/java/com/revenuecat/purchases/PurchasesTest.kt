@@ -547,6 +547,48 @@ class PurchasesTest {
                 any(),
                 receiptInfo.storeProduct!!.defaultOption!!.purchasingData,
                 expectedReplaceProductInfo,
+                any(),
+                any()
+            )
+        }
+    }
+
+    fun `deprecated upgrade does not set ProrationMode if not passed`() {
+        val productId = "gold"
+        val oldSubId = "oldSubID"
+        val receiptInfo = mockQueryingProductDetails(productId, ProductType.SUBS, null)
+
+        val oldTransaction = getMockedStoreTransaction(oldSubId, "token", ProductType.SUBS)
+        every {
+            mockBillingAbstract.findPurchaseInPurchaseHistory(
+                appUserId,
+                ProductType.SUBS,
+                oldSubId,
+                captureLambda(),
+                any()
+            )
+        } answers {
+            lambda<(StoreTransaction) -> Unit>().captured.invoke(oldTransaction)
+        }
+
+        purchases.purchaseProductWith(
+            mockActivity,
+            receiptInfo.storeProduct!!,
+            UpgradeInfo(oldSubId),
+            onError = { _, _ ->
+            }, onSuccess = { _, _ ->
+            })
+
+        val expectedReplaceProductInfo = ReplaceProductInfo(
+            oldTransaction,
+            null
+        )
+        verify {
+            mockBillingAbstract.makePurchaseAsync(
+                any(),
+                any(),
+                receiptInfo.storeProduct!!.defaultOption!!.purchasingData,
+                expectedReplaceProductInfo,
                 any()
             )
         }
