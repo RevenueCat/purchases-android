@@ -38,6 +38,8 @@ import com.revenuecat.purchases.google.toStoreTransaction
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
 import com.revenuecat.purchases.interfaces.LogInCallback
+import com.revenuecat.purchases.interfaces.PurchaseCallback
+import com.revenuecat.purchases.interfaces.PurchaseErrorCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import com.revenuecat.purchases.models.BillingFeature
@@ -83,6 +85,7 @@ import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.assertj.core.api.AssertionsForClassTypes
 import org.json.JSONObject
 import org.junit.After
+import org.junit.Assert.assertEquals
 import org.junit.Assert.fail
 import org.junit.Before
 import org.junit.Test
@@ -544,7 +547,86 @@ class PurchasesTest {
                 any(),
                 receiptInfo.storeProduct!!.defaultOption!!.purchasingData,
                 expectedReplaceProductInfo,
+                any(),
                 any()
+            )
+        }
+    }
+
+    fun `deprecated upgrade defaults ProrationMode to null if not passed`() {
+        val productId = "gold"
+        val oldSubId = "oldSubID"
+        val receiptInfo = mockQueryingProductDetails(productId, ProductType.SUBS, null)
+
+        val oldTransaction = getMockedStoreTransaction(oldSubId, "token", ProductType.SUBS)
+        every {
+            mockBillingAbstract.findPurchaseInPurchaseHistory(
+                appUserId,
+                ProductType.SUBS,
+                oldSubId,
+                captureLambda(),
+                any()
+            )
+        } answers {
+            lambda<(StoreTransaction) -> Unit>().captured.invoke(oldTransaction)
+        }
+
+        purchases.purchaseProductWith(
+            mockActivity,
+            receiptInfo.storeProduct!!,
+            UpgradeInfo(oldSubId),
+            onError = { _, _ ->
+            }, onSuccess = { _, _ ->
+            })
+
+        val expectedReplaceProductInfo = ReplaceProductInfo(
+            oldTransaction,
+            null
+        )
+        verify {
+            mockBillingAbstract.makePurchaseAsync(
+                any(),
+                any(),
+                receiptInfo.storeProduct!!.defaultOption!!.purchasingData,
+                expectedReplaceProductInfo,
+                any()
+            )
+        }
+    }
+
+    fun `deprecated purchase does not set isPersonalizedPrice`() {
+        val productId = "gold"
+        val oldSubId = "oldSubID"
+        val receiptInfo = mockQueryingProductDetails(productId, ProductType.SUBS, null)
+
+        val oldTransaction = getMockedStoreTransaction(oldSubId, "token", ProductType.SUBS)
+        every {
+            mockBillingAbstract.findPurchaseInPurchaseHistory(
+                appUserId,
+                ProductType.SUBS,
+                oldSubId,
+                captureLambda(),
+                any()
+            )
+        } answers {
+            lambda<(StoreTransaction) -> Unit>().captured.invoke(oldTransaction)
+        }
+
+        purchases.purchaseProductWith(
+            mockActivity,
+            receiptInfo.storeProduct!!,
+            UpgradeInfo(oldSubId),
+            onError = { _, _ ->
+            }, onSuccess = { _, _ ->
+            })
+
+        verify {
+            mockBillingAbstract.makePurchaseAsync(
+                any(),
+                any(),
+                receiptInfo.storeProduct!!.defaultOption!!.purchasingData,
+                any(),
+                null
             )
         }
     }
@@ -563,7 +645,8 @@ class PurchasesTest {
                 eq(appUserId),
                 storeProduct.subscriptionOptions!!.first().purchasingData,
                 null,
-                null
+                null,
+                any()
             )
         }
     }
@@ -582,7 +665,8 @@ class PurchasesTest {
                 eq(appUserId),
                 storeProduct.purchasingData,
                 null,
-                null
+                null,
+                any()
             )
         }
     }
@@ -602,7 +686,8 @@ class PurchasesTest {
                 eq(appUserId),
                 packageToPurchase.product.defaultOption!!.purchasingData,
                 null,
-                STUB_OFFERING_IDENTIFIER
+                STUB_OFFERING_IDENTIFIER,
+                any()
             )
         }
     }
@@ -623,7 +708,8 @@ class PurchasesTest {
                 eq(appUserId),
                 storeProduct.subscriptionOptions!!.first().purchasingData,
                 null,
-                expectedOfferingIdentifier
+                expectedOfferingIdentifier,
+                any()
             )
         }
     }
@@ -647,7 +733,8 @@ class PurchasesTest {
                 eq(appUserId),
                 storeProduct.defaultOption!!.purchasingData,
                 ReplaceProductInfo(oldPurchase, ProrationMode.IMMEDIATE_WITHOUT_PRORATION),
-                STUB_OFFERING_IDENTIFIER
+                STUB_OFFERING_IDENTIFIER,
+                any()
             )
         }
     }
@@ -1000,7 +1087,8 @@ class PurchasesTest {
                 appUserId,
                 expectedDefaultSubscriptionOption.purchasingData,
                 null,
-                null
+                null,
+                any()
             )
         }
     }
@@ -1037,7 +1125,8 @@ class PurchasesTest {
                 appUserId,
                 expectedDefaultSubscriptionOption.purchasingData,
                 null,
-                STUB_OFFERING_IDENTIFIER
+                STUB_OFFERING_IDENTIFIER,
+                any()
             )
         }
     }
@@ -1057,7 +1146,8 @@ class PurchasesTest {
 
         val purchasePackageUpgradeParams = getPurchaseParams(
             offerings[STUB_OFFERING_IDENTIFIER]!!.monthly!!,
-            oldPurchase.productIds[0])
+            oldPurchase.productIds[0]
+        )
         purchases.purchaseWith(
             purchasePackageUpgradeParams,
             onError = { _, _ ->
@@ -1148,7 +1238,8 @@ class PurchasesTest {
         val purchasePackageUpgradeParams =
             getPurchaseParams(
                 offerings[STUB_OFFERING_IDENTIFIER]!!.monthly!!,
-                oldPurchase.productIds[0])
+                oldPurchase.productIds[0]
+            )
         purchases.purchaseWith(
             purchasePackageUpgradeParams,
             onError = { error, userCancelled ->
@@ -1198,7 +1289,8 @@ class PurchasesTest {
                 eq(appUserId),
                 storeProduct.subscriptionOptions!!.first().purchasingData,
                 ReplaceProductInfo(oldPurchase, ProrationMode.IMMEDIATE_WITHOUT_PRORATION),
-                STUB_OFFERING_IDENTIFIER
+                STUB_OFFERING_IDENTIFIER,
+                any()
             )
         }
         assertThat(receivedError).isNotNull
@@ -1257,7 +1349,8 @@ class PurchasesTest {
                 eq(appUserId),
                 storeProduct.subscriptionOptions!!.first().purchasingData,
                 ReplaceProductInfo(oldPurchase, ProrationMode.IMMEDIATE_WITHOUT_PRORATION),
-                STUB_OFFERING_IDENTIFIER
+                STUB_OFFERING_IDENTIFIER,
+                any()
             )
         }
         assertThat(receivedError).isNotNull
@@ -1326,6 +1419,135 @@ class PurchasesTest {
                 storeAppUserID = null,
                 onSuccess = any(),
                 onError = any()
+            )
+        }
+    }
+
+    @Test
+    fun `isPersonalizedPrice value is passed through to purchase`() {
+        val storeProduct = stubStoreProduct("abc")
+        val expectedPersonalizedPrice = true
+
+        val purchaseParams = getPurchaseParams(storeProduct, null, expectedPersonalizedPrice)
+
+        purchases.purchaseWith(
+            purchaseParams
+        ) { _, _ -> }
+
+        verify {
+            mockBillingAbstract.makePurchaseAsync(
+                eq(mockActivity),
+                eq(appUserId),
+                storeProduct.subscriptionOptions!![0].purchasingData,
+                null,
+                any(),
+                expectedPersonalizedPrice
+            )
+        }
+    }
+
+    @Test
+    fun `isPersonalizedPrice value is passed through to product change purchase`() {
+        val storeProduct = stubStoreProduct("abc")
+        val expectedPersonalizedPrice = true
+        val oldSubId = "123"
+
+        val oldTransaction = getMockedStoreTransaction(oldSubId, "token", ProductType.SUBS)
+        every {
+            mockBillingAbstract.findPurchaseInPurchaseHistory(
+                appUserId,
+                ProductType.SUBS,
+                oldSubId,
+                captureLambda(),
+                any()
+            )
+        } answers {
+            lambda<(StoreTransaction) -> Unit>().captured.invoke(oldTransaction)
+        }
+
+        val upgradePurchaseParams = getPurchaseParams(storeProduct, oldSubId, expectedPersonalizedPrice)
+
+        purchases.purchaseWith(
+            upgradePurchaseParams) { _, _ -> }
+
+        val expectedReplaceProductInfo = ReplaceProductInfo(
+            oldTransaction,
+            ProrationMode.IMMEDIATE_WITHOUT_PRORATION
+        )
+
+        verify {
+            mockBillingAbstract.makePurchaseAsync(
+                eq(mockActivity),
+                eq(appUserId),
+                storeProduct.subscriptionOptions!![0].purchasingData,
+                expectedReplaceProductInfo,
+                any(),
+                expectedPersonalizedPrice
+            )
+        }
+    }
+
+    @Test
+    fun `isPersonalizedPrice defaults to null for purchase`() {
+        val (_, offerings) = stubOfferings("onemonth_freetrial")
+        val packageToPurchase = offerings[STUB_OFFERING_IDENTIFIER]!!.monthly!!
+
+        purchases.purchasePackage(
+            mockActivity,
+            packageToPurchase,
+            object : PurchaseCallback {
+                override fun onCompleted(storeTransaction: StoreTransaction, customerInfo: CustomerInfo) {}
+                override fun onError(error: PurchasesError, userCancelled: Boolean) {}
+            }
+        )
+
+        verify {
+            mockBillingAbstract.makePurchaseAsync(
+                eq(mockActivity),
+                eq(appUserId),
+                packageToPurchase.product.purchasingData,
+                null,
+                STUB_OFFERING_IDENTIFIER,
+                null
+            )
+        }
+    }
+
+    fun `isPersonalizedPrice value defaults to null for product change purchase`() {
+        val storeProduct = stubStoreProduct("abc")
+        val oldSubId = "123"
+
+        val oldTransaction = getMockedStoreTransaction(oldSubId, "token", ProductType.SUBS)
+        every {
+            mockBillingAbstract.findPurchaseInPurchaseHistory(
+                appUserId,
+                ProductType.SUBS,
+                oldSubId,
+                captureLambda(),
+                any()
+            )
+        } answers {
+            lambda<(StoreTransaction) -> Unit>().captured.invoke(oldTransaction)
+        }
+
+        val upgradePurchaseParams = getPurchaseParams(storeProduct, oldSubId)
+
+        purchases.purchaseWith(
+            upgradePurchaseParams) { _, _ -> }
+
+        val expectedReplaceProductInfo = ReplaceProductInfo(
+            oldTransaction,
+            ProrationMode.IMMEDIATE_WITHOUT_PRORATION
+        )
+
+        verify {
+            mockBillingAbstract.makePurchaseAsync(
+                eq(mockActivity),
+                eq(appUserId),
+                storeProduct.subscriptionOptions!![0].purchasingData,
+                expectedReplaceProductInfo,
+                any(),
+                null
             )
         }
     }
@@ -4118,7 +4340,8 @@ class PurchasesTest {
 
     private fun getPurchaseParams(
         purchaseable: Any,
-        oldProductId: String? = null
+        oldProductId: String? = null,
+        isPersonalizedPrice: Boolean? = null
     ): PurchaseParams {
         val builder = when (purchaseable) {
             is SubscriptionOption -> PurchaseParams.Builder(purchaseable, mockActivity)
@@ -4130,13 +4353,17 @@ class PurchasesTest {
         oldProductId?.let {
             builder!!.oldProductId(it)
         }
+
+        isPersonalizedPrice?.let {
+            builder!!.isPersonalizedPrice(it)
+        }
         return builder!!.build()
     }
 
     private fun mockBillingWrapper() {
         with(mockBillingAbstract) {
             every {
-                makePurchaseAsync(any(), any(), any(), any(), any())
+                makePurchaseAsync(any(), any(), any(), any(), any(), any())
             } just Runs
             every {
                 purchasesUpdatedListener = capture(capturedPurchasesUpdatedListener)

@@ -416,6 +416,7 @@ class Purchases internal constructor(
                     presentedOfferingIdentifier,
                     productId,
                     googleProrationMode.playBillingClientMode,
+                    isPersonalizedPrice,
                     callback
                 )
             } ?: run {
@@ -423,6 +424,7 @@ class Purchases internal constructor(
                     activity,
                     purchasingData,
                     presentedOfferingIdentifier,
+                    isPersonalizedPrice,
                     callback
                 )
             }
@@ -492,6 +494,7 @@ class Purchases internal constructor(
             activity,
             storeProduct.purchasingData,
             null,
+            null,
             callback
         )
     }
@@ -559,6 +562,7 @@ class Purchases internal constructor(
             activity,
             packageToPurchase.product.purchasingData,
             packageToPurchase.offering,
+            null,
             listener
         )
     }
@@ -1549,6 +1553,7 @@ class Purchases internal constructor(
         activity: Activity,
         purchasingData: PurchasingData,
         presentedOfferingIdentifier: String?,
+        isPersonalizedPrice: Boolean?,
         listener: PurchaseCallback
     ) {
         log(
@@ -1580,7 +1585,8 @@ class Purchases internal constructor(
                 appUserID,
                 purchasingData,
                 null,
-                presentedOfferingIdentifier
+                presentedOfferingIdentifier,
+                isPersonalizedPrice
             )
         } ?: listener.dispatch(PurchasesError(PurchasesErrorCode.OperationAlreadyInProgressError).also { errorLog(it) })
     }
@@ -1591,6 +1597,7 @@ class Purchases internal constructor(
         offeringIdentifier: String?,
         oldProductId: String,
         @BillingFlowParams.ProrationMode googleProrationMode: Int?,
+        isPersonalizedPrice: Boolean?,
         purchaseCallback: PurchaseCallback
     ) {
         if (purchasingData.productType != ProductType.SUBS) {
@@ -1633,6 +1640,7 @@ class Purchases internal constructor(
                 activity,
                 appUserID,
                 offeringIdentifier,
+                isPersonalizedPrice,
                 purchaseCallback
             )
         } ?: run {
@@ -1688,6 +1696,7 @@ class Purchases internal constructor(
                 activity,
                 appUserID,
                 offeringIdentifier,
+                null,
                 listener
             )
         } ?: run {
@@ -1703,6 +1712,7 @@ class Purchases internal constructor(
         activity: Activity,
         appUserID: String,
         presentedOfferingIdentifier: String?,
+        isPersonalizedPrice: Boolean?,
         listener: PurchaseErrorCallback
     ) {
         if (purchasingData.productType != ProductType.SUBS) {
@@ -1727,7 +1737,8 @@ class Purchases internal constructor(
                     appUserID,
                     purchasingData,
                     ReplaceProductInfo(purchaseRecord, googleProrationMode),
-                    presentedOfferingIdentifier
+                    presentedOfferingIdentifier,
+                    isPersonalizedPrice
                 )
             },
             onError = { error ->

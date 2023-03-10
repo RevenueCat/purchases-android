@@ -8,7 +8,7 @@ import com.revenuecat.purchases.models.SubscriptionOption
 
 data class PurchaseParams(val builder: Builder) {
 
-    private val isPersonalizedPrice: Boolean
+    val isPersonalizedPrice: Boolean?
     val oldProductId: String?
     val googleProrationMode: GoogleProrationMode
     @get:JvmSynthetic
@@ -76,7 +76,7 @@ data class PurchaseParams(val builder: Builder) {
          * Default is false.
          * Ignored for Amazon Appstore purchases.
          */
-        private fun isPersonalizedPrice(isPersonalizedPrice: Boolean) = apply {
+        fun isPersonalizedPrice(isPersonalizedPrice: Boolean) = apply {
             this.isPersonalizedPrice = isPersonalizedPrice
         }
 
@@ -85,7 +85,7 @@ data class PurchaseParams(val builder: Builder) {
          *
          * Product changes are only available in the Play Store. Ignored for Amazon Appstore purchases.
          */
-        fun oldProductId(oldProductId: String?) = apply {
+        fun oldProductId(oldProductId: String) = apply {
             this.oldProductId = oldProductId
         }
 
