@@ -7,9 +7,9 @@ import com.revenuecat.purchases.interfaces.ProductChangeCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback
-import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.models.SubscriptionOption
 
 internal val ON_ERROR_STUB: (error: PurchasesError) -> Unit = {}
 internal val ON_PURCHASE_ERROR_STUB: (error: PurchasesError, userCancelled: Boolean) -> Unit = { _, _ -> }
@@ -111,6 +111,14 @@ fun Purchases.getOfferingsWith(
     getOfferings(receiveOfferingsCallback(onSuccess, onError))
 }
 
+fun Purchases.purchaseWith(
+    purchaseParams: PurchaseParams,
+    onError: (error: PurchasesError, userCancelled: Boolean) -> Unit = ON_PURCHASE_ERROR_STUB,
+    onSuccess: (purchase: StoreTransaction?, customerInfo: CustomerInfo) -> Unit
+) {
+    purchase(purchaseParams, purchaseCompletedCallback(onSuccess, onError))
+}
+
 /**
  * Purchase product. If purchasing a subscription, it will choose the default [SubscriptionOption].
  * @param [activity] Current activity
@@ -118,6 +126,10 @@ fun Purchases.getOfferingsWith(
  * @param [onSuccess] Will be called after the purchase has completed
  * @param [onError] Will be called if there was an error with the purchase
  */
+@Deprecated(
+    "Use purchase() and PurchaseParams.Builder instead",
+    ReplaceWith("purchase()")
+)
 fun Purchases.purchaseProductWith(
     activity: Activity,
     storeProduct: StoreProduct,
@@ -137,6 +149,10 @@ fun Purchases.purchaseProductWith(
  * @param [onSuccess] Will be called after the purchase has completed
  * @param [onError] Will be called if there was an error with the purchase
  */
+@Deprecated(
+    "Use purchaseWith and PurchaseParams.Builder instead",
+    ReplaceWith("purchaseWith()")
+)
 fun Purchases.purchaseProductWith(
     activity: Activity,
     storeProduct: StoreProduct,
@@ -145,51 +161,6 @@ fun Purchases.purchaseProductWith(
     onSuccess: (purchase: StoreTransaction?, customerInfo: CustomerInfo) -> Unit
 ) {
     purchaseProduct(activity, storeProduct, upgradeInfo, productChangeCompletedListener(onSuccess, onError))
-}
-
-/**
- * Purchase a subscription [StoreProduct]'s [SubscriptionOption].
- * @param [activity] Current activity
- * @param [subscriptionOption] Your choice of [SubscriptionOption]s available for a subscription StoreProduct
- * @param [onSuccess] Will be called after the purchase has completed
- * @param [onError] Will be called if there was an error with the purchase
- */
-fun Purchases.purchaseSubscriptionOptionWith(
-    activity: Activity,
-    subscriptionOption: SubscriptionOption,
-    onError: (error: PurchasesError, userCancelled: Boolean) -> Unit = ON_PURCHASE_ERROR_STUB,
-    onSuccess: (purchase: StoreTransaction, customerInfo: CustomerInfo) -> Unit
-) {
-    purchaseSubscriptionOption(
-        activity,
-        subscriptionOption,
-        purchaseCompletedCallback(onSuccess, onError)
-    )
-}
-
-/**
- * Purchase a subscription [StoreProduct]'s [SubscriptionOption], upgrading from an old product.
- * @param [activity] Current activity
- * @param [subscriptionOption] Your choice of [SubscriptionOption]s available for a subscription StoreProduct
- * @param [upgradeInfo] The upgradeInfo you wish to upgrade from, containing the oldSku and the optional prorationMode.
- * Amazon Appstore doesn't support changing products so upgradeInfo is ignored for Amazon purchases.
- * @param [onSuccess] Will be called after the purchase has completed
- * @param [onError] Will be called if there was an error with the purchase
- */
-@Suppress("LongParameterList")
-fun Purchases.purchaseSubscriptionOptionWith(
-    activity: Activity,
-    subscriptionOption: SubscriptionOption,
-    upgradeInfo: UpgradeInfo,
-    onError: (error: PurchasesError, userCancelled: Boolean) -> Unit = ON_PURCHASE_ERROR_STUB,
-    onSuccess: (purchase: StoreTransaction?, customerInfo: CustomerInfo) -> Unit
-) {
-    purchaseSubscriptionOption(
-        activity,
-        subscriptionOption,
-        upgradeInfo,
-        productChangeCompletedListener(onSuccess, onError)
-    )
 }
 
 /**
@@ -202,6 +173,10 @@ fun Purchases.purchaseSubscriptionOptionWith(
  * @param [onSuccess] Will be called after the purchase has completed
  * @param [onError] Will be called if there was an error with the purchase
  */
+@Deprecated(
+    "Use purchaseWith and PurchaseParams.Builder instead",
+    ReplaceWith("purchaseWith()")
+)
 fun Purchases.purchasePackageWith(
     activity: Activity,
     packageToPurchase: Package,
@@ -219,6 +194,10 @@ fun Purchases.purchasePackageWith(
  * @param [onSuccess] Will be called after the purchase has completed
  * @param [onError] Will be called if there was an error with the purchase
  */
+@Deprecated(
+    "Use purchaseWith and PurchaseParams.Builder instead",
+    ReplaceWith("purchaseWith()")
+)
 fun Purchases.purchasePackageWith(
     activity: Activity,
     packageToPurchase: Package,
@@ -309,7 +288,7 @@ fun Purchases.getCustomerInfoWith(
 }
 
 /**
- * Gets the StoreProduct for the given list of subscription and non-subscription productIds.
+ * Gets the StoreProduct(s) for the given list of product ids for all product types.
  * @param [productIds] List of productIds
  * @param [onError] Will be called if there was an error with the purchase
  * @param [onGetStoreProducts] Will be called after fetching StoreProducts
@@ -321,6 +300,23 @@ fun Purchases.getProductsWith(
     onGetStoreProducts: (storeProducts: List<StoreProduct>) -> Unit
 ) {
     getProducts(productIds, getStoreProductsCallback(onGetStoreProducts, onError))
+}
+
+/**
+ * Gets the StoreProduct(s) for the given list of product ids of type [type]
+ * @param [productIds] List of productIds
+ * @param [type] A product type to filter by
+ * @param [onError] Will be called if there was an error with the purchase
+ * @param [onGetStoreProducts] Will be called after fetching StoreProducts
+ */
+@Suppress("unused")
+fun Purchases.getProductsWith(
+    productIds: List<String>,
+    type: ProductType?,
+    onError: (error: PurchasesError) -> Unit = ON_ERROR_STUB,
+    onGetStoreProducts: (storeProducts: List<StoreProduct>) -> Unit
+) {
+    getProducts(productIds, type, getStoreProductsCallback(onGetStoreProducts, onError))
 }
 
 // region Deprecated
@@ -340,7 +336,7 @@ fun Purchases.getSubscriptionSkusWith(
     onError: (error: PurchasesError) -> Unit = ON_ERROR_STUB,
     onReceiveSkus: (storeProducts: List<StoreProduct>) -> Unit
 ) {
-    getProducts(skus, getStoreProductsCallback(onReceiveSkus, onError))
+    getProducts(skus, ProductType.SUBS, getStoreProductsCallback(onReceiveSkus, onError))
 }
 
 /**
@@ -358,7 +354,7 @@ fun Purchases.getNonSubscriptionSkusWith(
     onError: (error: PurchasesError) -> Unit,
     onReceiveSkus: (storeProducts: List<StoreProduct>) -> Unit
 ) {
-    getProducts(skus, getStoreProductsCallback(onReceiveSkus, onError))
+    getProducts(skus, ProductType.INAPP, getStoreProductsCallback(onReceiveSkus, onError))
 }
 
 // endregion

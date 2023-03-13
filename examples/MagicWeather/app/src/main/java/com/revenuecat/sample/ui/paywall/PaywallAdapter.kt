@@ -7,7 +7,7 @@ import android.widget.TextView
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.recyclerview.widget.RecyclerView
 import com.revenuecat.purchases.Offering
-import com.revenuecat.purchases.Package
+import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.sample.R
@@ -57,7 +57,7 @@ class PaywallAdapter(
                     viewHolder.view.findViewById<ConstraintLayout>(R.id.purchasableLayout).visibility = View.VISIBLE
 
                     val product = it.storeProduct
-                    val price = product.oneTimeProductPrice?.formattedPrice ?: "???"
+                    val price = product.price.formatted
 
                     viewHolder.view.findViewById<TextView>(R.id.paywall_item_price).text = price
                     viewHolder.view.findViewById<TextView>(R.id.paywall_item_best_offer).visibility = View.GONE
@@ -67,9 +67,9 @@ class PaywallAdapter(
                     viewHolder.view.findViewById<ConstraintLayout>(R.id.purchasableLayout).visibility = View.VISIBLE
 
                     val option = it.subscriptionOption
-                    val price = option.pricingPhases.map { phase ->
-                        "${phase.formattedPrice} for ${phase.billingPeriod}"
-                    }.joinToString(separator = " -> ")
+                    val price = option.pricingPhases.joinToString(separator = " -> ") { phase ->
+                        "${phase.price.formatted} for ${phase.billingPeriod.toDescription}"
+                    }
 
                     viewHolder.view.findViewById<TextView>(R.id.paywall_item_price).text = price
                     viewHolder.view.findViewById<TextView>(R.id.paywall_item_best_offer).visibility =  if (it.defaultOffer) View.VISIBLE else View.GONE
@@ -82,31 +82,19 @@ class PaywallAdapter(
 
     private val theItems: List<PaywallItem>
         get() = offering?.availablePackages?.flatMap {
+            val product = it.product
 
-            if (it.product.subscriptionOptions.isEmpty()) {
-                listOf(
-                    PaywallItem.Title(it.product.title),
-                    PaywallItem.Product(it.product)
-                )
-            } else {
-                val product = it.product
-                val title = product.defaultOption?.pricingPhases?.lastOrNull()?.billingPeriod?.let { period ->
-                    when (period) {
-                        "P1W" -> "Weekly"
-                        "P4W" -> "Every 4  Weeks"
-                        "P1M" -> "Monthly"
-                        "P3M" -> "Every 3 Months"
-                        "P6M" -> "Every 6 Months"
-                        "P1Y" -> "Yearly"
-                        else -> {
-                            null
-                        }
-                    }
-                } ?: product.title
+            it.product.subscriptionOptions?.let { options ->
+                val title = product.period?.toTitle ?: product.title
 
-                mutableListOf(PaywallItem.Title(title)) + it.product.subscriptionOptions.map { option ->
+                mutableListOf(PaywallItem.Title(title)) + options.map { option ->
                     PaywallItem.Option(option, option == it.product.defaultOption)
                 }.sortedBy { option -> !option.defaultOffer }
+            } ?: run {
+                listOf(
+                    PaywallItem.Title(product.title),
+                    PaywallItem.Product(product)
+                )
             }
         } ?: emptyList()
 }
@@ -125,3 +113,21 @@ sealed class PaywallItem {
         val defaultOffer: Boolean
     ) : PaywallItem()
 }
+
+val Period.toTitle: String?
+    get() = when (unit) {
+        Period.Unit.DAY -> if (value == 1) "Daily" else "Every $value days"
+        Period.Unit.WEEK -> if (value == 1) "Weekly" else "Every $value weeks"
+        Period.Unit.MONTH -> if (value == 1) "Monthly" else "Every $value months"
+        Period.Unit.YEAR -> if (value == 1) "Yearly" else "Every $value years"
+        Period.Unit.UNKNOWN -> "Unknown"
+    }
+
+val Period.toDescription: String?
+    get() = when (unit) {
+        Period.Unit.DAY -> if (value == 1) "$value day" else "$value days"
+        Period.Unit.WEEK -> if (value == 1) "$value week" else "$value weeks"
+        Period.Unit.MONTH -> if (value == 1) "$value month" else "$value months"
+        Period.Unit.YEAR -> if (value == 1) "$value year" else "$value years"
+        Period.Unit.UNKNOWN -> null
+    }

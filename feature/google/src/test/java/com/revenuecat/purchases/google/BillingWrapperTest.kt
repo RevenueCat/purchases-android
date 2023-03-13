@@ -358,6 +358,10 @@ class BillingWrapperTest {
             mockBuilder.setProductDetailsParamsList(capture(productDetailsParamsSlot))
         } returns mockBuilder
 
+        every {
+            mockBuilder.setIsOfferPersonalized(any())
+        } returns mockBuilder
+
         val mockSubscriptionUpdateParamsBuilder =
             mockk<BillingFlowParams.SubscriptionUpdateParams.Builder>(relaxed = true)
         every {
@@ -374,6 +378,11 @@ class BillingWrapperTest {
             mockSubscriptionUpdateParamsBuilder.setReplaceProrationMode(capture(prorationModeSlot))
         } returns mockSubscriptionUpdateParamsBuilder
 
+        val isPersonalizedPriceSlot = slot<Boolean>()
+        every {
+            mockBuilder.setIsOfferPersonalized(capture(isPersonalizedPriceSlot))
+        } returns mockBuilder
+
         val productId = "product_a"
 
         val upgradeInfo = mockReplaceSkuInfo()
@@ -381,6 +390,7 @@ class BillingWrapperTest {
         val storeProduct = productDetails.toStoreProduct(
             productDetails.subscriptionOfferDetails!!
         )!!
+        val isPersonalizedPrice = true
 
         val slot = slot<BillingFlowParams>()
         every {
@@ -394,6 +404,8 @@ class BillingWrapperTest {
 
             assertThat(upgradeInfo.oldPurchase.purchaseToken).isEqualTo(oldPurchaseTokenSlot.captured)
             assertThat(upgradeInfo.prorationMode).isEqualTo(prorationModeSlot.captured)
+
+            assertThat(isPersonalizedPrice).isEqualTo(isPersonalizedPriceSlot.captured)
             billingClientOKResult
         }
 
@@ -403,7 +415,151 @@ class BillingWrapperTest {
             appUserId,
             storeProduct.subscriptionOptions!!.first().purchasingData,
             upgradeInfo,
-            null
+            null,
+            isPersonalizedPrice
+        )
+    }
+
+    @Test
+    fun `skips setting on BillingFlowPrams when prorationmode or personalized price null for subscription purchase`() {
+        mockkStatic(BillingFlowParams::class)
+        mockkStatic(BillingFlowParams.SubscriptionUpdateParams::class)
+
+        val mockBuilder = mockk<BillingFlowParams.Builder>(relaxed = true)
+        every {
+            BillingFlowParams.newBuilder()
+        } returns mockBuilder
+
+        val productDetailsParamsSlot = slot<List<ProductDetailsParams>>()
+        every {
+            mockBuilder.setProductDetailsParamsList(capture(productDetailsParamsSlot))
+        } returns mockBuilder
+
+        every {
+            mockBuilder.setIsOfferPersonalized(any())
+        } returns mockBuilder
+
+        val mockSubscriptionUpdateParamsBuilder =
+            mockk<BillingFlowParams.SubscriptionUpdateParams.Builder>(relaxed = true)
+        every {
+            BillingFlowParams.SubscriptionUpdateParams.newBuilder()
+        } returns mockSubscriptionUpdateParamsBuilder
+
+        val oldPurchaseTokenSlot = slot<String>()
+        every {
+            mockSubscriptionUpdateParamsBuilder.setOldPurchaseToken(capture(oldPurchaseTokenSlot))
+        } returns mockSubscriptionUpdateParamsBuilder
+
+        val prorationModeSlot = slot<Int>()
+        every {
+            mockSubscriptionUpdateParamsBuilder.setReplaceProrationMode(capture(prorationModeSlot))
+        } returns mockSubscriptionUpdateParamsBuilder
+
+        val isPersonalizedPriceSlot = slot<Boolean>()
+        every {
+            mockBuilder.setIsOfferPersonalized(capture(isPersonalizedPriceSlot))
+        } returns mockBuilder
+
+        val productId = "product_a"
+
+        val replaceProductInfo = ReplaceProductInfo(mockPurchaseHistoryRecordWrapper())
+        val productDetails = mockProductDetails(productId = productId, type = subsGoogleProductType)
+        val storeProduct = productDetails.toStoreProduct(
+            productDetails.subscriptionOfferDetails!!
+        )!!
+        val isPersonalizedPrice = null
+
+        val slot = slot<BillingFlowParams>()
+        every {
+            mockClient.launchBillingFlow(eq(mockActivity), capture(slot))
+        } answers {
+            val capturedProductDetailsParams = productDetailsParamsSlot.captured
+
+            assertThat(1).isEqualTo(capturedProductDetailsParams.size)
+            assertThat(productId).isEqualTo(capturedProductDetailsParams[0].zza().productId)
+            assertThat(subsGoogleProductType).isEqualTo(capturedProductDetailsParams[0].zza().productType)
+
+            assertThat(replaceProductInfo.oldPurchase.purchaseToken).isEqualTo(oldPurchaseTokenSlot.captured)
+
+            verify(exactly = 0) {
+                mockBuilder.setIsOfferPersonalized(any())
+                !isPersonalizedPriceSlot.isCaptured
+            }
+
+            verify(exactly = 0) {
+                mockSubscriptionUpdateParamsBuilder.setReplaceProrationMode(any())
+                !prorationModeSlot.isCaptured
+            }
+            billingClientOKResult
+        }
+
+        billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
+        wrapper.makePurchaseAsync(
+            mockActivity,
+            appUserId,
+            storeProduct.subscriptionOptions!!.first().purchasingData,
+            replaceProductInfo,
+            null,
+            isPersonalizedPrice
+        )
+    }
+
+    @Test
+    fun `properly sets billingFlowParams for inapp purchase`() {
+        mockkStatic(BillingFlowParams::class)
+        mockkStatic(BillingFlowParams.ProductDetailsParams::class)
+
+        val mockBuilder = mockk<BillingFlowParams.Builder>(relaxed = true)
+        every {
+            BillingFlowParams.newBuilder()
+        } returns mockBuilder
+
+        val productDetailsParamsSlot = slot<List<ProductDetailsParams>>()
+        every {
+            mockBuilder.setProductDetailsParamsList(capture(productDetailsParamsSlot))
+        } returns mockBuilder
+
+        every {
+            mockBuilder.setObfuscatedAccountId(any())
+        } returns mockBuilder
+
+        val isPersonalizedPriceSlot = slot<Boolean>()
+        every {
+            mockBuilder.setIsOfferPersonalized(capture(isPersonalizedPriceSlot))
+        } returns mockBuilder
+
+        val productId = "product_a"
+
+        val oneTimePurchaseOfferDetails = mockOneTimePurchaseOfferDetails()
+        val productDetails = mockProductDetails(
+            productId = productId,
+            type = inAppGoogleProductType,
+            oneTimePurchaseOfferDetails = oneTimePurchaseOfferDetails,
+            subscriptionOfferDetails = null
+        )
+        every {
+            oneTimePurchaseOfferDetails.zza()
+        } returns productId
+        
+        val storeProduct = productDetails.toInAppStoreProduct()!!
+        val isPersonalizedPrice = true
+
+        val slot = slot<BillingFlowParams>()
+        every {
+            mockClient.launchBillingFlow(eq(mockActivity), capture(slot))
+        } answers {
+            assertThat(isPersonalizedPrice).isEqualTo(isPersonalizedPriceSlot.captured)
+            billingClientOKResult
+        }
+
+        billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
+        wrapper.makePurchaseAsync(
+            mockActivity,
+            appUserId,
+            storeProduct.purchasingData,
+            null,
+            null,
+            isPersonalizedPrice
         )
     }
 
@@ -461,7 +617,6 @@ class BillingWrapperTest {
     fun `properly sets ProductDetailsParams for inapp product`() {
         mockkStatic(BillingFlowParams::class)
         mockkStatic(BillingFlowParams.ProductDetailsParams::class)
-        mockkStatic(BillingFlowParams.SubscriptionUpdateParams::class)
 
         val mockProductDetailsBuilder = mockk<ProductDetailsParams.Builder>(relaxed = true)
         every {
@@ -475,7 +630,6 @@ class BillingWrapperTest {
 
         val productId = "product_a"
 
-        val upgradeInfo = mockReplaceSkuInfo()
         val productDetails = mockProductDetails(
             productId = productId,
             type = inAppGoogleProductType,
@@ -495,7 +649,7 @@ class BillingWrapperTest {
             mockActivity,
             appUserId,
             storeProduct.purchasingData,
-            upgradeInfo,
+            null,
             null
         )
 

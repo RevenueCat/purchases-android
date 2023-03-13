@@ -1,14 +1,17 @@
 package com.revenuecat.purchases
 
-import com.revenuecat.purchases.models.GoogleProrationMode
+import com.android.billingclient.api.BillingFlowParams
 
 /**
  * This object holds the information used when upgrading from another sku.
- * @property oldProductId The old product ID to upgrade from.
- * @property googleProrationMode The [GoogleProrationMode] to use when upgrading the given oldProductId. Defaults to
- * [GoogleProrationMode.IMMEDIATE_WITHOUT_PRORATION].
+ * @property oldSku The oldSku to upgrade from.
+ * @property prorationMode The [BillingFlowParams.ProrationMode] to use when upgrading the given oldSku.
  */
-data class UpgradeInfo @JvmOverloads constructor(
-    val oldProductId: String,
-    val googleProrationMode: GoogleProrationMode = GoogleProrationMode.IMMEDIATE_WITHOUT_PRORATION
+@Deprecated(
+    "Use .oldProductId() and .googleProrationMode() in PurchaseParams.Builder instead",
+    ReplaceWith("PurchaseParams.Builder.oldProductId() and PurchaseParams.Builder.googleProrationMode()")
+)
+data class UpgradeInfo(
+    val oldSku: String,
+    @BillingFlowParams.ProrationMode val prorationMode: Int? = null
 )

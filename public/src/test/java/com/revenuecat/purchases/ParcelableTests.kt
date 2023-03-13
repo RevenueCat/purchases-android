@@ -68,6 +68,7 @@ class ParcelableTests {
             expirationDate = expirationDate,
             store = Store.PLAY_STORE,
             productIdentifier = "product_identifier",
+            productPlanIdentifier = null,
             isSandbox = false,
             unsubscribeDetectedAt = null,
             billingIssueDetectedAt = null,

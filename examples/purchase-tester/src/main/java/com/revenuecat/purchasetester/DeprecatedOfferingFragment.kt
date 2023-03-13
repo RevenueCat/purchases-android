@@ -15,20 +15,20 @@ import com.google.android.material.transition.MaterialContainerTransform
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
-import com.revenuecat.purchases.PurchaseParams
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.UpgradeInfo
 import com.revenuecat.purchases.getCustomerInfoWith
 import com.revenuecat.purchases.models.GoogleProrationMode
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
-import com.revenuecat.purchases.models.SubscriptionOption
-import com.revenuecat.purchases.purchaseWith
+import com.revenuecat.purchases.purchasePackageWith
+import com.revenuecat.purchases.purchaseProductWith
 import com.revenuecat.purchases_sample.R
 import com.revenuecat.purchases_sample.databinding.FragmentOfferingBinding
 
 @SuppressWarnings("TooManyFunctions")
-class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListener {
+class DeprecatedOfferingFragment : Fragment(), DeprecatedPackageCardAdapter.PackageCardAdapterListener {
 
     lateinit var binding: FragmentOfferingBinding
 
@@ -44,7 +44,13 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
             }
         }
 
-    private val successfulPurchaseCallback: (purchase: StoreTransaction?, customerInfo: CustomerInfo) -> Unit =
+    private val successfulPurchaseCallback: (purchase: StoreTransaction, customerInfo: CustomerInfo) -> Unit =
+        { storeTransaction, _ ->
+            toggleLoadingIndicator(false)
+            handleSuccessfulPurchase(storeTransaction.orderId)
+        }
+
+    private val successfulUpgradeCallback: (purchase: StoreTransaction?, customerInfo: CustomerInfo) -> Unit =
         { storeTransaction, _ ->
             toggleLoadingIndicator(false)
             handleSuccessfulPurchase(storeTransaction?.orderId)
@@ -69,7 +75,7 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
 
         binding.offeringDetailsPackagesRecycler.layoutManager = LinearLayoutManager(requireContext())
         binding.offeringDetailsPackagesRecycler.adapter =
-            PackageCardAdapter(
+            DeprecatedPackageCardAdapter(
                 offering.availablePackages,
                 activeSubscriptions,
                 this
@@ -82,72 +88,72 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
         cardView: View,
         currentPackage: Package,
         isUpgrade: Boolean
-    ) = startPurchase(isUpgrade, PurchaseParams.Builder(currentPackage, requireActivity()))
+    ) {
+        toggleLoadingIndicator(true)
+
+        if (isUpgrade) {
+            promptForUpgradeInfo { upgradeInfo ->
+                upgradeInfo?.let {
+                    startPurchasePackage(currentPackage, upgradeInfo)
+                }
+            }
+        } else {
+            startPurchasePackage(currentPackage, null)
+        }
+    }
 
     override fun onPurchaseProductClicked(
         cardView: View,
         currentProduct: StoreProduct,
         isUpgrade: Boolean
-    ) = startPurchase(isUpgrade, PurchaseParams.Builder(currentProduct, requireActivity()))
-
-    override fun onPurchaseSubscriptionOptionClicked(
-        cardView: View,
-        subscriptionOption: SubscriptionOption,
-        isUpgrade: Boolean
-    ) = startPurchase(isUpgrade, PurchaseParams.Builder(subscriptionOption, requireActivity()))
-
-    private fun startPurchase(
-        isUpgrade: Boolean,
-        purchaseParamsBuilder: PurchaseParams.Builder
     ) {
         toggleLoadingIndicator(true)
-        if (isUpgrade) {
-            promptForProductChangeInfo { oldProductId, prorationMode ->
-                oldProductId?.let {
-                    purchaseParamsBuilder.oldProductId(it)
 
-                    prorationMode?.let {
-                        purchaseParamsBuilder.googleProrationMode(prorationMode)
-                    }
-                    showPersonalizedPricePicker { personalizedPrice, _ ->
-                        personalizedPrice?.let {
-                            purchaseParamsBuilder.isPersonalizedPrice(it)
-                        }
-                        Purchases.sharedInstance.purchaseWith(
-                            purchaseParamsBuilder.build(),
-                            purchaseErrorCallback,
-                            successfulPurchaseCallback
-                        )
-                    }
+        if (isUpgrade) {
+            promptForUpgradeInfo { upgradeInfo ->
+                upgradeInfo?.let {
+                    startPurchaseProduct(currentProduct, upgradeInfo)
                 }
             }
         } else {
-            showPersonalizedPricePicker { personalizedPrice, _ ->
-                personalizedPrice?.let {
-                    purchaseParamsBuilder.isPersonalizedPrice(it)
-                }
-                Purchases.sharedInstance.purchaseWith(
-                    purchaseParamsBuilder.build(),
-                    purchaseErrorCallback,
-                    successfulPurchaseCallback
-                )
-            }
+            startPurchaseProduct(currentProduct, null)
         }
     }
 
-    private fun promptForProductChangeInfo(callback: (String?, GoogleProrationMode?) -> Unit) {
+    private fun promptForUpgradeInfo(callback: (UpgradeInfo?) -> Unit) {
         showOldSubIdPicker { subId ->
             subId?.let {
                 showProrationModePicker { prorationMode, error ->
                     if (error == null) {
                         prorationMode?.let {
-                            callback(subId, it)
-                        } ?: callback(subId, null)
+                            callback(UpgradeInfo(subId, prorationMode.playBillingClientMode))
+                        } ?: callback(UpgradeInfo(subId))
                     } else {
-                        callback(null, null)
+                        callback(null)
                     }
                 }
-            } ?: callback(null, null)
+            } ?: callback(null)
+        }
+    }
+
+    private fun startPurchaseProduct(
+        currentProduct: StoreProduct,
+        upgradeInfo: UpgradeInfo?
+    ) {
+        when {
+            upgradeInfo == null -> Purchases.sharedInstance.purchaseProductWith(
+                requireActivity(),
+                currentProduct,
+                purchaseErrorCallback,
+                successfulPurchaseCallback
+            )
+            upgradeInfo != null -> Purchases.sharedInstance.purchaseProductWith(
+                requireActivity(),
+                currentProduct,
+                upgradeInfo,
+                purchaseErrorCallback,
+                successfulUpgradeCallback
+            )
         }
     }
 
@@ -159,6 +165,27 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
                 Toast.LENGTH_SHORT
             ).show()
             findNavController().navigateUp()
+        }
+    }
+
+    private fun startPurchasePackage(
+        currentPackage: Package,
+        upgradeInfo: UpgradeInfo?
+    ) {
+        when {
+            upgradeInfo == null -> Purchases.sharedInstance.purchasePackageWith(
+                requireActivity(),
+                currentPackage,
+                purchaseErrorCallback,
+                successfulPurchaseCallback
+            )
+            upgradeInfo != null -> Purchases.sharedInstance.purchasePackageWith(
+                requireActivity(),
+                currentPackage,
+                upgradeInfo,
+                purchaseErrorCallback,
+                successfulUpgradeCallback
+            )
         }
     }
 
@@ -194,7 +221,7 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
                 toggleLoadingIndicator(false)
                 callback(null)
             }
-            .setOnCancelListener {
+            .setOnDismissListener {
                 toggleLoadingIndicator(false)
                 callback(null)
             }
@@ -220,33 +247,7 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
                 toggleLoadingIndicator(false)
                 callback(null, Error("Purchase cancelled"))
             }
-            .setOnCancelListener {
-                toggleLoadingIndicator(false)
-                callback(null, Error("Selection dismissed"))
-            }
-            .show()
-    }
-
-    private fun showPersonalizedPricePicker(callback: (Boolean?, Error?) -> Unit) {
-        val personalizedPriceOptions = arrayOf(true, false, null)
-        var selectedPersonalizedPrice: Boolean? = null
-
-        val personalizedPriceNames = arrayOf("True", "False", "Null")
-        MaterialAlertDialogBuilder(requireContext())
-            .setTitle("setIsPersonalizedPrice?")
-            .setSingleChoiceItems(personalizedPriceNames, -1) { _, selectedIndex ->
-                selectedPersonalizedPrice = personalizedPriceOptions.elementAt(selectedIndex)
-            }
-            .setPositiveButton("Start purchase") { dialog, _ ->
-                dialog.dismiss()
-                callback(selectedPersonalizedPrice, null)
-            }
-            .setNegativeButton("Cancel purchase") { dialog, _ ->
-                dialog.dismiss()
-                toggleLoadingIndicator(false)
-                callback(null, Error("Purchase cancelled"))
-            }
-            .setOnCancelListener {
+            .setOnDismissListener {
                 toggleLoadingIndicator(false)
                 callback(null, Error("Selection dismissed"))
             }

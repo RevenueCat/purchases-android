@@ -7,6 +7,7 @@ import com.revenuecat.purchases.PeriodType
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.utils.getDate
 import com.revenuecat.purchases.utils.optDate
+import com.revenuecat.purchases.utils.optNullableString
 import org.json.JSONObject
 import java.util.Date
 
@@ -18,7 +19,9 @@ internal fun JSONObject.buildEntitlementInfos(
     val all = mutableMapOf<String, EntitlementInfo>()
     keys().forEach { entitlementId ->
         val entitlement = getJSONObject(entitlementId)
-        entitlement.optString("product_identifier").takeIf { it.isNotEmpty() }
+
+        val productIdentifier = entitlement.optString("product_identifier")
+        productIdentifier.takeIf { it.isNotEmpty() }
             ?.let { productIdentifier ->
                 if (subscriptions.has(productIdentifier)) {
                     all[entitlementId] = entitlement.buildEntitlementInfo(
@@ -83,6 +86,7 @@ internal fun JSONObject.buildEntitlementInfo(
         expirationDate = expirationDate,
         store = store,
         productIdentifier = getString("product_identifier"),
+        productPlanIdentifier = optNullableString("product_plan_identifier"),
         isSandbox = productData.getBoolean("is_sandbox"),
         unsubscribeDetectedAt = unsubscribeDetectedAt,
         billingIssueDetectedAt = billingIssueDetectedAt,
