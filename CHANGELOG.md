@@ -1,3 +1,9 @@
+## 6.0.0-beta.2
+### New Features
+* Pass isPersonalizedPrice through to purchases (#864) via beylmk (@beylmk)
+### Other Changes
+* Fix issue where purchase tester modal callback was happening twice (#863) via Josh Holtz (@joshdholtz)
+
 ## 6.0.0-beta.1
 ### Breaking Changes
 * Purchase.Builder (#825) (#850) via beylmk (@beylmk)
