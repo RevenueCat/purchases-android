@@ -275,7 +275,7 @@ class BillingWrapperTest {
                 fail("shouldn't be an error")
             })
 
-        assertThat(numCallbacks == 1)
+        assert(numCallbacks == 1)
     }
 
     @Test
@@ -799,10 +799,6 @@ class BillingWrapperTest {
                     override val productType: ProductType
                         get() = ProductType.SUBS
                 }
-
-            override fun describeContents(): Int = 0
-
-            override fun writeToParcel(dest: Parcel?, flags: Int) {}
         }
 
         wrapper.makePurchaseAsync(
@@ -851,10 +847,6 @@ class BillingWrapperTest {
                 get() = purchasingInfo
             override val sku: String
                 get() = id
-
-            override fun describeContents(): Int = 0
-
-            override fun writeToParcel(dest: Parcel?, flags: Int) {}
         }
 
         val slot = slot<PurchasesError>()
