@@ -7,7 +7,7 @@ sealed class Endpoint(val pathTemplate: String, val name: String) {
     data class GetCustomerInfo(val userId: String) : Endpoint("/subscribers/%s", "get_customer") {
         override fun getPath() = pathTemplate.format(Uri.encode(userId))
     }
-    object PostReceipt : Endpoint("/receipt", "post_receipt") {
+    object PostReceipt : Endpoint("/receipts", "post_receipt") {
         override fun getPath() = pathTemplate
     }
     data class GetOfferings(val userId: String) : Endpoint("/subscribers/%s/offerings", "get_offerings") {
