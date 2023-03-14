@@ -1,6 +1,5 @@
 package com.revenuecat.purchases.utils
 
-import android.os.Parcel
 import com.android.billingclient.api.ProductDetails
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
@@ -8,12 +7,12 @@ import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.common.MICROS_MULTIPLIER
+import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.PricingPhase
 import com.revenuecat.purchases.models.PurchasingData
-import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.models.StoreProduct
-import com.revenuecat.purchases.models.Period
+import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.models.SubscriptionOptions
 import com.revenuecat.purchases.models.toRecurrenceMode
 
@@ -67,10 +66,6 @@ fun stubStoreProduct(
         )
     override val sku: String
         get() = productId
-
-    override fun describeContents(): Int = 0
-
-    override fun writeToParcel(dest: Parcel?, flags: Int) {}
 }
 
 @SuppressWarnings("EmptyFunctionBlock")
@@ -99,10 +94,6 @@ fun stubINAPPStoreProduct(
         )
     override val sku: String
         get() = productId
-
-    override fun describeContents(): Int = 0
-
-    override fun writeToParcel(dest: Parcel?, flags: Int) {}
 }
 
 @SuppressWarnings("EmptyFunctionBlock")
@@ -122,9 +113,6 @@ fun stubSubscriptionOption(
         get() = StubPurchasingData(
             productId = productId
         )
-
-    override fun describeContents(): Int = 0
-    override fun writeToParcel(dest: Parcel?, flags: Int) {}
 }
 
 fun stubFreeTrialPricingPhase(

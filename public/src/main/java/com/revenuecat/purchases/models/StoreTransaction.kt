@@ -105,6 +105,49 @@ data class StoreTransaction(
     )
     val skus: List<String>
         get() = productIds
+
+    override fun equals(other: Any?) = other is StoreTransaction &&
+        ComparableData(this) == ComparableData(other)
+    override fun hashCode() = ComparableData(this).hashCode()
+}
+
+/**
+ * Contains fields to be used for equality, which ignores jsonObject.
+ * jsonObject is excluded because we're already using the parsed fields for comparisons,
+ * and to avoid complicating parcelization
+ */
+private data class ComparableData(
+    val orderId: String?,
+    val productIds: List<String>,
+    val type: ProductType,
+    val purchaseTime: Long,
+    val purchaseToken: String,
+    val purchaseState: PurchaseState,
+    val isAutoRenewing: Boolean?,
+    val signature: String?,
+    val presentedOfferingIdentifier: String?,
+    val storeUserID: String?,
+    val purchaseType: PurchaseType,
+    val marketplace: String?,
+    val subscriptionOptionId: String?
+) {
+    constructor(
+        storeTransaction: StoreTransaction
+    ) : this(
+        orderId = storeTransaction.orderId,
+            productIds = storeTransaction.productIds,
+            type = storeTransaction.type,
+            purchaseTime = storeTransaction.purchaseTime,
+            purchaseToken = storeTransaction.purchaseToken,
+            purchaseState = storeTransaction.purchaseState,
+            isAutoRenewing = storeTransaction.isAutoRenewing,
+            signature = storeTransaction.signature,
+            presentedOfferingIdentifier = storeTransaction.presentedOfferingIdentifier,
+            storeUserID = storeTransaction.storeUserID,
+            purchaseType = storeTransaction.purchaseType,
+            marketplace = storeTransaction.marketplace,
+            subscriptionOptionId = storeTransaction.subscriptionOptionId
+    )
 }
 
 enum class PurchaseType {
