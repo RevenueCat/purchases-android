@@ -70,6 +70,13 @@ open class PurchasesConfiguration(builder: Builder) {
         /**
          * **Feature in beta**. Defines how strict [EntitlementInfo] verification ought to be.
          *
+         * When changing from [EntitlementVerificationMode.DISABLED] to [EntitlementVerificationMode.INFORMATIONAL],
+         * we will clear the CustomerInfo cache. This means users will need to connect to the internet to get back
+         * their entitlements.
+         *
+         * The result of the verification can be obtained from [EntitlementInfos.verification] or
+         * [EntitlementInfo.verification].
+         *
          * This feature is currently in beta and the behavior may change.
          *
          * Default mode is [EntitlementVerificationMode.DISABLED].
