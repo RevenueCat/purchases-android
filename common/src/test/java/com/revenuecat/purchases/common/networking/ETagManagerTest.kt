@@ -3,6 +3,7 @@ package com.revenuecat.purchases.common.networking
 import android.content.SharedPreferences
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.VerificationResult
+import com.revenuecat.purchases.VerificationResult.*
 import com.revenuecat.purchases.common.createResult
 import com.revenuecat.purchases.utils.Responses
 import io.mockk.Runs
@@ -160,7 +161,7 @@ class ETagManagerTest {
         val eTag = "eTag"
 
         val resultFromBackend = HTTPResult.createResult(
-            verificationResult = VerificationResult.FAILED,
+            verificationResult = FAILED,
             payload = Responses.validEmptyPurchaserResponse
         )
 
@@ -176,7 +177,7 @@ class ETagManagerTest {
         val eTag = "eTag"
 
         val resultFromBackend = HTTPResult.createResult(
-            verificationResult = VerificationResult.SUCCESS,
+            verificationResult = SUCCESS,
             payload = Responses.validEmptyPurchaserResponse
         )
         val resultStored = resultFromBackend.copy(
@@ -226,7 +227,7 @@ class ETagManagerTest {
             urlPathWithVersion = path,
             refreshETag = false,
             requestDate = null,
-            verificationResult = VerificationResult.NOT_REQUESTED
+            verificationResult = NOT_REQUESTED
         )
 
         assertStoredResponse(path, eTagInResponse, responsePayload)
@@ -248,7 +249,7 @@ class ETagManagerTest {
             urlPathWithVersion = path,
             refreshETag = false,
             requestDate = null,
-            verificationResult = VerificationResult.NOT_REQUESTED
+            verificationResult = NOT_REQUESTED
         )
 
         assertThat(slotPutStringSharedPreferencesKey.isCaptured).isFalse
@@ -272,7 +273,7 @@ class ETagManagerTest {
             urlPathWithVersion = path,
             refreshETag = false,
             requestDate = null,
-            verificationResult = VerificationResult.NOT_REQUESTED
+            verificationResult = NOT_REQUESTED
         )
 
         assertThat(result).isNull()
@@ -297,7 +298,7 @@ class ETagManagerTest {
             urlPathWithVersion = path,
             refreshETag = true,
             requestDate = null,
-            verificationResult = VerificationResult.NOT_REQUESTED
+            verificationResult = NOT_REQUESTED
         )
 
         assertThat(result).isNotNull
@@ -321,7 +322,7 @@ class ETagManagerTest {
             urlPathWithVersion = path,
             refreshETag = false,
             requestDate = null,
-            verificationResult = VerificationResult.NOT_REQUESTED
+            verificationResult = NOT_REQUESTED
         )
 
         assertThat(result).isNotNull
@@ -345,7 +346,7 @@ class ETagManagerTest {
             urlPathWithVersion = path,
             refreshETag = true,
             requestDate = null,
-            verificationResult = VerificationResult.NOT_REQUESTED
+            verificationResult = NOT_REQUESTED
         )
 
         assertThat(result).isNotNull
@@ -365,30 +366,10 @@ class ETagManagerTest {
             urlPathWithVersion = "/v1/subscribers/appUserID",
             refreshETag = false,
             requestDate = null,
-            verificationResult = VerificationResult.SUCCESS
+            verificationResult = SUCCESS
         )
 
-        assertThat(result?.verificationResult).isEqualTo(VerificationResult.SUCCESS)
-    }
-
-    @Test
-    fun `getHTTPResultFromCacheOrBackend should use result from latest request even if cached is different`() {
-        val httpResult = HTTPResult.createResult(
-            origin = HTTPResult.Origin.CACHE,
-            verificationResult = VerificationResult.SUCCESS
-        )
-        mockCachedHTTPResult("etag", "/v1/subscribers/appUserID", httpResult)
-        val result = underTest.getHTTPResultFromCacheOrBackend(
-            responseCode = RCHTTPStatusCodes.NOT_MODIFIED,
-            payload = "",
-            eTagHeader = "etag",
-            urlPathWithVersion = "/v1/subscribers/appUserID",
-            refreshETag = false,
-            requestDate = null,
-            verificationResult = VerificationResult.FAILED
-        )
-
-        assertThat(result?.verificationResult).isEqualTo(VerificationResult.FAILED)
+        assertThat(result?.verificationResult).isEqualTo(SUCCESS)
     }
 
     @Test
@@ -402,7 +383,7 @@ class ETagManagerTest {
             urlPathWithVersion = "/v1/subscribers/appUserID",
             refreshETag = false,
             requestDate = expectedDate,
-            verificationResult = VerificationResult.NOT_REQUESTED
+            verificationResult = NOT_REQUESTED
         )
 
         assertThat(result?.requestDate).isEqualTo(expectedDate)
@@ -423,10 +404,58 @@ class ETagManagerTest {
             urlPathWithVersion = "/v1/subscribers/appUserID",
             refreshETag = false,
             requestDate = expectedDate,
-            verificationResult = VerificationResult.NOT_REQUESTED
+            verificationResult = NOT_REQUESTED
         )
 
         assertThat(result?.requestDate).isEqualTo(expectedDate)
+    }
+
+    @Test
+    fun `verificationResults are expected between cache and backend`() {
+        data class TestCase(
+            val cachedVerificationResult: VerificationResult,
+            val backendVerificationResult: VerificationResult,
+            val expectedVerificationResult: VerificationResult
+            )
+        val testCases = listOf(
+            TestCase(NOT_REQUESTED, NOT_REQUESTED, NOT_REQUESTED),
+            TestCase(NOT_REQUESTED, SUCCESS, SUCCESS),
+            TestCase(NOT_REQUESTED, FAILED, FAILED),
+            TestCase(SUCCESS, NOT_REQUESTED, NOT_REQUESTED),
+            TestCase(SUCCESS, SUCCESS, SUCCESS),
+            TestCase(SUCCESS, FAILED, FAILED),
+            TestCase(FAILED, NOT_REQUESTED, NOT_REQUESTED),
+            TestCase(FAILED, SUCCESS, SUCCESS),
+            TestCase(FAILED, FAILED, FAILED)
+            )
+        testCases.onEach {
+            assertCorrectVerificationResult(
+                it.cachedVerificationResult, it.backendVerificationResult, it.expectedVerificationResult
+            )
+        }
+    }
+
+    private fun assertCorrectVerificationResult(
+        cachedVerificationResult: VerificationResult,
+        backendVerificationResult: VerificationResult,
+        expectedVerificationResult: VerificationResult
+    ) {
+        val httpResult = HTTPResult.createResult(
+            origin = HTTPResult.Origin.CACHE,
+            verificationResult = cachedVerificationResult
+        )
+        mockCachedHTTPResult("etag", "/v1/subscribers/appUserID", httpResult)
+        val result = underTest.getHTTPResultFromCacheOrBackend(
+            responseCode = RCHTTPStatusCodes.NOT_MODIFIED,
+            payload = "",
+            eTagHeader = "etag",
+            urlPathWithVersion = "/v1/subscribers/appUserID",
+            refreshETag = false,
+            requestDate = null,
+            verificationResult = backendVerificationResult
+        )
+
+        assertThat(result?.verificationResult).isEqualTo(expectedVerificationResult)
     }
 
     private fun mockCachedHTTPResult(
