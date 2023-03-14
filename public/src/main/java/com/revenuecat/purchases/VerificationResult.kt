@@ -14,9 +14,7 @@ enum class VerificationResult {
     /**
      * No verification was done.
      *
-     * This can happen for multiple reasons:
-     * 1. Verification is not enabled in PurchasesConfiguration
-     * 2. Data was cached in an older version of the SDK not supporting verification
+     * This value is returned when verification is not enabled in PurchasesConfiguration
      */
     NOT_REQUESTED,
 
