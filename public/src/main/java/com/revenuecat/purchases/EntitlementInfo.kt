@@ -130,6 +130,7 @@ data class EntitlementInfo constructor(
         if (unsubscribeDetectedAt != other.unsubscribeDetectedAt) return false
         if (billingIssueDetectedAt != other.billingIssueDetectedAt) return false
         if (ownershipType != other.ownershipType) return false
+        if (verification != other.verification) return false
 
         return true
     }

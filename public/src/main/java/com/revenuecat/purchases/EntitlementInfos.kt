@@ -41,6 +41,7 @@ class EntitlementInfos constructor(
 
         if (all != other.all) return false
         if (active != other.active) return false
+        if (verification != other.verification) return false
 
         return true
     }
