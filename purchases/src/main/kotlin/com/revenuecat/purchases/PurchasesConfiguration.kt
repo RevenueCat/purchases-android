@@ -68,8 +68,11 @@ open class PurchasesConfiguration(builder: Builder) {
         }
 
         /**
-         * Defines how strict [EntitlementInfo] verification ought to be.
-         * Default is [EntitlementVerificationMode.DISABLED].
+         * **Feature in beta**. Defines how strict [EntitlementInfo] verification ought to be.
+         *
+         * This feature is currently in beta and the behavior may change.
+         *
+         * Default mode is [EntitlementVerificationMode.DISABLED].
          */
         fun entitlementVerificationMode(entitlementVerificationMode: EntitlementVerificationMode) = apply {
             this.verificationMode = entitlementVerificationMode

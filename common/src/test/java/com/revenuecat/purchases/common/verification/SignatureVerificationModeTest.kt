@@ -19,9 +19,10 @@ class SignatureVerificationModeTest {
         assertThat(
             SignatureVerificationMode.fromEntitlementVerificationMode(EntitlementVerificationMode.INFORMATIONAL)
         ).isInstanceOf(SignatureVerificationMode.Informational::class.java)
-        assertThat(
-            SignatureVerificationMode.fromEntitlementVerificationMode(EntitlementVerificationMode.ENFORCED)
-        ).isInstanceOf(SignatureVerificationMode.Enforced::class.java)
+        // Hidden ENFORCED mode during feature beta
+        // assertThat(
+        //     SignatureVerificationMode.fromEntitlementVerificationMode(EntitlementVerificationMode.ENFORCED)
+        // ).isInstanceOf(SignatureVerificationMode.Enforced::class.java)
     }
 
     @Test

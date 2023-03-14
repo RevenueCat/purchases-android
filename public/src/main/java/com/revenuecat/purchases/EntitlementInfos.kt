@@ -7,6 +7,8 @@ import kotlinx.parcelize.Parcelize
  * This class contains all the entitlements associated to the user.
  * @property all Map of all EntitlementInfo [EntitlementInfo] objects (active and inactive) keyed by
  * entitlement identifier.
+ * @property verification If entitlement verification was enabled, the result of that verification.
+ * If not, [VerificationResult.NOT_REQUESTED]
  */
 @Parcelize
 class EntitlementInfos constructor(
