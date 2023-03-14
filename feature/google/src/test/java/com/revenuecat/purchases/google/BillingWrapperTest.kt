@@ -275,7 +275,7 @@ class BillingWrapperTest {
                 fail("shouldn't be an error")
             })
 
-        assert(numCallbacks == 1)
+        assertThat(numCallbacks).isEqualTo(1)
     }
 
     @Test
