@@ -3,13 +3,16 @@ package com.revenuecat.purchases.google
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.common.OfferingParser
 import com.revenuecat.purchases.models.StoreProduct
+import org.json.JSONObject
 
 class GoogleOfferingParser : OfferingParser() {
     override fun findMatchingProduct(
         productsById: Map<String, List<StoreProduct>>,
-        productIdentifier: String,
-        planIdentifier: String?
+        packageJson: JSONObject
     ): StoreProduct? {
+        val productIdentifier = packageJson.getString("platform_product_identifier")
+
+        val planIdentifier = packageJson.optString("platform_product_plan_identifier").takeIf { it.isNotEmpty() }
         val storeProducts: List<StoreProduct>? = productsById[productIdentifier]
         if (planIdentifier == null) {
             // It could be an INAPP or a mis-configured subscription

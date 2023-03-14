@@ -12,8 +12,7 @@ abstract class OfferingParser {
 
     abstract fun findMatchingProduct(
         productsById: Map<String, List<StoreProduct>>,
-        productIdentifier: String,
-        planIdentifier: String?
+        packageJson: JSONObject
     ): StoreProduct?
 
     /**
@@ -63,10 +62,7 @@ abstract class OfferingParser {
         offeringIdentifier: String
     ): Package? {
         val packageIdentifier = packageJson.getString("identifier")
-        val productIdentifier = packageJson.getString("platform_product_identifier")
-
-        val planIdentifier = packageJson.optString("platform_product_plan_identifier").takeIf { it.isNotEmpty() }
-        val product = findMatchingProduct(productsById, productIdentifier, planIdentifier)
+        val product = findMatchingProduct(productsById, packageJson)
 
         val packageType = packageIdentifier.toPackageType()
         return product?.let { Package(packageIdentifier, packageType, it, offeringIdentifier) }
