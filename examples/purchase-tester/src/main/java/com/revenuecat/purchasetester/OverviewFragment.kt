@@ -92,9 +92,10 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
 
         val offeringCardTransitionName = getString(R.string.offering_fragment_transition)
         val extras = FragmentNavigatorExtras(cardView to offeringCardTransitionName)
-        val directions = OverviewFragmentDirections.actionOverviewFragmentToOfferingFragment(offering)
+        val directions = OverviewFragmentDirections.actionOverviewFragmentToOfferingFragment(offering.identifier)
         // uncomment line below and comment line above to test deprecated purchase methods
-//        val directions = OverviewFragmentDirections.actionOverviewFragmentToDeprecatedOfferingFragment(offering)
+//        val directions = OverviewFragmentDirections.
+//        actionOverviewFragmentToDeprecatedOfferingFragment(offering.identifier)
         findNavController().navigate(directions, extras)
     }
 

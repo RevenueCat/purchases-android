@@ -46,16 +46,16 @@
             android:name="com.revenuecat.purchasetester.OfferingFragment"
             android:label="OfferingFragment">
         <argument
-                android:name="offering"
-                app:argType="com.revenuecat.purchases.Offering" />
+                android:name="offeringId"
+                app:argType="string" />
     </fragment>
     <fragment
             android:id="@+id/deprecatedOfferingFragment"
             android:name="com.revenuecat.purchasetester.DeprecatedOfferingFragment"
             android:label="DeprecatedOfferingFragment">
         <argument
-                android:name="offering"
-                app:argType="com.revenuecat.purchases.Offering" />
+                android:name="offeringId"
+                app:argType="string" />
     </fragment>
     <fragment
             android:id="@+id/configureFragment"

@@ -13,12 +13,13 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.transition.MaterialContainerTransform
 import com.revenuecat.purchases.CustomerInfo
-import com.revenuecat.purchases.Offering
+import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.UpgradeInfo
 import com.revenuecat.purchases.getCustomerInfoWith
+import com.revenuecat.purchases.getOfferingsWith
 import com.revenuecat.purchases.models.GoogleProrationMode
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
@@ -33,7 +34,7 @@ class DeprecatedOfferingFragment : Fragment(), DeprecatedPackageCardAdapter.Pack
     lateinit var binding: FragmentOfferingBinding
 
     private val args: OfferingFragmentArgs by navArgs()
-    private val offering: Offering by lazy { args.offering }
+    private val offeringId: String by lazy { args.offeringId }
     private var activeSubscriptions: Set<String> = setOf()
 
     private val purchaseErrorCallback: (error: PurchasesError, userCancelled: Boolean) -> Unit =
@@ -65,12 +66,8 @@ class DeprecatedOfferingFragment : Fragment(), DeprecatedPackageCardAdapter.Pack
         }
     }
 
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        Purchases.sharedInstance.getCustomerInfoWith {
-            activeSubscriptions = it.activeSubscriptions
-        }
-
-        binding = FragmentOfferingBinding.inflate(inflater)
+    private fun populateOfferings(offerings: Offerings) {
+        val offering = offerings.getOffering(offeringId) ?: return
         binding.offering = offering
 
         binding.offeringDetailsPackagesRecycler.layoutManager = LinearLayoutManager(requireContext())
@@ -80,8 +77,20 @@ class DeprecatedOfferingFragment : Fragment(), DeprecatedPackageCardAdapter.Pack
                 activeSubscriptions,
                 this
             )
+    }
+
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
+        Purchases.sharedInstance.getCustomerInfoWith {
+            activeSubscriptions = it.activeSubscriptions
+        }
+        binding = FragmentOfferingBinding.inflate(inflater)
 
         return binding.root
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        Purchases.sharedInstance.getOfferingsWith(::showError, ::populateOfferings)
     }
 
     override fun onPurchasePackageClicked(
