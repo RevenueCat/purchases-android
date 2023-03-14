@@ -148,10 +148,10 @@ jobs:
           command: sudo pip install awscli
       - run:
           name: Deploy to S3
-          command: aws s3 sync ~/purchases-android/docs/5.9.0-SNAPSHOT s3://purchases-docs/android/5.9.0-SNAPSHOT --delete
+          command: aws s3 sync ~/project/docs/5.9.0-SNAPSHOT s3://purchases-docs/android/5.9.0-SNAPSHOT --delete
       - run:
           name: Update index.html
-          command: aws s3 cp ~/purchases-android/docs/index.html s3://purchases-docs/android/index.html
+          command: aws s3 cp ~/project/docs/index.html s3://purchases-docs/android/index.html
       - run:
           name: Invalidate CloudFront caches
           command: aws cloudfront create-invalidation --distribution-id EPTW7F3CB566V --paths "/*"
