@@ -13,12 +13,13 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.transition.MaterialContainerTransform
 import com.revenuecat.purchases.CustomerInfo
-import com.revenuecat.purchases.Offering
+import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PurchaseParams
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.getCustomerInfoWith
+import com.revenuecat.purchases.getOfferingsWith
 import com.revenuecat.purchases.models.GoogleProrationMode
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
@@ -33,7 +34,7 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
     lateinit var binding: FragmentOfferingBinding
 
     private val args: OfferingFragmentArgs by navArgs()
-    private val offering: Offering by lazy { args.offering }
+    private val offeringId: String by lazy { args.offeringId }
     private var activeSubscriptions: Set<String> = setOf()
 
     private val purchaseErrorCallback: (error: PurchasesError, userCancelled: Boolean) -> Unit =
@@ -65,6 +66,17 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
         }
 
         binding = FragmentOfferingBinding.inflate(inflater)
+
+        return binding.root
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        Purchases.sharedInstance.getOfferingsWith(::showError, ::populateOfferings)
+    }
+
+    private fun populateOfferings(offerings: Offerings) {
+        val offering = offerings.getOffering(offeringId) ?: return
         binding.offering = offering
 
         binding.offeringDetailsPackagesRecycler.layoutManager = LinearLayoutManager(requireContext())
@@ -74,8 +86,6 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
                 activeSubscriptions,
                 this
             )
-
-        return binding.root
     }
 
     override fun onPurchasePackageClicked(
