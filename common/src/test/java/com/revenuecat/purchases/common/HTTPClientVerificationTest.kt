@@ -203,6 +203,30 @@ class HTTPClientVerificationTest: BaseHTTPClientTest() {
     }
 
     @Test
+    fun `performRequest on disabled client does not verify`() {
+        every { mockSigningManager.shouldVerifyEndpoint(any()) } returns false
+        val endpoint = Endpoint.GetCustomerInfo("test-user-id")
+        enqueue(
+            endpoint = endpoint,
+            expectedResult = HTTPResult.createResult(verificationResult = VerificationResult.NOT_REQUESTED),
+            verificationResult = VerificationResult.NOT_REQUESTED
+        )
+
+        val result = client.performRequest(
+            baseURL,
+            endpoint,
+            body = null,
+            requestHeaders = emptyMap()
+        )
+
+        server.takeRequest()
+        assertThat(result.verificationResult).isEqualTo(VerificationResult.NOT_REQUESTED)
+        verify(exactly = 0) {
+            mockSigningManager.verifyResponse(any(), any(), any(), any(), any(), any(), any())
+        }
+    }
+
+    @Test
     fun `performRequest on informational client does not throw on verification error`() {
         val endpoint = Endpoint.GetCustomerInfo("test-user-id")
         enqueue(
