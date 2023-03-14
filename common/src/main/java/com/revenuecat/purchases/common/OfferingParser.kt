@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.common
 
+import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.Package
@@ -37,7 +38,8 @@ abstract class OfferingParser {
         return Offerings(offerings[currentOfferingID], offerings)
     }
 
-    private fun createOffering(offeringJson: JSONObject, productsById: Map<String, List<StoreProduct>>): Offering? {
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    fun createOffering(offeringJson: JSONObject, productsById: Map<String, List<StoreProduct>>): Offering? {
         val offeringIdentifier = offeringJson.getString("identifier")
         val jsonPackages = offeringJson.getJSONArray("packages")
 
@@ -56,7 +58,8 @@ abstract class OfferingParser {
         }
     }
 
-    private fun createPackage(
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    fun createPackage(
         packageJson: JSONObject,
         productsById: Map<String, List<StoreProduct>>,
         offeringIdentifier: String

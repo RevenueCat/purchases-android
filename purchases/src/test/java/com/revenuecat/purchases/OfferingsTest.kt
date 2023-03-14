@@ -3,7 +3,7 @@
 //  Copyright © 2019 RevenueCat, Inc. All rights reserved.
 //
 
-package com.revenuecat.purchases.common
+package com.revenuecat.purchases
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.billingclient.api.ProductDetails
@@ -14,8 +14,8 @@ import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.utils.stubINAPPStoreProduct
 import com.revenuecat.purchases.utils.stubPricingPhase
-import com.revenuecat.purchases.utils.stubSubscriptionOption
 import com.revenuecat.purchases.utils.stubStoreProduct
+import com.revenuecat.purchases.utils.stubSubscriptionOption
 import org.assertj.core.api.Assertions.assertThat
 import org.json.JSONObject
 import org.junit.Test
@@ -33,15 +33,17 @@ class OfferingsTest {
     private val monthlyDuration = "P1M"
     private val annualDuration = "P1Y"
 
+    private val offeringsParser = OfferingParserFactory.createOfferingParser(Store.PLAY_STORE)
+
     @Test
     fun `Package is not created if there are no valid products`() {
         val storeProductAnnual = getStoreProduct(productIdentifier, annualDuration, annualBasePlan)
         val products = mapOf(productIdentifier to listOf(storeProductAnnual))
 
-        val packageToTest = getPackageJSON().createPackage(
+        val packageToTest = offeringsParser.createPackage(
+            getPackageJSON(),
             products,
-            "offering",
-            Store.PLAY_STORE
+            "offering"
         )
         assertThat(packageToTest).isNull()
     }
@@ -69,25 +71,27 @@ class OfferingsTest {
         )
         val lifetimePackageJSON = getLifetimePackageJSON()
 
-        val monthlyPackageToTest = monthlyPackageJSON.createPackage(
+        val monthlyPackageToTest = offeringsParser.createPackage(
+            monthlyPackageJSON,
             products,
-            "offering",
-            Store.PLAY_STORE)
+            "offering"
+        )
         assertThat(monthlyPackageToTest).isNotNull
         assertThat(monthlyPackageToTest!!.product).isEqualTo(products[productIdentifier]?.get(0))
         assertThat(monthlyPackageToTest.identifier).isEqualTo(PackageType.MONTHLY.identifier)
         assertThat(monthlyPackageToTest.packageType).isEqualTo(PackageType.MONTHLY)
 
-        val annualPackageToTest = annualPackageJSON.createPackage(products, "offering", Store.PLAY_STORE)
+        val annualPackageToTest = offeringsParser.createPackage(annualPackageJSON, products, "offering")
         assertThat(annualPackageToTest).isNotNull
         assertThat(annualPackageToTest!!.product).isEqualTo(products[productIdentifier]?.get(1))
         assertThat(annualPackageToTest.identifier).isEqualTo(PackageType.ANNUAL.identifier)
         assertThat(annualPackageToTest.packageType).isEqualTo(PackageType.ANNUAL)
 
-        val lifetimePackageToTest = lifetimePackageJSON.createPackage(
+        val lifetimePackageToTest = offeringsParser.createPackage(
+            lifetimePackageJSON,
             products,
             "offering",
-            Store.PLAY_STORE)
+        )
         assertThat(lifetimePackageToTest).isNotNull
         assertThat(lifetimePackageToTest!!.product).isEqualTo(products[lifetimeProductIdentifier]?.get(0))
         assertThat(lifetimePackageToTest.identifier).isEqualTo(PackageType.LIFETIME.identifier)
@@ -116,19 +120,21 @@ class OfferingsTest {
             """.trimIndent()
         )
 
-        val monthlyPackageToTest = monthlyPackageJSON.createPackage(
+        val monthlyPackageToTest = offeringsParser.createPackage(
+            monthlyPackageJSON,
             products,
             "offering",
-            Store.PLAY_STORE)
+        )
         assertThat(monthlyPackageToTest).isNotNull
         assertThat(monthlyPackageToTest!!.product).isEqualTo(products[productIdentifier]?.get(0))
         assertThat(monthlyPackageToTest.identifier).isEqualTo(PackageType.MONTHLY.identifier)
         assertThat(monthlyPackageToTest.packageType).isEqualTo(PackageType.MONTHLY)
 
-        val annualPackageToTest = annualPackageJSON.createPackage(
+        val annualPackageToTest = offeringsParser.createPackage(
+            annualPackageJSON,
             products,
             "offering",
-            Store.PLAY_STORE)
+        )
         assertThat(annualPackageToTest).isNull()
     }
 
@@ -139,7 +145,7 @@ class OfferingsTest {
         val products = mapOf(productId to listOf(storeProductAnnual))
 
         val offeringJSON = getOfferingJSON()
-        val offering = offeringJSON.createOffering(products, Store.PLAY_STORE)
+        val offering = offeringsParser.createOffering(offeringJSON, products)
         assertThat(offering).isNull()
     }
 
@@ -165,7 +171,7 @@ class OfferingsTest {
             packagesJSON = listOf(monthlyPackageJSON, annualPackageJSON)
         )
 
-        val offering = offeringJSON.createOffering(products, Store.PLAY_STORE)
+        val offering = offeringsParser.createOffering(offeringJSON, products)
         assertThat(offering).isNotNull
     }
 
@@ -175,7 +181,7 @@ class OfferingsTest {
         val storeProductAnnual = getStoreProduct(productId, annualDuration, annualBasePlan)
         val products = mapOf(productId to listOf(storeProductAnnual))
 
-        val offerings = getOfferingsJSON().createOfferings(products, Store.PLAY_STORE)
+        val offerings = offeringsParser.createOfferings(getOfferingsJSON(), products)
         assertThat(offerings).isNotNull
         assertThat(offerings.current).isNull()
         assertThat(offerings["offering_a"]).isNull()
@@ -189,7 +195,7 @@ class OfferingsTest {
 
         val products = mapOf(productIdentifier to listOf(storeProductMonthly, storeProductAnnual))
 
-        val offerings = getOfferingsJSON().createOfferings(products, Store.PLAY_STORE)
+        val offerings = offeringsParser.createOfferings(getOfferingsJSON(), products)
         assertThat(offerings).isNotNull
         assertThat(offerings.current!!.identifier).isEqualTo("offering_a")
         assertThat(offerings["offering_a"]).isNotNull
@@ -244,9 +250,9 @@ class OfferingsTest {
     @Test
     fun `No offerings`() {
         val offerings =
-            JSONObject("{'offerings': [], 'current_offering_id': null}").createOfferings(
-                emptyMap(),
-                Store.PLAY_STORE
+            offeringsParser.createOfferings(
+                JSONObject("{'offerings': [], 'current_offering_id': null}"),
+                emptyMap()
             )
 
         assertThat(offerings).isNotNull
@@ -256,8 +262,10 @@ class OfferingsTest {
     @Test
     fun `Current offering is a broken product`() {
         val offerings =
-            JSONObject("{'offerings': [], 'current_offering_id': 'offering_with_broken_product'}")
-                .createOfferings(emptyMap(), Store.PLAY_STORE)
+            offeringsParser.createOfferings(
+                JSONObject("{'offerings': [], 'current_offering_id': 'offering_with_broken_product'}"),
+                emptyMap()
+            )
 
         assertThat(offerings).isNotNull
         assertThat(offerings.current).isNull()
@@ -279,14 +287,17 @@ class OfferingsTest {
         val annualPackageID = "annual"
         val offeringID = "offering_a"
 
-        val offering = getOfferingJSON(
-            offeringID,
-            listOf(
-                getPackageJSON(monthlyPackageID, productIdentifier),
-                getPackageJSON(monthlyPackage2ID, monthlyProduct2ID),
-                getPackageJSON(annualPackageID, annualProductID)
-            )
-        ).createOffering(products, Store.PLAY_STORE)
+        val offering = offeringsParser.createOffering(
+            getOfferingJSON(
+                offeringID,
+                listOf(
+                    getPackageJSON(monthlyPackageID, productIdentifier),
+                    getPackageJSON(monthlyPackage2ID, monthlyProduct2ID),
+                    getPackageJSON(annualPackageID, annualProductID)
+                )
+            ),
+            products
+        )
 
         val packages = offering!!.availablePackages
         val monthlyPackages = packages.filter { it.packageType == PackageType.MONTHLY }
@@ -319,15 +330,18 @@ class OfferingsTest {
                 getPackageJSON(packageIdentifier = identifier)
             )
         )
-        val offerings = JSONObject(
-            """
+        val offerings = offeringsParser.createOfferings(
+            JSONObject(
+                """
                 {
                   'offerings': [
                     $offeringJSON
                   ],
                   'current_offering_id': 'offering_a'
                }""".trimIndent()
-        ).createOfferings(products, Store.PLAY_STORE)
+            ),
+            products
+        )
 
         assertThat(offerings).isNotNull
         assertThat(offerings.current).isNotNull
