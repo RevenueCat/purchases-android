@@ -1,8 +1,6 @@
 package com.revenuecat.purchases
 
-import android.os.Parcelable
 import com.revenuecat.purchases.models.StoreProduct
-import kotlinx.parcelize.Parcelize
 
 /**
  * Contains information about the product available for the user to purchase. For more info see https://docs.revenuecat.com/docs/entitlements
@@ -11,13 +9,12 @@ import kotlinx.parcelize.Parcelize
  * @property product [StoreProduct] assigned to this package.
  * @property offering offering this package was returned from.
  */
-@Parcelize
 data class Package(
     val identifier: String,
     val packageType: PackageType,
     val product: StoreProduct,
     val offering: String
-) : Parcelable
+)
 
 /**
  *  Enumeration of all possible Package types.

@@ -1,13 +1,8 @@
 package com.revenuecat.purchases.models
 
-import android.os.Parcelable
 import com.android.billingclient.api.ProductDetails
 import com.revenuecat.purchases.ProductType
-import kotlinx.parcelize.IgnoredOnParcel
-import kotlinx.parcelize.Parcelize
-import kotlinx.parcelize.RawValue
 
-@Parcelize
 data class GoogleStoreProduct(
     val productId: String,
     val basePlanId: String?,
@@ -18,8 +13,8 @@ data class GoogleStoreProduct(
     override val period: Period?,
     override val subscriptionOptions: SubscriptionOptions?,
     override val defaultOption: SubscriptionOption?,
-    val productDetails: @RawValue ProductDetails // TODO parcelize?
-) : StoreProduct, Parcelable {
+    val productDetails: ProductDetails
+) : StoreProduct {
 
     override val id: String
         get() = basePlanId?.let {
@@ -39,7 +34,6 @@ data class GoogleStoreProduct(
     /**
      * The sku of the StoreProduct
      */
-    @IgnoredOnParcel
     @Deprecated(
         "Replaced with productId",
         ReplaceWith("productId")

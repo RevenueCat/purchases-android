@@ -26,6 +26,7 @@
 | `UpgradeInfo`           | `PurchaseParams.Builder.oldProductId` and `PurchaseParams.Builder.googleProrationMode` |
 | `ProductChangeCallback` | `PurchaseCallback`                                                                     |
 
+`Offering`, `Offerings`, `Package`, and `StoreProduct` are no longer Parcelable.
 
 ### StoreProduct changes
 

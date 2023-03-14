@@ -1,13 +1,11 @@
 package com.revenuecat.purchases.models
 
-import android.os.Parcelable
 import com.revenuecat.purchases.ProductType
-import kotlinx.parcelize.IgnoredOnParcel
 
 /**
  * Represents an in-app product's or subscription's listing details.
  */
-interface StoreProduct : Parcelable {
+interface StoreProduct {
     /**
      * The product ID.
      * Google INAPP: "<productId>"
@@ -69,7 +67,6 @@ interface StoreProduct : Parcelable {
     /**
      * The sku of the StoreProduct
      */
-    @IgnoredOnParcel
     @Deprecated(
         "Replaced with id",
         ReplaceWith("id")
