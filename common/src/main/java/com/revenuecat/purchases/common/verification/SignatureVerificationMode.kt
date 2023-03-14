@@ -12,8 +12,9 @@ sealed class SignatureVerificationMode {
                 EntitlementVerificationMode.DISABLED -> Disabled
                 EntitlementVerificationMode.INFORMATIONAL ->
                     Informational(signatureVerifier ?: DefaultSignatureVerifier())
-                EntitlementVerificationMode.ENFORCED ->
-                    Enforced(signatureVerifier ?: DefaultSignatureVerifier())
+                // Hidden ENFORCED mode during feature beta
+                // EntitlementVerificationMode.ENFORCED ->
+                //     Enforced(signatureVerifier ?: DefaultSignatureVerifier())
             }
         }
     }

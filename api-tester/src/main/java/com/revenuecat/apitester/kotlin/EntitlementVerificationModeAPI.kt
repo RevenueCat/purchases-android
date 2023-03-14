@@ -8,7 +8,8 @@ private class EntitlementVerificationModeAPI {
         when (verificationMode) {
             EntitlementVerificationMode.DISABLED,
             EntitlementVerificationMode.INFORMATIONAL,
-            EntitlementVerificationMode.ENFORCED
+            // Hidden ENFORCED mode during feature beta
+            // EntitlementVerificationMode.ENFORCED
             -> {}
         }.exhaustive
     }
