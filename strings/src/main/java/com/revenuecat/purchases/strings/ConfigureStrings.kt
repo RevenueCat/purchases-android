@@ -33,4 +33,6 @@ object ConfigureStrings {
         "after the transaction is finished, so make sure purchases are synced before \n" +
         "finishing any consumable transaction, otherwise RevenueCat won’t register the \n" +
         "purchase."
+    const val INSTANCE_ALREADY_EXISTS = "Purchases instance already set. " +
+        "Did you mean to configure two Purchases objects?"
 }
