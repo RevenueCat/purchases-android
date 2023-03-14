@@ -10,7 +10,7 @@ import org.json.JSONObject
 
 abstract class OfferingParser {
 
-    abstract fun findMatchingProduct(
+    protected abstract fun findMatchingProduct(
         productsById: Map<String, List<StoreProduct>>,
         packageJson: JSONObject
     ): StoreProduct?
@@ -69,6 +69,6 @@ abstract class OfferingParser {
     }
 }
 
-fun String.toPackageType(): PackageType =
+private fun String.toPackageType(): PackageType =
     PackageType.values().firstOrNull { it.identifier == this }
         ?: if (this.startsWith("\$rc_")) PackageType.UNKNOWN else PackageType.CUSTOM
