@@ -6,6 +6,7 @@ import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.CustomerInfoHelper
 import com.revenuecat.purchases.LockedFeature
+import com.revenuecat.purchases.OfferingParserFactory
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
@@ -13,6 +14,7 @@ import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BillingAbstract
+import com.revenuecat.purchases.common.OfferingParser
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.PostReceiptDataErrorCallback
 import com.revenuecat.purchases.common.PostReceiptDataSuccessCallback
@@ -153,7 +155,8 @@ class SubscriberAttributesPurchasesTests {
                 proxyURL = null,
                 store = Store.PLAY_STORE
             ),
-            customerInfoHelper = customerInfoHelperMock
+            customerInfoHelper = customerInfoHelperMock,
+            offeringParser = OfferingParserFactory.createOfferingParser(Store.PLAY_STORE)
         )
     }
 

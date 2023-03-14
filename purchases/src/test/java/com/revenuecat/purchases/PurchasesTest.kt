@@ -22,6 +22,7 @@ import com.android.billingclient.api.PurchaseHistoryRecord
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BillingAbstract
+import com.revenuecat.purchases.common.OfferingParser
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.PostReceiptDataErrorCallback
 import com.revenuecat.purchases.common.PostReceiptDataSuccessCallback
@@ -115,6 +116,7 @@ class PurchasesTest {
     private val mockIdentityManager = mockk<IdentityManager>()
     private val mockSubscriberAttributesManager = mockk<SubscriberAttributesManager>()
     private val mockCustomerInfoHelper = mockk<CustomerInfoHelper>()
+    lateinit var mockOfferingParser: OfferingParser
 
     private var capturedPurchasesUpdatedListener = slot<BillingAbstract.PurchasesUpdatedListener>()
     private var capturedBillingWrapperStateListener = slot<BillingAbstract.StateListener>()
@@ -159,7 +161,6 @@ class PurchasesTest {
         every { LockedFeature.AmazonStore.isLocked } returns false
 
         mockkStatic("com.revenuecat.purchases.common.CustomerInfoFactoriesKt")
-        mockkStatic("com.revenuecat.purchases.common.OfferingFactoriesKt")
         mockkStatic(ProcessLifecycleOwner::class)
 
         val productIds = listOf(STUB_PRODUCT_IDENTIFIER)
@@ -4416,6 +4417,33 @@ class PurchasesTest {
         }
     }
 
+//    private fun mockOfferingsParser() {
+//        with(mockOfferingParser) {
+//            every {
+//                retrieveCustomerInfo(any(), any(), false, any())
+//            } answers {
+//                val callback = arg<ReceiveCustomerInfoCallback?>(3)
+//                if (errorGettingCustomerInfo == null) {
+//                    callback?.onReceived(mockInfo)
+//                } else {
+//                    callback?.onError(errorGettingCustomerInfo)
+//                }
+//            }
+//            every {
+//                cacheCustomerInfo(any())
+//            } just runs
+//            every {
+//                sendUpdatedCustomerInfoToDelegateIfChanged(any())
+//            } just runs
+//            every {
+//                updatedCustomerInfoListener = any()
+//            } just runs
+//            every {
+//                updatedCustomerInfoListener
+//            } returns null
+//        }
+//    }
+
     private fun mockBackend() {
         with(mockBackend) {
             mockProducts()
@@ -4641,7 +4669,8 @@ class PurchasesTest {
                 store = Store.PLAY_STORE,
                 dangerousSettings = DangerousSettings(autoSyncPurchases = autoSync)
             ),
-            customerInfoHelper = mockCustomerInfoHelper
+            customerInfoHelper = mockCustomerInfoHelper,
+            offeringParser = OfferingParserFactory.createOfferingParser(Store.PLAY_STORE)
         )
         Purchases.sharedInstance = purchases
         purchases.state = purchases.state.copy(appInBackground = false)
