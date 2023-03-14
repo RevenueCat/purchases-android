@@ -204,12 +204,12 @@ class HTTPClientVerificationTest: BaseHTTPClientTest() {
 
     @Test
     fun `performRequest on disabled client does not verify`() {
-        every { mockSigningManager.signatureVerificationMode } returns mockk<SignatureVerificationMode.Disabled>()
+        every { mockSigningManager.shouldVerifyEndpoint(any()) } returns false
         val endpoint = Endpoint.GetCustomerInfo("test-user-id")
         enqueue(
             endpoint = endpoint,
-            expectedResult = HTTPResult.createResult(verificationResult = VerificationResult.FAILED),
-            verificationResult = VerificationResult.FAILED
+            expectedResult = HTTPResult.createResult(verificationResult = VerificationResult.NOT_REQUESTED),
+            verificationResult = VerificationResult.NOT_REQUESTED
         )
 
         val result = client.performRequest(
