@@ -61,7 +61,7 @@ class SigningManager(
         val verificationResult = signatureVerifier.verify(signatureToVerify, messageToVerify)
 
         return if (verificationResult) {
-            VerificationResult.SUCCESS
+            VerificationResult.VERIFIED
         } else {
             errorLog(NetworkStrings.VERIFICATION_ERROR.format(urlPath))
             VerificationResult.FAILED

@@ -70,11 +70,11 @@ class EntitlementInfosTests {
             }
         )
 
-        val subscriberInfo = createCustomerInfo(response, null, VerificationResult.SUCCESS)
+        val subscriberInfo = createCustomerInfo(response, null, VerificationResult.VERIFIED)
         assertThat(subscriberInfo.entitlements.all).hasSize(2)
-        assertThat(subscriberInfo.entitlements.verification).isEqualTo(VerificationResult.SUCCESS)
+        assertThat(subscriberInfo.entitlements.verification).isEqualTo(VerificationResult.VERIFIED)
         subscriberInfo.entitlements.all.onEach { entry ->
-            assertThat(entry.value.verification).isEqualTo(VerificationResult.SUCCESS)
+            assertThat(entry.value.verification).isEqualTo(VerificationResult.VERIFIED)
         }
 
         verifySubscriberInfo()
@@ -1168,7 +1168,7 @@ class EntitlementInfosTests {
     @Test
     fun `same entitlement infos with different verifications are not equal`() {
         val entitlementInfos1 = EntitlementInfos(emptyMap(), VerificationResult.NOT_REQUESTED)
-        val entitlementInfos2 = EntitlementInfos(emptyMap(), VerificationResult.SUCCESS)
+        val entitlementInfos2 = EntitlementInfos(emptyMap(), VerificationResult.VERIFIED)
         val entitlementInfos3 = EntitlementInfos(emptyMap(), VerificationResult.FAILED)
         assertThat(entitlementInfos1).isNotEqualTo(entitlementInfos2)
         assertThat(entitlementInfos1).isNotEqualTo(entitlementInfos3)

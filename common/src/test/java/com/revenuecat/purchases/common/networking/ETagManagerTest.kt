@@ -177,7 +177,7 @@ class ETagManagerTest {
         val eTag = "eTag"
 
         val resultFromBackend = HTTPResult.createResult(
-            verificationResult = SUCCESS,
+            verificationResult = VERIFIED,
             payload = Responses.validEmptyPurchaserResponse
         )
         val resultStored = resultFromBackend.copy(
@@ -366,10 +366,10 @@ class ETagManagerTest {
             urlPathWithVersion = "/v1/subscribers/appUserID",
             refreshETag = false,
             requestDate = null,
-            verificationResult = SUCCESS
+            verificationResult = VERIFIED
         )
 
-        assertThat(result?.verificationResult).isEqualTo(SUCCESS)
+        assertThat(result?.verificationResult).isEqualTo(VERIFIED)
     }
 
     @Test
@@ -419,13 +419,13 @@ class ETagManagerTest {
             )
         val testCases = listOf(
             TestCase(NOT_REQUESTED, NOT_REQUESTED, NOT_REQUESTED),
-            TestCase(NOT_REQUESTED, SUCCESS, SUCCESS),
+            TestCase(NOT_REQUESTED, VERIFIED, VERIFIED),
             TestCase(NOT_REQUESTED, FAILED, FAILED),
-            TestCase(SUCCESS, NOT_REQUESTED, NOT_REQUESTED),
-            TestCase(SUCCESS, SUCCESS, SUCCESS),
-            TestCase(SUCCESS, FAILED, FAILED),
+            TestCase(VERIFIED, NOT_REQUESTED, NOT_REQUESTED),
+            TestCase(VERIFIED, VERIFIED, VERIFIED),
+            TestCase(VERIFIED, FAILED, FAILED),
             TestCase(FAILED, NOT_REQUESTED, NOT_REQUESTED),
-            TestCase(FAILED, SUCCESS, SUCCESS),
+            TestCase(FAILED, VERIFIED, VERIFIED),
             TestCase(FAILED, FAILED, FAILED)
             )
         testCases.onEach {
