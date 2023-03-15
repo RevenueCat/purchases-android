@@ -14,6 +14,7 @@ import com.revenuecat.purchases.utils.stubPricingPhase
 import com.revenuecat.purchases.utils.stubStoreProduct
 import com.revenuecat.purchases.utils.stubSubscriptionOption
 import org.assertj.core.api.Assertions.assertThat
+import org.json.JSONArray
 import org.json.JSONObject
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -29,6 +30,8 @@ class OfferingsTest {
     private val annualBasePlanId = "annual_base_plan"
     private val monthlyPeriod = Period.create("P1M")
     private val annualPeriod = Period.create("P1Y")
+    private val monthlyPackageID = PackageType.MONTHLY.identifier!!
+    private val annualPackageID = PackageType.ANNUAL.identifier!!
 
     private val offeringsParser = OfferingParserFactory.createOfferingParser(Store.PLAY_STORE)
 
@@ -81,14 +84,14 @@ class OfferingsTest {
         assertThat(monthlyPackageToTest.packageType).isEqualTo(PackageType.MONTHLY)
 
         val annualPackageJSON = getPackageJSON(
-            packageIdentifier = PackageType.ANNUAL.identifier!!,
+            packageIdentifier = annualPackageID,
             productIdentifier = storeProductAnnual.id,
             basePlanId = storeProductAnnual.subscriptionOptions!!.basePlan!!.id
         )
         val annualPackageToTest = offeringsParser.createPackage(annualPackageJSON, products, "offering")
         assertThat(annualPackageToTest).isNotNull
         assertThat(annualPackageToTest!!.product).isEqualTo(products[productIdentifier]?.get(1))
-        assertThat(annualPackageToTest.identifier).isEqualTo(PackageType.ANNUAL.identifier)
+        assertThat(annualPackageToTest.identifier).isEqualTo(annualPackageID)
         assertThat(annualPackageToTest.packageType).isEqualTo(PackageType.ANNUAL)
     }
 
@@ -124,7 +127,7 @@ class OfferingsTest {
         val annualPackageJSON = JSONObject(
             """
                 {
-                    'identifier': '${PackageType.ANNUAL.identifier}',
+                    'identifier': '${annualPackageID}',
                     'platform_product_identifier': '$productIdentifier'
                 }
             """.trimIndent()
@@ -163,7 +166,7 @@ class OfferingsTest {
             storeProductMonthly.subscriptionOptions!!.basePlan!!.id
         )
 
-        val annualPackageID = PackageType.ANNUAL.identifier!!
+        val annualPackageID = annualPackageID
         val annualPackageJSON = getPackageJSON(
             annualPackageID,
             storeProductAnnual.id,
@@ -226,7 +229,7 @@ class OfferingsTest {
         val storeProductAnnual = getStoreProduct(productIdentifier, annualPeriod, annualBasePlanId)
 
         val products = mapOf(productIdentifier to listOf(storeProductMonthly, storeProductAnnual))
-        val offeringsJson = getOfferingsJSON(null)
+        val offeringsJson = getOfferingsJSON("")
 
         val offerings = offeringsParser.createOfferings(offeringsJson, products)
         assertThat(offerings).isNotNull
@@ -308,48 +311,61 @@ class OfferingsTest {
     }
 
     @Test
-    fun `multiple offerings with packages of the same duration`() {
-        val monthlyProduct2ID = productIdentifier + "monthly2"
-        val annualProductID = productIdentifier + "annual"
+    fun `Can create multiple offerings with packages of the same duration`() {
+        val productId2 = productIdentifier + "2"
 
         val monthlyProduct = getStoreProduct(productIdentifier, monthlyPeriod, monthlyBasePlanId)
-        val monthlyProduct2 = getStoreProduct(monthlyProduct2ID, monthlyPeriod, monthlyBasePlanId)
-        val annualProduct = getStoreProduct(annualProductID, annualPeriod, annualBasePlanId)
+        val annualProduct = getStoreProduct(productIdentifier, annualPeriod, annualBasePlanId)
 
-        // TODO fix - there would never be two monthly products with the same identifiers
-//        val products = mapOf(productIdentifier to listOf(monthlyProduct, annualProduct), monthlyProduct2ID to listOf(monthlyProduct2))
+        val monthlyProduct2 = getStoreProduct(productId2, monthlyPeriod, monthlyBasePlanId)
 
-        val products = mapOf(productIdentifier to listOf(monthlyProduct, monthlyProduct2, annualProduct))
+        val products = mapOf(
+            productIdentifier to listOf(monthlyProduct, annualProduct),
+            productId2 to listOf(monthlyProduct2)
+        )
 
-        val monthlyPackageID = "monthly"
-        val monthlyPackage2ID = "monthly_@"
-        val annualPackageID = "annual"
         val offeringID = "offering_a"
+        val offeringID2 = "offering_b"
 
-        val offering = offeringsParser.createOffering(
-            getOfferingJSON(
+        val offerings = offeringsParser.createOfferings(
+            getOfferingsJSON(
                 offeringID,
-                listOf(
-                    getPackageJSON(monthlyPackageID, productIdentifier),
-                    getPackageJSON(monthlyPackage2ID, monthlyProduct2ID),
-                    getPackageJSON(annualPackageID, annualProductID)
+                mapOf(
+                    offeringID to listOf(
+                        getPackageJSON(monthlyPackageID, productIdentifier),
+                        getPackageJSON(annualPackageID, productIdentifier)
+                    ),
+                    offeringID2 to listOf(
+                        getPackageJSON(monthlyPackageID, productId2)
+                    )
                 )
             ),
             products
         )
 
-        val packages = offering!!.availablePackages
-        val monthlyPackages = packages.filter { it.packageType == PackageType.MONTHLY }
-        val yearlyPackages = packages.filter { it.packageType == PackageType.ANNUAL }
+        val offering1 = offerings[offeringID]
+        val offering1Packages = offering1!!.availablePackages
+        val offering1MonthlyPackages = offering1Packages.filter { it.packageType == PackageType.MONTHLY }
+        val offering1YearlyPackages = offering1Packages.filter { it.packageType == PackageType.ANNUAL }
 
-        assertThat(offering).isNotNull
-        assertThat(offering.identifier).isEqualTo(offeringID)
-        assertThat(packages.size).isEqualTo(3)
-        assertThat(monthlyPackages.size).isEqualTo(2)
-        assertThat(yearlyPackages.size).isEqualTo(1)
-        assertThat(monthlyPackages.filter { it.identifier == monthlyPackageID }).isNotNull
-        assertThat(monthlyPackages.filter { it.identifier == monthlyPackage2ID }).isNotNull
-        assertThat(yearlyPackages.filter { it.identifier == annualPackageID }).isNotNull
+        assertThat(offering1).isNotNull
+        assertThat(offering1.identifier).isEqualTo(offeringID)
+        assertThat(offering1Packages.size).isEqualTo(2)
+        assertThat(offering1MonthlyPackages.size).isEqualTo(1)
+        assertThat(offering1YearlyPackages.size).isEqualTo(1)
+        assertThat(offering1MonthlyPackages.filter { it.identifier == monthlyPackageID }).isNotNull
+        assertThat(offering1YearlyPackages.filter { it.identifier == annualPackageID }).isNotNull
+
+        val offering2 = offerings[offeringID2]
+        val offering2Packages = offering2!!.availablePackages
+        val offering2MonthlyPackages = offering2Packages.filter { it.packageType == PackageType.MONTHLY }
+        val offering2YearlyPackages = offering2Packages.filter { it.packageType == PackageType.ANNUAL }
+
+        assertThat(offering2).isNotNull
+        assertThat(offering2.identifier).isEqualTo(offeringID2)
+        assertThat(offering2Packages.size).isEqualTo(1)
+        assertThat(offering2MonthlyPackages.size).isEqualTo(1)
+        assertThat(offering2YearlyPackages.size).isEqualTo(0)
     }
 
     private fun testPackageType(packageType: PackageType) {
@@ -408,33 +424,48 @@ class OfferingsTest {
     }
 
     private fun getOfferingsJSON(
-        currentOfferingId: String? = "offering_a"
-    ) =
-        JSONObject(
-            "{'offerings': [" +
-                "${
-                    getOfferingJSON(
-                        offeringIdentifier = "offering_a",
-                        packagesJSON = listOf(
-                            getPackageJSON(
-                                PackageType.ANNUAL.identifier!!,
-                                productIdentifier,
-                                annualBasePlanId
-                            )
-                        )
+        currentOfferingId: String = "offering_a",
+        offeringPackagesById: Map<String, List<JSONObject>> =
+            mapOf(
+                "offering_a" to listOf(
+                    getPackageJSON(
+                        annualPackageID,
+                        productIdentifier,
+                        annualBasePlanId
                     )
-                }, " +
-                "${
-                    getOfferingJSON(offeringIdentifier = "offering_b")
-                }]" +
-                ", 'current_offering_id': '$currentOfferingId'}"
-        )
+                ),
+                "offering_b" to listOf(
+                    getPackageJSON(
+                        monthlyPackageID,
+                        this.productIdentifier,
+                        monthlyBasePlanId
+                    )
+                )
+            )
+    ): JSONObject {
+        val offeringJsons = mutableListOf<JSONObject>()
+        offeringPackagesById.forEach { (offeringId, packages) ->
+            offeringJsons.add(
+                getOfferingJSON(
+                    offeringId,
+                    packages
+                )
+            )
+        }
+
+        val offeringsJsonArray = JSONArray(offeringJsons)
+
+        return JSONObject().apply {
+            put("offerings", offeringsJsonArray)
+            put("current_offering_id", currentOfferingId)
+        }
+    }
 
     private fun getOfferingJSON(
         offeringIdentifier: String = "offering_a",
         packagesJSON: List<JSONObject> = listOf(
             getPackageJSON(
-                PackageType.MONTHLY.identifier!!,
+                monthlyPackageID,
                 this.productIdentifier,
                 monthlyBasePlanId
             ),
@@ -450,7 +481,7 @@ class OfferingsTest {
     )
 
     private fun getPackageJSON(
-        packageIdentifier: String = PackageType.MONTHLY.identifier!!,
+        packageIdentifier: String = monthlyPackageID,
         productIdentifier: String = this.productIdentifier,
         basePlanId: String = monthlyBasePlanId,
     ) =
