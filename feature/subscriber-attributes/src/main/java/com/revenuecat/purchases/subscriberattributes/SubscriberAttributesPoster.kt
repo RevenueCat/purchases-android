@@ -1,10 +1,10 @@
 package com.revenuecat.purchases.subscriberattributes
 
-import android.net.Uri
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.SubscriberAttributeError
+import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
 
 class SubscriberAttributesPoster(
@@ -22,7 +22,7 @@ class SubscriberAttributesPoster(
         ) -> Unit
     ) {
         backend.performRequest(
-            "/subscribers/" + Uri.encode(appUserID) + "/attributes",
+            Endpoint.PostAttributes(appUserID),
             mapOf("attributes" to attributes),
             { error ->
                 onErrorHandler(error, false, emptyList())

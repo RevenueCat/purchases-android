@@ -32,6 +32,7 @@ import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.ReplaceProductInfo
 import com.revenuecat.purchases.common.StoreProductsCallback
 import com.revenuecat.purchases.common.caching.DeviceCache
+import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.firstProductId
 import com.revenuecat.purchases.common.log
@@ -59,7 +60,9 @@ private const val RECONNECT_TIMER_MAX_TIME_MILLISECONDS = 1000L * 60L * 15L // 1
 class BillingWrapper(
     private val clientFactory: ClientFactory,
     private val mainHandler: Handler,
-    private val deviceCache: DeviceCache
+    private val deviceCache: DeviceCache,
+    @Suppress("unused")
+    private val diagnosticsTrackerIfEnabled: DiagnosticsTracker?
 ) : BillingAbstract(), PurchasesUpdatedListener, BillingClientStateListener {
 
     @get:Synchronized

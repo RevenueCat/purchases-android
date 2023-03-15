@@ -200,7 +200,44 @@ class SubscriberAttributesDeviceCacheTests {
     }
 
     @Test
-    fun `clearing caches also clears the synced subscriber attributes`() {
+    fun `clearAllSubscriberAttributesFromUser clears the synced subscriber attributes`() {
+        val expectedAttributes = mapOf(
+            "shoesize" to SubscriberAttribute("shoesize", "9", isSynced = true),
+            "tshirtsize" to SubscriberAttribute("tshirtsize", "L", isSynced = true)
+        )
+        mockNotEmptyCache(expectedAttributes)
+        underTest.clearAllSubscriberAttributesFromUser(appUserID)
+        verify(exactly = 1) {
+            mockEditor.putString(
+                "com.revenuecat.purchases.$apiKey.subscriberAttributes",
+                JSONObject().also {
+                    it.put("attributes", JSONObject())
+                }.toString()
+            )
+        }
+    }
+
+    @Test
+    fun `clearAllSubscriberAttributesFromUser also clears the unsynced subscriber attributes`() {
+        val expectedAttributes = mapOf(
+            "shoesize" to SubscriberAttribute("shoesize", "9", isSynced = false),
+            "tshirtsize" to SubscriberAttribute("tshirtsize", "L", isSynced = false)
+        )
+        mockNotEmptyCache(expectedAttributes)
+        underTest.clearAllSubscriberAttributesFromUser(appUserID)
+        verify(exactly = 1) {
+            mockEditor.putString(
+                "com.revenuecat.purchases.$apiKey.subscriberAttributes",
+                JSONObject().also {
+                    it.put("attributes", JSONObject())
+                }.toString()
+            )
+        }
+    }
+
+
+    @Test
+    fun `clearSubscriberAttributesIfSyncedForSubscriber also clears the synced subscriber attributes`() {
         val expectedAttributes = mapOf(
             "tshirtsize" to SubscriberAttribute("tshirtsize", "L", isSynced = true)
         )
@@ -217,7 +254,7 @@ class SubscriberAttributesDeviceCacheTests {
     }
 
     @Test
-    fun `clearing caches doesn't clear the unsynced subscriber attributes`() {
+    fun `clearSubscriberAttributesIfSyncedForSubscriber doesn't clear the unsynced subscriber attributes`() {
         val expectedAttributes = mapOf(
             "tshirtsize" to SubscriberAttribute("tshirtsize", "L", isSynced = false)
         )

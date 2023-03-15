@@ -7,4 +7,8 @@ internal data class HTTPRequest(
     val fullURL: URL,
     val headers: Map<String, String>,
     val body: JSONObject?
-)
+) {
+    companion object {
+        const val ETAG_HEADER_NAME = "X-RevenueCat-ETag"
+    }
+}

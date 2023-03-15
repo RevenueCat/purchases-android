@@ -33,6 +33,7 @@ class SubscriberAttributesManagerTests {
     private val mockBackend: SubscriberAttributesPoster = mockk()
     private val mockDeviceIdentifiersFetcher: DeviceIdentifiersFetcher = mockk()
     private val appUserID: String = "appUserID"
+    private val androidID = "androidid"
     private lateinit var underTest: SubscriberAttributesManager
 
     @Before
@@ -306,13 +307,13 @@ class SubscriberAttributesManagerTests {
         assertThat(capturedSetSubscriberAttribute).isNotNull
         assertThat(capturedSetSubscriberAttribute!!.value).isEqualTo(null)
         assertThat(capturedSetSubscriberAttribute.setTime).isEqualTo(subscriberAttribute.setTime)
-        assertThat(capturedSetSubscriberAttribute.isSynced).isTrue()
+        assertThat(capturedSetSubscriberAttribute.isSynced).isTrue
 
         val capturedSetSubscriberAttribute2 = capturedSet["key2"]
         assertThat(capturedSetSubscriberAttribute2).isNotNull
         assertThat(capturedSetSubscriberAttribute2!!.value).isEqualTo("value2")
         assertThat(capturedSetSubscriberAttribute2.setTime).isEqualTo(subscriberAttribute2.setTime)
-        assertThat(capturedSetSubscriberAttribute2.isSynced).isTrue()
+        assertThat(capturedSetSubscriberAttribute2.isSynced).isTrue
     }
 
     @Test
@@ -520,7 +521,7 @@ class SubscriberAttributesManagerTests {
         assertThat(capturedSetSubscriberAttribute).isNotNull
         assertThat(capturedSetSubscriberAttribute!!.value).isEqualTo(null)
         assertThat(capturedSetSubscriberAttribute.setTime).isEqualTo(subscriberAttribute.setTime)
-        assertThat(capturedSetSubscriberAttribute.isSynced).isTrue()
+        assertThat(capturedSetSubscriberAttribute.isSynced).isTrue
     }
 
     @Test
@@ -672,14 +673,13 @@ class SubscriberAttributesManagerTests {
     }
 
     @Test
-    fun `collectDeviceIdentifiers`() {
+    fun collectDeviceIdentifiers() {
         val capturingSlot = mockSettingAttributesOnEmptyCache()
 
         val mockContext = mockk<Application>(relaxed = true)
         mockAdvertisingInfo(
             mockContext = mockContext,
-            expectedAdID = "12345",
-            expectedAndroidID = "androidid"
+            expectedAdID = "12345"
         )
 
         underTest.collectDeviceIdentifiers(appUserID, mockContext)
@@ -711,8 +711,7 @@ class SubscriberAttributesManagerTests {
         val mockContext = mockk<Application>(relaxed = true)
         mockAdvertisingInfo(
             mockContext = mockContext,
-            expectedAdID = null,
-            expectedAndroidID = "androidid"
+            expectedAdID = null
         )
 
         underTest.collectDeviceIdentifiers(appUserID, mockContext)
@@ -732,14 +731,13 @@ class SubscriberAttributesManagerTests {
     }
 
     @Test
-    fun `setAttributionID`() {
+    fun setAttributionID() {
         val capturingSlot = mockSettingAttributesOnEmptyCache()
 
         val mockContext = mockk<Application>(relaxed = true)
         mockAdvertisingInfo(
             mockContext = mockContext,
-            expectedAdID = "12345",
-            expectedAndroidID = "androidid"
+            expectedAdID = "12345"
         )
 
         underTest.setAttributionID(
@@ -774,10 +772,39 @@ class SubscriberAttributesManagerTests {
         assertThat(facebookID!!.value).isEqualTo("facebook_id")
     }
 
+    // region copyUnsyncedSubscriberAttributes
+
+    @Test
+    fun `copyUnsyncedSubscriberAttributes does not do anything if no unsynced attributes to copy`() {
+        every { mockDeviceCache.getUnsyncedSubscriberAttributes(appUserID) } returns emptyMap()
+
+        underTest.copyUnsyncedSubscriberAttributes(appUserID, "new-app-user-id")
+
+        verify(exactly = 0) { mockDeviceCache.setAttributes(any(), any()) }
+        verify(exactly = 0) { mockDeviceCache.clearAllSubscriberAttributesFromUser(any()) }
+    }
+
+    @Test
+    fun `copyUnsyncedSubscriberAttributes copies unsynced attributes to new user and deletes old ones`() {
+        val unsyncedAttributes = mapOf("tshirtsize" to SubscriberAttribute("tshirtsize", "L"))
+        val newAppUserId = "new-app-user-id"
+        every { mockDeviceCache.getUnsyncedSubscriberAttributes(appUserID) } returns unsyncedAttributes
+        every { mockDeviceCache.setAttributes(newAppUserId, unsyncedAttributes) } just Runs
+        every { mockDeviceCache.clearAllSubscriberAttributesFromUser(appUserID) } just Runs
+
+        underTest.copyUnsyncedSubscriberAttributes(appUserID, newAppUserId)
+
+        verify(exactly = 1) { mockDeviceCache.setAttributes(newAppUserId, unsyncedAttributes) }
+        verify(exactly = 1) { mockDeviceCache.clearAllSubscriberAttributesFromUser(appUserID) }
+    }
+
+    // endregion
+
+    // region helper functions
+
     private fun mockAdvertisingInfo(
         mockContext: Application,
-        expectedAdID: String?,
-        expectedAndroidID: String
+        expectedAdID: String?
     ) {
         every {
             mockDeviceIdentifiersFetcher.getDeviceIdentifiers(mockContext, captureLambda())
@@ -785,7 +812,7 @@ class SubscriberAttributesManagerTests {
             lambda<(Map<String, String>) -> Unit>().captured.also {
                 val deviceIdentifiers = mapOf(
                     SubscriberAttributeKey.DeviceIdentifiers.GPSAdID.backendKey to expectedAdID,
-                    SubscriberAttributeKey.DeviceIdentifiers.AndroidID.backendKey to expectedAndroidID,
+                    SubscriberAttributeKey.DeviceIdentifiers.AndroidID.backendKey to androidID,
                     SubscriberAttributeKey.DeviceIdentifiers.IP.backendKey to "true"
                 ).filterNotNullValues()
                 it.invoke(deviceIdentifiers)
@@ -830,9 +857,9 @@ class SubscriberAttributesManagerTests {
     ): Pair<SubscriberAttributesPerAppUserIDMap, SubscriberAttributesPerAppUserIDMap> {
         val allStoredAttributes =
             subscriberAttributes.map { (user, list) ->
-                user to list.map {
-                    it.key.backendKey to it
-                }.toMap()
+                user to list.associateBy {
+                    it.key.backendKey
+                }
             }.toMap()
 
         subscriberAttributes.keys.forEach {
@@ -863,4 +890,6 @@ class SubscriberAttributesManagerTests {
         } returns emptyMap()
         return slot
     }
+
+    // endregion
 }

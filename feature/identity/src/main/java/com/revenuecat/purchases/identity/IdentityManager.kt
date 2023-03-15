@@ -3,11 +3,14 @@ package com.revenuecat.purchases.identity
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.errorLog
+import com.revenuecat.purchases.common.infoLog
 import com.revenuecat.purchases.common.log
+import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import com.revenuecat.purchases.strings.IdentityStrings
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesCache
@@ -24,6 +27,8 @@ class IdentityManager(
     val currentAppUserID: String
         get() = deviceCache.getCachedAppUserID() ?: ""
 
+    private val anonymousIdRegex = "^\\\$RCAnonymousID:([a-f0-9]{32})$".toRegex()
+
     @Synchronized
     fun configure(appUserID: String?) {
         if (appUserID?.isBlank() == true) {
@@ -39,6 +44,7 @@ class IdentityManager(
         deviceCache.cacheAppUserID(appUserIDToUse)
         subscriberAttributesCache.cleanUpSubscriberAttributeCache(appUserIDToUse)
         deviceCache.cleanupOldAttributionData()
+        invalidateCustomerInfoAndETagCacheIfNeeded(appUserIDToUse)
     }
 
     fun logIn(
@@ -71,6 +77,7 @@ class IdentityManager(
 
                         deviceCache.cacheAppUserID(newAppUserID)
                         deviceCache.cacheCustomerInfo(newAppUserID, customerInfo)
+                        copySubscriberAttributesToNewUserIfOldIsAnonymous(oldAppUserID, newAppUserID)
                     }
                     onSuccess(customerInfo, created)
                 },
@@ -102,12 +109,35 @@ class IdentityManager(
 
     @Synchronized
     fun currentUserIsAnonymous(): Boolean {
-        val currentAppUserIDLooksAnonymous =
-            "^\\\$RCAnonymousID:([a-f0-9]{32})$".toRegex()
-                .matches(deviceCache.getCachedAppUserID() ?: "")
+        val currentAppUserIDLooksAnonymous = isUserIDAnonymous(deviceCache.getCachedAppUserID() ?: "")
         val isLegacyAnonymousAppUserID =
             deviceCache.getCachedAppUserID() == deviceCache.getLegacyCachedAppUserID()
         return currentAppUserIDLooksAnonymous || isLegacyAnonymousAppUserID
+    }
+
+    private fun copySubscriberAttributesToNewUserIfOldIsAnonymous(oldAppUserId: String, newAppUserId: String) {
+        if (isUserIDAnonymous(oldAppUserId)) {
+            subscriberAttributesManager.copyUnsyncedSubscriberAttributes(oldAppUserId, newAppUserId)
+        }
+    }
+
+    private fun invalidateCustomerInfoAndETagCacheIfNeeded(appUserID: String) {
+        val cachedCustomerInfo = deviceCache.getCachedCustomerInfo(appUserID)
+        if (shouldInvalidateCustomerInfoAndETagCache(cachedCustomerInfo)) {
+            infoLog(IdentityStrings.INVALIDATING_CACHED_CUSTOMER_INFO)
+            deviceCache.clearCustomerInfoCache(appUserID)
+            backend.clearCaches()
+        }
+    }
+
+    private fun shouldInvalidateCustomerInfoAndETagCache(customerInfo: CustomerInfo?): Boolean {
+        return customerInfo != null &&
+            customerInfo.entitlements.verification == VerificationResult.NOT_REQUESTED &&
+            backend.verificationMode != SignatureVerificationMode.Disabled
+    }
+
+    private fun isUserIDAnonymous(appUserID: String): Boolean {
+        return anonymousIdRegex.matches(appUserID)
     }
 
     private fun generateRandomID(): String {

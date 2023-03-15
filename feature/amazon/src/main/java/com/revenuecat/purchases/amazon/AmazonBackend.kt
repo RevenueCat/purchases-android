@@ -1,8 +1,8 @@
 package com.revenuecat.purchases.amazon
 
-import android.net.Uri
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.common.Backend
+import com.revenuecat.purchases.common.networking.Endpoint
 import org.json.JSONObject
 
 /** @suppress */
@@ -30,7 +30,7 @@ class AmazonBackend(
 
         val call = {
             backend.performRequest(
-                "/receipts/amazon/${Uri.encode(storeUserID)}/$receiptId",
+                Endpoint.GetAmazonReceipt(storeUserID, receiptId),
                 null,
                 { error ->
                     synchronized(this@AmazonBackend) {

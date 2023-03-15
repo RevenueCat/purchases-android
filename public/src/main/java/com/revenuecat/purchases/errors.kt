@@ -52,5 +52,6 @@ enum class PurchasesErrorCode(val code: Int, val description: String) {
     UnsupportedError(24, "There was a problem with the operation. Looks like we doesn't support " +
         "that yet. Check the underlying error for more details."),
     EmptySubscriberAttributesError(25, "A request for subscriber attributes returned none."),
-    CustomerInfoError(28, "There was a problem related to the customer info.")
+    CustomerInfoError(28, "There was a problem related to the customer info."),
+    SignatureVerificationError(36, "Request failed signature verification.")
 }

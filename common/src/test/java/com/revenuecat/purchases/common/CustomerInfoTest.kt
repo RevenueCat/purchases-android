@@ -15,38 +15,35 @@ import org.json.JSONObject
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
+import kotlin.time.Duration.Companion.days
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
 class CustomerInfoTest {
 
     private val fullCustomerInfo: CustomerInfo by lazy {
-        JSONObject(Responses.validFullPurchaserResponse).buildCustomerInfo()
+        createCustomerInfo(Responses.validFullPurchaserResponse)
+    }
+    private val emptyCustomerInfo: CustomerInfo by lazy {
+        createCustomerInfo(Responses.validEmptyPurchaserResponse)
     }
 
     @Test(expected = JSONException::class)
     fun failsToBeCreatedWithEmptyJSONObject() {
-        val empty = JSONObject("{}")
-        empty.buildCustomerInfo()
+        createCustomerInfo("{}")
     }
 
     @Test
-    @Throws(JSONException::class)
     fun `Given an empty response, empty object is created`() {
-        val jsonObject = JSONObject(Responses.validEmptyPurchaserResponse)
-
-        val info = jsonObject.buildCustomerInfo()
-
-        assertThat(info).isNotNull
-        assertThat(info.activeSubscriptions).isEmpty()
-        assertThat(info.allPurchasedProductIds).isEmpty()
-        assertThat(info.nonSubscriptionTransactions).isEmpty()
-        assertThat(info.latestExpirationDate).isNull()
+        assertThat(emptyCustomerInfo).isNotNull
+        assertThat(emptyCustomerInfo.activeSubscriptions).isEmpty()
+        assertThat(emptyCustomerInfo.allPurchasedProductIds).isEmpty()
+        assertThat(emptyCustomerInfo.nonSubscriptionTransactions).isEmpty()
+        assertThat(emptyCustomerInfo.latestExpirationDate).isNull()
     }
 
     @Suppress("DEPRECATION")
     @Test
-    @Throws(JSONException::class)
     fun `Given a full response with non subscription SKUs, all SKUs are parsed properly`() {
         val info = fullCustomerInfo
 
@@ -73,6 +70,57 @@ class CustomerInfoTest {
     }
 
     @Test
+    fun `active subscriptions returns expired subscriptions in grace period`() {
+        val response = Responses.createFullCustomerResponse(
+            oneMonthFreeTrialExpirationDate = 3.days.ago(),
+            threeMonthFreeTrialExpirationDate = 1.days.ago()
+        )
+        val info = createCustomerInfo(response, 2.days.ago())
+        val actives = info.activeSubscriptions
+
+        assertThat(actives.size).isEqualTo(1)
+        assertThat(actives.first()).isEqualTo("basic:monthly")
+    }
+
+    @Test
+    fun `active subscriptions returns multiple non expired subscriptions in grace period`() {
+        val response = Responses.createFullCustomerResponse(
+            oneMonthFreeTrialExpirationDate = 1.days.ago(),
+            threeMonthFreeTrialExpirationDate = 1.days.ago()
+        )
+        val info = createCustomerInfo(response, 2.days.ago())
+        val actives = info.activeSubscriptions
+
+        assertThat(actives.size).isEqualTo(2)
+        assertThat(actives).containsAll(listOf("pro:monthly", "basic:monthly"))
+    }
+
+    @Test
+    fun `active subscriptions returns nothing if no subscriptions in grace period`() {
+        val response = Responses.createFullCustomerResponse(
+            oneMonthFreeTrialExpirationDate = 1.days.ago(),
+            threeMonthFreeTrialExpirationDate = 1.days.ago()
+        )
+        val info = createCustomerInfo(response, 5.days.ago())
+        val actives = info.activeSubscriptions
+
+        assertThat(actives.size).isEqualTo(0)
+    }
+
+    @Test
+    fun `active subscriptions returns non-expired subscriptions`() {
+        val response = Responses.createFullCustomerResponse(
+            oneMonthFreeTrialExpirationDate = 1.days.fromNow(),
+            threeMonthFreeTrialExpirationDate = 2.days.ago()
+        )
+        val info = createCustomerInfo(response, 1.days.ago())
+        val actives = info.activeSubscriptions
+
+        assertThat(actives.size).isEqualTo(1)
+        assertThat(actives.first()).isEqualTo("pro:monthly")
+    }
+
+    @Test
     @Throws(JSONException::class)
     fun `Given a full response, all purchased SKUs are retrieved properly`() {
         val info = fullCustomerInfo
@@ -93,7 +141,7 @@ class CustomerInfoTest {
 
         val latest = info.latestExpirationDate
 
-        assertThat(latest).isNotNull()
+        assertThat(latest).isNotNull
         assertThat(latest!!.time).isEqualTo(4110728085975L)
     }
 
@@ -124,7 +172,7 @@ class CustomerInfoTest {
         val pro = info.getExpirationDateForEntitlement("pro")
         val basic = info.getExpirationDateForEntitlement("basic")
 
-        assertThat(pro!!.after(basic)).`as`("$pro is after $basic").isTrue()
+        assertThat(pro!!.after(basic)).`as`("$pro is after $basic").isTrue
     }
 
     @Test
@@ -154,38 +202,38 @@ class CustomerInfoTest {
     @Test
     fun `Given a request date, it is de-serialized properly`() {
         val info = fullCustomerInfo
-        assertThat(info.requestDate).isNotNull()
+        assertThat(info.requestDate).isNotNull
     }
 
     @Test
     fun `Given a valid purchaser info, purchase date is parsed`() {
         val info = fullCustomerInfo
-        assertThat(info.getPurchaseDateForEntitlement("pro")).isNotNull()
+        assertThat(info.getPurchaseDateForEntitlement("pro")).isNotNull
     }
 
     @Test
     fun `Given two empty purchaser infos, both are equal`() {
-        val info = JSONObject(Responses.validEmptyPurchaserResponse).buildCustomerInfo()
-        val info1 = JSONObject(Responses.validEmptyPurchaserResponse).buildCustomerInfo()
-        assertThat(info == info1).isTrue()
+        val info = createCustomerInfo(Responses.validEmptyPurchaserResponse)
+        val info1 = createCustomerInfo(Responses.validEmptyPurchaserResponse)
+        assertThat(info == info1).isTrue
     }
 
     @Test
     fun `Given two empty purchaser infos with different request dates, both are equal`() {
         val jsonObject = JSONObject(Responses.validFullPurchaserResponse)
         jsonObject.put("request_date", "2018-06-20T06:24:50Z")
-        val info = jsonObject.buildCustomerInfo()
+        val info = createCustomerInfo(jsonObject)
         jsonObject.put("request_date", "2018-05-20T06:24:50Z")
-        val info1 = jsonObject.buildCustomerInfo()
+        val info1 = createCustomerInfo(jsonObject)
         assertThat(info).isEqualTo(info1)
     }
 
     @Test
     fun `Given two empty purchaser infos with different active entitlements, both are not equal`() {
         val jsonObject = JSONObject(Responses.validFullPurchaserResponse)
-        val info = jsonObject.buildCustomerInfo()
+        val info = createCustomerInfo(jsonObject)
         jsonObject.put("request_date", "2101-05-20T06:24:50Z")
-        val info1 = jsonObject.buildCustomerInfo()
+        val info1 = createCustomerInfo(jsonObject)
 
         assertThat(info).isNotEqualTo(info1)
     }
@@ -193,15 +241,14 @@ class CustomerInfoTest {
     @Test
     fun `Given two same purchaser infos, their hashcodes are the same`() {
         val jsonObject = JSONObject(Responses.validFullPurchaserResponse)
-        val x = jsonObject.buildCustomerInfo()
-        val y = jsonObject.buildCustomerInfo()
-        assertThat(x.hashCode() == y.hashCode())
+        val x = createCustomerInfo(jsonObject)
+        val y = createCustomerInfo(jsonObject)
+        assertThat(x.hashCode()).isEqualTo(y.hashCode())
     }
 
     @Test
     fun `Management url is properly retrieved`() {
-        val jsonObject = JSONObject(Responses.validFullPurchaserResponse)
-        val x = jsonObject.buildCustomerInfo()
+        val x = createCustomerInfo(Responses.validFullPurchaserResponse)
         assertThat(x.managementURL).isEqualTo(Uri.parse("https://play.google.com/store/account/subscriptions"))
     }
 
@@ -211,28 +258,24 @@ class CustomerInfoTest {
         val subscriber = jsonObject.getJSONObject("subscriber")
         subscriber.put("management_url", JSONObject.NULL)
         jsonObject.put("subscriber", subscriber)
-        val x = jsonObject.buildCustomerInfo()
+        val x = createCustomerInfo(jsonObject)
         assertThat(x.managementURL).isNull()
     }
 
     @Test
     fun `If management url is missing in the JSON, it is null in the customerInfo`() {
-        val jsonObject = JSONObject(Responses.validEmptyPurchaserResponse)
-        val x = jsonObject.buildCustomerInfo()
-        assertThat(x.managementURL).isNull()
+        assertThat(emptyCustomerInfo.managementURL).isNull()
     }
 
     @Test
     fun `Original purchase date is properly retrieved`() {
-        val jsonObject = JSONObject(Responses.validFullPurchaserResponse)
-        val x = jsonObject.buildCustomerInfo()
+        val x = createCustomerInfo(Responses.validFullPurchaserResponse)
         assertThat(x.originalPurchaseDate!!.time).isEqualTo(1564183841000L)
     }
 
     @Test
     fun `Original purchase date is null if missing`() {
-        val x = JSONObject(Responses.validEmptyPurchaserResponse).buildCustomerInfo()
-        assertThat(x.originalPurchaseDate).isNull()
+        assertThat(emptyCustomerInfo.originalPurchaseDate).isNull()
     }
 
     @Test
@@ -242,17 +285,14 @@ class CustomerInfoTest {
         subscriber.put("original_purchase_date", JSONObject.NULL)
         jsonObject.put("subscriber", subscriber)
 
-        val x = jsonObject.buildCustomerInfo()
+        val x = createCustomerInfo(jsonObject)
 
         assertThat(x.originalPurchaseDate).isNull()
     }
 
     @Test
     fun `Non subscription transactions is empty if there are no non_subscriptions`() {
-        val jsonObject = JSONObject(Responses.validEmptyPurchaserResponse)
-        val x = jsonObject.buildCustomerInfo()
-
-        assertThat(x.nonSubscriptionTransactions).isEmpty()
+        assertThat(emptyCustomerInfo.nonSubscriptionTransactions).isEmpty()
     }
 
     @Test

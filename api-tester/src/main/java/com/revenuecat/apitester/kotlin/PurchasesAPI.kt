@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.Context
 import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.EntitlementVerificationMode
 import com.revenuecat.purchases.LogHandler
 import com.revenuecat.purchases.LogLevel
 import com.revenuecat.purchases.Offerings
@@ -206,6 +207,8 @@ private class PurchasesAPI {
             .observerMode(true)
             .observerMode(false)
             .service(executorService)
+            .diagnosticsEnabled(true)
+            .entitlementVerificationMode(EntitlementVerificationMode.INFORMATIONAL)
             .build()
 
         Purchases.configure(build)
@@ -240,8 +243,7 @@ private class PurchasesAPI {
             LogLevel.INFO,
             LogLevel.WARN,
             LogLevel.ERROR
-            -> {
-            }
+            -> {}
         }.exhaustive
     }
 }

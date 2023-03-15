@@ -1,9 +1,11 @@
 package com.revenuecat.purchases.common
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.EntitlementInfos
 import com.revenuecat.purchases.OwnershipType
 import com.revenuecat.purchases.PeriodType
 import com.revenuecat.purchases.Store
+import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.utils.Iso8601Utils
 import com.revenuecat.purchases.utils.Responses
 import org.assertj.core.api.Assertions.assertThat
@@ -13,30 +15,13 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import java.util.Date
+import kotlin.time.Duration.Companion.days
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
 class EntitlementInfosTests {
 
     private var response = JSONObject()
-
-    fun stubResponse(
-        entitlements: JSONObject = JSONObject(),
-        nonSubscriptions: JSONObject = JSONObject(),
-        subscriptions: JSONObject = JSONObject()
-    ) {
-        response = JSONObject().apply {
-            put("request_date", "2019-08-26T23:29:50Z")
-            put("subscriber", JSONObject().apply {
-                put("entitlements", entitlements)
-                put("first_seen", "2019-07-26T23:29:50Z")
-                put("non_subscriptions", nonSubscriptions)
-                put("original_app_user_id", "cesarsandbox1")
-                put("original_application_version", "1.0")
-                put("subscriptions", subscriptions)
-            })
-        }
-    }
 
     @Test
     fun `multiple entitlements`() {
@@ -86,8 +71,12 @@ class EntitlementInfosTests {
             }
         )
 
-        val subscriberInfo = response.buildCustomerInfo()
+        val subscriberInfo = createCustomerInfo(response, null, VerificationResult.SUCCESS)
         assertThat(subscriberInfo.entitlements.all).hasSize(2)
+        assertThat(subscriberInfo.entitlements.verification).isEqualTo(VerificationResult.SUCCESS)
+        subscriberInfo.entitlements.all.onEach { entry ->
+            assertThat(entry.value.verification).isEqualTo(VerificationResult.SUCCESS)
+        }
 
         verifySubscriberInfo()
         verifyEntitlementActive()
@@ -110,6 +99,35 @@ class EntitlementInfosTests {
             expirationDate = null,
             entitlement = "lifetime_cat"
         )
+    }
+
+    @Test
+    fun `verification error is set correctly for entitlementInfos and entitlementInfo`() {
+        stubResponse(
+            entitlements = JSONObject().apply {
+                put("pro_cat", JSONObject().apply {
+                    put("expires_date", "2200-07-26T23:50:40Z")
+                    put("product_identifier", "monthly_freetrial")
+                    put("purchase_date", "1999-07-26T23:30:41Z")
+                })
+            },
+            subscriptions = JSONObject().apply {
+                put("monthly_freetrial", JSONObject().apply {
+                    put("billing_issues_detected_at", JSONObject.NULL)
+                    put("expires_date", "2200-07-26T23:50:40Z")
+                    put("is_sandbox", false)
+                    put("original_purchase_date", "1999-07-26T23:30:41Z")
+                    put("period_type", "normal")
+                    put("purchase_date", "1999-07-26T23:30:41Z")
+                    put("store", "app_store")
+                    put("unsubscribe_detected_at", JSONObject.NULL)
+                })
+            }
+        )
+
+        val subscriberInfo = createCustomerInfo(response, null, VerificationResult.FAILED)
+        assertThat(subscriberInfo.entitlements.verification).isEqualTo(VerificationResult.FAILED)
+        assertThat(subscriberInfo.entitlements["pro_cat"]?.verification).isEqualTo(VerificationResult.FAILED)
     }
 
     @Test
@@ -137,7 +155,7 @@ class EntitlementInfosTests {
             }
         )
 
-        val subscriberInfo = response.buildCustomerInfo()
+        val subscriberInfo = createCustomerInfo(response)
         assertThat(subscriberInfo.entitlements["pro_cat"]).isNotNull
         assertThat(subscriberInfo.entitlements.active["pro_cat"]).isNotNull
     }
@@ -201,9 +219,9 @@ class EntitlementInfosTests {
     @Test
     fun `empty subscriber info`() {
         stubResponse()
-        val subscriberInfo = response.buildCustomerInfo()
+        val subscriberInfo = createCustomerInfo(response)
 
-        assertThat(subscriberInfo.firstSeen).isNotNull()
+        assertThat(subscriberInfo.firstSeen).isNotNull
         assertThat(subscriberInfo.originalAppUserId).isEqualTo("cesarsandbox1")
         assertThat(subscriberInfo.entitlements.all).isEmpty()
     }
@@ -993,21 +1011,19 @@ class EntitlementInfosTests {
     @Test
     fun `Given two same entitlementInfos, their hashcodes are the same`() {
         val jsonObject = JSONObject(Responses.validFullPurchaserResponse)
-        val x = jsonObject.buildCustomerInfo().entitlements
-        val y = jsonObject.buildCustomerInfo().entitlements
-        assertThat(x.hashCode() == y.hashCode())
+        val x = createCustomerInfo(jsonObject).entitlements
+        val y = createCustomerInfo(jsonObject).entitlements
+        assertThat(x.hashCode()).isEqualTo(y.hashCode())
     }
 
     @Test
     fun `Given two same entitlementInfo, their hashcodes are the same`() {
-        val jsonObject = JSONObject(Responses.validFullPurchaserResponse)
-
-        val all = jsonObject.buildCustomerInfo().entitlements.all
+        val all = createCustomerInfo(Responses.validFullPurchaserResponse).entitlements.all
 
         val x = all.values.toTypedArray()[0]
         val y = all.values.toTypedArray()[0]
 
-        assertThat(x.hashCode() == y.hashCode())
+        assertThat(x.hashCode()).isEqualTo(y.hashCode())
     }
 
     @Test
@@ -1175,9 +1191,128 @@ class EntitlementInfosTests {
         verifyOwnershipType(OwnershipType.UNKNOWN)
     }
 
+    // region Equality tests
+
+    @Test
+    fun `same entitlement infos with different verifications are not equal`() {
+        val entitlementInfos1 = EntitlementInfos(emptyMap(), VerificationResult.NOT_REQUESTED)
+        val entitlementInfos2 = EntitlementInfos(emptyMap(), VerificationResult.SUCCESS)
+        val entitlementInfos3 = EntitlementInfos(emptyMap(), VerificationResult.FAILED)
+        assertThat(entitlementInfos1).isNotEqualTo(entitlementInfos2)
+        assertThat(entitlementInfos1).isNotEqualTo(entitlementInfos3)
+        assertThat(entitlementInfos2).isNotEqualTo(entitlementInfos3)
+    }
+
+    @Test
+    fun `same entitlement infos with same verifications are equal`() {
+        val entitlementInfos1 = EntitlementInfos(emptyMap(), VerificationResult.NOT_REQUESTED)
+        val entitlementInfos2 = EntitlementInfos(emptyMap(), VerificationResult.NOT_REQUESTED)
+        assertThat(entitlementInfos1).isEqualTo(entitlementInfos2)
+    }
+
+    // endregion
+
+    // region EntitlementInfo active with grace periods
+
+    @Test
+    fun `entitlementInfo is active if within grace period`() {
+        stubResponse(
+            entitlements = JSONObject().apply {
+                put("pro_cat", JSONObject().apply {
+                    put("expires_date", Iso8601Utils.format(1.days.ago()))
+                    put("product_identifier", "monthly_freetrial")
+                    put("purchase_date", "2019-07-26T23:45:40Z")
+                })
+            },
+            subscriptions = JSONObject().apply {
+                put("monthly_freetrial", JSONObject().apply {
+                    put("billing_issues_detected_at", JSONObject.NULL)
+                    put("expires_date", "2200-07-26T23:50:40Z")
+                    put("is_sandbox", false)
+                    put("original_purchase_date", "2019-07-26T23:30:41Z")
+                    put("period_type", "normal")
+                    put("purchase_date", "2019-07-26T23:45:40Z")
+                    put("store", "app_store")
+                    put("unsubscribe_detected_at", JSONObject.NULL)
+                })
+            },
+            requestDate = 2.days.ago()
+        )
+
+        val customerInfo = createCustomerInfo(response)
+        assertThat(customerInfo.entitlements.all.size).isEqualTo(1)
+        assertThat(customerInfo.entitlements.all.containsKey("pro_cat")).isTrue
+        assertThat(customerInfo.entitlements.all["pro_cat"]?.isActive).isTrue
+    }
+
+    @Test
+    fun `entitlementInfo is not active if past grace period`() {
+        stubResponse(
+            entitlements = JSONObject().apply {
+                put("pro_cat", JSONObject().apply {
+                    put("expires_date", Iso8601Utils.format(1.days.ago()))
+                    put("product_identifier", "monthly_freetrial")
+                    put("purchase_date", "2019-07-26T23:45:40Z")
+                })
+            },
+            subscriptions = JSONObject().apply {
+                put("monthly_freetrial", JSONObject().apply {
+                    put("billing_issues_detected_at", JSONObject.NULL)
+                    put("expires_date", "2200-07-26T23:50:40Z")
+                    put("is_sandbox", false)
+                    put("original_purchase_date", "2019-07-26T23:30:41Z")
+                    put("period_type", "normal")
+                    put("purchase_date", "2019-07-26T23:45:40Z")
+                    put("store", "app_store")
+                    put("unsubscribe_detected_at", JSONObject.NULL)
+                })
+            },
+            requestDate = 5.days.ago()
+        )
+
+        val customerInfo = createCustomerInfo(response)
+        assertThat(customerInfo.entitlements.all.size).isEqualTo(1)
+        assertThat(customerInfo.entitlements.all.containsKey("pro_cat")).isTrue
+        assertThat(customerInfo.entitlements.all["pro_cat"]?.isActive).isFalse
+    }
+
+    @Test
+    fun `entitlementInfo is active if expiration time in the future`() {
+        stubResponse(
+            entitlements = JSONObject().apply {
+                put("pro_cat", JSONObject().apply {
+                    put("expires_date", Iso8601Utils.format(1.days.fromNow()))
+                    put("product_identifier", "monthly_freetrial")
+                    put("purchase_date", "2019-07-26T23:45:40Z")
+                })
+            },
+            subscriptions = JSONObject().apply {
+                put("monthly_freetrial", JSONObject().apply {
+                    put("billing_issues_detected_at", JSONObject.NULL)
+                    put("expires_date", "2200-07-26T23:50:40Z")
+                    put("is_sandbox", false)
+                    put("original_purchase_date", "2019-07-26T23:30:41Z")
+                    put("period_type", "normal")
+                    put("purchase_date", "2019-07-26T23:45:40Z")
+                    put("store", "app_store")
+                    put("unsubscribe_detected_at", JSONObject.NULL)
+                })
+            },
+            requestDate = 5.days.ago()
+        )
+
+        val customerInfo = createCustomerInfo(response)
+        assertThat(customerInfo.entitlements.all.size).isEqualTo(1)
+        assertThat(customerInfo.entitlements.all.containsKey("pro_cat")).isTrue
+        assertThat(customerInfo.entitlements.all["pro_cat"]?.isActive).isTrue
+    }
+
+    // endregion
+
+    // region Helpers
 
     private fun verifySubscriberInfo() {
-        val subscriberInfo = response.buildCustomerInfo()
+        val subscriberInfo = createCustomerInfo(response)
 
         assertThat(subscriberInfo).isNotNull
         assertThat(subscriberInfo.firstSeen).isEqualTo(Iso8601Utils.parse("2019-07-26T23:29:50Z"))
@@ -1188,7 +1323,7 @@ class EntitlementInfosTests {
         matcher: Boolean = true,
         entitlement: String = "pro_cat"
     ) {
-        val subscriberInfo = response.buildCustomerInfo()
+        val subscriberInfo = createCustomerInfo(response)
         val proCat = subscriberInfo.entitlements[entitlement]!!
 
         assertThat(proCat.identifier).isEqualTo(entitlement)
@@ -1203,7 +1338,7 @@ class EntitlementInfosTests {
         billingIssueDetectedAt: Date? = null,
         entitlement: String = "pro_cat"
     ) {
-        val subscriberInfo = response.buildCustomerInfo()
+        val subscriberInfo = createCustomerInfo(response)
         val proCat = subscriberInfo.entitlements[entitlement]!!
 
         assertThat(proCat.willRenew).isEqualTo(willRenew)
@@ -1215,7 +1350,7 @@ class EntitlementInfosTests {
         matcher: PeriodType = PeriodType.NORMAL,
         entitlement: String = "pro_cat"
     ) {
-        val subscriberInfo = response.buildCustomerInfo()
+        val subscriberInfo = createCustomerInfo(response)
         val proCat = subscriberInfo.entitlements[entitlement]!!
 
         assertThat(proCat.periodType).isEqualTo(matcher)
@@ -1225,7 +1360,7 @@ class EntitlementInfosTests {
         matcher: Store = Store.APP_STORE,
         entitlement: String = "pro_cat"
     ) {
-        val subscriberInfo = response.buildCustomerInfo()
+        val subscriberInfo = createCustomerInfo(response)
         val proCat = subscriberInfo.entitlements[entitlement]!!
 
         assertThat(proCat.store).isEqualTo(matcher)
@@ -1235,7 +1370,7 @@ class EntitlementInfosTests {
         matcher: OwnershipType = OwnershipType.PURCHASED,
         entitlement: String = "pro_cat"
     ) {
-        val subscriberInfo = response.buildCustomerInfo()
+        val subscriberInfo = createCustomerInfo(response)
         val proCat = subscriberInfo.entitlements[entitlement]!!
 
         assertThat(proCat.ownershipType).isEqualTo(matcher)
@@ -1245,7 +1380,7 @@ class EntitlementInfosTests {
         matcher: Boolean = false,
         entitlement: String = "pro_cat"
     ) {
-        val subscriberInfo = response.buildCustomerInfo()
+        val subscriberInfo = createCustomerInfo(response)
         val proCat = subscriberInfo.entitlements[entitlement]!!
 
         assertThat(proCat.isSandbox).isEqualTo(matcher)
@@ -1259,7 +1394,7 @@ class EntitlementInfosTests {
         expirationDate: Date? = Iso8601Utils.parse("2200-07-26T23:50:40Z"),
         entitlement: String = "pro_cat"
     ) {
-        val subscriberInfo = response.buildCustomerInfo()
+        val subscriberInfo = createCustomerInfo(response)
         val proCat = subscriberInfo.entitlements[entitlement]!!
 
         assertThat(proCat.latestPurchaseDate).isEqualTo(latestPurchaseDate)
@@ -1268,4 +1403,25 @@ class EntitlementInfosTests {
         assertThat(proCat.productIdentifier).isEqualTo(identifier)
         assertThat(proCat.productPlanIdentifier).isEqualTo(planIdentifier)
     }
+
+    private fun stubResponse(
+        entitlements: JSONObject = JSONObject(),
+        nonSubscriptions: JSONObject = JSONObject(),
+        subscriptions: JSONObject = JSONObject(),
+        requestDate: Date = Iso8601Utils.parse("2019-08-26T23:29:50Z")
+    ) {
+        response = JSONObject().apply {
+            put("request_date", Iso8601Utils.format(requestDate))
+            put("subscriber", JSONObject().apply {
+                put("entitlements", entitlements)
+                put("first_seen", "2019-07-26T23:29:50Z")
+                put("non_subscriptions", nonSubscriptions)
+                put("original_app_user_id", "cesarsandbox1")
+                put("original_application_version", "1.0")
+                put("subscriptions", subscriptions)
+            })
+        }
+    }
+
+    // endregion
 }
