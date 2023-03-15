@@ -129,14 +129,14 @@ class SigningManagerTest {
             body = null,
             eTag = "test-etag"
         )
-        assertThat(verificationResult).isEqualTo(VerificationResult.SUCCESS)
+        assertThat(verificationResult).isEqualTo(VerificationResult.VERIFIED)
     }
 
     @Test
     fun `verifyResponse returns success if verifier returns success for given parameters`() {
         every { verifier.verify(any(), any()) } returns true
         val verificationResult = callVerifyResponse(informationalSigningManager)
-        assertThat(verificationResult).isEqualTo(VerificationResult.SUCCESS)
+        assertThat(verificationResult).isEqualTo(VerificationResult.VERIFIED)
     }
 
     @Test
@@ -150,7 +150,7 @@ class SigningManagerTest {
     fun `verifyResponse with real data verifies correctly`() {
         val signingManager = SigningManager(SignatureVerificationMode.Informational(DefaultSignatureVerifier()))
         val verificationResult = callVerifyResponse(signingManager)
-        assertThat(verificationResult).isEqualTo(VerificationResult.SUCCESS)
+        assertThat(verificationResult).isEqualTo(VerificationResult.VERIFIED)
     }
 
     @Suppress("MaxLineLength")
@@ -175,7 +175,7 @@ class SigningManagerTest {
     fun `verifyResponse returns success for enforced mode if verifier returns success for given parameters`() {
         every { verifier.verify(any(), any()) } returns true
         val verificationResult = callVerifyResponse(enforcedSigningManager)
-        assertThat(verificationResult).isEqualTo(VerificationResult.SUCCESS)
+        assertThat(verificationResult).isEqualTo(VerificationResult.VERIFIED)
     }
 
     // endregion
