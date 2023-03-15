@@ -29,7 +29,7 @@ class EntitlementInfoTest {
     fun `same entitlement info with different verification are not equal`() {
         val entitlementInfo1 = createEntitlementInfo(verification = VerificationResult.NOT_REQUESTED)
         val entitlementInfo2 = createEntitlementInfo(verification = VerificationResult.FAILED)
-        val entitlementInfo3 = createEntitlementInfo(verification = VerificationResult.SUCCESS)
+        val entitlementInfo3 = createEntitlementInfo(verification = VerificationResult.VERIFIED)
         assertThat(entitlementInfo1).isNotEqualTo(entitlementInfo2)
         assertThat(entitlementInfo1).isNotEqualTo(entitlementInfo3)
         assertThat(entitlementInfo2).isNotEqualTo(entitlementInfo3)

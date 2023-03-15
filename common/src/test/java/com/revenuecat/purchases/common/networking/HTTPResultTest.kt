@@ -19,14 +19,14 @@ class HTTPResultTest {
             "{\"test-key\":\"test-value\"}",
             HTTPResult.Origin.BACKEND,
             Date(1678180617000), // Tuesday, March 7, 2023 9:16:57 AM GMT,
-            VerificationResult.SUCCESS
+            VerificationResult.VERIFIED
         )
         assertThat(result.serialize()).isEqualTo("{" +
             "\"responseCode\":200," +
             "\"payload\":\"{\\\"test-key\\\":\\\"test-value\\\"}\"," +
             "\"origin\":\"BACKEND\"," +
             "\"requestDate\":1678180617000," +
-            "\"verificationResult\":\"SUCCESS\"}"
+            "\"verificationResult\":\"VERIFIED\"}"
         )
     }
 
@@ -37,13 +37,13 @@ class HTTPResultTest {
             "{\"test-key\":\"test-value\"}",
             HTTPResult.Origin.BACKEND,
             null,
-            VerificationResult.SUCCESS
+            VerificationResult.VERIFIED
         )
         assertThat(result.serialize()).isEqualTo("{" +
             "\"responseCode\":200," +
             "\"payload\":\"{\\\"test-key\\\":\\\"test-value\\\"}\"," +
             "\"origin\":\"BACKEND\"," +
-            "\"verificationResult\":\"SUCCESS\"}"
+            "\"verificationResult\":\"VERIFIED\"}"
         )
     }
 

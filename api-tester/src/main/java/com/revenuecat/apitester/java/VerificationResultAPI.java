@@ -7,7 +7,7 @@ final class VerificationResultAPI {
     static void check(final VerificationResult verificationResult) {
         switch (verificationResult) {
             case NOT_REQUESTED:
-            case SUCCESS:
+            case VERIFIED:
             case FAILED:
         }
     }

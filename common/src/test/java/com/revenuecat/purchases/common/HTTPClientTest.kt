@@ -281,7 +281,7 @@ class HTTPClientTest: BaseHTTPClientTest() {
         val endpoint = Endpoint.GetCustomerInfo("test-user-id")
         enqueue(
             endpoint = endpoint,
-            expectedResult = HTTPResult.createResult(verificationResult = VerificationResult.SUCCESS)
+            expectedResult = HTTPResult.createResult(verificationResult = VerificationResult.VERIFIED)
         )
 
         client.performRequest(

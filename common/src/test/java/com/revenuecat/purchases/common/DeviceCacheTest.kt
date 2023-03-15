@@ -43,7 +43,7 @@ class DeviceCacheTest {
     private val validCachedCustomerInfo by lazy {
         JSONObject(Responses.validFullPurchaserResponse).apply {
             put("schema_version", CUSTOMER_INFO_SCHEMA_VERSION)
-            put("verification_result", VerificationResult.SUCCESS)
+            put("verification_result", VerificationResult.VERIFIED)
         }.toString()
     }
 
@@ -110,7 +110,7 @@ class DeviceCacheTest {
         mockString(cache.customerInfoCacheKey(appUserID), validCachedCustomerInfo)
         val info = cache.getCachedCustomerInfo(appUserID)
         assertThat(info).`as`("info is not null").isNotNull
-        assertThat(info?.entitlements?.verification).isEqualTo(VerificationResult.SUCCESS)
+        assertThat(info?.entitlements?.verification).isEqualTo(VerificationResult.VERIFIED)
     }
 
     @Test
@@ -193,7 +193,7 @@ class DeviceCacheTest {
             mockEditor.putLong(cache.customerInfoLastUpdatedCacheKey(appUserID), any())
         } returns mockEditor
 
-        val info = createCustomerInfo(Responses.validFullPurchaserResponse, null, VerificationResult.SUCCESS)
+        val info = createCustomerInfo(Responses.validFullPurchaserResponse, null, VerificationResult.VERIFIED)
         val infoJSONSlot = slot<String>()
 
         every {
@@ -204,7 +204,7 @@ class DeviceCacheTest {
 
         val cachedJSON = JSONObject(infoJSONSlot.captured)
         assertThat(cachedJSON.has("verification_result")).isTrue
-        assertThat(cachedJSON.getString("verification_result")).isEqualTo(VerificationResult.SUCCESS.name)
+        assertThat(cachedJSON.getString("verification_result")).isEqualTo(VerificationResult.VERIFIED.name)
     }
 
     @Test

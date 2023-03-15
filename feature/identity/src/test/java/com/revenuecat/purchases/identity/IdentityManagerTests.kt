@@ -457,7 +457,7 @@ class IdentityManagerTests {
         val userId = "test-app-user-id"
         setupCustomerInfoCacheInvalidationTest(
             userId,
-            VerificationResult.SUCCESS,
+            VerificationResult.VERIFIED,
             SignatureVerificationMode.Informational(mockk()),
             shouldClearCustomerInfoAndETagCaches = false
         )

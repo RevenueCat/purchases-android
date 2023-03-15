@@ -35,7 +35,7 @@ class ParcelableTests {
         CustomerInfo(
             entitlements = EntitlementInfos(
                 mapOf("an_identifier" to getEntitlementInfo(identifier = "an_identifier")),
-                VerificationResult.SUCCESS
+                VerificationResult.VERIFIED
             ),
             allExpirationDatesByProduct = mapOf("a_product" to Date(System.currentTimeMillis())),
             allPurchaseDatesByProduct = mapOf("a_product" to Date(System.currentTimeMillis())),
