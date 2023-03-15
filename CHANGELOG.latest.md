@@ -20,6 +20,12 @@ purchases.getCustomerInfoWith(
 )
 ```
 
+#### Grace period for entitlements
+
+With this new feature, we will give users an up-to 3 day grace period to reconnect after the
+cached subscription has expired. After this grace period has passed, users will lose their entitlements until they
+reconnect with our backend in order to validate that the subscription is still active.
+
 ### New Features
 * Entitlements verification (#841) via Toni Rico (@tonidero)
 * Grant grace period for entitlements when the backend is offline (#851) via Toni Rico (@tonidero)
