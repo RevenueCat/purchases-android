@@ -17,7 +17,7 @@ class ProductConverterTest {
         val expectedSku = "sku"
         val product = dummyAmazonProduct(expectedSku)
         val storeProduct = product.toStoreProduct("US")
-        assertThat(storeProduct?.productId).isEqualTo(expectedSku)
+        assertThat(storeProduct?.id).isEqualTo(expectedSku)
     }
 
     @Test
@@ -85,7 +85,7 @@ class ProductConverterTest {
     fun `subscription period is null`() {
         val product = dummyAmazonProduct()
         val storeProduct = product.toStoreProduct("US")
-        assertThat(storeProduct?.subscriptionPeriod).isNull()
+        assertThat(storeProduct?.period).isNull()
     }
 
 //    @Test
