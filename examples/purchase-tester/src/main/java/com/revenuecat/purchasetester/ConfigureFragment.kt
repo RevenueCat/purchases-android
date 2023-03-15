@@ -82,7 +82,7 @@ class ConfigureFragment : Fragment() {
         val application = (requireActivity().application as MainApplication)
 
         if (proxyUrl.isNotEmpty()) Purchases.proxyURL = URL(proxyUrl)
-        println("Test message")
+
         Purchases.logLevel = LogLevel.VERBOSE
 
         val configurationBuilder =
