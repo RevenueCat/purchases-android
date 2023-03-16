@@ -6,6 +6,7 @@ import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.MICROS_MULTIPLIER
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.models.Period
+import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.SubscriptionOption
@@ -31,7 +32,6 @@ data class AmazonStoreProduct(
     override val title: String,
     override val description: String,
     override val period: Period?,
-
     override val price: com.revenuecat.purchases.models.Price,
     override val subscriptionOptions: SubscriptionOptions?,
     override val defaultOption: SubscriptionOption?,
@@ -49,14 +49,17 @@ data class AmazonStoreProduct(
     )
     override val sku: String
         get() = id
-
-    // We use this to not include the originalJSON in the equals
-    /*override fun equals(other: Any?) = other is StoreProduct && ComparableData(this) == ComparableData(other)
-    override fun hashCode() = ComparableData(this).hashCode()*/ // TODOBC5
 }
 
 val StoreProduct.amazonProduct: AmazonStoreProduct?
     get() = this as? AmazonStoreProduct
+
+// fun Product.toSubscriptionOption(): SubscriptionOption {
+//    val pricingPhase = PricingPhase(
+//
+//    )
+// }
+
 fun Product.toStoreProduct(marketplace: String): StoreProduct? {
     if (price == null) {
         log(LogIntent.AMAZON_ERROR, AmazonStrings.PRODUCT_PRICE_MISSING.format(sku))
@@ -64,9 +67,13 @@ fun Product.toStoreProduct(marketplace: String): StoreProduct? {
     }
     // By default, Amazon automatically converts the base list price of your IAP items into
     // the local currency of each marketplace where they can be sold, and customers will see IAP items in English.
-    val (currencyCode, priceAmountMicros) = price.extractPrice(marketplace)
+    val priceInfo = price.createPrice(marketplace)
 
-    val priceInfo = com.revenuecat.purchases.models.Price(price, priceAmountMicros, currencyCode)
+//    val subscriptionOptions = if (productType.toRevenueCatProductType() == ProductType.SUBS) {
+//        SubscriptionOptions(listOf(this.toSubscriptionOption()))
+//    } else {
+//        null
+//    }
 
     return AmazonStoreProduct(
         sku,
@@ -83,21 +90,13 @@ fun Product.toStoreProduct(marketplace: String): StoreProduct? {
     )
 }
 
-internal fun String.extractPrice(marketplace: String): Price {
+internal fun String.createPrice(marketplace: String): Price {
     val priceNumeric = this.parsePriceUsingRegex() ?: BigDecimal.ZERO
     val priceAmountMicros = (priceNumeric * BigDecimal(MICROS_MULTIPLIER)).toLong()
     val currencyCode = ISO3166Alpha2ToISO42170Converter.convertOrEmpty(marketplace)
 
-    return Price(
-        currencyCode,
-        priceAmountMicros
-    )
+    return Price(this, priceAmountMicros, currencyCode)
 }
-
-internal data class Price(
-    val currencyCode: String,
-    val priceAmountMicros: Long
-)
 
 // Explanations about the regexp:
 // \\d+: match the first(s) number(s)
