@@ -104,17 +104,17 @@ private class PurchasesAPI {
         val prorationMode = GoogleProrationMode.IMMEDIATE_WITH_TIME_PRORATION
         val isPersonalizedPrice = true
 
-        val purchasePackageBuilder: PurchaseParams.Builder = PurchaseParams.Builder(packageToPurchase, activity)
+        val purchasePackageBuilder: PurchaseParams.Builder = PurchaseParams.Builder(activity, packageToPurchase)
         purchasePackageBuilder.oldProductId(oldProductId).googleProrationMode(prorationMode)
         val purchasePackageParams: PurchaseParams = purchasePackageBuilder.build()
         purchases.purchase(purchasePackageParams, purchaseCallback)
 
-        val purchaseProductBuilder: PurchaseParams.Builder = PurchaseParams.Builder(storeProduct, activity)
+        val purchaseProductBuilder: PurchaseParams.Builder = PurchaseParams.Builder(activity, storeProduct)
         purchaseProductBuilder.oldProductId(oldProductId).googleProrationMode(prorationMode)
         val purchaseProductParams: PurchaseParams = purchaseProductBuilder.build()
         purchases.purchase(purchaseProductParams, purchaseCallback)
 
-        val purchaseOptionBuilder: PurchaseParams.Builder = PurchaseParams.Builder(subscriptionOption, activity)
+        val purchaseOptionBuilder: PurchaseParams.Builder = PurchaseParams.Builder(activity, subscriptionOption)
         purchaseOptionBuilder.oldProductId(oldProductId).googleProrationMode(prorationMode)
         val purchaseOptionsParams: PurchaseParams = purchaseOptionBuilder.build()
         purchases.purchase(purchaseOptionsParams, purchaseCallback)

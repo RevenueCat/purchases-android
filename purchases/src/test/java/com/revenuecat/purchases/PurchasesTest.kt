@@ -4375,9 +4375,9 @@ class PurchasesTest {
         isPersonalizedPrice: Boolean? = null
     ): PurchaseParams {
         val builder = when (purchaseable) {
-            is SubscriptionOption -> PurchaseParams.Builder(purchaseable, mockActivity)
-            is Package -> PurchaseParams.Builder(purchaseable, mockActivity)
-            is StoreProduct -> PurchaseParams.Builder(purchaseable, mockActivity)
+            is SubscriptionOption -> PurchaseParams.Builder(mockActivity, purchaseable)
+            is Package -> PurchaseParams.Builder(mockActivity, purchaseable)
+            is StoreProduct -> PurchaseParams.Builder(mockActivity, purchaseable)
             else -> null
         }
 

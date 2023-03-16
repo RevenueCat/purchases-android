@@ -18,6 +18,10 @@ import kotlin.time.Duration.Companion.days
 @Config(manifest = Config.NONE)
 class EntitlementInfoTest {
 
+    private val oneDayAgo = 1.days.ago()
+    private val twoDaysAgo = 2.days.ago()
+    private val oneDayFromNow = 1.days.fromNow()
+
     @Test
     fun `same entitlement info are equal`() {
         val entitlementInfo1 = createEntitlementInfo()
@@ -40,9 +44,9 @@ class EntitlementInfoTest {
         isActive: Boolean = true,
         willRenew: Boolean = true,
         periodType: PeriodType = PeriodType.NORMAL,
-        latestPurchaseDate: Date = 1.days.ago(),
-        originalPurchaseDate: Date = 2.days.ago(),
-        expirationDate: Date? = 1.days.fromNow(),
+        latestPurchaseDate: Date = oneDayAgo,
+        originalPurchaseDate: Date = twoDaysAgo,
+        expirationDate: Date? = oneDayFromNow,
         store: Store = Store.PLAY_STORE,
         productIdentifier: String = "test-product-id",
         productPlanIdentifier: String = "test-plan-id",
