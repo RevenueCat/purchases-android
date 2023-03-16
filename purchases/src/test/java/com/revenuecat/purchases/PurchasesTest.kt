@@ -160,7 +160,6 @@ class PurchasesTest {
         mockkObject(LockedFeature.AmazonStore)
         every { LockedFeature.AmazonStore.isLocked } returns false
 
-        mockkStatic("com.revenuecat.purchases.common.CustomerInfoFactoriesKt")
         mockkStatic(ProcessLifecycleOwner::class)
 
         val productIds = listOf(STUB_PRODUCT_IDENTIFIER)
@@ -4702,7 +4701,7 @@ class PurchasesTest {
                 dangerousSettings = DangerousSettings(autoSyncPurchases = autoSync)
             ),
             customerInfoHelper = mockCustomerInfoHelper,
-            offeringParser = OfferingParserFactory.createOfferingParser(Store.PLAY_STORE)
+            offeringParser = OfferingParserFactory.createOfferingParser(Store.PLAY_STORE),
             diagnosticsSynchronizer = mockDiagnosticsSynchronizer
         )
         Purchases.sharedInstance = purchases
