@@ -74,6 +74,18 @@
                                 bind:detail="@{viewModel.customerInfo.originalAppUserId}"
                                 bind:header="@{`Original App User Id: `}" />
 
+                        <include
+                                android:id="@+id/customer_info_verification_result"
+                                layout="@layout/row_view"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_marginEnd="@dimen/padding_small"
+                                app:layout_constraintEnd_toStartOf="@+id/customer_info_card_barrier"
+                                app:layout_constraintStart_toStartOf="parent"
+                                app:layout_constraintTop_toBottomOf="@+id/customer_info_app_user_id"
+                                bind:detail="@{viewModel.verificationResult.name()}"
+                                bind:header="@{`Current verification result: `}" />
+
                         <androidx.appcompat.widget.AppCompatImageButton
                                 android:id="@+id/customer_info_copy_user_id_button"
                                 android:layout_width="wrap_content"
@@ -92,7 +104,7 @@
                                 android:layout_height="wrap_content"
                                 app:layout_constraintEnd_toStartOf="@+id/customer_info_card_barrier"
                                 app:layout_constraintStart_toStartOf="parent"
-                                app:layout_constraintTop_toBottomOf="@+id/customer_info_app_user_id"
+                                app:layout_constraintTop_toBottomOf="@+id/customer_info_verification_result"
                                 bind:header="@{`Active Entitlements: `}"
                                 bind:detail="@{viewModel.activeEntitlements}"/>
 
