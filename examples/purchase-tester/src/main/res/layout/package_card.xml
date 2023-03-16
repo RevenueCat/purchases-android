@@ -19,6 +19,11 @@
         <variable
                 name="isSubscription"
                 type="Boolean" />
+
+        <variable
+                name="isPlayStore"
+                type="Boolean" />
+
     </data>
 
     <com.google.android.material.card.MaterialCardView
@@ -139,12 +144,12 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:text="Is product change?"
+                    android:enabled="@{isPlayStore}"
                     app:layout_constraintStart_toStartOf="@+id/package_buy_button"
                     app:layout_constraintEnd_toEndOf="@id/package_buy_button"
                     app:layout_constraintTop_toTopOf="parent"
                     app:layout_constraintBottom_toTopOf="@+id/package_buy_button"/>
 
-            <!-- TODO BC5 enable based on whether current base plan is active -->
             <com.google.android.material.button.MaterialButton
                     android:id="@+id/package_buy_button"
                     android:layout_width="0dp"
@@ -156,7 +161,6 @@
                     app:layout_constraintTop_toBottomOf="@+id/is_upgrade_checkbox"
                     app:layout_constraintStart_toStartOf="@+id/option_buy_button"/>
 
-            <!-- TODO BC5 enable based on whether current base plan is active -->
             <com.google.android.material.button.MaterialButton
                     android:id="@+id/product_buy_button"
                     android:layout_width="0dp"
@@ -171,7 +175,6 @@
                     android:id="@+id/option_buy_button"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:enabled="@{!isActive}"
                     android:text="Buy option"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintTop_toBottomOf="@+id/product_buy_button" />

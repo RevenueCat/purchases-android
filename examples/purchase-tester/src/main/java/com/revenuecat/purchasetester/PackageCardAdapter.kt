@@ -19,7 +19,8 @@ import com.revenuecat.purchases_sample.databinding.PackageCardBinding
 class PackageCardAdapter(
     private val packages: List<Package>,
     private val activeSubscriptions: Set<String>,
-    private val listener: PackageCardAdapterListener
+    private val listener: PackageCardAdapterListener,
+    private val isPlayStore: Boolean
 ) :
     RecyclerView.Adapter<PackageCardAdapter.PackageViewHolder>() {
 
@@ -31,7 +32,7 @@ class PackageCardAdapter(
     override fun getItemCount(): Int = packages.size
 
     override fun onBindViewHolder(holder: PackageViewHolder, position: Int) {
-        holder.bind(packages[position])
+        holder.bind(packages[position], isPlayStore)
     }
 
     inner class PackageViewHolder(private val binding: PackageCardBinding) :
@@ -39,11 +40,12 @@ class PackageCardAdapter(
 
         private val nothingCheckedIndex = -1
 
-        fun bind(currentPackage: Package) {
+        fun bind(currentPackage: Package, isPlayStore: Boolean) {
             val product = currentPackage.product
             binding.currentPackage = currentPackage
             binding.isSubscription = product.type == ProductType.SUBS
             binding.isActive = activeSubscriptions.contains(product.id)
+            binding.isPlayStore = isPlayStore
 
             binding.packageBuyButton.setOnClickListener {
                 listener.onPurchasePackageClicked(
