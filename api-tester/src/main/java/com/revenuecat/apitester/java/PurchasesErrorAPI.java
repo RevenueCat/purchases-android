@@ -39,6 +39,7 @@ final class PurchasesErrorAPI {
             case UnsupportedError:
             case EmptySubscriberAttributesError:
             case CustomerInfoError:
+            case SignatureVerificationError:
         }
     }
 }

@@ -8,6 +8,7 @@ import androidx.annotation.Nullable;
 
 import com.revenuecat.purchases.CacheFetchPolicy;
 import com.revenuecat.purchases.CustomerInfo;
+import com.revenuecat.purchases.EntitlementVerificationMode;
 import com.revenuecat.purchases.LogHandler;
 import com.revenuecat.purchases.LogLevel;
 import com.revenuecat.purchases.Offerings;
@@ -180,6 +181,8 @@ final class PurchasesAPI {
                 .observerMode(true)
                 .observerMode(false)
                 .service(executorService)
+                .diagnosticsEnabled(true)
+                .entitlementVerificationMode(EntitlementVerificationMode.INFORMATIONAL)
                 .build();
 
         Purchases.configure(build);
@@ -203,25 +206,11 @@ final class PurchasesAPI {
     static void checkLogHandler() {
         Purchases.setLogHandler(
                 new LogHandler() {
-                    @Override
-                    public void v(@NonNull String tag, @NonNull String msg) {
-                    }
-
-                    @Override
-                    public void d(@NonNull String tag, @NonNull String msg) {
-                    }
-
-                    @Override
-                    public void i(@NonNull String tag, @NonNull String msg) {
-                    }
-
-                    @Override
-                    public void w(@NonNull String tag, @NonNull String msg) {
-                    }
-
-                    @Override
-                    public void e(@NonNull String tag, @NonNull String msg, @Nullable Throwable throwable) {
-                    }
+                    @Override public void v(@NonNull String tag, @NonNull String msg) {}
+                    @Override public void d(@NonNull String tag, @NonNull String msg) {}
+                    @Override public void i(@NonNull String tag, @NonNull String msg) {}
+                    @Override public void w(@NonNull String tag, @NonNull String msg) {}
+                    @Override public void e(@NonNull String tag, @NonNull String msg, @Nullable Throwable throwable) {}
                 }
         );
         final LogHandler handler = Purchases.getLogHandler();

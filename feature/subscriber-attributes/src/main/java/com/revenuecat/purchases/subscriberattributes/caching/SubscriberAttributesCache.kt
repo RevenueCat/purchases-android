@@ -57,19 +57,22 @@ class SubscriberAttributesCache(
         getAllStoredSubscriberAttributes(appUserID).filterUnsynced(appUserID)
 
     @Synchronized
-    fun clearSubscriberAttributesIfSyncedForSubscriber(appUserID: String) {
-        val unsyncedSubscriberAttributes = getUnsyncedSubscriberAttributes(appUserID)
-        if (unsyncedSubscriberAttributes.isNotEmpty()) {
-            return
-        }
+    fun clearAllSubscriberAttributesFromUser(appUserID: AppUserID) {
         log(LogIntent.DEBUG, AttributionStrings.DELETING_ATTRIBUTES.format(appUserID))
         val allStoredSubscriberAttributes = getAllStoredSubscriberAttributes()
         val updatedStoredSubscriberAttributes =
             allStoredSubscriberAttributes.toMutableMap().also {
                 it.remove(appUserID)
             }.toMap()
-
         deviceCache.putAttributes(updatedStoredSubscriberAttributes)
+    }
+
+    @Synchronized
+    fun clearSubscriberAttributesIfSyncedForSubscriber(appUserID: AppUserID) {
+        val unsyncedSubscriberAttributes = getUnsyncedSubscriberAttributes(appUserID)
+        if (unsyncedSubscriberAttributes.isEmpty()) {
+            clearAllSubscriberAttributesFromUser(appUserID)
+        }
     }
 
     @Synchronized

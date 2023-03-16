@@ -31,7 +31,9 @@ import com.revenuecat.purchases.common.ReplaceProductInfo
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.currentLogHandler
 import com.revenuecat.purchases.common.debugLogsEnabled
+import com.revenuecat.purchases.common.diagnostics.DiagnosticsSynchronizer
 import com.revenuecat.purchases.common.errorLog
+import com.revenuecat.purchases.common.infoLog
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.subscriberattributes.SubscriberAttributeKey
@@ -47,8 +49,8 @@ import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import com.revenuecat.purchases.models.BillingFeature
-import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.PurchaseState
+import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.SubscriptionOption
@@ -92,6 +94,7 @@ class Purchases internal constructor(
     @set:JvmSynthetic @get:JvmSynthetic internal var appConfig: AppConfig,
     private val customerInfoHelper: CustomerInfoHelper,
     private val offeringParser: OfferingParser,
+    diagnosticsSynchronizer: DiagnosticsSynchronizer?,
     // This is nullable due to: https://github.com/RevenueCat/purchases-flutter/issues/408
     private val mainHandler: Handler? = Handler(Looper.getMainLooper())
 ) : LifecycleDelegate {
@@ -162,6 +165,8 @@ class Purchases internal constructor(
         if (!appConfig.dangerousSettings.autoSyncPurchases) {
             log(LogIntent.WARNING, AUTO_SYNC_PURCHASES_DISABLED)
         }
+
+        diagnosticsSynchronizer?.syncDiagnosticsFileIfNeeded()
     }
 
     /** @suppress */
@@ -202,8 +207,7 @@ class Purchases internal constructor(
 
     /**
      * This method will send all the purchases to the RevenueCat backend. Call this when using your own implementation
-     * for subscriptions anytime a sync is needed, like after a successful purchase, or when migrating existing
-     * users to RevenueCat
+     * for subscriptions anytime a sync is needed, such as when migrating existing users to RevenueCat
      *
      * @warning This function should only be called if you're migrating to RevenueCat or in observer mode.
      */
@@ -1910,9 +1914,7 @@ class Purchases internal constructor(
         @Deprecated(message = "Use logLevel instead")
         var debugLogsEnabled
             get() = logLevel.debugLogsEnabled
-            set(value) {
-                logLevel = LogLevel.debugLogsEnabled(value)
-            }
+            set(value) { logLevel = LogLevel.debugLogsEnabled(value) }
 
         /**
          * Configure log level. Useful for debugging issues with the lovely team @RevenueCat
@@ -1921,9 +1923,7 @@ class Purchases internal constructor(
         @JvmStatic
         var logLevel: LogLevel
             get() = Config.logLevel
-            set(value) {
-                Config.logLevel = value
-            }
+            set(value) { Config.logLevel = value }
 
         /**
          * Set a custom log handler for redirecting logs to your own logging system.
@@ -1988,6 +1988,9 @@ class Purchases internal constructor(
         fun configure(
             configuration: PurchasesConfiguration
         ): Purchases {
+            if (isConfigured) {
+                infoLog(ConfigureStrings.INSTANCE_ALREADY_EXISTS)
+            }
             if (configuration.store == Store.AMAZON && LockedFeature.AmazonStore.isLocked) {
                 throw FeatureNotSupportedException(LockedFeature.AmazonStore)
             }

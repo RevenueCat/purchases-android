@@ -23,24 +23,24 @@ import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.OfferingParser
+import com.revenuecat.purchases.common.CustomerInfoFactory
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.PostReceiptDataErrorCallback
 import com.revenuecat.purchases.common.PostReceiptDataSuccessCallback
 import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.ReplaceProductInfo
-import com.revenuecat.purchases.common.buildCustomerInfo
 import com.revenuecat.purchases.common.caching.DeviceCache
+import com.revenuecat.purchases.common.diagnostics.DiagnosticsSynchronizer
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.google.billingResponseToPurchasesError
 import com.revenuecat.purchases.google.toGoogleProductType
-import com.revenuecat.purchases.google.toStoreProduct
 import com.revenuecat.purchases.google.toInAppStoreProduct
+import com.revenuecat.purchases.google.toStoreProduct
 import com.revenuecat.purchases.google.toStoreTransaction
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
 import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
-import com.revenuecat.purchases.interfaces.PurchaseErrorCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import com.revenuecat.purchases.models.BillingFeature
@@ -52,20 +52,20 @@ import com.revenuecat.purchases.strings.PurchaseStrings
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttribute
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.subscriberattributes.toBackendMap
+import com.revenuecat.purchases.utils.ONE_OFFERINGS_RESPONSE
 import com.revenuecat.purchases.utils.Responses
+import com.revenuecat.purchases.utils.STUB_OFFERING_IDENTIFIER
+import com.revenuecat.purchases.utils.STUB_PRODUCT_IDENTIFIER
 import com.revenuecat.purchases.utils.SyncDispatcher
 import com.revenuecat.purchases.utils.createMockOneTimeProductDetails
 import com.revenuecat.purchases.utils.createMockProductDetailsFreeTrial
-import com.revenuecat.purchases.utils.ONE_OFFERINGS_RESPONSE
 import com.revenuecat.purchases.utils.stubFreeTrialPricingPhase
 import com.revenuecat.purchases.utils.stubGooglePurchase
-import com.revenuecat.purchases.utils.STUB_OFFERING_IDENTIFIER
 import com.revenuecat.purchases.utils.stubOfferings
 import com.revenuecat.purchases.utils.stubPricingPhase
-import com.revenuecat.purchases.utils.STUB_PRODUCT_IDENTIFIER
 import com.revenuecat.purchases.utils.stubPurchaseHistoryRecord
-import com.revenuecat.purchases.utils.stubSubscriptionOption
 import com.revenuecat.purchases.utils.stubStoreProduct
+import com.revenuecat.purchases.utils.stubSubscriptionOption
 import io.mockk.Call
 import io.mockk.CapturingSlot
 import io.mockk.MockKAnswerScope
@@ -86,7 +86,6 @@ import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.assertj.core.api.AssertionsForClassTypes
 import org.json.JSONObject
 import org.junit.After
-import org.junit.Assert.assertEquals
 import org.junit.Assert.fail
 import org.junit.Before
 import org.junit.Test
@@ -117,6 +116,7 @@ class PurchasesTest {
     private val mockSubscriberAttributesManager = mockk<SubscriberAttributesManager>()
     private val mockCustomerInfoHelper = mockk<CustomerInfoHelper>()
     lateinit var mockOfferingParser: OfferingParser
+    private val mockDiagnosticsSynchronizer = mockk<DiagnosticsSynchronizer>()
 
     private var capturedPurchasesUpdatedListener = slot<BillingAbstract.PurchasesUpdatedListener>()
     private var capturedBillingWrapperStateListener = slot<BillingAbstract.StateListener>()
@@ -175,6 +175,9 @@ class PurchasesTest {
         } just Runs
         every {
             mockIdentityManager.configure(any())
+        } just Runs
+        every {
+            mockDiagnosticsSynchronizer.syncDiagnosticsFileIfNeeded()
         } just Runs
 
         anonymousSetup(false)
@@ -262,6 +265,31 @@ class PurchasesTest {
         assertThat(purchases).isNotNull
 
         assertThat(purchases.appUserID).isEqualTo(randomAppUserId)
+    }
+
+    @Test
+    fun `diagnostics is synced if needed on constructor`() {
+        verify(exactly = 1) { mockDiagnosticsSynchronizer.syncDiagnosticsFileIfNeeded() }
+    }
+
+    @Test
+    fun getsSubscriptionSkus() {
+        val skus = listOf("onemonth_freetrial")
+
+        val skuDetails = mockStoreProduct(skus, listOf(), ProductType.SUBS)
+
+        purchases.getSubscriptionSkus(skus,
+            object : GetStoreProductsCallback {
+                override fun onReceived(storeProducts: List<StoreProduct>) {
+                    receivedProducts = storeProducts
+                }
+
+                override fun onError(error: PurchasesError) {
+                    fail("shouldn't be error")
+                }
+            })
+
+        assertThat(receivedProducts).isEqualTo(skuDetails)
     }
 
     @Test
@@ -2254,7 +2282,11 @@ class PurchasesTest {
             }
         }
 
-        val mockInfo = JSONObject(Responses.validFullPurchaserResponse).buildCustomerInfo()
+        val mockInfo = CustomerInfoFactory.buildCustomerInfo(
+            JSONObject(Responses.validFullPurchaserResponse),
+            null,
+            VerificationResult.NOT_REQUESTED
+        )
         every {
             mockBackend.postReceiptData(
                 purchaseToken = any(),
@@ -4671,6 +4703,7 @@ class PurchasesTest {
             ),
             customerInfoHelper = mockCustomerInfoHelper,
             offeringParser = OfferingParserFactory.createOfferingParser(Store.PLAY_STORE)
+            diagnosticsSynchronizer = mockDiagnosticsSynchronizer
         )
         Purchases.sharedInstance = purchases
         purchases.state = purchases.state.copy(appInBackground = false)

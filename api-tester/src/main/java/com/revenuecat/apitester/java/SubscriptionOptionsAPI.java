@@ -1,6 +1,5 @@
 package com.revenuecat.apitester.java;
 
-import com.revenuecat.purchases.models.PricingPhase;
 import com.revenuecat.purchases.models.SubscriptionOption;
 import com.revenuecat.purchases.models.SubscriptionOptions;
 

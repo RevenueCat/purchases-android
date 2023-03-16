@@ -11,7 +11,9 @@ open class PurchasesConfiguration(builder: Builder) {
     val observerMode: Boolean
     val service: ExecutorService?
     val store: Store
+    val diagnosticsEnabled: Boolean
     val dangerousSettings: DangerousSettings
+    val verificationMode: EntitlementVerificationMode
 
     init {
         this.context = builder.context
@@ -20,6 +22,8 @@ open class PurchasesConfiguration(builder: Builder) {
         this.observerMode = builder.observerMode
         this.service = builder.service
         this.store = builder.store
+        this.diagnosticsEnabled = builder.diagnosticsEnabled
+        this.verificationMode = builder.verificationMode
         this.dangerousSettings = builder.dangerousSettings
     }
 
@@ -32,6 +36,9 @@ open class PurchasesConfiguration(builder: Builder) {
         @set:JvmSynthetic @get:JvmSynthetic internal var observerMode: Boolean = false
         @set:JvmSynthetic @get:JvmSynthetic internal var service: ExecutorService? = null
         @set:JvmSynthetic @get:JvmSynthetic internal var store: Store = Store.PLAY_STORE
+        @set:JvmSynthetic @get:JvmSynthetic internal var diagnosticsEnabled: Boolean = false
+        @set:JvmSynthetic @get:JvmSynthetic internal var verificationMode: EntitlementVerificationMode =
+            EntitlementVerificationMode.default
         @set:JvmSynthetic @get:JvmSynthetic internal var dangerousSettings: DangerousSettings = DangerousSettings()
 
         fun appUserID(appUserID: String?) = apply {
@@ -48,6 +55,34 @@ open class PurchasesConfiguration(builder: Builder) {
 
         fun store(store: Store) = apply {
             this.store = store
+        }
+
+        /**
+         * Enabling diagnostics will send some performance and debugging information from the SDK to our servers.
+         * Examples of this information include response times, cache hits or error codes.
+         * This information will be anonymized so it can't be traced back to the end-user.
+         * The default value is false.
+         */
+        fun diagnosticsEnabled(diagnosticsEnabled: Boolean) = apply {
+            this.diagnosticsEnabled = diagnosticsEnabled
+        }
+
+        /**
+         * **Feature in beta**. Defines how strict [EntitlementInfo] verification ought to be.
+         *
+         * When changing from [EntitlementVerificationMode.DISABLED] to [EntitlementVerificationMode.INFORMATIONAL],
+         * the SDK will clear the CustomerInfo cache. This means users will need to connect to the internet to get back
+         * their entitlements.
+         *
+         * The result of the verification can be obtained from [EntitlementInfos.verification] or
+         * [EntitlementInfo.verification].
+         *
+         * This feature is currently in beta and the behavior may change.
+         *
+         * Default mode is [EntitlementVerificationMode.DISABLED].
+         */
+        fun entitlementVerificationMode(entitlementVerificationMode: EntitlementVerificationMode) = apply {
+            this.verificationMode = entitlementVerificationMode
         }
 
         /**
