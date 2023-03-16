@@ -818,6 +818,27 @@ class BackendTest {
     }
 
     @Test
+    fun `postReceipt passes price_string as header`() {
+        mockPostReceiptResponseAndPost(
+            backend,
+            responseCode = 200,
+            isRestore = false,
+            clientException = null,
+            resultBody = null,
+            observerMode = true,
+            receiptInfo = ReceiptInfo(
+                productIDs,
+                storeProduct = storeProduct
+            ),
+            storeAppUserID = null
+        )
+
+        assertThat(headersSlot.isCaptured).isTrue
+        assertThat(headersSlot.captured.keys).contains("price_string")
+        assertThat(headersSlot.captured["price_string"]).isEqualTo("$4.99")
+    }
+
+    @Test
     fun `postReceipt passes marketplace as header`() {
         mockPostReceiptResponseAndPost(
             backend,
@@ -837,6 +858,30 @@ class BackendTest {
         assertThat(headersSlot.isCaptured).isTrue
         assertThat(headersSlot.captured.keys).contains("marketplace")
         assertThat(headersSlot.captured["marketplace"]).isEqualTo("DE")
+    }
+
+    @Test
+    fun `postReceipt passes price_string and marketplace as header`() {
+        mockPostReceiptResponseAndPost(
+            backend,
+            responseCode = 200,
+            isRestore = false,
+            clientException = null,
+            resultBody = null,
+            observerMode = true,
+            receiptInfo = ReceiptInfo(
+                productIDs,
+                storeProduct = storeProduct
+            ),
+            storeAppUserID = null,
+            marketplace = "US"
+        )
+
+        assertThat(headersSlot.isCaptured).isTrue
+        assertThat(headersSlot.captured.keys).contains("price_string")
+        assertThat(headersSlot.captured["price_string"]).isEqualTo("$4.99")
+        assertThat(headersSlot.captured.keys).contains("marketplace")
+        assertThat(headersSlot.captured["marketplace"]).isEqualTo("US")
     }
 
     // endregion
