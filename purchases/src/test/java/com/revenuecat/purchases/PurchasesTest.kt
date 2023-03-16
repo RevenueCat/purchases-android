@@ -4702,7 +4702,7 @@ class PurchasesTest {
                 dangerousSettings = DangerousSettings(autoSyncPurchases = autoSync)
             ),
             customerInfoHelper = mockCustomerInfoHelper,
-            offeringParser = OfferingParserFactory.createOfferingParser(Store.PLAY_STORE)
+            offeringParser = OfferingParserFactory.createOfferingParser(Store.PLAY_STORE),
             diagnosticsSynchronizer = mockDiagnosticsSynchronizer
         )
         Purchases.sharedInstance = purchases

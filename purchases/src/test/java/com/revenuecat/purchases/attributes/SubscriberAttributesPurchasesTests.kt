@@ -160,7 +160,7 @@ class SubscriberAttributesPurchasesTests {
                 store = Store.PLAY_STORE
             ),
             customerInfoHelper = customerInfoHelperMock,
-            offeringParser = OfferingParserFactory.createOfferingParser(Store.PLAY_STORE)
+            offeringParser = OfferingParserFactory.createOfferingParser(Store.PLAY_STORE),
             diagnosticsSynchronizer = null
         )
     }
