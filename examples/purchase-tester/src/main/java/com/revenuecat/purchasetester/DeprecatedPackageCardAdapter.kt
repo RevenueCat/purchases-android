@@ -68,7 +68,7 @@ class DeprecatedPackageCardAdapter(
             }
 
             binding.packageDetailsJsonObject.detail = product.googleProduct?.productDetails?.toString()
-                ?: product.amazonProduct?.originalJson?.toString()
+                ?: product.amazonProduct?.originalProduct?.toJSON().toString()
 
             binding.root.setOnClickListener {
                 with(binding.packageDetailsContainer) {

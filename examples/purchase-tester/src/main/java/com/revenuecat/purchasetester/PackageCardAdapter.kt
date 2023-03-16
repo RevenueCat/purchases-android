@@ -86,7 +86,7 @@ class PackageCardAdapter(
             }
 
             binding.packageDetailsJsonObject.detail = product.googleProduct?.productDetails?.toString()
-                ?: product.amazonProduct?.originalJson?.toString()
+                ?: product.amazonProduct?.originalProduct?.toJSON().toString()
 
             bindSubscriptionOptions(product)
 
