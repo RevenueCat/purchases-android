@@ -55,6 +55,8 @@ data class AmazonStoreProduct(
     override fun hashCode() = ComparableData(this).hashCode()*/ // TODOBC5
 }
 
+val StoreProduct.amazonProduct: AmazonStoreProduct?
+    get() = this as? AmazonStoreProduct
 fun Product.toStoreProduct(marketplace: String): StoreProduct? {
     if (price == null) {
         log(LogIntent.AMAZON_ERROR, AmazonStrings.PRODUCT_PRICE_MISSING.format(sku))

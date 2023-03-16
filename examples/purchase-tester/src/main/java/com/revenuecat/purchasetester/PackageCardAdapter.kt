@@ -10,6 +10,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
 import com.revenuecat.purchases.ProductType
+import com.revenuecat.purchases.amazon.amazonProduct
 import com.revenuecat.purchases.models.googleProduct
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.models.StoreProduct
@@ -82,7 +83,8 @@ class PackageCardAdapter(
                 currentPackage.packageType.toString()
             }
 
-            binding.packageDetailsJsonObject.detail = product.googleProduct?.productDetails?.toString() ?: "TODO Amazon"
+            binding.packageDetailsJsonObject.detail = product.googleProduct?.productDetails?.toString()
+                ?: product.amazonProduct?.originalJson?.toString()
 
             bindSubscriptionOptions(product)
 
