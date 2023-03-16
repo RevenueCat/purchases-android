@@ -24,11 +24,11 @@ import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.Config
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.LogIntent
+import com.revenuecat.purchases.common.OfferingParser
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.ReplaceProductInfo
 import com.revenuecat.purchases.common.caching.DeviceCache
-import com.revenuecat.purchases.common.createOfferings
 import com.revenuecat.purchases.common.currentLogHandler
 import com.revenuecat.purchases.common.debugLogsEnabled
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsSynchronizer
@@ -93,6 +93,7 @@ class Purchases internal constructor(
     private val subscriberAttributesManager: SubscriberAttributesManager,
     @set:JvmSynthetic @get:JvmSynthetic internal var appConfig: AppConfig,
     private val customerInfoHelper: CustomerInfoHelper,
+    private val offeringParser: OfferingParser,
     diagnosticsSynchronizer: DiagnosticsSynchronizer?,
     // This is nullable due to: https://github.com/RevenueCat/purchases-flutter/issues/408
     private val mainHandler: Handler? = Handler(Looper.getMainLooper())
@@ -1134,7 +1135,7 @@ class Purchases internal constructor(
                         getStoreProductsById(allRequestedProductIdentifiers, { productsById ->
                             logMissingProducts(allRequestedProductIdentifiers, productsById)
 
-                            val offerings = offeringsJSON.createOfferings(productsById)
+                            val offerings = offeringParser.createOfferings(offeringsJSON, productsById)
                             if (offerings.all.isEmpty()) {
                                 handleErrorFetchingOfferings(
                                     PurchasesError(

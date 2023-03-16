@@ -6,6 +6,7 @@ import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.CustomerInfoHelper
 import com.revenuecat.purchases.LockedFeature
+import com.revenuecat.purchases.OfferingParserFactory
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
@@ -159,6 +160,7 @@ class SubscriberAttributesPurchasesTests {
                 store = Store.PLAY_STORE
             ),
             customerInfoHelper = customerInfoHelperMock,
+            offeringParser = OfferingParserFactory.createOfferingParser(Store.PLAY_STORE),
             diagnosticsSynchronizer = null
         )
     }

@@ -113,6 +113,7 @@ internal class PurchasesFactory(
             )
 
             val customerInfoHelper = CustomerInfoHelper(cache, backend, identityManager)
+            val offeringParser = OfferingParserFactory.createOfferingParser(store)
 
             var diagnosticsSynchronizer: DiagnosticsSynchronizer? = null
             if (diagnosticsFileHelper != null && diagnosticsTracker != null) {
@@ -136,6 +137,7 @@ internal class PurchasesFactory(
                 subscriberAttributesManager,
                 appConfig,
                 customerInfoHelper,
+                offeringParser,
                 diagnosticsSynchronizer
             )
         }

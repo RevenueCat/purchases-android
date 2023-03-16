@@ -43,6 +43,10 @@ data class AmazonStoreProduct(
     override val purchasingData: AmazonPurchasingData
         get() = AmazonPurchasingData.Product(this)
 
+    @Deprecated(
+        "Replaced with id",
+        ReplaceWith("id")
+    )
     override val sku: String
         get() = id
 
