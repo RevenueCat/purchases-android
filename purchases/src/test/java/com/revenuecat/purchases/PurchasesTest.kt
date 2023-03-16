@@ -153,11 +153,6 @@ class PurchasesTest {
 
     @Before
     fun setup() {
-        mockkObject(LockedFeature.SyncPurchases)
-        every { LockedFeature.SyncPurchases.isLocked } returns false
-        mockkObject(LockedFeature.ObserverMode)
-        every { LockedFeature.ObserverMode.isLocked } returns false
-
         mockkStatic(ProcessLifecycleOwner::class)
 
         val productIds = listOf(STUB_PRODUCT_IDENTIFIER)
@@ -179,47 +174,6 @@ class PurchasesTest {
 
         anonymousSetup(false)
     }
-
-    // region disabled features
-
-    @Test
-    fun `configure throws exception if using observer mode and observer mode disabled`() {
-        every { LockedFeature.ObserverMode.isLocked } returns true
-
-        val configuration = PurchasesConfiguration.Builder(mockContext, "api").apply {
-            observerMode = true
-        }
-
-        assertThatThrownBy {
-            Purchases.configure(configuration.build())
-        }.isInstanceOf(FeatureNotSupportedException::class.java)
-    }
-
-    @Test
-    fun `syncObserverModeAmazonPurchase throws exception if observer mode feature is disabled`() {
-        every { LockedFeature.ObserverMode.isLocked } returns true
-
-        assertThatThrownBy {
-            purchases.syncObserverModeAmazonPurchase(
-                productID = "",
-                receiptID = "",
-                amazonUserID = "",
-                price = null,
-                isoCurrencyCode = null
-            )
-        }.isInstanceOf(FeatureNotSupportedException::class.java)
-    }
-
-    @Test
-    fun `syncPurchases throws exception if sync purchases feature is disabled`() {
-        every { LockedFeature.SyncPurchases.isLocked } returns true
-
-        assertThatThrownBy {
-            purchases.syncPurchases()
-        }.isInstanceOf(FeatureNotSupportedException::class.java)
-    }
-
-    // endregion
 
     // region setup
 
