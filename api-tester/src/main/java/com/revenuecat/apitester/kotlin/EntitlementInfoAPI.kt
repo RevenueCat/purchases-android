@@ -4,9 +4,11 @@ import com.revenuecat.purchases.EntitlementInfo
 import com.revenuecat.purchases.OwnershipType
 import com.revenuecat.purchases.PeriodType
 import com.revenuecat.purchases.Store
+import com.revenuecat.purchases.VerificationResult
+import org.json.JSONObject
 import java.util.Date
 
-@Suppress("unused", "UNUSED_VARIABLE")
+@Suppress("unused", "UNUSED_VARIABLE", "DEPRECATION", "LongParameterList")
 private class EntitlementInfoAPI {
     fun check(entitlementInfo: EntitlementInfo) {
         with(entitlementInfo) {
@@ -24,7 +26,63 @@ private class EntitlementInfoAPI {
             val unsubscribeDetectedAt: Date? = unsubscribeDetectedAt
             val billingIssueDetectedAt: Date? = billingIssueDetectedAt
             val ownershipType: OwnershipType = ownershipType
+            val verification: VerificationResult = verification
         }
+    }
+
+    fun checkConstructor(
+        identifier: String,
+        isActive: Boolean,
+        willRenew: Boolean,
+        periodType: PeriodType,
+        latestPurchaseDate: Date,
+        originalPurchaseDate: Date,
+        expirationDate: Date?,
+        store: Store,
+        productIdentifier: String,
+        productPlanIdentifier: String?,
+        isSandbox: Boolean,
+        unsubscribeDetectedAt: Date?,
+        billingIssueDetectedAt: Date?,
+        ownershipType: OwnershipType,
+        jsonObject: JSONObject,
+        verification: VerificationResult
+    ) {
+        val entitlementInfo = EntitlementInfo(
+            identifier = identifier,
+            isActive = isActive,
+            willRenew = willRenew,
+            periodType = periodType,
+            latestPurchaseDate = latestPurchaseDate,
+            originalPurchaseDate = originalPurchaseDate,
+            expirationDate = expirationDate,
+            store = store,
+            productIdentifier = productIdentifier,
+            productPlanIdentifier = productPlanIdentifier,
+            isSandbox = isSandbox,
+            unsubscribeDetectedAt = unsubscribeDetectedAt,
+            billingIssueDetectedAt = billingIssueDetectedAt,
+            ownershipType = ownershipType,
+            jsonObject = jsonObject,
+            verification = verification
+        )
+        val entitlementInfo2 = EntitlementInfo(
+            identifier = identifier,
+            isActive = isActive,
+            willRenew = willRenew,
+            periodType = periodType,
+            latestPurchaseDate = latestPurchaseDate,
+            originalPurchaseDate = originalPurchaseDate,
+            expirationDate = expirationDate,
+            store = store,
+            productIdentifier = productIdentifier,
+            productPlanIdentifier = productPlanIdentifier,
+            isSandbox = isSandbox,
+            unsubscribeDetectedAt = unsubscribeDetectedAt,
+            billingIssueDetectedAt = billingIssueDetectedAt,
+            ownershipType = ownershipType,
+            jsonObject = jsonObject
+        )
     }
 
     fun store(store: Store) {

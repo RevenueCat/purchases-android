@@ -2,8 +2,10 @@ package com.revenuecat.purchases.common.networking
 
 import android.content.SharedPreferences
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.VerificationResult
+import com.revenuecat.purchases.VerificationResult.*
+import com.revenuecat.purchases.common.createResult
 import com.revenuecat.purchases.utils.Responses
-import com.revenuecat.purchases.utils.filterNotNullValues
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
@@ -15,8 +17,7 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
-import java.net.HttpURLConnection
-import java.net.URL
+import java.util.Date
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
@@ -50,9 +51,9 @@ class ETagManagerTest {
         mockCachedHTTPResult(expectedETag = null, path = path)
 
         val requestWithETagHeader = underTest.getETagHeader(path)
-        val eTagHeader = requestWithETagHeader[ETAG_HEADER_NAME]
-        assertThat(eTagHeader).isNotNull()
-        assertThat(eTagHeader).isBlank()
+        val eTagHeader = requestWithETagHeader[HTTPRequest.ETAG_HEADER_NAME]
+        assertThat(eTagHeader).isNotNull
+        assertThat(eTagHeader).isBlank
     }
 
     @Test
@@ -62,8 +63,8 @@ class ETagManagerTest {
         mockCachedHTTPResult(expectedETag, path)
 
         val requestWithETagHeader = underTest.getETagHeader(path)
-        val eTagHeader = requestWithETagHeader[ETAG_HEADER_NAME]
-        assertThat(eTagHeader).isNotNull()
+        val eTagHeader = requestWithETagHeader[HTTPRequest.ETAG_HEADER_NAME]
+        assertThat(eTagHeader).isNotNull
         assertThat(eTagHeader).isEqualTo(expectedETag)
     }
 
@@ -71,14 +72,14 @@ class ETagManagerTest {
     fun `If response code is 304, cached version should be used`() {
         val shouldUse = underTest.shouldUseCachedVersion(RCHTTPStatusCodes.NOT_MODIFIED)
 
-        assertThat(shouldUse).isTrue()
+        assertThat(shouldUse).isTrue
     }
 
     @Test
     fun `If response code is not 304, cached version should not be used`() {
         val shouldUse = underTest.shouldUseCachedVersion(RCHTTPStatusCodes.SUCCESS)
 
-        assertThat(shouldUse).isFalse()
+        assertThat(shouldUse).isFalse
     }
 
     @Test
@@ -111,12 +112,12 @@ class ETagManagerTest {
         val path = "/v1/subscribers/appUserID"
         val eTag = "eTag"
 
-        val resultFromBackend = HTTPResult(RCHTTPStatusCodes.NOT_MODIFIED, "")
+        val resultFromBackend = HTTPResult.createResult(RCHTTPStatusCodes.NOT_MODIFIED, "")
 
         underTest.storeBackendResultIfNoError(path, resultFromBackend, eTag)
 
-        assertThat(slotPutStringSharedPreferencesKey.isCaptured).isFalse()
-        assertThat(slotPutSharedPreferencesValue.isCaptured).isFalse()
+        assertThat(slotPutStringSharedPreferencesKey.isCaptured).isFalse
+        assertThat(slotPutSharedPreferencesValue.isCaptured).isFalse
     }
 
     @Test
@@ -124,16 +125,21 @@ class ETagManagerTest {
         val path = "/v1/subscribers/appUserID"
         val eTag = "eTag"
 
-        val resultFromBackend = HTTPResult(RCHTTPStatusCodes.SUCCESS, Responses.validEmptyPurchaserResponse)
-        val resultFromBackendWithETag = HTTPResultWithETag(eTag, resultFromBackend)
+        val resultFromBackend = HTTPResult.createResult(
+            RCHTTPStatusCodes.SUCCESS, Responses.validEmptyPurchaserResponse
+        )
+        val resultStored = resultFromBackend.copy(
+            origin = HTTPResult.Origin.CACHE
+        )
+        val resultStoredWithETag = HTTPResultWithETag(eTag, resultStored)
 
         underTest.storeBackendResultIfNoError(path, resultFromBackend, eTag)
 
-        assertThat(slotPutStringSharedPreferencesKey.isCaptured).isTrue()
-        assertThat(slotPutSharedPreferencesValue.isCaptured).isTrue()
+        assertThat(slotPutStringSharedPreferencesKey.isCaptured).isTrue
+        assertThat(slotPutSharedPreferencesValue.isCaptured).isTrue
 
         assertThat(slotPutStringSharedPreferencesKey.captured).isEqualTo(path)
-        assertThat(slotPutSharedPreferencesValue.captured).isEqualTo(resultFromBackendWithETag.serialize())
+        assertThat(slotPutSharedPreferencesValue.captured).isEqualTo(resultStoredWithETag.serialize())
     }
 
     @Test
@@ -141,12 +147,51 @@ class ETagManagerTest {
         val path = "/v1/subscribers/appUserID"
         val eTag = "eTag"
 
-        val resultFromBackend = HTTPResult(500, "{}")
+        val resultFromBackend = HTTPResult.createResult(500)
 
         underTest.storeBackendResultIfNoError(path, resultFromBackend, eTag)
 
-        assertThat(slotPutStringSharedPreferencesKey.isCaptured).isFalse()
-        assertThat(slotPutSharedPreferencesValue.isCaptured).isFalse()
+        assertThat(slotPutStringSharedPreferencesKey.isCaptured).isFalse
+        assertThat(slotPutSharedPreferencesValue.isCaptured).isFalse
+    }
+
+    @Test
+    fun `If verification failed, don't store response in cache`() {
+        val path = "/v1/subscribers/appUserID"
+        val eTag = "eTag"
+
+        val resultFromBackend = HTTPResult.createResult(
+            verificationResult = FAILED,
+            payload = Responses.validEmptyPurchaserResponse
+        )
+
+        underTest.storeBackendResultIfNoError(path, resultFromBackend, eTag)
+
+        assertThat(slotPutStringSharedPreferencesKey.isCaptured).isFalse
+        assertThat(slotPutSharedPreferencesValue.isCaptured).isFalse
+    }
+
+    @Test
+    fun `If verification successful, store response in cache`() {
+        val path = "/v1/subscribers/appUserID"
+        val eTag = "eTag"
+
+        val resultFromBackend = HTTPResult.createResult(
+            verificationResult = VERIFIED,
+            payload = Responses.validEmptyPurchaserResponse
+        )
+        val resultStored = resultFromBackend.copy(
+            origin = HTTPResult.Origin.CACHE
+        )
+        val resultStoredWithETag = HTTPResultWithETag(eTag, resultStored)
+
+        underTest.storeBackendResultIfNoError(path, resultFromBackend, eTag)
+
+        assertThat(slotPutStringSharedPreferencesKey.isCaptured).isTrue
+        assertThat(slotPutSharedPreferencesValue.isCaptured).isTrue
+
+        assertThat(slotPutStringSharedPreferencesKey.captured).isEqualTo(path)
+        assertThat(slotPutSharedPreferencesValue.captured).isEqualTo(resultStoredWithETag.serialize())
     }
 
     @Test
@@ -164,9 +209,9 @@ class ETagManagerTest {
         mockCachedHTTPResult(expectedETag = null, path = path)
 
         val requestWithETagHeader = underTest.getETagHeader(path, refreshETag = true)
-        val eTagHeader = requestWithETagHeader[ETAG_HEADER_NAME]
-        assertThat(eTagHeader).isNotNull()
-        assertThat(eTagHeader).isBlank()
+        val eTagHeader = requestWithETagHeader[HTTPRequest.ETAG_HEADER_NAME]
+        assertThat(eTagHeader).isNotNull
+        assertThat(eTagHeader).isBlank
     }
 
     @Test
@@ -178,9 +223,11 @@ class ETagManagerTest {
         underTest.getHTTPResultFromCacheOrBackend(
             responseCode = RCHTTPStatusCodes.SUCCESS,
             payload = responsePayload,
-            connection = mockURLConnectionETag(eTagInResponse),
+            eTagHeader = eTagInResponse,
             urlPathWithVersion = path,
-            refreshETag = false
+            refreshETag = false,
+            requestDate = null,
+            verificationResult = NOT_REQUESTED
         )
 
         assertStoredResponse(path, eTagInResponse, responsePayload)
@@ -198,13 +245,15 @@ class ETagManagerTest {
         underTest.getHTTPResultFromCacheOrBackend(
             responseCode = RCHTTPStatusCodes.NOT_MODIFIED,
             payload = responsePayload,
-            connection = mockURLConnectionETag(eTagInResponse),
+            eTagHeader = eTagInResponse,
             urlPathWithVersion = path,
-            refreshETag = false
+            refreshETag = false,
+            requestDate = null,
+            verificationResult = NOT_REQUESTED
         )
 
-        assertThat(slotPutStringSharedPreferencesKey.isCaptured).isFalse()
-        assertThat(slotPutSharedPreferencesValue.isCaptured).isFalse()
+        assertThat(slotPutStringSharedPreferencesKey.isCaptured).isFalse
+        assertThat(slotPutSharedPreferencesValue.isCaptured).isFalse
     }
 
     @Test
@@ -220,14 +269,16 @@ class ETagManagerTest {
         val result = underTest.getHTTPResultFromCacheOrBackend(
             responseCode = RCHTTPStatusCodes.NOT_MODIFIED,
             payload = responsePayload,
-            connection = mockURLConnectionETag(eTagInResponse),
+            eTagHeader = eTagInResponse,
             urlPathWithVersion = path,
-            refreshETag = false
+            refreshETag = false,
+            requestDate = null,
+            verificationResult = NOT_REQUESTED
         )
 
         assertThat(result).isNull()
-        assertThat(slotPutStringSharedPreferencesKey.isCaptured).isFalse()
-        assertThat(slotPutSharedPreferencesValue.isCaptured).isFalse()
+        assertThat(slotPutStringSharedPreferencesKey.isCaptured).isFalse
+        assertThat(slotPutSharedPreferencesValue.isCaptured).isFalse
     }
 
     @Test
@@ -243,16 +294,19 @@ class ETagManagerTest {
         val result = underTest.getHTTPResultFromCacheOrBackend(
             responseCode = RCHTTPStatusCodes.NOT_MODIFIED,
             payload = responsePayload,
-            connection = mockURLConnectionETag(eTagInResponse),
+            eTagHeader = eTagInResponse,
             urlPathWithVersion = path,
-            refreshETag = true
+            refreshETag = true,
+            requestDate = null,
+            verificationResult = NOT_REQUESTED
         )
 
         assertThat(result).isNotNull
         assertThat(result!!.responseCode).isEqualTo(RCHTTPStatusCodes.NOT_MODIFIED)
         assertThat(result.payload).isEqualTo(responsePayload)
-        assertThat(slotPutStringSharedPreferencesKey.isCaptured).isFalse()
-        assertThat(slotPutSharedPreferencesValue.isCaptured).isFalse()
+        assertThat(result.origin).isEqualTo(HTTPResult.Origin.BACKEND)
+        assertThat(slotPutStringSharedPreferencesKey.isCaptured).isFalse
+        assertThat(slotPutSharedPreferencesValue.isCaptured).isFalse
     }
 
     @Test
@@ -264,14 +318,17 @@ class ETagManagerTest {
         val result = underTest.getHTTPResultFromCacheOrBackend(
             responseCode = RCHTTPStatusCodes.SUCCESS,
             payload = responsePayload,
-            connection = mockURLConnectionETag(eTagInResponse),
+            eTagHeader = eTagInResponse,
             urlPathWithVersion = path,
-            refreshETag = false
+            refreshETag = false,
+            requestDate = null,
+            verificationResult = NOT_REQUESTED
         )
 
         assertThat(result).isNotNull
         assertThat(result!!.responseCode).isEqualTo(RCHTTPStatusCodes.SUCCESS)
         assertThat(result.payload).isEqualTo(responsePayload)
+        assertThat(result.origin).isEqualTo(HTTPResult.Origin.BACKEND)
 
         assertStoredResponse(path, eTagInResponse, responsePayload)
     }
@@ -285,30 +342,129 @@ class ETagManagerTest {
         val result = underTest.getHTTPResultFromCacheOrBackend(
             responseCode = RCHTTPStatusCodes.SUCCESS,
             payload = responsePayload,
-            connection = mockURLConnectionETag(eTagInResponse),
+            eTagHeader = eTagInResponse,
             urlPathWithVersion = path,
-            refreshETag = true
+            refreshETag = true,
+            requestDate = null,
+            verificationResult = NOT_REQUESTED
         )
 
         assertThat(result).isNotNull
         assertThat(result!!.responseCode).isEqualTo(RCHTTPStatusCodes.SUCCESS)
         assertThat(result.payload).isEqualTo(responsePayload)
+        assertThat(result.origin).isEqualTo(HTTPResult.Origin.BACKEND)
 
         assertStoredResponse(path, eTagInResponse, responsePayload)
     }
 
-    private fun mockURLConnectionETag(eTag: String): HttpURLConnection {
-        return mockk<HttpURLConnection>(relaxed = true).also {
-            every { it.getHeaderField(ETAG_HEADER_NAME) } returns eTag
+    @Test
+    fun `getHTTPResultFromCacheOrBackend should use verification result parameter when coming from backend`() {
+        val result = underTest.getHTTPResultFromCacheOrBackend(
+            responseCode = RCHTTPStatusCodes.SUCCESS,
+            payload = "",
+            eTagHeader = "etag",
+            urlPathWithVersion = "/v1/subscribers/appUserID",
+            refreshETag = false,
+            requestDate = null,
+            verificationResult = VERIFIED
+        )
+
+        assertThat(result?.verificationResult).isEqualTo(VERIFIED)
+    }
+
+    @Test
+    fun `getHTTPResultFromCacheOrBackend should use requestDate from header when no cached version exists`() {
+        val expectedDate = Date(1234567890)
+        mockCachedHTTPResult(expectedETag = null, "/v1/subscribers/appUserID")
+        val result = underTest.getHTTPResultFromCacheOrBackend(
+            responseCode = RCHTTPStatusCodes.SUCCESS,
+            payload = "",
+            eTagHeader = "etag",
+            urlPathWithVersion = "/v1/subscribers/appUserID",
+            refreshETag = false,
+            requestDate = expectedDate,
+            verificationResult = NOT_REQUESTED
+        )
+
+        assertThat(result?.requestDate).isEqualTo(expectedDate)
+    }
+
+    @Test
+    fun `getHTTPResultFromCacheOrBackend should use requestDate from header even if cached is different`() {
+        val expectedDate = Date(1234567890)
+        val cachedHttpResult = HTTPResult.createResult(
+            origin = HTTPResult.Origin.CACHE,
+            requestDate = Date(1000)
+        )
+        mockCachedHTTPResult("etag", "/v1/subscribers/appUserID", cachedHttpResult)
+        val result = underTest.getHTTPResultFromCacheOrBackend(
+            responseCode = RCHTTPStatusCodes.SUCCESS,
+            payload = "",
+            eTagHeader = "etag",
+            urlPathWithVersion = "/v1/subscribers/appUserID",
+            refreshETag = false,
+            requestDate = expectedDate,
+            verificationResult = NOT_REQUESTED
+        )
+
+        assertThat(result?.requestDate).isEqualTo(expectedDate)
+    }
+
+    @Test
+    fun `verificationResults are expected between cache and backend`() {
+        data class TestCase(
+            val cachedVerificationResult: VerificationResult,
+            val backendVerificationResult: VerificationResult,
+            val expectedVerificationResult: VerificationResult
+            )
+        val testCases = listOf(
+            TestCase(NOT_REQUESTED, NOT_REQUESTED, NOT_REQUESTED),
+            TestCase(NOT_REQUESTED, VERIFIED, VERIFIED),
+            TestCase(NOT_REQUESTED, FAILED, FAILED),
+            TestCase(VERIFIED, NOT_REQUESTED, NOT_REQUESTED),
+            TestCase(VERIFIED, VERIFIED, VERIFIED),
+            TestCase(VERIFIED, FAILED, FAILED),
+            TestCase(FAILED, NOT_REQUESTED, NOT_REQUESTED),
+            TestCase(FAILED, VERIFIED, VERIFIED),
+            TestCase(FAILED, FAILED, FAILED)
+            )
+        testCases.onEach {
+            assertCorrectVerificationResult(
+                it.cachedVerificationResult, it.backendVerificationResult, it.expectedVerificationResult
+            )
         }
+    }
+
+    private fun assertCorrectVerificationResult(
+        cachedVerificationResult: VerificationResult,
+        backendVerificationResult: VerificationResult,
+        expectedVerificationResult: VerificationResult
+    ) {
+        val httpResult = HTTPResult.createResult(
+            origin = HTTPResult.Origin.CACHE,
+            verificationResult = cachedVerificationResult
+        )
+        mockCachedHTTPResult("etag", "/v1/subscribers/appUserID", httpResult)
+        val result = underTest.getHTTPResultFromCacheOrBackend(
+            responseCode = RCHTTPStatusCodes.NOT_MODIFIED,
+            payload = "",
+            eTagHeader = "etag",
+            urlPathWithVersion = "/v1/subscribers/appUserID",
+            refreshETag = false,
+            requestDate = null,
+            verificationResult = backendVerificationResult
+        )
+
+        assertThat(result?.verificationResult).isEqualTo(expectedVerificationResult)
     }
 
     private fun mockCachedHTTPResult(
         expectedETag: String?,
-        path: String
+        path: String,
+        httpResult: HTTPResult = HTTPResult.createResult(origin = HTTPResult.Origin.CACHE)
     ): HTTPResultWithETag? {
         val cachedResult = expectedETag?.let {
-            HTTPResultWithETag(expectedETag, HTTPResult(RCHTTPStatusCodes.SUCCESS, "{}"))
+            HTTPResultWithETag(expectedETag, httpResult)
         }
         every {
             mockedPrefs.getString(path, null)
@@ -316,30 +472,13 @@ class ETagManagerTest {
         return cachedResult
     }
 
-    private fun getHTTPRequest(eTag: String?): HTTPRequest {
-        val fullURL = URL("https://api.revenuecat.com/v1/subscribers/appUserID")
-        val headers = mapOf(
-            "Content-Type" to "application/json",
-            "X-Platform" to "android",
-            "X-Platform-Flavor" to "native",
-            "X-Platform-Version" to "29",
-            "X-Version" to "4.1.0",
-            "X-Client-Locale" to "en-US",
-            "X-Client-Version" to "1.0",
-            "X-Observer-Mode-Enabled" to "false",
-            "Authorization" to "Bearer apiKey",
-            ETAG_HEADER_NAME to eTag
-        ).filterNotNullValues()
-        return HTTPRequest(fullURL, headers, body = null)
-    }
-
     private fun assertStoredResponse(
         path: String,
         eTagInResponse: String,
         responsePayload: String
     ) {
-        assertThat(slotPutStringSharedPreferencesKey.isCaptured).isTrue()
-        assertThat(slotPutSharedPreferencesValue.isCaptured).isTrue()
+        assertThat(slotPutStringSharedPreferencesKey.isCaptured).isTrue
+        assertThat(slotPutSharedPreferencesValue.isCaptured).isTrue
 
         assertThat(slotPutStringSharedPreferencesKey.captured).isEqualTo(path)
         assertThat(slotPutSharedPreferencesValue.captured).isNotNull

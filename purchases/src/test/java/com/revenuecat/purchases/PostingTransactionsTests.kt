@@ -4,12 +4,12 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.OfferingParser
+import com.revenuecat.purchases.common.CustomerInfoFactory
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.PostReceiptDataErrorCallback
 import com.revenuecat.purchases.common.PostReceiptDataSuccessCallback
 import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.SubscriberAttributeError
-import com.revenuecat.purchases.common.buildCustomerInfo
 import com.revenuecat.purchases.google.BillingWrapper
 import com.revenuecat.purchases.google.toStoreTransaction
 import com.revenuecat.purchases.models.StoreTransaction
@@ -73,7 +73,11 @@ class PostingTransactionsTests {
     )
 
     internal data class PostReceiptCompletionContainer(
-        val info: CustomerInfo = JSONObject(Responses.validFullPurchaserResponse).buildCustomerInfo(),
+        val info: CustomerInfo = CustomerInfoFactory.buildCustomerInfo(
+            JSONObject(Responses.validFullPurchaserResponse),
+            null,
+            VerificationResult.NOT_REQUESTED
+        ),
         val body: JSONObject = JSONObject(Responses.validFullPurchaserResponse)
     )
 
@@ -155,6 +159,7 @@ class PostingTransactionsTests {
             ),
             customerInfoHelper = customerInfoHelperMock,
             offeringParser = OfferingParserFactory.createOfferingParser(Store.PLAY_STORE)
+            diagnosticsSynchronizer = null
         )
     }
 

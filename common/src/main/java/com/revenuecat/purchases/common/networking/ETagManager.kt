@@ -2,16 +2,15 @@ package com.revenuecat.purchases.common.networking
 
 import android.content.Context
 import android.content.SharedPreferences
+import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.strings.NetworkStrings
 import org.json.JSONObject
-import java.net.HttpURLConnection
+import java.util.Date
 
 private const val SERIALIZATION_NAME_ETAG = "eTag"
 private const val SERIALIZATION_NAME_HTTPRESULT = "httpResult"
-
-internal const val ETAG_HEADER_NAME = "X-RevenueCat-ETag"
 
 data class HTTPResultWithETag(
     val eTag: String,
@@ -42,21 +41,37 @@ class ETagManager(
         path: String,
         refreshETag: Boolean = false
     ): Map<String, String> {
-        val eTagHeader = ETAG_HEADER_NAME to if (refreshETag) "" else getETag(path)
+        val eTagHeader = HTTPRequest.ETAG_HEADER_NAME to if (refreshETag) "" else getETag(path)
         return mapOf(eTagHeader)
     }
 
+    @Suppress("LongParameterList")
     internal fun getHTTPResultFromCacheOrBackend(
         responseCode: Int,
         payload: String,
-        connection: HttpURLConnection,
+        eTagHeader: String?,
         urlPathWithVersion: String,
-        refreshETag: Boolean
+        refreshETag: Boolean,
+        requestDate: Date?,
+        verificationResult: VerificationResult
     ): HTTPResult? {
-        val resultFromBackend = HTTPResult(responseCode, payload)
-        connection.getETagHeader()?.let { eTagInResponse ->
+        val resultFromBackend = HTTPResult(
+            responseCode,
+            payload,
+            HTTPResult.Origin.BACKEND,
+            requestDate,
+            verificationResult
+        )
+        eTagHeader?.let { eTagInResponse ->
             if (shouldUseCachedVersion(responseCode)) {
-                val storedResult = getStoredResult(urlPathWithVersion)
+                val storedResult = getStoredResult(urlPathWithVersion)?.let { storedResult ->
+                    storedResult.copy(
+                        // This assumes we won't store verification failures in the cache and we will clear the cache
+                        // when enabling verification.
+                        verificationResult = verificationResult,
+                        requestDate = requestDate ?: storedResult.requestDate
+                    )
+                }
                 return storedResult
                     ?: if (refreshETag) {
                         log(LogIntent.WARNING, NetworkStrings.ETAG_CALL_ALREADY_RETRIED.format(resultFromBackend))
@@ -83,8 +98,7 @@ class ETagManager(
         resultFromBackend: HTTPResult,
         eTagInResponse: String
     ) {
-        val responseCode = resultFromBackend.responseCode
-        if (responseCode != RCHTTPStatusCodes.NOT_MODIFIED && responseCode < RCHTTPStatusCodes.ERROR) {
+        if (shouldStoreBackendResult(resultFromBackend)) {
             storeResult(path, resultFromBackend, eTagInResponse)
         }
     }
@@ -100,7 +114,8 @@ class ETagManager(
         result: HTTPResult,
         eTag: String
     ) {
-        val httpResultWithETag = HTTPResultWithETag(eTag, result)
+        val cacheResult = result.copy(origin = HTTPResult.Origin.CACHE)
+        val httpResultWithETag = HTTPResultWithETag(eTag, cacheResult)
         prefs.edit().putString(path, httpResultWithETag.serialize()).apply()
     }
 
@@ -115,6 +130,13 @@ class ETagManager(
         return getStoredResultSavedInSharedPreferences(path)?.eTag.orEmpty()
     }
 
+    private fun shouldStoreBackendResult(resultFromBackend: HTTPResult): Boolean {
+        val responseCode = resultFromBackend.responseCode
+        return responseCode != RCHTTPStatusCodes.NOT_MODIFIED &&
+            responseCode < RCHTTPStatusCodes.ERROR &&
+            resultFromBackend.verificationResult != VerificationResult.FAILED
+    }
+
     companion object {
         fun initializeSharedPreferences(context: Context): SharedPreferences =
             context.getSharedPreferences(
@@ -123,5 +145,3 @@ class ETagManager(
             )
     }
 }
-
-internal fun HttpURLConnection.getETagHeader(): String? = this.getHeaderField(ETAG_HEADER_NAME)

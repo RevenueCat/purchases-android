@@ -31,14 +31,6 @@ Runs all the tests
 
 Replaces version numbers, updates changelog and creates PR
 
-### android tag_release_with_latest_if_needed
-
-```sh
-[bundle exec] fastlane android tag_release_with_latest_if_needed
-```
-
-Tag release version with latest if necessary
-
 ### android automatic_bump
 
 ```sh
@@ -53,7 +45,7 @@ Automatically bumps version, replaces version numbers, updates changelog and cre
 [bundle exec] fastlane android github_release
 ```
 
-Creates github release and updates the latest tag
+Creates github release
 
 ### android deploy
 

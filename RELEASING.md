@@ -45,3 +45,11 @@ Sometimes you might need to release a patch on a version that's not the latest. 
 1. CircleCI will start the deployment process
 1. Close the PR after the release has been completed and delete both `release/3.9.0` and `release/3.9.1` branches.
 1. Remember to edit the CHANGELOG.md in `main` to include the version that has been just released
+
+Fixing timeouts when closing repository
+=========
+Sonatype might fail when performing the `closeAndRelease` step. Fortunately, we can close and release manually if the publish task succeeds.
+- Head to https://oss.sonatype.org/#stagingRepositories, login using the credentials in 1Password
+- That link should redirect you to the Staging Repositories section, if it doesn't go to that section on the left hand side of the website, under the Build Promotion section.
+- You should see one staging repository there. If there are more than one, drop all of them and rerun the failing job in CircleCI.
+- Select the only repository available, then do Close. When close finishes, do Release and automatically drop the repository.

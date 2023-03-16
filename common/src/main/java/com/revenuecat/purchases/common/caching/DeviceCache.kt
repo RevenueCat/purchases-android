@@ -8,10 +8,11 @@ package com.revenuecat.purchases.common.caching
 import android.content.SharedPreferences
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Offerings
+import com.revenuecat.purchases.VerificationResult
+import com.revenuecat.purchases.common.CustomerInfoFactory
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.DefaultDateProvider
 import com.revenuecat.purchases.common.LogIntent
-import com.revenuecat.purchases.common.buildCustomerInfo
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.models.StoreTransaction
@@ -23,7 +24,7 @@ import java.util.Date
 private const val CACHE_REFRESH_PERIOD_IN_FOREGROUND = 60000 * 5
 private const val CACHE_REFRESH_PERIOD_IN_BACKGROUND = 60000 * 60 * 25
 private const val SHARED_PREFERENCES_PREFIX = "com.revenuecat.purchases."
-internal const val PURCHASER_INFO_SCHEMA_VERSION = 3
+internal const val CUSTOMER_INFO_SCHEMA_VERSION = 3
 
 open class DeviceCache(
     private val preferences: SharedPreferences,
@@ -31,6 +32,12 @@ open class DeviceCache(
     private val offeringsCachedObject: InMemoryCachedObject<Offerings> = InMemoryCachedObject(),
     private val dateProvider: DateProvider = DefaultDateProvider()
 ) {
+    companion object {
+        private const val CUSTOMER_INFO_SCHEMA_VERSION_KEY = "schema_version"
+        private const val CUSTOMER_INFO_VERIFICATION_RESULT_KEY = "verification_result"
+        private const val CUSTOMER_INFO_REQUEST_DATE_KEY = "customer_info_request_date"
+    }
+
     val legacyAppUserIDCacheKey: String by lazy { "$SHARED_PREFERENCES_PREFIX$apiKey" }
     val appUserIDCacheKey: String by lazy { "$SHARED_PREFERENCES_PREFIX$apiKey.new" }
     internal val attributionCacheKey = "$SHARED_PREFERENCES_PREFIX.attribution"
@@ -96,9 +103,19 @@ open class DeviceCache(
             ?.let { json ->
                 try {
                     val cachedJSONObject = JSONObject(json)
-                    val schemaVersion = cachedJSONObject.optInt("schema_version")
-                    return if (schemaVersion == PURCHASER_INFO_SCHEMA_VERSION) {
-                        cachedJSONObject.buildCustomerInfo()
+                    val schemaVersion = cachedJSONObject.optInt(CUSTOMER_INFO_SCHEMA_VERSION_KEY)
+                    val verificationResultString = if (cachedJSONObject.has(CUSTOMER_INFO_VERIFICATION_RESULT_KEY)) {
+                        cachedJSONObject.getString(CUSTOMER_INFO_VERIFICATION_RESULT_KEY)
+                    } else VerificationResult.NOT_REQUESTED.name
+                    val requestDate = cachedJSONObject.optLong(CUSTOMER_INFO_REQUEST_DATE_KEY).takeIf { it > 0 }?.let {
+                        Date(it)
+                    }
+                    cachedJSONObject.remove(CUSTOMER_INFO_SCHEMA_VERSION_KEY)
+                    cachedJSONObject.remove(CUSTOMER_INFO_VERIFICATION_RESULT_KEY)
+                    cachedJSONObject.remove(CUSTOMER_INFO_REQUEST_DATE_KEY)
+                    val verificationResult = VerificationResult.valueOf(verificationResultString)
+                    return if (schemaVersion == CUSTOMER_INFO_SCHEMA_VERSION) {
+                        CustomerInfoFactory.buildCustomerInfo(cachedJSONObject, requestDate, verificationResult)
                     } else {
                         null
                     }
@@ -111,7 +128,9 @@ open class DeviceCache(
     @Synchronized
     fun cacheCustomerInfo(appUserID: String, info: CustomerInfo) {
         val jsonObject = info.rawData.also {
-            it.put("schema_version", PURCHASER_INFO_SCHEMA_VERSION)
+            it.put(CUSTOMER_INFO_SCHEMA_VERSION_KEY, CUSTOMER_INFO_SCHEMA_VERSION)
+            it.put(CUSTOMER_INFO_VERIFICATION_RESULT_KEY, info.entitlements.verification.name)
+            it.put(CUSTOMER_INFO_REQUEST_DATE_KEY, info.requestDate.time)
         }
         preferences.edit()
             .putString(

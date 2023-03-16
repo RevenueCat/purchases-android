@@ -141,7 +141,7 @@ class BillingWrapperTest {
 
         mockDetailsList = listOf(mockProductDetails())
 
-        wrapper = BillingWrapper(mockClientFactory, handler, mockDeviceCache)
+        wrapper = BillingWrapper(mockClientFactory, handler, mockDeviceCache, null)
         wrapper.purchasesUpdatedListener = mockPurchasesListener
         onConnectedCalled = false
         wrapper.stateListener = object : BillingAbstract.StateListener {

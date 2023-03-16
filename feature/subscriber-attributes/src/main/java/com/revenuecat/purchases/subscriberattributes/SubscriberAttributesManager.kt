@@ -3,6 +3,7 @@ package com.revenuecat.purchases.subscriberattributes
 import android.app.Application
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.SubscriberAttributeError
+import com.revenuecat.purchases.common.infoLog
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.subscriberattributes.DeviceIdentifiersFetcher
 import com.revenuecat.purchases.common.subscriberattributes.SubscriberAttributeKey
@@ -104,6 +105,17 @@ class SubscriberAttributesManager(
                 )
             }
         }
+    }
+
+    @Synchronized
+    fun copyUnsyncedSubscriberAttributes(originalAppUserId: AppUserID, newAppUserID: AppUserID) {
+        val unsyncedAttributesPreviousUser = deviceCache.getUnsyncedSubscriberAttributes(originalAppUserId)
+        if (unsyncedAttributesPreviousUser.isEmpty()) {
+            return
+        }
+        infoLog(AttributionStrings.COPYING_ATTRIBUTES_FROM_TO_USER.format(originalAppUserId, newAppUserID))
+        deviceCache.setAttributes(newAppUserID, unsyncedAttributesPreviousUser)
+        deviceCache.clearAllSubscriberAttributesFromUser(originalAppUserId)
     }
 
     @Synchronized
