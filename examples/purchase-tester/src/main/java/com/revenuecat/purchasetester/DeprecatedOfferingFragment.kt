@@ -203,7 +203,8 @@ class DeprecatedOfferingFragment : Fragment(), DeprecatedPackageCardAdapter.Pack
     }
 
     private fun showOldSubIdPicker(callback: (String?) -> Unit) {
-        val activeSubIds = activeSubscriptions.map { it.split(":").first() } // TODOBC5 remove sub Id parsing
+        // Removes base plan id to get the sub id
+        val activeSubIds = activeSubscriptions.map { it.split(":").first() }
         if (activeSubIds.isEmpty()) {
             Toast.makeText(
                 requireContext(),
