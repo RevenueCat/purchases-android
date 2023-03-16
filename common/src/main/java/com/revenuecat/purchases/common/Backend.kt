@@ -201,9 +201,10 @@ class Backend(
             "pricing_phases" to receiptInfo.pricingPhases?.map { it.toMap() }
         ).filterNotNullValues()
 
-        val extraHeaders = marketplace?.let {
-            mapOf("marketplace" to it)
-        } ?: emptyMap()
+        val extraHeaders = mapOf(
+            "price_string" to receiptInfo.storeProduct?.price?.formatted,
+            "marketplace" to marketplace
+        ).filterNotNullValues()
 
         val call = object : Dispatcher.AsyncCall() {
 
