@@ -11,6 +11,7 @@ import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.models.SubscriptionOptions
+import org.json.JSONObject
 import java.math.BigDecimal
 import java.util.regex.Pattern
 
@@ -35,7 +36,7 @@ data class AmazonStoreProduct(
     override val subscriptionOptions: SubscriptionOptions?,
     override val defaultOption: SubscriptionOption?,
     val iconUrl: String,
-    val originalProduct: Product
+    val originalProductJSON: JSONObject
 ) : StoreProduct {
 
     override val purchasingData: AmazonPurchasingData
@@ -83,7 +84,7 @@ fun Product.toStoreProduct(marketplace: String): StoreProduct? {
         null,
         defaultOption = null,
         iconUrl = smallIconUrl,
-        originalProduct = this
+        originalProductJSON = this.toJSON()
     )
 }
 
