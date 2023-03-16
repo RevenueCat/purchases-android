@@ -160,7 +160,6 @@ class PurchasesTest {
         mockkObject(LockedFeature.AmazonStore)
         every { LockedFeature.AmazonStore.isLocked } returns false
 
-        mockkStatic("com.revenuecat.purchases.common.CustomerInfoFactoriesKt")
         mockkStatic(ProcessLifecycleOwner::class)
 
         val productIds = listOf(STUB_PRODUCT_IDENTIFIER)
