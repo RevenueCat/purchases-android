@@ -4,35 +4,48 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.VerificationResult
+import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
+import com.revenuecat.purchases.common.CustomerInfoFactory
 import com.revenuecat.purchases.common.HTTPClient
 import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.SubscriberAttributeError
-import com.revenuecat.purchases.common.buildCustomerInfo
+import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.utils.Responses
 import com.revenuecat.purchases.utils.SyncDispatcher
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.mockkStatic
+import io.mockk.mockkObject
 import io.mockk.slot
+import io.mockk.unmockkObject
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
 import org.json.JSONObject
+import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.IOException
+import java.net.URL
 
 private const val API_KEY = "TEST_API_KEY"
 
 @RunWith(AndroidJUnit4::class)
 class SubscriberAttributesPosterTests {
     private var mockClient: HTTPClient = mockk(relaxed = true)
+    private val mockBaseURL = URL("http://mock-api-test.revenuecat.com/")
+    private val mockAppConfig = mockk<AppConfig>().apply {
+        every { baseURL } returns mockBaseURL
+    }
     private val appUserID = "jerry"
+    private val dispatcher = SyncDispatcher()
     private var backend: Backend = Backend(
         API_KEY,
-        SyncDispatcher(),
+        mockAppConfig,
+        dispatcher,
+        dispatcher,
         mockClient
     )
     private var subscriberAttributesPoster = SubscriberAttributesPoster(backend)
@@ -90,7 +103,7 @@ class SubscriberAttributesPosterTests {
 
     @Before
     fun setup() {
-        mockkStatic("com.revenuecat.purchases.common.CustomerInfoFactoriesKt")
+        mockkObject(CustomerInfoFactory)
         receivedError = null
         receivedSyncedSuccessfully = null
         receivedAttributeErrors = null
@@ -98,11 +111,16 @@ class SubscriberAttributesPosterTests {
         receivedOnSuccess = false
     }
 
+    @After
+    fun tearDown() {
+        unmockkObject(CustomerInfoFactory)
+    }
+
     // region posting attributes
 
     @Test
     fun `posting subscriber attributes works`() {
-        mockResponse("/subscribers/$appUserID/attributes", 200)
+        mockResponse(200)
 
         subscriberAttributesPoster.postSubscriberAttributes(
             mapOf("email" to SubscriberAttribute("email", "un@email.com").toBackendMap()),
@@ -115,7 +133,7 @@ class SubscriberAttributesPosterTests {
 
     @Test
     fun `posting null subscriber attributes works`() {
-        mockResponse("/subscribers/$appUserID/attributes", 200)
+        mockResponse(200)
 
         subscriberAttributesPoster.postSubscriberAttributes(
             mapOf("email" to SubscriberAttribute("email", null).toBackendMap()),
@@ -128,7 +146,7 @@ class SubscriberAttributesPosterTests {
 
     @Test
     fun `error when posting attributes`() {
-        mockResponse("/subscribers/$appUserID/attributes", 0, clientException = IOException())
+        mockResponse(0, clientException = IOException())
 
         subscriberAttributesPoster.postSubscriberAttributes(
             mapOf("email" to SubscriberAttribute("email", null)).toBackendMap(),
@@ -145,7 +163,6 @@ class SubscriberAttributesPosterTests {
     @Test
     fun `attributes validation error when posting attributes`() {
         mockResponse(
-            "/subscribers/$appUserID/attributes",
             400,
             expectedResultBody = "{" +
                 "'code': 7263," +
@@ -171,7 +188,6 @@ class SubscriberAttributesPosterTests {
     @Test
     fun `empty attributes validation errors when posting attributes`() {
         mockResponse(
-            "/subscribers/$appUserID/attributes",
             400,
             expectedResultBody = "{" +
                 "'code': 7263," +
@@ -193,7 +209,7 @@ class SubscriberAttributesPosterTests {
 
     @Test
     fun `backend error when posting attributes`() {
-        mockResponse("/subscribers/$appUserID/attributes", 503)
+        mockResponse(503)
 
         subscriberAttributesPoster.postSubscriberAttributes(
             mapOf("email" to SubscriberAttribute("email", null)).toBackendMap(),
@@ -210,7 +226,6 @@ class SubscriberAttributesPosterTests {
     @Test
     fun `Not found error when posting attributes`() {
         mockResponse(
-            "/subscribers/$appUserID/attributes",
             404,
             expectedResultBody = "{" +
                 "'code': 7259," +
@@ -376,7 +391,6 @@ class SubscriberAttributesPosterTests {
     // endregion
 
     private fun mockResponse(
-        path: String,
         responseCode: Int,
         expectedBody: Map<String, Any?>? = null,
         clientException: Exception? = null,
@@ -384,7 +398,8 @@ class SubscriberAttributesPosterTests {
     ) {
         val everyMockedCall = every {
             mockClient.performRequest(
-                path,
+                mockBaseURL,
+                Endpoint.PostAttributes(appUserID),
                 (expectedBody ?: any()),
                 mapOf("Authorization" to "Bearer $API_KEY")
             )
@@ -392,7 +407,7 @@ class SubscriberAttributesPosterTests {
 
         if (clientException == null) {
             everyMockedCall answers {
-                HTTPResult(responseCode, expectedResultBody ?: "{}")
+                createResult(responseCode, expectedResultBody ?: "{}")
             }
         } else {
             everyMockedCall throws clientException
@@ -406,16 +421,22 @@ class SubscriberAttributesPosterTests {
     ) {
         every {
             mockClient.performRequest(
-                "/receipts",
+                mockBaseURL,
+                Endpoint.PostReceipt,
                 capture(actualPostReceiptBodySlot),
                 mapOf("Authorization" to "Bearer $API_KEY")
             )
         } answers {
-            HTTPResult(responseCode, responseBody).also {
+            createResult(responseCode, responseBody).also {
                 every {
-                    it.body.buildCustomerInfo()
+                    CustomerInfoFactory.buildCustomerInfo(it)
                 } returns mockk()
             }
         }
     }
+
+    private fun createResult(
+        responseCode: Int,
+        responseBody: String
+    ) = HTTPResult(responseCode, responseBody, HTTPResult.Origin.BACKEND, null, VerificationResult.NOT_REQUESTED)
 }

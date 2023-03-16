@@ -6,14 +6,22 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.preference.PreferenceManager
 import androidx.annotation.VisibleForTesting
+import com.revenuecat.purchases.common.Anonymizer
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.Dispatcher
+import com.revenuecat.purchases.common.FileHelper
 import com.revenuecat.purchases.common.HTTPClient
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.caching.DeviceCache
+import com.revenuecat.purchases.common.diagnostics.DiagnosticsAnonymizer
+import com.revenuecat.purchases.common.diagnostics.DiagnosticsFileHelper
+import com.revenuecat.purchases.common.diagnostics.DiagnosticsSynchronizer
+import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.networking.ETagManager
+import com.revenuecat.purchases.common.verification.SignatureVerificationMode
+import com.revenuecat.purchases.common.verification.SigningManager
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesPoster
@@ -21,11 +29,13 @@ import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttribute
 import java.net.URL
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+import java.util.concurrent.ThreadFactory
 
 internal class PurchasesFactory(
     private val apiKeyValidator: APIKeyValidator = APIKeyValidator(),
 ) {
 
+    @Suppress("LongMethod")
     fun createPurchases(
         configuration: PurchasesConfiguration,
         platformInfo: PlatformInfo,
@@ -50,10 +60,28 @@ internal class PurchasesFactory(
             val eTagManager = ETagManager(sharedPreferencesForETags)
 
             val dispatcher = Dispatcher(service ?: createDefaultExecutor())
+            val diagnosticsDispatcher = Dispatcher(createDiagnosticsExecutor())
+
+            var diagnosticsFileHelper: DiagnosticsFileHelper? = null
+            var diagnosticsTracker: DiagnosticsTracker? = null
+            if (diagnosticsEnabled) {
+                diagnosticsFileHelper = DiagnosticsFileHelper(FileHelper(context))
+                diagnosticsTracker = DiagnosticsTracker(
+                    diagnosticsFileHelper,
+                    DiagnosticsAnonymizer(Anonymizer()),
+                    diagnosticsDispatcher
+                )
+            }
+
+            val signatureVerificationMode = SignatureVerificationMode.fromEntitlementVerificationMode(verificationMode)
+            val signingManager = SigningManager(signatureVerificationMode)
+
             val backend = Backend(
                 apiKey,
+                appConfig,
                 dispatcher,
-                HTTPClient(appConfig, eTagManager)
+                diagnosticsDispatcher,
+                HTTPClient(appConfig, eTagManager, diagnosticsTracker, signingManager)
             )
             val subscriberAttributesPoster = SubscriberAttributesPoster(backend)
 
@@ -64,7 +92,8 @@ internal class PurchasesFactory(
                 application,
                 backend,
                 cache,
-                observerMode
+                observerMode,
+                diagnosticsTracker
             )
             val attributionFetcher = AttributionFetcherFactory.createAttributionFetcher(store, dispatcher)
 
@@ -85,6 +114,17 @@ internal class PurchasesFactory(
 
             val customerInfoHelper = CustomerInfoHelper(cache, backend, identityManager)
 
+            var diagnosticsSynchronizer: DiagnosticsSynchronizer? = null
+            if (diagnosticsFileHelper != null && diagnosticsTracker != null) {
+                diagnosticsSynchronizer = DiagnosticsSynchronizer(
+                    diagnosticsFileHelper,
+                    diagnosticsTracker,
+                    backend,
+                    diagnosticsDispatcher,
+                    DiagnosticsSynchronizer.initializeSharedPreferences(context)
+                )
+            }
+
             return Purchases(
                 application,
                 appUserID,
@@ -95,7 +135,8 @@ internal class PurchasesFactory(
                 identityManager,
                 subscriberAttributesManager,
                 appConfig,
-                customerInfoHelper
+                customerInfoHelper,
+                diagnosticsSynchronizer
             )
         }
     }
@@ -123,5 +164,21 @@ internal class PurchasesFactory(
 
     private fun createDefaultExecutor(): ExecutorService {
         return Executors.newSingleThreadScheduledExecutor()
+    }
+
+    private fun createDiagnosticsExecutor(): ExecutorService {
+        return Executors.newSingleThreadScheduledExecutor(LowPriorityThreadFactory("revenuecat-diagnostics-thread"))
+    }
+
+    private class LowPriorityThreadFactory(private val threadName: String) : ThreadFactory {
+        override fun newThread(r: Runnable?): Thread {
+            val wrapperRunnable = Runnable {
+                r?.let {
+                    android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_LOWEST)
+                    r.run()
+                }
+            }
+            return Thread(wrapperRunnable, threadName)
+        }
     }
 }

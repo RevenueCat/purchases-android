@@ -7,13 +7,21 @@ package com.revenuecat.purchases.common
 
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.common.networking.HTTPResult
+import com.revenuecat.purchases.common.verification.SignatureVerificationException
 import org.json.JSONException
 import java.io.IOException
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
 
-private const val JITTERING_DELAY_MILLISECONDS = 5000
+private const val JITTERING_DELAY_MILLISECONDS = 5000L
+private const val JITTERING_LONG_DELAY_MILLISECONDS = 10000L
+
+enum class Delay(val delayMillis: Long) {
+    NONE(0),
+    DEFAULT(JITTERING_DELAY_MILLISECONDS),
+    LONG(JITTERING_LONG_DELAY_MILLISECONDS)
+}
 
 open class Dispatcher(
     private val executorService: ExecutorService
@@ -36,19 +44,21 @@ open class Dispatcher(
             } catch (e: SecurityException) {
                 // This can happen if a user disables the INTERNET permission.
                 onError(e.toPurchasesError().also { errorLog(it) })
+            } catch (e: SignatureVerificationException) {
+                onError(e.toPurchasesError().also { errorLog(it) })
             }
         }
     }
 
     open fun enqueue(
         command: Runnable,
-        useRandomDelay: Boolean = false
+        delay: Delay = Delay.NONE
     ) {
         synchronized(this.executorService) {
             if (!executorService.isShutdown) {
-                val future = if (useRandomDelay && executorService is ScheduledExecutorService) {
-                    val delayToApply = (0..JITTERING_DELAY_MILLISECONDS).random()
-                    executorService.schedule(command, delayToApply.toLong(), TimeUnit.MILLISECONDS)
+                val future = if (delay != Delay.NONE && executorService is ScheduledExecutorService) {
+                    val delayToApply = (0..delay.delayMillis).random()
+                    executorService.schedule(command, delayToApply, TimeUnit.MILLISECONDS)
                 } else {
                     executorService.submit(command)
                 }

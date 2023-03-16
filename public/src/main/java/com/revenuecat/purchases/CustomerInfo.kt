@@ -9,6 +9,7 @@ import android.net.Uri
 import android.os.Parcelable
 import com.revenuecat.purchases.models.RawDataContainer
 import com.revenuecat.purchases.models.Transaction
+import com.revenuecat.purchases.utils.DateHelper
 import com.revenuecat.purchases.utils.JSONObjectParceler
 import kotlinx.parcelize.IgnoredOnParcel
 import kotlinx.parcelize.Parcelize
@@ -169,7 +170,9 @@ data class CustomerInfo constructor(
         get() = jsonObject
 
     private fun activeIdentifiers(expirations: Map<String, Date?>): Set<String> {
-        return expirations.filterValues { date -> date == null || date.after(requestDate) }.keys
+        return expirations.filterValues {
+                expirationDate -> DateHelper.isDateActive(expirationDate, requestDate).isActive
+        }.keys
     }
 
     @IgnoredOnParcel
