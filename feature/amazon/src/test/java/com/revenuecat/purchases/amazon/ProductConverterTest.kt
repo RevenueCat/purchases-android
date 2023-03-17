@@ -8,7 +8,6 @@ import org.junit.runner.RunWith
 import com.amazon.device.iap.model.ProductType as AmazonProductType
 import com.revenuecat.purchases.ProductType as RevenueCatProductType
 
-// TODOBC5:fix tests
 @RunWith(AndroidJUnit4::class)
 class ProductConverterTest {
 
@@ -56,15 +55,6 @@ class ProductConverterTest {
         val storeProduct = product.toStoreProduct("US")
         assertThat(storeProduct?.price?.currencyCode).isEqualTo("USD")
     }
-
-//    @Test
-//    fun `originalPrice is null`() {
-//        val product = dummyAmazonProduct()
-//        val storeProduct = product.toStoreProduct("US")
-//        assertThat(storeProduct?.originalPrice).isNull()
-//        assertThat(storeProduct?.originalPriceAmountMicros).isZero()
-//    }
-
     @Test
     fun `title is correctly assigned`() {
         val expectedTitle = "title"
@@ -72,7 +62,6 @@ class ProductConverterTest {
         val storeProduct = product.toStoreProduct("US")
         assertThat(storeProduct?.title).isEqualTo(expectedTitle)
     }
-
     @Test
     fun `description is correctly assigned`() {
         val expectedDescription = "description"
@@ -88,39 +77,28 @@ class ProductConverterTest {
         assertThat(storeProduct?.period).isNull()
     }
 
-//    @Test
-//    fun `introductory price and trial periods are not available for Amazon`() {
-//        val product = dummyAmazonProduct()
-//        val storeProduct = product.toStoreProduct("US")
-//        assertThat(storeProduct?.freeTrialPeriod).isNull()
-//        assertThat(storeProduct?.introductoryPrice).isNull()
-//        assertThat(storeProduct?.introductoryPriceAmountMicros).isZero
-//        assertThat(storeProduct?.introductoryPricePeriod).isNull()
-//        assertThat(storeProduct?.introductoryPriceCycles).isZero
-//    }
+    @Test
+    fun `icon URL is correctly assigned`() {
+        val expectedSmallIconUrl = "https://icon.url"
+        val product = dummyAmazonProduct(smallIconUrl = expectedSmallIconUrl)
+        val storeProduct = product.toStoreProduct("US")
+        assertThat(storeProduct?.amazonProduct?.iconUrl).isEqualTo(expectedSmallIconUrl)
+    }
 
-//    @Test
-//    fun `icon URL is correctly assigned`() {
-//        val expectedSmallIconUrl = "https://icon.url"
-//        val product = dummyAmazonProduct(smallIconUrl = expectedSmallIconUrl)
-//        val storeProduct = product.toStoreProduct("US")
-//        assertThat(storeProduct?.iconUrl).isEqualTo(expectedSmallIconUrl)
-//    }
-//
-//    @Test
-//    fun `originalJSON is correctly assigned`() {
-//        val product = dummyAmazonProduct()
-//        val storeProduct = product.toStoreProduct("US")
-//
-//        val receivedJSON = storeProduct?.originalJson
-//        val expectedJSON = product.toJSON()
-//
-//        assertThat(receivedJSON).isNotNull
-//        assertThat(receivedJSON!!.length()).isEqualTo(expectedJSON.length())
-//        receivedJSON.keys().forEach {
-//            assertThat(receivedJSON[it]).isEqualTo(expectedJSON[it])
-//        }
-//    }
+    @Test
+    fun `originalJSON is correctly assigned`() {
+        val product = dummyAmazonProduct()
+        val storeProduct = product.toStoreProduct("US")
+
+        val receivedJSON = storeProduct?.amazonProduct?.originalProductJSON
+        val expectedJSON = product.toJSON()
+
+        assertThat(receivedJSON).isNotNull
+        assertThat(receivedJSON!!.length()).isEqualTo(expectedJSON.length())
+        receivedJSON.keys().forEach {
+            assertThat(receivedJSON[it]).isEqualTo(expectedJSON[it])
+        }
+    }
 
     @Test
     fun `if price is missing, product is not converted`() {
