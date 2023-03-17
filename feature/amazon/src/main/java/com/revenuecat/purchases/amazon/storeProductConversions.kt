@@ -50,11 +50,9 @@ internal fun String.createPeriod(): Period? {
 
         // Handle "7 Days" or "14 Days" or "1 Month" just in case
         else -> this.split(" ")
-            .takeIf {
-                it.size == 2
-            }
+            .takeIf { it.size == 2 }
             ?.let {
-                (it[0].toIntOrNull())?.let { numberValue ->
+                it.firstOrNull()?.toIntOrNull()?.let { numberValue ->
                     val letter = it[1].first().uppercase()
                     val iso = "P$numberValue$letter"
                     return Period.create(iso)
