@@ -269,9 +269,6 @@ class Purchases internal constructor(
         isoCurrencyCode: String?,
         price: Double?
     ) {
-        if (LockedFeature.AmazonStore.isLocked) {
-            throw FeatureNotSupportedException(LockedFeature.AmazonStore)
-        }
         if (LockedFeature.ObserverMode.isLocked) {
             throw FeatureNotSupportedException(LockedFeature.ObserverMode)
         }
@@ -1990,9 +1987,6 @@ class Purchases internal constructor(
         ): Purchases {
             if (isConfigured) {
                 infoLog(ConfigureStrings.INSTANCE_ALREADY_EXISTS)
-            }
-            if (configuration.store == Store.AMAZON && LockedFeature.AmazonStore.isLocked) {
-                throw FeatureNotSupportedException(LockedFeature.AmazonStore)
             }
             if (configuration.observerMode && LockedFeature.ObserverMode.isLocked) {
                 throw FeatureNotSupportedException(LockedFeature.ObserverMode)
