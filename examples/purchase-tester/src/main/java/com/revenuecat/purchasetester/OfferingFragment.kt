@@ -92,19 +92,19 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
         cardView: View,
         currentPackage: Package,
         isUpgrade: Boolean
-    ) = startPurchase(isUpgrade, PurchaseParams.Builder(currentPackage, requireActivity()))
+    ) = startPurchase(isUpgrade, PurchaseParams.Builder(requireActivity(), currentPackage))
 
     override fun onPurchaseProductClicked(
         cardView: View,
         currentProduct: StoreProduct,
         isUpgrade: Boolean
-    ) = startPurchase(isUpgrade, PurchaseParams.Builder(currentProduct, requireActivity()))
+    ) = startPurchase(isUpgrade, PurchaseParams.Builder(requireActivity(), currentProduct))
 
     override fun onPurchaseSubscriptionOptionClicked(
         cardView: View,
         subscriptionOption: SubscriptionOption,
         isUpgrade: Boolean
-    ) = startPurchase(isUpgrade, PurchaseParams.Builder(subscriptionOption, requireActivity()))
+    ) = startPurchase(isUpgrade, PurchaseParams.Builder(requireActivity(), subscriptionOption))
 
     private fun startPurchase(
         isUpgrade: Boolean,

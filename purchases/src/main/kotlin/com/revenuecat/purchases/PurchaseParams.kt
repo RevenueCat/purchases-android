@@ -38,22 +38,22 @@ data class PurchaseParams(val builder: Builder) {
      *   - Falls back to use base plan
      */
     open class Builder private constructor(
-        @get:JvmSynthetic internal val purchasingData: PurchasingData,
         @get:JvmSynthetic internal val activity: Activity,
+        @get:JvmSynthetic internal val purchasingData: PurchasingData,
         @get:JvmSynthetic internal val presentedOfferingIdentifier: String? = null
     ) {
-        constructor(packageToPurchase: Package, activity: Activity) :
+        constructor(activity: Activity, packageToPurchase: Package) :
             this(
-                packageToPurchase.product.purchasingData,
                 activity,
+                packageToPurchase.product.purchasingData,
                 packageToPurchase.offering
             )
 
-        constructor(storeProduct: StoreProduct, activity: Activity) :
-            this(storeProduct.purchasingData, activity)
+        constructor(activity: Activity, storeProduct: StoreProduct) :
+            this(activity, storeProduct.purchasingData)
 
-        constructor(subscriptionOption: SubscriptionOption, activity: Activity) :
-            this(subscriptionOption.purchasingData, activity)
+        constructor(activity: Activity, subscriptionOption: SubscriptionOption) :
+            this(activity, subscriptionOption.purchasingData)
 
         @set:JvmSynthetic
         @get:JvmSynthetic

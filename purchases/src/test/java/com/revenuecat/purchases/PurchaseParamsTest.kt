@@ -24,8 +24,8 @@ class PurchaseParamsTest {
         val storeProduct = stubStoreProduct("abc")
         val (_, offerings) = stubOfferings(storeProduct)
         val purchasePackageParams = PurchaseParams.Builder(
-            offerings[STUB_OFFERING_IDENTIFIER]!!.monthly!!,
-            mockk()
+            mockk(),
+            offerings[STUB_OFFERING_IDENTIFIER]!!.monthly!!
         ).build()
 
         assertThat(purchasePackageParams.presentedOfferingIdentifier).isEqualTo(STUB_OFFERING_IDENTIFIER)
@@ -37,8 +37,8 @@ class PurchaseParamsTest {
         val (_, offerings) = stubOfferings(storeProduct)
         val packageToPurchase = offerings[STUB_OFFERING_IDENTIFIER]!!.monthly!!
         val purchasePackageParams = PurchaseParams.Builder(
-            packageToPurchase,
-            mockk<Activity>()
+            mockk(),
+            packageToPurchase
         ).build()
 
         val expectedPurchasingData = packageToPurchase.product.purchasingData
@@ -49,8 +49,8 @@ class PurchaseParamsTest {
     fun `Initializing with product sets proper purchasingData`() {
         val storeProduct = stubStoreProduct("abc")
         val purchasePackageParams = PurchaseParams.Builder(
-            storeProduct,
-            mockk()
+            mockk(),
+            storeProduct
         ).build()
 
         val expectedPurchasingData = storeProduct.purchasingData
@@ -61,8 +61,8 @@ class PurchaseParamsTest {
     fun `Initializing with option sets proper purchasingData`() {
         val basePlanSubscriptionOption = stubSubscriptionOption("base-plan-purchase-option", "abc")
         val purchasePackageParams = PurchaseParams.Builder(
-            basePlanSubscriptionOption,
-            mockk()
+            mockk(),
+            basePlanSubscriptionOption
         ).build()
 
         val expectedPurchasingData = basePlanSubscriptionOption.purchasingData
