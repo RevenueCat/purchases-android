@@ -9,6 +9,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.billingclient.api.ProductDetails
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.StoreProduct
+import com.revenuecat.purchases.utils.getLifetimePackageJSON
 import com.revenuecat.purchases.utils.stubINAPPStoreProduct
 import com.revenuecat.purchases.utils.stubPricingPhase
 import com.revenuecat.purchases.utils.stubStoreProduct
@@ -491,16 +492,6 @@ class OfferingsTest {
                     'identifier': '$packageIdentifier',
                     'platform_product_identifier': '$productIdentifier',
                     'platform_product_plan_identifier': '$basePlanId'
-                }
-            """.trimIndent()
-        )
-
-    private fun getLifetimePackageJSON() =
-        JSONObject(
-            """
-                {
-                    'identifier': '${PackageType.LIFETIME.identifier}',
-                    'platform_product_identifier': '$inAppProductIdentifier'
                 }
             """.trimIndent()
         )
