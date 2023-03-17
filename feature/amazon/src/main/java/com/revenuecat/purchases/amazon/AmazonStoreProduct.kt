@@ -18,7 +18,7 @@ data class AmazonStoreProduct(
     override val subscriptionOptions: SubscriptionOptions?,
     override val defaultOption: SubscriptionOption?,
     val iconUrl: String,
-    val freeTrialPeriod: String?,
+    val freeTrialPeriod: Period?,
     val originalProductJSON: JSONObject
 ) : StoreProduct {
 
