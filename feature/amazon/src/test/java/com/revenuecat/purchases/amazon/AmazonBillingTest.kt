@@ -1,6 +1,5 @@
 package com.revenuecat.purchases.amazon
 
-import android.app.Activity
 import android.content.Context
 import android.os.Handler
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -18,7 +17,6 @@ import com.revenuecat.purchases.amazon.helpers.dummyAmazonProduct
 import com.revenuecat.purchases.amazon.helpers.dummyReceipt
 import com.revenuecat.purchases.amazon.helpers.dummyUserData
 import com.revenuecat.purchases.amazon.helpers.successfulRVSResponse
-import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
@@ -34,7 +32,6 @@ import org.json.JSONObject
 import org.junit.Test
 import org.junit.runner.RunWith
 
-// TODOBC5: fix
 @RunWith(AndroidJUnit4::class)
 class AmazonBillingTest {
     private val appUserID: String = "appUserID"
