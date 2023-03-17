@@ -24,7 +24,6 @@ final class StoreProductAPI {
         SubscriptionOptions subscriptionOptions = product.getSubscriptionOptions();
         SubscriptionOption defaultOption = product.getDefaultOption();
 
-        // TODOBC5 can we find an easier way to do this in java?
         GoogleStoreProduct underlyingProduct = GoogleStoreProductKt.getGoogleProduct(product);
     }
 

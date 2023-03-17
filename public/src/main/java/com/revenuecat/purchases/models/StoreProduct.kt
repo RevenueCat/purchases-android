@@ -61,7 +61,9 @@ interface StoreProduct {
      */
     val defaultOption: SubscriptionOption?
 
-    // TODO javadocs
+    /**
+     * Contains only data that is required to make the purchase.
+     */
     val purchasingData: PurchasingData
 
     /**
