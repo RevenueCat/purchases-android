@@ -1,63 +1,13 @@
 package com.revenuecat.purchases.amazon
 
 import com.amazon.device.iap.model.Product
-import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.MICROS_MULTIPLIER
 import com.revenuecat.purchases.common.log
-import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
-import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreProduct
-import com.revenuecat.purchases.models.SubscriptionOption
-import com.revenuecat.purchases.models.SubscriptionOptions
-import org.json.JSONObject
 import java.math.BigDecimal
 import java.util.regex.Pattern
-
-sealed class AmazonPurchasingData : PurchasingData {
-    data class Product(
-        val storeProduct: AmazonStoreProduct,
-    ) : AmazonPurchasingData() {
-        override val productId: String
-            get() = storeProduct.id
-        override val productType: ProductType
-            get() = storeProduct.type
-    }
-}
-
-data class AmazonStoreProduct(
-    override val id: String,
-    override val type: ProductType,
-    override val title: String,
-    override val description: String,
-    override val period: Period?,
-    override val price: Price,
-    override val subscriptionOptions: SubscriptionOptions?,
-    override val defaultOption: SubscriptionOption?,
-    val iconUrl: String,
-    val originalProductJSON: JSONObject
-) : StoreProduct {
-
-    override val purchasingData: AmazonPurchasingData
-        get() = AmazonPurchasingData.Product(this)
-
-    @Deprecated(
-        "Replaced with id",
-        ReplaceWith("id")
-    )
-    override val sku: String
-        get() = id
-}
-
-val StoreProduct.amazonProduct: AmazonStoreProduct?
-    get() = this as? AmazonStoreProduct
-
-// fun Product.toSubscriptionOption(): SubscriptionOption {
-//    val pricingPhase = PricingPhase(
-//
-//    )
-// }
 
 fun Product.toStoreProduct(marketplace: String): StoreProduct? {
     if (price == null) {
@@ -67,12 +17,6 @@ fun Product.toStoreProduct(marketplace: String): StoreProduct? {
     // By default, Amazon automatically converts the base list price of your IAP items into
     // the local currency of each marketplace where they can be sold, and customers will see IAP items in English.
     val priceInfo = price.createPrice(marketplace)
-
-//    val subscriptionOptions = if (productType.toRevenueCatProductType() == ProductType.SUBS) {
-//        SubscriptionOptions(listOf(this.toSubscriptionOption()))
-//    } else {
-//        null
-//    }
 
     return AmazonStoreProduct(
         sku,
@@ -84,6 +28,7 @@ fun Product.toStoreProduct(marketplace: String): StoreProduct? {
         null,
         defaultOption = null,
         iconUrl = smallIconUrl,
+        freeTrialPeriod = freeTrialPeriod,
         originalProductJSON = this.toJSON()
     )
 }
