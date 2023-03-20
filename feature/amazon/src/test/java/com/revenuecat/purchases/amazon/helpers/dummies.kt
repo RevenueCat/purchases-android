@@ -23,17 +23,21 @@ fun dummyAmazonProduct(
     sku: String = "premium",
     productType: ProductType = ProductType.SUBSCRIPTION,
     description: String = "A product description",
+    subscriptionPeriod: String? = null,
     title: String = "A product title",
     price: String? = "$3.00",
     smallIconUrl: String = "https://icon.url",
+    freeTrialPeriod: String? = null,
     coinsRewardAmount: Int = 100
 ): Product {
     return ProductBuilder()
         .setSku(sku)
         .setProductType(productType)
         .setDescription(description)
+        .setFreeTrialPeriod(freeTrialPeriod)
         .setPrice(price)
         .setSmallIconUrl(smallIconUrl)
+        .setSubscriptionPeriod(subscriptionPeriod)
         .setTitle(title)
         .setCoinsRewardAmount(coinsRewardAmount).build()
 }

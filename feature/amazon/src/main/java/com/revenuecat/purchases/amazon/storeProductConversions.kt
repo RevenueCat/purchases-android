@@ -4,6 +4,7 @@ import com.amazon.device.iap.model.Product
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.MICROS_MULTIPLIER
 import com.revenuecat.purchases.common.log
+import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.StoreProduct
 import java.math.BigDecimal
@@ -23,14 +24,41 @@ fun Product.toStoreProduct(marketplace: String): StoreProduct? {
         productType.toRevenueCatProductType(),
         title,
         description,
-        period = null,
+        period = subscriptionPeriod?.createPeriod(),
         priceInfo,
         null,
         defaultOption = null,
         iconUrl = smallIconUrl,
-        freeTrialPeriod = freeTrialPeriod,
+        freeTrialPeriod = freeTrialPeriod?.createPeriod(),
         originalProductJSON = this.toJSON()
     )
+}
+
+@SuppressWarnings("MagicNumber")
+internal fun String.createPeriod(): Period? {
+    // Valid values: Weekly, BiWeekly, Monthly, BiMonthly, Quarterly, SemiAnnually, Annually.
+    // https://developer.amazon.com/docs/in-app-purchasing/iap-implement-iap.html#successful-reques
+
+    return when (this) {
+        "Weekly" -> Period(1, Period.Unit.WEEK, "P1W")
+        "BiWeekly" -> Period(2, Period.Unit.WEEK, "P2W")
+        "Monthly" -> Period(1, Period.Unit.MONTH, "P1M")
+        "BiMonthly" -> Period(2, Period.Unit.MONTH, "P2M")
+        "Quarterly" -> Period(3, Period.Unit.MONTH, "P3M")
+        "SemiAnnually" -> Period(6, Period.Unit.MONTH, "P6M")
+        "Annually" -> Period(1, Period.Unit.YEAR, "P1Y")
+
+        // Handle "7 Days" or "14 Days" or "1 Month" just in case
+        else -> this.split(" ")
+            .takeIf { it.size == 2 }
+            ?.let {
+                it.firstOrNull()?.toIntOrNull()?.let { numberValue ->
+                    val letter = it[1].first().uppercase()
+                    val iso = "P$numberValue$letter"
+                    return Period.create(iso)
+                }
+            }
+    }
 }
 
 internal fun String.createPrice(marketplace: String): Price {
