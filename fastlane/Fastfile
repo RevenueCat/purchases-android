@@ -161,13 +161,15 @@ platform :android do
     )
   end
 
-  desc "Builds a Magic Weather APK and prompts for:"
-  desc "* Gradle task"
-  desc "* Amazon or Google API Key for RevenueCat"
-  desc "* Version code"
-  desc "* Version name"
-  desc "* Amazon pem path (optional)"
-  desc "* New application id (optional)"
+  desc <<-DESC
+Builds a Magic Weather APK and prompts for:
+* Gradle task
+* Amazon or Google API Key for RevenueCat
+* Version code
+* Version name
+* Amazon pem path (optional)
+* New application id (optional)
+DESC
   lane :build_magic_weather do |options|
     ensure_git_status_clean
 
@@ -243,11 +245,13 @@ platform :android do
     end
   end
 
-  desc "Builds a Purchase Tester APK and prompts for:"
-  desc "* Version code"
-  desc "* Version name"
-  desc "* Min SDK Version"
-  desc "* Amazon pem path (optional)"
+  desc <<-DESC
+Builds a Purchase Tester APK and prompts for:
+* Version code
+* Version name
+* Min SDK Version
+* Amazon pem path (optional)
+DESC
   lane :build_purchase_tester do |options|
     ensure_git_status_clean
 

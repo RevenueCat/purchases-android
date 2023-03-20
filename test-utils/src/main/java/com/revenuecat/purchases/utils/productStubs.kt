@@ -173,3 +173,16 @@ fun getLifetimePackageJSON() =
                 }
             """.trimIndent()
     )
+
+fun getAmazonPackageJSON(
+    packageIdentifier: String = "com.myproduct",
+    productIdentifier: String = "com.myproduct.monthly"
+) =
+    JSONObject(
+        """
+                {
+                    'identifier': '$packageIdentifier',
+                    'platform_product_identifier': '$productIdentifier'
+                }
+            """.trimIndent()
+    )

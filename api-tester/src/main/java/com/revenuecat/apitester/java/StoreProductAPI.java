@@ -62,6 +62,6 @@ final class StoreProductAPI {
     static void checkAmazonStoreProduct(AmazonStoreProduct amazonStoreProduct) {
         check(amazonStoreProduct);
         String iconUrl = amazonStoreProduct.getIconUrl();
-        Period freeTrailPeriod = amazonStoreProduct.getFreeTrialPeriod();
+        Period freeTrialPeriod = amazonStoreProduct.getFreeTrialPeriod();
     }
 }

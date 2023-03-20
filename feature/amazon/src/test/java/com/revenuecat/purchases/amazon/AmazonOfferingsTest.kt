@@ -12,6 +12,7 @@ import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.amazon.helpers.dummyAmazonProduct
 import com.revenuecat.purchases.amazon.helpers.stubStoreProductForAmazon
 import com.revenuecat.purchases.models.Period
+import com.revenuecat.purchases.utils.getAmazonPackageJSON
 import com.revenuecat.purchases.utils.getLifetimePackageJSON
 import com.revenuecat.purchases.utils.stubINAPPStoreProduct
 import org.assertj.core.api.Assertions
@@ -430,18 +431,4 @@ class AmazonOfferingsTest {
             }
         """.trimIndent()
     )
-
-    private fun getAmazonPackageJSON(
-        packageIdentifier: String = monthlyPackageID,
-        productIdentifier: String = monthlyTermSku
-    ) =
-        JSONObject(
-            """
-                {
-                    'identifier': '$packageIdentifier',
-                    'platform_product_identifier': '$productIdentifier'
-                }
-            """.trimIndent()
-        )
-
 }

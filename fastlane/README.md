@@ -102,18 +102,13 @@ Publish purchase tester to test track in Play Console
 ```
 
 Builds a Magic Weather APK and prompts for:
-
 * Gradle task
-
 * Amazon or Google API Key for RevenueCat
-
 * Version code
-
 * Version name
-
 * Amazon pem path (optional)
-
 * New application id (optional)
+
 
 ### android build_purchase_tester
 
@@ -122,14 +117,11 @@ Builds a Magic Weather APK and prompts for:
 ```
 
 Builds a Purchase Tester APK and prompts for:
-
 * Version code
-
 * Version name
-
 * Min SDK Version
-
 * Amazon pem path (optional)
+
 
 ----
 
