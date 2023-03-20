@@ -239,7 +239,7 @@ platform :android do
       end
     ensure
       sh("git reset --hard")
-      sh("git clean -fd")
+      sh("cd .. && git clean -fd")
     end
   end
 
@@ -301,8 +301,7 @@ platform :android do
       end
     ensure
       sh("git reset --hard")
-      sleep 1
-      sh("git clean -fd")
+      sh("cd .. && git clean -fd")
     end
   end
 end
