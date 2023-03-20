@@ -95,10 +95,10 @@ Build purchase tester app bundle
 
 Publish purchase tester to test track in Play Console
 
-### android build_example
+### android build_magic_weather
 
 ```sh
-[bundle exec] fastlane android build_example
+[bundle exec] fastlane android build_magic_weather
 ```
 
 Builds a Magic Weather APK and prompts for:
@@ -114,6 +114,22 @@ Builds a Magic Weather APK and prompts for:
 * Amazon pem path (optional)
 
 * New application id (optional)
+
+### android build_purchase_tester
+
+```sh
+[bundle exec] fastlane android build_purchase_tester
+```
+
+Builds a Purchase Tester APK and prompts for:
+
+* Version code
+
+* Version name
+
+* Min SDK Version
+
+* Amazon pem path (optional)
 
 ----
 
