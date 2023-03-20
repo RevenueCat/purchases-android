@@ -95,10 +95,10 @@ Build purchase tester app bundle
 
 Publish purchase tester to test track in Play Console
 
-### android build_magic_weather
+### android build_example
 
 ```sh
-[bundle exec] fastlane android build_magic_weather
+[bundle exec] fastlane android build_example
 ```
 
 Builds a Magic Weather APK and prompts for:
