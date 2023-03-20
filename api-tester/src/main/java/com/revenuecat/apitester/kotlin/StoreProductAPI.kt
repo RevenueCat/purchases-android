@@ -60,7 +60,7 @@ private class StoreProductAPI {
     }
 
     fun checkAmazonStoreProduct(amazonStoreProduct: AmazonStoreProduct) {
-        check(amazonStoreProduct);
+        check(amazonStoreProduct)
         val iconUrl: String = amazonStoreProduct.iconUrl
         val freeTrialPeriod = amazonStoreProduct.freeTrialPeriod
     }
