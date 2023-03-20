@@ -2,6 +2,7 @@ package com.revenuecat.apitester.kotlin
 
 import com.android.billingclient.api.ProductDetails
 import com.revenuecat.purchases.ProductType
+import com.revenuecat.purchases.amazon.AmazonStoreProduct
 import com.revenuecat.purchases.models.GoogleStoreProduct
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.SubscriptionOption
@@ -54,7 +55,13 @@ private class StoreProductAPI {
             googleStoreProduct.productDetails
         )
 
-        val productId = constructedGoogleStoreProduct.productId
-        val basePlanId = constructedGoogleStoreProduct.basePlanId
+        val productId: String = constructedGoogleStoreProduct.productId
+        val basePlanId: String? = constructedGoogleStoreProduct.basePlanId
+    }
+
+    fun checkAmazonStoreProduct(amazonStoreProduct: AmazonStoreProduct) {
+        check(amazonStoreProduct);
+        val iconUrl: String = amazonStoreProduct.iconUrl
+        val freeTrialPeriod = amazonStoreProduct.freeTrialPeriod
     }
 }
