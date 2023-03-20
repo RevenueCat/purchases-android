@@ -57,7 +57,7 @@ final class StoreProductAPI {
 
         String productId = constructedGoogleStoreProduct.getProductId();
         String basePlanId = constructedGoogleStoreProduct.getBasePlanId();
-    }33
+    }
 
     static void checkAmazonStoreProduct(AmazonStoreProduct amazonStoreProduct) {
         check(amazonStoreProduct);
