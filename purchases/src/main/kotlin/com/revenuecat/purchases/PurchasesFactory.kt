@@ -73,6 +73,7 @@ internal class PurchasesFactory(
                 )
             }
 
+            // Trusted entitlements: Commented out until ready to be made public
 //            val signatureVerificationMode = SignatureVerificationMode.fromEntitlementVerificationMode(
 //                verificationMode
 //            )

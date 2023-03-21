@@ -29,15 +29,16 @@ class EntitlementInfoTest {
         assertThat(entitlementInfo1).isEqualTo(entitlementInfo2)
     }
 
-    @Test
-    fun `same entitlement info with different verification are not equal`() {
-        val entitlementInfo1 = createEntitlementInfo(verification = VerificationResult.NOT_REQUESTED)
-        val entitlementInfo2 = createEntitlementInfo(verification = VerificationResult.FAILED)
-        val entitlementInfo3 = createEntitlementInfo(verification = VerificationResult.VERIFIED)
-        assertThat(entitlementInfo1).isNotEqualTo(entitlementInfo2)
-        assertThat(entitlementInfo1).isNotEqualTo(entitlementInfo3)
-        assertThat(entitlementInfo2).isNotEqualTo(entitlementInfo3)
-    }
+    // Trusted entitlements: Commented out until ready to be made public
+//    @Test
+//    fun `same entitlement info with different verification are not equal`() {
+//        val entitlementInfo1 = createEntitlementInfo(verification = VerificationResult.NOT_REQUESTED)
+//        val entitlementInfo2 = createEntitlementInfo(verification = VerificationResult.FAILED)
+//        val entitlementInfo3 = createEntitlementInfo(verification = VerificationResult.VERIFIED)
+//        assertThat(entitlementInfo1).isNotEqualTo(entitlementInfo2)
+//        assertThat(entitlementInfo1).isNotEqualTo(entitlementInfo3)
+//        assertThat(entitlementInfo2).isNotEqualTo(entitlementInfo3)
+//    }
 
     private fun createEntitlementInfo(
         identifier: String = "test-entitlement-info-id",
@@ -71,7 +72,8 @@ class EntitlementInfoTest {
             billingIssueDetectedAt,
             ownershipType,
             jsonObject,
-            verification
+            // Trusted entitlements: Commented out until ready to be made public
+            // verification
         )
     }
 }
