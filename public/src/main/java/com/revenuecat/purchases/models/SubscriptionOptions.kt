@@ -6,6 +6,10 @@ class SubscriptionOptions(
     private val subscriptionOptions: List<SubscriptionOption>
     ) : List<SubscriptionOption> by subscriptionOptions {
 
+    private companion object {
+        const val RC_IGNORE_OFFER_TAG = "rc-ignore-offer"
+    }
+
     /**
      * The base plan [SubscriptionOption].
      */
@@ -27,7 +31,7 @@ class SubscriptionOptions(
 
     /**
      * The default [SubscriptionOption]:
-     *   - Filters out offers with "rc-ignore-default-offer" tag
+     *   - Filters out offers with "rc-ignore-offer" tag
      *   - Uses [SubscriptionOption] WITH longest free trial or cheapest first phase
      *   - Falls back to use base plan
      */
@@ -37,7 +41,7 @@ class SubscriptionOptions(
 
             val validOffers = this
                 .filter { !it.isBasePlan }
-                .filter { !it.tags.contains("rc-ignore-default-offer") }
+                .filter { !it.tags.contains(RC_IGNORE_OFFER_TAG) }
 
             return findLongestFreeTrial(validOffers) ?: findLowestNonFreeOffer(validOffers) ?: basePlan
         }
