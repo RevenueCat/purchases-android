@@ -7,6 +7,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -27,6 +28,9 @@ import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.purchaseWith
 import com.revenuecat.purchases_sample.R
 import com.revenuecat.purchases_sample.databinding.FragmentOfferingBinding
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.launch
 
 @SuppressWarnings("TooManyFunctions")
 class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListener {
@@ -36,6 +40,9 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
     private val args: OfferingFragmentArgs by navArgs()
     private val offeringId: String by lazy { args.offeringId }
     private var activeSubscriptions: Set<String> = setOf()
+
+    private lateinit var dataStoreUtils: DataStoreUtils
+    private var isPlayStore: Boolean = true
 
     private val purchaseErrorCallback: (error: PurchasesError, userCancelled: Boolean) -> Unit =
         { error, userCancelled ->
@@ -65,7 +72,14 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
             activeSubscriptions = it.activeSubscriptions
         }
 
+        dataStoreUtils = DataStoreUtils(requireActivity().applicationContext.configurationDataStore)
         binding = FragmentOfferingBinding.inflate(inflater)
+
+        lifecycleScope.launch {
+            dataStoreUtils.getSdkConfig().onEach { sdkConfiguration ->
+                isPlayStore = !sdkConfiguration.useAmazon
+            }.collect()
+        }
 
         return binding.root
     }
@@ -80,11 +94,13 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
         binding.offering = offering
 
         binding.offeringDetailsPackagesRecycler.layoutManager = LinearLayoutManager(requireContext())
+
         binding.offeringDetailsPackagesRecycler.adapter =
             PackageCardAdapter(
                 offering.availablePackages,
                 activeSubscriptions,
-                this
+                this,
+                isPlayStore
             )
     }
 

@@ -15,6 +15,7 @@ import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.models.SubscriptionOptions
 import com.revenuecat.purchases.models.toRecurrenceMode
+import org.json.JSONObject
 
 @SuppressWarnings("MatchingDeclarationName")
 private data class StubPurchasingData(
@@ -162,3 +163,26 @@ fun stubOfferings(productId: String): Pair<StoreProduct, Offerings> {
     val storeProduct = stubStoreProduct(productId)
     return stubOfferings(storeProduct)
 }
+
+fun getLifetimePackageJSON() =
+    JSONObject(
+        """
+                {
+                    'identifier': '${PackageType.LIFETIME.identifier}',
+                    'platform_product_identifier': 'com.myproduct.lifetime'
+                }
+            """.trimIndent()
+    )
+
+fun getAmazonPackageJSON(
+    packageIdentifier: String = "com.myproduct",
+    productIdentifier: String = "com.myproduct.monthly"
+) =
+    JSONObject(
+        """
+                {
+                    'identifier': '$packageIdentifier',
+                    'platform_product_identifier': '$productIdentifier'
+                }
+            """.trimIndent()
+    )

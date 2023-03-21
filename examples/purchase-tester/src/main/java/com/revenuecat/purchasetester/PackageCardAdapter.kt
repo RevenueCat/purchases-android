@@ -10,6 +10,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
 import com.revenuecat.purchases.ProductType
+import com.revenuecat.purchases.amazon.amazonProduct
 import com.revenuecat.purchases.models.googleProduct
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.models.StoreProduct
@@ -18,7 +19,8 @@ import com.revenuecat.purchases_sample.databinding.PackageCardBinding
 class PackageCardAdapter(
     private val packages: List<Package>,
     private val activeSubscriptions: Set<String>,
-    private val listener: PackageCardAdapterListener
+    private val listener: PackageCardAdapterListener,
+    private val isPlayStore: Boolean
 ) :
     RecyclerView.Adapter<PackageCardAdapter.PackageViewHolder>() {
 
@@ -30,7 +32,7 @@ class PackageCardAdapter(
     override fun getItemCount(): Int = packages.size
 
     override fun onBindViewHolder(holder: PackageViewHolder, position: Int) {
-        holder.bind(packages[position])
+        holder.bind(packages[position], isPlayStore)
     }
 
     inner class PackageViewHolder(private val binding: PackageCardBinding) :
@@ -38,11 +40,12 @@ class PackageCardAdapter(
 
         private val nothingCheckedIndex = -1
 
-        fun bind(currentPackage: Package) {
+        fun bind(currentPackage: Package, isPlayStore: Boolean) {
             val product = currentPackage.product
             binding.currentPackage = currentPackage
             binding.isSubscription = product.type == ProductType.SUBS
             binding.isActive = activeSubscriptions.contains(product.id)
+            binding.isPlayStore = isPlayStore
 
             binding.packageBuyButton.setOnClickListener {
                 listener.onPurchasePackageClicked(
@@ -82,7 +85,8 @@ class PackageCardAdapter(
                 currentPackage.packageType.toString()
             }
 
-            binding.packageDetailsJsonObject.detail = product.googleProduct?.productDetails?.toString() ?: "TODO Amazon"
+            binding.packageDetailsJsonObject.detail = product.googleProduct?.productDetails?.toString()
+                ?: product.amazonProduct?.originalProductJSON.toString()
 
             bindSubscriptionOptions(product)
 
