@@ -1697,7 +1697,7 @@ class BackendTest {
 
     // endregion
 
-    // region
+    // region getProductEntitlementMappings
 
     @Test
     fun `getProductEntitlementMappings makes call with correct parameters`() {
