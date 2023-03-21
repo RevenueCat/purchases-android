@@ -127,7 +127,7 @@ prices would automatically be applied if the user was eligible.
 Now, in v6, a `Package` or `StoreProduct` could contain multiple offers along with a base plan. 
 When passing a `Package` or `StoreProduct` to `purchase()`, the SDK will use the following logic to choose which 
 [SubscriptionOption] to purchase:
-*   - Filters out offers with "rc-ignore-default-offer" tag
+*   - Filters out offers with "rc-ignore-offer" tag
 *   - Uses [SubscriptionOption] with the longest free trial or cheapest first phase
 *   - Falls back to use base plan
 

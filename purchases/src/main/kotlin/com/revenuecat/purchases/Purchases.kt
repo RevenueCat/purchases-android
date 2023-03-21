@@ -399,7 +399,7 @@ class Purchases internal constructor(
      *
      * If a [Package] or [StoreProduct] is used to build the [PurchaseParams], the [defaultOption] will be purchased.
      * [defaultOption] is selected via the following logic:
-     *   - Filters out offers with "rc-ignore-default-offer" tag
+     *   - Filters out offers with "rc-ignore-offer" tag
      *   - Uses [SubscriptionOption] with the longest free trial or cheapest first phase
      *   - Falls back to use base plan
      *
@@ -439,7 +439,7 @@ class Purchases internal constructor(
      * [upgradeInfo.oldSku] and chooses [storeProduct]'s default [SubscriptionOption].
      *
      * The default [SubscriptionOption] logic:
-     *   - Filters out offers with "rc-ignore-default-offer" tag
+     *   - Filters out offers with "rc-ignore-offer" tag
      *   - Uses [SubscriptionOption] WITH longest free trial or cheapest first phase
      *   - Falls back to use base plan
      *
@@ -475,7 +475,7 @@ class Purchases internal constructor(
      * Purchases a [StoreProduct]. If purchasing a subscription, it will choose the default [SubscriptionOption].
      *
      * The default [SubscriptionOption] logic:
-     *   - Filters out offers with "rc-ignore-default-offer" tag
+     *   - Filters out offers with "rc-ignore-offer" tag
      *   - Uses [SubscriptionOption] WITH longest free trial or cheapest first phase
      *   - Falls back to use base plan
      *
@@ -507,7 +507,7 @@ class Purchases internal constructor(
      * [oldProductId]and chooses the default [SubscriptionOption] from [packageToPurchase].
      *
      * The default [SubscriptionOption] logic:
-     *   - Filters out offers with "rc-ignore-default-offer" tag
+     *   - Filters out offers with "rc-ignore-offer" tag
      *   - Uses [SubscriptionOption] WITH longest free trial or cheapest first phase
      *   - Falls back to use base plan
      *
@@ -543,7 +543,7 @@ class Purchases internal constructor(
      * Purchase a [Package]. If purchasing a subscription, it will choose the default [SubscriptionOption].
      *
      * The default [SubscriptionOption] logic:
-     *   - Filters out offers with "rc-ignore-default-offer" tag
+     *   - Filters out offers with "rc-ignore-offer" tag
      *   - Uses [SubscriptionOption] WITH longest free trial or cheapest first phase
      *   - Falls back to use base plan
      *
