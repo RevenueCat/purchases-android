@@ -39,7 +39,8 @@ final class PurchasesErrorAPI {
             case UnsupportedError:
             case EmptySubscriberAttributesError:
             case CustomerInfoError:
-            case SignatureVerificationError:
+            // Trusted entitlements: Commented out until ready to be made public
+            // case SignatureVerificationError:
         }
     }
 }

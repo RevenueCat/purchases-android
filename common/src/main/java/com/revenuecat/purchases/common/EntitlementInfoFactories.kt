@@ -41,7 +41,7 @@ internal fun JSONObject.buildEntitlementInfos(
                 }
             }
     }
-    return EntitlementInfos(all, verificationResult)
+    return EntitlementInfos(all)
 }
 
 internal fun JSONObject.getStore(name: String) = when (getString(name)) {
@@ -67,6 +67,8 @@ internal fun JSONObject.optOwnershipType(name: String) = when (optString(name)) 
     else -> OwnershipType.UNKNOWN
 }
 
+// Trusted entitlements: Added until ready to use it.
+@Suppress("UnusedPrivateMember")
 internal fun JSONObject.buildEntitlementInfo(
     identifier: String,
     productData: JSONObject,
@@ -94,8 +96,7 @@ internal fun JSONObject.buildEntitlementInfo(
         unsubscribeDetectedAt = unsubscribeDetectedAt,
         billingIssueDetectedAt = billingIssueDetectedAt,
         ownershipType = productData.optOwnershipType("ownership_type"),
-        jsonObject = this,
-        verification = verificationResult
+        jsonObject = this
     )
 }
 

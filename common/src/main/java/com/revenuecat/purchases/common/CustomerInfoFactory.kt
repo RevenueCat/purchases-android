@@ -61,7 +61,7 @@ object CustomerInfoFactory {
             nonSubscriptionsLatestPurchases,
             requestDate,
             verificationResult
-        ) ?: EntitlementInfos(emptyMap(), VerificationResult.NOT_REQUESTED)
+        ) ?: EntitlementInfos(emptyMap())
 
         val managementURL = subscriber.optNullableString("management_url")
         val originalPurchaseDate = subscriber.optNullableString("original_purchase_date")?.let {

@@ -3,7 +3,7 @@ package com.revenuecat.purchases
 /**
  * Verification strictness levels for [EntitlementInfo].
  */
-enum class EntitlementVerificationMode {
+internal enum class EntitlementVerificationMode {
     /**
      * The SDK will not perform any entitlement verification.
      */
