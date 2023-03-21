@@ -52,6 +52,19 @@ class ProductEntitlementTest {
     }
 
     @Test
+    fun `fromJson parses empty entitlements correctly`() {
+        val json = JSONObject(
+            """
+                {
+                    "products": []
+                }
+            """.trimIndent()
+        )
+        val productsEntitlement = ProductsEntitlement.fromJson(json)
+        assertThat(productsEntitlement.products.size).isEqualTo(0)
+    }
+
+    @Test
     fun `equals returns true if same product entitlements`() {
         val productEntitlement1 = ProductsEntitlement(
             listOf(
