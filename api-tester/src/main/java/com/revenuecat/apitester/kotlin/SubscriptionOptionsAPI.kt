@@ -8,7 +8,7 @@ private class SubscriptionOptionsAPI {
         val subscriptionOptions = SubscriptionOptions(emptyList())
 
         val freeTrial = subscriptionOptions.freeTrial
-        val introTrial = subscriptionOptions.introTrial
+        val introOffer = subscriptionOptions.introOffer
         val tagOptions = subscriptionOptions.withTag("pick-this-one")
 
         subscriptionOptions.forEach {

@@ -26,7 +26,7 @@ class SubscriptionOptions(
      * The first [SubscriptionOption] with an intro trial [PricingPhase].
      * There can be a free trial [PricingPhase] and intro trial [PricingPhase] in the same [SubscriptionOption].
      */
-    val introTrial: SubscriptionOption?
+    val introOffer: SubscriptionOption?
         get() = this.firstOrNull { it.introPhase != null }
 
     /**

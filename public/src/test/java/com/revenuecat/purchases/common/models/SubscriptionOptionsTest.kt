@@ -95,7 +95,7 @@ class SubscriptionOptionsTest {
 
     @Test
     fun `Can find intro trial`() {
-        val introTrial = subscriptionOptions.introTrial
+        val introTrial = subscriptionOptions.introOffer
         assertThat(introTrial).isNotNull
         assertThat(introTrial?.pricingPhases?.first()?.price?.amountMicros).isEqualTo(2990000L)
     }

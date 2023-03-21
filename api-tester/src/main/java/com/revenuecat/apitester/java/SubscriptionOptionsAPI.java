@@ -13,7 +13,7 @@ final class SubscriptionOptionsAPI {
         SubscriptionOptions subscriptionOptions = new SubscriptionOptions(new ArrayList());
 
         SubscriptionOption freeTrial = subscriptionOptions.getFreeTrial();
-        SubscriptionOption introTrial = subscriptionOptions.getIntroTrial();
+        SubscriptionOption introOffer = subscriptionOptions.getIntroOffer();
         List<SubscriptionOption> tagOptions = subscriptionOptions.withTag("pick-this-one");
 
         for (SubscriptionOption subscriptionOption : subscriptionOptions) {
