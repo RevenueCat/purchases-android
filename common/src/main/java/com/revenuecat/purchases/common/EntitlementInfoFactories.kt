@@ -41,7 +41,11 @@ internal fun JSONObject.buildEntitlementInfos(
                 }
             }
     }
-    return EntitlementInfos(all)
+    return EntitlementInfos(
+        all,
+        // Trusted entitlements: Commented out until ready to be made public
+        // verificationResult
+    )
 }
 
 internal fun JSONObject.getStore(name: String) = when (getString(name)) {
@@ -96,7 +100,9 @@ internal fun JSONObject.buildEntitlementInfo(
         unsubscribeDetectedAt = unsubscribeDetectedAt,
         billingIssueDetectedAt = billingIssueDetectedAt,
         ownershipType = productData.optOwnershipType("ownership_type"),
-        jsonObject = this
+        jsonObject = this,
+        // Trusted entitlements: Commented out until ready to be made public
+        // verificationResult = verificationResult
     )
 }
 
