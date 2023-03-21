@@ -66,39 +66,56 @@ class ProductEntitlementMappingsTest {
 
     @Test
     fun `equals returns true if same mappings`() {
-        val mappingEntitlement1 = ProductEntitlementMappings(
+        val mappings1 = ProductEntitlementMappings(
             listOf(
                 ProductEntitlementMappings.Mapping("com.revenuecat.foo_1", listOf("pro_1")),
                 ProductEntitlementMappings.Mapping("com.revenuecat.foo_2", listOf("pro_1", "pro_2")),
                 ProductEntitlementMappings.Mapping("com.revenuecat.foo_3", listOf("pro_2")),
             )
         )
-        val mappingEntitlement2 = ProductEntitlementMappings(
+        val mappings2 = ProductEntitlementMappings(
             listOf(
                 ProductEntitlementMappings.Mapping("com.revenuecat.foo_1", listOf("pro_1")),
                 ProductEntitlementMappings.Mapping("com.revenuecat.foo_2", listOf("pro_1", "pro_2")),
                 ProductEntitlementMappings.Mapping("com.revenuecat.foo_3", listOf("pro_2")),
             )
         )
-        assertThat(mappingEntitlement1).isEqualTo(mappingEntitlement2)
+        assertThat(mappings1).isEqualTo(mappings2)
     }
 
     @Test
     fun `equals returns false if any mapping has different entitlements`() {
-        val mappingEntitlement1 = ProductEntitlementMappings(
+        val mappings1 = ProductEntitlementMappings(
             listOf(
                 ProductEntitlementMappings.Mapping("com.revenuecat.foo_1", listOf("pro_1")),
                 ProductEntitlementMappings.Mapping("com.revenuecat.foo_2", listOf("pro_1", "pro_2")),
                 ProductEntitlementMappings.Mapping("com.revenuecat.foo_3", listOf("pro_2")),
             )
         )
-        val mappingEntitlement2 = ProductEntitlementMappings(
+        val mappings2 = ProductEntitlementMappings(
             listOf(
                 ProductEntitlementMappings.Mapping("com.revenuecat.foo_1", listOf("pro_1")),
                 ProductEntitlementMappings.Mapping("com.revenuecat.foo_2", listOf("pro_1", "pro_3")),
                 ProductEntitlementMappings.Mapping("com.revenuecat.foo_3", listOf("pro_2")),
             )
         )
-        assertThat(mappingEntitlement1).isNotEqualTo(mappingEntitlement2)
+        assertThat(mappings1).isNotEqualTo(mappings2)
+    }
+
+    @Test
+    fun `toMap transforms mappings to map`() {
+        val mappingsMap = ProductEntitlementMappings(
+            listOf(
+                ProductEntitlementMappings.Mapping("com.revenuecat.foo_1", listOf("pro_1")),
+                ProductEntitlementMappings.Mapping("com.revenuecat.foo_2", listOf("pro_1", "pro_2")),
+                ProductEntitlementMappings.Mapping("com.revenuecat.foo_3", listOf("pro_2")),
+            )
+        ).toMap()
+        val expectedMap = mapOf(
+            "com.revenuecat.foo_1" to listOf("pro_1"),
+            "com.revenuecat.foo_2" to listOf("pro_1", "pro_2"),
+            "com.revenuecat.foo_3" to listOf("pro_2"),
+        )
+        assertThat(mappingsMap).isEqualTo(expectedMap)
     }
 }

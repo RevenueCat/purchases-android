@@ -27,4 +27,8 @@ data class ProductEntitlementMappings(
         val identifier: String,
         val entitlements: List<String>
     )
+
+    fun toMap(): Map<String, List<String>> {
+        return mappings.associateBy({ it.identifier }, { it.entitlements })
+    }
 }
