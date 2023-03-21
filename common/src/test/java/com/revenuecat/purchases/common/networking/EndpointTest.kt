@@ -60,6 +60,13 @@ class EndpointTest {
     }
 
     @Test
+    fun `GetProductEntitlementMappings has correct path`() {
+        val endpoint = Endpoint.GetProductEntitlementMappings
+        val expectedPath = "/products-entitlements"
+        assertThat(endpoint.getPath()).isEqualTo(expectedPath)
+    }
+
+    @Test
     fun `supportsSignatureValidation returns true for expected values`() {
         val expectedSupportsValidationEndpoints = listOf(
             Endpoint.GetCustomerInfo("test-user-id"),
@@ -77,7 +84,8 @@ class EndpointTest {
             Endpoint.GetAmazonReceipt("test-user-id", "test-receipt-id"),
             Endpoint.GetOfferings("test-user-id"),
             Endpoint.PostAttributes("test-user-id"),
-            Endpoint.PostDiagnostics
+            Endpoint.PostDiagnostics,
+            Endpoint.GetProductEntitlementMappings
         )
         for (endpoint in expectedNotSupportsValidationEndpoints) {
             assertThat(endpoint.supportsSignatureValidation).isFalse
