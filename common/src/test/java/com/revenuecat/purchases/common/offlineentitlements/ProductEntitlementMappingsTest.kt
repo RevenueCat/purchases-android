@@ -41,14 +41,14 @@ class ProductEntitlementMappingsTest {
             """.trimIndent()
         )
         val productEntitlementMappings = ProductEntitlementMappings.fromJson(json)
-        val expectedMappingEntitlementMapping = ProductEntitlementMappings(
+        val expectedEntitlementMappings = ProductEntitlementMappings(
             listOf(
                 ProductEntitlementMappings.Mapping("com.revenuecat.foo_1", listOf("pro_1")),
                 ProductEntitlementMappings.Mapping("com.revenuecat.foo_2", listOf("pro_1", "pro_2")),
                 ProductEntitlementMappings.Mapping("com.revenuecat.foo_3", listOf("pro_2")),
             )
         )
-        assertThat(productEntitlementMappings).isEqualTo(expectedMappingEntitlementMapping)
+        assertThat(productEntitlementMappings).isEqualTo(expectedEntitlementMappings)
     }
 
     @Test
