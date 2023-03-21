@@ -241,7 +241,7 @@ DESC
       end
     ensure
       sh("git reset --hard")
-      sh("cd .. && git clean -fd")
+      sh("git -C .. clean -fd")
     end
   end
 
@@ -305,7 +305,7 @@ DESC
       end
     ensure
       sh("git reset --hard")
-      sh("cd .. && git clean -fd")
+      sh("git -C .. clean -fd")
     end
   end
 end
