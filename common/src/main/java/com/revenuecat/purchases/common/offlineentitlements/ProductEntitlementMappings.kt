@@ -2,13 +2,13 @@ package com.revenuecat.purchases.common.offlineentitlements
 
 import org.json.JSONObject
 
-data class ProductsEntitlement(
-    val products: List<Product>
+data class ProductEntitlementMappings(
+    val mappings: List<Mapping>
 ) {
     companion object {
-        fun fromJson(json: JSONObject): ProductsEntitlement {
+        fun fromJson(json: JSONObject): ProductEntitlementMappings {
             val productsArray = json.getJSONArray("products")
-            val products = mutableListOf<Product>()
+            val mappings = mutableListOf<Mapping>()
             for (productIndex in 0 until productsArray.length()) {
                 val productObject = productsArray.getJSONObject(productIndex)
                 val productIdentifier = productObject.getString("id")
@@ -17,13 +17,13 @@ data class ProductsEntitlement(
                 for (entitlementIndex in 0 until entitlementsArray.length()) {
                     entitlements.add(entitlementsArray.getString(entitlementIndex))
                 }
-                products.add(Product(productIdentifier, entitlements))
+                mappings.add(Mapping(productIdentifier, entitlements))
             }
-            return ProductsEntitlement(products)
+            return ProductEntitlementMappings(mappings)
         }
     }
 
-    data class Product(
+    data class Mapping(
         val identifier: String,
         val entitlements: List<String>
     )
