@@ -71,7 +71,7 @@ be found through `subscriptionOptions`:
 val basePlan = storeProduct.subscriptionOptions?.basePlan
 val defaultOffer = storeProduct.subscriptionOptions?.defaultOffer
 val freeOffer = storeProduct.subscriptionOptions?.freeTrial
-val trialOffer = storeProduct.subscriptionOptions?.introTrial
+val introOffer = storeProduct.subscriptionOptions?.introOffer
 val offersForLapsedCustomers = storeProduct.subscriptionOptions?.withTag("lapsed-customers")
 ```
 
