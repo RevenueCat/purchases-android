@@ -7,11 +7,18 @@ import kotlinx.parcelize.Parcelize
  * This class contains all the entitlements associated to the user.
  * @property all Map of all EntitlementInfo [EntitlementInfo] objects (active and inactive) keyed by
  * entitlement identifier.
+ * @property verification If entitlement verification was enabled, the result of that verification.
+ * If not, [VerificationResult.NOT_REQUESTED]
  */
 @Parcelize
-class EntitlementInfos constructor(
+class EntitlementInfos internal constructor(
     val all: Map<String, EntitlementInfo>,
+    internal val verification: VerificationResult
 ) : Parcelable {
+
+    constructor(
+        all: Map<String, EntitlementInfo>
+    ) : this(all, VerificationResult.NOT_REQUESTED)
 
     /**
      * Dictionary of active [EntitlementInfo] objects keyed by entitlement identifier.
@@ -33,6 +40,7 @@ class EntitlementInfos constructor(
 
         if (all != other.all) return false
         if (active != other.active) return false
+        if (verification != other.verification) return false
 
         return true
     }

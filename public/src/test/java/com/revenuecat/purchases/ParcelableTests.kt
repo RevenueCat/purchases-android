@@ -22,7 +22,8 @@ class ParcelableTests {
     @Test
     fun `EntitlementInfos is Parcelable`() = testParcelization(
         EntitlementInfos(
-            mapOf("an_identifier" to getEntitlementInfo(identifier = "an_identifier"))
+            mapOf("an_identifier" to getEntitlementInfo(identifier = "an_identifier")),
+            verification = VerificationResult.NOT_REQUESTED
         )
     )
 
@@ -30,7 +31,8 @@ class ParcelableTests {
     fun `CustomerInfo is Parcelable`() = testParcelization(
         CustomerInfo(
             entitlements = EntitlementInfos(
-                mapOf("an_identifier" to getEntitlementInfo(identifier = "an_identifier"))
+                mapOf("an_identifier" to getEntitlementInfo(identifier = "an_identifier")),
+                VerificationResult.VERIFIED
             ),
             purchasedNonSubscriptionSkus = setOf(),
             allExpirationDatesByProduct = mapOf("a_product" to Date(System.currentTimeMillis())),
@@ -77,7 +79,8 @@ class ParcelableTests {
             unsubscribeDetectedAt = null,
             billingIssueDetectedAt = null,
             ownershipType = OwnershipType.UNKNOWN,
-            jsonObject = JSONObject(Responses.validFullPurchaserResponse)
+            jsonObject = JSONObject(Responses.validFullPurchaserResponse),
+            verification = VerificationResult.NOT_REQUESTED
         )
     }
 }

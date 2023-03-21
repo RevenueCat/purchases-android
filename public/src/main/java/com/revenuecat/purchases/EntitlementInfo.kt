@@ -29,10 +29,12 @@ import java.util.Date
  * @property billingIssueDetectedAt The date a billing issue was detected. Can be `null` if there is
  * no billing issue or an issue has been resolved. Note: Entitlement may still be active even if
  * there is a billing issue. Check the `isActive` property.
+ * @property verification If entitlement verification was enabled, the result of that verification.
+ * If not, [VerificationResult.NOT_REQUESTED]
  */
 @Parcelize
 @TypeParceler<JSONObject, JSONObjectParceler>()
-data class EntitlementInfo(
+data class EntitlementInfo internal constructor(
     val identifier: String,
     val isActive: Boolean,
     val willRenew: Boolean,
@@ -49,8 +51,41 @@ data class EntitlementInfo(
     @Deprecated(
         "Use rawData instead",
         replaceWith = ReplaceWith("rawData")
-    ) val jsonObject: JSONObject
+    ) val jsonObject: JSONObject,
+    internal val verification: VerificationResult
 ) : Parcelable, RawDataContainer<JSONObject> {
+
+    constructor(
+        identifier: String,
+        isActive: Boolean,
+        willRenew: Boolean,
+        periodType: PeriodType,
+        latestPurchaseDate: Date,
+        originalPurchaseDate: Date,
+        expirationDate: Date?,
+        store: Store,
+        productIdentifier: String,
+        isSandbox: Boolean,
+        unsubscribeDetectedAt: Date?,
+        billingIssueDetectedAt: Date?,
+        ownershipType: OwnershipType,
+        jsonObject: JSONObject
+    ) : this(
+        identifier,
+        isActive,
+        willRenew,
+        periodType,
+        latestPurchaseDate,
+        originalPurchaseDate,
+        expirationDate, store,
+        productIdentifier,
+        isSandbox,
+        unsubscribeDetectedAt,
+        billingIssueDetectedAt,
+        ownershipType,
+        jsonObject,
+        VerificationResult.NOT_REQUESTED
+    )
 
     @IgnoredOnParcel
     override val rawData: JSONObject
@@ -94,6 +129,7 @@ data class EntitlementInfo(
         if (unsubscribeDetectedAt != other.unsubscribeDetectedAt) return false
         if (billingIssueDetectedAt != other.billingIssueDetectedAt) return false
         if (ownershipType != other.ownershipType) return false
+        if (verification != other.verification) return false
 
         return true
     }
