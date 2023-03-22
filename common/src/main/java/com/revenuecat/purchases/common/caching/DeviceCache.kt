@@ -341,6 +341,7 @@ open class DeviceCache(
 
     private fun Date?.isStale(appInBackground: Boolean): Boolean {
         return this?.let {
+            log(LogIntent.DEBUG, ReceiptStrings.CHECKING_IF_CACHE_STALE.format(appInBackground))
             val cacheDuration = when {
                 appInBackground -> CACHE_REFRESH_PERIOD_IN_BACKGROUND
                 else -> CACHE_REFRESH_PERIOD_IN_FOREGROUND
@@ -352,7 +353,6 @@ open class DeviceCache(
 
     private fun Date?.isStale(cacheDuration: Duration): Boolean {
         return this?.let { cacheLastUpdated ->
-            log(LogIntent.DEBUG, ReceiptStrings.CHECKING_IF_CACHE_STALE.format(cacheDuration.inWholeSeconds.toString()))
             (dateProvider.now.time - cacheLastUpdated.time).milliseconds >= cacheDuration
         } ?: true
     }
