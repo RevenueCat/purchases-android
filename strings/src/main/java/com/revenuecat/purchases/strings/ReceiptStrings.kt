@@ -1,7 +1,7 @@
 package com.revenuecat.purchases.strings
 
 object ReceiptStrings {
-    const val CHECKING_IF_CACHE_STALE = "Checking if cache is stale AppInBackground %s"
+    const val CHECKING_IF_CACHE_STALE = "Checking if cache is stale after %s seconds"
     const val CLEANING_PREV_SENT_HASHED_TOKEN = "Cleaning previously sent tokens"
     const val TOKENS_IN_CACHE = "Tokens in cache before saving %s"
     const val TOKENS_ALREADY_POSTED = "Tokens already posted: %s"
