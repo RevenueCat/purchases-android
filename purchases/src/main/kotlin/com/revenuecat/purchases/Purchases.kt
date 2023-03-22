@@ -212,9 +212,6 @@ class Purchases internal constructor(
      * @warning This function should only be called if you're migrating to RevenueCat or in observer mode.
      */
     fun syncPurchases() {
-        if (LockedFeature.SyncPurchases.isLocked) {
-            throw FeatureNotSupportedException(LockedFeature.SyncPurchases)
-        }
         log(LogIntent.DEBUG, PurchaseStrings.SYNCING_PURCHASES)
 
         val appUserID = identityManager.currentAppUserID
@@ -269,9 +266,6 @@ class Purchases internal constructor(
         isoCurrencyCode: String?,
         price: Double?
     ) {
-        if (LockedFeature.ObserverMode.isLocked) {
-            throw FeatureNotSupportedException(LockedFeature.ObserverMode)
-        }
         log(LogIntent.DEBUG, PurchaseStrings.SYNCING_PURCHASE_STORE_USER_ID.format(receiptID, amazonUserID))
 
         deviceCache.getPreviouslySentHashedTokens().takeIf { it.contains(receiptID.sha1()) }?.apply {
@@ -1986,9 +1980,6 @@ class Purchases internal constructor(
         ): Purchases {
             if (isConfigured) {
                 infoLog(ConfigureStrings.INSTANCE_ALREADY_EXISTS)
-            }
-            if (configuration.observerMode && LockedFeature.ObserverMode.isLocked) {
-                throw FeatureNotSupportedException(LockedFeature.ObserverMode)
             }
             return PurchasesFactory().createPurchases(
                 configuration,

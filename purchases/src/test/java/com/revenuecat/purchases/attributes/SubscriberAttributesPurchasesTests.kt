@@ -5,7 +5,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.CustomerInfoHelper
-import com.revenuecat.purchases.LockedFeature
 import com.revenuecat.purchases.OfferingParserFactory
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
@@ -85,9 +84,6 @@ class SubscriberAttributesPurchasesTests {
 
     @Before
     fun setup() {
-        mockkObject(LockedFeature.SyncPurchases)
-        every { LockedFeature.SyncPurchases.isLocked } returns false
-
         every {
             billingWrapperMock.queryAllPurchases(appUserId, captureLambda(), any())
         } answers {
