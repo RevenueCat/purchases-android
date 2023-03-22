@@ -22,14 +22,13 @@ import org.json.JSONException
 import org.json.JSONObject
 import java.util.Date
 import kotlin.time.Duration
-import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.minutes
 
 private val CACHE_REFRESH_PERIOD_IN_FOREGROUND = 5.minutes
 private val CACHE_REFRESH_PERIOD_IN_BACKGROUND = 25.hours
-private val PRODUCT_ENTITLEMENT_MAPPING_CACHE_REFRESH_PERIOD = 1.days
+private val PRODUCT_ENTITLEMENT_MAPPING_CACHE_REFRESH_PERIOD = 25.hours
 private const val SHARED_PREFERENCES_PREFIX = "com.revenuecat.purchases."
 internal const val CUSTOMER_INFO_SCHEMA_VERSION = 3
 

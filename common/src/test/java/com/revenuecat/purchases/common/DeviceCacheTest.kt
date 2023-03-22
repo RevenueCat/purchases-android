@@ -13,9 +13,9 @@ import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.VerificationResult
+import com.revenuecat.purchases.common.caching.CUSTOMER_INFO_SCHEMA_VERSION
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.caching.InMemoryCachedObject
-import com.revenuecat.purchases.common.caching.CUSTOMER_INFO_SCHEMA_VERSION
 import com.revenuecat.purchases.common.offlineentitlements.createProductEntitlementMapping
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
@@ -34,10 +34,9 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
-import java.lang.ClassCastException
 import java.util.Calendar
 import java.util.Date
-import kotlin.time.Duration.Companion.days
+import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
 
 @RunWith(AndroidJUnit4::class)
@@ -638,7 +637,7 @@ class DeviceCacheTest {
         } returns true
         every {
             mockPrefs.getLong(productEntitlementMappingsLastUpdatedCacheKey, any())
-        } returns currentTime.subtract(1.days + 1.minutes).time
+        } returns currentTime.subtract(25.hours + 1.minutes).time
         assertThat(cache.isProductEntitlementMappingsCacheStale()).isTrue
     }
 
@@ -649,7 +648,7 @@ class DeviceCacheTest {
         } returns true
         every {
             mockPrefs.getLong(productEntitlementMappingsLastUpdatedCacheKey, any())
-        } returns currentTime.subtract(1.days - 1.minutes).time
+        } returns currentTime.subtract(25.hours - 1.minutes).time
         assertThat(cache.isProductEntitlementMappingsCacheStale()).isFalse
     }
 
