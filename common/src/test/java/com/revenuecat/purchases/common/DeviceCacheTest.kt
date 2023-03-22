@@ -110,21 +110,23 @@ class DeviceCacheTest {
         mockString(cache.customerInfoCacheKey(appUserID), validCachedCustomerInfo)
         val info = cache.getCachedCustomerInfo(appUserID)
         assertThat(info).`as`("info is not null").isNotNull
-        assertThat(info?.entitlements?.verification).isEqualTo(VerificationResult.VERIFIED)
+        // Trusted entitlements: Commented out until ready to be made public
+        // assertThat(info?.entitlements?.verification).isEqualTo(VerificationResult.VERIFIED)
     }
 
-    @Test
-    fun `given a valid customer info without verification result, the JSON is parsed correctly`() {
-        val deprecatedValidCachedCustomerInfo by lazy {
-            JSONObject(Responses.validFullPurchaserResponse).apply {
-                put("schema_version", CUSTOMER_INFO_SCHEMA_VERSION)
-            }.toString()
-        }
-        mockString(cache.customerInfoCacheKey(appUserID), deprecatedValidCachedCustomerInfo)
-        val info = cache.getCachedCustomerInfo(appUserID)
-        assertThat(info).`as`("info is not null").isNotNull
-        assertThat(info?.entitlements?.verification).isEqualTo(VerificationResult.NOT_REQUESTED)
-    }
+    // Trusted entitlements: Commented out until ready to be made public
+//    @Test
+//    fun `given a valid customer info without verification result, the JSON is parsed correctly`() {
+//        val deprecatedValidCachedCustomerInfo by lazy {
+//            JSONObject(Responses.validFullPurchaserResponse).apply {
+//                put("schema_version", CUSTOMER_INFO_SCHEMA_VERSION)
+//            }.toString()
+//        }
+//        mockString(cache.customerInfoCacheKey(appUserID), deprecatedValidCachedCustomerInfo)
+//        val info = cache.getCachedCustomerInfo(appUserID)
+//        assertThat(info).`as`("info is not null").isNotNull
+//        assertThat(info?.entitlements?.verification).isEqualTo(VerificationResult.NOT_REQUESTED)
+//    }
 
     @Test
     fun `given a valid customer info without request date, the JSON is parsed correctly`() {
@@ -187,25 +189,26 @@ class DeviceCacheTest {
         }
     }
 
-    @Test
-    fun `given a customer info, the information is cached with a verification result`() {
-        every {
-            mockEditor.putLong(cache.customerInfoLastUpdatedCacheKey(appUserID), any())
-        } returns mockEditor
-
-        val info = createCustomerInfo(Responses.validFullPurchaserResponse, null, VerificationResult.VERIFIED)
-        val infoJSONSlot = slot<String>()
-
-        every {
-            mockEditor.putString(any(), capture(infoJSONSlot))
-        } returns mockEditor
-
-        cache.cacheCustomerInfo(appUserID, info)
-
-        val cachedJSON = JSONObject(infoJSONSlot.captured)
-        assertThat(cachedJSON.has("verification_result")).isTrue
-        assertThat(cachedJSON.getString("verification_result")).isEqualTo(VerificationResult.VERIFIED.name)
-    }
+    // Trusted entitlements: Commented out until ready to be made public
+//    @Test
+//    fun `given a customer info, the information is cached with a verification result`() {
+//        every {
+//            mockEditor.putLong(cache.customerInfoLastUpdatedCacheKey(appUserID), any())
+//        } returns mockEditor
+//
+//        val info = createCustomerInfo(Responses.validFullPurchaserResponse, null, VerificationResult.VERIFIED)
+//        val infoJSONSlot = slot<String>()
+//
+//        every {
+//            mockEditor.putString(any(), capture(infoJSONSlot))
+//        } returns mockEditor
+//
+//        cache.cacheCustomerInfo(appUserID, info)
+//
+//        val cachedJSON = JSONObject(infoJSONSlot.captured)
+//        assertThat(cachedJSON.has("verification_result")).isTrue
+//        assertThat(cachedJSON.getString("verification_result")).isEqualTo(VerificationResult.VERIFIED.name)
+//    }
 
     @Test
     fun `given a customer info, the information is cached with a schema version`() {

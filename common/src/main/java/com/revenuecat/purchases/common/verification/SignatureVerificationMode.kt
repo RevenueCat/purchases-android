@@ -1,22 +1,21 @@
 package com.revenuecat.purchases.common.verification
 
-import com.revenuecat.purchases.EntitlementVerificationMode
-
 sealed class SignatureVerificationMode {
     companion object {
-        fun fromEntitlementVerificationMode(
-            verificationMode: EntitlementVerificationMode,
-            signatureVerifier: SignatureVerifier? = null
-        ): SignatureVerificationMode {
-            return when (verificationMode) {
-                EntitlementVerificationMode.DISABLED -> Disabled
-                EntitlementVerificationMode.INFORMATIONAL ->
-                    Informational(signatureVerifier ?: DefaultSignatureVerifier())
-                // Hidden ENFORCED mode during feature beta
-                // EntitlementVerificationMode.ENFORCED ->
-                //     Enforced(signatureVerifier ?: DefaultSignatureVerifier())
-            }
-        }
+// Trusted entitlements: Commented out until ready to be made public
+//        fun fromEntitlementVerificationMode(
+//            verificationMode: EntitlementVerificationMode,
+//            signatureVerifier: SignatureVerifier? = null
+//        ): SignatureVerificationMode {
+//            return when (verificationMode) {
+//                EntitlementVerificationMode.DISABLED -> Disabled
+//                EntitlementVerificationMode.INFORMATIONAL ->
+//                    Informational(signatureVerifier ?: DefaultSignatureVerifier())
+//                // Hidden ENFORCED mode during feature beta
+//                // EntitlementVerificationMode.ENFORCED ->
+//                //     Enforced(signatureVerifier ?: DefaultSignatureVerifier())
+//            }
+//        }
     }
     object Disabled : SignatureVerificationMode()
     data class Informational(val signatureVerifier: SignatureVerifier) : SignatureVerificationMode()

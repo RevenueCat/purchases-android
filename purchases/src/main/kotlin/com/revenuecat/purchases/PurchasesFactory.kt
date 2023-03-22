@@ -73,7 +73,11 @@ internal class PurchasesFactory(
                 )
             }
 
-            val signatureVerificationMode = SignatureVerificationMode.fromEntitlementVerificationMode(verificationMode)
+            // Trusted entitlements: Commented out until ready to be made public
+//            val signatureVerificationMode = SignatureVerificationMode.fromEntitlementVerificationMode(
+//                verificationMode
+//            )
+            val signatureVerificationMode = SignatureVerificationMode.Disabled
             val signingManager = SigningManager(signatureVerificationMode)
 
             val backend = Backend(

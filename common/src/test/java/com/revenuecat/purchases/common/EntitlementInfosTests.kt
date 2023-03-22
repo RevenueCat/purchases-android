@@ -1,7 +1,6 @@
 package com.revenuecat.purchases.common
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.revenuecat.purchases.EntitlementInfos
 import com.revenuecat.purchases.OwnershipType
 import com.revenuecat.purchases.PeriodType
 import com.revenuecat.purchases.Store
@@ -72,10 +71,11 @@ class EntitlementInfosTests {
 
         val subscriberInfo = createCustomerInfo(response, null, VerificationResult.VERIFIED)
         assertThat(subscriberInfo.entitlements.all).hasSize(2)
-        assertThat(subscriberInfo.entitlements.verification).isEqualTo(VerificationResult.VERIFIED)
-        subscriberInfo.entitlements.all.onEach { entry ->
-            assertThat(entry.value.verification).isEqualTo(VerificationResult.VERIFIED)
-        }
+        // Trusted entitlements: Commented out until ready to be made public
+//        assertThat(subscriberInfo.entitlements.verification).isEqualTo(VerificationResult.VERIFIED)
+//        subscriberInfo.entitlements.all.onEach { entry ->
+//            assertThat(entry.value.verification).isEqualTo(VerificationResult.VERIFIED)
+//        }
 
         verifySubscriberInfo()
         verifyEntitlementActive()
@@ -99,34 +99,35 @@ class EntitlementInfosTests {
         )
     }
 
-    @Test
-    fun `verification error is set correctly for entitlementInfos and entitlementInfo`() {
-        stubResponse(
-            entitlements = JSONObject().apply {
-                put("pro_cat", JSONObject().apply {
-                    put("expires_date", "2200-07-26T23:50:40Z")
-                    put("product_identifier", "monthly_freetrial")
-                    put("purchase_date", "1999-07-26T23:30:41Z")
-                })
-            },
-            subscriptions = JSONObject().apply {
-                put("monthly_freetrial", JSONObject().apply {
-                    put("billing_issues_detected_at", JSONObject.NULL)
-                    put("expires_date", "2200-07-26T23:50:40Z")
-                    put("is_sandbox", false)
-                    put("original_purchase_date", "1999-07-26T23:30:41Z")
-                    put("period_type", "normal")
-                    put("purchase_date", "1999-07-26T23:30:41Z")
-                    put("store", "app_store")
-                    put("unsubscribe_detected_at", JSONObject.NULL)
-                })
-            }
-        )
-
-        val subscriberInfo = createCustomerInfo(response, null, VerificationResult.FAILED)
-        assertThat(subscriberInfo.entitlements.verification).isEqualTo(VerificationResult.FAILED)
-        assertThat(subscriberInfo.entitlements["pro_cat"]?.verification).isEqualTo(VerificationResult.FAILED)
-    }
+    // Trusted entitlements: Commented out until ready to be made public
+//    @Test
+//    fun `verification error is set correctly for entitlementInfos and entitlementInfo`() {
+//        stubResponse(
+//            entitlements = JSONObject().apply {
+//                put("pro_cat", JSONObject().apply {
+//                    put("expires_date", "2200-07-26T23:50:40Z")
+//                    put("product_identifier", "monthly_freetrial")
+//                    put("purchase_date", "1999-07-26T23:30:41Z")
+//                })
+//            },
+//            subscriptions = JSONObject().apply {
+//                put("monthly_freetrial", JSONObject().apply {
+//                    put("billing_issues_detected_at", JSONObject.NULL)
+//                    put("expires_date", "2200-07-26T23:50:40Z")
+//                    put("is_sandbox", false)
+//                    put("original_purchase_date", "1999-07-26T23:30:41Z")
+//                    put("period_type", "normal")
+//                    put("purchase_date", "1999-07-26T23:30:41Z")
+//                    put("store", "app_store")
+//                    put("unsubscribe_detected_at", JSONObject.NULL)
+//                })
+//            }
+//        )
+//
+//        val subscriberInfo = createCustomerInfo(response, null, VerificationResult.FAILED)
+//        assertThat(subscriberInfo.entitlements.verification).isEqualTo(VerificationResult.FAILED)
+//        assertThat(subscriberInfo.entitlements["pro_cat"]?.verification).isEqualTo(VerificationResult.FAILED)
+//    }
 
     @Test
     fun `string accessor`() {
@@ -1165,22 +1166,23 @@ class EntitlementInfosTests {
 
     // region Equality tests
 
-    @Test
-    fun `same entitlement infos with different verifications are not equal`() {
-        val entitlementInfos1 = EntitlementInfos(emptyMap(), VerificationResult.NOT_REQUESTED)
-        val entitlementInfos2 = EntitlementInfos(emptyMap(), VerificationResult.VERIFIED)
-        val entitlementInfos3 = EntitlementInfos(emptyMap(), VerificationResult.FAILED)
-        assertThat(entitlementInfos1).isNotEqualTo(entitlementInfos2)
-        assertThat(entitlementInfos1).isNotEqualTo(entitlementInfos3)
-        assertThat(entitlementInfos2).isNotEqualTo(entitlementInfos3)
-    }
-
-    @Test
-    fun `same entitlement infos with same verifications are equal`() {
-        val entitlementInfos1 = EntitlementInfos(emptyMap(), VerificationResult.NOT_REQUESTED)
-        val entitlementInfos2 = EntitlementInfos(emptyMap(), VerificationResult.NOT_REQUESTED)
-        assertThat(entitlementInfos1).isEqualTo(entitlementInfos2)
-    }
+    // Trusted entitlements: Commented out until ready to be made public
+//    @Test
+//    fun `same entitlement infos with different verifications are not equal`() {
+//        val entitlementInfos1 = EntitlementInfos(emptyMap(), VerificationResult.NOT_REQUESTED)
+//        val entitlementInfos2 = EntitlementInfos(emptyMap(), VerificationResult.VERIFIED)
+//        val entitlementInfos3 = EntitlementInfos(emptyMap(), VerificationResult.FAILED)
+//        assertThat(entitlementInfos1).isNotEqualTo(entitlementInfos2)
+//        assertThat(entitlementInfos1).isNotEqualTo(entitlementInfos3)
+//        assertThat(entitlementInfos2).isNotEqualTo(entitlementInfos3)
+//    }
+//
+//    @Test
+//    fun `same entitlement infos with same verifications are equal`() {
+//        val entitlementInfos1 = EntitlementInfos(emptyMap(), VerificationResult.NOT_REQUESTED)
+//        val entitlementInfos2 = EntitlementInfos(emptyMap(), VerificationResult.NOT_REQUESTED)
+//        assertThat(entitlementInfos1).isEqualTo(entitlementInfos2)
+//    }
 
     // endregion
 

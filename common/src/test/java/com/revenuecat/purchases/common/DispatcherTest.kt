@@ -143,24 +143,25 @@ class DispatcherTest {
         assertThat(errorHolder.get().code).isEqualTo(PurchasesErrorCode.InsufficientPermissionsError)
     }
 
-    @Test
-    fun `signatureVerificationExceptions are correctly converted to purchase errors`() {
-        val errorHolder = AtomicReference<PurchasesError>()
-
-        val call = object : Dispatcher.AsyncCall() {
-            override fun call(): HTTPResult {
-                throw SignatureVerificationException("/test-api-path")
-            }
-
-            override fun onError(error: PurchasesError) {
-                errorHolder.set(error)
-            }
-        }
-
-        call.run()
-
-        assertThat(errorHolder.get().code).isEqualTo(PurchasesErrorCode.SignatureVerificationError)
-    }
+    // Trusted entitlements: Commented out until ready to be made public
+//    @Test
+//    fun `signatureVerificationExceptions are correctly converted to purchase errors`() {
+//        val errorHolder = AtomicReference<PurchasesError>()
+//
+//        val call = object : Dispatcher.AsyncCall() {
+//            override fun call(): HTTPResult {
+//                throw SignatureVerificationException("/test-api-path")
+//            }
+//
+//            override fun onError(error: PurchasesError) {
+//                errorHolder.set(error)
+//            }
+//        }
+//
+//        call.run()
+//
+//        assertThat(errorHolder.get().code).isEqualTo(PurchasesErrorCode.SignatureVerificationError)
+//    }
 
     @Test
     fun `execute on background when service is shutdown`() {

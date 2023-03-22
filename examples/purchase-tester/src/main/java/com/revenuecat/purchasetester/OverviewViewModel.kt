@@ -8,7 +8,6 @@ import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.EntitlementInfo
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
-import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.restorePurchasesWith
 
 class OverviewViewModel(private val interactionHandler: OverviewInteractionHandler) : ViewModel() {
@@ -27,7 +26,8 @@ class OverviewViewModel(private val interactionHandler: OverviewInteractionHandl
 
     val customerInfoJson = MediatorLiveData<String>()
 
-    val verificationResult = MediatorLiveData<VerificationResult>()
+    // Trusted entitlements: Commented out until ready to be made public
+    // val verificationResult = MediatorLiveData<VerificationResult>()
 
     init {
         activeEntitlements.addSource(customerInfo) { info ->
@@ -42,11 +42,12 @@ class OverviewViewModel(private val interactionHandler: OverviewInteractionHandl
             }
         }
 
-        verificationResult.addSource(customerInfo) { info ->
-            info?.entitlements?.verification?.let {
-                verificationResult.value = it
-            }
-        }
+        // Trusted entitlements: Commented out until ready to be made public
+//        verificationResult.addSource(customerInfo) { info ->
+//            info?.entitlements?.verification?.let {
+//                verificationResult.value = it
+//            }
+//        }
 
         customerInfoJson.addSource(customerInfo) { info ->
             customerInfoJson.value = info?.rawData?.toString(JSON_FORMATTER_INDENT_SPACES)
