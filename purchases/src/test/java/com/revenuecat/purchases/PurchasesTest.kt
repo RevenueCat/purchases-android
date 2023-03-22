@@ -30,6 +30,7 @@ import com.revenuecat.purchases.common.ReplaceSkuInfo
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.createOfferings
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsSynchronizer
+import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.google.billingResponseToPurchasesError
 import com.revenuecat.purchases.google.toGoogleProductType
@@ -100,6 +101,7 @@ class PurchasesTest {
     private val mockSubscriberAttributesManager = mockk<SubscriberAttributesManager>()
     private val mockCustomerInfoHelper = mockk<CustomerInfoHelper>()
     private val mockDiagnosticsSynchronizer = mockk<DiagnosticsSynchronizer>()
+    private val mockOfflineEntitlementsManager = mockk<OfflineEntitlementsManager>()
 
     private var capturedPurchasesUpdatedListener = slot<BillingAbstract.PurchasesUpdatedListener>()
     private var capturedBillingWrapperStateListener = slot<BillingAbstract.StateListener>()
@@ -158,6 +160,9 @@ class PurchasesTest {
         every {
             mockDiagnosticsSynchronizer.syncDiagnosticsFileIfNeeded()
         } just Runs
+        every {
+            mockOfflineEntitlementsManager.updateProductEntitlementMappingsCacheIfStale()
+        } just Runs
 
         anonymousSetup(false)
     }
@@ -212,6 +217,11 @@ class PurchasesTest {
     @Test
     fun `diagnostics is synced if needed on constructor`() {
         verify(exactly = 1) { mockDiagnosticsSynchronizer.syncDiagnosticsFileIfNeeded() }
+    }
+
+    @Test
+    fun `product entitlement mappings are updated if staled on constructor`() {
+        verify(exactly = 1) { mockOfflineEntitlementsManager.updateProductEntitlementMappingsCacheIfStale() }
     }
 
     @Test
@@ -4149,7 +4159,8 @@ class PurchasesTest {
                 dangerousSettings = DangerousSettings(autoSyncPurchases = autoSync)
             ),
             customerInfoHelper = mockCustomerInfoHelper,
-            diagnosticsSynchronizer = mockDiagnosticsSynchronizer
+            diagnosticsSynchronizer = mockDiagnosticsSynchronizer,
+            offlineEntitlementsManager = mockOfflineEntitlementsManager
         )
         Purchases.sharedInstance = purchases
         purchases.state = purchases.state.copy(appInBackground = false)

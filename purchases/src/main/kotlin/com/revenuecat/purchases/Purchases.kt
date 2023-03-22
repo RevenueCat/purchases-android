@@ -35,6 +35,7 @@ import com.revenuecat.purchases.common.diagnostics.DiagnosticsSynchronizer
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.infoLog
 import com.revenuecat.purchases.common.log
+import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.subscriberattributes.SubscriberAttributeKey
 import com.revenuecat.purchases.google.isSuccessful
@@ -106,6 +107,7 @@ class Purchases internal constructor(
     @set:JvmSynthetic @get:JvmSynthetic internal var appConfig: AppConfig,
     private val customerInfoHelper: CustomerInfoHelper,
     diagnosticsSynchronizer: DiagnosticsSynchronizer?,
+    private val offlineEntitlementsManager: OfflineEntitlementsManager,
     // This is nullable due to: https://github.com/RevenueCat/purchases-flutter/issues/408
     private val mainHandler: Handler? = Handler(Looper.getMainLooper())
 ) : LifecycleDelegate {
@@ -177,6 +179,7 @@ class Purchases internal constructor(
             log(LogIntent.WARNING, AUTO_SYNC_PURCHASES_DISABLED)
         }
 
+        offlineEntitlementsManager.updateProductEntitlementMappingsCacheIfStale()
         diagnosticsSynchronizer?.syncDiagnosticsFileIfNeeded()
     }
 
