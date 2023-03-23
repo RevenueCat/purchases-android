@@ -45,10 +45,4 @@ sealed class Endpoint(val pathTemplate: String, val name: String) {
             GetProductEntitlementMappings ->
                 false
         }
-
-    val supportsETags: Boolean
-        get() = when (this) {
-            GetProductEntitlementMappings -> false
-            else -> true
-        }
 }

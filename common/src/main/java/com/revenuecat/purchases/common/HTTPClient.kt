@@ -135,7 +135,7 @@ class HTTPClient(
             val fullURL = URL(baseURL, urlPathWithVersion)
 
             nonce = if (shouldSignResponse) signingManager.createRandomNonce() else null
-            val headers = getHeaders(requestHeaders, urlPathWithVersion, endpoint.supportsETags, refreshETag, nonce)
+            val headers = getHeaders(requestHeaders, urlPathWithVersion, refreshETag, nonce)
 
             val httpRequest = HTTPRequest(fullURL, headers, jsonBody)
 
@@ -215,11 +215,10 @@ class HTTPClient(
     private fun getHeaders(
         authenticationHeaders: Map<String, String>,
         urlPath: String,
-        supportsETag: Boolean,
         refreshETag: Boolean,
         nonce: String?
     ): Map<String, String> {
-        return mutableMapOf(
+        return mapOf(
             "Content-Type" to "application/json",
             "X-Platform" to getXPlatformHeader(),
             "X-Platform-Flavor" to appConfig.platformInfo.flavor,
@@ -232,12 +231,8 @@ class HTTPClient(
             "X-Observer-Mode-Enabled" to if (appConfig.finishTransactions) "false" else "true",
             "X-Nonce" to nonce
         )
-            .apply {
-                putAll(authenticationHeaders)
-                if (supportsETag) {
-                    putAll(eTagManager.getETagHeader(urlPath, refreshETag))
-                }
-            }
+            .plus(authenticationHeaders)
+            .plus(eTagManager.getETagHeader(urlPath, refreshETag))
             .filterNotNullValues()
     }
 
