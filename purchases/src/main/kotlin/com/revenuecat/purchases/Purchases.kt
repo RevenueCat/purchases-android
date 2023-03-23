@@ -213,6 +213,7 @@ class Purchases internal constructor(
             fetchAndCacheOfferings(identityManager.currentAppUserID, appInBackground = false)
             log(LogIntent.RC_SUCCESS, OfferingStrings.OFFERINGS_UPDATED_FROM_NETWORK)
         }
+        offlineEntitlementsManager.updateProductEntitlementMappingsCacheIfStale()
         updatePendingPurchaseQueue()
         synchronizeSubscriberAttributesIfNeeded()
     }

@@ -531,6 +531,19 @@ class PurchasesTest {
         }
     }
 
+    @Test
+    fun `fetch product entitlement mapping on foreground if it's stale`() {
+        mockSuccessfulQueryPurchases(
+            queriedSUBS = emptyMap(),
+            queriedINAPP = emptyMap(),
+            notInCache = emptyList()
+        )
+        Purchases.sharedInstance.onAppForegrounded()
+        verify(exactly = 2) {
+            mockOfflineEntitlementsManager.updateProductEntitlementMappingsCacheIfStale()
+        }
+    }
+
     private fun mockSynchronizeSubscriberAttributesForAllUsers() {
         every {
             mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(appUserId)
