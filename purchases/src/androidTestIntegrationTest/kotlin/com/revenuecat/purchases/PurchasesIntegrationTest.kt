@@ -17,6 +17,7 @@ import org.junit.BeforeClass
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.net.URL
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import kotlin.time.Duration.Companion.seconds
@@ -35,6 +36,7 @@ class PurchasesIntegrationTest {
 
     private val testTimeout = 5.seconds
     private val testUserId = Constants.USER_ID
+    private val proxyUrl = Constants.PROXY_URL.takeIf { it != "NO_PROXY_URL" }
 
     private lateinit var mockBillingAbstract: BillingAbstract
 
@@ -54,6 +56,10 @@ class PurchasesIntegrationTest {
             mockBillingAbstract = mockk<BillingAbstract>(relaxed = true).apply {
                 every { purchasesUpdatedListener = any() } answers { localPurchasesUpdatedListener = firstArg() }
                 every { stateListener = any() } answers { localStateListener = firstArg() }
+            }
+
+            proxyUrl?.let { urlString ->
+                Purchases.proxyURL = URL(urlString)
             }
 
             Purchases.configure(
