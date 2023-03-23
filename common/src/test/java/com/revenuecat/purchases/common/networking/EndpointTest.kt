@@ -91,30 +91,4 @@ class EndpointTest {
             assertThat(endpoint.supportsSignatureValidation).isFalse
         }
     }
-
-    @Test
-    fun `supportsETags returns true for expected values`() {
-        val expectedSupportsETagsEndpoints = listOf(
-            Endpoint.GetCustomerInfo("test-user-id"),
-            Endpoint.LogIn,
-            Endpoint.PostReceipt,
-            Endpoint.GetAmazonReceipt("test-user-id", "test-receipt-id"),
-            Endpoint.GetOfferings("test-user-id"),
-            Endpoint.PostAttributes("test-user-id"),
-            Endpoint.PostDiagnostics
-        )
-        for (endpoint in expectedSupportsETagsEndpoints) {
-            assertThat(endpoint.supportsETags).isTrue
-        }
-    }
-
-    @Test
-    fun `supportsETags returns false for expected values`() {
-        val expectedDoesNotSupportETagsEndpoints = listOf(
-            Endpoint.GetProductEntitlementMappings
-        )
-        for (endpoint in expectedDoesNotSupportETagsEndpoints) {
-            assertThat(endpoint.supportsETags).isFalse
-        }
-    }
 }
