@@ -92,6 +92,7 @@ internal class PurchasesFactory(
 
             val cache = DeviceCache(prefs, apiKey)
 
+            // Override used for integration tests.
             val billing: BillingAbstract = overrideBillingAbstract ?: BillingFactory.createBilling(
                 store,
                 application,
