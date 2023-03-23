@@ -44,20 +44,21 @@ open class DeviceCache(
         private const val CUSTOMER_INFO_REQUEST_DATE_KEY = "customer_info_request_date"
     }
 
-    val legacyAppUserIDCacheKey: String by lazy { "$SHARED_PREFERENCES_PREFIX$apiKey" }
-    val appUserIDCacheKey: String by lazy { "$SHARED_PREFERENCES_PREFIX$apiKey.new" }
+    private val apiKeyPrefix: String by lazy { "$SHARED_PREFERENCES_PREFIX$apiKey" }
+    val legacyAppUserIDCacheKey: String by lazy { "$apiKeyPrefix" }
+    val appUserIDCacheKey: String by lazy { "$apiKeyPrefix.new" }
     internal val attributionCacheKey = "$SHARED_PREFERENCES_PREFIX.attribution"
-    val tokensCacheKey: String by lazy { "$SHARED_PREFERENCES_PREFIX$apiKey.tokens" }
+    val tokensCacheKey: String by lazy { "$apiKeyPrefix.tokens" }
 
     private val productEntitlementMappingCacheKey: String by lazy {
-        "$SHARED_PREFERENCES_PREFIX$apiKey.productEntitlementMapping"
+        "$apiKeyPrefix.productEntitlementMapping"
     }
     private val productEntitlementMappingLastUpdatedCacheKey: String by lazy {
-        "$SHARED_PREFERENCES_PREFIX$apiKey.productEntitlementMappingLastUpdated"
+        "$apiKeyPrefix.productEntitlementMappingLastUpdated"
     }
 
     private val customerInfoCachesLastUpdatedCacheBaseKey: String by lazy {
-        "$SHARED_PREFERENCES_PREFIX$apiKey.purchaserInfoLastUpdated"
+        "$apiKeyPrefix.purchaserInfoLastUpdated"
     }
 
     // region app user id
@@ -396,7 +397,7 @@ open class DeviceCache(
 
     fun newKey(
         key: String
-    ) = "$SHARED_PREFERENCES_PREFIX$apiKey.$key"
+    ) = "$apiKeyPrefix.$key"
 
     // endregion
 }
