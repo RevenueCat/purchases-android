@@ -1535,14 +1535,17 @@ class BackendTest {
             delayed = true,
             baseURL = mockDiagnosticsBaseURL
         )
+
         val lock = CountDownLatch(1)
         asyncBackend.postDiagnostics(diagnosticsList, { lock.countDown() }, { _, _ -> fail("expected success") })
         lock.await(defaultTimeout, TimeUnit.MILLISECONDS)
         assertThat(lock.count).isEqualTo(0)
+
         val lock2 = CountDownLatch(1)
         asyncBackend.postDiagnostics(diagnosticsList, { lock2.countDown() }, { _, _ -> fail("expected success") })
         lock2.await(defaultTimeout, TimeUnit.MILLISECONDS)
         assertThat(lock2.count).isEqualTo(0)
+
         verify(exactly = 2) {
             mockClient.performRequest(
                 baseURL = mockDiagnosticsBaseURL,
@@ -1748,14 +1751,17 @@ class BackendTest {
             resultBody = "{\"products\":[]}",
             delayed = true
         )
+
         val lock = CountDownLatch(1)
         asyncBackend.getProductEntitlementMappings({ lock.countDown() }, { fail("expected succcess") })
         lock.await(defaultTimeout, TimeUnit.MILLISECONDS)
         assertThat(lock.count).isEqualTo(0)
+
         val lock2 = CountDownLatch(1)
         asyncBackend.getProductEntitlementMappings({ lock2.countDown() }, { fail("expected succcess") })
         lock2.await(defaultTimeout, TimeUnit.MILLISECONDS)
         assertThat(lock2.count).isEqualTo(0)
+
         verify(exactly = 2) {
             mockClient.performRequest(
                 baseURL = mockBaseURL,
