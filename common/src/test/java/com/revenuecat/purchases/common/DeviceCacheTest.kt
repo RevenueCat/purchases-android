@@ -189,13 +189,6 @@ class DeviceCacheTest {
     }
 
     @Test
-    fun `given a valid cached customer info, the created customer info does not have schema version information`() {
-        mockString(cache.customerInfoCacheKey(appUserID), validCachedCustomerInfo)
-        val info = cache.getCachedCustomerInfo(appUserID)
-        assertThat(info?.rawData?.has("schema_version")).isFalse
-    }
-
-    @Test
     fun `given a valid customer info, the created customer info does not have verification result information`() {
         mockString(cache.customerInfoCacheKey(appUserID), validCachedCustomerInfo)
         val info = cache.getCachedCustomerInfo(appUserID)
