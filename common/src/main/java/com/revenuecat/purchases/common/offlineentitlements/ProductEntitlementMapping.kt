@@ -3,7 +3,7 @@ package com.revenuecat.purchases.common.offlineentitlements
 import org.json.JSONArray
 import org.json.JSONObject
 
-data class ProductEntitlementMappings(
+data class ProductEntitlementMapping(
     val mappings: List<Mapping>
 ) {
     companion object {
@@ -11,7 +11,7 @@ data class ProductEntitlementMappings(
         private const val PRODUCT_ID_KEY = "id"
         private const val ENTITLEMENTS_KEY = "entitlements"
 
-        fun fromJson(json: JSONObject): ProductEntitlementMappings {
+        fun fromJson(json: JSONObject): ProductEntitlementMapping {
             val productsArray = json.getJSONArray(PRODUCTS_KEY)
             val mappings = mutableListOf<Mapping>()
             for (productIndex in 0 until productsArray.length()) {
@@ -24,7 +24,7 @@ data class ProductEntitlementMappings(
                 }
                 mappings.add(Mapping(productIdentifier, entitlements))
             }
-            return ProductEntitlementMappings(mappings)
+            return ProductEntitlementMapping(mappings)
         }
     }
 

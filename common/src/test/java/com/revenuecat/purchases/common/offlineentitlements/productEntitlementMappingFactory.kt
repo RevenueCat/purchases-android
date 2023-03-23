@@ -6,6 +6,6 @@ fun createProductEntitlementMapping(
         "com.revenuecat.foo_2" to listOf("pro_1", "pro_2"),
         "com.revenuecat.foo_3" to listOf("pro_2")
     )
-) = ProductEntitlementMappings(
-    mappings.map { (productId, entitlements) -> ProductEntitlementMappings.Mapping(productId, entitlements) }
+) = ProductEntitlementMapping(
+    mappings.map { (productId, entitlements) -> ProductEntitlementMapping.Mapping(productId, entitlements) }
 )

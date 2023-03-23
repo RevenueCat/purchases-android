@@ -12,7 +12,6 @@ import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
-import com.revenuecat.purchases.common.offlineentitlements.ProductEntitlementMappings
 import com.revenuecat.purchases.common.offlineentitlements.createProductEntitlementMapping
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.utils.Responses
@@ -59,7 +58,7 @@ class BackendTest {
     private val mockBaseURL = URL("http://mock-api-test.revenuecat.com/")
     private val mockDiagnosticsBaseURL = URL("https://mock-api-diagnostics.revenuecat.com/")
     private val diagnosticsEndpoint = Endpoint.PostDiagnostics
-    private val productEntitlementMappingsEndpoint = Endpoint.GetProductEntitlementMappings
+    private val productEntitlementMappingEndpoint = Endpoint.GetProductEntitlementMapping
     private val defaultAuthHeaders = mapOf("Authorization" to "Bearer $API_KEY")
     private val mockAppConfig: AppConfig = mockk<AppConfig>().apply {
         every { baseURL } returns mockBaseURL
@@ -1701,15 +1700,15 @@ class BackendTest {
 
     // endregion
 
-    // region getProductEntitlementMappings
+    // region getProductEntitlementMapping
 
     @Test
-    fun `getProductEntitlementMappings makes call with correct parameters`() {
-        backend.getProductEntitlementMappings({}, {})
+    fun `getProductEntitlementMapping makes call with correct parameters`() {
+        backend.getProductEntitlementMapping({}, {})
         verify(exactly = 1) {
             mockClient.performRequest(
                 baseURL = mockBaseURL,
-                endpoint = productEntitlementMappingsEndpoint,
+                endpoint = productEntitlementMappingEndpoint,
                 body = null,
                 requestHeaders = defaultAuthHeaders
             )
@@ -1717,9 +1716,9 @@ class BackendTest {
     }
 
     @Test
-    fun `getProductEntitlementMappings only executes once same request if one in progress`() {
+    fun `getProductEntitlementMapping only executes once same request if one in progress`() {
         mockResponse(
-            endpoint = productEntitlementMappingsEndpoint,
+            endpoint = productEntitlementMappingEndpoint,
             body = null,
             responseCode = 200,
             clientException = null,
@@ -1727,15 +1726,15 @@ class BackendTest {
             delayed = true
         )
         val lock = CountDownLatch(3)
-        asyncBackend.getProductEntitlementMappings({ lock.countDown() }, { fail("expected succcess") })
-        asyncBackend.getProductEntitlementMappings({ lock.countDown() }, { fail("expected succcess") })
-        asyncBackend.getProductEntitlementMappings({ lock.countDown() }, { fail("expected succcess") })
+        asyncBackend.getProductEntitlementMapping({ lock.countDown() }, { fail("expected succcess") })
+        asyncBackend.getProductEntitlementMapping({ lock.countDown() }, { fail("expected succcess") })
+        asyncBackend.getProductEntitlementMapping({ lock.countDown() }, { fail("expected succcess") })
         lock.await(defaultTimeout, TimeUnit.MILLISECONDS)
         assertThat(lock.count).isEqualTo(0)
         verify(exactly = 1) {
             mockClient.performRequest(
                 baseURL = mockBaseURL,
-                endpoint = productEntitlementMappingsEndpoint,
+                endpoint = productEntitlementMappingEndpoint,
                 body = null,
                 requestHeaders = defaultAuthHeaders
             )
@@ -1743,9 +1742,9 @@ class BackendTest {
     }
 
     @Test
-    fun `getProductEntitlementMappings executes same request if done after first one finishes`() {
+    fun `getProductEntitlementMapping executes same request if done after first one finishes`() {
         mockResponse(
-            endpoint = productEntitlementMappingsEndpoint,
+            endpoint = productEntitlementMappingEndpoint,
             body = null,
             responseCode = 200,
             clientException = null,
@@ -1754,19 +1753,19 @@ class BackendTest {
         )
 
         val lock = CountDownLatch(1)
-        asyncBackend.getProductEntitlementMappings({ lock.countDown() }, { fail("expected succcess") })
+        asyncBackend.getProductEntitlementMapping({ lock.countDown() }, { fail("expected succcess") })
         lock.await(defaultTimeout, TimeUnit.MILLISECONDS)
         assertThat(lock.count).isEqualTo(0)
 
         val lock2 = CountDownLatch(1)
-        asyncBackend.getProductEntitlementMappings({ lock2.countDown() }, { fail("expected succcess") })
+        asyncBackend.getProductEntitlementMapping({ lock2.countDown() }, { fail("expected succcess") })
         lock2.await(defaultTimeout, TimeUnit.MILLISECONDS)
         assertThat(lock2.count).isEqualTo(0)
 
         verify(exactly = 2) {
             mockClient.performRequest(
                 baseURL = mockBaseURL,
-                endpoint = productEntitlementMappingsEndpoint,
+                endpoint = productEntitlementMappingEndpoint,
                 body = null,
                 requestHeaders = defaultAuthHeaders
             )
@@ -1774,16 +1773,16 @@ class BackendTest {
     }
 
     @Test
-    fun `getProductEntitlementMappings calls error handler when Network error`() {
+    fun `getProductEntitlementMapping calls error handler when Network error`() {
         mockResponse(
-            endpoint = productEntitlementMappingsEndpoint,
+            endpoint = productEntitlementMappingEndpoint,
             body = null,
             responseCode = 200,
             clientException = IOException(),
             resultBody = null
         )
         var errorCalled = false
-        backend.getProductEntitlementMappings(
+        backend.getProductEntitlementMapping(
             { fail("expected error") },
             { error ->
                 errorCalled = true
@@ -1794,9 +1793,9 @@ class BackendTest {
     }
 
     @Test
-    fun `getProductEntitlementMappings calls error handler if status code is 500`() {
+    fun `getProductEntitlementMapping calls error handler if status code is 500`() {
         mockResponse(
-            endpoint = productEntitlementMappingsEndpoint,
+            endpoint = productEntitlementMappingEndpoint,
             body = null,
             responseCode = 500,
             clientException = null,
@@ -1804,7 +1803,7 @@ class BackendTest {
             baseURL = mockBaseURL
         )
         var errorCalled = false
-        backend.getProductEntitlementMappings(
+        backend.getProductEntitlementMapping(
             { fail("expected error") },
             { error ->
                 errorCalled = true
@@ -1815,9 +1814,9 @@ class BackendTest {
     }
 
     @Test
-    fun `getProductEntitlementMappings calls error handler if status code is 400`() {
+    fun `getProductEntitlementMapping calls error handler if status code is 400`() {
         mockResponse(
-            endpoint = productEntitlementMappingsEndpoint,
+            endpoint = productEntitlementMappingEndpoint,
             body = null,
             responseCode = 400,
             clientException = null,
@@ -1825,7 +1824,7 @@ class BackendTest {
             baseURL = mockBaseURL
         )
         var errorCalled = false
-        backend.getProductEntitlementMappings(
+        backend.getProductEntitlementMapping(
             { fail("expected error") },
             { error ->
                 errorCalled = true
@@ -1836,13 +1835,13 @@ class BackendTest {
     }
 
     @Test
-    fun `getProductEntitlementMappings calls success handler`() {
+    fun `getProductEntitlementMapping calls success handler`() {
         val resultBody = "{\"products\":[" +
             "{\"id\":\"test-product-id\"," +
             "\"entitlements\":[\"entitlement-1\",\"entitlement-2\"]" +
             "}]}"
         mockResponse(
-            endpoint = productEntitlementMappingsEndpoint,
+            endpoint = productEntitlementMappingEndpoint,
             body = null,
             responseCode = 200,
             clientException = null,
@@ -1850,7 +1849,7 @@ class BackendTest {
             baseURL = mockBaseURL
         )
         var successCalled = false
-        backend.getProductEntitlementMappings(
+        backend.getProductEntitlementMapping(
             {
                 successCalled = true
                 val expectedMapping = createProductEntitlementMapping(
@@ -1864,9 +1863,9 @@ class BackendTest {
     }
 
     @Test
-    fun `getProductEntitlementMappings call is enqueued with default delay`() {
+    fun `getProductEntitlementMapping call is enqueued with default delay`() {
         mockResponse(
-            endpoint = productEntitlementMappingsEndpoint,
+            endpoint = productEntitlementMappingEndpoint,
             body = null,
             responseCode = 200,
             clientException = null,
@@ -1874,7 +1873,7 @@ class BackendTest {
             baseURL = mockBaseURL
         )
         dispatcher.calledDelay = null
-        backend.getProductEntitlementMappings(
+        backend.getProductEntitlementMapping(
             {},
             { fail("expected success") }
         )

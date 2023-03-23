@@ -21,7 +21,7 @@ import org.robolectric.annotation.Config
 @Config(manifest = Config.NONE)
 class OfflineEntitlementsManagerTest {
 
-    private lateinit var backendSuccessSlot: CapturingSlot<(ProductEntitlementMappings) -> Unit>
+    private lateinit var backendSuccessSlot: CapturingSlot<(ProductEntitlementMapping) -> Unit>
     private lateinit var backendErrorSlot: CapturingSlot<(PurchasesError) -> Unit>
 
     private lateinit var backend: Backend
@@ -38,7 +38,7 @@ class OfflineEntitlementsManagerTest {
         deviceCache = mockk()
 
         every {
-            backend.getProductEntitlementMappings(capture(backendSuccessSlot), capture(backendErrorSlot))
+            backend.getProductEntitlementMapping(capture(backendSuccessSlot), capture(backendErrorSlot))
         } just Runs
 
         offlineEntitlementsManager = OfflineEntitlementsManager(
@@ -48,29 +48,29 @@ class OfflineEntitlementsManagerTest {
     }
 
     @Test
-    fun `updateProductEntitlementMappingsCacheIfStale does nothing if cache not stale`() {
-        every { deviceCache.isProductEntitlementMappingsCacheStale() } returns false
-        offlineEntitlementsManager.updateProductEntitlementMappingsCacheIfStale()
-        verify(exactly = 0) { backend.getProductEntitlementMappings(any(), any()) }
+    fun `updateProductEntitlementMappingCacheIfStale does nothing if cache not stale`() {
+        every { deviceCache.isProductEntitlementMappingCacheStale() } returns false
+        offlineEntitlementsManager.updateProductEntitlementMappingCacheIfStale()
+        verify(exactly = 0) { backend.getProductEntitlementMapping(any(), any()) }
     }
 
     @Test
-    fun `updateProductEntitlementMappingsCacheIfStale does nothing if backend request errors`() {
-        every { deviceCache.isProductEntitlementMappingsCacheStale() } returns true
-        offlineEntitlementsManager.updateProductEntitlementMappingsCacheIfStale()
-        verify(exactly = 1) { backend.getProductEntitlementMappings(any(), any()) }
+    fun `updateProductEntitlementMappingCacheIfStale does nothing if backend request errors`() {
+        every { deviceCache.isProductEntitlementMappingCacheStale() } returns true
+        offlineEntitlementsManager.updateProductEntitlementMappingCacheIfStale()
+        verify(exactly = 1) { backend.getProductEntitlementMapping(any(), any()) }
         backendErrorSlot.captured(PurchasesError(PurchasesErrorCode.NetworkError))
-        verify(exactly = 0) { deviceCache.cacheProductEntitlementMappings(any()) }
+        verify(exactly = 0) { deviceCache.cacheProductEntitlementMapping(any()) }
     }
 
     @Test
-    fun `updateProductEntitlementMappingsCacheIfStale caches mapping from backend if request successful`() {
-        every { deviceCache.isProductEntitlementMappingsCacheStale() } returns true
-        every { deviceCache.cacheProductEntitlementMappings(any()) } just Runs
-        offlineEntitlementsManager.updateProductEntitlementMappingsCacheIfStale()
-        verify(exactly = 1) { backend.getProductEntitlementMappings(any(), any()) }
+    fun `updateProductEntitlementMappingCacheIfStale caches mapping from backend if request successful`() {
+        every { deviceCache.isProductEntitlementMappingCacheStale() } returns true
+        every { deviceCache.cacheProductEntitlementMapping(any()) } just Runs
+        offlineEntitlementsManager.updateProductEntitlementMappingCacheIfStale()
+        verify(exactly = 1) { backend.getProductEntitlementMapping(any(), any()) }
         val expectedMappings = createProductEntitlementMapping()
         backendSuccessSlot.captured(expectedMappings)
-        verify(exactly = 1) { deviceCache.cacheProductEntitlementMappings(expectedMappings) }
+        verify(exactly = 1) { deviceCache.cacheProductEntitlementMapping(expectedMappings) }
     }
 }

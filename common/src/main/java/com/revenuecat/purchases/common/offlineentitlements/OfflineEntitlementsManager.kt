@@ -11,12 +11,12 @@ class OfflineEntitlementsManager(
     private val deviceCache: DeviceCache
 ) {
 
-    fun updateProductEntitlementMappingsCacheIfStale() {
-        if (deviceCache.isProductEntitlementMappingsCacheStale()) {
-            debugLog(OfflineEntitlementsStrings.UPDATING_PRODUCT_ENTITLEMENT_MAPPINGS)
-            backend.getProductEntitlementMappings(
-                onSuccessHandler = { productEntitlementMappings ->
-                    deviceCache.cacheProductEntitlementMappings(productEntitlementMappings)
+    fun updateProductEntitlementMappingCacheIfStale() {
+        if (deviceCache.isProductEntitlementMappingCacheStale()) {
+            debugLog(OfflineEntitlementsStrings.UPDATING_PRODUCT_ENTITLEMENT_MAPPING)
+            backend.getProductEntitlementMapping(
+                onSuccessHandler = { productEntitlementMapping ->
+                    deviceCache.cacheProductEntitlementMapping(productEntitlementMapping)
                     debugLog(OfflineEntitlementsStrings.SUCCESSFULLY_UPDATED_PRODUCT_ENTITLEMENTS)
                 },
                 onErrorHandler = { e ->

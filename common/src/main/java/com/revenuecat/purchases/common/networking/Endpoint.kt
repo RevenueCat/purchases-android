@@ -28,7 +28,7 @@ sealed class Endpoint(val pathTemplate: String, val name: String) {
         ) : Endpoint("/receipts/amazon/%s/%s", "get_amazon_receipt") {
         override fun getPath() = pathTemplate.format(Uri.encode(userId), receiptId)
     }
-    object GetProductEntitlementMappings : Endpoint("/products-entitlements", "get_product_entitlement_mappings") {
+    object GetProductEntitlementMapping : Endpoint("/products-entitlements", "get_product_entitlement_mapping") {
         override fun getPath() = pathTemplate
     }
 
@@ -42,7 +42,7 @@ sealed class Endpoint(val pathTemplate: String, val name: String) {
             is GetOfferings,
             is PostAttributes,
             PostDiagnostics,
-            GetProductEntitlementMappings ->
+            GetProductEntitlementMapping ->
                 false
         }
 }

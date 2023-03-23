@@ -60,8 +60,8 @@ class EndpointTest {
     }
 
     @Test
-    fun `GetProductEntitlementMappings has correct path`() {
-        val endpoint = Endpoint.GetProductEntitlementMappings
+    fun `GetProductEntitlementMapping has correct path`() {
+        val endpoint = Endpoint.GetProductEntitlementMapping
         val expectedPath = "/products-entitlements"
         assertThat(endpoint.getPath()).isEqualTo(expectedPath)
     }
@@ -85,7 +85,7 @@ class EndpointTest {
             Endpoint.GetOfferings("test-user-id"),
             Endpoint.PostAttributes("test-user-id"),
             Endpoint.PostDiagnostics,
-            Endpoint.GetProductEntitlementMappings
+            Endpoint.GetProductEntitlementMapping
         )
         for (endpoint in expectedNotSupportsValidationEndpoints) {
             assertThat(endpoint.supportsSignatureValidation).isFalse
