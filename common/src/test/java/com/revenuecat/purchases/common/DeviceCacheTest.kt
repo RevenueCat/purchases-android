@@ -154,6 +154,20 @@ class DeviceCacheTest {
     }
 
     @Test
+    fun `given a valid customer info with schema version, the JSON is parsed correctly`() {
+        val deprecatedValidCachedCustomerInfo by lazy {
+            JSONObject(Responses.validFullPurchaserResponse).apply {
+                put("schema_version", CUSTOMER_INFO_SCHEMA_VERSION)
+                put("customer_info_request_date", 1234567890L)
+            }.toString()
+        }
+        mockString(cache.customerInfoCacheKey(appUserID), deprecatedValidCachedCustomerInfo)
+        val info = cache.getCachedCustomerInfo(appUserID)
+        assertThat(info).`as`("info is not null").isNotNull
+        assertThat(info?.schemaVersion).isEqualTo(CUSTOMER_INFO_SCHEMA_VERSION)
+    }
+
+    @Test
     fun `given a valid customer info with request date, the JSON is parsed correctly`() {
         val deprecatedValidCachedCustomerInfo by lazy {
             JSONObject(Responses.validFullPurchaserResponse).apply {
