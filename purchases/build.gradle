@@ -5,12 +5,11 @@ apply plugin: 'org.jetbrains.dokka'
 android {
     namespace 'com.revenuecat.purchases.api'
 
-    packagingOptions {
-        resources.excludes.add("META-INF/*")
-    }
-
     productFlavors {
         integrationTest {
+            packagingOptions {
+                resources.excludes.add("META-INF/*")
+            }
             minSdkVersion 21 // Needed because mockk-android requires API 21
             matchingFallbacks = ['latestDependencies']
         }

@@ -29,7 +29,7 @@ class PurchasesIntegrationTest {
         @BeforeClass @JvmStatic
         fun setupClass() {
             if (!Constants.canRunIntegrationTests()) {
-                error("You need to set Constants API key and google purchase token to execute integration tests.")
+                error("You need to set required constants in Constants.kt")
             }
         }
     }
