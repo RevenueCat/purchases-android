@@ -614,6 +614,18 @@ class DeviceCacheTest {
     }
 
     @Test
+    fun `cacheProductEntitlementMappings caches empty mappings in shared preferences correctly`() {
+        cache.cacheProductEntitlementMappings(createProductEntitlementMapping(emptyMap()))
+        verify(exactly = 1) {
+            mockEditor.putString(productEntitlementMappingsCacheKey, "{\"products\":[]}")
+        }
+        verify(exactly = 1) {
+            mockEditor.putLong(productEntitlementMappingsLastUpdatedCacheKey, currentTime.time)
+        }
+        verify(exactly = 2) { mockEditor.apply() }
+    }
+
+    @Test
     fun `setProductEntitlementMappingCacheTimestampToNow caches cache timestamp correctly`() {
         cache.setProductEntitlementMappingCacheTimestampToNow()
         verify(exactly = 1) {
