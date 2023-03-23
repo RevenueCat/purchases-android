@@ -40,21 +40,21 @@ class PurchasesIntegrationTest {
 
     private lateinit var mockBillingAbstract: BillingAbstract
 
-    private var localPurchasesUpdatedListener: BillingAbstract.PurchasesUpdatedListener? = null
-    private var localStateListener: BillingAbstract.StateListener? = null
+    private var latestPurchasesUpdatedListener: BillingAbstract.PurchasesUpdatedListener? = null
+    private var latestStateListener: BillingAbstract.StateListener? = null
 
     @get:Rule
     var activityScenarioRule = activityScenarioRule<MainActivity>()
 
     @Before
     fun setup() {
-        localPurchasesUpdatedListener = null
-        localStateListener = null
+        latestPurchasesUpdatedListener = null
+        latestStateListener = null
 
         onActivityReady {
             mockBillingAbstract = mockk<BillingAbstract>(relaxed = true).apply {
-                every { purchasesUpdatedListener = any() } answers { localPurchasesUpdatedListener = firstArg() }
-                every { stateListener = any() } answers { localStateListener = firstArg() }
+                every { purchasesUpdatedListener = any() } answers { latestPurchasesUpdatedListener = firstArg() }
+                every { stateListener = any() } answers { latestStateListener = firstArg() }
             }
 
             proxyUrl?.let { urlString ->
@@ -169,7 +169,7 @@ class PurchasesIntegrationTest {
                     lock.countDown()
                 }
             )
-            localPurchasesUpdatedListener!!.onPurchasesUpdated(listOf(storeTransaction))
+            latestPurchasesUpdatedListener!!.onPurchasesUpdated(listOf(storeTransaction))
         }
         lock.await(testTimeout.inWholeSeconds, TimeUnit.SECONDS)
         assertThat(lock.count).isZero
