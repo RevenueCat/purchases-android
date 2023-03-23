@@ -10,6 +10,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.networking.Endpoint
+import com.revenuecat.purchases.common.networking.HTTPRequest
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
 import com.revenuecat.purchases.utils.Responses
@@ -143,6 +144,39 @@ class HTTPClientTest: BaseHTTPClientTest() {
         assertThat(request.getHeader("X-Client-Version")).isEqualTo("")
         assertThat(request.getHeader("X-Client-Bundle-ID")).isEqualTo("mock-package-name")
         assertThat(request.getHeader("X-Observer-Mode-Enabled")).isEqualTo("false")
+    }
+
+    @Test
+    fun `adds eTag header if endpoint supports it`() {
+        val expectedResult = HTTPResult.createResult()
+        val endpoint = Endpoint.LogIn
+        enqueue(
+            endpoint,
+            expectedResult
+        )
+
+        client.performRequest(baseURL, endpoint, null, mapOf("" to ""))
+
+        val request = server.takeRequest()
+
+        assertThat(request.headers.names().contains(HTTPRequest.ETAG_HEADER_NAME)).isTrue
+        assertThat(request.getHeader(HTTPRequest.ETAG_HEADER_NAME)).isEqualTo("")
+    }
+
+    @Test
+    fun `does not add eTag header if endpoint does not supports it`() {
+        val expectedResult = HTTPResult.createResult()
+        val endpoint = Endpoint.GetProductEntitlementMappings
+        enqueue(
+            endpoint,
+            expectedResult
+        )
+
+        client.performRequest(baseURL, endpoint, null, mapOf("" to ""))
+
+        val request = server.takeRequest()
+
+        assertThat(request.headers.names().contains(HTTPRequest.ETAG_HEADER_NAME)).isFalse
     }
 
     @Test
