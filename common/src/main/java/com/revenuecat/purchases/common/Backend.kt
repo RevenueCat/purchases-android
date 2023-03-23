@@ -11,7 +11,7 @@ import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
-import com.revenuecat.purchases.common.offlineentitlements.ProductEntitlementMappings
+import com.revenuecat.purchases.common.offlineentitlements.ProductEntitlementMapping
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import com.revenuecat.purchases.strings.NetworkStrings
 import com.revenuecat.purchases.utils.filterNotNullValues
@@ -40,7 +40,7 @@ typealias IdentifyCallback = Pair<(CustomerInfo, Boolean) -> Unit, (PurchasesErr
 /** @suppress */
 typealias DiagnosticsCallback = Pair<(JSONObject) -> Unit, (PurchasesError, Boolean) -> Unit>
 /** @suppress */
-typealias ProductEntitlementCallback = Pair<(ProductEntitlementMappings) -> Unit, (PurchasesError) -> Unit>
+typealias ProductEntitlementCallback = Pair<(ProductEntitlementMapping) -> Unit, (PurchasesError) -> Unit>
 
 class Backend(
     private val apiKey: String,
@@ -415,11 +415,11 @@ class Backend(
         }
     }
 
-    fun getProductEntitlementMappings(
-        onSuccessHandler: (ProductEntitlementMappings) -> Unit,
+    fun getProductEntitlementMapping(
+        onSuccessHandler: (ProductEntitlementMapping) -> Unit,
         onErrorHandler: (PurchasesError) -> Unit
     ) {
-        val endpoint = Endpoint.GetProductEntitlementMappings
+        val endpoint = Endpoint.GetProductEntitlementMapping
         val path = endpoint.getPath()
         val call = object : Dispatcher.AsyncCall() {
             override fun call(): HTTPResult {
@@ -445,7 +445,7 @@ class Backend(
                 }?.forEach { (onSuccess, onError) ->
                     if (result.isSuccessful()) {
                         try {
-                            onSuccess(ProductEntitlementMappings.fromJson(result.body))
+                            onSuccess(ProductEntitlementMapping.fromJson(result.body))
                         } catch (e: JSONException) {
                             onError(e.toPurchasesError().also { errorLog(it) })
                         }

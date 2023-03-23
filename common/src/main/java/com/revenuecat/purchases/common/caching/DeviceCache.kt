@@ -14,7 +14,7 @@ import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.DefaultDateProvider
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.log
-import com.revenuecat.purchases.common.offlineentitlements.ProductEntitlementMappings
+import com.revenuecat.purchases.common.offlineentitlements.ProductEntitlementMapping
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.strings.ReceiptStrings
@@ -292,14 +292,14 @@ open class DeviceCache(
 
     // endregion
 
-    // region ProductEntitlementMappings
+    // region ProductEntitlementMapping
 
     @Synchronized
-    fun cacheProductEntitlementMappings(productEntitlementMappings: ProductEntitlementMappings) {
+    fun cacheProductEntitlementMapping(productEntitlementMapping: ProductEntitlementMapping) {
         preferences.edit()
             .putString(
                 productEntitlementMappingCacheKey,
-                productEntitlementMappings.toJson().toString()
+                productEntitlementMapping.toJson().toString()
             ).apply()
 
         setProductEntitlementMappingCacheTimestampToNow()
@@ -315,18 +315,18 @@ open class DeviceCache(
     }
 
     @Synchronized
-    fun isProductEntitlementMappingsCacheStale(): Boolean {
-        return getProductEntitlementMappingsLastUpdated().isStale(PRODUCT_ENTITLEMENT_MAPPING_CACHE_REFRESH_PERIOD)
+    fun isProductEntitlementMappingCacheStale(): Boolean {
+        return getProductEntitlementMappingLastUpdated().isStale(PRODUCT_ENTITLEMENT_MAPPING_CACHE_REFRESH_PERIOD)
     }
 
     @Synchronized
-    fun getProductEntitlementMappings(): ProductEntitlementMappings? {
+    fun getProductEntitlementMapping(): ProductEntitlementMapping? {
         return preferences.getString(productEntitlementMappingCacheKey, null)?.let { jsonString ->
-            return ProductEntitlementMappings.fromJson(JSONObject(jsonString))
+            return ProductEntitlementMapping.fromJson(JSONObject(jsonString))
         }
     }
 
-    private fun getProductEntitlementMappingsLastUpdated(): Date? {
+    private fun getProductEntitlementMappingLastUpdated(): Date? {
         return if (preferences.contains(productEntitlementMappingLastUpdatedCacheKey)) {
             Date(preferences.getLong(productEntitlementMappingLastUpdatedCacheKey, -1))
         } else {

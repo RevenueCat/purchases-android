@@ -9,7 +9,7 @@ import org.robolectric.annotation.Config
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
-class ProductEntitlementMappingsTest {
+class ProductEntitlementMappingTest {
 
     private val sampleResponseJson = JSONObject(
         """
@@ -41,9 +41,9 @@ class ProductEntitlementMappingsTest {
 
     @Test
     fun `fromJson parses mappings correctly`() {
-        val productEntitlementMappings = ProductEntitlementMappings.fromJson(sampleResponseJson)
-        val expectedEntitlementMappings = createProductEntitlementMapping()
-        assertThat(productEntitlementMappings).isEqualTo(expectedEntitlementMappings)
+        val productEntitlementMapping = ProductEntitlementMapping.fromJson(sampleResponseJson)
+        val expectedEntitlementMapping = createProductEntitlementMapping()
+        assertThat(productEntitlementMapping).isEqualTo(expectedEntitlementMapping)
     }
 
     @Test
@@ -55,8 +55,8 @@ class ProductEntitlementMappingsTest {
                 }
             """.trimIndent()
         )
-        val productEntitlementMappings = ProductEntitlementMappings.fromJson(json)
-        assertThat(productEntitlementMappings.mappings.size).isEqualTo(0)
+        val productEntitlementMapping = ProductEntitlementMapping.fromJson(json)
+        assertThat(productEntitlementMapping.mappings.size).isEqualTo(0)
     }
 
     @Test
@@ -92,7 +92,7 @@ class ProductEntitlementMappingsTest {
 
     @Test
     fun `toJson transforms mappings back to original Json`() {
-        val mappings = ProductEntitlementMappings.fromJson(sampleResponseJson)
+        val mappings = ProductEntitlementMapping.fromJson(sampleResponseJson)
         assertThat(mappings.toJson().toString()).isEqualTo(sampleResponseJson.toString())
     }
 }
