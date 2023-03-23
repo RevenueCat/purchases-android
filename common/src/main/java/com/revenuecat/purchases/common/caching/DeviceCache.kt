@@ -124,7 +124,6 @@ open class DeviceCache(
                     val requestDate = cachedJSONObject.optLong(CUSTOMER_INFO_REQUEST_DATE_KEY).takeIf { it > 0 }?.let {
                         Date(it)
                     }
-                    cachedJSONObject.remove(CUSTOMER_INFO_SCHEMA_VERSION_KEY)
                     cachedJSONObject.remove(CUSTOMER_INFO_VERIFICATION_RESULT_KEY)
                     cachedJSONObject.remove(CUSTOMER_INFO_REQUEST_DATE_KEY)
                     val verificationResult = VerificationResult.valueOf(verificationResultString)
