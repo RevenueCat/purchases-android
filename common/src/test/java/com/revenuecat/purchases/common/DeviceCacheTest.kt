@@ -13,12 +13,14 @@ import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.VerificationResult
+import com.revenuecat.purchases.common.caching.CUSTOMER_INFO_SCHEMA_VERSION
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.caching.InMemoryCachedObject
-import com.revenuecat.purchases.common.caching.CUSTOMER_INFO_SCHEMA_VERSION
+import com.revenuecat.purchases.common.offlineentitlements.createProductEntitlementMapping
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.utils.Responses
+import com.revenuecat.purchases.utils.subtract
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
@@ -32,9 +34,10 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
-import java.lang.ClassCastException
 import java.util.Calendar
 import java.util.Date
+import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.minutes
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
@@ -46,6 +49,7 @@ class DeviceCacheTest {
             put("verification_result", VerificationResult.VERIFIED)
         }.toString()
     }
+    private val sampleProductEntitlementMappings = createProductEntitlementMapping()
 
     private val oldCachedCustomerInfo =
         "{'schema_version': 0, 'request_date': '2018-10-19T02:40:36Z', 'subscriber': {'other_purchases': {'onetime_purchase': {'purchase_date': '1990-08-30T02:40:36Z'}}, 'subscriptions': {'onemonth_freetrial': {'expires_date': '2100-04-06T20:54:45.975000Z'}, 'threemonth_freetrial': {'expires_date': '1990-08-30T02:40:36Z'}}, 'entitlements': { 'pro': {'expires_date': '2100-04-06T20:54:45.975000Z', 'purchase_date': '2018-10-26T23:17:53Z'}, 'old_pro': {'expires_date': '1990-08-30T02:40:36Z'}, 'forever_pro': {'expires_date': null}}}}"
@@ -53,8 +57,13 @@ class DeviceCacheTest {
     private lateinit var cache: DeviceCache
     private lateinit var mockPrefs: SharedPreferences
     private lateinit var mockEditor: SharedPreferences.Editor
+    private lateinit var mockDateProvider: DateProvider
     private val apiKey = "api_key"
     private val appUserID = "app_user_id"
+    private val currentTime = Date()
+
+    private val productEntitlementMappingsLastUpdatedCacheKey = "com.revenuecat.purchases.api_key.productEntitlementMappingLastUpdated"
+    private val productEntitlementMappingsCacheKey = "com.revenuecat.purchases.api_key.productEntitlementMapping"
 
     private val slotForPutLong = slot<Long>()
 
@@ -62,6 +71,7 @@ class DeviceCacheTest {
     fun setup() {
         mockPrefs = mockk()
         mockEditor = mockk()
+        mockDateProvider = mockk()
 
         every {
             mockEditor.putString(any(), any())
@@ -81,7 +91,9 @@ class DeviceCacheTest {
             mockEditor.apply()
         } just runs
 
-        cache = DeviceCache(mockPrefs, apiKey)
+        every { mockDateProvider.now } returns currentTime
+
+        cache = DeviceCache(mockPrefs, apiKey, dateProvider = mockDateProvider)
     }
 
     @Test
@@ -583,6 +595,91 @@ class DeviceCacheTest {
 
         verify (exactly = 1) { mockEditor.apply() }
     }
+
+    // region ProductEntitlementMappings
+
+    @Test
+    fun `cacheProductEntitlementMappings caches mappings in shared preferences correctly`() {
+        cache.cacheProductEntitlementMappings(sampleProductEntitlementMappings)
+        verify(exactly = 1) {
+            mockEditor.putString(
+                productEntitlementMappingsCacheKey,
+                "{\"products\":[{\"id\":\"com.revenuecat.foo_1\",\"entitlements\":[\"pro_1\"]},{\"id\":\"com.revenuecat.foo_2\",\"entitlements\":[\"pro_1\",\"pro_2\"]},{\"id\":\"com.revenuecat.foo_3\",\"entitlements\":[\"pro_2\"]}]}"
+            )
+        }
+        verify(exactly = 1) {
+            mockEditor.putLong(productEntitlementMappingsLastUpdatedCacheKey, currentTime.time)
+        }
+        verify(exactly = 2) { mockEditor.apply() }
+    }
+
+    @Test
+    fun `cacheProductEntitlementMappings caches empty mappings in shared preferences correctly`() {
+        cache.cacheProductEntitlementMappings(createProductEntitlementMapping(emptyMap()))
+        verify(exactly = 1) {
+            mockEditor.putString(productEntitlementMappingsCacheKey, "{\"products\":[]}")
+        }
+        verify(exactly = 1) {
+            mockEditor.putLong(productEntitlementMappingsLastUpdatedCacheKey, currentTime.time)
+        }
+        verify(exactly = 2) { mockEditor.apply() }
+    }
+
+    @Test
+    fun `setProductEntitlementMappingCacheTimestampToNow caches cache timestamp correctly`() {
+        cache.setProductEntitlementMappingCacheTimestampToNow()
+        verify(exactly = 1) {
+            mockEditor.putLong(productEntitlementMappingsLastUpdatedCacheKey, currentTime.time)
+        }
+        verify(exactly = 1) { mockEditor.apply() }
+    }
+
+    @Test
+    fun `isProductEntitlementMappingsCacheStale returns stale if nothing in cache`() {
+        every {
+            mockPrefs.contains(productEntitlementMappingsLastUpdatedCacheKey)
+        } returns false
+        assertThat(cache.isProductEntitlementMappingsCacheStale()).isTrue
+    }
+
+    @Test
+    fun `isProductEntitlementMappingsCacheStale returns stale if cache older than cache period`() {
+        every {
+            mockPrefs.contains(productEntitlementMappingsLastUpdatedCacheKey)
+        } returns true
+        every {
+            mockPrefs.getLong(productEntitlementMappingsLastUpdatedCacheKey, any())
+        } returns currentTime.subtract(25.hours + 1.minutes).time
+        assertThat(cache.isProductEntitlementMappingsCacheStale()).isTrue
+    }
+
+    @Test
+    fun `isProductEntitlementMappingsCacheStale returns not stale if cache newer than cache period`() {
+        every {
+            mockPrefs.contains(productEntitlementMappingsLastUpdatedCacheKey)
+        } returns true
+        every {
+            mockPrefs.getLong(productEntitlementMappingsLastUpdatedCacheKey, any())
+        } returns currentTime.subtract(25.hours - 1.minutes).time
+        assertThat(cache.isProductEntitlementMappingsCacheStale()).isFalse
+    }
+
+    @Test
+    fun `getProductEntitlementMappings returns null if nothing in cache`() {
+        every { mockPrefs.getString(productEntitlementMappingsCacheKey, null) } returns null
+        assertThat(cache.getProductEntitlementMappings()).isNull()
+    }
+
+    @Test
+    fun `getProductEntitlementMappings returns correct product entitlements mapping from cache`() {
+        val expectedMappings = createProductEntitlementMapping()
+        every {
+            mockPrefs.getString(productEntitlementMappingsCacheKey, null)
+        } returns expectedMappings.toJson().toString()
+        assertThat(cache.getProductEntitlementMappings()).isEqualTo(expectedMappings)
+    }
+
+    // endregion
 
     private fun mockString(key: String, value: String?) {
         every {

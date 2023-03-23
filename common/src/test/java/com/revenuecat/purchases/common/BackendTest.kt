@@ -13,6 +13,7 @@ import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.offlineentitlements.ProductEntitlementMappings
+import com.revenuecat.purchases.common.offlineentitlements.createProductEntitlementMapping
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.utils.Responses
 import com.revenuecat.purchases.utils.getNullableString
@@ -1852,9 +1853,10 @@ class BackendTest {
         backend.getProductEntitlementMappings(
             {
                 successCalled = true
-                assertThat(it).isEqualTo(ProductEntitlementMappings(listOf(
-                    ProductEntitlementMappings.Mapping("test-product-id", listOf("entitlement-1", "entitlement-2"))
-                )))
+                val expectedMapping = createProductEntitlementMapping(
+                    mapOf("test-product-id" to listOf("entitlement-1", "entitlement-2"))
+                )
+                assertThat(it).isEqualTo(expectedMapping)
             },
             { fail("expected success") }
         )
