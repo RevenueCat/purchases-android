@@ -11,6 +11,7 @@ import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
+import com.revenuecat.purchases.common.offlineentitlements.ProductEntitlementMappings
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import com.revenuecat.purchases.strings.NetworkStrings
 import com.revenuecat.purchases.utils.filterNotNullValues
@@ -38,6 +39,8 @@ typealias PostReceiptDataErrorCallback = (PurchasesError, shouldConsumePurchase:
 typealias IdentifyCallback = Pair<(CustomerInfo, Boolean) -> Unit, (PurchasesError) -> Unit>
 /** @suppress */
 typealias DiagnosticsCallback = Pair<(JSONObject) -> Unit, (PurchasesError, Boolean) -> Unit>
+/** @suppress */
+typealias ProductEntitlementCallback = Pair<(ProductEntitlementMappings) -> Unit, (PurchasesError) -> Unit>
 
 class Backend(
     private val apiKey: String,
@@ -65,6 +68,9 @@ class Backend(
 
     @get:Synchronized @set:Synchronized
     @Volatile var diagnosticsCallbacks = mutableMapOf<CallbackCacheKey, MutableList<DiagnosticsCallback>>()
+
+    @get:Synchronized @set:Synchronized
+    @Volatile var productEntitlementCallbacks = mutableMapOf<String, MutableList<ProductEntitlementCallback>>()
 
     fun close() {
         this.dispatcher.close()
@@ -405,6 +411,57 @@ class Backend(
                 cacheKey,
                 onSuccessHandler to onErrorHandler,
                 Delay.LONG
+            )
+        }
+    }
+
+    fun getProductEntitlementMappings(
+        onSuccessHandler: (ProductEntitlementMappings) -> Unit,
+        onErrorHandler: (PurchasesError) -> Unit
+    ) {
+        val endpoint = Endpoint.GetProductEntitlementMappings
+        val path = endpoint.getPath()
+        val call = object : Dispatcher.AsyncCall() {
+            override fun call(): HTTPResult {
+                return httpClient.performRequest(
+                    appConfig.baseURL,
+                    endpoint,
+                    null,
+                    authenticationHeaders
+                )
+            }
+
+            override fun onError(error: PurchasesError) {
+                synchronized(this@Backend) {
+                    productEntitlementCallbacks.remove(path)
+                }?.forEach { (_, onError) ->
+                    onError(error)
+                }
+            }
+
+            override fun onCompletion(result: HTTPResult) {
+                synchronized(this@Backend) {
+                    productEntitlementCallbacks.remove(path)
+                }?.forEach { (onSuccess, onError) ->
+                    if (result.isSuccessful()) {
+                        try {
+                            onSuccess(ProductEntitlementMappings.fromJson(result.body))
+                        } catch (e: JSONException) {
+                            onError(e.toPurchasesError().also { errorLog(it) })
+                        }
+                    } else {
+                        onError(result.toPurchasesError().also { errorLog(it) })
+                    }
+                }
+            }
+        }
+        synchronized(this@Backend) {
+            productEntitlementCallbacks.addCallback(
+                call,
+                dispatcher,
+                path,
+                onSuccessHandler to onErrorHandler,
+                Delay.DEFAULT
             )
         }
     }
