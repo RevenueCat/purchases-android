@@ -46,7 +46,6 @@ class PurchasesIntegrationTest {
     @get:Rule
     var activityScenarioRule = activityScenarioRule<MainActivity>()
 
-
     @Before
     fun setup() {
         localPurchasesUpdatedListener = null

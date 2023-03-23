@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.factories
 
+import com.revenuecat.purchases.Constants
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.models.StoreProduct
 import org.json.JSONObject
@@ -7,7 +8,7 @@ import org.json.JSONObject
 object StoreProductFactory {
 
     private const val validStoreProductJson = "{" +
-        "\"productId\":\"monthly_intro_pricing_one_week\"," +
+        "\"productId\":\"${Constants.PRODUCT_ID_TO_PURCHASE}\"," +
         "\"type\":\"subs\"," +
         "\"title\":\"Monthly Product Intro Pricing One Week (RevenueCat SDK Tester)\"," +
         "\"name\":\"Monthly Product Intro Pricing One Week\"," +
@@ -22,7 +23,7 @@ object StoreProductFactory {
 
     @Suppress("LongParameterList")
     fun createStoreProduct(
-        sku: String = "monthly_intro_pricing_one_week",
+        sku: String = Constants.PRODUCT_ID_TO_PURCHASE,
         type: ProductType = ProductType.SUBS,
         price: String = "€5.49",
         priceAmountMicros: Long = 5490000,
