@@ -78,6 +78,7 @@ class ConfigureFragment : Fragment() {
         val verificationModeIndex = binding.verificationOptionsInput.selectedItemPosition
         val entitlementVerificationMode = EntitlementVerificationMode.values()[verificationModeIndex]
         val useAmazonStore = binding.storeRadioGroup.checkedRadioButtonId == R.id.amazon_store_radio_id
+        val useObserverMode = binding.observerModeRadioGroup.checkedRadioButtonId == R.id.observer_mode_on
 
         val application = (requireActivity().application as MainApplication)
 
@@ -92,8 +93,13 @@ class ConfigureFragment : Fragment() {
         val configuration = configurationBuilder
             .diagnosticsEnabled(true)
             .entitlementVerificationMode(entitlementVerificationMode)
+            .observerMode(useObserverMode)
             .build()
         Purchases.configure(configuration)
+
+        if (useObserverMode) {
+            ObserverModeBillingClient.start(application)
+        }
 
         // set attributes to store additional, structured information for a user in RevenueCat.
         // More info: https://docs.revenuecat.com/docs/user-attributes

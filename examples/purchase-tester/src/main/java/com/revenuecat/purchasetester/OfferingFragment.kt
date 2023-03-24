@@ -22,6 +22,8 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.getCustomerInfoWith
 import com.revenuecat.purchases.getOfferingsWith
 import com.revenuecat.purchases.models.GoogleProrationMode
+import com.revenuecat.purchases.models.GooglePurchasingData
+import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.SubscriptionOption
@@ -108,19 +110,37 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
         cardView: View,
         currentPackage: Package,
         isUpgrade: Boolean
-    ) = startPurchase(isUpgrade, PurchaseParams.Builder(requireActivity(), currentPackage))
+    ) {
+        if (Purchases.sharedInstance.finishTransactions) {
+            startPurchase(isUpgrade, PurchaseParams.Builder(requireActivity(), currentPackage))
+        } else {
+            startObservableModePurchase(currentPackage.product.purchasingData)
+        }
+    }
 
     override fun onPurchaseProductClicked(
         cardView: View,
         currentProduct: StoreProduct,
         isUpgrade: Boolean
-    ) = startPurchase(isUpgrade, PurchaseParams.Builder(requireActivity(), currentProduct))
+    ) {
+        if (Purchases.sharedInstance.finishTransactions) {
+            startPurchase(isUpgrade, PurchaseParams.Builder(requireActivity(), currentProduct))
+        } else {
+            startObservableModePurchase(currentProduct.purchasingData)
+        }
+    }
 
     override fun onPurchaseSubscriptionOptionClicked(
         cardView: View,
         subscriptionOption: SubscriptionOption,
         isUpgrade: Boolean
-    ) = startPurchase(isUpgrade, PurchaseParams.Builder(requireActivity(), subscriptionOption))
+    ) {
+        if (Purchases.sharedInstance.finishTransactions) {
+            startPurchase(isUpgrade, PurchaseParams.Builder(requireActivity(), subscriptionOption))
+        } else {
+            startObservableModePurchase(subscriptionOption.purchasingData)
+        }
+    }
 
     private fun startPurchase(
         isUpgrade: Boolean,
@@ -156,6 +176,27 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
                     purchaseParamsBuilder.build(),
                     purchaseErrorCallback,
                     successfulPurchaseCallback
+                )
+            }
+        }
+    }
+
+    private fun startObservableModePurchase(purchasingData: PurchasingData) {
+        when (purchasingData) {
+            is GooglePurchasingData.Subscription -> {
+                ObserverModeBillingClient.purchase(
+                    requireActivity(),
+                    purchasingData.productDetails,
+                    purchasingData.token,
+                    false
+                )
+            }
+            is GooglePurchasingData.InAppProduct -> {
+                ObserverModeBillingClient.purchase(
+                    requireActivity(),
+                    purchasingData.productDetails,
+                    null,
+                    false
                 )
             }
         }
