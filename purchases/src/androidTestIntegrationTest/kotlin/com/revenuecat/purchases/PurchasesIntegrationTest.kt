@@ -1,5 +1,7 @@
 package com.revenuecat.purchases
 
+import android.content.Context
+import android.preference.PreferenceManager
 import androidx.test.ext.junit.rules.activityScenarioRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.common.BillingAbstract
@@ -18,6 +20,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.net.URL
+import java.util.Date
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import kotlin.time.Duration.Companion.seconds
@@ -39,7 +42,8 @@ class PurchasesIntegrationTest {
     }
 
     private val testTimeout = 5.seconds
-    private val testUserId = Constants.userId
+    private val currentTimestamp = Date().time
+    private val testUserId = "android-integration-test-$currentTimestamp"
     private val proxyUrl = Constants.proxyUrl.takeIf { it != "NO_PROXY_URL" }
 
     private lateinit var mockBillingAbstract: BillingAbstract
@@ -56,6 +60,8 @@ class PurchasesIntegrationTest {
         latestStateListener = null
 
         onActivityReady {
+            clearAllSharedPreferences(it)
+
             mockBillingAbstract = mockk<BillingAbstract>(relaxed = true).apply {
                 every { purchasesUpdatedListener = any() } answers { latestPurchasesUpdatedListener = firstArg() }
                 every { stateListener = any() } answers { latestStateListener = firstArg() }
@@ -195,6 +201,18 @@ class PurchasesIntegrationTest {
 
     private fun onActivityReady(block: (MainActivity) -> Unit) {
         activityScenarioRule.scenario.onActivity(block)
+    }
+
+    private fun clearAllSharedPreferences(context: Context) {
+        PreferenceManager.getDefaultSharedPreferences(context).edit().clear().commit()
+        context.getSharedPreferences(
+            "${context.packageName}_preferences_etags",
+            Context.MODE_PRIVATE
+        ).edit().clear().commit()
+        context.getSharedPreferences(
+            "com_revenuecat_purchases_${context.packageName}_preferences_diagnostics",
+            Context.MODE_PRIVATE
+        ).edit().clear().commit()
     }
 
     // endregion
