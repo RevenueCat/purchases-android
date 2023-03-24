@@ -114,7 +114,7 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
         if (Purchases.sharedInstance.finishTransactions) {
             startPurchase(isUpgrade, PurchaseParams.Builder(requireActivity(), currentPackage))
         } else {
-            startObservableModePurchase(currentPackage.product.purchasingData)
+            startObserverModePurchase(currentPackage.product.purchasingData)
         }
     }
 
@@ -126,7 +126,7 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
         if (Purchases.sharedInstance.finishTransactions) {
             startPurchase(isUpgrade, PurchaseParams.Builder(requireActivity(), currentProduct))
         } else {
-            startObservableModePurchase(currentProduct.purchasingData)
+            startObserverModePurchase(currentProduct.purchasingData)
         }
     }
 
@@ -138,7 +138,7 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
         if (Purchases.sharedInstance.finishTransactions) {
             startPurchase(isUpgrade, PurchaseParams.Builder(requireActivity(), subscriptionOption))
         } else {
-            startObservableModePurchase(subscriptionOption.purchasingData)
+            startObserverModePurchase(subscriptionOption.purchasingData)
         }
     }
 
@@ -181,7 +181,7 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
         }
     }
 
-    private fun startObservableModePurchase(purchasingData: PurchasingData) {
+    private fun startObserverModePurchase(purchasingData: PurchasingData) {
         when (purchasingData) {
             is GooglePurchasingData.Subscription -> {
                 ObserverModeBillingClient.purchase(
