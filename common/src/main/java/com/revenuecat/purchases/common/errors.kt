@@ -3,7 +3,6 @@ package com.revenuecat.purchases.common
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.networking.HTTPResult
-import com.revenuecat.purchases.common.verification.SignatureVerificationException
 import org.json.JSONException
 import java.io.IOException
 

@@ -62,7 +62,7 @@ import kotlin.time.Duration
 private const val RECONNECT_TIMER_START_MILLISECONDS = 1L * 1000L
 private const val RECONNECT_TIMER_MAX_TIME_MILLISECONDS = 1000L * 60L * 15L // 15 minutes
 
-@Suppress("LargeClass")
+@Suppress("LargeClass", "TooManyFunctions")
 class BillingWrapper(
     private val clientFactory: ClientFactory,
     private val mainHandler: Handler,
