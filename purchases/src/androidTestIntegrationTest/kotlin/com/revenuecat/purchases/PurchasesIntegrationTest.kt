@@ -28,15 +28,19 @@ class PurchasesIntegrationTest {
     companion object {
         @BeforeClass @JvmStatic
         fun setupClass() {
-            if (!Constants.canRunIntegrationTests()) {
+            if (!canRunIntegrationTests()) {
                 error("You need to set required constants in Constants.kt")
             }
         }
+
+        private fun canRunIntegrationTests() = Constants.apiKey != "REVENUECAT_API_KEY" &&
+            Constants.googlePurchaseToken != "GOOGLE_PURCHASE_TOKEN" &&
+            Constants.productIdToPurchase != "PRODUCT_ID_TO_PURCHASE"
     }
 
     private val testTimeout = 5.seconds
-    private val testUserId = Constants.USER_ID
-    private val proxyUrl = Constants.PROXY_URL.takeIf { it != "NO_PROXY_URL" }
+    private val testUserId = Constants.userId
+    private val proxyUrl = Constants.proxyUrl.takeIf { it != "NO_PROXY_URL" }
 
     private lateinit var mockBillingAbstract: BillingAbstract
 
@@ -62,7 +66,7 @@ class PurchasesIntegrationTest {
             }
 
             Purchases.configure(
-                PurchasesConfiguration.Builder(it, Constants.API_KEY)
+                PurchasesConfiguration.Builder(it, Constants.apiKey)
                     .appUserID(testUserId)
                     .build(),
                 mockBillingAbstract
