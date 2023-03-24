@@ -39,7 +39,8 @@ internal class PurchasesFactory(
     fun createPurchases(
         configuration: PurchasesConfiguration,
         platformInfo: PlatformInfo,
-        proxyURL: URL?
+        proxyURL: URL?,
+        overrideBillingAbstract: BillingAbstract? = null
     ): Purchases {
         validateConfiguration(configuration)
 
@@ -91,7 +92,8 @@ internal class PurchasesFactory(
 
             val cache = DeviceCache(prefs, apiKey)
 
-            val billing: BillingAbstract = BillingFactory.createBilling(
+            // Override used for integration tests.
+            val billing: BillingAbstract = overrideBillingAbstract ?: BillingFactory.createBilling(
                 store,
                 application,
                 backend,
