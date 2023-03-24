@@ -425,11 +425,6 @@ workflows:
     jobs:
       - test
       - assemble-sample-app
-      # TEST: Need to remove
-      - purchases-integration-tests-build
-      - run-firebase-tests-purchases-integration-test:
-          requires:
-            - purchases-integration-tests-build
 
   deploy:
     when:
