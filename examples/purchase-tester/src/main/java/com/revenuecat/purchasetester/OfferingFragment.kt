@@ -109,10 +109,11 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
     override fun onPurchasePackageClicked(
         cardView: View,
         currentPackage: Package,
-        isUpgrade: Boolean
+        isUpgrade: Boolean,
+        isPersonalizedPrice: Boolean,
     ) {
         if (Purchases.sharedInstance.finishTransactions) {
-            startPurchase(isUpgrade, PurchaseParams.Builder(requireActivity(), currentPackage))
+            startPurchase(isUpgrade, isPersonalizedPrice, PurchaseParams.Builder(requireActivity(), currentPackage))
         } else {
             startObserverModePurchase(currentPackage.product.purchasingData)
         }
@@ -121,10 +122,11 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
     override fun onPurchaseProductClicked(
         cardView: View,
         currentProduct: StoreProduct,
-        isUpgrade: Boolean
+        isUpgrade: Boolean,
+        isPersonalizedPrice: Boolean,
     ) {
         if (Purchases.sharedInstance.finishTransactions) {
-            startPurchase(isUpgrade, PurchaseParams.Builder(requireActivity(), currentProduct))
+            startPurchase(isUpgrade, isPersonalizedPrice, PurchaseParams.Builder(requireActivity(), currentProduct))
         } else {
             startObserverModePurchase(currentProduct.purchasingData)
         }
@@ -133,10 +135,11 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
     override fun onPurchaseSubscriptionOptionClicked(
         cardView: View,
         subscriptionOption: SubscriptionOption,
-        isUpgrade: Boolean
-    ) {
+        isUpgrade: Boolean,
+        isPersonalizedPrice: Boolean,
+        ) {
         if (Purchases.sharedInstance.finishTransactions) {
-            startPurchase(isUpgrade, PurchaseParams.Builder(requireActivity(), subscriptionOption))
+            startPurchase(isUpgrade, isPersonalizedPrice, PurchaseParams.Builder(requireActivity(), subscriptionOption))
         } else {
             startObserverModePurchase(subscriptionOption.purchasingData)
         }
@@ -144,6 +147,7 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
 
     private fun startPurchase(
         isUpgrade: Boolean,
+        isPersonalizedPrice: Boolean,
         purchaseParamsBuilder: PurchaseParams.Builder
     ) {
         toggleLoadingIndicator(true)
@@ -155,29 +159,28 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
                     prorationMode?.let {
                         purchaseParamsBuilder.googleProrationMode(prorationMode)
                     }
-                    showPersonalizedPricePicker { personalizedPrice, _ ->
-                        personalizedPrice?.let {
-                            purchaseParamsBuilder.isPersonalizedPrice(it)
-                        }
-                        Purchases.sharedInstance.purchaseWith(
-                            purchaseParamsBuilder.build(),
-                            purchaseErrorCallback,
-                            successfulPurchaseCallback
-                        )
+
+                    if (isPersonalizedPrice) {
+                        purchaseParamsBuilder.isPersonalizedPrice(isPersonalizedPrice)
                     }
+
+                    Purchases.sharedInstance.purchaseWith(
+                        purchaseParamsBuilder.build(),
+                        purchaseErrorCallback,
+                        successfulPurchaseCallback
+                    )
                 }
             }
         } else {
-            showPersonalizedPricePicker { personalizedPrice, _ ->
-                personalizedPrice?.let {
-                    purchaseParamsBuilder.isPersonalizedPrice(it)
-                }
-                Purchases.sharedInstance.purchaseWith(
-                    purchaseParamsBuilder.build(),
-                    purchaseErrorCallback,
-                    successfulPurchaseCallback
-                )
+            if (isPersonalizedPrice) {
+                purchaseParamsBuilder.isPersonalizedPrice(isPersonalizedPrice)
             }
+
+            Purchases.sharedInstance.purchaseWith(
+                purchaseParamsBuilder.build(),
+                purchaseErrorCallback,
+                successfulPurchaseCallback
+            )
         }
     }
 
@@ -282,32 +285,6 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
             .setPositiveButton("Start purchase") { dialog, _ ->
                 dialog.dismiss()
                 callback(selectedProrationMode, null)
-            }
-            .setNegativeButton("Cancel purchase") { dialog, _ ->
-                dialog.dismiss()
-                toggleLoadingIndicator(false)
-                callback(null, Error("Purchase cancelled"))
-            }
-            .setOnCancelListener {
-                toggleLoadingIndicator(false)
-                callback(null, Error("Selection dismissed"))
-            }
-            .show()
-    }
-
-    private fun showPersonalizedPricePicker(callback: (Boolean?, Error?) -> Unit) {
-        val personalizedPriceOptions = arrayOf(true, false, null)
-        var selectedPersonalizedPrice: Boolean? = null
-
-        val personalizedPriceNames = arrayOf("True", "False", "Null")
-        MaterialAlertDialogBuilder(requireContext())
-            .setTitle("setIsPersonalizedPrice?")
-            .setSingleChoiceItems(personalizedPriceNames, -1) { _, selectedIndex ->
-                selectedPersonalizedPrice = personalizedPriceOptions.elementAt(selectedIndex)
-            }
-            .setPositiveButton("Start purchase") { dialog, _ ->
-                dialog.dismiss()
-                callback(selectedPersonalizedPrice, null)
             }
             .setNegativeButton("Cancel purchase") { dialog, _ ->
                 dialog.dismiss()

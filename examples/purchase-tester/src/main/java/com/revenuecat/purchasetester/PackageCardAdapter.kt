@@ -51,7 +51,8 @@ class PackageCardAdapter(
                 listener.onPurchasePackageClicked(
                     binding.root,
                     currentPackage,
-                    binding.isUpgradeCheckbox.isChecked
+                    binding.isUpgradeCheckbox.isChecked,
+                    binding.isPersonalizedCheckbox.isChecked
                 )
             }
 
@@ -59,7 +60,8 @@ class PackageCardAdapter(
                 listener.onPurchaseProductClicked(
                     binding.root,
                     product,
-                    binding.isUpgradeCheckbox.isChecked
+                    binding.isUpgradeCheckbox.isChecked,
+                    binding.isPersonalizedCheckbox.isChecked
                 )
             }
 
@@ -72,7 +74,8 @@ class PackageCardAdapter(
                     listener.onPurchaseSubscriptionOptionClicked(
                         binding.root,
                         subscriptionOption,
-                        binding.isUpgradeCheckbox.isChecked
+                        binding.isUpgradeCheckbox.isChecked,
+                        binding.isPersonalizedCheckbox.isChecked
                     )
                 } else {
                     showErrorMessage(errorStartingPurchase)
@@ -139,17 +142,20 @@ class PackageCardAdapter(
         fun onPurchasePackageClicked(
             cardView: View,
             currentPackage: Package,
-            isUpgrade: Boolean
+            isUpgrade: Boolean,
+            isPersonalizedPrice: Boolean,
         )
         fun onPurchaseProductClicked(
             cardView: View,
             currentProduct: StoreProduct,
-            isUpgrade: Boolean
+            isUpgrade: Boolean,
+            isPersonalizedPrice: Boolean,
         )
         fun onPurchaseSubscriptionOptionClicked(
             cardView: View,
             subscriptionOption: SubscriptionOption,
-            isUpgrade: Boolean
+            isUpgrade: Boolean,
+            isPersonalizedPrice: Boolean,
         )
     }
 }
