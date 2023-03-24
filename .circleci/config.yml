@@ -371,7 +371,7 @@ workflows:
                 - main
                 - bc5-support
       - docs-deploy: *release-tags
-      - publish-purchase-tester-release:
+      - publish-purchase-tester-latest-dependencies-release:
           requires:
             - deploy
             - docs-deploy
