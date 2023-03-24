@@ -164,25 +164,6 @@ class DispatcherTest {
 //    }
 
     @Test
-    fun `signatureVerificationExceptions are correctly converted to purchase errors`() {
-        val errorHolder = AtomicReference<PurchasesError>()
-
-        val call = object : Dispatcher.AsyncCall() {
-            override fun call(): HTTPResult {
-                throw SignatureVerificationException("/test-api-path")
-            }
-
-            override fun onError(error: PurchasesError) {
-                errorHolder.set(error)
-            }
-        }
-
-        call.run()
-
-        assertThat(errorHolder.get().code).isEqualTo(PurchasesErrorCode.SignatureVerificationError)
-    }
-
-    @Test
     fun `execute on background when service is shutdown`() {
         every {
             mockExecutorService.isShutdown

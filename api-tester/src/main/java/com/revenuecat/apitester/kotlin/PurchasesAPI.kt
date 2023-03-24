@@ -4,7 +4,6 @@ import android.app.Activity
 import android.content.Context
 import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfo
-import com.revenuecat.purchases.EntitlementVerificationMode
 import com.revenuecat.purchases.LogHandler
 import com.revenuecat.purchases.LogLevel
 import com.revenuecat.purchases.Offerings
@@ -216,9 +215,6 @@ private class PurchasesAPI {
 
         Purchases.canMakePayments(context, features) { _: Boolean -> }
         Purchases.canMakePayments(context) { _: Boolean -> }
-
-        Purchases.logLevel = LogLevel.INFO
-        val logLevel: LogLevel = Purchases.logLevel
 
         Purchases.logLevel = LogLevel.INFO
         val logLevel: LogLevel = Purchases.logLevel

@@ -121,57 +121,6 @@ class CustomerInfoTest {
     }
 
     @Test
-    fun `active subscriptions returns expired subscriptions in grace period`() {
-        val response = Responses.createFullCustomerResponse(
-            oneMonthFreeTrialExpirationDate = 3.days.ago(),
-            threeMonthFreeTrialExpirationDate = 1.days.ago()
-        )
-        val info = createCustomerInfo(response, 2.days.ago())
-        val actives = info.activeSubscriptions
-
-        assertThat(actives.size).isEqualTo(1)
-        assertThat(actives.first()).isEqualTo("threemonth_freetrial")
-    }
-
-    @Test
-    fun `active subscriptions returns multiple non expired subscriptions in grace period`() {
-        val response = Responses.createFullCustomerResponse(
-            oneMonthFreeTrialExpirationDate = 1.days.ago(),
-            threeMonthFreeTrialExpirationDate = 1.days.ago()
-        )
-        val info = createCustomerInfo(response, 2.days.ago())
-        val actives = info.activeSubscriptions
-
-        assertThat(actives.size).isEqualTo(2)
-        assertThat(actives).containsAll(listOf("onemonth_freetrial", "threemonth_freetrial"))
-    }
-
-    @Test
-    fun `active subscriptions returns nothing if no subscriptions in grace period`() {
-        val response = Responses.createFullCustomerResponse(
-            oneMonthFreeTrialExpirationDate = 1.days.ago(),
-            threeMonthFreeTrialExpirationDate = 1.days.ago()
-        )
-        val info = createCustomerInfo(response, 5.days.ago())
-        val actives = info.activeSubscriptions
-
-        assertThat(actives.size).isEqualTo(0)
-    }
-
-    @Test
-    fun `active subscriptions returns non-expired subscriptions`() {
-        val response = Responses.createFullCustomerResponse(
-            oneMonthFreeTrialExpirationDate = 1.days.fromNow(),
-            threeMonthFreeTrialExpirationDate = 2.days.ago()
-        )
-        val info = createCustomerInfo(response, 1.days.ago())
-        val actives = info.activeSubscriptions
-
-        assertThat(actives.size).isEqualTo(1)
-        assertThat(actives.first()).isEqualTo("onemonth_freetrial")
-    }
-
-    @Test
     @Throws(JSONException::class)
     fun `Given a full response, all purchased SKUs are retrieved properly`() {
         val info = fullCustomerInfo

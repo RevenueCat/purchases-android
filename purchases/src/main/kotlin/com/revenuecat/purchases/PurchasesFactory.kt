@@ -132,17 +132,6 @@ internal class PurchasesFactory(
                 )
             }
 
-            var diagnosticsSynchronizer: DiagnosticsSynchronizer? = null
-            if (diagnosticsFileHelper != null && diagnosticsTracker != null) {
-                diagnosticsSynchronizer = DiagnosticsSynchronizer(
-                    diagnosticsFileHelper,
-                    diagnosticsTracker,
-                    backend,
-                    diagnosticsDispatcher,
-                    DiagnosticsSynchronizer.initializeSharedPreferences(context)
-                )
-            }
-
             return Purchases(
                 application,
                 appUserID,

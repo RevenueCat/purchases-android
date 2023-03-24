@@ -10,17 +10,16 @@ import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.ConsumeParams
 import com.android.billingclient.api.ConsumeResponseListener
+import com.android.billingclient.api.ProductDetails
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchasesUpdatedListener
-import com.android.billingclient.api.SkuDetails
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.models.StoreProduct
-import com.revenuecat.purchases.utils.stubSkuDetails
-import io.mockk.MockK
+import com.revenuecat.purchases.utils.mockProductDetails
 import io.mockk.Runs
 import io.mockk.clearAllMocks
 import io.mockk.every
@@ -51,7 +50,7 @@ open class BillingWrapperTestBase {
 
     internal lateinit var wrapper: BillingWrapper
 
-    private lateinit var mockDetailsList: List<SkuDetails>
+    private lateinit var mockDetailsList: List<ProductDetails>
 
     internal var storeProducts: List<StoreProduct>? = null
 
@@ -105,9 +104,9 @@ open class BillingWrapperTestBase {
             mockClient.isReady
         } returns false andThen true
 
-        mockDetailsList = listOf(stubSkuDetails())
+        mockDetailsList = listOf(mockProductDetails())
 
-        wrapper = BillingWrapper(mockClientFactory, handler, mockDeviceCache, mockDiagnosticsTracker, mockDateProvider)
+        wrapper = BillingWrapper(mockClientFactory, handler, mockDeviceCache, mockDiagnosticsTracker)
         wrapper.purchasesUpdatedListener = mockPurchasesListener
         onConnectedCalled = false
         wrapper.stateListener = object : BillingAbstract.StateListener {
