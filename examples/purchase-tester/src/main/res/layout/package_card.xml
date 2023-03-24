@@ -148,6 +148,17 @@
                     app:layout_constraintStart_toStartOf="@+id/package_buy_button"
                     app:layout_constraintEnd_toEndOf="@id/package_buy_button"
                     app:layout_constraintTop_toTopOf="parent"
+                    app:layout_constraintBottom_toTopOf="@+id/is_personalized_checkbox"/>
+
+            <com.google.android.material.checkbox.MaterialCheckBox
+                    android:id="@+id/is_personalized_checkbox"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:text="Is personalized price?"
+                    android:enabled="@{isPlayStore}"
+                    app:layout_constraintStart_toStartOf="@+id/package_buy_button"
+                    app:layout_constraintEnd_toEndOf="@id/package_buy_button"
+                    app:layout_constraintTop_toTopOf="@id/is_upgrade_checkbox"
                     app:layout_constraintBottom_toTopOf="@+id/package_buy_button"/>
 
             <com.google.android.material.button.MaterialButton
@@ -158,7 +169,7 @@
                     android:textSize="10dp"
                     app:layout_constraintBottom_toTopOf="@+id/product_buy_button"
                     app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/is_upgrade_checkbox"
+                    app:layout_constraintTop_toBottomOf="@+id/is_personalized_checkbox"
                     app:layout_constraintStart_toStartOf="@+id/option_buy_button"/>
 
             <com.google.android.material.button.MaterialButton
