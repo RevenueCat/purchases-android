@@ -65,10 +65,11 @@ abstract class OfferingParser {
         offeringIdentifier: String
     ): Package? {
         val packageIdentifier = packageJson.getString("identifier")
+        val defaultOfferIdentifier = packageJson.optString("platform_product_default_offer_identifier").takeIf { it.isNotEmpty() }
         val product = findMatchingProduct(productsById, packageJson)
 
         val packageType = packageIdentifier.toPackageType()
-        return product?.let { Package(packageIdentifier, packageType, it, offeringIdentifier) }
+        return product?.let { Package(packageIdentifier, packageType, it, offeringIdentifier, defaultOfferIdentifier) }
     }
 }
 

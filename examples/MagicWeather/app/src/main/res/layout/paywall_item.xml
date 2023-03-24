@@ -59,7 +59,7 @@
                         app:layout_constraintBottom_toTopOf="@+id/paywall_item_price"
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintTop_toTopOf="parent"
-                        android:text="Best Offer" />
+                        android:text="Default Offer" />
 
                     <TextView
                         android:id="@+id/paywall_item_price"

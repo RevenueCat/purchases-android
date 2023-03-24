@@ -13,7 +13,8 @@ data class Package(
     val identifier: String,
     val packageType: PackageType,
     val product: StoreProduct,
-    val offering: String
+    val offering: String,
+    val defaultOfferId: String?
 )
 
 /**

@@ -145,7 +145,8 @@ fun stubOfferings(storeProduct: StoreProduct): Pair<StoreProduct, Offerings> {
         "\$rc_monthly",
         PackageType.MONTHLY,
         storeProduct,
-        STUB_OFFERING_IDENTIFIER
+        STUB_OFFERING_IDENTIFIER,
+        null
     )
     val offering = Offering(
         STUB_OFFERING_IDENTIFIER,

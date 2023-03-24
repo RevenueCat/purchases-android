@@ -81,14 +81,16 @@ class PaywallAdapter(
     override fun getItemCount() = theItems.size ?: 0
 
     private val theItems: List<PaywallItem>
-        get() = offering?.availablePackages?.flatMap {
-            val product = it.product
+        get() = offering?.availablePackages?.flatMap { pkg ->
+            val product = pkg.product
 
-            it.product.subscriptionOptions?.let { options ->
+            pkg.product.subscriptionOptions?.let { options ->
                 val title = product.period?.toTitle ?: product.title
 
+                val defaultOfferId = pkg.defaultOfferId ?: options.defaultOffer?.id
+
                 mutableListOf(PaywallItem.Title(title)) + options.map { option ->
-                    PaywallItem.Option(option, option == it.product.defaultOption)
+                    PaywallItem.Option(option, option.id ==  defaultOfferId)
                 }.sortedBy { option -> !option.defaultOffer }
             } ?: run {
                 listOf(

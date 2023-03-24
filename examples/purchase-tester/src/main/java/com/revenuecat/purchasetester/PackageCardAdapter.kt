@@ -88,7 +88,7 @@ class PackageCardAdapter(
             binding.packageDetailsJsonObject.detail = product.googleProduct?.productDetails?.toString()
                 ?: product.amazonProduct?.originalProductJSON.toString()
 
-            bindSubscriptionOptions(product)
+            bindSubscriptionOptions(product, currentPackage.defaultOfferId)
 
             binding.root.setOnClickListener {
                 with(binding.packageDetailsContainer) {
@@ -97,13 +97,13 @@ class PackageCardAdapter(
             }
         }
 
-        private fun bindSubscriptionOptions(product: StoreProduct) {
+        private fun bindSubscriptionOptions(product: StoreProduct,defaultOfferId: String?) {
             binding.packageSubscriptionOptionGroup.removeAllViews()
             val numberOfSubscriptionOptions = product.subscriptionOptions?.size ?: 0
-            val defaultOption = product.defaultOption
+            val defaultId = defaultOfferId ?: product.defaultOption?.id
             product.subscriptionOptions?.forEach { subscriptionOption ->
                 val radioButton = RadioButton(binding.root.context).apply {
-                    text = subscriptionOption.toButtonString(subscriptionOption == defaultOption)
+                    text = subscriptionOption.toButtonString(subscriptionOption.id == defaultId)
                     tag = subscriptionOption
                 }
                 binding.packageSubscriptionOptionGroup.addView(radioButton)
