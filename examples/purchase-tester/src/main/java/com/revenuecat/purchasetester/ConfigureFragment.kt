@@ -69,6 +69,18 @@ class ConfigureFragment : Fragment() {
             navigateToLogsFragment()
         }
 
+        binding.amazonStoreRadioId.setOnCheckedChangeListener { buttonView, isChecked ->
+            // Disable observer mode options if Amazon
+            binding.observerModeRadioGroup.isEnabled = !isChecked
+            binding.observerModeOff.isEnabled = !isChecked
+            binding.observerModeOn.isEnabled = !isChecked
+
+            // Toggle observer mode off only if Amazon is checked
+            if (isChecked) {
+                binding.observerModeOff.isChecked = true
+            }
+        }
+
         return binding.root
     }
 
