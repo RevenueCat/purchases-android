@@ -37,7 +37,7 @@ class CustomerInfoTest {
     fun `Given an empty response, empty object is created`() {
         assertThat(emptyCustomerInfo).isNotNull
         assertThat(emptyCustomerInfo.activeSubscriptions).isEmpty()
-        assertThat(emptyCustomerInfo.allPurchasedSkus).isEmpty()
+        assertThat(emptyCustomerInfo.allPurchasedProductIds).isEmpty()
         assertThat(emptyCustomerInfo.nonSubscriptionTransactions).isEmpty()
         assertThat(emptyCustomerInfo.latestExpirationDate).isNull()
     }

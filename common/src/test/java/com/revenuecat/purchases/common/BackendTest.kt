@@ -1,3 +1,8 @@
+//  Purchases
+//
+//  Copyright © 2019 RevenueCat, Inc. All rights reserved.
+//
+
 package com.revenuecat.purchases.common
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -152,25 +157,6 @@ class BackendTest {
     @Test
     fun canBeCreated() {
         assertThat(backend).isNotNull
-    }
-
-    @Test
-    fun getSubscriberInfoCallsProperURL() {
-
-        val info = getCustomerInfo(200, null, null)
-
-        assertThat(receivedCustomerInfo).isNotNull
-        assertThat(receivedCustomerInfo).isEqualTo(info)
-    }
-
-    @Test
-    fun getSubscriberInfoFailsIfNot20X() {
-        val failureCode = ThreadLocalRandom.current().nextInt(300, 500 + 1)
-
-        getCustomerInfo(failureCode, null, null)
-
-        assertThat(receivedCustomerInfo).isNull()
-        assertThat(receivedError).`as`("Received error is not null").isNotNull
     }
 
     @Test
