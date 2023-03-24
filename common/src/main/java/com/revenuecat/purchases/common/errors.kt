@@ -46,9 +46,10 @@ fun Exception.toPurchasesError(): PurchasesError {
         is SecurityException -> {
             PurchasesError(PurchasesErrorCode.InsufficientPermissionsError, localizedMessage)
         }
-        is SignatureVerificationException -> {
-            PurchasesError(PurchasesErrorCode.SignatureVerificationError, localizedMessage)
-        }
+        // Trusted entitlements: Commented out until ready to be made public
+        // is SignatureVerificationException -> {
+        //     PurchasesError(PurchasesErrorCode.SignatureVerificationError, localizedMessage)
+        // }
         else -> PurchasesError(PurchasesErrorCode.UnknownError, localizedMessage)
     }
 }

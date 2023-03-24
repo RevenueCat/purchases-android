@@ -12,6 +12,8 @@ dependencies {
     implementation "androidx.core:core-ktx:$androidxCoreVersion"
     implementation "com.google.crypto.tink:tink-android:$tinkVersion"
     implementation "com.android.billingclient:billing:$billingVersion"
+//    latestDependenciesImplementation "com.android.billingclient:billing:$billing4Version"
+//    unityIAPCompileOnly "com.android.billingclient:billing:$billing4Version"
     testImplementation project(":test-utils")
     testImplementation "androidx.test:core:$testLibrariesVersion"
     testImplementation "androidx.test:runner:$testLibrariesVersion"

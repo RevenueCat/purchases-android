@@ -39,7 +39,8 @@ internal class PurchasesFactory(
     fun createPurchases(
         configuration: PurchasesConfiguration,
         platformInfo: PlatformInfo,
-        proxyURL: URL?
+        proxyURL: URL?,
+        overrideBillingAbstract: BillingAbstract? = null
     ): Purchases {
         validateConfiguration(configuration)
 
@@ -73,7 +74,11 @@ internal class PurchasesFactory(
                 )
             }
 
-            val signatureVerificationMode = SignatureVerificationMode.fromEntitlementVerificationMode(verificationMode)
+            // Trusted entitlements: Commented out until ready to be made public
+//            val signatureVerificationMode = SignatureVerificationMode.fromEntitlementVerificationMode(
+//                verificationMode
+//            )
+            val signatureVerificationMode = SignatureVerificationMode.Disabled
             val signingManager = SigningManager(signatureVerificationMode)
 
             val backend = Backend(
@@ -87,7 +92,8 @@ internal class PurchasesFactory(
 
             val cache = DeviceCache(prefs, apiKey)
 
-            val billing: BillingAbstract = BillingFactory.createBilling(
+            // Override used for integration tests.
+            val billing: BillingAbstract = overrideBillingAbstract ?: BillingFactory.createBilling(
                 store,
                 application,
                 backend,
@@ -114,6 +120,17 @@ internal class PurchasesFactory(
 
             val customerInfoHelper = CustomerInfoHelper(cache, backend, identityManager)
             val offeringParser = OfferingParserFactory.createOfferingParser(store)
+
+            var diagnosticsSynchronizer: DiagnosticsSynchronizer? = null
+            if (diagnosticsFileHelper != null && diagnosticsTracker != null) {
+                diagnosticsSynchronizer = DiagnosticsSynchronizer(
+                    diagnosticsFileHelper,
+                    diagnosticsTracker,
+                    backend,
+                    diagnosticsDispatcher,
+                    DiagnosticsSynchronizer.initializeSharedPreferences(context)
+                )
+            }
 
             var diagnosticsSynchronizer: DiagnosticsSynchronizer? = null
             if (diagnosticsFileHelper != null && diagnosticsTracker != null) {

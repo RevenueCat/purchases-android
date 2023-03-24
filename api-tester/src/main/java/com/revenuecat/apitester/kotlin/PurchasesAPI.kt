@@ -208,13 +208,17 @@ private class PurchasesAPI {
             .observerMode(false)
             .service(executorService)
             .diagnosticsEnabled(true)
-            .entitlementVerificationMode(EntitlementVerificationMode.INFORMATIONAL)
+            // Trusted entitlements: Commented out until ready to be made public
+            // .entitlementVerificationMode(EntitlementVerificationMode.INFORMATIONAL)
             .build()
 
         Purchases.configure(build)
 
         Purchases.canMakePayments(context, features) { _: Boolean -> }
         Purchases.canMakePayments(context) { _: Boolean -> }
+
+        Purchases.logLevel = LogLevel.INFO
+        val logLevel: LogLevel = Purchases.logLevel
 
         Purchases.logLevel = LogLevel.INFO
         val logLevel: LogLevel = Purchases.logLevel

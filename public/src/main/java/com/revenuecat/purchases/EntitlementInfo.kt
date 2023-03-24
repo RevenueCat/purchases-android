@@ -35,7 +35,7 @@ import java.util.Date
  */
 @Parcelize
 @TypeParceler<JSONObject, JSONObjectParceler>()
-data class EntitlementInfo constructor(
+data class EntitlementInfo internal constructor(
     val identifier: String,
     val isActive: Boolean,
     val willRenew: Boolean,
@@ -50,11 +50,13 @@ data class EntitlementInfo constructor(
     val unsubscribeDetectedAt: Date?,
     val billingIssueDetectedAt: Date?,
     val ownershipType: OwnershipType,
-    private val jsonObject: JSONObject,
-    val verification: VerificationResult
+    @Deprecated(
+        "Use rawData instead",
+        replaceWith = ReplaceWith("rawData")
+    ) val jsonObject: JSONObject,
+    internal val verification: VerificationResult
 ) : Parcelable, RawDataContainer<JSONObject> {
 
-    @Deprecated("Use full constructor instead")
     constructor(
         identifier: String,
         isActive: Boolean,

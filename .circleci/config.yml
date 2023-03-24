@@ -231,11 +231,11 @@ jobs:
       - store_artifacts:
           path: examples/purchase-tester/build/outputs/apk/release/purchase-tester-release.apk
       - store_artifacts:
-          path: examples/purchase-tester/build/outputs/apk/debug/purchase-tester-debug.apk
+          path: examples/purchase-tester/build/outputs/apk/latestDependencies/debug/purchase-tester-latestDependencies-debug.apk
       - android/save-gradle-cache
       - android/save-build-cache
 
-  publish-purchase-tester-release:
+  publish-purchase-tester-latest-dependencies-release:
     <<: *android-executor
     steps:
       - checkout
@@ -254,7 +254,7 @@ jobs:
           command: |
             bundle exec fastlane android build_purchase_tester_bundle
       - store_artifacts:
-          path: examples/purchase-tester/build/outputs/bundle/release/purchase-tester-release.aab
+          path: examples/purchase-tester/build/outputs/bundle/latestDependenciesRelease/purchase-tester-latestDependencies-release.aab
       - android/save-gradle-cache
       - android/save-build-cache
       - run:

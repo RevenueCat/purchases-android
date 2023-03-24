@@ -12,11 +12,20 @@ final class EntitlementInfosAPI {
         final Map<String, EntitlementInfo> active = infos.getActive();
         final Map<String, EntitlementInfo> all = infos.getAll();
         final EntitlementInfo i = infos.get("");
-        final VerificationResult verification = infos.getVerification();
+        // Trusted entitlements: Commented out until ready to be made public
+        // final VerificationResult verification = infos.getVerification();
     }
 
-    static void checkConstructor(Map<String, EntitlementInfo> all, VerificationResult verificationResult) {
-        final EntitlementInfos entitlementInfos = new EntitlementInfos(all, verificationResult);
+    static void checkConstructor(
+            Map<String, EntitlementInfo> all
+            // Trusted entitlements: Commented out until ready to be made public
+            // VerificationResult verificationResult
+    ) {
+        final EntitlementInfos entitlementInfos = new EntitlementInfos(
+                all
+                // Trusted entitlements: Commented out until ready to be made public
+                // verificationResult
+        );
         final EntitlementInfos entitlementInfos2 = new EntitlementInfos(all);
     }
 }

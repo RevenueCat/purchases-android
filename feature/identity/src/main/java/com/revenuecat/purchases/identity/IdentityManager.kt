@@ -130,10 +130,13 @@ class IdentityManager(
         }
     }
 
+    @Suppress("UnusedPrivateMember", "FunctionOnlyReturningConstant")
     private fun shouldInvalidateCustomerInfoAndETagCache(customerInfo: CustomerInfo?): Boolean {
-        return customerInfo != null &&
-            customerInfo.entitlements.verification == VerificationResult.NOT_REQUESTED &&
-            backend.verificationMode != SignatureVerificationMode.Disabled
+        // Trusted entitlements: Commented out until ready to be made public
+//        return customerInfo != null &&
+//             customerInfo.entitlements.verification == VerificationResult.NOT_REQUESTED &&
+//            backend.verificationMode != SignatureVerificationMode.Disabled
+        return false
     }
 
     private fun isUserIDAnonymous(appUserID: String): Boolean {

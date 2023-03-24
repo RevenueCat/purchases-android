@@ -3,7 +3,6 @@ package com.revenuecat.purchases
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
-import com.revenuecat.purchases.common.OfferingParser
 import com.revenuecat.purchases.common.CustomerInfoFactory
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.PostReceiptDataErrorCallback
