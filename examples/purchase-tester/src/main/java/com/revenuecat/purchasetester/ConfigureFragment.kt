@@ -71,13 +71,11 @@ class ConfigureFragment : Fragment() {
 
         binding.amazonStoreRadioId.setOnCheckedChangeListener { buttonView, isChecked ->
             // Disable observer mode options if Amazon
-            binding.observerModeRadioGroup.isEnabled = !isChecked
-            binding.observerModeOff.isEnabled = !isChecked
-            binding.observerModeOn.isEnabled = !isChecked
+            binding.observerModeCheckbox.isEnabled = !isChecked
 
             // Toggle observer mode off only if Amazon is checked
             if (isChecked) {
-                binding.observerModeOff.isChecked = true
+                binding.observerModeCheckbox.isChecked = false
             }
         }
 
@@ -90,7 +88,7 @@ class ConfigureFragment : Fragment() {
         val verificationModeIndex = binding.verificationOptionsInput.selectedItemPosition
         val entitlementVerificationMode = EntitlementVerificationMode.values()[verificationModeIndex]
         val useAmazonStore = binding.storeRadioGroup.checkedRadioButtonId == R.id.amazon_store_radio_id
-        val useObserverMode = binding.observerModeRadioGroup.checkedRadioButtonId == R.id.observer_mode_on
+        val useObserverMode = binding.observerModeCheckbox.isChecked
 
         val application = (requireActivity().application as MainApplication)
 
@@ -110,7 +108,7 @@ class ConfigureFragment : Fragment() {
         Purchases.configure(configuration)
 
         if (useObserverMode) {
-            ObserverModeBillingClient.start(application)
+            ObserverModeBillingClient.start(application, application.logHandler)
         }
 
         // set attributes to store additional, structured information for a user in RevenueCat.
