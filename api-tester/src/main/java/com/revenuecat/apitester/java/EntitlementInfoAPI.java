@@ -4,7 +4,6 @@ import com.revenuecat.purchases.EntitlementInfo;
 import com.revenuecat.purchases.OwnershipType;
 import com.revenuecat.purchases.PeriodType;
 import com.revenuecat.purchases.Store;
-import com.revenuecat.purchases.VerificationResult;
 
 import org.json.JSONObject;
 
@@ -27,7 +26,8 @@ final class EntitlementInfoAPI {
         final Date unsubscribeDetectedAt = entitlementInfo.getUnsubscribeDetectedAt();
         final Date billingIssueDetectedAt = entitlementInfo.getBillingIssueDetectedAt();
         final OwnershipType ownershipType = entitlementInfo.getOwnershipType();
-        final VerificationResult verification = entitlementInfo.getVerification();
+        // Trusted entitlements: Commented out until ready to be made public
+        // final VerificationResult verification = entitlementInfo.getVerification();
     }
 
     static void checkConstructor(
@@ -45,13 +45,17 @@ final class EntitlementInfoAPI {
             Date unsubscribeDetectedAt,
             Date billingIssueDetectedAt,
             OwnershipType ownershipType,
-            JSONObject jsonObject,
-            VerificationResult verification
+            JSONObject jsonObject
+            // Trusted entitlements: Commented out until ready to be made public
+            // VerificationResult verification
     ) {
         final EntitlementInfo entitlementInfo = new EntitlementInfo(identifier, active, willRenew, periodType,
                 latestPurchaseDate, originalPurchaseDate, expirationDate, store, productIdentifier,
                 productPlanIdentifier, sandbox, unsubscribeDetectedAt, billingIssueDetectedAt, ownershipType,
-                jsonObject, verification);
+                jsonObject
+                // Trusted entitlements: Commented out until ready to be made public
+                //verification
+        );
         final EntitlementInfo entitlementInfo2 = new EntitlementInfo(identifier, active, willRenew, periodType,
                 latestPurchaseDate, originalPurchaseDate, expirationDate, store, productIdentifier,
                 productPlanIdentifier, sandbox, unsubscribeDetectedAt, billingIssueDetectedAt, ownershipType,
