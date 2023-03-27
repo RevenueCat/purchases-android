@@ -104,7 +104,7 @@ data class EntitlementInfo internal constructor(
             "expirationDate=$expirationDate, " +
             "store=$store, " +
             "productIdentifier='$productIdentifier', " +
-            "productPlanIdentifier='$productIdentifier', " +
+            "productPlanIdentifier='$productPlanIdentifier', " +
             "isSandbox=$isSandbox, " +
             "unsubscribeDetectedAt=$unsubscribeDetectedAt, " +
             "billingIssueDetectedAt=$billingIssueDetectedAt, " +
