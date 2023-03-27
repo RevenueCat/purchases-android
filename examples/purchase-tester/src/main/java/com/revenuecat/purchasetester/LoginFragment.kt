@@ -6,10 +6,10 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
+import com.revenuecat.loadShedderIntegrationTests.databinding.FragmentLoginBinding
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.logInWith
 import com.revenuecat.purchases.logOutWith
-import com.revenuecat.purchases_sample.databinding.FragmentLoginBinding
 
 class LoginFragment : Fragment() {
 

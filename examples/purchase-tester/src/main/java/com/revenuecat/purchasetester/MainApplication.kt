@@ -11,11 +11,11 @@ import android.util.Log
 import android.widget.Toast
 import androidx.core.content.ContextCompat
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.revenuecat.loadShedderIntegrationTests.BuildConfig
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
-import com.revenuecat.purchases_sample.BuildConfig
 
 class MainApplication : Application(), UpdatedCustomerInfoListener {
 
@@ -29,7 +29,6 @@ class MainApplication : Application(), UpdatedCustomerInfoListener {
                 VmPolicy.Builder()
                     .detectLeakedClosableObjects()
                     .penaltyLog()
-                    .penaltyDeath()
                     .build()
             )
         }

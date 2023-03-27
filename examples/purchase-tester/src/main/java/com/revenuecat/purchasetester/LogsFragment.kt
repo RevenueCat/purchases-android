@@ -11,8 +11,8 @@ import androidx.navigation.ui.NavigationUI
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import com.revenuecat.purchases_sample.databinding.FragmentLogsBinding
-import com.revenuecat.purchases_sample.databinding.LogRowViewBinding
+import com.revenuecat.loadShedderIntegrationTests.databinding.FragmentLogsBinding
+import com.revenuecat.loadShedderIntegrationTests.databinding.LogRowViewBinding
 
 class LogsFragment : Fragment() {
 

@@ -1,7 +1,7 @@
 package com.revenuecat.purchasetester
 
+import com.revenuecat.loadShedderIntegrationTests.R
 import com.revenuecat.purchases.LogLevel
-import com.revenuecat.purchases_sample.R
 
 val LogLevel.colorResource: Int
     get() = when (this) {

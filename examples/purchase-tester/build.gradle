@@ -18,7 +18,7 @@ android {
         dataBinding true
     }
     defaultConfig {
-        applicationId "com.revenuecat.purchases_sample"
+        applicationId "com.revenuecat.loadShedderIntegrationTests"
         minSdkVersion 21
         versionCode purchaseTesterVersionCode as Integer
         versionName purchaseTesterVersionName
@@ -43,7 +43,7 @@ android {
         }
     }
     testBuildType obtainTestBuildType()
-    namespace 'com.revenuecat.purchases_sample'
+    namespace 'com.revenuecat.loadShedderIntegrationTests'
 }
 
 def obtainTestBuildType() {
