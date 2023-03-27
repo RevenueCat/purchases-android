@@ -13,12 +13,14 @@ import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.VerificationResult
+import com.revenuecat.purchases.common.caching.CUSTOMER_INFO_SCHEMA_VERSION
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.caching.InMemoryCachedObject
-import com.revenuecat.purchases.common.caching.CUSTOMER_INFO_SCHEMA_VERSION
+import com.revenuecat.purchases.common.offlineentitlements.createProductEntitlementMapping
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.utils.Responses
+import com.revenuecat.purchases.utils.subtract
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
@@ -32,9 +34,10 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
-import java.lang.ClassCastException
 import java.util.Calendar
 import java.util.Date
+import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.minutes
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
@@ -46,6 +49,7 @@ class DeviceCacheTest {
             put("verification_result", VerificationResult.VERIFIED)
         }.toString()
     }
+    private val sampleProductEntitlementMapping = createProductEntitlementMapping()
 
     private val oldCachedCustomerInfo =
         "{'schema_version': 0, 'request_date': '2018-10-19T02:40:36Z', 'subscriber': {'other_purchases': {'onetime_purchase': {'purchase_date': '1990-08-30T02:40:36Z'}}, 'subscriptions': {'onemonth_freetrial': {'expires_date': '2100-04-06T20:54:45.975000Z'}, 'threemonth_freetrial': {'expires_date': '1990-08-30T02:40:36Z'}}, 'entitlements': { 'pro': {'expires_date': '2100-04-06T20:54:45.975000Z', 'purchase_date': '2018-10-26T23:17:53Z'}, 'old_pro': {'expires_date': '1990-08-30T02:40:36Z'}, 'forever_pro': {'expires_date': null}}}}"
@@ -53,8 +57,13 @@ class DeviceCacheTest {
     private lateinit var cache: DeviceCache
     private lateinit var mockPrefs: SharedPreferences
     private lateinit var mockEditor: SharedPreferences.Editor
+    private lateinit var mockDateProvider: DateProvider
     private val apiKey = "api_key"
     private val appUserID = "app_user_id"
+    private val currentTime = Date()
+
+    private val productEntitlementMappingLastUpdatedCacheKey = "com.revenuecat.purchases.api_key.productEntitlementMappingLastUpdated"
+    private val productEntitlementMappingCacheKey = "com.revenuecat.purchases.api_key.productEntitlementMapping"
 
     private val slotForPutLong = slot<Long>()
 
@@ -62,6 +71,7 @@ class DeviceCacheTest {
     fun setup() {
         mockPrefs = mockk()
         mockEditor = mockk()
+        mockDateProvider = mockk()
 
         every {
             mockEditor.putString(any(), any())
@@ -81,7 +91,9 @@ class DeviceCacheTest {
             mockEditor.apply()
         } just runs
 
-        cache = DeviceCache(mockPrefs, apiKey)
+        every { mockDateProvider.now } returns currentTime
+
+        cache = DeviceCache(mockPrefs, apiKey, dateProvider = mockDateProvider)
     }
 
     @Test
@@ -110,21 +122,23 @@ class DeviceCacheTest {
         mockString(cache.customerInfoCacheKey(appUserID), validCachedCustomerInfo)
         val info = cache.getCachedCustomerInfo(appUserID)
         assertThat(info).`as`("info is not null").isNotNull
-        assertThat(info?.entitlements?.verification).isEqualTo(VerificationResult.VERIFIED)
+        // Trusted entitlements: Commented out until ready to be made public
+        // assertThat(info?.entitlements?.verification).isEqualTo(VerificationResult.VERIFIED)
     }
 
-    @Test
-    fun `given a valid customer info without verification result, the JSON is parsed correctly`() {
-        val deprecatedValidCachedCustomerInfo by lazy {
-            JSONObject(Responses.validFullPurchaserResponse).apply {
-                put("schema_version", CUSTOMER_INFO_SCHEMA_VERSION)
-            }.toString()
-        }
-        mockString(cache.customerInfoCacheKey(appUserID), deprecatedValidCachedCustomerInfo)
-        val info = cache.getCachedCustomerInfo(appUserID)
-        assertThat(info).`as`("info is not null").isNotNull
-        assertThat(info?.entitlements?.verification).isEqualTo(VerificationResult.NOT_REQUESTED)
-    }
+    // Trusted entitlements: Commented out until ready to be made public
+//    @Test
+//    fun `given a valid customer info without verification result, the JSON is parsed correctly`() {
+//        val deprecatedValidCachedCustomerInfo by lazy {
+//            JSONObject(Responses.validFullPurchaserResponse).apply {
+//                put("schema_version", CUSTOMER_INFO_SCHEMA_VERSION)
+//            }.toString()
+//        }
+//        mockString(cache.customerInfoCacheKey(appUserID), deprecatedValidCachedCustomerInfo)
+//        val info = cache.getCachedCustomerInfo(appUserID)
+//        assertThat(info).`as`("info is not null").isNotNull
+//        assertThat(info?.entitlements?.verification).isEqualTo(VerificationResult.NOT_REQUESTED)
+//    }
 
     @Test
     fun `given a valid customer info without request date, the JSON is parsed correctly`() {
@@ -137,6 +151,20 @@ class DeviceCacheTest {
         val info = cache.getCachedCustomerInfo(appUserID)
         assertThat(info).`as`("info is not null").isNotNull
         assertThat(info?.requestDate?.time).isEqualTo(1565951442000L)
+    }
+
+    @Test
+    fun `given a valid customer info with schema version, the JSON is parsed correctly`() {
+        val deprecatedValidCachedCustomerInfo by lazy {
+            JSONObject(Responses.validFullPurchaserResponse).apply {
+                put("schema_version", CUSTOMER_INFO_SCHEMA_VERSION)
+                put("customer_info_request_date", 1234567890L)
+            }.toString()
+        }
+        mockString(cache.customerInfoCacheKey(appUserID), deprecatedValidCachedCustomerInfo)
+        val info = cache.getCachedCustomerInfo(appUserID)
+        assertThat(info).`as`("info is not null").isNotNull
+        assertThat(info?.schemaVersion).isEqualTo(CUSTOMER_INFO_SCHEMA_VERSION)
     }
 
     @Test
@@ -161,13 +189,6 @@ class DeviceCacheTest {
     }
 
     @Test
-    fun `given a valid cached customer info, the created customer info does not have schema version information`() {
-        mockString(cache.customerInfoCacheKey(appUserID), validCachedCustomerInfo)
-        val info = cache.getCachedCustomerInfo(appUserID)
-        assertThat(info?.rawData?.has("schema_version")).isFalse
-    }
-
-    @Test
     fun `given a valid customer info, the created customer info does not have verification result information`() {
         mockString(cache.customerInfoCacheKey(appUserID), validCachedCustomerInfo)
         val info = cache.getCachedCustomerInfo(appUserID)
@@ -187,25 +208,26 @@ class DeviceCacheTest {
         }
     }
 
-    @Test
-    fun `given a customer info, the information is cached with a verification result`() {
-        every {
-            mockEditor.putLong(cache.customerInfoLastUpdatedCacheKey(appUserID), any())
-        } returns mockEditor
-
-        val info = createCustomerInfo(Responses.validFullPurchaserResponse, null, VerificationResult.VERIFIED)
-        val infoJSONSlot = slot<String>()
-
-        every {
-            mockEditor.putString(any(), capture(infoJSONSlot))
-        } returns mockEditor
-
-        cache.cacheCustomerInfo(appUserID, info)
-
-        val cachedJSON = JSONObject(infoJSONSlot.captured)
-        assertThat(cachedJSON.has("verification_result")).isTrue
-        assertThat(cachedJSON.getString("verification_result")).isEqualTo(VerificationResult.VERIFIED.name)
-    }
+    // Trusted entitlements: Commented out until ready to be made public
+//    @Test
+//    fun `given a customer info, the information is cached with a verification result`() {
+//        every {
+//            mockEditor.putLong(cache.customerInfoLastUpdatedCacheKey(appUserID), any())
+//        } returns mockEditor
+//
+//        val info = createCustomerInfo(Responses.validFullPurchaserResponse, null, VerificationResult.VERIFIED)
+//        val infoJSONSlot = slot<String>()
+//
+//        every {
+//            mockEditor.putString(any(), capture(infoJSONSlot))
+//        } returns mockEditor
+//
+//        cache.cacheCustomerInfo(appUserID, info)
+//
+//        val cachedJSON = JSONObject(infoJSONSlot.captured)
+//        assertThat(cachedJSON.has("verification_result")).isTrue
+//        assertThat(cachedJSON.getString("verification_result")).isEqualTo(VerificationResult.VERIFIED.name)
+//    }
 
     @Test
     fun `given a customer info, the information is cached with a schema version`() {
@@ -580,6 +602,91 @@ class DeviceCacheTest {
 
         verify (exactly = 1) { mockEditor.apply() }
     }
+
+    // region ProductEntitlementMapping
+
+    @Test
+    fun `cacheProductEntitlementMapping caches mappings in shared preferences correctly`() {
+        cache.cacheProductEntitlementMapping(sampleProductEntitlementMapping)
+        verify(exactly = 1) {
+            mockEditor.putString(
+                productEntitlementMappingCacheKey,
+                "{\"products\":[{\"id\":\"com.revenuecat.foo_1\",\"entitlements\":[\"pro_1\"]},{\"id\":\"com.revenuecat.foo_2\",\"entitlements\":[\"pro_1\",\"pro_2\"]},{\"id\":\"com.revenuecat.foo_3\",\"entitlements\":[\"pro_2\"]}]}"
+            )
+        }
+        verify(exactly = 1) {
+            mockEditor.putLong(productEntitlementMappingLastUpdatedCacheKey, currentTime.time)
+        }
+        verify(exactly = 2) { mockEditor.apply() }
+    }
+
+    @Test
+    fun `cacheProductEntitlementMapping caches empty mappings in shared preferences correctly`() {
+        cache.cacheProductEntitlementMapping(createProductEntitlementMapping(emptyMap()))
+        verify(exactly = 1) {
+            mockEditor.putString(productEntitlementMappingCacheKey, "{\"products\":[]}")
+        }
+        verify(exactly = 1) {
+            mockEditor.putLong(productEntitlementMappingLastUpdatedCacheKey, currentTime.time)
+        }
+        verify(exactly = 2) { mockEditor.apply() }
+    }
+
+    @Test
+    fun `setProductEntitlementMappingCacheTimestampToNow caches cache timestamp correctly`() {
+        cache.setProductEntitlementMappingCacheTimestampToNow()
+        verify(exactly = 1) {
+            mockEditor.putLong(productEntitlementMappingLastUpdatedCacheKey, currentTime.time)
+        }
+        verify(exactly = 1) { mockEditor.apply() }
+    }
+
+    @Test
+    fun `isProductEntitlementMappingCacheStale returns stale if nothing in cache`() {
+        every {
+            mockPrefs.contains(productEntitlementMappingLastUpdatedCacheKey)
+        } returns false
+        assertThat(cache.isProductEntitlementMappingCacheStale()).isTrue
+    }
+
+    @Test
+    fun `isProductEntitlementMappingCacheStale returns stale if cache older than cache period`() {
+        every {
+            mockPrefs.contains(productEntitlementMappingLastUpdatedCacheKey)
+        } returns true
+        every {
+            mockPrefs.getLong(productEntitlementMappingLastUpdatedCacheKey, any())
+        } returns currentTime.subtract(25.hours + 1.minutes).time
+        assertThat(cache.isProductEntitlementMappingCacheStale()).isTrue
+    }
+
+    @Test
+    fun `isProductEntitlementMappingCacheStale returns not stale if cache newer than cache period`() {
+        every {
+            mockPrefs.contains(productEntitlementMappingLastUpdatedCacheKey)
+        } returns true
+        every {
+            mockPrefs.getLong(productEntitlementMappingLastUpdatedCacheKey, any())
+        } returns currentTime.subtract(25.hours - 1.minutes).time
+        assertThat(cache.isProductEntitlementMappingCacheStale()).isFalse
+    }
+
+    @Test
+    fun `getProductEntitlementMapping returns null if nothing in cache`() {
+        every { mockPrefs.getString(productEntitlementMappingCacheKey, null) } returns null
+        assertThat(cache.getProductEntitlementMapping()).isNull()
+    }
+
+    @Test
+    fun `getProductEntitlementMapping returns correct product entitlements mapping from cache`() {
+        val expectedMappings = createProductEntitlementMapping()
+        every {
+            mockPrefs.getString(productEntitlementMappingCacheKey, null)
+        } returns expectedMappings.toJson().toString()
+        assertThat(cache.getProductEntitlementMapping()).isEqualTo(expectedMappings)
+    }
+
+    // endregion
 
     private fun mockString(key: String, value: String?) {
         every {

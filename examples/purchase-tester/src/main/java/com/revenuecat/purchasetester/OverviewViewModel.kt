@@ -26,6 +26,9 @@ class OverviewViewModel(private val interactionHandler: OverviewInteractionHandl
 
     val customerInfoJson = MediatorLiveData<String>()
 
+    // Trusted entitlements: Commented out until ready to be made public
+    // val verificationResult = MediatorLiveData<VerificationResult>()
+
     init {
         activeEntitlements.addSource(customerInfo) { info ->
             info?.entitlements?.active?.values?.let {
@@ -38,6 +41,13 @@ class OverviewViewModel(private val interactionHandler: OverviewInteractionHandl
                 allEntitlements.value = formatEntitlements(it)
             }
         }
+
+        // Trusted entitlements: Commented out until ready to be made public
+//        verificationResult.addSource(customerInfo) { info ->
+//            info?.entitlements?.verification?.let {
+//                verificationResult.value = it
+//            }
+//        }
 
         customerInfoJson.addSource(customerInfo) { info ->
             customerInfoJson.value = info?.rawData?.toString(JSON_FORMATTER_INDENT_SPACES)

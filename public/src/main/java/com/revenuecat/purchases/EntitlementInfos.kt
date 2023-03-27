@@ -11,12 +11,11 @@ import kotlinx.parcelize.Parcelize
  * If not, [VerificationResult.NOT_REQUESTED]
  */
 @Parcelize
-class EntitlementInfos constructor(
+class EntitlementInfos internal constructor(
     val all: Map<String, EntitlementInfo>,
-    val verification: VerificationResult
+    internal val verification: VerificationResult
 ) : Parcelable {
 
-    @Deprecated("Use full constructor instead")
     constructor(
         all: Map<String, EntitlementInfo>
     ) : this(all, VerificationResult.NOT_REQUESTED)
