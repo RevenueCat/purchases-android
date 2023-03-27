@@ -31,7 +31,7 @@ class CustomerInfoResponseHandler(
                     put("request_date_ms", requestDate.time)
                     put("subscriber", JSONObject().apply {
                         put("original_app_user_id", appUserID)
-                         put("original_application_version", null) // TODO: I think this is fine
+                        put("original_application_version", "1.0")
                         put("entitlements", generateEntitlementsResponse(purchasedProducts))
                         put("first_seen", formattedDate)
                         val originalPurchaseDate = calculateOriginalPurchaseDate(purchasedProducts)
