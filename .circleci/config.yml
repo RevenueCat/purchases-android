@@ -428,15 +428,6 @@ workflows:
     jobs:
       - test
       - assemble-sample-app
-      # Need to remove
-      - purchases-integration-tests-build
-      - purchases-load-shedder-integration-tests-build
-      - run-firebase-tests-purchases-integration-test:
-          requires:
-            - purchases-integration-tests-build
-      - run-firebase-tests-purchases-load-shedder-integration-test:
-          requires:
-            - purchases-load-shedder-integration-tests-build
 
   deploy:
     when:
