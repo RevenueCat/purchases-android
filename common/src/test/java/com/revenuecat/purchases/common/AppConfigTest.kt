@@ -225,7 +225,10 @@ class AppConfigTest {
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
             store = Store.PLAY_STORE,
-            dangerousSettings = DangerousSettings(autoSyncPurchases = false)
+            dangerousSettings = DangerousSettings(
+                autoSyncPurchases = false,
+                forceServerDown = true
+            )
         )
 
         assertThat(x).isNotEqualTo(y)

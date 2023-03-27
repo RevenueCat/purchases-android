@@ -9,5 +9,11 @@ data class DangerousSettings(
      * automatically, and you will have to call syncPurchases whenever a new purchase is completed in order to send it
      * to the RevenueCat's backend. Auto syncing of purchases is enabled by default.
      */
-    val autoSyncPurchases: Boolean = true
+    val autoSyncPurchases: Boolean = true,
+
+    /**
+     * Disable or enable to force and test a situation where the RevenueCat server is down. This is meant to only be
+     * enabled during tests.
+     */
+    val forceServerDown: Boolean = false
 )

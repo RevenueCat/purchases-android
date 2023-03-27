@@ -76,4 +76,11 @@ class PurchasesConfigurationTest {
         val purchasesConfiguration = builder.dangerousSettings(dangerousSettings).build()
         assertThat(purchasesConfiguration.dangerousSettings).isEqualTo(dangerousSettings)
     }
+
+    @Test
+    fun `PurchasesConfiguration sets default dangerous settings correctly`() {
+        val purchasesConfiguration = builder.build()
+        assertThat(purchasesConfiguration.dangerousSettings.autoSyncPurchases).isEqualTo(true)
+        assertThat(purchasesConfiguration.dangerousSettings.forceServerDown).isEqualTo(false)
+    }
 }
