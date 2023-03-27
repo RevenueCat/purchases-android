@@ -9,19 +9,72 @@ import com.revenuecat.purchases.models.SubscriptionOptions
 import org.json.JSONObject
 
 data class AmazonStoreProduct(
+
+    /**
+     * The productId
+     * For subscriptions: the term sku
+     * For INAPP: the sku
+     */
     override val id: String,
+
+    /**
+     * Type of product. One of [ProductType].
+     */
     override val type: ProductType,
+
+    /**
+     * Title of the product.
+     */
     override val title: String,
+
+    /**
+     * The description of the product.
+     */
     override val description: String,
+
+    /**
+     * Subscription period.
+     *
+     * Note: Returned only for subscriptions. Null for INAPP products.
+     */
     override val period: Period?,
+
+    /**
+     * Price information for a non-subscription product.
+     * Term price for a subscription.
+     */
     override val price: Price,
+
+    /**
+     * Always null for AmazonStoreProduct
+     */
     override val subscriptionOptions: SubscriptionOptions?,
+
+    /**
+     * Always null for AmazonStoreProduct
+     */
     override val defaultOption: SubscriptionOption?,
+
+    /**
+     * The icon URL of the product.
+     */
     val iconUrl: String,
+
+    /**
+     * The [Period] of a subscription's free trial. Null for INAPP.
+     */
     val freeTrialPeriod: Period?,
+
+    /**
+     * JSONObject representing the original [Product] class from Amazon.
+     * The original [Product] can be obtained using the extension property `StoreProduct.amazonProduct`
+     */
     val originalProductJSON: JSONObject
 ) : StoreProduct {
 
+    /**
+     * Contains only data that is required to make the purchase.
+     */
     override val purchasingData: AmazonPurchasingData
         get() = AmazonPurchasingData.Product(this)
 
