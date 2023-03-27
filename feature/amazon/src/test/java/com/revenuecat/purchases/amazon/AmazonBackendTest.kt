@@ -7,6 +7,7 @@ import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.amazon.helpers.successfulRVSResponse
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
+import com.revenuecat.purchases.common.BackendHelper
 import com.revenuecat.purchases.common.HTTPClient
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
@@ -33,13 +34,7 @@ class AmazonBackendTest {
     }
     private val dispatcher = SyncDispatcher()
 
-    private var backend: Backend = Backend(
-        API_KEY,
-        mockAppConfig,
-        dispatcher,
-        dispatcher,
-        mockClient
-    )
+    private val backendHelper = BackendHelper(API_KEY, dispatcher, mockAppConfig, mockClient)
 
     private var receivedOnSuccess: JSONObject? = null
     private var receivedError: PurchasesError? = null
@@ -60,7 +55,7 @@ class AmazonBackendTest {
         Assertions.fail("Shouldn't be error.")
     }
 
-    private var underTest = AmazonBackend(backend)
+    private var underTest = AmazonBackend(backendHelper)
 
     private var successfulResult = HTTPResult(
         responseCode = 200,

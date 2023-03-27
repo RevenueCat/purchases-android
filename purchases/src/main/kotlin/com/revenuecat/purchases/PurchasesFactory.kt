@@ -9,6 +9,7 @@ import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.common.Anonymizer
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
+import com.revenuecat.purchases.common.BackendHelper
 import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.FileHelper
@@ -81,26 +82,29 @@ internal class PurchasesFactory(
             val signatureVerificationMode = SignatureVerificationMode.Disabled
             val signingManager = SigningManager(signatureVerificationMode)
 
+            val httpClient = HTTPClient(appConfig, eTagManager, diagnosticsTracker, signingManager)
+            val backendHelper = BackendHelper(apiKey, dispatcher, appConfig, httpClient)
             val backend = Backend(
-                apiKey,
                 appConfig,
                 dispatcher,
                 diagnosticsDispatcher,
-                HTTPClient(appConfig, eTagManager, diagnosticsTracker, signingManager)
+                httpClient,
+                backendHelper
             )
-            val subscriberAttributesPoster = SubscriberAttributesPoster(backend)
-
             val cache = DeviceCache(prefs, apiKey)
 
             // Override used for integration tests.
             val billing: BillingAbstract = overrideBillingAbstract ?: BillingFactory.createBilling(
                 store,
                 application,
-                backend,
+                backendHelper,
                 cache,
                 observerMode,
                 diagnosticsTracker
             )
+
+            val subscriberAttributesPoster = SubscriberAttributesPoster(backendHelper)
+
             val attributionFetcher = AttributionFetcherFactory.createAttributionFetcher(store, dispatcher)
 
             val subscriberAttributesCache = SubscriberAttributesCache(cache)

@@ -7,6 +7,7 @@ import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
+import com.revenuecat.purchases.common.BackendHelper
 import com.revenuecat.purchases.common.CustomerInfoFactory
 import com.revenuecat.purchases.common.HTTPClient
 import com.revenuecat.purchases.common.ReceiptInfo
@@ -41,14 +42,20 @@ class SubscriberAttributesPosterTests {
     }
     private val appUserID = "jerry"
     private val dispatcher = SyncDispatcher()
-    private var backend: Backend = Backend(
+    private var backendHelper = BackendHelper(
         API_KEY,
+        dispatcher,
+        mockAppConfig,
+        mockClient
+    )
+    private var backend: Backend = Backend(
         mockAppConfig,
         dispatcher,
         dispatcher,
-        mockClient
+        mockClient,
+        backendHelper
     )
-    private var subscriberAttributesPoster = SubscriberAttributesPoster(backend)
+    private var subscriberAttributesPoster = SubscriberAttributesPoster(backendHelper)
 
     private var receivedError: PurchasesError? = null
     private var receivedSyncedSuccessfully: Boolean? = null

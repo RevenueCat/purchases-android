@@ -23,7 +23,7 @@ import com.revenuecat.purchases.amazon.listener.ProductDataResponseListener
 import com.revenuecat.purchases.amazon.listener.PurchaseResponseListener
 import com.revenuecat.purchases.amazon.listener.PurchaseUpdatesResponseListener
 import com.revenuecat.purchases.amazon.listener.UserDataResponseListener
-import com.revenuecat.purchases.common.Backend
+import com.revenuecat.purchases.common.BackendHelper
 import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.ReplaceSkuInfo
@@ -70,11 +70,11 @@ internal class AmazonBilling constructor(
     @Suppress("unused")
     constructor(
         applicationContext: Context,
-        backend: Backend,
         cache: DeviceCache,
         observerMode: Boolean,
-        mainHandler: Handler
-    ) : this(applicationContext, AmazonBackend(backend), AmazonCache(cache), observerMode, mainHandler)
+        mainHandler: Handler,
+        backendHelper: BackendHelper
+    ) : this(applicationContext, AmazonBackend(backendHelper), AmazonCache(cache), observerMode, mainHandler)
 
     var connected = false
 

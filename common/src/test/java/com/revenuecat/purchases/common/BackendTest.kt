@@ -65,16 +65,27 @@ class BackendTest {
         every { diagnosticsURL } returns mockDiagnosticsBaseURL
     }
     private val dispatcher = SyncDispatcher()
+    private val backendHelper = BackendHelper(API_KEY, dispatcher, mockAppConfig, mockClient)
     private var backend: Backend = Backend(
-        API_KEY,
         mockAppConfig,
         dispatcher,
         dispatcher,
-        mockClient
+        mockClient,
+        backendHelper
     )
+    private val asyncDispatcher = Dispatcher(
+        ThreadPoolExecutor(
+            1,
+            2,
+            0,
+            TimeUnit.MILLISECONDS,
+            LinkedBlockingQueue()
+        )
+    )
+    private var asyncBackendHelper: BackendHelper = BackendHelper(API_KEY, asyncDispatcher, mockAppConfig, mockClient)
     private var asyncBackend: Backend = Backend(
-        API_KEY,
         mockAppConfig,
+        asyncDispatcher,
         Dispatcher(
             ThreadPoolExecutor(
                 1,
@@ -84,16 +95,8 @@ class BackendTest {
                 LinkedBlockingQueue()
             )
         ),
-        Dispatcher(
-            ThreadPoolExecutor(
-                1,
-                2,
-                0,
-                TimeUnit.MILLISECONDS,
-                LinkedBlockingQueue()
-            )
-        ),
-        mockClient
+        mockClient,
+        asyncBackendHelper
     )
     private val appUserID = "jerry"
     private val defaultTimeout = 200L

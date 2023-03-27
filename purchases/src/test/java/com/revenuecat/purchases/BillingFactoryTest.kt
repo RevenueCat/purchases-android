@@ -3,6 +3,7 @@ package com.revenuecat.purchases
 import android.app.Application
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.common.Backend
+import com.revenuecat.purchases.common.BackendHelper
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import io.mockk.mockk
@@ -15,14 +16,14 @@ class BillingFactoryTest {
     @Test
     fun `BillingWrapper can be created`() {
         val mockApplication = mockk<Application>(relaxed = true)
-        val mockBackend = mockk<Backend>(relaxed = true)
+        val mockBackendHelper = mockk<BackendHelper>(relaxed = true)
         val mockCache = mockk<DeviceCache>(relaxed = true)
         val mockDiagnosticsTracker = mockk<DiagnosticsTracker>(relaxed = true)
 
         BillingFactory.createBilling(
             Store.PLAY_STORE,
             mockApplication,
-            mockBackend,
+            mockBackendHelper,
             mockCache,
             observerMode = false,
             mockDiagnosticsTracker
@@ -32,13 +33,13 @@ class BillingFactoryTest {
     @Test
     fun `BillingWrapper can be created without diagnostics tracker`() {
         val mockApplication = mockk<Application>(relaxed = true)
-        val mockBackend = mockk<Backend>(relaxed = true)
+        val mockBackendHelper = mockk<BackendHelper>(relaxed = true)
         val mockCache = mockk<DeviceCache>(relaxed = true)
 
         BillingFactory.createBilling(
             Store.PLAY_STORE,
             mockApplication,
-            mockBackend,
+            mockBackendHelper,
             mockCache,
             observerMode = false,
             diagnosticsTrackerIfEnabled = null
