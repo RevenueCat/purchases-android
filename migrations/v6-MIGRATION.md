@@ -40,6 +40,8 @@ more thorough explanation of the new Google subscription model announced with Bi
 
 ### StoreProduct changes
 
+`StoreProduct` has been made an interface, which `GoogleStoreProduct` and `AmazonStoreProduct` implement.
+
 | Previous                      | New                                                                           |
 |-------------------------------|-------------------------------------------------------------------------------|
 | sku                           | id                                                                            |
