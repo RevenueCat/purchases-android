@@ -1,3 +1,12 @@
+## 6.0.0-rc.1
+### Bugfixes
+* Fix entitlment info to string plan identifier (#906) via Josh Holtz (@joshdholtz)
+### Other Changes
+* Merge main -> bc5-support 2023-03-25 (#905) via Toni Rico (@tonidero)
+* Small improvements to v6-MIGRATION.md (#907) via Josh Holtz (@joshdholtz)
+* Make personalized price checkbox in PurchaseTester (#903) via swehner (@swehner)
+* PurchaseTester gets observable mode for google (#902) via Josh Holtz (@joshdholtz)
+
 ## 6.0.0-beta.3
 ### Breaking Changes
 * Rename `introTrial` to `introOffer` on `SubscriptionOptions` (#890) via Josh Holtz (@joshdholtz)
