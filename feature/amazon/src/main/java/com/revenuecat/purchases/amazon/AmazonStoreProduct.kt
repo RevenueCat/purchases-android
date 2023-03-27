@@ -67,7 +67,6 @@ data class AmazonStoreProduct(
 
     /**
      * JSONObject representing the original [Product] class from Amazon.
-     * The original [Product] can be obtained using the extension property `StoreProduct.amazonProduct`
      */
     val originalProductJSON: JSONObject
 ) : StoreProduct {
@@ -86,5 +85,11 @@ data class AmazonStoreProduct(
         get() = id
 }
 
+/**
+ * StoreProduct object containing Amazon-specific fields:
+ * `originalProductJson`
+ * `freeTrialPeriod`
+ * `iconUrl`
+ */
 val StoreProduct.amazonProduct: AmazonStoreProduct?
     get() = this as? AmazonStoreProduct

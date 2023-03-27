@@ -4,7 +4,17 @@ import com.android.billingclient.api.ProductDetails
 import com.revenuecat.purchases.ProductType
 
 data class GoogleStoreProduct(
+
+    /**
+     * The productId.
+     * For subscriptions, this is the high-level productId set up for a subscription in the Play Console,
+     * unique to an entitlement.
+     */
     val productId: String,
+
+    /**
+     * The basePlanId for subscription products. Null for INAPP.
+     */
     val basePlanId: String?,
 
     /**
@@ -91,5 +101,11 @@ data class GoogleStoreProduct(
         get() = sku
 }
 
+/**
+ * StoreProduct object containing Google-specific fields:
+ * `productId`
+ * `basePlanId`
+ * `productDetails`
+ */
 val StoreProduct.googleProduct: GoogleStoreProduct?
     get() = this as? GoogleStoreProduct
