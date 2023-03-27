@@ -40,8 +40,6 @@ more thorough explanation of the new Google subscription model announced with Bi
 
 ### StoreProduct changes
 
-`StoreProduct` has been made an interface, which `GoogleStoreProduct` and `AmazonStoreProduct` implement.
-
 | Previous                      | New                                                                           |
 |-------------------------------|-------------------------------------------------------------------------------|
 | sku                           | id                                                                            |
@@ -180,7 +178,7 @@ Replaces all of the following:
 
 ### Removed APIs
 
-This APIs were deprecated in V5 and are now being removed in V6.
+These APIs were deprecated in V5 and are now being removed in V6.
 
 | Removed APIs                                                                                                          |  
 |-----------------------------------------------------------------------------------------------------------------------|
