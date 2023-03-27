@@ -19,9 +19,12 @@ import com.revenuecat.purchases.amazon.helpers.dummyReceipt
 import com.revenuecat.purchases.amazon.helpers.dummyUserData
 import com.revenuecat.purchases.amazon.helpers.successfulRVSResponse
 import com.revenuecat.purchases.common.BillingAbstract
+import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.utils.add
+import com.revenuecat.purchases.utils.subtract
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
@@ -33,6 +36,8 @@ import org.assertj.core.api.Assertions.fail
 import org.json.JSONObject
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.util.Date
+import kotlin.time.Duration.Companion.hours
 
 @RunWith(AndroidJUnit4::class)
 class AmazonBillingTest {
@@ -200,6 +205,99 @@ class AmazonBillingTest {
             PurchaseState.UNSPECIFIED_STATE
         )
     }
+
+    @Test
+    fun `When querying purchases, canceled but not expired subscriptions are returned`() {
+        setup()
+        val expectedNotExpiredTermSku = "expired_sku.monthly"
+        val dummyReceiptNotExpired = dummyReceipt(
+            receiptId = "not_expired_id",
+            sku = "not_expired_sku",
+            cancelDate = Date().add(1.hours)
+        )
+
+        val dummyUserData = dummyUserData()
+
+        mockQueryPurchases(listOf(dummyReceiptNotExpired), dummyUserData)
+
+        mockEmptyCache()
+
+        mockGetAmazonReceiptData(dummyReceiptNotExpired, dummyUserData, expectedNotExpiredTermSku)
+
+        var receivedPurchases: Map<String, StoreTransaction>? = null
+        underTest.queryPurchases(
+            appUserID,
+            onSuccess = {
+                receivedPurchases = it
+            },
+            onError = {
+                fail("Should be a success")
+            }
+        )
+
+        assertThat(receivedPurchases).isNotNull
+        assertThat(receivedPurchases!!.keys.size).isEqualTo(1)
+        checkPurchaseIsCorrect(
+            receivedPurchases!![dummyReceiptNotExpired.receiptId.sha1()]!!,
+            expectedNotExpiredTermSku,
+            dummyUserData,
+            PurchaseState.UNSPECIFIED_STATE
+        )
+    }
+
+    @Test
+    fun `When querying purchases, expired subscriptions are not returned`() {
+        setup()
+        val expectedTermSku = "sub_sku.monthly"
+        val expectedNotExpiredTermSku = "expired_sku.monthly"
+        val dummyReceipt = dummyReceipt(receiptId = "dummy_id", sku = "sub_sku")
+        val dummyReceiptExpired = dummyReceipt(
+            receiptId = "expired_id",
+            sku = "expired_sku",
+            cancelDate = Date().subtract(1.hours)
+        )
+        val dummyReceiptNotExpired = dummyReceipt(
+            receiptId = "not_expired_id",
+            sku = "not_expired_sku",
+            cancelDate = Date().add(1.hours)
+        )
+
+        val dummyUserData = dummyUserData()
+
+        mockQueryPurchases(listOf(dummyReceipt, dummyReceiptExpired, dummyReceiptNotExpired), dummyUserData)
+
+        mockEmptyCache()
+
+        mockGetAmazonReceiptData(dummyReceipt, dummyUserData, expectedTermSku)
+        mockGetAmazonReceiptData(dummyReceiptNotExpired, dummyUserData, expectedNotExpiredTermSku)
+
+        var receivedPurchases: Map<String, StoreTransaction>? = null
+        underTest.queryPurchases(
+            appUserID,
+            onSuccess = {
+                receivedPurchases = it
+            },
+            onError = {
+                fail("Should be a success")
+            }
+        )
+
+        assertThat(receivedPurchases).isNotNull
+        assertThat(receivedPurchases!!.keys.size).isEqualTo(2)
+        checkPurchaseIsCorrect(
+            receivedPurchases!![dummyReceipt.receiptId.sha1()]!!,
+            expectedTermSku,
+            dummyUserData,
+            PurchaseState.UNSPECIFIED_STATE
+        )
+        checkPurchaseIsCorrect(
+            receivedPurchases!![dummyReceiptNotExpired.receiptId.sha1()]!!,
+            expectedNotExpiredTermSku,
+            dummyUserData,
+            PurchaseState.UNSPECIFIED_STATE
+        )
+    }
+
 
     @Test
     fun `When querying purchases, consumables don't need to fetch receipt data`() {
@@ -539,6 +637,67 @@ class AmazonBillingTest {
         checkPurchaseIsCorrect(
             receivedPurchases!![0],
             expectedTermSku,
+            dummyUserData,
+            PurchaseState.UNSPECIFIED_STATE
+        )
+    }
+
+    @Test
+    fun `querying all purchases returns all purchases, even if they were canceled previously`() {
+        setup()
+        val expectedTermSku = "sub_sku.monthly"
+        val expectedExpiredTermSku = "expired_sku.monthly"
+        val expectedNotExpiredTermSku = "expired_sku.monthly"
+        val dummyReceipt = dummyReceipt(receiptId = "dummy_id", sku = "sub_sku")
+        val dummyReceiptExpired = dummyReceipt(
+            receiptId = "expired_id",
+            sku = "expired_sku",
+            cancelDate = Date().subtract(1.hours)
+        )
+        val dummyReceiptNotExpired = dummyReceipt(
+            receiptId = "not_expired_id",
+            sku = "not_expired_sku",
+            cancelDate = Date().add(1.hours)
+        )
+
+        val dummyUserData = dummyUserData()
+
+        mockQueryPurchases(listOf(dummyReceipt, dummyReceiptExpired, dummyReceiptNotExpired), dummyUserData)
+
+        mockEmptyCache()
+
+        mockGetAmazonReceiptData(dummyReceipt, dummyUserData, expectedTermSku)
+        mockGetAmazonReceiptData(dummyReceiptExpired, dummyUserData, expectedExpiredTermSku)
+        mockGetAmazonReceiptData(dummyReceiptNotExpired, dummyUserData, expectedNotExpiredTermSku)
+
+        var receivedPurchases: List<StoreTransaction>? = null
+        underTest.queryAllPurchases(
+            appUserID,
+            onReceivePurchaseHistory = {
+                receivedPurchases = it
+            },
+            onReceivePurchaseHistoryError = {
+                fail("Should be a success")
+            }
+        )
+
+        assertThat(receivedPurchases).isNotNull
+        assertThat(receivedPurchases!!.size).isEqualTo(3)
+        checkPurchaseIsCorrect(
+            receivedPurchases!![0],
+            expectedTermSku,
+            dummyUserData,
+            PurchaseState.UNSPECIFIED_STATE
+        )
+        checkPurchaseIsCorrect(
+            receivedPurchases!![1],
+            expectedExpiredTermSku,
+            dummyUserData,
+            PurchaseState.UNSPECIFIED_STATE
+        )
+        checkPurchaseIsCorrect(
+            receivedPurchases!![2],
+            expectedNotExpiredTermSku,
             dummyUserData,
             PurchaseState.UNSPECIFIED_STATE
         )

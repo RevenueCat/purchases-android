@@ -34,7 +34,7 @@ fun dummyReceipt(
     productType: ProductType = ProductType.SUBSCRIPTION,
     purchaseDate: Date = Date(),
     receiptId: String = "receipt_id",
-    cancelDate: Date? = Date()
+    cancelDate: Date? = null
 ): Receipt {
     return ReceiptBuilder()
         .setReceiptId(receiptId)
