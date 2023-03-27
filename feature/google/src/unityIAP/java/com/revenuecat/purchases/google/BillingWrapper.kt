@@ -41,10 +41,12 @@ import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.firstSku
 import com.revenuecat.purchases.common.listOfSkus
 import com.revenuecat.purchases.common.log
+import com.revenuecat.purchases.common.offlineentitlements.ProductEntitlementMapping
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.sha256
 import com.revenuecat.purchases.common.toHumanReadableDescription
 import com.revenuecat.purchases.models.PurchaseState
+import com.revenuecat.purchases.models.PurchasedProduct
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.skuDetails
@@ -56,6 +58,7 @@ import java.io.PrintWriter
 import java.io.StringWriter
 import java.util.Date
 import java.util.concurrent.ConcurrentLinkedQueue
+import java.util.concurrent.TimeUnit
 import kotlin.math.min
 import kotlin.time.Duration
 
@@ -237,6 +240,78 @@ class BillingWrapper(
         }
     }
 
+    override fun queryPurchasedProducts(
+        appUserID: String,
+        onSuccess: (List<PurchasedProduct>) -> Unit,
+        onError: (PurchasesError) -> Unit
+    ) {
+        val productEntitlementMapping = deviceCache.getProductEntitlementMapping()
+
+        queryAllPurchases(
+            appUserID,
+            onReceivePurchaseHistory = { allPurchases ->
+                queryPurchases(
+                    appUserID,
+                    onSuccess = { activePurchasesByHashedToken ->
+                        val purchasedProductIdentifiers = allPurchases.map { it.skus[0] }.toSet()
+                        val activeProducts = activePurchasesByHashedToken.values.map { it.skus[0] }.toSet()
+                        val purchasedProducts = purchasedProductIdentifiers.map { productIdentifier ->
+                            createPurchasedProduct(
+                                allPurchases,
+                                productIdentifier,
+                                activeProducts,
+                                productEntitlementMapping
+                            )
+                        }
+                        onSuccess(purchasedProducts)
+                    },
+                    onError = { error ->
+                        // TODO: better handling?
+                        onError(error)
+                    }
+                )
+            },
+            onReceivePurchaseHistoryError = { error ->
+                // TODO: better handling?
+                onError(error)
+            }
+        )
+    }
+
+    private fun createPurchasedProduct(
+        allPurchases: List<StoreTransaction>,
+        productIdentifier: String,
+        activeProducts: Set<String>,
+        productEntitlementMapping: ProductEntitlementMapping?
+    ): PurchasedProduct {
+        val purchaseAssociatedToProduct = allPurchases.first { it.skus[0] == productIdentifier }
+        val isActive = activeProducts.contains(productIdentifier)
+        val expirationDate = getExpirationDate(isActive, purchaseAssociatedToProduct)
+        return PurchasedProduct(
+            productIdentifier,
+            purchaseAssociatedToProduct,
+            isActive,
+            productEntitlementMapping?.toMap()?.get(productIdentifier) ?: emptyList(),
+            expirationDate
+        )
+    }
+
+    // TODO: Where do we put this?
+    private fun getExpirationDate(
+        isActive: Boolean,
+        purchaseAssociatedToProduct: StoreTransaction
+    ): Date? {
+        return if (purchaseAssociatedToProduct.type == ProductType.SUBS) {
+            if (isActive) {
+                Date(dateProvider.now.time + TimeUnit.DAYS.toMillis(1))
+            } else {
+                Date(purchaseAssociatedToProduct.purchaseTime)
+            }
+        } else {
+            null
+        }
+    }
+
     @UiThread
     private fun launchBillingFlow(
         activity: Activity,
@@ -412,8 +487,7 @@ class BillingWrapper(
 
                 val mapOfActiveSubscriptions = activeSubsPurchases.toMapOfGooglePurchaseWrapper(SkuType.SUBS)
 
-                queryPurchasesAsyncWithTracking(SkuType.INAPP) queryInAppsPurchasesAsync@{
-                        unconsumedInAppsResult, unconsumedInAppsPurchases ->
+                queryPurchasesAsyncWithTracking(SkuType.INAPP) queryInAppsPurchasesAsync@{ unconsumedInAppsResult, unconsumedInAppsPurchases ->
                     if (!unconsumedInAppsResult.isSuccessful()) {
                         val purchasesError = unconsumedInAppsResult.responseCode.billingResponseToPurchasesError(
                             RestoreStrings.QUERYING_INAPP_ERROR.format(
@@ -480,8 +554,7 @@ class BillingWrapper(
     @Suppress("ReturnCount")
     internal fun getPurchaseType(purchaseToken: String, listener: (ProductType) -> Unit) {
         billingClient?.let { client ->
-            client.queryPurchasesAsyncWithTracking(SkuType.SUBS) querySubPurchasesAsync@{
-                    subsResult, subsPurchasesList ->
+            client.queryPurchasesAsyncWithTracking(SkuType.SUBS) querySubPurchasesAsync@{ subsResult, subsPurchasesList ->
                 val subsResponseOK = subsResult.responseCode == BillingClient.BillingResponseCode.OK
                 val subFound = subsPurchasesList.any { it.purchaseToken == purchaseToken }
                 if (subsResponseOK && subFound) {
@@ -489,8 +562,7 @@ class BillingWrapper(
                     return@querySubPurchasesAsync
                 }
 
-                client.queryPurchasesAsyncWithTracking(SkuType.INAPP) queryInAppPurchasesAsync@{
-                        queryInAppsResult, inAppPurchasesList ->
+                client.queryPurchasesAsyncWithTracking(SkuType.INAPP) queryInAppPurchasesAsync@{ queryInAppsResult, inAppPurchasesList ->
                     val inAppsResponseIsOK = queryInAppsResult.responseCode == BillingClient.BillingResponseCode.OK
                     val inAppFound = inAppPurchasesList.any { it.purchaseToken == purchaseToken }
                     if (inAppsResponseIsOK && inAppFound) {

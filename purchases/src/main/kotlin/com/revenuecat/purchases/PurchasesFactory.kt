@@ -11,6 +11,7 @@ import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BackendHelper
 import com.revenuecat.purchases.common.BillingAbstract
+import com.revenuecat.purchases.common.CustomerInfoResponseHandler
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.FileHelper
 import com.revenuecat.purchases.common.HTTPClient
@@ -84,13 +85,6 @@ internal class PurchasesFactory(
 
             val httpClient = HTTPClient(appConfig, eTagManager, diagnosticsTracker, signingManager)
             val backendHelper = BackendHelper(apiKey, dispatcher, appConfig, httpClient)
-            val backend = Backend(
-                appConfig,
-                dispatcher,
-                diagnosticsDispatcher,
-                httpClient,
-                backendHelper
-            )
             val cache = DeviceCache(prefs, apiKey)
 
             // Override used for integration tests.
@@ -103,6 +97,15 @@ internal class PurchasesFactory(
                 diagnosticsTracker
             )
 
+            val customerInfoResponseHandler = CustomerInfoResponseHandler(billing)
+            val backend = Backend(
+                appConfig,
+                dispatcher,
+                diagnosticsDispatcher,
+                httpClient,
+                backendHelper,
+                customerInfoResponseHandler
+            )
             val subscriberAttributesPoster = SubscriberAttributesPoster(backendHelper)
 
             val attributionFetcher = AttributionFetcherFactory.createAttributionFetcher(store, dispatcher)

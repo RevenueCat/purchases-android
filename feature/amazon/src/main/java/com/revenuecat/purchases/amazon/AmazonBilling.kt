@@ -33,6 +33,7 @@ import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.models.PurchaseState
+import com.revenuecat.purchases.models.PurchasedProduct
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.strings.PurchaseStrings
@@ -144,6 +145,14 @@ internal class AmazonBilling constructor(
                 onError(errorGettingReceiptInfo(error))
             }
         )
+    }
+
+    override fun queryPurchasedProducts(
+        appUserID: String,
+        onSuccess: (List<PurchasedProduct>) -> Unit,
+        onError: (PurchasesError) -> Unit
+    ) {
+        TODO("Not yet implemented")
     }
 
     // region Product Data
