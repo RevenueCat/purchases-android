@@ -181,7 +181,7 @@ class Purchases internal constructor(
         }
 
         // Offline entitlements: Commenting out for now until backend is ready
-        // offlineEntitlementsManager.updateProductEntitlementMappingsCacheIfStale()
+        // offlineEntitlementsManager.updateProductEntitlementMappingCacheIfStale()
         diagnosticsSynchronizer?.syncDiagnosticsFileIfNeeded()
     }
 
@@ -216,7 +216,7 @@ class Purchases internal constructor(
             log(LogIntent.RC_SUCCESS, OfferingStrings.OFFERINGS_UPDATED_FROM_NETWORK)
         }
         // Offline entitlements: Commenting out for now until backend is ready
-        // offlineEntitlementsManager.updateProductEntitlementMappingsCacheIfStale()
+        // offlineEntitlementsManager.updateProductEntitlementMappingCacheIfStale()
         updatePendingPurchaseQueue()
         synchronizeSubscriberAttributesIfNeeded()
     }

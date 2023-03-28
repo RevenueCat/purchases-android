@@ -137,7 +137,7 @@ class SubscriberAttributesPurchasesTests {
             customerInfoHelperMock.sendUpdatedCustomerInfoToDelegateIfChanged(any())
         } just runs
         every {
-            offlineEntitlementsManagerMock.updateProductEntitlementMappingsCacheIfStale()
+            offlineEntitlementsManagerMock.updateProductEntitlementMappingCacheIfStale()
         } just runs
 
         underTest = Purchases(
