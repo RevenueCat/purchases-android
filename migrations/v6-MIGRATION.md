@@ -1,16 +1,16 @@
 # V6 API Migration Guide
 
 This latest release updates the SDK to use BillingClient 5. This version of BillingClient brings an entire new
-subscription model which has resulted large changes across the entire SDK.
+subscription model which has resulted in large changes across the entire SDK.
 
 ## Updated Code References
 
 This migration guide has detailed class, property, and method changes.
 
 See [Android Native - 5.x to 6.x Migration](https://www.revenuecat.com/docs/android-native-5x-to-6x-migration) for a 
-more thorough explanation of the new Google subscription model announced with BillingClient 5 and how to take advantage of them in V6.
+more thorough explanation of the new Google subscription model announced with BillingClient 5 and how to take advantage of it in V6.
 
-### Classes
+### Class changes
 
 | New                        |
 |----------------------------|
@@ -22,6 +22,7 @@ more thorough explanation of the new Google subscription model announced with Bi
 | `Period.Unit`              |
 | `Price`                    |
 | `PricingPhase`             |
+| `PurchaseParams`           |
 | `RecurrenceMode`           |
 | `SubscriptionOption`       |
 | `SubscriptionOptions`      |
@@ -38,22 +39,22 @@ more thorough explanation of the new Google subscription model announced with Bi
 
 `Offering`, `Offerings`, `Package`, and `StoreProduct` are no longer Parcelable.
 
-### StoreProduct changes
+#### StoreProduct changes
 
 `StoreProduct` has been made an interface, which `GoogleStoreProduct` and `AmazonStoreProduct` implement.
 
-| Previous                      | New                                                                           |
-|-------------------------------|-------------------------------------------------------------------------------|
-| sku                           | id                                                                            |
-| price                         | Moved to `price`                                                              |
-| priceAmountMicros             | Moved to `price`                                                              |
-| priceCurrencyCode             | Moved to `price`                                                              |
-| freeTrialPeriod               | Moved to `PricingPhase` in a `SubscriptionOption`                             |
-| introductoryPrice             | Moved to `PricingPhase` in a `SubscriptionOption`                             |
-| introductoryPriceAmountMicros | Moved to `PricingPhase` in a `SubscriptionOption`                             |
-| introductoryPricePeriod       | Moved to `PricingPhase` in a `SubscriptionOption`                             |
-| introductoryPriceCycles       | Moved to `PricingPhase` in a `SubscriptionOption`                             |
-| originalJson                  | `productDetails` in GoogleStoreProduct; `amazonProduct` in AmazonStoreProduct |
+| Previous                      | New                                                                                                            |
+|-------------------------------|----------------------------------------------------------------------------------------------------------------|
+| sku                           | id                                                                                                             |
+| price                         | Moved to `price.formatted`                                                                                     |
+| priceAmountMicros             | Moved to `price.amountMicros`                                                                                  |
+| priceCurrencyCode             | Moved to `price.currencyCode`                                                                                  |
+| freeTrialPeriod               | Replaced with related `PricingPhase` fields in either `SubscriptionOption` or `SubscriptionOptions.freeTrial`  |
+| introductoryPrice             | Replaced with related `PricingPhase` fields in either `SubscriptionOption` or `SubscriptionOptions.introOffer` |
+| introductoryPriceAmountMicros | Replaced with related `PricingPhase` fields in either `SubscriptionOption` or `SubscriptionOptions.introOffer` |
+| introductoryPricePeriod       | Replaced with related `PricingPhase` fields in either `SubscriptionOption` or `SubscriptionOptions.introOffer` |
+| introductoryPriceCycles       | Replaced with related `PricingPhase` fields in either `SubscriptionOption` or `SubscriptionOptions.introOffer` |
+| originalJson                  | `productDetails` in GoogleStoreProduct; `originalProductJSON` in AmazonStoreProduct                            |
 
 | New                 |
 |---------------------|
@@ -68,7 +69,7 @@ more thorough explanation of the new Google subscription model announced with Bi
 | product.iconUrl                   |                                                                                                                    | 
 | product.originalJson              | (product as GoogleStoreProduct).productDetails                                                                     |
 
-#### Free Trial and Intro Offers
+##### Handling Free Trial and Intro Offers
 
 `StoreProduct` can now have multiple free trials and introductory offers. There is a `defaultOption` property on
 `StoreProduct` that will select the offer with the longest free trial period or the cheapest introductory offer.
@@ -102,7 +103,7 @@ The `Period.Unit` enum can be one of the following:
 - YEAR
 - UNKNOWN
 
-### StoreTransaction changes
+#### StoreTransaction changes
 
 | New                  |
 |----------------------|
@@ -113,7 +114,7 @@ The `Period.Unit` enum can be one of the following:
 | skus       | productIds |
 
 
-### CustomerInfo changes
+#### CustomerInfo changes
 
 | Deprecated              | New                           |
 |-------------------------|-------------------------------|
@@ -140,7 +141,9 @@ When passing a `Package` or `StoreProduct` to `purchase()`, the SDK will use the
 *   - Uses [SubscriptionOption] with the longest free trial or cheapest first phase
 *   - Falls back to base plan
 
-For more control, create your `PurchaseParams.Builder` with the desired `SubscriptionOption`.
+For more control, create your `PurchaseParams.Builder` with the desired `SubscriptionOption`. For example:
+
+
 
 | New                                          |
 |----------------------------------------------|
@@ -155,7 +158,7 @@ Replaces all of the following:
 | `purchasePackage(Activity, Package, PurchaseCallback)`                        |
 | `purchasePackage(Activity, Package, UpgradeInfo, ProductChangeCallback)`      |
 
-### Kotlin Helpers
+#### Kotlin Helpers
 
 | New                                                                                                         |
 |-------------------------------------------------------------------------------------------------------------|
@@ -170,7 +173,7 @@ Replaces all of the following:
 | `purchasePackageWith(Activity, Package, (PurchasesError, Boolean) -> Unit, (StoreTransaction, CustomerInfo) -> Unit)`                    |
 | `purchasePackageWith(Activity, Package, UpgradeInfo, (PurchasesError, Boolean) -> Unit, (StoreTransaction?, CustomerInfo) -> Unit)`      |
 
-### Purchases API deprecations
+### API deprecations
 
 | Deprecated                                                                                         | New                                                                                     |
 |----------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------|
