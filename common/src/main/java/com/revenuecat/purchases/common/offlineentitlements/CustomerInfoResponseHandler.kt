@@ -1,10 +1,15 @@
-package com.revenuecat.purchases.common
+package com.revenuecat.purchases.common.offlineentitlements
 
 import com.google.gson.internal.bind.util.ISO8601Utils
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.VerificationResult
+import com.revenuecat.purchases.common.BillingAbstract
+import com.revenuecat.purchases.common.CustomerInfoFactory
+import com.revenuecat.purchases.common.DateProvider
+import com.revenuecat.purchases.common.DefaultDateProvider
+import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.models.PurchasedProduct
 import com.revenuecat.purchases.strings.CustomerInfoStrings.COMPUTING_OFFLINE_CUSTOMER_INFO_FAILED
 import com.revenuecat.purchases.utils.Iso8601Utils
