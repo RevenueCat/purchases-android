@@ -398,15 +398,13 @@ class BackendTest {
             )
         )
         val subscriptionOption = GoogleSubscriptionOption(
-            id = basePlanId,
+            productId = productId,
+            basePlanId = basePlanId,
+            offerId = null,
             pricingPhases = listOf(recurringPhase),
             tags = emptyList(),
-            purchasingData = GooglePurchasingData.Subscription(
-                productId = productId,
-                productDetails = productDetails,
-                optionId = basePlanId,
-                token = "mock-token"
-            )
+            productDetails = productDetails,
+            offerToken = "mock-token"
         )
 
         val googleStoreProduct = GoogleStoreProduct(

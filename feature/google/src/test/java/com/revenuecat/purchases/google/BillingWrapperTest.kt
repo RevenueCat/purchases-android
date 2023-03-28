@@ -41,6 +41,7 @@ import com.revenuecat.purchases.models.RecurrenceMode
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.Period
+import com.revenuecat.purchases.models.PlatformProductId
 import com.revenuecat.purchases.models.SubscriptionOptions
 import com.revenuecat.purchases.utils.createMockProductDetailsNoOffers
 import com.revenuecat.purchases.utils.mockOneTimePurchaseOfferDetails
@@ -799,6 +800,8 @@ class BillingWrapperTest {
                     override val productType: ProductType
                         get() = ProductType.SUBS
                 }
+            override val platformProductId: PlatformProductId
+                get() = PlatformProductId("")
         }
 
         wrapper.makePurchaseAsync(
@@ -819,11 +822,18 @@ class BillingWrapperTest {
 
     @Test
     fun `purchase fails if store product is not GoogleStoreProduct`() {
-        val purchasingInfo = object: PurchasingData {
+        val purchasingData = object: PurchasingData {
             override val productId: String
                 get() = ""
             override val productType: ProductType
                 get() = ProductType.SUBS
+        }
+
+        object : PlatformProductId {
+            override val productId: String
+                get() = ""
+            override val toMap: Map<String, String?>
+                get() = mapOf("product_id" to productId)
         }
 
         val storeProduct = object : StoreProduct {
@@ -842,9 +852,22 @@ class BillingWrapperTest {
             override val subscriptionOptions: SubscriptionOptions
                 get() = SubscriptionOptions(listOf(defaultOption))
             override val defaultOption: SubscriptionOption
-                get() = GoogleSubscriptionOption("subscriptionOption", emptyList(), emptyList(), purchasingInfo)
+                get() = object : SubscriptionOption {
+                    override val id: String
+                        get() = ""
+                    override val pricingPhases: List<PricingPhase>
+                        get() = emptyList()
+                    override val tags: List<String>
+                        get() = emptyList()
+                    override val purchasingData: PurchasingData
+                        get() = purchasingData
+                    override val platformProductId: PlatformProductId
+                        get() = platformProductId
+                }
             override val purchasingData: PurchasingData
-                get() = purchasingInfo
+                get() = purchasingData
+            override val platformProductId: PlatformProductId
+                get() = platformProductId
             override val sku: String
                 get() = id
         }

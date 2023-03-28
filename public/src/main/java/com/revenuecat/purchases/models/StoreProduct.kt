@@ -78,25 +78,18 @@ interface StoreProduct {
     val sku: String
 }
 
-interface PlatformProductId {
-    val productId: String
-    val toMap: Map<String, String?>
-}
-
-data class AmazonPlatformProductId(
-    override val productId: String
-) : PlatformProductId {
-    override val toMap: Map<String, String?>
+open class PlatformProductId(open val productId: String) {
+    open val toMap: Map<String, String?>
         get() = mapOf(
             "product_id" to productId
         )
 }
 
-data class GooglePlatformProductId(
+class GooglePlatformProductId(
     override val productId: String,
     val basePlanId: String? = null,
     val offerId: String? = null
-) : PlatformProductId {
+) : PlatformProductId(productId) {
     override val toMap: Map<String, String?>
         get() = mapOf(
             "product_id" to productId,

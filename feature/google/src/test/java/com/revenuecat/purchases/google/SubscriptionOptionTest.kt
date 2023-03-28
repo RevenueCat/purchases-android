@@ -14,6 +14,11 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class SubscriptionOptionTest {
+
+    private val productId = "product-id"
+    private val basePlanId = "base-plan-id"
+    private val offerToken = "mock-token"
+
     @Test
     fun `SubscriptionOption can find recurring phase with INFINITE_RECURRING`() {
         val productDetails = mockProductDetails()
@@ -30,15 +35,13 @@ class SubscriptionOptionTest {
         )
 
         val subscriptionOption = GoogleSubscriptionOption(
-            id = "subscriptionOptionId",
+            productId = productId,
+            basePlanId = basePlanId,
+            offerId = null,
             pricingPhases = listOf(recurringPhase),
             tags = emptyList(),
-            purchasingData = GooglePurchasingData.Subscription(
-                productId = "product_id",
-                productDetails = productDetails,
-                optionId = "subscriptionOptionId",
-                token = "mock-token"
-            )
+            productDetails,
+            offerToken
         )
 
         assertThat(subscriptionOption.freePhase).isNull()
@@ -64,15 +67,13 @@ class SubscriptionOptionTest {
         )
 
         val subscriptionOption = GoogleSubscriptionOption(
-            id = "subscriptionOptionId",
+            productId = productId,
+            basePlanId = basePlanId,
+            offerId = null,
             pricingPhases = listOf(recurringPhase),
             tags = emptyList(),
-            purchasingData = GooglePurchasingData.Subscription(
-                productId = "product_id",
-                productDetails = productDetails,
-                optionId = "subscriptionOptionId",
-                token = "mock-token"
-            )
+            productDetails,
+            offerToken
         )
 
         assertThat(subscriptionOption.freePhase).isNull()
@@ -107,15 +108,13 @@ class SubscriptionOptionTest {
         )
 
         val subscriptionOption = GoogleSubscriptionOption(
-            id = "subscriptionOptionId",
+            productId = productId,
+            basePlanId = basePlanId,
+            offerId = null,
             pricingPhases = listOf(freePhase, recurringPhase),
             tags = emptyList(),
-            purchasingData = GooglePurchasingData.Subscription(
-                productId = "product_id",
-                productDetails = productDetails,
-                optionId = "subscriptionOptionId",
-                token = "mock-token"
-            )
+            productDetails,
+            offerToken
         )
 
         assertThat(subscriptionOption.freePhase).isEqualTo(freePhase)
@@ -150,15 +149,13 @@ class SubscriptionOptionTest {
         )
 
         val subscriptionOption = GoogleSubscriptionOption(
-            id = "subscriptionOptionId",
+            productId = productId,
+            basePlanId = basePlanId,
+            offerId = null,
             pricingPhases = listOf(introPhase, recurringPhase),
             tags = emptyList(),
-            purchasingData = GooglePurchasingData.Subscription(
-                productId = "product_id",
-                productDetails = productDetails,
-                optionId = "subscriptionOptionId",
-                token = "mock-token"
-            )
+            productDetails,
+            offerToken
         )
 
         assertThat(subscriptionOption.freePhase).isNull()

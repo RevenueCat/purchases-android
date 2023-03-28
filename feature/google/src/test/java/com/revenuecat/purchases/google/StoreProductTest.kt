@@ -17,6 +17,11 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class StoreProductTest {
+
+    private val productId = "product-id"
+    private val basePlanId = "base-plan-id"
+    private val offerToken = "mock-token"
+
     @Test
     fun `Two StoreProducts with the same properties are equal`() {
         val productDetails = mockProductDetails()
@@ -32,7 +37,9 @@ class StoreProductTest {
         )
 
         val subscriptionOption1 = GoogleSubscriptionOption(
-            id = "subscriptionOptionId",
+            productId = productId,
+            basePlanId = basePlanId,
+            offerId = null,
             pricingPhases = listOf(PricingPhase(
                 billingPeriod = Period.create("P1M"),
                 recurrenceMode = RecurrenceMode.INFINITE_RECURRING,
@@ -44,15 +51,13 @@ class StoreProductTest {
                 )
             )),
             tags = emptyList(),
-            purchasingData = GooglePurchasingData.Subscription(
-                productId = "product_id",
-                productDetails = productDetails,
-                optionId = "subscriptionOptionId",
-                token = "mock-token"
-            )
+            productDetails,
+            offerToken
         )
         val subscriptionOption2 = GoogleSubscriptionOption(
-            id = "subscriptionOptionId",
+            productId = productId,
+            basePlanId = basePlanId,
+            offerId = null,
             pricingPhases = listOf(PricingPhase(
                 billingPeriod = Period.create("P1M"),
                 recurrenceMode = RecurrenceMode.INFINITE_RECURRING,
@@ -64,12 +69,8 @@ class StoreProductTest {
                 )
             )),
             tags = emptyList(),
-            purchasingData = GooglePurchasingData.Subscription(
-                productId = "product_id",
-                productDetails = productDetails,
-                optionId = "subscriptionOptionId",
-                token = "mock-token"
-            )
+            productDetails,
+            offerToken
         )
 
         val storeProduct1 = GoogleStoreProduct(
@@ -116,7 +117,9 @@ class StoreProductTest {
         )
 
         val subscriptionOption1 = GoogleSubscriptionOption(
-            id = "subscriptionOptionId",
+            productId = productId,
+            basePlanId = basePlanId,
+            offerId = null,
             pricingPhases = listOf(PricingPhase(
                 billingPeriod = Period.create("P1M"),
                 recurrenceMode = RecurrenceMode.INFINITE_RECURRING,
@@ -128,15 +131,13 @@ class StoreProductTest {
                 )
             )),
             tags = emptyList(),
-            purchasingData = GooglePurchasingData.Subscription(
-                productId = "product_id",
-                productDetails = productDetails,
-                optionId = "subscriptionOptionId",
-                token = "mock-token"
-            )
+            productDetails,
+            offerToken
         )
         val subscriptionOption2 = GoogleSubscriptionOption(
-            id = "subscriptionOptionId",
+            productId = productId,
+            basePlanId = basePlanId,
+            offerId = null,
             pricingPhases = listOf(PricingPhase(
                 billingPeriod = Period.create("P1M"),
                 recurrenceMode = RecurrenceMode.INFINITE_RECURRING,
@@ -148,12 +149,8 @@ class StoreProductTest {
                 )
             )),
             tags = emptyList(),
-            purchasingData = GooglePurchasingData.Subscription(
-                productId = "product_id",
-                productDetails = productDetails,
-                optionId = "subscriptionOptionId",
-                token = "mock-token"
-            )
+            productDetails,
+            offerToken
         )
 
         val storeProduct1 = GoogleStoreProduct(

@@ -1,7 +1,6 @@
 package com.revenuecat.purchases.amazon
 
 import com.revenuecat.purchases.ProductType
-import com.revenuecat.purchases.models.AmazonPlatformProductId
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.PlatformProductId
 import com.revenuecat.purchases.models.Price
@@ -28,7 +27,7 @@ data class AmazonStoreProduct(
         get() = AmazonPurchasingData.Product(this)
 
     override val platformProductId: PlatformProductId
-        get() = AmazonPlatformProductId(id)
+        get() = PlatformProductId(id)
 
     @Deprecated(
         "Replaced with id",

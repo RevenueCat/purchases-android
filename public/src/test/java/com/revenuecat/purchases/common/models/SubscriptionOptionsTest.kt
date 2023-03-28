@@ -18,13 +18,10 @@ import org.junit.runners.Parameterized
 class SubscriptionOptionsTest {
     private val discountTag = "discount"
 
+    private val productId = "product_id"
+    private val mockToken = "mock-token"
+
     private val productDetails = mockProductDetails()
-    private val purchasingData = GooglePurchasingData.Subscription(
-        productId = "product_id",
-        productDetails = productDetails,
-        optionId = "subscriptionOptionId",
-        token = "mock-token"
-    )
 
     private val finalPricingPhase = PricingPhase(
         billingPeriod = Period.create("P1M"),
@@ -38,7 +35,9 @@ class SubscriptionOptionsTest {
     )
 
     private val subscriptionOptionFreeTrial = GoogleSubscriptionOption(
-        id = "subscriptionOptionId",
+        productId = productId,
+        basePlanId = "subscriptionOptionId",
+        offerId = null,
         pricingPhases = listOf(
             PricingPhase(
                 billingPeriod = Period.create("P1W"),
@@ -53,11 +52,14 @@ class SubscriptionOptionsTest {
             finalPricingPhase
         ),
         tags = listOf(discountTag),
-        purchasingData = purchasingData
+        productDetails = productDetails,
+        offerToken = mockToken
     )
 
     private val subscriptionOptionIntroTrial = GoogleSubscriptionOption(
-        id = "subscriptionOptionId",
+        productId = productId,
+        basePlanId = "subscriptionOptionId",
+        offerId = null,
         pricingPhases = listOf(
             PricingPhase(
                 billingPeriod = Period.create("P1M"),
@@ -72,16 +74,20 @@ class SubscriptionOptionsTest {
             finalPricingPhase
         ),
         tags = listOf(discountTag),
-        purchasingData = purchasingData
+        productDetails = productDetails,
+        offerToken = mockToken
     )
 
     private val subscriptionOptionBase = GoogleSubscriptionOption(
-        id = "subscriptionOptionId",
+        productId = productId,
+        basePlanId = "subscriptionOptionId",
+        offerId = null,
         pricingPhases = listOf(
             finalPricingPhase
         ),
         tags = emptyList(),
-        purchasingData = purchasingData
+        productDetails = productDetails,
+        offerToken = mockToken
     )
 
     private val subscriptionOptions = SubscriptionOptions(listOf(subscriptionOptionBase, subscriptionOptionFreeTrial, subscriptionOptionIntroTrial))

@@ -67,12 +67,7 @@ fun stubStoreProduct(
             productId = productId
         )
     override val platformProductId: PlatformProductId
-        get() = object : PlatformProductId {
-            override val productId: String
-                get() = productId
-            override val toMap: Map<String, String?>
-                get() = mapOf("product_id" to productId)
-        }
+        get() = PlatformProductId(productId)
     override val sku: String
         get() = productId
 }
@@ -102,12 +97,7 @@ fun stubINAPPStoreProduct(
             productId = productId
         )
     override val platformProductId: PlatformProductId
-        get() = object : PlatformProductId {
-            override val productId: String
-                get() = productId
-            override val toMap: Map<String, String?>
-                get() = mapOf("product_id" to productId)
-        }
+        get() = PlatformProductId(productId)
     override val sku: String
         get() = productId
 }
@@ -130,14 +120,12 @@ fun stubSubscriptionOption(
             productId = productId
         )
     override val platformProductId: PlatformProductId
-        get() = object : PlatformProductId {
-            override val productId: String
-                get() = productId
+        get() = object : PlatformProductId(productId) {
             override val toMap: Map<String, String?>
                 get() = mapOf(
                     "product_id" to productId,
-                    "base_plan_id" to id.split(":").firstOrNull(), // TODO: Bad
-                    "offer_id" to id.split(":").getOrNull(1), // TODO: Bad
+                    "base_plan_id" to id.split(":").firstOrNull(),
+                    "offer_id" to id.split(":").getOrNull(1)
                 )
         }
 }

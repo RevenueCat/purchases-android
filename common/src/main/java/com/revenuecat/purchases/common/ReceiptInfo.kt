@@ -39,13 +39,14 @@ class ReceiptInfo(
 
     val platformProductIds: List<PlatformProductId>?
         get() {
-            // TODO: Might need to look at productIds to make sure all of them are here
-            // TODO: this only looks at StoreProduct
-            return listOfNotNull(
+            val fromStoreProduct =
                 subscriptionOption?.let {
                     it.platformProductId
                 } ?: storeProduct?.platformProductId
-            )
+
+            return productIDs.map { PlatformProductId(it) }.filter {
+                it.productId != fromStoreProduct?.productId
+            } + listOfNotNull(fromStoreProduct)
         }
 
     override fun hashCode(): Int {
