@@ -48,7 +48,7 @@ class ReceiptInfo(
             // We want the PlatformProductID with most info (like GooglePlatformProductId from a SubscriptionOption)
             // so this logic prevents duplicate productIds (PlatformProductID) from being returned
             val platformProductIds = productIDs
-                .filter { it != storeProductPlatformProductId.productId }
+                .filter { it != storeProductPlatformProductId?.productId }
                 .map { PlatformProductId(it) }
 
             return platformProductIds + listOfNotNull(storeProductPlatformProductId)
