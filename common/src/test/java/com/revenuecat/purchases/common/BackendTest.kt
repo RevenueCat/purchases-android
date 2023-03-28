@@ -15,6 +15,7 @@ import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.offlineentitlements.createProductEntitlementMapping
 import com.revenuecat.purchases.models.RecurrenceMode
 import com.revenuecat.purchases.utils.Responses
+import com.revenuecat.purchases.utils.filterNotNullValues
 import com.revenuecat.purchases.utils.getNullableString
 import com.revenuecat.purchases.utils.stubStoreProduct
 import com.revenuecat.purchases.utils.stubSubscriptionOption
@@ -368,6 +369,47 @@ class BackendTest {
                 )
             )
         )
+    }
+
+    @Test
+    fun `postReceipt has product_plan_id in body if receipt has subscriptionOptionId`() {
+        val subscriptionOption = storeProduct.subscriptionOptions!!.first()
+        val receiptInfo = ReceiptInfo(
+            productIDs = productIDs,
+            storeProduct = storeProduct,
+            subscriptionOptionId = subscriptionOption.id
+        )
+
+        mockPostReceiptResponseAndPost(
+            backend,
+            isRestore = false,
+            observerMode = false,
+            receiptInfo = receiptInfo,
+            storeAppUserID = null
+        )
+
+        assertThat(requestBodySlot.isCaptured).isTrue
+        assertThat(requestBodySlot.captured["product_plan_id"]).isNotNull
+        assertThat(requestBodySlot.captured["product_plan_id"]).isEqualTo(subscriptionOption.id)
+    }
+
+    @Test
+    fun `postReceipt doesn't have product_plan_id in body if receipt doesn't have subscriptionOptionId`() {
+        val receiptInfo = ReceiptInfo(
+            productIDs = productIDs,
+            storeProduct = storeProduct
+        )
+
+        mockPostReceiptResponseAndPost(
+            backend,
+            isRestore = false,
+            observerMode = false,
+            receiptInfo = receiptInfo,
+            storeAppUserID = null
+        )
+
+        assertThat(requestBodySlot.isCaptured).isTrue
+        assertThat(requestBodySlot.captured["product_plan_id"]).isNull()
     }
 
     @Test
@@ -1849,6 +1891,7 @@ class BackendTest {
             "fetch_token" to token,
             "app_user_id" to appUserID,
             "product_ids" to receiptInfo.productIDs,
+            "product_plan_id" to receiptInfo.subscriptionOptionId,
             "is_restore" to isRestore,
             "presented_offering_identifier" to receiptInfo.offeringIdentifier,
             "observer_mode" to observerMode,
@@ -1856,9 +1899,7 @@ class BackendTest {
             "currency" to receiptInfo.currency,
             "normal_duration" to receiptInfo.duration,
             "store_user_id" to storeAppUserID
-        ).mapNotNull { entry: Map.Entry<String, Any?> ->
-            entry.value?.let { entry.key to it }
-        }.toMap()
+        ).filterNotNullValues()
 
         return mockResponse(
             Endpoint.PostReceipt,
