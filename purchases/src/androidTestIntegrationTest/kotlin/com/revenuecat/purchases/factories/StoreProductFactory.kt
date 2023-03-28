@@ -8,7 +8,7 @@ import org.json.JSONObject
 object StoreProductFactory {
 
     private const val validStoreProductJson = "{" +
-        "\"productId\":\"${Constants.PRODUCT_ID_TO_PURCHASE}\"," +
+        "\"productId\":\"${Constants.productIdToPurchase}\"," +
         "\"type\":\"subs\"," +
         "\"title\":\"Monthly Product Intro Pricing One Week (RevenueCat SDK Tester)\"," +
         "\"name\":\"Monthly Product Intro Pricing One Week\"," +
@@ -23,7 +23,7 @@ object StoreProductFactory {
 
     @Suppress("LongParameterList")
     fun createStoreProduct(
-        sku: String = Constants.PRODUCT_ID_TO_PURCHASE,
+        sku: String = Constants.productIdToPurchase,
         type: ProductType = ProductType.SUBS,
         price: String = "€5.49",
         priceAmountMicros: Long = 5490000,

@@ -9,6 +9,7 @@ import com.revenuecat.purchases.common.PostReceiptDataErrorCallback
 import com.revenuecat.purchases.common.PostReceiptDataSuccessCallback
 import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.SubscriberAttributeError
+import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
 import com.revenuecat.purchases.google.BillingWrapper
 import com.revenuecat.purchases.google.toStoreTransaction
 import com.revenuecat.purchases.models.StoreProduct
@@ -42,6 +43,7 @@ class PostingTransactionsTests {
     private val backendMock = mockk<Backend>(relaxed = true)
     private val billingWrapperMock = mockk<BillingWrapper>(relaxed = true)
     private val customerInfoHelperMock = mockk<CustomerInfoHelper>()
+    private val offlineEntitlementsManagerMock = mockk<OfflineEntitlementsManager>()
     private var postReceiptError: PostReceiptErrorContainer? = null
     private var postReceiptSuccess: PostReceiptCompletionContainer? = null
     private var subscriberAttribute = SubscriberAttribute("key", "value")
@@ -122,6 +124,9 @@ class PostingTransactionsTests {
         every {
             customerInfoHelperMock.sendUpdatedCustomerInfoToDelegateIfChanged(any())
         } just runs
+        every {
+            offlineEntitlementsManagerMock.updateProductEntitlementMappingCacheIfStale()
+        } just runs
 
         underTest = Purchases(
             application = mockk(relaxed = true),
@@ -145,7 +150,8 @@ class PostingTransactionsTests {
                 store = Store.PLAY_STORE
             ),
             customerInfoHelper = customerInfoHelperMock,
-            diagnosticsSynchronizer = null
+            diagnosticsSynchronizer = null,
+            offlineEntitlementsManager = offlineEntitlementsManagerMock
         )
     }
 

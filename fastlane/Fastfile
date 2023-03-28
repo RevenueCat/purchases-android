@@ -161,6 +161,44 @@ platform :android do
     )
   end
 
+  desc "Build purchases module integration tests"
+  lane :build_purchases_integration_tests do |options|
+    constants_path = './purchases/src/androidTestIntegrationTest/kotlin/com/revenuecat/purchases/Constants.kt'
+    proxy_url = options[:proxy_url]
+    build_type = options[:build_type] || "release"
+    replace_text_in_files(
+      previous_text: "REVENUECAT_API_KEY",
+      new_text: ENV["REVENUECAT_API_KEY"],
+      paths_of_files_to_update: [constants_path]
+    )
+    replace_text_in_files(
+      previous_text: "GOOGLE_PURCHASE_TOKEN",
+      new_text: ENV["GOOGLE_PURCHASE_TOKEN"],
+      paths_of_files_to_update: [constants_path]
+    )
+    replace_text_in_files(
+      previous_text: "PRODUCT_ID_TO_PURCHASE",
+      new_text: ENV["PRODUCT_ID_TO_PURCHASE"],
+      paths_of_files_to_update: [constants_path]
+    )
+    unless proxy_url.nil?
+      replace_text_in_files(
+        previous_text: "NO_PROXY_URL",
+        new_text: proxy_url,
+        paths_of_files_to_update: [constants_path]
+      )
+    end
+
+    # We need to build the same apk twice since firebase test labs don't allow the app and test apks
+    # to have same package name
+
+    # Build test apk
+    build_purchases_android_test_apk("com.revenuecat.purchases.integrationtests.test", "integrationTest-app", build_type)
+
+    # Build app apk
+    build_purchases_android_test_apk("com.revenuecat.purchases.integrationtests", "integrationTest-test", build_type)
+  end
+
   desc "Publish purchase tester to test track in Play Console"
   lane :publish_purchase_tester do |options|
     json_key_data = ENV["PUBLISH_SERVICE_ACCOUNT_JSON_KEY_DATA"] || UI.user_error!("Missing JSON key data to publish purchase tester.")
@@ -268,4 +306,22 @@ def check_no_git_tag_exists(version_number)
   if git_tag_exists(tag: version_number, remote: true, remote_name: 'origin')
     raise "git tag with version #{version_number} already exists!"
   end
+end
+
+def build_purchases_android_test_apk(package_name, apk_name, build_type)
+  gradle(
+    task: ':purchases:assembleAndroidTest',
+    properties: {
+      "testApplicationId" => package_name,
+      "testBuildType" => build_type
+    }
+  )
+  apk_path = "../purchases/build/outputs/apk/androidTest/integrationTest/#{build_type}/purchases-integrationTest-#{build_type}-androidTest.apk"
+  new_apk_path = "../purchases/build/outputs/apk/androidTest/integrationTest/#{build_type}/#{apk_name}.apk"
+  sh "mv #{apk_path} #{new_apk_path}"
+  copy_artifacts(
+    target_path: 'purchases/test_artifacts',
+    artifacts: ['purchases/build/**/*.apk'],
+    fail_on_missing: true
+  )
 end

@@ -22,6 +22,7 @@ import com.revenuecat.purchases.common.diagnostics.DiagnosticsFileHelper
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsSynchronizer
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.networking.ETagManager
+import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import com.revenuecat.purchases.common.verification.SigningManager
 import com.revenuecat.purchases.identity.IdentityManager
@@ -127,6 +128,8 @@ internal class PurchasesFactory(
 
             val customerInfoHelper = CustomerInfoHelper(cache, backend, identityManager)
 
+            val offlineEntitlementsManager = OfflineEntitlementsManager(backend, cache)
+
             var diagnosticsSynchronizer: DiagnosticsSynchronizer? = null
             if (diagnosticsFileHelper != null && diagnosticsTracker != null) {
                 diagnosticsSynchronizer = DiagnosticsSynchronizer(
@@ -149,7 +152,8 @@ internal class PurchasesFactory(
                 subscriberAttributesManager,
                 appConfig,
                 customerInfoHelper,
-                diagnosticsSynchronizer
+                diagnosticsSynchronizer,
+                offlineEntitlementsManager
             )
         }
     }

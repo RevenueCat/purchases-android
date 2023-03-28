@@ -300,6 +300,55 @@ jobs:
             - integration-tests/build/outputs/apk/androidTest/latestDependencies/release/integration-tests-latestDependencies-release-androidTest.apk
             - integration-tests/build/outputs/apk/androidTest/unityIAP/release/integration-tests-unityIAP-release-androidTest.apk
 
+  purchases-integration-tests-build:
+    <<: *android-executor
+    steps:
+      - checkout
+      - install-sdkman
+      - revenuecat/install-gem-unix-dependencies:
+          cache-version: v1
+      - android/restore-build-cache
+      - run:
+          name: Create purchases integration tests apks
+          command: |
+            bundle exec fastlane android build_purchases_integration_tests
+      - android/save-build-cache
+      - persist_to_workspace:
+          root: .
+          paths:
+            - purchases/test_artifacts/integrationTest-app.apk
+            - purchases/test_artifacts/integrationTest-test.apk
+
+  run-firebase-tests-purchases-integration-test:
+    description: "Run purchases module integration tests for Android in Firebase. Variant integrationTest"
+    executor: gcp-cli/google
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - gcp-cli/initialize:
+          gcloud-service-key: GCLOUD_SERVICE_KEY
+          google-compute-zone: GOOGLE_COMPUTE_ZONE
+          google-project-id: GOOGLE_PROJECT_ID
+      - run:
+          name: Test with Firebase Test Lab
+          command: >
+            gcloud firebase test android run --type instrumentation \
+              --app purchases/test_artifacts/integrationTest-app.apk \
+              --test purchases/test_artifacts/integrationTest-test.apk \
+              --timeout 2m \
+              --results-bucket cloud-test-${GOOGLE_PROJECT_ID}
+      - run:
+          name: Copy test results data
+          command: |
+            mkdir -p ~/gsutil/
+            gsutil -m cp -r -U `gsutil ls gs://cloud-test-$GOOGLE_PROJECT_ID | tail -1` ~/gsutil/ | true
+          when: always
+      - store_artifacts:
+          path: ~/gsutil/
+      - store_test_results:
+          path: ~/gsutil/
+
   run-firebase-tests-latest-dependencies:
     description: "Run integration tests for Android in Firebase. Variant latestDependencies"
     executor: gcp-cli/google
@@ -383,6 +432,10 @@ workflows:
         equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
     jobs:
       - integration-tests-build: *release-branches
+      - purchases-integration-tests-build: *release-branches
+      - run-firebase-tests-purchases-integration-test:
+          requires:
+            - purchases-integration-tests-build
       - run-firebase-tests-latest-dependencies:
           requires:
             - integration-tests-build
@@ -392,6 +445,7 @@ workflows:
       - hold:
           type: approval
           requires:
+            - run-firebase-tests-purchases-integration-test
             - run-firebase-tests-latest-dependencies
             - run-firebase-tests-unityIAP
           <<: *release-branches
