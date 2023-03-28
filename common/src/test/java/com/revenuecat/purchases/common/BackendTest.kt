@@ -382,7 +382,7 @@ class BackendTest {
     }
 
     @Test
-    fun `postReceipt has product_plan_id in body if receipt if GoogleStoreProduct subscription`() {
+    fun `postReceipt has product_plan_id in body if receipt is GoogleStoreProduct subscription`() {
         val productId = "product_id"
         val basePlanId = "base_plan_id"
         val productDetails = mockProductDetails()
@@ -447,7 +447,7 @@ class BackendTest {
     }
 
     @Test
-    fun `postReceipt doesn't have product_plan_id in body if receipt if GoogleStoreProduct in-app`() {
+    fun `postReceipt doesn't have product_plan_id in body if receipt is GoogleStoreProduct in-app`() {
         val productId = "product_id"
         val productDetails = mockProductDetails()
 
