@@ -14,6 +14,7 @@ import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.offlineentitlements.createProductEntitlementMapping
 import com.revenuecat.purchases.models.RecurrenceMode
+import com.revenuecat.purchases.models.googleProduct
 import com.revenuecat.purchases.utils.Responses
 import com.revenuecat.purchases.utils.filterNotNullValues
 import com.revenuecat.purchases.utils.getNullableString
@@ -390,7 +391,7 @@ class BackendTest {
 
         assertThat(requestBodySlot.isCaptured).isTrue
         assertThat(requestBodySlot.captured["product_plan_id"]).isNotNull
-        assertThat(requestBodySlot.captured["product_plan_id"]).isEqualTo(subscriptionOption.id)
+        assertThat(requestBodySlot.captured["product_plan_id"]).isEqualTo(storeProduct?.googleProduct?.basePlanId)
     }
 
     @Test
