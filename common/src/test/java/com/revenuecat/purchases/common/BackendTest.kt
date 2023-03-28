@@ -1960,7 +1960,6 @@ class BackendTest {
             "fetch_token" to token,
             "app_user_id" to appUserID,
             "product_ids" to receiptInfo.productIDs,
-            "product_plan_id" to receiptInfo.subscriptionOptionId,
             "is_restore" to isRestore,
             "presented_offering_identifier" to receiptInfo.offeringIdentifier,
             "observer_mode" to observerMode,
