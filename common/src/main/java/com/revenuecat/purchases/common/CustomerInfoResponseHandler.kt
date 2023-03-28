@@ -82,13 +82,14 @@ class CustomerInfoResponseHandler(
         val entitlements = JSONObject()
 
         purchasedProducts.forEach { product ->
-            product.entitlement?.let { entitlement ->
-                entitlements.put(entitlement, JSONObject().apply {
-                    put("expires_date", product.expiresDate?.let { Iso8601Utils.format(it) })
-                    put("product_identifier", product.productIdentifier)
-                    val purchaseDate = Date(product.storeTransaction.purchaseTime)
-                    put("purchase_date", Iso8601Utils.format(purchaseDate))
-                })
+            val entitlementDetails = JSONObject().apply {
+                put("expires_date", product.expiresDate?.let { Iso8601Utils.format(it) })
+                put("product_identifier", product.productIdentifier)
+                val purchaseDate = Date(product.storeTransaction.purchaseTime)
+                put("purchase_date", Iso8601Utils.format(purchaseDate))
+            }
+            product.entitlements?.forEach { entitlement ->
+                entitlements.put(entitlement, entitlementDetails)
             }
         }
         return entitlements
