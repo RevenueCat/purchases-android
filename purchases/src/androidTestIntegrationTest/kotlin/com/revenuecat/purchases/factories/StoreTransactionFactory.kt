@@ -11,10 +11,10 @@ object StoreTransactionFactory {
     @Suppress("LongParameterList")
     fun createStoreTransaction(
         orderId: String? = "test-order-id",
-        skus: List<String> = listOf(Constants.PRODUCT_ID_TO_PURCHASE),
+        skus: List<String> = listOf(Constants.productIdToPurchase),
         type: ProductType = ProductType.SUBS,
         purchaseTime: Long = 1679575266000L, // Thursday, March 23, 2023 12:41:06 PM GMT
-        purchaseToken: String = Constants.GOOGLE_PURCHASE_TOKEN,
+        purchaseToken: String = Constants.googlePurchaseToken,
         purchaseState: PurchaseState = PurchaseState.PURCHASED,
         isAutoRenewing: Boolean? = true,
         signature: String? = "test-signature",

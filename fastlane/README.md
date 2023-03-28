@@ -87,6 +87,14 @@ Tag current branch with current version number
 
 Build purchase tester app bundle
 
+### android build_purchases_integration_tests
+
+```sh
+[bundle exec] fastlane android build_purchases_integration_tests
+```
+
+Build purchases module integration tests
+
 ### android publish_purchase_tester
 
 ```sh
