@@ -64,6 +64,4 @@ interface SubscriptionOption {
         }
 
     val purchasingData: PurchasingData
-
-    val platformProductId: PlatformProductId
 }

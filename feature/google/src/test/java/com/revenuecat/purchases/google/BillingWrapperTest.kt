@@ -32,7 +32,6 @@ import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.firstSku
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.sha256
-import com.revenuecat.purchases.models.GoogleSubscriptionOption
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.PricingPhase
 import com.revenuecat.purchases.models.PurchasingData
@@ -41,7 +40,6 @@ import com.revenuecat.purchases.models.RecurrenceMode
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.Period
-import com.revenuecat.purchases.models.PlatformProductId
 import com.revenuecat.purchases.models.SubscriptionOptions
 import com.revenuecat.purchases.utils.createMockProductDetailsNoOffers
 import com.revenuecat.purchases.utils.mockOneTimePurchaseOfferDetails
@@ -800,8 +798,6 @@ class BillingWrapperTest {
                     override val productType: ProductType
                         get() = ProductType.SUBS
                 }
-            override val platformProductId: PlatformProductId
-                get() = PlatformProductId("")
         }
 
         wrapper.makePurchaseAsync(
@@ -829,13 +825,6 @@ class BillingWrapperTest {
                 get() = ProductType.SUBS
         }
 
-        object : PlatformProductId {
-            override val productId: String
-                get() = ""
-            override val toMap: Map<String, String?>
-                get() = mapOf("product_id" to productId)
-        }
-
         val storeProduct = object : StoreProduct {
             override val id: String
                 get() = "mock-sku"
@@ -861,13 +850,9 @@ class BillingWrapperTest {
                         get() = emptyList()
                     override val purchasingData: PurchasingData
                         get() = purchasingData
-                    override val platformProductId: PlatformProductId
-                        get() = platformProductId
                 }
             override val purchasingData: PurchasingData
                 get() = purchasingData
-            override val platformProductId: PlatformProductId
-                get() = platformProductId
             override val sku: String
                 get() = id
         }

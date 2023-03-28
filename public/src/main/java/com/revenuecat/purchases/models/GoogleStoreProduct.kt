@@ -31,9 +31,6 @@ data class GoogleStoreProduct(
             )
         }
 
-    override val platformProductId: PlatformProductId
-        get() = GooglePlatformProductId(productId)
-
     /**
      * The sku of the StoreProduct
      */

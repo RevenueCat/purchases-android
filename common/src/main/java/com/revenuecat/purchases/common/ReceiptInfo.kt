@@ -1,6 +1,6 @@
 package com.revenuecat.purchases.common
 
-import com.revenuecat.purchases.models.PlatformProductId
+import com.revenuecat.purchases.models.GoogleSubscriptionOption
 import com.revenuecat.purchases.models.PricingPhase
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.SubscriptionOption
@@ -37,12 +37,12 @@ class ReceiptInfo(
         return true
     }
 
-    val platformProductIds: List<PlatformProductId>?
+    internal val platformProductIds: List<PlatformProductId>?
         get() {
             val fromStoreProduct =
                 subscriptionOption?.let {
-                    it.platformProductId
-                } ?: storeProduct?.platformProductId
+                    it.platformProductId()
+                } ?: storeProduct?.platformProductId()
 
             return productIDs.map { PlatformProductId(it) }.filter {
                 it.productId != fromStoreProduct?.productId
@@ -68,4 +68,39 @@ class ReceiptInfo(
             "currency=$currency, " +
             "duration=$duration)"
     }
+}
+
+internal fun StoreProduct.platformProductId(): PlatformProductId {
+    return PlatformProductId(id)
+}
+
+internal fun SubscriptionOption.platformProductId(): PlatformProductId? {
+    return when (this) {
+        is GoogleSubscriptionOption -> GooglePlatformProductId(
+            productId,
+            basePlanId,
+            offerId
+        )
+        else -> null
+    }
+}
+
+internal open class PlatformProductId(open val productId: String) {
+    open val toMap: Map<String, String?>
+        get() = mapOf(
+            "product_id" to productId
+        )
+}
+
+internal class GooglePlatformProductId(
+    override val productId: String,
+    val basePlanId: String? = null,
+    val offerId: String? = null
+) : PlatformProductId(productId) {
+    override val toMap: Map<String, String?>
+        get() = mapOf(
+            "product_id" to productId,
+            "base_plan_id" to basePlanId,
+            "offer_id" to offerId
+        )
 }

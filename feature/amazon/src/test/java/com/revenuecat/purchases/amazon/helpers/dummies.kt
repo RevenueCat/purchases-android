@@ -9,14 +9,11 @@ import com.amazon.device.iap.model.Receipt
 import com.amazon.device.iap.model.UserData
 import com.revenuecat.purchases.common.MICROS_MULTIPLIER
 import com.revenuecat.purchases.models.Period
-import com.revenuecat.purchases.models.PlatformProductId
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.models.SubscriptionOptions
-import org.json.JSONArray
-import org.json.JSONObject
 import java.util.Date
 
 @SuppressWarnings("LongParameterList")
@@ -70,13 +67,6 @@ fun stubStoreProductForAmazon(
         get() = StubPurchasingData(
             productId = productId
         )
-    override val platformProductId: PlatformProductId
-        get() = object : PlatformProductId {
-            override val productId: String
-                get() = productId
-            override val toMap: Map<String, String?>
-                get() = mapOf("product_id" to productId)
-        }
     override val sku: String
         get() = productId
 }

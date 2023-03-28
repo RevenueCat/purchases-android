@@ -24,11 +24,4 @@ data class GoogleSubscriptionOption(
             productDetails,
             offerToken
         )
-
-    override val platformProductId: PlatformProductId
-        get() = GooglePlatformProductId(
-            productId,
-            basePlanId,
-            offerId
-        )
 }

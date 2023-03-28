@@ -8,7 +8,6 @@ import com.revenuecat.purchases.PackageType
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.common.MICROS_MULTIPLIER
 import com.revenuecat.purchases.models.Period
-import com.revenuecat.purchases.models.PlatformProductId
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.PricingPhase
 import com.revenuecat.purchases.models.PurchasingData
@@ -66,8 +65,6 @@ fun stubStoreProduct(
         get() = StubPurchasingData(
             productId = productId
         )
-    override val platformProductId: PlatformProductId
-        get() = PlatformProductId(productId)
     override val sku: String
         get() = productId
 }
@@ -96,8 +93,6 @@ fun stubINAPPStoreProduct(
         get() = StubPurchasingData(
             productId = productId
         )
-    override val platformProductId: PlatformProductId
-        get() = PlatformProductId(productId)
     override val sku: String
         get() = productId
 }
@@ -119,15 +114,6 @@ fun stubSubscriptionOption(
         get() = StubPurchasingData(
             productId = productId
         )
-    override val platformProductId: PlatformProductId
-        get() = object : PlatformProductId(productId) {
-            override val toMap: Map<String, String?>
-                get() = mapOf(
-                    "product_id" to productId,
-                    "base_plan_id" to id.split(":").firstOrNull(),
-                    "offer_id" to id.split(":").getOrNull(1)
-                )
-        }
 }
 
 fun stubFreeTrialPricingPhase(
