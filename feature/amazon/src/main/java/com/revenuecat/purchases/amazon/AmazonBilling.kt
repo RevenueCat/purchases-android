@@ -107,7 +107,7 @@ internal class AmazonBilling constructor(
         onReceivePurchaseHistory: (List<StoreTransaction>) -> Unit,
         onReceivePurchaseHistoryError: PurchasesErrorCallback
     ) {
-        queryAmazonPurchases(
+        queryPurchases(
             filterOnlyActivePurchases = false,
             onSuccess = {
                 onReceivePurchaseHistory(it.values.toList())
@@ -263,7 +263,7 @@ internal class AmazonBilling constructor(
         onError: (PurchasesError) -> Unit
     ) {
         if (checkObserverMode()) return
-        queryAmazonPurchases(
+        queryPurchases(
             filterOnlyActivePurchases = true,
             onSuccess,
             onError
@@ -331,7 +331,7 @@ internal class AmazonBilling constructor(
         }
     }
 
-    private fun queryAmazonPurchases(
+    private fun queryPurchases(
         filterOnlyActivePurchases: Boolean,
         onSuccess: (Map<String, StoreTransaction>) -> Unit,
         onError: (PurchasesError) -> Unit
@@ -341,6 +341,9 @@ internal class AmazonBilling constructor(
                 purchaseUpdatesHandler.queryPurchases(
                     onSuccess = onSuccess@{ receipts, userData ->
                         val filteredReceipts = if (filterOnlyActivePurchases) {
+                            // This filters out expired receipts according to the current date.
+                            // Note that this is not calculating the expiration date of the purchase,
+                            // where we would use the backend requestDate as part of the calculation.
                             receipts.filter { it.cancelDate == null || it.cancelDate > dateProvider.now }
                         } else {
                             receipts
