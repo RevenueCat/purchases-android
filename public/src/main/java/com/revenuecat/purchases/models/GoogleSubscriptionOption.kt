@@ -8,4 +8,11 @@ data class GoogleSubscriptionOption(
     override val pricingPhases: List<PricingPhase>,
     override val tags: List<String>,
     override val purchasingData: PurchasingData
-) : SubscriptionOption
+) : SubscriptionOption {
+    override val platformProductId: PlatformProductId
+        get() = GooglePlatformProductId(
+            purchasingData.productId,
+            id.split(":").firstOrNull(), // TODO: fix, this is bad
+            id.split(":").getOrNull(1) // TODO: fix, this is bad
+        )
+}

@@ -1,7 +1,9 @@
 package com.revenuecat.purchases.common
 
+import com.revenuecat.purchases.models.PlatformProductId
 import com.revenuecat.purchases.models.PricingPhase
 import com.revenuecat.purchases.models.StoreProduct
+import com.revenuecat.purchases.models.SubscriptionOption
 
 class ReceiptInfo(
     val productIDs: List<String>,
@@ -14,8 +16,10 @@ class ReceiptInfo(
 ) {
 
     val duration: String? = storeProduct?.period?.iso8601?.takeUnless { it.isEmpty() }
+    val subscriptionOption: SubscriptionOption? =
+        storeProduct?.subscriptionOptions?.firstOrNull { it.id == subscriptionOptionId }
     val pricingPhases: List<PricingPhase>? =
-        storeProduct?.subscriptionOptions?.firstOrNull { it.id == subscriptionOptionId }?.pricingPhases
+        subscriptionOption?.pricingPhases
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -32,6 +36,17 @@ class ReceiptInfo(
 
         return true
     }
+
+    val platformProductIds: List<PlatformProductId>?
+        get() {
+            // TODO: Might need to look at productIds to make sure all of them are here
+            // TODO: this only looks at StoreProduct
+            return listOfNotNull(
+                subscriptionOption?.let {
+                    it.platformProductId
+                } ?: storeProduct?.platformProductId
+            )
+        }
 
     override fun hashCode(): Int {
         var result = productIDs.hashCode()

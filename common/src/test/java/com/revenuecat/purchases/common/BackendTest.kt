@@ -408,22 +408,24 @@ class BackendTest {
                 token = "mock-token"
             )
         )
+
         val googleStoreProduct = GoogleStoreProduct(
             productId = productId,
             basePlanId = basePlanId,
             type = ProductType.SUBS,
-            price = Price("", 299, "USD"),
+            price = Price("$9.00", 9000000, "USD"),
             title = "TITLE",
             description = "DESCRIPTION",
             period = Period.create("P1M"),
             subscriptionOptions = SubscriptionOptions(listOf(subscriptionOption)),
-            defaultOption = null,
+            defaultOption = subscriptionOption,
             productDetails = productDetails
         )
 
         val receiptInfo = ReceiptInfo(
             productIDs = listOf(productId),
-            storeProduct = googleStoreProduct
+            storeProduct = googleStoreProduct,
+            subscriptionOptionId = basePlanId
         )
 
         mockPostReceiptResponseAndPost(
@@ -435,15 +437,38 @@ class BackendTest {
         )
 
         assertThat(requestBodySlot.isCaptured).isTrue
-        assertThat(requestBodySlot.captured["product_plan_id"]).isNotNull
-        assertThat(requestBodySlot.captured["product_plan_id"]).isEqualTo(googleStoreProduct?.googleProduct?.basePlanId)
+        assertThat(requestBodySlot.captured["platform_product_ids"]).isEqualTo(
+            listOf(
+                mapOf(
+                    "product_id" to productId,
+                    "base_plan_id" to basePlanId,
+                    "offer_id" to null,
+                )
+            )
+        )
     }
 
     @Test
-    fun `postReceipt doesn't have product_plan_id in body if receipt doesn't have subscriptionOptionId`() {
+    fun `postReceipt doesn't have product_plan_id in body if receipt if GoogleStoreProduct in-app`() {
+        val productId = "product_id"
+        val productDetails = mockProductDetails()
+
+        val googleStoreProduct = GoogleStoreProduct(
+            productId = productId,
+            basePlanId = null,
+            type = ProductType.SUBS,
+            price = Price("$9.00", 9000000, "USD"),
+            title = "TITLE",
+            description = "DESCRIPTION",
+            period = Period.create("P1M"),
+            subscriptionOptions = null,
+            defaultOption = null,
+            productDetails = productDetails
+        )
+
         val receiptInfo = ReceiptInfo(
-            productIDs = productIDs,
-            storeProduct = storeProduct
+            productIDs = listOf(productId),
+            storeProduct = googleStoreProduct
         )
 
         mockPostReceiptResponseAndPost(

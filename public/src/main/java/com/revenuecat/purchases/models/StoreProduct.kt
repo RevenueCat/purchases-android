@@ -66,6 +66,8 @@ interface StoreProduct {
      */
     val purchasingData: PurchasingData
 
+    val platformProductId: PlatformProductId
+
     /**
      * The sku of the StoreProduct
      */
@@ -74,4 +76,31 @@ interface StoreProduct {
         ReplaceWith("id")
     )
     val sku: String
+}
+
+interface PlatformProductId {
+    val productId: String
+    val toMap: Map<String, String?>
+}
+
+data class AmazonPlatformProductId(
+    override val productId: String
+) : PlatformProductId {
+    override val toMap: Map<String, String?>
+        get() = mapOf(
+            "product_id" to productId
+        )
+}
+
+data class GooglePlatformProductId(
+    override val productId: String,
+    val basePlanId: String? = null,
+    val offerId: String? = null
+) : PlatformProductId {
+    override val toMap: Map<String, String?>
+        get() = mapOf(
+            "product_id" to productId,
+            "base_plan_id" to basePlanId,
+            "offer_id" to offerId
+        )
 }
