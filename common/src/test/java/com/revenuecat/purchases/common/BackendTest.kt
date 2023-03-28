@@ -7,17 +7,26 @@ package com.revenuecat.purchases.common
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.offlineentitlements.createProductEntitlementMapping
+import com.revenuecat.purchases.models.GooglePurchasingData
+import com.revenuecat.purchases.models.GoogleStoreProduct
+import com.revenuecat.purchases.models.GoogleSubscriptionOption
+import com.revenuecat.purchases.models.Period
+import com.revenuecat.purchases.models.Price
+import com.revenuecat.purchases.models.PricingPhase
 import com.revenuecat.purchases.models.RecurrenceMode
+import com.revenuecat.purchases.models.SubscriptionOptions
 import com.revenuecat.purchases.models.googleProduct
 import com.revenuecat.purchases.utils.Responses
 import com.revenuecat.purchases.utils.filterNotNullValues
 import com.revenuecat.purchases.utils.getNullableString
+import com.revenuecat.purchases.utils.mockProductDetails
 import com.revenuecat.purchases.utils.stubStoreProduct
 import com.revenuecat.purchases.utils.stubSubscriptionOption
 import io.mockk.every
@@ -373,12 +382,48 @@ class BackendTest {
     }
 
     @Test
-    fun `postReceipt has product_plan_id in body if receipt has subscriptionOptionId`() {
-        val subscriptionOption = storeProduct.subscriptionOptions!!.first()
+    fun `postReceipt has product_plan_id in body if receipt if GoogleStoreProduct subscription`() {
+        val productId = "product_id"
+        val basePlanId = "base_plan_id"
+        val productDetails = mockProductDetails()
+
+        val recurringPhase = PricingPhase(
+            billingPeriod = Period.create("P1M"),
+            recurrenceMode = RecurrenceMode.INFINITE_RECURRING,
+            billingCycleCount = 0,
+            price = Price(
+                formatted = "$9.00",
+                amountMicros = 9000000,
+                currencyCode = "USD",
+            )
+        )
+        val subscriptionOption = GoogleSubscriptionOption(
+            id = basePlanId,
+            pricingPhases = listOf(recurringPhase),
+            tags = emptyList(),
+            purchasingData = GooglePurchasingData.Subscription(
+                productId = productId,
+                productDetails = productDetails,
+                optionId = basePlanId,
+                token = "mock-token"
+            )
+        )
+        val googleStoreProduct = GoogleStoreProduct(
+            productId = productId,
+            basePlanId = basePlanId,
+            type = ProductType.SUBS,
+            price = Price("", 299, "USD"),
+            title = "TITLE",
+            description = "DESCRIPTION",
+            period = Period.create("P1M"),
+            subscriptionOptions = SubscriptionOptions(listOf(subscriptionOption)),
+            defaultOption = null,
+            productDetails = productDetails
+        )
+
         val receiptInfo = ReceiptInfo(
-            productIDs = productIDs,
-            storeProduct = storeProduct,
-            subscriptionOptionId = subscriptionOption.id
+            productIDs = listOf(productId),
+            storeProduct = googleStoreProduct
         )
 
         mockPostReceiptResponseAndPost(
@@ -391,7 +436,7 @@ class BackendTest {
 
         assertThat(requestBodySlot.isCaptured).isTrue
         assertThat(requestBodySlot.captured["product_plan_id"]).isNotNull
-        assertThat(requestBodySlot.captured["product_plan_id"]).isEqualTo(storeProduct?.googleProduct?.basePlanId)
+        assertThat(requestBodySlot.captured["product_plan_id"]).isEqualTo(googleStoreProduct?.googleProduct?.basePlanId)
     }
 
     @Test
