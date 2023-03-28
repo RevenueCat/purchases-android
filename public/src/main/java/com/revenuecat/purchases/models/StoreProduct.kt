@@ -24,7 +24,7 @@ interface StoreProduct {
      * Price information for a non-subscription product.
      * Base plan price for a Google subscription.
      * Term price for an Amazon subscription.
-     * For subscriptions, use SubscriptionOption's pricing phases.
+     * For Google subscriptions, use SubscriptionOption's pricing phases for offer pricing.
      */
     val price: Price
 

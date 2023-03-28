@@ -1,12 +1,12 @@
 package com.revenuecat.purchases.models
 
+import com.android.billingclient.api.ProductDetails
+
 /**
  * Recurrence mode for a pricing phase
  */
-// TODO if google-only, rename and annotate identifier with @ProductDetails.RecurrenceMode
-// TODO add api testers
 @SuppressWarnings("MagicNumber")
-enum class RecurrenceMode(val identifier: Int?) {
+enum class RecurrenceMode(@ProductDetails.RecurrenceMode val identifier: Int?) {
 
     // Pricing phase repeats infinitely until cancellation
     INFINITE_RECURRING(1),
