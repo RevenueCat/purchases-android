@@ -6,6 +6,7 @@ import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.models.PurchasedProduct
+import com.revenuecat.purchases.strings.CustomerInfoStrings.COMPUTING_OFFLINE_CUSTOMER_INFO_FAILED
 import com.revenuecat.purchases.utils.Iso8601Utils
 import org.json.JSONObject
 import java.util.Date
@@ -46,8 +47,9 @@ class CustomerInfoResponseHandler(
                     jsonObject, requestDate, VerificationResult.NOT_REQUESTED
                 )
                 onSuccess.invoke(customerInfo)
-            }, onError = {
-                // TODO
+            }, onError = { error ->
+                errorLog(COMPUTING_OFFLINE_CUSTOMER_INFO_FAILED.format(error))
+                onError(error)
             })
     }
 
