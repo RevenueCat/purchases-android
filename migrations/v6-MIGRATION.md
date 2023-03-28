@@ -122,7 +122,8 @@ The `Period.Unit` enum can be one of the following:
 | getExpirationDateForSku | getExpirationDateForProductId |
 | getPurchaseDateForSku   | getPurchaseDateForProductId   |
 
-`productIds` in `CustomerInfo` fields conform to the following:
+`productIds` in `CustomerInfo` fields (`allExpirationDatesByProduct`, `allPurchaseDatesByProduct`, 
+`activeSubscriptions`, and `allPurchasedProductIds`) conform to the following:
 - Google subscriptions: subscriptionId:basePlanId
 - Amazon subscriptions: termSku
 - INAPPs: productId
