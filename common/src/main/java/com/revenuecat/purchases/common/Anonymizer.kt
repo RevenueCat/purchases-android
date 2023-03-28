@@ -19,6 +19,10 @@ class Anonymizer {
         return mapToAnonymize.mapValues { (_, value) -> anonymizedAny(value) }
     }
 
+    fun anonymizedStringMap(mapToAnonymize: Map<String, String>): Map<String, String> {
+        return mapToAnonymize.mapValues { (_, value) -> anonymizedString(value) }
+    }
+
     private fun anonymizedAny(valueToAnonymize: Any): Any {
         return when (valueToAnonymize) {
             is String -> anonymizedString(valueToAnonymize)

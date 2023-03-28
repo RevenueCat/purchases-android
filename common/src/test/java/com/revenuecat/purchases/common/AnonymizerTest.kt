@@ -50,10 +50,29 @@ class AnonymizerTest {
 
     // endregion
 
+    // region anonymizeStringMap
+
+    @Test
+    fun `anonymizedStringMap anonymizes string fields if needed`() {
+        val originalMap = mapOf(
+            "key-1" to "string with some.pii@revenuecat.com and 192.168.1.1.",
+            "key-2" to "string without pii",
+            "key-3" to "string with other.pii@revenuecat.com"
+        )
+        val expectedMap = mapOf(
+            "key-1" to "string with ***** and *****.",
+            "key-2" to "string without pii",
+            "key-3" to "string with *****"
+        )
+        assertThat(anonymizer.anonymizedStringMap(originalMap)).isEqualTo(expectedMap)
+    }
+
+    // endregion
+
     // region anonymizeMap
 
     @Test
-    fun `anonymizeMap anonymizes all string fields if needed`() {
+    fun `anonymizedMap anonymizes all string fields if needed`() {
         val originalMap = mapOf(
             "key-1" to 1234,
             "key-2" to "string with some.pii@revenuecat.com and 192.168.1.1.",
@@ -72,7 +91,7 @@ class AnonymizerTest {
     }
 
     @Test
-    fun `anonymizeMap anonymizes lists`() {
+    fun `anonymizedMap anonymizes lists`() {
         val originalMap = mapOf(
             "key-1" to 1234,
             "key-2" to "string with some.pii@revenuecat.com and 192.168.1.1.",
@@ -91,7 +110,7 @@ class AnonymizerTest {
     }
 
     @Test
-    fun `anonymizeMap anonymizes nested maps`() {
+    fun `anonymizedMap anonymizes nested maps`() {
         val originalMap = mapOf(
             "key-1" to 1234,
             "key-2" to "string with some.pii@revenuecat.com and 192.168.1.1.",
