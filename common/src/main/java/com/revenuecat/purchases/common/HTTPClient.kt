@@ -37,7 +37,7 @@ import java.util.Date
 import kotlin.time.Duration
 
 class HTTPClient(
-    val appConfig: AppConfig,
+    private val appConfig: AppConfig,
     private val eTagManager: ETagManager,
     private val diagnosticsTrackerIfEnabled: DiagnosticsTracker?,
     val signingManager: SigningManager,
