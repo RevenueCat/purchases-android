@@ -66,8 +66,6 @@ interface StoreProduct {
      */
     val purchasingData: PurchasingData
 
-//    internal val platformProductId: PlatformProductId
-
     /**
      * The sku of the StoreProduct
      */
