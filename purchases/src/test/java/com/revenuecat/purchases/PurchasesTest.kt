@@ -161,7 +161,7 @@ class PurchasesTest {
             mockDiagnosticsSynchronizer.syncDiagnosticsFileIfNeeded()
         } just Runs
         every {
-            mockOfflineEntitlementsManager.updateProductEntitlementMappingsCacheIfStale()
+            mockOfflineEntitlementsManager.updateProductEntitlementMappingCacheIfStale()
         } just Runs
 
         anonymousSetup(false)
@@ -222,7 +222,7 @@ class PurchasesTest {
 //    Offline entitlements: Commenting out for now until backend is ready
 //    @Test
 //    fun `product entitlement mappings are updated if staled on constructor`() {
-//        verify(exactly = 1) { mockOfflineEntitlementsManager.updateProductEntitlementMappingsCacheIfStale() }
+//        verify(exactly = 1) { mockOfflineEntitlementsManager.updateProductEntitlementMappingCacheIfStale() }
 //    }
 
     @Test
@@ -542,7 +542,7 @@ class PurchasesTest {
 //        )
 //        Purchases.sharedInstance.onAppForegrounded()
 //        verify(exactly = 2) {
-//            mockOfflineEntitlementsManager.updateProductEntitlementMappingsCacheIfStale()
+//            mockOfflineEntitlementsManager.updateProductEntitlementMappingCacheIfStale()
 //        }
 //    }
 
