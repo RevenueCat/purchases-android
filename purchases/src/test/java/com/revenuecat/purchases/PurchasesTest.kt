@@ -219,10 +219,11 @@ class PurchasesTest {
         verify(exactly = 1) { mockDiagnosticsSynchronizer.syncDiagnosticsFileIfNeeded() }
     }
 
-    @Test
-    fun `product entitlement mappings are updated if staled on constructor`() {
-        verify(exactly = 1) { mockOfflineEntitlementsManager.updateProductEntitlementMappingsCacheIfStale() }
-    }
+//    Offline entitlements: Commenting out for now until backend is ready
+//    @Test
+//    fun `product entitlement mappings are updated if staled on constructor`() {
+//        verify(exactly = 1) { mockOfflineEntitlementsManager.updateProductEntitlementMappingsCacheIfStale() }
+//    }
 
     @Test
     fun getsSubscriptionSkus() {
@@ -531,18 +532,19 @@ class PurchasesTest {
         }
     }
 
-    @Test
-    fun `fetch product entitlement mapping on foreground if it's stale`() {
-        mockSuccessfulQueryPurchases(
-            queriedSUBS = emptyMap(),
-            queriedINAPP = emptyMap(),
-            notInCache = emptyList()
-        )
-        Purchases.sharedInstance.onAppForegrounded()
-        verify(exactly = 2) {
-            mockOfflineEntitlementsManager.updateProductEntitlementMappingsCacheIfStale()
-        }
-    }
+//    Offline entitlements: Commenting out for now until backend is ready
+//    @Test
+//    fun `fetch product entitlement mapping on foreground if it's stale`() {
+//        mockSuccessfulQueryPurchases(
+//            queriedSUBS = emptyMap(),
+//            queriedINAPP = emptyMap(),
+//            notInCache = emptyList()
+//        )
+//        Purchases.sharedInstance.onAppForegrounded()
+//        verify(exactly = 2) {
+//            mockOfflineEntitlementsManager.updateProductEntitlementMappingsCacheIfStale()
+//        }
+//    }
 
     private fun mockSynchronizeSubscriberAttributesForAllUsers() {
         every {
