@@ -265,16 +265,10 @@ class BillingWrapper(
                         }
                         onSuccess(purchasedProducts)
                     },
-                    onError = { error ->
-                        // TODO: better handling?
-                        onError(error)
-                    }
+                    onError
                 )
             },
-            onReceivePurchaseHistoryError = { error ->
-                // TODO: better handling?
-                onError(error)
-            }
+            onError
         )
     }
 
@@ -296,7 +290,6 @@ class BillingWrapper(
         )
     }
 
-    // TODO: Where do we put this?
     private fun getExpirationDate(
         isActive: Boolean,
         purchaseAssociatedToProduct: StoreTransaction

@@ -47,8 +47,7 @@ class Backend(
     private val dispatcher: Dispatcher,
     private val diagnosticsDispatcher: Dispatcher,
     private val httpClient: HTTPClient,
-    private val backendHelper: BackendHelper,
-    private val customerInfoResponseHandler: CustomerInfoResponseHandler
+    private val backendHelper: BackendHelper
 ) {
 
     val verificationMode: SignatureVerificationMode

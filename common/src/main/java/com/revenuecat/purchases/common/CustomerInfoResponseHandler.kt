@@ -36,7 +36,7 @@ class CustomerInfoResponseHandler(
                         put("first_seen", formattedDate)
                         val originalPurchaseDate = calculateOriginalPurchaseDate(purchasedProducts)
                         put("original_purchase_date", originalPurchaseDate)
-                        put("non_subscriptions", JSONObject()) // TODO
+                        put("non_subscriptions", JSONObject()) // TODO in another PR
                         put("subscriptions", generateSubscriptions(purchasedProducts))
                         put("management_url", "https://play.google.com/store/account/subscriptions")
                     })
@@ -72,7 +72,7 @@ class CustomerInfoResponseHandler(
                 put("store", "play_store")
                 put("unsubscribe_detected_at", JSONObject.NULL)
                 put("expires_date", Iso8601Utils.format(product.expiresDate))
-                put("period_type", "normal") // TODO
+                put("period_type", "normal") // Best guess, we don't know what period type was purchased
             })
         }
         return subscriptions
