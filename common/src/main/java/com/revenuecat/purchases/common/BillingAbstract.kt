@@ -89,6 +89,12 @@ abstract class BillingAbstract {
         onError: (PurchasesError) -> Unit
     )
 
+    abstract fun queryPurchasedProducts(
+        appUserID: String,
+        onSuccess: (List<PurchasedProduct>) -> Unit,
+        onError: (PurchasesError) -> Unit
+    )
+
     /**
      * Amazon has the concept of term and parent product ID. This function will return
      * the correct product ID the RevenueCat backend expects for a specific purchase.
@@ -108,10 +114,4 @@ abstract class BillingAbstract {
         fun onPurchasesUpdated(purchases: List<StoreTransaction>)
         fun onPurchasesFailedToUpdate(purchasesError: PurchasesError)
     }
-
-    abstract fun queryPurchasedProducts(
-        appUserID: String,
-        onSuccess: (List<PurchasedProduct>) -> Unit,
-        onError: (PurchasesError) -> Unit
-    )
 }
