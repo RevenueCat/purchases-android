@@ -122,6 +122,11 @@ The `Period.Unit` enum can be one of the following:
 | getExpirationDateForSku | getExpirationDateForProductId |
 | getPurchaseDateForSku   | getPurchaseDateForProductId   |
 
+`productIds` in `CustomerInfo` fields now conform to the following:
+- Google subscriptions: subscriptionId:basePlanId
+- Amazon subscriptions: termSku
+- INAPPs: productId
+
 ### Purchasing API changes
 
 Purchases are now configured using `PurchaseParams.Builder()`. The builder is constructed with either a `Package`,
