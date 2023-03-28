@@ -10,7 +10,7 @@ This migration guide has detailed class, property, and method changes.
 See [Android Native - 5.x to 6.x Migration](https://www.revenuecat.com/docs/android-native-5x-to-6x-migration) for a 
 more thorough explanation of the new Google subscription model announced with BillingClient 5 and how to take advantage of it in V6.
 
-### Class changes
+### Class/interface changes
 
 | New                        |
 |----------------------------|
@@ -122,10 +122,17 @@ The `Period.Unit` enum can be one of the following:
 | getExpirationDateForSku | getExpirationDateForProductId |
 | getPurchaseDateForSku   | getPurchaseDateForProductId   |
 
-`productIds` in `CustomerInfo` fields now conform to the following:
+`productIds` in `CustomerInfo` fields conform to the following:
 - Google subscriptions: subscriptionId:basePlanId
 - Amazon subscriptions: termSku
 - INAPPs: productId
+
+#### EntitlementInfo changes
+
+| New                   |
+|-----------------------|
+| productPlanIdentifier |
+
 
 ### Purchasing API changes
 
