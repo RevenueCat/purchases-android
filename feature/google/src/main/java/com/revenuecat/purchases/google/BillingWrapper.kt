@@ -725,7 +725,6 @@ class BillingWrapper(
                 .format(purchase.toHumanReadableDescription())
         )
 
-        // JOSH HERE
         synchronized(this@BillingWrapper) {
             val presentedOffering = presentedOfferingsByProductIdentifier[purchase.firstProductId]
             val subscriptionOptionId = subscriptionOptionSelectedByProductIdentifier[purchase.firstProductId]
