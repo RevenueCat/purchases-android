@@ -16,7 +16,8 @@ class ReceiptInfo(
 ) {
 
     val duration: String? = storeProduct?.period?.iso8601?.takeUnless { it.isEmpty() }
-    val subscriptionOption: SubscriptionOption? =
+
+    private val subscriptionOption: SubscriptionOption? =
         storeProduct?.subscriptionOptions?.firstOrNull { it.id == subscriptionOptionId }
     val pricingPhases: List<PricingPhase>? =
         subscriptionOption?.pricingPhases
@@ -39,14 +40,18 @@ class ReceiptInfo(
 
     internal val platformProductIds: List<PlatformProductId>?
         get() {
-            val fromStoreProduct =
-                subscriptionOption?.let {
-                    it.platformProductId()
-                } ?: storeProduct?.platformProductId()
+            val storeProductPlatformProductId =
+                subscriptionOption?.platformProductId() ?: storeProduct?.platformProductId()
 
-            return productIDs.map { PlatformProductId(it) }.filter {
-                it.productId != fromStoreProduct?.productId
-            } + listOfNotNull(fromStoreProduct)
+            // ReceiptInfo can be created with only productIDs but it might also be created with
+            // a StoreProduct
+            // We want the PlatformProductID with most info (like GooglePlatformProductId from a SubscriptionOption)
+            // so this logic prevents duplicate productIds (PlatformProductID) from being returned
+            val platformProductIds = productIDs
+                .filter { it != storeProductPlatformProductId.productId }
+                .map { PlatformProductId(it) }
+
+            return platformProductIds + listOfNotNull(storeProductPlatformProductId)
         }
 
     override fun hashCode(): Int {
@@ -86,7 +91,7 @@ internal fun SubscriptionOption.platformProductId(): PlatformProductId? {
 }
 
 internal open class PlatformProductId(open val productId: String) {
-    open val toMap: Map<String, String?>
+    open val asMap: Map<String, String?>
         get() = mapOf(
             "product_id" to productId
         )
@@ -97,7 +102,7 @@ internal class GooglePlatformProductId(
     val basePlanId: String? = null,
     val offerId: String? = null
 ) : PlatformProductId(productId) {
-    override val toMap: Map<String, String?>
+    override val asMap: Map<String, String?>
         get() = mapOf(
             "product_id" to productId,
             "base_plan_id" to basePlanId,
