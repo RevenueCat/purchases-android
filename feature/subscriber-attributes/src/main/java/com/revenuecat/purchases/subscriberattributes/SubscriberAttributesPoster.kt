@@ -2,13 +2,13 @@ package com.revenuecat.purchases.subscriberattributes
 
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
-import com.revenuecat.purchases.common.Backend
+import com.revenuecat.purchases.common.BackendHelper
 import com.revenuecat.purchases.common.SubscriberAttributeError
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
 
 class SubscriberAttributesPoster(
-    private val backend: Backend
+    private val backendHelper: BackendHelper
 ) {
 
     fun postSubscriberAttributes(
@@ -21,7 +21,7 @@ class SubscriberAttributesPoster(
             attributeErrors: List<SubscriberAttributeError>
         ) -> Unit
     ) {
-        backend.performRequest(
+        backendHelper.performRequest(
             Endpoint.PostAttributes(appUserID),
             mapOf("attributes" to attributes),
             { error ->
