@@ -391,7 +391,7 @@ jobs:
           test_apk_path: purchases/test_artifacts/loadShedderIntegrationTest-test.apk
 
   run-firebase-tests-latest-dependencies:
-    description: "Run purchases module integration tests for Android in Firebase. Variant latestDependencies"
+    description: "Run integration tests for Android in Firebase. Variant latestDependencies"
     executor: gcp-cli/google
     steps:
       - checkout
@@ -402,7 +402,7 @@ jobs:
           test_apk_path: integration-tests/build/outputs/apk/androidTest/latestDependencies/release/integration-tests-latestDependencies-release-androidTest.apk
 
   run-firebase-tests-unityIAP:
-    description: "Run purchases module integration tests for Android in Firebase. Variant unityIAP"
+    description: "Run integration tests for Android in Firebase. Variant unityIAP"
     executor: gcp-cli/google
     steps:
       - checkout
