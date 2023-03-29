@@ -74,4 +74,6 @@ interface StoreProduct {
         ReplaceWith("id")
     )
     val sku: String
+
+    val platformProductId: PlatformProductId?
 }

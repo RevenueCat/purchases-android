@@ -4,8 +4,6 @@ import com.android.billingclient.api.ProductDetails
 import com.revenuecat.purchases.ProductType
 
 data class GoogleStoreProduct(
-    val productId: String,
-    val basePlanId: String?,
     override val type: ProductType,
     override val price: Price,
     override val title: String,
@@ -13,13 +11,12 @@ data class GoogleStoreProduct(
     override val period: Period?,
     override val subscriptionOptions: SubscriptionOptions?,
     override val defaultOption: SubscriptionOption?,
-    val productDetails: ProductDetails
+    val productDetails: ProductDetails,
+    override val platformProductId: GooglePlatformProductId,
 ) : StoreProduct {
 
     override val id: String
-        get() = basePlanId?.let {
-            "$productId:$basePlanId"
-        } ?: productId
+        get() = platformProductId.toId()
 
     override val purchasingData: PurchasingData
         get() = if (type == ProductType.SUBS && defaultOption != null) {

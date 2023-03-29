@@ -4,6 +4,7 @@ import com.android.billingclient.api.ProductDetails
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.log
+import com.revenuecat.purchases.models.GooglePlatformProductId
 import com.revenuecat.purchases.models.GoogleStoreProduct
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.StoreProduct
@@ -29,8 +30,6 @@ fun ProductDetails.toStoreProduct(
     val price = createOneTimeProductPrice() ?: basePlanPrice ?: return null
 
     return GoogleStoreProduct(
-        productId,
-        basePlan?.id,
         productType.toRevenueCatProductType(),
         price,
         title,
@@ -38,7 +37,8 @@ fun ProductDetails.toStoreProduct(
         basePlan?.billingPeriod,
         subscriptionOptions,
         subscriptionOptions?.defaultOffer,
-        this
+        this,
+        GooglePlatformProductId(productId, basePlan?.id, null)
     )
 }
 
