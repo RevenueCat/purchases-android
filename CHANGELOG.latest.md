@@ -1,4 +1,4 @@
-RevenueCat Android SDK v6 is here!! 😻 
+**RevenueCat Android SDK v6** is here!! 😻 
 
 This latest release updates the SDK to use BillingClient 5. This version of BillingClient brings an entire new subscription model which has resulted large changes across the entire SDK.
 
@@ -30,7 +30,7 @@ To initiate a purchase, simply pass the built `PurchaseParams` and your `Purchas
 In V5, a purchase of a `Package` or `StoreProduct` represented a single purchaseable entity, and free trials or intro
 offers would automatically be applied if the user was eligible.
 
-### New `SubscriptionOption` oncept
+### New `SubscriptionOption` concept
 
 Now, in v6, a `Package` or `StoreProduct` could contain multiple offers along within its base plan. 
 When passing a `Package` or `StoreProduct` to `purchase()`, the SDK will use the following logic to choose which 
