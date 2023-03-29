@@ -30,9 +30,9 @@ offers would automatically be applied if the user was eligible.
 
 Now, in v6, a `Package` or `StoreProduct` could contain multiple offers along within its base plan. 
 When passing a `Package` or `StoreProduct` to `purchase()`, the SDK will use the following logic to choose which 
-[SubscriptionOption] to purchase:
+`SubscriptionOption` to purchase:
 *   - Filters out offers with "rc-ignore-offer" tag
-*   - Uses [SubscriptionOption] with the longest free trial or cheapest first phase
+*   - Uses `SubscriptionOption` with the longest free trial or cheapest first phase
 *   - Falls back to base plan
 
 For more control, create your `PurchaseParams.Builder` with the desired `SubscriptionOption`.

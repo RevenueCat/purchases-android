@@ -31,93 +31,14 @@ offers would automatically be applied if the user was eligible.
 
 Now, in v6, a `Package` or `StoreProduct` could contain multiple offers along within its base plan. 
 When passing a `Package` or `StoreProduct` to `purchase()`, the SDK will use the following logic to choose which 
-[SubscriptionOption] to purchase:
+`SubscriptionOption` to purchase:
 *   - Filters out offers with "rc-ignore-offer" tag
-*   - Uses [SubscriptionOption] with the longest free trial or cheapest first phase
+*   - Uses `SubscriptionOption` with the longest free trial or cheapest first phase
 *   - Falls back to base plan
 
 For more control, create your `PurchaseParams.Builder` with the desired `SubscriptionOption`.
 
 
-## 6.0.0-rc.1
-### Bugfixes
-* Fix entitlment info to string plan identifier (#906) via Josh Holtz (@joshdholtz)
-### Other Changes
-* Merge main -> bc5-support 2023-03-25 (#905) via Toni Rico (@tonidero)
-* Small improvements to v6-MIGRATION.md (#907) via Josh Holtz (@joshdholtz)
-* Make personalized price checkbox in PurchaseTester (#903) via swehner (@swehner)
-* PurchaseTester gets observable mode for google (#902) via Josh Holtz (@joshdholtz)
-
-## 6.0.0-beta.3
-### Breaking Changes
-* Rename `introTrial` to `introOffer` on `SubscriptionOptions` (#890) via Josh Holtz (@joshdholtz)
-* Use `rc-ignore-offer` instead of `rc-ignore-befault-offer` (#889) via Josh Holtz (@joshdholtz)
-* AmazonStoreProduct updates (#881) via beylmk (@beylmk)
-* Remove Parcelable implementation for classes with ProductDetails as a member (#866) via beylmk (@beylmk)
-* Make Activity first param in PurchaseParams (#882) via Josh Holtz (@joshdholtz)
-### New Features
-* Re-enable `observerMode` and `syncPurchases()` (#878) via Josh Holtz (@joshdholtz)
-### Bugfixes
-* Re-add `price_string` header on postReceipt (#879) via Josh Holtz (@joshdholtz)
-### Other Changes
-* Cleaning up some TODOs in the code (#883) via Josh Holtz (@joshdholtz)
-* Amazon Offering Parsing (#824) via beylmk (@beylmk)
-* Merge main ->  bc5-support 2023-03-15 (#875) via Toni Rico (@tonidero)
-* Fix purchase tester navigation (#871) via beylmk (@beylmk)
-
-## 6.0.0-beta.2
-### New Features
-* Pass isPersonalizedPrice through to purchases (#864) via beylmk (@beylmk)
-### Other Changes
-* Fix issue where purchase tester modal callback was happening twice (#863) via Josh Holtz (@joshdholtz)
-
-## 6.0.0-beta.1
-### Breaking Changes
-* Purchase.Builder (#825) (#850) via beylmk (@beylmk)
-### New Features
-* Add/use productPlanIdentifier to EntitlementInfo and CustomerInfo (#849) via Josh Holtz (@joshdholtz)
-### Bugfixes
-* New API for getting products by type, properly filter deprecated functions, reworked logic (#843) via Josh Holtz (@joshdholtz)
-### Other Changes
-* Hide isPersonalizedPrice (#858) via beylmk (@beylmk)
-* Always use purchasingData property directly on the StoreProduct when purchasing (#847) via Josh Holtz (@joshdholtz)
-* Remove use of UpgradeInfo from Purchase Tester (#846) via Josh Holtz (@joshdholtz)
-* Update MagicWeather and Purchase Tester with 6.0.0-alpha.4 APIs (#834) via Josh Holtz (@joshdholtz)
-
-## 6.0.0-alpha.4
-### New Features
-* New SubscriptionOptions model  (#816) via Josh Holtz (@joshdholtz)
-* StoreProduct id improvements (#810) via Josh Holtz (@joshdholtz)
-* New Period and Unit classes to represent ISO8601 period strings (#806) via Josh Holtz (@joshdholtz)
-* Price API improvements (#794) via Josh Holtz (@joshdholtz)
-### Bugfixes
-* Found and fixed logMissingProducts bug where never any missing products (#813) via Josh Holtz (@joshdholtz)
-* Fix where recurring and prepaid subs of same duration where considered same StoreProduct (#814) via Josh Holtz (@joshdholtz)
-* Fix period serialization (#818) via swehner (@swehner)
-* Fix value of NON_RECURRING from 0 to 3 (#797) via Josh Holtz (@joshdholtz)
-* Fix callback error issue (#732) via beylmk (@beylmk)
-### Other Changes
-* Small doc change for StoreProduct.title explaining why duplicate titles when using base plans on same subscription (#815) via Josh Holtz (@joshdholtz)
-* Migration guide updates for API improvements (#829) via Josh Holtz (@joshdholtz)
-* Fix serialization of period (#818) via Stefan Wehner (@swehner)
-
-## 6.0.0-alpha.3
-### Bugfixes
-* [BC5] Merge changes from 5.7.0 (#772) via Josh Holtz (@joshdholtz)
-* [BC5]  Add `storeProduct` to `ReceiptInfo`'s equals method (and fix broken tests because of this) (#770) via Josh Holtz (@joshdholtz)
-
-## 6.0.0-alpha.2
-### New Features
-* [CF-1119] Default offer now uses best offer logic (longest free, best savings, base plan) (#754) via Josh Holtz (@joshdholtz)
-* [CF-1147] Use GoogleProrationMode in purchases (#752) via beylmk (@beylmk)
-* [CF-1148] Add proration mode (#751) via beylmk (@beylmk)
-* [CF-1135] Remove requirement for `StoreProduct` when purchasing a `PurchaseOption` (#739) via Josh Holtz (@joshdholtz)
-### Other Changes
-* [CF1120] Update SDK docs for default offer logic (#762) via Josh Holtz (@joshdholtz)
-* Clean up Google-related TODOs (#736) via beylmk (@beylmk)
-
-## 6.0.0-alpha.1
-Initial v6.0.0 alpha release
 
 ## 5.8.2
 
