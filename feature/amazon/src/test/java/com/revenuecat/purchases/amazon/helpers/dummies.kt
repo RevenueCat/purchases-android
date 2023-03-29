@@ -14,8 +14,6 @@ import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.models.SubscriptionOptions
-import org.json.JSONArray
-import org.json.JSONObject
 import java.util.Date
 
 @SuppressWarnings("LongParameterList")

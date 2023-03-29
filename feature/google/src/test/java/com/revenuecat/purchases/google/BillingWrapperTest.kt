@@ -32,7 +32,6 @@ import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.firstSku
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.sha256
-import com.revenuecat.purchases.models.GoogleSubscriptionOption
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.PricingPhase
 import com.revenuecat.purchases.models.PurchasingData
@@ -819,7 +818,7 @@ class BillingWrapperTest {
 
     @Test
     fun `purchase fails if store product is not GoogleStoreProduct`() {
-        val purchasingInfo = object: PurchasingData {
+        val purchasingData = object: PurchasingData {
             override val productId: String
                 get() = ""
             override val productType: ProductType
@@ -842,9 +841,18 @@ class BillingWrapperTest {
             override val subscriptionOptions: SubscriptionOptions
                 get() = SubscriptionOptions(listOf(defaultOption))
             override val defaultOption: SubscriptionOption
-                get() = GoogleSubscriptionOption("subscriptionOption", emptyList(), emptyList(), purchasingInfo)
+                get() = object : SubscriptionOption {
+                    override val id: String
+                        get() = ""
+                    override val pricingPhases: List<PricingPhase>
+                        get() = emptyList()
+                    override val tags: List<String>
+                        get() = emptyList()
+                    override val purchasingData: PurchasingData
+                        get() = purchasingData
+                }
             override val purchasingData: PurchasingData
-                get() = purchasingInfo
+                get() = purchasingData
             override val sku: String
                 get() = id
         }
