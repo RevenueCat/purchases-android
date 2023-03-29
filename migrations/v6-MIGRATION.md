@@ -160,7 +160,8 @@ Replaces all of the following:
 In V5, a `Package` or `StoreProduct` represented a single purchaseable entity, and free trials or intro
 offers would automatically be applied to the purchase if the user was eligible.
 
-Now, in V6, a `Package` or `StoreProduct` could contain multiple offers along within its base plan. 
+Now, in v6, a `Package` or `StoreProduct` represents a duration of a subscription and contains all the ways to
+purchase that duration -- any offers and its base plan. Each of these purchase options are `SubscriptionOption`s.
 When passing a `Package` or `StoreProduct` to `purchase()`, the SDK will use the following logic to choose which 
 [SubscriptionOption] to purchase:
 *   - Filters out offers with "rc-ignore-offer" tag
