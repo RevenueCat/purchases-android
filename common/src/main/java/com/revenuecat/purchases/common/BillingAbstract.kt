@@ -4,7 +4,7 @@ import android.app.Activity
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCallback
-import com.revenuecat.purchases.models.PurchasedProduct
+import com.revenuecat.purchases.common.offlineentitlements.PurchasedProduct
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 

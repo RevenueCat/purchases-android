@@ -1,5 +1,6 @@
-package com.revenuecat.purchases.models
+package com.revenuecat.purchases.common.offlineentitlements
 
+import com.revenuecat.purchases.models.StoreTransaction
 import java.util.Date
 
 data class PurchasedProduct(

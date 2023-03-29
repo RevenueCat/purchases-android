@@ -46,7 +46,7 @@ import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.sha256
 import com.revenuecat.purchases.common.toHumanReadableDescription
 import com.revenuecat.purchases.models.PurchaseState
-import com.revenuecat.purchases.models.PurchasedProduct
+import com.revenuecat.purchases.common.offlineentitlements.PurchasedProduct
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.skuDetails
