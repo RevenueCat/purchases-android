@@ -18,10 +18,15 @@ import org.json.JSONObject
 import java.util.Date
 
 /**
- * Class containing all information regarding the purchaser
- * @property entitlements Entitlements attached to this purchaser info
+ * Class containing all information regarding the customer
+ * @property entitlements Entitlements attached to this customer info
  * @property allExpirationDatesByProduct Map of productIds to expiration dates
+ * For Google subscriptions, productIds are subscriptionId:basePlanId
+ * For Amazon subscriptions, productsIds are termSkus
  * @property allPurchaseDatesByProduct Map of productIds to purchase dates
+ * For Google subscriptions, productIds are subscriptionId:basePlanId
+ * For Google and Amazon INAPPs, productsIds are simply productId.
+ * For Amazon subscriptions, productsIds are termSkus
  * @property requestDate Date when this info was requested
  * @property firstSeen The date this user was first seen in RevenueCat.
  * @property originalAppUserId The original App User Id recorded for this user.
@@ -49,6 +54,9 @@ data class CustomerInfo constructor(
 
     /**
      * @return Set of active subscription productIds
+     *
+     * For Google subscriptions, productIds will be subscriptionId:basePlanId
+     * For Amazon subscriptions, productIds will be termSku
      */
     @IgnoredOnParcel
     val activeSubscriptions: Set<String> by lazy {
@@ -56,7 +64,7 @@ data class CustomerInfo constructor(
     }
 
     /**
-     * @return Set of purchased productIds, active and inactive
+     * @return Set of purchased skus, active and inactive
      */
     @IgnoredOnParcel
     @Deprecated(
@@ -69,6 +77,10 @@ data class CustomerInfo constructor(
 
     /**
      * @return Set of purchased productIds, active and inactive
+     *
+     * For Google subscriptions, productIds are subscriptionId:basePlanId
+     * For Google and Amazon INAPPs, productsIds are simply productId.
+     * For Amazon subscriptions, productsIds are termSkus
      */
     @IgnoredOnParcel
     val allPurchasedProductIds: Set<String> by lazy {
@@ -118,7 +130,10 @@ data class CustomerInfo constructor(
 
     /**
      * Get the expiration date for a given productId
-     * @param productId Sku for which to retrieve expiration date
+     * @param productId productId for which to retrieve expiration date
+     * For Google subscriptions, productIds are subscriptionId:basePlanId
+     *
+     * For Amazon subscriptions, productsIds are termSkus
      * @return Expiration date for given productId
      */
     fun getExpirationDateForProductId(productId: String): Date? {
@@ -141,6 +156,9 @@ data class CustomerInfo constructor(
     /**
      * Get the latest purchase or renewal date for given productId
      * @param productId productId for which to retrieve expiration date
+     * For Google subscriptions, productIds are subscriptionId:basePlanId
+     * For Google and Amazon INAPPs, productsIds are simply productId.
+     * For Amazon subscriptions, productsIds are termSkus
      * @return Purchase date for given productId
      */
     fun getPurchaseDateForProductId(productId: String): Date? {
