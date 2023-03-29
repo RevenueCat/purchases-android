@@ -11,7 +11,6 @@ import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BackendHelper
 import com.revenuecat.purchases.common.BillingAbstract
-import com.revenuecat.purchases.common.offlineentitlements.CustomerInfoResponseHandler
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.FileHelper
 import com.revenuecat.purchases.common.HTTPClient
@@ -98,14 +97,12 @@ internal class PurchasesFactory(
                 diagnosticsTracker
             )
 
-            val customerInfoResponseHandler = CustomerInfoResponseHandler(billing)
             val backend = Backend(
                 appConfig,
                 dispatcher,
                 diagnosticsDispatcher,
                 httpClient,
-                backendHelper,
-                customerInfoResponseHandler
+                backendHelper
             )
             val subscriberAttributesPoster = SubscriberAttributesPoster(backendHelper)
 
