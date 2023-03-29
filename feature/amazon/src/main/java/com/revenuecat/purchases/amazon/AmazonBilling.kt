@@ -152,7 +152,8 @@ internal class AmazonBilling constructor(
         onSuccess: (List<PurchasedProduct>) -> Unit,
         onError: (PurchasesError) -> Unit
     ) {
-        TODO("Not yet implemented")
+        // TODO: Implement
+        onSuccess(emptyList())
     }
 
     // region Product Data
