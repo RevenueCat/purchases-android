@@ -150,7 +150,7 @@ class PurchasesIntegrationTest {
                 onSuccess = { offerings ->
                     assertThat(offerings.current).isNotNull
                     assertThat(offerings.current?.availablePackages?.size).isEqualTo(1)
-                    assertThat(offerings.current?.monthly?.product?.sku).isEqualTo("monthly_intro_pricing_one_week")
+                    assertThat(offerings.current?.monthly?.product?.sku).isEqualTo(Constants.productIdToPurchase)
 
                     lock.countDown()
                 }
