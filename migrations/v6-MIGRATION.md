@@ -143,9 +143,22 @@ parameters (`oldProductId` and `googleProrationMode`).
 
 To initiate a purchase, simply pass the built `PurchaseParams` and your `PurchaseCallback` to the `purchase()` method.
 
+| New                                          |
+|----------------------------------------------|
+| `purchase(PurchaseParams, PurchaseCallback)` |
+
+Replaces all of the following:
+
+| Deprecated                                                                    |
+|-------------------------------------------------------------------------------|
+| `purchaseProduct(Activity, StoreProduct, PurchaseCallback)`                   |
+| `purchaseProduct(Activity, StoreProduct, UpgradeInfo, ProductChangeCallback)` |
+| `purchasePackage(Activity, Package, PurchaseCallback)`                        |
+| `purchasePackage(Activity, Package, UpgradeInfo, ProductChangeCallback)`      |
+
 #### Applying offers on a purchase
-In V5, a purchase of a `Package` or `StoreProduct` represented a single purchaseable entity, and free trials or intro
-offers would automatically be applied if the user was eligible.
+In V5, a `Package` or `StoreProduct` represented a single purchaseable entity, and free trials or intro
+offers would automatically be applied to the purchase if the user was eligible.
 
 Now, in V6, a `Package` or `StoreProduct` could contain multiple offers along within its base plan. 
 When passing a `Package` or `StoreProduct` to `purchase()`, the SDK will use the following logic to choose which 
@@ -154,22 +167,7 @@ When passing a `Package` or `StoreProduct` to `purchase()`, the SDK will use the
 *   - Uses [SubscriptionOption] with the longest free trial or cheapest first phase
 *   - Falls back to base plan
 
-For more control, create your `PurchaseParams.Builder` with the desired `SubscriptionOption`. For example:
-
-
-
-| New                                          |
-|----------------------------------------------|
-| `purchase(PurchaseParams, PurchaseCallback)` |
-
-Replaces all of the following: 
-
-| Deprecated                                                                    |
-|-------------------------------------------------------------------------------|
-| `purchaseProduct(Activity, StoreProduct, PurchaseCallback)`                   |
-| `purchaseProduct(Activity, StoreProduct, UpgradeInfo, ProductChangeCallback)` |
-| `purchasePackage(Activity, Package, PurchaseCallback)`                        |
-| `purchasePackage(Activity, Package, UpgradeInfo, ProductChangeCallback)`      |
+For more control, create your `PurchaseParams.Builder` with the desired `SubscriptionOption`.
 
 #### Kotlin Helpers
 
