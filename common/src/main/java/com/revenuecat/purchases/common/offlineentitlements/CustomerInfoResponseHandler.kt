@@ -5,6 +5,7 @@ import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.VerificationResult
+import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.CustomerInfoFactory
 import com.revenuecat.purchases.common.DateProvider
@@ -17,7 +18,8 @@ import java.util.Date
 
 class CustomerInfoResponseHandler(
     private val billing: BillingAbstract,
-    private val dateProvider: DateProvider = DefaultDateProvider()
+    private val dateProvider: DateProvider = DefaultDateProvider(),
+    private val appConfig: AppConfig
 ) {
 
     fun computeOfflineCustomerInfo(
@@ -75,7 +77,7 @@ class CustomerInfoResponseHandler(
                 val purchaseDate = Date(product.storeTransaction.purchaseTime)
                 put("original_purchase_date", Iso8601Utils.format(purchaseDate))
                 put("purchase_date", Iso8601Utils.format(purchaseDate))
-                put("store", "play_store")
+                put("store", appConfig.store.name.lowercase())
                 put("unsubscribe_detected_at", JSONObject.NULL)
                 put("expires_date", Iso8601Utils.format(product.expiresDate))
                 put("period_type", "normal") // Best guess, we don't know what period type was purchased
