@@ -14,7 +14,6 @@ import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.offlineentitlements.createProductEntitlementMapping
-import com.revenuecat.purchases.models.GooglePurchasingData
 import com.revenuecat.purchases.models.GoogleStoreProduct
 import com.revenuecat.purchases.models.GoogleSubscriptionOption
 import com.revenuecat.purchases.models.Period
@@ -22,7 +21,6 @@ import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.PricingPhase
 import com.revenuecat.purchases.models.RecurrenceMode
 import com.revenuecat.purchases.models.SubscriptionOptions
-import com.revenuecat.purchases.models.googleProduct
 import com.revenuecat.purchases.utils.Responses
 import com.revenuecat.purchases.utils.filterNotNullValues
 import com.revenuecat.purchases.utils.getNullableString
@@ -78,16 +76,27 @@ class BackendTest {
         every { diagnosticsURL } returns mockDiagnosticsBaseURL
     }
     private val dispatcher = SyncDispatcher()
+    private val backendHelper = BackendHelper(API_KEY, dispatcher, mockAppConfig, mockClient)
     private var backend: Backend = Backend(
-        API_KEY,
         mockAppConfig,
         dispatcher,
         dispatcher,
-        mockClient
+        mockClient,
+        backendHelper
     )
+    private val asyncDispatcher = Dispatcher(
+        ThreadPoolExecutor(
+            1,
+            2,
+            0,
+            TimeUnit.MILLISECONDS,
+            LinkedBlockingQueue()
+        )
+    )
+    private var asyncBackendHelper: BackendHelper = BackendHelper(API_KEY, asyncDispatcher, mockAppConfig, mockClient)
     private var asyncBackend: Backend = Backend(
-        API_KEY,
         mockAppConfig,
+        asyncDispatcher,
         Dispatcher(
             ThreadPoolExecutor(
                 1,
@@ -97,16 +106,8 @@ class BackendTest {
                 LinkedBlockingQueue()
             )
         ),
-        Dispatcher(
-            ThreadPoolExecutor(
-                1,
-                2,
-                0,
-                TimeUnit.MILLISECONDS,
-                LinkedBlockingQueue()
-            )
-        ),
-        mockClient
+        mockClient,
+        asyncBackendHelper
     )
     private val appUserID = "jerry"
     private val storeProduct = stubStoreProduct("productID")
@@ -564,7 +565,6 @@ class BackendTest {
             },
             onError = postReceiptErrorCallback
         )
-
         mockPostReceiptResponseAndPost(
             asyncBackend,
             isRestore = false,
@@ -804,7 +804,7 @@ class BackendTest {
             },
             onError = postReceiptErrorCallback
         )
-        lock.await(2000, TimeUnit.MILLISECONDS)
+        lock.await(defaultTimeout, TimeUnit.MILLISECONDS)
         assertThat(lock.count).isEqualTo(0)
         verify(exactly = 2) {
             mockClient.performRequest(

@@ -5,17 +5,15 @@ import android.app.Application
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
-import android.os.StrictMode
-import android.os.StrictMode.VmPolicy
 import android.util.Log
 import android.widget.Toast
 import androidx.core.content.ContextCompat
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.LogLevel
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
-import com.revenuecat.purchases_sample.BuildConfig
 
 class MainApplication : Application(), UpdatedCustomerInfoListener {
 
@@ -24,16 +22,7 @@ class MainApplication : Application(), UpdatedCustomerInfoListener {
     override fun onCreate() {
         super.onCreate()
 
-        if (BuildConfig.DEBUG) {
-            StrictMode.setVmPolicy(
-                VmPolicy.Builder()
-                    .detectLeakedClosableObjects()
-                    .penaltyLog()
-                    .build()
-            )
-        }
-
-        Purchases.debugLogsEnabled = true
+        Purchases.logLevel = LogLevel.DEBUG
 
         Purchases.logHandler = logHandler
     }

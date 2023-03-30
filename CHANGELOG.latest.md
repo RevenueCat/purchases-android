@@ -40,4 +40,3 @@ When passing a `Package` or `StoreProduct` to `purchase()`, the SDK will use the
 *   - Falls back to base plan
 
 For more control, create your `PurchaseParams.Builder` with the desired `SubscriptionOption`.
-

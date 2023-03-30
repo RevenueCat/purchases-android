@@ -42,7 +42,6 @@ When passing a `Package` or `StoreProduct` to `purchase()`, the SDK will use the
 
 For more control, create your `PurchaseParams.Builder` with the desired `SubscriptionOption`.
 
-
 ## 5.8.2
 
 ⚠️ ⚠️ ⚠️ ⚠️ 

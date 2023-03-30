@@ -9,6 +9,8 @@ android {
 // after this.
 //    productFlavors {
 //        integrationTest {
+//            testApplicationId obtainTestApplicationId()
+//            testBuildType obtainTestBuildType()
 //            packagingOptions {
 //                resources.excludes.add("META-INF/*")
 //            }
@@ -16,7 +18,26 @@ android {
 //            matchingFallbacks = ['latestDependencies']
 //        }
 //    }
+}
 
+def obtainTestApplicationId() {
+    def result = "com.revenuecat.purchases.integrationTest";
+
+    if (project.hasProperty("testApplicationId")) {
+        result = project.getProperties().get("testApplicationId")
+    }
+
+    result
+}
+
+def obtainTestBuildType() {
+    def result = "debug";
+
+    if (project.hasProperty("testBuildType")) {
+        result = project.getProperties().get("testBuildType")
+    }
+
+    result
 }
 
 dependencies {
@@ -33,7 +54,6 @@ dependencies {
     implementation "androidx.annotation:annotation:$annotationVersion"
 
     api "com.android.billingclient:billing:$billingVersion"
-
     implementation "androidx.lifecycle:lifecycle-runtime:$lifecycleVersion"
     implementation "androidx.lifecycle:lifecycle-common:$lifecycleVersion"
     implementation "androidx.lifecycle:lifecycle-process:$lifecycleVersion"

@@ -40,7 +40,7 @@ sealed class DiagnosticsEntry(val diagnosticType: String) {
     }
 
     data class Counter(
-        val name: String,
+        val name: DiagnosticsCounterName,
         val tags: Map<String, String>,
         val value: Int
     ) : DiagnosticsEntry("counter") {
@@ -57,7 +57,7 @@ sealed class DiagnosticsEntry(val diagnosticType: String) {
         private fun toJSONObject() = JSONObject().apply {
             put(VERSION_KEY, VERSION)
             put(TYPE_KEY, diagnosticType)
-            put(NAME_KEY, name.lowercase())
+            put(NAME_KEY, name.name.lowercase())
             put(TAGS_KEY, JSONObject(tags))
             put(VALUE_KEY, value)
         }
