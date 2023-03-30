@@ -98,7 +98,7 @@ data class GoogleStoreProduct(
         ReplaceWith("productId")
     )
     override val sku: String
-        get() = sku
+        get() = productId
 }
 
 /**
