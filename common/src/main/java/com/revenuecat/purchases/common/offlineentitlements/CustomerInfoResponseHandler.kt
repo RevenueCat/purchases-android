@@ -6,7 +6,6 @@ import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.AppConfig
-import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.CustomerInfoFactory
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.DefaultDateProvider
@@ -17,7 +16,7 @@ import org.json.JSONObject
 import java.util.Date
 
 class CustomerInfoResponseHandler(
-    private val billing: BillingAbstract,
+    private val purchasedProductsFetcher: PurchasedProductsFetcher,
     private val dateProvider: DateProvider = DefaultDateProvider(),
     private val appConfig: AppConfig
 ) {
@@ -27,7 +26,7 @@ class CustomerInfoResponseHandler(
         onSuccess: (CustomerInfo) -> Unit,
         onError: (PurchasesError) -> Unit
     ) {
-        billing.queryPurchasedProducts(
+        purchasedProductsFetcher.queryPurchasedProducts(
             appUserID,
             onSuccess = { purchasedProducts ->
                 val jsonObject = JSONObject()

@@ -41,12 +41,10 @@ import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.firstSku
 import com.revenuecat.purchases.common.listOfSkus
 import com.revenuecat.purchases.common.log
-import com.revenuecat.purchases.common.offlineentitlements.ProductEntitlementMapping
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.sha256
 import com.revenuecat.purchases.common.toHumanReadableDescription
 import com.revenuecat.purchases.models.PurchaseState
-import com.revenuecat.purchases.common.offlineentitlements.PurchasedProduct
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.skuDetails
@@ -58,7 +56,6 @@ import java.io.PrintWriter
 import java.io.StringWriter
 import java.util.Date
 import java.util.concurrent.ConcurrentLinkedQueue
-import java.util.concurrent.TimeUnit
 import kotlin.math.min
 import kotlin.time.Duration
 
@@ -237,71 +234,6 @@ class BillingWrapper(
                 }.build()
 
             launchBillingFlow(activity, params)
-        }
-    }
-
-    override fun queryPurchasedProducts(
-        appUserID: String,
-        onSuccess: (List<PurchasedProduct>) -> Unit,
-        onError: (PurchasesError) -> Unit
-    ) {
-        val productEntitlementMapping = deviceCache.getProductEntitlementMapping()
-
-        queryAllPurchases(
-            appUserID,
-            onReceivePurchaseHistory = { allPurchases ->
-                queryPurchases(
-                    appUserID,
-                    onSuccess = { activePurchasesByHashedToken ->
-                        val purchasedProductIdentifiers = allPurchases.map { it.skus[0] }.toSet()
-                        val activeProducts = activePurchasesByHashedToken.values.map { it.skus[0] }.toSet()
-                        val purchasedProducts = purchasedProductIdentifiers.map { productIdentifier ->
-                            createPurchasedProduct(
-                                allPurchases,
-                                productIdentifier,
-                                activeProducts,
-                                productEntitlementMapping
-                            )
-                        }
-                        onSuccess(purchasedProducts)
-                    },
-                    onError
-                )
-            },
-            onError
-        )
-    }
-
-    private fun createPurchasedProduct(
-        allPurchases: List<StoreTransaction>,
-        productIdentifier: String,
-        activeProducts: Set<String>,
-        productEntitlementMapping: ProductEntitlementMapping?
-    ): PurchasedProduct {
-        val purchaseAssociatedToProduct = allPurchases.first { it.skus[0] == productIdentifier }
-        val isActive = activeProducts.contains(productIdentifier)
-        val expirationDate = getExpirationDate(isActive, purchaseAssociatedToProduct)
-        return PurchasedProduct(
-            productIdentifier,
-            purchaseAssociatedToProduct,
-            isActive,
-            productEntitlementMapping?.toMap()?.get(productIdentifier) ?: emptyList(),
-            expirationDate
-        )
-    }
-
-    private fun getExpirationDate(
-        isActive: Boolean,
-        purchaseAssociatedToProduct: StoreTransaction
-    ): Date? {
-        return if (purchaseAssociatedToProduct.type == ProductType.SUBS) {
-            if (isActive) {
-                Date(dateProvider.now.time + TimeUnit.DAYS.toMillis(1))
-            } else {
-                Date(purchaseAssociatedToProduct.purchaseTime)
-            }
-        } else {
-            null
         }
     }
 

@@ -6,7 +6,7 @@ import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.OwnershipType
 import com.revenuecat.purchases.PeriodType
 import com.revenuecat.purchases.Store
-import com.revenuecat.purchases.common.BillingAbstract
+import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.utils.dummyGoogleRestoredStoreTransaction
 import io.mockk.every
@@ -22,22 +22,27 @@ import org.assertj.core.api.Assertions.assertThat
 @Config(manifest = Config.NONE)
 class CustomerInfoResponseHandlerTest {
     private val testDate = Date(1680048626287L) // Tue Mar 28 17:10:26 PDT 2023
-    private val tomorrowDate = Date(1680135026287L) // Tue Mar 29 17:10:26 PDT 2023
+    private val testDatePlusOneDay = Date(1680135026287L) // Tue Mar 29 17:10:26 PDT 2023
     private val appUserID = "appUserID"
 
-    private lateinit var billing: BillingAbstract
+    private lateinit var purchasedProductsFetcher: PurchasedProductsFetcher
+    private lateinit var appConfig: AppConfig
+
     private lateinit var testDateProvider: DateProvider
 
     private lateinit var customerInfoResponseHandler: CustomerInfoResponseHandler
 
     @Before
     fun setUp() {
-        billing = mockk()
+        purchasedProductsFetcher = mockk()
+        appConfig = mockk<AppConfig>().apply {
+            every { store } returns Store.PLAY_STORE
+        }
         testDateProvider = object : DateProvider {
             override val now: Date
                 get() = testDate
         }
-        customerInfoResponseHandler = CustomerInfoResponseHandler(billing, testDateProvider)
+        customerInfoResponseHandler = CustomerInfoResponseHandler(purchasedProductsFetcher, testDateProvider, appConfig)
     }
 
     @Test
@@ -45,7 +50,7 @@ class CustomerInfoResponseHandlerTest {
         val entitlementID = "pro_1"
         val purchasedProduct = mockPurchasedProduct(
             entitlementID = entitlementID,
-            expirationDate = tomorrowDate
+            expirationDate = testDatePlusOneDay
         )
 
         var receivedCustomerInfo: CustomerInfo? = null
@@ -63,7 +68,7 @@ class CustomerInfoResponseHandlerTest {
         assertThat(receivedEntitlement?.identifier).isEqualTo(entitlementID)
         assertThat(receivedEntitlement?.productIdentifier).isEqualTo(purchasedProduct.productIdentifier)
         assertThat(receivedEntitlement?.billingIssueDetectedAt).isNull()
-        assertThat(receivedEntitlement?.expirationDate).isEqualTo(tomorrowDate)
+        assertThat(receivedEntitlement?.expirationDate).isEqualTo(testDatePlusOneDay)
         assertThat(receivedEntitlement?.isSandbox).isFalse
         assertThat(receivedEntitlement?.originalPurchaseDate).isEqualTo(testDate)
         assertThat(receivedEntitlement?.latestPurchaseDate).isEqualTo(testDate)
@@ -77,7 +82,7 @@ class CustomerInfoResponseHandlerTest {
         productIdentifier: String = "product_identifier",
         entitlementID: String = "pro_1",
         purchaseDate: Date = testDate,
-        expirationDate: Date = tomorrowDate
+        expirationDate: Date = testDatePlusOneDay
     ): PurchasedProduct {
         val storeTransaction = dummyGoogleRestoredStoreTransaction(
             purchaseDate = testDate
@@ -90,7 +95,7 @@ class CustomerInfoResponseHandlerTest {
             expiresDate = expirationDate
         )
         every {
-            billing.queryPurchasedProducts(
+            purchasedProductsFetcher.queryPurchasedProducts(
                 appUserID,
                 captureLambda(),
                 any()
