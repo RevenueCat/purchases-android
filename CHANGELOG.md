@@ -1,3 +1,7 @@
+## 6.0.1
+### Bugfixes
+* Fix infinite loop when accesing deprecated property (#926) via Toni Rico (@tonidero)
+
 ## 6.0.0
 **RevenueCat Android SDK v6** is here!! 😻
 
