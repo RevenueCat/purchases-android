@@ -14,6 +14,7 @@ android {
         }
         integrationTest {
             dimension "extraAPIs"
+            minSdkVersion 21 // Needed because mockk-android requires API 21
         }
     }
 

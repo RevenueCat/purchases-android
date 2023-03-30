@@ -6,19 +6,10 @@ android {
     compileSdkVersion compileVersion
     buildToolsVersion buildToolsVersion
 
-    flavorDimensions "extraAPIs"
-    productFlavors {
-        defaults {
-            dimension "extraAPIs"
-        }
-        integrationTest {
-            dimension "extraAPIs"
-        }
-    }
-
     defaultConfig {
         minSdkVersion minVersion
         targetSdkVersion compileVersion
+        missingDimensionStrategy 'extraAPIs', 'defaults'
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }

@@ -12,7 +12,6 @@ android {
             packagingOptions {
                 resources.excludes.add("META-INF/*")
             }
-            minSdkVersion 21 // Needed because mockk-android requires API 21
         }
     }
 }

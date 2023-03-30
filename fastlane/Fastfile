@@ -389,7 +389,7 @@ end
 
 def build_purchases_android_test_apk(package_name, apk_name, build_type)
   gradle(
-    task: ':purchases:assembleIntegrationTestAndroidTest',
+    task: ':purchases:assembleAndroidTest',
     properties: {
       "testApplicationId" => package_name,
       "testBuildType" => build_type
