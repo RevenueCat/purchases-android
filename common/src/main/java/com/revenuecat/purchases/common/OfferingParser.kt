@@ -68,7 +68,9 @@ abstract class OfferingParser {
         val product = findMatchingProduct(productsById, packageJson)
 
         val packageType = packageIdentifier.toPackageType()
-        return product?.let { Package(packageIdentifier, packageType, it, offeringIdentifier) }
+        return product?.let {
+            Package(packageIdentifier, packageType, product.copyWithOfferingId(offeringIdentifier), offeringIdentifier)
+        }
     }
 }
 

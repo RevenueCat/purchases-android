@@ -68,7 +68,14 @@ data class AmazonStoreProduct(
     /**
      * JSONObject representing the original [Product] class from Amazon.
      */
-    val originalProductJSON: JSONObject
+    val originalProductJSON: JSONObject,
+
+    /**
+     * The offering ID this `SubscriptionOption` was returned from.
+     *
+     * Null if not using RevenueCat offerings system, or if fetched directly via `getProducts`
+     */
+    override val presentedOfferingIdentifier: String?
 ) : StoreProduct {
 
     /**
@@ -83,6 +90,23 @@ data class AmazonStoreProduct(
     )
     override val sku: String
         get() = id
+
+    override fun copyWithOfferingId(offeringId: String): StoreProduct {
+        return AmazonStoreProduct(
+            this.id,
+            this.type,
+            this.title,
+            this.description,
+            this.period,
+            this.price,
+            this.subscriptionOptions,
+            this.defaultOption,
+            this.iconUrl,
+            this.freeTrialPeriod,
+            this.originalProductJSON,
+            offeringId
+        )
+    }
 }
 
 /**

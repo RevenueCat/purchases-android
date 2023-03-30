@@ -64,8 +64,30 @@ data class GoogleStoreProduct(
     /**
      * The [ProductDetails] object returned from BillingClient that was used to construct this product.
      */
-    val productDetails: ProductDetails
+    val productDetails: ProductDetails,
+
+    override val presentedOfferingIdentifier: String?
 ) : StoreProduct {
+
+    constructor(
+        otherProduct: GoogleStoreProduct,
+        defaultOption: SubscriptionOption?,
+        subscriptionOptionsWithOfferingId: SubscriptionOptions?,
+        presentedOfferingIdentifier: String?
+    ) :
+        this(
+            otherProduct.productId,
+            otherProduct.basePlanId,
+            otherProduct.type,
+            otherProduct.price,
+            otherProduct.title,
+            otherProduct.description,
+            otherProduct.period,
+            subscriptionOptionsWithOfferingId,
+            defaultOption,
+            otherProduct.productDetails,
+            presentedOfferingIdentifier
+        )
 
     /**
      * The product ID.
@@ -99,6 +121,28 @@ data class GoogleStoreProduct(
     )
     override val sku: String
         get() = sku
+
+    override fun copyWithOfferingId(offeringId: String): StoreProduct {
+        val subscriptionOptionsWithOfferingIds = subscriptionOptions?.map {
+            GoogleSubscriptionOption(it as GoogleSubscriptionOption, offeringId)
+        }
+
+        val defaultOptionWithOfferingId = (defaultOption as? GoogleSubscriptionOption)?.let {
+            GoogleSubscriptionOption(
+                it,
+                offeringId
+            )
+        }
+
+        return GoogleStoreProduct(
+            this,
+            defaultOptionWithOfferingId,
+            if (subscriptionOptionsWithOfferingIds.isNullOrEmpty()) null else SubscriptionOptions(
+                subscriptionOptionsWithOfferingIds
+            ),
+            offeringId
+        )
+    }
 }
 
 /**

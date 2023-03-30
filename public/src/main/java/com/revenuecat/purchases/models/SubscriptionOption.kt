@@ -24,6 +24,13 @@ interface SubscriptionOption {
     val tags: List<String>
 
     /**
+     * The offering ID this `SubscriptionOption` was returned from.
+     *
+     * Null if not using RevenueCat offerings system, or if fetched directly via `getProducts`
+     */
+    val presentedOfferingIdentifier: String?
+
+    /**
      * True if this SubscriptionOption represents a Google subscription base plan (rather than an offer).
      * Not applicable for Amazon subscriptions.
      */

@@ -30,7 +30,8 @@ fun Product.toStoreProduct(marketplace: String): StoreProduct? {
         defaultOption = null,
         iconUrl = smallIconUrl,
         freeTrialPeriod = freeTrialPeriod?.createPeriod(),
-        originalProductJSON = this.toJSON()
+        originalProductJSON = this.toJSON(),
+        null
     )
 }
 
