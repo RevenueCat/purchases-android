@@ -415,6 +415,19 @@ workflows:
     jobs:
       - test
       - assemble-sample-app
+      # Testing integration test jobs
+      - integration-tests-build
+      - purchases-integration-tests-build
+      - purchases-load-shedder-integration-tests-build
+      - run-firebase-tests-purchases-integration-test:
+          requires:
+            - purchases-integration-tests-build
+      - run-firebase-tests-purchases-load-shedder-integration-test:
+          requires:
+            - purchases-load-shedder-integration-tests-build
+      - run-firebase-tests:
+          requires:
+            - integration-tests-build
 
   deploy:
     when:
