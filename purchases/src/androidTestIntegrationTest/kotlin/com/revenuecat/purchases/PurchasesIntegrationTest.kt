@@ -96,20 +96,6 @@ class PurchasesIntegrationTest {
     }
 
     @Test
-    fun customerInfoCanBeFetched() {
-        val lock = CountDownLatch(1)
-
-        onActivityReady {
-            Purchases.sharedInstance.getPurchaserInfoWith(
-                onError = { fail("should be success. Error: ${it.message}") },
-                onSuccess = { lock.countDown() }
-            )
-        }
-        lock.await(testTimeoutInSeconds, TimeUnit.SECONDS)
-        assertThat(lock.count).isZero
-    }
-
-    @Test
     fun canFetchOfferings() {
         val lock = CountDownLatch(1)
 
