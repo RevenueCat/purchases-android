@@ -43,7 +43,8 @@ fun stubStoreProduct(
         Period(1, Period.Unit.MONTH, "P1M"),
     ),
     subscriptionOptions: List<SubscriptionOption> = defaultOption?.let { listOf(defaultOption) } ?: emptyList(),
-    price: Price = subscriptionOptions.first().fullPricePhase!!.price
+    price: Price = subscriptionOptions.first().fullPricePhase!!.price,
+    presentedOfferingId: String? = null
 ): StoreProduct = object : StoreProduct {
     override val id: String
         get() = productId
@@ -67,11 +68,18 @@ fun stubStoreProduct(
         )
     override val sku: String
         get() = productId
+
+    override fun copyWithOfferingId(offeringId: String): StoreProduct {
+        return this // TODO
+    }
+
+    override val presentedOfferingIdentifier: String? = presentedOfferingId
 }
 
 @SuppressWarnings("EmptyFunctionBlock")
 fun stubINAPPStoreProduct(
-    productId: String
+    productId: String,
+    presentedOfferingId: String? = null
 ): StoreProduct = object : StoreProduct {
     override val id: String
         get() = productId
@@ -93,8 +101,14 @@ fun stubINAPPStoreProduct(
         get() = StubPurchasingData(
             productId = productId
         )
+    override val presentedOfferingIdentifier: String?
+        get() = presentedOfferingId
     override val sku: String
         get() = productId
+
+    override fun copyWithOfferingId(offeringId: String): StoreProduct {
+        return this // TODO
+    }
 }
 
 @SuppressWarnings("EmptyFunctionBlock")
@@ -110,6 +124,8 @@ fun stubSubscriptionOption(
         get() = pricingPhases
     override val tags: List<String>
         get() = listOf("tag")
+    override val presentedOfferingIdentifier: String?
+        get() = null // TODO
     override val purchasingData: PurchasingData
         get() = StubPurchasingData(
             productId = productId

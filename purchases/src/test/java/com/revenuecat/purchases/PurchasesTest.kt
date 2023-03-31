@@ -656,13 +656,67 @@ class PurchasesTest {
     }
 
     @Test
-    fun `purchase of package passes presentedOfferingIdentifier through to purchase`() {
+    fun `purchase of Package passes presentedOfferingIdentifier through to purchase`() {
         val (storeProduct, offerings) = stubOfferings("onemonth_freetrial")
         val expectedOfferingIdentifier = STUB_OFFERING_IDENTIFIER
 
-        purchases.purchasePackageWith(
+        val packageToPurchase = offerings[STUB_OFFERING_IDENTIFIER]!!.monthly!!
+        val purchaseParams = PurchaseParams.Builder(
             mockActivity,
-            offerings[STUB_OFFERING_IDENTIFIER]!!.monthly!!
+            packageToPurchase
+        )
+        purchases.purchaseWith(purchaseParams.build()) { _, _ -> }
+
+        verify {
+            mockBillingAbstract.makePurchaseAsync(
+                eq(mockActivity),
+                eq(appUserId),
+                storeProduct.subscriptionOptions!!.first().purchasingData,
+                null,
+                expectedOfferingIdentifier,
+                any()
+            )
+        }
+    }
+
+    @Test
+    fun `purchase of StoreProduct passes presentedOfferingIdentifier through to purchase`() {
+        val (_, offerings) = stubOfferings("onemonth_freetrial")
+        val expectedOfferingIdentifier = STUB_OFFERING_IDENTIFIER
+
+        val storeProduct = offerings[STUB_OFFERING_IDENTIFIER]!!.monthly!!.product
+        val purchaseParams = PurchaseParams.Builder(
+            mockActivity,
+            storeProduct
+        )
+        purchases.purchaseWith(
+            purchaseParams.build()
+        ) { _, _ -> }
+
+        verify {
+            mockBillingAbstract.makePurchaseAsync(
+                eq(mockActivity),
+                eq(appUserId),
+                storeProduct.subscriptionOptions!!.first().purchasingData,
+                null,
+                expectedOfferingIdentifier,
+                any()
+            )
+        }
+    }
+
+    @Test
+    fun `purchase of SubscriptionOption passes presentedOfferingIdentifier through to purchase`() {
+        val (storeProduct, offerings) = stubOfferings("onemonth_freetrial")
+        val expectedOfferingIdentifier = STUB_OFFERING_IDENTIFIER
+
+        val option = offerings[STUB_OFFERING_IDENTIFIER]!!.monthly!!.product.defaultOption!!
+        val purchaseParams = PurchaseParams.Builder(
+            mockActivity,
+            option
+        )
+        purchases.purchaseWith(
+            purchaseParams.build()
         ) { _, _ -> }
 
         verify {
