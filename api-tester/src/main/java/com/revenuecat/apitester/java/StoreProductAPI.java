@@ -1,30 +1,31 @@
 package com.revenuecat.apitester.java;
 
+import com.android.billingclient.api.ProductDetails;
 import com.revenuecat.purchases.ProductType;
+import com.revenuecat.purchases.amazon.AmazonStoreProduct;
+import com.revenuecat.purchases.models.GoogleSubscriptionOption;
+import com.revenuecat.purchases.models.GoogleStoreProduct;
+import com.revenuecat.purchases.models.GoogleStoreProductKt;
+import com.revenuecat.purchases.models.Price;
+import com.revenuecat.purchases.models.SubscriptionOption;
 import com.revenuecat.purchases.models.StoreProduct;
-
-import org.json.JSONObject;
+import com.revenuecat.purchases.models.Period;
+import com.revenuecat.purchases.models.SubscriptionOptions;
 
 @SuppressWarnings({"unused"})
 final class StoreProductAPI {
     static void check(final StoreProduct product) {
+        final String productId = product.getId();
         final String sku = product.getSku();
         final ProductType type = product.getType();
-        final String price = product.getPrice();
-        final long priceAmountMicros = product.getPriceAmountMicros();
-        final String priceCurrencyCode = product.getPriceCurrencyCode();
-        final String originalPrice = product.getOriginalPrice();
-        final long originalPriceAmountMicros = product.getOriginalPriceAmountMicros();
+        final Price price = product.getPrice();
         final String title = product.getTitle();
         final String description = product.getDescription();
-        final String subscriptionPeriod = product.getSubscriptionPeriod();
-        final String freeTrialPeriod = product.getFreeTrialPeriod();
-        final String introductoryPrice = product.getIntroductoryPrice();
-        final long introductoryPriceAmountMicros = product.getIntroductoryPriceAmountMicros();
-        final String introductoryPricePeriod = product.getIntroductoryPricePeriod();
-        final int introductoryPriceCycles = product.getIntroductoryPriceCycles();
-        final String iconUrl = product.getIconUrl();
-        final JSONObject originalJson = product.getOriginalJson();
+        final Period period = product.getPeriod();
+        SubscriptionOptions subscriptionOptions = product.getSubscriptionOptions();
+        SubscriptionOption defaultOption = product.getDefaultOption();
+
+        GoogleStoreProduct underlyingProduct = GoogleStoreProductKt.getGoogleProduct(product);
     }
 
     static void check(final ProductType type) {
@@ -33,5 +34,33 @@ final class StoreProductAPI {
             case INAPP:
             case UNKNOWN:
         }
+    }
+
+    static void checkGoogleStoreProduct(GoogleStoreProduct googleStoreProduct) {
+        check(googleStoreProduct);
+        ProductDetails productDetails = googleStoreProduct.getProductDetails();
+        SubscriptionOptions subscriptionOptions = googleStoreProduct.getSubscriptionOptions();
+        SubscriptionOption defaultOption = googleStoreProduct.getDefaultOption();
+        GoogleStoreProduct constructedGoogleStoreProduct = new GoogleStoreProduct(
+                googleStoreProduct.getId(),
+                null,
+                googleStoreProduct.getType(),
+                googleStoreProduct.getPrice(),
+                googleStoreProduct.getTitle(),
+                googleStoreProduct.getDescription(),
+                googleStoreProduct.getPeriod(),
+                googleStoreProduct.getSubscriptionOptions(),
+                googleStoreProduct.getDefaultOption(),
+                googleStoreProduct.getProductDetails()
+        );
+
+        String productId = constructedGoogleStoreProduct.getProductId();
+        String basePlanId = constructedGoogleStoreProduct.getBasePlanId();
+    }
+
+    static void checkAmazonStoreProduct(AmazonStoreProduct amazonStoreProduct) {
+        check(amazonStoreProduct);
+        String iconUrl = amazonStoreProduct.getIconUrl();
+        Period freeTrialPeriod = amazonStoreProduct.getFreeTrialPeriod();
     }
 }

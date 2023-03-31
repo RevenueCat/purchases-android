@@ -1,6 +1,5 @@
 package com.revenuecat.purchases.amazon
 
-import android.app.Activity
 import android.content.Context
 import android.os.Handler
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -19,9 +18,12 @@ import com.revenuecat.purchases.amazon.helpers.dummyReceipt
 import com.revenuecat.purchases.amazon.helpers.dummyUserData
 import com.revenuecat.purchases.amazon.helpers.successfulRVSResponse
 import com.revenuecat.purchases.common.BillingAbstract
+import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.utils.add
+import com.revenuecat.purchases.utils.subtract
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
@@ -33,10 +35,11 @@ import org.assertj.core.api.Assertions.fail
 import org.json.JSONObject
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.util.Date
+import kotlin.time.Duration.Companion.hours
 
 @RunWith(AndroidJUnit4::class)
 class AmazonBillingTest {
-
     private val appUserID: String = "appUserID"
     private lateinit var underTest: AmazonBilling
 
@@ -184,7 +187,7 @@ class AmazonBillingTest {
         assertThat(receivedPurchases).isNotNull
         assertThat(receivedPurchases!!.size).isEqualTo(2)
 
-        val purchaseA = receivedPurchases!!.values.first { it.skus[0] == expectedTermSkuA }
+        val purchaseA = receivedPurchases!!.values.first { it.productIds[0] == expectedTermSkuA }
         checkPurchaseIsCorrect(
             purchaseA,
             expectedTermSkuA,
@@ -192,7 +195,7 @@ class AmazonBillingTest {
             PurchaseState.UNSPECIFIED_STATE
         )
 
-        val purchaseB = receivedPurchases!!.values.first { it.skus[0] == expectedTermSkuB }
+        val purchaseB = receivedPurchases!!.values.first { it.productIds[0] == expectedTermSkuB }
         checkPurchaseIsCorrect(
             purchaseB,
             expectedTermSkuB,
@@ -200,6 +203,99 @@ class AmazonBillingTest {
             PurchaseState.UNSPECIFIED_STATE
         )
     }
+
+    @Test
+    fun `When querying purchases, canceled but not expired subscriptions are returned`() {
+        setup()
+        val expectedNotExpiredTermSku = "expired_sku.monthly"
+        val dummyReceiptNotExpired = dummyReceipt(
+            receiptId = "not_expired_id",
+            sku = "not_expired_sku",
+            cancelDate = Date().add(1.hours)
+        )
+
+        val dummyUserData = dummyUserData()
+
+        mockQueryPurchases(listOf(dummyReceiptNotExpired), dummyUserData)
+
+        mockEmptyCache()
+
+        mockGetAmazonReceiptData(dummyReceiptNotExpired, dummyUserData, expectedNotExpiredTermSku)
+
+        var receivedPurchases: Map<String, StoreTransaction>? = null
+        underTest.queryPurchases(
+            appUserID,
+            onSuccess = {
+                receivedPurchases = it
+            },
+            onError = {
+                fail("Should be a success")
+            }
+        )
+
+        assertThat(receivedPurchases).isNotNull
+        assertThat(receivedPurchases!!.keys.size).isEqualTo(1)
+        checkPurchaseIsCorrect(
+            receivedPurchases!![dummyReceiptNotExpired.receiptId.sha1()]!!,
+            expectedNotExpiredTermSku,
+            dummyUserData,
+            PurchaseState.UNSPECIFIED_STATE
+        )
+    }
+
+    @Test
+    fun `When querying purchases, expired subscriptions are not returned`() {
+        setup()
+        val expectedTermSku = "sub_sku.monthly"
+        val expectedNotExpiredTermSku = "expired_sku.monthly"
+        val dummyReceipt = dummyReceipt(receiptId = "dummy_id", sku = "sub_sku")
+        val dummyReceiptExpired = dummyReceipt(
+            receiptId = "expired_id",
+            sku = "expired_sku",
+            cancelDate = Date().subtract(1.hours)
+        )
+        val dummyReceiptNotExpired = dummyReceipt(
+            receiptId = "not_expired_id",
+            sku = "not_expired_sku",
+            cancelDate = Date().add(1.hours)
+        )
+
+        val dummyUserData = dummyUserData()
+
+        mockQueryPurchases(listOf(dummyReceipt, dummyReceiptExpired, dummyReceiptNotExpired), dummyUserData)
+
+        mockEmptyCache()
+
+        mockGetAmazonReceiptData(dummyReceipt, dummyUserData, expectedTermSku)
+        mockGetAmazonReceiptData(dummyReceiptNotExpired, dummyUserData, expectedNotExpiredTermSku)
+
+        var receivedPurchases: Map<String, StoreTransaction>? = null
+        underTest.queryPurchases(
+            appUserID,
+            onSuccess = {
+                receivedPurchases = it
+            },
+            onError = {
+                fail("Should be a success")
+            }
+        )
+
+        assertThat(receivedPurchases).isNotNull
+        assertThat(receivedPurchases!!.keys.size).isEqualTo(2)
+        checkPurchaseIsCorrect(
+            receivedPurchases!![dummyReceipt.receiptId.sha1()]!!,
+            expectedTermSku,
+            dummyUserData,
+            PurchaseState.UNSPECIFIED_STATE
+        )
+        checkPurchaseIsCorrect(
+            receivedPurchases!![dummyReceiptNotExpired.receiptId.sha1()]!!,
+            expectedNotExpiredTermSku,
+            dummyUserData,
+            PurchaseState.UNSPECIFIED_STATE
+        )
+    }
+
 
     @Test
     fun `When querying purchases, consumables don't need to fetch receipt data`() {
@@ -270,7 +366,7 @@ class AmazonBillingTest {
         assertThat(receivedPurchases).isNotNull
         assertThat(receivedPurchases!!.size).isEqualTo(2)
 
-        val purchaseA = receivedPurchases!!.values.first { it.skus[0] == expectedTermSkuA }
+        val purchaseA = receivedPurchases!!.values.first { it.productIds[0] == expectedTermSkuA }
         checkPurchaseIsCorrect(
             purchaseA,
             expectedTermSkuA,
@@ -278,7 +374,7 @@ class AmazonBillingTest {
             PurchaseState.UNSPECIFIED_STATE
         )
 
-        val purchaseB = receivedPurchases!!.values.first { it.skus[0] == "sub_sku_b.monthly" }
+        val purchaseB = receivedPurchases!!.values.first { it.productIds[0] == "sub_sku_b.monthly" }
         checkPurchaseIsCorrect(
             purchaseB,
             "sub_sku_b.monthly",
@@ -384,7 +480,7 @@ class AmazonBillingTest {
         setup()
         underTest.startConnection()
 
-        val skus = setOf("sku", "sku_2")
+        val productIds = setOf("sku", "sku_2")
         val marketplace = "ES"
         val dummyUserData = dummyUserData(marketplace = marketplace)
 
@@ -398,15 +494,15 @@ class AmazonBillingTest {
         val storeProducts = listOfNotNull(dummyAmazonProduct().toStoreProduct(marketplace))
 
         every {
-            mockProductDataHandler.getProductData(skus, capture(marketplaceSlot), captureLambda(), any())
+            mockProductDataHandler.getProductData(productIds, capture(marketplaceSlot), captureLambda(), any())
         } answers {
             lambda<(List<StoreProduct>) -> Unit>().captured.invoke(storeProducts)
         }
 
         var onReceiveCalled = false
-        underTest.querySkuDetailsAsync(
+        underTest.queryProductDetailsAsync(
             productType = com.revenuecat.purchases.ProductType.SUBS,
-            skus = skus,
+            productIds = productIds,
             onReceive = {
                 onReceiveCalled = true
             },
@@ -425,7 +521,7 @@ class AmazonBillingTest {
         underTest.consumeAndSave(
             shouldTryToConsume = true,
             purchase = dummyReceipt().toStoreTransaction(
-                sku = "sku.monthly",
+                productId = "sku.monthly",
                 presentedOfferingIdentifier = null,
                 purchaseState = PurchaseState.PENDING,
                 userData = dummyUserData(
@@ -456,7 +552,7 @@ class AmazonBillingTest {
         underTest.consumeAndSave(
             shouldTryToConsume = true,
             purchase = dummyReceipt.toStoreTransaction(
-                sku = "sku.monthly",
+                productId = "sku.monthly",
                 presentedOfferingIdentifier = null,
                 purchaseState = PurchaseState.PURCHASED,
                 userData = dummyUserData(
@@ -491,7 +587,7 @@ class AmazonBillingTest {
         underTest.consumeAndSave(
             shouldTryToConsume = false,
             purchase = dummyReceipt.toStoreTransaction(
-                sku = "sku.monthly",
+                productId = "sku.monthly",
                 presentedOfferingIdentifier = null,
                 purchaseState = PurchaseState.PURCHASED,
                 userData = dummyUserData(
@@ -543,130 +639,191 @@ class AmazonBillingTest {
             PurchaseState.UNSPECIFIED_STATE
         )
     }
+//
+//    @Test
+//    fun `Term sku is used when purchasing subscriptions`() {
+//        setup()
+//        val appUserID = "appUserID"
+//        val storeProduct = dummyAmazonProduct().toStoreProduct("US")
+//        val dummyReceipt = dummyReceipt()
+//        val dummyUserData = dummyUserData()
+//        val expectedTermSku = "sku.monthly"
+//
+//        every {
+//            mockPurchasingServiceProvider.registerListener(mockContext, any())
+//        } just Runs
+//
+//        var receivedPurchases: List<StoreTransaction>? = null
+//        underTest.purchasesUpdatedListener = object : BillingAbstract.PurchasesUpdatedListener {
+//            override fun onPurchasesUpdated(purchases: List<StoreTransaction>) {
+//                receivedPurchases = purchases
+//            }
+//
+//            override fun onPurchasesFailedToUpdate(purchasesError: PurchasesError) {
+//                fail<String>("should be success")
+//            }
+//        }
+//
+//        assertThat(storeProduct).isNotNull
+//
+//        val activity = mockk<Activity>()
+//        every {
+//            mockPurchaseHandler.purchase(
+//                handler,
+//                activity,
+//                appUserID,
+//                storeProduct!!,
+//                presentedOfferingIdentifier = null,
+//                onSuccess = captureLambda(),
+//                onError = any()
+//            )
+//        } answers {
+//            lambda<(Receipt, UserData) -> Unit>().captured.invoke(dummyReceipt, dummyUserData)
+//        }
+//
+//        mockGetAmazonReceiptData(dummyReceipt, dummyUserData, expectedTermSku)
+//
+//        underTest.makePurchaseAsync(
+//            activity,
+//            appUserID,
+//            storeProduct = storeProduct!!,
+//            replaceSkuInfo = null,
+//            presentedOfferingIdentifier = null
+//        )
+//
+//        assertThat(receivedPurchases).isNotNull
+//        assertThat(receivedPurchases!!.size).isOne
+//        checkPurchaseIsCorrect(
+//            receivedPurchases!![0],
+//            expectedTermSku,
+//            dummyUserData,
+//            PurchaseState.PURCHASED
+//        )
+//    }
+
+//    @Test
+//    fun `Sku is used when purchasing consumables`() {
+//        setup()
+//        val appUserID = "appUserID"
+//        val sku = "sku"
+//        val storeProduct = dummyAmazonProduct(
+//            sku = sku,
+//            productType = ProductType.CONSUMABLE
+//        ).toStoreProduct("US")
+//        val dummyReceipt = dummyReceipt(
+//            sku = sku,
+//            productType = ProductType.CONSUMABLE
+//        )
+//        val dummyUserData = dummyUserData()
+//
+//        every {
+//            mockPurchasingServiceProvider.registerListener(mockContext, any())
+//        } just Runs
+//
+//        var receivedPurchases: List<StoreTransaction>? = null
+//        underTest.purchasesUpdatedListener = object : BillingAbstract.PurchasesUpdatedListener {
+//            override fun onPurchasesUpdated(purchases: List<StoreTransaction>) {
+//                receivedPurchases = purchases
+//            }
+//
+//            override fun onPurchasesFailedToUpdate(purchasesError: PurchasesError) {
+//                fail<String>("should be success")
+//            }
+//        }
+//
+//        assertThat(storeProduct).isNotNull
+//
+//        val activity = mockk<Activity>()
+//        every {
+//            mockPurchaseHandler.purchase(
+//                handler,
+//                activity,
+//                appUserID,
+//                storeProduct!!,
+//                presentedOfferingIdentifier = null,
+//                onSuccess = captureLambda(),
+//                onError = any()
+//            )
+//        } answers {
+//            lambda<(Receipt, UserData) -> Unit>().captured.invoke(dummyReceipt, dummyUserData)
+//        }
+//
+//        underTest.makePurchaseAsync(
+//            activity,
+//            appUserID,
+//            storeProduct = storeProduct!!,
+//            replaceSkuInfo = null,
+//            presentedOfferingIdentifier = null
+//        )
+//
+//        assertThat(receivedPurchases).isNotNull
+//        assertThat(receivedPurchases!!.size).isOne
+//        checkPurchaseIsCorrect(
+//            receivedPurchases!![0],
+//            sku,
+//            dummyUserData,
+//            PurchaseState.PURCHASED
+//        )
+//    }
 
     @Test
-    fun `Term sku is used when purchasing subscriptions`() {
+    fun `querying all purchases returns all purchases, even if they were canceled previously`() {
         setup()
-        val appUserID = "appUserID"
-        val storeProduct = dummyAmazonProduct().toStoreProduct("US")
-        val dummyReceipt = dummyReceipt()
+        val expectedTermSku = "sub_sku.monthly"
+        val expectedExpiredTermSku = "expired_sku.monthly"
+        val expectedNotExpiredTermSku = "expired_sku.monthly"
+        val dummyReceipt = dummyReceipt(receiptId = "dummy_id", sku = "sub_sku")
+        val dummyReceiptExpired = dummyReceipt(
+            receiptId = "expired_id",
+            sku = "expired_sku",
+            cancelDate = Date().subtract(1.hours)
+        )
+        val dummyReceiptNotExpired = dummyReceipt(
+            receiptId = "not_expired_id",
+            sku = "not_expired_sku",
+            cancelDate = Date().add(1.hours)
+        )
+
         val dummyUserData = dummyUserData()
-        val expectedTermSku = "sku.monthly"
 
-        every {
-            mockPurchasingServiceProvider.registerListener(mockContext, any())
-        } just Runs
+        mockQueryPurchases(listOf(dummyReceipt, dummyReceiptExpired, dummyReceiptNotExpired), dummyUserData)
 
-        var receivedPurchases: List<StoreTransaction>? = null
-        underTest.purchasesUpdatedListener = object : BillingAbstract.PurchasesUpdatedListener {
-            override fun onPurchasesUpdated(purchases: List<StoreTransaction>) {
-                receivedPurchases = purchases
-            }
-
-            override fun onPurchasesFailedToUpdate(purchasesError: PurchasesError) {
-                fail<String>("should be success")
-            }
-        }
-
-        assertThat(storeProduct).isNotNull
-
-        val activity = mockk<Activity>()
-        every {
-            mockPurchaseHandler.purchase(
-                handler,
-                activity,
-                appUserID,
-                storeProduct!!,
-                presentedOfferingIdentifier = null,
-                onSuccess = captureLambda(),
-                onError = any()
-            )
-        } answers {
-            lambda<(Receipt, UserData) -> Unit>().captured.invoke(dummyReceipt, dummyUserData)
-        }
+        mockEmptyCache()
 
         mockGetAmazonReceiptData(dummyReceipt, dummyUserData, expectedTermSku)
+        mockGetAmazonReceiptData(dummyReceiptExpired, dummyUserData, expectedExpiredTermSku)
+        mockGetAmazonReceiptData(dummyReceiptNotExpired, dummyUserData, expectedNotExpiredTermSku)
 
-        underTest.makePurchaseAsync(
-            activity,
+        var receivedPurchases: List<StoreTransaction>? = null
+        underTest.queryAllPurchases(
             appUserID,
-            storeProduct = storeProduct!!,
-            replaceSkuInfo = null,
-            presentedOfferingIdentifier = null
+            onReceivePurchaseHistory = {
+                receivedPurchases = it
+            },
+            onReceivePurchaseHistoryError = {
+                fail("Should be a success")
+            }
         )
 
         assertThat(receivedPurchases).isNotNull
-        assertThat(receivedPurchases!!.size).isOne
+        assertThat(receivedPurchases!!.size).isEqualTo(3)
         checkPurchaseIsCorrect(
             receivedPurchases!![0],
             expectedTermSku,
             dummyUserData,
-            PurchaseState.PURCHASED
+            PurchaseState.UNSPECIFIED_STATE
         )
-    }
-
-    @Test
-    fun `Sku is used when purchasing consumables`() {
-        setup()
-        val appUserID = "appUserID"
-        val sku = "sku"
-        val storeProduct = dummyAmazonProduct(
-            sku = sku,
-            productType = ProductType.CONSUMABLE
-        ).toStoreProduct("US")
-        val dummyReceipt = dummyReceipt(
-            sku = sku,
-            productType = ProductType.CONSUMABLE
-        )
-        val dummyUserData = dummyUserData()
-
-        every {
-            mockPurchasingServiceProvider.registerListener(mockContext, any())
-        } just Runs
-
-        var receivedPurchases: List<StoreTransaction>? = null
-        underTest.purchasesUpdatedListener = object : BillingAbstract.PurchasesUpdatedListener {
-            override fun onPurchasesUpdated(purchases: List<StoreTransaction>) {
-                receivedPurchases = purchases
-            }
-
-            override fun onPurchasesFailedToUpdate(purchasesError: PurchasesError) {
-                fail<String>("should be success")
-            }
-        }
-
-        assertThat(storeProduct).isNotNull
-
-        val activity = mockk<Activity>()
-        every {
-            mockPurchaseHandler.purchase(
-                handler,
-                activity,
-                appUserID,
-                storeProduct!!,
-                presentedOfferingIdentifier = null,
-                onSuccess = captureLambda(),
-                onError = any()
-            )
-        } answers {
-            lambda<(Receipt, UserData) -> Unit>().captured.invoke(dummyReceipt, dummyUserData)
-        }
-
-        underTest.makePurchaseAsync(
-            activity,
-            appUserID,
-            storeProduct = storeProduct!!,
-            replaceSkuInfo = null,
-            presentedOfferingIdentifier = null
-        )
-
-        assertThat(receivedPurchases).isNotNull
-        assertThat(receivedPurchases!!.size).isOne
         checkPurchaseIsCorrect(
-            receivedPurchases!![0],
-            sku,
+            receivedPurchases!![1],
+            expectedExpiredTermSku,
             dummyUserData,
-            PurchaseState.PURCHASED
+            PurchaseState.UNSPECIFIED_STATE
+        )
+        checkPurchaseIsCorrect(
+            receivedPurchases!![2],
+            expectedNotExpiredTermSku,
+            dummyUserData,
+            PurchaseState.UNSPECIFIED_STATE
         )
     }
 

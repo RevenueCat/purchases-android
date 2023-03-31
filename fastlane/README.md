@@ -87,13 +87,21 @@ Tag current branch with current version number
 
 Build purchase tester app bundle
 
-### android build_purchases_integration_tests
+### android build_default_purchases_integration_tests
 
 ```sh
-[bundle exec] fastlane android build_purchases_integration_tests
+[bundle exec] fastlane android build_default_purchases_integration_tests
 ```
 
-Build purchases module integration tests
+Build purchases module integration tests pointing to production
+
+### android build_load_shedder_purchases_integration_tests
+
+```sh
+[bundle exec] fastlane android build_load_shedder_purchases_integration_tests
+```
+
+Build purchases module integration tests pointing to load shedder
 
 ### android publish_purchase_tester
 
@@ -110,18 +118,26 @@ Publish purchase tester to test track in Play Console
 ```
 
 Builds a Magic Weather APK and prompts for:
-
 * Gradle task
-
 * Amazon or Google API Key for RevenueCat
-
 * Version code
-
 * Version name
+* Amazon pem path (optional)
+* New application id (optional)
 
+
+### android build_purchase_tester
+
+```sh
+[bundle exec] fastlane android build_purchase_tester
+```
+
+Builds a Purchase Tester APK and prompts for:
+* Version code
+* Version name
+* Min SDK Version
 * Amazon pem path (optional)
 
-* New application id (optional)
 
 ----
 

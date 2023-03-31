@@ -4,6 +4,7 @@ import android.app.Activity
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCallback
+import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 
@@ -52,9 +53,9 @@ abstract class BillingAbstract {
         onReceivePurchaseHistoryError: PurchasesErrorCallback
     )
 
-    abstract fun querySkuDetailsAsync(
+    abstract fun queryProductDetailsAsync(
         productType: ProductType,
-        skus: Set<String>,
+        productIds: Set<String>,
         onReceive: StoreProductsCallback,
         onError: PurchasesErrorCallback
     )
@@ -72,12 +73,14 @@ abstract class BillingAbstract {
         onError: (PurchasesError) -> Unit
     )
 
+    @SuppressWarnings("LongParameterList")
     abstract fun makePurchaseAsync(
         activity: Activity,
         appUserID: String,
-        storeProduct: StoreProduct,
-        replaceSkuInfo: ReplaceSkuInfo?,
-        presentedOfferingIdentifier: String?
+        purchasingData: PurchasingData,
+        replaceProductInfo: ReplaceProductInfo?,
+        presentedOfferingIdentifier: String?,
+        isPersonalizedPrice: Boolean? = null
     )
 
     abstract fun isConnected(): Boolean

@@ -70,6 +70,16 @@ class ConfigureFragment : Fragment() {
             navigateToLogsFragment()
         }
 
+        binding.amazonStoreRadioId.setOnCheckedChangeListener { buttonView, isChecked ->
+            // Disable observer mode options if Amazon
+            binding.observerModeCheckbox.isEnabled = !isChecked
+
+            // Toggle observer mode off only if Amazon is checked
+            if (isChecked) {
+                binding.observerModeCheckbox.isChecked = false
+            }
+        }
+
         return binding.root
     }
 
@@ -82,6 +92,7 @@ class ConfigureFragment : Fragment() {
         // Trusted entitlements: Commented out until ready to be made public
         // val entitlementVerificationMode = EntitlementVerificationMode.values()[verificationModeIndex]
         val useAmazonStore = binding.storeRadioGroup.checkedRadioButtonId == R.id.amazon_store_radio_id
+        val useObserverMode = binding.observerModeCheckbox.isChecked
 
         val application = (requireActivity().application as MainApplication)
 
@@ -97,8 +108,13 @@ class ConfigureFragment : Fragment() {
             .diagnosticsEnabled(true)
             // Trusted entitlements: Commented out until ready to be made public
             // .entitlementVerificationMode(entitlementVerificationMode)
+            .observerMode(useObserverMode)
             .build()
         Purchases.configure(configuration)
+
+        if (useObserverMode) {
+            ObserverModeBillingClient.start(application, application.logHandler)
+        }
 
         // set attributes to store additional, structured information for a user in RevenueCat.
         // More info: https://docs.revenuecat.com/docs/user-attributes

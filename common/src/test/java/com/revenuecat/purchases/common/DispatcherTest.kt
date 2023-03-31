@@ -169,7 +169,6 @@ class DispatcherTest {
             mockExecutorService.isShutdown
         } returns true
 
-
         dispatcherWithMockExecutor.enqueue({
             fail("should never execute")
         })

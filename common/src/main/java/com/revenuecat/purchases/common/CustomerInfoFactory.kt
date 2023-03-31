@@ -6,9 +6,8 @@ import com.revenuecat.purchases.EntitlementInfos
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.utils.Iso8601Utils
+import com.revenuecat.purchases.utils.optDate
 import com.revenuecat.purchases.utils.optNullableString
-import com.revenuecat.purchases.utils.parseExpirations
-import com.revenuecat.purchases.utils.parsePurchaseDates
 import org.json.JSONException
 import org.json.JSONObject
 import java.util.Collections.emptyMap
@@ -74,7 +73,6 @@ object CustomerInfoFactory {
 
         return CustomerInfo(
             entitlements = entitlementInfos,
-            purchasedNonSubscriptionSkus = nonSubscriptions.keys().asSequence().toSet(),
             allExpirationDatesByProduct = expirationDatesByProduct,
             allPurchaseDatesByProduct = purchaseDatesByProduct,
             requestDate = requestDate,
@@ -85,5 +83,43 @@ object CustomerInfoFactory {
             managementURL = managementURL?.let { Uri.parse(it) },
             originalPurchaseDate = originalPurchaseDate
         )
+    }
+
+    /**
+     * Parses expiration dates in a JSONObject
+     * @throws [JSONException] If the json is invalid.
+     */
+    private fun JSONObject.parseExpirations(): Map<String, Date?> {
+        return parseDates("expires_date")
+    }
+
+    /**
+     * Parses purchase dates in a JSONObject
+     * @throws [JSONException] If the json is invalid.
+     */
+    private fun JSONObject.parsePurchaseDates(): Map<String, Date?> {
+        return parseDates("purchase_date")
+    }
+
+    /**
+     * Parses dates that match a JSON key in a JSONObject
+     * @param jsonKey Key of the dates to deserialize from the JSONObject
+     * @throws [JSONException] If the json is invalid.
+     */
+    private fun JSONObject.parseDates(jsonKey: String): HashMap<String, Date?> {
+        val expirationDates = HashMap<String, Date?>()
+
+        val it = keys()
+        while (it.hasNext()) {
+            val productId = it.next()
+            val basePlanId = getJSONObject(productId).optString("product_plan_identifier").takeIf { it.isNotEmpty() }
+
+            val expirationObject = getJSONObject(productId)
+
+            val key = basePlanId?.let { "$productId:$it" } ?: productId
+            expirationDates[key] = expirationObject.optDate(jsonKey)
+        }
+
+        return expirationDates
     }
 }

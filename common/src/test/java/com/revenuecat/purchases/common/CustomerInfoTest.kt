@@ -37,7 +37,7 @@ class CustomerInfoTest {
     fun `Given an empty response, empty object is created`() {
         assertThat(emptyCustomerInfo).isNotNull
         assertThat(emptyCustomerInfo.activeSubscriptions).isEmpty()
-        assertThat(emptyCustomerInfo.allPurchasedSkus).isEmpty()
+        assertThat(emptyCustomerInfo.allPurchasedProductIds).isEmpty()
         assertThat(emptyCustomerInfo.nonSubscriptionTransactions).isEmpty()
         assertThat(emptyCustomerInfo.latestExpirationDate).isNull()
     }
@@ -46,11 +46,6 @@ class CustomerInfoTest {
     @Test
     fun `Given a full response with non subscription SKUs, all SKUs are parsed properly`() {
         val info = fullCustomerInfo
-
-        assertThat(info.purchasedNonSubscriptionSkus.size).isEqualTo(3)
-        assertThat(info.purchasedNonSubscriptionSkus).contains("100_coins_pack")
-        assertThat(info.purchasedNonSubscriptionSkus).contains("7_extra_lives")
-        assertThat(info.purchasedNonSubscriptionSkus).contains("lifetime_access")
 
         assertThat(info.nonSubscriptionTransactions.size).isEqualTo(5)
         assertThat(
@@ -71,7 +66,7 @@ class CustomerInfoTest {
         val actives = info.activeSubscriptions
 
         assertThat(actives.size).isEqualTo(1)
-        assertThat(actives).contains("onemonth_freetrial")
+        assertThat(actives).contains("pro:monthly")
     }
 
     @Test
@@ -84,7 +79,7 @@ class CustomerInfoTest {
         val actives = info.activeSubscriptions
 
         assertThat(actives.size).isEqualTo(1)
-        assertThat(actives.first()).isEqualTo("threemonth_freetrial")
+        assertThat(actives.first()).isEqualTo("basic:monthly")
     }
 
     @Test
@@ -97,7 +92,7 @@ class CustomerInfoTest {
         val actives = info.activeSubscriptions
 
         assertThat(actives.size).isEqualTo(2)
-        assertThat(actives).containsAll(listOf("onemonth_freetrial", "threemonth_freetrial"))
+        assertThat(actives).containsAll(listOf("pro:monthly", "basic:monthly"))
     }
 
     @Test
@@ -122,19 +117,19 @@ class CustomerInfoTest {
         val actives = info.activeSubscriptions
 
         assertThat(actives.size).isEqualTo(1)
-        assertThat(actives.first()).isEqualTo("onemonth_freetrial")
+        assertThat(actives.first()).isEqualTo("pro:monthly")
     }
 
     @Test
     @Throws(JSONException::class)
     fun `Given a full response, all purchased SKUs are retrieved properly`() {
         val info = fullCustomerInfo
-        val purchasedSkus = info.allPurchasedSkus
+        val purchasedSkus = info.allPurchasedProductIds
 
         assertThat(purchasedSkus.size).isEqualTo(5)
-        assertThat(purchasedSkus).contains("onemonth_freetrial")
+        assertThat(purchasedSkus).contains("pro:monthly")
         assertThat(purchasedSkus).contains("100_coins_pack")
-        assertThat(purchasedSkus).contains("threemonth_freetrial")
+        assertThat(purchasedSkus).contains("basic:monthly")
         assertThat(purchasedSkus).contains("7_extra_lives")
         assertThat(purchasedSkus).contains("lifetime_access")
     }
@@ -155,10 +150,10 @@ class CustomerInfoTest {
     fun `Given a full purchase info, expiration date is de-serialized properly`() {
         val info = fullCustomerInfo
 
-        val oneMonthDate = info.getExpirationDateForSku("onemonth_freetrial")
-        val threeMonthDate = info.getExpirationDateForSku("threemonth_freetrial")
+        val pro = info.getExpirationDateForProductId("pro:monthly")
+        val basic = info.getExpirationDateForProductId("basic:monthly")
 
-        assertThat(oneMonthDate!!.after(threeMonthDate)).`as`("$oneMonthDate is after $threeMonthDate")
+        assertThat(pro!!.after(basic)).`as`("$pro is after $basic")
             .isTrue
     }
 
@@ -175,9 +170,9 @@ class CustomerInfoTest {
         val info = fullCustomerInfo
 
         val pro = info.getExpirationDateForEntitlement("pro")
-        val oldPro = info.getExpirationDateForEntitlement("old_pro")
+        val basic = info.getExpirationDateForEntitlement("basic")
 
-        assertThat(pro!!.after(oldPro)).`as`("$pro is after $oldPro").isTrue
+        assertThat(pro!!.after(basic)).`as`("$pro is after $basic").isTrue
     }
 
     @Test
@@ -326,5 +321,26 @@ class CustomerInfoTest {
         assertThat(
             (fullCustomerInfo.nonSubscriptionTransactions).distinctBy { it.transactionIdentifier }.size
         ).isEqualTo(5)
+    }
+
+    @Test
+    fun `Test allExpirationDatesByProduct`() {
+        assertThat(fullCustomerInfo.allExpirationDatesByProduct).isNotEmpty
+        assertThat(fullCustomerInfo.allExpirationDatesByProduct.size).isEqualTo(2)
+
+        assertThat(fullCustomerInfo.allExpirationDatesByProduct["pro:monthly"]).isNotNull
+        assertThat(fullCustomerInfo.allExpirationDatesByProduct["basic:monthly"]).isNotNull
+    }
+
+    @Test
+    fun `Test allPurchaseDatesByProduct`() {
+        assertThat(fullCustomerInfo.allPurchaseDatesByProduct).isNotEmpty
+        assertThat(fullCustomerInfo.allPurchaseDatesByProduct.size).isEqualTo(5)
+
+        assertThat(fullCustomerInfo.allPurchaseDatesByProduct["pro:monthly"]).isNotNull
+        assertThat(fullCustomerInfo.allPurchaseDatesByProduct["basic:monthly"]).isNotNull
+        assertThat(fullCustomerInfo.allPurchaseDatesByProduct["100_coins_pack"]).isNotNull
+        assertThat(fullCustomerInfo.allPurchaseDatesByProduct["7_extra_lives"]).isNotNull
+        assertThat(fullCustomerInfo.allPurchaseDatesByProduct["lifetime_access"]).isNotNull
     }
 }

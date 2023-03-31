@@ -69,7 +69,7 @@ class AnonymizerTest {
 
     // endregion
 
-    // region anonymizeMap
+    // region anonymizedMap
 
     @Test
     fun `anonymizedMap anonymizes all string fields if needed`() {

@@ -22,7 +22,8 @@ object StoreTransactionFactory {
         presentedOfferingIdentifier: String? = null,
         storeUserID: String? = null,
         purchaseType: PurchaseType = PurchaseType.GOOGLE_PURCHASE,
-        marketplace: String? = null
+        marketplace: String? = null,
+        subscriptionOptionId: String? = Constants.basePlanIdToPurchase
     ): StoreTransaction {
         return StoreTransaction(
             orderId,
@@ -37,7 +38,8 @@ object StoreTransactionFactory {
             presentedOfferingIdentifier,
             storeUserID,
             purchaseType,
-            marketplace
+            marketplace,
+            subscriptionOptionId
         )
     }
 }

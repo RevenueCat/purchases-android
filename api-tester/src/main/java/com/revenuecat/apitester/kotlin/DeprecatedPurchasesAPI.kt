@@ -1,67 +1,32 @@
 package com.revenuecat.apitester.kotlin
 
 import android.app.Activity
-import android.content.Context
-import com.android.billingclient.api.Purchase
-import com.android.billingclient.api.SkuDetails
 import com.revenuecat.purchases.CustomerInfo
-import com.revenuecat.purchases.Offerings
-import com.revenuecat.purchases.Package
-import com.revenuecat.purchases.PurchaserInfo
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.UpgradeInfo
-import com.revenuecat.purchases.interfaces.GetSkusResponseListener
-import com.revenuecat.purchases.interfaces.MakePurchaseListener
+import com.revenuecat.purchases.getNonSubscriptionSkusWith
+import com.revenuecat.purchases.getSubscriptionSkusWith
 import com.revenuecat.purchases.interfaces.ProductChangeCallback
-import com.revenuecat.purchases.interfaces.ProductChangeListener
 import com.revenuecat.purchases.interfaces.PurchaseCallback
-import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
-import com.revenuecat.purchases.interfaces.ReceiveOfferingsListener
-import com.revenuecat.purchases.interfaces.ReceivePurchaserInfoListener
-import com.revenuecat.purchases.interfaces.UpdatedPurchaserInfoListener
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.models.SubscriptionOption
+import com.revenuecat.purchases.purchasePackageWith
 import com.revenuecat.purchases.purchaseProductWith
-import java.util.ArrayList
-import java.util.concurrent.ExecutorService
 
-@Suppress("unused", "UNUSED_VARIABLE", "EmptyFunctionBlock", "LongParameterList")
+@Suppress("unused")
 private class DeprecatedPurchasesAPI {
+    @SuppressWarnings("LongParameterList", "LongMethod", "EmptyFunctionBlock")
     fun check(
         purchases: Purchases,
         activity: Activity,
-        skuDetails: SkuDetails,
         storeProduct: StoreProduct,
-        packageToPurchase: Package,
-        upgradeInfo: UpgradeInfo
+        upgradeInfo: UpgradeInfo,
+        subscriptionOption: SubscriptionOption,
+        packageToPurchase: com.revenuecat.purchases.Package
     ) {
-        val skus = ArrayList<String>()
-        val receiveOfferingsListener = object : ReceiveOfferingsListener {
-            override fun onReceived(offerings: Offerings) {}
-            override fun onError(error: PurchasesError) {}
-        }
-        val skusResponseListener = object : GetSkusResponseListener {
-            override fun onReceived(skus: List<SkuDetails>) {}
-            override fun onError(error: PurchasesError) {}
-        }
-        val productChangeListener = object : ProductChangeListener {
-            override fun onCompleted(purchase: Purchase?, purchaserInfo: PurchaserInfo) {}
-            override fun onError(error: PurchasesError, userCancelled: Boolean) {}
-        }
-        val makePurchaseListener = object : MakePurchaseListener {
-            override fun onCompleted(purchase: Purchase, purchaserInfo: PurchaserInfo) {}
-            override fun onError(error: PurchasesError, userCancelled: Boolean) {}
-        }
-        val receiveCustomerInfoListener = object : ReceivePurchaserInfoListener {
-            override fun onReceived(purchaserInfo: PurchaserInfo) {}
-            override fun onError(error: PurchasesError) {}
-        }
-        purchases.getOfferings(receiveOfferingsListener)
-        purchases.getSubscriptionSkus(skus, skusResponseListener)
-        purchases.getNonSubscriptionSkus(skus, skusResponseListener)
-
-        val productChangeCallback = object : ProductChangeCallback {
+        val purchaseChangeCallback = object : ProductChangeCallback {
             override fun onCompleted(storeTransaction: StoreTransaction?, customerInfo: CustomerInfo) {}
             override fun onError(error: PurchasesError, userCancelled: Boolean) {}
         }
@@ -69,61 +34,69 @@ private class DeprecatedPurchasesAPI {
             override fun onCompleted(storeTransaction: StoreTransaction, customerInfo: CustomerInfo) {}
             override fun onError(error: PurchasesError, userCancelled: Boolean) {}
         }
-        purchases.purchaseProduct(activity, skuDetails, upgradeInfo, productChangeListener)
-        purchases.purchaseProduct(activity, storeProduct, upgradeInfo, productChangeListener)
-        purchases.purchaseProduct(activity, skuDetails, upgradeInfo, productChangeCallback)
-        purchases.purchaseProduct(activity, skuDetails, makePurchaseListener)
-        purchases.purchaseProduct(activity, storeProduct, makePurchaseListener)
-        purchases.purchaseProduct(activity, skuDetails, purchaseCallback)
-        purchases.purchasePackage(activity, packageToPurchase, upgradeInfo, productChangeListener)
-        purchases.purchasePackage(activity, packageToPurchase, makePurchaseListener)
-        purchases.restorePurchases(receiveCustomerInfoListener)
-        purchases.logOut(receiveCustomerInfoListener)
-        purchases.getPurchaserInfo(receiveCustomerInfoListener)
-        purchases.getPurchaserInfo(object : ReceiveCustomerInfoCallback {
-            override fun onReceived(customerInfo: CustomerInfo) {}
-            override fun onError(error: PurchasesError) {}
-        })
-        purchases.getCustomerInfo(receiveCustomerInfoListener)
-        purchases.invalidatePurchaserInfoCache()
-        purchases.removeUpdatedPurchaserInfoListener()
 
-        val updatedPurchaserInfoListener: UpdatedPurchaserInfoListener? = purchases.updatedPurchaserInfoListener
-        purchases.updatedPurchaserInfoListener = object : UpdatedPurchaserInfoListener {
-            override fun onReceived(purchaserInfo: PurchaserInfo) {
-            }
-        }
+        purchases.purchaseProduct(activity, storeProduct, upgradeInfo, purchaseChangeCallback)
+        purchases.purchaseProduct(activity, storeProduct, purchaseCallback)
+        purchases.purchasePackage(activity, packageToPurchase, upgradeInfo, purchaseChangeCallback)
+        purchases.purchasePackage(activity, packageToPurchase, purchaseCallback)
 
-        purchases.allowSharingPlayStoreAccount = true
-    }
-
-    @Suppress("RedundantLambdaArrow")
-    fun checkListenerConversions(
-        purchases: Purchases,
-        activity: Activity,
-        skuDetails: SkuDetails,
-        upgradeInfo: UpgradeInfo
-    ) {
         purchases.purchaseProductWith(
             activity,
-            skuDetails,
+            storeProduct,
             onError = { _: PurchasesError, _: Boolean -> },
-            onSuccess = { _: Purchase, _: PurchaserInfo -> }
+            onSuccess = { _: StoreTransaction, _: CustomerInfo -> }
         )
         purchases.purchaseProductWith(
             activity,
-            skuDetails,
+            storeProduct) { _: StoreTransaction, _: CustomerInfo -> }
+        purchases.purchaseProductWith(
+            activity,
+            storeProduct,
             upgradeInfo,
             onError = { _: PurchasesError, _: Boolean -> },
-            onSuccess = { _: Purchase?, _: PurchaserInfo -> }
+            onSuccess = { _: StoreTransaction?, _: CustomerInfo -> }
         )
-    }
+        purchases.purchaseProductWith(
+            activity,
+            storeProduct,
+            upgradeInfo) { _: StoreTransaction?, _: CustomerInfo -> }
 
-    @Suppress("RemoveRedundantQualifierName", "RedundantLambdaArrow", "ForbiddenComment")
-    fun checkConfiguration(context: Context, executorService: ExecutorService) {
-        Purchases.configure(context, "")
-        Purchases.configure(context, "", "")
-        Purchases.configure(context, "", "", true)
-        Purchases.configure(context, "", "", false, executorService)
+        purchases.purchasePackageWith(
+            activity,
+            packageToPurchase,
+            upgradeInfo,
+            onError = { _: PurchasesError, _: Boolean -> },
+            onSuccess = { _: StoreTransaction?, _: CustomerInfo -> }
+        )
+        purchases.purchasePackageWith(
+            activity,
+            packageToPurchase,
+            upgradeInfo) { _: StoreTransaction?, _: CustomerInfo -> }
+
+        purchases.purchasePackageWith(
+            activity,
+            packageToPurchase,
+            onError = { _: PurchasesError, _: Boolean -> },
+            onSuccess = { _: StoreTransaction, _: CustomerInfo -> }
+        )
+
+        purchases.purchasePackageWith(
+            activity,
+            packageToPurchase) { _: StoreTransaction, _: CustomerInfo -> }
+
+        purchases.allowSharingPlayStoreAccount = true
+        purchases.getSubscriptionSkusWith(
+            ArrayList<String>(),
+            onError = { _: PurchasesError -> },
+            onReceiveSkus = { _: List<StoreProduct> -> }
+        )
+        purchases.getNonSubscriptionSkusWith(
+            ArrayList<String>(),
+            onError = { _: PurchasesError -> },
+            onReceiveSkus = { _: List<StoreProduct> -> }
+        )
+
+        Purchases.debugLogsEnabled = false
+        val debugLogs: Boolean = Purchases.debugLogsEnabled
     }
 }

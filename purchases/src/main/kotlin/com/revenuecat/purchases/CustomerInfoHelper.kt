@@ -126,7 +126,7 @@ internal class CustomerInfoHelper(
                 dispatch { callback?.onReceived(info) }
             },
             { error ->
-                Log.e("Purchases", "Error fetching customer data: ${error.message}")
+                Log.e("Purchases", "Error fetching customer data: $error")
                 deviceCache.clearCustomerInfoCacheTimestamp(appUserID)
                 dispatch { callback?.onError(error) }
             })

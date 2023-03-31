@@ -9,7 +9,7 @@
             android:roundIcon="@mipmap/ic_launcher_round"
             android:supportsRtl="true"
             android:debuggable="true"
-            android:theme="@style/Theme.Purchasesandroid"
+            android:theme="@style/Theme.MaterialComponents.DayNight.DarkActionBar"
             tools:ignore="HardcodedDebugMode">
         <activity android:name="com.revenuecat.purchases.MainActivity" android:exported="true"/>
     </application>

@@ -2,7 +2,7 @@ package com.revenuecat.purchases
 
 import android.os.Parcelable
 import com.revenuecat.purchases.models.RawDataContainer
-import com.revenuecat.purchases.parceler.JSONObjectParceler
+import com.revenuecat.purchases.utils.JSONObjectParceler
 import kotlinx.parcelize.IgnoredOnParcel
 import kotlinx.parcelize.Parcelize
 import kotlinx.parcelize.TypeParceler
@@ -23,6 +23,10 @@ import java.util.Date
  * @property store The store where this entitlement was unlocked from. Either: APP_STORE,
  * MAC_APP_STORE, PLAY_STORE, STRIPE, PROMOTIONAL or UNKNOWN_STORE.
  * @property productIdentifier The product identifier that unlocked this entitlement.
+ * For Google subscriptions, this is the subscription ID.
+ * For Amazon subscriptions, this is the termSku.
+ * For INAPP purchases, this is simply the productId.
+ * @property productPlanIdentifier The base plan identifier that unlocked this entitlement (Google only).
  * @property isSandbox False if this entitlement is unlocked via a production purchase.
  * @property unsubscribeDetectedAt The date an unsubscribe was detected. Can be `null`.
  * Note: Entitlement may still be active even if user has unsubscribed. Check the `isActive` property.
@@ -44,14 +48,12 @@ data class EntitlementInfo internal constructor(
     val expirationDate: Date?,
     val store: Store,
     val productIdentifier: String,
+    val productPlanIdentifier: String?,
     val isSandbox: Boolean,
     val unsubscribeDetectedAt: Date?,
     val billingIssueDetectedAt: Date?,
     val ownershipType: OwnershipType,
-    @Deprecated(
-        "Use rawData instead",
-        replaceWith = ReplaceWith("rawData")
-    ) val jsonObject: JSONObject,
+    private val jsonObject: JSONObject,
     internal val verification: VerificationResult
 ) : Parcelable, RawDataContainer<JSONObject> {
 
@@ -65,6 +67,7 @@ data class EntitlementInfo internal constructor(
         expirationDate: Date?,
         store: Store,
         productIdentifier: String,
+        productPlanIdentifier: String?,
         isSandbox: Boolean,
         unsubscribeDetectedAt: Date?,
         billingIssueDetectedAt: Date?,
@@ -79,6 +82,7 @@ data class EntitlementInfo internal constructor(
         originalPurchaseDate,
         expirationDate, store,
         productIdentifier,
+        productPlanIdentifier,
         isSandbox,
         unsubscribeDetectedAt,
         billingIssueDetectedAt,
@@ -103,10 +107,12 @@ data class EntitlementInfo internal constructor(
             "expirationDate=$expirationDate, " +
             "store=$store, " +
             "productIdentifier='$productIdentifier', " +
+            "productPlanIdentifier='$productPlanIdentifier', " +
             "isSandbox=$isSandbox, " +
             "unsubscribeDetectedAt=$unsubscribeDetectedAt, " +
             "billingIssueDetectedAt=$billingIssueDetectedAt, " +
-            "ownershipType=$ownershipType)"
+            "ownershipType=$ownershipType, " +
+            "verification=$verification)"
     }
 
     /** @suppress */
@@ -125,6 +131,7 @@ data class EntitlementInfo internal constructor(
         if (expirationDate != other.expirationDate) return false
         if (store != other.store) return false
         if (productIdentifier != other.productIdentifier) return false
+        if (productPlanIdentifier != other.productPlanIdentifier) return false
         if (isSandbox != other.isSandbox) return false
         if (unsubscribeDetectedAt != other.unsubscribeDetectedAt) return false
         if (billingIssueDetectedAt != other.billingIssueDetectedAt) return false
@@ -144,6 +151,7 @@ data class EntitlementInfo internal constructor(
         result = 31 * result + (expirationDate?.hashCode() ?: 0)
         result = 31 * result + store.hashCode()
         result = 31 * result + productIdentifier.hashCode()
+        result = 31 * result + productPlanIdentifier.hashCode()
         result = 31 * result + isSandbox.hashCode()
         result = 31 * result + (unsubscribeDetectedAt?.hashCode() ?: 0)
         result = 31 * result + (billingIssueDetectedAt?.hashCode() ?: 0)

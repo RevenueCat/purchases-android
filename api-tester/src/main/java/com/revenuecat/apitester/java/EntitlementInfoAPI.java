@@ -21,6 +21,7 @@ final class EntitlementInfoAPI {
         final Date expirationDate = entitlementInfo.getExpirationDate();
         final Store store = entitlementInfo.getStore();
         final String productIdentifier = entitlementInfo.getProductIdentifier();
+        final String productPlanIdentifier = entitlementInfo.getProductPlanIdentifier();
         final boolean sandbox = entitlementInfo.isSandbox();
         final Date unsubscribeDetectedAt = entitlementInfo.getUnsubscribeDetectedAt();
         final Date billingIssueDetectedAt = entitlementInfo.getBillingIssueDetectedAt();
@@ -39,6 +40,7 @@ final class EntitlementInfoAPI {
             Date expirationDate,
             Store store,
             String productIdentifier,
+            String productPlanIdentifier,
             boolean sandbox,
             Date unsubscribeDetectedAt,
             Date billingIssueDetectedAt,
@@ -48,14 +50,16 @@ final class EntitlementInfoAPI {
             // VerificationResult verification
     ) {
         final EntitlementInfo entitlementInfo = new EntitlementInfo(identifier, active, willRenew, periodType,
-                latestPurchaseDate, originalPurchaseDate, expirationDate, store, productIdentifier, sandbox,
-                unsubscribeDetectedAt, billingIssueDetectedAt, ownershipType, jsonObject
+                latestPurchaseDate, originalPurchaseDate, expirationDate, store, productIdentifier,
+                productPlanIdentifier, sandbox, unsubscribeDetectedAt, billingIssueDetectedAt, ownershipType,
+                jsonObject
                 // Trusted entitlements: Commented out until ready to be made public
                 //verification
         );
         final EntitlementInfo entitlementInfo2 = new EntitlementInfo(identifier, active, willRenew, periodType,
-                latestPurchaseDate, originalPurchaseDate, expirationDate, store, productIdentifier, sandbox,
-                unsubscribeDetectedAt, billingIssueDetectedAt, ownershipType, jsonObject);
+                latestPurchaseDate, originalPurchaseDate, expirationDate, store, productIdentifier,
+                productPlanIdentifier, sandbox, unsubscribeDetectedAt, billingIssueDetectedAt, ownershipType,
+                jsonObject);
     }
 
     static void store(final Store store) {

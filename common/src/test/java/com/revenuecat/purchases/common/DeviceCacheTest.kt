@@ -278,7 +278,7 @@ class DeviceCacheTest {
     fun `given a valid version customer info, it is returned`() {
         mockString(cache.customerInfoCacheKey(appUserID), validCachedCustomerInfo)
         val info = cache.getCachedCustomerInfo(appUserID)
-        assertThat(info).`as`("info is not null").isNotNull()
+        assertThat(info).`as`("info is not null").isNotNull
     }
 
     @Test
@@ -389,12 +389,12 @@ class DeviceCacheTest {
     @Test
     fun `invalidating customer info caches`() {
         mockLong(cache.customerInfoLastUpdatedCacheKey(appUserID), Date(0).time)
-        assertThat(cache.isCustomerInfoCacheStale(appUserID, appInBackground = false)).isTrue()
+        assertThat(cache.isCustomerInfoCacheStale(appUserID, appInBackground = false)).isTrue
         mockLong(cache.customerInfoLastUpdatedCacheKey(appUserID), Date().time)
-        assertThat(cache.isCustomerInfoCacheStale(appUserID, appInBackground = false)).isFalse()
+        assertThat(cache.isCustomerInfoCacheStale(appUserID, appInBackground = false)).isFalse
         cache.clearCustomerInfoCacheTimestamp(appUserID)
         mockLong(cache.customerInfoLastUpdatedCacheKey(appUserID), 0L)
-        assertThat(cache.isCustomerInfoCacheStale(appUserID, appInBackground = false)).isTrue()
+        assertThat(cache.isCustomerInfoCacheStale(appUserID, appInBackground = false)).isTrue
     }
 
     @Test
@@ -431,41 +431,41 @@ class DeviceCacheTest {
         verify {
             mockEditor.remove(cache.customerInfoLastUpdatedCacheKey("appUserID"))
         }
-        assertThat(cache.isOfferingsCacheStale(appInBackground = false)).isTrue()
+        assertThat(cache.isOfferingsCacheStale(appInBackground = false)).isTrue
     }
 
     @Test
     fun `invalidating offerings caches`() {
-        assertThat(cache.isOfferingsCacheStale(appInBackground = false)).isTrue()
+        assertThat(cache.isOfferingsCacheStale(appInBackground = false)).isTrue
         cache.setOfferingsCacheTimestampToNow()
-        assertThat(cache.isOfferingsCacheStale(appInBackground = false)).isFalse()
+        assertThat(cache.isOfferingsCacheStale(appInBackground = false)).isFalse
         cache.clearOfferingsCacheTimestamp()
-        assertThat(cache.isOfferingsCacheStale(appInBackground = false)).isTrue()
+        assertThat(cache.isOfferingsCacheStale(appInBackground = false)).isTrue
     }
 
     @Test
     fun `stale if no caches`() {
-        assertThat(cache.isOfferingsCacheStale(appInBackground = false)).isTrue()
+        assertThat(cache.isOfferingsCacheStale(appInBackground = false)).isTrue
         mockLong(cache.customerInfoLastUpdatedCacheKey(appUserID), 0L)
-        assertThat(cache.isCustomerInfoCacheStale(appUserID, appInBackground = false)).isTrue()
+        assertThat(cache.isCustomerInfoCacheStale(appUserID, appInBackground = false)).isTrue
     }
 
     @Test
     fun `isCustomerInfoCacheStale returns true if the cached object is stale`() {
         cache.cacheCustomerInfo(appUserID, mockk(relaxed = true))
         mockLong(cache.customerInfoLastUpdatedCacheKey(appUserID), Date(0).time)
-        assertThat(cache.isCustomerInfoCacheStale(appUserID, appInBackground = false)).isTrue()
+        assertThat(cache.isCustomerInfoCacheStale(appUserID, appInBackground = false)).isTrue
         mockLong(cache.customerInfoLastUpdatedCacheKey(appUserID), Date().time)
-        assertThat(cache.isCustomerInfoCacheStale(appUserID, appInBackground = false)).isFalse()
+        assertThat(cache.isCustomerInfoCacheStale(appUserID, appInBackground = false)).isFalse
     }
 
     @Test
     fun `isCustomerInfoCacheStale in background returns true if the cached object is stale`() {
         cache.cacheCustomerInfo(appUserID, mockk(relaxed = true))
         mockLong(cache.customerInfoLastUpdatedCacheKey(appUserID), Date(0).time)
-        assertThat(cache.isCustomerInfoCacheStale(appUserID, appInBackground = true)).isTrue()
+        assertThat(cache.isCustomerInfoCacheStale(appUserID, appInBackground = true)).isTrue
         mockLong(cache.customerInfoLastUpdatedCacheKey(appUserID), Date().time)
-        assertThat(cache.isCustomerInfoCacheStale(appUserID, appInBackground = true)).isFalse()
+        assertThat(cache.isCustomerInfoCacheStale(appUserID, appInBackground = true)).isFalse
     }
 
     @Test
@@ -476,7 +476,7 @@ class DeviceCacheTest {
         every {
             offeringsCachedObject.lastUpdatedAt
         } returns Date()
-        assertThat(cache.isOfferingsCacheStale(appInBackground = false)).isFalse()
+        assertThat(cache.isOfferingsCacheStale(appInBackground = false)).isFalse
 
         val cal = Calendar.getInstance()
         cal.time = Date()
@@ -484,7 +484,7 @@ class DeviceCacheTest {
         every {
             offeringsCachedObject.lastUpdatedAt
         } returns cal.time
-        assertThat(cache.isOfferingsCacheStale(appInBackground = false)).isTrue()
+        assertThat(cache.isOfferingsCacheStale(appInBackground = false)).isTrue
     }
 
     @Test
@@ -495,7 +495,7 @@ class DeviceCacheTest {
         every {
             offeringsCachedObject.lastUpdatedAt
         } returns Date()
-        assertThat(cache.isOfferingsCacheStale(appInBackground = true)).isFalse()
+        assertThat(cache.isOfferingsCacheStale(appInBackground = true)).isFalse
 
         val cal = Calendar.getInstance()
         cal.time = Date()
@@ -503,13 +503,13 @@ class DeviceCacheTest {
         every {
             offeringsCachedObject.lastUpdatedAt
         } returns cal.time
-        assertThat(cache.isOfferingsCacheStale(appInBackground = true)).isTrue()
+        assertThat(cache.isOfferingsCacheStale(appInBackground = true)).isTrue
     }
 
     @Test
     fun `caching offerings works`() {
         val storeProduct = mockk<StoreProduct>().also {
-            every { it.sku } returns "onemonth_freetrial"
+            every { it.id } returns "onemonth_freetrial"
         }
         val packageObject = Package(
             "custom",
@@ -534,13 +534,13 @@ class DeviceCacheTest {
     @Test
     fun `timestamp is set when caching customer info`() {
         cache.cacheCustomerInfo("waldo", mockk(relaxed = true))
-        assertThat(slotForPutLong.captured).isNotNull()
+        assertThat(slotForPutLong.captured).isNotNull
     }
 
     @Test
     fun `clearing customer info caches clears the shared preferences`() {
         cache.cacheCustomerInfo(appUserID, mockk(relaxed = true))
-        assertThat(slotForPutLong.captured).isNotNull()
+        assertThat(slotForPutLong.captured).isNotNull
 
         cache.clearCustomerInfoCache(appUserID)
         verify { mockEditor.remove(cache.customerInfoCacheKey(appUserID)) }
