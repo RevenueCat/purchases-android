@@ -175,6 +175,24 @@ fun stubOfferings(storeProduct: StoreProduct): Pair<StoreProduct, Offerings> {
     return Pair(storeProduct, offerings)
 }
 
+fun stubOTPOffering(inAppProduct: StoreProduct): Pair<StoreProduct, Offerings> {
+    val packageObject = Package(
+        "${inAppProduct.id} package",
+        PackageType.CUSTOM,
+        inAppProduct,
+        STUB_OFFERING_IDENTIFIER
+    )
+    val offering = Offering(
+        STUB_OFFERING_IDENTIFIER,
+        "This is the base offering",
+        listOf(packageObject)
+    )
+    val offerings = Offerings(
+        offering,
+        mapOf(offering.identifier to offering)
+    )
+    return Pair(inAppProduct, offerings)
+}
 fun stubOfferings(productId: String): Pair<StoreProduct, Offerings> {
     val storeProduct = stubStoreProduct(productId)
     return stubOfferings(storeProduct)
