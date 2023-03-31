@@ -365,10 +365,6 @@ workflows:
     jobs:
       - test
       - assemble-sample-app
-      - purchases-load-shedder-integration-tests-build
-      - run-firebase-tests-purchases-load-shedder-integration-test:
-          requires:
-            - purchases-load-shedder-integration-tests-build
 
   integration-test:
     jobs:
