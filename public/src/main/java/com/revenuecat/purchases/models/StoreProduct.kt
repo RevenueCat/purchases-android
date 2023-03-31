@@ -87,5 +87,5 @@ interface StoreProduct {
      *
      * Creates a copy of this `StoreProduct` with the specified `offeringId` set.
      */
-    fun copyWithOfferingId(offeringId: String): StoreProduct = this
+    fun copyWithOfferingId(offeringId: String): StoreProduct
 }
