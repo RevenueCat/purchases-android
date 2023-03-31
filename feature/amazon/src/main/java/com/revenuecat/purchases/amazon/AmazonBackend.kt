@@ -1,7 +1,7 @@
 package com.revenuecat.purchases.amazon
 
 import com.revenuecat.purchases.PurchasesError
-import com.revenuecat.purchases.common.Backend
+import com.revenuecat.purchases.common.BackendHelper
 import com.revenuecat.purchases.common.networking.Endpoint
 import org.json.JSONObject
 
@@ -11,7 +11,7 @@ typealias PostAmazonReceiptCallback = Pair<(response: JSONObject) -> Unit, (Purc
 typealias CallbackCacheKey = List<String>
 
 class AmazonBackend(
-    private val backend: Backend
+    private val backendHelper: BackendHelper
 ) {
 
     @get:Synchronized @set:Synchronized
@@ -29,7 +29,7 @@ class AmazonBackend(
         )
 
         val call = {
-            backend.performRequest(
+            backendHelper.performRequest(
                 Endpoint.GetAmazonReceipt(storeUserID, receiptId),
                 null,
                 { error ->

@@ -1,11 +1,15 @@
 package com.revenuecat.purchases
 
+import android.content.Context
+import android.preference.PreferenceManager
 import androidx.test.ext.junit.rules.activityScenarioRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.factories.StoreProductFactory
 import com.revenuecat.purchases.factories.StoreTransactionFactory
-import com.revenuecat.purchases.helpers.mockQuerySkuDetails
+import com.revenuecat.purchases.helpers.mockQueryProductDetails
+import com.revenuecat.purchases.models.GooglePurchasingData
+import com.revenuecat.purchases.models.GoogleStoreProduct
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -18,6 +22,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.net.URL
+import java.util.Date
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import kotlin.time.Duration.Companion.seconds
@@ -28,15 +33,20 @@ class PurchasesIntegrationTest {
     companion object {
         @BeforeClass @JvmStatic
         fun setupClass() {
-            if (!Constants.canRunIntegrationTests()) {
+            if (!canRunIntegrationTests()) {
                 error("You need to set required constants in Constants.kt")
             }
         }
+
+        private fun canRunIntegrationTests() = Constants.apiKey != "REVENUECAT_API_KEY" &&
+            Constants.googlePurchaseToken != "GOOGLE_PURCHASE_TOKEN" &&
+            Constants.productIdToPurchase != "PRODUCT_ID_TO_PURCHASE"
     }
 
     private val testTimeout = 5.seconds
-    private val testUserId = Constants.USER_ID
-    private val proxyUrl = Constants.PROXY_URL.takeIf { it != "NO_PROXY_URL" }
+    private val currentTimestamp = Date().time
+    private val testUserId = "android-integration-test-$currentTimestamp"
+    private val proxyUrl = Constants.proxyUrl.takeIf { it != "NO_PROXY_URL" }
 
     private lateinit var mockBillingAbstract: BillingAbstract
 
@@ -52,6 +62,8 @@ class PurchasesIntegrationTest {
         latestStateListener = null
 
         onActivityReady {
+            clearAllSharedPreferences(it)
+
             mockBillingAbstract = mockk<BillingAbstract>(relaxed = true).apply {
                 every { purchasesUpdatedListener = any() } answers { latestPurchasesUpdatedListener = firstArg() }
                 every { stateListener = any() } answers { latestStateListener = firstArg() }
@@ -62,7 +74,7 @@ class PurchasesIntegrationTest {
             }
 
             Purchases.configure(
-                PurchasesConfiguration.Builder(it, Constants.API_KEY)
+                PurchasesConfiguration.Builder(it, Constants.apiKey)
                     .appUserID(testUserId)
                     .build(),
                 mockBillingAbstract
@@ -131,8 +143,8 @@ class PurchasesIntegrationTest {
     fun canFetchOfferings() {
         val lock = CountDownLatch(1)
 
-        val storeProduct = StoreProductFactory.createStoreProduct()
-        mockBillingAbstract.mockQuerySkuDetails(querySkuDetailsSubsReturn = listOf(storeProduct))
+        val storeProduct = StoreProductFactory.createGoogleStoreProduct()
+        mockBillingAbstract.mockQueryProductDetails(queryProductDetailsSubsReturn = listOf(storeProduct))
 
         onActivityReady {
             Purchases.sharedInstance.getOfferingsWith(
@@ -140,7 +152,7 @@ class PurchasesIntegrationTest {
                 onSuccess = { offerings ->
                     assertThat(offerings.current).isNotNull
                     assertThat(offerings.current?.availablePackages?.size).isEqualTo(1)
-                    assertThat(offerings.current?.monthly?.product?.sku).isEqualTo("monthly_intro_pricing_one_week")
+                    assertThat(offerings.current?.monthly?.product?.sku).isEqualTo(Constants.productIdToPurchase)
 
                     lock.countDown()
                 }
@@ -154,18 +166,23 @@ class PurchasesIntegrationTest {
     fun canPurchaseSubsProduct() {
         val lock = CountDownLatch(1)
 
-        val storeProduct = StoreProductFactory.createStoreProduct()
+        val storeProduct = StoreProductFactory.createGoogleStoreProduct()
         val storeTransaction = StoreTransactionFactory.createStoreTransaction()
-        mockBillingAbstract.mockQuerySkuDetails(querySkuDetailsSubsReturn = listOf(storeProduct))
+        mockBillingAbstract.mockQueryProductDetails(queryProductDetailsSubsReturn = listOf(storeProduct))
 
         onActivityReady { activity ->
-            Purchases.sharedInstance.purchaseProductWith(
-                activity = activity,
-                storeProduct = storeProduct,
+            Purchases.sharedInstance.purchaseWith(
+                purchaseParams = PurchaseParams.Builder(activity, storeProduct).build(),
                 onError = { error, _ -> fail("Purchase should be successful. Error: ${error.message}") },
                 onSuccess = { transaction, customerInfo ->
                     assertThat(transaction).isEqualTo(storeTransaction)
-                    assertThat(customerInfo.allPurchaseDatesByProduct.containsKey(storeProduct.sku)).isTrue
+                    assertThat(customerInfo.allPurchaseDatesByProduct.size).isEqualTo(1)
+                    val productId = customerInfo.allPurchaseDatesByProduct.keys.first()
+                    // Uncomment to check for the correct product id once changes in load shedder to include
+                    // base plan id are merged
+                    // val expectedProductId = "${Constants.productIdToPurchase}:${Constants.basePlanIdToPurchase}"
+                    // assertThat(productId).isEqualTo(expectedProductId)
+                    assertThat(productId.startsWith(Constants.productIdToPurchase)).isTrue
                     lock.countDown()
                 }
             )
@@ -178,9 +195,15 @@ class PurchasesIntegrationTest {
             mockBillingAbstract.makePurchaseAsync(
                 any(),
                 testUserId,
-                storeProduct,
-                replaceSkuInfo = null,
-                presentedOfferingIdentifier = null
+                match {
+                    it is GooglePurchasingData.Subscription &&
+                        storeProduct is GoogleStoreProduct &&
+                        it.productId == storeProduct.productId &&
+                        it.optionId == storeProduct.basePlanId
+                      },
+                replaceProductInfo = null,
+                presentedOfferingIdentifier = null,
+                isPersonalizedPrice = false
             )
         }
     }
@@ -191,6 +214,18 @@ class PurchasesIntegrationTest {
 
     private fun onActivityReady(block: (MainActivity) -> Unit) {
         activityScenarioRule.scenario.onActivity(block)
+    }
+
+    private fun clearAllSharedPreferences(context: Context) {
+        PreferenceManager.getDefaultSharedPreferences(context).edit().clear().commit()
+        context.getSharedPreferences(
+            "${context.packageName}_preferences_etags",
+            Context.MODE_PRIVATE
+        ).edit().clear().commit()
+        context.getSharedPreferences(
+            "com_revenuecat_purchases_${context.packageName}_preferences_diagnostics",
+            Context.MODE_PRIVATE
+        ).edit().clear().commit()
     }
 
     // endregion

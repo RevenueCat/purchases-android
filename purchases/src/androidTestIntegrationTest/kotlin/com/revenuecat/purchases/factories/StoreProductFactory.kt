@@ -1,64 +1,94 @@
 package com.revenuecat.purchases.factories
 
+import com.android.billingclient.api.ProductDetails
 import com.revenuecat.purchases.Constants
 import com.revenuecat.purchases.ProductType
+import com.revenuecat.purchases.models.GoogleStoreProduct
+import com.revenuecat.purchases.models.GoogleSubscriptionOption
+import com.revenuecat.purchases.models.Period
+import com.revenuecat.purchases.models.Price
+import com.revenuecat.purchases.models.PricingPhase
+import com.revenuecat.purchases.models.RecurrenceMode
 import com.revenuecat.purchases.models.StoreProduct
-import org.json.JSONObject
+import com.revenuecat.purchases.models.SubscriptionOption
+import com.revenuecat.purchases.models.SubscriptionOptions
+import io.mockk.mockk
 
 object StoreProductFactory {
 
-    private const val validStoreProductJson = "{" +
-        "\"productId\":\"${Constants.PRODUCT_ID_TO_PURCHASE}\"," +
-        "\"type\":\"subs\"," +
-        "\"title\":\"Monthly Product Intro Pricing One Week (RevenueCat SDK Tester)\"," +
-        "\"name\":\"Monthly Product Intro Pricing One Week\"," +
-        "\"description\":\"Monthly Product Intro Pricing One Week\"," +
-        "\"price\":\"€5.49\"," +
-        "\"price_amount_micros\":5490000," +
-        "\"price_currency_code\":\"EUR\"," +
-        "\"skuDetailsToken\":\"test-token\"," +
-        "\"subscriptionPeriod\":\"P1M\"," +
-        "\"freeTrialPeriod\":\"P1W\"" +
-        "}"
-
-    @Suppress("LongParameterList")
-    fun createStoreProduct(
-        sku: String = Constants.PRODUCT_ID_TO_PURCHASE,
-        type: ProductType = ProductType.SUBS,
+    fun createPrice(
         price: String = "€5.49",
         priceAmountMicros: Long = 5490000,
         priceCurrencyCode: String = "EUR",
-        originalPrice: String? = "€5.49",
-        originalPriceAmountMicros: Long = 5490000,
+    ): Price {
+        return Price(price, priceAmountMicros, priceCurrencyCode)
+    }
+
+    fun createPeriod(
+        value: Int = 1,
+        unit: Period.Unit = Period.Unit.MONTH,
+        iso8601: String = "P1M"
+    ): Period {
+        return Period(value, unit, iso8601)
+    }
+
+    fun createPricingPhase(
+        period: Period = createPeriod(),
+        recurrenceMode: RecurrenceMode = RecurrenceMode.INFINITE_RECURRING,
+        numberOfPeriods: Int = 0,
+        price: Price = createPrice()
+    ): PricingPhase {
+        return PricingPhase(period, recurrenceMode, numberOfPeriods, price)
+    }
+
+    @Suppress("LongParameterList")
+    fun createGoogleSubscriptionOption(
+        productId: String = Constants.productIdToPurchase,
+        basePlanId: String = Constants.basePlanIdToPurchase,
+        offerId: String? = null,
+        pricingPhases: List<PricingPhase> = listOf(createPricingPhase()),
+        tags: List<String> = emptyList(),
+        productDetails: ProductDetails = mockk(),
+        offerToken: String = "test-offer-token"
+    ): GoogleSubscriptionOption {
+        return GoogleSubscriptionOption(
+            productId,
+            basePlanId,
+            offerId,
+            pricingPhases,
+            tags,
+            productDetails,
+            offerToken
+        )
+    }
+
+    @Suppress("LongParameterList")
+    fun createGoogleStoreProduct(
+        productId: String = Constants.productIdToPurchase,
+        basePlanId: String? = Constants.basePlanIdToPurchase,
+        type: ProductType = ProductType.SUBS,
+        price: Price = createPrice(),
         title: String = "Monthly Product Intro Pricing One Week (RevenueCat SDK Tester)",
         description: String = "Monthly Product Intro Pricing One Week",
-        subscriptionPeriod: String? = "P1M",
-        freeTrialPeriod: String? = "P1W",
-        introductoryPrice: String? = null,
-        introductoryPriceAmountMicros: Long = 0,
-        introductoryPricePeriod: String? = null,
-        introductoryPriceCycles: Int = 0,
-        iconUrl: String = "",
-        originalJson: JSONObject = JSONObject(validStoreProductJson)
+        period: Period? = createPeriod(),
+        defaultOptionIndex: Int = 0,
+        productDetails: ProductDetails = mockk(),
+        subscriptionOptionsList: List<SubscriptionOption>? = listOf(
+            createGoogleSubscriptionOption(productDetails = productDetails)
+        ),
     ): StoreProduct {
-        return StoreProduct(
-            sku = sku,
+        val subscriptionOptions = subscriptionOptionsList?.let { SubscriptionOptions(it) }
+        return GoogleStoreProduct(
+            productId = productId,
+            basePlanId = basePlanId,
             type = type,
             price = price,
-            priceAmountMicros = priceAmountMicros,
-            priceCurrencyCode = priceCurrencyCode,
-            originalPrice = originalPrice,
-            originalPriceAmountMicros = originalPriceAmountMicros,
             title = title,
             description = description,
-            subscriptionPeriod = subscriptionPeriod,
-            freeTrialPeriod = freeTrialPeriod,
-            introductoryPrice = introductoryPrice,
-            introductoryPriceAmountMicros = introductoryPriceAmountMicros,
-            introductoryPricePeriod = introductoryPricePeriod,
-            introductoryPriceCycles = introductoryPriceCycles,
-            iconUrl = iconUrl,
-            originalJson = originalJson
+            period = period,
+            subscriptionOptions = subscriptionOptions,
+            defaultOption = subscriptionOptions?.let { it[defaultOptionIndex] },
+            productDetails = productDetails
         )
     }
 }
