@@ -7,6 +7,9 @@ import com.android.billingclient.api.PurchaseHistoryRecord
 import com.android.billingclient.api.PurchaseHistoryResponseListener
 import com.android.billingclient.api.PurchasesResponseListener
 import com.android.billingclient.api.SkuDetails
+import com.revenuecat.purchases.ProductType
+import com.revenuecat.purchases.google.toStoreTransaction
+import com.revenuecat.purchases.models.StoreTransaction
 import io.mockk.every
 import io.mockk.slot
 import io.mockk.verify
@@ -48,6 +51,26 @@ fun stubPurchaseHistoryRecord(
                 "purchaseToken": "$purchaseToken"
             }
         """.trimIndent(), signature)
+
+fun stubStoreTransactionFromGooglePurchase(
+    productIds: List<String>,
+    purchaseTime: Long,
+): StoreTransaction {
+    return stubGooglePurchase(
+        productIds,
+        purchaseTime
+    ).toStoreTransaction(ProductType.SUBS, null)
+}
+
+fun stubStoreTransactionFromPurchaseHistoryRecord(
+    productIds: List<String>,
+    purchaseTime: Long,
+): StoreTransaction {
+    return stubPurchaseHistoryRecord(
+        productIds = productIds,
+        purchaseTime = purchaseTime
+    ).toStoreTransaction(ProductType.SUBS)
+}
 
 @SuppressWarnings("LongParameterList", "MagicNumber")
 fun stubSkuDetails(

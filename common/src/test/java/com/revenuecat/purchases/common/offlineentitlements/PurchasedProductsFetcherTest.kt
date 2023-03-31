@@ -1,19 +1,14 @@
-package com.revenuecat.purchases.google.offlineentitlements
+package com.revenuecat.purchases.common.offlineentitlements
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.caching.DeviceCache
-import com.revenuecat.purchases.common.offlineentitlements.ProductEntitlementMapping
-import com.revenuecat.purchases.common.offlineentitlements.PurchasedProduct
-import com.revenuecat.purchases.common.offlineentitlements.PurchasedProductsFetcher
 import com.revenuecat.purchases.common.sha1
-import com.revenuecat.purchases.google.toStoreTransaction
 import com.revenuecat.purchases.models.StoreTransaction
-import com.revenuecat.purchases.utils.stubGooglePurchase
-import com.revenuecat.purchases.utils.stubPurchaseHistoryRecord
+import com.revenuecat.purchases.utils.stubStoreTransactionFromGooglePurchase
+import com.revenuecat.purchases.utils.stubStoreTransactionFromPurchaseHistoryRecord
 import io.mockk.every
 import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
@@ -59,14 +54,14 @@ class PurchasedProductsFetcherTest {
             deviceCache.getProductEntitlementMapping()
         } returns null
 
-        val activePurchase = stubGooglePurchase(
+        val activePurchase = stubStoreTransactionFromGooglePurchase(
             productIds = listOf("product1", "product2"),
             purchaseTime = testDate.time
-        ).toStoreTransaction(ProductType.SUBS, null)
-        val purchaseRecord = stubPurchaseHistoryRecord(
+        )
+        val purchaseRecord = stubStoreTransactionFromPurchaseHistoryRecord(
             productIds = listOf("product1", "product2"),
             purchaseTime = testDate.time
-        ).toStoreTransaction(ProductType.SUBS)
+        )
 
         mockActivePurchases(activePurchase)
         mockAllPurchases(purchaseRecord)
@@ -113,14 +108,14 @@ class PurchasedProductsFetcherTest {
         val productIdentifierToEntitlements = mapOf(productIdentifier to listOf("pro"))
         mockEntitlementMapping(productIdentifierToEntitlements)
 
-        val activePurchase = stubGooglePurchase(
+        val activePurchase = stubStoreTransactionFromGooglePurchase(
             productIds = listOf(productIdentifier),
             purchaseTime = testDate.time
-        ).toStoreTransaction(ProductType.SUBS, null)
-        val purchaseRecord = stubPurchaseHistoryRecord(
+        )
+        val purchaseRecord = stubStoreTransactionFromPurchaseHistoryRecord(
             productIds = listOf(productIdentifier),
             purchaseTime = testDate.time
-        ).toStoreTransaction(ProductType.SUBS)
+        )
 
         mockAllPurchases(purchaseRecord)
         mockActivePurchases(activePurchase)
@@ -153,14 +148,14 @@ class PurchasedProductsFetcherTest {
         val productIdentifierToEntitlements = mapOf(productIdentifier to listOf("pro", "premium"),)
         mockEntitlementMapping(productIdentifierToEntitlements)
 
-        val activePurchase = stubGooglePurchase(
+        val activePurchase = stubStoreTransactionFromGooglePurchase(
             productIds = listOf(productIdentifier),
             purchaseTime = testDate.time
-        ).toStoreTransaction(ProductType.SUBS, null)
-        val purchaseRecord = stubPurchaseHistoryRecord(
+        )
+        val purchaseRecord = stubStoreTransactionFromPurchaseHistoryRecord(
             productIds = listOf(productIdentifier),
             purchaseTime = testDate.time
-        ).toStoreTransaction(ProductType.SUBS)
+        )
 
         mockAllPurchases(purchaseRecord)
         mockActivePurchases(activePurchase)
@@ -200,18 +195,18 @@ class PurchasedProductsFetcherTest {
             productIdentifierToEntitlements
         )
 
-        val activePurchase = stubGooglePurchase(
+        val activePurchase = stubStoreTransactionFromGooglePurchase(
             productIds = listOf(productIdentifierMonthly),
             purchaseTime = testDate.time
-        ).toStoreTransaction(ProductType.SUBS, null)
-        val purchaseRecordMonthly = stubPurchaseHistoryRecord(
+        )
+        val purchaseRecordMonthly = stubStoreTransactionFromPurchaseHistoryRecord(
             productIds = listOf(productIdentifierMonthly),
             purchaseTime = testDate.time
-        ).toStoreTransaction(ProductType.SUBS)
-        val purchaseRecordAnnual = stubPurchaseHistoryRecord(
+        )
+        val purchaseRecordAnnual = stubStoreTransactionFromPurchaseHistoryRecord(
             productIds = listOf(productIdentifierAnnual),
             purchaseTime = testDate.time
-        ).toStoreTransaction(ProductType.SUBS)
+        )
 
         mockAllPurchases(purchaseRecordMonthly, purchaseRecordAnnual)
         mockActivePurchases(activePurchase)
@@ -257,18 +252,18 @@ class PurchasedProductsFetcherTest {
         )
         mockEntitlementMapping(mapOfEntitlements)
 
-        val activePurchase = stubGooglePurchase(
+        val activePurchase = stubStoreTransactionFromGooglePurchase(
             productIds = listOf(productIdentifierMonthly),
             purchaseTime = testDate.time
-        ).toStoreTransaction(ProductType.SUBS, null)
-        val purchaseRecordMonthly = stubPurchaseHistoryRecord(
+        )
+        val purchaseRecordMonthly = stubStoreTransactionFromPurchaseHistoryRecord(
             productIds = listOf(productIdentifierMonthly),
             purchaseTime = testDate.time
-        ).toStoreTransaction(ProductType.SUBS)
-        val purchaseRecordAnnual = stubPurchaseHistoryRecord(
+        )
+        val purchaseRecordAnnual = stubStoreTransactionFromPurchaseHistoryRecord(
             productIds = listOf(productIdentifierAnnual),
             purchaseTime = testDate.time
-        ).toStoreTransaction(ProductType.SUBS)
+        )
 
         mockAllPurchases(purchaseRecordMonthly, purchaseRecordAnnual)
         mockActivePurchases(activePurchase)
@@ -318,18 +313,18 @@ class PurchasedProductsFetcherTest {
 
         mockEntitlementMapping(mapOfEntitlements)
 
-        val activePurchase = stubGooglePurchase(
+        val activePurchase = stubStoreTransactionFromGooglePurchase(
             productIds = listOf(productIdentifierMonthly),
             purchaseTime = testDate.time
-        ).toStoreTransaction(ProductType.SUBS, null)
-        val purchaseRecordMonthly = stubPurchaseHistoryRecord(
+        )
+        val purchaseRecordMonthly = stubStoreTransactionFromPurchaseHistoryRecord(
             productIds = listOf(productIdentifierMonthly),
             purchaseTime = testDate.time
-        ).toStoreTransaction(ProductType.SUBS)
-        val purchaseRecordAnnual = stubPurchaseHistoryRecord(
+        )
+        val purchaseRecordAnnual = stubStoreTransactionFromPurchaseHistoryRecord(
             productIds = listOf(productIdentifierAnnual),
             purchaseTime = testDate.time
-        ).toStoreTransaction(ProductType.SUBS)
+        )
 
         mockAllPurchases(purchaseRecordMonthly, purchaseRecordAnnual)
         mockActivePurchases(activePurchase)
@@ -379,18 +374,18 @@ class PurchasedProductsFetcherTest {
 
         mockEntitlementMapping(mapOfEntitlements)
 
-        val activePurchase = stubGooglePurchase(
+        val activePurchase = stubStoreTransactionFromGooglePurchase(
             productIds = listOf(productIdentifierMonthly),
             purchaseTime = testDate.time
-        ).toStoreTransaction(ProductType.SUBS, null)
-        val purchaseRecordMonthly = stubPurchaseHistoryRecord(
+        )
+        val purchaseRecordMonthly = stubStoreTransactionFromPurchaseHistoryRecord(
             productIds = listOf(productIdentifierMonthly),
             purchaseTime = testDate.time
-        ).toStoreTransaction(ProductType.SUBS)
-        val purchaseRecordAnnual = stubPurchaseHistoryRecord(
+        )
+        val purchaseRecordAnnual = stubStoreTransactionFromPurchaseHistoryRecord(
             productIds = listOf(productIdentifierAnnual),
             purchaseTime = testDate.time
-        ).toStoreTransaction(ProductType.SUBS)
+        )
 
         mockAllPurchases(purchaseRecordMonthly, purchaseRecordAnnual)
         mockActivePurchases(activePurchase)
