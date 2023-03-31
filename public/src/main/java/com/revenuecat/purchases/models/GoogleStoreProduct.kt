@@ -74,7 +74,7 @@ data class GoogleStoreProduct(
     override val presentedOfferingIdentifier: String?
 ) : StoreProduct {
 
-    constructor(
+    private constructor(
         otherProduct: GoogleStoreProduct,
         defaultOption: SubscriptionOption?,
         subscriptionOptionsWithOfferingId: SubscriptionOptions?,
