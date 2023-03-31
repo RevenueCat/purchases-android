@@ -7,7 +7,6 @@ import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.amazon.helpers.successfulRVSResponse
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.BackendHelper
-import com.revenuecat.purchases.common.CustomerInfoFactory
 import com.revenuecat.purchases.common.HTTPClient
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
@@ -15,7 +14,6 @@ import com.revenuecat.purchases.utils.SyncDispatcher
 import io.mockk.clearAllMocks
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.unmockkObject
 import org.assertj.core.api.Assertions
 import org.assertj.core.api.Assertions.assertThat
 import org.json.JSONObject

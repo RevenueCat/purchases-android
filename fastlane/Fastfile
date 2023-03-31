@@ -45,7 +45,8 @@ platform :android do
       github_rate_limit: options[:github_rate_limit],
       editor: options[:editor],
       next_version: options[:next_version],
-      automatic_release: options[:automatic_release]
+      automatic_release: options[:automatic_release],
+      is_prerelease: options[:is_prerelease]
     )
   end
 
@@ -98,18 +99,6 @@ platform :android do
       properties: gradleProperties
     )
 
-    UI.verbose("Creating special version for Unity IAP with BillingClient 4 and Amazon 2 for version: #{version}")
-    gradleProperties["ANDROID_VARIANT_TO_PUBLISH"] = "unityIAPRelease"
-    
-    UI.verbose("Adding -unityiap to artifact ids")
-
-    gradle(
-      tasks: [
-        "publish --no-daemon --no-parallel"
-      ],
-      properties: gradleProperties
-    )
-
     github_release(version: version) unless is_snapshot_version?(version)
   end
 
@@ -147,7 +136,6 @@ platform :android do
     release_keystore_password = ENV['PURCHASE_TESTER_RELEASE_KEYSTORE_PASSWORD'] || UI.user_error!('Release keystore password not found.')
     gradle(
       task: 'examples:purchase-tester:bundle',
-      flavor: 'latestDependencies',
       build_type: 'Release',
       print_command: false,
       properties: {
@@ -229,13 +217,15 @@ platform :android do
     )
   end
 
-  desc "Builds a Magic Weather APK and prompts for:"
-  desc "* Gradle task"
-  desc "* Amazon or Google API Key for RevenueCat"
-  desc "* Version code"
-  desc "* Version name"
-  desc "* Amazon pem path (optional)"
-  desc "* New application id (optional)"
+  desc <<-DESC
+Builds a Magic Weather APK and prompts for:
+* Gradle task
+* Amazon or Google API Key for RevenueCat
+* Version code
+* Version name
+* Amazon pem path (optional)
+* New application id (optional)
+DESC
   lane :build_magic_weather do |options|
     ensure_git_status_clean
 
@@ -307,7 +297,71 @@ platform :android do
       end
     ensure
       sh("git reset --hard")
-      sh("git clean -fd")
+      sh("git -C .. clean -fd")
+    end
+  end
+
+  desc <<-DESC
+Builds a Purchase Tester APK and prompts for:
+* Version code
+* Version name
+* Min SDK Version
+* Amazon pem path (optional)
+DESC
+  lane :build_purchase_tester do |options|
+    ensure_git_status_clean
+
+    begin
+      project_dir = "examples/purchase-tester"
+      task = ":examples:purchase-tester:assembleDebug"
+
+      version_code = options[:version_code] || UI.input("Version code?")
+      version_name = options[:version_name] || UI.input("Version name?")
+      min_sdk_version = options[:min_sdk_version] || UI.input("Minimum SDK Version?")
+
+      amazon_pem_path = options[:amazon_pem_path] || UI.input("Amazon .pem path?")
+
+      # Replace version 
+      version_code_old = "purchaseTesterVersionCode=1"
+      version_code_new = "purchaseTesterVersionCode=#{version_code}"
+      sh("find ../ -name 'gradle.properties' -type f -exec sed -i '' 's/#{version_code_old}/#{version_code_new}/' {} \\;")
+
+      version_name_old = "purchaseTesterVersionName=1.0"
+      version_name_new = "purchaseTesterVersionName=#{version_code}"
+      sh("find ../ -name 'gradle.properties' -type f -exec sed -i '' 's/#{version_name_old}/#{version_name_new}/' {} \\;")
+
+      min_sdk_version_old = "purchaseTesterMinSdkVersion=21"
+      min_sdk_version_new = "purchaseTesterMinSdkVersion=#{min_sdk_version}"
+      sh("find ../ -name 'gradle.properties' -type f -exec sed -i '' 's/#{min_sdk_version_old}/#{min_sdk_version_new}/' {} \\;")
+
+      # Amazon pem
+      if amazon_pem_path.to_s.size > 0
+        pem_dir = File.join("../", project_dir, "src/main/assets")
+        pem_file = "AppstoreAuthenticationKey.pem"
+        FileUtils.mkdir_p(pem_dir)
+        FileUtils.cp(amazon_pem_path, File.join(pem_dir, pem_file))
+      end
+
+      # Build APK
+      gradle(
+        task: task
+      )
+
+      # View APK info for sanity checking
+      path = lane_context[SharedValues::GRADLE_APK_OUTPUT_PATH]
+      if UI.confirm("Do you want to see APK info from 'aapt dump bading'?")
+        sh("aapt dump badging #{path}")
+      end
+
+      # Final result
+      UI.important("APK at #{path}")
+      if UI.confirm("Open directory of APK?")
+        dir = File.dirname(path)
+        sh("open #{dir}")
+      end
+    ensure
+      sh("git reset --hard")
+      sh("git -C .. clean -fd")
     end
   end
 end

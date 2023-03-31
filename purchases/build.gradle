@@ -5,18 +5,19 @@ apply plugin: 'org.jetbrains.dokka'
 android {
     namespace 'com.revenuecat.purchases.api'
 
-    productFlavors {
-        integrationTest {
-            testApplicationId obtainTestApplicationId()
-            testBuildType obtainTestBuildType()
-            packagingOptions {
-                resources.excludes.add("META-INF/*")
-            }
-            minSdkVersion 21 // Needed because mockk-android requires API 21
-            matchingFallbacks = ['latestDependencies']
-        }
-    }
-
+// Commenting out flavor temporarily after main -> bc5-support merge. We will need to fix integration tests
+// after this.
+//    productFlavors {
+//        integrationTest {
+//            testApplicationId obtainTestApplicationId()
+//            testBuildType obtainTestBuildType()
+//            packagingOptions {
+//                resources.excludes.add("META-INF/*")
+//            }
+//            minSdkVersion 21 // Needed because mockk-android requires API 21
+//            matchingFallbacks = ['latestDependencies']
+//        }
+//    }
 }
 
 def obtainTestApplicationId() {
@@ -51,9 +52,8 @@ dependencies {
 
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
     implementation "androidx.annotation:annotation:$annotationVersion"
-    latestDependenciesApi "com.android.billingclient:billing:$billing4Version"
-    integrationTestApi "com.android.billingclient:billing:$billing4Version"
-    unityIAPCompileOnly "com.android.billingclient:billing:$billing4Version"
+
+    api "com.android.billingclient:billing:$billingVersion"
     implementation "androidx.lifecycle:lifecycle-runtime:$lifecycleVersion"
     implementation "androidx.lifecycle:lifecycle-common:$lifecycleVersion"
     implementation "androidx.lifecycle:lifecycle-process:$lifecycleVersion"
@@ -66,19 +66,20 @@ dependencies {
     testImplementation "org.robolectric:robolectric:$robolectricVersion"
     testImplementation "io.mockk:mockk:$mockkVersion"
     testImplementation "org.assertj:assertj-core:$assertJVersion"
-    testLatestDependenciesImplementation "com.android.billingclient:billing:$billing4Version"
-    testUnityIAPImplementation "com.android.billingclient:billing:$billing4Version"
+    testImplementation "com.android.billingclient:billing:$billingVersion"
 
-    integrationTestImplementation 'androidx.appcompat:appcompat:1.4.1'
-    integrationTestImplementation 'com.google.android.material:material:1.6.0'
-    integrationTestImplementation 'androidx.constraintlayout:constraintlayout:2.1.3'
-    androidTestIntegrationTestImplementation 'androidx.test.espresso:espresso-core:3.4.0'
-    androidTestIntegrationTestImplementation 'androidx.test:runner:1.4.0'
-    androidTestIntegrationTestImplementation 'androidx.test:rules:1.4.0'
-    androidTestIntegrationTestImplementation 'androidx.test.ext:junit-ktx:1.1.3'
-    androidTestIntegrationTestImplementation 'org.assertj:assertj-core:3.22.0'
-    androidTestIntegrationTestImplementation "io.mockk:mockk-android:$mockkVersion"
-    androidTestIntegrationTestImplementation "io.mockk:mockk-agent:$mockkVersion"
+// Commenting out flavor temporarily after main -> bc5-support merge. We will need to fix integration tests
+// after this.
+//    integrationTestImplementation 'androidx.appcompat:appcompat:1.4.1'
+//    integrationTestImplementation 'com.google.android.material:material:1.6.0'
+//    integrationTestImplementation 'androidx.constraintlayout:constraintlayout:2.1.3'
+//    androidTestIntegrationTestImplementation 'androidx.test.espresso:espresso-core:3.4.0'
+//    androidTestIntegrationTestImplementation 'androidx.test:runner:1.4.0'
+//    androidTestIntegrationTestImplementation 'androidx.test:rules:1.4.0'
+//    androidTestIntegrationTestImplementation 'androidx.test.ext:junit-ktx:1.1.3'
+//    androidTestIntegrationTestImplementation 'org.assertj:assertj-core:3.22.0'
+//    androidTestIntegrationTestImplementation "io.mockk:mockk-android:$mockkVersion"
+//    androidTestIntegrationTestImplementation "io.mockk:mockk-agent:$mockkVersion"
 }
 
 tasks.dokkaHtmlPartial.configure {

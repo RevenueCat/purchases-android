@@ -1,25 +1,14 @@
 package com.revenuecat.purchases.amazon
 
-import com.amazon.device.iap.internal.model.ProductBuilder
 import com.amazon.device.iap.model.Product
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.MICROS_MULTIPLIER
 import com.revenuecat.purchases.common.log
+import com.revenuecat.purchases.models.Period
+import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.StoreProduct
-import org.json.JSONObject
 import java.math.BigDecimal
 import java.util.regex.Pattern
-import com.amazon.device.iap.model.ProductType as AmazonProductType
-
-val StoreProduct.amazonProduct: Product
-    get() = ProductBuilder()
-        .setSku(originalJson.getString("sku"))
-        .setProductType(originalJson.getProductType("productType"))
-        .setDescription(originalJson.getString("description"))
-        .setPrice(originalJson.getString("price"))
-        .setSmallIconUrl(originalJson.getString("smallIconUrl"))
-        .setTitle(originalJson.getString("title"))
-        .setCoinsRewardAmount(originalJson.getInt("coinsRewardAmount")).build()
 
 fun Product.toStoreProduct(marketplace: String): StoreProduct? {
     if (price == null) {
@@ -28,44 +17,57 @@ fun Product.toStoreProduct(marketplace: String): StoreProduct? {
     }
     // By default, Amazon automatically converts the base list price of your IAP items into
     // the local currency of each marketplace where they can be sold, and customers will see IAP items in English.
-    val (currencyCode, priceAmountMicros) = price.extractPrice(marketplace)
+    val priceInfo = price.createPrice(marketplace)
 
-    return StoreProduct(
+    return AmazonStoreProduct(
         sku,
         productType.toRevenueCatProductType(),
-        price,
-        priceAmountMicros = priceAmountMicros,
-        priceCurrencyCode = currencyCode,
-        originalPrice = null,
-        originalPriceAmountMicros = 0,
         title,
         description,
-        subscriptionPeriod = null,
-        freeTrialPeriod = null,
-        introductoryPrice = null,
-        introductoryPriceAmountMicros = 0,
-        introductoryPricePeriod = null,
-        introductoryPriceCycles = 0,
+        period = subscriptionPeriod?.createPeriod(),
+        priceInfo,
+        null,
+        defaultOption = null,
         iconUrl = smallIconUrl,
-        originalJson = toJSON()
+        freeTrialPeriod = freeTrialPeriod?.createPeriod(),
+        originalProductJSON = this.toJSON()
     )
 }
 
-internal fun String.extractPrice(marketplace: String): Price {
+@SuppressWarnings("MagicNumber")
+internal fun String.createPeriod(): Period? {
+    // Valid values: Weekly, BiWeekly, Monthly, BiMonthly, Quarterly, SemiAnnually, Annually.
+    // https://developer.amazon.com/docs/in-app-purchasing/iap-implement-iap.html#successful-reques
+
+    return when (this) {
+        "Weekly" -> Period(1, Period.Unit.WEEK, "P1W")
+        "BiWeekly" -> Period(2, Period.Unit.WEEK, "P2W")
+        "Monthly" -> Period(1, Period.Unit.MONTH, "P1M")
+        "BiMonthly" -> Period(2, Period.Unit.MONTH, "P2M")
+        "Quarterly" -> Period(3, Period.Unit.MONTH, "P3M")
+        "SemiAnnually" -> Period(6, Period.Unit.MONTH, "P6M")
+        "Annually" -> Period(1, Period.Unit.YEAR, "P1Y")
+
+        // Handle "7 Days" or "14 Days" or "1 Month" just in case
+        else -> this.split(" ")
+            .takeIf { it.size == 2 }
+            ?.let {
+                it.firstOrNull()?.toIntOrNull()?.let { numberValue ->
+                    val letter = it[1].first().uppercase()
+                    val iso = "P$numberValue$letter"
+                    return Period.create(iso)
+                }
+            }
+    }
+}
+
+internal fun String.createPrice(marketplace: String): Price {
     val priceNumeric = this.parsePriceUsingRegex() ?: BigDecimal.ZERO
     val priceAmountMicros = (priceNumeric * BigDecimal(MICROS_MULTIPLIER)).toLong()
     val currencyCode = ISO3166Alpha2ToISO42170Converter.convertOrEmpty(marketplace)
 
-    return Price(
-        currencyCode,
-        priceAmountMicros
-    )
+    return Price(this, priceAmountMicros, currencyCode)
 }
-
-internal data class Price(
-    val currencyCode: String,
-    val priceAmountMicros: Long
-)
 
 // Explanations about the regexp:
 // \\d+: match the first(s) number(s)
@@ -101,6 +103,3 @@ internal fun String.parsePriceUsingRegex(): BigDecimal? {
         BigDecimal(price)
     }
 }
-
-private fun JSONObject.getProductType(productType: String) =
-    AmazonProductType.values().firstOrNull { it.name == this.getString(productType) }

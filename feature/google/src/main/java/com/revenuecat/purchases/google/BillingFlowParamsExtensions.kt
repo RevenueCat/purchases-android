@@ -1,13 +1,13 @@
 package com.revenuecat.purchases.google
 
 import com.android.billingclient.api.BillingFlowParams
-import com.revenuecat.purchases.common.ReplaceSkuInfo
+import com.revenuecat.purchases.common.ReplaceProductInfo
 
-fun BillingFlowParams.Builder.setUpgradeInfo(replaceSkuInfo: ReplaceSkuInfo) {
+fun BillingFlowParams.Builder.setUpgradeInfo(replaceProductInfo: ReplaceProductInfo) {
     val subscriptionUpdateParams = BillingFlowParams.SubscriptionUpdateParams.newBuilder().apply {
-        setOldSkuPurchaseToken(replaceSkuInfo.oldPurchase.purchaseToken)
-        replaceSkuInfo.prorationMode?.let { prorationMode ->
-            setReplaceSkusProrationMode(prorationMode)
+        setOldPurchaseToken(replaceProductInfo.oldPurchase.purchaseToken)
+        replaceProductInfo.prorationMode?.let {
+            setReplaceProrationMode(it)
         }
     }
     setSubscriptionUpdateParams(subscriptionUpdateParams.build())

@@ -19,7 +19,7 @@ android {
     }
     defaultConfig {
         applicationId "com.revenuecat.purchases_sample"
-        minSdkVersion 21
+        minSdkVersion purchaseTesterMinSdkVersion as Integer
         versionCode purchaseTesterVersionCode as Integer
         versionName purchaseTesterVersionName
         vectorDrawables.useSupportLibrary = true

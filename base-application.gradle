@@ -21,22 +21,6 @@ android {
     kotlinOptions {
         jvmTarget = JavaVersion.VERSION_1_8.toString()
     }
-    flavorDimensions "dependencyVersions"
-    productFlavors {
-        unityIAP {
-            dimension "dependencyVersions"
-        }
-        latestDependencies {
-            dimension "dependencyVersions"
-        }
-    }
-
-    // TODO remove after BC5 is merged
-    sourceSets {
-        latestDependencies {
-            java.srcDirs = ['src/unityIAP/java']
-        }
-    }
 }
 
 dependencies {

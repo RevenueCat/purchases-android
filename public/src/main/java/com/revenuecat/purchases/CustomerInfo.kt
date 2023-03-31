@@ -9,8 +9,8 @@ import android.net.Uri
 import android.os.Parcelable
 import com.revenuecat.purchases.models.RawDataContainer
 import com.revenuecat.purchases.models.Transaction
-import com.revenuecat.purchases.parceler.JSONObjectParceler
 import com.revenuecat.purchases.utils.DateHelper
+import com.revenuecat.purchases.utils.JSONObjectParceler
 import kotlinx.parcelize.IgnoredOnParcel
 import kotlinx.parcelize.Parcelize
 import kotlinx.parcelize.TypeParceler
@@ -18,11 +18,15 @@ import org.json.JSONObject
 import java.util.Date
 
 /**
- * Class containing all information regarding the purchaser
- * @property entitlements Entitlements attached to this purchaser info
- * @property purchasedNonSubscriptionSkus Set of non-subscription, non-consumed skus
- * @property allExpirationDatesByProduct Map of skus to expiration dates
- * @property allPurchaseDatesByProduct Map of skus to purchase dates
+ * Class containing all information regarding the customer
+ * @property entitlements Entitlements attached to this customer info
+ * @property allExpirationDatesByProduct Map of productIds to expiration dates
+ * For Google subscriptions, productIds are subscriptionId:basePlanId
+ * For Amazon subscriptions, productsIds are termSkus
+ * @property allPurchaseDatesByProduct Map of productIds to purchase dates
+ * For Google subscriptions, productIds are subscriptionId:basePlanId
+ * For Google and Amazon INAPPs, productsIds are simply productId.
+ * For Amazon subscriptions, productsIds are termSkus
  * @property requestDate Date when this info was requested
  * @property firstSeen The date this user was first seen in RevenueCat.
  * @property originalAppUserId The original App User Id recorded for this user.
@@ -37,26 +41,22 @@ import java.util.Date
 @TypeParceler<JSONObject, JSONObjectParceler>()
 data class CustomerInfo constructor(
     val entitlements: EntitlementInfos,
-    @Deprecated(
-        "Use nonSubscriptionTransactions instead",
-        ReplaceWith("nonSubscriptionTransactions.map{ it.productIdentifier }.toSet()")
-    ) val purchasedNonSubscriptionSkus: Set<String>,
     val allExpirationDatesByProduct: Map<String, Date?>,
     val allPurchaseDatesByProduct: Map<String, Date?>,
     val requestDate: Date,
-    @Deprecated(
-        "Use rawData instead",
-        replaceWith = ReplaceWith("rawData")
-    ) val jsonObject: JSONObject,
     val schemaVersion: Int,
     val firstSeen: Date,
     val originalAppUserId: String,
     val managementURL: Uri?,
-    val originalPurchaseDate: Date?
+    val originalPurchaseDate: Date?,
+    private val jsonObject: JSONObject
 ) : Parcelable, RawDataContainer<JSONObject> {
 
     /**
-     * @return Set of active subscription skus
+     * @return Set of active subscription productIds
+     *
+     * For Google subscriptions, productIds will be subscriptionId:basePlanId
+     * For Amazon subscriptions, productIds will be termSku
      */
     @IgnoredOnParcel
     val activeSubscriptions: Set<String> by lazy {
@@ -67,12 +67,28 @@ data class CustomerInfo constructor(
      * @return Set of purchased skus, active and inactive
      */
     @IgnoredOnParcel
+    @Deprecated(
+        "Use allPurchasedProductIds instead",
+        ReplaceWith("allPurchasedProductIds")
+    )
     val allPurchasedSkus: Set<String> by lazy {
         this.nonSubscriptionTransactions.map { it.productIdentifier }.toSet() + allExpirationDatesByProduct.keys
     }
 
     /**
-     * @return The latest expiration date of all purchased skus
+     * @return Set of purchased productIds, active and inactive
+     *
+     * For Google subscriptions, productIds are subscriptionId:basePlanId
+     * For Google and Amazon INAPPs, productsIds are simply productId.
+     * For Amazon subscriptions, productsIds are termSkus
+     */
+    @IgnoredOnParcel
+    val allPurchasedProductIds: Set<String> by lazy {
+        this.nonSubscriptionTransactions.map { it.productIdentifier }.toSet() + allExpirationDatesByProduct.keys
+    }
+
+    /**
+     * @return The latest expiration date of all purchased productIds
      */
     @IgnoredOnParcel
     val latestExpirationDate: Date? by lazy {
@@ -104,8 +120,24 @@ data class CustomerInfo constructor(
      * @param sku Sku for which to retrieve expiration date
      * @return Expiration date for given sku
      */
+    @Deprecated(
+        "Use getExpirationDateForProductId instead",
+        ReplaceWith("getExpirationDateForProductId")
+    )
     fun getExpirationDateForSku(sku: String): Date? {
         return allExpirationDatesByProduct[sku]
+    }
+
+    /**
+     * Get the expiration date for a given productId
+     * @param productId productId for which to retrieve expiration date
+     * For Google subscriptions, productIds are subscriptionId:basePlanId
+     *
+     * For Amazon subscriptions, productsIds are termSkus
+     * @return Expiration date for given productId
+     */
+    fun getExpirationDateForProductId(productId: String): Date? {
+        return allExpirationDatesByProduct[productId]
     }
 
     /**
@@ -113,8 +145,24 @@ data class CustomerInfo constructor(
      * @param sku Sku for which to retrieve expiration date
      * @return Purchase date for given sku
      */
+    @Deprecated(
+        "Use getPurchaseDateForProductId instead",
+        ReplaceWith("getPurchaseDateForProductId")
+    )
     fun getPurchaseDateForSku(sku: String): Date? {
         return allPurchaseDatesByProduct[sku]
+    }
+
+    /**
+     * Get the latest purchase or renewal date for given productId
+     * @param productId productId for which to retrieve expiration date
+     * For Google subscriptions, productIds are subscriptionId:basePlanId
+     * For Google and Amazon INAPPs, productsIds are simply productId.
+     * For Amazon subscriptions, productsIds are termSkus
+     * @return Purchase date for given productId
+     */
+    fun getPurchaseDateForProductId(productId: String): Date? {
+        return allPurchaseDatesByProduct[productId]
     }
 
     /**
@@ -155,7 +203,7 @@ data class CustomerInfo constructor(
         "<CustomerInfo\n " +
                 "latestExpirationDate: $latestExpirationDate\n" +
                 "activeSubscriptions:  ${activeSubscriptions.map {
-                    it to mapOf("expiresDate" to getExpirationDateForSku(it))
+                    it to mapOf("expiresDate" to getExpirationDateForProductId(it))
                 }.toMap()},\n" +
                 "activeEntitlements: ${entitlements.active.map { it.toString() }},\n" +
                 "entitlements: ${entitlements.all.map { it.toString() }},\n" +

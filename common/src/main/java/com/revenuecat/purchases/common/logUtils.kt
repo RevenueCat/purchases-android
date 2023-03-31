@@ -60,7 +60,7 @@ fun errorLog(error: PurchasesError) {
         PurchasesErrorCode.UnsupportedError,
         PurchasesErrorCode.EmptySubscriberAttributesError,
         PurchasesErrorCode.CustomerInfoError,
-        PurchasesErrorCode.InvalidSubscriberAttributesError -> log(LogIntent.RC_ERROR, error.message)
+        PurchasesErrorCode.InvalidSubscriberAttributesError -> log(LogIntent.RC_ERROR, error.toString())
         PurchasesErrorCode.PurchaseCancelledError,
         PurchasesErrorCode.StoreProblemError,
         PurchasesErrorCode.PurchaseNotAllowedError,
@@ -73,6 +73,6 @@ fun errorLog(error: PurchasesError) {
         PurchasesErrorCode.IneligibleError,
         PurchasesErrorCode.InsufficientPermissionsError,
         PurchasesErrorCode.PaymentPendingError,
-        PurchasesErrorCode.InvalidCredentialsError -> log(LogIntent.GOOGLE_ERROR, error.message)
+        PurchasesErrorCode.InvalidCredentialsError -> log(LogIntent.GOOGLE_ERROR, error.toString())
     }
 }

@@ -2,7 +2,8 @@ package com.revenuecat.purchases.models
 
 import android.os.Parcelable
 import com.revenuecat.purchases.ProductType
-import com.revenuecat.purchases.parceler.JSONObjectParceler
+import com.revenuecat.purchases.utils.JSONObjectParceler
+import kotlinx.parcelize.IgnoredOnParcel
 import kotlinx.parcelize.Parcelize
 import kotlinx.parcelize.TypeParceler
 import org.json.JSONObject
@@ -21,9 +22,12 @@ data class StoreTransaction(
     val orderId: String?,
 
     /**
-     * Product Ids.
+     * Product IDs purchased.
+     *
+     * If size > 1, indicates that a multi-line purchase occurred, which RevenueCat does not support.
+     * Only the first productId will be processed by the SDK.
      */
-    val skus: List<String>,
+    val productIds: List<String>,
 
     /**
      * Type of the product associated with the purchase.
@@ -81,17 +85,69 @@ data class StoreTransaction(
     /**
      * Amazon's marketplace. Null for Google
      */
-    val marketplace: String?
+    val marketplace: String?,
+
+    /**
+     * The id of the SubscriptionOption purchased.
+     * In Google, this will be calculated from the basePlanId and offerId
+     * Null for restored transactions and purchases initiated outside of the app.
+     */
+    val subscriptionOptionId: String?
 ) : Parcelable {
 
     /**
-     * Product Id.
+     * Skus associated with the transaction
      */
+    @IgnoredOnParcel
     @Deprecated(
-        message = "Will be removed in a future release in favor of a list of product ids",
-        replaceWith = ReplaceWith("skus[0]"))
-    val sku: String
-        get() = skus[0]
+        "Replaced with productIds",
+        ReplaceWith("productIds")
+    )
+    val skus: List<String>
+        get() = productIds
+
+    override fun equals(other: Any?) = other is StoreTransaction &&
+        ComparableData(this) == ComparableData(other)
+    override fun hashCode() = ComparableData(this).hashCode()
+}
+
+/**
+ * Contains fields to be used for equality, which ignores jsonObject.
+ * jsonObject is excluded because we're already using the parsed fields for comparisons,
+ * and to avoid complicating parcelization
+ */
+private data class ComparableData(
+    val orderId: String?,
+    val productIds: List<String>,
+    val type: ProductType,
+    val purchaseTime: Long,
+    val purchaseToken: String,
+    val purchaseState: PurchaseState,
+    val isAutoRenewing: Boolean?,
+    val signature: String?,
+    val presentedOfferingIdentifier: String?,
+    val storeUserID: String?,
+    val purchaseType: PurchaseType,
+    val marketplace: String?,
+    val subscriptionOptionId: String?
+) {
+    constructor(
+        storeTransaction: StoreTransaction
+    ) : this(
+        orderId = storeTransaction.orderId,
+            productIds = storeTransaction.productIds,
+            type = storeTransaction.type,
+            purchaseTime = storeTransaction.purchaseTime,
+            purchaseToken = storeTransaction.purchaseToken,
+            purchaseState = storeTransaction.purchaseState,
+            isAutoRenewing = storeTransaction.isAutoRenewing,
+            signature = storeTransaction.signature,
+            presentedOfferingIdentifier = storeTransaction.presentedOfferingIdentifier,
+            storeUserID = storeTransaction.storeUserID,
+            purchaseType = storeTransaction.purchaseType,
+            marketplace = storeTransaction.marketplace,
+            subscriptionOptionId = storeTransaction.subscriptionOptionId
+    )
 }
 
 enum class PurchaseType {

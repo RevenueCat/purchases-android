@@ -6,29 +6,14 @@ apply plugin: 'kover'
 android {
     compileSdkVersion compileVersion
     buildToolsVersion buildToolsVersion
-    flavorDimensions "dependencyVersions"
-    productFlavors {
-        unityIAP {
-            dimension "dependencyVersions"
-        }
-        latestDependencies {
-            dimension "dependencyVersions"
-        }
-    }
+
     defaultConfig {
         minSdkVersion minVersion
         targetSdkVersion compileVersion
         versionCode 1
-        versionName "5.9.0-SNAPSHOT"
+        versionName "6.0.1"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles "consumer-rules.pro"
-    }
-
-    // TODO remove after BC5 is merged
-    sourceSets {
-        latestDependencies {
-            java.srcDirs = ['src/unityIAP/java']
-        }
     }
 
     testOptions {
@@ -44,12 +29,6 @@ android {
     kotlinOptions {
         jvmTarget = '1.8'
     }
-}
-
-def artifactId = project.property("POM_ARTIFACT_ID")
-def publishVariant = project.property("ANDROID_VARIANT_TO_PUBLISH")
-if (publishVariant == "unityIAPRelease") {
-    project.ext.POM_ARTIFACT_ID = artifactId + "-unityiap"
 }
 
 apply plugin: 'com.vanniktech.maven.publish'

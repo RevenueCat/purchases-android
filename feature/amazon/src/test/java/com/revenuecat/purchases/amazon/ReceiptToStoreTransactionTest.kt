@@ -1,7 +1,6 @@
 package com.revenuecat.purchases.amazon
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.amazon.device.iap.model.UserData
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.amazon.helpers.dummyReceipt
 import com.revenuecat.purchases.amazon.helpers.dummyUserData
@@ -22,7 +21,7 @@ class ReceiptToStoreTransactionTest {
         val receipt = dummyReceipt()
 
         val storeTransaction = receipt.toStoreTransaction(
-            sku = "sku",
+            productId = "sku",
             presentedOfferingIdentifier = "offering",
             purchaseState = PurchaseState.PURCHASED,
             userData = dummyUserData(
@@ -42,7 +41,7 @@ class ReceiptToStoreTransactionTest {
         val receipt = dummyReceipt(sku = expectedReceiptSku)
 
         val storeTransaction = receipt.toStoreTransaction(
-            sku = expectedTermSku,
+            productId = expectedTermSku,
             presentedOfferingIdentifier = "offering",
             purchaseState = PurchaseState.PURCHASED,
             userData = dummyUserData(
@@ -60,7 +59,7 @@ class ReceiptToStoreTransactionTest {
         var receipt = dummyReceipt(productType = AmazonProductType.SUBSCRIPTION)
 
         var storeTransaction: StoreTransaction = receipt.toStoreTransaction(
-            sku = "sku",
+            productId = "sku",
             presentedOfferingIdentifier = "offering",
             purchaseState = PurchaseState.PURCHASED,
             userData = dummyUserData(
@@ -74,7 +73,7 @@ class ReceiptToStoreTransactionTest {
         receipt = dummyReceipt(productType = AmazonProductType.CONSUMABLE)
 
         storeTransaction = receipt.toStoreTransaction(
-            sku = "sku",
+            productId = "sku",
             presentedOfferingIdentifier = "offering",
             purchaseState = PurchaseState.PURCHASED,
             userData = dummyUserData(
@@ -88,7 +87,7 @@ class ReceiptToStoreTransactionTest {
         receipt = dummyReceipt(productType = AmazonProductType.ENTITLED)
 
         storeTransaction = receipt.toStoreTransaction(
-            sku = "sku",
+            productId = "sku",
             presentedOfferingIdentifier = "offering",
             purchaseState = PurchaseState.PURCHASED,
             userData = dummyUserData(
@@ -106,7 +105,7 @@ class ReceiptToStoreTransactionTest {
         val receipt = dummyReceipt(purchaseDate = expectedPurchaseDate)
 
         val storeTransaction: StoreTransaction = receipt.toStoreTransaction(
-            sku = "sku",
+            productId = "sku",
             presentedOfferingIdentifier = "offering",
             purchaseState = PurchaseState.PURCHASED,
             userData = dummyUserData(
@@ -123,7 +122,7 @@ class ReceiptToStoreTransactionTest {
         val receipt = dummyReceipt(receiptId = "receipt_id")
 
         val storeTransaction: StoreTransaction = receipt.toStoreTransaction(
-            sku = "sku",
+            productId = "sku",
             presentedOfferingIdentifier = "offering",
             purchaseState = PurchaseState.PURCHASED,
             userData = dummyUserData(
@@ -141,7 +140,7 @@ class ReceiptToStoreTransactionTest {
 
         PurchaseState.values().forEach { expectedPurchaseState ->
             val storeTransaction: StoreTransaction = receipt.toStoreTransaction(
-                sku = "sku",
+                productId = "sku",
                 presentedOfferingIdentifier = "offering",
                 purchaseState = expectedPurchaseState,
                 userData = dummyUserData(
@@ -159,7 +158,7 @@ class ReceiptToStoreTransactionTest {
         val receipt = dummyReceipt(productType = AmazonProductType.SUBSCRIPTION, cancelDate = Date())
 
         val storeTransaction: StoreTransaction = receipt.toStoreTransaction(
-            sku = "sku",
+            productId = "sku",
             presentedOfferingIdentifier = "offering",
             purchaseState = PurchaseState.PURCHASED,
             userData = dummyUserData(
@@ -176,7 +175,7 @@ class ReceiptToStoreTransactionTest {
         val receipt = dummyReceipt(productType = AmazonProductType.SUBSCRIPTION, cancelDate = null)
 
         val storeTransaction: StoreTransaction = receipt.toStoreTransaction(
-            sku = "sku",
+            productId = "sku",
             presentedOfferingIdentifier = "offering",
             purchaseState = PurchaseState.PURCHASED,
             userData = dummyUserData(
@@ -193,7 +192,7 @@ class ReceiptToStoreTransactionTest {
         var receipt = dummyReceipt(productType = AmazonProductType.ENTITLED, cancelDate = null)
 
         var storeTransaction: StoreTransaction = receipt.toStoreTransaction(
-            sku = "sku",
+            productId = "sku",
             presentedOfferingIdentifier = "offering",
             purchaseState = PurchaseState.PURCHASED,
             userData = dummyUserData(
@@ -207,7 +206,7 @@ class ReceiptToStoreTransactionTest {
         receipt = dummyReceipt(productType = AmazonProductType.CONSUMABLE, cancelDate = null)
 
         storeTransaction = receipt.toStoreTransaction(
-            sku = "sku",
+            productId = "sku",
             presentedOfferingIdentifier = "offering",
             purchaseState = PurchaseState.PURCHASED,
             userData = dummyUserData(
@@ -224,7 +223,7 @@ class ReceiptToStoreTransactionTest {
         val receipt = dummyReceipt()
 
         val storeTransaction: StoreTransaction = receipt.toStoreTransaction(
-            sku = "sku",
+            productId = "sku",
             presentedOfferingIdentifier = "offering",
             purchaseState = PurchaseState.PURCHASED,
             userData = dummyUserData(
@@ -241,7 +240,7 @@ class ReceiptToStoreTransactionTest {
         val receipt = dummyReceipt()
 
         val storeTransaction: StoreTransaction = receipt.toStoreTransaction(
-            sku = "sku",
+            productId = "sku",
             presentedOfferingIdentifier = "offering",
             purchaseState = PurchaseState.PURCHASED,
             userData = dummyUserData(
@@ -265,7 +264,7 @@ class ReceiptToStoreTransactionTest {
 
         val expectedPresentedOfferingIdentifier = "offering"
         val storeTransaction: StoreTransaction = receipt.toStoreTransaction(
-            sku = "sku",
+            productId = "sku",
             presentedOfferingIdentifier = expectedPresentedOfferingIdentifier,
             purchaseState = PurchaseState.PURCHASED,
             userData = dummyUserData(
@@ -283,7 +282,7 @@ class ReceiptToStoreTransactionTest {
 
         val expectedPresentedOfferingIdentifier = null
         val storeTransaction: StoreTransaction = receipt.toStoreTransaction(
-            sku = "sku",
+            productId = "sku",
             presentedOfferingIdentifier = expectedPresentedOfferingIdentifier,
             purchaseState = PurchaseState.PURCHASED,
             userData = dummyUserData(
@@ -302,7 +301,7 @@ class ReceiptToStoreTransactionTest {
         val expectedStoreUserID = "store_user_id"
 
         val storeTransaction: StoreTransaction = receipt.toStoreTransaction(
-            sku = "sku",
+            productId = "sku",
             presentedOfferingIdentifier = "offering",
             purchaseState = PurchaseState.PURCHASED,
             userData = dummyUserData(
@@ -321,7 +320,7 @@ class ReceiptToStoreTransactionTest {
         val expectedMarketplace = "US"
 
         val storeTransaction: StoreTransaction = receipt.toStoreTransaction(
-            sku = "sku",
+            productId = "sku",
             presentedOfferingIdentifier = "offering",
             purchaseState = PurchaseState.PURCHASED,
             userData = dummyUserData(
@@ -337,7 +336,7 @@ class ReceiptToStoreTransactionTest {
     fun `purchase type is correct`() {
         val receipt = dummyReceipt()
         val storeTransaction = receipt.toStoreTransaction(
-            sku = "sku",
+            productId = "sku",
             presentedOfferingIdentifier = null,
             purchaseState = PurchaseState.PURCHASED,
             userData = dummyUserData(

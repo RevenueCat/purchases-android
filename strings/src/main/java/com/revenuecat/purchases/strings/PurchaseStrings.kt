@@ -29,10 +29,19 @@ object PurchaseStrings {
         "It has already been posted"
     const val UPDATING_PENDING_PURCHASE_QUEUE = "Updating pending purchase queue"
     const val UPGRADING_SKU = "Moving from old SKU %s to sku %s"
+    const val UPGRADING_INVALID_TYPE = "UpgradeInfo passed to purchase for non-sub product type. No upgrade will " +
+        "occur. Consider using non-upgrade purchase flows for this product."
     const val UPGRADING_SKU_ERROR = "There was an error trying to upgrade. BillingResponseCode: %s"
     const val NOT_RECOGNIZED_PRODUCT_TYPE = "Type of product not recognized."
     const val SKIPPING_AUTOMATIC_SYNC = "Skipping automatic synchronization."
     const val INVALID_PRODUCT_TYPE = "Invalid product type passed to %s."
+    const val INVALID_PURCHASE_TYPE = "Purchase for a %s purchase must be a %s."
+    const val INVALID_STORE_PRODUCT_TYPE = "StoreProduct for a %s purchase must be a %s."
+    const val INVALID_PRODUCT_NO_PRICE = "Error finding a price for %s."
+    const val INVALID_CALLBACK_TYPE_INTERNAL_ERROR = "Internal SDK error -- invalid callback type passed to " +
+        "startProductChange."
+    const val NULL_TRANSACTION_ON_PURCHASE_ERROR = "Error purchasing. Null transaction returned from a succcessful " +
+        "non-upgrade purchase."
     const val ENTITLEMENT_EXPIRED_OUTSIDE_GRACE_PERIOD = "Entitlement %s is no longer active (expired %s) " +
         "and it's outside grace period window (last updated %s)"
 }

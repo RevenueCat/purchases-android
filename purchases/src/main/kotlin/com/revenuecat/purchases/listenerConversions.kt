@@ -9,6 +9,7 @@ import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.models.SubscriptionOption
 
 internal val ON_ERROR_STUB: (error: PurchasesError) -> Unit = {}
 internal val ON_PURCHASE_ERROR_STUB: (error: PurchasesError, userCancelled: Boolean) -> Unit = { _, _ -> }
@@ -110,13 +111,25 @@ fun Purchases.getOfferingsWith(
     getOfferings(receiveOfferingsCallback(onSuccess, onError))
 }
 
+fun Purchases.purchaseWith(
+    purchaseParams: PurchaseParams,
+    onError: (error: PurchasesError, userCancelled: Boolean) -> Unit = ON_PURCHASE_ERROR_STUB,
+    onSuccess: (purchase: StoreTransaction?, customerInfo: CustomerInfo) -> Unit
+) {
+    purchase(purchaseParams, purchaseCompletedCallback(onSuccess, onError))
+}
+
 /**
- * Purchase product.
+ * Purchase product. If purchasing a subscription, it will choose the default [SubscriptionOption].
  * @param [activity] Current activity
  * @param [storeProduct] The storeProduct of the product you wish to purchase
  * @param [onSuccess] Will be called after the purchase has completed
- * @param [onError] Will be called after the purchase has completed with error
+ * @param [onError] Will be called if there was an error with the purchase
  */
+@Deprecated(
+    "Use purchase() and PurchaseParams.Builder instead",
+    ReplaceWith("purchase()")
+)
 fun Purchases.purchaseProductWith(
     activity: Activity,
     storeProduct: StoreProduct,
@@ -127,14 +140,19 @@ fun Purchases.purchaseProductWith(
 }
 
 /**
- * Make a purchase upgrading from a previous sku.
+ * Make a purchase upgrading from a previous sku. If purchasing a subscription, it will choose the
+ * default [SubscriptionOption].
  * @param [activity] Current activity
  * @param [storeProduct] The storeProduct of the product you wish to purchase
  * @param [upgradeInfo] The upgradeInfo you wish to upgrade from, containing the oldSku and the optional prorationMode.
  * Amazon Appstore doesn't support changing products so upgradeInfo is ignored for Amazon purchases.
  * @param [onSuccess] Will be called after the purchase has completed
- * @param [onError] Will be called after the purchase has completed with error
+ * @param [onError] Will be called if there was an error with the purchase
  */
+@Deprecated(
+    "Use purchaseWith and PurchaseParams.Builder instead",
+    ReplaceWith("purchaseWith()")
+)
 fun Purchases.purchaseProductWith(
     activity: Activity,
     storeProduct: StoreProduct,
@@ -146,14 +164,19 @@ fun Purchases.purchaseProductWith(
 }
 
 /**
- * Make a purchase upgrading from a previous sku.
+ * Make a purchase upgrading from a previous sku. If purchasing a subscription, it will choose the
+ * default [SubscriptionOption].
  * @param [activity] Current activity
  * @param [packageToPurchase] The Package you wish to purchase
  * @param [upgradeInfo] The upgradeInfo you wish to upgrade from, containing the oldSku and the optional prorationMode.
  * Amazon Appstore doesn't support changing products so upgradeInfo is ignored for Amazon purchases.
  * @param [onSuccess] Will be called after the purchase has completed
- * @param [onError] Will be called after the purchase has completed with error
+ * @param [onError] Will be called if there was an error with the purchase
  */
+@Deprecated(
+    "Use purchaseWith and PurchaseParams.Builder instead",
+    ReplaceWith("purchaseWith()")
+)
 fun Purchases.purchasePackageWith(
     activity: Activity,
     packageToPurchase: Package,
@@ -165,12 +188,16 @@ fun Purchases.purchasePackageWith(
 }
 
 /**
- * Make a purchase.
+ * Make a purchase. If purchasing a subscription, it will choose the default [SubscriptionOption].
  * @param [activity] Current activity
  * @param [packageToPurchase] The Package you wish to purchase
  * @param [onSuccess] Will be called after the purchase has completed
- * @param [onError] Will be called after the purchase has completed with error
+ * @param [onError] Will be called if there was an error with the purchase
  */
+@Deprecated(
+    "Use purchaseWith and PurchaseParams.Builder instead",
+    ReplaceWith("purchaseWith()")
+)
 fun Purchases.purchasePackageWith(
     activity: Activity,
     packageToPurchase: Package,
@@ -220,7 +247,7 @@ fun Purchases.logInWith(
  * Logs out the Purchases client clearing the save appUserID. This will generate a random user
  * id and save it in the cache.
  * @param [onSuccess] Will be called after the call has completed.
- * @param [onError] Will be called after the call has completed with an error.
+ * @param [onError] Will be called if there was an error with the purchase.
  */
 @Suppress("unused")
 fun Purchases.logOutWith(
@@ -234,7 +261,7 @@ fun Purchases.logOutWith(
  * Get latest available customer info.
  * @param onSuccess Called when customer info is available and not stale. Called immediately if
  * customer info is cached.
- * @param onError Will be called after the call has completed with an error.
+ * @param onError Will be called if there was an error with the purchase.
  */
 @Suppress("unused")
 fun Purchases.getCustomerInfoWith(
@@ -249,7 +276,7 @@ fun Purchases.getCustomerInfoWith(
  * @param fetchPolicy Specifies cache behavior for customer info retrieval
  * @param onSuccess Called when customer info is available depending on the fetchPolicy parameter, this can be called
  * immediately or after a fetch has happened.
- * @param onError Will be called after the call has completed with an error.
+ * @param onError Will be called if there was an error with the purchase.
  */
 @Suppress("unused")
 fun Purchases.getCustomerInfoWith(
@@ -261,29 +288,73 @@ fun Purchases.getCustomerInfoWith(
 }
 
 /**
- * Gets the SKUDetails for the given list of subscription skus.
- * @param [skus] List of skus
- * @param [onReceiveSkus] Will be called after fetching subscriptions
+ * Gets the StoreProduct(s) for the given list of product ids for all product types.
+ * @param [productIds] List of productIds
+ * @param [onError] Will be called if there was an error with the purchase
+ * @param [onGetStoreProducts] Will be called after fetching StoreProducts
  */
 @Suppress("unused")
+fun Purchases.getProductsWith(
+    productIds: List<String>,
+    onError: (error: PurchasesError) -> Unit = ON_ERROR_STUB,
+    onGetStoreProducts: (storeProducts: List<StoreProduct>) -> Unit
+) {
+    getProducts(productIds, getStoreProductsCallback(onGetStoreProducts, onError))
+}
+
+/**
+ * Gets the StoreProduct(s) for the given list of product ids of type [type]
+ * @param [productIds] List of productIds
+ * @param [type] A product type to filter by
+ * @param [onError] Will be called if there was an error with the purchase
+ * @param [onGetStoreProducts] Will be called after fetching StoreProducts
+ */
+@Suppress("unused")
+fun Purchases.getProductsWith(
+    productIds: List<String>,
+    type: ProductType?,
+    onError: (error: PurchasesError) -> Unit = ON_ERROR_STUB,
+    onGetStoreProducts: (storeProducts: List<StoreProduct>) -> Unit
+) {
+    getProducts(productIds, type, getStoreProductsCallback(onGetStoreProducts, onError))
+}
+
+// region Deprecated
+
+/**
+ * Gets the SKUDetails for the given list of subscription skus.
+ * @param [skus] List of skus
+ * @param [onError] Will be called if there was an error with the purchase
+ * @param [onReceiveSkus] Will be called after fetching subscriptions
+ */
+@Deprecated(
+    "Replaced with getProductsWith() which returns both subscriptions and non-subscriptions",
+    ReplaceWith("getProductsWith()")
+)
 fun Purchases.getSubscriptionSkusWith(
     skus: List<String>,
     onError: (error: PurchasesError) -> Unit = ON_ERROR_STUB,
     onReceiveSkus: (storeProducts: List<StoreProduct>) -> Unit
 ) {
-    getSubscriptionSkus(skus, getStoreProductsCallback(onReceiveSkus, onError))
+    getProducts(skus, ProductType.SUBS, getStoreProductsCallback(onReceiveSkus, onError))
 }
 
 /**
- * Gets the SKUDetails for the given list of non-subscription skus.
+ * Gets the StoreProduct for the given list of non-subscription skus.
  * @param [skus] List of skus
- * @param [onReceiveSkus] Will be called after fetching SkuDetails
+ * @param [onError] Will be called if there was an error with the purchase
+ * @param [onReceiveSkus] Will be called after fetching StoreProduct
  */
-@Suppress("unused")
+@Deprecated(
+    "Replaced with getProductsWith() which returns both subscriptions and non-subscriptions",
+    ReplaceWith("getProductsWith()")
+)
 fun Purchases.getNonSubscriptionSkusWith(
     skus: List<String>,
     onError: (error: PurchasesError) -> Unit,
     onReceiveSkus: (storeProducts: List<StoreProduct>) -> Unit
 ) {
-    getNonSubscriptionSkus(skus, getStoreProductsCallback(onReceiveSkus, onError))
+    getProducts(skus, ProductType.INAPP, getStoreProductsCallback(onReceiveSkus, onError))
 }
+
+// endregion

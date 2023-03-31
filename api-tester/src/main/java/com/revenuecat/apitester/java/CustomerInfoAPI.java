@@ -17,6 +17,7 @@ final class CustomerInfoAPI {
         final EntitlementInfos entitlementInfo = customerInfo.getEntitlements();
         final Set<String> asubs = customerInfo.getActiveSubscriptions();
         final Set<String> skus = customerInfo.getAllPurchasedSkus();
+        final Set<String> purchaseProductIds = customerInfo.getAllPurchasedProductIds();
         final Date led = customerInfo.getLatestExpirationDate();
 
         final List<Transaction> nst = customerInfo.getNonSubscriptionTransactions();
@@ -27,7 +28,9 @@ final class CustomerInfoAPI {
         final Uri mu = customerInfo.getManagementURL();
 
         final Date eds = customerInfo.getExpirationDateForSku("");
+        final Date edpi = customerInfo.getExpirationDateForProductId("");
         final Date pds = customerInfo.getPurchaseDateForSku("");
+        final Date pdpi = customerInfo.getPurchaseDateForProductId("");
         final Date ede = customerInfo.getExpirationDateForEntitlement("");
         final Date pde = customerInfo.getPurchaseDateForEntitlement("");
         final Map<String, Date> allExpirationDatesByProduct = customerInfo.getAllExpirationDatesByProduct();

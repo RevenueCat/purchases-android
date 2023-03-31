@@ -18,8 +18,7 @@ dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
     implementation "androidx.annotation:annotation:$annotationVersion"
 
-    latestDependenciesImplementation "com.amazon.device:amazon-appstore-sdk:$amazonVersion"
-    unityIAPCompileOnly files("libs/in-app-purchasing-${amazon2Version}.jar")
+    implementation "com.amazon.device:amazon-appstore-sdk:$amazonVersion"
 
     testImplementation "com.amazon.device:amazon-appstore-sdk:$amazonVersion"
     testImplementation project(":test-utils")
@@ -75,8 +74,6 @@ task cleanAmazonLibrary(type: Delete) {
 }
 
 afterEvaluate {
-    preUnityIAPDebugBuild.dependsOn getAmazonLibrary
-    preUnityIAPReleaseBuild.dependsOn getAmazonLibrary
-    preLatestDependenciesDebugBuild.dependsOn cleanAmazonLibrary
-    preLatestDependenciesReleaseBuild.dependsOn cleanAmazonLibrary
+    preDebugBuild.dependsOn cleanAmazonLibrary
+    preReleaseBuild.dependsOn cleanAmazonLibrary
 }

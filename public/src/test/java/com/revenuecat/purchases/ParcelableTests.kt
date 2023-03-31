@@ -3,8 +3,11 @@ package com.revenuecat.purchases
 import android.net.Uri
 import android.os.Parcel
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.revenuecat.purchases.parceler.JSONObjectParceler
-import com.revenuecat.purchases.parceler.JSONObjectParceler.write
+import com.revenuecat.purchases.models.PurchaseState
+import com.revenuecat.purchases.models.PurchaseType
+import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.utils.JSONObjectParceler
+import com.revenuecat.purchases.utils.JSONObjectParceler.write
 import com.revenuecat.purchases.utils.Responses
 import com.revenuecat.purchases.utils.testParcelization
 import org.assertj.core.api.Assertions
@@ -34,7 +37,6 @@ class ParcelableTests {
                 mapOf("an_identifier" to getEntitlementInfo(identifier = "an_identifier")),
                 VerificationResult.VERIFIED
             ),
-            purchasedNonSubscriptionSkus = setOf(),
             allExpirationDatesByProduct = mapOf("a_product" to Date(System.currentTimeMillis())),
             allPurchaseDatesByProduct = mapOf("a_product" to Date(System.currentTimeMillis())),
             requestDate = Date(System.currentTimeMillis()),
@@ -46,6 +48,28 @@ class ParcelableTests {
             originalPurchaseDate = Date(System.currentTimeMillis())
         )
     )
+
+    @Test
+    fun `StoreTransaction is parcelable`() {
+        testParcelization(
+            StoreTransaction(
+                "orderId",
+                listOf("productId1", "productId2"),
+                ProductType.UNKNOWN,
+                0L,
+                "purchaseToken",
+                PurchaseState.PENDING,
+                true,
+                null,
+                JSONObject(emptyMap<String, String>()),
+                "offering_a",
+                "userId",
+                PurchaseType.GOOGLE_PURCHASE,
+                null,
+                "optionId"
+            )
+        )
+    }
 
     @Test
     fun `JSONObjectParceler works`() {
@@ -75,6 +99,7 @@ class ParcelableTests {
             expirationDate = expirationDate,
             store = Store.PLAY_STORE,
             productIdentifier = "product_identifier",
+            productPlanIdentifier = null,
             isSandbox = false,
             unsubscribeDetectedAt = null,
             billingIssueDetectedAt = null,

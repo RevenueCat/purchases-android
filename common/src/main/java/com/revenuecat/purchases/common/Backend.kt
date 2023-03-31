@@ -13,6 +13,7 @@ import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
 import com.revenuecat.purchases.common.offlineentitlements.ProductEntitlementMapping
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
+import com.revenuecat.purchases.models.PricingPhase
 import com.revenuecat.purchases.strings.NetworkStrings
 import com.revenuecat.purchases.utils.filterNotNullValues
 import org.json.JSONArray
@@ -144,6 +145,7 @@ class Backend(
         subscriberAttributes: Map<String, Map<String, Any?>>,
         receiptInfo: ReceiptInfo,
         storeAppUserID: String?,
+        @SuppressWarnings("UnusedPrivateMember")
         marketplace: String? = null,
         onSuccess: PostReceiptDataSuccessCallback,
         onError: PostReceiptDataErrorCallback
@@ -161,6 +163,7 @@ class Backend(
         val body = mapOf(
             "fetch_token" to purchaseToken,
             "product_ids" to receiptInfo.productIDs,
+            "platform_product_ids" to receiptInfo.platformProductIds?.map { it.asMap },
             "app_user_id" to appUserID,
             "is_restore" to isRestore,
             "presented_offering_identifier" to receiptInfo.offeringIdentifier,
@@ -169,14 +172,14 @@ class Backend(
             "currency" to receiptInfo.currency,
             "attributes" to subscriberAttributes.takeUnless { it.isEmpty() },
             "normal_duration" to receiptInfo.duration,
-            "intro_duration" to receiptInfo.introDuration,
-            "trial_duration" to receiptInfo.trialDuration,
-            "store_user_id" to storeAppUserID
-        ).filterValues { value -> value != null }
+            "store_user_id" to storeAppUserID,
+            "pricing_phases" to receiptInfo.pricingPhases?.map { it.toMap() }
+        ).filterNotNullValues()
 
-        val extraHeaders = receiptInfo.storeProduct?.price?.let { priceString ->
-            mapOf("price_string" to priceString, "marketplace" to marketplace).filterNotNullValues()
-        } ?: mapOf()
+        val extraHeaders = mapOf(
+            "price_string" to receiptInfo.storeProduct?.price?.formatted,
+            "marketplace" to marketplace
+        ).filterNotNullValues()
 
         val call = object : Dispatcher.AsyncCall() {
 
@@ -453,4 +456,15 @@ class Backend(
             this[cacheKey]!!.add(functions)
         }
     }
+}
+
+internal fun PricingPhase.toMap(): Map<String, Any?> {
+    return mapOf(
+        "billingPeriod" to this.billingPeriod.iso8601,
+        "billingCycleCount" to this.billingCycleCount,
+        "recurrenceMode" to this.recurrenceMode.identifier,
+        "formattedPrice" to this.price.formatted,
+        "priceAmountMicros" to this.price.amountMicros,
+        "priceCurrencyCode" to this.price.currencyCode,
+    )
 }
