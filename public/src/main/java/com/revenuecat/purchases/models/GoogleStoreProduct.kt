@@ -127,6 +127,11 @@ data class GoogleStoreProduct(
     override val sku: String
         get() = productId
 
+    /**
+     * For internal RevenueCat use.
+     *
+     * Creates a copy of this `GoogleStoreProduct` with the specified `offeringId` set.
+     */
     override fun copyWithOfferingId(offeringId: String): StoreProduct {
         val subscriptionOptionsWithOfferingIds = subscriptionOptions?.map {
             GoogleSubscriptionOption(it as GoogleSubscriptionOption, offeringId)

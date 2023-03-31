@@ -82,5 +82,10 @@ interface StoreProduct {
     )
     val sku: String
 
+    /**
+     * For internal RevenueCat use.
+     *
+     * Creates a copy of this `StoreProduct` with the specified `offeringId` set.
+     */
     fun copyWithOfferingId(offeringId: String): StoreProduct
 }

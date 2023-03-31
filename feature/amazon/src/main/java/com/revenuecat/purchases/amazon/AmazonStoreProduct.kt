@@ -91,6 +91,11 @@ data class AmazonStoreProduct(
     override val sku: String
         get() = id
 
+    /**
+     * For internal RevenueCat use.
+     *
+     * Creates a copy of this `AmazonStoreProduct` with the specified `offeringId` set.
+     */
     override fun copyWithOfferingId(offeringId: String): StoreProduct {
         return AmazonStoreProduct(
             this.id,
