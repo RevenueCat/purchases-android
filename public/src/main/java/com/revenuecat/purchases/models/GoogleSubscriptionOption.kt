@@ -54,7 +54,7 @@ data class GoogleSubscriptionOption(
     override val presentedOfferingIdentifier: String? = null
 ) : SubscriptionOption {
 
-    constructor(subscriptionOption: GoogleSubscriptionOption, presentedOfferingIdentifier: String?) :
+    internal constructor(subscriptionOption: GoogleSubscriptionOption, presentedOfferingIdentifier: String?) :
         this(
             subscriptionOption.productId,
             subscriptionOption.basePlanId,
