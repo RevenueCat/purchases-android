@@ -1,30 +1,40 @@
-## 5.8.2
-
-⚠️ ⚠️ ⚠️ ⚠️ 
-
-Our Android SDK versions 5.8.0 and 5.8.1 introduced a bug that prevented new purchase tokens from being sent to RevenueCat for validation between the above dates.
-
-Users who made new purchases were charged by Google but did not receive entitlements during that time. We've already shipped a backend fix, so affected users can recover their purchases simply by opening the app again. If the purchases aren’t recovered by the users within 72 hours from their purchase date, Google will automatically refund their purchase. No further action is required from you at this time.
-
-Users with pre-existing purchases are not affected.
-
-⚠️ ⚠️ ⚠️ ⚠️
-
-### Other changes in 5.8.0 and 5.8.1
-### New Features
-* Diagnostics (#811) via Toni Rico (@tonidero)
-### Bugfixes
-* Fix issue with missing subscriber attributes if set after login but before login callback (#809) via Toni Rico (@tonidero)
-### Dependency Updates
-* Bump fastlane from 2.212.0 to 2.212.1 (#821) via dependabot[bot] (@dependabot[bot])
-* Bump fastlane from 2.211.0 to 2.212.0 (#808) via dependabot[bot] (@dependabot[bot])
-* Bump fastlane-plugin-versioning_android from 0.1.0 to 0.1.1 (#798) via dependabot[bot] (@dependabot[bot])
-* Bump danger from 8.6.1 to 9.2.0 (#778) via dependabot[bot] (@dependabot[bot])
 ### Other Changes
-* Fix docs deployment (#836) via Toni Rico (@tonidero)
-* Fix SDKMAN issues (#822) via Toni Rico (@tonidero)
-* Fix bundle install on CircleCI (#827) via Cesar de la Vega (@vegaro)
-* Update README.md to include minimum Kotlin version (#786) via Cesar de la Vega (@vegaro)
-* Remove `tag_release_with_latest_if_needed` fastlane lane (#781) via Cesar de la Vega (@vegaro)
-* Adds docs for timeouts when closing and releasing (#759) via Cesar de la Vega (@vegaro)
-* Add Amazon App tester package to purchase tester queries (#789) via Stefan Wehner (@tonidero)
+* Automate integration tests for load shedder (#911)
+* Filter out expired purchases from queryPurchases in Amazon store (#908)
+* Adds multidex to integration tests (#914) via Cesar de la Vega (@vegaro)
+* Refactors BillingAbstract to not depend on Backend (#912) via Cesar de la Vega (@vegaro)
+* Fix tests after PR merge changes (#917)
+* Improve diagnostics counters system by adding anonymization and changing counter name to an enum (#877)
+* Add integration tests that can mock the Store (#899)
+* Offline entitlements: Rename `ProductEntitlementMappings` -> `ProductEntitlementMapping` (#897)
+* Offline entitlements: Add `OfflineEntitlementsManager` and add operation to perform backend request and cache result in device (#893)
+* Revert behavior change when parsing customer info schema version from cache (#898)
+* Offline entitlements: Add support to store ProductEntitlementMappings in DeviceCache (#892)
+* Offline entitlements: Add support for fetching ProductEntitlement mappings (#891)
+* Offline entitlements: Created `ProductEntitlementMapping` (#888)
+* Hide all new Trusted entitlements APIs (#886)
+* Fix flaky test in EntitlementInfoTest (#887)
+* Add verification result to purchase tester overview page (#880)
+* Rename verification result SUCCESS to VERIFIED (#874)
+* Improve entitlement verification documentation (#870)
+* Update VerificationResult NOT_REQUESTED docs to new behavior (#872)
+* Improve tests on etag cache verification logic (#869)
+* Entitlement verification: Send updated value in listener when verification result changes (#856)
+* Entitlement verification: Hide EntitlementVerificationMode.ENFORCED during beta and improve documentation (#852)
+* Entitlement verification: Fix request verification (#839)
+* Grant grace period for entitlements when the backend is offline (#851)
+* Entitlement verification: Return updated request time from header in CustomerInfo in 304 responses (#848)
+* Entitlement verification: Invalidate DeviceCache and ETag cache if verification mode enabled and cached value is NOT_REQUESTED (#844)
+* Entitlement verification: Not perform verification if request returns error (#840)
+* Entitlement verification: Return current call verification result over cached version (#842)
+* Entitlement verification: Rename not verified to not requested and error to failed (#838)
+* EntitlementVerification: Add verification property to EntitlementInfos and EntitlementInfo (#837)
+* Entitlement verification: Avoid caching responses with verification errors (#831)
+* Entitlement verification: Add entitlement verification options to purchase tester (#830)
+* Entitlement verification: Refactor SigningManager to make it not-nullable (#826)
+* Entitlement verification: Add Tink dependency to perform signature verification (#823)
+* Entitlement verification: Architecture and API (#820)
+* Log message when trying configure the SDK multiple times (#868)
+* Fix docs deployment paths (#854)
+* Update CHANGELOG with improved notes about SDK issue (#862)
+
