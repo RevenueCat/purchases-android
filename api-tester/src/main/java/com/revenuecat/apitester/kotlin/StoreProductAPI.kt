@@ -53,6 +53,19 @@ private class StoreProductAPI {
             googleStoreProduct.period,
             googleStoreProduct.subscriptionOptions,
             googleStoreProduct.defaultOption,
+            googleStoreProduct.productDetails
+        )
+
+        val constructedGoogleStoreProductWithOfferingId = GoogleStoreProduct(
+            googleStoreProduct.id,
+            null,
+            googleStoreProduct.type,
+            googleStoreProduct.price,
+            googleStoreProduct.title,
+            googleStoreProduct.description,
+            googleStoreProduct.period,
+            googleStoreProduct.subscriptionOptions,
+            googleStoreProduct.defaultOption,
             googleStoreProduct.productDetails,
             googleStoreProduct.presentedOfferingIdentifier
         )
@@ -65,6 +78,20 @@ private class StoreProductAPI {
     fun checkAmazonStoreProduct(amazonStoreProduct: AmazonStoreProduct) {
         check(amazonStoreProduct)
         val constructedAmazonStoreProduct = AmazonStoreProduct(
+            amazonStoreProduct.id,
+            amazonStoreProduct.type,
+            amazonStoreProduct.title,
+            amazonStoreProduct.description,
+            amazonStoreProduct.period,
+            amazonStoreProduct.price,
+            amazonStoreProduct.subscriptionOptions,
+            amazonStoreProduct.defaultOption,
+            amazonStoreProduct.iconUrl,
+            amazonStoreProduct.freeTrialPeriod,
+            amazonStoreProduct.originalProductJSON
+        )
+
+        val constructedAmazonStoreProductWithOfferingId = AmazonStoreProduct(
             amazonStoreProduct.id,
             amazonStoreProduct.type,
             amazonStoreProduct.title,

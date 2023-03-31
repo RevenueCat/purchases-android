@@ -75,7 +75,7 @@ data class AmazonStoreProduct(
      *
      * Null if not using RevenueCat offerings system, or if fetched directly via `Purchases.getProducts`
      */
-    override val presentedOfferingIdentifier: String?
+    override val presentedOfferingIdentifier: String? = null
 ) : StoreProduct {
 
     /**
