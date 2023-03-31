@@ -19,6 +19,7 @@ import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.PostReceiptDataErrorCallback
 import com.revenuecat.purchases.common.PostReceiptDataSuccessCallback
 import com.revenuecat.purchases.common.SubscriberAttributeError
+import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
 import com.revenuecat.purchases.common.subscriberattributes.SubscriberAttributeKey
 import com.revenuecat.purchases.common.toPurchasesError
 import com.revenuecat.purchases.identity.IdentityManager
@@ -53,6 +54,7 @@ class SubscriberAttributesPurchasesTests {
     private val backendMock = mockk<Backend>(relaxed = true)
     private val billingWrapperMock = mockk<BillingAbstract>(relaxed = true)
     private val customerInfoHelperMock = mockk<CustomerInfoHelper>()
+    private val offlineEntitlementsManagerMock = mockk<OfflineEntitlementsManager>()
     private lateinit var applicationMock: Application
 
     private var postReceiptError: PostReceiptErrorContainer? = null
@@ -135,6 +137,9 @@ class SubscriberAttributesPurchasesTests {
         every {
             customerInfoHelperMock.sendUpdatedCustomerInfoToDelegateIfChanged(any())
         } just runs
+        every {
+            offlineEntitlementsManagerMock.updateProductEntitlementMappingCacheIfStale()
+        } just runs
 
         underTest = Purchases(
             application = mockk<Application>(relaxed = true).also { applicationMock = it },
@@ -156,7 +161,8 @@ class SubscriberAttributesPurchasesTests {
             ),
             customerInfoHelper = customerInfoHelperMock,
             offeringParser = OfferingParserFactory.createOfferingParser(Store.PLAY_STORE),
-            diagnosticsSynchronizer = null
+            diagnosticsSynchronizer = null,
+            offlineEntitlementsManager = offlineEntitlementsManagerMock
         )
     }
 

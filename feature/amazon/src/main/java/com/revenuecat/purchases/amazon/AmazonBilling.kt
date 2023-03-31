@@ -23,8 +23,10 @@ import com.revenuecat.purchases.amazon.listener.ProductDataResponseListener
 import com.revenuecat.purchases.amazon.listener.PurchaseResponseListener
 import com.revenuecat.purchases.amazon.listener.PurchaseUpdatesResponseListener
 import com.revenuecat.purchases.amazon.listener.UserDataResponseListener
-import com.revenuecat.purchases.common.Backend
+import com.revenuecat.purchases.common.BackendHelper
 import com.revenuecat.purchases.common.BillingAbstract
+import com.revenuecat.purchases.common.DateProvider
+import com.revenuecat.purchases.common.DefaultDateProvider
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.ReplaceProductInfo
 import com.revenuecat.purchases.common.StoreProductsCallback
@@ -60,7 +62,8 @@ internal class AmazonBilling constructor(
     private val purchaseUpdatesHandler: PurchaseUpdatesResponseListener = PurchaseUpdatesHandler(
         purchasingServiceProvider
     ),
-    private val userDataHandler: UserDataResponseListener = UserDataHandler(purchasingServiceProvider, mainHandler)
+    private val userDataHandler: UserDataResponseListener = UserDataHandler(purchasingServiceProvider, mainHandler),
+    private val dateProvider: DateProvider = DefaultDateProvider()
 ) : BillingAbstract(),
     ProductDataResponseListener by productDataHandler,
     PurchaseResponseListener by purchaseHandler,
@@ -71,11 +74,11 @@ internal class AmazonBilling constructor(
     @Suppress("unused")
     constructor(
         applicationContext: Context,
-        backend: Backend,
         cache: DeviceCache,
         observerMode: Boolean,
-        mainHandler: Handler
-    ) : this(applicationContext, AmazonBackend(backend), AmazonCache(cache), observerMode, mainHandler)
+        mainHandler: Handler,
+        backendHelper: BackendHelper
+    ) : this(applicationContext, AmazonBackend(backendHelper), AmazonCache(cache), observerMode, mainHandler)
 
     var connected = false
 
@@ -106,7 +109,7 @@ internal class AmazonBilling constructor(
         onReceivePurchaseHistoryError: PurchasesErrorCallback
     ) {
         queryPurchases(
-            appUserID,
+            filterOnlyActivePurchases = false,
             onSuccess = {
                 onReceivePurchaseHistory(it.values.toList())
             },
@@ -278,42 +281,11 @@ internal class AmazonBilling constructor(
         onError: (PurchasesError) -> Unit
     ) {
         if (checkObserverMode()) return
-        executeRequestOnUIThread { connectionError ->
-            if (connectionError == null) {
-                purchaseUpdatesHandler.queryPurchases(
-                    onSuccess = onSuccess@{ receipts, userData ->
-                        if (receipts.isEmpty()) {
-                            onSuccess(emptyMap())
-                            return@onSuccess
-                        }
-
-                        getMissingSkusForReceipts(
-                            userData.userId,
-                            receipts
-                        ) { tokensToSkusMap, errors ->
-                            logErrorsIfAny(errors)
-
-                            if (tokensToSkusMap.isEmpty()) {
-                                val error = PurchasesError(
-                                    PurchasesErrorCode.InvalidReceiptError,
-                                    AmazonStrings.ERROR_FETCHING_PURCHASE_HISTORY_ALL_RECEIPTS_INVALID
-                                )
-                                onError(error)
-                                return@getMissingSkusForReceipts
-                            }
-
-                            val purchasesByHashedToken =
-                                receipts.toMapOfReceiptHashesToRestoredPurchases(tokensToSkusMap, userData)
-
-                            onSuccess(purchasesByHashedToken)
-                        }
-                    },
-                    onError
-                )
-            } else {
-                onError(connectionError)
-            }
-        }
+        queryPurchases(
+            filterOnlyActivePurchases = true,
+            onSuccess,
+            onError
+        )
     }
 
     private fun List<Receipt>.toMapOfReceiptHashesToRestoredPurchases(
@@ -374,6 +346,57 @@ internal class AmazonBilling constructor(
                 LogIntent.AMAZON_ERROR,
                 AmazonStrings.ERROR_FETCHING_RECEIPTS.format(receiptsWithErrors)
             )
+        }
+    }
+
+    private fun queryPurchases(
+        filterOnlyActivePurchases: Boolean,
+        onSuccess: (Map<String, StoreTransaction>) -> Unit,
+        onError: (PurchasesError) -> Unit
+    ) {
+        executeRequestOnUIThread { connectionError ->
+            if (connectionError == null) {
+                purchaseUpdatesHandler.queryPurchases(
+                    onSuccess = onSuccess@{ receipts, userData ->
+                        val filteredReceipts = if (filterOnlyActivePurchases) {
+                            // This filters out expired receipts according to the current date.
+                            // Note that this is not calculating the expiration date of the purchase,
+                            // where we would use the backend requestDate as part of the calculation.
+                            receipts.filter { it.cancelDate == null || it.cancelDate > dateProvider.now }
+                        } else {
+                            receipts
+                        }
+                        if (filteredReceipts.isEmpty()) {
+                            onSuccess(emptyMap())
+                            return@onSuccess
+                        }
+
+                        getMissingSkusForReceipts(
+                            userData.userId,
+                            filteredReceipts
+                        ) { tokensToSkusMap, errors ->
+                            logErrorsIfAny(errors)
+
+                            if (tokensToSkusMap.isEmpty()) {
+                                val error = PurchasesError(
+                                    PurchasesErrorCode.InvalidReceiptError,
+                                    AmazonStrings.ERROR_FETCHING_PURCHASE_HISTORY_ALL_RECEIPTS_INVALID
+                                )
+                                onError(error)
+                                return@getMissingSkusForReceipts
+                            }
+
+                            val purchasesByHashedToken =
+                                filteredReceipts.toMapOfReceiptHashesToRestoredPurchases(tokensToSkusMap, userData)
+
+                            onSuccess(purchasesByHashedToken)
+                        }
+                    },
+                    onError
+                )
+            } else {
+                onError(connectionError)
+            }
         }
     }
 

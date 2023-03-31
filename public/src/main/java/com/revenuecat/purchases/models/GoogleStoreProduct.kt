@@ -120,7 +120,7 @@ data class GoogleStoreProduct(
         ReplaceWith("productId")
     )
     override val sku: String
-        get() = sku
+        get() = productId
 
     override fun copyWithOfferingId(offeringId: String): StoreProduct {
         val subscriptionOptionsWithOfferingIds = subscriptionOptions?.map {

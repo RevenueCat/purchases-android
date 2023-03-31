@@ -11,9 +11,9 @@ import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
+import com.revenuecat.purchases.common.offlineentitlements.ProductEntitlementMapping
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import com.revenuecat.purchases.models.PricingPhase
-import com.revenuecat.purchases.common.offlineentitlements.ProductEntitlementMapping
 import com.revenuecat.purchases.strings.NetworkStrings
 import com.revenuecat.purchases.utils.filterNotNullValues
 import org.json.JSONArray
@@ -44,13 +44,12 @@ typealias DiagnosticsCallback = Pair<(JSONObject) -> Unit, (PurchasesError, Bool
 typealias ProductEntitlementCallback = Pair<(ProductEntitlementMapping) -> Unit, (PurchasesError) -> Unit>
 
 class Backend(
-    private val apiKey: String,
     private val appConfig: AppConfig,
     private val dispatcher: Dispatcher,
     private val diagnosticsDispatcher: Dispatcher,
-    private val httpClient: HTTPClient
+    private val httpClient: HTTPClient,
+    private val backendHelper: BackendHelper
 ) {
-    internal val authenticationHeaders = mapOf("Authorization" to "Bearer ${this.apiKey}")
 
     val verificationMode: SignatureVerificationMode
         get() = httpClient.signingManager.signatureVerificationMode
@@ -75,37 +74,6 @@ class Backend(
 
     fun close() {
         this.dispatcher.close()
-    }
-
-    fun performRequest(
-        endpoint: Endpoint,
-        body: Map<String, Any?>?,
-        onError: (PurchasesError) -> Unit,
-        onCompleted: (PurchasesError?, Int, JSONObject) -> Unit
-    ) {
-        enqueue(object : Dispatcher.AsyncCall() {
-            override fun call(): HTTPResult {
-                return httpClient.performRequest(
-                    appConfig.baseURL,
-                    endpoint,
-                    body,
-                    authenticationHeaders
-                )
-            }
-
-            override fun onError(error: PurchasesError) {
-                onError(error)
-            }
-
-            override fun onCompletion(result: HTTPResult) {
-                val error = if (!result.isSuccessful()) {
-                    result.toPurchasesError().also { errorLog(it) }
-                } else {
-                    null
-                }
-                onCompleted(error, result.responseCode, result.body)
-            }
-        }, dispatcher)
     }
 
     fun getCustomerInfo(
@@ -134,7 +102,7 @@ class Backend(
                     appConfig.baseURL,
                     endpoint,
                     null,
-                    authenticationHeaders
+                    backendHelper.authenticationHeaders
                 )
             }
 
@@ -220,7 +188,7 @@ class Backend(
                     appConfig.baseURL,
                     Endpoint.PostReceipt,
                     body,
-                    authenticationHeaders + extraHeaders
+                    backendHelper.authenticationHeaders + extraHeaders
                 )
             }
 
@@ -277,7 +245,7 @@ class Backend(
                     appConfig.baseURL,
                     endpoint,
                     null,
-                    authenticationHeaders
+                    backendHelper.authenticationHeaders
                 )
             }
 
@@ -330,7 +298,7 @@ class Backend(
                         "new_app_user_id" to newAppUserID,
                         "app_user_id" to appUserID
                     ),
-                    authenticationHeaders
+                    backendHelper.authenticationHeaders
                 )
             }
 
@@ -380,7 +348,7 @@ class Backend(
                     appConfig.diagnosticsURL,
                     Endpoint.PostDiagnostics,
                     body,
-                    authenticationHeaders
+                    backendHelper.authenticationHeaders
                 )
             }
 
@@ -430,7 +398,7 @@ class Backend(
                     appConfig.baseURL,
                     endpoint,
                     null,
-                    authenticationHeaders
+                    backendHelper.authenticationHeaders
                 )
             }
 
@@ -469,24 +437,8 @@ class Backend(
         }
     }
 
-    private fun enqueue(
-        call: Dispatcher.AsyncCall,
-        dispatcher: Dispatcher,
-        delay: Delay = Delay.NONE
-    ) {
-        if (dispatcher.isClosed()) {
-            errorLog("Enqueuing operation in closed dispatcher.")
-        } else {
-            dispatcher.enqueue(call, delay)
-        }
-    }
-
     fun clearCaches() {
         httpClient.clearCaches()
-    }
-
-    private fun HTTPResult.isSuccessful(): Boolean {
-        return responseCode < RCHTTPStatusCodes.UNSUCCESSFUL
     }
 
     private fun <K, S, E> MutableMap<K, MutableList<Pair<S, E>>>.addCallback(
@@ -498,7 +450,7 @@ class Backend(
     ) {
         if (!containsKey(cacheKey)) {
             this[cacheKey] = mutableListOf(functions)
-            enqueue(call, dispatcher, delay)
+            backendHelper.enqueue(call, dispatcher, delay)
         } else {
             debugLog(String.format(NetworkStrings.SAME_CALL_ALREADY_IN_PROGRESS, cacheKey))
             this[cacheKey]!!.add(functions)

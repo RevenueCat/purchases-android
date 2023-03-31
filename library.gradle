@@ -7,11 +7,22 @@ android {
     compileSdkVersion compileVersion
     buildToolsVersion buildToolsVersion
 
+    flavorDimensions "extraAPIs"
+    productFlavors {
+        defaults {
+            dimension "extraAPIs"
+        }
+        integrationTest {
+            dimension "extraAPIs"
+            minSdkVersion 21 // Needed because mockk-android requires API 21
+        }
+    }
+
     defaultConfig {
         minSdkVersion minVersion
         targetSdkVersion compileVersion
         versionCode 1
-        versionName "6.0.0-beta.3"
+        versionName "6.1.0-SNAPSHOT"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles "consumer-rules.pro"
     }
