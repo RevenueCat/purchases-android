@@ -401,7 +401,7 @@ class BillingWrapper(
         withConnectedClient {
             log(LogIntent.DEBUG, RestoreStrings.QUERYING_PURCHASE)
 
-            queryPurchasesAsyncWithTracking(SkuType.SUBS) querySubPurchasesAsync@{ subsResult, subs ->
+            queryPurchasesAsyncWithTracking(SkuType.SUBS) querySubPurchasesAsync@{ subsResult, activeSubsPurchases ->
                 if (!subsResult.isSuccessful()) {
                     val purchasesError = subsResult.responseCode.billingResponseToPurchasesError(
                         RestoreStrings.QUERYING_SUBS_ERROR.format(subsResult.toHumanReadableDescription())
@@ -410,13 +410,13 @@ class BillingWrapper(
                     return@querySubPurchasesAsync
                 }
 
-                val mapOfActiveSubscriptions = subs.toMapOfGooglePurchaseWrapper(SkuType.SUBS)
+                val mapOfActiveSubscriptions = activeSubsPurchases.toMapOfGooglePurchaseWrapper(SkuType.SUBS)
 
-                queryPurchasesAsyncWithTracking(SkuType.INAPP) queryInAppsPurchasesAsync@{ inAppsResult, inApps ->
-                    if (!inAppsResult.isSuccessful()) {
-                        val purchasesError = inAppsResult.responseCode.billingResponseToPurchasesError(
+                queryPurchasesAsyncWithTracking(SkuType.INAPP) queryInAppsPurchasesAsync@{ unconsumedInAppsResult, inApps ->
+                    if (!unconsumedInAppsResult.isSuccessful()) {
+                        val purchasesError = unconsumedInAppsResult.responseCode.billingResponseToPurchasesError(
                             RestoreStrings.QUERYING_INAPP_ERROR.format(
-                                inAppsResult.toHumanReadableDescription()
+                                unconsumedInAppsResult.toHumanReadableDescription()
                             )
                         )
                         onError(purchasesError)
@@ -478,16 +478,16 @@ class BillingWrapper(
     @Suppress("ReturnCount")
     internal fun getPurchaseType(purchaseToken: String, listener: (ProductType) -> Unit) {
         billingClient?.apply {
-            queryPurchasesAsyncWithTracking(SkuType.SUBS) querySubPurchasesAsync@{ subsResult, subs ->
+            queryPurchasesAsyncWithTracking(SkuType.SUBS) querySubPurchasesAsync@{ subsResult, subsPurchasesList ->
                 val subsResponseOK = subsResult.responseCode == BillingClient.BillingResponseCode.OK
-                val subFound = subs.any { it.purchaseToken == purchaseToken }
+                val subFound = subsPurchasesList.any { it.purchaseToken == purchaseToken }
                 if (subsResponseOK && subFound) {
                     listener(ProductType.SUBS)
                     return@querySubPurchasesAsync
                 }
 
-                queryPurchasesAsyncWithTracking(SkuType.INAPP) queryInAppPurchasesAsync@{ inAppsResult, inApps ->
-                    val inAppsResponseIsOK = inAppsResult.responseCode == BillingClient.BillingResponseCode.OK
+                queryPurchasesAsyncWithTracking(SkuType.INAPP) queryInAppPurchasesAsync@{ queryInAppsResult, inApps ->
+                    val inAppsResponseIsOK = queryInAppsResult.responseCode == BillingClient.BillingResponseCode.OK
                     val inAppFound = inApps.any { it.purchaseToken == purchaseToken }
                     if (inAppsResponseIsOK && inAppFound) {
                         listener(ProductType.INAPP)

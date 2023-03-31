@@ -8,7 +8,6 @@ import com.revenuecat.purchases.PeriodType
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.DateProvider
-import com.revenuecat.purchases.utils.stubStoreTransactionFromGooglePurchase
 import com.revenuecat.purchases.utils.stubStoreTransactionFromPurchaseHistoryRecord
 import io.mockk.every
 import io.mockk.mockk
