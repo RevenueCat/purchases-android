@@ -136,7 +136,8 @@ class OfferingsTest {
             "offering"
         )
         assertThat(monthlyPackageToTest).isNotNull
-        assertThat(monthlyPackageToTest!!.product).isEqualTo(products[productIdentifier]?.get(0))
+        assertThat(monthlyPackageToTest!!.product).usingRecursiveComparison()
+            .isEqualTo(products[productIdentifier]?.get(0))
         assertThat(monthlyPackageToTest.identifier).isEqualTo(PackageType.MONTHLY.identifier)
         assertThat(monthlyPackageToTest.packageType).isEqualTo(PackageType.MONTHLY)
 
@@ -147,7 +148,8 @@ class OfferingsTest {
         )
         val annualPackageToTest = offeringsParser.createPackage(annualPackageJSON, products, "offering")
         assertThat(annualPackageToTest).isNotNull
-        assertThat(annualPackageToTest!!.product).isEqualTo(products[productIdentifier]?.get(1))
+        assertThat(annualPackageToTest!!.product).usingRecursiveComparison()
+            .isEqualTo(products[productIdentifier]?.get(1))
         assertThat(annualPackageToTest.identifier).isEqualTo(annualPackageID)
         assertThat(annualPackageToTest.packageType).isEqualTo(PackageType.ANNUAL)
     }
@@ -169,7 +171,8 @@ class OfferingsTest {
             "offering",
         )
         assertThat(inAppPackageToTest).isNotNull
-        assertThat(inAppPackageToTest!!.product).isEqualTo(products[inAppProductIdentifier]?.get(0))
+        assertThat(inAppPackageToTest!!.product).usingRecursiveComparison()
+            .isEqualTo(products[inAppProductIdentifier]?.get(0))
         assertThat(inAppPackageToTest.identifier).isEqualTo(PackageType.LIFETIME.identifier)
         assertThat(inAppPackageToTest.packageType).isEqualTo(PackageType.LIFETIME)
     }

@@ -860,6 +860,10 @@ class BillingWrapperTest {
                 get() = null
             override val sku: String
                 get() = id
+
+            override fun copyWithOfferingId(offeringId: String): StoreProduct {
+                return this // this is wrong, just doing for test
+            }
         }
 
         val slot = slot<PurchasesError>()

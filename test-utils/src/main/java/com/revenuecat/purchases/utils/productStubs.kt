@@ -72,49 +72,32 @@ fun stubStoreProduct(
         get() = productId
 
     override fun copyWithOfferingId(offeringId: String): StoreProduct {
-        return object : StoreProduct {
-            override val id: String
-                get() = productId
-            override val type: ProductType
-                get() = ProductType.SUBS
-            override val price: Price
-                get() = price
-            override val title: String
-                get() = ""
-            override val description: String
-                get() = ""
-            override val period: Period?
-                get() = subscriptionOptions.firstOrNull { it.isBasePlan }?.pricingPhases?.get(0)?.billingPeriod
-            override val subscriptionOptions: SubscriptionOptions
-                get() {
-                    val subscriptionOptionsWithOfferingIds = subscriptionOptions.map {
-                        stubSubscriptionOption(
-                            it.id,
-                            productId,
-                            period!!,
-                            it.pricingPhases,
-                            offeringId
-                        )
-                    }
-                    return SubscriptionOptions(subscriptionOptionsWithOfferingIds)
-                }
-            override val defaultOption: SubscriptionOption?
-                get() = stubSubscriptionOption(
-                    defaultOption!!.id,
-                    productId,
-                    period!!,
-                    defaultOption!!.pricingPhases,
-                    offeringId
-                )
-            override val purchasingData: PurchasingData
-                get() = StubPurchasingData(
-                    productId = productId
-                )
-            override val presentedOfferingIdentifier: String?
-                get() = offeringId
-            override val sku: String
-                get() = productId
+        val subscriptionOptionsWithOfferingIds = subscriptionOptions.map {
+            stubSubscriptionOption(
+                it.id,
+                productId,
+                period!!,
+                it.pricingPhases,
+                offeringId
+            )
         }
+
+        val defaultOptionWithOfferingId = defaultOption?.let {
+            stubSubscriptionOption(
+                it.id,
+                productId,
+                period!!,
+                it.pricingPhases,
+                offeringId
+            )
+        }
+        return stubStoreProduct(
+            productId,
+            defaultOptionWithOfferingId,
+            subscriptionOptionsWithOfferingIds,
+            price,
+            offeringId
+        )
     }
 }
 
@@ -174,6 +157,8 @@ fun stubINAPPStoreProduct(
                 get() = offeringId
             override val sku: String
                 get() = productId
+
+            override fun copyWithOfferingId(offeringId: String): StoreProduct = this
         }
     }
 }
