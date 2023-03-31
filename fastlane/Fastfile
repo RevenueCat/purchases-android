@@ -159,7 +159,7 @@ platform :android do
 
   desc "Build purchases module integration tests"
   lane :build_purchases_integration_tests do |options|
-    constants_path = './purchases/src/androidTestIntegrationTest/kotlin/com/revenuecat/purchases/Constants.kt'
+    constants_path = '../purchases/src/androidTestIntegrationTest/kotlin/com/revenuecat/purchases/Constants.kt'
     proxy_url = options[:proxy_url]
     build_type = options[:build_type] || "debug"
     replace_text_in_files(
@@ -227,7 +227,7 @@ end
 
 def replace_text_in_files(previous_text:, new_text:, paths_of_files_to_update:)
   paths_of_files_to_update.each do |path|
-    sh "sed", "s/#{previous_text}/#{new_text}/g", "../#{path}"
+    sh "sed -i 's/#{previous_text}/#{new_text}/g' #{path}"
   end
 end
 
