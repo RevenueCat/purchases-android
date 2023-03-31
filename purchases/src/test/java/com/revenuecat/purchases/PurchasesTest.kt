@@ -658,7 +658,7 @@ class PurchasesTest {
     }
 
     @Test
-    fun `purchase of Package passes presentedOfferingIdentifier through to purchase`() {
+    fun `purchase of sub Package passes presentedOfferingIdentifier through to purchase`() {
         val (storeProduct, offerings) = stubOfferings("onemonth_freetrial")
         val expectedOfferingIdentifier = STUB_OFFERING_IDENTIFIER
 
@@ -682,7 +682,7 @@ class PurchasesTest {
     }
 
     @Test
-    fun `purchase of StoreProduct passes presentedOfferingIdentifier through to purchase`() {
+    fun `purchase of sub StoreProduct passes presentedOfferingIdentifier through to purchase`() {
         val (_, offerings) = stubOfferings("onemonth_freetrial")
         val expectedOfferingIdentifier = STUB_OFFERING_IDENTIFIER
 

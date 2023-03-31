@@ -59,6 +59,62 @@ class OfferingsTest {
     }
 
     @Test
+    fun `createPackage for sub sets presentedOfferingId on Package, product, product's defaultOption, and product's subscriptionOptions`() {
+        val storeProductMonthly = getStoreProduct(productIdentifier, monthlyPeriod, monthlyBasePlanId)
+        val storeProductAnnual = getStoreProduct(productIdentifier, annualPeriod, annualBasePlanId)
+
+        val products = mapOf(
+            productIdentifier to listOf(storeProductMonthly, storeProductAnnual)
+        )
+
+        val monthlyPackageJSON = getPackageJSON(
+            packageIdentifier = PackageType.MONTHLY.identifier!!,
+            productIdentifier = storeProductMonthly.id,
+            basePlanId = storeProductMonthly.subscriptionOptions!!.basePlan!!.id
+        )
+
+        val expectedOfferingIdentifier = "offering"
+        val monthlyPackageToTest = offeringsParser.createPackage(
+            monthlyPackageJSON,
+            products,
+            expectedOfferingIdentifier
+        )!!
+
+        assertThat(monthlyPackageToTest.offering).isEqualTo(expectedOfferingIdentifier)
+
+        val packageProduct = monthlyPackageToTest.product
+        assertThat(packageProduct.presentedOfferingIdentifier).isEqualTo(expectedOfferingIdentifier)
+
+        val defaultOption = packageProduct.defaultOption!!
+        assertThat(defaultOption.presentedOfferingIdentifier).isEqualTo(expectedOfferingIdentifier)
+
+        val allOptions = packageProduct.subscriptionOptions!!
+        allOptions.forEach {
+            assertThat(it.presentedOfferingIdentifier).isEqualTo(expectedOfferingIdentifier)
+        }
+    }
+
+    @Test
+    fun `createPackage for OTP sets offeringId on Package and OTP Product`() {
+        val storeProductInApp = stubINAPPStoreProduct(inAppProductIdentifier)
+        val products = mapOf(
+            inAppProductIdentifier to listOf(storeProductInApp)
+        )
+        val expectedOfferingIdentifier = "OTP_offering"
+        val inAppPackageJson = getLifetimePackageJSON()
+        val inAppPackageToTest = offeringsParser.createPackage(
+            inAppPackageJson,
+            products,
+            expectedOfferingIdentifier
+        )
+
+        assertThat(inAppPackageToTest!!.offering).isEqualTo(expectedOfferingIdentifier)
+
+        val packageProduct = inAppPackageToTest!!.product
+        assertThat(packageProduct.presentedOfferingIdentifier).isEqualTo(expectedOfferingIdentifier)
+    }
+
+    @Test
     fun `createPackage creates a Package if package json matches subscription store products`() {
         val storeProductMonthly = getStoreProduct(productIdentifier, monthlyPeriod, monthlyBasePlanId)
         val storeProductAnnual = getStoreProduct(productIdentifier, annualPeriod, annualBasePlanId)
