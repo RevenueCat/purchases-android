@@ -36,12 +36,13 @@ class PurchasesIntegrationTest {
             }
         }
 
+        private const val testTimeoutInSeconds = 5L
+
         private fun canRunIntegrationTests() = Constants.apiKey != "REVENUECAT_API_KEY" &&
             Constants.googlePurchaseToken != "GOOGLE_PURCHASE_TOKEN" &&
             Constants.productIdToPurchase != "PRODUCT_ID_TO_PURCHASE"
     }
 
-    private val testTimeoutInSeconds = 5L
     private val currentTimestamp = Date().time
     private val testUserId = "android-integration-test-$currentTimestamp"
     private val proxyUrl = Constants.proxyUrl.takeIf { it != "NO_PROXY_URL" }
