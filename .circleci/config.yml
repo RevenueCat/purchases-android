@@ -241,6 +241,57 @@ jobs:
       - android-wordpress-orb/save-gradle-cache
       - android/save-build-cache
 
+  purchases-load-shedder-integration-tests-build:
+    executor: android-executor
+    steps:
+      - checkout
+      - install-sdkman
+      - android/accept-licenses
+      - android-wordpress-orb/restore-gradle-cache
+      - android/restore-build-cache
+      - download-amazon-dependency
+      - run:
+          name: Create purchases integration tests apks
+          command: |
+            bundle exec fastlane android build_purchases_integration_tests
+      - android-wordpress-orb/save-gradle-cache
+      - android/save-build-cache
+      - persist_to_workspace:
+          root: .
+          paths:
+            - purchases/test_artifacts/integrationTest-app.apk
+            - purchases/test_artifacts/integrationTest-test.apk
+
+  run-firebase-tests-purchases-load-shedder-integration-test:
+    description: "Run purchases module integration tests in the load shedder for Android in Firebase"
+    executor: gcp-cli/google
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - gcp-cli/initialize:
+          gcloud-service-key: GCLOUD_SERVICE_KEY
+          google-compute-zone: GOOGLE_COMPUTE_ZONE
+          google-project-id: GOOGLE_PROJECT_ID
+      - run:
+          name: Test with Firebase Test Lab
+          command: >
+            gcloud firebase test android run --type instrumentation \
+              --app purchases/test_artifacts/integrationTest-app.apk \
+              --test purchases/test_artifacts/integrationTest-test.apk \
+              --timeout 2m \
+              --results-bucket cloud-test-${GOOGLE_PROJECT_ID}
+      - run:
+          name: Copy test results data
+          command: |
+            mkdir -p ~/gsutil/
+            gsutil -m cp -r -U `gsutil ls gs://cloud-test-$GOOGLE_PROJECT_ID | tail -1` ~/gsutil/ | true
+          when: always
+      - store_artifacts:
+          path: ~/gsutil/
+      - store_test_results:
+          path: ~/gsutil/
+
   integration-tests-build:
     executor: android-executor
     steps:
@@ -313,6 +364,10 @@ workflows:
     jobs:
       - test
       - assemble-sample-app
+      - purchases-load-shedder-integration-tests-build
+      - run-firebase-tests-purchases-load-shedder-integration-test:
+          requires:
+            - purchases-load-shedder-integration-tests-build
 
   integration-test:
     jobs:
@@ -331,3 +386,14 @@ workflows:
               only:
                 - main
       - docs-deploy: *release-tags
+
+  daily-load-shedder-integration-tests:
+    when:
+      and:
+        - equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
+        - equal: [ "load-shedder-integration-tests-v4", << pipeline.schedule.name >> ]
+    jobs:
+      - purchases-load-shedder-integration-tests-build
+      - run-firebase-tests-purchases-load-shedder-integration-test:
+          requires:
+            - purchases-load-shedder-integration-tests-build
