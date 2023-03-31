@@ -71,9 +71,9 @@ data class AmazonStoreProduct(
     val originalProductJSON: JSONObject,
 
     /**
-     * The offering ID this `SubscriptionOption` was returned from.
+     * The offering ID this `AmazonStoreProduct` was returned from.
      *
-     * Null if not using RevenueCat offerings system, or if fetched directly via `getProducts`
+     * Null if not using RevenueCat offerings system, or if fetched directly via `Purchases.getProducts`
      */
     override val presentedOfferingIdentifier: String?
 ) : StoreProduct {

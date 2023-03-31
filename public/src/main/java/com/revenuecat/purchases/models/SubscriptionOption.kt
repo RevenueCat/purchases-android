@@ -19,14 +19,15 @@ interface SubscriptionOption {
     val pricingPhases: List<PricingPhase>
 
     /**
-     * Tags defined on the base plan or offer. Empty for Amazon.
+     * Tags defined on the base plan or offer. Keep in mind that offers automatically
+     * inherit their base plan's tag. Empty for Amazon.
      */
     val tags: List<String>
 
     /**
      * The offering ID this `SubscriptionOption` was returned from.
      *
-     * Null if not using RevenueCat offerings system, or if fetched directly via `getProducts`
+     * Null if not using RevenueCat offerings system, or if fetched directly via `Purchases.getProducts`
      */
     val presentedOfferingIdentifier: String?
 
