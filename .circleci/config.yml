@@ -246,6 +246,7 @@ jobs:
     steps:
       - checkout
       - install-sdkman
+      - install-gems
       - android/accept-licenses
       - android-wordpress-orb/restore-gradle-cache
       - android/restore-build-cache
