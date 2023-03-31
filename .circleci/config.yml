@@ -481,7 +481,7 @@ workflows:
     when:
       and:
         - equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
-        - equal: [ "load-shedder-integration-tests", << pipeline.schedule.name >> ]
+        - equal: [ "load-shedder-integration-tests-v5", << pipeline.schedule.name >> ]
     jobs:
       - purchases-load-shedder-integration-tests-build
       - run-firebase-tests-purchases-load-shedder-integration-test:
