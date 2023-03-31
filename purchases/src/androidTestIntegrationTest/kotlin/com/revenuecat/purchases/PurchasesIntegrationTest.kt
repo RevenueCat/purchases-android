@@ -7,7 +7,9 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.factories.StoreProductFactory
 import com.revenuecat.purchases.factories.StoreTransactionFactory
-import com.revenuecat.purchases.helpers.mockQuerySkuDetails
+import com.revenuecat.purchases.helpers.mockQueryProductDetails
+import com.revenuecat.purchases.models.GooglePurchasingData
+import com.revenuecat.purchases.models.GoogleStoreProduct
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -141,8 +143,8 @@ class PurchasesIntegrationTest {
     fun canFetchOfferings() {
         val lock = CountDownLatch(1)
 
-        val storeProduct = StoreProductFactory.createStoreProduct()
-        mockBillingAbstract.mockQuerySkuDetails(querySkuDetailsSubsReturn = listOf(storeProduct))
+        val storeProduct = StoreProductFactory.createGoogleStoreProduct()
+        mockBillingAbstract.mockQueryProductDetails(queryProductDetailsSubsReturn = listOf(storeProduct))
 
         onActivityReady {
             Purchases.sharedInstance.getOfferingsWith(
@@ -164,18 +166,23 @@ class PurchasesIntegrationTest {
     fun canPurchaseSubsProduct() {
         val lock = CountDownLatch(1)
 
-        val storeProduct = StoreProductFactory.createStoreProduct()
+        val storeProduct = StoreProductFactory.createGoogleStoreProduct()
         val storeTransaction = StoreTransactionFactory.createStoreTransaction()
-        mockBillingAbstract.mockQuerySkuDetails(querySkuDetailsSubsReturn = listOf(storeProduct))
+        mockBillingAbstract.mockQueryProductDetails(queryProductDetailsSubsReturn = listOf(storeProduct))
 
         onActivityReady { activity ->
-            Purchases.sharedInstance.purchaseProductWith(
-                activity = activity,
-                storeProduct = storeProduct,
+            Purchases.sharedInstance.purchaseWith(
+                purchaseParams = PurchaseParams.Builder(activity, storeProduct).build(),
                 onError = { error, _ -> fail("Purchase should be successful. Error: ${error.message}") },
                 onSuccess = { transaction, customerInfo ->
                     assertThat(transaction).isEqualTo(storeTransaction)
-                    assertThat(customerInfo.allPurchaseDatesByProduct.containsKey(storeProduct.sku)).isTrue
+                    assertThat(customerInfo.allPurchaseDatesByProduct.size).isEqualTo(1)
+                    val productId = customerInfo.allPurchaseDatesByProduct.keys.first()
+                    // Uncomment to check for the correct product id once changes in load shedder to include
+                    // base plan id are merged
+                    // val expectedProductId = "${Constants.productIdToPurchase}:${Constants.basePlanIdToPurchase}"
+                    // assertThat(productId).isEqualTo(expectedProductId)
+                    assertThat(productId.startsWith(Constants.productIdToPurchase)).isTrue
                     lock.countDown()
                 }
             )
@@ -188,9 +195,15 @@ class PurchasesIntegrationTest {
             mockBillingAbstract.makePurchaseAsync(
                 any(),
                 testUserId,
-                storeProduct,
-                replaceSkuInfo = null,
-                presentedOfferingIdentifier = null
+                match {
+                    it is GooglePurchasingData.Subscription &&
+                        storeProduct is GoogleStoreProduct &&
+                        it.productId == storeProduct.productId &&
+                        it.optionId == storeProduct.basePlanId
+                      },
+                replaceProductInfo = null,
+                presentedOfferingIdentifier = null,
+                isPersonalizedPrice = false
             )
         }
     }

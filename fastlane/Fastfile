@@ -155,7 +155,8 @@ platform :android do
         app_name: 'integrationTest',
         api_key: ENV['REVENUECAT_API_KEY'],
         google_purchase_token: ENV['GOOGLE_PURCHASE_TOKEN'],
-        product_id_to_purchase: ENV['PRODUCT_ID_TO_PURCHASE']
+        product_id_to_purchase: ENV['PRODUCT_ID_TO_PURCHASE'],
+        base_plan_id_to_purchase: ENV['BASE_PLAN_ID_TO_PURCHASE']
     )
   end
 
@@ -165,12 +166,13 @@ platform :android do
         app_name: 'loadShedderIntegrationTest',
         api_key: ENV['LOAD_SHEDDER_REVENUECAT_API_KEY'],
         google_purchase_token: ENV['LOAD_SHEDDER_GOOGLE_PURCHASE_TOKEN'],
-        product_id_to_purchase: ENV['LOAD_SHEDDER_PRODUCT_ID_TO_PURCHASE']
+        product_id_to_purchase: ENV['LOAD_SHEDDER_PRODUCT_ID_TO_PURCHASE'],
+        base_plan_id_to_purchase: ENV['LOAD_SHEDDER_BASE_PLAN_ID_TO_PURCHASE']
     )
   end
 
   def build_purchases_integration_tests(app_name:, api_key:, google_purchase_token:, product_id_to_purchase:,
-                                        proxy_url: nil, build_type: 'release')
+                                        base_plan_id_to_purchase:, proxy_url: nil, build_type: 'release')
     constants_path = './purchases/src/androidTestIntegrationTest/kotlin/com/revenuecat/purchases/Constants.kt'
     replace_text_in_files(
       previous_text: "REVENUECAT_API_KEY",
@@ -185,6 +187,11 @@ platform :android do
     replace_text_in_files(
       previous_text: "PRODUCT_ID_TO_PURCHASE",
       new_text: product_id_to_purchase,
+      paths_of_files_to_update: [constants_path]
+    )
+    replace_text_in_files(
+      previous_text: "BASE_PLAN_ID_TO_PURCHASE",
+      new_text: base_plan_id_to_purchase,
       paths_of_files_to_update: [constants_path]
     )
     unless proxy_url.nil?

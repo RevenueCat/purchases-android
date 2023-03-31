@@ -422,15 +422,14 @@ workflows:
         equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
     jobs:
       - integration-tests-build: *release-branches
-#      Commenting out until we fix purchases module integration tests
-#      - purchases-integration-tests-build: *release-branches
-#      - purchases-load-shedder-integration-tests-build: *release-branches
-#      - run-firebase-tests-purchases-integration-test:
-#          requires:
-#            - purchases-integration-tests-build
-#      - run-firebase-tests-purchases-load-shedder-integration-test:
-#          requires:
-#            - purchases-load-shedder-integration-tests-build
+      - purchases-integration-tests-build: *release-branches
+      - purchases-load-shedder-integration-tests-build: *release-branches
+      - run-firebase-tests-purchases-integration-test:
+          requires:
+            - purchases-integration-tests-build
+      - run-firebase-tests-purchases-load-shedder-integration-test:
+          requires:
+            - purchases-load-shedder-integration-tests-build
       - run-firebase-tests:
           requires:
             - integration-tests-build
@@ -438,9 +437,8 @@ workflows:
           type: approval
           requires:
             - run-firebase-tests
-#            Commenting out until we fix purchases module integration tests
-#            - run-firebase-tests-purchases-integration-test
-#            - run-firebase-tests-purchases-load-shedder-integration-test
+            - run-firebase-tests-purchases-integration-test
+            - run-firebase-tests-purchases-load-shedder-integration-test
           <<: *release-branches
       - revenuecat/tag-current-branch:
           requires:
@@ -462,17 +460,16 @@ workflows:
     jobs:
       - prepare-next-version: *only-main-branch
 
-#  Commenting out until we fix purchases module integration tests
-#  daily-load-shedder-integration-tests:
-#    when:
-#      and:
-#        - equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
-#        - equal: [ "load-shedder-integration-tests", << pipeline.schedule.name >> ]
-#    jobs:
-#      - purchases-load-shedder-integration-tests-build
-#      - run-firebase-tests-purchases-load-shedder-integration-test:
-#          requires:
-#            - purchases-load-shedder-integration-tests-build
+  daily-load-shedder-integration-tests:
+    when:
+      and:
+        - equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
+        - equal: [ "load-shedder-integration-tests", << pipeline.schedule.name >> ]
+    jobs:
+      - purchases-load-shedder-integration-tests-build
+      - run-firebase-tests-purchases-load-shedder-integration-test:
+          requires:
+            - purchases-load-shedder-integration-tests-build
 
   weekly-run-workflow:
     when:
