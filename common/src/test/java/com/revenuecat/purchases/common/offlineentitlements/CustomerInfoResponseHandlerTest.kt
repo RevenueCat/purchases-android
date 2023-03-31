@@ -8,7 +8,8 @@ import com.revenuecat.purchases.PeriodType
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.DateProvider
-import com.revenuecat.purchases.utils.dummyGoogleRestoredStoreTransaction
+import com.revenuecat.purchases.utils.stubStoreTransactionFromGooglePurchase
+import com.revenuecat.purchases.utils.stubStoreTransactionFromPurchaseHistoryRecord
 import io.mockk.every
 import io.mockk.mockk
 import org.junit.Before
@@ -84,8 +85,9 @@ class CustomerInfoResponseHandlerTest {
         purchaseDate: Date = testDate,
         expirationDate: Date = testDatePlusOneDay
     ): PurchasedProduct {
-        val storeTransaction = dummyGoogleRestoredStoreTransaction(
-            purchaseDate = testDate
+        val storeTransaction = stubStoreTransactionFromPurchaseHistoryRecord(
+            productIds = listOf("product1", "product2"),
+            purchaseTime = testDate.time,
         )
         val purchasedProduct = PurchasedProduct(
             productIdentifier,
