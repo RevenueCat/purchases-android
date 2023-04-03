@@ -102,7 +102,7 @@ class AmazonOfferingsTest {
         val packageProduct = inAppPackageToTest!!.product
         Assertions.assertThat(packageProduct.presentedOfferingIdentifier).isEqualTo(expectedOfferingIdentifier)
     }
-    
+
     @Test
     fun `createPackage creates a Package if package json matches subscription store products`() {
         val monthlyPackageJSON = getAmazonPackageJSON(

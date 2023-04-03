@@ -45,7 +45,7 @@ final class StoreProductAPI {
         check(googleStoreProduct);
         GoogleStoreProduct constructedGoogleStoreProduct = new GoogleStoreProduct(
                 googleStoreProduct.getId(),
-                null,
+                googleStoreProduct.getBasePlanId(),
                 googleStoreProduct.getType(),
                 googleStoreProduct.getPrice(),
                 googleStoreProduct.getTitle(),
@@ -55,6 +55,20 @@ final class StoreProductAPI {
                 googleStoreProduct.getDefaultOption(),
                 googleStoreProduct.getProductDetails(),
                 googleStoreProduct.getPresentedOfferingIdentifier()
+        );
+
+        GoogleStoreProduct constructedGoogleStoreProductWithNullableFieldsNull = new GoogleStoreProduct(
+                googleStoreProduct.getId(),
+                null,
+                googleStoreProduct.getType(),
+                googleStoreProduct.getPrice(),
+                googleStoreProduct.getTitle(),
+                googleStoreProduct.getDescription(),
+                null,
+                null,
+                null,
+                googleStoreProduct.getProductDetails(),
+                null
         );
 
         String productId = constructedGoogleStoreProduct.getProductId();
@@ -77,6 +91,21 @@ final class StoreProductAPI {
                 amazonStoreProduct.getFreeTrialPeriod(),
                 amazonStoreProduct.getOriginalProductJSON(),
                 amazonStoreProduct.getPresentedOfferingIdentifier()
+        );
+
+        AmazonStoreProduct constructedAmazonStoreProductWithNullOfferingId = new AmazonStoreProduct(
+                amazonStoreProduct.getId(),
+                amazonStoreProduct.getType(),
+                amazonStoreProduct.getTitle(),
+                amazonStoreProduct.getDescription(),
+                null,
+                amazonStoreProduct.getPrice(),
+                null,
+                null,
+                amazonStoreProduct.getIconUrl(),
+                null,
+                amazonStoreProduct.getOriginalProductJSON(),
+                null
         );
         String iconUrl = amazonStoreProduct.getIconUrl();
         Period freeTrialPeriod = amazonStoreProduct.getFreeTrialPeriod();
