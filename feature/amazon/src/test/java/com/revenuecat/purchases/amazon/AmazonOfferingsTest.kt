@@ -59,8 +59,8 @@ class AmazonOfferingsTest {
 
     @Test
     fun `createPackage for sub sets presentedOfferingId on Package and product`() {
-        val storeProductAnnual = dummyAmazonProduct(annualTermSku).toStoreProduct("US")
-        val storeProductMap = mapOf(annualTermSku to listOf(storeProductAnnual!!))
+        val storeProductMonthly = dummyAmazonProduct(monthlyTermSku).toStoreProduct("US")
+        val storeProductMap = mapOf(monthlyTermSku to listOf(storeProductMonthly!!))
 
         val packageWithMonthlyProduct = getAmazonPackageJSON(
             packageIdentifier = monthlyPackageID,
