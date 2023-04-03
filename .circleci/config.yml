@@ -409,9 +409,6 @@ workflows:
     jobs:
       - test
       - assemble-sample-app
-      - run-firebase-tests-purchases-load-shedder-integration-test:
-          context:
-            - slack-secrets
 
   deploy:
     when:
