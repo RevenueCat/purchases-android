@@ -73,6 +73,15 @@ commands:
           command: ./gradlew androidDependencies
       - android/save-gradle-cache
 
+  install-ruby:
+    steps:
+      - run:
+          name: Install Ruby
+          command: |
+            apt-get update
+            apt-get install ruby-full
+            gem install bundler
+
   prepare-signing-key:
     steps:
       - run:
@@ -388,6 +397,7 @@ jobs:
       - checkout
       - attach_workspace:
           at: .
+      - install-ruby
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
       - run-firebase-tests:
@@ -493,8 +503,12 @@ workflows:
         - equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
         - equal: [ "load-shedder-integration-tests", << pipeline.schedule.name >> ]
     jobs:
-      - purchases-load-shedder-integration-tests-build
+      - purchases-load-shedder-integration-tests-build:
+          context:
+            - slack-secrets
       - run-firebase-tests-purchases-load-shedder-integration-test:
+          context:
+            - slack-secrets
           requires:
             - purchases-load-shedder-integration-tests-build
 
