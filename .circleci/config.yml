@@ -373,7 +373,7 @@ jobs:
           google-project-id: GOOGLE_PROJECT_ID
       - android/restore-build-cache
       - run:
-          name: Create purchases integration tests apks
+          name: Build and run load shedder integration tests
           command: |
             bundle exec fastlane android run_load_shedder_purchases_integration_tests
       - android/save-build-cache
