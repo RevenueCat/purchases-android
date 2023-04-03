@@ -377,6 +377,10 @@ jobs:
           command: |
             bundle exec fastlane android run_load_shedder_purchases_integration_tests
       - android/save-build-cache
+      - store_artifacts:
+          path: ~/gsutil/
+      - store_test_results:
+          path: ~/gsutil/
 
   run-firebase-tests:
     description: "Run integration tests for Android in Firebase. Variant latestDependencies"
