@@ -374,11 +374,17 @@ DESC
 
   lane :send_slack_load_shedder_integration_test do |options|
     success = options[:success] || false
-    message = success ? "Load Shedder Integration Tests finished successfully" : "Load Shedder Integration Tests failed"
+    message =
+        if success
+            "Android load shedder integration tests V6 finished successfully"
+        else
+            "Android load shedder integration tests V6 failed"
+        end
     slack(
       message: message,
       slack_url: ENV["SLACK_URL_LOAD_SHEDDER_INTEGRATION_TESTS"],
-      success: success
+      success: success,
+      default_payloads: [:git_branch]
     )
   end
 end
