@@ -150,9 +150,7 @@ data class GoogleStoreProduct(
         return GoogleStoreProduct(
             this,
             defaultOptionWithOfferingId,
-            if (subscriptionOptionsWithOfferingIds.isNullOrEmpty()) null else SubscriptionOptions(
-                subscriptionOptionsWithOfferingIds
-            ),
+            subscriptionOptionsWithOfferingIds?.let { SubscriptionOptions(it) },
             offeringId
         )
     }

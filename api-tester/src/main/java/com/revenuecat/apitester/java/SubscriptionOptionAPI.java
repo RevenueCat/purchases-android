@@ -18,8 +18,6 @@ final class SubscriptionOptionAPI {
         String presentedOfferingId = subscriptionOption.getPresentedOfferingIdentifier();
         PurchasingData purchasingData = subscriptionOption.getPurchasingData();
         String id = subscriptionOption.getId();
-
-        GoogleSubscriptionOption googleOption = (GoogleSubscriptionOption) subscriptionOption;
     }
 
     static void checkGoogleSubscriptionOption(GoogleSubscriptionOption googleSubscriptionOption) {
