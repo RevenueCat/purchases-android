@@ -171,6 +171,26 @@ platform :android do
     )
   end
 
+  desc "Build and run purchases module load shedder integration tests"
+  desc "This requires the google cloud cli to be installed and initialized."
+  lane :run_load_shedder_purchases_integration_tests do |options|
+    begin
+      google_project_id = ENV['GOOGLE_PROJECT_ID'] || UI.user_error!('Google project id not found.')
+      build_load_shedder_purchases_integration_tests
+      sh "gcloud firebase test android run --type instrumentation \
+                        --app purchases/test_artifacts/loadShedderIntegrationTest-app.apk \
+                        --test purchases/test_artifacts/loadShedderIntegrationTest-test.apk \
+                        --timeout 2m \
+                        --results-bucket cloud-test-#{google_project_id}"
+      sh "mkdir -p ~/gsutil/"
+      sh "gsutil -m cp -r -U `gsutil ls gs://cloud-test-#{google_project_id} | tail -1` ~/gsutil/ | true"
+    rescue => exception
+      send_slack_load_shedder_integration_test(success: false)
+    else
+      send_slack_load_shedder_integration_test(success: true)
+    end
+  end
+
   def build_purchases_integration_tests(app_name:, api_key:, google_purchase_token:, product_id_to_purchase:,
                                         base_plan_id_to_purchase:, proxy_url: nil, build_type: 'release')
     constants_path = './purchases/src/androidTestIntegrationTest/kotlin/com/revenuecat/purchases/Constants.kt'

@@ -103,6 +103,16 @@ Build purchases module integration tests pointing to production
 
 Build purchases module integration tests pointing to load shedder
 
+### android run_load_shedder_purchases_integration_tests
+
+```sh
+[bundle exec] fastlane android run_load_shedder_purchases_integration_tests
+```
+
+Build and run purchases module load shedder integration tests
+
+This requires the google cloud cli to be installed and initialized.
+
 ### android publish_purchase_tester
 
 ```sh
