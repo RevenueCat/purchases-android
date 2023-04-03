@@ -9,5 +9,6 @@ private class SubscriptionOptionAPI {
         val phases: List<PricingPhase> = subscriptionOption.pricingPhases
         val tags: List<String> = subscriptionOption.tags
         val isBasePlan: Boolean = subscriptionOption.isBasePlan
+        val presentedOfferingId: String? = subscriptionOption.presentedOfferingIdentifier
     }
 }

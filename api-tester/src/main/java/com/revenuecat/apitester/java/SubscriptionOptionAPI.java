@@ -12,6 +12,7 @@ final class SubscriptionOptionAPI {
         List<PricingPhase> pricingPhases = subscriptionOption.getPricingPhases();
         List<String> tags = subscriptionOption.getTags();
         Boolean isBasePlan = subscriptionOption.isBasePlan();
+        String presentedOfferingId = subscriptionOption.getPresentedOfferingIdentifier();
     }
 
 }
