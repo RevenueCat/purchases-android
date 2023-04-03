@@ -7,6 +7,7 @@ package com.revenuecat.purchases
 
 import android.app.Activity
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.utils.STUB_OFFERING_IDENTIFIER
 import com.revenuecat.purchases.utils.stubOfferings
 import com.revenuecat.purchases.utils.stubStoreProduct
@@ -47,9 +48,10 @@ class PurchaseParamsTest {
     fun `Initializing with SubscriptionOption sets proper presentedOfferingIdentifier`() {
         val storeProduct = stubStoreProduct("abc", presentedOfferingId = STUB_OFFERING_IDENTIFIER)
         val (_, offerings) = stubOfferings(storeProduct)
+        val defaultOption = offerings[STUB_OFFERING_IDENTIFIER]!!.monthly!!.product.defaultOption!!
         val purchaseProductParams = PurchaseParams.Builder(
             mockk(),
-            offerings[STUB_OFFERING_IDENTIFIER]!!.monthly!!.product.defaultOption!!
+            defaultOption
         ).build()
 
         assertThat(purchaseProductParams.presentedOfferingIdentifier).isEqualTo(STUB_OFFERING_IDENTIFIER)
