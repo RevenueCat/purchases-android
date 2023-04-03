@@ -130,11 +130,14 @@ data class GoogleStoreProduct(
     /**
      * For internal RevenueCat use.
      *
-     * Creates a copy of this `GoogleStoreProduct` with the specified `offeringId` set.
+     * Creates a copy of this `GoogleStoreProduct` with the specified `offeringId` set on itself and its
+     * `defaultOption`/`subscriptionOptions`.
      */
     override fun copyWithOfferingId(offeringId: String): StoreProduct {
-        val subscriptionOptionsWithOfferingIds = subscriptionOptions?.map {
-            GoogleSubscriptionOption(it as GoogleSubscriptionOption, offeringId)
+        val subscriptionOptionsWithOfferingIds = subscriptionOptions?.mapNotNull {
+            (it as? GoogleSubscriptionOption)?.let { googleOption ->
+                GoogleSubscriptionOption(googleOption, offeringId)
+            }
         }
 
         val defaultOptionWithOfferingId = (defaultOption as? GoogleSubscriptionOption)?.let {
