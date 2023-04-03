@@ -32,6 +32,30 @@ class PurchaseParamsTest {
     }
 
     @Test
+    fun `Initializing with StoreProduct sets proper presentedOfferingIdentifier`() {
+        val storeProduct = stubStoreProduct("abc", presentedOfferingId = STUB_OFFERING_IDENTIFIER)
+        val (_, offerings) = stubOfferings(storeProduct)
+        val purchaseProductParams = PurchaseParams.Builder(
+            mockk(),
+            offerings[STUB_OFFERING_IDENTIFIER]!!.monthly!!.product
+        ).build()
+
+        assertThat(purchaseProductParams.presentedOfferingIdentifier).isEqualTo(STUB_OFFERING_IDENTIFIER)
+    }
+
+    @Test
+    fun `Initializing with SubscriptionOption sets proper presentedOfferingIdentifier`() {
+        val storeProduct = stubStoreProduct("abc", presentedOfferingId = STUB_OFFERING_IDENTIFIER)
+        val (_, offerings) = stubOfferings(storeProduct)
+        val purchaseProductParams = PurchaseParams.Builder(
+            mockk(),
+            offerings[STUB_OFFERING_IDENTIFIER]!!.monthly!!.product.defaultOption!!
+        ).build()
+
+        assertThat(purchaseProductParams.presentedOfferingIdentifier).isEqualTo(STUB_OFFERING_IDENTIFIER)
+    }
+
+    @Test
     fun `Initializing with Package sets proper purchasingData`() {
         val storeProduct = stubStoreProduct("abc")
         val (_, offerings) = stubOfferings(storeProduct)
