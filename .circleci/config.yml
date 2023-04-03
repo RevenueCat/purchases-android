@@ -79,7 +79,7 @@ commands:
           name: Install Ruby
           command: |
             apt-get update
-            yes | apt-get install ruby-full
+            (yes || true) | apt-get install ruby-full
             gem install bundler
 
   prepare-signing-key:
