@@ -429,6 +429,14 @@ workflows:
     jobs:
       - test
       - assemble-sample-app
+      - purchases-load-shedder-integration-tests-build:
+          context:
+            - slack-secrets
+      - run-firebase-tests-purchases-load-shedder-integration-test:
+          context:
+            - slack-secrets
+          requires:
+            - purchases-load-shedder-integration-tests-build
 
   deploy:
     when:
