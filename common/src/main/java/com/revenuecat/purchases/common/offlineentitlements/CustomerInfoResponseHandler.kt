@@ -95,7 +95,7 @@ class CustomerInfoResponseHandler(
                 val purchaseDate = Date(product.storeTransaction.purchaseTime)
                 put("purchase_date", Iso8601Utils.format(purchaseDate))
             }
-            product.entitlements?.forEach { entitlement ->
+            product.entitlements.forEach { entitlement ->
                 entitlements.put(entitlement, entitlementDetails)
             }
         }
