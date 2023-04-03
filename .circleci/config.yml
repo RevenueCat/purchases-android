@@ -359,6 +359,10 @@ jobs:
           name: Create purchases integration tests apks
           command: |
             bundle exec fastlane android build_load_shedder_purchases_integration_tests
+      - run:
+          command: |
+            bundle exec fastlane android send_slack_load_shedder_integration_test success:false
+          when: on_fail
       - android/save-build-cache
       - persist_to_workspace:
           root: .
@@ -384,9 +388,19 @@ jobs:
       - checkout
       - attach_workspace:
           at: .
+      - revenuecat/install-gem-unix-dependencies:
+          cache-version: v1
       - run-firebase-tests:
           app_apk_path: purchases/test_artifacts/loadShedderIntegrationTest-app.apk
           test_apk_path: purchases/test_artifacts/loadShedderIntegrationTest-test.apk
+      - run:
+          command: |
+            bundle exec fastlane android send_slack_load_shedder_integration_test success:false
+          when: on_fail
+      - run:
+          command: |
+            bundle exec fastlane android send_slack_load_shedder_integration_test success:true
+          when: on_success
 
   run-firebase-tests:
     description: "Run integration tests for Android in Firebase. Variant latestDependencies"
@@ -423,11 +437,16 @@ workflows:
     jobs:
       - integration-tests-build: *release-branches
       - purchases-integration-tests-build: *release-branches
-      - purchases-load-shedder-integration-tests-build: *release-branches
+      - purchases-load-shedder-integration-tests-build:
+          <<: *release-branches
+          context:
+            - slack-secrets
       - run-firebase-tests-purchases-integration-test:
           requires:
             - purchases-integration-tests-build
       - run-firebase-tests-purchases-load-shedder-integration-test:
+          context:
+            - slack-secrets
           requires:
             - purchases-load-shedder-integration-tests-build
       - run-firebase-tests:

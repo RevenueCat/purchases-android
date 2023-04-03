@@ -371,6 +371,16 @@ DESC
       sh("git -C .. clean -fd")
     end
   end
+
+  lane :send_slack_load_shedder_integration_test do |options|
+    success = options[:success] || false
+    message = success ? "Load Shedder Integration Tests finished successfully" : "Load Shedder Integration Tests failed"
+    slack(
+      message: message,
+      slack_url: ENV["SLACK_URL_LOAD_SHEDDER_INTEGRATION_TESTS"],
+      success: success
+    )
+  end
 end
 
 def is_snapshot_version?(version_name)
