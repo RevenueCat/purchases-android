@@ -686,7 +686,9 @@ class PurchasesTest {
         val (_, offerings) = stubOfferings("onemonth_freetrial")
         val expectedOfferingIdentifier = STUB_OFFERING_IDENTIFIER
 
-        val storeProduct = offerings[STUB_OFFERING_IDENTIFIER]!!.monthly!!.product
+        val storeProduct = offerings[STUB_OFFERING_IDENTIFIER]!!.monthly!!.product.copyWithOfferingId(
+            expectedOfferingIdentifier
+        )
         val purchaseParams = PurchaseParams.Builder(
             mockActivity,
             storeProduct
@@ -712,7 +714,8 @@ class PurchasesTest {
         val (storeProduct, offerings) = stubOfferings("onemonth_freetrial")
         val expectedOfferingIdentifier = STUB_OFFERING_IDENTIFIER
 
-        val option = offerings[STUB_OFFERING_IDENTIFIER]!!.monthly!!.product.defaultOption!!
+        val option =
+            offerings[STUB_OFFERING_IDENTIFIER]!!.monthly!!.product.copyWithOfferingId(expectedOfferingIdentifier).defaultOption!!
         val purchaseParams = PurchaseParams.Builder(
             mockActivity,
             option
@@ -735,7 +738,7 @@ class PurchasesTest {
 
     fun `purchase of OTP Package passes presentedOfferingIdentifier through to purchase`() {
         val expectedOfferingIdentifier = STUB_OFFERING_IDENTIFIER
-        val stubOtpProduct =  stubINAPPStoreProduct(
+        val stubOtpProduct = stubINAPPStoreProduct(
             "tokens",
             expectedOfferingIdentifier
         )
@@ -764,7 +767,7 @@ class PurchasesTest {
     @Test
     fun `purchase of OTP StoreProduct passes presentedOfferingIdentifier through to purchase`() {
         val expectedOfferingIdentifier = STUB_OFFERING_IDENTIFIER
-        val stubOtpProduct =  stubINAPPStoreProduct(
+        val stubOtpProduct = stubINAPPStoreProduct(
             "tokens",
             expectedOfferingIdentifier
         )
@@ -1543,7 +1546,8 @@ class PurchasesTest {
         val upgradePurchaseParams = getPurchaseParams(storeProduct, oldSubId, expectedPersonalizedPrice)
 
         purchases.purchaseWith(
-            upgradePurchaseParams) { _, _ -> }
+            upgradePurchaseParams
+        ) { _, _ -> }
 
         val expectedReplaceProductInfo = ReplaceProductInfo(
             oldTransaction,
@@ -1608,7 +1612,8 @@ class PurchasesTest {
         val upgradePurchaseParams = getPurchaseParams(storeProduct, oldSubId)
 
         purchases.purchaseWith(
-            upgradePurchaseParams) { _, _ -> }
+            upgradePurchaseParams
+        ) { _, _ -> }
 
         val expectedReplaceProductInfo = ReplaceProductInfo(
             oldTransaction,
