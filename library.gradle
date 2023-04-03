@@ -6,6 +6,27 @@ android {
     compileSdkVersion compileVersion
     buildToolsVersion "30.0.3"
 
+    flavorDimensions "extraAPIs"
+    productFlavors {
+        defaults {
+            dimension "extraAPIs"
+        }
+        integrationTest {
+            dimension "extraAPIs"
+            minSdkVersion 21 // Needed because mockk-android requires API 21
+            compileSdkVersion 31
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    kotlinOptions {
+        jvmTarget = JavaVersion.VERSION_1_8.toString()
+    }
+
     defaultConfig {
         minSdkVersion minVersion
         targetSdkVersion compileVersion
@@ -41,4 +62,4 @@ dependencies {
     testImplementation 'org.assertj:assertj-core:3.13.2'
 }
 
-apply plugin: 'com.vanniktech.maven.publish'
+//apply plugin: 'com.vanniktech.maven.publish'

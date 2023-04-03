@@ -2,6 +2,16 @@ apply from: "$rootProject.projectDir/library.gradle"
 apply plugin: 'kotlin-kapt'
 apply plugin: 'org.jetbrains.dokka'
 
+android {
+    productFlavors {
+        integrationTest {
+            packagingOptions {
+                resources.excludes.add("META-INF/*")
+            }
+        }
+    }
+}
+
 dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
     implementation project(":common")
@@ -30,6 +40,17 @@ dependencies {
     testImplementation "com.android.billingclient:billing:$billingVersion"
     testImplementation 'io.mockk:mockk:1.10.0'
     testImplementation 'org.assertj:assertj-core:3.13.2'
+
+    integrationTestImplementation 'androidx.appcompat:appcompat:1.4.1'
+    integrationTestImplementation 'com.google.android.material:material:1.6.0'
+    integrationTestImplementation 'androidx.constraintlayout:constraintlayout:2.1.3'
+    androidTestIntegrationTestImplementation 'androidx.test.espresso:espresso-core:3.4.0'
+    androidTestIntegrationTestImplementation 'androidx.test:runner:1.4.0'
+    androidTestIntegrationTestImplementation 'androidx.test:rules:1.4.0'
+    androidTestIntegrationTestImplementation 'androidx.test.ext:junit-ktx:1.1.3'
+    androidTestIntegrationTestImplementation 'org.assertj:assertj-core:3.22.0'
+    androidTestIntegrationTestImplementation 'io.mockk:mockk-android:1.12.8'
+    androidTestIntegrationTestImplementation 'io.mockk:mockk-agent:1.12.8'
 }
 
 tasks.dokkaHtmlPartial.configure {

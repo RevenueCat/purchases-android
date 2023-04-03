@@ -1,5 +1,5 @@
 buildscript {
-    ext.kotlinVersion = "1.4.10"
+    ext.kotlinVersion = "1.6.21"
     ext.compileVersion = 28
     ext.minVersion = 14
     ext.billingVersion = "4.0.0"

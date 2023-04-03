@@ -1844,7 +1844,8 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
         @JvmStatic
         @JvmSynthetic
         internal fun configure(
-            configuration: PurchasesConfiguration
+            configuration: PurchasesConfiguration,
+            overrideBillingAbstract: BillingAbstract? = null
         ): Purchases {
             with(configuration) {
                 require(context.hasPermission(Manifest.permission.INTERNET)) {
@@ -1878,7 +1879,12 @@ class Purchases @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) intern
 
                 val cache = DeviceCache(prefs, apiKey)
 
-                val billing: BillingAbstract = BillingFactory.createBilling(store, application, backend, cache)
+                val billing: BillingAbstract = overrideBillingAbstract ?: BillingFactory.createBilling(
+                    store,
+                    application,
+                    backend,
+                    cache
+                )
                 val attributionFetcher = AttributionFetcherFactory.createAttributionFetcher(store, dispatcher)
 
                 val subscriberAttributesCache = SubscriberAttributesCache(cache)
