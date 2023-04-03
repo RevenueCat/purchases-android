@@ -58,6 +58,53 @@ class AmazonOfferingsTest {
     }
 
     @Test
+    fun `createPackage for sub sets presentedOfferingId on Package and product`() {
+        val storeProductAnnual = dummyAmazonProduct(annualTermSku).toStoreProduct("US")
+        val storeProductMap = mapOf(annualTermSku to listOf(storeProductAnnual!!))
+
+        val packageWithMonthlyProduct = getAmazonPackageJSON(
+            packageIdentifier = monthlyPackageID,
+            productIdentifier = monthlyTermSku
+        )
+
+        val expectedOfferingIdentifier = "offering"
+        val monthlyPackageToTest = offeringsParser.createPackage(
+            packageWithMonthlyProduct,
+            storeProductMap,
+            expectedOfferingIdentifier
+        )!!
+
+        Assertions.assertThat(monthlyPackageToTest.offering).isEqualTo(expectedOfferingIdentifier)
+
+        val packageProduct = monthlyPackageToTest.product
+        Assertions.assertThat(packageProduct.presentedOfferingIdentifier).isEqualTo(expectedOfferingIdentifier)
+
+        Assertions.assertThat(packageProduct.defaultOption).isNull()
+        Assertions.assertThat(packageProduct.subscriptionOptions).isNull()
+    }
+
+    @Test
+    fun `createPackage for OTP sets offeringId on Package and OTP Product`() {
+        val storeProductInApp = stubINAPPStoreProduct(inAppProductIdentifier)
+        val products = mapOf(
+            inAppProductIdentifier to listOf(storeProductInApp)
+        )
+        val expectedOfferingIdentifier = "OTP_offering"
+        val inAppPackageJson = getLifetimePackageJSON()
+        val inAppPackageToTest = offeringsParser.createPackage(
+            inAppPackageJson,
+            products,
+            expectedOfferingIdentifier
+        )
+
+        Assertions.assertThat(inAppPackageToTest!!.offering).isEqualTo(expectedOfferingIdentifier)
+
+        val packageProduct = inAppPackageToTest!!.product
+        Assertions.assertThat(packageProduct.presentedOfferingIdentifier).isEqualTo(expectedOfferingIdentifier)
+    }
+
+
+    @Test
     fun `createPackage creates a Package if package json matches subscription store products`() {
         val monthlyPackageJSON = getAmazonPackageJSON(
             packageIdentifier = PackageType.MONTHLY.identifier!!,
