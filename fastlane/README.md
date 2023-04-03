@@ -139,6 +139,14 @@ Builds a Purchase Tester APK and prompts for:
 * Amazon pem path (optional)
 
 
+### android send_slack_load_shedder_integration_test
+
+```sh
+[bundle exec] fastlane android send_slack_load_shedder_integration_test
+```
+
+
+
 ----
 
 This README.md is auto-generated and will be re-generated every time [_fastlane_](https://fastlane.tools) is run.
