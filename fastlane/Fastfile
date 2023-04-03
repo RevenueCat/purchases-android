@@ -178,8 +178,8 @@ platform :android do
       google_project_id = ENV['GOOGLE_PROJECT_ID'] || UI.user_error!('Google project id not found.')
       build_load_shedder_purchases_integration_tests
       sh "gcloud firebase test android run --type instrumentation \
-                        --app purchases/test_artifacts/loadShedderIntegrationTest-app.apk \
-                        --test purchases/test_artifacts/loadShedderIntegrationTest-test.apk \
+                        --app ../purchases/test_artifacts/loadShedderIntegrationTest-app.apk \
+                        --test ../purchases/test_artifacts/loadShedderIntegrationTest-test.apk \
                         --timeout 2m \
                         --results-bucket cloud-test-#{google_project_id}"
       sh "mkdir -p ~/gsutil/"
