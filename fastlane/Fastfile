@@ -186,6 +186,7 @@ platform :android do
       sh "gsutil -m cp -r -U `gsutil ls gs://cloud-test-#{google_project_id} | tail -1` ~/gsutil/ | true"
     rescue => exception
       send_slack_load_shedder_integration_test(success: false)
+      raise
     else
       send_slack_load_shedder_integration_test(success: true)
     end
