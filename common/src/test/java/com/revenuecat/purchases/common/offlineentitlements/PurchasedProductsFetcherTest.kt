@@ -421,6 +421,7 @@ class PurchasedProductsFetcherTest {
         )
     }
 
+    // region helpers
     private fun assertPurchasedProduct(
         purchasedProduct: PurchasedProduct,
         purchaseRecord: StoreTransaction,
@@ -474,4 +475,5 @@ class PurchasedProductsFetcherTest {
             deviceCache.getProductEntitlementMapping()
         } returns productEntitlementMapping
     }
+    // endregion
 }
