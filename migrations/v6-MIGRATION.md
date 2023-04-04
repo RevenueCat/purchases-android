@@ -239,6 +239,10 @@ These APIs were deprecated in V5 and are now being removed in V6.
 | CustomerInfo.jsonObject                   |
 | EntitlementInfo.jsonObject                |
 
+### Observer Mode
+
+Observer mode is still supported in v6. Other than updating the SDK version, there are no changes required..
+
 ### Reporting undocumented issues:
 
 Feel free to file an issue! [New RevenueCat Issue](https://github.com/RevenueCat/purchases-android/issues/new/).
