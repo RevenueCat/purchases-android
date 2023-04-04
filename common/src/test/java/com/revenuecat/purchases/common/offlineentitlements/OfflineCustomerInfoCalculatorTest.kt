@@ -249,6 +249,7 @@ class OfflineCustomerInfoCalculatorTest {
         assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
     }
 
+    // region helpers
     private fun verifyEntitlement(
         receivedCustomerInfo: CustomerInfo?,
         entitlementID: String,
@@ -299,4 +300,5 @@ class OfflineCustomerInfoCalculatorTest {
         }
         return products
     }
+    // endregion
 }
