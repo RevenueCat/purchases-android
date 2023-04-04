@@ -26,5 +26,10 @@ enum class VerificationResult {
     /**
      * Verification failed, possibly due to a MiTM attack.
      */
-    FAILED
+    FAILED,
+
+    /**
+     * Entitlements were computed on device.
+     */
+    ENTITLEMENTS_COMPUTED_ON_DEVICE
 }
