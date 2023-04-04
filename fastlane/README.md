@@ -79,13 +79,23 @@ Upload a snapshot release
 
 Prepare next version
 
-### android build_purchases_integration_tests
+### android run_load_shedder_purchases_integration_tests
 
 ```sh
-[bundle exec] fastlane android build_purchases_integration_tests
+[bundle exec] fastlane android run_load_shedder_purchases_integration_tests
 ```
 
-Build purchases module integration tests
+Build and run purchases module load shedder integration tests
+
+This requires the google cloud cli to be installed and initialized.
+
+### android send_slack_load_shedder_integration_test
+
+```sh
+[bundle exec] fastlane android send_slack_load_shedder_integration_test
+```
+
+
 
 ----
 
