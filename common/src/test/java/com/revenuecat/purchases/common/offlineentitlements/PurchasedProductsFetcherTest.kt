@@ -301,14 +301,14 @@ class PurchasedProductsFetcherTest {
 
     @Test
     fun `two active purchased products with same entitlement`() {
-        val entitlements = listOf("pro", "premium")
+        val entitlement = "pro"
 
         val productIdentifierMonthly = "monthly"
         val productIdentifierAnnual = "annual"
 
         val mapOfEntitlements = mapOf(
-            productIdentifierMonthly to listOf(entitlements[0]),
-            productIdentifierAnnual to listOf(entitlements[0])
+            productIdentifierMonthly to listOf(entitlement),
+            productIdentifierAnnual to listOf(entitlement)
         )
 
         mockEntitlementMapping(mapOfEntitlements)
