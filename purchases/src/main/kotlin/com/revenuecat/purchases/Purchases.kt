@@ -144,6 +144,12 @@ class Purchases internal constructor(
     val isAnonymous: Boolean
         get() = identityManager.currentUserIsAnonymous()
 
+    /**
+     * The currently configured store
+     */
+    val store: Store
+        get() = appConfig.store
+
     private val lifecycleHandler: AppLifecycleHandler by lazy {
         AppLifecycleHandler(this)
     }

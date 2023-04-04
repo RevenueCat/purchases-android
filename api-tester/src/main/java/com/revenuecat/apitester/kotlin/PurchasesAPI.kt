@@ -13,6 +13,7 @@ import com.revenuecat.purchases.PurchaseParams
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesConfiguration
 import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.getCustomerInfoWith
 import com.revenuecat.purchases.getOfferingsWith
 import com.revenuecat.purchases.getProductsWith
@@ -81,6 +82,8 @@ private class PurchasesAPI {
         purchases.updatedCustomerInfoListener = UpdatedCustomerInfoListener { _: CustomerInfo? -> }
 
         val anonymous: Boolean = purchases.isAnonymous
+
+        val store: Store = purchases.store
 
         purchases.onAppBackgrounded()
         purchases.onAppForegrounded()
