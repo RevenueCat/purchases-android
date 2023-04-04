@@ -47,7 +47,11 @@ class OfflineCustomerInfoCalculatorTest {
             override val now: Date
                 get() = testDate
         }
-        offlineCustomerInfoCalculator = OfflineCustomerInfoCalculator(purchasedProductsFetcher, testDateProvider, appConfig)
+        offlineCustomerInfoCalculator = OfflineCustomerInfoCalculator(
+            purchasedProductsFetcher,
+            appConfig,
+            testDateProvider
+        )
     }
 
     @Test

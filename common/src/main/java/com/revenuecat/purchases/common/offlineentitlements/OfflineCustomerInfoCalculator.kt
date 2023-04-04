@@ -17,8 +17,8 @@ import java.util.Date
 
 class OfflineCustomerInfoCalculator(
     private val purchasedProductsFetcher: PurchasedProductsFetcher,
-    private val dateProvider: DateProvider = DefaultDateProvider(),
-    private val appConfig: AppConfig
+    private val appConfig: AppConfig,
+    private val dateProvider: DateProvider = DefaultDateProvider()
 ) {
 
     fun computeOfflineCustomerInfo(
