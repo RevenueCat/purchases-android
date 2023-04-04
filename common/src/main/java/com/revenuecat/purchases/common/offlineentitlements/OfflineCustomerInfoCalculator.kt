@@ -29,33 +29,41 @@ class OfflineCustomerInfoCalculator(
         purchasedProductsFetcher.queryPurchasedProducts(
             appUserID,
             onSuccess = { purchasedProducts ->
-                val jsonObject = JSONObject()
-                val requestDate = dateProvider.now
-                jsonObject.apply {
-                    val formattedDate = Iso8601Utils.format(requestDate)
-                    put("request_date", formattedDate)
-                    put("request_date_ms", requestDate.time)
-                    put("subscriber", JSONObject().apply {
-                        put("original_app_user_id", appUserID)
-                        put("original_application_version", "1.0")
-                        put("entitlements", generateEntitlementsResponse(purchasedProducts))
-                        put("first_seen", formattedDate)
-                        val originalPurchaseDate = calculateOriginalPurchaseDate(purchasedProducts)
-                        put("original_purchase_date", originalPurchaseDate)
-                        put("non_subscriptions", JSONObject()) // TODO in another PR
-                        put("subscriptions", generateSubscriptions(purchasedProducts))
-                        put("management_url", "https://play.google.com/store/account/subscriptions")
-                    })
-                }
-
-                val customerInfo = CustomerInfoFactory.buildCustomerInfo(
-                    jsonObject, requestDate, VerificationResult.NOT_REQUESTED
-                )
+                val customerInfo = buildCustomerInfoUsingListOfPurchases(appUserID, purchasedProducts)
                 onSuccess.invoke(customerInfo)
             }, onError = { error ->
                 errorLog(COMPUTING_OFFLINE_CUSTOMER_INFO_FAILED.format(error))
                 onError(error)
             })
+    }
+
+    private fun buildCustomerInfoUsingListOfPurchases(
+        appUserID: String,
+        purchasedProducts: List<PurchasedProduct>
+    ): CustomerInfo {
+        val jsonObject = JSONObject()
+        val requestDate = dateProvider.now
+        jsonObject.apply {
+            val formattedDate = Iso8601Utils.format(requestDate)
+            put("request_date", formattedDate)
+            put("request_date_ms", requestDate.time)
+            put("subscriber", JSONObject().apply {
+                put("original_app_user_id", appUserID)
+                put("original_application_version", "1.0")
+                put("entitlements", generateEntitlementsResponse(purchasedProducts))
+                put("first_seen", formattedDate)
+                val originalPurchaseDate = calculateOriginalPurchaseDate(purchasedProducts)
+                put("original_purchase_date", originalPurchaseDate)
+                put("non_subscriptions", JSONObject()) // TODO in another PR
+                put("subscriptions", generateSubscriptions(purchasedProducts))
+                put("management_url", "https://play.google.com/store/account/subscriptions")
+            })
+        }
+
+        val customerInfo = CustomerInfoFactory.buildCustomerInfo(
+            jsonObject, requestDate, VerificationResult.NOT_REQUESTED
+        )
+        return customerInfo
     }
 
     private fun calculateOriginalPurchaseDate(purchasedProducts: List<PurchasedProduct>): String? {
