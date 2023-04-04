@@ -172,12 +172,17 @@ platform :android do
         product_id_to_purchase: ENV['LOAD_SHEDDER_PRODUCT_ID_TO_PURCHASE'],
         base_plan_id_to_purchase: ENV['LOAD_SHEDDER_BASE_PLAN_ID_TO_PURCHASE']
       )
+
+      # We run the test on google firebase test labs
       sh "gcloud firebase test android run --type instrumentation \
-                        --app ../purchases/test_artifacts/loadShedderIntegrationTest-app.apk \
-                        --test ../purchases/test_artifacts/loadShedderIntegrationTest-test.apk \
-                        --timeout 2m \
-                        --results-bucket cloud-test-#{google_project_id}"
-      sh "mkdir -p ~/gsutil/"
+            --app ../purchases/test_artifacts/loadShedderIntegrationTest-app.apk \
+            --test ../purchases/test_artifacts/loadShedderIntegrationTest-test.apk \
+            --timeout 2m \
+            --results-bucket cloud-test-#{google_project_id}"
+
+      dir_path = File.join(Dir.home, 'gsutil')
+      FileUtils.mkdir_p(dir_path)
+      # We copy the test results from google cloud to the ~/gsutil folder. We use the tail -1 to get the latest
       sh "gsutil -m cp -r -U `gsutil ls gs://cloud-test-#{google_project_id} | tail -1` ~/gsutil/ | true"
     rescue => exception
       send_slack_load_shedder_integration_test(success: false)
