@@ -218,10 +218,10 @@ platform :android do
     # to have same package name
 
     # Build test apk
-    build_purchases_android_test_apk("com.revenuecat.purchases.integrationtests.test", "integrationTest-app", build_type)
+    build_purchases_android_test_apk("com.revenuecat.purchases.integrationtests.test", "#{app_name}-app", build_type)
 
     # Build app apk
-    build_purchases_android_test_apk("com.revenuecat.purchases.integrationtests", "integrationTest-test", build_type)
+    build_purchases_android_test_apk("com.revenuecat.purchases.integrationtests", "#{app_name}-test", build_type)
   end
 
   lane :send_slack_load_shedder_integration_test do |options|
