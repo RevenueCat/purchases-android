@@ -85,6 +85,13 @@ internal class PurchasesFactory(
 
             val httpClient = HTTPClient(appConfig, eTagManager, diagnosticsTracker, signingManager)
             val backendHelper = BackendHelper(apiKey, dispatcher, appConfig, httpClient)
+            val backend = Backend(
+                appConfig,
+                dispatcher,
+                diagnosticsDispatcher,
+                httpClient,
+                backendHelper
+            )
             val cache = DeviceCache(prefs, apiKey)
 
             // Override used for integration tests.
@@ -97,13 +104,6 @@ internal class PurchasesFactory(
                 diagnosticsTracker
             )
 
-            val backend = Backend(
-                appConfig,
-                dispatcher,
-                diagnosticsDispatcher,
-                httpClient,
-                backendHelper
-            )
             val subscriberAttributesPoster = SubscriberAttributesPoster(backendHelper)
 
             val attributionFetcher = AttributionFetcherFactory.createAttributionFetcher(store, dispatcher)
