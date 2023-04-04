@@ -10,12 +10,32 @@ import com.revenuecat.purchases.models.StoreTransaction
 import java.util.Date
 import java.util.concurrent.TimeUnit
 
+/**
+ * This class is responsible for fetching the list of purchased products of a user
+ * from a billing system, and mapping them to `PurchasedProduct` objects.
+ *
+ * @property deviceCache An instance of `DeviceCache`, used to retrieve the mapping
+ * of product entitlements to products.
+ * @property billing An instance of `BillingAbstract`, used to query the purchases from
+ * the billing system.
+ * @property dateProvider An instance of `DateProvider` used to retrieve the current time.
+ */
 class PurchasedProductsFetcher(
     private val deviceCache: DeviceCache,
     private val billing: BillingAbstract,
     private val dateProvider: DateProvider = DefaultDateProvider()
 ) {
 
+    /**
+     * Queries the list of purchased products for a given user from the billing system,
+     * and maps them to `PurchasedProduct` objects.
+     *
+     * @param appUserID The ID of the user for which to retrieve the purchased products.
+     * @param onSuccess A callback function that will be called with the list of `PurchasedProduct`
+     * objects upon a successful query.
+     * @param onError A callback function that will be called with a `PurchasesError` object
+     * upon a failed query.
+     */
     fun queryPurchasedProducts(
         appUserID: String,
         onSuccess: (List<PurchasedProduct>) -> Unit,
