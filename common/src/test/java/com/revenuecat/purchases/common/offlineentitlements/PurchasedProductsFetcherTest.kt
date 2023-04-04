@@ -86,7 +86,16 @@ class PurchasedProductsFetcherTest {
         mockEntitlementMapping(mapOf("monthly" to listOf("pro")))
 
         mockAllPurchases()
-        mockActivePurchases()
+
+        every {
+            billing.queryPurchases(
+                appUserID,
+                onSuccess = captureLambda(),
+                onError = any()
+            )
+        } answers {
+            lambda<(Map<String, StoreTransaction>) -> Unit>().captured.invoke(emptyMap())
+        }
 
         var receivedListOfPurchasedProducts: List<PurchasedProduct>? = null
 
