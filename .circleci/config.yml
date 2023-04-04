@@ -443,6 +443,9 @@ workflows:
       - run-firebase-tests-latest-dependencies:
           requires:
             - integration-tests-build
+      - run-firebase-tests-unityIAP:
+          requires:
+            - integration-tests-build
       - hold:
           type: approval
           requires:
