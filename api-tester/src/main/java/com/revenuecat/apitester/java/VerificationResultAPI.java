@@ -7,6 +7,7 @@ package com.revenuecat.apitester.java;
 //final class VerificationResultAPI {
 //    static void check(final VerificationResult verificationResult) {
 //        switch (verificationResult) {
+//            case ENTITLEMENTS_COMPUTED_ON_DEVICE:
 //            case NOT_REQUESTED:
 //            case VERIFIED:
 //            case FAILED:

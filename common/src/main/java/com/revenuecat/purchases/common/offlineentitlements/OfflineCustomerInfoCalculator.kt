@@ -49,7 +49,7 @@ class OfflineCustomerInfoCalculator(
                 }
 
                 val customerInfo = CustomerInfoFactory.buildCustomerInfo(
-                    jsonObject, requestDate, VerificationResult.NOT_REQUESTED
+                    jsonObject, requestDate, VerificationResult.ENTITLEMENTS_COMPUTED_ON_DEVICE
                 )
                 onSuccess.invoke(customerInfo)
             }, onError = { error ->
