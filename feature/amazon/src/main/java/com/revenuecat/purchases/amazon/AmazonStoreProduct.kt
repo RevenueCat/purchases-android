@@ -112,6 +112,10 @@ data class AmazonStoreProduct(
             offeringId
         )
     }
+
+    override fun equals(other: Any?) = other is AmazonStoreProduct &&
+        ComparableData(this) == ComparableData(other)
+    override fun hashCode() = ComparableData(this).hashCode()
 }
 
 /**
@@ -122,3 +126,38 @@ data class AmazonStoreProduct(
  */
 val StoreProduct.amazonProduct: AmazonStoreProduct?
     get() = this as? AmazonStoreProduct
+
+/**
+ * Contains fields to be used for equality, which ignores jsonObject.
+ * jsonObject is excluded because we're already using the parsed fields for comparisons,
+ * and to avoid complicating parcelization
+ */
+private data class ComparableData(
+    val id: String,
+    val type: ProductType,
+    val title: String,
+    val description: String,
+    val period: Period?,
+    val price: Price,
+    val subscriptionOptions: SubscriptionOptions?,
+    val defaultOption: SubscriptionOption?,
+    val iconUrl: String,
+    val freeTrialPeriod: Period?,
+    val offeringId: String?
+) {
+    constructor(
+        amazonStoreProduct: AmazonStoreProduct
+    ) : this(
+        id = amazonStoreProduct.id,
+        type = amazonStoreProduct.type,
+        title = amazonStoreProduct.title,
+        description = amazonStoreProduct.description,
+        period = amazonStoreProduct.period,
+        price = amazonStoreProduct.price,
+        subscriptionOptions = amazonStoreProduct.subscriptionOptions,
+        defaultOption = amazonStoreProduct.defaultOption,
+        iconUrl = amazonStoreProduct.iconUrl,
+        freeTrialPeriod = amazonStoreProduct.freeTrialPeriod,
+        offeringId = amazonStoreProduct.presentedOfferingIdentifier
+    )
+}

@@ -47,7 +47,9 @@ class StoreProductTest {
         assertThat(copiedProduct.originalProductJSON).isEqualTo(product.originalProductJSON)
         assertThat(copiedProduct.purchasingData.productId).isEqualTo(product.purchasingData.productId)
         assertThat(copiedProduct.purchasingData.productType).isEqualTo(product.purchasingData.productType)
-        assertThat((copiedProduct.purchasingData as AmazonPurchasingData.Product).storeProduct.presentedOfferingIdentifier).isEqualTo(expectedOfferingId)
+        assertThat(
+            (copiedProduct.purchasingData as AmazonPurchasingData.Product).storeProduct.presentedOfferingIdentifier)
+            .isEqualTo(expectedOfferingId)
         assertThat(copiedProduct.presentedOfferingIdentifier).isEqualTo(expectedOfferingId)
 
     }
