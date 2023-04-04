@@ -1,7 +1,6 @@
 package com.revenuecat.purchases.common.offlineentitlements
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.android.billingclient.api.Purchase
 import com.ibm.icu.impl.Assert.fail
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.OwnershipType
@@ -29,8 +28,8 @@ import kotlin.time.Duration.Companion.hours
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
 class OfflineCustomerInfoCalculatorTest {
-    private val testDate = 1.hours.ago()
-    private val testDatePlusOneDay = 1.days.fromNow()
+    private val dateInThePast = 1.hours.ago()
+    private val dateInTheFuture = 1.days.fromNow()
     private val appUserID = "appUserID"
 
     private lateinit var purchasedProductsFetcher: PurchasedProductsFetcher
@@ -48,7 +47,7 @@ class OfflineCustomerInfoCalculatorTest {
         }
         testDateProvider = object : DateProvider {
             override val now: Date
-                get() = testDate
+                get() = dateInThePast
         }
         offlineCustomerInfoCalculator = OfflineCustomerInfoCalculator(
             purchasedProductsFetcher,
@@ -110,7 +109,7 @@ class OfflineCustomerInfoCalculatorTest {
         val secondEntitlementID = "pro_2"
         val purchasedProduct = mockPurchasedProducts(
             entitlementMap = mapOf("prod_1" to listOf(entitlementID, secondEntitlementID)),
-            expirationDates = mapOf("prod_1" to testDatePlusOneDay)
+            expirationDates = mapOf("prod_1" to dateInTheFuture)
         ).first()
 
         var receivedCustomerInfo: CustomerInfo? = null
@@ -139,8 +138,8 @@ class OfflineCustomerInfoCalculatorTest {
                 "prod_2" to listOf(secondEntitlementID, thirdEntitlementID)
             ),
             expirationDates = mapOf(
-                "prod_1" to testDatePlusOneDay,
-                "prod_2" to testDatePlusOneDay
+                "prod_1" to dateInTheFuture,
+                "prod_2" to dateInTheFuture
             )
         )
 
@@ -175,7 +174,7 @@ class OfflineCustomerInfoCalculatorTest {
             ),
             expirationDates = mapOf(
                 "prod_1" to twoDaysFromNow,
-                "prod_2" to testDatePlusOneDay
+                "prod_2" to dateInTheFuture
             )
         )
 
@@ -207,7 +206,7 @@ class OfflineCustomerInfoCalculatorTest {
             ),
             expirationDates = mapOf(
                 "prod_1" to null,
-                "prod_2" to testDatePlusOneDay
+                "prod_2" to dateInTheFuture
             )
         )
 
@@ -254,7 +253,7 @@ class OfflineCustomerInfoCalculatorTest {
         receivedCustomerInfo: CustomerInfo?,
         entitlementID: String,
         purchasedProduct: PurchasedProduct,
-        expirationDate: Date? = testDatePlusOneDay
+        expirationDate: Date? = dateInTheFuture
     ) {
         val receivedEntitlement = receivedCustomerInfo?.entitlements?.get(entitlementID)
         assertThat(receivedEntitlement?.isActive).isTrue
@@ -263,8 +262,8 @@ class OfflineCustomerInfoCalculatorTest {
         assertThat(receivedEntitlement?.billingIssueDetectedAt).isNull()
         assertThat(receivedEntitlement?.expirationDate).isEqualTo(expirationDate)
         assertThat(receivedEntitlement?.isSandbox).isFalse
-        assertThat(receivedEntitlement?.originalPurchaseDate).isEqualTo(testDate)
-        assertThat(receivedEntitlement?.latestPurchaseDate).isEqualTo(testDate)
+        assertThat(receivedEntitlement?.originalPurchaseDate).isEqualTo(dateInThePast)
+        assertThat(receivedEntitlement?.latestPurchaseDate).isEqualTo(dateInThePast)
         assertThat(receivedEntitlement?.ownershipType).isEqualTo(OwnershipType.UNKNOWN)
         assertThat(receivedEntitlement?.periodType).isEqualTo(PeriodType.NORMAL)
         assertThat(receivedEntitlement?.store).isEqualTo(Store.PLAY_STORE)
@@ -273,12 +272,12 @@ class OfflineCustomerInfoCalculatorTest {
 
     private fun mockPurchasedProducts(
         entitlementMap: Map<String, List<String>> = mapOf("product_1" to listOf("pro_1")),
-        expirationDates: Map<String, Date?> = mapOf("product_1" to testDatePlusOneDay)
+        expirationDates: Map<String, Date?> = mapOf("product_1" to dateInTheFuture)
     ): List<PurchasedProduct> {
         val products = entitlementMap.entries.map { (productIdentifier, entitlements) ->
             val storeTransaction = stubStoreTransactionFromPurchaseHistoryRecord(
                 productIds = listOf(productIdentifier),
-                purchaseTime = testDate.time,
+                purchaseTime = dateInThePast.time,
             )
             PurchasedProduct(
                 productIdentifier,
