@@ -14,23 +14,74 @@ import com.revenuecat.purchases.models.RecurrenceMode
 import com.revenuecat.purchases.models.SubscriptionOptions
 import com.revenuecat.purchases.utils.mockProductDetails
 import org.assertj.core.api.AssertionsForInterfaceTypes.assertThat
+import org.json.JSONObject
 import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class StoreProductTest {
 
+    private val price = Price(
+        formatted = "$1.00",
+        amountMicros = 100,
+        currencyCode = "USD"
+    )
+
+    private val period = Period.create("P1M")
+
     @Test
     fun `Two StoreProducts with the same properties are equal and have same hashcode`() {
-        val product1 = dummyAmazonProduct().toStoreProduct("US")!!.amazonProduct
-        val product2 = dummyAmazonProduct().toStoreProduct("US")!!.amazonProduct
+        val product1 = AmazonStoreProduct(
+            id = "productId",
+            type = ProductType.SUBS,
+            title = "title",
+            description = "description",
+            period = period,
+            price = price,
+            subscriptionOptions = null,
+            defaultOption = null,
+            iconUrl = "iconUrl",
+            freeTrialPeriod = period,
+            originalProductJSON = JSONObject(),
+            presentedOfferingIdentifier = "presentedOfferingIdentifier"
+        )
+
+        val product2 = AmazonStoreProduct(
+            id = "productId",
+            type = ProductType.SUBS,
+            title = "title",
+            description = "description",
+            period = period,
+            price = price,
+            subscriptionOptions = null,
+            defaultOption = null,
+            iconUrl = "iconUrl",
+            freeTrialPeriod = period,
+            originalProductJSON = JSONObject(),
+            presentedOfferingIdentifier = "presentedOfferingIdentifier"
+        )
+
         assertThat(product1).isEqualTo(product2)
         assertThat(product1.hashCode()).isEqualTo(product2.hashCode())
     }
 
     @Test
     fun `copyWithOfferingId copies product with offeringId`() {
-        val product = dummyAmazonProduct().toStoreProduct("US")!!.amazonProduct
+        val product = AmazonStoreProduct(
+            id = "productId",
+            type = ProductType.SUBS,
+            title = "title",
+            description = "description",
+            period = period,
+            price = price,
+            subscriptionOptions = null,
+            defaultOption = null,
+            iconUrl = "iconUrl",
+            freeTrialPeriod = period,
+            originalProductJSON = JSONObject(),
+            presentedOfferingIdentifier = "presentedOfferingIdentifier"
+        )
+
         val expectedOfferingId = "newOfferingId"
         val copiedProduct = product!!.copyWithOfferingId(expectedOfferingId).amazonProduct!!
 
