@@ -1,10 +1,13 @@
 package com.revenuecat.purchases.common.offlineentitlements
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.android.billingclient.api.Purchase
 import com.ibm.icu.impl.Assert.fail
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.OwnershipType
 import com.revenuecat.purchases.PeriodType
+import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.DateProvider
@@ -57,9 +60,7 @@ class OfflineCustomerInfoCalculatorTest {
     @Test
     fun `simple customer info`() {
         val entitlementID = "pro_1"
-        val purchasedProduct = mockPurchasedProducts(
-            expirationDate = testDatePlusOneDay
-        ).first()
+        val purchasedProduct = mockPurchasedProducts().first()
 
         var receivedCustomerInfo: CustomerInfo? = null
         offlineCustomerInfoCalculator.computeOfflineCustomerInfo(
@@ -77,9 +78,7 @@ class OfflineCustomerInfoCalculatorTest {
     @Test
     fun `raw data`() {
         val entitlementID = "pro_1"
-        val purchasedProduct = mockPurchasedProducts(
-            expirationDate = testDatePlusOneDay
-        ).first()
+        val purchasedProduct = mockPurchasedProducts().first()
 
         var receivedCustomerInfo: CustomerInfo? = null
         offlineCustomerInfoCalculator.computeOfflineCustomerInfo(
@@ -111,7 +110,7 @@ class OfflineCustomerInfoCalculatorTest {
         val secondEntitlementID = "pro_2"
         val purchasedProduct = mockPurchasedProducts(
             entitlementMap = mapOf("prod_1" to listOf(entitlementID, secondEntitlementID)),
-            expirationDate = testDatePlusOneDay
+            expirationDates = mapOf("prod_1" to testDatePlusOneDay)
         ).first()
 
         var receivedCustomerInfo: CustomerInfo? = null
@@ -139,7 +138,10 @@ class OfflineCustomerInfoCalculatorTest {
                 "prod_1" to listOf(entitlementID),
                 "prod_2" to listOf(secondEntitlementID, thirdEntitlementID)
             ),
-            expirationDate = testDatePlusOneDay
+            expirationDates = mapOf(
+                "prod_1" to testDatePlusOneDay,
+                "prod_2" to testDatePlusOneDay
+            )
         )
 
         var receivedCustomerInfo: CustomerInfo? = null
@@ -161,17 +163,105 @@ class OfflineCustomerInfoCalculatorTest {
         verifyEntitlement(receivedCustomerInfo, thirdEntitlementID, secondPurchasedProduct)
     }
 
+    @Test
+    fun `two products with overlapping entitlements prioritizes longest expiration`() {
+        val entitlementID = "pro_1"
+
+        val twoDaysFromNow = 2.days.fromNow()
+        val purchasedProducts = mockPurchasedProducts(
+            entitlementMap = mapOf(
+                "prod_1" to listOf(entitlementID),
+                "prod_2" to listOf(entitlementID)
+            ),
+            expirationDates = mapOf(
+                "prod_1" to twoDaysFromNow,
+                "prod_2" to testDatePlusOneDay
+            )
+        )
+
+        var receivedCustomerInfo: CustomerInfo? = null
+        offlineCustomerInfoCalculator.computeOfflineCustomerInfo(
+            appUserID,
+            { receivedCustomerInfo = it },
+            { fail("Should've succeeded") }
+        )
+        assertThat(receivedCustomerInfo).isNotNull
+
+        assertThat(receivedCustomerInfo?.activeSubscriptions).isEqualTo(listOf("prod_1", "prod_2").toSet())
+
+        assertThat(receivedCustomerInfo?.entitlements?.all?.size).isEqualTo(1)
+
+        val purchasedProduct = purchasedProducts.first { it.productIdentifier == "prod_1" }
+        verifyEntitlement(receivedCustomerInfo, entitlementID, purchasedProduct, twoDaysFromNow)
+    }
+
+    @Test
+    fun `two products with overlapping entitlements prioritizes the one with no expiration`() {
+        val entitlementID = "pro_1"
+
+        val twoDaysFromNow = 2.days.fromNow()
+        val purchasedProducts = mockPurchasedProducts(
+            entitlementMap = mapOf(
+                "prod_1" to listOf(entitlementID),
+                "prod_2" to listOf(entitlementID)
+            ),
+            expirationDates = mapOf(
+                "prod_1" to null,
+                "prod_2" to testDatePlusOneDay
+            )
+        )
+
+        var receivedCustomerInfo: CustomerInfo? = null
+        offlineCustomerInfoCalculator.computeOfflineCustomerInfo(
+            appUserID,
+            { receivedCustomerInfo = it },
+            { fail("Should've succeeded") }
+        )
+        assertThat(receivedCustomerInfo).isNotNull
+
+        assertThat(receivedCustomerInfo?.activeSubscriptions).isEqualTo(listOf("prod_1", "prod_2").toSet())
+
+        assertThat(receivedCustomerInfo?.entitlements?.all?.size).isEqualTo(1)
+
+        val purchasedProduct = purchasedProducts.first { it.productIdentifier == "prod_1" }
+        verifyEntitlement(receivedCustomerInfo, entitlementID, purchasedProduct, null)
+    }
+
+    @Test
+    fun `error is triggered when fetching products fails`() {
+        val entitlementID = "pro_1"
+        every {
+            purchasedProductsFetcher.queryPurchasedProducts(
+                appUserID,
+                any(),
+                captureLambda()
+            )
+        } answers {
+            lambda<(PurchasesError) -> Unit>().captured.invoke(PurchasesError(PurchasesErrorCode.StoreProblemError))
+        }
+
+        var receivedError: PurchasesError? = null
+        offlineCustomerInfoCalculator.computeOfflineCustomerInfo(
+            appUserID,
+            { fail("Should've failed") },
+            { receivedError = it }
+        )
+        assertThat(receivedError).isNotNull
+        assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
+    }
+
     private fun verifyEntitlement(
         receivedCustomerInfo: CustomerInfo?,
         entitlementID: String,
-        purchasedProduct: PurchasedProduct
+        purchasedProduct: PurchasedProduct,
+        expirationDate: Date? = testDatePlusOneDay
     ) {
         val receivedEntitlement = receivedCustomerInfo?.entitlements?.get(entitlementID)
         assertThat(receivedEntitlement?.isActive).isTrue
         assertThat(receivedEntitlement?.identifier).isEqualTo(entitlementID)
         assertThat(receivedEntitlement?.productIdentifier).isEqualTo(purchasedProduct.productIdentifier)
         assertThat(receivedEntitlement?.billingIssueDetectedAt).isNull()
-        assertThat(receivedEntitlement?.expirationDate).isEqualTo(testDatePlusOneDay)
+        assertThat(receivedEntitlement?.expirationDate).isEqualTo(expirationDate)
         assertThat(receivedEntitlement?.isSandbox).isFalse
         assertThat(receivedEntitlement?.originalPurchaseDate).isEqualTo(testDate)
         assertThat(receivedEntitlement?.latestPurchaseDate).isEqualTo(testDate)
@@ -183,8 +273,7 @@ class OfflineCustomerInfoCalculatorTest {
 
     private fun mockPurchasedProducts(
         entitlementMap: Map<String, List<String>> = mapOf("product_1" to listOf("pro_1")),
-        purchaseDate: Date = testDate,
-        expirationDate: Date = testDatePlusOneDay
+        expirationDates: Map<String, Date?> = mapOf("product_1" to testDatePlusOneDay)
     ): List<PurchasedProduct> {
         val products = entitlementMap.entries.map { (productIdentifier, entitlements) ->
             val storeTransaction = stubStoreTransactionFromPurchaseHistoryRecord(
@@ -196,7 +285,7 @@ class OfflineCustomerInfoCalculatorTest {
                 storeTransaction,
                 true,
                 entitlements,
-                expiresDate = expirationDate
+                expirationDates[productIdentifier]
             )
         }
 

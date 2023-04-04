@@ -78,7 +78,7 @@ class OfflineCustomerInfoCalculator(
                 put("purchase_date", Iso8601Utils.format(purchaseDate))
                 put("store", appConfig.store.name.lowercase())
                 put("unsubscribe_detected_at", JSONObject.NULL)
-                put("expires_date", Iso8601Utils.format(product.expiresDate))
+                put("expires_date", product.expiresDate?.let { Iso8601Utils.format(it) } ?: JSONObject.NULL)
                 put("period_type", "normal") // Best guess, we don't know what period type was purchased
             })
         }
@@ -86,18 +86,26 @@ class OfflineCustomerInfoCalculator(
     }
 
     private fun generateEntitlementsResponse(purchasedProducts: List<PurchasedProduct>): JSONObject {
+        val mapOfEntitlementsToProducts: Map<String, PurchasedProduct> = purchasedProducts
+            // transform into a list of pairs of entitlement to product
+            .flatMap { product -> product.entitlements.map { it to product } }
+            // group by the entitlement name
+            .groupBy({ it.first }, { it.second })
+            // only take the product with the max date
+            .mapValues { (_, products) ->
+                products.maxByOrNull { it.expiresDate?.time ?: Long.MAX_VALUE } ?: products.first()
+            }
+
         val entitlements = JSONObject()
 
-        purchasedProducts.forEach { product ->
+        mapOfEntitlementsToProducts.forEach { (entitlement, product) ->
             val entitlementDetails = JSONObject().apply {
                 put("expires_date", product.expiresDate?.let { Iso8601Utils.format(it) })
                 put("product_identifier", product.productIdentifier)
                 val purchaseDate = Date(product.storeTransaction.purchaseTime)
                 put("purchase_date", Iso8601Utils.format(purchaseDate))
             }
-            product.entitlements.forEach { entitlement ->
-                entitlements.put(entitlement, entitlementDetails)
-            }
+            entitlements.put(entitlement, entitlementDetails)
         }
         return entitlements
     }
