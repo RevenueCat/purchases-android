@@ -20,6 +20,7 @@ import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import com.revenuecat.purchases.common.verification.SigningManager
 import com.revenuecat.purchases.strings.NetworkStrings
 import com.revenuecat.purchases.utils.filterNotNullValues
+import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
 import java.io.BufferedReader
@@ -239,6 +240,16 @@ class HTTPClient(
     private fun Map<String, Any?>.convert(): JSONObject {
         val mapWithoutInnerMaps = mapValues { (_, value) ->
             value.tryCast<Map<String, Any?>>(ifSuccess = { convert() })
+            when (value) {
+                is List<*> -> {
+                    if (value.all { it is String }) {
+                        JSONObject(mapOf("temp_key" to JSONArray(value))).getJSONArray("temp_key")
+                    } else {
+                        value
+                    }
+                }
+                else -> value.tryCast<Map<String, Any?>>(ifSuccess = { convert() })
+            }
         }
         return JSONObject(mapWithoutInnerMaps)
     }
