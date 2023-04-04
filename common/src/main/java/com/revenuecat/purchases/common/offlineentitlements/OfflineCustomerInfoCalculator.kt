@@ -15,7 +15,7 @@ import com.revenuecat.purchases.utils.Iso8601Utils
 import org.json.JSONObject
 import java.util.Date
 
-class CustomerInfoResponseHandler(
+class OfflineCustomerInfoCalculator(
     private val purchasedProductsFetcher: PurchasedProductsFetcher,
     private val dateProvider: DateProvider = DefaultDateProvider(),
     private val appConfig: AppConfig

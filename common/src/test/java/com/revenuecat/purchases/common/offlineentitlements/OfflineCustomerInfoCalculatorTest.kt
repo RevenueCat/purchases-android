@@ -25,7 +25,7 @@ import kotlin.time.Duration.Companion.hours
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
-class CustomerInfoResponseHandlerTest {
+class OfflineCustomerInfoCalculatorTest {
     private val testDate = 1.hours.ago()
     private val testDatePlusOneDay = 1.days.fromNow()
     private val appUserID = "appUserID"
@@ -35,7 +35,7 @@ class CustomerInfoResponseHandlerTest {
 
     private lateinit var testDateProvider: DateProvider
 
-    private lateinit var customerInfoResponseHandler: CustomerInfoResponseHandler
+    private lateinit var offlineCustomerInfoCalculator: OfflineCustomerInfoCalculator
 
     @Before
     fun setUp() {
@@ -47,7 +47,7 @@ class CustomerInfoResponseHandlerTest {
             override val now: Date
                 get() = testDate
         }
-        customerInfoResponseHandler = CustomerInfoResponseHandler(purchasedProductsFetcher, testDateProvider, appConfig)
+        offlineCustomerInfoCalculator = OfflineCustomerInfoCalculator(purchasedProductsFetcher, testDateProvider, appConfig)
     }
 
     @Test
@@ -58,7 +58,7 @@ class CustomerInfoResponseHandlerTest {
         ).first()
 
         var receivedCustomerInfo: CustomerInfo? = null
-        customerInfoResponseHandler.computeOfflineCustomerInfo(
+        offlineCustomerInfoCalculator.computeOfflineCustomerInfo(
             appUserID,
             { receivedCustomerInfo = it },
             { fail("Should've succeeded") }
@@ -78,7 +78,7 @@ class CustomerInfoResponseHandlerTest {
         ).first()
 
         var receivedCustomerInfo: CustomerInfo? = null
-        customerInfoResponseHandler.computeOfflineCustomerInfo(
+        offlineCustomerInfoCalculator.computeOfflineCustomerInfo(
             appUserID,
             { receivedCustomerInfo = it },
             { fail("Should've succeeded") }
@@ -111,7 +111,7 @@ class CustomerInfoResponseHandlerTest {
         ).first()
 
         var receivedCustomerInfo: CustomerInfo? = null
-        customerInfoResponseHandler.computeOfflineCustomerInfo(
+        offlineCustomerInfoCalculator.computeOfflineCustomerInfo(
             appUserID,
             { receivedCustomerInfo = it },
             { fail("Should've succeeded") }
@@ -139,7 +139,7 @@ class CustomerInfoResponseHandlerTest {
         )
 
         var receivedCustomerInfo: CustomerInfo? = null
-        customerInfoResponseHandler.computeOfflineCustomerInfo(
+        offlineCustomerInfoCalculator.computeOfflineCustomerInfo(
             appUserID,
             { receivedCustomerInfo = it },
             { fail("Should've succeeded") }
