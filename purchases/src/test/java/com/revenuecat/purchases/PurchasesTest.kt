@@ -332,9 +332,9 @@ class PurchasesTest {
 
     @Test
     fun `Setting store in the configuration sets it on the Purchases instance`() {
-        val builder = PurchasesConfiguration.Builder(mockContext, "api").store(Store.AMAZON)
+        val builder = PurchasesConfiguration.Builder(mockContext, "api").store(Store.PLAY_STORE)
         Purchases.configure(builder.build())
-        assertThat(Purchases.sharedInstance.store).isEqualTo(Store.AMAZON)
+        assertThat(Purchases.sharedInstance.store).isEqualTo(Store.PLAY_STORE)
     }
 
     // endregion
