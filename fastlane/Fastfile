@@ -166,8 +166,7 @@ platform :android do
         app_name: 'loadShedderIntegrationTest',
         api_key: ENV['LOAD_SHEDDER_REVENUECAT_API_KEY'],
         google_purchase_token: ENV['LOAD_SHEDDER_GOOGLE_PURCHASE_TOKEN'],
-        product_id_to_purchase: ENV['LOAD_SHEDDER_PRODUCT_ID_TO_PURCHASE'],
-        base_plan_id_to_purchase: ENV['LOAD_SHEDDER_BASE_PLAN_ID_TO_PURCHASE']
+        product_id_to_purchase: ENV['LOAD_SHEDDER_PRODUCT_ID_TO_PURCHASE']
       )
 
       # We run the test on google firebase test labs
@@ -229,16 +228,16 @@ platform :android do
     success = options[:success] || false
     message =
         if success
-            "Android load shedder integration tests V6 finished successfully"
+            "Android load shedder integration tests V4 finished successfully"
         else
-            "Android load shedder integration tests V6 failed"
+            "Android load shedder integration tests V4 failed"
         end
-#     slack(
-#       message: message,
-#       slack_url: ENV["SLACK_URL_LOAD_SHEDDER_INTEGRATION_TESTS"],
-#       success: success,
-#       default_payloads: [:git_branch]
-#     )
+    slack(
+      message: message,
+      slack_url: ENV["SLACK_URL_LOAD_SHEDDER_INTEGRATION_TESTS"],
+      success: success,
+      default_payloads: [:git_branch]
+    )
   end
 end
 
