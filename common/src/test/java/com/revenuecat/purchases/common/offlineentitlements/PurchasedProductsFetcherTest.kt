@@ -439,7 +439,7 @@ class PurchasedProductsFetcherTest {
             .isEqualTo(expiresDate)
     }
 
-    private fun mockActivePurchases(vararg storeTransactions: StoreTransaction) {
+    private fun mockActivePurchases(storeTransaction: StoreTransaction) {
         every {
             billing.queryPurchases(
                 appUserID,
@@ -447,7 +447,7 @@ class PurchasedProductsFetcherTest {
                 onError = any()
             )
         } answers {
-            val map = storeTransactions.associateBy { it.purchaseToken.sha1() }
+            val map = mapOf(storeTransaction.purchaseToken.sha1() to storeTransaction)
             lambda<(Map<String, StoreTransaction>) -> Unit>().captured.invoke(map)
         }
     }
