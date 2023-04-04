@@ -337,9 +337,9 @@ platform :android do
     success = options[:success] || false
     message =
         if success
-            "Android load shedder integration tests V6 finished successfully"
+            "Android load shedder integration tests V5 finished successfully"
         else
-            "Android load shedder integration tests V6 failed"
+            "Android load shedder integration tests V5 failed"
         end
     slack(
       message: message,
