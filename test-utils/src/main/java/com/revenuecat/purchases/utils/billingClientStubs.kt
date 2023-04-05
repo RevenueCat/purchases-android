@@ -14,6 +14,9 @@ import com.android.billingclient.api.PurchaseHistoryResponseListener
 import com.android.billingclient.api.PurchasesResponseListener
 import com.android.billingclient.api.QueryPurchaseHistoryParams
 import com.android.billingclient.api.QueryPurchasesParams
+import com.revenuecat.purchases.ProductType
+import com.revenuecat.purchases.google.toStoreTransaction
+import com.revenuecat.purchases.models.StoreTransaction
 import io.mockk.clearStaticMockk
 import io.mockk.every
 import io.mockk.mockk
@@ -168,6 +171,26 @@ fun stubPurchaseHistoryRecord(
                 "purchaseToken": "$purchaseToken"
             }
         """.trimIndent(), signature)
+
+fun stubStoreTransactionFromGooglePurchase(
+    productIds: List<String>,
+    purchaseTime: Long,
+): StoreTransaction {
+    return stubGooglePurchase(
+        productIds,
+        purchaseTime
+    ).toStoreTransaction(ProductType.SUBS, null)
+}
+
+fun stubStoreTransactionFromPurchaseHistoryRecord(
+    productIds: List<String>,
+    purchaseTime: Long,
+): StoreTransaction {
+    return stubPurchaseHistoryRecord(
+        productIds = productIds,
+        purchaseTime = purchaseTime
+    ).toStoreTransaction(ProductType.SUBS)
+}
 
 fun BillingClient.mockQueryPurchaseHistory(
     result: BillingResult,
