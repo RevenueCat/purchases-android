@@ -299,7 +299,7 @@ class StoreProductTest {
 
         assertThat(copiedStoreProduct.presentedOfferingIdentifier).isEqualTo(expectedOfferingId)
         assertThat(copiedStoreProduct.defaultOption!!.presentedOfferingIdentifier).isEqualTo(expectedOfferingId)
-        copiedStoreProduct.subscriptionOptions?.forEach {
+        copiedStoreProduct.subscriptionOptions!!.forEach {
             assertThat(it.presentedOfferingIdentifier).isEqualTo(expectedOfferingId)
         }
     }
