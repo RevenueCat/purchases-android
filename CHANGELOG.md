@@ -1,3 +1,9 @@
+## 6.1.1
+### Bugfixes
+* Remove flavors temporarily to fix deployment (#953) via Toni Rico (@tonidero)
+### Other Changes
+* Add diagnostics tracking for BC5 google methods (#876) via Toni Rico (@tonidero)
+
 ## 6.1.0
 ### New Features
 * Add `OfferPaymentMode` on to `PricingPhase` to describe behavior for offers (#943) via Josh Holtz (@joshdholtz)
