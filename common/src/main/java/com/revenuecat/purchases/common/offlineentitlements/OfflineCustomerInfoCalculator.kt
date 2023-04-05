@@ -2,14 +2,20 @@ package com.revenuecat.purchases.common.offlineentitlements
 
 import com.google.gson.internal.bind.util.ISO8601Utils
 import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.PeriodType
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.AppConfig
+import com.revenuecat.purchases.common.Constants
 import com.revenuecat.purchases.common.CustomerInfoFactory
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.DefaultDateProvider
 import com.revenuecat.purchases.common.errorLog
+import com.revenuecat.purchases.common.responses.CustomerInfoResponseJsonKeys
+import com.revenuecat.purchases.common.responses.EntitlementsResponseJsonKeys
+import com.revenuecat.purchases.common.responses.ProductResponseJsonKeys
 import com.revenuecat.purchases.strings.CustomerInfoStrings.COMPUTING_OFFLINE_CUSTOMER_INFO_FAILED
 import com.revenuecat.purchases.utils.Iso8601Utils
 import org.json.JSONObject
@@ -45,26 +51,28 @@ class OfflineCustomerInfoCalculator(
         val requestDate = dateProvider.now
         jsonObject.apply {
             val formattedDate = Iso8601Utils.format(requestDate)
-            put("request_date", formattedDate)
-            put("request_date_ms", requestDate.time)
-            put("subscriber", JSONObject().apply {
-                put("original_app_user_id", appUserID)
-                put("original_application_version", "1.0")
-                put("entitlements", generateEntitlementsResponse(purchasedProducts))
-                put("first_seen", formattedDate)
+            put(CustomerInfoResponseJsonKeys.REQUEST_DATE, formattedDate)
+            put(CustomerInfoResponseJsonKeys.REQUEST_DATE_MS, requestDate.time)
+            put(CustomerInfoResponseJsonKeys.SUBSCRIBER, JSONObject().apply {
+                put(CustomerInfoResponseJsonKeys.ORIGINAL_APP_USER_ID, appUserID)
+                put(CustomerInfoResponseJsonKeys.ORIGINAL_APPLICATION_VERSION, "1.0")
+                put(CustomerInfoResponseJsonKeys.ENTITLEMENTS, generateEntitlementsResponse(purchasedProducts))
+                put(CustomerInfoResponseJsonKeys.FIRST_SEEN, formattedDate)
                 val originalPurchaseDate = calculateOriginalPurchaseDate(purchasedProducts)
-                put("original_purchase_date", originalPurchaseDate)
-                put("non_subscriptions", JSONObject()) // TODO in another PR
-                put("subscriptions", generateSubscriptions(purchasedProducts))
-                put("management_url", "https://play.google.com/store/account/subscriptions")
+                put(CustomerInfoResponseJsonKeys.ORIGINAL_PURCHASE_DATE, originalPurchaseDate)
+                put(CustomerInfoResponseJsonKeys.NON_SUBSCRIPTIONS, JSONObject()) // TODO in another PR
+                put(CustomerInfoResponseJsonKeys.SUBSCRIPTIONS, generateSubscriptions(purchasedProducts))
+                put(CustomerInfoResponseJsonKeys.MANAGEMENT_URL, determineManagementURL())
             })
         }
 
-        val customerInfo = CustomerInfoFactory.buildCustomerInfo(
+        return CustomerInfoFactory.buildCustomerInfo(
             jsonObject, requestDate, VerificationResult.NOT_REQUESTED
         )
-        return customerInfo
     }
+
+    private fun determineManagementURL() =
+        if (appConfig.store == Store.PLAY_STORE) Constants.GOOGLE_PLAY_MANAGEMENT_URL else JSONObject.NULL
 
     private fun calculateOriginalPurchaseDate(purchasedProducts: List<PurchasedProduct>): String? {
         val minPurchaseDate = purchasedProducts.minOfOrNull { it.storeTransaction.purchaseTime }
@@ -78,16 +86,20 @@ class OfflineCustomerInfoCalculator(
 
         purchasedProducts.filter { it.storeTransaction.type == ProductType.SUBS }.forEach { product ->
             subscriptions.put(product.productIdentifier, JSONObject().apply {
-                put("billing_issues_detected_at", JSONObject.NULL)
-                put("is_sandbox", false)
-                put("original_purchase_date", false)
+                put(ProductResponseJsonKeys.BILLING_ISSUES_DETECTED_AT, JSONObject.NULL)
+                put(ProductResponseJsonKeys.IS_SANDBOX, false)
                 val purchaseDate = Date(product.storeTransaction.purchaseTime)
-                put("original_purchase_date", Iso8601Utils.format(purchaseDate))
-                put("purchase_date", Iso8601Utils.format(purchaseDate))
-                put("store", appConfig.store.name.lowercase())
-                put("unsubscribe_detected_at", JSONObject.NULL)
-                put("expires_date", product.expiresDate?.let { Iso8601Utils.format(it) } ?: JSONObject.NULL)
-                put("period_type", "normal") // Best guess, we don't know what period type was purchased
+                put(ProductResponseJsonKeys.ORIGINAL_PURCHASE_DATE, Iso8601Utils.format(purchaseDate))
+                put(ProductResponseJsonKeys.PURCHASE_DATE, Iso8601Utils.format(purchaseDate))
+                put(ProductResponseJsonKeys.STORE, appConfig.store.name.lowercase())
+                put(ProductResponseJsonKeys.UNSUBSCRIBE_DETECTED_AT, JSONObject.NULL)
+                put(
+                    ProductResponseJsonKeys.EXPIRES_DATE,
+                    product.expiresDate?.let { Iso8601Utils.format(it) } ?: JSONObject.NULL)
+                put(
+                    ProductResponseJsonKeys.PERIOD_TYPE,
+                    PeriodType.NORMAL.name.lowercase()
+                ) // Best guess, we don't know what period type was purchased
             })
         }
         return subscriptions
@@ -108,10 +120,10 @@ class OfflineCustomerInfoCalculator(
 
         mapOfEntitlementsToProducts.forEach { (entitlement, product) ->
             val entitlementDetails = JSONObject().apply {
-                put("expires_date", product.expiresDate?.let { Iso8601Utils.format(it) })
-                put("product_identifier", product.productIdentifier)
+                put(EntitlementsResponseJsonKeys.EXPIRES_DATE, product.expiresDate?.let { Iso8601Utils.format(it) })
+                put(EntitlementsResponseJsonKeys.PRODUCT_IDENTIFIER, product.productIdentifier)
                 val purchaseDate = Date(product.storeTransaction.purchaseTime)
-                put("purchase_date", Iso8601Utils.format(purchaseDate))
+                put(EntitlementsResponseJsonKeys.PURCHASE_DATE, Iso8601Utils.format(purchaseDate))
             }
             entitlements.put(entitlement, entitlementDetails)
         }
