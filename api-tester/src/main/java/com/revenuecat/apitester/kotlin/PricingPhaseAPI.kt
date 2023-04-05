@@ -1,6 +1,6 @@
 package com.revenuecat.apitester.kotlin
 
-import com.revenuecat.purchases.models.PaymentMode
+import com.revenuecat.purchases.models.OfferPaymentMode
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.PricingPhase
@@ -14,6 +14,6 @@ private class PricingPhaseAPI {
         val billingCycleCount: Int? = pricingPhase.billingCycleCount
         val price: Price = pricingPhase.price
 
-        val paymentMode: PaymentMode? = pricingPhase.paymentMode
+        val offerPaymentMode: OfferPaymentMode? = pricingPhase.offerPaymentMode
     }
 }

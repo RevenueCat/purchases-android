@@ -1,6 +1,6 @@
 package com.revenuecat.apitester.java;
 
-import com.revenuecat.purchases.models.PaymentMode;
+import com.revenuecat.purchases.models.OfferPaymentMode;
 import com.revenuecat.purchases.models.Period;
 import com.revenuecat.purchases.models.Price;
 import com.revenuecat.purchases.models.PricingPhase;
@@ -12,8 +12,8 @@ final class PricingPhaseAPI {
         Period billingPeriod = pricingPhase.getBillingPeriod();
         RecurrenceMode recurrenceMode = pricingPhase.getRecurrenceMode();
         Integer billingCycleCount = pricingPhase.getBillingCycleCount();
-        Price pirce = pricingPhase.getPrice();
+        Price price = pricingPhase.getPrice();
 
-        PaymentMode paymentMode = pricingPhase.getPaymentMode();
+        OfferPaymentMode offerPaymentMode = pricingPhase.getOfferPaymentMode();
     }
 }

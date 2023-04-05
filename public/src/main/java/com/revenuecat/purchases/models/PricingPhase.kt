@@ -33,7 +33,7 @@ data class PricingPhase(
     /**
      * Indicates how the pricing phase is charged for FINITE_RECURRING pricing phases
      */
-    val paymentMode: PaymentMode?
+    val offerPaymentMode: OfferPaymentMode?
         get() {
             // billingCycleCount is null for INFINITE_RECURRING or NON_RECURRING recurrence modes
             // but validating for FINITE_RECURRING anyway
@@ -42,11 +42,11 @@ data class PricingPhase(
             }
 
             return if (price.amountMicros == 0L) {
-                PaymentMode.FREE_TRIAL
+                OfferPaymentMode.FREE_TRIAL
             } else if (billingCycleCount == 1) {
-                PaymentMode.PAY_UP_FRONT
+                OfferPaymentMode.PAY_UP_FRONT
             } else if (billingCycleCount != null && billingCycleCount > 1) {
-                PaymentMode.PAY_AS_YOU_GO
+                OfferPaymentMode.PAY_AS_YOU_GO
             } else {
                 null
             }
