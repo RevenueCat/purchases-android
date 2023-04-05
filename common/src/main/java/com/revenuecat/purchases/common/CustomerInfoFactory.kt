@@ -5,6 +5,7 @@ import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.EntitlementInfos
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.networking.HTTPResult
+import com.revenuecat.purchases.common.responses.CustomerInfoResponseJsonKeys
 import com.revenuecat.purchases.utils.Iso8601Utils
 import com.revenuecat.purchases.utils.optDate
 import com.revenuecat.purchases.utils.optNullableString
@@ -29,9 +30,9 @@ object CustomerInfoFactory {
         overrideRequestDate: Date?,
         verificationResult: VerificationResult
     ): CustomerInfo {
-        val subscriber = body.getJSONObject("subscriber")
+        val subscriber = body.getJSONObject(CustomerInfoResponseJsonKeys.SUBSCRIBER)
 
-        val nonSubscriptions = subscriber.getJSONObject("non_subscriptions")
+        val nonSubscriptions = subscriber.getJSONObject(CustomerInfoResponseJsonKeys.NON_SUBSCRIPTIONS)
         val nonSubscriptionsLatestPurchases = JSONObject()
         nonSubscriptions.keys().forEach { productId ->
             val arrayOfNonSubscriptions = nonSubscriptions.getJSONArray(productId)
@@ -44,16 +45,17 @@ object CustomerInfoFactory {
             }
         }
 
-        val subscriptions = subscriber.getJSONObject("subscriptions")
+        val subscriptions = subscriber.getJSONObject(CustomerInfoResponseJsonKeys.SUBSCRIPTIONS)
         val expirationDatesByProduct = subscriptions.parseExpirations()
         val purchaseDatesByProduct =
             subscriptions.parsePurchaseDates() + nonSubscriptionsLatestPurchases.parsePurchaseDates()
 
-        val entitlements = subscriber.optJSONObject("entitlements")
+        val entitlements = subscriber.optJSONObject(CustomerInfoResponseJsonKeys.ENTITLEMENTS)
 
-        val requestDate = overrideRequestDate ?: Iso8601Utils.parse(body.getString("request_date"))
+        val requestDate =
+            overrideRequestDate ?: Iso8601Utils.parse(body.getString(CustomerInfoResponseJsonKeys.REQUEST_DATE))
 
-        val firstSeen = Iso8601Utils.parse(subscriber.getString("first_seen"))
+        val firstSeen = Iso8601Utils.parse(subscriber.getString(CustomerInfoResponseJsonKeys.FIRST_SEEN))
 
         val entitlementInfos = entitlements?.buildEntitlementInfos(
             subscriptions,
@@ -66,10 +68,11 @@ object CustomerInfoFactory {
             // VerificationResult.NOT_REQUESTED
         )
 
-        val managementURL = subscriber.optNullableString("management_url")
-        val originalPurchaseDate = subscriber.optNullableString("original_purchase_date")?.let {
-            Iso8601Utils.parse(it) ?: null
-        }
+        val managementURL = subscriber.optNullableString(CustomerInfoResponseJsonKeys.MANAGEMENT_URL)
+        val originalPurchaseDate =
+            subscriber.optNullableString(CustomerInfoResponseJsonKeys.ORIGINAL_PURCHASE_DATE)?.let {
+                Iso8601Utils.parse(it) ?: null
+            }
 
         return CustomerInfo(
             entitlements = entitlementInfos,
@@ -79,7 +82,7 @@ object CustomerInfoFactory {
             jsonObject = body,
             schemaVersion = body.optInt("schema_version"),
             firstSeen = firstSeen,
-            originalAppUserId = subscriber.optString("original_app_user_id"),
+            originalAppUserId = subscriber.optString(CustomerInfoResponseJsonKeys.ORIGINAL_APP_USER_ID),
             managementURL = managementURL?.let { Uri.parse(it) },
             originalPurchaseDate = originalPurchaseDate
         )
@@ -90,7 +93,7 @@ object CustomerInfoFactory {
      * @throws [JSONException] If the json is invalid.
      */
     private fun JSONObject.parseExpirations(): Map<String, Date?> {
-        return parseDates("expires_date")
+        return parseDates(CustomerInfoResponseJsonKeys.EXPIRES_DATE)
     }
 
     /**
@@ -98,7 +101,7 @@ object CustomerInfoFactory {
      * @throws [JSONException] If the json is invalid.
      */
     private fun JSONObject.parsePurchaseDates(): Map<String, Date?> {
-        return parseDates("purchase_date")
+        return parseDates(CustomerInfoResponseJsonKeys.PURCHASE_DATE)
     }
 
     /**
@@ -112,7 +115,8 @@ object CustomerInfoFactory {
         val it = keys()
         while (it.hasNext()) {
             val productId = it.next()
-            val basePlanId = getJSONObject(productId).optString("product_plan_identifier").takeIf { it.isNotEmpty() }
+            val basePlanId = getJSONObject(productId).optString(CustomerInfoResponseJsonKeys.PRODUCT_PLAN_IDENTIFIER)
+                .takeIf { it.isNotEmpty() }
 
             val expirationObject = getJSONObject(productId)
 
