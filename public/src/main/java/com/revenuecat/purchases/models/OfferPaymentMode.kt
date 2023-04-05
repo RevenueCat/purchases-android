@@ -13,4 +13,3 @@ enum class OfferPaymentMode {
     // No payment
     FREE_TRIAL
 }
-3
