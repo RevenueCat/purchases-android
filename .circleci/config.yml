@@ -349,25 +349,6 @@ jobs:
             - purchases/test_artifacts/integrationTest-app.apk
             - purchases/test_artifacts/integrationTest-test.apk
 
-  purchases-load-shedder-integration-tests-build:
-    <<: *android-executor
-    steps:
-      - checkout
-      - install-sdkman
-      - revenuecat/install-gem-unix-dependencies:
-          cache-version: v1
-      - android/restore-build-cache
-      - run:
-          name: Create purchases integration tests apks
-          command: |
-            bundle exec fastlane android build_load_shedder_purchases_integration_tests
-      - android/save-build-cache
-      - persist_to_workspace:
-          root: .
-          paths:
-            - purchases/test_artifacts/loadShedderIntegrationTest-app.apk
-            - purchases/test_artifacts/loadShedderIntegrationTest-test.apk
-
   run-firebase-tests-purchases-integration-test:
     description: "Run purchases module integration tests for Android in Firebase. Variant integrationTest"
     executor: gcp-cli/google
@@ -380,15 +361,28 @@ jobs:
           test_apk_path: purchases/test_artifacts/integrationTest-test.apk
 
   run-firebase-tests-purchases-load-shedder-integration-test:
-    description: "Run purchases module integration tests for Android in Firebase using the load shedder servers. Variant integrationTest"
-    executor: gcp-cli/google
+    description: "Run purchases module integration tests for Android in Firebase using the load shedder servers"
+    <<: *android-executor
     steps:
       - checkout
-      - attach_workspace:
-          at: .
-      - run-firebase-tests:
-          app_apk_path: purchases/test_artifacts/loadShedderIntegrationTest-app.apk
-          test_apk_path: purchases/test_artifacts/loadShedderIntegrationTest-test.apk
+      - install-sdkman
+      - revenuecat/install-gem-unix-dependencies:
+          cache-version: v1
+      - gcp-cli/install
+      - gcp-cli/initialize:
+          gcloud-service-key: GCLOUD_SERVICE_KEY
+          google-compute-zone: GOOGLE_COMPUTE_ZONE
+          google-project-id: GOOGLE_PROJECT_ID
+      - android/restore-build-cache
+      - run:
+          name: Build and run load shedder integration tests
+          command: |
+            bundle exec fastlane android run_load_shedder_purchases_integration_tests
+      - android/save-build-cache
+      - store_artifacts:
+          path: ~/gsutil/
+      - store_test_results:
+          path: ~/gsutil/
 
   run-firebase-tests-latest-dependencies:
     description: "Run integration tests for Android in Firebase. Variant latestDependencies"
@@ -436,13 +430,13 @@ workflows:
     jobs:
       - integration-tests-build: *release-branches
       - purchases-integration-tests-build: *release-branches
-      - purchases-load-shedder-integration-tests-build: *release-branches
       - run-firebase-tests-purchases-integration-test:
           requires:
             - purchases-integration-tests-build
       - run-firebase-tests-purchases-load-shedder-integration-test:
-          requires:
-            - purchases-load-shedder-integration-tests-build
+          <<: *release-branches
+          context:
+            - slack-secrets
       - run-firebase-tests-latest-dependencies:
           requires:
             - integration-tests-build
@@ -483,10 +477,9 @@ workflows:
         - equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
         - equal: [ "load-shedder-integration-tests-v5", << pipeline.schedule.name >> ]
     jobs:
-      - purchases-load-shedder-integration-tests-build
       - run-firebase-tests-purchases-load-shedder-integration-test:
-          requires:
-            - purchases-load-shedder-integration-tests-build
+          context:
+            - slack-secrets
 
   weekly-run-workflow:
     when:

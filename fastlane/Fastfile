@@ -171,14 +171,35 @@ platform :android do
     )
   end
 
-  desc "Build purchases module integration tests pointing to load shedder"
-  lane :build_load_shedder_purchases_integration_tests do |options|
-    build_purchases_integration_tests(
+  desc "Build and run purchases module load shedder integration tests"
+  desc "This requires the google cloud cli to be installed and initialized."
+  lane :run_load_shedder_purchases_integration_tests do |options|
+    begin
+      google_project_id = ENV['GOOGLE_PROJECT_ID'] || UI.user_error!('Google project id not found.')
+      build_purchases_integration_tests(
         app_name: 'loadShedderIntegrationTest',
         api_key: ENV['LOAD_SHEDDER_REVENUECAT_API_KEY'],
         google_purchase_token: ENV['LOAD_SHEDDER_GOOGLE_PURCHASE_TOKEN'],
         product_id_to_purchase: ENV['LOAD_SHEDDER_PRODUCT_ID_TO_PURCHASE']
-    )
+      )
+
+      # We run the test on google firebase test labs
+      sh "gcloud firebase test android run --type instrumentation \
+            --app ../purchases/test_artifacts/loadShedderIntegrationTest-app.apk \
+            --test ../purchases/test_artifacts/loadShedderIntegrationTest-test.apk \
+            --timeout 2m \
+            --results-bucket cloud-test-#{google_project_id}"
+
+      dir_path = File.join(Dir.home, 'gsutil')
+      FileUtils.mkdir_p(dir_path)
+      # We copy the test results from google cloud to the ~/gsutil folder. We use the tail -1 to get the latest
+      sh "gsutil -m cp -r -U `gsutil ls gs://cloud-test-#{google_project_id} | tail -1` ~/gsutil/ | true"
+    rescue => exception
+      send_slack_load_shedder_integration_test(success: false)
+      raise
+    else
+      send_slack_load_shedder_integration_test(success: true)
+    end
   end
 
   def build_purchases_integration_tests(app_name:, api_key:, google_purchase_token:, product_id_to_purchase:,
@@ -309,6 +330,22 @@ platform :android do
       sh("git reset --hard")
       sh("git clean -fd")
     end
+  end
+
+  lane :send_slack_load_shedder_integration_test do |options|
+    success = options[:success] || false
+    message =
+        if success
+            "Android load shedder integration tests V5 finished successfully"
+        else
+            "Android load shedder integration tests V5 failed"
+        end
+    slack(
+      message: message,
+      slack_url: ENV["SLACK_URL_LOAD_SHEDDER_INTEGRATION_TESTS"],
+      success: success,
+      default_payloads: [:git_branch]
+    )
   end
 end
 
