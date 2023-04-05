@@ -220,7 +220,8 @@ platform :android do
     )
     replace_text_in_files(
       previous_text: "ACTIVE_ENTITLEMENT_IDS_TO_VERIFY",
-      new_text: base_plan_id_to_purchase,
+      new_text: active_entitlements_to_verify,
+      allow_empty: true,
       paths_of_files_to_update: [constants_path]
     )
     unless proxy_url.nil?
