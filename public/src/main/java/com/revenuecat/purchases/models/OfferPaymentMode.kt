@@ -4,7 +4,7 @@ package com.revenuecat.purchases.models
  * Payment mode for offer pricing phases
  */
 enum class OfferPaymentMode {
-    // Subscribers don't pay until specific period ends
+    // Subscribers don't pay until the specified period ends
     FREE_TRIAL,
 
     // Subscribers pay up front for a specified period
