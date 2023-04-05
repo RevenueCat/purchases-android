@@ -12,14 +12,25 @@ object CustomerInfoResponseJsonKeys {
     const val NON_SUBSCRIPTIONS = "non_subscriptions"
     const val SUBSCRIPTIONS = "subscriptions"
     const val MANAGEMENT_URL = "management_url"
+    const val PURCHASE_DATE = "purchase_date"
+}
+
+object EntitlementsResponseJsonKeys {
+    const val EXPIRES_DATE = "expires_date"
+    const val PRODUCT_IDENTIFIER = "product_identifier"
+    const val PRODUCT_PLAN_IDENTIFIER = "product_plan_identifier"
+    const val PURCHASE_DATE = "purchase_date"
+}
+
+object ProductResponseJsonKeys {
     const val BILLING_ISSUES_DETECTED_AT = "billing_issues_detected_at"
     const val IS_SANDBOX = "is_sandbox"
+    const val ORIGINAL_PURCHASE_DATE = "original_purchase_date"
     const val PURCHASE_DATE = "purchase_date"
+    const val PRODUCT_PLAN_IDENTIFIER = "product_plan_identifier"
     const val STORE = "store"
     const val UNSUBSCRIBE_DETECTED_AT = "unsubscribe_detected_at"
     const val EXPIRES_DATE = "expires_date"
     const val PERIOD_TYPE = "period_type"
-    const val PRODUCT_PLAN_IDENTIFIER = "product_plan_identifier"
-    const val PRODUCT_IDENTIFIER = "product_identifier"
     const val OWNERSHIP_TYPE = "ownership_type"
 }

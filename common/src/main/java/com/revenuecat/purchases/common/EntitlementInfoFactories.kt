@@ -6,7 +6,8 @@ import com.revenuecat.purchases.OwnershipType
 import com.revenuecat.purchases.PeriodType
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.VerificationResult
-import com.revenuecat.purchases.common.responses.CustomerInfoResponseJsonKeys
+import com.revenuecat.purchases.common.responses.EntitlementsResponseJsonKeys
+import com.revenuecat.purchases.common.responses.ProductResponseJsonKeys
 import com.revenuecat.purchases.strings.PurchaseStrings
 import com.revenuecat.purchases.utils.DateHelper
 import com.revenuecat.purchases.utils.getDate
@@ -25,7 +26,7 @@ internal fun JSONObject.buildEntitlementInfos(
     keys().forEach { entitlementId ->
         val entitlement = getJSONObject(entitlementId)
 
-        val productIdentifier = entitlement.optString(CustomerInfoResponseJsonKeys.PRODUCT_IDENTIFIER)
+        val productIdentifier = entitlement.optString(EntitlementsResponseJsonKeys.PRODUCT_IDENTIFIER)
         productIdentifier.takeIf { it.isNotEmpty() }
             ?.let { productIdentifier ->
                 if (subscriptions.has(productIdentifier)) {
@@ -83,28 +84,28 @@ internal fun JSONObject.buildEntitlementInfo(
     requestDate: Date,
     verificationResult: VerificationResult
 ): EntitlementInfo {
-    val expirationDate = optDate(CustomerInfoResponseJsonKeys.EXPIRES_DATE)
-    val unsubscribeDetectedAt = productData.optDate(CustomerInfoResponseJsonKeys.UNSUBSCRIBE_DETECTED_AT)
-    val billingIssueDetectedAt = productData.optDate(CustomerInfoResponseJsonKeys.BILLING_ISSUES_DETECTED_AT)
+    val expirationDate = optDate(EntitlementsResponseJsonKeys.EXPIRES_DATE)
+    val unsubscribeDetectedAt = productData.optDate(ProductResponseJsonKeys.UNSUBSCRIBE_DETECTED_AT)
+    val billingIssueDetectedAt = productData.optDate(ProductResponseJsonKeys.BILLING_ISSUES_DETECTED_AT)
 
-    val store = productData.getStore(CustomerInfoResponseJsonKeys.STORE)
+    val store = productData.getStore(ProductResponseJsonKeys.STORE)
 
     return EntitlementInfo(
         identifier = identifier,
         isActive = isDateActive(identifier, expirationDate, requestDate),
         willRenew = getWillRenew(store, expirationDate, unsubscribeDetectedAt,
             billingIssueDetectedAt),
-        periodType = productData.optPeriodType(CustomerInfoResponseJsonKeys.PERIOD_TYPE),
-        latestPurchaseDate = getDate(CustomerInfoResponseJsonKeys.PURCHASE_DATE),
-        originalPurchaseDate = productData.getDate(CustomerInfoResponseJsonKeys.ORIGINAL_PURCHASE_DATE),
+        periodType = productData.optPeriodType(ProductResponseJsonKeys.PERIOD_TYPE),
+        latestPurchaseDate = getDate(ProductResponseJsonKeys.PURCHASE_DATE),
+        originalPurchaseDate = productData.getDate(ProductResponseJsonKeys.ORIGINAL_PURCHASE_DATE),
         expirationDate = expirationDate,
         store = store,
-        productIdentifier = getString(CustomerInfoResponseJsonKeys.PRODUCT_IDENTIFIER),
-        productPlanIdentifier = optNullableString(CustomerInfoResponseJsonKeys.PRODUCT_PLAN_IDENTIFIER),
-        isSandbox = productData.getBoolean(CustomerInfoResponseJsonKeys.IS_SANDBOX),
+        productIdentifier = getString(EntitlementsResponseJsonKeys.PRODUCT_IDENTIFIER),
+        productPlanIdentifier = optNullableString(EntitlementsResponseJsonKeys.PRODUCT_PLAN_IDENTIFIER),
+        isSandbox = productData.getBoolean(ProductResponseJsonKeys.IS_SANDBOX),
         unsubscribeDetectedAt = unsubscribeDetectedAt,
         billingIssueDetectedAt = billingIssueDetectedAt,
-        ownershipType = productData.optOwnershipType(CustomerInfoResponseJsonKeys.OWNERSHIP_TYPE),
+        ownershipType = productData.optOwnershipType(ProductResponseJsonKeys.OWNERSHIP_TYPE),
         jsonObject = this,
         // Trusted entitlements: Commented out until ready to be made public
         // verificationResult = verificationResult

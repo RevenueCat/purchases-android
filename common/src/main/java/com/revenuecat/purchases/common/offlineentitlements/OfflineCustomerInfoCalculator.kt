@@ -14,6 +14,8 @@ import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.DefaultDateProvider
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.responses.CustomerInfoResponseJsonKeys
+import com.revenuecat.purchases.common.responses.EntitlementsResponseJsonKeys
+import com.revenuecat.purchases.common.responses.ProductResponseJsonKeys
 import com.revenuecat.purchases.strings.CustomerInfoStrings.COMPUTING_OFFLINE_CUSTOMER_INFO_FAILED
 import com.revenuecat.purchases.utils.Iso8601Utils
 import org.json.JSONObject
@@ -84,18 +86,18 @@ class OfflineCustomerInfoCalculator(
 
         purchasedProducts.filter { it.storeTransaction.type == ProductType.SUBS }.forEach { product ->
             subscriptions.put(product.productIdentifier, JSONObject().apply {
-                put(CustomerInfoResponseJsonKeys.BILLING_ISSUES_DETECTED_AT, JSONObject.NULL)
-                put(CustomerInfoResponseJsonKeys.IS_SANDBOX, false)
+                put(ProductResponseJsonKeys.BILLING_ISSUES_DETECTED_AT, JSONObject.NULL)
+                put(ProductResponseJsonKeys.IS_SANDBOX, false)
                 val purchaseDate = Date(product.storeTransaction.purchaseTime)
-                put(CustomerInfoResponseJsonKeys.ORIGINAL_PURCHASE_DATE, Iso8601Utils.format(purchaseDate))
-                put(CustomerInfoResponseJsonKeys.PURCHASE_DATE, Iso8601Utils.format(purchaseDate))
-                put(CustomerInfoResponseJsonKeys.STORE, appConfig.store.name.lowercase())
-                put(CustomerInfoResponseJsonKeys.UNSUBSCRIBE_DETECTED_AT, JSONObject.NULL)
+                put(ProductResponseJsonKeys.ORIGINAL_PURCHASE_DATE, Iso8601Utils.format(purchaseDate))
+                put(ProductResponseJsonKeys.PURCHASE_DATE, Iso8601Utils.format(purchaseDate))
+                put(ProductResponseJsonKeys.STORE, appConfig.store.name.lowercase())
+                put(ProductResponseJsonKeys.UNSUBSCRIBE_DETECTED_AT, JSONObject.NULL)
                 put(
-                    CustomerInfoResponseJsonKeys.EXPIRES_DATE,
+                    ProductResponseJsonKeys.EXPIRES_DATE,
                     product.expiresDate?.let { Iso8601Utils.format(it) } ?: JSONObject.NULL)
                 put(
-                    CustomerInfoResponseJsonKeys.PERIOD_TYPE,
+                    ProductResponseJsonKeys.PERIOD_TYPE,
                     PeriodType.NORMAL.name.lowercase()
                 ) // Best guess, we don't know what period type was purchased
             })
@@ -118,10 +120,10 @@ class OfflineCustomerInfoCalculator(
 
         mapOfEntitlementsToProducts.forEach { (entitlement, product) ->
             val entitlementDetails = JSONObject().apply {
-                put(CustomerInfoResponseJsonKeys.EXPIRES_DATE, product.expiresDate?.let { Iso8601Utils.format(it) })
-                put(CustomerInfoResponseJsonKeys.PRODUCT_IDENTIFIER, product.productIdentifier)
+                put(EntitlementsResponseJsonKeys.EXPIRES_DATE, product.expiresDate?.let { Iso8601Utils.format(it) })
+                put(EntitlementsResponseJsonKeys.PRODUCT_IDENTIFIER, product.productIdentifier)
                 val purchaseDate = Date(product.storeTransaction.purchaseTime)
-                put(CustomerInfoResponseJsonKeys.PURCHASE_DATE, Iso8601Utils.format(purchaseDate))
+                put(EntitlementsResponseJsonKeys.PURCHASE_DATE, Iso8601Utils.format(purchaseDate))
             }
             entitlements.put(entitlement, entitlementDetails)
         }

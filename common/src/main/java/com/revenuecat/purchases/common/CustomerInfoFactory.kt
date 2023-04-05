@@ -6,6 +6,7 @@ import com.revenuecat.purchases.EntitlementInfos
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.responses.CustomerInfoResponseJsonKeys
+import com.revenuecat.purchases.common.responses.ProductResponseJsonKeys
 import com.revenuecat.purchases.utils.Iso8601Utils
 import com.revenuecat.purchases.utils.optDate
 import com.revenuecat.purchases.utils.optNullableString
@@ -93,7 +94,7 @@ object CustomerInfoFactory {
      * @throws [JSONException] If the json is invalid.
      */
     private fun JSONObject.parseExpirations(): Map<String, Date?> {
-        return parseDates(CustomerInfoResponseJsonKeys.EXPIRES_DATE)
+        return parseDates(ProductResponseJsonKeys.EXPIRES_DATE)
     }
 
     /**
@@ -115,7 +116,7 @@ object CustomerInfoFactory {
         val it = keys()
         while (it.hasNext()) {
             val productId = it.next()
-            val basePlanId = getJSONObject(productId).optString(CustomerInfoResponseJsonKeys.PRODUCT_PLAN_IDENTIFIER)
+            val basePlanId = getJSONObject(productId).optString(ProductResponseJsonKeys.PRODUCT_PLAN_IDENTIFIER)
                 .takeIf { it.isNotEmpty() }
 
             val expirationObject = getJSONObject(productId)
