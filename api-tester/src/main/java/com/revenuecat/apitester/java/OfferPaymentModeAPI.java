@@ -6,8 +6,8 @@ import com.revenuecat.purchases.models.OfferPaymentMode;
 final class OfferPaymentModeAPI {
     static void check(final OfferPaymentMode offerPaymentMode) {
         switch (offerPaymentMode) {
-            case PAY_AS_YOU_GO:
-            case PAY_UP_FRONT:
+            case DISCOUNTED_RECURRING_PAYMENT:
+            case SINGLE_PAYMENT:
             case FREE_TRIAL:
         }
     }

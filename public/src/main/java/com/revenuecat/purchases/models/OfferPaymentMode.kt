@@ -4,12 +4,12 @@ package com.revenuecat.purchases.models
  * Payment mode for offer pricing phases
  */
 enum class OfferPaymentMode {
-    // Recurring payment
-    PAY_AS_YOU_GO,
+    // Subscribers don't pay until specific period ends
+    FREE_TRIAL,
 
-    // Pay once
-    PAY_UP_FRONT,
+    // Subscribers pay up front for a specified period
+    SINGLE_PAYMENT,
 
-    // No payment
-    FREE_TRIAL
+    // Subscribers pay a discounted amount for a specified number of periods
+    DISCOUNTED_RECURRING_PAYMENT
 }

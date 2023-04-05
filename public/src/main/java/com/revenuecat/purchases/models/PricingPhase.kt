@@ -44,9 +44,9 @@ data class PricingPhase(
             return if (price.amountMicros == 0L) {
                 OfferPaymentMode.FREE_TRIAL
             } else if (billingCycleCount == 1) {
-                OfferPaymentMode.PAY_UP_FRONT
+                OfferPaymentMode.SINGLE_PAYMENT
             } else if (billingCycleCount != null && billingCycleCount > 1) {
-                OfferPaymentMode.PAY_AS_YOU_GO
+                OfferPaymentMode.DISCOUNTED_RECURRING_PAYMENT
             } else {
                 null
             }

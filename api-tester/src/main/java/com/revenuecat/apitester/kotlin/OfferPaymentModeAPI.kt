@@ -6,8 +6,8 @@ import com.revenuecat.purchases.models.OfferPaymentMode
 private class OfferPaymentModeAPI {
     fun check(offerPaymentMode: OfferPaymentMode) {
         when (offerPaymentMode) {
-            OfferPaymentMode.PAY_AS_YOU_GO,
-            OfferPaymentMode.PAY_UP_FRONT,
+            OfferPaymentMode.DISCOUNTED_RECURRING_PAYMENT,
+            OfferPaymentMode.SINGLE_PAYMENT,
             OfferPaymentMode.FREE_TRIAL -> {
             }
         }.exhaustive

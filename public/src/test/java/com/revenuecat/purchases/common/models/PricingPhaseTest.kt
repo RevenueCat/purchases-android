@@ -71,7 +71,7 @@ class PricingPhaseTest {
             price = nonFreePrice
         )
 
-        assertThat(phase.offerPaymentMode).isEqualTo(OfferPaymentMode.PAY_UP_FRONT)
+        assertThat(phase.offerPaymentMode).isEqualTo(OfferPaymentMode.SINGLE_PAYMENT)
     }
 
     @Test
@@ -83,6 +83,6 @@ class PricingPhaseTest {
             price = nonFreePrice
         )
 
-        assertThat(phase.offerPaymentMode).isEqualTo(OfferPaymentMode.PAY_AS_YOU_GO)
+        assertThat(phase.offerPaymentMode).isEqualTo(OfferPaymentMode.DISCOUNTED_RECURRING_PAYMENT)
     }
 }
