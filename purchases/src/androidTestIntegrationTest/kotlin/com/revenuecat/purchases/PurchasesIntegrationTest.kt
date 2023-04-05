@@ -46,6 +46,10 @@ class PurchasesIntegrationTest {
     private val testTimeout = 5.seconds
     private val currentTimestamp = Date().time
     private val testUserId = "android-integration-test-$currentTimestamp"
+    private val entitlementsToVerify = Constants.activeEntitlementIdsToVerify
+        .split(",")
+        .map { it.trim() }
+        .filter { it.isNotEmpty() }
     private val proxyUrl = Constants.proxyUrl.takeIf { it != "NO_PROXY_URL" }
 
     private lateinit var mockBillingAbstract: BillingAbstract
@@ -178,11 +182,12 @@ class PurchasesIntegrationTest {
                     assertThat(transaction).isEqualTo(storeTransaction)
                     assertThat(customerInfo.allPurchaseDatesByProduct.size).isEqualTo(1)
                     val productId = customerInfo.allPurchaseDatesByProduct.keys.first()
-                    // Uncomment to check for the correct product id once changes in load shedder to include
-                    // base plan id are merged
-                    // val expectedProductId = "${Constants.productIdToPurchase}:${Constants.basePlanIdToPurchase}"
-                    // assertThat(productId).isEqualTo(expectedProductId)
-                    assertThat(productId.startsWith(Constants.productIdToPurchase)).isTrue
+                    val expectedProductId = "${Constants.productIdToPurchase}:${Constants.basePlanIdToPurchase}"
+                    assertThat(productId).isEqualTo(expectedProductId)
+                    assertThat(customerInfo.entitlements.active.size).isEqualTo(entitlementsToVerify.size)
+                    entitlementsToVerify.onEach { entitlementId ->
+                        assertThat(customerInfo.entitlements.active[entitlementId]).isNotNull
+                    }
                     lock.countDown()
                 }
             )

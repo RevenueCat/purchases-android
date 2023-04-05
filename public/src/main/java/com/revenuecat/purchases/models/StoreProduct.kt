@@ -67,6 +67,13 @@ interface StoreProduct {
     val purchasingData: PurchasingData
 
     /**
+     * The offering ID this `StoreProduct` was returned from.
+     *
+     * Null if not using RevenueCat offerings system, or if fetched directly via `Purchases.getProducts`
+     */
+    val presentedOfferingIdentifier: String?
+
+    /**
      * The sku of the StoreProduct
      */
     @Deprecated(
@@ -74,4 +81,11 @@ interface StoreProduct {
         ReplaceWith("id")
     )
     val sku: String
+
+    /**
+     * For internal RevenueCat use.
+     *
+     * Creates a copy of this `StoreProduct` with the specified `offeringId` set.
+     */
+    fun copyWithOfferingId(offeringId: String): StoreProduct
 }

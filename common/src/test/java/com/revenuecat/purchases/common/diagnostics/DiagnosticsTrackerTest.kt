@@ -134,16 +134,16 @@ class DiagnosticsTrackerTest {
     }
 
     @Test
-    fun `trackGoogleQuerySkuDetailsRequest tracks correct event`() {
+    fun `trackGoogleQueryProductDetailsRequest tracks correct event`() {
         val expectedProperties = mapOf(
-            "sku_type_queried" to "subs",
+            "product_type_queried" to "subs",
             "billing_response_code" to 12,
             "billing_debug_message" to "test-debug-message",
             "response_time_millis" to 1234L
         )
         every { diagnosticsFileHelper.appendEntryToDiagnosticsFile(any()) } just Runs
-        diagnosticsTracker.trackGoogleQuerySkuDetailsRequest(
-            skuType = "subs",
+        diagnosticsTracker.trackGoogleQueryProductDetailsRequest(
+            productType = "subs",
             billingResponseCode = 12,
             billingDebugMessage = "test-debug-message",
             responseTime = 1234L.milliseconds
@@ -151,7 +151,7 @@ class DiagnosticsTrackerTest {
         verify(exactly = 1) {
             diagnosticsFileHelper.appendEntryToDiagnosticsFile(match { event ->
                 event is DiagnosticsEntry.Event &&
-                    event.name == DiagnosticsEventName.GOOGLE_QUERY_SKU_DETAILS_REQUEST &&
+                    event.name == DiagnosticsEventName.GOOGLE_QUERY_PRODUCT_DETAILS_REQUEST &&
                     event.properties == expectedProperties
             })
         }
@@ -160,14 +160,14 @@ class DiagnosticsTrackerTest {
     @Test
     fun `trackGoogleQueryPurchasesRequest tracks correct event`() {
         val expectedProperties = mapOf(
-            "sku_type_queried" to "subs",
+            "product_type_queried" to "subs",
             "billing_response_code" to 12,
             "billing_debug_message" to "test-debug-message",
             "response_time_millis" to 1234L
         )
         every { diagnosticsFileHelper.appendEntryToDiagnosticsFile(any()) } just Runs
         diagnosticsTracker.trackGoogleQueryPurchasesRequest(
-            skuType = "subs",
+            productType = "subs",
             billingResponseCode = 12,
             billingDebugMessage = "test-debug-message",
             responseTime = 1234L.milliseconds
@@ -184,12 +184,14 @@ class DiagnosticsTrackerTest {
     @Test
     fun `trackGoogleQueryPurchaseHistoryRequest tracks correct event`() {
         val expectedProperties = mapOf(
+            "product_type_queried" to "inapp",
             "billing_response_code" to 12,
             "billing_debug_message" to "test-debug-message",
             "response_time_millis" to 1234L
         )
         every { diagnosticsFileHelper.appendEntryToDiagnosticsFile(any()) } just Runs
         diagnosticsTracker.trackGoogleQueryPurchaseHistoryRequest(
+            productType = "inapp",
             billingResponseCode = 12,
             billingDebugMessage = "test-debug-message",
             responseTime = 1234L.milliseconds

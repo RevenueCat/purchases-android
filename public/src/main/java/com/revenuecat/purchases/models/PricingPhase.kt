@@ -28,4 +28,27 @@ data class PricingPhase(
      * [Price] of the [PricingPhase]
      */
     val price: Price
-) : Parcelable
+) : Parcelable {
+
+    /**
+     * Indicates how the pricing phase is charged for FINITE_RECURRING pricing phases
+     */
+    val offerPaymentMode: OfferPaymentMode?
+        get() {
+            // billingCycleCount is null for INFINITE_RECURRING or NON_RECURRING recurrence modes
+            // but validating for FINITE_RECURRING anyway
+            if (recurrenceMode != RecurrenceMode.FINITE_RECURRING) {
+                return null
+            }
+
+            return if (price.amountMicros == 0L) {
+                OfferPaymentMode.FREE_TRIAL
+            } else if (billingCycleCount == 1) {
+                OfferPaymentMode.SINGLE_PAYMENT
+            } else if (billingCycleCount != null && billingCycleCount > 1) {
+                OfferPaymentMode.DISCOUNTED_RECURRING_PAYMENT
+            } else {
+                null
+            }
+        }
+}

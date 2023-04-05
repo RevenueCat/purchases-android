@@ -68,7 +68,14 @@ data class AmazonStoreProduct(
     /**
      * JSONObject representing the original [Product] class from Amazon.
      */
-    val originalProductJSON: JSONObject
+    val originalProductJSON: JSONObject,
+
+    /**
+     * The offering ID this `AmazonStoreProduct` was returned from.
+     *
+     * Null if not using RevenueCat offerings system, or if fetched directly via `Purchases.getProducts`
+     */
+    override val presentedOfferingIdentifier: String? = null
 ) : StoreProduct {
 
     /**
@@ -83,6 +90,32 @@ data class AmazonStoreProduct(
     )
     override val sku: String
         get() = id
+
+    /**
+     * For internal RevenueCat use.
+     *
+     * Creates a copy of this `AmazonStoreProduct` with the specified `offeringId` set.
+     */
+    override fun copyWithOfferingId(offeringId: String): StoreProduct {
+        return AmazonStoreProduct(
+            this.id,
+            this.type,
+            this.title,
+            this.description,
+            this.period,
+            this.price,
+            this.subscriptionOptions,
+            this.defaultOption,
+            this.iconUrl,
+            this.freeTrialPeriod,
+            this.originalProductJSON,
+            offeringId
+        )
+    }
+
+    override fun equals(other: Any?) = other is AmazonStoreProduct &&
+        ComparableData(this) == ComparableData(other)
+    override fun hashCode() = ComparableData(this).hashCode()
 }
 
 /**
@@ -93,3 +126,38 @@ data class AmazonStoreProduct(
  */
 val StoreProduct.amazonProduct: AmazonStoreProduct?
     get() = this as? AmazonStoreProduct
+
+/**
+ * Contains fields to be used for equality, which ignores jsonObject.
+ * jsonObject is excluded because we're already using the parsed fields for comparisons,
+ * and to avoid complicating parcelization
+ */
+private data class ComparableData(
+    val id: String,
+    val type: ProductType,
+    val title: String,
+    val description: String,
+    val period: Period?,
+    val price: Price,
+    val subscriptionOptions: SubscriptionOptions?,
+    val defaultOption: SubscriptionOption?,
+    val iconUrl: String,
+    val freeTrialPeriod: Period?,
+    val offeringId: String?
+) {
+    constructor(
+        amazonStoreProduct: AmazonStoreProduct
+    ) : this(
+        id = amazonStoreProduct.id,
+        type = amazonStoreProduct.type,
+        title = amazonStoreProduct.title,
+        description = amazonStoreProduct.description,
+        period = amazonStoreProduct.period,
+        price = amazonStoreProduct.price,
+        subscriptionOptions = amazonStoreProduct.subscriptionOptions,
+        defaultOption = amazonStoreProduct.defaultOption,
+        iconUrl = amazonStoreProduct.iconUrl,
+        freeTrialPeriod = amazonStoreProduct.freeTrialPeriod,
+        offeringId = amazonStoreProduct.presentedOfferingIdentifier
+    )
+}
