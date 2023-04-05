@@ -76,14 +76,12 @@ import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.mockkConstructor
-import io.mockk.mockkObject
 import io.mockk.mockkStatic
 import io.mockk.runs
 import io.mockk.slot
 import io.mockk.verify
 import io.mockk.verifyOrder
 import org.assertj.core.api.Assertions.assertThat
-import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.assertj.core.api.AssertionsForClassTypes
 import org.json.JSONObject
 import org.junit.After
@@ -443,10 +441,10 @@ class PurchasesTest {
             productChangeParams,
             onError = { _, _ ->
                 fail("should be successful")
-            }, onSuccess = { _, _ ->
-                callCount++
             }
-        )
+        ) { _, _ ->
+            callCount++
+        }
 
         capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(
             getMockedPurchaseList(productId, purchaseToken, ProductType.SUBS)
@@ -503,9 +501,9 @@ class PurchasesTest {
         purchases.purchaseWith(
             upgradePurchaseParams,
             onError = { _, _ ->
-            }, onSuccess = { _, _ ->
+            }) { _, _ ->
 
-            })
+        }
 
         val expectedReplaceProductInfo = ReplaceProductInfo(
             oldTransaction,
@@ -825,7 +823,7 @@ class PurchasesTest {
             onError = { error, _ ->
                 errorCalled = true
                 assertThat(error.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
-            }, onSuccess = { _, _ -> })
+            }) { _, _ -> }
 
         val error = PurchasesError(PurchasesErrorCode.StoreProblemError)
         capturedPurchasesUpdatedListener.captured.onPurchasesFailedToUpdate(error)
@@ -952,9 +950,9 @@ class PurchasesTest {
             onError = { purchaseError, userCancelled ->
                 receivedError = purchaseError
                 receivedUserCancelled = userCancelled
-            }, onSuccess = { _, _ ->
-                fail("should be error")
-            })
+            }) { _, _ ->
+            fail("should be error")
+        }
 
         assertThat(receivedError).isNotNull
         assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
@@ -977,19 +975,17 @@ class PurchasesTest {
         )
         purchases.purchaseWith(
             purchaseParams,
-            onError = { _, _ -> },
-            onSuccess = { _, _ ->
-                fail("should be error")
-            }
-        )
+            onError = { _, _ -> }
+        ) { _, _ ->
+            fail("should be error")
+        }
 
         purchases.purchaseWith(
             purchaseParams,
             onError = { error, _ ->
                 receivedError = error
-            },
-            onSuccess = { _, _ -> }
-        )
+            }
+        ) { _, _ -> }
         assertThat(receivedError).isNotNull
         assertThat(receivedError!!.code).isNotEqualTo(PurchasesErrorCode.OperationAlreadyInProgressError)
     }
@@ -1013,9 +1009,9 @@ class PurchasesTest {
             onError = { error, userCancelled ->
                 receivedError = error
                 receivedUserCancelled = userCancelled
-            }, onSuccess = { _, _ ->
-                fail("should be error")
-            })
+            }) { _, _ ->
+            fail("should be error")
+        }
 
         val error = PurchasesError(PurchasesErrorCode.StoreProblemError)
         capturedPurchasesUpdatedListener.captured.onPurchasesFailedToUpdate(error)
@@ -1047,9 +1043,8 @@ class PurchasesTest {
 
         purchases.purchaseWith(
             purchaseProductParams,
-            onError = { _, _ -> },
-            onSuccess = { _, _ -> }
-        )
+            onError = { _, _ -> }
+        ) { _, _ -> }
 
         verify(exactly = 1) {
             mockBillingAbstract.makePurchaseAsync(
@@ -1085,9 +1080,8 @@ class PurchasesTest {
         val purchasePackageParams = getPurchaseParams(packageToPurchase)
         purchases.purchaseWith(
             purchasePackageParams,
-            onError = { _, _ -> },
-            onSuccess = { _, _ -> }
-        )
+            onError = { _, _ -> }
+        ) { _, _ -> }
 
         verify(exactly = 1) {
             mockBillingAbstract.makePurchaseAsync(
@@ -1122,10 +1116,10 @@ class PurchasesTest {
             purchasePackageUpgradeParams,
             onError = { _, _ ->
                 fail("should be successful")
-            }, onSuccess = { _, _ ->
-                callCount++
             }
-        )
+        ) { _, _ ->
+            callCount++
+        }
         capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(
             getMockedPurchaseList(
                 offerings[STUB_OFFERING_IDENTIFIER]!!.monthly!!.product.id,
@@ -1187,10 +1181,10 @@ class PurchasesTest {
             onError = { error, userCancelled ->
                 receivedError = error
                 receivedUserCancelled = userCancelled
-            }, onSuccess = { _, _ ->
-                fail("should be error")
             }
-        )
+        ) { _, _ ->
+            fail("should be error")
+        }
         assertThat(receivedError).isNotNull
         assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
         assertThat(receivedUserCancelled).isFalse
@@ -1215,10 +1209,10 @@ class PurchasesTest {
             onError = { error, userCancelled ->
                 receivedError = error
                 receivedUserCancelled = userCancelled
-            }, onSuccess = { _, _ ->
-                fail("should be error")
             }
-        )
+        ) { _, _ ->
+            fail("should be error")
+        }
 
         val error = PurchasesError(PurchasesErrorCode.StoreProblemError)
         capturedPurchasesUpdatedListener.captured.onPurchasesFailedToUpdate(error)
@@ -1249,9 +1243,8 @@ class PurchasesTest {
             onError = { error, userCancelled ->
                 receivedError = error
                 receivedUserCancelled = userCancelled
-            },
-            onSuccess = { _, _ -> }
-        )
+            }
+        ) { _, _ -> }
 
         verify(exactly = 0) {
             mockBillingAbstract.makePurchaseAsync(
@@ -1309,9 +1302,8 @@ class PurchasesTest {
             onError = { error, userCancelled ->
                 receivedError = error
                 receivedUserCancelled = userCancelled
-            },
-            onSuccess = { _, _ -> }
-        )
+            }
+        ) { _, _ -> }
 
         verify(exactly = 0) {
             mockBillingAbstract.makePurchaseAsync(
@@ -1458,7 +1450,7 @@ class PurchasesTest {
     }
 
     @Test
-    fun `isPersonalizedPrice defaults to null for purchase`() {
+    fun `isPersonalizedPrice defaults to null for deprecated purchase`() {
         val (_, offerings) = stubOfferings("onemonth_freetrial")
         val packageToPurchase = offerings[STUB_OFFERING_IDENTIFIER]!!.monthly!!
 
@@ -1483,6 +1475,29 @@ class PurchasesTest {
         }
     }
 
+    fun `isPersonalizedPrice defaults to null for purchase with purchaseparams`() {
+        val (_, offerings) = stubOfferings("onemonth_freetrial")
+        val packageToPurchase = offerings[STUB_OFFERING_IDENTIFIER]!!.monthly!!
+
+        val purchaseParams = PurchaseParams.Builder(mockActivity, packageToPurchase).build()
+
+        purchases.purchaseWith(
+            purchaseParams
+        ) { _, _ -> }
+
+        verify {
+            mockBillingAbstract.makePurchaseAsync(
+                eq(mockActivity),
+                eq(appUserId),
+                packageToPurchase.product.purchasingData,
+                null,
+                STUB_OFFERING_IDENTIFIER,
+                null
+            )
+        }
+    }
+
+    @Test
     fun `isPersonalizedPrice value defaults to null for product change purchase`() {
         val storeProduct = stubStoreProduct("abc")
         val oldSubId = "123"
@@ -1503,7 +1518,8 @@ class PurchasesTest {
         val upgradePurchaseParams = getPurchaseParams(storeProduct, oldSubId)
 
         purchases.purchaseWith(
-            upgradePurchaseParams) { _, _ -> }
+            upgradePurchaseParams
+        ) { _, _ -> }
 
         val expectedReplaceProductInfo = ReplaceProductInfo(
             oldTransaction,
