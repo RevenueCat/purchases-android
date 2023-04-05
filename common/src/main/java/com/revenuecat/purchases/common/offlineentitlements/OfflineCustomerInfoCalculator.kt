@@ -118,10 +118,10 @@ class OfflineCustomerInfoCalculator(
 
         mapOfEntitlementsToProducts.forEach { (entitlement, product) ->
             val entitlementDetails = JSONObject().apply {
-                put("expires_date", product.expiresDate?.let { Iso8601Utils.format(it) })
-                put("product_identifier", product.productIdentifier)
+                put(CustomerInfoResponseJsonKeys.EXPIRES_DATE, product.expiresDate?.let { Iso8601Utils.format(it) })
+                put(CustomerInfoResponseJsonKeys.PRODUCT_IDENTIFIER, product.productIdentifier)
                 val purchaseDate = Date(product.storeTransaction.purchaseTime)
-                put("purchase_date", Iso8601Utils.format(purchaseDate))
+                put(CustomerInfoResponseJsonKeys.PURCHASE_DATE, Iso8601Utils.format(purchaseDate))
             }
             entitlements.put(entitlement, entitlementDetails)
         }
