@@ -29,16 +29,17 @@ fun ProductDetails.toStoreProduct(
     val price = createOneTimeProductPrice() ?: basePlanPrice ?: return null
 
     return GoogleStoreProduct(
-        productId,
-        basePlan?.id,
-        productType.toRevenueCatProductType(),
-        price,
-        title,
-        description,
-        basePlan?.billingPeriod,
-        subscriptionOptions,
-        subscriptionOptions?.defaultOffer,
-        this
+        productId = productId,
+        basePlanId = basePlan?.id,
+        type = productType.toRevenueCatProductType(),
+        price = price,
+        title = title,
+        description = description,
+        period = basePlan?.billingPeriod,
+        subscriptionOptions = subscriptionOptions,
+        defaultOption = subscriptionOptions?.defaultOffer,
+        productDetails = this,
+        presentedOfferingIdentifier = null
     )
 }
 

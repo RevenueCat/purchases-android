@@ -59,6 +59,62 @@ class OfferingsTest {
     }
 
     @Test
+    fun `createPackage for sub sets presentedOfferingId on Package, product, product's defaultOption, and product's subscriptionOptions`() {
+        val storeProductMonthly = getStoreProduct(productIdentifier, monthlyPeriod, monthlyBasePlanId)
+        val storeProductAnnual = getStoreProduct(productIdentifier, annualPeriod, annualBasePlanId)
+
+        val products = mapOf(
+            productIdentifier to listOf(storeProductMonthly, storeProductAnnual)
+        )
+
+        val monthlyPackageJSON = getPackageJSON(
+            packageIdentifier = PackageType.MONTHLY.identifier!!,
+            productIdentifier = storeProductMonthly.id,
+            basePlanId = storeProductMonthly.subscriptionOptions!!.basePlan!!.id
+        )
+
+        val expectedOfferingIdentifier = "offering"
+        val monthlyPackageToTest = offeringsParser.createPackage(
+            monthlyPackageJSON,
+            products,
+            expectedOfferingIdentifier
+        )!!
+
+        assertThat(monthlyPackageToTest.offering).isEqualTo(expectedOfferingIdentifier)
+
+        val packageProduct = monthlyPackageToTest.product
+        assertThat(packageProduct.presentedOfferingIdentifier).isEqualTo(expectedOfferingIdentifier)
+
+        val defaultOption = packageProduct.defaultOption!!
+        assertThat(defaultOption.presentedOfferingIdentifier).isEqualTo(expectedOfferingIdentifier)
+
+        val allOptions = packageProduct.subscriptionOptions!!
+        allOptions.forEach {
+            assertThat(it.presentedOfferingIdentifier).isEqualTo(expectedOfferingIdentifier)
+        }
+    }
+
+    @Test
+    fun `createPackage for OTP sets offeringId on Package and OTP Product`() {
+        val storeProductInApp = stubINAPPStoreProduct(inAppProductIdentifier)
+        val products = mapOf(
+            inAppProductIdentifier to listOf(storeProductInApp)
+        )
+        val expectedOfferingIdentifier = "OTP_offering"
+        val inAppPackageJson = getLifetimePackageJSON()
+        val inAppPackageToTest = offeringsParser.createPackage(
+            inAppPackageJson,
+            products,
+            expectedOfferingIdentifier
+        )
+
+        assertThat(inAppPackageToTest!!.offering).isEqualTo(expectedOfferingIdentifier)
+
+        val packageProduct = inAppPackageToTest!!.product
+        assertThat(packageProduct.presentedOfferingIdentifier).isEqualTo(expectedOfferingIdentifier)
+    }
+
+    @Test
     fun `createPackage creates a Package if package json matches subscription store products`() {
         val storeProductMonthly = getStoreProduct(productIdentifier, monthlyPeriod, monthlyBasePlanId)
         val storeProductAnnual = getStoreProduct(productIdentifier, annualPeriod, annualBasePlanId)
@@ -80,7 +136,8 @@ class OfferingsTest {
             "offering"
         )
         assertThat(monthlyPackageToTest).isNotNull
-        assertThat(monthlyPackageToTest!!.product).isEqualTo(products[productIdentifier]?.get(0))
+        assertThat(monthlyPackageToTest!!.product).usingRecursiveComparison()
+            .isEqualTo(products[productIdentifier]?.get(0))
         assertThat(monthlyPackageToTest.identifier).isEqualTo(PackageType.MONTHLY.identifier)
         assertThat(monthlyPackageToTest.packageType).isEqualTo(PackageType.MONTHLY)
 
@@ -91,7 +148,8 @@ class OfferingsTest {
         )
         val annualPackageToTest = offeringsParser.createPackage(annualPackageJSON, products, "offering")
         assertThat(annualPackageToTest).isNotNull
-        assertThat(annualPackageToTest!!.product).isEqualTo(products[productIdentifier]?.get(1))
+        assertThat(annualPackageToTest!!.product).usingRecursiveComparison()
+            .isEqualTo(products[productIdentifier]?.get(1))
         assertThat(annualPackageToTest.identifier).isEqualTo(annualPackageID)
         assertThat(annualPackageToTest.packageType).isEqualTo(PackageType.ANNUAL)
     }
@@ -113,7 +171,8 @@ class OfferingsTest {
             "offering",
         )
         assertThat(inAppPackageToTest).isNotNull
-        assertThat(inAppPackageToTest!!.product).isEqualTo(products[inAppProductIdentifier]?.get(0))
+        assertThat(inAppPackageToTest!!.product).usingRecursiveComparison()
+            .isEqualTo(products[inAppProductIdentifier]?.get(0))
         assertThat(inAppPackageToTest.identifier).isEqualTo(PackageType.LIFETIME.identifier)
         assertThat(inAppPackageToTest.packageType).isEqualTo(PackageType.LIFETIME)
     }

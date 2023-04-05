@@ -56,11 +56,12 @@ more thorough explanation of the new Google subscription model announced with Bi
 | introductoryPriceCycles       | Replaced with related `PricingPhase` fields in either `SubscriptionOption` or `SubscriptionOptions.introOffer` |
 | originalJson                  | `productDetails` in GoogleStoreProduct; `originalProductJSON` in AmazonStoreProduct                            |
 
-| New                 |
-|---------------------|
-| price               |
-| subscriptionOptions |
-| defaultOption       |
+| New                         |
+|-----------------------------|
+| price                       |
+| subscriptionOptions         |
+| defaultOption               |
+| presentedOfferingIdentifier |
 
 | Removed                           |                                                                                                                    | 
 |-----------------------------------|--------------------------------------------------------------------------------------------------------------------|

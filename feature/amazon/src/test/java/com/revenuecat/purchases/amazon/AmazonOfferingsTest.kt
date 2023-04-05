@@ -58,6 +58,52 @@ class AmazonOfferingsTest {
     }
 
     @Test
+    fun `createPackage for sub sets presentedOfferingId on Package and product`() {
+        val storeProductMonthly = dummyAmazonProduct(monthlyTermSku).toStoreProduct("US")
+        val storeProductMap = mapOf(monthlyTermSku to listOf(storeProductMonthly!!))
+
+        val packageWithMonthlyProduct = getAmazonPackageJSON(
+            packageIdentifier = monthlyPackageID,
+            productIdentifier = monthlyTermSku
+        )
+
+        val expectedOfferingIdentifier = "offering"
+        val monthlyPackageToTest = offeringsParser.createPackage(
+            packageWithMonthlyProduct,
+            storeProductMap,
+            expectedOfferingIdentifier
+        )!!
+
+        Assertions.assertThat(monthlyPackageToTest.offering).isEqualTo(expectedOfferingIdentifier)
+
+        val packageProduct = monthlyPackageToTest.product
+        Assertions.assertThat(packageProduct.presentedOfferingIdentifier).isEqualTo(expectedOfferingIdentifier)
+
+        Assertions.assertThat(packageProduct.defaultOption).isNull()
+        Assertions.assertThat(packageProduct.subscriptionOptions).isNull()
+    }
+
+    @Test
+    fun `createPackage for OTP sets offeringId on Package and OTP Product`() {
+        val storeProductInApp = stubINAPPStoreProduct(inAppProductIdentifier)
+        val products = mapOf(
+            inAppProductIdentifier to listOf(storeProductInApp)
+        )
+        val expectedOfferingIdentifier = "OTP_offering"
+        val inAppPackageJson = getLifetimePackageJSON()
+        val inAppPackageToTest = offeringsParser.createPackage(
+            inAppPackageJson,
+            products,
+            expectedOfferingIdentifier
+        )
+
+        Assertions.assertThat(inAppPackageToTest!!.offering).isEqualTo(expectedOfferingIdentifier)
+
+        val packageProduct = inAppPackageToTest!!.product
+        Assertions.assertThat(packageProduct.presentedOfferingIdentifier).isEqualTo(expectedOfferingIdentifier)
+    }
+
+    @Test
     fun `createPackage creates a Package if package json matches subscription store products`() {
         val monthlyPackageJSON = getAmazonPackageJSON(
             packageIdentifier = PackageType.MONTHLY.identifier!!,
@@ -73,7 +119,8 @@ class AmazonOfferingsTest {
             "offering"
         )
         Assertions.assertThat(monthlyPackageToTest).isNotNull
-        Assertions.assertThat(monthlyPackageToTest!!.product).isEqualTo(productsMap[monthlyTermSku]?.get(0))
+        Assertions.assertThat(monthlyPackageToTest!!.product).usingRecursiveComparison()
+            .isEqualTo(productsMap[monthlyTermSku]?.get(0))
         Assertions.assertThat(monthlyPackageToTest.identifier).isEqualTo(PackageType.MONTHLY.identifier)
         Assertions.assertThat(monthlyPackageToTest.packageType).isEqualTo(PackageType.MONTHLY)
 
@@ -83,7 +130,8 @@ class AmazonOfferingsTest {
         )
         val annualPackageToTest = offeringsParser.createPackage(annualPackageJSON, productsMap, "offering")
         Assertions.assertThat(annualPackageToTest).isNotNull
-        Assertions.assertThat(annualPackageToTest!!.product).isEqualTo(productsMap[storeProductAnnual.id]?.get(0))
+        Assertions.assertThat(annualPackageToTest!!.product).usingRecursiveComparison()
+            .isEqualTo(productsMap[storeProductAnnual.id]?.get(0))
         Assertions.assertThat(annualPackageToTest.identifier).isEqualTo(annualPackageID)
         Assertions.assertThat(annualPackageToTest.packageType).isEqualTo(PackageType.ANNUAL)
     }

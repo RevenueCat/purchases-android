@@ -62,6 +62,8 @@ import com.revenuecat.purchases.utils.createMockOneTimeProductDetails
 import com.revenuecat.purchases.utils.createMockProductDetailsFreeTrial
 import com.revenuecat.purchases.utils.stubFreeTrialPricingPhase
 import com.revenuecat.purchases.utils.stubGooglePurchase
+import com.revenuecat.purchases.utils.stubINAPPStoreProduct
+import com.revenuecat.purchases.utils.stubOTPOffering
 import com.revenuecat.purchases.utils.stubOfferings
 import com.revenuecat.purchases.utils.stubPricingPhase
 import com.revenuecat.purchases.utils.stubPurchaseHistoryRecord
@@ -663,13 +665,43 @@ class PurchasesTest {
     }
 
     @Test
-    fun `purchase of package passes presentedOfferingIdentifier through to purchase`() {
+    fun `purchase of sub Package passes presentedOfferingIdentifier through to purchase`() {
         val (storeProduct, offerings) = stubOfferings("onemonth_freetrial")
         val expectedOfferingIdentifier = STUB_OFFERING_IDENTIFIER
 
-        purchases.purchasePackageWith(
+        val packageToPurchase = offerings[STUB_OFFERING_IDENTIFIER]!!.monthly!!
+        val purchaseParams = PurchaseParams.Builder(
             mockActivity,
-            offerings[STUB_OFFERING_IDENTIFIER]!!.monthly!!
+            packageToPurchase
+        )
+        purchases.purchaseWith(purchaseParams.build()) { _, _ -> }
+
+        verify {
+            mockBillingAbstract.makePurchaseAsync(
+                eq(mockActivity),
+                eq(appUserId),
+                storeProduct.subscriptionOptions!!.first().purchasingData,
+                null,
+                expectedOfferingIdentifier,
+                any()
+            )
+        }
+    }
+
+    @Test
+    fun `purchase of sub StoreProduct passes presentedOfferingIdentifier through to purchase`() {
+        val (_, offerings) = stubOfferings("onemonth_freetrial")
+        val expectedOfferingIdentifier = STUB_OFFERING_IDENTIFIER
+
+        val storeProduct = offerings[STUB_OFFERING_IDENTIFIER]!!.monthly!!.product.copyWithOfferingId(
+            expectedOfferingIdentifier
+        )
+        val purchaseParams = PurchaseParams.Builder(
+            mockActivity,
+            storeProduct
+        )
+        purchases.purchaseWith(
+            purchaseParams.build()
         ) { _, _ -> }
 
         verify {
@@ -677,6 +709,89 @@ class PurchasesTest {
                 eq(mockActivity),
                 eq(appUserId),
                 storeProduct.subscriptionOptions!!.first().purchasingData,
+                null,
+                expectedOfferingIdentifier,
+                any()
+            )
+        }
+    }
+
+    @Test
+    fun `purchase of SubscriptionOption passes presentedOfferingIdentifier through to purchase`() {
+        val (storeProduct, offerings) = stubOfferings("onemonth_freetrial")
+        val expectedOfferingIdentifier = STUB_OFFERING_IDENTIFIER
+
+        val option =
+            offerings[STUB_OFFERING_IDENTIFIER]!!.monthly!!.product.copyWithOfferingId(expectedOfferingIdentifier).defaultOption!!
+        val purchaseParams = PurchaseParams.Builder(
+            mockActivity,
+            option
+        )
+        purchases.purchaseWith(
+            purchaseParams.build()
+        ) { _, _ -> }
+
+        verify {
+            mockBillingAbstract.makePurchaseAsync(
+                eq(mockActivity),
+                eq(appUserId),
+                storeProduct.subscriptionOptions!!.first().purchasingData,
+                null,
+                expectedOfferingIdentifier,
+                any()
+            )
+        }
+    }
+
+    fun `purchase of OTP Package passes presentedOfferingIdentifier through to purchase`() {
+        val expectedOfferingIdentifier = STUB_OFFERING_IDENTIFIER
+        val stubOtpProduct = stubINAPPStoreProduct(
+            "tokens",
+            expectedOfferingIdentifier
+        )
+
+        val (_, stubOTPOffering) = stubOTPOffering(stubOtpProduct)
+
+        val packageToPurchase = stubOTPOffering[expectedOfferingIdentifier]!!.availablePackages.get(0)
+        val purchaseParams = PurchaseParams.Builder(
+            mockActivity,
+            packageToPurchase
+        )
+        purchases.purchaseWith(purchaseParams.build()) { _, _ -> }
+
+        verify {
+            mockBillingAbstract.makePurchaseAsync(
+                eq(mockActivity),
+                eq(appUserId),
+                packageToPurchase.product.purchasingData,
+                null,
+                expectedOfferingIdentifier,
+                any()
+            )
+        }
+    }
+
+    @Test
+    fun `purchase of OTP StoreProduct passes presentedOfferingIdentifier through to purchase`() {
+        val expectedOfferingIdentifier = STUB_OFFERING_IDENTIFIER
+        val stubOtpProduct = stubINAPPStoreProduct(
+            "tokens",
+            expectedOfferingIdentifier
+        )
+
+        val (_, stubOTPOffering) = stubOTPOffering(stubOtpProduct)
+
+        val purchaseParams = PurchaseParams.Builder(
+            mockActivity,
+            stubOtpProduct
+        )
+        purchases.purchaseWith(purchaseParams.build()) { _, _ -> }
+
+        verify {
+            mockBillingAbstract.makePurchaseAsync(
+                eq(mockActivity),
+                eq(appUserId),
+                stubOtpProduct.purchasingData,
                 null,
                 expectedOfferingIdentifier,
                 any()
@@ -1438,7 +1553,8 @@ class PurchasesTest {
         val upgradePurchaseParams = getPurchaseParams(storeProduct, oldSubId, expectedPersonalizedPrice)
 
         purchases.purchaseWith(
-            upgradePurchaseParams) { _, _ -> }
+            upgradePurchaseParams
+        ) { _, _ -> }
 
         val expectedReplaceProductInfo = ReplaceProductInfo(
             oldTransaction,
@@ -1503,7 +1619,8 @@ class PurchasesTest {
         val upgradePurchaseParams = getPurchaseParams(storeProduct, oldSubId)
 
         purchases.purchaseWith(
-            upgradePurchaseParams) { _, _ -> }
+            upgradePurchaseParams
+        ) { _, _ -> }
 
         val expectedReplaceProductInfo = ReplaceProductInfo(
             oldTransaction,

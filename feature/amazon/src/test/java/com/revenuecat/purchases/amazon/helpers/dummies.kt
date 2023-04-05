@@ -45,7 +45,8 @@ fun stubStoreProductForAmazon(
     productId: String,
     type: com.revenuecat.purchases.ProductType = com.revenuecat.purchases.ProductType.SUBS,
     price: Price = Price("\$1.00", MICROS_MULTIPLIER * 1L, "USD"),
-    period: Period = Period(1, Period.Unit.MONTH, "P1M")
+    period: Period = Period(1, Period.Unit.MONTH, "P1M"),
+    presentedOfferingId: String? = null
 ): StoreProduct = object : StoreProduct {
     override val id: String
         get() = productId
@@ -67,8 +68,20 @@ fun stubStoreProductForAmazon(
         get() = StubPurchasingData(
             productId = productId
         )
+    override val presentedOfferingIdentifier: String?
+        get() = presentedOfferingId
     override val sku: String
         get() = productId
+
+    override fun copyWithOfferingId(offeringId: String): StoreProduct {
+        return stubStoreProductForAmazon(
+            productId,
+            type,
+            price,
+            period,
+            offeringId
+        )
+    }
 }
 
 @SuppressWarnings("MatchingDeclarationName")

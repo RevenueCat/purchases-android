@@ -50,10 +50,10 @@ data class PurchaseParams(val builder: Builder) {
             )
 
         constructor(activity: Activity, storeProduct: StoreProduct) :
-            this(activity, storeProduct.purchasingData)
+            this(activity, storeProduct.purchasingData, storeProduct.presentedOfferingIdentifier)
 
         constructor(activity: Activity, subscriptionOption: SubscriptionOption) :
-            this(activity, subscriptionOption.purchasingData)
+            this(activity, subscriptionOption.purchasingData, subscriptionOption.presentedOfferingIdentifier)
 
         @set:JvmSynthetic
         @get:JvmSynthetic

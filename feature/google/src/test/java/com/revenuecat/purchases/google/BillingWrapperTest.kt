@@ -4,7 +4,6 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.os.Handler
-import android.os.Parcel
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.billingclient.api.AcknowledgePurchaseParams
 import com.android.billingclient.api.AcknowledgePurchaseResponseListener
@@ -32,14 +31,14 @@ import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.firstSku
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.sha256
+import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.PricingPhase
 import com.revenuecat.purchases.models.PurchasingData
-import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.models.RecurrenceMode
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
-import com.revenuecat.purchases.models.Period
+import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.models.SubscriptionOptions
 import com.revenuecat.purchases.utils.createMockProductDetailsNoOffers
 import com.revenuecat.purchases.utils.mockOneTimePurchaseOfferDetails
@@ -790,6 +789,8 @@ class BillingWrapperTest {
                 ))
             override val tags: List<String>
                 get() = emptyList()
+            override val presentedOfferingIdentifier: String?
+                get() = null
 
             override val purchasingData: PurchasingData
                 get() = object: PurchasingData {
@@ -848,13 +849,21 @@ class BillingWrapperTest {
                         get() = emptyList()
                     override val tags: List<String>
                         get() = emptyList()
+                    override val presentedOfferingIdentifier: String?
+                        get() = null
                     override val purchasingData: PurchasingData
                         get() = purchasingData
                 }
             override val purchasingData: PurchasingData
                 get() = purchasingData
+            override val presentedOfferingIdentifier: String?
+                get() = null
             override val sku: String
                 get() = id
+
+            override fun copyWithOfferingId(offeringId: String): StoreProduct {
+                return this // this is wrong, just doing for test
+            }
         }
 
         val slot = slot<PurchasesError>()
