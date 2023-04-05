@@ -1475,6 +1475,7 @@ class PurchasesTest {
         }
     }
 
+    @Test
     fun `isPersonalizedPrice defaults to null for purchase with purchaseparams`() {
         val (_, offerings) = stubOfferings("onemonth_freetrial")
         val packageToPurchase = offerings[STUB_OFFERING_IDENTIFIER]!!.monthly!!

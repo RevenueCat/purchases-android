@@ -57,7 +57,7 @@ data class PurchaseParams(val builder: Builder) {
 
         @set:JvmSynthetic
         @get:JvmSynthetic
-        internal var isPersonalizedPrice: Boolean = false
+        internal var isPersonalizedPrice: Boolean? = null
 
         @set:JvmSynthetic
         @get:JvmSynthetic
