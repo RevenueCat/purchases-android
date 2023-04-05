@@ -56,7 +56,7 @@ fun Exception.toPurchasesError(): PurchasesError {
 private fun BackendErrorCode.toPurchasesError(underlyingErrorMessage: String) =
     PurchasesError(this.toPurchasesErrorCode(), underlyingErrorMessage)
 
-fun HTTPResult.toPurchasesError(): PurchasesError {
+internal fun HTTPResult.toPurchasesError(): PurchasesError {
     val errorCode = if (body.has("code")) body.get("code") as Int else null
     val errorMessage = if (body.has("message")) body.get("message") as String else ""
 
