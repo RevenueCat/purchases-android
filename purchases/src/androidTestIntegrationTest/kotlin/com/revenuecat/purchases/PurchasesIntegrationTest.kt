@@ -44,6 +44,10 @@ class PurchasesIntegrationTest {
     private val testTimeout = 5.seconds
     private val currentTimestamp = Date().time
     private val testUserId = "android-integration-test-$currentTimestamp"
+    private val entitlementsToVerify = Constants.activeEntitlementIdsToVerify
+        .split(",")
+        .map { it.trim() }
+        .filter { it.isNotEmpty() }
     private val proxyUrl = Constants.proxyUrl.takeIf { it != "NO_PROXY_URL" }
 
     private lateinit var mockBillingAbstract: BillingAbstract
@@ -175,7 +179,12 @@ class PurchasesIntegrationTest {
                 onError = { error, _ -> fail("Purchase should be successful. Error: ${error.message}") },
                 onSuccess = { transaction, customerInfo ->
                     assertThat(transaction).isEqualTo(storeTransaction)
+                    assertThat(customerInfo.allPurchaseDatesByProduct.size).isEqualTo(1)
                     assertThat(customerInfo.allPurchaseDatesByProduct.containsKey(storeProduct.sku)).isTrue
+                    assertThat(customerInfo.entitlements.active.size).isEqualTo(entitlementsToVerify.size)
+                    entitlementsToVerify.onEach { entitlementId ->
+                        assertThat(customerInfo.entitlements.active[entitlementId]).isNotNull
+                    }
                     lock.countDown()
                 }
             )
