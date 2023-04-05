@@ -18,6 +18,7 @@ class DiagnosticsTracker(
 ) {
     private companion object {
         const val RESPONSE_TIME_MILLIS_KEY = "response_time_millis"
+        const val PRODUCT_TYPE_QUERIED_KEY = "product_type_queried"
     }
 
     fun trackHttpRequestPerformed(
@@ -41,17 +42,17 @@ class DiagnosticsTracker(
         )
     }
 
-    fun trackGoogleQuerySkuDetailsRequest(
-        skuType: String,
+    fun trackGoogleQueryProductDetailsRequest(
+        productType: String,
         billingResponseCode: Int,
         billingDebugMessage: String,
         responseTime: Duration
     ) {
         trackEvent(
             DiagnosticsEntry.Event(
-                name = DiagnosticsEventName.GOOGLE_QUERY_SKU_DETAILS_REQUEST,
+                name = DiagnosticsEventName.GOOGLE_QUERY_PRODUCT_DETAILS_REQUEST,
                 properties = mapOf(
-                    "sku_type_queried" to skuType,
+                    PRODUCT_TYPE_QUERIED_KEY to productType,
                     "billing_response_code" to billingResponseCode,
                     "billing_debug_message" to billingDebugMessage,
                     RESPONSE_TIME_MILLIS_KEY to responseTime.inWholeMilliseconds
@@ -61,7 +62,7 @@ class DiagnosticsTracker(
     }
 
     fun trackGoogleQueryPurchasesRequest(
-        skuType: String,
+        productType: String,
         billingResponseCode: Int,
         billingDebugMessage: String,
         responseTime: Duration
@@ -70,7 +71,7 @@ class DiagnosticsTracker(
             DiagnosticsEntry.Event(
                 name = DiagnosticsEventName.GOOGLE_QUERY_PURCHASES_REQUEST,
                 properties = mapOf(
-                    "sku_type_queried" to skuType,
+                    PRODUCT_TYPE_QUERIED_KEY to productType,
                     "billing_response_code" to billingResponseCode,
                     "billing_debug_message" to billingDebugMessage,
                     RESPONSE_TIME_MILLIS_KEY to responseTime.inWholeMilliseconds
@@ -80,6 +81,7 @@ class DiagnosticsTracker(
     }
 
     fun trackGoogleQueryPurchaseHistoryRequest(
+        productType: String,
         billingResponseCode: Int,
         billingDebugMessage: String,
         responseTime: Duration
@@ -88,6 +90,7 @@ class DiagnosticsTracker(
             DiagnosticsEntry.Event(
                 name = DiagnosticsEventName.GOOGLE_QUERY_PURCHASE_HISTORY_REQUEST,
                 properties = mapOf(
+                    PRODUCT_TYPE_QUERIED_KEY to productType,
                     "billing_response_code" to billingResponseCode,
                     "billing_debug_message" to billingDebugMessage,
                     RESPONSE_TIME_MILLIS_KEY to responseTime.inWholeMilliseconds
