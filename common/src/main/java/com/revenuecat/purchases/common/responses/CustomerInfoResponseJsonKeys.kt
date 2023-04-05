@@ -21,4 +21,5 @@ object CustomerInfoResponseJsonKeys {
     const val PERIOD_TYPE = "period_type"
     const val PRODUCT_PLAN_IDENTIFIER = "product_plan_identifier"
     const val PRODUCT_IDENTIFIER = "product_identifier"
+    const val OWNERSHIP_TYPE = "ownership_type"
 }
