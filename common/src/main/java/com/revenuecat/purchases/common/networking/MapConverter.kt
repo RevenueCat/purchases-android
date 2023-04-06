@@ -17,16 +17,12 @@ class MapConverter {
      * @param inputMap The input map to convert.
      * @return A JSONObject representing the input map.
      */
-    fun convertToJSON(inputMap: Map<String, Any?>?): JSONObject {
-        return inputMap.convert()
-    }
-
-    private fun Map<String, Any?>?.convert(): JSONObject {
-        if (this == null) {
+    internal fun convertToJSON(inputMap: Map<String, Any?>?): JSONObject {
+        if (inputMap == null) {
             return JSONObject()
         }
-        val mapWithoutInnerMaps = mapValues { (_, value) ->
-            value.tryCast<Map<String, Any?>>(ifSuccess = { convert() })
+        val mapWithoutInnerMaps = inputMap.mapValues { (_, value) ->
+            value.tryCast<Map<String, Any?>>(ifSuccess = { convertToJSON(this) })
             when (value) {
                 is List<*> -> {
                     if (value.all { it is String }) {
@@ -35,10 +31,14 @@ class MapConverter {
                         value
                     }
                 }
-                else -> value.tryCast<Map<String, Any?>>(ifSuccess = { convert() })
+                else -> value.tryCast<Map<String, Any?>>(ifSuccess = { convertToJSON(this) })
             }
         }
-        return JSONObject(mapWithoutInnerMaps)
+        return createJSONObject(mapWithoutInnerMaps)
+    }
+
+    internal fun createJSONObject(inputMap: Map<String, Any?>): JSONObject {
+        return JSONObject(inputMap)
     }
 
     /** To avoid Java type erasure, we use a Kotlin inline function with a reified parameter

@@ -3,6 +3,7 @@ package com.revenuecat.purchases.common.networking
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.spyk
 import org.json.JSONArray
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
@@ -58,24 +59,33 @@ class MapConverterTest {
         assertEquals(expectedJson.toString(), result.toString())
     }
 
+    /**
+     * This tests workaround for a bug in Android 4 , where a List<String> would be incorrectly converted into
+     * a single string instead of a JSONArray of strings.
+     * (i.e.: "[\"value1\", \"value2\"]" instead of "[value1, value2]")
+     */
     @Test
     fun `test map conversion with mocked List of String conversion`() {
-        val mapConverterMock = mockk<MapConverter>()
+        val mapConverterMock = spyk<MapConverter>()
 
         val inputMap = mapOf(
-            "key" to listOf("value1", "value2")
+            "nested" to listOf("value1", "value2")
         )
 
-        val expectedIncorrectJsonArrayString = "[\"value1\",\"value2\"]"
+        val mapContainingInputMap = mapOf(
+            "root" to inputMap
+        )
+
+        val incorrectJsonArrayString = "[value1,value2]"
+        val correctedJSONArray = JSONArray(listOf("value1", "value2"))
 
         every {
-            mapConverterMock.convertToJSON(match { it == inputMap })
-        } returns JSONObject(mapOf("key" to expectedIncorrectJsonArrayString))
+            mapConverterMock.createJSONObject(match { it == inputMap })
+        } returns JSONObject(mapOf("nested" to incorrectJsonArrayString))
 
-        val resultJson = mapConverterMock.convertToJSON(inputMap)
-        val resultArrayString = resultJson.optString("key")
+        val resultJson = mapConverterMock.convertToJSON(mapContainingInputMap)
+        val resultArrayString = resultJson.optJSONObject("root")?.optJSONArray("nested")
 
-        assertEquals(expectedIncorrectJsonArrayString, resultArrayString)
+        assertEquals(correctedJSONArray, resultArrayString)
     }
-
 }
