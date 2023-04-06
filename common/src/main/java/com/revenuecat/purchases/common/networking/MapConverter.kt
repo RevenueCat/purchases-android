@@ -17,10 +17,7 @@ class MapConverter {
      * @param inputMap The input map to convert.
      * @return A JSONObject representing the input map.
      */
-    internal fun convertToJSON(inputMap: Map<String, Any?>?): JSONObject {
-        if (inputMap == null) {
-            return JSONObject()
-        }
+    internal fun convertToJSON(inputMap: Map<String, Any?>): JSONObject {
         val mapWithoutInnerMaps = inputMap.mapValues { (_, value) ->
             value.tryCast<Map<String, Any?>>(ifSuccess = { convertToJSON(this) })
             when (value) {
