@@ -65,7 +65,7 @@ class MapConverterTest {
      * (i.e.: "[\"value1\", \"value2\"]" instead of "[value1, value2]")
      */
     @Test
-    fun `test map conversion with mocked List of String conversion`() {
+    fun `test map conversion fixes wrong treatment of arrays of strings in JSON library`() {
         val mapConverterMock = spyk<MapConverter>()
 
         val inputMap = mapOf(
