@@ -84,7 +84,7 @@ class MapConverterTest {
         } returns JSONObject(mapOf("product_ids" to incorrectJsonArrayString))
 
         val resultJson = mapConverterMock.convertToJSON(mapContainingInputMap)
-        val resultArrayString = resultJson.optJSONObject("root")?.optJSONArray("nested")
+        val resultArrayString = resultJson.optJSONObject("subscriber_info")?.optJSONArray("product_ids")
 
         assertEquals(correctedJSONArray, resultArrayString)
     }
