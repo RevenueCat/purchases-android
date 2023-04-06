@@ -13,6 +13,7 @@ import com.revenuecat.purchases.common.CustomerInfoFactory
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.DefaultDateProvider
 import com.revenuecat.purchases.common.LogIntent
+import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.offlineentitlements.ProductEntitlementMapping
 import com.revenuecat.purchases.common.sha1
@@ -49,6 +50,7 @@ open class DeviceCache(
     val appUserIDCacheKey: String by lazy { "$apiKeyPrefix.new" }
     internal val attributionCacheKey = "$SHARED_PREFERENCES_PREFIX.attribution"
     val tokensCacheKey: String by lazy { "$apiKeyPrefix.tokens" }
+    val orderIdsPerTokenCacheKey: String by lazy { "$apiKeyPrefix.orderids_per_token" }
 
     private val productEntitlementMappingCacheKey: String by lazy {
         "$apiKeyPrefix.productEntitlementMapping"
@@ -218,11 +220,31 @@ open class DeviceCache(
     }
 
     @Synchronized
-    fun addSuccessfullyPostedToken(token: String) {
-        log(LogIntent.DEBUG, ReceiptStrings.SAVING_TOKENS_WITH_HASH.format(token, token.sha1()))
-        getPreviouslySentHashedTokens().let {
-            log(LogIntent.DEBUG, ReceiptStrings.TOKENS_IN_CACHE.format(it))
-            setSavedTokenHashes(it.toMutableSet().apply { add(token.sha1()) })
+    fun getPreviouslySentOrderIdsPerHashToken(): Map<String, String> {
+        val jsonString = preferences.getString(orderIdsPerTokenCacheKey, "{}") ?: "{}"
+        val map = mutableMapOf<String, String>()
+        try {
+            val jsonObject = JSONObject(jsonString)
+            jsonObject.keys().forEach { key ->
+                map[key] = jsonObject.getString(key)
+            }
+            log(LogIntent.DEBUG, ReceiptStrings.TOKENS_ALREADY_POSTED.format(map))
+        } catch (e: JSONException) {
+            errorLog(ReceiptStrings.ERROR_READING_TOKENS_FROM_CACHE, e)
+        } catch (e: ClassCastException) {
+            errorLog(ReceiptStrings.ERROR_READING_TOKENS_FROM_CACHE, e)
+        }
+        return map
+    }
+
+    @Synchronized
+    fun addSuccessfullyPostedToken(token: String, orderId: String) {
+        log(LogIntent.DEBUG, ReceiptStrings.SAVING_ORDER_IDS_PER_TOKENS_WITH_HASH.format(orderId, token, token.sha1()))
+        getPreviouslySentOrderIdsPerHashToken().let { storedMap ->
+            log(LogIntent.DEBUG, ReceiptStrings.TOKENS_IN_CACHE.format(storedMap))
+            storedMap.toMutableMap().apply { put(token.sha1(), orderId) }.also { newMap ->
+                setSavedOrderIdsPerTokenHashes(newMap)
+            }
         }
     }
 
@@ -230,6 +252,13 @@ open class DeviceCache(
     private fun setSavedTokenHashes(newSet: Set<String>) {
         log(LogIntent.DEBUG, ReceiptStrings.SAVING_TOKENS.format(newSet))
         preferences.edit().putStringSet(tokensCacheKey, newSet).apply()
+    }
+
+    @Synchronized
+    private fun setSavedOrderIdsPerTokenHashes(newMap: Map<String, String>) {
+        log(LogIntent.DEBUG, ReceiptStrings.SAVING_TOKENS.format(newMap))
+        val jsonString = JSONObject(newMap).toString()
+        preferences.edit().putString(orderIdsPerTokenCacheKey, jsonString).apply()
     }
 
     /**
@@ -244,6 +273,20 @@ open class DeviceCache(
         setSavedTokenHashes(
             hashedTokens.intersect(getPreviouslySentHashedTokens())
         )
+    }
+
+    /**
+     * Removes from the database all hashed tokens that are not considered active anymore, i.e. all
+     * consumed in-apps or inactive subscriptions hashed tokens that are still in the local cache.
+     */
+    @Synchronized
+    fun cleanInactiveTokens(
+        activeTokens: Map<String, String>
+    ) {
+        log(LogIntent.DEBUG, ReceiptStrings.CLEANING_PREV_SENT_HASHED_TOKEN)
+        val tokensInCache = getPreviouslySentOrderIdsPerHashToken()
+        val tokensThatAreStillActive = tokensInCache.filter { activeTokens.containsKey(it.key) }
+        setSavedOrderIdsPerTokenHashes(tokensThatAreStillActive)
     }
 
     /**
