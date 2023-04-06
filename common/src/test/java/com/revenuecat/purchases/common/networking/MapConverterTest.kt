@@ -69,19 +69,19 @@ class MapConverterTest {
         val mapConverterMock = spyk<MapConverter>()
 
         val inputMap = mapOf(
-            "nested" to listOf("value1", "value2")
+            "product_ids" to listOf("product_1", "product_2")
         )
 
         val mapContainingInputMap = mapOf(
-            "root" to inputMap
+            "subscriber_info" to inputMap
         )
 
-        val incorrectJsonArrayString = "[value1,value2]"
-        val correctedJSONArray = JSONArray(listOf("value1", "value2"))
+        val incorrectJsonArrayString = "[product_1,product_2]"
+        val correctedJSONArray = JSONArray(listOf("product_1", "product_2"))
 
         every {
             mapConverterMock.createJSONObject(match { it == inputMap })
-        } returns JSONObject(mapOf("nested" to incorrectJsonArrayString))
+        } returns JSONObject(mapOf("product_ids" to incorrectJsonArrayString))
 
         val resultJson = mapConverterMock.convertToJSON(mapContainingInputMap)
         val resultArrayString = resultJson.optJSONObject("root")?.optJSONArray("nested")
