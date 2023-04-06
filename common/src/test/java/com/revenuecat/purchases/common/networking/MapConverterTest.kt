@@ -68,7 +68,6 @@ class MapConverterTest {
 
         val expectedIncorrectJsonArrayString = "[\"value1\",\"value2\"]"
 
-        // Mock the convertToJSON method for the specific input
         every {
             mapConverterMock.convertToJSON(match { it == inputMap })
         } returns JSONObject(mapOf("key" to expectedIncorrectJsonArrayString))
