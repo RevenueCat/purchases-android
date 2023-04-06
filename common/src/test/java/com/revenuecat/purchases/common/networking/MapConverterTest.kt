@@ -24,7 +24,7 @@ class MapConverterTest {
     }
 
     @Test
-    fun testConvertToJSON() {
+    fun `test convert to JSON`() {
         val inputMap = mapOf(
             "key1" to "value1",
             "key2" to listOf("value2", "value3"),
@@ -41,7 +41,7 @@ class MapConverterTest {
     }
 
     @Test
-    fun testConvertToJSONWithNestedArrayOfStrings() {
+    fun `test convert to JSON with nested array of strings`() {
         val inputMap = mapOf(
             "key1" to "value1",
             "key2" to listOf("value2", "value3"),
