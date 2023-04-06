@@ -221,9 +221,9 @@ open class DeviceCache(
 
     @Synchronized
     fun getPreviouslySentOrderIdsPerHashToken(): Map<String, String> {
-        val jsonString = preferences.getString(orderIdsPerTokenCacheKey, "{}") ?: "{}"
         val map = mutableMapOf<String, String>()
         try {
+            val jsonString = preferences.getString(orderIdsPerTokenCacheKey, "{}") ?: "{}"
             val jsonObject = JSONObject(jsonString)
             jsonObject.keys().forEach { key ->
                 map[key] = jsonObject.getString(key)
@@ -238,7 +238,16 @@ open class DeviceCache(
     }
 
     @Synchronized
-    fun addSuccessfullyPostedToken(token: String, orderId: String) {
+    fun addSuccessfullyPostedToken(token: String) {
+        log(LogIntent.DEBUG, ReceiptStrings.SAVING_TOKENS_WITH_HASH.format(token, token.sha1()))
+        getPreviouslySentHashedTokens().let {
+            log(LogIntent.DEBUG, ReceiptStrings.TOKENS_IN_CACHE.format(it))
+            setSavedTokenHashes(it.toMutableSet().apply { add(token.sha1()) })
+        }
+    }
+
+    @Synchronized
+    fun addSuccessfullyPostedTokenWithOrderId(token: String, orderId: String) {
         log(LogIntent.DEBUG, ReceiptStrings.SAVING_ORDER_IDS_PER_TOKENS_WITH_HASH.format(orderId, token, token.sha1()))
         getPreviouslySentOrderIdsPerHashToken().let { storedMap ->
             log(LogIntent.DEBUG, ReceiptStrings.TOKENS_IN_CACHE.format(storedMap))
@@ -302,6 +311,24 @@ open class DeviceCache(
         return hashedTokens
             .minus(getPreviouslySentHashedTokens())
             .values.toList()
+    }
+
+    /**
+     * Returns a list containing all tokens that are in [hashedTokens]
+     * that are not present in the device cache.
+     * In other words, returns all hashed tokens that are active and have not
+     * been posted to our backend yet.
+     */
+    @Synchronized
+    fun getActivePurchasesNotInCacheByOrderId(
+        hashedTokens: Map<String, StoreTransaction>,
+    ): List<StoreTransaction> {
+        getPreviouslySentOrderIdsPerHashToken().let { storedMap ->
+            log(LogIntent.DEBUG, ReceiptStrings.TOKENS_IN_CACHE.format(storedMap))
+            return hashedTokens
+                .minus(storedMap.values)
+                .values.toList()
+        }
     }
 
     // endregion
