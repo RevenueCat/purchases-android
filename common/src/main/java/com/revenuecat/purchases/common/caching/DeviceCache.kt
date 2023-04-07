@@ -208,6 +208,35 @@ open class DeviceCache(
 
     // region purchase tokens
 
+    /**
+     * Migrates data from hashed tokens cache to cache with order IDs. If there are no hashed tokens in the cache, or if
+     * there are already order IDs in the cache, this method does nothing. If there are hashed tokens in the cache, but
+     * no order IDs, it will use the active purchases to get the order IDs of the cached tokens and store them in
+     * the cache.
+     *
+     * This method is synchronized to ensure thread safety.
+     *
+     * @param activePurchasesByHashedToken a map of hashed tokens to store transactions
+     */
+    @Synchronized
+    fun migrateFromHashedTokensCacheToCacheWithOrderIds(
+        activePurchasesByHashedToken: Map<String, StoreTransaction>
+    ) {
+        val hashedTokens = getPreviouslySentHashedTokens()
+        val hashedTokensAndOrderIds = getPreviouslySentOrderIdsPerHashToken()
+
+        if (hashedTokens.isNotEmpty() && hashedTokensAndOrderIds.isEmpty()) {
+            val orderIdsPerHashedToken = mutableMapOf<String, String>()
+            hashedTokens.forEach { hashedToken ->
+                orderIdsPerHashedToken[hashedToken] = activePurchasesByHashedToken[hashedToken]?.orderId ?: ""
+            }
+
+            val editor = setSavedOrderIdsPerTokenHashes(orderIdsPerHashedToken, applyEditor = false)
+            editor.remove(tokensCacheKey)
+            editor.apply()
+        }
+    }
+
     @Synchronized
     fun getPreviouslySentHashedTokens(): Set<String> {
         return try {
@@ -254,10 +283,18 @@ open class DeviceCache(
     }
 
     @Synchronized
-    private fun setSavedOrderIdsPerTokenHashes(newMap: Map<String, String>) {
+    private fun setSavedOrderIdsPerTokenHashes(
+        newMap: Map<String, String>,
+        applyEditor: Boolean = true
+    ): SharedPreferences.Editor {
         log(LogIntent.DEBUG, ReceiptStrings.SAVING_TOKENS.format(newMap))
         val jsonString = JSONObject(newMap).toString()
-        preferences.edit().putString(orderIdsPerTokenCacheKey, jsonString).apply()
+        val editor = preferences.edit()
+        editor.putString(orderIdsPerTokenCacheKey, jsonString)
+        if (applyEditor) {
+            editor.apply()
+        }
+        return editor
     }
 
     /**
