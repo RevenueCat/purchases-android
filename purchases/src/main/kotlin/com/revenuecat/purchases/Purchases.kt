@@ -1775,7 +1775,7 @@ class Purchases internal constructor(
                                     RestoreStrings.QUERYING_PURCHASE_WITH_HASH.format(purchase.type, hash)
                                 )
                             }
-                            deviceCache.migrateFromHashedTokensCacheToCacheWithOrderIds(activePurchasesByHashedToken)
+                            deviceCache.migrateHashedTokensCacheToCacheWithOrderIds(activePurchasesByHashedToken)
                             deviceCache.cleanInactiveTokens(activePurchasesByHashedToken.keys)
                             postPurchases(
                                 deviceCache.getActivePurchasesNotInCache(activePurchasesByHashedToken),

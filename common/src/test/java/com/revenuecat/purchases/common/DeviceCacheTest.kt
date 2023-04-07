@@ -717,6 +717,51 @@ class DeviceCacheTest {
         verifySavedOrderIdsPerToken(newMap)
     }
 
+    @Test
+    fun `migration of cache of hashed tokens to order ids is skipped if cache of hashed tokens is empty`() {
+        mockTokensCache(setOf())
+        mockOrderIdsPerTokenCache(mapOf("token1" to "order_id", "token2" to "order_id_2"))
+
+        cache.migrateHashedTokensCacheToCacheWithOrderIds(mapOf())
+
+        verify (exactly = 0) {
+            mockEditor.putString(cache.orderIdsPerTokenCacheKey, any())
+        }
+    }
+
+    @Test
+    fun `migration of cache of hashed tokens to order ids saves current order id if purchase is active`() {
+        mockTokensCache(setOf("token1", "token2"))
+        mockOrderIdsPerTokenCache(mapOf())
+
+        val activeSub = mockk<StoreTransaction>(relaxed = true).also {
+            every { it.type } returns ProductType.SUBS
+            every { it.orderId } returns "order_id_1"
+        }
+
+        cache.migrateHashedTokensCacheToCacheWithOrderIds(mapOf("token1" to activeSub))
+
+        val newMap = mapOf("token1" to "order_id_1", "token2" to "")
+        verifySavedOrderIdsPerToken(newMap)
+    }
+
+    @Test
+    fun `migration of cache of hashed tokens to order ids cleans hashed tokens cache`() {
+        mockTokensCache(setOf("token1", "token2"))
+        mockOrderIdsPerTokenCache(mapOf())
+
+        val activeSub = mockk<StoreTransaction>(relaxed = true).also {
+            every { it.type } returns ProductType.SUBS
+            every { it.orderId } returns "order_id_1"
+        }
+
+        cache.migrateHashedTokensCacheToCacheWithOrderIds(mapOf("token1" to activeSub))
+
+        verify {
+            mockEditor.remove(cache.tokensCacheKey)
+        }
+    }
+
     // endregion
 
     // region helpers
@@ -731,6 +776,12 @@ class DeviceCacheTest {
         every {
             mockPrefs.getLong(eq(key), 0L)
         } returns value
+    }
+
+    private fun mockTokensCache(tokens: Set<String>) {
+        every {
+            mockPrefs.getStringSet(cache.tokensCacheKey, any())
+        } returns tokens
     }
 
     private fun mockOrderIdsPerTokenCache(tokensAndOrderIds: Map<String, String>): Map<String, String> {

@@ -219,7 +219,7 @@ open class DeviceCache(
      * @param activePurchasesByHashedToken a map of hashed tokens to store transactions
      */
     @Synchronized
-    fun migrateFromHashedTokensCacheToCacheWithOrderIds(
+    fun migrateHashedTokensCacheToCacheWithOrderIds(
         activePurchasesByHashedToken: Map<String, StoreTransaction>
     ) {
         val hashedTokens = getPreviouslySentHashedTokens()
