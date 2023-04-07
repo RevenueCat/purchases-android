@@ -236,11 +236,9 @@ class Purchases internal constructor(
                     allPurchases.forEach { purchase ->
                         val productInfo = ReceiptInfo(productIDs = purchase.productIds)
                         syncPurchaseWithBackend(
-                            purchase.purchaseToken,
-                            purchase.storeUserID,
+                            purchase,
                             appUserID,
                             productInfo,
-                            purchase.marketplace,
                             {
                                 log(LogIntent.PURCHASE, PurchaseStrings.PURCHASE_SYNCED.format(purchase))
                             },
@@ -281,7 +279,7 @@ class Purchases internal constructor(
     ) {
         log(LogIntent.DEBUG, PurchaseStrings.SYNCING_PURCHASE_STORE_USER_ID.format(receiptID, amazonUserID))
 
-        deviceCache.getPreviouslySentHashedTokens().takeIf { it.contains(receiptID.sha1()) }?.apply {
+        deviceCache.getPreviouslySentOrderIdsPerHashToken().takeIf { it.contains(receiptID.sha1()) }?.apply {
             log(LogIntent.DEBUG, PurchaseStrings.SYNCING_PURCHASE_SKIPPING.format(receiptID, amazonUserID))
             return
         }
@@ -304,6 +302,7 @@ class Purchases internal constructor(
                     appUserID,
                     receiptInfo,
                     marketplace = null,
+                    orderId = null,
                     {
                         val logMessage = PurchaseStrings.PURCHASE_SYNCED_USER_ID.format(receiptID, amazonUserID)
                         log(LogIntent.PURCHASE, logMessage)
@@ -1769,16 +1768,16 @@ class Purchases internal constructor(
                 appUserID.let { appUserID ->
                     billing.queryPurchases(
                         appUserID,
-                        onSuccess = { purchasesByHashedToken ->
-                            purchasesByHashedToken.forEach { (hash, purchase) ->
+                        onSuccess = { activePurchasesByHashedToken ->
+                            activePurchasesByHashedToken.forEach { (hash, purchase) ->
                                 log(
                                     LogIntent.DEBUG,
                                     RestoreStrings.QUERYING_PURCHASE_WITH_HASH.format(purchase.type, hash)
                                 )
                             }
-                            deviceCache.cleanPreviouslySentTokens(purchasesByHashedToken.keys)
+                            deviceCache.cleanInactiveTokens(activePurchasesByHashedToken.keys)
                             postPurchases(
-                                deviceCache.getActivePurchasesNotInCache(purchasesByHashedToken),
+                                deviceCache.getActivePurchasesNotInCache(activePurchasesByHashedToken),
                                 allowSharingPlayStoreAccount,
                                 finishTransactions,
                                 appUserID
@@ -1799,11 +1798,31 @@ class Purchases internal constructor(
     }
 
     private fun syncPurchaseWithBackend(
+        purchase: StoreTransaction,
+        appUserID: String,
+        productInfo: ReceiptInfo,
+        onSuccess: () -> Unit,
+        onError: (PurchasesError) -> Unit,
+    ) {
+        syncPurchaseWithBackend(
+            purchase.purchaseToken,
+            purchase.storeUserID,
+            appUserID,
+            productInfo,
+            purchase.marketplace,
+            purchase.orderId,
+            onSuccess,
+            onError
+        )
+    }
+
+    private fun syncPurchaseWithBackend(
         purchaseToken: String,
         storeUserID: String?,
         appUserID: String,
         productInfo: ReceiptInfo,
         marketplace: String?,
+        orderId: String?,
         onSuccess: () -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {
@@ -1823,7 +1842,7 @@ class Purchases internal constructor(
                         unsyncedSubscriberAttributesByKey,
                         body.getAttributeErrors()
                     )
-                    deviceCache.addSuccessfullyPostedToken(purchaseToken)
+                    deviceCache.addSuccessfullyPostedPurchase(purchaseToken, orderId)
                     customerInfoHelper.cacheCustomerInfo(info)
                     customerInfoHelper.sendUpdatedCustomerInfoToDelegateIfChanged(info)
                     onSuccess()
@@ -1835,7 +1854,7 @@ class Purchases internal constructor(
                             unsyncedSubscriberAttributesByKey,
                             body.getAttributeErrors()
                         )
-                        deviceCache.addSuccessfullyPostedToken(purchaseToken)
+                        deviceCache.addSuccessfullyPostedPurchase(purchaseToken, orderId)
                     }
                     onError(error)
                 }

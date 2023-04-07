@@ -238,29 +238,19 @@ open class DeviceCache(
     }
 
     @Synchronized
-    fun addSuccessfullyPostedToken(token: String) {
-        log(LogIntent.DEBUG, ReceiptStrings.SAVING_TOKENS_WITH_HASH.format(token, token.sha1()))
-        getPreviouslySentHashedTokens().let {
-            log(LogIntent.DEBUG, ReceiptStrings.TOKENS_IN_CACHE.format(it))
-            setSavedTokenHashes(it.toMutableSet().apply { add(token.sha1()) })
-        }
+    fun addSuccessfullyPostedPurchase(purchase: StoreTransaction) {
+        addSuccessfullyPostedPurchase(purchase.purchaseToken, purchase.orderId)
     }
 
     @Synchronized
-    fun addSuccessfullyPostedTokenWithOrderId(token: String, orderId: String) {
+    fun addSuccessfullyPostedPurchase(token: String, orderId: String?) {
         log(LogIntent.DEBUG, ReceiptStrings.SAVING_ORDER_IDS_PER_TOKENS_WITH_HASH.format(orderId, token, token.sha1()))
         getPreviouslySentOrderIdsPerHashToken().let { storedMap ->
             log(LogIntent.DEBUG, ReceiptStrings.TOKENS_IN_CACHE.format(storedMap))
-            storedMap.toMutableMap().apply { put(token.sha1(), orderId) }.also { newMap ->
+            storedMap.toMutableMap().apply { put(token.sha1(), orderId ?: "") }.also { newMap ->
                 setSavedOrderIdsPerTokenHashes(newMap)
             }
         }
-    }
-
-    @Synchronized
-    private fun setSavedTokenHashes(newSet: Set<String>) {
-        log(LogIntent.DEBUG, ReceiptStrings.SAVING_TOKENS.format(newSet))
-        preferences.edit().putStringSet(tokensCacheKey, newSet).apply()
     }
 
     @Synchronized
@@ -275,58 +265,29 @@ open class DeviceCache(
      * consumed in-apps or inactive subscriptions hashed tokens that are still in the local cache.
      */
     @Synchronized
-    fun cleanPreviouslySentTokens(
-        hashedTokens: Set<String>
-    ) {
-        log(LogIntent.DEBUG, ReceiptStrings.CLEANING_PREV_SENT_HASHED_TOKEN)
-        setSavedTokenHashes(
-            hashedTokens.intersect(getPreviouslySentHashedTokens())
-        )
-    }
-
-    /**
-     * Removes from the database all hashed tokens that are not considered active anymore, i.e. all
-     * consumed in-apps or inactive subscriptions hashed tokens that are still in the local cache.
-     */
-    @Synchronized
     fun cleanInactiveTokens(
-        activeTokens: Map<String, String>
+        activeTokens: Set<String>
     ) {
         log(LogIntent.DEBUG, ReceiptStrings.CLEANING_PREV_SENT_HASHED_TOKEN)
         val tokensInCache = getPreviouslySentOrderIdsPerHashToken()
-        val tokensThatAreStillActive = tokensInCache.filter { activeTokens.containsKey(it.key) }
+        val tokensThatAreStillActive = tokensInCache.filter { activeTokens.contains(it.key) }
         setSavedOrderIdsPerTokenHashes(tokensThatAreStillActive)
     }
 
     /**
-     * Returns a list containing all tokens that are in [hashedTokens]
+     * Returns a list containing all tokens that are in [activePurchasesByHashedToken]
      * that are not present in the device cache.
      * In other words, returns all hashed tokens that are active and have not
      * been posted to our backend yet.
      */
     @Synchronized
     fun getActivePurchasesNotInCache(
-        hashedTokens: Map<String, StoreTransaction>,
+        activePurchasesByHashedToken: Map<String, StoreTransaction>,
     ): List<StoreTransaction> {
-        return hashedTokens
-            .minus(getPreviouslySentHashedTokens())
-            .values.toList()
-    }
-
-    /**
-     * Returns a list containing all tokens that are in [hashedTokens]
-     * that are not present in the device cache.
-     * In other words, returns all hashed tokens that are active and have not
-     * been posted to our backend yet.
-     */
-    @Synchronized
-    fun getActivePurchasesNotInCacheByOrderId(
-        hashedTokens: Map<String, StoreTransaction>,
-    ): List<StoreTransaction> {
-        getPreviouslySentOrderIdsPerHashToken().let { storedMap ->
-            log(LogIntent.DEBUG, ReceiptStrings.TOKENS_IN_CACHE.format(storedMap))
-            return hashedTokens
-                .minus(storedMap.values)
+        getPreviouslySentOrderIdsPerHashToken().let { storedTokensToOrderIds ->
+            log(LogIntent.DEBUG, ReceiptStrings.TOKENS_IN_CACHE.format(storedTokensToOrderIds))
+            return activePurchasesByHashedToken
+                .minus(storedTokensToOrderIds.keys.toSet())
                 .values.toList()
         }
     }

@@ -319,75 +319,6 @@ class DeviceCacheTest {
     }
 
     @Test
-    fun `token is hashed then added`() {
-        every {
-            mockPrefs.getStringSet(cache.tokensCacheKey, any())
-        } returns setOf("token1", "token2")
-        val sha1 = "token3".sha1()
-        every {
-            mockEditor.putStringSet(cache.tokensCacheKey, setOf("token1", "token2", sha1))
-        } returns mockEditor
-        every {
-            mockEditor.apply()
-        } just runs
-
-        cache.addSuccessfullyPostedToken("token3")
-        verify {
-            mockEditor.putStringSet(cache.tokensCacheKey, setOf("token1", "token2", sha1))
-        }
-    }
-
-    @Test
-    fun `if token is not active anymore, remove it from database`() {
-        every {
-            mockEditor.putStringSet(cache.tokensCacheKey, setOf("token3"))
-        } returns mockEditor
-        every {
-            mockEditor.apply()
-        } just runs
-        every {
-            mockPrefs.getStringSet(cache.tokensCacheKey, any())
-        } returns setOf("token1", "token2", "token3")
-        cache.cleanPreviouslySentTokens(setOf("token3", "token4"))
-        verify {
-            mockEditor.putStringSet(cache.tokensCacheKey, setOf("token3"))
-        }
-    }
-
-    @Test
-    fun `if all tokens are active, do not remove any`() {
-        every {
-            mockEditor.putStringSet(cache.tokensCacheKey, setOf("token1", "token2"))
-        } returns mockEditor
-        every {
-            mockEditor.apply()
-        } just runs
-        every {
-            mockPrefs.getStringSet(cache.tokensCacheKey, any())
-        } returns setOf("token1", "token2")
-        cache.cleanPreviouslySentTokens(setOf("token1", "token2"))
-        verify {
-            mockEditor.putStringSet(cache.tokensCacheKey, setOf("token1", "token2"))
-        }
-    }
-
-    @Test
-    fun `getting the tokens not in cache returns all the active tokens that have not been sent`() {
-        every {
-            mockPrefs.getStringSet(cache.tokensCacheKey, any())
-        } returns setOf("token1", "hash2", "token3")
-        val activeSub = mockk<StoreTransaction>(relaxed = true).also {
-            every { it.type } returns ProductType.SUBS
-        }
-        val inApp = mockk<StoreTransaction>(relaxed = true).also {
-            every { it.type } returns ProductType.INAPP
-        }
-        val activePurchasesNotInCache =
-            cache.getActivePurchasesNotInCache(mapOf("hash1" to activeSub, "hash2" to inApp))
-        assertThat(activePurchasesNotInCache).contains(activeSub)
-    }
-
-    @Test
     fun `invalidating customer info caches`() {
         mockLong(cache.customerInfoLastUpdatedCacheKey(appUserID), Date(0).time)
         assertThat(cache.isCustomerInfoCacheStale(appUserID, appInBackground = false)).isTrue
@@ -711,9 +642,10 @@ class DeviceCacheTest {
         val inApp = mockk<StoreTransaction>(relaxed = true).also {
             every { it.type } returns ProductType.INAPP
         }
-        val activePurchasesNotInCache =
-            cache.getActivePurchasesNotInCacheByOrderId(mapOf("token3" to activeSub, "token2" to inApp))
-        assertThat(activePurchasesNotInCache).contains(activeSub)
+        val activePurchasesNotInCache: List<StoreTransaction> =
+            cache.getActivePurchasesNotInCache(mapOf("token3" to activeSub, "token2" to inApp))
+        assertThat(activePurchasesNotInCache.size).isEqualTo(1)
+        assertThat(activePurchasesNotInCache[0]).isEqualTo(activeSub)
     }
 
     @Test
@@ -724,7 +656,7 @@ class DeviceCacheTest {
         val cachedTokensAndOrderIds = mapOf("token1" to "order_id", "token2" to "order_id_2")
         mockOrderIdsPerTokenCache(cachedTokensAndOrderIds)
 
-        cache.cleanInactiveTokens(cachedTokensAndOrderIds)
+        cache.cleanInactiveTokens(cachedTokensAndOrderIds.keys)
         verifySavedOrderIdsPerToken(cachedTokensAndOrderIds)
     }
 
@@ -736,7 +668,7 @@ class DeviceCacheTest {
         val tokensAndOrderIds = mapOf("token1" to "order_id", "token2" to "order_id_2", "token3" to "order_id_3")
         mockOrderIdsPerTokenCache(tokensAndOrderIds)
 
-        cache.cleanInactiveTokens(mapOf("token3" to "order_id_3", "token4" to "order_id_4"))
+        cache.cleanInactiveTokens(setOf("token3", "token4"))
         verifySavedOrderIdsPerToken(expectedSavedCache)
     }
 
@@ -749,7 +681,7 @@ class DeviceCacheTest {
         val newMap = tokensAndOrderIds.toMutableMap() + (sha1 to "order_id_3")
         mockSavingOrderIdsPerToken(newMap)
 
-        cache.addSuccessfullyPostedTokenWithOrderId("token3", "order_id_3")
+        cache.addSuccessfullyPostedPurchase("token3", "order_id_3")
         verifySavedOrderIdsPerToken(newMap)
     }
 
@@ -781,7 +713,7 @@ class DeviceCacheTest {
         val newMap = tokensAndOrderIds.toMutableMap().also { it[token1Hash] = "order_id_3" }
         mockSavingOrderIdsPerToken(newMap)
 
-        cache.addSuccessfullyPostedTokenWithOrderId("token1", "order_id_3")
+        cache.addSuccessfullyPostedPurchase("token1", "order_id_3")
         verifySavedOrderIdsPerToken(newMap)
     }
 

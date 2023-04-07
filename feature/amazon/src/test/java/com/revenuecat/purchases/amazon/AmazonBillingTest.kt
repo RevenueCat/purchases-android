@@ -17,7 +17,6 @@ import com.revenuecat.purchases.amazon.helpers.dummyAmazonProduct
 import com.revenuecat.purchases.amazon.helpers.dummyReceipt
 import com.revenuecat.purchases.amazon.helpers.dummyUserData
 import com.revenuecat.purchases.amazon.helpers.successfulRVSResponse
-import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.StoreProduct
@@ -546,7 +545,7 @@ class AmazonBillingTest {
         } just Runs
 
         every {
-            mockCache.addSuccessfullyPostedToken(dummyReceipt.receiptId)
+            mockCache.addSuccessfullyPostedPurchase(dummyReceipt.receiptId)
         } just Runs
 
         underTest.consumeAndSave(
@@ -567,7 +566,7 @@ class AmazonBillingTest {
         }
 
         verify(exactly = 1) {
-            mockCache.addSuccessfullyPostedToken(dummyReceipt.receiptId)
+            mockCache.addSuccessfullyPostedPurchase(dummyReceipt.receiptId)
         }
     }
 
@@ -581,7 +580,7 @@ class AmazonBillingTest {
         } just Runs
 
         every {
-            mockCache.addSuccessfullyPostedToken(dummyReceipt.receiptId)
+            mockCache.addSuccessfullyPostedPurchase(dummyReceipt.receiptId)
         } just Runs
 
         underTest.consumeAndSave(
@@ -602,7 +601,7 @@ class AmazonBillingTest {
         }
 
         verify(exactly = 1) {
-            mockCache.addSuccessfullyPostedToken(dummyReceipt.receiptId)
+            mockCache.addSuccessfullyPostedPurchase(dummyReceipt.receiptId)
         }
     }
 

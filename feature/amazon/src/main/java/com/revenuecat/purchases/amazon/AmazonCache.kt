@@ -39,6 +39,6 @@ internal class AmazonCache(
 
     @Synchronized
     fun addSuccessfullyPostedToken(token: String) {
-        deviceCache.addSuccessfullyPostedToken(token)
+        deviceCache.addSuccessfullyPostedPurchase(token, null)
     }
 }

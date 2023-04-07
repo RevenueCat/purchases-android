@@ -355,9 +355,9 @@ class BillingWrapper(
         val originalGooglePurchase = purchase.originalGooglePurchase
         val alreadyAcknowledged = originalGooglePurchase?.isAcknowledged ?: false
         if (shouldTryToConsume && purchase.type == ProductType.INAPP) {
-            consumePurchase(purchase.purchaseToken) { billingResult, purchaseToken ->
+            consumePurchase(purchase.purchaseToken) { billingResult, _ ->
                 if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
-                    deviceCache.addSuccessfullyPostedToken(purchaseToken)
+                    deviceCache.addSuccessfullyPostedPurchase(purchase)
                 } else {
                     log(
                         LogIntent.GOOGLE_ERROR, PurchaseStrings.CONSUMING_PURCHASE_ERROR
@@ -366,9 +366,9 @@ class BillingWrapper(
                 }
             }
         } else if (shouldTryToConsume && !alreadyAcknowledged) {
-            acknowledge(purchase.purchaseToken) { billingResult, purchaseToken ->
+            acknowledge(purchase.purchaseToken) { billingResult, _ ->
                 if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
-                    deviceCache.addSuccessfullyPostedToken(purchaseToken)
+                    deviceCache.addSuccessfullyPostedPurchase(purchase)
                 } else {
                     log(
                         LogIntent.GOOGLE_ERROR, PurchaseStrings.ACKNOWLEDGING_PURCHASE_ERROR
@@ -377,7 +377,7 @@ class BillingWrapper(
                 }
             }
         } else {
-            deviceCache.addSuccessfullyPostedToken(purchase.purchaseToken)
+            deviceCache.addSuccessfullyPostedPurchase(purchase)
         }
     }
 
