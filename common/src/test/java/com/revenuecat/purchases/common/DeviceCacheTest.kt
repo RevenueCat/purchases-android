@@ -769,10 +769,26 @@ class DeviceCacheTest {
         val sentTokens = cache.getPreviouslySentOrderIdsPerHashToken()
         assertThat(sentTokens).isEmpty()
     }
+
+    @Test
+    fun `addSuccessfullyPostedTokenWithOrderId supports saving new order id for existing token`() {
+        val token1Hash = "token1".sha1()
+        val token2Hash = "token2".sha1()
+
+        val tokensAndOrderIds = mapOf(token1Hash to "order_id", token2Hash to "order_id_2")
+        mockOrderIdsPerTokenCache(tokensAndOrderIds)
+
+        val newMap = tokensAndOrderIds.toMutableMap().also { it[token1Hash] = "order_id_3" }
+        mockSavingOrderIdsPerToken(newMap)
+
+        cache.addSuccessfullyPostedTokenWithOrderId("token1", "order_id_3")
+        verifySavedOrderIdsPerToken(newMap)
+    }
+
     // endregion
 
     // region helpers
-    
+
     private fun mockString(key: String, value: String?) {
         every {
             mockPrefs.getString(eq(key), isNull())
