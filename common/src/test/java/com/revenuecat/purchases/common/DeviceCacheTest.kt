@@ -656,8 +656,38 @@ class DeviceCacheTest {
         val cachedTokensAndOrderIds = mapOf("token1" to "order_id", "token2" to "order_id_2")
         mockOrderIdsPerTokenCache(cachedTokensAndOrderIds)
 
-        cache.cleanInactiveTokens(cachedTokensAndOrderIds.keys)
+        val activeSub = mockk<StoreTransaction>(relaxed = true).also {
+            every { it.type } returns ProductType.SUBS
+            every { it.orderId } returns "order_id"
+        }
+        val inApp = mockk<StoreTransaction>(relaxed = true).also {
+            every { it.type } returns ProductType.INAPP
+            every { it.orderId } returns "order_id_2"
+        }
+
+        cache.cleanUpTokensCache(mapOf("token1" to activeSub, "token2" to inApp))
         verifySavedOrderIdsPerToken(cachedTokensAndOrderIds)
+    }
+
+    @Test
+    fun `if an active token has an empty order id in the cache after migration, update order id from transaction`() {
+        val expectedSavedCache = mapOf("token1" to "order_id_1", "token2" to "order_id_2")
+        mockSavingOrderIdsPerToken(expectedSavedCache)
+
+        val cachedTokensAndOrderIds = mapOf("token1" to "", "token2" to "order_id_2")
+        mockOrderIdsPerTokenCache(cachedTokensAndOrderIds)
+
+        val activeSub = mockk<StoreTransaction>(relaxed = true).also {
+            every { it.type } returns ProductType.SUBS
+            every { it.orderId } returns "order_id_1"
+        }
+        val inApp = mockk<StoreTransaction>(relaxed = true).also {
+            every { it.type } returns ProductType.INAPP
+            every { it.orderId } returns "order_id_2"
+        }
+
+        cache.cleanUpTokensCache(mapOf("token1" to activeSub, "token2" to inApp))
+        verifySavedOrderIdsPerToken(expectedSavedCache)
     }
 
     @Test
@@ -667,8 +697,15 @@ class DeviceCacheTest {
 
         val tokensAndOrderIds = mapOf("token1" to "order_id", "token2" to "order_id_2", "token3" to "order_id_3")
         mockOrderIdsPerTokenCache(tokensAndOrderIds)
-
-        cache.cleanInactiveTokens(setOf("token3", "token4"))
+        val activeSub = mockk<StoreTransaction>(relaxed = true).also {
+            every { it.type } returns ProductType.SUBS
+            every { it.orderId } returns "order_id_3"
+        }
+        val inApp = mockk<StoreTransaction>(relaxed = true).also {
+            every { it.type } returns ProductType.INAPP
+            every { it.orderId } returns "order_id_4"
+        }
+        cache.cleanUpTokensCache(mapOf("token3" to activeSub, "token4" to inApp))
         verifySavedOrderIdsPerToken(expectedSavedCache)
     }
 
@@ -722,7 +759,7 @@ class DeviceCacheTest {
         mockTokensCache(setOf())
         mockOrderIdsPerTokenCache(mapOf("token1" to "order_id", "token2" to "order_id_2"))
 
-        cache.migrateHashedTokensCacheToCacheWithOrderIds(mapOf())
+        cache.migrateHashedTokensCacheToCacheWithOrderIds()
 
         verify (exactly = 0) {
             mockEditor.putString(cache.orderIdsPerTokenCacheKey, any())
@@ -730,18 +767,13 @@ class DeviceCacheTest {
     }
 
     @Test
-    fun `migration of cache of hashed tokens to order ids saves current order id if purchase is active`() {
+    fun `migration of cache of hashed tokens to order ids saves empty order id`() {
         mockTokensCache(setOf("token1", "token2"))
         mockOrderIdsPerTokenCache(mapOf())
 
-        val activeSub = mockk<StoreTransaction>(relaxed = true).also {
-            every { it.type } returns ProductType.SUBS
-            every { it.orderId } returns "order_id_1"
-        }
+        cache.migrateHashedTokensCacheToCacheWithOrderIds()
 
-        cache.migrateHashedTokensCacheToCacheWithOrderIds(mapOf("token1" to activeSub))
-
-        val newMap = mapOf("token1" to "order_id_1", "token2" to "")
+        val newMap = mapOf("token1" to "", "token2" to "")
         verifySavedOrderIdsPerToken(newMap)
     }
 
@@ -750,12 +782,7 @@ class DeviceCacheTest {
         mockTokensCache(setOf("token1", "token2"))
         mockOrderIdsPerTokenCache(mapOf())
 
-        val activeSub = mockk<StoreTransaction>(relaxed = true).also {
-            every { it.type } returns ProductType.SUBS
-            every { it.orderId } returns "order_id_1"
-        }
-
-        cache.migrateHashedTokensCacheToCacheWithOrderIds(mapOf("token1" to activeSub))
+        cache.migrateHashedTokensCacheToCacheWithOrderIds()
 
         verify {
             mockEditor.remove(cache.tokensCacheKey)

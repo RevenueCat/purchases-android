@@ -219,32 +219,19 @@ open class DeviceCache(
      * @param activePurchasesByHashedToken a map of hashed tokens to store transactions
      */
     @Synchronized
-    fun migrateHashedTokensCacheToCacheWithOrderIds(
-        activePurchasesByHashedToken: Map<String, StoreTransaction>
-    ) {
+    fun migrateHashedTokensCacheToCacheWithOrderIds() {
         val hashedTokens = getPreviouslySentHashedTokens()
         val hashedTokensAndOrderIds = getPreviouslySentOrderIdsPerHashToken()
 
         if (hashedTokens.isNotEmpty() && hashedTokensAndOrderIds.isEmpty()) {
             val orderIdsPerHashedToken = mutableMapOf<String, String>()
             hashedTokens.forEach { hashedToken ->
-                orderIdsPerHashedToken[hashedToken] = activePurchasesByHashedToken[hashedToken]?.orderId ?: ""
+                orderIdsPerHashedToken[hashedToken] = ""
             }
 
             val editor = setSavedOrderIdsPerTokenHashes(orderIdsPerHashedToken, applyEditor = false)
             editor.remove(tokensCacheKey)
             editor.apply()
-        }
-    }
-
-    @Synchronized
-    fun getPreviouslySentHashedTokens(): Set<String> {
-        return try {
-            (preferences.getStringSet(tokensCacheKey, emptySet())?.toSet() ?: emptySet()).also {
-                log(LogIntent.DEBUG, ReceiptStrings.TOKENS_ALREADY_POSTED.format(it))
-            }
-        } catch (e: ClassCastException) {
-            emptySet()
         }
     }
 
@@ -267,11 +254,6 @@ open class DeviceCache(
     }
 
     @Synchronized
-    fun addSuccessfullyPostedPurchase(purchase: StoreTransaction) {
-        addSuccessfullyPostedPurchase(purchase.purchaseToken, purchase.orderId)
-    }
-
-    @Synchronized
     fun addSuccessfullyPostedPurchase(token: String, orderId: String?) {
         log(LogIntent.DEBUG, ReceiptStrings.SAVING_ORDER_IDS_PER_TOKENS_WITH_HASH.format(orderId, token, token.sha1()))
         getPreviouslySentOrderIdsPerHashToken().let { storedMap ->
@@ -282,33 +264,25 @@ open class DeviceCache(
         }
     }
 
-    @Synchronized
-    private fun setSavedOrderIdsPerTokenHashes(
-        newMap: Map<String, String>,
-        applyEditor: Boolean = true
-    ): SharedPreferences.Editor {
-        log(LogIntent.DEBUG, ReceiptStrings.SAVING_TOKENS.format(newMap))
-        val jsonString = JSONObject(newMap).toString()
-        val editor = preferences.edit()
-        editor.putString(orderIdsPerTokenCacheKey, jsonString)
-        if (applyEditor) {
-            editor.apply()
-        }
-        return editor
-    }
-
     /**
      * Removes from the database all hashed tokens that are not considered active anymore, i.e. all
      * consumed in-apps or inactive subscriptions hashed tokens that are still in the local cache.
+     *
+     * It also adds order ids to the cache if the token is still active and the order id is not present. This can happen
+     * after a migration from hashed tokens cache to order ids per hash tokens cache.
      */
     @Synchronized
-    fun cleanInactiveTokens(
-        activeTokens: Set<String>
+    fun cleanUpTokensCache(
+        activePurchasesByHashedToken: Map<String, StoreTransaction>
     ) {
         log(LogIntent.DEBUG, ReceiptStrings.CLEANING_PREV_SENT_HASHED_TOKEN)
         val tokensInCache = getPreviouslySentOrderIdsPerHashToken()
-        val tokensThatAreStillActive = tokensInCache.filter { activeTokens.contains(it.key) }
-        setSavedOrderIdsPerTokenHashes(tokensThatAreStillActive)
+        val tokensInCacheThatAreStillActive = tokensInCache.filter {
+            activePurchasesByHashedToken.contains(it.key)
+        }
+        val activeTokensWithFixedOrders =
+            fixEmptyOrderIds(tokensInCacheThatAreStillActive, activePurchasesByHashedToken)
+        setSavedOrderIdsPerTokenHashes(activeTokensWithFixedOrders)
     }
 
     /**
@@ -326,6 +300,53 @@ open class DeviceCache(
             return activePurchasesByHashedToken
                 .minus(storedTokensToOrderIds.keys.toSet())
                 .values.toList()
+        }
+    }
+
+    private fun fixEmptyOrderIds(
+        tokensInCacheThatAreStillActive: Map<String, String>,
+        activePurchasesByHashedToken: Map<String, StoreTransaction>
+    ): Map<String, String> {
+        val mutableMap = tokensInCacheThatAreStillActive.toMutableMap()
+        val activeTokensWithEmptyOrderId = tokensInCacheThatAreStillActive.filter { it.value.isEmpty() }
+        activeTokensWithEmptyOrderId.forEach { (tokenHash, _) ->
+            log(LogIntent.DEBUG, ReceiptStrings.EMPTY_ORDER_ID_DETECTED.format(tokenHash))
+            activePurchasesByHashedToken[tokenHash]?.let { storeTransaction ->
+                storeTransaction.orderId?.let { orderIdFromTransaction ->
+                    log(
+                        LogIntent.DEBUG,
+                        ReceiptStrings.SAVING_ORDER_IDS_FOR_HASH.format(orderIdFromTransaction, tokenHash)
+                    )
+                    mutableMap[tokenHash] = orderIdFromTransaction
+                }
+            }
+        }
+        return mutableMap.toMap()
+    }
+
+    @Synchronized
+    private fun setSavedOrderIdsPerTokenHashes(
+        newMap: Map<String, String>,
+        applyEditor: Boolean = true
+    ): SharedPreferences.Editor {
+        log(LogIntent.DEBUG, ReceiptStrings.SAVING_TOKENS.format(newMap))
+        val jsonString = JSONObject(newMap).toString()
+        val editor = preferences.edit()
+        editor.putString(orderIdsPerTokenCacheKey, jsonString)
+        if (applyEditor) {
+            editor.apply()
+        }
+        return editor
+    }
+
+    @Synchronized
+    internal fun getPreviouslySentHashedTokens(): Set<String> {
+        return try {
+            (preferences.getStringSet(tokensCacheKey, emptySet())?.toSet() ?: emptySet()).also {
+                log(LogIntent.DEBUG, ReceiptStrings.TOKENS_ALREADY_POSTED.format(it))
+            }
+        } catch (e: ClassCastException) {
+            emptySet()
         }
     }
 

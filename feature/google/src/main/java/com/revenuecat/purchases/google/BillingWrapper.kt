@@ -357,7 +357,7 @@ class BillingWrapper(
         if (shouldTryToConsume && purchase.type == ProductType.INAPP) {
             consumePurchase(purchase.purchaseToken) { billingResult, _ ->
                 if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
-                    deviceCache.addSuccessfullyPostedPurchase(purchase)
+                    deviceCache.addSuccessfullyPostedPurchase(purchase.purchaseToken, purchase.orderId)
                 } else {
                     log(
                         LogIntent.GOOGLE_ERROR, PurchaseStrings.CONSUMING_PURCHASE_ERROR
@@ -368,7 +368,7 @@ class BillingWrapper(
         } else if (shouldTryToConsume && !alreadyAcknowledged) {
             acknowledge(purchase.purchaseToken) { billingResult, _ ->
                 if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
-                    deviceCache.addSuccessfullyPostedPurchase(purchase)
+                    deviceCache.addSuccessfullyPostedPurchase(purchase.purchaseToken, purchase.orderId)
                 } else {
                     log(
                         LogIntent.GOOGLE_ERROR, PurchaseStrings.ACKNOWLEDGING_PURCHASE_ERROR
@@ -377,7 +377,7 @@ class BillingWrapper(
                 }
             }
         } else {
-            deviceCache.addSuccessfullyPostedPurchase(purchase)
+            deviceCache.addSuccessfullyPostedPurchase(purchase.purchaseToken, purchase.orderId)
         }
     }
 

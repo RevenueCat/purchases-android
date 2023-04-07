@@ -22,7 +22,6 @@ import com.android.billingclient.api.PurchaseHistoryRecord
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BillingAbstract
-import com.revenuecat.purchases.common.OfferingParser
 import com.revenuecat.purchases.common.CustomerInfoFactory
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.PostReceiptDataErrorCallback
@@ -76,14 +75,12 @@ import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.mockkConstructor
-import io.mockk.mockkObject
 import io.mockk.mockkStatic
 import io.mockk.runs
 import io.mockk.slot
 import io.mockk.verify
 import io.mockk.verifyOrder
 import org.assertj.core.api.Assertions.assertThat
-import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.assertj.core.api.AssertionsForClassTypes
 import org.json.JSONObject
 import org.junit.After
@@ -116,7 +113,6 @@ class PurchasesTest {
     private val mockIdentityManager = mockk<IdentityManager>()
     private val mockSubscriberAttributesManager = mockk<SubscriberAttributesManager>()
     private val mockCustomerInfoHelper = mockk<CustomerInfoHelper>()
-    lateinit var mockOfferingParser: OfferingParser
     private val mockDiagnosticsSynchronizer = mockk<DiagnosticsSynchronizer>()
     private val mockOfflineEntitlementsManager = mockk<OfflineEntitlementsManager>()
 
@@ -2708,10 +2704,7 @@ class PurchasesTest {
         assertThat(capturedLambda1).isNotNull
 
         verify(exactly = 0) {
-            mockCache.addSuccessfullyPostedToken(inAppPurchaseToken)
-        }
-        verify(exactly = 0) {
-            mockCache.addSuccessfullyPostedToken(subPurchaseToken)
+            mockCache.addSuccessfullyPostedPurchase(any(), any())
         }
     }
 
@@ -3484,9 +3477,7 @@ class PurchasesTest {
             }
         }
 
-        every {
-            mockCache.getPreviouslySentHashedTokens()
-        } returns setOf()
+        mockCacheOfOrderIdsPerToken()
 
         purchases.syncObserverModeAmazonPurchase(
             productID = skuParent,
@@ -3542,9 +3533,7 @@ class PurchasesTest {
             }
         }
 
-        every {
-            mockCache.getPreviouslySentHashedTokens()
-        } returns setOf()
+        mockCacheOfOrderIdsPerToken()
 
         purchases.syncObserverModeAmazonPurchase(
             productID = skuParent,
@@ -3601,9 +3590,7 @@ class PurchasesTest {
             }
         }
 
-        every {
-            mockCache.getPreviouslySentHashedTokens()
-        } returns setOf()
+        mockCacheOfOrderIdsPerToken()
 
         purchases.syncObserverModeAmazonPurchase(
             productID = skuParent,
@@ -3649,9 +3636,7 @@ class PurchasesTest {
         val price = 10.40
         val currencyCode = "USD"
 
-        every {
-            mockCache.getPreviouslySentHashedTokens()
-        } returns emptySet()
+        mockCacheOfOrderIdsPerToken()
 
         every {
             mockBillingAbstract.normalizePurchaseData(
@@ -3695,12 +3680,10 @@ class PurchasesTest {
         }
 
         verify(exactly = 1) {
-            mockCache.addSuccessfullyPostedToken(purchaseToken)
+            mockCache.addSuccessfullyPostedPurchase(purchaseToken, null)
         }
 
-        every {
-            mockCache.getPreviouslySentHashedTokens()
-        } returns setOf(purchaseToken.sha1())
+        mockCacheOfOrderIdsPerToken(mapOf(purchaseToken.sha1() to ""))
 
         purchases.syncObserverModeAmazonPurchase(
             productID = skuParent,
@@ -3725,7 +3708,7 @@ class PurchasesTest {
         }
 
         verify(exactly = 1) {
-            mockCache.addSuccessfullyPostedToken(any())
+            mockCache.addSuccessfullyPostedPurchase(any(), any())
         }
 
         verify(exactly = 0) {
@@ -3772,9 +3755,7 @@ class PurchasesTest {
             }
         }
 
-        every {
-            mockCache.getPreviouslySentHashedTokens()
-        } returns setOf()
+        mockCacheOfOrderIdsPerToken()
 
         purchases.syncObserverModeAmazonPurchase(
             productID = skuParent,
@@ -3832,9 +3813,7 @@ class PurchasesTest {
             }
         }
 
-        every {
-            mockCache.getPreviouslySentHashedTokens()
-        } returns setOf()
+        mockCacheOfOrderIdsPerToken()
 
         purchases.syncObserverModeAmazonPurchase(
             productID = skuParent,
@@ -3883,9 +3862,7 @@ class PurchasesTest {
             }
         }
 
-        every {
-            mockCache.getPreviouslySentHashedTokens()
-        } returns setOf()
+        mockCacheOfOrderIdsPerToken()
 
         purchases.syncObserverModeAmazonPurchase(
             productID = skuParent,
@@ -4088,7 +4065,7 @@ class PurchasesTest {
 
         purchases.updatePendingPurchaseQueue()
         verify(exactly = 0) {
-            mockCache.getPreviouslySentHashedTokens()
+            mockCache.getPreviouslySentOrderIdsPerHashToken()
         }
     }
 
@@ -4498,7 +4475,7 @@ class PurchasesTest {
                 isOfferingsCacheStale(any())
             } returns false
             every {
-                addSuccessfullyPostedToken(any())
+                addSuccessfullyPostedPurchase(any(), any())
             } just Runs
             every {
                 mockCache.cacheOfferings(any())
@@ -4625,7 +4602,10 @@ class PurchasesTest {
     ) {
         val purchasesByHashedToken = queriedSUBS + queriedINAPP
         every {
-            mockCache.cleanPreviouslySentTokens(purchasesByHashedToken.keys)
+            mockCache.migrateHashedTokensCacheToCacheWithOrderIds()
+        } just Runs
+        every {
+            mockCache.cleanUpTokensCache(purchasesByHashedToken)
         } just Runs
         every {
             mockCache.getActivePurchasesNotInCache(purchasesByHashedToken)
@@ -4902,6 +4882,12 @@ class PurchasesTest {
 
         buildPurchases(anonymous)
         mockSubscriberAttributesManager(userIdToUse)
+    }
+
+    private fun mockCacheOfOrderIdsPerToken(cache: Map<String, String> = emptyMap()) {
+        every {
+            mockCache.getPreviouslySentOrderIdsPerHashToken()
+        } returns cache
     }
 
 // endregion

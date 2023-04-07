@@ -1775,8 +1775,7 @@ class Purchases internal constructor(
                                     RestoreStrings.QUERYING_PURCHASE_WITH_HASH.format(purchase.type, hash)
                                 )
                             }
-                            deviceCache.migrateHashedTokensCacheToCacheWithOrderIds(activePurchasesByHashedToken)
-                            deviceCache.cleanInactiveTokens(activePurchasesByHashedToken.keys)
+                            deviceCache.cleanUpTokensCache(activePurchasesByHashedToken)
                             postPurchases(
                                 deviceCache.getActivePurchasesNotInCache(activePurchasesByHashedToken),
                                 allowSharingPlayStoreAccount,

@@ -138,7 +138,7 @@ internal class PurchasesFactory(
             }
 
             val offlineEntitlementsManager = OfflineEntitlementsManager(backend, cache)
-
+            cache.migrateHashedTokensCacheToCacheWithOrderIds()
             return Purchases(
                 application,
                 appUserID,
