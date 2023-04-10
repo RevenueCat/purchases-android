@@ -3,7 +3,6 @@ package com.revenuecat.purchases.common.offlineentitlements
 import com.google.gson.internal.bind.util.ISO8601Utils
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.PeriodType
-import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.VerificationResult
@@ -60,7 +59,7 @@ class OfflineCustomerInfoCalculator(
                 put(CustomerInfoResponseJsonKeys.FIRST_SEEN, formattedDate)
                 val originalPurchaseDate = calculateOriginalPurchaseDate(purchasedProducts)
                 put(CustomerInfoResponseJsonKeys.ORIGINAL_PURCHASE_DATE, originalPurchaseDate)
-                put(CustomerInfoResponseJsonKeys.NON_SUBSCRIPTIONS, JSONObject()) // TODO in another PR
+                put(CustomerInfoResponseJsonKeys.NON_SUBSCRIPTIONS, JSONObject())
                 put(CustomerInfoResponseJsonKeys.SUBSCRIPTIONS, generateSubscriptions(purchasedProducts))
                 put(CustomerInfoResponseJsonKeys.MANAGEMENT_URL, determineManagementURL())
             })
@@ -84,7 +83,7 @@ class OfflineCustomerInfoCalculator(
     ): JSONObject {
         val subscriptions = JSONObject()
 
-        purchasedProducts.filter { it.storeTransaction.type == ProductType.SUBS }.forEach { product ->
+        purchasedProducts.forEach { product ->
             subscriptions.put(product.productIdentifier, JSONObject().apply {
                 put(ProductResponseJsonKeys.BILLING_ISSUES_DETECTED_AT, JSONObject.NULL)
                 put(ProductResponseJsonKeys.IS_SANDBOX, false)
