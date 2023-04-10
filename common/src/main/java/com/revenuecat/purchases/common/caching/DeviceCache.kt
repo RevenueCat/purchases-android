@@ -220,13 +220,13 @@ open class DeviceCache(
         val hashedTokens = getPreviouslySentHashedTokens()
         val hashedTokensAndOrderIds = getPreviouslySentOrderIdsPerHashToken()
 
-        if (hashedTokens.isNotEmpty() && hashedTokensAndOrderIds.isEmpty()) {
-            val orderIdsPerHashedToken = mutableMapOf<String, String>()
+        if (hashedTokens.isNotEmpty()) {
+            val migratedTokens = mutableMapOf<String, String>()
             hashedTokens.forEach { hashedToken ->
-                orderIdsPerHashedToken[hashedToken] = ""
+                migratedTokens[hashedToken] = ""
             }
 
-            val editor = setSavedOrderIdsPerTokenHashes(orderIdsPerHashedToken, applyEditor = false)
+            val editor = setSavedOrderIdsPerTokenHashes(hashedTokensAndOrderIds + migratedTokens, applyEditor = false)
             editor.remove(tokensCacheKey)
             editor.apply()
         }
