@@ -29,7 +29,7 @@ enum class VerificationResult {
     FAILED,
 
     /**
-     * Entitlements were computed on device.
+     * Verification was performed on device.
      */
-    ENTITLEMENTS_COMPUTED_ON_DEVICE
+    VERIFIED_ON_DEVICE
 }

@@ -1200,7 +1200,7 @@ class EntitlementInfosTests {
 //        val entitlementInfos1 = EntitlementInfos(emptyMap(), VerificationResult.NOT_REQUESTED)
 //        val entitlementInfos2 = EntitlementInfos(emptyMap(), VerificationResult.VERIFIED)
 //        val entitlementInfos3 = EntitlementInfos(emptyMap(), VerificationResult.FAILED)
-//        val entitlementInfos4 = EntitlementInfos(emptyMap(), VerificationResult.ENTITLEMENTS_COMPUTED_ON_DEVICE)
+//        val entitlementInfos4 = EntitlementInfos(emptyMap(), VerificationResult.VERIFIED_ON_DEVICE)
 //        assertThat(entitlementInfos1).isNotEqualTo(entitlementInfos2)
 //        assertThat(entitlementInfos1).isNotEqualTo(entitlementInfos3)
 //        assertThat(entitlementInfos1).isNotEqualTo(entitlementInfos4)

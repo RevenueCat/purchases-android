@@ -35,7 +35,7 @@ class EntitlementInfoTest {
 //        val entitlementInfo1 = createEntitlementInfo(verification = VerificationResult.NOT_REQUESTED)
 //        val entitlementInfo2 = createEntitlementInfo(verification = VerificationResult.FAILED)
 //        val entitlementInfo3 = createEntitlementInfo(verification = VerificationResult.VERIFIED)
-//        val entitlementInfo4 = createEntitlementInfo(verification = VerificationResult.ENTITLEMENTS_COMPUTED_ON_DEVICE)
+//        val entitlementInfo4 = createEntitlementInfo(verification = VerificationResult.VERIFIED_ON_DEVICE)
 //        assertThat(entitlementInfo1).isNotEqualTo(entitlementInfo2)
 //        assertThat(entitlementInfo1).isNotEqualTo(entitlementInfo3)
 //        assertThat(entitlementInfo1).isNotEqualTo(entitlementInfo4)
