@@ -210,13 +210,10 @@ open class DeviceCache(
 
     /**
      * Migrates data from hashed tokens cache to cache with order IDs. If there are no hashed tokens in the cache, or if
-     * there are already order IDs in the cache, this method does nothing. If there are hashed tokens in the cache, but
-     * no order IDs, it will use the active purchases to get the order IDs of the cached tokens and store them in
-     * the cache.
+     * there are already order IDs in the cache, this method does nothing. If there are hashed tokens in the cache, it
+     * will migrate them to the cache with order IDs (setting an empty order ID), and remove the hashed tokens cache.
      *
      * This method is synchronized to ensure thread safety.
-     *
-     * @param activePurchasesByHashedToken a map of hashed tokens to store transactions
      */
     @Synchronized
     fun migrateHashedTokensCacheToCacheWithOrderIds() {
