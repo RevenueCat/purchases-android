@@ -67,7 +67,7 @@ class OfflineCustomerInfoCalculator(
         }
 
         return CustomerInfoFactory.buildCustomerInfo(
-            jsonObject, requestDate, VerificationResult.NOT_REQUESTED
+            jsonObject, requestDate, VerificationResult.VERIFIED_ON_DEVICE
         )
     }
 
