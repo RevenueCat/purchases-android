@@ -279,7 +279,9 @@ open class DeviceCache(
         }
         val activeTokensWithFixedOrders =
             fixEmptyOrderIds(tokensInCacheThatAreStillActive, activePurchasesByHashedToken)
-        setSavedOrderIdsPerTokenHashes(activeTokensWithFixedOrders)
+        if (tokensInCache != activeTokensWithFixedOrders) {
+            setSavedOrderIdsPerTokenHashes(activeTokensWithFixedOrders)
+        }
     }
 
     /**
