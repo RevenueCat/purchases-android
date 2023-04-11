@@ -128,7 +128,7 @@ class HTTPClient(
         requestHeaders: Map<String, String>,
         refreshETag: Boolean
     ): HTTPResult? {
-        val jsonBody = body?.let { mapConverter.convertToJSON(body) }
+        val jsonBody = body?.let { mapConverter.convertToJSON(it) }
         val path = endpoint.getPath()
         val urlPathWithVersion = "/v1$path"
         val connection: HttpURLConnection

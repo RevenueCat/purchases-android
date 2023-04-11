@@ -19,7 +19,6 @@ class MapConverter {
      */
     internal fun convertToJSON(inputMap: Map<String, Any?>): JSONObject {
         val mapWithoutInnerMaps = inputMap.mapValues { (_, value) ->
-            value.tryCast<Map<String, Any?>>(ifSuccess = { convertToJSON(this) })
             when (value) {
                 is List<*> -> {
                     if (value.all { it is String }) {

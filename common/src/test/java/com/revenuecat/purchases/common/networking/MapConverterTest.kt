@@ -2,7 +2,6 @@ package com.revenuecat.purchases.common.networking
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import io.mockk.every
-import io.mockk.mockk
 import io.mockk.spyk
 import org.json.JSONArray
 import org.json.JSONObject
@@ -66,7 +65,7 @@ class MapConverterTest {
      */
     @Test
     fun `test map conversion fixes wrong treatment of arrays of strings in JSON library`() {
-        val mapConverterMock = spyk<MapConverter>()
+        val mapConverterPartialMock = spyk<MapConverter>()
 
         val inputMap = mapOf(
             "product_ids" to listOf("product_1", "product_2")
@@ -80,10 +79,10 @@ class MapConverterTest {
         val correctedJSONArray = JSONArray(listOf("product_1", "product_2"))
 
         every {
-            mapConverterMock.createJSONObject(match { it == inputMap })
+            mapConverterPartialMock.createJSONObject(match { it == inputMap })
         } returns JSONObject(mapOf("product_ids" to incorrectJsonArrayString))
 
-        val resultJson = mapConverterMock.convertToJSON(mapContainingInputMap)
+        val resultJson = mapConverterPartialMock.convertToJSON(mapContainingInputMap)
         val resultArrayString = resultJson.optJSONObject("subscriber_info")?.optJSONArray("product_ids")
 
         assertEquals(correctedJSONArray, resultArrayString)
