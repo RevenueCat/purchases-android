@@ -5,11 +5,33 @@ apply plugin: 'org.jetbrains.dokka'
 android {
     productFlavors {
         integrationTest {
+            testApplicationId obtainTestApplicationId()
+            testBuildType obtainTestBuildType()
             packagingOptions {
                 resources.excludes.add("META-INF/*")
             }
         }
     }
+}
+
+def obtainTestApplicationId() {
+    def result = "com.revenuecat.purchases.integrationTest";
+
+    if (project.hasProperty("testApplicationId")) {
+        result = project.getProperties().get("testApplicationId")
+    }
+
+    result
+}
+
+def obtainTestBuildType() {
+    def result = "debug";
+
+    if (project.hasProperty("testBuildType")) {
+        result = project.getProperties().get("testBuildType")
+    }
+
+    result
 }
 
 dependencies {
