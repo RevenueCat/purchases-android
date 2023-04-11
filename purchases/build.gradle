@@ -10,7 +10,8 @@ android {
             testApplicationId obtainTestApplicationId()
             testBuildType obtainTestBuildType()
             packagingOptions {
-                resources.excludes.add("META-INF/*")
+                resources.excludes.add("META-INF/LICENSE.md")
+                resources.excludes.add("META-INF/LICENSE-notice.md")
             }
         }
     }
