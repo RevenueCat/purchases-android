@@ -45,14 +45,14 @@ class MapConverterTest {
             "key1" to "value1",
             "key2" to listOf("value2", "value3"),
             "key3" to mapOf("nestedKey" to "nestedValue"),
-            "key4" to listOf("value4", "value5")
+            "key4" to mapOf("nestedArray" to listOf("value4", "value5")),
         )
 
         val expectedJson = JSONObject()
             .put("key1", "value1")
             .put("key2", JSONArray(listOf("value2", "value3")))
             .put("key3", JSONObject().put("nestedKey", "nestedValue"))
-            .put("key4", JSONArray(listOf("value4", "value5")))
+            .put("key4", JSONObject().put("nestedArray", JSONArray(listOf("value4", "value5"))))
 
         val result = mapConverter.convertToJSON(inputMap)
         assertEquals(expectedJson.toString(), result.toString())
