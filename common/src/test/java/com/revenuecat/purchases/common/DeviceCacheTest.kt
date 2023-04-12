@@ -611,7 +611,7 @@ class DeviceCacheTest {
         verify(exactly = 1) {
             mockEditor.putString(
                 productEntitlementMappingCacheKey,
-                "{\"products\":[{\"id\":\"com.revenuecat.foo_1\",\"entitlements\":[\"pro_1\"]},{\"id\":\"com.revenuecat.foo_2\",\"entitlements\":[\"pro_1\",\"pro_2\"]},{\"id\":\"com.revenuecat.foo_3\",\"entitlements\":[\"pro_2\"]}]}"
+                "{\"products\":[{\"id\":\"com.revenuecat.foo_1:p1m\",\"entitlements\":[\"pro_1\"],\"base_plan_id\":\"p1m\"},{\"id\":\"com.revenuecat.foo_1:not_bw\",\"entitlements\":[\"pro_2\"],\"base_plan_id\":\"not_bw\"},{\"id\":\"com.revenuecat.foo_1\",\"entitlements\":[\"pro_1\"],\"base_plan_id\":\"p1m\"},{\"id\":\"com.revenuecat.foo_2\",\"entitlements\":[\"pro_1\",\"pro_2\"],\"base_plan_id\":\"p1m\"},{\"id\":\"com.revenuecat.foo_3\",\"entitlements\":[\"pro_2\"],\"base_plan_id\":\"p1m\"}]}"
             )
         }
         verify(exactly = 1) {
