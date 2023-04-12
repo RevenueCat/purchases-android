@@ -125,16 +125,18 @@ class Backend(
                             )
                         }
                     } catch (e: JSONException) {
-                        onError(e.toPurchasesError().also { errorLog(it) }, false)
+                        val isServerError = false
+                        onError(e.toPurchasesError().also { errorLog(it) }, isServerError)
                     }
                 }
             }
 
             override fun onError(error: PurchasesError) {
+                val isServerError = false
                 synchronized(this@Backend) {
                     callbacks.remove(cacheKey)
                 }?.forEach { (_, onError) ->
-                    onError(error, false)
+                    onError(error, isServerError)
                 }
             }
         }
@@ -218,10 +220,11 @@ class Backend(
                             )
                         }
                     } catch (e: JSONException) {
+                        val isServerError = false
                         onError(
                             e.toPurchasesError().also { errorLog(it) },
                             false,
-                            false,
+                            isServerError,
                             null
                         )
                     }
@@ -229,13 +232,14 @@ class Backend(
             }
 
             override fun onError(error: PurchasesError) {
+                val isServerError = false
                 synchronized(this@Backend) {
                     postReceiptCallbacks.remove(cacheKey)
                 }?.forEach { (_, onError) ->
                     onError(
                         error,
                         false,
-                        false,
+                        isServerError,
                         null
                     )
                 }
