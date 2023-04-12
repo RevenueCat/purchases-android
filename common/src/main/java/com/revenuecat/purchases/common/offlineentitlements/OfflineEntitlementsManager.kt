@@ -17,6 +17,7 @@ class OfflineEntitlementsManager(
     // We cache the offline customer info in memory, so it's not persisted.
     val offlineCustomerInfo: CustomerInfo?
         get() = _offlineCustomerInfo
+    // TODO make sure we handle concurrency
     private var _offlineCustomerInfo: CustomerInfo? = null
 
     fun resetOfflineCustomerInfoCache() {

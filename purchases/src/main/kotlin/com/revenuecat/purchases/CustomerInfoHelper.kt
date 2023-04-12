@@ -139,10 +139,11 @@ internal class CustomerInfoHelper(
                         onSuccess = { offlineComputedCustomerInfo ->
                             // TODO Improve logs
                             warnLog("Using offline computed customer info.")
+                            sendUpdatedCustomerInfoToDelegateIfChanged(offlineComputedCustomerInfo)
                             dispatch { callback?.onReceived(offlineComputedCustomerInfo) }
                         },
                         onError = { errorCalculatingOfflineCustomerInfo ->
-                            errorLog(errorCalculatingOfflineCustomerInfo)
+                            errorLog("Error calculating offline customer info: $errorCalculatingOfflineCustomerInfo")
                             dispatch { callback?.onError(error) }
                         }
                     )
