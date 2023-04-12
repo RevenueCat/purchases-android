@@ -477,7 +477,7 @@ class PurchasedProductsFetcherTest {
         productIdentifierToEntitlements: Map<String, List<String>>
     ) {
         val mappings = productIdentifierToEntitlements.map { (identifier, entitlements) ->
-            ProductEntitlementMapping.Mapping(identifier, entitlements)
+            ProductEntitlementMapping.Mapping(identifier, entitlements, null) // TODO
         }.toList()
         val productEntitlementMapping = ProductEntitlementMapping(mappings)
         every {

@@ -16,23 +16,40 @@ class ProductEntitlementMappingTest {
             {
                 "products": [
                     {
+                        "id": "com.revenuecat.foo_1:p1m",
+                        "entitlements": [
+                            "pro_1"
+                        ],
+                        "base_plan_id": "p1m"
+                    },
+                    {
+                        "id": "com.revenuecat.foo_1:not_bw",
+                        "entitlements": [
+                            "pro_2"
+                        ],
+                        "base_plan_id": "not_bw"
+                    },
+                    {
                         "id": "com.revenuecat.foo_1",
                         "entitlements": [
                             "pro_1"
-                        ]
+                        ],
+                        "base_plan_id": "p1m"
                     },
                     {
                         "id": "com.revenuecat.foo_2",
                         "entitlements": [
                             "pro_1",
                             "pro_2"
-                        ]
+                        ],
+                        "base_plan_id": "p1m"
                     },
                     {
                         "id": "com.revenuecat.foo_3",
                         "entitlements": [
                             "pro_2"
-                        ]
+                        ],
+                        "base_plan_id": "p1m"
                     }
                 ]
             }
@@ -83,9 +100,11 @@ class ProductEntitlementMappingTest {
     fun `toMap transforms mappings to map`() {
         val mappingsMap = createProductEntitlementMapping().toMap()
         val expectedMap = mapOf(
+            "com.revenuecat.foo_1:p1m" to listOf("pro_1"),
+            "com.revenuecat.foo_1:not_bw" to listOf("pro_2"),
             "com.revenuecat.foo_1" to listOf("pro_1"),
             "com.revenuecat.foo_2" to listOf("pro_1", "pro_2"),
-            "com.revenuecat.foo_3" to listOf("pro_2"),
+            "com.revenuecat.foo_3" to listOf("pro_2")
         )
         assertThat(mappingsMap).isEqualTo(expectedMap)
     }

@@ -62,7 +62,9 @@ class PurchasedProductsFetcher(
             purchaseAssociatedToProduct,
             isActive,
             productEntitlementMapping?.toMap()?.get(productIdentifier) ?: emptyList(),
-            expirationDate
+            expirationDate,
+            productEntitlementMapping?.mappings?.firstOrNull { it.identifier == productIdentifier }
+                ?.basePlanIdentifier
         )
     }
 
