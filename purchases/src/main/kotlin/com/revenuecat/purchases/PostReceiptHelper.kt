@@ -7,6 +7,8 @@ import com.revenuecat.purchases.common.PostReceiptDataErrorCallback
 import com.revenuecat.purchases.common.PostReceiptDataSuccessCallback
 import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.caching.DeviceCache
+import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
+import com.revenuecat.purchases.common.warnLog
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
@@ -20,7 +22,8 @@ internal class PostReceiptHelper(
     private val billing: BillingAbstract,
     private val customerInfoHelper: CustomerInfoHelper,
     private val deviceCache: DeviceCache,
-    private val subscriberAttributesManager: SubscriberAttributesManager
+    private val subscriberAttributesManager: SubscriberAttributesManager,
+    private val offlineEntitlementsManager: OfflineEntitlementsManager
 ) {
     private val finishTransactions: Boolean
         get() = appConfig.finishTransactions
@@ -46,7 +49,7 @@ internal class PostReceiptHelper(
             receiptInfo,
             storeUserID,
             marketplace,
-            onSuccess = { _, _ ->
+            onSuccess = {
                 deviceCache.addSuccessfullyPostedToken(purchaseToken)
                 onSuccess()
             },
@@ -84,7 +87,7 @@ internal class PostReceiptHelper(
             receiptInfo = receiptInfo,
             storeUserID = purchase.storeUserID,
             marketplace = purchase.marketplace,
-            onSuccess = { info, _ ->
+            onSuccess = { info ->
                 billing.consumeAndSave(finishTransactions, purchase)
                 onSuccess?.let { it(purchase, info) }
             },
@@ -104,7 +107,7 @@ internal class PostReceiptHelper(
         receiptInfo: ReceiptInfo,
         storeUserID: String?,
         marketplace: String?,
-        onSuccess: PostReceiptDataSuccessCallback,
+        onSuccess: (CustomerInfo) -> Unit,
         onError: PostReceiptDataErrorCallback
     ) {
         subscriberAttributesManager.getUnsyncedSubscriberAttributes(appUserID) { unsyncedSubscriberAttributesByKey ->
@@ -118,6 +121,7 @@ internal class PostReceiptHelper(
                 storeAppUserID = storeUserID,
                 marketplace = marketplace,
                 onSuccess = { customerInfo, responseBody ->
+                    offlineEntitlementsManager.resetOfflineCustomerInfoCache()
                     subscriberAttributesManager.markAsSynced(
                         appUserID,
                         unsyncedSubscriberAttributesByKey,
@@ -125,7 +129,7 @@ internal class PostReceiptHelper(
                     )
                     customerInfoHelper.cacheCustomerInfo(customerInfo)
                     customerInfoHelper.sendUpdatedCustomerInfoToDelegateIfChanged(customerInfo)
-                    onSuccess(customerInfo, responseBody)
+                    onSuccess(customerInfo)
                 },
                 onError = { error, shouldConsumePurchase, isServerError, responseBody ->
                     if (shouldConsumePurchase) {
@@ -135,9 +139,27 @@ internal class PostReceiptHelper(
                             responseBody.getAttributeErrors()
                         )
                     }
-                    onError(error, shouldConsumePurchase, isServerError, responseBody)
+                    val offlineCustomerInfo = calculateOfflineCustomerInfoIfNeeded(isServerError)
+                    if (offlineCustomerInfo != null) {
+                        onSuccess(offlineCustomerInfo)
+                    } else {
+                        onError(error, shouldConsumePurchase, isServerError, responseBody)
+                    }
                 }
             )
         }
+    }
+
+    private fun calculateOfflineCustomerInfoIfNeeded(isServerError: Boolean): CustomerInfo? {
+        if (offlineEntitlementsManager.shouldCalculateOfflineCustomerInfoInPostReceipt(isServerError)) {
+            val customerInfo = offlineEntitlementsManager.calculateAndCacheOfflineCustomerInfo()
+            customerInfo?.let {
+                // TODO Improve logs
+                warnLog("Using offline computed customer info.")
+                customerInfoHelper.sendUpdatedCustomerInfoToDelegateIfChanged(it)
+            }
+            return customerInfo
+        }
+        return null
     }
 }

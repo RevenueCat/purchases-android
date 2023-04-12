@@ -116,14 +116,17 @@ internal class PurchasesFactory(
                 attributionFetcher
             )
 
+            val offlineEntitlementsManager = OfflineEntitlementsManager(backend, cache)
+
             val identityManager = IdentityManager(
                 cache,
                 subscriberAttributesCache,
                 subscriberAttributesManager,
-                backend
+                backend,
+                offlineEntitlementsManager
             )
 
-            val customerInfoHelper = CustomerInfoHelper(cache, backend, identityManager)
+            val customerInfoHelper = CustomerInfoHelper(cache, backend, identityManager, offlineEntitlementsManager)
             val offeringParser = OfferingParserFactory.createOfferingParser(store)
 
             var diagnosticsSynchronizer: DiagnosticsSynchronizer? = null
@@ -137,15 +140,14 @@ internal class PurchasesFactory(
                 )
             }
 
-            val offlineEntitlementsManager = OfflineEntitlementsManager(backend, cache)
-
             val postReceiptHelper = PostReceiptHelper(
                 appConfig,
                 backend,
                 billing,
                 customerInfoHelper,
                 cache,
-                subscriberAttributesManager
+                subscriberAttributesManager,
+                offlineEntitlementsManager
             )
 
             return Purchases(
