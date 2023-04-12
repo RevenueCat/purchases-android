@@ -184,7 +184,7 @@ fun stubStoreTransactionFromGooglePurchase(
 
 fun stubStoreTransactionFromPurchaseHistoryRecord(
     productIds: List<String>,
-    purchaseTime: Long,
+    purchaseTime: Long
 ): StoreTransaction {
     return stubPurchaseHistoryRecord(
         productIds = productIds,
