@@ -1876,7 +1876,8 @@ class BackendTest {
     fun `getProductEntitlementMapping calls success handler`() {
         val resultBody = "{\"products\":[" +
             "{\"id\":\"test-product-id\"," +
-            "\"entitlements\":[\"entitlement-1\",\"entitlement-2\"]" +
+            "\"entitlements\":[\"entitlement-1\",\"entitlement-2\"]," +
+            "\"base_plan_id\":\"p1m\"" +
             "}]}"
         mockResponse(
             endpoint = productEntitlementMappingEndpoint,
@@ -1891,11 +1892,12 @@ class BackendTest {
             {
                 successCalled = true
                 val expectedMapping = createProductEntitlementMapping(
-                    mapOf("test-product-id" to listOf("entitlement-1", "entitlement-2"))
+                    mappings = mapOf("test-product-id" to listOf("entitlement-1", "entitlement-2")),
+                    basePlans = mapOf("test-product-id" to "p1m")
                 )
                 assertThat(it).isEqualTo(expectedMapping)
             },
-            { fail("expected success") }
+            { error -> fail("expected success $error", error) }
         )
         assertTrue(successCalled)
     }

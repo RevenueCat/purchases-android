@@ -126,7 +126,9 @@ class OfflineCustomerInfoCalculator(
                 put(EntitlementsResponseJsonKeys.PRODUCT_IDENTIFIER, product.productIdentifier)
                 val purchaseDate = Date(product.storeTransaction.purchaseTime)
                 put(EntitlementsResponseJsonKeys.PURCHASE_DATE, Iso8601Utils.format(purchaseDate))
-                put(EntitlementsResponseJsonKeys.PRODUCT_PLAN_IDENTIFIER, product.basePlanIdentifier)
+                product.basePlanIdentifier?.let {
+                    put(EntitlementsResponseJsonKeys.PRODUCT_PLAN_IDENTIFIER, it)
+                }
             }
             entitlements.put(entitlement, entitlementDetails)
         }
