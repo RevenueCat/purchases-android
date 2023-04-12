@@ -142,9 +142,6 @@ jobs:
               mkdir -p build/test-results/
               find . -type f -regex ".*/build/test-results/.*xml" -exec cp --parents {} build/test-results/ \;
       - run:
-          name: Detekt
-          command: ./gradlew detektAll
-      - run:
           name: Kover HTML
           command: ./gradlew koverMergedHtmlReport
       - run:
@@ -155,8 +152,26 @@ jobs:
       - android/save-build-cache
       - store_artifacts:
           path: build/reports
+      - run:
+          name: Save test results
+          command: |
+            mkdir -p build/test-results
+            find . -type f -regex ".*/build/test-results/.*xml" -exec cp {} build/test-results \;
+          when: always
       - store_test_results:
           path: build/test-results
+
+  detekt:
+    <<: *android-executor
+    shell: /bin/bash --login -o pipefail
+    steps:
+      - checkout
+      - install-sdkman
+      - android/restore-gradle-cache
+      - run:
+          name: Detekt
+          command: ./gradlew detektAll
+      - android/save-gradle-cache
 
   docs-deploy:
     <<: *android-executor
@@ -408,6 +423,7 @@ workflows:
         equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
     jobs:
       - test
+      - detekt
       - assemble-sample-app
 
   deploy:
