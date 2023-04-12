@@ -148,7 +148,6 @@ internal class CustomerInfoHelper(
                         }
                     )
                 } else {
-                    offlineEntitlementsManager.resetOfflineCustomerInfoCache()
                     dispatch { callback?.onError(error) }
                 }
             })
