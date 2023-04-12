@@ -10,6 +10,7 @@ import com.revenuecat.purchases.common.PostReceiptDataSuccessCallback
 import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.SubscriberAttributeError
 import com.revenuecat.purchases.common.caching.DeviceCache
+import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
 import com.revenuecat.purchases.google.toStoreTransaction
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttribute
@@ -74,6 +75,7 @@ class PostReceiptHelperTest {
     private lateinit var customerInfoHelper: CustomerInfoHelper
     private lateinit var deviceCache: DeviceCache
     private lateinit var subscriberAttributesManager: SubscriberAttributesManager
+    private lateinit var offlineEntitlementsManager: OfflineEntitlementsManager
 
     private lateinit var postReceiptHelper: PostReceiptHelper
 
@@ -85,6 +87,8 @@ class PostReceiptHelperTest {
         customerInfoHelper = mockk()
         deviceCache = mockk()
         subscriberAttributesManager = mockk()
+        // TODO remove relaxed
+        offlineEntitlementsManager = mockk(relaxed = true)
 
         postedReceiptInfoSlot = slot()
 
@@ -94,7 +98,8 @@ class PostReceiptHelperTest {
             billing = billing,
             customerInfoHelper = customerInfoHelper,
             deviceCache = deviceCache,
-            subscriberAttributesManager = subscriberAttributesManager
+            subscriberAttributesManager = subscriberAttributesManager,
+            offlineEntitlementsManager = offlineEntitlementsManager
         )
 
         mockUnsyncedSubscriberAttributes()

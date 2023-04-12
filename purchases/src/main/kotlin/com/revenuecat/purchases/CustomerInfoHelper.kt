@@ -142,8 +142,7 @@ internal class CustomerInfoHelper(
                             sendUpdatedCustomerInfoToDelegateIfChanged(offlineComputedCustomerInfo)
                             dispatch { callback?.onReceived(offlineComputedCustomerInfo) }
                         },
-                        onError = { errorCalculatingOfflineCustomerInfo ->
-                            errorLog("Error calculating offline customer info: $errorCalculatingOfflineCustomerInfo")
+                        onError = {
                             dispatch { callback?.onError(error) }
                         }
                     )

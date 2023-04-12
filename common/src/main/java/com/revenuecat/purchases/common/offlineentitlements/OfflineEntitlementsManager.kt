@@ -48,10 +48,15 @@ class OfflineEntitlementsManager(
         offlineCustomerInfoCalculator.computeOfflineCustomerInfo(
             appUserId,
             onSuccess = { customerInfo ->
+                // TODO improve logs
+                warnLog("Updating offline customer info cache")
                 _offlineCustomerInfo = customerInfo
                 onSuccess(customerInfo)
             },
-            onError = onError
+            onError = {
+                errorLog("Error calculating offline customer info: $it")
+                onError(it)
+            }
         )
     }
 

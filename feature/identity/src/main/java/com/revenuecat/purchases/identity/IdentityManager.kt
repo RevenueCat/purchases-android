@@ -91,6 +91,7 @@ class IdentityManager(
     private fun reset() {
         deviceCache.clearCachesForAppUserID(currentAppUserID)
         subscriberAttributesCache.clearSubscriberAttributesIfSyncedForSubscriber(currentAppUserID)
+        offlineEntitlementsManager.resetOfflineCustomerInfoCache()
         deviceCache.cacheAppUserID(generateRandomID())
     }
 
@@ -106,7 +107,6 @@ class IdentityManager(
             log(LogIntent.USER, IdentityStrings.LOG_OUT_SUCCESSFUL)
             completion(null)
         }
-        offlineEntitlementsManager.resetOfflineCustomerInfoCache()
     }
 
     @Synchronized
