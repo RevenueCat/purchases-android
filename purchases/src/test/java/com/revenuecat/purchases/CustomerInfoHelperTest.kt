@@ -475,7 +475,7 @@ class CustomerInfoHelperTest {
                 every {
                     getCustomerInfo(any(), any(), any(), captureLambda())
                 } answers {
-                    lambda<(PurchasesError) -> Unit>().captured.invoke(errorGettingCustomerInfo)
+                    lambda<(PurchasesError, Boolean) -> Unit>().captured.invoke(errorGettingCustomerInfo, false)
                 }
             } else {
                 every {

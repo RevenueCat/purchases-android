@@ -29,7 +29,7 @@ class SubscriberAttributesPoster(
             },
             { error, responseCode, body ->
                 error?.let {
-                    val internalServerError = responseCode >= RCHTTPStatusCodes.ERROR
+                    val internalServerError = RCHTTPStatusCodes.isServerError(responseCode)
                     val notFoundError = responseCode == RCHTTPStatusCodes.NOT_FOUND
                     val successfullySynced = !(internalServerError || notFoundError)
                     var attributeErrors: List<SubscriberAttributeError> = emptyList()

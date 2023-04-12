@@ -10,4 +10,5 @@ object RCHTTPStatusCodes {
     const val ERROR = 500
 
     fun isSuccessful(statusCode: Int) = statusCode < BAD_REQUEST
+    fun isServerError(statusCode: Int) = statusCode >= ERROR
 }

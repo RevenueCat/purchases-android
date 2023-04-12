@@ -13,6 +13,7 @@ import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
+import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
 import com.revenuecat.purchases.common.offlineentitlements.createProductEntitlementMapping
 import com.revenuecat.purchases.models.GoogleStoreProduct
 import com.revenuecat.purchases.models.GoogleSubscriptionOption
@@ -60,7 +61,15 @@ private const val API_KEY = "TEST_API_KEY"
 class BackendTest {
 
     @Before
-    fun setup() = mockkObject(CustomerInfoFactory)
+    fun setup() {
+        mockkObject(CustomerInfoFactory)
+        receivedError = null
+        receivedOfferingsJSON = null
+        receivedCustomerInfo = null
+        receivedShouldConsumePurchase = null
+        receivedCustomerInfoCreated = null
+        receivedIsServerError = null
+    }
 
     @After
     fun tearDown() = unmockkObject(CustomerInfoFactory)
@@ -124,6 +133,7 @@ class BackendTest {
     private var receivedOfferingsJSON: JSONObject? = null
     private var receivedError: PurchasesError? = null
     private var receivedShouldConsumePurchase: Boolean? = null
+    private var receivedIsServerError: Boolean? = null
     private val noOfferingsResponse = "{'offerings': [], 'current_offering_id': null}"
 
     private val headersSlot = slot<Map<String, String>>()
@@ -138,14 +148,16 @@ class BackendTest {
             this@BackendTest.receivedCustomerInfo = info
         }
 
-    private val postReceiptErrorCallback: (PurchasesError, Boolean, JSONObject?) -> Unit =
-        { error, shouldConsumePurchase, _ ->
+    private val postReceiptErrorCallback: (PurchasesError, Boolean, Boolean, JSONObject?) -> Unit =
+        { error, shouldConsumePurchase, isServerError, _ ->
             this@BackendTest.receivedError = error
             this@BackendTest.receivedShouldConsumePurchase = shouldConsumePurchase
+            this@BackendTest.receivedIsServerError = isServerError
         }
 
-    private val onReceiveCustomerInfoErrorHandler: (PurchasesError) -> Unit = {
-        this@BackendTest.receivedError = it
+    private val onReceiveCustomerInfoErrorHandler: (PurchasesError, Boolean) -> Unit = { error, isServerError ->
+        this@BackendTest.receivedError = error
+        this@BackendTest.receivedIsServerError = isServerError
     }
 
     private val onReceiveOfferingsResponseSuccessHandler: (JSONObject) -> Unit = { offeringsJSON ->
@@ -211,6 +223,18 @@ class BackendTest {
     fun handlesMissingMessageInErrorBody() {
         getCustomerInfo(404, null, "{'no_message': 'Dude not found'}")
         assertThat(receivedError).`as`("Received error is not null").isNotNull
+    }
+
+    @Test
+    fun `getCustomerInfo error callback returns isServerError true if response code is 500`() {
+        getCustomerInfo(RCHTTPStatusCodes.ERROR, null, "{}")
+        assertThat(receivedIsServerError).isEqualTo(true)
+    }
+
+    @Test
+    fun `getCustomerInfo error callback returns isServerError false if response code is 400`() {
+        getCustomerInfo(RCHTTPStatusCodes.BAD_REQUEST, null, "{}")
+        assertThat(receivedIsServerError).isEqualTo(false)
     }
 
     @Test
@@ -617,7 +641,7 @@ class BackendTest {
         asyncBackend.getCustomerInfo(appUserID, appInBackground = false, onSuccess = {
             assertThat(it).isEqualTo(initialInfo)
             lock.countDown()
-        }, onError = onReceiveOfferingsErrorHandler)
+        }, onError = onReceiveCustomerInfoErrorHandler)
         mockPostReceiptResponseAndPost(
             asyncBackend,
             delayed = true,
@@ -643,7 +667,7 @@ class BackendTest {
         asyncBackend.getCustomerInfo(appUserID, appInBackground = false, onSuccess = {
             assertThat(it).isEqualTo(updatedInfo)
             lock.countDown()
-        }, onError = onReceiveOfferingsErrorHandler)
+        }, onError = onReceiveCustomerInfoErrorHandler)
 
         // Expect requests:
 
@@ -991,6 +1015,44 @@ class BackendTest {
             .`as`("Received error code is the right one")
             .isEqualTo(PurchasesErrorCode.UnsupportedError)
         assertThat(receivedShouldConsumePurchase).`as`("Purchase shouldn't be consumed").isFalse
+    }
+
+    @Test
+    fun `postReceipt error callback returns isServerError true if response code is 500`() {
+        mockPostReceiptResponseAndPost(
+            backend,
+            responseCode = RCHTTPStatusCodes.ERROR,
+            isRestore = false,
+            clientException = null,
+            resultBody = """
+                {"code":7662,
+                "message":"The product IDs list provided is not an array or does not contain only a single element."
+                }""".trimIndent(),
+            observerMode = false,
+            receiptInfo = ReceiptInfo(productIDs),
+            storeAppUserID = null
+        )
+
+        assertThat(receivedIsServerError).isEqualTo(true)
+    }
+
+    @Test
+    fun `postReceipt error callback returns isServerError false if response code is 400`() {
+        mockPostReceiptResponseAndPost(
+            backend,
+            responseCode = RCHTTPStatusCodes.BAD_REQUEST,
+            isRestore = false,
+            clientException = null,
+            resultBody = """
+                {"code":7662,
+                "message":"The product IDs list provided is not an array or does not contain only a single element."
+                }""".trimIndent(),
+            observerMode = false,
+            receiptInfo = ReceiptInfo(productIDs),
+            storeAppUserID = null
+        )
+
+        assertThat(receivedIsServerError).isEqualTo(false)
     }
 
     @Test
@@ -1916,7 +1978,7 @@ class BackendTest {
         delayed: Boolean = false,
         marketplace: String? = null,
         onSuccess: (CustomerInfo, JSONObject?) -> Unit = onReceivePostReceiptSuccessHandler,
-        onError: (PurchasesError, Boolean, JSONObject?) -> Unit = postReceiptErrorCallback
+        onError: (PurchasesError, Boolean, Boolean, JSONObject?) -> Unit = postReceiptErrorCallback
     ): CustomerInfo {
         val info = mockPostReceiptResponse(
             isRestore = isRestore,

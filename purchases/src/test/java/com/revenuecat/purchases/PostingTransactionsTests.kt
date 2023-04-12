@@ -70,6 +70,7 @@ class PostingTransactionsTests {
     internal data class PostReceiptErrorContainer(
         val error: PurchasesError,
         val shouldConsumePurchase: Boolean,
+        val isServerError: Boolean,
         val body: JSONObject?
     )
 
@@ -108,7 +109,7 @@ class PostingTransactionsTests {
             )
         } answers {
             postReceiptError?.let {
-                errorSlot.captured(it.error, it.shouldConsumePurchase, it.body)
+                errorSlot.captured(it.error, it.shouldConsumePurchase, it.isServerError, it.body)
             } ?: postReceiptSuccess?.let {
                 successSlot.captured(it.info, it.body)
             }
