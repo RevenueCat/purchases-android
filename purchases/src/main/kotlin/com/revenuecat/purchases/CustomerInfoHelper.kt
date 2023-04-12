@@ -134,14 +134,18 @@ internal class CustomerInfoHelper(
                 Log.e("Purchases", "Error fetching customer data: $error")
                 deviceCache.clearCustomerInfoCacheTimestamp(appUserID)
                 if (shouldCalculateOfflineCustomerInfo(isServerError, appUserID)) {
-                    val offlineComputedCustomerInfo = offlineEntitlementsManager.calculateAndCacheOfflineCustomerInfo()
-                    if (offlineComputedCustomerInfo != null) {
-                        // TODO Improve logs
-                        warnLog("Using offline computed customer info.")
-                        dispatch { callback?.onReceived(offlineComputedCustomerInfo) }
-                    } else {
-                        dispatch { callback?.onError(error) }
-                    }
+                    offlineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(
+                        appUserID,
+                        onSuccess = { offlineComputedCustomerInfo ->
+                            // TODO Improve logs
+                            warnLog("Using offline computed customer info.")
+                            dispatch { callback?.onReceived(offlineComputedCustomerInfo) }
+                        },
+                        onError = { errorCalculatingOfflineCustomerInfo ->
+                            errorLog(errorCalculatingOfflineCustomerInfo)
+                            dispatch { callback?.onError(error) }
+                        }
+                    )
                 } else {
                     offlineEntitlementsManager.resetOfflineCustomerInfoCache()
                     dispatch { callback?.onError(error) }

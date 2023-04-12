@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.common.offlineentitlements
 
 import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.debugLog
@@ -10,6 +11,7 @@ import com.revenuecat.purchases.strings.OfflineEntitlementsStrings
 
 class OfflineEntitlementsManager(
     private val backend: Backend,
+    private val offlineCustomerInfoCalculator: OfflineCustomerInfoCalculator,
     private val deviceCache: DeviceCache
 ) {
     // We cache the offline customer info in memory, so it's not persisted.
@@ -37,9 +39,19 @@ class OfflineEntitlementsManager(
     }
 
     @Suppress("FunctionOnlyReturningConstant")
-    fun calculateAndCacheOfflineCustomerInfo(): CustomerInfo? {
-        // TODO Calculate last offline customer info and assign to _offlineCustomerInfo
-        return null
+    fun calculateAndCacheOfflineCustomerInfo(
+        appUserId: String,
+        onSuccess: (CustomerInfo) -> Unit,
+        onError: (PurchasesError) -> Unit
+    ) {
+        offlineCustomerInfoCalculator.computeOfflineCustomerInfo(
+            appUserId,
+            onSuccess = { customerInfo ->
+                _offlineCustomerInfo = customerInfo
+                onSuccess(customerInfo)
+            },
+            onError = onError
+        )
     }
 
     fun updateProductEntitlementMappingCacheIfStale() {

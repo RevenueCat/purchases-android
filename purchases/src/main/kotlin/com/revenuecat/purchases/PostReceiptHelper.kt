@@ -7,6 +7,7 @@ import com.revenuecat.purchases.common.PostReceiptDataErrorCallback
 import com.revenuecat.purchases.common.PostReceiptDataSuccessCallback
 import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.caching.DeviceCache
+import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
 import com.revenuecat.purchases.common.warnLog
 import com.revenuecat.purchases.models.StoreProduct
@@ -139,9 +140,14 @@ internal class PostReceiptHelper(
                             responseBody.getAttributeErrors()
                         )
                     }
-                    val offlineCustomerInfo = calculateOfflineCustomerInfoIfNeeded(isServerError)
-                    if (offlineCustomerInfo != null) {
-                        onSuccess(offlineCustomerInfo)
+                    if (offlineEntitlementsManager.shouldCalculateOfflineCustomerInfoInPostReceipt(isServerError)) {
+                        calculateOfflineCustomerInfo(
+                            appUserID,
+                            onSuccess = onSuccess,
+                            onError = {
+                                onError(error, shouldConsumePurchase, isServerError, responseBody)
+                            }
+                        )
                     } else {
                         onError(error, shouldConsumePurchase, isServerError, responseBody)
                     }
@@ -150,16 +156,23 @@ internal class PostReceiptHelper(
         }
     }
 
-    private fun calculateOfflineCustomerInfoIfNeeded(isServerError: Boolean): CustomerInfo? {
-        if (offlineEntitlementsManager.shouldCalculateOfflineCustomerInfoInPostReceipt(isServerError)) {
-            val customerInfo = offlineEntitlementsManager.calculateAndCacheOfflineCustomerInfo()
-            customerInfo?.let {
+    private fun calculateOfflineCustomerInfo(
+        appUserID: String,
+        onSuccess: (CustomerInfo) -> Unit,
+        onError: (PurchasesError) -> Unit
+    ) {
+        offlineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(
+            appUserID,
+            onSuccess = { customerInfo ->
                 // TODO Improve logs
                 warnLog("Using offline computed customer info.")
-                customerInfoHelper.sendUpdatedCustomerInfoToDelegateIfChanged(it)
+                customerInfoHelper.sendUpdatedCustomerInfoToDelegateIfChanged(customerInfo)
+                onSuccess(customerInfo)
+            },
+            onError = { error ->
+                errorLog("Error calculating offline customer info: $error")
+                onError(error)
             }
-            return customerInfo
-        }
-        return null
+        )
     }
 }
