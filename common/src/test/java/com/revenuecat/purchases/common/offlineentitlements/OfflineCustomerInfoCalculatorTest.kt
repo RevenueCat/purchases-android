@@ -304,8 +304,7 @@ class OfflineCustomerInfoCalculatorTest {
             val expiresDate = expirationDates[productIdentifier]
             val storeTransaction = stubStoreTransactionFromPurchaseHistoryRecord(
                 productIds = listOf(productIdentifier),
-                purchaseTime = dateInThePast.time,
-                productType = if (expiresDate != null) ProductType.SUBS else ProductType.INAPP
+                purchaseTime = dateInThePast.time
             )
             PurchasedProduct(
                 productIdentifier,
