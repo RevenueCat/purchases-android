@@ -296,10 +296,9 @@ class PostReceiptHelperTest {
     }
 
     @Test
-    fun `postTransactionAndConsumeIfNeeded marks unsynced attributes as synced on error if it should consume purchase`() {
+    fun `postTransactionAndConsumeIfNeeded marks unsynced attributes as synced on error if finishable error`() {
         mockUnsyncedSubscriberAttributes(unsyncedSubscriberAttributes)
-        val expectedPurchasesError = PurchasesError(PurchasesErrorCode.UnknownBackendError)
-        mockPostReceiptError(expectedPurchasesError, shouldConsumePurchase = true, isServerError = false, body = null)
+        mockPostReceiptError(finishableError = true)
 
         postReceiptHelper.postTransactionAndConsumeIfNeeded(
             purchase = mockStoreTransaction,
@@ -320,10 +319,9 @@ class PostReceiptHelperTest {
     }
 
     @Test
-    fun `postTransactionAndConsumeIfNeeded does not mark unsynced attributes as synced on error if it should not consume purchase`() {
+    fun `postTransactionAndConsumeIfNeeded does not mark unsynced attributes as synced on error if not finishable error`() {
         mockUnsyncedSubscriberAttributes(unsyncedSubscriberAttributes)
-        val expectedPurchasesError = PurchasesError(PurchasesErrorCode.UnknownBackendError)
-        mockPostReceiptError(expectedPurchasesError, shouldConsumePurchase = false, isServerError = false, body = null)
+        mockPostReceiptError(finishableError = false)
 
         postReceiptHelper.postTransactionAndConsumeIfNeeded(
             purchase = mockStoreTransaction,
@@ -344,10 +342,9 @@ class PostReceiptHelperTest {
     }
 
     @Test
-    fun `postTransactionAndConsumeIfNeeded calls consume transaction with consuming flag true if not observer mode on error if it should consume purchase`() {
+    fun `postTransactionAndConsumeIfNeeded calls consume transaction with consuming flag true if not observer mode on error if finishable error`() {
         every { appConfig.finishTransactions } returns true
-        val expectedPurchasesError = PurchasesError(PurchasesErrorCode.UnknownBackendError)
-        mockPostReceiptError(expectedPurchasesError, shouldConsumePurchase = true, isServerError = false, body = null)
+        mockPostReceiptError(finishableError = true)
 
         postReceiptHelper.postTransactionAndConsumeIfNeeded(
             purchase = mockStoreTransaction,
@@ -364,10 +361,9 @@ class PostReceiptHelperTest {
     }
 
     @Test
-    fun `postTransactionAndConsumeIfNeeded calls consume transaction with consuming flag false if observer mode on error if it should consume purchase`() {
+    fun `postTransactionAndConsumeIfNeeded calls consume transaction with consuming flag false if observer mode on error if finishable error`() {
         every { appConfig.finishTransactions } returns false
-        val expectedPurchasesError = PurchasesError(PurchasesErrorCode.UnknownBackendError)
-        mockPostReceiptError(expectedPurchasesError, shouldConsumePurchase = true, isServerError = false, body = null)
+        mockPostReceiptError(finishableError = true)
 
         postReceiptHelper.postTransactionAndConsumeIfNeeded(
             purchase = mockStoreTransaction,
@@ -384,9 +380,8 @@ class PostReceiptHelperTest {
     }
 
     @Test
-    fun `postTransactionAndConsumeIfNeeded does not call consume transaction on error if it should not consume purchase`() {
-        val expectedPurchasesError = PurchasesError(PurchasesErrorCode.UnknownBackendError)
-        mockPostReceiptError(expectedPurchasesError, shouldConsumePurchase = false, isServerError = false, body = null)
+    fun `postTransactionAndConsumeIfNeeded does not call consume transaction on error if not finishable error`() {
+        mockPostReceiptError(finishableError = false)
 
         postReceiptHelper.postTransactionAndConsumeIfNeeded(
             purchase = mockStoreTransaction,
@@ -404,8 +399,7 @@ class PostReceiptHelperTest {
 
     @Test
     fun `postTransactionAndConsumeIfNeeded calls error block with expected parameters on error`() {
-        val expectedPurchasesError = PurchasesError(PurchasesErrorCode.UnknownBackendError)
-        mockPostReceiptError(expectedPurchasesError, shouldConsumePurchase = false, isServerError = false, body = null)
+        mockPostReceiptError(finishableError = false)
 
         var errorTransaction: StoreTransaction? = null
         var purchasesError: PurchasesError? = null
@@ -422,7 +416,7 @@ class PostReceiptHelperTest {
         )
 
         assertThat(errorTransaction).isEqualTo(mockStoreTransaction)
-        assertThat(purchasesError).isEqualTo(expectedPurchasesError)
+        assertThat(purchasesError?.code).isEqualTo(PurchasesErrorCode.UnexpectedBackendResponseError)
     }
 
     @Test
@@ -579,7 +573,7 @@ class PostReceiptHelperTest {
 
     @Test
     fun `postTokenWithoutConsuming posts with expected default parameters`() {
-        mockPostReceiptSuccess(postType = PostType.TOKEN_AND_RECEIPT_INFO)
+        mockPostReceiptSuccess(postType = PostType.TOKEN_WITHOUT_CONSUMING)
 
         val allowSharingPlayStoreAccount = true
 
@@ -613,7 +607,7 @@ class PostReceiptHelperTest {
     @Test
     fun `postTokenWithoutConsuming posts unsynced subscriber attributes`() {
         mockUnsyncedSubscriberAttributes(unsyncedSubscriberAttributes)
-        mockPostReceiptSuccess(postType = PostType.TOKEN_AND_RECEIPT_INFO)
+        mockPostReceiptSuccess(postType = PostType.TOKEN_WITHOUT_CONSUMING)
 
         postReceiptHelper.postTokenWithoutConsuming(
             purchaseToken = postToken,
@@ -645,7 +639,7 @@ class PostReceiptHelperTest {
     @Test
     fun `postTokenWithoutConsuming marks unsynced subscriber attributes as synced on success`() {
         mockUnsyncedSubscriberAttributes(unsyncedSubscriberAttributes)
-        mockPostReceiptSuccess(postType = PostType.TOKEN_AND_RECEIPT_INFO)
+        mockPostReceiptSuccess(postType = PostType.TOKEN_WITHOUT_CONSUMING)
 
         postReceiptHelper.postTokenWithoutConsuming(
             purchaseToken = postToken,
@@ -669,7 +663,7 @@ class PostReceiptHelperTest {
 
     @Test
     fun `postTokenWithoutConsuming caches customer info on success`() {
-        mockPostReceiptSuccess(postType = PostType.TOKEN_AND_RECEIPT_INFO)
+        mockPostReceiptSuccess(postType = PostType.TOKEN_WITHOUT_CONSUMING)
 
         postReceiptHelper.postTokenWithoutConsuming(
             purchaseToken = postToken,
@@ -689,7 +683,7 @@ class PostReceiptHelperTest {
 
     @Test
     fun `postTokenWithoutConsuming sends updated customer info on success`() {
-        mockPostReceiptSuccess(postType = PostType.TOKEN_AND_RECEIPT_INFO)
+        mockPostReceiptSuccess(postType = PostType.TOKEN_WITHOUT_CONSUMING)
 
         postReceiptHelper.postTokenWithoutConsuming(
             purchaseToken = postToken,
@@ -712,7 +706,7 @@ class PostReceiptHelperTest {
         val expectedShouldConsumeFlag = true
         every { appConfig.finishTransactions } returns expectedShouldConsumeFlag
 
-        mockPostReceiptSuccess(postType = PostType.TOKEN_AND_RECEIPT_INFO)
+        mockPostReceiptSuccess(postType = PostType.TOKEN_WITHOUT_CONSUMING)
 
         postReceiptHelper.postTokenWithoutConsuming(
             purchaseToken = postToken,
@@ -732,7 +726,7 @@ class PostReceiptHelperTest {
 
     @Test
     fun `postTokenWithoutConsuming calls success block on success`() {
-        mockPostReceiptSuccess(postType = PostType.TOKEN_AND_RECEIPT_INFO)
+        mockPostReceiptSuccess(postType = PostType.TOKEN_WITHOUT_CONSUMING)
 
         var successCalledCount = 0
         postReceiptHelper.postTokenWithoutConsuming(
@@ -750,15 +744,11 @@ class PostReceiptHelperTest {
     }
 
     @Test
-    fun `postTokenWithoutConsuming marks unsynced attributes as synced on error if it should consume purchase`() {
+    fun `postTokenWithoutConsuming marks unsynced attributes as synced on error if finishable error`() {
         mockUnsyncedSubscriberAttributes(unsyncedSubscriberAttributes)
-        val expectedPurchasesError = PurchasesError(PurchasesErrorCode.UnknownBackendError)
         mockPostReceiptError(
-            error = expectedPurchasesError,
-            shouldConsumePurchase = true,
-            isServerError = false,
-            body = null,
-            postType = PostType.TOKEN_AND_RECEIPT_INFO
+            finishableError = true,
+            postType = PostType.TOKEN_WITHOUT_CONSUMING
         )
 
         postReceiptHelper.postTokenWithoutConsuming(
@@ -782,15 +772,11 @@ class PostReceiptHelperTest {
     }
 
     @Test
-    fun `postTokenWithoutConsuming does not mark unsynced attributes as synced on error if it should not consume purchase`() {
+    fun `postTokenWithoutConsuming does not mark unsynced attributes as synced on error if not finishable error`() {
         mockUnsyncedSubscriberAttributes(unsyncedSubscriberAttributes)
-        val expectedPurchasesError = PurchasesError(PurchasesErrorCode.UnknownBackendError)
         mockPostReceiptError(
-            error = expectedPurchasesError,
-            shouldConsumePurchase = false,
-            isServerError = false,
-            body = null,
-            postType = PostType.TOKEN_AND_RECEIPT_INFO
+            finishableError = false,
+            postType = PostType.TOKEN_WITHOUT_CONSUMING
         )
 
         postReceiptHelper.postTokenWithoutConsuming(
@@ -814,14 +800,10 @@ class PostReceiptHelperTest {
     }
 
     @Test
-    fun `postTokenWithoutConsuming adds sent token if it should consume purchase`() {
-        val expectedPurchasesError = PurchasesError(PurchasesErrorCode.UnknownBackendError)
+    fun `postTokenWithoutConsuming adds sent token if finishable error`() {
         mockPostReceiptError(
-            error = expectedPurchasesError,
-            shouldConsumePurchase = true,
-            isServerError = false,
-            body = null,
-            postType = PostType.TOKEN_AND_RECEIPT_INFO
+            finishableError = true,
+            postType = PostType.TOKEN_WITHOUT_CONSUMING
         )
 
         postReceiptHelper.postTokenWithoutConsuming(
@@ -841,14 +823,10 @@ class PostReceiptHelperTest {
     }
 
     @Test
-    fun `postTokenWithoutConsuming does not add sent token on error if it should not consume purchase`() {
-        val expectedPurchasesError = PurchasesError(PurchasesErrorCode.UnknownBackendError)
+    fun `postTokenWithoutConsuming does not add sent token on error if not finishable error`() {
         mockPostReceiptError(
-            error = expectedPurchasesError,
-            shouldConsumePurchase = false,
-            isServerError = false,
-            body = null,
-            postType = PostType.TOKEN_AND_RECEIPT_INFO
+            finishableError = false,
+            postType = PostType.TOKEN_WITHOUT_CONSUMING
         )
 
         postReceiptHelper.postTokenWithoutConsuming(
@@ -869,13 +847,9 @@ class PostReceiptHelperTest {
 
     @Test
     fun `postTokenWithoutConsuming calls error block with expected parameters on error`() {
-        val expectedPurchasesError = PurchasesError(PurchasesErrorCode.UnknownBackendError)
         mockPostReceiptError(
-            error = expectedPurchasesError,
-            shouldConsumePurchase = false,
-            isServerError = false,
-            body = null,
-            postType = PostType.TOKEN_AND_RECEIPT_INFO
+            finishableError = false,
+            postType = PostType.TOKEN_WITHOUT_CONSUMING
         )
 
         var purchasesError: PurchasesError? = null
@@ -890,12 +864,12 @@ class PostReceiptHelperTest {
             onError = { purchasesError = it }
         )
 
-        assertThat(purchasesError).isEqualTo(expectedPurchasesError)
+        assertThat(purchasesError?.code).isEqualTo(PurchasesErrorCode.UnexpectedBackendResponseError)
     }
 
     @Test
     fun `postTokenWithoutConsuming does not consume on success`() {
-        mockPostReceiptSuccess(postType = PostType.TOKEN_AND_RECEIPT_INFO)
+        mockPostReceiptSuccess(postType = PostType.TOKEN_WITHOUT_CONSUMING)
 
         postReceiptHelper.postTokenWithoutConsuming(
             purchaseToken = postToken,
@@ -915,13 +889,9 @@ class PostReceiptHelperTest {
 
     @Test
     fun `postTokenWithoutConsuming does not consume on error `() {
-        val expectedPurchasesError = PurchasesError(PurchasesErrorCode.UnknownBackendError)
         mockPostReceiptError(
-            error = expectedPurchasesError,
-            shouldConsumePurchase = false,
-            isServerError = false,
-            body = null,
-            postType = PostType.TOKEN_AND_RECEIPT_INFO
+            finishableError = false,
+            postType = PostType.TOKEN_WITHOUT_CONSUMING
         )
 
         postReceiptHelper.postTokenWithoutConsuming(
@@ -945,8 +915,8 @@ class PostReceiptHelperTest {
     // region helpers
 
     private enum class PostType {
-        TRANSACTION,
-        TOKEN_AND_RECEIPT_INFO
+        TRANSACTION_AND_CONSUME,
+        TOKEN_WITHOUT_CONSUMING
     }
 
     private fun mockUnsyncedSubscriberAttributes(
@@ -960,7 +930,7 @@ class PostReceiptHelperTest {
     private fun mockPostReceiptSuccess(
         customerInfo: CustomerInfo = defaultCustomerInfo,
         jsonBody: JSONObject = JSONObject(Responses.validFullPurchaserResponse),
-        postType: PostType = PostType.TRANSACTION
+        postType: PostType = PostType.TRANSACTION_AND_CONSUME
     ) {
         every {
             backend.postReceiptData(
@@ -982,7 +952,7 @@ class PostReceiptHelperTest {
         every { subscriberAttributesManager.markAsSynced(appUserID, any(), any()) } just Runs
         every { customerInfoHelper.cacheCustomerInfo(any()) } just Runs
         every { customerInfoHelper.sendUpdatedCustomerInfoToDelegateIfChanged(any()) } just Runs
-        if (postType == PostType.TRANSACTION) {
+        if (postType == PostType.TRANSACTION_AND_CONSUME) {
             every { billing.consumeAndSave(any(), mockStoreTransaction) } just Runs
         } else {
             every { deviceCache.addSuccessfullyPostedToken(postToken) } just Runs
@@ -990,11 +960,8 @@ class PostReceiptHelperTest {
     }
 
     private fun mockPostReceiptError(
-        error: PurchasesError,
-        shouldConsumePurchase: Boolean,
-        isServerError: Boolean,
-        body: JSONObject?,
-        postType: PostType = PostType.TRANSACTION
+        finishableError: Boolean,
+        postType: PostType = PostType.TRANSACTION_AND_CONSUME
     ) {
         every {
             backend.postReceiptData(
@@ -1010,12 +977,14 @@ class PostReceiptHelperTest {
                 onError = captureLambda()
             )
         } answers {
-            lambda<PostReceiptDataErrorCallback>().captured.invoke(error, shouldConsumePurchase, isServerError, body)
+            val callback = lambda<PostReceiptDataErrorCallback>().captured
+            if (finishableError) callback.invokeWithFinishableError()
+            else callback.invokeWithNotFinishableError()
         }
 
-        if (shouldConsumePurchase) {
+        if (finishableError) {
             every { subscriberAttributesManager.markAsSynced(appUserID, any(), any()) } just Runs
-            if (postType == PostType.TRANSACTION) {
+            if (postType == PostType.TRANSACTION_AND_CONSUME) {
                 every { billing.consumeAndSave(any(), mockStoreTransaction) } just Runs
             } else {
                 every { deviceCache.addSuccessfullyPostedToken(postToken) } just Runs
@@ -1027,6 +996,24 @@ class PostReceiptHelperTest {
         val subscriberAttribute = SubscriberAttribute("key", "value")
         return mapOf(
             subscriberAttribute.key.backendKey to subscriberAttribute
+        )
+    }
+
+    private fun PostReceiptDataErrorCallback.invokeWithFinishableError() {
+        invoke(
+            PurchasesError(PurchasesErrorCode.InvalidCredentialsError),
+            true,
+            false,
+            JSONObject(Responses.invalidCredentialsErrorResponse)
+        )
+    }
+
+    private fun PostReceiptDataErrorCallback.invokeWithNotFinishableError() {
+        invoke(
+            PurchasesError(PurchasesErrorCode.UnexpectedBackendResponseError),
+            false,
+            true,
+            JSONObject(Responses.internalServerErrorResponse)
         )
     }
     // endregion
