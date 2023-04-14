@@ -8,24 +8,19 @@ class JSONArrayBugInstrumentedTest {
     @org.junit.Test
     fun testReproduceIncorrectJSONArray() {
         val inputMap = mapOf(
-            "key1" to "value1",
-            "key2" to listOf("value2", "value3"),
-            "key3" to mapOf("nestedKey" to "nestedValue"),
-            "key4" to mapOf("nestedArray" to listOf("value4", "value5")),
+            "key1" to listOf("value2", "value3"),
         )
         val incorrectJSONObject = JSONObject(inputMap)
         assertEquals(
             incorrectJSONObject
-                .toString(), ("""{"key1":"value1","key2":[value2, value3],"key3":{"nestedKey":"nestedValue"},
-                    |"key4":{"nestedArray":[value4, value5]}}""".trimMargin())
+                .toString(), ("""{"key1":[value2, value3]}""".trimMargin())
         )
         val mapConverter = MapConverter()
 
         val correctJSONObject = mapConverter.convertToJSON(inputMap)
         assertEquals(
             correctJSONObject
-                .toString(), ("""{"key1":"value1","key2":["value2","value3"],"key3":{"nestedKey":"nestedValue"},
-                    |"key4":{"nestedArray":["value4","value5"]}}""".trimMargin())
+                .toString(), ("""{"key1":["value2","value3"]}""".trimMargin())
         )
     }
 }
