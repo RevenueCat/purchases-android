@@ -74,6 +74,8 @@ task cleanAmazonLibrary(type: Delete) {
 }
 
 afterEvaluate {
-    preDebugBuild.dependsOn cleanAmazonLibrary
-    preReleaseBuild.dependsOn cleanAmazonLibrary
+    preDefaultsDebugBuild.dependsOn cleanAmazonLibrary
+    preDefaultsReleaseBuild.dependsOn cleanAmazonLibrary
+    preIntegrationTestDebugBuild.dependsOn cleanAmazonLibrary
+    preIntegrationTestReleaseBuild.dependsOn cleanAmazonLibrary
 }
