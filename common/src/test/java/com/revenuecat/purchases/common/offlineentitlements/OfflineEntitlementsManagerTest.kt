@@ -26,6 +26,7 @@ class OfflineEntitlementsManagerTest {
 
     private lateinit var backend: Backend
     private lateinit var deviceCache: DeviceCache
+    private lateinit var offlineEntitlementsCalculator: OfflineCustomerInfoCalculator
 
     private lateinit var offlineEntitlementsManager: OfflineEntitlementsManager
 
@@ -36,6 +37,7 @@ class OfflineEntitlementsManagerTest {
 
         backend = mockk()
         deviceCache = mockk()
+        offlineEntitlementsCalculator = mockk()
 
         every {
             backend.getProductEntitlementMapping(capture(backendSuccessSlot), capture(backendErrorSlot))
@@ -43,6 +45,7 @@ class OfflineEntitlementsManagerTest {
 
         offlineEntitlementsManager = OfflineEntitlementsManager(
             backend,
+            offlineEntitlementsCalculator,
             deviceCache
         )
     }
