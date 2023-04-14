@@ -331,7 +331,11 @@ class OfflineCustomerInfoCalculatorTest {
 
         val productIdentifier = "consumable"
         val purchasedProducts = mockPurchasedProducts(
-            entitlementMap = mapOf(productIdentifier to listOf(entitlementID)),
+            entitlementMap = ProductEntitlementMapping(listOf(ProductEntitlementMapping.Mapping(
+                productIdentifier,
+                listOf(entitlementID),
+                null
+            ))),
             expirationDates = mapOf(productIdentifier to null)
         )
 
