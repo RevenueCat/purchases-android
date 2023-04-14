@@ -5,9 +5,11 @@ import android.os.Looper
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.caching.DeviceCache
+import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
+import io.mockk.clearAllMocks
 import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.just
@@ -26,6 +28,7 @@ class CustomerInfoHelperTest {
     private val mockCache = mockk<DeviceCache>()
     private val mockBackend = mockk<Backend>()
     private val mockIdentityManager = mockk<IdentityManager>()
+    private val mockOfflineEntitlementsManager = mockk<OfflineEntitlementsManager>()
     private val mockHandler = mockk<Handler>()
     private val mockLooper = mockk<Looper>()
     private val mockThread = mockk<Thread>()
@@ -46,13 +49,14 @@ class CustomerInfoHelperTest {
             mockCache,
             mockBackend,
             mockIdentityManager,
+            mockOfflineEntitlementsManager,
             mockHandler
         )
     }
 
     @After
     fun tearDown() {
-        clearMocks(mockCache, mockBackend, mockIdentityManager, mockHandler, mockLooper, mockThread, mockInfo)
+        clearAllMocks()
     }
 
     // region updatedCustomerInfoListener
