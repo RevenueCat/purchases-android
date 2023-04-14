@@ -19,14 +19,14 @@ class JSONArrayBugInstrumentedTest {
         val incorrectJSONObject = JSONObject(inputMap)
         assertEquals(
             incorrectJSONObject
-                .toString(), ("{\"key1\":[\"value2, value3\"]}")
+                .toString(), "{\"key1\":[\"value2, value3\"]}"
         )
         val mapConverter = MapConverter()
 
         val correctJSONObject = mapConverter.convertToJSON(inputMap)
         assertEquals(
             correctJSONObject
-                .toString(), ("{\"key1\":[\"value2\",\"value3\"]}")
+                .toString(), "{\"key1\":[\"value2\",\"value3\"]}"
         )
     }
 }
