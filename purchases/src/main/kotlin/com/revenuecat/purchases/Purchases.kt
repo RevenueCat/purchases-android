@@ -234,7 +234,7 @@ class Purchases internal constructor(
                 if (allPurchases.isNotEmpty()) {
                     allPurchases.forEach { purchase ->
                         val productInfo = ReceiptInfo(productIDs = purchase.productIds)
-                        postReceiptHelper.postTokenAndReceiptInfoToBackend(
+                        postReceiptHelper.postTokenWithoutConsuming(
                             purchase.purchaseToken,
                             purchase.storeUserID,
                             productInfo,
@@ -298,7 +298,7 @@ class Purchases internal constructor(
                     price = price?.takeUnless { it == 0.0 },
                     currency = isoCurrencyCode?.takeUnless { it.isBlank() }
                 )
-                postReceiptHelper.postTokenAndReceiptInfoToBackend(
+                postReceiptHelper.postTokenWithoutConsuming(
                     receiptID,
                     amazonUserID,
                     receiptInfo,
@@ -607,7 +607,7 @@ class Purchases internal constructor(
                 } else {
                     allPurchases.sortedBy { it.purchaseTime }.let { sortedByTime ->
                         sortedByTime.forEach { purchase ->
-                            postReceiptHelper.postTransactionToBackend(
+                            postReceiptHelper.postTransactionAndConsumeIfNeeded(
                                 purchase = purchase,
                                 storeProduct = null,
                                 isRestore = true,
@@ -1283,7 +1283,7 @@ class Purchases internal constructor(
                             }
                         }
 
-                        postReceiptHelper.postTransactionToBackend(
+                        postReceiptHelper.postTransactionAndConsumeIfNeeded(
                             purchase = purchase,
                             storeProduct = purchasedStoreProduct,
                             isRestore = allowSharingPlayStoreAccount,
@@ -1293,7 +1293,7 @@ class Purchases internal constructor(
                         )
                     },
                     onError = {
-                        postReceiptHelper.postTransactionToBackend(
+                        postReceiptHelper.postTransactionAndConsumeIfNeeded(
                             purchase = purchase,
                             storeProduct = null,
                             isRestore = allowSharingPlayStoreAccount,

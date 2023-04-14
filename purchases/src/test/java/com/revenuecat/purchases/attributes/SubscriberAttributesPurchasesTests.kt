@@ -405,15 +405,6 @@ class SubscriberAttributesPurchasesTests {
 
     // endregion
 
-//    private fun getFinishableErrorResponse(): PostReceiptErrorContainer {
-//        return PostReceiptErrorContainer(
-//            PurchasesError(PurchasesErrorCode.UnexpectedBackendResponseError),
-//            shouldConsumePurchase = true,
-//            isServerError = false,
-//            JSONObject(Responses.badRequestErrorResponse)
-//        )
-//    }
-
     private fun attributionIDTest(
         network: SubscriberAttributeKey.AttributionIds,
         functionToTest: (String) -> Unit

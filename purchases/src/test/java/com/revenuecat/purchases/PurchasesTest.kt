@@ -236,7 +236,7 @@ class PurchasesTest {
         capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(transactions)
 
         verify {
-            mockPostReceiptHelper.postTransactionToBackend(
+            mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(
                 purchase = transactions[0],
                 storeProduct = any(),
                 isRestore = true,
@@ -826,7 +826,7 @@ class PurchasesTest {
 
         allPurchases.forEach { transaction ->
             every {
-                mockPostReceiptHelper.postTransactionToBackend(transaction, any(), false, appUserId, captureLambda(), any())
+                mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(transaction, any(), false, appUserId, captureLambda(), any())
             } answers {
                 lambda<SuccessfulPurchaseCallback>().captured.invoke(transaction, mockk())
             }
@@ -835,7 +835,7 @@ class PurchasesTest {
         capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(allPurchases)
 
         verifyAll {
-            mockPostReceiptHelper.postTransactionToBackend(
+            mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(
                 purchase = mockedInApps[0],
                 storeProduct = match { it.purchasingData.productId == inAppProductId },
                 isRestore = false,
@@ -843,7 +843,7 @@ class PurchasesTest {
                 onSuccess = any(),
                 onError = any()
             )
-            mockPostReceiptHelper.postTransactionToBackend(
+            mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(
                 purchase = mockedSubs[0],
                 storeProduct = match { it.purchasingData.productId == subProductId },
                 isRestore = false,
@@ -859,7 +859,7 @@ class PurchasesTest {
         val error = PurchasesError(PurchasesErrorCode.StoreProblemError)
         capturedPurchasesUpdatedListener.captured.onPurchasesFailedToUpdate(error)
         verify(exactly = 0) {
-            mockPostReceiptHelper.postTransactionToBackend(
+            mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(
                 purchase = any(),
                 storeProduct = any(),
                 isRestore = any(),
@@ -1428,7 +1428,7 @@ class PurchasesTest {
             offeringIdentifier = "offering_a"
         )
         verify(exactly = 1) {
-            mockPostReceiptHelper.postTransactionToBackend(
+            mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(
                 purchase = transactions[0],
                 storeProduct = null,
                 isRestore = false,
@@ -2053,7 +2053,7 @@ class PurchasesTest {
         val transactions = getMockedPurchaseList(productId, purchaseToken, ProductType.SUBS)
         capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(transactions)
         verify {
-            mockPostReceiptHelper.postTransactionToBackend(
+            mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(
                 purchase = transactions[0],
                 storeProduct = any(),
                 isRestore = true,
@@ -2075,7 +2075,7 @@ class PurchasesTest {
         capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(transactions)
 
         verify {
-            mockPostReceiptHelper.postTransactionToBackend(
+            mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(
                 purchase = transactions[0],
                 storeProduct = any(),
                 isRestore = false,
@@ -2140,7 +2140,7 @@ class PurchasesTest {
         assertThat(restoreCalled).isTrue()
 
         verifyAll {
-            mockPostReceiptHelper.postTransactionToBackend(
+            mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(
                 purchase = inAppTransactions[0],
                 storeProduct = null,
                 isRestore = true,
@@ -2148,7 +2148,7 @@ class PurchasesTest {
                 onSuccess = any(),
                 onError = any()
             )
-            mockPostReceiptHelper.postTransactionToBackend(
+            mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(
                 purchase = subTransactions[0],
                 storeProduct = null,
                 isRestore = true,
@@ -2208,7 +2208,7 @@ class PurchasesTest {
             VerificationResult.NOT_REQUESTED
         )
         every {
-            mockPostReceiptHelper.postTransactionToBackend(any(), any(), any(), any(), captureLambda(), any())
+            mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(any(), any(), any(), any(), captureLambda(), any())
         } answers {
             lambda<SuccessfulPurchaseCallback>().captured.invoke(firstArg(), mockInfo)
         }
@@ -2732,7 +2732,7 @@ class PurchasesTest {
         val productInfo = ReceiptInfo(productIDs = listOf(inAppProductId))
         assertThat(capturedLambda).isNotNull
         verify(exactly = 1) {
-            mockPostReceiptHelper.postTokenAndReceiptInfoToBackend(
+            mockPostReceiptHelper.postTokenWithoutConsuming(
                 purchaseToken = inAppPurchaseToken,
                 storeUserID = null,
                 receiptInfo = productInfo,
@@ -2745,7 +2745,7 @@ class PurchasesTest {
         }
         val productInfo1 = ReceiptInfo(productIDs = listOf(subProductId))
         verify(exactly = 1) {
-            mockPostReceiptHelper.postTokenAndReceiptInfoToBackend(
+            mockPostReceiptHelper.postTokenWithoutConsuming(
                 purchaseToken = subPurchaseToken,
                 storeUserID = null,
                 receiptInfo = productInfo1,
@@ -2784,7 +2784,7 @@ class PurchasesTest {
         val productInfo = ReceiptInfo(productIDs = listOf(inAppProductId))
         assertThat(capturedLambda).isNotNull
         verify(exactly = 1) {
-            mockPostReceiptHelper.postTokenAndReceiptInfoToBackend(
+            mockPostReceiptHelper.postTokenWithoutConsuming(
                 purchaseToken = inAppPurchaseToken,
                 storeUserID = null,
                 receiptInfo = productInfo,
@@ -2798,7 +2798,7 @@ class PurchasesTest {
 
         val productInfo1 = ReceiptInfo(productIDs = listOf(subProductId))
         verify(exactly = 1) {
-            mockPostReceiptHelper.postTokenAndReceiptInfoToBackend(
+            mockPostReceiptHelper.postTokenWithoutConsuming(
                 purchaseToken = subPurchaseToken,
                 storeUserID = null,
                 receiptInfo = productInfo1,
@@ -2835,7 +2835,7 @@ class PurchasesTest {
 
         val productInfo = ReceiptInfo(productIDs = listOf(productId))
         verify {
-            mockPostReceiptHelper.postTokenAndReceiptInfoToBackend(
+            mockPostReceiptHelper.postTokenWithoutConsuming(
                 purchaseToken = purchaseToken,
                 storeUserID = null,
                 receiptInfo = productInfo,
@@ -2892,7 +2892,7 @@ class PurchasesTest {
             currency = currencyCode
         )
         verify(exactly = 1) {
-            mockPostReceiptHelper.postTokenAndReceiptInfoToBackend(
+            mockPostReceiptHelper.postTokenWithoutConsuming(
                 purchaseToken = purchaseToken,
                 storeUserID = amazonUserID,
                 receiptInfo = productInfo,
@@ -2949,7 +2949,7 @@ class PurchasesTest {
             currency = currencyCode
         )
         verify(exactly = 1) {
-            mockPostReceiptHelper.postTokenAndReceiptInfoToBackend(
+            mockPostReceiptHelper.postTokenWithoutConsuming(
                 purchaseToken = purchaseToken,
                 storeUserID = amazonUserID,
                 receiptInfo = productInfo,
@@ -3007,7 +3007,7 @@ class PurchasesTest {
             currency = currencyCode
         )
         verify(exactly = 1) {
-            mockPostReceiptHelper.postTokenAndReceiptInfoToBackend(
+            mockPostReceiptHelper.postTokenWithoutConsuming(
                 purchaseToken = purchaseToken,
                 storeUserID = amazonUserID,
                 receiptInfo = productInfo,
@@ -3065,7 +3065,7 @@ class PurchasesTest {
             currency = currencyCode
         )
         verify(exactly = 1) {
-            mockPostReceiptHelper.postTokenAndReceiptInfoToBackend(
+            mockPostReceiptHelper.postTokenWithoutConsuming(
                 purchaseToken = purchaseToken,
                 storeUserID = amazonUserID,
                 receiptInfo = productInfo,
@@ -3090,7 +3090,7 @@ class PurchasesTest {
         )
 
         verify(exactly = 1) {
-            mockPostReceiptHelper.postTokenAndReceiptInfoToBackend(
+            mockPostReceiptHelper.postTokenWithoutConsuming(
                 purchaseToken = purchaseToken,
                 storeUserID = amazonUserID,
                 receiptInfo = productInfo,
@@ -3140,7 +3140,7 @@ class PurchasesTest {
 
         val productInfo = ReceiptInfo(productIDs = listOf(skuTerm))
         verify(exactly = 1) {
-            mockPostReceiptHelper.postTokenAndReceiptInfoToBackend(
+            mockPostReceiptHelper.postTokenWithoutConsuming(
                 purchaseToken = purchaseToken,
                 storeUserID = amazonUserID,
                 receiptInfo = productInfo,
@@ -3194,7 +3194,7 @@ class PurchasesTest {
             price = null
         )
         verify(exactly = 1) {
-            mockPostReceiptHelper.postTokenAndReceiptInfoToBackend(
+            mockPostReceiptHelper.postTokenWithoutConsuming(
                 purchaseToken = purchaseToken,
                 storeUserID = amazonUserID,
                 receiptInfo = productInfo,
@@ -3261,7 +3261,7 @@ class PurchasesTest {
             mockBillingAbstract.queryPurchases(appUserId, any(), any())
         }
         verify(exactly = 0) {
-            mockPostReceiptHelper.postTransactionToBackend(any(), any(), any(), any(), any(), any())
+            mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(any(), any(), any(), any(), any(), any())
         }
     }
 
@@ -3284,13 +3284,13 @@ class PurchasesTest {
         mockQueryingProductDetails("product", ProductType.SUBS, null)
 
         every {
-            mockPostReceiptHelper.postTransactionToBackend(any(), any(), any(), any(), null, null)
+            mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(any(), any(), any(), any(), null, null)
         } just Runs
 
         purchases.updatePendingPurchaseQueue()
 
         verify(exactly = 1) {
-            mockPostReceiptHelper.postTransactionToBackend(
+            mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(
                 purchase = activePurchase,
                 storeProduct = any(),
                 isRestore = false,
@@ -3319,13 +3319,13 @@ class PurchasesTest {
         mockQueryingProductDetails("product", ProductType.SUBS, null)
 
         every {
-            mockPostReceiptHelper.postTransactionToBackend(any(), any(), any(), any(), null, null)
+            mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(any(), any(), any(), any(), null, null)
         } just Runs
 
         purchases.updatePendingPurchaseQueue()
 
         verify(exactly = 1) {
-            mockPostReceiptHelper.postTransactionToBackend(
+            mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(
                 purchase = purchaseWrapper,
                 storeProduct = any(),
                 isRestore = false,
@@ -3355,7 +3355,7 @@ class PurchasesTest {
         purchases.updatePendingPurchaseQueue()
 
         verify(exactly = 0) {
-            mockPostReceiptHelper.postTransactionToBackend(any(), any(), any(), any(), null, null)
+            mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(any(), any(), any(), any(), null, null)
         }
     }
 
@@ -3412,13 +3412,13 @@ class PurchasesTest {
         val productInfo = mockQueryingProductDetails("product", ProductType.SUBS, null)
 
         every {
-            mockPostReceiptHelper.postTransactionToBackend(any(), any(), any(), any(), null, null)
+            mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(any(), any(), any(), any(), null, null)
         } just Runs
 
         purchases.updatePendingPurchaseQueue()
 
         verify(exactly = 1) {
-            mockPostReceiptHelper.postTransactionToBackend(
+            mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(
                 purchase = activePurchasedPurchase,
                 storeProduct = any(),
                 isRestore = false,
@@ -3429,7 +3429,7 @@ class PurchasesTest {
         }
 
         verify(exactly = 1) {
-            mockPostReceiptHelper.postTransactionToBackend(
+            mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(
                 purchase = activeUnspecifiedPurchase,
                 storeProduct = any(),
                 isRestore = false,
@@ -3440,7 +3440,7 @@ class PurchasesTest {
         }
 
         verify(exactly = 0) {
-            mockPostReceiptHelper.postTransactionToBackend(
+            mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(
                 purchase = activePendingPurchase,
                 storeProduct = any(),
                 isRestore = any(),
@@ -3723,7 +3723,7 @@ class PurchasesTest {
     private fun mockPostReceiptHelper() {
         with(mockPostReceiptHelper) {
             every {
-                postTransactionToBackend(any(), any(), any(), any(), captureLambda(), any())
+                postTransactionAndConsumeIfNeeded(any(), any(), any(), any(), captureLambda(), any())
             } answers {
                 lambda<SuccessfulPurchaseCallback>().captured.invoke(
                     firstArg(),
@@ -3731,7 +3731,7 @@ class PurchasesTest {
                 )
             }
             every {
-                postTokenAndReceiptInfoToBackend(any(), any(), any(), any(), any(), any(), captureLambda(), any())
+                postTokenWithoutConsuming(any(), any(), any(), any(), any(), any(), captureLambda(), any())
             } answers {
                 lambda<() -> Unit>().captured.invoke()
             }

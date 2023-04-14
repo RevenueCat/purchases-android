@@ -29,7 +29,7 @@ internal class PostReceiptHelper(
      * This method will post a token and receiptInfo to the backend without consuming any purchases.
      * It will store that the token was sent to the backend so it doesn't send it again.
      */
-    fun postTokenAndReceiptInfoToBackend(
+    fun postTokenWithoutConsuming(
         purchaseToken: String,
         storeUserID: String?,
         receiptInfo: ReceiptInfo,
@@ -39,7 +39,7 @@ internal class PostReceiptHelper(
         onSuccess: () -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {
-        syncSubscriberAttributesAndPostReceipt(
+        postReceiptAndSubscriberAttributes(
             appUserID,
             purchaseToken,
             isRestore,
@@ -63,7 +63,7 @@ internal class PostReceiptHelper(
      * This method will post a StoreTransaction and optionally a StoreProduct info to the backend.
      * It will consume the purchase if finishTransactions is true.
      */
-    fun postTransactionToBackend(
+    fun postTransactionAndConsumeIfNeeded(
         purchase: StoreTransaction,
         storeProduct: StoreProduct?,
         isRestore: Boolean,
@@ -77,7 +77,7 @@ internal class PostReceiptHelper(
             storeProduct = storeProduct,
             subscriptionOptionId = purchase.subscriptionOptionId
         )
-        syncSubscriberAttributesAndPostReceipt(
+        postReceiptAndSubscriberAttributes(
             appUserID = appUserID,
             purchaseToken = purchase.purchaseToken,
             isRestore = isRestore,
@@ -97,7 +97,7 @@ internal class PostReceiptHelper(
         )
     }
 
-    private fun syncSubscriberAttributesAndPostReceipt(
+    private fun postReceiptAndSubscriberAttributes(
         appUserID: String,
         purchaseToken: String,
         isRestore: Boolean,
