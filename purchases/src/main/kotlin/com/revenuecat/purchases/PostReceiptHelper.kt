@@ -53,11 +53,20 @@ internal class PostReceiptHelper(
                 deviceCache.addSuccessfullyPostedToken(purchaseToken)
                 onSuccess()
             },
-            onError = { error, shouldConsumePurchase, _, _ ->
+            onError = { error, shouldConsumePurchase, isServerError, _ ->
                 if (shouldConsumePurchase) {
                     deviceCache.addSuccessfullyPostedToken(purchaseToken)
                 }
-                onError(error)
+                useOfflineEntitlementsCustomerInfoIfNeeded(
+                    isServerError,
+                    appUserID,
+                    onSuccess = {
+                        onSuccess()
+                    },
+                    onError = {
+                        onError(error)
+                    }
+                )
             }
         )
     }
@@ -91,11 +100,20 @@ internal class PostReceiptHelper(
                 billing.consumeAndSave(finishTransactions, purchase)
                 onSuccess?.let { it(purchase, info) }
             },
-            onError = { error, shouldConsumePurchase, _, _ ->
+            onError = { error, shouldConsumePurchase, isServerError, _ ->
                 if (shouldConsumePurchase) {
                     billing.consumeAndSave(finishTransactions, purchase)
                 }
-                onError?.let { it(purchase, error) }
+                useOfflineEntitlementsCustomerInfoIfNeeded(
+                    isServerError,
+                    appUserID,
+                    onSuccess = { customerInfo ->
+                        onSuccess?.let { it(purchase, customerInfo) }
+                    },
+                    onError = {
+                        onError?.let { it(purchase, error) }
+                    }
+                )
             }
         )
     }
@@ -139,19 +157,28 @@ internal class PostReceiptHelper(
                             responseBody.getAttributeErrors()
                         )
                     }
-                    if (offlineEntitlementsManager.shouldCalculateOfflineCustomerInfoInPostReceipt(isServerError)) {
-                        calculateOfflineCustomerInfo(
-                            appUserID,
-                            onSuccess = onSuccess,
-                            onError = {
-                                onError(error, shouldConsumePurchase, isServerError, responseBody)
-                            }
-                        )
-                    } else {
-                        onError(error, shouldConsumePurchase, isServerError, responseBody)
-                    }
+                    onError(error, shouldConsumePurchase, isServerError, responseBody)
                 }
             )
+        }
+    }
+
+    private fun useOfflineEntitlementsCustomerInfoIfNeeded(
+        isServerError: Boolean,
+        appUserID: String,
+        onSuccess: (CustomerInfo) -> Unit,
+        onError: () -> Unit
+    ) {
+        if (offlineEntitlementsManager.shouldCalculateOfflineCustomerInfoInPostReceipt(isServerError)) {
+            calculateOfflineCustomerInfo(
+                appUserID,
+                onSuccess = onSuccess,
+                onError = {
+                    onError()
+                }
+            )
+        } else {
+            onError()
         }
     }
 
