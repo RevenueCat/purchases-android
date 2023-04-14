@@ -16,14 +16,16 @@ class JSONArrayBugInstrumentedTest {
         val incorrectJSONObject = JSONObject(inputMap)
         assertEquals(
             incorrectJSONObject
-                .toString(), ("""{"key1":"value1","key2":[value2, value3],"key3":{"nestedKey":"nestedValue"},"key4":{"nestedArray":[value4, value5]}}""")
+                .toString(), ("""{"key1":"value1","key2":[value2, value3],"key3":{"nestedKey":"nestedValue"},
+                    |"key4":{"nestedArray":[value4, value5]}}""".trimMargin())
         )
         val mapConverter = MapConverter()
 
         val correctJSONObject = mapConverter.convertToJSON(inputMap)
         assertEquals(
             correctJSONObject
-                .toString(), ("""{"key1":"value1","key2":["value2","value3"],"key3":{"nestedKey":"nestedValue"},"key4":{"nestedArray":["value4","value5"]}}""")
+                .toString(), ("""{"key1":"value1","key2":["value2","value3"],"key3":{"nestedKey":"nestedValue"},
+                    |"key4":{"nestedArray":["value4","value5"]}}""".trimMargin())
         )
     }
 }
