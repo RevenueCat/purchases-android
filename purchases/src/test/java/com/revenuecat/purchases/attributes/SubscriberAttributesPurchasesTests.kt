@@ -3,33 +3,19 @@ package com.revenuecat.purchases.attributes
 import android.app.Application
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.CacheFetchPolicy
-import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.CustomerInfoHelper
 import com.revenuecat.purchases.OfferingParserFactory
 import com.revenuecat.purchases.PostReceiptHelper
 import com.revenuecat.purchases.Purchases
-import com.revenuecat.purchases.PurchasesError
-import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.Store
-import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BillingAbstract
-import com.revenuecat.purchases.common.CustomerInfoFactory
 import com.revenuecat.purchases.common.PlatformInfo
-import com.revenuecat.purchases.common.PostReceiptDataErrorCallback
-import com.revenuecat.purchases.common.PostReceiptDataSuccessCallback
-import com.revenuecat.purchases.common.SubscriberAttributeError
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
 import com.revenuecat.purchases.common.subscriberattributes.SubscriberAttributeKey
-import com.revenuecat.purchases.common.toPurchasesError
 import com.revenuecat.purchases.identity.IdentityManager
-import com.revenuecat.purchases.models.StoreTransaction
-import com.revenuecat.purchases.restorePurchasesWith
-import com.revenuecat.purchases.subscriberattributes.SubscriberAttribute
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
-import com.revenuecat.purchases.subscriberattributes.toBackendMap
-import com.revenuecat.purchases.utils.Responses
 import com.revenuecat.purchases.utils.SyncDispatcher
 import io.mockk.Runs
 import io.mockk.clearMocks
@@ -37,10 +23,7 @@ import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.runs
-import io.mockk.slot
 import io.mockk.verify
-import org.json.JSONException
-import org.json.JSONObject
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
@@ -59,87 +42,8 @@ class SubscriberAttributesPurchasesTests {
     private val postReceiptHelperMock = mockk<PostReceiptHelper>()
     private lateinit var applicationMock: Application
 
-    private var postReceiptError: PostReceiptErrorContainer? = null
-    private var postReceiptCompletion: PostReceiptCompletionContainer? = null
-    private var subscriberAttribute = SubscriberAttribute("key", "value")
-    private var expectedAttributes = mapOf(
-        subscriberAttribute.key.backendKey to subscriberAttribute
-    )
-
-    private val attributesToMarkAsSyncSlot = slot<Map<String, SubscriberAttribute>>()
-    private val attributesErrorsSlot = slot<List<SubscriberAttributeError>>()
-    private val postedAttributesSlot = slot<Map<String, Map<String, Any?>>>()
-
-    internal data class PostReceiptErrorContainer(
-        val error: PurchasesError,
-        val shouldConsumePurchase: Boolean,
-        val isServerError: Boolean,
-        val body: JSONObject?
-    )
-
-    internal data class PostReceiptCompletionContainer(
-        val info: CustomerInfo = CustomerInfoFactory.buildCustomerInfo(
-            JSONObject(Responses.validFullPurchaserResponse),
-            null,
-            VerificationResult.NOT_REQUESTED
-        ),
-        val body: JSONObject = JSONObject(Responses.validFullPurchaserResponse)
-    )
-
     @Before
     fun setup() {
-        every {
-            billingWrapperMock.queryAllPurchases(appUserId, captureLambda(), any())
-        } answers {
-            lambda<(List<StoreTransaction>) -> Unit>().captured.also {
-                it.invoke(listOf(mockk(relaxed = true)))
-            }
-        }
-        val successSlot = slot<PostReceiptDataSuccessCallback>()
-        val errorSlot = slot<PostReceiptDataErrorCallback>()
-        every {
-            backendMock.postReceiptData(
-                purchaseToken = any(),
-                appUserID = appUserId,
-                isRestore = any(),
-                observerMode = any(),
-                subscriberAttributes = capture(postedAttributesSlot),
-                receiptInfo = any(),
-                storeAppUserID = any(),
-                marketplace = any(),
-                onSuccess = capture(successSlot),
-                onError = capture(errorSlot)
-            )
-        } answers {
-            postReceiptError?.let {
-                errorSlot.captured(it.error, it.shouldConsumePurchase, it.isServerError, it.body)
-            } ?: postReceiptCompletion?.let {
-                successSlot.captured(it.info, it.body)
-            }
-        }
-
-        every {
-            subscriberAttributesManagerMock.getUnsyncedSubscriberAttributes(appUserId, captureLambda())
-        } answers {
-            lambda<(Map<String, SubscriberAttribute>) -> Unit>().captured.also {
-                it.invoke(expectedAttributes)
-            }
-        }
-
-        every {
-            subscriberAttributesManagerMock.markAsSynced(
-                appUserId,
-                capture(attributesToMarkAsSyncSlot),
-                capture(attributesErrorsSlot)
-            )
-        } just runs
-
-        every {
-            customerInfoHelperMock.cacheCustomerInfo(any())
-        } just runs
-        every {
-            customerInfoHelperMock.sendUpdatedCustomerInfoToDelegateIfChanged(any())
-        } just runs
         every {
             offlineEntitlementsManagerMock.updateProductEntitlementMappingCacheIfStale()
         } just runs
@@ -172,8 +76,6 @@ class SubscriberAttributesPurchasesTests {
 
     @After
     fun tearDown() {
-        postReceiptError = null
-        postReceiptCompletion = null
         clearMocks(customerInfoHelperMock)
     }
 
