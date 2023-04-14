@@ -559,6 +559,32 @@ class PostReceiptHelperTest {
         verify(exactly = 0) { deviceCache.addSuccessfullyPostedToken(any()) }
     }
 
+    @Test
+    fun `postTransactionAndConsumeIfNeeded does not mark attributes as synced if using offline entitlements`() {
+        mockUnsyncedSubscriberAttributes(unsyncedSubscriberAttributes)
+        mockPostReceiptError(finishableError = false)
+
+        every {
+            offlineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(appUserID, captureLambda(), any())
+        } answers {
+            lambda<(CustomerInfo) -> Unit>().captured(defaultCustomerInfo)
+        }
+        every {
+            customerInfoHelper.sendUpdatedCustomerInfoToDelegateIfChanged(defaultCustomerInfo)
+        } just Runs
+
+        postReceiptHelper.postTransactionAndConsumeIfNeeded(
+            purchase = mockStoreTransaction,
+            storeProduct = mockStoreProduct,
+            isRestore = true,
+            appUserID = appUserID,
+            onSuccess = { _, _ ->  },
+            onError = { _, _ -> fail("Expected success") }
+        )
+
+        verify(exactly = 0) { subscriberAttributesManager.markAsSynced(any(), any(), any()) }
+    }
+
     // endregion
 
     @Test
@@ -1213,6 +1239,37 @@ class PostReceiptHelperTest {
 
         verify(exactly = 0) { billing.consumeAndSave(any(), any()) }
         verify(exactly = 0) { deviceCache.addSuccessfullyPostedToken(any()) }
+    }
+
+    @Test
+    fun `postTokenWithoutConsuming does not mark attributes as synced if using offline entitlements`() {
+        mockUnsyncedSubscriberAttributes(unsyncedSubscriberAttributes)
+        mockPostReceiptError(
+            finishableError = false,
+            postType = PostType.TOKEN_WITHOUT_CONSUMING
+        )
+
+        every {
+            offlineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(appUserID, captureLambda(), any())
+        } answers {
+            lambda<(CustomerInfo) -> Unit>().captured(defaultCustomerInfo)
+        }
+        every {
+            customerInfoHelper.sendUpdatedCustomerInfoToDelegateIfChanged(defaultCustomerInfo)
+        } just Runs
+
+        postReceiptHelper.postTokenWithoutConsuming(
+            purchaseToken = postToken,
+            storeUserID = storeUserId,
+            receiptInfo = testReceiptInfo,
+            isRestore = true,
+            appUserID = appUserID,
+            marketplace = marketplace,
+            onSuccess = { },
+            onError = { fail("Should succeed") }
+        )
+
+        verify(exactly = 0) { subscriberAttributesManager.markAsSynced(any(), any(), any()) }
     }
 
     // endregion
