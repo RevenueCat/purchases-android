@@ -59,6 +59,7 @@ class SubscriberAttributesPosterTests {
 
     private var receivedError: PurchasesError? = null
     private var receivedSyncedSuccessfully: Boolean? = null
+    private var receivedIsServerError: Boolean? = null
     private var receivedAttributeErrors: List<SubscriberAttributeError>? = null
     private var receivedCustomerInfo: CustomerInfo? = null
     private var receivedOnSuccess = false
@@ -70,10 +71,11 @@ class SubscriberAttributesPosterTests {
             receivedAttributeErrors = attributeErrors
         }
 
-    private val expectedOnErrorPostReceipt: (PurchasesError, Boolean, JSONObject?) -> Unit =
-        { error, syncedSuccessfully, body ->
+    private val expectedOnErrorPostReceipt: (PurchasesError, Boolean, Boolean, JSONObject?) -> Unit =
+        { error, syncedSuccessfully, isServerError, body ->
             receivedError = error
             receivedSyncedSuccessfully = syncedSuccessfully
+            receivedIsServerError = isServerError
             receivedAttributeErrors = body.getAttributeErrors()
         }
 
@@ -93,8 +95,8 @@ class SubscriberAttributesPosterTests {
             fail("Shouldn't be error.")
         }
 
-    private val unexpectedOnErrorPostReceipt: (PurchasesError, Boolean, JSONObject?) -> Unit =
-        { _, _, _ ->
+    private val unexpectedOnErrorPostReceipt: (PurchasesError, Boolean, Boolean, JSONObject?) -> Unit =
+        { _, _, _, _ ->
             fail("Shouldn't be success.")
         }
 
@@ -113,6 +115,7 @@ class SubscriberAttributesPosterTests {
         mockkObject(CustomerInfoFactory)
         receivedError = null
         receivedSyncedSuccessfully = null
+        receivedIsServerError = null
         receivedAttributeErrors = null
         receivedCustomerInfo = null
         receivedOnSuccess = false

@@ -632,7 +632,7 @@ class Purchases internal constructor(
                                                 dispatch { callback.onReceived(info) }
                                             }
                                         },
-                                        onError = { error, shouldConsumePurchase, body ->
+                                        onError = { error, shouldConsumePurchase, _, body ->
                                             if (shouldConsumePurchase) {
                                                 subscriberAttributesManager.markAsSynced(
                                                     appUserID,
@@ -1376,7 +1376,7 @@ class Purchases internal constructor(
                     customerInfoHelper.sendUpdatedCustomerInfoToDelegateIfChanged(info)
                     onSuccess?.let { it(purchase, info) }
                 },
-                onError = { error, shouldConsumePurchase, body ->
+                onError = { error, shouldConsumePurchase, _, body ->
                     if (shouldConsumePurchase) {
                         subscriberAttributesManager.markAsSynced(
                             appUserID,
@@ -1828,7 +1828,7 @@ class Purchases internal constructor(
                     customerInfoHelper.sendUpdatedCustomerInfoToDelegateIfChanged(info)
                     onSuccess()
                 },
-                onError = { error, shouldConsumePurchase, body ->
+                onError = { error, shouldConsumePurchase, _, body ->
                     if (shouldConsumePurchase) {
                         subscriberAttributesManager.markAsSynced(
                             appUserID,

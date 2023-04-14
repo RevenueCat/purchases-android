@@ -71,6 +71,7 @@ class SubscriberAttributesPurchasesTests {
     internal data class PostReceiptErrorContainer(
         val error: PurchasesError,
         val shouldConsumePurchase: Boolean,
+        val isServerError: Boolean,
         val body: JSONObject?
     )
 
@@ -109,7 +110,7 @@ class SubscriberAttributesPurchasesTests {
             )
         } answers {
             postReceiptError?.let {
-                errorSlot.captured(it.error, it.shouldConsumePurchase, it.body)
+                errorSlot.captured(it.error, it.shouldConsumePurchase, it.isServerError, it.body)
             } ?: postReceiptCompletion?.let {
                 successSlot.captured(it.info, it.body)
             }
@@ -330,8 +331,9 @@ class SubscriberAttributesPurchasesTests {
     fun `when syncing purchases, attributes are not marked as synced if error is not finishable`() {
         postReceiptError = PostReceiptErrorContainer(
             PurchasesError(PurchasesErrorCode.NetworkError),
-            false,
-            null
+            shouldConsumePurchase = false,
+            isServerError = false,
+            body = null
         )
         underTest.syncPurchases()
 
@@ -413,8 +415,9 @@ class SubscriberAttributesPurchasesTests {
         )
         postReceiptError = PostReceiptErrorContainer(
             PurchasesError(PurchasesErrorCode.NetworkError),
-            false,
-            null
+            shouldConsumePurchase = false,
+            isServerError = false,
+            body = null
         )
 
         underTest.restorePurchasesWith { }
@@ -513,8 +516,9 @@ class SubscriberAttributesPurchasesTests {
     fun `when purchasing, attributes are not marked as synced if error is not finishable`() {
         postReceiptError = PostReceiptErrorContainer(
             JSONException("exception").toPurchasesError(),
-            false,
-            null
+            shouldConsumePurchase = false,
+            isServerError = true,
+            body = null
         )
 
         underTest.postToBackend(
@@ -671,7 +675,8 @@ class SubscriberAttributesPurchasesTests {
     private fun getFinishableErrorResponse(): PostReceiptErrorContainer {
         return PostReceiptErrorContainer(
             PurchasesError(PurchasesErrorCode.UnexpectedBackendResponseError),
-            true,
+            shouldConsumePurchase = true,
+            isServerError = false,
             JSONObject(Responses.badRequestErrorResponse)
         )
     }

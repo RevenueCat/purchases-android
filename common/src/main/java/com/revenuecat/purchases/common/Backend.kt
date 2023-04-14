@@ -24,7 +24,7 @@ const val ATTRIBUTES_ERROR_RESPONSE_KEY = "attributes_error_response"
 const val ATTRIBUTE_ERRORS_KEY = "attribute_errors"
 
 /** @suppress */
-internal typealias CustomerInfoCallback = Pair<(CustomerInfo) -> Unit, (PurchasesError) -> Unit>
+internal typealias CustomerInfoCallback = Pair<(CustomerInfo) -> Unit, (PurchasesError, isServerError: Boolean) -> Unit>
 
 /** @suppress */
 typealias PostReceiptCallback = Pair<PostReceiptDataSuccessCallback, PostReceiptDataErrorCallback>
@@ -35,7 +35,12 @@ typealias OfferingsCallback = Pair<(JSONObject) -> Unit, (PurchasesError) -> Uni
 /** @suppress */
 typealias PostReceiptDataSuccessCallback = (CustomerInfo, body: JSONObject) -> Unit
 /** @suppress */
-typealias PostReceiptDataErrorCallback = (PurchasesError, shouldConsumePurchase: Boolean, body: JSONObject?) -> Unit
+typealias PostReceiptDataErrorCallback = (
+    PurchasesError,
+    shouldConsumePurchase: Boolean,
+    isServerError: Boolean,
+    body: JSONObject?
+) -> Unit
 /** @suppress */
 typealias IdentifyCallback = Pair<(CustomerInfo, Boolean) -> Unit, (PurchasesError) -> Unit>
 /** @suppress */
@@ -80,7 +85,7 @@ class Backend(
         appUserID: String,
         appInBackground: Boolean,
         onSuccess: (CustomerInfo) -> Unit,
-        onError: (PurchasesError) -> Unit
+        onError: (PurchasesError, isServerError: Boolean) -> Unit
     ) {
         val endpoint = Endpoint.GetCustomerInfo(appUserID)
         val path = endpoint.getPath()
@@ -114,19 +119,24 @@ class Backend(
                         if (result.isSuccessful()) {
                             onSuccess(CustomerInfoFactory.buildCustomerInfo(result))
                         } else {
-                            onError(result.toPurchasesError().also { errorLog(it) })
+                            onError(
+                                result.toPurchasesError().also { errorLog(it) },
+                                RCHTTPStatusCodes.isServerError(result.responseCode)
+                            )
                         }
                     } catch (e: JSONException) {
-                        onError(e.toPurchasesError().also { errorLog(it) })
+                        val isServerError = false
+                        onError(e.toPurchasesError().also { errorLog(it) }, isServerError)
                     }
                 }
             }
 
             override fun onError(error: PurchasesError) {
+                val isServerError = false
                 synchronized(this@Backend) {
                     callbacks.remove(cacheKey)
                 }?.forEach { (_, onError) ->
-                    onError(error)
+                    onError(error, isServerError)
                 }
             }
         }
@@ -205,22 +215,31 @@ class Backend(
                                 purchasesError,
                                 result.responseCode < RCHTTPStatusCodes.ERROR &&
                                     purchasesError.code != PurchasesErrorCode.UnsupportedError,
+                                RCHTTPStatusCodes.isServerError(result.responseCode),
                                 result.body
                             )
                         }
                     } catch (e: JSONException) {
-                        onError(e.toPurchasesError().also { errorLog(it) }, false, null)
+                        val isServerError = false
+                        onError(
+                            e.toPurchasesError().also { errorLog(it) },
+                            false,
+                            isServerError,
+                            null
+                        )
                     }
                 }
             }
 
             override fun onError(error: PurchasesError) {
+                val isServerError = false
                 synchronized(this@Backend) {
                     postReceiptCallbacks.remove(cacheKey)
                 }?.forEach { (_, onError) ->
                     onError(
                         error,
                         false,
+                        isServerError,
                         null
                     )
                 }
@@ -368,7 +387,7 @@ class Backend(
                         onSuccessHandler(result.body)
                     } else {
                         val error = result.toPurchasesError()
-                        val shouldRetry = result.responseCode >= RCHTTPStatusCodes.ERROR ||
+                        val shouldRetry = RCHTTPStatusCodes.isServerError(result.responseCode) ||
                             error.code == PurchasesErrorCode.NetworkError
                         onErrorHandler(error, shouldRetry)
                     }

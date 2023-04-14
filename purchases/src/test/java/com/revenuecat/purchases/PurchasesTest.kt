@@ -4951,6 +4951,7 @@ class PurchasesTest {
         invoke(
             PurchasesError(PurchasesErrorCode.InvalidCredentialsError),
             true,
+            false,
             JSONObject(Responses.invalidCredentialsErrorResponse)
         )
     }
@@ -4959,6 +4960,7 @@ class PurchasesTest {
         invoke(
             PurchasesError(PurchasesErrorCode.UnexpectedBackendResponseError),
             false,
+            true,
             JSONObject(Responses.internalServerErrorResponse)
         )
     }
