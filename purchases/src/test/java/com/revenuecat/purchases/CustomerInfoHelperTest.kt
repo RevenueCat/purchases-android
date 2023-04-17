@@ -73,6 +73,16 @@ class CustomerInfoHelperTest {
     }
 
     @Test
+    fun `setting listener sends offline customer info cached value if it exists over cached value`() {
+        val mockCustomerInfo2 = mockk<CustomerInfo>()
+        every { mockOfflineEntitlementsManager.offlineCustomerInfo } returns mockCustomerInfo2
+        val listenerMock = mockk<UpdatedCustomerInfoListener>(relaxed = true)
+        customerInfoHelper.updatedCustomerInfoListener = listenerMock
+
+        verify(exactly = 1) { listenerMock.onReceived(mockCustomerInfo2) }
+    }
+
+    @Test
     fun `setting listener does not send cached value if it does not exists`() {
         val listenerMock = mockk<UpdatedCustomerInfoListener>(relaxed = true)
         every { mockCache.getCachedCustomerInfo(any()) } returns null
