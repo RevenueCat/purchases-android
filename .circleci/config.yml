@@ -135,7 +135,7 @@ jobs:
       - android/restore-build-cache
       - run:
           name: Run Tests
-          command: ./gradlew lint test
+          command: ./gradlew lint testDefaultsDebugUnitTest testDefaultsReleaseUnitTest
       - run:
           name: Consolidate artifacts
           command: |
