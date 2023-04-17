@@ -123,7 +123,12 @@ internal class PurchasesFactory(
                 appConfig
             )
 
-            val offlineEntitlementsManager = OfflineEntitlementsManager(backend, offlineCustomerInfoCalculator, cache)
+            val offlineEntitlementsManager = OfflineEntitlementsManager(
+                appConfig,
+                backend,
+                offlineCustomerInfoCalculator,
+                cache
+            )
 
             val identityManager = IdentityManager(
                 cache,

@@ -2,6 +2,7 @@ package com.revenuecat.purchases.common.offlineentitlements
 
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.debugLog
@@ -10,6 +11,7 @@ import com.revenuecat.purchases.common.warnLog
 import com.revenuecat.purchases.strings.OfflineEntitlementsStrings
 
 class OfflineEntitlementsManager(
+    private val appConfig: AppConfig,
     private val backend: Backend,
     private val offlineCustomerInfoCalculator: OfflineCustomerInfoCalculator,
     private val deviceCache: DeviceCache
@@ -32,11 +34,11 @@ class OfflineEntitlementsManager(
         isServerError: Boolean,
         appUserId: String
     ): Boolean {
-        return isServerError && deviceCache.getCachedCustomerInfo(appUserId) == null
+        return appConfig.areOfflineEntitlementsEnabled && isServerError && deviceCache.getCachedCustomerInfo(appUserId) == null
     }
 
     fun shouldCalculateOfflineCustomerInfoInPostReceipt(isServerError: Boolean): Boolean {
-        return isServerError
+        return appConfig.areOfflineEntitlementsEnabled && isServerError
     }
 
     @Suppress("FunctionOnlyReturningConstant")

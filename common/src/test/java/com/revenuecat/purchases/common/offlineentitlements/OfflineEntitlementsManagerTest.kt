@@ -3,6 +3,7 @@ package com.revenuecat.purchases.common.offlineentitlements
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.caching.DeviceCache
 import io.mockk.CapturingSlot
@@ -24,6 +25,7 @@ class OfflineEntitlementsManagerTest {
     private lateinit var backendSuccessSlot: CapturingSlot<(ProductEntitlementMapping) -> Unit>
     private lateinit var backendErrorSlot: CapturingSlot<(PurchasesError) -> Unit>
 
+    private lateinit var appConfig: AppConfig
     private lateinit var backend: Backend
     private lateinit var deviceCache: DeviceCache
     private lateinit var offlineEntitlementsCalculator: OfflineCustomerInfoCalculator
@@ -35,6 +37,7 @@ class OfflineEntitlementsManagerTest {
         backendSuccessSlot = slot()
         backendErrorSlot = slot()
 
+        appConfig = mockk()
         backend = mockk()
         deviceCache = mockk()
         offlineEntitlementsCalculator = mockk()
@@ -42,8 +45,12 @@ class OfflineEntitlementsManagerTest {
         every {
             backend.getProductEntitlementMapping(capture(backendSuccessSlot), capture(backendErrorSlot))
         } just Runs
+        every {
+            appConfig.areOfflineEntitlementsEnabled
+        } returns true
 
         offlineEntitlementsManager = OfflineEntitlementsManager(
+            appConfig,
             backend,
             offlineEntitlementsCalculator,
             deviceCache
