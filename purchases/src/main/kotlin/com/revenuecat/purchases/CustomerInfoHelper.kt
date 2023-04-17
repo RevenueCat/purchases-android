@@ -89,7 +89,7 @@ internal class CustomerInfoHelper(
     private fun afterSetListener(listener: UpdatedCustomerInfoListener?) {
         if (listener != null) {
             log(LogIntent.DEBUG, ConfigureStrings.LISTENER_SET)
-            deviceCache.getCachedCustomerInfo(identityManager.currentAppUserID)?.let {
+            getCachedCustomerInfo(identityManager.currentAppUserID)?.let {
                 sendUpdatedCustomerInfoToDelegateIfChanged(it)
             }
         }
