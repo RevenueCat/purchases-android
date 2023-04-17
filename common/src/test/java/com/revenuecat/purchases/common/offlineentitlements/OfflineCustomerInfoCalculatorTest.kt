@@ -128,6 +128,64 @@ class OfflineCustomerInfoCalculatorTest {
     }
 
     @Test
+    fun `product with different entitlement per base plan`() {
+        val entitlementID = "pro_1"
+        val secondEntitlementID = "pro_2"
+        val productIdentifier = "prod_1"
+
+        // Made a purchase for p1m and then a purchase for not_bw after that one expired
+        // You can't have an active purchase of the same product different base plans at the same time
+        val oneHourAgo = 1.hours.ago()
+        val twoHoursAgo = 2.hours.ago()
+        val p1mProduct = PurchasedProduct(
+            productIdentifier,
+            stubStoreTransactionFromPurchaseHistoryRecord(
+                productIds = listOf(productIdentifier),
+                purchaseTime = twoHoursAgo.time,
+            ),
+            false,
+            listOf(entitlementID),
+            expiresDate = oneHourAgo
+        )
+
+            val notBwProduct = PurchasedProduct(
+            productIdentifier,
+            stubStoreTransactionFromPurchaseHistoryRecord(
+                productIds = listOf(productIdentifier),
+                purchaseTime = oneHourAgo.time,
+            ),
+            true,
+            listOf(secondEntitlementID),
+            dateInTheFuture
+        )
+
+        every {
+            purchasedProductsFetcher.queryPurchasedProducts(
+                appUserID,
+                captureLambda(),
+                any()
+            )
+        } answers {
+            lambda<(List<PurchasedProduct>) -> Unit>().captured.invoke(listOf(p1mProduct, notBwProduct))
+        }
+
+        var receivedCustomerInfo: CustomerInfo? = null
+        offlineCustomerInfoCalculator.computeOfflineCustomerInfo(
+            appUserID,
+            { receivedCustomerInfo = it },
+            { fail("Should've succeeded") }
+        )
+        assertThat(receivedCustomerInfo).isNotNull
+        assertThat(receivedCustomerInfo?.activeSubscriptions!!.size).isEqualTo(1)
+        assertThat(receivedCustomerInfo?.activeSubscriptions).contains("prod_1:not_bw")
+        assertThat(receivedCustomerInfo?.entitlements?.all?.size).isEqualTo(2)
+
+        verifyEntitlement(receivedCustomerInfo, entitlementID, p1mProduct, expirationDate = oneHourAgo,
+            purchaseDate = twoHoursAgo)
+        verifyEntitlement(receivedCustomerInfo, secondEntitlementID, notBwProduct, purchaseDate = oneHourAgo)
+    }
+
+    @Test
     fun `multiple products`() {
         val entitlementID = "pro_1"
         val secondEntitlementID = "pro_2"
@@ -279,7 +337,8 @@ class OfflineCustomerInfoCalculatorTest {
         receivedCustomerInfo: CustomerInfo?,
         entitlementID: String,
         purchasedProduct: PurchasedProduct,
-        expirationDate: Date? = dateInTheFuture
+        expirationDate: Date? = dateInTheFuture,
+        purchaseDate: Date? = dateInThePast
     ) {
         val receivedEntitlement = receivedCustomerInfo?.entitlements?.get(entitlementID)
         assertThat(receivedEntitlement?.isActive).isTrue
@@ -288,8 +347,8 @@ class OfflineCustomerInfoCalculatorTest {
         assertThat(receivedEntitlement?.billingIssueDetectedAt).isNull()
         assertThat(receivedEntitlement?.expirationDate).isEqualTo(expirationDate)
         assertThat(receivedEntitlement?.isSandbox).isFalse
-        assertThat(receivedEntitlement?.originalPurchaseDate).isEqualTo(dateInThePast)
-        assertThat(receivedEntitlement?.latestPurchaseDate).isEqualTo(dateInThePast)
+        assertThat(receivedEntitlement?.originalPurchaseDate).isEqualTo(purchaseDate)
+        assertThat(receivedEntitlement?.latestPurchaseDate).isEqualTo(purchaseDate)
         assertThat(receivedEntitlement?.ownershipType).isEqualTo(OwnershipType.UNKNOWN)
         assertThat(receivedEntitlement?.periodType).isEqualTo(PeriodType.NORMAL)
         assertThat(receivedEntitlement?.store).isEqualTo(Store.PLAY_STORE)
