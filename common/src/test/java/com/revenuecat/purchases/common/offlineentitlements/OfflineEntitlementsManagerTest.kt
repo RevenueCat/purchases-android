@@ -7,6 +7,7 @@ import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.caching.DeviceCache
+import com.revenuecat.purchases.strings.OfflineEntitlementsStrings
 import io.mockk.CapturingSlot
 import io.mockk.Runs
 import io.mockk.every
@@ -169,6 +170,19 @@ class OfflineEntitlementsManagerTest {
     // region calculateAndCacheOfflineCustomerInfo
 
     @Test
+    fun `calculateAndCacheOfflineCustomerInfo does nothing if offline entitlements disabled`() {
+        every { appConfig.areOfflineEntitlementsEnabled } returns false
+        var receivedError: PurchasesError? = null
+        offlineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(
+            appUserID,
+            onSuccess = { fail("Should error") },
+            onError = { receivedError = it }
+        )
+        verify(exactly = 0) { offlineEntitlementsCalculator.computeOfflineCustomerInfo(any(), any(), any()) }
+        assertThat(receivedError?.code).isEqualTo(PurchasesErrorCode.UnsupportedError)
+    }
+
+    @Test
     fun `calculateAndCacheOfflineCustomerInfo returns customer info on success callback`() {
         val customerInfo = mockk<CustomerInfo>()
         mockCalculateOfflineEntitlements(successCustomerInfo = customerInfo)
@@ -302,6 +316,14 @@ class OfflineEntitlementsManagerTest {
         val expectedMappings = createProductEntitlementMapping()
         backendSuccessSlot.captured(expectedMappings)
         verify(exactly = 1) { deviceCache.cacheProductEntitlementMapping(expectedMappings) }
+    }
+
+    @Test
+    fun `updateProductEntitlementMappingCacheIfStale does nothing if offline entitlements disabled`() {
+        every { appConfig.areOfflineEntitlementsEnabled } returns false
+        offlineEntitlementsManager.updateProductEntitlementMappingCacheIfStale()
+        verify(exactly = 0) { deviceCache.isProductEntitlementMappingCacheStale() }
+        verify(exactly = 0) { backend.getProductEntitlementMapping(any(), any()) }
     }
 
     // endregion
