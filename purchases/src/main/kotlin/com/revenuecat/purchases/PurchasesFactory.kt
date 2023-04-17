@@ -139,6 +139,15 @@ internal class PurchasesFactory(
 
             val offlineEntitlementsManager = OfflineEntitlementsManager(backend, cache)
 
+            val postReceiptHelper = PostReceiptHelper(
+                appConfig,
+                backend,
+                billing,
+                customerInfoHelper,
+                cache,
+                subscriberAttributesManager
+            )
+
             return Purchases(
                 application,
                 appUserID,
@@ -152,7 +161,8 @@ internal class PurchasesFactory(
                 customerInfoHelper,
                 offeringParser,
                 diagnosticsSynchronizer,
-                offlineEntitlementsManager
+                offlineEntitlementsManager,
+                postReceiptHelper
             )
         }
     }

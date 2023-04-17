@@ -64,8 +64,6 @@ import com.revenuecat.purchases.strings.OfferingStrings
 import com.revenuecat.purchases.strings.PurchaseStrings
 import com.revenuecat.purchases.strings.RestoreStrings
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
-import com.revenuecat.purchases.subscriberattributes.getAttributeErrors
-import com.revenuecat.purchases.subscriberattributes.toBackendMap
 import org.json.JSONException
 import org.json.JSONObject
 import java.net.URL
@@ -98,6 +96,7 @@ class Purchases internal constructor(
     diagnosticsSynchronizer: DiagnosticsSynchronizer?,
     @Suppress("UnusedPrivateMember")
     private val offlineEntitlementsManager: OfflineEntitlementsManager,
+    private val postReceiptHelper: PostReceiptHelper,
     // This is nullable due to: https://github.com/RevenueCat/purchases-flutter/issues/408
     private val mainHandler: Handler? = Handler(Looper.getMainLooper())
 ) : LifecycleDelegate {
@@ -235,11 +234,12 @@ class Purchases internal constructor(
                 if (allPurchases.isNotEmpty()) {
                     allPurchases.forEach { purchase ->
                         val productInfo = ReceiptInfo(productIDs = purchase.productIds)
-                        syncPurchaseWithBackend(
+                        postReceiptHelper.postTokenWithoutConsuming(
                             purchase.purchaseToken,
                             purchase.storeUserID,
-                            appUserID,
                             productInfo,
+                            this.allowSharingPlayStoreAccount,
+                            appUserID,
                             purchase.marketplace,
                             {
                                 log(LogIntent.PURCHASE, PurchaseStrings.PURCHASE_SYNCED.format(purchase))
@@ -298,11 +298,12 @@ class Purchases internal constructor(
                     price = price?.takeUnless { it == 0.0 },
                     currency = isoCurrencyCode?.takeUnless { it.isBlank() }
                 )
-                syncPurchaseWithBackend(
+                postReceiptHelper.postTokenWithoutConsuming(
                     receiptID,
                     amazonUserID,
-                    appUserID,
                     receiptInfo,
+                    this.allowSharingPlayStoreAccount,
+                    appUserID,
                     marketplace = null,
                     {
                         val logMessage = PurchaseStrings.PURCHASE_SYNCED_USER_ID.format(receiptID, amazonUserID)
@@ -598,68 +599,43 @@ class Purchases internal constructor(
 
         val appUserID = identityManager.currentAppUserID
 
-        this.finishTransactions.let { finishTransactions ->
-            billing.queryAllPurchases(
-                appUserID,
-                onReceivePurchaseHistory = { allPurchases ->
-                    if (allPurchases.isEmpty()) {
-                        getCustomerInfo(callback)
-                    } else {
-                        allPurchases.sortedBy { it.purchaseTime }.let { sortedByTime ->
-                            sortedByTime.forEach { purchase ->
-                                subscriberAttributesManager.getUnsyncedSubscriberAttributes(appUserID) { attrsByKey ->
-                                    val receiptInfo = ReceiptInfo(productIDs = purchase.productIds)
-                                    backend.postReceiptData(
-                                        purchaseToken = purchase.purchaseToken,
-                                        appUserID = appUserID,
-                                        isRestore = true,
-                                        observerMode = !finishTransactions,
-                                        subscriberAttributes = attrsByKey.toBackendMap(),
-                                        receiptInfo = receiptInfo,
-                                        storeAppUserID = purchase.storeUserID,
-                                        marketplace = purchase.marketplace,
-                                        onSuccess = { info, body ->
-                                            subscriberAttributesManager.markAsSynced(
-                                                appUserID,
-                                                attrsByKey,
-                                                body.getAttributeErrors()
-                                            )
-                                            billing.consumeAndSave(finishTransactions, purchase)
-                                            customerInfoHelper.cacheCustomerInfo(info)
-                                            customerInfoHelper.sendUpdatedCustomerInfoToDelegateIfChanged(info)
-                                            log(LogIntent.DEBUG, RestoreStrings.PURCHASE_RESTORED.format(purchase))
-                                            if (sortedByTime.last() == purchase) {
-                                                dispatch { callback.onReceived(info) }
-                                            }
-                                        },
-                                        onError = { error, shouldConsumePurchase, _, body ->
-                                            if (shouldConsumePurchase) {
-                                                subscriberAttributesManager.markAsSynced(
-                                                    appUserID,
-                                                    attrsByKey,
-                                                    body.getAttributeErrors()
-                                                )
-                                                billing.consumeAndSave(finishTransactions, purchase)
-                                            }
-                                            log(
-                                                LogIntent.RC_ERROR, RestoreStrings.RESTORING_PURCHASE_ERROR
-                                                    .format(purchase, error)
-                                            )
-                                            if (sortedByTime.last() == purchase) {
-                                                dispatch { callback.onError(error) }
-                                            }
-                                        }
+        billing.queryAllPurchases(
+            appUserID,
+            onReceivePurchaseHistory = { allPurchases ->
+                if (allPurchases.isEmpty()) {
+                    getCustomerInfo(callback)
+                } else {
+                    allPurchases.sortedBy { it.purchaseTime }.let { sortedByTime ->
+                        sortedByTime.forEach { purchase ->
+                            postReceiptHelper.postTransactionAndConsumeIfNeeded(
+                                purchase = purchase,
+                                storeProduct = null,
+                                isRestore = true,
+                                appUserID = appUserID,
+                                onSuccess = { _, info ->
+                                    log(LogIntent.DEBUG, RestoreStrings.PURCHASE_RESTORED.format(purchase))
+                                    if (sortedByTime.last() == purchase) {
+                                        dispatch { callback.onReceived(info) }
+                                    }
+                                },
+                                onError = { _, error ->
+                                    log(
+                                        LogIntent.RC_ERROR, RestoreStrings.RESTORING_PURCHASE_ERROR
+                                            .format(purchase, error)
                                     )
+                                    if (sortedByTime.last() == purchase) {
+                                        dispatch { callback.onError(error) }
+                                    }
                                 }
-                            }
+                            )
                         }
                     }
-                },
-                onReceivePurchaseHistoryError = { error ->
-                    dispatch { callback.onError(error) }
                 }
-            )
-        }
+            },
+            onReceivePurchaseHistoryError = { error ->
+                dispatch { callback.onError(error) }
+            }
+        )
     }
 
     /**
@@ -1284,7 +1260,6 @@ class Purchases internal constructor(
     private fun postPurchases(
         purchases: List<StoreTransaction>,
         allowSharingPlayStoreAccount: Boolean,
-        consumeAllTransactions: Boolean,
         appUserID: String,
         onSuccess: (SuccessfulPurchaseCallback)? = null,
         onError: (ErrorPurchaseCallback)? = null
@@ -1308,22 +1283,20 @@ class Purchases internal constructor(
                             }
                         }
 
-                        postToBackend(
+                        postReceiptHelper.postTransactionAndConsumeIfNeeded(
                             purchase = purchase,
                             storeProduct = purchasedStoreProduct,
-                            allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
-                            consumeAllTransactions = consumeAllTransactions,
+                            isRestore = allowSharingPlayStoreAccount,
                             appUserID = appUserID,
                             onSuccess = onSuccess,
                             onError = onError
                         )
                     },
                     onError = {
-                        postToBackend(
+                        postReceiptHelper.postTransactionAndConsumeIfNeeded(
                             purchase = purchase,
                             storeProduct = null,
-                            allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
-                            consumeAllTransactions = consumeAllTransactions,
+                            isRestore = allowSharingPlayStoreAccount,
                             appUserID = appUserID,
                             onSuccess = onSuccess,
                             onError = onError
@@ -1336,58 +1309,6 @@ class Purchases internal constructor(
                     PurchasesError(PurchasesErrorCode.PaymentPendingError).also { errorLog(it) }
                 )
             }
-        }
-    }
-
-    @JvmSynthetic
-    internal fun postToBackend(
-        purchase: StoreTransaction,
-        storeProduct: StoreProduct?,
-        allowSharingPlayStoreAccount: Boolean,
-        consumeAllTransactions: Boolean,
-        appUserID: String,
-        onSuccess: (SuccessfulPurchaseCallback)? = null,
-        onError: (ErrorPurchaseCallback)? = null
-    ) {
-        subscriberAttributesManager.getUnsyncedSubscriberAttributes(appUserID) { unsyncedSubscriberAttributesByKey ->
-            val receiptInfo = ReceiptInfo(
-                productIDs = purchase.productIds,
-                offeringIdentifier = purchase.presentedOfferingIdentifier,
-                storeProduct = storeProduct,
-                subscriptionOptionId = purchase.subscriptionOptionId
-            )
-            backend.postReceiptData(
-                purchaseToken = purchase.purchaseToken,
-                appUserID = appUserID,
-                isRestore = allowSharingPlayStoreAccount,
-                observerMode = !consumeAllTransactions,
-                subscriberAttributes = unsyncedSubscriberAttributesByKey.toBackendMap(),
-                receiptInfo = receiptInfo,
-                storeAppUserID = purchase.storeUserID,
-                marketplace = purchase.marketplace,
-                onSuccess = { info, body ->
-                    subscriberAttributesManager.markAsSynced(
-                        appUserID,
-                        unsyncedSubscriberAttributesByKey,
-                        body.getAttributeErrors()
-                    )
-                    billing.consumeAndSave(consumeAllTransactions, purchase)
-                    customerInfoHelper.cacheCustomerInfo(info)
-                    customerInfoHelper.sendUpdatedCustomerInfoToDelegateIfChanged(info)
-                    onSuccess?.let { it(purchase, info) }
-                },
-                onError = { error, shouldConsumePurchase, _, body ->
-                    if (shouldConsumePurchase) {
-                        subscriberAttributesManager.markAsSynced(
-                            appUserID,
-                            unsyncedSubscriberAttributesByKey,
-                            body.getAttributeErrors()
-                        )
-                        billing.consumeAndSave(consumeAllTransactions, purchase)
-                    }
-                    onError?.let { it(purchase, error) }
-                }
-            )
         }
     }
 
@@ -1492,7 +1413,6 @@ class Purchases internal constructor(
                 postPurchases(
                     purchases,
                     allowSharingPlayStoreAccount,
-                    finishTransactions,
                     appUserID,
                     onSuccess = callbackPair.first,
                     onError = callbackPair.second
@@ -1780,7 +1700,6 @@ class Purchases internal constructor(
                             postPurchases(
                                 deviceCache.getActivePurchasesNotInCache(purchasesByHashedToken),
                                 allowSharingPlayStoreAccount,
-                                finishTransactions,
                                 appUserID
                             )
                         },
@@ -1796,51 +1715,6 @@ class Purchases internal constructor(
 
     private fun synchronizeSubscriberAttributesIfNeeded() {
         subscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(appUserID)
-    }
-
-    private fun syncPurchaseWithBackend(
-        purchaseToken: String,
-        storeUserID: String?,
-        appUserID: String,
-        productInfo: ReceiptInfo,
-        marketplace: String?,
-        onSuccess: () -> Unit,
-        onError: (PurchasesError) -> Unit,
-    ) {
-        subscriberAttributesManager.getUnsyncedSubscriberAttributes(appUserID) { unsyncedSubscriberAttributesByKey ->
-            backend.postReceiptData(
-                purchaseToken = purchaseToken,
-                appUserID = appUserID,
-                isRestore = this.allowSharingPlayStoreAccount,
-                observerMode = !this.finishTransactions,
-                subscriberAttributes = unsyncedSubscriberAttributesByKey.toBackendMap(),
-                receiptInfo = productInfo,
-                storeAppUserID = storeUserID,
-                marketplace = marketplace,
-                onSuccess = { info, body ->
-                    subscriberAttributesManager.markAsSynced(
-                        appUserID,
-                        unsyncedSubscriberAttributesByKey,
-                        body.getAttributeErrors()
-                    )
-                    deviceCache.addSuccessfullyPostedToken(purchaseToken)
-                    customerInfoHelper.cacheCustomerInfo(info)
-                    customerInfoHelper.sendUpdatedCustomerInfoToDelegateIfChanged(info)
-                    onSuccess()
-                },
-                onError = { error, shouldConsumePurchase, _, body ->
-                    if (shouldConsumePurchase) {
-                        subscriberAttributesManager.markAsSynced(
-                            appUserID,
-                            unsyncedSubscriberAttributesByKey,
-                            body.getAttributeErrors()
-                        )
-                        deviceCache.addSuccessfullyPostedToken(purchaseToken)
-                    }
-                    onError(error)
-                }
-            )
-        }
     }
 
     // endregion
