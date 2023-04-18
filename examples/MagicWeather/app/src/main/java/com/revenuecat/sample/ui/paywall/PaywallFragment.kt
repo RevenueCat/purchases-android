@@ -41,7 +41,7 @@ class PaywallFragment : Fragment() {
                 is PaywallItem.Option -> {
                     purchaseOption(item.subscriptionOption)
                 }
-                else -> {
+                is PaywallItem.Title -> {
                     // Do nothing
                 }
             }
