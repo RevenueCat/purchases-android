@@ -66,7 +66,7 @@ class BackendTest {
         receivedError = null
         receivedOfferingsJSON = null
         receivedCustomerInfo = null
-        receivedShouldConsumePurchase = null
+        receivedPostReceiptErrorType = null
         receivedCustomerInfoCreated = null
         receivedIsServerError = null
     }
@@ -132,7 +132,7 @@ class BackendTest {
     private var receivedCustomerInfoCreated: Boolean? = null
     private var receivedOfferingsJSON: JSONObject? = null
     private var receivedError: PurchasesError? = null
-    private var receivedShouldConsumePurchase: Boolean? = null
+    private var receivedPostReceiptErrorType: PostReceiptErrorType? = null
     private var receivedIsServerError: Boolean? = null
     private val noOfferingsResponse = "{'offerings': [], 'current_offering_id': null}"
 
@@ -148,11 +148,10 @@ class BackendTest {
             this@BackendTest.receivedCustomerInfo = info
         }
 
-    private val postReceiptErrorCallback: (PurchasesError, Boolean, Boolean, JSONObject?) -> Unit =
-        { error, shouldConsumePurchase, isServerError, _ ->
+    private val postReceiptErrorCallback: PostReceiptDataErrorCallback =
+        { error, errorType, _ ->
             this@BackendTest.receivedError = error
-            this@BackendTest.receivedShouldConsumePurchase = shouldConsumePurchase
-            this@BackendTest.receivedIsServerError = isServerError
+            this@BackendTest.receivedPostReceiptErrorType = errorType
         }
 
     private val onReceiveCustomerInfoErrorHandler: (PurchasesError, Boolean) -> Unit = { error, isServerError ->
@@ -1014,7 +1013,26 @@ class BackendTest {
         assertThat(receivedError!!.code)
             .`as`("Received error code is the right one")
             .isEqualTo(PurchasesErrorCode.UnsupportedError)
-        assertThat(receivedShouldConsumePurchase).`as`("Purchase shouldn't be consumed").isFalse
+        assertThat(receivedPostReceiptErrorType).isEqualTo(PostReceiptErrorType.CANNOT_BE_CONSUMED)
+    }
+
+    @Test
+    fun `postReceipt error callback says purchase can be consumed if 4xx error and not unsupported error`() {
+        mockPostReceiptResponseAndPost(
+            backend,
+            responseCode = RCHTTPStatusCodes.BAD_REQUEST,
+            isRestore = false,
+            clientException = null,
+            resultBody = """
+                {"code":7226,
+                "message":"Backend bad request."
+                }""".trimIndent(),
+            observerMode = false,
+            receiptInfo = ReceiptInfo(productIDs),
+            storeAppUserID = null
+        )
+
+        assertThat(receivedPostReceiptErrorType).isEqualTo(PostReceiptErrorType.CAN_BE_CONSUMED)
     }
 
     @Test
@@ -1033,7 +1051,7 @@ class BackendTest {
             storeAppUserID = null
         )
 
-        assertThat(receivedIsServerError).isEqualTo(true)
+        assertThat(receivedPostReceiptErrorType).isEqualTo(PostReceiptErrorType.SERVER_ERROR)
     }
 
     @Test
@@ -1052,7 +1070,7 @@ class BackendTest {
             storeAppUserID = null
         )
 
-        assertThat(receivedIsServerError).isEqualTo(false)
+        assertThat(receivedPostReceiptErrorType).isEqualTo(PostReceiptErrorType.CANNOT_BE_CONSUMED)
     }
 
     @Test
@@ -1978,7 +1996,7 @@ class BackendTest {
         delayed: Boolean = false,
         marketplace: String? = null,
         onSuccess: (CustomerInfo, JSONObject?) -> Unit = onReceivePostReceiptSuccessHandler,
-        onError: (PurchasesError, Boolean, Boolean, JSONObject?) -> Unit = postReceiptErrorCallback
+        onError: PostReceiptDataErrorCallback = postReceiptErrorCallback
     ): CustomerInfo {
         val info = mockPostReceiptResponse(
             isRestore = isRestore,

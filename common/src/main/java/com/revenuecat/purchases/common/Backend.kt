@@ -37,8 +37,7 @@ typealias PostReceiptDataSuccessCallback = (CustomerInfo, body: JSONObject) -> U
 /** @suppress */
 typealias PostReceiptDataErrorCallback = (
     PurchasesError,
-    shouldConsumePurchase: Boolean,
-    isServerError: Boolean,
+    postReceiptErrorType: PostReceiptErrorType,
     body: JSONObject?
 ) -> Unit
 /** @suppress */
@@ -47,6 +46,12 @@ typealias IdentifyCallback = Pair<(CustomerInfo, Boolean) -> Unit, (PurchasesErr
 typealias DiagnosticsCallback = Pair<(JSONObject) -> Unit, (PurchasesError, Boolean) -> Unit>
 /** @suppress */
 typealias ProductEntitlementCallback = Pair<(ProductEntitlementMapping) -> Unit, (PurchasesError) -> Unit>
+
+enum class PostReceiptErrorType {
+    CAN_BE_CONSUMED,
+    SERVER_ERROR,
+    CANNOT_BE_CONSUMED
+}
 
 class Backend(
     private val appConfig: AppConfig,
@@ -211,20 +216,17 @@ class Backend(
                             onSuccess(CustomerInfoFactory.buildCustomerInfo(result), result.body)
                         } else {
                             val purchasesError = result.toPurchasesError().also { errorLog(it) }
+                            val errorType = calculatePostReceiptErrorType(result.responseCode, purchasesError)
                             onError(
                                 purchasesError,
-                                result.responseCode < RCHTTPStatusCodes.ERROR &&
-                                    purchasesError.code != PurchasesErrorCode.UnsupportedError,
-                                RCHTTPStatusCodes.isServerError(result.responseCode),
+                                errorType,
                                 result.body
                             )
                         }
                     } catch (e: JSONException) {
-                        val isServerError = false
                         onError(
                             e.toPurchasesError().also { errorLog(it) },
-                            false,
-                            isServerError,
+                            PostReceiptErrorType.CANNOT_BE_CONSUMED,
                             null
                         )
                     }
@@ -232,14 +234,12 @@ class Backend(
             }
 
             override fun onError(error: PurchasesError) {
-                val isServerError = false
                 synchronized(this@Backend) {
                     postReceiptCallbacks.remove(cacheKey)
                 }?.forEach { (_, onError) ->
                     onError(
                         error,
-                        false,
-                        isServerError,
+                        PostReceiptErrorType.CANNOT_BE_CONSUMED,
                         null
                     )
                 }
@@ -458,6 +458,17 @@ class Backend(
 
     fun clearCaches() {
         httpClient.clearCaches()
+    }
+
+    private fun calculatePostReceiptErrorType(
+        responseCode: Int,
+        purchasesError: PurchasesError
+    ) = if (RCHTTPStatusCodes.isServerError(responseCode)) {
+        PostReceiptErrorType.SERVER_ERROR
+    } else if (purchasesError.code != PurchasesErrorCode.UnsupportedError) {
+        PostReceiptErrorType.CAN_BE_CONSUMED
+    } else {
+        PostReceiptErrorType.CANNOT_BE_CONSUMED
     }
 
     private fun <K, S, E> MutableMap<K, MutableList<Pair<S, E>>>.addCallback(
