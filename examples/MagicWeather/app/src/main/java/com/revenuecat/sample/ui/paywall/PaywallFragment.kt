@@ -4,7 +4,6 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.TextView
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -42,6 +41,9 @@ class PaywallFragment : Fragment() {
                 is PaywallItem.Option -> {
                     purchaseOption(item.subscriptionOption)
                 }
+                is PaywallItem.Title -> {
+                    // Do nothing
+                }
             }
         })
 
@@ -63,7 +65,8 @@ class PaywallFragment : Fragment() {
     }
 
     private fun purchaseProduct(item: StoreProduct) {
-        Purchases.sharedInstance.purchaseProductWith(requireActivity(), item,
+        Purchases.sharedInstance.purchaseWith(
+            PurchaseParams.Builder(requireActivity(), item).build(),
             onError = { error, userCancelled ->
                 if (!userCancelled) {
                     buildError(context, error.message)
@@ -75,7 +78,8 @@ class PaywallFragment : Fragment() {
     }
 
     private fun purchaseOption(item: SubscriptionOption) {
-        Purchases.sharedInstance.purchaseSubscriptionOptionWith(requireActivity(), item,
+        Purchases.sharedInstance.purchaseWith(
+            PurchaseParams.Builder(requireActivity(), item).build(),
             onError = { error, userCancelled ->
                 if (!userCancelled) {
                     buildError(context, error.message)
