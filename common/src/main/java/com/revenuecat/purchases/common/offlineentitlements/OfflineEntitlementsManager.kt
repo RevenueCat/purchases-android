@@ -53,7 +53,7 @@ class OfflineEntitlementsManager(
         if (!appConfig.areOfflineEntitlementsEnabled) {
             onError(PurchasesError(
                 PurchasesErrorCode.UnsupportedError,
-                OfflineEntitlementsStrings.OFFLINE_ENTITLEMENTS_NOT_SUPPORTED
+                OfflineEntitlementsStrings.OFFLINE_ENTITLEMENTS_NOT_ENABLED
             ))
             return
         }

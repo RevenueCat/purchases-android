@@ -7,6 +7,6 @@ object OfflineEntitlementsStrings {
     const val USING_OFFLINE_ENTITLEMENTS_CUSTOMER_INFO = "Using offline computed customer info."
     const val UPDATING_OFFLINE_CUSTOMER_INFO_CACHE = "Updating offline customer info cache."
     const val RESETTING_OFFLINE_CUSTOMER_INFO_CACHE = "Resetting offline customer info cache."
-    const val OFFLINE_ENTITLEMENTS_NOT_SUPPORTED = "Offline entitlements not supported in this version."
+    const val OFFLINE_ENTITLEMENTS_NOT_ENABLED = "Offline entitlements not enabled in this version."
     const val ALREADY_CALCULATING_OFFLINE_CUSTOMER_INFO = "Already calculating offline customer info for %s."
 }
