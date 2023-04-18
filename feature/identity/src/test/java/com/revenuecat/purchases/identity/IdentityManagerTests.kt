@@ -391,10 +391,10 @@ class IdentityManagerTests {
         mockSubscriberAttributesManagerSynchronize(identifiedUserID)
         every { mockDeviceCache.cleanupOldAttributionData() } just Runs
 
-        var error: PurchasesError? = null
-        identityManager.logOut { error = it }
+        var completionCallCount = 0
+        identityManager.logOut { completionCallCount++ }
 
-        assertThat(error).isNull()
+        assertThat(completionCallCount).isEqualTo(1)
         verify(exactly = 1) { mockOfflineEntitlementsManager.resetOfflineCustomerInfoCache() }
     }
 

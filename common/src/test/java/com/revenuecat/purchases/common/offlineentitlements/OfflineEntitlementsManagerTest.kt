@@ -89,6 +89,17 @@ class OfflineEntitlementsManagerTest {
     }
 
     @Test
+    fun `shouldCalculateOfflineCustomerInfoInGetCustomerInfoRequest returns false if not server error and offline mode disabled`() {
+        every { appConfig.areOfflineEntitlementsEnabled } returns false
+        val isServerError = false
+        val result = offlineEntitlementsManager.shouldCalculateOfflineCustomerInfoInGetCustomerInfoRequest(
+            isServerError,
+            appUserID
+        )
+        assertThat(result).isFalse
+    }
+
+    @Test
     fun `shouldCalculateOfflineCustomerInfoInGetCustomerInfoRequest returns false if server error and cached customer info is not null`() {
         every { deviceCache.getCachedCustomerInfo(appUserID) } returns mockk()
         val isServerError = true
@@ -135,6 +146,13 @@ class OfflineEntitlementsManagerTest {
     fun `shouldCalculateOfflineCustomerInfoInPostReceipt returns false if offline entitlements disabled`() {
         every { appConfig.areOfflineEntitlementsEnabled } returns false
         val isServerError = true
+        assertThat(offlineEntitlementsManager.shouldCalculateOfflineCustomerInfoInPostReceipt(isServerError)).isFalse
+    }
+
+    @Test
+    fun `shouldCalculateOfflineCustomerInfoInPostReceipt returns false if not server error and offline entitlements disabled`() {
+        every { appConfig.areOfflineEntitlementsEnabled } returns false
+        val isServerError = false
         assertThat(offlineEntitlementsManager.shouldCalculateOfflineCustomerInfoInPostReceipt(isServerError)).isFalse
     }
 
