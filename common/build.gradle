@@ -1,6 +1,10 @@
 apply from: "$rootProject.projectDir/library.gradle"
 android {
     namespace 'com.revenuecat.purchases.common'
+
+    buildFeatures {
+        buildConfig true
+    }
 }
 
 dependencies {
