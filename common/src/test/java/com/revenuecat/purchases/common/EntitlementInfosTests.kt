@@ -1215,6 +1215,48 @@ class EntitlementInfosTests {
         verifyOwnershipType(OwnershipType.UNKNOWN)
     }
 
+    @Test
+    fun `entitlement original purchase date is correct if product has been purchased using different base plans`() {
+        stubResponse(
+            entitlements = JSONObject().apply {
+                put("pro_level_a", JSONObject().apply {
+                    put("expires_date", "2023-04-11T17:36:06Z")
+                    put("product_identifier", "gold")
+                    put("purchase_date", "2023-04-11T17:31:06Z")
+                    put("product_plan_identifier", "monthly-gold")
+                })
+                put("pro_level_b", JSONObject().apply {
+                    put("expires_date", "2023-04-11T18:16:03Z")
+                    put("product_identifier", "gold")
+                    put("purchase_date", "2023-04-11T18:11:03Z")
+                    put("product_plan_identifier", "weekly-gold")
+                })
+
+            },
+            subscriptions = JSONObject().apply {
+                put("gold", JSONObject().apply {
+                    put("billing_issues_detected_at", JSONObject.NULL)
+                    put("expires_date", "2023-04-11T18:16:03Z")
+                    put("is_sandbox", false)
+                    put("original_purchase_date", "2023-04-11T17:41:06Z")
+                    put("period_type", "normal")
+                    put("purchase_date", "2019-07-26T23:45:40Z")
+                    put("store", "app_store")
+                    put("unsubscribe_detected_at", "2023-04-11T18:16:06Z")
+                    put("product_plan_identifier", "weekly-gold")
+                })
+            },
+            requestDate = 2.days.ago()
+        )
+
+        val customerInfo = createCustomerInfo(response)
+        assertThat(customerInfo.entitlements.all.size).isEqualTo(2)
+        assertThat(customerInfo.entitlements.all.containsKey("pro_level_a")).isTrue
+        assertThat(customerInfo.entitlements.all.containsKey("pro_level_b")).isTrue
+        assertThat(customerInfo.entitlements["pro_level_a"]?.originalPurchaseDate).isEqualTo("2023-04-11T17:31:06Z")
+        assertThat(customerInfo.entitlements["pro_level_b"]?.originalPurchaseDate).isEqualTo("2023-04-11T17:41:06Z")
+    }
+
     // region Equality tests
 
     // Trusted entitlements: Commented out until ready to be made public
