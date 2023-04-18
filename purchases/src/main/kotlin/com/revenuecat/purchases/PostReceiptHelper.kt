@@ -53,7 +53,7 @@ internal class PostReceiptHelper(
                 deviceCache.addSuccessfullyPostedToken(purchaseToken)
                 onSuccess()
             },
-            onError = { error, shouldConsumePurchase, isServerError, _ ->
+            onError = { backendError, shouldConsumePurchase, isServerError, _ ->
                 if (shouldConsumePurchase) {
                     deviceCache.addSuccessfullyPostedToken(purchaseToken)
                 }
@@ -64,7 +64,7 @@ internal class PostReceiptHelper(
                         onSuccess()
                     },
                     onError = {
-                        onError(error)
+                        onError(backendError)
                     }
                 )
             }
@@ -100,7 +100,7 @@ internal class PostReceiptHelper(
                 billing.consumeAndSave(finishTransactions, purchase)
                 onSuccess?.let { it(purchase, info) }
             },
-            onError = { error, shouldConsumePurchase, isServerError, _ ->
+            onError = { backendError, shouldConsumePurchase, isServerError, _ ->
                 if (shouldConsumePurchase) {
                     billing.consumeAndSave(finishTransactions, purchase)
                 }
@@ -111,7 +111,7 @@ internal class PostReceiptHelper(
                         onSuccess?.let { it(purchase, customerInfo) }
                     },
                     onError = {
-                        onError?.let { it(purchase, error) }
+                        onError?.let { it(purchase, backendError) }
                     }
                 )
             }

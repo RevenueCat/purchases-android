@@ -130,24 +130,25 @@ internal class CustomerInfoHelper(
                 sendUpdatedCustomerInfoToDelegateIfChanged(info)
                 dispatch { callback?.onReceived(info) }
             },
-            { error, isServerError ->
-                Log.e("Purchases", "Error fetching customer data: $error")
+            { backendError, isServerError ->
+                errorLog(CustomerInfoStrings.ERROR_FETCHING_CUSTOMER_INFO.format(backendError))
                 deviceCache.clearCustomerInfoCacheTimestamp(appUserID)
-                if (shouldCalculateOfflineCustomerInfo(isServerError, appUserID)) {
+                if (offlineEntitlementsManager.shouldCalculateOfflineCustomerInfoInGetCustomerInfoRequest(
+                        isServerError,
+                        appUserID
+                    )) {
                     offlineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(
                         appUserID,
                         onSuccess = { offlineComputedCustomerInfo ->
-                            // TODO Improve logs
-                            warnLog("Using offline computed customer info.")
                             sendUpdatedCustomerInfoToDelegateIfChanged(offlineComputedCustomerInfo)
                             dispatch { callback?.onReceived(offlineComputedCustomerInfo) }
                         },
                         onError = {
-                            dispatch { callback?.onError(error) }
+                            dispatch { callback?.onError(backendError) }
                         }
                     )
                 } else {
-                    dispatch { callback?.onError(error) }
+                    dispatch { callback?.onError(backendError) }
                 }
             })
     }
@@ -196,13 +197,6 @@ internal class CustomerInfoHelper(
                 else CustomerInfoStrings.CUSTOMERINFO_STALE_UPDATING_FOREGROUND)
             getCustomerInfoFetchOnly(appUserID, appInBackground)
         }
-    }
-
-    private fun shouldCalculateOfflineCustomerInfo(isServerError: Boolean, appUserID: String): Boolean {
-        return offlineEntitlementsManager.shouldCalculateOfflineCustomerInfoInGetCustomerInfoRequest(
-            isServerError,
-            appUserID
-        )
     }
 
     private fun dispatch(action: () -> Unit) {

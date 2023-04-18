@@ -25,28 +25,24 @@ class OfflineEntitlementsManager(
 
     private val offlineCustomerInfoCallbackCache = mutableMapOf<String, List<OfflineCustomerInfoCallback>>()
 
+    @Synchronized
     fun resetOfflineCustomerInfoCache() {
-        synchronized(this) {
-            if (_offlineCustomerInfo != null) {
-                warnLog(OfflineEntitlementsStrings.RESETTING_OFFLINE_CUSTOMER_INFO_CACHE)
-                _offlineCustomerInfo = null
-            }
+        if (_offlineCustomerInfo != null) {
+            warnLog(OfflineEntitlementsStrings.RESETTING_OFFLINE_CUSTOMER_INFO_CACHE)
+            _offlineCustomerInfo = null
         }
     }
 
     fun shouldCalculateOfflineCustomerInfoInGetCustomerInfoRequest(
         isServerError: Boolean,
         appUserId: String
-    ): Boolean {
-        return appConfig.areOfflineEntitlementsEnabled &&
-            isServerError &&
-            deviceCache.getCachedCustomerInfo(appUserId) == null
-    }
+    ) = appConfig.areOfflineEntitlementsEnabled &&
+        isServerError &&
+        deviceCache.getCachedCustomerInfo(appUserId) == null
 
-    fun shouldCalculateOfflineCustomerInfoInPostReceipt(isServerError: Boolean): Boolean {
-        return appConfig.areOfflineEntitlementsEnabled &&
-            isServerError
-    }
+    fun shouldCalculateOfflineCustomerInfoInPostReceipt(
+        isServerError: Boolean
+    ) = appConfig.areOfflineEntitlementsEnabled && isServerError
 
     @Suppress("FunctionOnlyReturningConstant")
     fun calculateAndCacheOfflineCustomerInfo(
@@ -61,7 +57,7 @@ class OfflineEntitlementsManager(
             ))
             return
         }
-        synchronized(this) {
+        synchronized(this@OfflineEntitlementsManager) {
             val alreadyProcessing = offlineCustomerInfoCallbackCache.containsKey(appUserId)
             val callbacks = offlineCustomerInfoCallbackCache[appUserId] ?: emptyList()
             offlineCustomerInfoCallbackCache[appUserId] = callbacks + listOf(onSuccess to onError)
@@ -73,8 +69,8 @@ class OfflineEntitlementsManager(
         offlineCustomerInfoCalculator.computeOfflineCustomerInfo(
             appUserId,
             onSuccess = { customerInfo ->
-                synchronized(this) {
-                    warnLog("Updating offline customer info cache")
+                synchronized(this@OfflineEntitlementsManager) {
+                    debugLog(OfflineEntitlementsStrings.UPDATING_OFFLINE_CUSTOMER_INFO_CACHE)
                     _offlineCustomerInfo = customerInfo
                     val callbacks = offlineCustomerInfoCallbackCache.remove(appUserId)
                     callbacks?.forEach { (onSuccess, _) ->
@@ -83,7 +79,7 @@ class OfflineEntitlementsManager(
                 }
             },
             onError = {
-                synchronized(this) {
+                synchronized(this@OfflineEntitlementsManager) {
                     val callbacks = offlineCustomerInfoCallbackCache.remove(appUserId)
                     callbacks?.forEach { (_, onError) ->
                         onError(it)
