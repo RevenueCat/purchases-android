@@ -177,7 +177,7 @@ class OfflineCustomerInfoCalculatorTest {
         )
         assertThat(receivedCustomerInfo).isNotNull
         assertThat(receivedCustomerInfo?.activeSubscriptions!!.size).isEqualTo(1)
-        assertThat(receivedCustomerInfo?.activeSubscriptions).contains("prod_1:not_bw")
+        assertThat(receivedCustomerInfo?.activeSubscriptions).contains("prod_1")
         assertThat(receivedCustomerInfo?.entitlements?.all?.size).isEqualTo(2)
 
         verifyEntitlement(receivedCustomerInfo, entitlementID, p1mProduct, expirationDate = oneHourAgo,
