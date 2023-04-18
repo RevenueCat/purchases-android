@@ -382,7 +382,8 @@ class OfflineCustomerInfoCalculatorTest {
         receivedCustomerInfo: CustomerInfo?,
         entitlementID: String,
         purchasedProduct: PurchasedProduct,
-        expirationDate: Date? = dateInTheFuture
+        expirationDate: Date? = dateInTheFuture,
+        purchaseDate: Date? = dateInThePast
     ) {
         val receivedEntitlement = receivedCustomerInfo?.entitlements?.get(entitlementID)
         assertThat(receivedEntitlement?.isActive).isTrue
@@ -391,8 +392,8 @@ class OfflineCustomerInfoCalculatorTest {
         assertThat(receivedEntitlement?.billingIssueDetectedAt).isNull()
         assertThat(receivedEntitlement?.expirationDate).isEqualTo(expirationDate)
         assertThat(receivedEntitlement?.isSandbox).isFalse
-        assertThat(receivedEntitlement?.originalPurchaseDate).isEqualTo(dateInThePast)
-        assertThat(receivedEntitlement?.latestPurchaseDate).isEqualTo(dateInThePast)
+        assertThat(receivedEntitlement?.originalPurchaseDate).isEqualTo(purchaseDate)
+        assertThat(receivedEntitlement?.latestPurchaseDate).isEqualTo(purchaseDate)
         assertThat(receivedEntitlement?.ownershipType).isEqualTo(OwnershipType.UNKNOWN)
         assertThat(receivedEntitlement?.periodType).isEqualTo(PeriodType.NORMAL)
         assertThat(receivedEntitlement?.store).isEqualTo(Store.PLAY_STORE)
