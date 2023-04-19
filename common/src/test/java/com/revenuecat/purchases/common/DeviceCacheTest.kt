@@ -678,6 +678,27 @@ class DeviceCacheTest {
     }
 
     @Test
+    fun `getProductEntitlementMapping returns null if cache has invalid value`() {
+        every {
+            mockPrefs.getString(productEntitlementMappingCacheKey, null)
+        } returns "invalid-json"
+        assertThat(cache.getProductEntitlementMapping()).isNull()
+    }
+
+    @Test
+    fun `getProductEntitlementMapping clears cache if cache has invalid value`() {
+        every {
+            mockPrefs.getString(productEntitlementMappingCacheKey, null)
+        } returns "invalid-json"
+        every {
+            mockEditor.remove(productEntitlementMappingCacheKey)
+        } returns mockEditor
+        cache.getProductEntitlementMapping()
+        verify(exactly = 1) { mockEditor.remove(productEntitlementMappingCacheKey) }
+        verify(exactly = 1) { mockEditor.apply() }
+    }
+
+    @Test
     fun `getProductEntitlementMapping returns correct product entitlements mapping from cache`() {
         val expectedMappings = createProductEntitlementMapping()
         every {
