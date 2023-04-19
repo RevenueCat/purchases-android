@@ -611,7 +611,7 @@ class DeviceCacheTest {
         verify(exactly = 1) {
             mockEditor.putString(
                 productEntitlementMappingCacheKey,
-                "{\"products\":[{\"id\":\"com.revenuecat.foo_1\",\"entitlements\":[\"pro_1\"]},{\"id\":\"com.revenuecat.foo_2\",\"entitlements\":[\"pro_1\",\"pro_2\"]},{\"id\":\"com.revenuecat.foo_3\",\"entitlements\":[\"pro_2\"]}]}"
+                "{\"product_entitlement_mapping\":{\"com.revenuecat.foo_1:p1m\":{\"product_identifier\":\"com.revenuecat.foo_1\",\"base_plan_id\":\"p1m\",\"entitlements\":[\"pro_1\"]},\"com.revenuecat.foo_1:p1y\":{\"product_identifier\":\"com.revenuecat.foo_1\",\"base_plan_id\":\"p1y\",\"entitlements\":[\"pro_1\",\"pro_2\"]},\"com.revenuecat.foo_1\":{\"product_identifier\":\"com.revenuecat.foo_1\",\"base_plan_id\":\"p1m\",\"entitlements\":[\"pro_1\"]},\"com.revenuecat.foo_2\":{\"product_identifier\":\"com.revenuecat.foo_2\",\"entitlements\":[\"pro_3\"]}}}"
             )
         }
         verify(exactly = 1) {
@@ -624,7 +624,7 @@ class DeviceCacheTest {
     fun `cacheProductEntitlementMapping caches empty mappings in shared preferences correctly`() {
         cache.cacheProductEntitlementMapping(createProductEntitlementMapping(emptyMap()))
         verify(exactly = 1) {
-            mockEditor.putString(productEntitlementMappingCacheKey, "{\"products\":[]}")
+            mockEditor.putString(productEntitlementMappingCacheKey, "{\"product_entitlement_mapping\":{}}")
         }
         verify(exactly = 1) {
             mockEditor.putLong(productEntitlementMappingLastUpdatedCacheKey, currentTime.time)
