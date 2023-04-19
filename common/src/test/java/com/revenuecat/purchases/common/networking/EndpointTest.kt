@@ -62,7 +62,7 @@ class EndpointTest {
     @Test
     fun `GetProductEntitlementMapping has correct path`() {
         val endpoint = Endpoint.GetProductEntitlementMapping
-        val expectedPath = "/products-entitlements"
+        val expectedPath = "/product_entitlement_mapping"
         assertThat(endpoint.getPath()).isEqualTo(expectedPath)
     }
 

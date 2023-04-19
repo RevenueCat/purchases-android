@@ -57,11 +57,13 @@ class PurchasedProductsFetcher(
         val purchaseAssociatedToProduct = allPurchases.first { it.skus[0] == productIdentifier }
         val isActive = activeProducts.contains(productIdentifier)
         val expirationDate = getExpirationDate(isActive, purchaseAssociatedToProduct)
+        val mapping = productEntitlementMapping?.mappings?.get(productIdentifier)
         return PurchasedProduct(
             productIdentifier,
+            mapping?.basePlanId,
             purchaseAssociatedToProduct,
             isActive,
-            productEntitlementMapping?.toMap()?.get(productIdentifier) ?: emptyList(),
+            mapping?.entitlements ?: emptyList(),
             expirationDate
         )
     }
