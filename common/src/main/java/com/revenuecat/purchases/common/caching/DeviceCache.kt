@@ -13,10 +13,12 @@ import com.revenuecat.purchases.common.CustomerInfoFactory
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.DefaultDateProvider
 import com.revenuecat.purchases.common.LogIntent
+import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.offlineentitlements.ProductEntitlementMapping
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.strings.OfflineEntitlementsStrings
 import com.revenuecat.purchases.strings.ReceiptStrings
 import org.json.JSONException
 import org.json.JSONObject
@@ -322,7 +324,13 @@ open class DeviceCache(
     @Synchronized
     fun getProductEntitlementMapping(): ProductEntitlementMapping? {
         return preferences.getString(productEntitlementMappingCacheKey, null)?.let { jsonString ->
-            return ProductEntitlementMapping.fromJson(JSONObject(jsonString))
+            return try {
+                ProductEntitlementMapping.fromJson(JSONObject(jsonString))
+            } catch (e: JSONException) {
+                errorLog(OfflineEntitlementsStrings.ERROR_PARSING_PRODUCT_ENTITLEMENT_MAPPING.format(jsonString), e)
+                preferences.edit().remove(productEntitlementMappingCacheKey).apply()
+                null
+            }
         }
     }
 
