@@ -24,6 +24,7 @@ private class StoreTransactionAPI {
             val su1: String? = storeUserID
             val purchaseType: PurchaseType = purchaseType
             val subscriptionOptionId = subscriptionOptionId
+            val prorationMode = prorationMode
 
             val constructedStoreTransaction = StoreTransaction(
                 orderId,
@@ -39,7 +40,8 @@ private class StoreTransactionAPI {
                 storeUserID,
                 purchaseType,
                 marketplace,
-                subscriptionOptionId
+                subscriptionOptionId,
+                prorationMode
             )
         }
     }

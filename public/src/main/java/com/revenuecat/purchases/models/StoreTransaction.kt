@@ -92,7 +92,9 @@ data class StoreTransaction(
      * In Google, this will be calculated from the basePlanId and offerId
      * Null for restored transactions and purchases initiated outside of the app.
      */
-    val subscriptionOptionId: String?
+    val subscriptionOptionId: String?,
+
+    val prorationMode: String?
 ) : Parcelable {
 
     /**

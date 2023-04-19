@@ -7,7 +7,7 @@ fun BillingFlowParams.Builder.setUpgradeInfo(replaceProductInfo: ReplaceProductI
     val subscriptionUpdateParams = BillingFlowParams.SubscriptionUpdateParams.newBuilder().apply {
         setOldPurchaseToken(replaceProductInfo.oldPurchase.purchaseToken)
         replaceProductInfo.prorationMode?.let {
-            setReplaceProrationMode(it)
+            setReplaceProrationMode(it.playBillingClientMode)
         }
     }
     setSubscriptionUpdateParams(subscriptionUpdateParams.build())

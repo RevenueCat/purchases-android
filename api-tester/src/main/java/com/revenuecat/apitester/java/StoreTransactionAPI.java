@@ -27,6 +27,7 @@ final class StoreTransactionAPI {
         final PurchaseType purchaseType = transaction.getPurchaseType();
         final String marketplace = transaction.getMarketplace();
         final String subscriptionOptionId = transaction.getSubscriptionOptionId();
+        final String prorationMode = transaction.getProrationMode();
 
         StoreTransaction constructedStoreTransaction = new StoreTransaction(
                 transaction.getOrderId(),
@@ -42,7 +43,8 @@ final class StoreTransactionAPI {
                 transaction.getStoreUserID(),
                 transaction.getPurchaseType(),
                 transaction.getMarketplace(),
-                transaction.getSubscriptionOptionId()
+                transaction.getSubscriptionOptionId(),
+                transaction.getProrationMode()
         );
     }
 

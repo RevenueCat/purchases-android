@@ -12,7 +12,8 @@ class ReceiptInfo(
     val storeProduct: StoreProduct? = null,
 
     val price: Double? = storeProduct?.price?.amountMicros?.div(MICROS_MULTIPLIER.toDouble()),
-    val currency: String? = storeProduct?.price?.currencyCode
+    val currency: String? = storeProduct?.price?.currencyCode,
+    val prorationMode: String? = null,
 ) {
 
     val duration: String? = storeProduct?.period?.iso8601?.takeUnless { it.isEmpty() }

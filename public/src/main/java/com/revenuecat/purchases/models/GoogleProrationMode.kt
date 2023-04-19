@@ -25,5 +25,18 @@ enum class GoogleProrationMode(@BillingFlowParams.ProrationMode val playBillingC
      * The purchase will fail if this mode is used when switching between [SubscriptionOption]s
      * of the same [StoreProduct].
      */
-    IMMEDIATE_WITH_TIME_PRORATION(BillingFlowParams.ProrationMode.IMMEDIATE_WITH_TIME_PRORATION)
+    IMMEDIATE_WITH_TIME_PRORATION(BillingFlowParams.ProrationMode.IMMEDIATE_WITH_TIME_PRORATION),
+    DEFERRED(BillingFlowParams.ProrationMode.DEFERRED),
+    IMMEDIATE_AND_CHARGE_FULL_PRICE(BillingFlowParams.ProrationMode.IMMEDIATE_AND_CHARGE_FULL_PRICE),
+    IMMEDIATE_AND_CHARGE_PRORATED_PRICE(BillingFlowParams.ProrationMode.IMMEDIATE_AND_CHARGE_PRORATED_PRICE);
+
+    companion object {
+        fun fromPlayBillingClientMode(@BillingFlowParams.ProrationMode playBillingClientMode: Int?): GoogleProrationMode? {
+            return playBillingClientMode?.let {
+                values().first { playBillingClientMode == it.playBillingClientMode }
+            }
+        }
+
+    }
 }
+

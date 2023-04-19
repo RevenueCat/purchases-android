@@ -78,9 +78,7 @@ class BillingWrapper(
     @Volatile
     var billingClient: BillingClient? = null
 
-    private val productTypes = mutableMapOf<String, ProductType>()
-    private val presentedOfferingsByProductIdentifier = mutableMapOf<String, String?>()
-    private val subscriptionOptionSelectedByProductIdentifier = mutableMapOf<String, String?>()
+    private val purchaseContext = mutableMapOf<String, PurchaseContext>();
 
     private val serviceRequests =
         ConcurrentLinkedQueue<(connectionError: PurchasesError?) -> Unit>()
@@ -248,9 +246,12 @@ class BillingWrapper(
         }
 
         synchronized(this@BillingWrapper) {
-            productTypes[googlePurchasingData.productId] = googlePurchasingData.productType
-            presentedOfferingsByProductIdentifier[googlePurchasingData.productId] = presentedOfferingIdentifier
-            subscriptionOptionSelectedByProductIdentifier[googlePurchasingData.productId] = subscriptionOptionId
+            purchaseContext[googlePurchasingData.productId] = PurchaseContext(
+                googlePurchasingData.productType,
+                presentedOfferingIdentifier,
+                subscriptionOptionId,
+                replaceProductInfo?.prorationMode
+            )
         }
         executeRequestOnUIThread {
             val result = buildPurchaseParams(
@@ -743,14 +744,14 @@ class BillingWrapper(
         )
 
         synchronized(this@BillingWrapper) {
-            val presentedOffering = presentedOfferingsByProductIdentifier[purchase.firstProductId]
-            val subscriptionOptionId = subscriptionOptionSelectedByProductIdentifier[purchase.firstProductId]
-            productTypes[purchase.firstProductId]?.let { productType ->
+            val context = purchaseContext[purchase.firstProductId]
+            context?.productType?.let { productType ->
                 completion(
                     purchase.toStoreTransaction(
-                        productType,
-                        presentedOffering,
-                        subscriptionOptionId
+                        context.productType,
+                        context.presentedOffering,
+                        context.subscriptionOptionSelected,
+                        context.prorationMode,
                     )
                 )
                 return
@@ -760,7 +761,7 @@ class BillingWrapper(
                 completion(
                     purchase.toStoreTransaction(
                         type,
-                        presentedOffering
+                        context?.presentedOffering
                     )
                 )
             }
