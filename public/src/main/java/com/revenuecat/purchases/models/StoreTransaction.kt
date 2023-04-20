@@ -94,6 +94,9 @@ data class StoreTransaction(
      */
     val subscriptionOptionId: String?,
 
+    /**
+     * The proration_mode string to be sent to the backend.
+     */
     val prorationMode: String?
 ) : Parcelable {
 

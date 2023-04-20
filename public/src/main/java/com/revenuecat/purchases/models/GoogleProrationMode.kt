@@ -53,8 +53,9 @@ enum class GoogleProrationMode(
     /**
      * Replacement takes effect immediately, and the billing cycle remains the same.
      *
-     * Example: This mode can be used because the Tier 2 subscription price per time unit ($36/year = $3/month) is greater
-     * than Tier 1 subscription price per time unit ($2/month). Samwise's Tier 1 subscription is immediately ended.
+     * Example: This mode can be used because the Tier 2 subscription price per time unit ($36/year = $3/month) is
+     * greater than Tier 1 subscription price per time unit ($2/month). Samwise's Tier 1 subscription is immediately
+     * ended.
      * Since he paid for a full month but used only half of it, half of a month's subscription ($1) is applied to
      * his new subscription. However, since that new subscription costs $36/year, the remaining 15 days costs $1.50,
      * so he is charged the difference of $0.50 for his new subscription.
