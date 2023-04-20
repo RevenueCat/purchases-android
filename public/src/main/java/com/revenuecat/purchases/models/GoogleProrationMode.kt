@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.models
 
 import com.android.billingclient.api.BillingFlowParams
+import com.android.billingclient.api.BillingFlowParams.ProrationMode
 
 /**
  * Enum of possible proration modes to be passed to a Google Play purchase.
@@ -8,7 +9,9 @@ import com.android.billingclient.api.BillingFlowParams
  *
  * See https://developer.android.com/google/play/billing/subscriptions#proration for examples
  */
-enum class GoogleProrationMode(@BillingFlowParams.ProrationMode val playBillingClientMode: Int) {
+enum class GoogleProrationMode(
+    @BillingFlowParams.ProrationMode val playBillingClientMode: Int
+) : com.revenuecat.purchases.ProrationMode {
     /**
      * Old subscription is cancelled, and new subscription takes effect immediately.
      * User is charged for the full price of the new subscription on the old subscription's expiration date.
