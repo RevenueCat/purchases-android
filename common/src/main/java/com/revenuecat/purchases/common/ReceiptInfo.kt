@@ -5,6 +5,7 @@ import com.revenuecat.purchases.models.PricingPhase
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.SubscriptionOption
 
+@SuppressWarnings("LongParameterList")
 class ReceiptInfo(
     val productIDs: List<String>,
     val offeringIdentifier: String? = null,

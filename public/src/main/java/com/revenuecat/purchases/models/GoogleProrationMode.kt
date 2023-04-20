@@ -31,12 +31,12 @@ enum class GoogleProrationMode(@BillingFlowParams.ProrationMode val playBillingC
     IMMEDIATE_AND_CHARGE_PRORATED_PRICE(BillingFlowParams.ProrationMode.IMMEDIATE_AND_CHARGE_PRORATED_PRICE);
 
     companion object {
-        fun fromPlayBillingClientMode(@BillingFlowParams.ProrationMode playBillingClientMode: Int?): GoogleProrationMode? {
+        fun fromPlayBillingClientMode(
+            @BillingFlowParams.ProrationMode playBillingClientMode: Int?
+        ): GoogleProrationMode? {
             return playBillingClientMode?.let {
                 values().first { playBillingClientMode == it.playBillingClientMode }
             }
         }
-
     }
 }
-

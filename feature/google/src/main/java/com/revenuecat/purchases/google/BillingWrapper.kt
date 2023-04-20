@@ -78,7 +78,7 @@ class BillingWrapper(
     @Volatile
     var billingClient: BillingClient? = null
 
-    private val purchaseContext = mutableMapOf<String, PurchaseContext>();
+    private val purchaseContext = mutableMapOf<String, PurchaseContext>()
 
     private val serviceRequests =
         ConcurrentLinkedQueue<(connectionError: PurchasesError?) -> Unit>()

@@ -8,6 +8,4 @@ class PurchaseContext(
     val presentedOffering: String?,
     val subscriptionOptionSelected: String?,
     val prorationMode: GoogleProrationMode?
-){
-
-}
+)
