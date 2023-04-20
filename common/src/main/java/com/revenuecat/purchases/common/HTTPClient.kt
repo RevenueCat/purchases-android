@@ -232,7 +232,7 @@ class HTTPClient(
             "X-Nonce" to nonce
         )
             .plus(authenticationHeaders)
-            .plus(eTagManager.getETagHeader(urlPath, refreshETag))
+            .plus(eTagManager.getETagHeaders(urlPath, refreshETag))
             .filterNotNullValues()
     }
 

@@ -267,10 +267,10 @@ class HTTPClientTest: BaseHTTPClientTest() {
         server.takeRequest()
 
         verify(exactly = 1) {
-            mockETagManager.getETagHeader(any(), false)
+            mockETagManager.getETagHeaders(any(), false)
         }
         verify(exactly = 1) {
-            mockETagManager.getETagHeader(any(), true)
+            mockETagManager.getETagHeaders(any(), true)
         }
         assertThat(result.payload).isEqualTo(expectedResult.payload)
         assertThat(result.responseCode).isEqualTo(expectedResult.responseCode)
