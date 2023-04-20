@@ -122,7 +122,8 @@ class ReceiptInfoTest {
             storeUserID = null,
             purchaseType = PurchaseType.GOOGLE_PURCHASE,
             marketplace = null,
-            subscriptionOptionId = subscriptionOptionId
+            subscriptionOptionId = subscriptionOptionId,
+            prorationMode = null
         )
     }
 }
