@@ -78,6 +78,9 @@ class ETagManagerTest {
         mockCachedHTTPResult(expectedETag = "etag", expectedLastRefreshTime = null, path = path)
 
         val eTagHeaders = underTest.getETagHeaders(path)
+        val eTagHeader = eTagHeaders[HTTPRequest.ETAG_HEADER_NAME]
+        assertThat(eTagHeader).isEqualTo("etag")
+
         val lastRefreshTimeHeader = eTagHeaders[HTTPRequest.ETAG_LAST_REFRESH_NAME]
         assertThat(lastRefreshTimeHeader).isNull()
     }
