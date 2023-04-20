@@ -424,7 +424,7 @@ class BillingWrapperTest {
             assertThat(subsGoogleProductType).isEqualTo(capturedProductDetailsParams[0].zza().productType)
 
             assertThat(upgradeInfo.oldPurchase.purchaseToken).isEqualTo(oldPurchaseTokenSlot.captured)
-            assertThat((upgradeInfo.prorationMode as GoogleProrationMode)?.playBillingClientMode).isEqualTo(prorationModeSlot.captured)
+            assertThat((upgradeInfo.prorationMode as GoogleProrationMode?)?.playBillingClientMode).isEqualTo(prorationModeSlot.captured)
 
             assertThat(isPersonalizedPrice).isEqualTo(isPersonalizedPriceSlot.captured)
             billingClientOKResult

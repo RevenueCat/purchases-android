@@ -251,7 +251,7 @@ class BillingWrapper(
                 googlePurchasingData.productType,
                 presentedOfferingIdentifier,
                 subscriptionOptionId,
-                replaceProductInfo?.prorationMode as GoogleProrationMode
+                replaceProductInfo?.prorationMode as GoogleProrationMode?
             )
         }
         executeRequestOnUIThread {
