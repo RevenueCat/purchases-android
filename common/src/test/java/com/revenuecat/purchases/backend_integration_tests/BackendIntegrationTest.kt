@@ -2,6 +2,7 @@ package com.revenuecat.purchases.backend_integration_tests
 
 import android.content.SharedPreferences
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
@@ -93,6 +94,7 @@ class BackendIntegrationTest {
 
     @Test
     fun canPerformProductEntitlementMappingBackendRequest() {
+        var error: PurchasesError? = null
         ensureBlockFinishes { latch ->
             backend.getProductEntitlementMapping(
                 onSuccessHandler = { productEntitlementMapping ->
@@ -100,10 +102,12 @@ class BackendIntegrationTest {
                     latch.countDown()
                 },
                 onErrorHandler = {
-                    fail("Request should succeed")
+                    error = it
+                    latch.countDown()
                 }
             )
         }
+        assertThat(error).isNull()
         verify(exactly = 1) {
             // Verify we save the backend response in the shared preferences
             sharedPreferencesEditor.putString("/v1${Endpoint.GetProductEntitlementMapping.getPath()}", any())
