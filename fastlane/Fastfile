@@ -166,7 +166,8 @@ platform :android do
         app_name: 'loadShedderIntegrationTest',
         api_key: ENV['LOAD_SHEDDER_REVENUECAT_API_KEY'],
         google_purchase_token: ENV['LOAD_SHEDDER_GOOGLE_PURCHASE_TOKEN'],
-        product_id_to_purchase: ENV['LOAD_SHEDDER_PRODUCT_ID_TO_PURCHASE']
+        product_id_to_purchase: ENV['LOAD_SHEDDER_PRODUCT_ID_TO_PURCHASE'],
+        active_entitlements_to_verify: ENV['LOAD_SHEDDER_ACTIVE_ENTITLEMENTS_TO_VERIFY'] || ''
       )
 
       # We run the test on google firebase test labs
@@ -189,21 +190,26 @@ platform :android do
   end
 
   def build_purchases_integration_tests(app_name:, api_key:, google_purchase_token:, product_id_to_purchase:,
-                                        proxy_url: nil, build_type: 'debug')
+                                        active_entitlements_to_verify:, proxy_url: nil, build_type: 'debug')
     constants_path = '../purchases/src/androidTestIntegrationTest/kotlin/com/revenuecat/purchases/Constants.kt'
     replace_text_in_files(
       previous_text: "REVENUECAT_API_KEY",
-      new_text: ENV["LOAD_SHEDDER_REVENUECAT_API_KEY"],
+      new_text: api_key,
       paths_of_files_to_update: [constants_path]
     )
     replace_text_in_files(
       previous_text: "GOOGLE_PURCHASE_TOKEN",
-      new_text: ENV["LOAD_SHEDDER_GOOGLE_PURCHASE_TOKEN"],
+      new_text: google_purchase_token,
       paths_of_files_to_update: [constants_path]
     )
     replace_text_in_files(
       previous_text: "PRODUCT_ID_TO_PURCHASE",
-      new_text: ENV["LOAD_SHEDDER_PRODUCT_ID_TO_PURCHASE"],
+      new_text: product_id_to_purchase,
+      paths_of_files_to_update: [constants_path]
+    )
+    replace_text_in_files(
+      previous_text: "ACTIVE_ENTITLEMENT_IDS_TO_VERIFY",
+      new_text: active_entitlements_to_verify,
       paths_of_files_to_update: [constants_path]
     )
     unless proxy_url.nil?
