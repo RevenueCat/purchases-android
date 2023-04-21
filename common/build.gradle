@@ -1,6 +1,18 @@
 apply from: "$rootProject.projectDir/library.gradle"
 android {
     namespace 'com.revenuecat.purchases.common'
+
+    testOptions {
+        unitTests {
+            all {
+                if (project.hasProperty('RUN_INTEGRATION_TESTS')) {
+                    include "com/revenuecat/purchases/backend_integration_tests/**"
+                } else {
+                    exclude "com/revenuecat/purchases/backend_integration_tests/**"
+                }
+            }
+        }
+    }
 }
 
 dependencies {
