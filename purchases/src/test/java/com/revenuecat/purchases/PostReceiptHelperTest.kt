@@ -450,7 +450,7 @@ class PostReceiptHelperTest {
             onError = { _, _ -> fail("Should succeed") }
         )
         assertThat(postedReceiptInfoSlot.isCaptured).isTrue
-        assertThat(postedReceiptInfoSlot.captured.prorationMode).isEqualTo("DEFERRED")
+        assertThat(postedReceiptInfoSlot.captured.prorationMode).isEqualTo(GoogleProrationMode.DEFERRED)
     }
 
     @Test
