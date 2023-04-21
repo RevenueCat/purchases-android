@@ -184,7 +184,7 @@ class Backend(
             "normal_duration" to receiptInfo.duration,
             "store_user_id" to storeAppUserID,
             "pricing_phases" to receiptInfo.pricingPhases?.map { it.toMap() },
-            "proration_mode" to receiptInfo.prorationMode
+            "proration_mode" to receiptInfo.prorationMode?.name
         ).filterNotNullValues()
 
         val extraHeaders = mapOf(

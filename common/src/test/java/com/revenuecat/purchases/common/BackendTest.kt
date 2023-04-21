@@ -408,7 +408,7 @@ class BackendTest {
         )
 
         assertThat(requestBodySlot.captured.keys).contains("proration_mode")
-        assertThat(requestBodySlot.captured["proration_mode"]).isEqualTo("mode1")
+        assertThat(requestBodySlot.captured["proration_mode"]).isEqualTo("IMMEDIATE_WITHOUT_PRORATION")
     }
 
     @Test
