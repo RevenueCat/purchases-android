@@ -21,6 +21,7 @@ import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Assert.fail
 import org.junit.Before
+import org.junit.BeforeClass
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.net.URL
@@ -29,11 +30,23 @@ import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import kotlin.time.Duration.Companion.seconds
 
+// To run these tests in Android Studio, you need to remove the test exclusion in the
+// common module build.gradle and change the API KEY in Constants.kt
 @RunWith(AndroidJUnit4::class)
 class BackendIntegrationTest {
 
     companion object {
         private val TIMEOUT = 5.seconds
+
+        @BeforeClass
+        @JvmStatic
+        fun setupClass() {
+            if (!canRunIntegrationTests()) {
+                error("You need to set required constants in Constants.kt")
+            }
+        }
+
+        private fun canRunIntegrationTests() = Constants.apiKey != "REVENUECAT_API_KEY"
     }
 
     lateinit var appConfig: AppConfig
@@ -47,6 +60,8 @@ class BackendIntegrationTest {
     lateinit var backendHelper: BackendHelper
 
     lateinit var backend: Backend
+
+
 
     @Before
     fun setUp() {
