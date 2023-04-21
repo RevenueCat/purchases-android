@@ -135,7 +135,9 @@ jobs:
       - android/restore-build-cache
       - run:
           name: Run Tests
-          command: ./gradlew lint test
+          # We are running tests in the "defaults" flavor only. If we ever add/remove flavors, we will need to update
+          # this command.
+          command: ./gradlew lint testDefaultsDebugUnitTest testDefaultsReleaseUnitTest
       - run:
           name: Consolidate artifacts
           command: |
@@ -432,6 +434,14 @@ workflows:
         equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
     jobs:
       - integration-tests-build: *release-branches
+      - purchases-integration-tests-build: *release-branches
+      - run-firebase-tests-purchases-integration-test:
+          requires:
+            - purchases-integration-tests-build
+      - run-firebase-tests-purchases-load-shedder-integration-test:
+          <<: *release-branches
+          context:
+            - slack-secrets
       - run-firebase-tests:
           requires:
             - integration-tests-build
@@ -439,6 +449,8 @@ workflows:
           type: approval
           requires:
             - run-firebase-tests
+            - run-firebase-tests-purchases-integration-test
+            - run-firebase-tests-purchases-load-shedder-integration-test
           <<: *release-branches
       - revenuecat/tag-current-branch:
           requires:
@@ -459,6 +471,16 @@ workflows:
         equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
     jobs:
       - prepare-next-version: *only-main-branch
+
+  daily-load-shedder-integration-tests:
+    when:
+      and:
+        - equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
+        - equal: [ "load-shedder-integration-tests", << pipeline.schedule.name >> ]
+    jobs:
+      - run-firebase-tests-purchases-load-shedder-integration-test:
+          context:
+            - slack-secrets
 
   weekly-run-workflow:
     when:
