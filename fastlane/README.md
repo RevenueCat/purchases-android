@@ -95,6 +95,14 @@ Build purchase tester app bundle
 
 Build purchases module integration tests pointing to production
 
+### android run_backend_integration_tests
+
+```sh
+[bundle exec] fastlane android run_backend_integration_tests
+```
+
+Build purchases module integration tests pointing to production
+
 ### android run_load_shedder_purchases_integration_tests
 
 ```sh

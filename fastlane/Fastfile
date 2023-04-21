@@ -162,6 +162,22 @@ platform :android do
     )
   end
 
+  desc "Build purchases module integration tests pointing to production"
+  lane :run_backend_integration_tests do |options|
+    constants_path = './common/src/test/java/com/revenuecat/purchases/backend_integration_tests/Constants.kt'
+    replace_text_in_files(
+      previous_text: 'REVENUECAT_API_KEY',
+      new_text: ENV['REVENUECAT_API_KEY'],
+      paths_of_files_to_update: [constants_path]
+    )
+    gradle(
+      task: ':common:test',
+      properties: {
+        "RUN_INTEGRATION_TESTS" => true
+      }
+    )
+  end
+
   desc "Build and run purchases module load shedder integration tests"
   desc "This requires the google cloud cli to be installed and initialized."
   lane :run_load_shedder_purchases_integration_tests do |options|
