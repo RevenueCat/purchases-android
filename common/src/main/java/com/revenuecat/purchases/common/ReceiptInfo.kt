@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.common
 
+import com.revenuecat.purchases.ProrationMode
 import com.revenuecat.purchases.models.GoogleSubscriptionOption
 import com.revenuecat.purchases.models.PricingPhase
 import com.revenuecat.purchases.models.StoreProduct
@@ -14,7 +15,7 @@ class ReceiptInfo(
 
     val price: Double? = storeProduct?.price?.amountMicros?.div(MICROS_MULTIPLIER.toDouble()),
     val currency: String? = storeProduct?.price?.currencyCode,
-    val prorationMode: String? = null,
+    val prorationMode: ProrationMode? = null,
 ) {
 
     val duration: String? = storeProduct?.period?.iso8601?.takeUnless { it.isEmpty() }

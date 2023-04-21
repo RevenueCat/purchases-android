@@ -8,6 +8,9 @@ final class GoogleProrationModeAPI {
         switch (mode) {
             case IMMEDIATE_WITHOUT_PRORATION:
             case IMMEDIATE_WITH_TIME_PRORATION:
+            case DEFERRED:
+            case IMMEDIATE_AND_CHARGE_FULL_PRICE:
+            case IMMEDIATE_AND_CHARGE_PRORATED_PRICE:
         }
     }
 }

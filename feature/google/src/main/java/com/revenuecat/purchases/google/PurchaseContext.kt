@@ -5,7 +5,7 @@ import com.revenuecat.purchases.models.GoogleProrationMode
 
 class PurchaseContext(
     val productType: ProductType,
-    val presentedOffering: String?,
-    val subscriptionOptionSelected: String?,
+    val presentedOfferingId: String?,
+    val selectedSubscriptionOptionId: String?,
     val prorationMode: GoogleProrationMode?
 )

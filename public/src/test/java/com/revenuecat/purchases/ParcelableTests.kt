@@ -3,6 +3,7 @@ package com.revenuecat.purchases
 import android.net.Uri
 import android.os.Parcel
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.models.GoogleProrationMode
 import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.PurchaseType
 import com.revenuecat.purchases.models.StoreTransaction
@@ -83,6 +84,13 @@ class ParcelableTests {
         val created = JSONObjectParceler.create(parcel)
 
         Assertions.assertThat(expected.toString()).isEqualTo(created.toString())
+    }
+
+    @Test
+    fun `GoogleProrationMode is Parcelable`() {
+        GoogleProrationMode.values().forEach { testParcelization(it, true) }
+        val nullMode: GoogleProrationMode? = null
+        testParcelization(nullMode, true)
     }
 
     private fun getEntitlementInfo(

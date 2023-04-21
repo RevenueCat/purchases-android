@@ -11,7 +11,7 @@ import org.json.JSONObject
 
 fun Purchase.toStoreTransaction(
     productType: ProductType,
-    presentedOfferingIdentifier: String?,
+    presentedOfferingIdentifier: String? = null,
     subscriptionOptionId: String? = null,
     prorationMode: GoogleProrationMode? = null
 ): StoreTransaction = StoreTransaction(
@@ -29,8 +29,16 @@ fun Purchase.toStoreTransaction(
     purchaseType = PurchaseType.GOOGLE_PURCHASE,
     marketplace = null,
     subscriptionOptionId = subscriptionOptionId,
-    prorationMode = prorationMode?.name,
+    prorationMode = prorationMode,
 )
+
+fun Purchase.toStoreTransaction(purchaseContext: PurchaseContext): StoreTransaction =
+    toStoreTransaction(
+        purchaseContext.productType,
+        purchaseContext.presentedOfferingId,
+        purchaseContext.selectedSubscriptionOptionId,
+        purchaseContext.prorationMode
+    )
 
 val StoreTransaction.originalGooglePurchase: Purchase?
     get() =

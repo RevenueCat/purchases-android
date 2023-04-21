@@ -1,5 +1,7 @@
 package com.revenuecat.purchases.models
 
+import android.os.Parcel
+import android.os.Parcelable
 import com.android.billingclient.api.BillingFlowParams
 import com.android.billingclient.api.BillingFlowParams.ProrationMode
 
@@ -63,13 +65,29 @@ enum class GoogleProrationMode(
      */
     IMMEDIATE_AND_CHARGE_PRORATED_PRICE(BillingFlowParams.ProrationMode.IMMEDIATE_AND_CHARGE_PRORATED_PRICE);
 
-    companion object {
+    override fun describeContents(): Int {
+        return 0
+    }
+
+    override fun writeToParcel(out: Parcel, flags: Int) {
+        out.writeString(this.name)
+    }
+
+    companion object CREATOR : Parcelable.Creator<GoogleProrationMode?> {
         fun fromPlayBillingClientMode(
             @BillingFlowParams.ProrationMode playBillingClientMode: Int?
         ): GoogleProrationMode? {
             return playBillingClientMode?.let {
                 values().first { playBillingClientMode == it.playBillingClientMode }
             }
+        }
+
+        override fun createFromParcel(`in`: Parcel): GoogleProrationMode? {
+            return `in`.readString()?.let { GoogleProrationMode.valueOf(it) }
+        }
+
+        override fun newArray(size: Int): Array<GoogleProrationMode?> {
+            return arrayOfNulls(size)
         }
     }
 }

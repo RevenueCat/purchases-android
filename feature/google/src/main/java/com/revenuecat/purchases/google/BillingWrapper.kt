@@ -170,8 +170,10 @@ class BillingWrapper(
                 val params = googleType.buildQueryProductDetailsParams(nonEmptyProductIds)
 
                 withConnectedClient {
-                    queryProductDetailsAsyncEnsuringOneResponse(googleType, params) {
-                            billingResult, productDetailsList ->
+                    queryProductDetailsAsyncEnsuringOneResponse(
+                        googleType,
+                        params
+                    ) { billingResult, productDetailsList ->
                         if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
                             log(
                                 LogIntent.DEBUG, OfferingStrings.FETCHING_PRODUCTS_FINISHED
@@ -232,6 +234,7 @@ class BillingWrapper(
             is GooglePurchasingData.InAppProduct -> {
                 null
             }
+
             is GooglePurchasingData.Subscription -> {
                 googlePurchasingData.optionId
             }
@@ -251,7 +254,7 @@ class BillingWrapper(
                 googlePurchasingData.productType,
                 presentedOfferingIdentifier,
                 subscriptionOptionId,
-                replaceProductInfo?.prorationMode as GoogleProrationMode?
+                replaceProductInfo?.prorationMode as? GoogleProrationMode?
             )
         }
         executeRequestOnUIThread {
@@ -500,11 +503,7 @@ class BillingWrapper(
     ): Map<String, StoreTransaction> {
         return this.associate { purchase ->
             val hash = purchase.purchaseToken.sha1()
-            hash to purchase.toStoreTransaction(
-                productType.toRevenueCatProductType(),
-                presentedOfferingIdentifier = null,
-                subscriptionOptionId = null
-            )
+            hash to purchase.toStoreTransaction(productType.toRevenueCatProductType())
         }
     }
 
@@ -651,6 +650,7 @@ class BillingWrapper(
                     executePendingRequests()
                     reconnectMilliseconds = RECONNECT_TIMER_START_MILLISECONDS
                 }
+
                 BillingClient.BillingResponseCode.FEATURE_NOT_SUPPORTED,
                 BillingClient.BillingResponseCode.BILLING_UNAVAILABLE -> {
                     val message =
@@ -672,6 +672,7 @@ class BillingWrapper(
                         }
                     }
                 }
+
                 BillingClient.BillingResponseCode.SERVICE_TIMEOUT,
                 BillingClient.BillingResponseCode.ERROR,
                 BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE,
@@ -683,6 +684,7 @@ class BillingWrapper(
                     )
                     retryBillingServiceConnectionWithExponentialBackoff()
                 }
+
                 BillingClient.BillingResponseCode.ITEM_UNAVAILABLE,
                 BillingClient.BillingResponseCode.ITEM_ALREADY_OWNED,
                 BillingClient.BillingResponseCode.ITEM_NOT_OWNED -> {
@@ -691,6 +693,7 @@ class BillingWrapper(
                             .format(billingResult.toHumanReadableDescription())
                     )
                 }
+
                 BillingClient.BillingResponseCode.DEVELOPER_ERROR -> {
                     // Billing service is already trying to connect. Don't do anything.
                 }
@@ -748,12 +751,7 @@ class BillingWrapper(
             val context = purchaseContext[purchase.firstProductId]
             context?.productType?.let { productType ->
                 completion(
-                    purchase.toStoreTransaction(
-                        context.productType,
-                        context.presentedOffering,
-                        context.subscriptionOptionSelected,
-                        context.prorationMode,
-                    )
+                    purchase.toStoreTransaction(context)
                 )
                 return
             }
@@ -762,7 +760,7 @@ class BillingWrapper(
                 completion(
                     purchase.toStoreTransaction(
                         type,
-                        context?.presentedOffering
+                        context?.presentedOfferingId
                     )
                 )
             }
@@ -883,6 +881,7 @@ class BillingWrapper(
             is GooglePurchasingData.InAppProduct -> {
                 buildOneTimePurchaseParams(purchaseInfo, appUserID, isPersonalizedPrice)
             }
+
             is GooglePurchasingData.Subscription -> {
                 buildSubscriptionPurchaseParams(purchaseInfo, replaceProductInfo, appUserID, isPersonalizedPrice)
             }
