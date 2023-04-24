@@ -66,7 +66,7 @@ class BackendTest {
         receivedError = null
         receivedOfferingsJSON = null
         receivedCustomerInfo = null
-        receivedPostReceiptErrorType = null
+        receivedPostReceiptErrorHandlingBehavior = null
         receivedCustomerInfoCreated = null
         receivedIsServerError = null
     }
@@ -132,7 +132,7 @@ class BackendTest {
     private var receivedCustomerInfoCreated: Boolean? = null
     private var receivedOfferingsJSON: JSONObject? = null
     private var receivedError: PurchasesError? = null
-    private var receivedPostReceiptErrorType: PostReceiptErrorType? = null
+    private var receivedPostReceiptErrorHandlingBehavior: PostReceiptErrorHandlingBehavior? = null
     private var receivedIsServerError: Boolean? = null
     private val noOfferingsResponse = "{'offerings': [], 'current_offering_id': null}"
 
@@ -151,7 +151,7 @@ class BackendTest {
     private val postReceiptErrorCallback: PostReceiptDataErrorCallback =
         { error, errorType, _ ->
             this@BackendTest.receivedError = error
-            this@BackendTest.receivedPostReceiptErrorType = errorType
+            this@BackendTest.receivedPostReceiptErrorHandlingBehavior = errorType
         }
 
     private val onReceiveCustomerInfoErrorHandler: (PurchasesError, Boolean) -> Unit = { error, isServerError ->
@@ -1013,7 +1013,7 @@ class BackendTest {
         assertThat(receivedError!!.code)
             .`as`("Received error code is the right one")
             .isEqualTo(PurchasesErrorCode.UnsupportedError)
-        assertThat(receivedPostReceiptErrorType).isEqualTo(PostReceiptErrorType.CANNOT_BE_CONSUMED)
+        assertThat(receivedPostReceiptErrorHandlingBehavior).isEqualTo(PostReceiptErrorHandlingBehavior.SHOULD_NOT_CONSUME)
     }
 
     @Test
@@ -1032,7 +1032,7 @@ class BackendTest {
             storeAppUserID = null
         )
 
-        assertThat(receivedPostReceiptErrorType).isEqualTo(PostReceiptErrorType.CAN_BE_CONSUMED)
+        assertThat(receivedPostReceiptErrorHandlingBehavior).isEqualTo(PostReceiptErrorHandlingBehavior.SHOULD_BE_CONSUMED)
     }
 
     @Test
@@ -1051,7 +1051,7 @@ class BackendTest {
             storeAppUserID = null
         )
 
-        assertThat(receivedPostReceiptErrorType).isEqualTo(PostReceiptErrorType.SERVER_ERROR)
+        assertThat(receivedPostReceiptErrorHandlingBehavior).isEqualTo(PostReceiptErrorHandlingBehavior.SHOULD_USE_OFFLINE_ENTITLEMENTS_AND_NOT_CONSUME)
     }
 
     @Test
@@ -1070,7 +1070,7 @@ class BackendTest {
             storeAppUserID = null
         )
 
-        assertThat(receivedPostReceiptErrorType).isEqualTo(PostReceiptErrorType.CANNOT_BE_CONSUMED)
+        assertThat(receivedPostReceiptErrorHandlingBehavior).isEqualTo(PostReceiptErrorHandlingBehavior.SHOULD_NOT_CONSUME)
     }
 
     @Test

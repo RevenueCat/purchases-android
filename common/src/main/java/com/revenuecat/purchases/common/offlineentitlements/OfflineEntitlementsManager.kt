@@ -8,7 +8,6 @@ import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
-import com.revenuecat.purchases.common.warnLog
 import com.revenuecat.purchases.strings.OfflineEntitlementsStrings
 
 class OfflineEntitlementsManager(

@@ -37,7 +37,7 @@ typealias PostReceiptDataSuccessCallback = (CustomerInfo, body: JSONObject) -> U
 /** @suppress */
 typealias PostReceiptDataErrorCallback = (
     PurchasesError,
-    postReceiptErrorType: PostReceiptErrorType,
+    postReceiptErrorHandlingBehavior: PostReceiptErrorHandlingBehavior,
     body: JSONObject?
 ) -> Unit
 /** @suppress */
@@ -47,10 +47,10 @@ typealias DiagnosticsCallback = Pair<(JSONObject) -> Unit, (PurchasesError, Bool
 /** @suppress */
 typealias ProductEntitlementCallback = Pair<(ProductEntitlementMapping) -> Unit, (PurchasesError) -> Unit>
 
-enum class PostReceiptErrorType {
-    CAN_BE_CONSUMED,
-    SERVER_ERROR,
-    CANNOT_BE_CONSUMED
+enum class PostReceiptErrorHandlingBehavior {
+    SHOULD_BE_CONSUMED,
+    SHOULD_USE_OFFLINE_ENTITLEMENTS_AND_NOT_CONSUME,
+    SHOULD_NOT_CONSUME
 }
 
 class Backend(
@@ -226,7 +226,7 @@ class Backend(
                     } catch (e: JSONException) {
                         onError(
                             e.toPurchasesError().also { errorLog(it) },
-                            PostReceiptErrorType.CANNOT_BE_CONSUMED,
+                            PostReceiptErrorHandlingBehavior.SHOULD_NOT_CONSUME,
                             null
                         )
                     }
@@ -239,7 +239,7 @@ class Backend(
                 }?.forEach { (_, onError) ->
                     onError(
                         error,
-                        PostReceiptErrorType.CANNOT_BE_CONSUMED,
+                        PostReceiptErrorHandlingBehavior.SHOULD_NOT_CONSUME,
                         null
                     )
                 }
@@ -464,11 +464,11 @@ class Backend(
         responseCode: Int,
         purchasesError: PurchasesError
     ) = if (RCHTTPStatusCodes.isServerError(responseCode)) {
-        PostReceiptErrorType.SERVER_ERROR
+        PostReceiptErrorHandlingBehavior.SHOULD_USE_OFFLINE_ENTITLEMENTS_AND_NOT_CONSUME
     } else if (purchasesError.code == PurchasesErrorCode.UnsupportedError) {
-        PostReceiptErrorType.CANNOT_BE_CONSUMED
+        PostReceiptErrorHandlingBehavior.SHOULD_NOT_CONSUME
     } else {
-        PostReceiptErrorType.CAN_BE_CONSUMED
+        PostReceiptErrorHandlingBehavior.SHOULD_BE_CONSUMED
     }
 
     private fun <K, S, E> MutableMap<K, MutableList<Pair<S, E>>>.addCallback(

@@ -7,7 +7,7 @@ import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.CustomerInfoFactory
 import com.revenuecat.purchases.common.PostReceiptDataErrorCallback
 import com.revenuecat.purchases.common.PostReceiptDataSuccessCallback
-import com.revenuecat.purchases.common.PostReceiptErrorType
+import com.revenuecat.purchases.common.PostReceiptErrorHandlingBehavior
 import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.SubscriberAttributeError
 import com.revenuecat.purchases.common.caching.DeviceCache
@@ -303,7 +303,7 @@ class PostReceiptHelperTest {
     @Test
     fun `postTransactionAndConsumeIfNeeded marks unsynced attributes as synced on error if finishable error`() {
         mockUnsyncedSubscriberAttributes(unsyncedSubscriberAttributes)
-        mockPostReceiptError(errorType = PostReceiptErrorType.CAN_BE_CONSUMED)
+        mockPostReceiptError(errorType = PostReceiptErrorHandlingBehavior.SHOULD_BE_CONSUMED)
 
         postReceiptHelper.postTransactionAndConsumeIfNeeded(
             purchase = mockStoreTransaction,
@@ -326,7 +326,7 @@ class PostReceiptHelperTest {
     @Test
     fun `postTransactionAndConsumeIfNeeded does not mark unsynced attributes as synced on error if not finishable error`() {
         mockUnsyncedSubscriberAttributes(unsyncedSubscriberAttributes)
-        mockPostReceiptError(errorType = PostReceiptErrorType.CANNOT_BE_CONSUMED)
+        mockPostReceiptError(errorType = PostReceiptErrorHandlingBehavior.SHOULD_NOT_CONSUME)
 
         postReceiptHelper.postTransactionAndConsumeIfNeeded(
             purchase = mockStoreTransaction,
@@ -349,7 +349,7 @@ class PostReceiptHelperTest {
     @Test
     fun `postTransactionAndConsumeIfNeeded calls consume transaction with consuming flag true if not observer mode on error if finishable error`() {
         every { appConfig.finishTransactions } returns true
-        mockPostReceiptError(errorType = PostReceiptErrorType.CAN_BE_CONSUMED)
+        mockPostReceiptError(errorType = PostReceiptErrorHandlingBehavior.SHOULD_BE_CONSUMED)
 
         postReceiptHelper.postTransactionAndConsumeIfNeeded(
             purchase = mockStoreTransaction,
@@ -368,7 +368,7 @@ class PostReceiptHelperTest {
     @Test
     fun `postTransactionAndConsumeIfNeeded calls consume transaction with consuming flag false if observer mode on error if finishable error`() {
         every { appConfig.finishTransactions } returns false
-        mockPostReceiptError(errorType = PostReceiptErrorType.CAN_BE_CONSUMED)
+        mockPostReceiptError(errorType = PostReceiptErrorHandlingBehavior.SHOULD_BE_CONSUMED)
 
         postReceiptHelper.postTransactionAndConsumeIfNeeded(
             purchase = mockStoreTransaction,
@@ -386,7 +386,7 @@ class PostReceiptHelperTest {
 
     @Test
     fun `postTransactionAndConsumeIfNeeded does not call consume transaction on error if not finishable error`() {
-        mockPostReceiptError(errorType = PostReceiptErrorType.CANNOT_BE_CONSUMED)
+        mockPostReceiptError(errorType = PostReceiptErrorHandlingBehavior.SHOULD_NOT_CONSUME)
 
         postReceiptHelper.postTransactionAndConsumeIfNeeded(
             purchase = mockStoreTransaction,
@@ -404,7 +404,7 @@ class PostReceiptHelperTest {
 
     @Test
     fun `postTransactionAndConsumeIfNeeded calls error block with expected parameters on error`() {
-        mockPostReceiptError(errorType = PostReceiptErrorType.CANNOT_BE_CONSUMED)
+        mockPostReceiptError(errorType = PostReceiptErrorHandlingBehavior.SHOULD_NOT_CONSUME)
 
         var errorTransaction: StoreTransaction? = null
         var purchasesError: PurchasesError? = null
@@ -446,7 +446,7 @@ class PostReceiptHelperTest {
 
     @Test
     fun `postTransactionAndConsumeIfNeeded does not calculate offline entitlements customer info if not server error`() {
-        mockPostReceiptError(errorType = PostReceiptErrorType.CANNOT_BE_CONSUMED)
+        mockPostReceiptError(errorType = PostReceiptErrorHandlingBehavior.SHOULD_NOT_CONSUME)
 
         postReceiptHelper.postTransactionAndConsumeIfNeeded(
             purchase = mockStoreTransaction,
@@ -465,7 +465,7 @@ class PostReceiptHelperTest {
 
     @Test
     fun `postTransactionAndConsumeIfNeeded calculates offline entitlements customer info if server error`() {
-        mockPostReceiptError(errorType = PostReceiptErrorType.SERVER_ERROR)
+        mockPostReceiptError(errorType = PostReceiptErrorHandlingBehavior.SHOULD_USE_OFFLINE_ENTITLEMENTS_AND_NOT_CONSUME)
 
         postReceiptHelper.postTransactionAndConsumeIfNeeded(
             purchase = mockStoreTransaction,
@@ -484,7 +484,7 @@ class PostReceiptHelperTest {
 
     @Test
     fun `postTransactionAndConsumeIfNeeded returns offline entitlements customer info if server error and success calculating customer info`() {
-        mockPostReceiptError(errorType = PostReceiptErrorType.SERVER_ERROR)
+        mockPostReceiptError(errorType = PostReceiptErrorHandlingBehavior.SHOULD_USE_OFFLINE_ENTITLEMENTS_AND_NOT_CONSUME)
 
         every {
             offlineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(appUserID, captureLambda(), any())
@@ -511,7 +511,7 @@ class PostReceiptHelperTest {
 
     @Test
     fun `postTransactionAndConsumeIfNeeded does not cache offline entitlements`() {
-        mockPostReceiptError(errorType = PostReceiptErrorType.SERVER_ERROR)
+        mockPostReceiptError(errorType = PostReceiptErrorHandlingBehavior.SHOULD_USE_OFFLINE_ENTITLEMENTS_AND_NOT_CONSUME)
 
         every {
             offlineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(appUserID, captureLambda(), any())
@@ -536,7 +536,7 @@ class PostReceiptHelperTest {
 
     @Test
     fun `postTransactionAndConsumeIfNeeded does not consume if using offline entitlements`() {
-        mockPostReceiptError(errorType = PostReceiptErrorType.SERVER_ERROR)
+        mockPostReceiptError(errorType = PostReceiptErrorHandlingBehavior.SHOULD_USE_OFFLINE_ENTITLEMENTS_AND_NOT_CONSUME)
 
         every {
             offlineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(appUserID, captureLambda(), any())
@@ -563,7 +563,7 @@ class PostReceiptHelperTest {
     @Test
     fun `postTransactionAndConsumeIfNeeded does not mark attributes as synced if using offline entitlements`() {
         mockUnsyncedSubscriberAttributes(unsyncedSubscriberAttributes)
-        mockPostReceiptError(errorType = PostReceiptErrorType.SERVER_ERROR)
+        mockPostReceiptError(errorType = PostReceiptErrorHandlingBehavior.SHOULD_USE_OFFLINE_ENTITLEMENTS_AND_NOT_CONSUME)
 
         every {
             offlineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(appUserID, captureLambda(), any())
@@ -916,7 +916,7 @@ class PostReceiptHelperTest {
     fun `postTokenWithoutConsuming marks unsynced attributes as synced on error if finishable error`() {
         mockUnsyncedSubscriberAttributes(unsyncedSubscriberAttributes)
         mockPostReceiptError(
-            errorType = PostReceiptErrorType.CAN_BE_CONSUMED,
+            errorType = PostReceiptErrorHandlingBehavior.SHOULD_BE_CONSUMED,
             postType = PostType.TOKEN_WITHOUT_CONSUMING
         )
 
@@ -944,7 +944,7 @@ class PostReceiptHelperTest {
     fun `postTokenWithoutConsuming does not mark unsynced attributes as synced on error if not finishable error`() {
         mockUnsyncedSubscriberAttributes(unsyncedSubscriberAttributes)
         mockPostReceiptError(
-            errorType = PostReceiptErrorType.CANNOT_BE_CONSUMED,
+            errorType = PostReceiptErrorHandlingBehavior.SHOULD_NOT_CONSUME,
             postType = PostType.TOKEN_WITHOUT_CONSUMING
         )
 
@@ -971,7 +971,7 @@ class PostReceiptHelperTest {
     @Test
     fun `postTokenWithoutConsuming adds sent token if finishable error`() {
         mockPostReceiptError(
-            errorType = PostReceiptErrorType.CAN_BE_CONSUMED,
+            errorType = PostReceiptErrorHandlingBehavior.SHOULD_BE_CONSUMED,
             postType = PostType.TOKEN_WITHOUT_CONSUMING
         )
 
@@ -994,7 +994,7 @@ class PostReceiptHelperTest {
     @Test
     fun `postTokenWithoutConsuming does not add sent token on error if not finishable error`() {
         mockPostReceiptError(
-            errorType = PostReceiptErrorType.CANNOT_BE_CONSUMED,
+            errorType = PostReceiptErrorHandlingBehavior.SHOULD_NOT_CONSUME,
             postType = PostType.TOKEN_WITHOUT_CONSUMING
         )
 
@@ -1017,7 +1017,7 @@ class PostReceiptHelperTest {
     @Test
     fun `postTokenWithoutConsuming calls error block with expected parameters on error`() {
         mockPostReceiptError(
-            errorType = PostReceiptErrorType.CANNOT_BE_CONSUMED,
+            errorType = PostReceiptErrorHandlingBehavior.SHOULD_NOT_CONSUME,
             postType = PostType.TOKEN_WITHOUT_CONSUMING
         )
 
@@ -1059,7 +1059,7 @@ class PostReceiptHelperTest {
     @Test
     fun `postTokenWithoutConsuming does not consume on non consumable error `() {
         mockPostReceiptError(
-            errorType = PostReceiptErrorType.CANNOT_BE_CONSUMED,
+            errorType = PostReceiptErrorHandlingBehavior.SHOULD_NOT_CONSUME,
             postType = PostType.TOKEN_WITHOUT_CONSUMING
         )
 
@@ -1104,7 +1104,7 @@ class PostReceiptHelperTest {
     @Test
     fun `postTokenWithoutConsuming does not calculate offline entitlements customer info if not server error`() {
         mockPostReceiptError(
-            errorType = PostReceiptErrorType.CAN_BE_CONSUMED,
+            errorType = PostReceiptErrorHandlingBehavior.SHOULD_BE_CONSUMED,
             postType = PostType.TOKEN_WITHOUT_CONSUMING
         )
 
@@ -1128,7 +1128,7 @@ class PostReceiptHelperTest {
     @Test
     fun `postTokenWithoutConsuming calculates offline entitlements customer info if server error`() {
         mockPostReceiptError(
-            errorType = PostReceiptErrorType.SERVER_ERROR,
+            errorType = PostReceiptErrorHandlingBehavior.SHOULD_USE_OFFLINE_ENTITLEMENTS_AND_NOT_CONSUME,
             postType = PostType.TOKEN_WITHOUT_CONSUMING
         )
 
@@ -1152,7 +1152,7 @@ class PostReceiptHelperTest {
     @Test
     fun `postTokenWithoutConsuming returns offline entitlements customer info if server error and success calculating customer info`() {
         mockPostReceiptError(
-            errorType = PostReceiptErrorType.SERVER_ERROR,
+            errorType = PostReceiptErrorHandlingBehavior.SHOULD_USE_OFFLINE_ENTITLEMENTS_AND_NOT_CONSUME,
             postType = PostType.TOKEN_WITHOUT_CONSUMING
         )
 
@@ -1184,7 +1184,7 @@ class PostReceiptHelperTest {
     @Test
     fun `postTokenWithoutConsuming does not cache offline entitlements`() {
         mockPostReceiptError(
-            errorType = PostReceiptErrorType.SERVER_ERROR,
+            errorType = PostReceiptErrorHandlingBehavior.SHOULD_USE_OFFLINE_ENTITLEMENTS_AND_NOT_CONSUME,
             postType = PostType.TOKEN_WITHOUT_CONSUMING
         )
 
@@ -1214,7 +1214,7 @@ class PostReceiptHelperTest {
     @Test
     fun `postTokenWithoutConsuming does not mark token as consumed if using offline entitlements`() {
         mockPostReceiptError(
-            errorType = PostReceiptErrorType.SERVER_ERROR,
+            errorType = PostReceiptErrorHandlingBehavior.SHOULD_USE_OFFLINE_ENTITLEMENTS_AND_NOT_CONSUME,
             postType = PostType.TOKEN_WITHOUT_CONSUMING
         )
 
@@ -1246,7 +1246,7 @@ class PostReceiptHelperTest {
     fun `postTokenWithoutConsuming does not mark attributes as synced if using offline entitlements`() {
         mockUnsyncedSubscriberAttributes(unsyncedSubscriberAttributes)
         mockPostReceiptError(
-            errorType = PostReceiptErrorType.SERVER_ERROR,
+            errorType = PostReceiptErrorHandlingBehavior.SHOULD_USE_OFFLINE_ENTITLEMENTS_AND_NOT_CONSUME,
             postType = PostType.TOKEN_WITHOUT_CONSUMING
         )
 
@@ -1326,7 +1326,7 @@ class PostReceiptHelperTest {
     }
 
     private fun mockPostReceiptError(
-        errorType: PostReceiptErrorType,
+        errorType: PostReceiptErrorHandlingBehavior,
         postType: PostType = PostType.TRANSACTION_AND_CONSUME
     ) {
         every {
@@ -1345,9 +1345,9 @@ class PostReceiptHelperTest {
         } answers {
             val callback = lambda<PostReceiptDataErrorCallback>().captured
             when (errorType) {
-                PostReceiptErrorType.CAN_BE_CONSUMED -> callback.invokeWithFinishableError()
-                PostReceiptErrorType.CANNOT_BE_CONSUMED -> callback.invokeWithNotFinishableError()
-                PostReceiptErrorType.SERVER_ERROR -> callback.invokeWithServerError()
+                PostReceiptErrorHandlingBehavior.SHOULD_BE_CONSUMED -> callback.invokeWithFinishableError()
+                PostReceiptErrorHandlingBehavior.SHOULD_NOT_CONSUME -> callback.invokeWithNotFinishableError()
+                PostReceiptErrorHandlingBehavior.SHOULD_USE_OFFLINE_ENTITLEMENTS_AND_NOT_CONSUME -> callback.invokeWithServerError()
             }
         }
 
@@ -1361,7 +1361,7 @@ class PostReceiptHelperTest {
                 PurchasesError(PurchasesErrorCode.UnknownError)
             )
         }
-        if (errorType == PostReceiptErrorType.CAN_BE_CONSUMED) {
+        if (errorType == PostReceiptErrorHandlingBehavior.SHOULD_BE_CONSUMED) {
             every { subscriberAttributesManager.markAsSynced(appUserID, any(), any()) } just Runs
             if (postType == PostType.TRANSACTION_AND_CONSUME) {
                 every { billing.consumeAndSave(any(), mockStoreTransaction) } just Runs
@@ -1381,7 +1381,7 @@ class PostReceiptHelperTest {
     private fun PostReceiptDataErrorCallback.invokeWithFinishableError() {
         invoke(
             PurchasesError(PurchasesErrorCode.InvalidCredentialsError),
-            PostReceiptErrorType.CAN_BE_CONSUMED,
+            PostReceiptErrorHandlingBehavior.SHOULD_BE_CONSUMED,
             JSONObject(Responses.invalidCredentialsErrorResponse)
         )
     }
@@ -1389,7 +1389,7 @@ class PostReceiptHelperTest {
     private fun PostReceiptDataErrorCallback.invokeWithNotFinishableError() {
         invoke(
             PurchasesError(PurchasesErrorCode.UnexpectedBackendResponseError),
-            PostReceiptErrorType.CANNOT_BE_CONSUMED,
+            PostReceiptErrorHandlingBehavior.SHOULD_NOT_CONSUME,
             JSONObject(Responses.internalServerErrorResponse)
         )
     }
@@ -1397,7 +1397,7 @@ class PostReceiptHelperTest {
     private fun PostReceiptDataErrorCallback.invokeWithServerError() {
         invoke(
             PurchasesError(PurchasesErrorCode.UnexpectedBackendResponseError),
-            PostReceiptErrorType.SERVER_ERROR,
+            PostReceiptErrorHandlingBehavior.SHOULD_USE_OFFLINE_ENTITLEMENTS_AND_NOT_CONSUME,
             JSONObject(Responses.internalServerErrorResponse)
         )
     }
