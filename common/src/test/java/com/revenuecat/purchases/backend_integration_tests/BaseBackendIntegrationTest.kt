@@ -34,7 +34,7 @@ import kotlin.time.Duration.Companion.seconds
 // To run these tests in Android Studio, you need to remove the test exclusion in the
 // common module build.gradle and change the API KEY in Constants.kt
 @RunWith(AndroidJUnit4::class)
-class BackendIntegrationTest {
+abstract class BaseBackendIntegrationTest {
 
     companion object {
         private val TIMEOUT = 5.seconds
@@ -48,6 +48,7 @@ class BackendIntegrationTest {
         }
 
         private fun canRunIntegrationTests() = Constants.apiKey != "REVENUECAT_API_KEY"
+            && Constants.loadShedderApiKey != "LOAD_SHEDDER_API_KEY"
     }
 
     lateinit var appConfig: AppConfig
@@ -61,8 +62,6 @@ class BackendIntegrationTest {
     lateinit var backendHelper: BackendHelper
 
     lateinit var backend: Backend
-
-
 
     @Before
     fun setUp() {
@@ -88,34 +87,13 @@ class BackendIntegrationTest {
         eTagManager = ETagManager(sharedPreferences)
         signingManager = SigningManager(SignatureVerificationMode.Disabled)
         httpClient = HTTPClient(appConfig, eTagManager, diagnosticsTrackerIfEnabled = null, signingManager)
-        backendHelper = BackendHelper(Constants.apiKey, dispatcher, appConfig, httpClient)
+        backendHelper = BackendHelper(apiKey(), dispatcher, appConfig, httpClient)
         backend = Backend(appConfig, dispatcher, diagnosticsDispatcher, httpClient, backendHelper)
     }
 
-    @Test
-    fun canPerformProductEntitlementMappingBackendRequest() {
-        var error: PurchasesError? = null
-        ensureBlockFinishes { latch ->
-            backend.getProductEntitlementMapping(
-                onSuccessHandler = { productEntitlementMapping ->
-                    assertThat(productEntitlementMapping.mappings).isNotEmpty
-                    latch.countDown()
-                },
-                onErrorHandler = {
-                    error = it
-                    latch.countDown()
-                }
-            )
-        }
-        assertThat(error).isNull()
-        verify(exactly = 1) {
-            // Verify we save the backend response in the shared preferences
-            sharedPreferencesEditor.putString("/v1${Endpoint.GetProductEntitlementMapping.getPath()}", any())
-        }
-        verify(exactly = 1) { sharedPreferencesEditor.apply() }
-    }
+    abstract fun apiKey(): String
 
-    private fun ensureBlockFinishes(block: (CountDownLatch) -> Unit) {
+    protected fun ensureBlockFinishes(block: (CountDownLatch) -> Unit) {
         val latch = CountDownLatch(1)
         block(latch)
         latch.await(TIMEOUT.inWholeSeconds, TimeUnit.SECONDS)
