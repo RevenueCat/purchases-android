@@ -28,7 +28,7 @@ class OfflineEntitlementsManager(
     @Synchronized
     fun resetOfflineCustomerInfoCache() {
         if (_offlineCustomerInfo != null) {
-            warnLog(OfflineEntitlementsStrings.RESETTING_OFFLINE_CUSTOMER_INFO_CACHE)
+            debugLog(OfflineEntitlementsStrings.RESETTING_OFFLINE_CUSTOMER_INFO_CACHE)
             _offlineCustomerInfo = null
         }
     }

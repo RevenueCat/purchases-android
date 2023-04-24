@@ -216,7 +216,7 @@ class Backend(
                             onSuccess(CustomerInfoFactory.buildCustomerInfo(result), result.body)
                         } else {
                             val purchasesError = result.toPurchasesError().also { errorLog(it) }
-                            val errorType = calculatePostReceiptErrorType(result.responseCode, purchasesError)
+                            val errorType = determinePostReceiptErrorType(result.responseCode, purchasesError)
                             onError(
                                 purchasesError,
                                 errorType,
@@ -460,15 +460,15 @@ class Backend(
         httpClient.clearCaches()
     }
 
-    private fun calculatePostReceiptErrorType(
+    private fun determinePostReceiptErrorType(
         responseCode: Int,
         purchasesError: PurchasesError
     ) = if (RCHTTPStatusCodes.isServerError(responseCode)) {
         PostReceiptErrorType.SERVER_ERROR
-    } else if (purchasesError.code != PurchasesErrorCode.UnsupportedError) {
-        PostReceiptErrorType.CAN_BE_CONSUMED
-    } else {
+    } else if (purchasesError.code == PurchasesErrorCode.UnsupportedError) {
         PostReceiptErrorType.CANNOT_BE_CONSUMED
+    } else {
+        PostReceiptErrorType.CAN_BE_CONSUMED
     }
 
     private fun <K, S, E> MutableMap<K, MutableList<Pair<S, E>>>.addCallback(
