@@ -35,6 +35,7 @@ import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.firstSku
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.sha256
+import com.revenuecat.purchases.models.GoogleProrationMode
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.PricingPhase
@@ -423,7 +424,7 @@ class BillingWrapperTest {
             assertThat(subsGoogleProductType).isEqualTo(capturedProductDetailsParams[0].zza().productType)
 
             assertThat(upgradeInfo.oldPurchase.purchaseToken).isEqualTo(oldPurchaseTokenSlot.captured)
-            assertThat(upgradeInfo.prorationMode).isEqualTo(prorationModeSlot.captured)
+            assertThat((upgradeInfo.prorationMode as GoogleProrationMode?)?.playBillingClientMode).isEqualTo(prorationModeSlot.captured)
 
             assertThat(isPersonalizedPrice).isEqualTo(isPersonalizedPriceSlot.captured)
             billingClientOKResult
@@ -2513,7 +2514,7 @@ class BillingWrapperTest {
 
     private fun mockReplaceSkuInfo(): ReplaceProductInfo {
         val oldPurchase = mockPurchaseHistoryRecordWrapper()
-        return ReplaceProductInfo(oldPurchase, BillingFlowParams.ProrationMode.DEFERRED)
+        return ReplaceProductInfo(oldPurchase, GoogleProrationMode.IMMEDIATE_AND_CHARGE_FULL_PRICE)
     }
 
     private fun mockQueryPurchasesAsyncResponse(

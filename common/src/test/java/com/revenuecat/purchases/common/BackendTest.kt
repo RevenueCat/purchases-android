@@ -15,6 +15,7 @@ import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
 import com.revenuecat.purchases.common.offlineentitlements.createProductEntitlementMapping
+import com.revenuecat.purchases.models.GoogleProrationMode
 import com.revenuecat.purchases.models.GoogleStoreProduct
 import com.revenuecat.purchases.models.GoogleSubscriptionOption
 import com.revenuecat.purchases.models.Period
@@ -370,12 +371,13 @@ class BackendTest {
     }
 
     @Test
-    fun `postReceipt passes pricing phases as maps in body`() {
+    fun `postReceipt passes proration mode and pricing phases as maps in body`() {
         val subscriptionOption = storeProduct.subscriptionOptions!!.first()
         val receiptInfo = ReceiptInfo(
             productIDs = productIDs,
             storeProduct = storeProduct,
-            subscriptionOptionId = subscriptionOption.id
+            subscriptionOptionId = subscriptionOption.id,
+            prorationMode = GoogleProrationMode.IMMEDIATE_WITHOUT_PRORATION
         )
 
         mockPostReceiptResponseAndPost(
@@ -404,6 +406,9 @@ class BackendTest {
                 )
             )
         )
+
+        assertThat(requestBodySlot.captured.keys).contains("proration_mode")
+        assertThat(requestBodySlot.captured["proration_mode"]).isEqualTo("IMMEDIATE_WITHOUT_PRORATION")
     }
 
     @Test

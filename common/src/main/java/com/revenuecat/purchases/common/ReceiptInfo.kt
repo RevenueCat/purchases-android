@@ -1,10 +1,12 @@
 package com.revenuecat.purchases.common
 
+import com.revenuecat.purchases.ProrationMode
 import com.revenuecat.purchases.models.GoogleSubscriptionOption
 import com.revenuecat.purchases.models.PricingPhase
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.SubscriptionOption
 
+@SuppressWarnings("LongParameterList")
 class ReceiptInfo(
     val productIDs: List<String>,
     val offeringIdentifier: String? = null,
@@ -12,7 +14,8 @@ class ReceiptInfo(
     val storeProduct: StoreProduct? = null,
 
     val price: Double? = storeProduct?.price?.amountMicros?.div(MICROS_MULTIPLIER.toDouble()),
-    val currency: String? = storeProduct?.price?.currencyCode
+    val currency: String? = storeProduct?.price?.currencyCode,
+    val prorationMode: ProrationMode? = null,
 ) {
 
     val duration: String? = storeProduct?.period?.iso8601?.takeUnless { it.isEmpty() }

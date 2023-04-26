@@ -11,6 +11,7 @@ import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.SubscriberAttributeError
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.google.toStoreTransaction
+import com.revenuecat.purchases.models.GoogleProrationMode
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttribute
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
@@ -50,7 +51,8 @@ class PostReceiptHelperTest {
     private val mockStoreTransaction = mockGooglePurchase.toStoreTransaction(
         ProductType.SUBS,
         null,
-        subscriptionOptionId
+        subscriptionOptionId,
+        prorationMode = GoogleProrationMode.IMMEDIATE_AND_CHARGE_FULL_PRICE
     )
     private val testReceiptInfo = ReceiptInfo(
         productIDs = listOf("test-product-id-1", "test-product-id-2"),
@@ -433,6 +435,22 @@ class PostReceiptHelperTest {
         )
         assertThat(postedReceiptInfoSlot.isCaptured).isTrue
         assertThat(postedReceiptInfoSlot.captured.duration).isEqualTo("P1M")
+    }
+
+    @Test
+    fun `postTransactionAndConsumeIfNeeded posts proration mode`() {
+        mockPostReceiptSuccess()
+
+        postReceiptHelper.postTransactionAndConsumeIfNeeded(
+            purchase = mockStoreTransaction,
+            storeProduct = mockStoreProduct,
+            isRestore = true,
+            appUserID = appUserID,
+            onSuccess = { _, _ -> },
+            onError = { _, _ -> fail("Should succeed") }
+        )
+        assertThat(postedReceiptInfoSlot.isCaptured).isTrue
+        assertThat(postedReceiptInfoSlot.captured.prorationMode).isEqualTo(GoogleProrationMode.IMMEDIATE_AND_CHARGE_FULL_PRICE)
     }
 
     @Test

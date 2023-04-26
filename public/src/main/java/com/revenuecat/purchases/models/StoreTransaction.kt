@@ -2,6 +2,7 @@ package com.revenuecat.purchases.models
 
 import android.os.Parcelable
 import com.revenuecat.purchases.ProductType
+import com.revenuecat.purchases.ProrationMode
 import com.revenuecat.purchases.utils.JSONObjectParceler
 import kotlinx.parcelize.IgnoredOnParcel
 import kotlinx.parcelize.Parcelize
@@ -92,7 +93,14 @@ data class StoreTransaction(
      * In Google, this will be calculated from the basePlanId and offerId
      * Null for restored transactions and purchases initiated outside of the app.
      */
-    val subscriptionOptionId: String?
+    val subscriptionOptionId: String?,
+
+    /**
+     * The prorationMode used to perform the upgrade/downgrade of this purchase.
+     * Null if it was not an upgrade/downgrade or if the purchase was restored.
+     * This is not available for Amazon purchases.
+     */
+    val prorationMode: ProrationMode?
 ) : Parcelable {
 
     /**
