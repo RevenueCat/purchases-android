@@ -2514,7 +2514,7 @@ class BillingWrapperTest {
 
     private fun mockReplaceSkuInfo(): ReplaceProductInfo {
         val oldPurchase = mockPurchaseHistoryRecordWrapper()
-        return ReplaceProductInfo(oldPurchase, GoogleProrationMode.DEFERRED)
+        return ReplaceProductInfo(oldPurchase, GoogleProrationMode.IMMEDIATE_AND_CHARGE_FULL_PRICE)
     }
 
     private fun mockQueryPurchasesAsyncResponse(

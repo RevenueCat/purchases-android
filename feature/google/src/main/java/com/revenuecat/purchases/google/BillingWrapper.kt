@@ -650,7 +650,6 @@ class BillingWrapper(
                     executePendingRequests()
                     reconnectMilliseconds = RECONNECT_TIMER_START_MILLISECONDS
                 }
-
                 BillingClient.BillingResponseCode.FEATURE_NOT_SUPPORTED,
                 BillingClient.BillingResponseCode.BILLING_UNAVAILABLE -> {
                     val message =
@@ -672,7 +671,6 @@ class BillingWrapper(
                         }
                     }
                 }
-
                 BillingClient.BillingResponseCode.SERVICE_TIMEOUT,
                 BillingClient.BillingResponseCode.ERROR,
                 BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE,
@@ -684,7 +682,6 @@ class BillingWrapper(
                     )
                     retryBillingServiceConnectionWithExponentialBackoff()
                 }
-
                 BillingClient.BillingResponseCode.ITEM_UNAVAILABLE,
                 BillingClient.BillingResponseCode.ITEM_ALREADY_OWNED,
                 BillingClient.BillingResponseCode.ITEM_NOT_OWNED -> {
@@ -693,7 +690,6 @@ class BillingWrapper(
                             .format(billingResult.toHumanReadableDescription())
                     )
                 }
-
                 BillingClient.BillingResponseCode.DEVELOPER_ERROR -> {
                     // Billing service is already trying to connect. Don't do anything.
                 }
@@ -881,7 +877,6 @@ class BillingWrapper(
             is GooglePurchasingData.InAppProduct -> {
                 buildOneTimePurchaseParams(purchaseInfo, appUserID, isPersonalizedPrice)
             }
-
             is GooglePurchasingData.Subscription -> {
                 buildSubscriptionPurchaseParams(purchaseInfo, replaceProductInfo, appUserID, isPersonalizedPrice)
             }
