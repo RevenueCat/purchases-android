@@ -13,7 +13,11 @@ import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.ago
 import com.revenuecat.purchases.common.fromNow
+import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.utils.add
+import com.revenuecat.purchases.utils.stubPurchaseHistoryRecord
 import com.revenuecat.purchases.utils.stubStoreTransactionFromPurchaseHistoryRecord
+import com.revenuecat.purchases.utils.subtract
 import io.mockk.every
 import io.mockk.mockk
 import org.junit.Before
@@ -25,6 +29,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.json.JSONObject
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.minutes
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
@@ -250,6 +255,80 @@ class OfflineCustomerInfoCalculatorTest {
 
         val purchasedProduct = purchasedProducts.first { it.productIdentifier == "consumable" }
         verifyEntitlement(receivedCustomerInfo, entitlementID, purchasedProduct, null)
+    }
+
+    @Test
+    fun `error is triggered if active inapp purchase exists`() {
+        val productId = "test-product-id"
+        val storeTransaction = mockk<StoreTransaction>().apply {
+            every { type } returns ProductType.INAPP
+        }
+        val products = listOf(
+            PurchasedProduct(
+                productId,
+                storeTransaction,
+                true,
+                listOf("pro"),
+                null
+            )
+        )
+
+        every {
+            purchasedProductsFetcher.queryPurchasedProducts(
+                appUserID,
+                captureLambda(),
+                any()
+            )
+        } answers {
+            lambda<(List<PurchasedProduct>) -> Unit>().captured.invoke(products)
+        }
+
+        var receivedError: PurchasesError? = null
+        offlineCustomerInfoCalculator.computeOfflineCustomerInfo(
+            appUserID,
+            { fail("Should've failed") },
+            { receivedError = it }
+        )
+        assertThat(receivedError).isNotNull
+        assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.UnsupportedError)
+    }
+
+    @Test
+    fun `success is triggered if non active inapp purchase exists`() {
+        val productId = "test-product-id"
+        val storeTransaction = mockk<StoreTransaction>().apply {
+            every { type } returns ProductType.INAPP
+            every { purchaseTime } returns Date().time
+        }
+        val products = listOf(
+            PurchasedProduct(
+                productId,
+                storeTransaction,
+                false,
+                listOf("pro"),
+                null
+            )
+        )
+
+        every {
+            purchasedProductsFetcher.queryPurchasedProducts(
+                appUserID,
+                captureLambda(),
+                any()
+            )
+        } answers {
+            lambda<(List<PurchasedProduct>) -> Unit>().captured.invoke(products)
+        }
+
+        var receivedCustomerInfo: CustomerInfo? = null
+        offlineCustomerInfoCalculator.computeOfflineCustomerInfo(
+            appUserID,
+            { receivedCustomerInfo = it },
+            { fail("Should be success") }
+        )
+        assertThat(receivedCustomerInfo).isNotNull
+        assertThat(receivedCustomerInfo?.allPurchaseDatesByProduct).containsOnlyKeys(productId)
+        assertThat(receivedCustomerInfo?.allPurchaseDatesByProduct?.get(productId)?.time).isEqualTo(storeTransaction.purchaseTime)
     }
 
     @Test
