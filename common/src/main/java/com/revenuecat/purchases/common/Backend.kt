@@ -216,10 +216,12 @@ class Backend(
                             onSuccess(CustomerInfoFactory.buildCustomerInfo(result), result.body)
                         } else {
                             val purchasesError = result.toPurchasesError().also { errorLog(it) }
-                            val errorType = determinePostReceiptErrorType(result.responseCode, purchasesError)
+                            val errorHandlingBehavior = determinePostReceiptErrorHandlingBehavior(
+                                result.responseCode, purchasesError
+                            )
                             onError(
                                 purchasesError,
-                                errorType,
+                                errorHandlingBehavior,
                                 result.body
                             )
                         }
@@ -460,7 +462,7 @@ class Backend(
         httpClient.clearCaches()
     }
 
-    private fun determinePostReceiptErrorType(
+    private fun determinePostReceiptErrorHandlingBehavior(
         responseCode: Int,
         purchasesError: PurchasesError
     ) = if (RCHTTPStatusCodes.isServerError(responseCode)) {

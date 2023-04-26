@@ -74,9 +74,9 @@ class SubscriberAttributesPosterTests {
         }
 
     private val expectedOnErrorPostReceipt: PostReceiptDataErrorCallback =
-        { error, errorType, body ->
+        { error, errorHandlingBehavior, body ->
             receivedError = error
-            receivedPostReceiptErrorHandlingBehavior = errorType
+            receivedPostReceiptErrorHandlingBehavior = errorHandlingBehavior
             receivedAttributeErrors = body.getAttributeErrors()
         }
 

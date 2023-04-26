@@ -54,12 +54,12 @@ internal class PostReceiptHelper(
                 deviceCache.addSuccessfullyPostedToken(purchaseToken)
                 onSuccess()
             },
-            onError = { backendError, errorType, _ ->
-                if (errorType == PostReceiptErrorHandlingBehavior.SHOULD_BE_CONSUMED) {
+            onError = { backendError, errorHandlingBehavior, _ ->
+                if (errorHandlingBehavior == PostReceiptErrorHandlingBehavior.SHOULD_BE_CONSUMED) {
                     deviceCache.addSuccessfullyPostedToken(purchaseToken)
                 }
                 useOfflineEntitlementsCustomerInfoIfNeeded(
-                    errorType,
+                    errorHandlingBehavior,
                     appUserID,
                     onSuccess = {
                         onSuccess()
@@ -101,12 +101,12 @@ internal class PostReceiptHelper(
                 billing.consumeAndSave(finishTransactions, purchase)
                 onSuccess?.let { it(purchase, info) }
             },
-            onError = { backendError, errorType, _ ->
-                if (errorType == PostReceiptErrorHandlingBehavior.SHOULD_BE_CONSUMED) {
+            onError = { backendError, errorHandlingBehavior, _ ->
+                if (errorHandlingBehavior == PostReceiptErrorHandlingBehavior.SHOULD_BE_CONSUMED) {
                     billing.consumeAndSave(finishTransactions, purchase)
                 }
                 useOfflineEntitlementsCustomerInfoIfNeeded(
-                    errorType,
+                    errorHandlingBehavior,
                     appUserID,
                     onSuccess = { customerInfo ->
                         onSuccess?.let { it(purchase, customerInfo) }
@@ -150,28 +150,28 @@ internal class PostReceiptHelper(
                     customerInfoHelper.sendUpdatedCustomerInfoToDelegateIfChanged(customerInfo)
                     onSuccess(customerInfo)
                 },
-                onError = { error, errorType, responseBody ->
-                    if (errorType == PostReceiptErrorHandlingBehavior.SHOULD_BE_CONSUMED) {
+                onError = { error, errorHandlingBehavior, responseBody ->
+                    if (errorHandlingBehavior == PostReceiptErrorHandlingBehavior.SHOULD_BE_CONSUMED) {
                         subscriberAttributesManager.markAsSynced(
                             appUserID,
                             unsyncedSubscriberAttributesByKey,
                             responseBody.getAttributeErrors()
                         )
                     }
-                    onError(error, errorType, responseBody)
+                    onError(error, errorHandlingBehavior, responseBody)
                 }
             )
         }
     }
 
     private fun useOfflineEntitlementsCustomerInfoIfNeeded(
-        errorType: PostReceiptErrorHandlingBehavior,
+        errorHandlingBehavior: PostReceiptErrorHandlingBehavior,
         appUserID: String,
         onSuccess: (CustomerInfo) -> Unit,
         onError: () -> Unit
     ) {
         val isServerError =
-            errorType == PostReceiptErrorHandlingBehavior.SHOULD_USE_OFFLINE_ENTITLEMENTS_AND_NOT_CONSUME
+            errorHandlingBehavior == PostReceiptErrorHandlingBehavior.SHOULD_USE_OFFLINE_ENTITLEMENTS_AND_NOT_CONSUME
         if (offlineEntitlementsManager.shouldCalculateOfflineCustomerInfoInPostReceipt(isServerError)) {
             calculateOfflineCustomerInfo(
                 appUserID,

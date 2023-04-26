@@ -149,9 +149,9 @@ class BackendTest {
         }
 
     private val postReceiptErrorCallback: PostReceiptDataErrorCallback =
-        { error, errorType, _ ->
+        { error, errorHandlingBehavior, _ ->
             this@BackendTest.receivedError = error
-            this@BackendTest.receivedPostReceiptErrorHandlingBehavior = errorType
+            this@BackendTest.receivedPostReceiptErrorHandlingBehavior = errorHandlingBehavior
         }
 
     private val onReceiveCustomerInfoErrorHandler: (PurchasesError, Boolean) -> Unit = { error, isServerError ->
