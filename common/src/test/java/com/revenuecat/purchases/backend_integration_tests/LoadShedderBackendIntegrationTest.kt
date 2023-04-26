@@ -11,7 +11,7 @@ class LoadShedderBackendIntegrationTest: BaseBackendIntegrationTest() {
     override fun apiKey() = Constants.loadShedderApiKey
 
     @Test
-    fun canPerformProductEntitlementMappingBackendRequest() {
+    fun `can perform product entitlement mapping backend request`() {
         var error: PurchasesError? = null
         ensureBlockFinishes { latch ->
             backend.getProductEntitlementMapping(
