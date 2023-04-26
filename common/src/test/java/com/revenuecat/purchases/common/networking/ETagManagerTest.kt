@@ -4,6 +4,7 @@ import android.content.SharedPreferences
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.VerificationResult.*
+import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.createResult
 import com.revenuecat.purchases.utils.Responses
 import io.mockk.Runs
@@ -23,8 +24,13 @@ import java.util.Date
 @Config(manifest = Config.NONE)
 class ETagManagerTest {
 
+    private val testDate = Date(1675954145L) // Thursday, February 9, 2023 2:49:05 PM GMT
+    private val testDateProvider = object : DateProvider {
+        override val now: Date
+            get() = testDate
+    }
     private val mockedPrefs = mockk<SharedPreferences>()
-    private val underTest = ETagManager(mockedPrefs)
+    private val underTest = ETagManager(mockedPrefs, testDateProvider)
     private val slotPutStringSharedPreferencesKey = slot<String>()
     private val slotPutSharedPreferencesValue = slot<String>()
     private val mockEditor = mockk<SharedPreferences.Editor>()
@@ -50,10 +56,33 @@ class ETagManagerTest {
         val path = "/v1/subscribers/appUserID"
         mockCachedHTTPResult(expectedETag = null, path = path)
 
-        val requestWithETagHeader = underTest.getETagHeader(path)
-        val eTagHeader = requestWithETagHeader[HTTPRequest.ETAG_HEADER_NAME]
+        val eTagHeaders = underTest.getETagHeaders(path)
+        val eTagHeader = eTagHeaders[HTTPRequest.ETAG_HEADER_NAME]
         assertThat(eTagHeader).isNotNull
         assertThat(eTagHeader).isBlank
+    }
+
+    @Test
+    fun `ETag Last refresh time header is null if there is no ETag saved for that request`() {
+        val path = "/v1/subscribers/appUserID"
+        mockCachedHTTPResult(expectedETag = null, path = path)
+
+        val eTagHeaders = underTest.getETagHeaders(path)
+        val lastRefreshTimeHeader = eTagHeaders[HTTPRequest.ETAG_LAST_REFRESH_NAME]
+        assertThat(lastRefreshTimeHeader).isNull()
+    }
+
+    @Test
+    fun `ETag Last refresh time header is null if there is an ETag saved but no refresh time saved for that request`() {
+        val path = "/v1/subscribers/appUserID"
+        mockCachedHTTPResult(expectedETag = "etag", expectedLastRefreshTime = null, path = path)
+
+        val eTagHeaders = underTest.getETagHeaders(path)
+        val eTagHeader = eTagHeaders[HTTPRequest.ETAG_HEADER_NAME]
+        assertThat(eTagHeader).isEqualTo("etag")
+
+        val lastRefreshTimeHeader = eTagHeaders[HTTPRequest.ETAG_LAST_REFRESH_NAME]
+        assertThat(lastRefreshTimeHeader).isNull()
     }
 
     @Test
@@ -62,10 +91,29 @@ class ETagManagerTest {
         val expectedETag = "etag"
         mockCachedHTTPResult(expectedETag, path)
 
-        val requestWithETagHeader = underTest.getETagHeader(path)
-        val eTagHeader = requestWithETagHeader[HTTPRequest.ETAG_HEADER_NAME]
+        val eTagHeaders = underTest.getETagHeaders(path)
+        val eTagHeader = eTagHeaders[HTTPRequest.ETAG_HEADER_NAME]
         assertThat(eTagHeader).isNotNull
         assertThat(eTagHeader).isEqualTo(expectedETag)
+    }
+
+    @Test
+    fun `An ETag Last refresh time header is added if there is a refresh time saved for that request`() {
+        val path = "/v1/subscribers/appUserID"
+        mockCachedHTTPResult(expectedETag = "etag", expectedLastRefreshTime = testDate, path = path)
+
+        val eTagHeaders = underTest.getETagHeaders(path)
+        val lastRefreshTimeHeader = eTagHeaders[HTTPRequest.ETAG_LAST_REFRESH_NAME]
+        assertThat(lastRefreshTimeHeader).isEqualTo("1675954145")
+    }
+
+    @Test
+    fun `Expected number of headers are added when there is an Etag and last refresh time saved for that request`() {
+        val path = "/v1/subscribers/appUserID"
+        mockCachedHTTPResult(expectedETag = "etag", expectedLastRefreshTime = testDate, path = path)
+
+        val eTagHeaders = underTest.getETagHeaders(path)
+        assertThat(eTagHeaders.size).isEqualTo(2)
     }
 
     @Test
@@ -131,7 +179,7 @@ class ETagManagerTest {
         val resultStored = resultFromBackend.copy(
             origin = HTTPResult.Origin.CACHE
         )
-        val resultStoredWithETag = HTTPResultWithETag(eTag, resultStored)
+        val resultStoredWithETag = HTTPResultWithETag(ETagData(eTag, testDate), resultStored)
 
         underTest.storeBackendResultIfNoError(path, resultFromBackend, eTag)
 
@@ -183,7 +231,7 @@ class ETagManagerTest {
         val resultStored = resultFromBackend.copy(
             origin = HTTPResult.Origin.CACHE
         )
-        val resultStoredWithETag = HTTPResultWithETag(eTag, resultStored)
+        val resultStoredWithETag = HTTPResultWithETag(ETagData(eTag, testDate), resultStored)
 
         underTest.storeBackendResultIfNoError(path, resultFromBackend, eTag)
 
@@ -208,7 +256,7 @@ class ETagManagerTest {
         val path = "/v1/subscribers/appUserID"
         mockCachedHTTPResult(expectedETag = null, path = path)
 
-        val requestWithETagHeader = underTest.getETagHeader(path, refreshETag = true)
+        val requestWithETagHeader = underTest.getETagHeaders(path, refreshETag = true)
         val eTagHeader = requestWithETagHeader[HTTPRequest.ETAG_HEADER_NAME]
         assertThat(eTagHeader).isNotNull
         assertThat(eTagHeader).isBlank
@@ -230,7 +278,7 @@ class ETagManagerTest {
             verificationResult = NOT_REQUESTED
         )
 
-        assertStoredResponse(path, eTagInResponse, responsePayload)
+        assertStoredResponse(path, eTagInResponse, testDate, responsePayload)
     }
 
     @Test
@@ -330,7 +378,7 @@ class ETagManagerTest {
         assertThat(result.payload).isEqualTo(responsePayload)
         assertThat(result.origin).isEqualTo(HTTPResult.Origin.BACKEND)
 
-        assertStoredResponse(path, eTagInResponse, responsePayload)
+        assertStoredResponse(path, eTagInResponse, testDate, responsePayload)
     }
 
     @Test
@@ -354,7 +402,7 @@ class ETagManagerTest {
         assertThat(result.payload).isEqualTo(responsePayload)
         assertThat(result.origin).isEqualTo(HTTPResult.Origin.BACKEND)
 
-        assertStoredResponse(path, eTagInResponse, responsePayload)
+        assertStoredResponse(path, eTagInResponse, testDate, responsePayload)
     }
 
     @Test
@@ -396,7 +444,7 @@ class ETagManagerTest {
             origin = HTTPResult.Origin.CACHE,
             requestDate = Date(1000)
         )
-        mockCachedHTTPResult("etag", "/v1/subscribers/appUserID", cachedHttpResult)
+        mockCachedHTTPResult("etag", "/v1/subscribers/appUserID", httpResult = cachedHttpResult)
         val result = underTest.getHTTPResultFromCacheOrBackend(
             responseCode = RCHTTPStatusCodes.SUCCESS,
             payload = "",
@@ -444,7 +492,7 @@ class ETagManagerTest {
             origin = HTTPResult.Origin.CACHE,
             verificationResult = cachedVerificationResult
         )
-        mockCachedHTTPResult("etag", "/v1/subscribers/appUserID", httpResult)
+        mockCachedHTTPResult("etag","/v1/subscribers/appUserID", httpResult = httpResult)
         val result = underTest.getHTTPResultFromCacheOrBackend(
             responseCode = RCHTTPStatusCodes.NOT_MODIFIED,
             payload = "",
@@ -461,10 +509,11 @@ class ETagManagerTest {
     private fun mockCachedHTTPResult(
         expectedETag: String?,
         path: String,
+        expectedLastRefreshTime: Date? = Date(),
         httpResult: HTTPResult = HTTPResult.createResult(origin = HTTPResult.Origin.CACHE)
     ): HTTPResultWithETag? {
         val cachedResult = expectedETag?.let {
-            HTTPResultWithETag(expectedETag, httpResult)
+            HTTPResultWithETag(ETagData(expectedETag, expectedLastRefreshTime), httpResult)
         }
         every {
             mockedPrefs.getString(path, null)
@@ -475,6 +524,7 @@ class ETagManagerTest {
     private fun assertStoredResponse(
         path: String,
         eTagInResponse: String,
+        lastRefreshTime: Date?,
         responsePayload: String
     ) {
         assertThat(slotPutStringSharedPreferencesKey.isCaptured).isTrue
@@ -484,7 +534,8 @@ class ETagManagerTest {
         assertThat(slotPutSharedPreferencesValue.captured).isNotNull
 
         val deserializedResult = HTTPResultWithETag.deserialize(slotPutSharedPreferencesValue.captured)
-        assertThat(deserializedResult.eTag).isEqualTo(eTagInResponse)
+        assertThat(deserializedResult.eTagData.eTag).isEqualTo(eTagInResponse)
+        assertThat(deserializedResult.eTagData.lastRefreshTime?.time).isEqualTo(lastRefreshTime?.time)
         assertThat(deserializedResult.httpResult.responseCode).isEqualTo(RCHTTPStatusCodes.SUCCESS)
         assertThat(deserializedResult.httpResult.payload).isEqualTo(responsePayload)
     }
