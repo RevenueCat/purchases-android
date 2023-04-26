@@ -49,4 +49,4 @@ Or view our Android sample app:
 Our full SDK reference [can be found here](https://sdk.revenuecat.com/android/index.html).
 
 ## Contributing
-Contributions are always welcome! To learn how you can contribute, please see the [Contributing Guide](./Contributing/CONTRIBUTING.md).
+Contributions are always welcome! To learn how you can contribute, please see the [Contributing Guide](./CONTRIBUTING.md).
