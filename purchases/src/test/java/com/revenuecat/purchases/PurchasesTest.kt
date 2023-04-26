@@ -18,6 +18,7 @@ import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingFlowParams.ProrationMode
 import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.Purchase
+import com.android.billingclient.api.Purchase.PurchaseState
 import com.android.billingclient.api.PurchaseHistoryRecord
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
@@ -467,6 +468,37 @@ class PurchasesTest {
                 callCount++
                 assertThat(purchase).isNull()
             })
+
+        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(emptyList())
+        assertThat(callCount).isEqualTo(1)
+    }
+
+    @Test
+    fun `when making a deferred upgrade, completion is called with null purchase for new version`() {
+        val productId = "onemonth_freetrial"
+
+        val receiptInfo = mockQueryingProductDetails(productId, ProductType.SUBS, null)
+
+        val oldPurchase = mockPurchaseFound()
+
+        var callCount = 0
+
+        val productChangeParams = getPurchaseParams(
+            receiptInfo.storeProduct!!.subscriptionOptions!!.first(),
+            oldPurchase.productIds.first(),
+            googleProrationMode = GoogleProrationMode.DEFERRED
+        )
+        purchases.purchaseWith(
+            productChangeParams,
+            onError = { _, _ ->
+                fail("should be successful")
+            },
+            onSuccess = { purchase, _ ->
+                callCount++
+                println(purchase)
+                assertThat(purchase).isNotNull()
+            }
+        )
 
         capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(emptyList())
         assertThat(callCount).isEqualTo(1)
@@ -3605,7 +3637,8 @@ class PurchasesTest {
     private fun getPurchaseParams(
         purchaseable: Any,
         oldProductId: String? = null,
-        isPersonalizedPrice: Boolean? = null
+        isPersonalizedPrice: Boolean? = null,
+        googleProrationMode: GoogleProrationMode? = null
     ): PurchaseParams {
         val builder = when (purchaseable) {
             is SubscriptionOption -> PurchaseParams.Builder(mockActivity, purchaseable)
@@ -3620,6 +3653,10 @@ class PurchasesTest {
 
         isPersonalizedPrice?.let {
             builder!!.isPersonalizedPrice(it)
+        }
+
+        googleProrationMode?.let {
+            builder!!.googleProrationMode(googleProrationMode)
         }
         return builder!!.build()
     }

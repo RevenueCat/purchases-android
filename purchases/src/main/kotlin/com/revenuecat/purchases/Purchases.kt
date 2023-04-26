@@ -1386,24 +1386,14 @@ class Purchases internal constructor(
                 }
 
                 if (purchases.isEmpty()) {
-                    if (isDeprecatedProductChangeInProgress) {
-                        // Can happen if the product change is ProrationMode.DEFERRED
-                        invalidateCustomerInfoCache()
-                        getCustomerInfoWith { customerInfo ->
-                            deprecatedProductChangeListener?.let { callback ->
-                                dispatch {
-                                    callback.onCompleted(null, customerInfo)
-                                }
+                    // Can happen if the product change is ProrationMode.DEFERRED
+                    invalidateCustomerInfoCache()
+                    getCustomerInfoWith { customerInfo ->
+                        deprecatedProductChangeListener?.let { callback ->
+                            dispatch {
+                                callback.onCompleted(null, customerInfo)
                             }
                         }
-                    } else {
-                        // the non-deprecated purchase(PurchaseParams, PurchaseCallback) flow doesn't allow for
-                        // DEFERRED, so this is an unexpected state. return an error
-                        val nullTransactionError = PurchasesError(
-                            PurchasesErrorCode.StoreProblemError,
-                            PurchaseStrings.NULL_TRANSACTION_ON_PURCHASE_ERROR
-                        )
-                        getAndClearAllPurchaseCallbacks().forEach { it.dispatch(nullTransactionError) }
                     }
                     return
                 }

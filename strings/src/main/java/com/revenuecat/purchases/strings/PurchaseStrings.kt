@@ -40,8 +40,6 @@ object PurchaseStrings {
     const val INVALID_PRODUCT_NO_PRICE = "Error finding a price for %s."
     const val INVALID_CALLBACK_TYPE_INTERNAL_ERROR = "Internal SDK error -- invalid callback type passed to " +
         "startProductChange."
-    const val NULL_TRANSACTION_ON_PURCHASE_ERROR = "Error purchasing. Null transaction returned from a succcessful " +
-        "non-upgrade purchase."
     const val ENTITLEMENT_EXPIRED_OUTSIDE_GRACE_PERIOD = "Entitlement %s is no longer active (expired %s) " +
         "and it's outside grace period window (last updated %s)"
 }

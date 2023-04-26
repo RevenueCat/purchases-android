@@ -29,6 +29,7 @@ import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCallback
 import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.DefaultDateProvider
@@ -596,20 +597,10 @@ class BillingWrapper(
         purchases: List<Purchase>?
     ) {
         val notNullPurchasesList = purchases ?: emptyList()
-        if (billingResult.responseCode == BillingClient.BillingResponseCode.OK && notNullPurchasesList.isNotEmpty()) {
+        if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
             val storeTransactions = mutableListOf<StoreTransaction>()
-
-            notNullPurchasesList.forEach { purchase ->
-                getStoreTransaction(purchase) { storeTxn ->
-                    storeTransactions.add(storeTxn)
-                    if (storeTransactions.size == notNullPurchasesList.size) {
-                        purchasesUpdatedListener?.onPurchasesUpdated(storeTransactions)
-                    }
-                }
-            }
-        } else if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
-            // When doing a DEFERRED downgrade, the result is OK, but the list of purchases is null
-            purchasesUpdatedListener?.onPurchasesUpdated(emptyList())
+            notNullPurchasesList.forEach { purchase -> getStoreTransaction(purchase, {tx -> storeTransactions.add(tx)})}
+            purchasesUpdatedListener?.onPurchasesUpdated(storeTransactions)
         } else {
             log(LogIntent.GOOGLE_ERROR, BillingStrings.BILLING_WRAPPER_PURCHASES_ERROR
                 .format(billingResult.toHumanReadableDescription()) +
@@ -650,6 +641,7 @@ class BillingWrapper(
                     executePendingRequests()
                     reconnectMilliseconds = RECONNECT_TIMER_START_MILLISECONDS
                 }
+
                 BillingClient.BillingResponseCode.FEATURE_NOT_SUPPORTED,
                 BillingClient.BillingResponseCode.BILLING_UNAVAILABLE -> {
                     val message =
@@ -671,6 +663,7 @@ class BillingWrapper(
                         }
                     }
                 }
+
                 BillingClient.BillingResponseCode.SERVICE_TIMEOUT,
                 BillingClient.BillingResponseCode.ERROR,
                 BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE,
@@ -682,6 +675,7 @@ class BillingWrapper(
                     )
                     retryBillingServiceConnectionWithExponentialBackoff()
                 }
+
                 BillingClient.BillingResponseCode.ITEM_UNAVAILABLE,
                 BillingClient.BillingResponseCode.ITEM_ALREADY_OWNED,
                 BillingClient.BillingResponseCode.ITEM_NOT_OWNED -> {
@@ -690,6 +684,7 @@ class BillingWrapper(
                             .format(billingResult.toHumanReadableDescription())
                     )
                 }
+
                 BillingClient.BillingResponseCode.DEVELOPER_ERROR -> {
                     // Billing service is already trying to connect. Don't do anything.
                 }
@@ -877,6 +872,7 @@ class BillingWrapper(
             is GooglePurchasingData.InAppProduct -> {
                 buildOneTimePurchaseParams(purchaseInfo, appUserID, isPersonalizedPrice)
             }
+
             is GooglePurchasingData.Subscription -> {
                 buildSubscriptionPurchaseParams(purchaseInfo, replaceProductInfo, appUserID, isPersonalizedPrice)
             }
