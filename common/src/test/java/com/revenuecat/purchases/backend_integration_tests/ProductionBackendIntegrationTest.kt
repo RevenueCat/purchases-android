@@ -11,7 +11,7 @@ class ProductionBackendIntegrationTest: BaseBackendIntegrationTest() {
     override fun apiKey() = Constants.apiKey
 
     @Test
-    fun canPerformProductEntitlementMappingBackendRequest() {
+    fun `can perform product entitlement mapping backend request`() {
         var error: PurchasesError? = null
         ensureBlockFinishes { latch ->
             backend.getProductEntitlementMapping(
