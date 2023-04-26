@@ -10,6 +10,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.networking.Endpoint
+import com.revenuecat.purchases.common.networking.HTTPRequest
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
 import com.revenuecat.purchases.utils.Responses
@@ -143,6 +144,60 @@ class HTTPClientTest: BaseHTTPClientTest() {
         assertThat(request.getHeader("X-Client-Version")).isEqualTo("")
         assertThat(request.getHeader("X-Client-Bundle-ID")).isEqualTo("mock-package-name")
         assertThat(request.getHeader("X-Observer-Mode-Enabled")).isEqualTo("false")
+    }
+
+    @Test
+    fun addsETagHeadersToRequest() {
+        val expectedResult = HTTPResult.createResult()
+        val endpoint = Endpoint.LogIn
+
+        every {
+            mockETagManager.getETagHeaders(any(), any())
+        } answers {
+            mapOf(
+                HTTPRequest.ETAG_HEADER_NAME to "mock-etag",
+                HTTPRequest.ETAG_LAST_REFRESH_NAME to "1234567890"
+            )
+        }
+
+        enqueue(
+            endpoint,
+            expectedResult
+        )
+
+        client.performRequest(baseURL, endpoint, null, mapOf("" to ""))
+
+        val request = server.takeRequest()
+
+        assertThat(request.getHeader(HTTPRequest.ETAG_HEADER_NAME)).isEqualTo("mock-etag")
+        assertThat(request.getHeader(HTTPRequest.ETAG_LAST_REFRESH_NAME)).isEqualTo("1234567890")
+    }
+
+    @Test
+    fun doesNotAddNullETagHeadersToRequest() {
+        val expectedResult = HTTPResult.createResult()
+        val endpoint = Endpoint.LogIn
+
+        every {
+            mockETagManager.getETagHeaders(any(), any())
+        } answers {
+            mapOf(
+                HTTPRequest.ETAG_HEADER_NAME to "mock-etag",
+                HTTPRequest.ETAG_LAST_REFRESH_NAME to null
+            )
+        }
+
+        enqueue(
+            endpoint,
+            expectedResult
+        )
+
+        client.performRequest(baseURL, endpoint, null, mapOf("" to ""))
+
+        val request = server.takeRequest()
+
+        assertThat(request.getHeader(HTTPRequest.ETAG_HEADER_NAME)).isEqualTo("mock-etag")
+        assertThat(request.headers.names().contains(HTTPRequest.ETAG_LAST_REFRESH_NAME)).isFalse
     }
 
     @Test
