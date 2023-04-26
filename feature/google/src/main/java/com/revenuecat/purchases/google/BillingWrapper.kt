@@ -29,7 +29,6 @@ import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCallback
 import com.revenuecat.purchases.PurchasesErrorCode
-import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.DefaultDateProvider
@@ -599,7 +598,11 @@ class BillingWrapper(
         val notNullPurchasesList = purchases ?: emptyList()
         if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
             val storeTransactions = mutableListOf<StoreTransaction>()
-            notNullPurchasesList.forEach { purchase -> getStoreTransaction(purchase, {tx -> storeTransactions.add(tx)})}
+            notNullPurchasesList.forEach { purchase ->
+                getStoreTransaction(
+                    purchase,
+                    { tx -> storeTransactions.add(tx) })
+            }
             purchasesUpdatedListener?.onPurchasesUpdated(storeTransactions)
         } else {
             log(LogIntent.GOOGLE_ERROR, BillingStrings.BILLING_WRAPPER_PURCHASES_ERROR
