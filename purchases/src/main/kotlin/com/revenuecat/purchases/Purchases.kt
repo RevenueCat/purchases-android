@@ -174,8 +174,7 @@ class Purchases internal constructor(
             log(LogIntent.WARNING, AUTO_SYNC_PURCHASES_DISABLED)
         }
 
-        // Offline entitlements: Commenting out for now until backend is ready
-        // offlineEntitlementsManager.updateProductEntitlementMappingCacheIfStale()
+        offlineEntitlementsManager.updateProductEntitlementMappingCacheIfStale()
         diagnosticsSynchronizer?.syncDiagnosticsFileIfNeeded()
     }
 
@@ -209,8 +208,7 @@ class Purchases internal constructor(
             fetchAndCacheOfferings(identityManager.currentAppUserID, appInBackground = false)
             log(LogIntent.RC_SUCCESS, OfferingStrings.OFFERINGS_UPDATED_FROM_NETWORK)
         }
-        // Offline entitlements: Commenting out for now until backend is ready
-        // offlineEntitlementsManager.updateProductEntitlementMappingCacheIfStale()
+        offlineEntitlementsManager.updateProductEntitlementMappingCacheIfStale()
         updatePendingPurchaseQueue()
         synchronizeSubscriberAttributesIfNeeded()
     }

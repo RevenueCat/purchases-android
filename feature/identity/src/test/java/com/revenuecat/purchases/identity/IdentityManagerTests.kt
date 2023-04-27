@@ -8,6 +8,7 @@ import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.caching.DeviceCache
+import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesCache
@@ -34,6 +35,7 @@ class IdentityManagerTests {
     private lateinit var mockSubscriberAttributesCache: SubscriberAttributesCache
     private lateinit var mockSubscriberAttributesManager: SubscriberAttributesManager
     private lateinit var mockBackend: Backend
+    private lateinit var mockOfflineEntitlementsManager: OfflineEntitlementsManager
     private lateinit var identityManager: IdentityManager
     private val stubAnonymousID = "\$RCAnonymousID:ff68f26e432648369a713849a9f93b58"
 
@@ -55,6 +57,9 @@ class IdentityManagerTests {
         mockSubscriberAttributesManager = mockk()
 
         mockBackend = mockk()
+        mockOfflineEntitlementsManager = mockk<OfflineEntitlementsManager>().apply {
+            every { resetOfflineCustomerInfoCache() } just Runs
+        }
         identityManager = createIdentityManager()
     }
 
@@ -237,6 +242,48 @@ class IdentityManagerTests {
     }
 
     @Test
+    fun `login resets offline customer info cache on success`() {
+        val randomCreated: Boolean = Random.nextBoolean()
+        val mockCustomerInfo: CustomerInfo = mockk()
+        mockCachedAnonymousUser()
+        val oldAppUserID = stubAnonymousID
+        val newAppUserID = "new"
+        every {
+            mockBackend.logIn(oldAppUserID, newAppUserID, captureLambda(), any())
+        } answers {
+            lambda<(CustomerInfo, Boolean) -> Unit>().captured.invoke(
+                mockCustomerInfo, randomCreated
+            )
+        }
+        every { mockDeviceCache.cacheCustomerInfo(any(), any()) } just Runs
+        mockSubscriberAttributesManagerSynchronize(newAppUserID)
+        mockSubscriberAttributesManagerCopyAttributes(oldAppUserID, newAppUserID)
+
+        identityManager.logIn(newAppUserID, { _, _ -> }, { })
+
+        verify(exactly = 1) { mockOfflineEntitlementsManager.resetOfflineCustomerInfoCache() }
+    }
+
+    @Test
+    fun `login does not reset offline customer info cache on error`() {
+        mockCachedAnonymousUser()
+        val oldAppUserID = stubAnonymousID
+        val newAppUserID = "new"
+        every {
+            mockBackend.logIn(oldAppUserID, newAppUserID, any(), captureLambda())
+        } answers {
+            lambda<(PurchasesError) -> Unit>().captured.invoke(
+                PurchasesError(PurchasesErrorCode.InvalidCredentialsError)
+            )
+        }
+        mockSubscriberAttributesManagerSynchronize(newAppUserID)
+
+        identityManager.logIn(newAppUserID, { _, _ -> }, { })
+
+        verify(exactly = 0) { mockOfflineEntitlementsManager.resetOfflineCustomerInfoCache() }
+    }
+
+    @Test
     fun `login copies unsynced attributes from old user to new one if old is anonymous on successful completion`() {
         val randomCreated: Boolean = Random.nextBoolean()
         val mockCustomerInfo: CustomerInfo = mockk()
@@ -335,6 +382,20 @@ class IdentityManagerTests {
 
         assertThat(error).isNull()
         assertCorrectlyIdentifiedWithAnonymous()
+    }
+
+    @Test
+    fun `logOut resets offline customer info cache`() {
+        val identifiedUserID = "Waldo"
+        mockIdentifiedUser(identifiedUserID)
+        mockSubscriberAttributesManagerSynchronize(identifiedUserID)
+        every { mockDeviceCache.cleanupOldAttributionData() } just Runs
+
+        var completionCallCount = 0
+        identityManager.logOut { completionCallCount++ }
+
+        assertThat(completionCallCount).isEqualTo(1)
+        verify(exactly = 1) { mockOfflineEntitlementsManager.resetOfflineCustomerInfoCache() }
     }
 
     @Test
@@ -589,10 +650,11 @@ class IdentityManagerTests {
         deviceCache: DeviceCache = mockDeviceCache,
         subscriberAttributesCache: SubscriberAttributesCache = mockSubscriberAttributesCache,
         subscriberAttributesManager: SubscriberAttributesManager = mockSubscriberAttributesManager,
-        backend: Backend = mockBackend
+        backend: Backend = mockBackend,
+        offlineEntitlementsManager: OfflineEntitlementsManager = mockOfflineEntitlementsManager
     ): IdentityManager {
         return IdentityManager(
-            deviceCache, subscriberAttributesCache, subscriberAttributesManager, backend
+            deviceCache, subscriberAttributesCache, subscriberAttributesManager, backend, offlineEntitlementsManager
         )
     }
 

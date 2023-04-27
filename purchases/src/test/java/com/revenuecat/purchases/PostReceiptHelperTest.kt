@@ -7,9 +7,11 @@ import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.CustomerInfoFactory
 import com.revenuecat.purchases.common.PostReceiptDataErrorCallback
 import com.revenuecat.purchases.common.PostReceiptDataSuccessCallback
+import com.revenuecat.purchases.common.PostReceiptErrorHandlingBehavior
 import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.SubscriberAttributeError
 import com.revenuecat.purchases.common.caching.DeviceCache
+import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
 import com.revenuecat.purchases.google.toStoreTransaction
 import com.revenuecat.purchases.models.GoogleProrationMode
 import com.revenuecat.purchases.models.StoreTransaction
@@ -76,6 +78,7 @@ class PostReceiptHelperTest {
     private lateinit var customerInfoHelper: CustomerInfoHelper
     private lateinit var deviceCache: DeviceCache
     private lateinit var subscriberAttributesManager: SubscriberAttributesManager
+    private lateinit var offlineEntitlementsManager: OfflineEntitlementsManager
 
     private lateinit var postReceiptHelper: PostReceiptHelper
 
@@ -87,6 +90,7 @@ class PostReceiptHelperTest {
         customerInfoHelper = mockk()
         deviceCache = mockk()
         subscriberAttributesManager = mockk()
+        offlineEntitlementsManager = mockk()
 
         postedReceiptInfoSlot = slot()
 
@@ -96,7 +100,8 @@ class PostReceiptHelperTest {
             billing = billing,
             customerInfoHelper = customerInfoHelper,
             deviceCache = deviceCache,
-            subscriberAttributesManager = subscriberAttributesManager
+            subscriberAttributesManager = subscriberAttributesManager,
+            offlineEntitlementsManager = offlineEntitlementsManager
         )
 
         mockUnsyncedSubscriberAttributes()
@@ -300,7 +305,7 @@ class PostReceiptHelperTest {
     @Test
     fun `postTransactionAndConsumeIfNeeded marks unsynced attributes as synced on error if finishable error`() {
         mockUnsyncedSubscriberAttributes(unsyncedSubscriberAttributes)
-        mockPostReceiptError(finishableError = true)
+        mockPostReceiptError(errorHandlingBehavior = PostReceiptErrorHandlingBehavior.SHOULD_BE_CONSUMED)
 
         postReceiptHelper.postTransactionAndConsumeIfNeeded(
             purchase = mockStoreTransaction,
@@ -323,7 +328,7 @@ class PostReceiptHelperTest {
     @Test
     fun `postTransactionAndConsumeIfNeeded does not mark unsynced attributes as synced on error if not finishable error`() {
         mockUnsyncedSubscriberAttributes(unsyncedSubscriberAttributes)
-        mockPostReceiptError(finishableError = false)
+        mockPostReceiptError(errorHandlingBehavior = PostReceiptErrorHandlingBehavior.SHOULD_NOT_CONSUME)
 
         postReceiptHelper.postTransactionAndConsumeIfNeeded(
             purchase = mockStoreTransaction,
@@ -346,7 +351,7 @@ class PostReceiptHelperTest {
     @Test
     fun `postTransactionAndConsumeIfNeeded calls consume transaction with consuming flag true if not observer mode on error if finishable error`() {
         every { appConfig.finishTransactions } returns true
-        mockPostReceiptError(finishableError = true)
+        mockPostReceiptError(errorHandlingBehavior = PostReceiptErrorHandlingBehavior.SHOULD_BE_CONSUMED)
 
         postReceiptHelper.postTransactionAndConsumeIfNeeded(
             purchase = mockStoreTransaction,
@@ -365,7 +370,7 @@ class PostReceiptHelperTest {
     @Test
     fun `postTransactionAndConsumeIfNeeded calls consume transaction with consuming flag false if observer mode on error if finishable error`() {
         every { appConfig.finishTransactions } returns false
-        mockPostReceiptError(finishableError = true)
+        mockPostReceiptError(errorHandlingBehavior = PostReceiptErrorHandlingBehavior.SHOULD_BE_CONSUMED)
 
         postReceiptHelper.postTransactionAndConsumeIfNeeded(
             purchase = mockStoreTransaction,
@@ -383,7 +388,7 @@ class PostReceiptHelperTest {
 
     @Test
     fun `postTransactionAndConsumeIfNeeded does not call consume transaction on error if not finishable error`() {
-        mockPostReceiptError(finishableError = false)
+        mockPostReceiptError(errorHandlingBehavior = PostReceiptErrorHandlingBehavior.SHOULD_NOT_CONSUME)
 
         postReceiptHelper.postTransactionAndConsumeIfNeeded(
             purchase = mockStoreTransaction,
@@ -401,7 +406,7 @@ class PostReceiptHelperTest {
 
     @Test
     fun `postTransactionAndConsumeIfNeeded calls error block with expected parameters on error`() {
-        mockPostReceiptError(finishableError = false)
+        mockPostReceiptError(errorHandlingBehavior = PostReceiptErrorHandlingBehavior.SHOULD_NOT_CONSUME)
 
         var errorTransaction: StoreTransaction? = null
         var purchasesError: PurchasesError? = null
@@ -420,6 +425,170 @@ class PostReceiptHelperTest {
         assertThat(errorTransaction).isEqualTo(mockStoreTransaction)
         assertThat(purchasesError?.code).isEqualTo(PurchasesErrorCode.UnexpectedBackendResponseError)
     }
+
+    // region offline entitlements
+
+    @Test
+    fun `postTransactionAndConsumeIfNeeded resets offline consumer info cache on success`() {
+        mockPostReceiptSuccess()
+
+        postReceiptHelper.postTransactionAndConsumeIfNeeded(
+            purchase = mockStoreTransaction,
+            storeProduct = mockStoreProduct,
+            isRestore = true,
+            appUserID = appUserID,
+            onSuccess = { _, _ -> },
+            onError = { _, _ -> fail("Should succeed") }
+        )
+
+        verify(exactly = 1) {
+            offlineEntitlementsManager.resetOfflineCustomerInfoCache()
+        }
+    }
+
+    @Test
+    fun `postTransactionAndConsumeIfNeeded does not calculate offline entitlements customer info if not server error`() {
+        mockPostReceiptError(errorHandlingBehavior = PostReceiptErrorHandlingBehavior.SHOULD_NOT_CONSUME)
+
+        postReceiptHelper.postTransactionAndConsumeIfNeeded(
+            purchase = mockStoreTransaction,
+            storeProduct = mockStoreProduct,
+            isRestore = true,
+            appUserID = appUserID,
+            onSuccess = { _, _ -> fail("Expected error") },
+            onError = { _, _ -> }
+        )
+
+        verify(exactly = 1) {
+            offlineEntitlementsManager.shouldCalculateOfflineCustomerInfoInPostReceipt(isServerError = false)
+        }
+        verify(exactly = 0) { offlineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(appUserID, any(), any()) }
+    }
+
+    @Test
+    fun `postTransactionAndConsumeIfNeeded calculates offline entitlements customer info if server error`() {
+        mockPostReceiptError(errorHandlingBehavior = PostReceiptErrorHandlingBehavior.SHOULD_USE_OFFLINE_ENTITLEMENTS_AND_NOT_CONSUME)
+
+        postReceiptHelper.postTransactionAndConsumeIfNeeded(
+            purchase = mockStoreTransaction,
+            storeProduct = mockStoreProduct,
+            isRestore = true,
+            appUserID = appUserID,
+            onSuccess = { _, _ -> fail("Expected error") },
+            onError = { _, _ -> }
+        )
+
+        verify(exactly = 1) {
+            offlineEntitlementsManager.shouldCalculateOfflineCustomerInfoInPostReceipt(isServerError = true)
+        }
+        verify(exactly = 1) { offlineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(appUserID, any(), any()) }
+    }
+
+    @Test
+    fun `postTransactionAndConsumeIfNeeded returns offline entitlements customer info if server error and success calculating customer info`() {
+        mockPostReceiptError(errorHandlingBehavior = PostReceiptErrorHandlingBehavior.SHOULD_USE_OFFLINE_ENTITLEMENTS_AND_NOT_CONSUME)
+
+        every {
+            offlineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(appUserID, captureLambda(), any())
+        } answers {
+            lambda<(CustomerInfo) -> Unit>().captured(defaultCustomerInfo)
+        }
+        every {
+            customerInfoHelper.sendUpdatedCustomerInfoToDelegateIfChanged(defaultCustomerInfo)
+        } just Runs
+
+        var receivedCustomerInfo: CustomerInfo? = null
+        postReceiptHelper.postTransactionAndConsumeIfNeeded(
+            purchase = mockStoreTransaction,
+            storeProduct = mockStoreProduct,
+            isRestore = true,
+            appUserID = appUserID,
+            onSuccess = { _, customerInfo -> receivedCustomerInfo = customerInfo },
+            onError = { _, _ -> fail("Expected success") }
+        )
+
+        assertThat(receivedCustomerInfo).isEqualTo(defaultCustomerInfo)
+        verify(exactly = 1) { customerInfoHelper.sendUpdatedCustomerInfoToDelegateIfChanged(defaultCustomerInfo) }
+    }
+
+    @Test
+    fun `postTransactionAndConsumeIfNeeded does not cache offline entitlements`() {
+        mockPostReceiptError(errorHandlingBehavior = PostReceiptErrorHandlingBehavior.SHOULD_USE_OFFLINE_ENTITLEMENTS_AND_NOT_CONSUME)
+
+        every {
+            offlineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(appUserID, captureLambda(), any())
+        } answers {
+            lambda<(CustomerInfo) -> Unit>().captured(defaultCustomerInfo)
+        }
+        every {
+            customerInfoHelper.sendUpdatedCustomerInfoToDelegateIfChanged(defaultCustomerInfo)
+        } just Runs
+
+        postReceiptHelper.postTransactionAndConsumeIfNeeded(
+            purchase = mockStoreTransaction,
+            storeProduct = mockStoreProduct,
+            isRestore = true,
+            appUserID = appUserID,
+            onSuccess = { _, _ ->  },
+            onError = { _, _ -> fail("Expected success") }
+        )
+
+        verify(exactly = 0) { customerInfoHelper.cacheCustomerInfo(any()) }
+    }
+
+    @Test
+    fun `postTransactionAndConsumeIfNeeded does not consume if using offline entitlements`() {
+        mockPostReceiptError(errorHandlingBehavior = PostReceiptErrorHandlingBehavior.SHOULD_USE_OFFLINE_ENTITLEMENTS_AND_NOT_CONSUME)
+
+        every {
+            offlineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(appUserID, captureLambda(), any())
+        } answers {
+            lambda<(CustomerInfo) -> Unit>().captured(defaultCustomerInfo)
+        }
+        every {
+            customerInfoHelper.sendUpdatedCustomerInfoToDelegateIfChanged(defaultCustomerInfo)
+        } just Runs
+
+        postReceiptHelper.postTransactionAndConsumeIfNeeded(
+            purchase = mockStoreTransaction,
+            storeProduct = mockStoreProduct,
+            isRestore = true,
+            appUserID = appUserID,
+            onSuccess = { _, _ ->  },
+            onError = { _, _ -> fail("Expected success") }
+        )
+
+        verify(exactly = 0) { billing.consumeAndSave(any(), any()) }
+        verify(exactly = 0) { deviceCache.addSuccessfullyPostedToken(any()) }
+    }
+
+    @Test
+    fun `postTransactionAndConsumeIfNeeded does not mark attributes as synced if using offline entitlements`() {
+        mockUnsyncedSubscriberAttributes(unsyncedSubscriberAttributes)
+        mockPostReceiptError(errorHandlingBehavior = PostReceiptErrorHandlingBehavior.SHOULD_USE_OFFLINE_ENTITLEMENTS_AND_NOT_CONSUME)
+
+        every {
+            offlineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(appUserID, captureLambda(), any())
+        } answers {
+            lambda<(CustomerInfo) -> Unit>().captured(defaultCustomerInfo)
+        }
+        every {
+            customerInfoHelper.sendUpdatedCustomerInfoToDelegateIfChanged(defaultCustomerInfo)
+        } just Runs
+
+        postReceiptHelper.postTransactionAndConsumeIfNeeded(
+            purchase = mockStoreTransaction,
+            storeProduct = mockStoreProduct,
+            isRestore = true,
+            appUserID = appUserID,
+            onSuccess = { _, _ ->  },
+            onError = { _, _ -> fail("Expected success") }
+        )
+
+        verify(exactly = 0) { subscriberAttributesManager.markAsSynced(any(), any(), any()) }
+    }
+
+    // endregion
 
     @Test
     fun `postTransactionAndConsumeIfNeeded posts product durations`() {
@@ -765,7 +934,7 @@ class PostReceiptHelperTest {
     fun `postTokenWithoutConsuming marks unsynced attributes as synced on error if finishable error`() {
         mockUnsyncedSubscriberAttributes(unsyncedSubscriberAttributes)
         mockPostReceiptError(
-            finishableError = true,
+            errorHandlingBehavior = PostReceiptErrorHandlingBehavior.SHOULD_BE_CONSUMED,
             postType = PostType.TOKEN_WITHOUT_CONSUMING
         )
 
@@ -793,7 +962,7 @@ class PostReceiptHelperTest {
     fun `postTokenWithoutConsuming does not mark unsynced attributes as synced on error if not finishable error`() {
         mockUnsyncedSubscriberAttributes(unsyncedSubscriberAttributes)
         mockPostReceiptError(
-            finishableError = false,
+            errorHandlingBehavior = PostReceiptErrorHandlingBehavior.SHOULD_NOT_CONSUME,
             postType = PostType.TOKEN_WITHOUT_CONSUMING
         )
 
@@ -820,7 +989,7 @@ class PostReceiptHelperTest {
     @Test
     fun `postTokenWithoutConsuming adds sent token if finishable error`() {
         mockPostReceiptError(
-            finishableError = true,
+            errorHandlingBehavior = PostReceiptErrorHandlingBehavior.SHOULD_BE_CONSUMED,
             postType = PostType.TOKEN_WITHOUT_CONSUMING
         )
 
@@ -843,7 +1012,7 @@ class PostReceiptHelperTest {
     @Test
     fun `postTokenWithoutConsuming does not add sent token on error if not finishable error`() {
         mockPostReceiptError(
-            finishableError = false,
+            errorHandlingBehavior = PostReceiptErrorHandlingBehavior.SHOULD_NOT_CONSUME,
             postType = PostType.TOKEN_WITHOUT_CONSUMING
         )
 
@@ -866,7 +1035,7 @@ class PostReceiptHelperTest {
     @Test
     fun `postTokenWithoutConsuming calls error block with expected parameters on error`() {
         mockPostReceiptError(
-            finishableError = false,
+            errorHandlingBehavior = PostReceiptErrorHandlingBehavior.SHOULD_NOT_CONSUME,
             postType = PostType.TOKEN_WITHOUT_CONSUMING
         )
 
@@ -906,9 +1075,9 @@ class PostReceiptHelperTest {
     }
 
     @Test
-    fun `postTokenWithoutConsuming does not consume on error `() {
+    fun `postTokenWithoutConsuming does not consume on non consumable error `() {
         mockPostReceiptError(
-            finishableError = false,
+            errorHandlingBehavior = PostReceiptErrorHandlingBehavior.SHOULD_NOT_CONSUME,
             postType = PostType.TOKEN_WITHOUT_CONSUMING
         )
 
@@ -927,6 +1096,202 @@ class PostReceiptHelperTest {
             billing.consumeAndSave(any(), any())
         }
     }
+
+    // region offline entitlements
+
+    @Test
+    fun `postTokenWithoutConsuming resets offline consumer info cache on success`() {
+        mockPostReceiptSuccess(postType = PostType.TOKEN_WITHOUT_CONSUMING)
+
+        postReceiptHelper.postTokenWithoutConsuming(
+            purchaseToken = postToken,
+            storeUserID = storeUserId,
+            receiptInfo = testReceiptInfo,
+            isRestore = true,
+            appUserID = appUserID,
+            marketplace = marketplace,
+            onSuccess = { },
+            onError = { fail("Should succeed") }
+        )
+
+        verify(exactly = 1) {
+            offlineEntitlementsManager.resetOfflineCustomerInfoCache()
+        }
+    }
+
+    @Test
+    fun `postTokenWithoutConsuming does not calculate offline entitlements customer info if not server error`() {
+        mockPostReceiptError(
+            errorHandlingBehavior = PostReceiptErrorHandlingBehavior.SHOULD_BE_CONSUMED,
+            postType = PostType.TOKEN_WITHOUT_CONSUMING
+        )
+
+        postReceiptHelper.postTokenWithoutConsuming(
+            purchaseToken = postToken,
+            storeUserID = storeUserId,
+            receiptInfo = testReceiptInfo,
+            isRestore = true,
+            appUserID = appUserID,
+            marketplace = marketplace,
+            onSuccess = { fail("Expected error") },
+            onError = { }
+        )
+
+        verify(exactly = 1) {
+            offlineEntitlementsManager.shouldCalculateOfflineCustomerInfoInPostReceipt(isServerError = false)
+        }
+        verify(exactly = 0) { offlineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(appUserID, any(), any()) }
+    }
+
+    @Test
+    fun `postTokenWithoutConsuming calculates offline entitlements customer info if server error`() {
+        mockPostReceiptError(
+            errorHandlingBehavior = PostReceiptErrorHandlingBehavior.SHOULD_USE_OFFLINE_ENTITLEMENTS_AND_NOT_CONSUME,
+            postType = PostType.TOKEN_WITHOUT_CONSUMING
+        )
+
+        postReceiptHelper.postTokenWithoutConsuming(
+            purchaseToken = postToken,
+            storeUserID = storeUserId,
+            receiptInfo = testReceiptInfo,
+            isRestore = true,
+            appUserID = appUserID,
+            marketplace = marketplace,
+            onSuccess = { fail("Expected error") },
+            onError = { }
+        )
+
+        verify(exactly = 1) {
+            offlineEntitlementsManager.shouldCalculateOfflineCustomerInfoInPostReceipt(isServerError = true)
+        }
+        verify(exactly = 1) { offlineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(appUserID, any(), any()) }
+    }
+
+    @Test
+    fun `postTokenWithoutConsuming returns offline entitlements customer info if server error and success calculating customer info`() {
+        mockPostReceiptError(
+            errorHandlingBehavior = PostReceiptErrorHandlingBehavior.SHOULD_USE_OFFLINE_ENTITLEMENTS_AND_NOT_CONSUME,
+            postType = PostType.TOKEN_WITHOUT_CONSUMING
+        )
+
+        every {
+            offlineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(appUserID, captureLambda(), any())
+        } answers {
+            lambda<(CustomerInfo) -> Unit>().captured(defaultCustomerInfo)
+        }
+        every {
+            customerInfoHelper.sendUpdatedCustomerInfoToDelegateIfChanged(defaultCustomerInfo)
+        } just Runs
+
+        var successCallCount = 0
+        postReceiptHelper.postTokenWithoutConsuming(
+            purchaseToken = postToken,
+            storeUserID = storeUserId,
+            receiptInfo = testReceiptInfo,
+            isRestore = true,
+            appUserID = appUserID,
+            marketplace = marketplace,
+            onSuccess = { successCallCount++ },
+            onError = { fail("Should succeed") }
+        )
+
+        assertThat(successCallCount).isEqualTo(1)
+        verify(exactly = 1) { customerInfoHelper.sendUpdatedCustomerInfoToDelegateIfChanged(defaultCustomerInfo) }
+    }
+
+    @Test
+    fun `postTokenWithoutConsuming does not cache offline entitlements`() {
+        mockPostReceiptError(
+            errorHandlingBehavior = PostReceiptErrorHandlingBehavior.SHOULD_USE_OFFLINE_ENTITLEMENTS_AND_NOT_CONSUME,
+            postType = PostType.TOKEN_WITHOUT_CONSUMING
+        )
+
+        every {
+            offlineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(appUserID, captureLambda(), any())
+        } answers {
+            lambda<(CustomerInfo) -> Unit>().captured(defaultCustomerInfo)
+        }
+        every {
+            customerInfoHelper.sendUpdatedCustomerInfoToDelegateIfChanged(defaultCustomerInfo)
+        } just Runs
+
+        postReceiptHelper.postTokenWithoutConsuming(
+            purchaseToken = postToken,
+            storeUserID = storeUserId,
+            receiptInfo = testReceiptInfo,
+            isRestore = true,
+            appUserID = appUserID,
+            marketplace = marketplace,
+            onSuccess = { },
+            onError = { fail("Should succeed") }
+        )
+
+        verify(exactly = 0) { customerInfoHelper.cacheCustomerInfo(any()) }
+    }
+
+    @Test
+    fun `postTokenWithoutConsuming does not mark token as consumed if using offline entitlements`() {
+        mockPostReceiptError(
+            errorHandlingBehavior = PostReceiptErrorHandlingBehavior.SHOULD_USE_OFFLINE_ENTITLEMENTS_AND_NOT_CONSUME,
+            postType = PostType.TOKEN_WITHOUT_CONSUMING
+        )
+
+        every {
+            offlineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(appUserID, captureLambda(), any())
+        } answers {
+            lambda<(CustomerInfo) -> Unit>().captured(defaultCustomerInfo)
+        }
+        every {
+            customerInfoHelper.sendUpdatedCustomerInfoToDelegateIfChanged(defaultCustomerInfo)
+        } just Runs
+
+        postReceiptHelper.postTokenWithoutConsuming(
+            purchaseToken = postToken,
+            storeUserID = storeUserId,
+            receiptInfo = testReceiptInfo,
+            isRestore = true,
+            appUserID = appUserID,
+            marketplace = marketplace,
+            onSuccess = { },
+            onError = { fail("Should succeed") }
+        )
+
+        verify(exactly = 0) { billing.consumeAndSave(any(), any()) }
+        verify(exactly = 0) { deviceCache.addSuccessfullyPostedToken(any()) }
+    }
+
+    @Test
+    fun `postTokenWithoutConsuming does not mark attributes as synced if using offline entitlements`() {
+        mockUnsyncedSubscriberAttributes(unsyncedSubscriberAttributes)
+        mockPostReceiptError(
+            errorHandlingBehavior = PostReceiptErrorHandlingBehavior.SHOULD_USE_OFFLINE_ENTITLEMENTS_AND_NOT_CONSUME,
+            postType = PostType.TOKEN_WITHOUT_CONSUMING
+        )
+
+        every {
+            offlineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(appUserID, captureLambda(), any())
+        } answers {
+            lambda<(CustomerInfo) -> Unit>().captured(defaultCustomerInfo)
+        }
+        every {
+            customerInfoHelper.sendUpdatedCustomerInfoToDelegateIfChanged(defaultCustomerInfo)
+        } just Runs
+
+        postReceiptHelper.postTokenWithoutConsuming(
+            purchaseToken = postToken,
+            storeUserID = storeUserId,
+            receiptInfo = testReceiptInfo,
+            isRestore = true,
+            appUserID = appUserID,
+            marketplace = marketplace,
+            onSuccess = { },
+            onError = { fail("Should succeed") }
+        )
+
+        verify(exactly = 0) { subscriberAttributesManager.markAsSynced(any(), any(), any()) }
+    }
+
+    // endregion
 
     // endregion
 
@@ -967,6 +1332,7 @@ class PostReceiptHelperTest {
             lambda<PostReceiptDataSuccessCallback>().captured.invoke(customerInfo, jsonBody)
         }
 
+        every { offlineEntitlementsManager.resetOfflineCustomerInfoCache() } just Runs
         every { subscriberAttributesManager.markAsSynced(appUserID, any(), any()) } just Runs
         every { customerInfoHelper.cacheCustomerInfo(any()) } just Runs
         every { customerInfoHelper.sendUpdatedCustomerInfoToDelegateIfChanged(any()) } just Runs
@@ -978,7 +1344,7 @@ class PostReceiptHelperTest {
     }
 
     private fun mockPostReceiptError(
-        finishableError: Boolean,
+        errorHandlingBehavior: PostReceiptErrorHandlingBehavior,
         postType: PostType = PostType.TRANSACTION_AND_CONSUME
     ) {
         every {
@@ -996,11 +1362,24 @@ class PostReceiptHelperTest {
             )
         } answers {
             val callback = lambda<PostReceiptDataErrorCallback>().captured
-            if (finishableError) callback.invokeWithFinishableError()
-            else callback.invokeWithNotFinishableError()
+            when (errorHandlingBehavior) {
+                PostReceiptErrorHandlingBehavior.SHOULD_BE_CONSUMED -> callback.invokeWithFinishableError()
+                PostReceiptErrorHandlingBehavior.SHOULD_NOT_CONSUME -> callback.invokeWithNotFinishableError()
+                PostReceiptErrorHandlingBehavior.SHOULD_USE_OFFLINE_ENTITLEMENTS_AND_NOT_CONSUME -> callback.invokeWithServerError()
+            }
         }
 
-        if (finishableError) {
+        every {
+            offlineEntitlementsManager.shouldCalculateOfflineCustomerInfoInPostReceipt(any())
+        } answers { firstArg() }
+        every {
+            offlineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(appUserID, any(), captureLambda())
+        } answers {
+            lambda<(PurchasesError) -> Unit>().captured.invoke(
+                PurchasesError(PurchasesErrorCode.UnknownError)
+            )
+        }
+        if (errorHandlingBehavior == PostReceiptErrorHandlingBehavior.SHOULD_BE_CONSUMED) {
             every { subscriberAttributesManager.markAsSynced(appUserID, any(), any()) } just Runs
             if (postType == PostType.TRANSACTION_AND_CONSUME) {
                 every { billing.consumeAndSave(any(), mockStoreTransaction) } just Runs
@@ -1020,8 +1399,7 @@ class PostReceiptHelperTest {
     private fun PostReceiptDataErrorCallback.invokeWithFinishableError() {
         invoke(
             PurchasesError(PurchasesErrorCode.InvalidCredentialsError),
-            true,
-            false,
+            PostReceiptErrorHandlingBehavior.SHOULD_BE_CONSUMED,
             JSONObject(Responses.invalidCredentialsErrorResponse)
         )
     }
@@ -1029,8 +1407,15 @@ class PostReceiptHelperTest {
     private fun PostReceiptDataErrorCallback.invokeWithNotFinishableError() {
         invoke(
             PurchasesError(PurchasesErrorCode.UnexpectedBackendResponseError),
-            false,
-            true,
+            PostReceiptErrorHandlingBehavior.SHOULD_NOT_CONSUME,
+            JSONObject(Responses.internalServerErrorResponse)
+        )
+    }
+
+    private fun PostReceiptDataErrorCallback.invokeWithServerError() {
+        invoke(
+            PurchasesError(PurchasesErrorCode.UnexpectedBackendResponseError),
+            PostReceiptErrorHandlingBehavior.SHOULD_USE_OFFLINE_ENTITLEMENTS_AND_NOT_CONSUME,
             JSONObject(Responses.internalServerErrorResponse)
         )
     }

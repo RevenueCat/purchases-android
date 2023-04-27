@@ -10,6 +10,8 @@ import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BackendHelper
 import com.revenuecat.purchases.common.CustomerInfoFactory
 import com.revenuecat.purchases.common.HTTPClient
+import com.revenuecat.purchases.common.PostReceiptDataErrorCallback
+import com.revenuecat.purchases.common.PostReceiptErrorHandlingBehavior
 import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.SubscriberAttributeError
 import com.revenuecat.purchases.common.networking.Endpoint
@@ -59,7 +61,7 @@ class SubscriberAttributesPosterTests {
 
     private var receivedError: PurchasesError? = null
     private var receivedSyncedSuccessfully: Boolean? = null
-    private var receivedIsServerError: Boolean? = null
+    private var receivedPostReceiptErrorHandlingBehavior: PostReceiptErrorHandlingBehavior? = null
     private var receivedAttributeErrors: List<SubscriberAttributeError>? = null
     private var receivedCustomerInfo: CustomerInfo? = null
     private var receivedOnSuccess = false
@@ -71,11 +73,10 @@ class SubscriberAttributesPosterTests {
             receivedAttributeErrors = attributeErrors
         }
 
-    private val expectedOnErrorPostReceipt: (PurchasesError, Boolean, Boolean, JSONObject?) -> Unit =
-        { error, syncedSuccessfully, isServerError, body ->
+    private val expectedOnErrorPostReceipt: PostReceiptDataErrorCallback =
+        { error, errorHandlingBehavior, body ->
             receivedError = error
-            receivedSyncedSuccessfully = syncedSuccessfully
-            receivedIsServerError = isServerError
+            receivedPostReceiptErrorHandlingBehavior = errorHandlingBehavior
             receivedAttributeErrors = body.getAttributeErrors()
         }
 
@@ -95,8 +96,8 @@ class SubscriberAttributesPosterTests {
             fail("Shouldn't be error.")
         }
 
-    private val unexpectedOnErrorPostReceipt: (PurchasesError, Boolean, Boolean, JSONObject?) -> Unit =
-        { _, _, _, _ ->
+    private val unexpectedOnErrorPostReceipt: PostReceiptDataErrorCallback =
+        { _, _, _ ->
             fail("Shouldn't be success.")
         }
 
@@ -115,7 +116,7 @@ class SubscriberAttributesPosterTests {
         mockkObject(CustomerInfoFactory)
         receivedError = null
         receivedSyncedSuccessfully = null
-        receivedIsServerError = null
+        receivedPostReceiptErrorHandlingBehavior = null
         receivedAttributeErrors = null
         receivedCustomerInfo = null
         receivedOnSuccess = false

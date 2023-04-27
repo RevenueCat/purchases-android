@@ -2,23 +2,25 @@ package com.revenuecat.purchases
 
 import android.os.Handler
 import android.os.Looper
-import android.util.Log
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.log
+import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import com.revenuecat.purchases.strings.ConfigureStrings
 import com.revenuecat.purchases.strings.CustomerInfoStrings
 
+@Suppress("TooManyFunctions")
 internal class CustomerInfoHelper(
     private val deviceCache: DeviceCache,
     private val backend: Backend,
     private val identityManager: IdentityManager,
+    private val offlineEntitlementsManager: OfflineEntitlementsManager,
     private val handler: Handler = Handler(Looper.getMainLooper())
 ) {
 
@@ -85,7 +87,7 @@ internal class CustomerInfoHelper(
     private fun afterSetListener(listener: UpdatedCustomerInfoListener?) {
         if (listener != null) {
             log(LogIntent.DEBUG, ConfigureStrings.LISTENER_SET)
-            deviceCache.getCachedCustomerInfo(identityManager.currentAppUserID)?.let {
+            getCachedCustomerInfo(identityManager.currentAppUserID)?.let {
                 sendUpdatedCustomerInfoToDelegateIfChanged(it)
             }
         }
@@ -96,7 +98,7 @@ internal class CustomerInfoHelper(
         callback: ReceiveCustomerInfoCallback? = null
     ) {
         if (callback == null) return
-        val cachedCustomerInfo = deviceCache.getCachedCustomerInfo(appUserID)
+        val cachedCustomerInfo = getCachedCustomerInfo(appUserID)
         if (cachedCustomerInfo != null) {
             log(LogIntent.DEBUG, CustomerInfoStrings.VENDING_CACHE)
             dispatch { callback.onReceived(cachedCustomerInfo) }
@@ -121,14 +123,31 @@ internal class CustomerInfoHelper(
             appInBackground,
             { info ->
                 log(LogIntent.RC_SUCCESS, CustomerInfoStrings.CUSTOMERINFO_UPDATED_FROM_NETWORK)
+                offlineEntitlementsManager.resetOfflineCustomerInfoCache()
                 cacheCustomerInfo(info)
                 sendUpdatedCustomerInfoToDelegateIfChanged(info)
                 dispatch { callback?.onReceived(info) }
             },
-            { error, _ ->
-                Log.e("Purchases", "Error fetching customer data: $error")
+            { backendError, isServerError ->
+                errorLog(CustomerInfoStrings.ERROR_FETCHING_CUSTOMER_INFO.format(backendError))
                 deviceCache.clearCustomerInfoCacheTimestamp(appUserID)
-                dispatch { callback?.onError(error) }
+                if (offlineEntitlementsManager.shouldCalculateOfflineCustomerInfoInGetCustomerInfoRequest(
+                        isServerError,
+                        appUserID
+                    )) {
+                    offlineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(
+                        appUserID,
+                        onSuccess = { offlineComputedCustomerInfo ->
+                            sendUpdatedCustomerInfoToDelegateIfChanged(offlineComputedCustomerInfo)
+                            dispatch { callback?.onReceived(offlineComputedCustomerInfo) }
+                        },
+                        onError = {
+                            dispatch { callback?.onError(backendError) }
+                        }
+                    )
+                } else {
+                    dispatch { callback?.onError(backendError) }
+                }
             })
     }
 
@@ -137,7 +156,7 @@ internal class CustomerInfoHelper(
         appInBackground: Boolean,
         callback: ReceiveCustomerInfoCallback? = null
     ) {
-        val cachedCustomerInfo = deviceCache.getCachedCustomerInfo(appUserID)
+        val cachedCustomerInfo = getCachedCustomerInfo(appUserID)
         if (cachedCustomerInfo != null) {
             log(LogIntent.DEBUG, CustomerInfoStrings.VENDING_CACHE)
             dispatch { callback?.onReceived(cachedCustomerInfo) }
@@ -158,6 +177,11 @@ internal class CustomerInfoHelper(
         } else {
             getCustomerInfoCachedOrFetched(appUserID, appInBackground, callback)
         }
+    }
+
+    private fun getCachedCustomerInfo(appUserID: String): CustomerInfo? {
+        return offlineEntitlementsManager.offlineCustomerInfo
+            ?: deviceCache.getCachedCustomerInfo(appUserID)
     }
 
     private fun updateCachedCustomerInfoIfStale(
