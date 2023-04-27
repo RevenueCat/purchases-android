@@ -4,11 +4,14 @@ import android.net.Uri
 import androidx.lifecycle.MediatorLiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.EntitlementInfo
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.restorePurchasesWith
+import com.revenuecat.purchases.utils.Result
+import kotlinx.coroutines.launch
 
 class OverviewViewModel(private val interactionHandler: OverviewInteractionHandler) : ViewModel() {
 
@@ -80,6 +83,15 @@ class OverviewViewModel(private val interactionHandler: OverviewInteractionHandl
         }
     }
 
+    fun retrieveCustomerInfo() {
+        viewModelScope.launch {
+            when (val result = Purchases.sharedInstance.getCustomerInfo()) {
+                is Result.Success -> interactionHandler.customerInfo(result.value)
+                is Result.Error -> interactionHandler.customerInfoError(result.value)
+            }
+        }
+    }
+
     private fun formatEntitlements(entitlementInfos: Collection<EntitlementInfo>): String {
         return entitlementInfos.joinToString(separator = "\n") { it.toBriefString() }
     }
@@ -91,4 +103,7 @@ interface OverviewInteractionHandler {
     fun toggleCard()
     fun copyToClipboard(text: String)
     fun launchURL(url: Uri)
+
+    fun customerInfo(customerInfo: CustomerInfo)
+    fun customerInfoError(error: PurchasesError)
 }

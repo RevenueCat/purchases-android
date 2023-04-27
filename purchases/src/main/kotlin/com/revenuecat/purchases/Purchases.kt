@@ -64,10 +64,13 @@ import com.revenuecat.purchases.strings.OfferingStrings
 import com.revenuecat.purchases.strings.PurchaseStrings
 import com.revenuecat.purchases.strings.RestoreStrings
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
+import com.revenuecat.purchases.utils.Result
 import org.json.JSONException
 import org.json.JSONObject
 import java.net.URL
 import java.util.Collections.emptyMap
+import kotlin.coroutines.resume
+import kotlin.coroutines.suspendCoroutine
 
 typealias SuccessfulPurchaseCallback = (StoreTransaction, CustomerInfo) -> Unit
 typealias ErrorPurchaseCallback = (StoreTransaction, PurchasesError) -> Unit
@@ -721,6 +724,29 @@ class Purchases internal constructor(
         callback: ReceiveCustomerInfoCallback
     ) {
         getCustomerInfo(CacheFetchPolicy.default(), callback)
+    }
+
+    /**
+     * Get latest available purchaser info.
+     * Coroutine friendly version of [getCustomerInfo].
+     *
+     * @return [Result] type containing either the [CustomerInfo] or the [PurchasesError]
+     */
+    suspend fun getCustomerInfo(): Result<CustomerInfo, PurchasesError> {
+        // TODO Ideally suspendCancellableCoroutine should be used but didn't want to add
+        //  kotlinx-coroutines-core without discussing your policy around adding dependencies first
+        return suspendCoroutine { continuation ->
+            val receiveCustomerInfoCallback = object : ReceiveCustomerInfoCallback {
+                override fun onReceived(customerInfo: CustomerInfo) {
+                    continuation.resume(Result.Success(customerInfo))
+                }
+
+                override fun onError(error: PurchasesError) {
+                    continuation.resume(Result.Error(error))
+                }
+            }
+            getCustomerInfo(receiveCustomerInfoCallback)
+        }
     }
 
     /**
