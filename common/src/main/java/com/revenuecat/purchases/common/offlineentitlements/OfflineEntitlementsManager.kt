@@ -71,6 +71,7 @@ class OfflineEntitlementsManager(
                 synchronized(this@OfflineEntitlementsManager) {
                     debugLog(OfflineEntitlementsStrings.UPDATING_OFFLINE_CUSTOMER_INFO_CACHE)
                     _offlineCustomerInfo = customerInfo
+                    deviceCache.getCachedAppUserID()?.let { deviceCache.clearCustomerInfoCache(it) }
                     val callbacks = offlineCustomerInfoCallbackCache.remove(appUserId)
                     callbacks?.forEach { (onSuccess, _) ->
                         onSuccess(customerInfo)
