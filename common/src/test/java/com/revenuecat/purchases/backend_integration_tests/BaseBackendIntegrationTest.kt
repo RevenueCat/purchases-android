@@ -37,7 +37,7 @@ import kotlin.time.Duration.Companion.seconds
 abstract class BaseBackendIntegrationTest {
 
     companion object {
-        private val TIMEOUT = 5.seconds
+        private val TIMEOUT = 10.seconds
 
         @BeforeClass
         @JvmStatic

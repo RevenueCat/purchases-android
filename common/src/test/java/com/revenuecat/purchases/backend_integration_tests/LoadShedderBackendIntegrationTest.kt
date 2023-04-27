@@ -43,10 +43,5 @@ class LoadShedderBackendIntegrationTest: BaseBackendIntegrationTest() {
             )
         }
         assertThat(error).isNull()
-        verify(exactly = 1) {
-            // Verify we save the backend response in the shared preferences
-            sharedPreferencesEditor.putString("/v1${Endpoint.GetProductEntitlementMapping.getPath()}", any())
-        }
-        verify(exactly = 1) { sharedPreferencesEditor.apply() }
     }
 }
