@@ -14,6 +14,7 @@ import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
+import com.revenuecat.purchases.common.offlineentitlements.ProductEntitlementMapping
 import com.revenuecat.purchases.common.offlineentitlements.createProductEntitlementMapping
 import com.revenuecat.purchases.models.GoogleProrationMode
 import com.revenuecat.purchases.models.GoogleStoreProduct
@@ -1783,7 +1784,7 @@ class BackendTest {
             body = null,
             responseCode = 200,
             clientException = null,
-            resultBody = "{\"products\":[]}",
+            resultBody = "{\"product_entitlement_mapping\":{}}",
             delayed = true
         )
         val lock = CountDownLatch(3)
@@ -1809,7 +1810,7 @@ class BackendTest {
             body = null,
             responseCode = 200,
             clientException = null,
-            resultBody = "{\"products\":[]}",
+            resultBody = "{\"product_entitlement_mapping\":{}}",
             delayed = true
         )
 
@@ -1897,10 +1898,10 @@ class BackendTest {
 
     @Test
     fun `getProductEntitlementMapping calls success handler`() {
-        val resultBody = "{\"products\":[" +
-            "{\"id\":\"test-product-id\"," +
+        val resultBody = "{\"product_entitlement_mapping\":{" +
+            "\"test-product-id\":{\"product_identifier\":\"test-product-id\"," +
             "\"entitlements\":[\"entitlement-1\",\"entitlement-2\"]" +
-            "}]}"
+            "}}}"
         mockResponse(
             endpoint = productEntitlementMappingEndpoint,
             body = null,
@@ -1914,7 +1915,13 @@ class BackendTest {
             {
                 successCalled = true
                 val expectedMapping = createProductEntitlementMapping(
-                    mapOf("test-product-id" to listOf("entitlement-1", "entitlement-2"))
+                    mapOf(
+                        "test-product-id" to ProductEntitlementMapping.Mapping(
+                            "test-product-id",
+                            null,
+                            listOf("entitlement-1", "entitlement-2")
+                        )
+                    )
                 )
                 assertThat(it).isEqualTo(expectedMapping)
             },
@@ -1930,7 +1937,7 @@ class BackendTest {
             body = null,
             responseCode = 200,
             clientException = null,
-            resultBody = "{\"products\":[]}",
+            resultBody = "{\"product_entitlement_mapping\":{}}",
             baseURL = mockBaseURL
         )
         dispatcher.calledDelay = null
