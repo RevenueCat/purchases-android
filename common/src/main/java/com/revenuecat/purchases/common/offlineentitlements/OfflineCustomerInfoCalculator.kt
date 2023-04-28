@@ -94,7 +94,7 @@ class OfflineCustomerInfoCalculator(
                 put(ProductResponseJsonKeys.STORE, appConfig.store.name.lowercase())
                 put(ProductResponseJsonKeys.UNSUBSCRIBE_DETECTED_AT, JSONObject.NULL)
                 // TODO: in post receipt we might be able to have the subscription option id
-                put(ProductResponseJsonKeys.PRODUCT_PLAN_IDENTIFIER, product.basePlanIdentifier)
+                put(ProductResponseJsonKeys.PRODUCT_PLAN_IDENTIFIER, product.basePlanId)
                 put(
                     ProductResponseJsonKeys.EXPIRES_DATE,
                     product.expiresDate?.let { Iso8601Utils.format(it) } ?: JSONObject.NULL)
@@ -126,7 +126,7 @@ class OfflineCustomerInfoCalculator(
                 put(EntitlementsResponseJsonKeys.PRODUCT_IDENTIFIER, product.productIdentifier)
                 val purchaseDate = Date(product.storeTransaction.purchaseTime)
                 put(EntitlementsResponseJsonKeys.PURCHASE_DATE, Iso8601Utils.format(purchaseDate))
-                product.basePlanIdentifier?.let {
+                product.basePlanId?.let {
                     put(EntitlementsResponseJsonKeys.PRODUCT_PLAN_IDENTIFIER, it)
                 }
             }
