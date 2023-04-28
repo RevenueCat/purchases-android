@@ -1544,7 +1544,8 @@ class Purchases internal constructor(
 
             if (!state.purchaseCallbacksByProductId.containsKey(purchasingData.productId)) {
                 // for deferred proration mode the callback is for the old product
-                val productId = if (googleProrationMode == GoogleProrationMode.DEFERRED) oldProductId else purchasingData.productId
+                val productId =
+                    if (googleProrationMode == GoogleProrationMode.DEFERRED) oldProductId else purchasingData.productId
                 purchasingData.productId
                 val mapOfProductIdToListener = mapOf(productId to purchaseCallback)
                 state = state.copy(
