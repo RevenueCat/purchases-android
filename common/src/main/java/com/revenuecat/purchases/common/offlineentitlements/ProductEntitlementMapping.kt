@@ -37,10 +37,6 @@ data class ProductEntitlementMapping(
         val entitlements: List<String>
     )
 
-    fun getMapping(identifier: String): Mapping? {
-        return mappings.find { it.identifier == identifier }
-    }
-
     fun toJson() = JSONObject().apply {
         val mappingsObjects = mappings.mapValues { (_, value) ->
             JSONObject().apply {
