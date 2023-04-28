@@ -489,6 +489,11 @@ class PurchasesTest {
             googleProrationMode = GoogleProrationMode.DEFERRED
         )
         val oldTransaction = getMockedStoreTransaction(productId, "token", ProductType.SUBS)
+        every {
+            mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(oldTransaction, any(), false, appUserId, captureLambda(), any())
+        } answers {
+            lambda<SuccessfulPurchaseCallback>().captured.invoke(oldTransaction, mockk())
+        }
 
         purchases.purchaseWith(
             productChangeParams,
