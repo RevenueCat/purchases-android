@@ -50,6 +50,12 @@ class OfflineEntitlementsManagerTest {
         offlineEntitlementsCalculator = mockk()
 
         every {
+            deviceCache.getCachedAppUserID()
+        } returns appUserID
+        every {
+            deviceCache.clearCustomerInfoCache(appUserID)
+        } just Runs
+        every {
             backend.getProductEntitlementMapping(capture(backendSuccessSlot), capture(backendErrorSlot))
         } just Runs
         every {
@@ -214,7 +220,7 @@ class OfflineEntitlementsManagerTest {
     }
 
     @Test
-    fun `calculateAndCacheOfflineCustomerInfo caches customer info on success`() {
+    fun `calculateAndCacheOfflineCustomerInfo caches computed customer info on success`() {
         val customerInfo = mockk<CustomerInfo>()
         mockCalculateOfflineEntitlements(successCustomerInfo = customerInfo)
         offlineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(
@@ -223,6 +229,20 @@ class OfflineEntitlementsManagerTest {
             onError = { fail("Should succeed") }
         )
         assertThat(offlineEntitlementsManager.offlineCustomerInfo).isEqualTo(customerInfo)
+    }
+
+    @Test
+    fun `calculateAndCacheOfflineCustomerInfo clears customer info cache on success`() {
+        val customerInfo = mockk<CustomerInfo>()
+        mockCalculateOfflineEntitlements(successCustomerInfo = customerInfo)
+        offlineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(
+            appUserID,
+            onSuccess = {},
+            onError = { fail("Should succeed") }
+        )
+        verify(exactly = 1) {
+            deviceCache.clearCustomerInfoCache(appUserID)
+        }
     }
 
     @Test
@@ -254,7 +274,7 @@ class OfflineEntitlementsManagerTest {
     }
 
     @Test
-    fun `calculateAndCacheOfflineCustomerInfo does not cache customer info on error`() {
+    fun `calculateAndCacheOfflineCustomerInfo does not cache computed customer info on error`() {
         mockCalculateOfflineEntitlements(error = PurchasesError(PurchasesErrorCode.UnknownError))
         offlineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(
             appUserID,
@@ -262,6 +282,19 @@ class OfflineEntitlementsManagerTest {
             onError = {}
         )
         assertThat(offlineEntitlementsManager.offlineCustomerInfo).isNull()
+    }
+
+    @Test
+    fun `calculateAndCacheOfflineCustomerInfo does not clear customer info cache on error`() {
+        mockCalculateOfflineEntitlements(error = PurchasesError(PurchasesErrorCode.UnknownError))
+        offlineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(
+            appUserID,
+            onSuccess = { fail("Should error") },
+            onError = {}
+        )
+        verify(exactly = 0) {
+            deviceCache.clearCustomerInfoCache(any())
+        }
     }
 
     @Test
