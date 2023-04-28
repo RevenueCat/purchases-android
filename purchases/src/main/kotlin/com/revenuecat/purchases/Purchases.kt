@@ -1386,16 +1386,18 @@ class Purchases internal constructor(
                 }
 
                 if (purchases.isEmpty()) {
-                    // Can happen if the product change is ProrationMode.DEFERRED
-                    invalidateCustomerInfoCache()
-                    getCustomerInfoWith { customerInfo ->
-                        deprecatedProductChangeListener?.let { callback ->
-                            dispatch {
-                                callback.onCompleted(null, customerInfo)
+                    if (isDeprecatedProductChangeInProgress) {
+                        // Can happen if the product change is ProrationMode.DEFERRED
+                        invalidateCustomerInfoCache()
+                        getCustomerInfoWith { customerInfo ->
+                            deprecatedProductChangeListener?.let { callback ->
+                                dispatch {
+                                    callback.onCompleted(null, customerInfo)
+                                }
                             }
                         }
+                        return
                     }
-                    return
                 }
 
                 postPurchases(
@@ -1541,7 +1543,10 @@ class Purchases internal constructor(
             }
 
             if (!state.purchaseCallbacksByProductId.containsKey(purchasingData.productId)) {
-                val mapOfProductIdToListener = mapOf(purchasingData.productId to purchaseCallback)
+                // for deferred proration mode the callback is for the old product
+                val productId = if (googleProrationMode == GoogleProrationMode.DEFERRED) oldProductId else purchasingData.productId
+                purchasingData.productId
+                val mapOfProductIdToListener = mapOf(productId to purchaseCallback)
                 state = state.copy(
                     purchaseCallbacksByProductId = state.purchaseCallbacksByProductId + mapOfProductIdToListener
                 )

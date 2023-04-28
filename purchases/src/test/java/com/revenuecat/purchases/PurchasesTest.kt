@@ -488,19 +488,19 @@ class PurchasesTest {
             oldPurchase.productIds.first(),
             googleProrationMode = GoogleProrationMode.DEFERRED
         )
+        val oldTransaction = getMockedStoreTransaction(productId, "token", ProductType.SUBS)
+
         purchases.purchaseWith(
             productChangeParams,
             onError = { _, _ ->
                 fail("should be successful")
             },
-            onSuccess = { purchase, _ ->
+            onSuccess = { _, _ ->
                 callCount++
-                println(purchase)
-                assertThat(purchase).isNotNull()
             }
         )
 
-        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(emptyList())
+        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(listOf(oldTransaction))
         assertThat(callCount).isEqualTo(1)
     }
 

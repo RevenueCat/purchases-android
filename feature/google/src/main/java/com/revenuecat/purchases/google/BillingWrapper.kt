@@ -250,7 +250,10 @@ class BillingWrapper(
         }
 
         synchronized(this@BillingWrapper) {
-            purchaseContext[googlePurchasingData.productId] = PurchaseContext(
+            // for deferred proration mode the callback will be for the old product
+            val productId =
+                if (replaceProductInfo?.prorationMode == GoogleProrationMode.DEFERRED) replaceProductInfo.oldPurchase.productIds.first() else googlePurchasingData.productId
+            purchaseContext[productId] = PurchaseContext(
                 googlePurchasingData.productType,
                 presentedOfferingIdentifier,
                 subscriptionOptionId,
