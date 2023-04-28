@@ -21,7 +21,9 @@ import com.revenuecat.purchases.common.diagnostics.DiagnosticsFileHelper
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsSynchronizer
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.networking.ETagManager
+import com.revenuecat.purchases.common.offlineentitlements.OfflineCustomerInfoCalculator
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
+import com.revenuecat.purchases.common.offlineentitlements.PurchasedProductsFetcher
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import com.revenuecat.purchases.common.verification.SigningManager
 import com.revenuecat.purchases.identity.IdentityManager
@@ -116,14 +118,27 @@ internal class PurchasesFactory(
                 attributionFetcher
             )
 
+            val offlineCustomerInfoCalculator = OfflineCustomerInfoCalculator(
+                PurchasedProductsFetcher(cache, billing),
+                appConfig
+            )
+
+            val offlineEntitlementsManager = OfflineEntitlementsManager(
+                appConfig,
+                backend,
+                offlineCustomerInfoCalculator,
+                cache
+            )
+
             val identityManager = IdentityManager(
                 cache,
                 subscriberAttributesCache,
                 subscriberAttributesManager,
-                backend
+                backend,
+                offlineEntitlementsManager
             )
 
-            val customerInfoHelper = CustomerInfoHelper(cache, backend, identityManager)
+            val customerInfoHelper = CustomerInfoHelper(cache, backend, identityManager, offlineEntitlementsManager)
             val offeringParser = OfferingParserFactory.createOfferingParser(store)
 
             var diagnosticsSynchronizer: DiagnosticsSynchronizer? = null
@@ -137,15 +152,14 @@ internal class PurchasesFactory(
                 )
             }
 
-            val offlineEntitlementsManager = OfflineEntitlementsManager(backend, cache)
-
             val postReceiptHelper = PostReceiptHelper(
                 appConfig,
                 backend,
                 billing,
                 customerInfoHelper,
                 cache,
-                subscriberAttributesManager
+                subscriberAttributesManager,
+                offlineEntitlementsManager
             )
 
             return Purchases(

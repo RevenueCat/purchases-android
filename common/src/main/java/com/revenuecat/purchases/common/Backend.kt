@@ -37,8 +37,7 @@ typealias PostReceiptDataSuccessCallback = (CustomerInfo, body: JSONObject) -> U
 /** @suppress */
 typealias PostReceiptDataErrorCallback = (
     PurchasesError,
-    shouldConsumePurchase: Boolean,
-    isServerError: Boolean,
+    postReceiptErrorHandlingBehavior: PostReceiptErrorHandlingBehavior,
     body: JSONObject?
 ) -> Unit
 /** @suppress */
@@ -47,6 +46,12 @@ typealias IdentifyCallback = Pair<(CustomerInfo, Boolean) -> Unit, (PurchasesErr
 typealias DiagnosticsCallback = Pair<(JSONObject) -> Unit, (PurchasesError, Boolean) -> Unit>
 /** @suppress */
 typealias ProductEntitlementCallback = Pair<(ProductEntitlementMapping) -> Unit, (PurchasesError) -> Unit>
+
+enum class PostReceiptErrorHandlingBehavior {
+    SHOULD_BE_CONSUMED,
+    SHOULD_USE_OFFLINE_ENTITLEMENTS_AND_NOT_CONSUME,
+    SHOULD_NOT_CONSUME
+}
 
 class Backend(
     private val appConfig: AppConfig,
@@ -183,7 +188,8 @@ class Backend(
             "attributes" to subscriberAttributes.takeUnless { it.isEmpty() },
             "normal_duration" to receiptInfo.duration,
             "store_user_id" to storeAppUserID,
-            "pricing_phases" to receiptInfo.pricingPhases?.map { it.toMap() }
+            "pricing_phases" to receiptInfo.pricingPhases?.map { it.toMap() },
+            "proration_mode" to receiptInfo.prorationMode?.name
         ).filterNotNullValues()
 
         val extraHeaders = mapOf(
@@ -211,20 +217,19 @@ class Backend(
                             onSuccess(CustomerInfoFactory.buildCustomerInfo(result), result.body)
                         } else {
                             val purchasesError = result.toPurchasesError().also { errorLog(it) }
+                            val errorHandlingBehavior = determinePostReceiptErrorHandlingBehavior(
+                                result.responseCode, purchasesError
+                            )
                             onError(
                                 purchasesError,
-                                result.responseCode < RCHTTPStatusCodes.ERROR &&
-                                    purchasesError.code != PurchasesErrorCode.UnsupportedError,
-                                RCHTTPStatusCodes.isServerError(result.responseCode),
+                                errorHandlingBehavior,
                                 result.body
                             )
                         }
                     } catch (e: JSONException) {
-                        val isServerError = false
                         onError(
                             e.toPurchasesError().also { errorLog(it) },
-                            false,
-                            isServerError,
+                            PostReceiptErrorHandlingBehavior.SHOULD_NOT_CONSUME,
                             null
                         )
                     }
@@ -232,14 +237,12 @@ class Backend(
             }
 
             override fun onError(error: PurchasesError) {
-                val isServerError = false
                 synchronized(this@Backend) {
                     postReceiptCallbacks.remove(cacheKey)
                 }?.forEach { (_, onError) ->
                     onError(
                         error,
-                        false,
-                        isServerError,
+                        PostReceiptErrorHandlingBehavior.SHOULD_NOT_CONSUME,
                         null
                     )
                 }
@@ -458,6 +461,17 @@ class Backend(
 
     fun clearCaches() {
         httpClient.clearCaches()
+    }
+
+    private fun determinePostReceiptErrorHandlingBehavior(
+        responseCode: Int,
+        purchasesError: PurchasesError
+    ) = if (RCHTTPStatusCodes.isServerError(responseCode)) {
+        PostReceiptErrorHandlingBehavior.SHOULD_USE_OFFLINE_ENTITLEMENTS_AND_NOT_CONSUME
+    } else if (purchasesError.code == PurchasesErrorCode.UnsupportedError) {
+        PostReceiptErrorHandlingBehavior.SHOULD_NOT_CONSUME
+    } else {
+        PostReceiptErrorHandlingBehavior.SHOULD_BE_CONSUMED
     }
 
     private fun <K, S, E> MutableMap<K, MutableList<Pair<S, E>>>.addCallback(

@@ -1,57 +1,54 @@
 package com.revenuecat.purchases.common.offlineentitlements
 
+import com.revenuecat.purchases.utils.optNullableString
 import org.json.JSONArray
 import org.json.JSONObject
 
 data class ProductEntitlementMapping(
-    val mappings: List<Mapping>
+    val mappings: Map<String, Mapping>
 ) {
     companion object {
-        private const val PRODUCTS_KEY = "products"
-        private const val PRODUCT_ID_KEY = "id"
+        private const val PRODUCT_ENTITLEMENT_MAPPING_KEY = "product_entitlement_mapping"
+        private const val PRODUCT_ID_KEY = "product_identifier"
+        private const val BASE_PLAN_ID_KEY = "base_plan_id"
         private const val ENTITLEMENTS_KEY = "entitlements"
-        private const val BASE_PLAN_IDENTIFIER = "base_plan_id"
 
         fun fromJson(json: JSONObject): ProductEntitlementMapping {
-            val productsArray = json.getJSONArray(PRODUCTS_KEY)
-            val mappings = mutableListOf<Mapping>()
-            for (productIndex in 0 until productsArray.length()) {
-                val productObject = productsArray.getJSONObject(productIndex)
+            val productsObject = json.getJSONObject(PRODUCT_ENTITLEMENT_MAPPING_KEY)
+            val mappings = mutableMapOf<String, Mapping>()
+            for (mappingIdentifier in productsObject.keys()) {
+                val productObject = productsObject.getJSONObject(mappingIdentifier)
                 val productIdentifier = productObject.getString(PRODUCT_ID_KEY)
-                val basePlanIdentifier = productObject.getString(BASE_PLAN_IDENTIFIER)
+                val basePlanId = productObject.optNullableString(BASE_PLAN_ID_KEY)
                 val entitlementsArray = productObject.getJSONArray(ENTITLEMENTS_KEY)
                 val entitlements = mutableListOf<String>()
                 for (entitlementIndex in 0 until entitlementsArray.length()) {
                     entitlements.add(entitlementsArray.getString(entitlementIndex))
                 }
-                mappings.add(Mapping(productIdentifier, entitlements, basePlanIdentifier))
+                mappings[mappingIdentifier] = Mapping(productIdentifier, basePlanId, entitlements)
             }
             return ProductEntitlementMapping(mappings)
         }
     }
 
     data class Mapping(
-        val identifier: String,
-        val entitlements: List<String>,
-        val basePlanIdentifier: String?
+        val productIdentifier: String,
+        val basePlanId: String?,
+        val entitlements: List<String>
     )
-
-    fun toMap(): Map<String, List<String>> {
-        return mappings.associateBy({ it.identifier }, { it.entitlements })
-    }
 
     fun getMapping(identifier: String): Mapping? {
         return mappings.find { it.identifier == identifier }
     }
 
     fun toJson() = JSONObject().apply {
-        val mappingsArray = mappings.map {
+        val mappingsObjects = mappings.mapValues { (_, value) ->
             JSONObject().apply {
-                put(PRODUCT_ID_KEY, it.identifier)
-                put(ENTITLEMENTS_KEY, JSONArray(it.entitlements))
-                put(BASE_PLAN_IDENTIFIER, it.basePlanIdentifier)
+                put(PRODUCT_ID_KEY, value.productIdentifier)
+                value.basePlanId?.let { put(BASE_PLAN_ID_KEY, it) }
+                put(ENTITLEMENTS_KEY, JSONArray(value.entitlements))
             }
         }
-        put(PRODUCTS_KEY, JSONArray(mappingsArray))
+        put(PRODUCT_ENTITLEMENT_MAPPING_KEY, JSONObject(mappingsObjects))
     }
 }

@@ -14,7 +14,9 @@ import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
+import com.revenuecat.purchases.common.offlineentitlements.ProductEntitlementMapping
 import com.revenuecat.purchases.common.offlineentitlements.createProductEntitlementMapping
+import com.revenuecat.purchases.models.GoogleProrationMode
 import com.revenuecat.purchases.models.GoogleStoreProduct
 import com.revenuecat.purchases.models.GoogleSubscriptionOption
 import com.revenuecat.purchases.models.Period
@@ -66,7 +68,7 @@ class BackendTest {
         receivedError = null
         receivedOfferingsJSON = null
         receivedCustomerInfo = null
-        receivedShouldConsumePurchase = null
+        receivedPostReceiptErrorHandlingBehavior = null
         receivedCustomerInfoCreated = null
         receivedIsServerError = null
     }
@@ -132,7 +134,7 @@ class BackendTest {
     private var receivedCustomerInfoCreated: Boolean? = null
     private var receivedOfferingsJSON: JSONObject? = null
     private var receivedError: PurchasesError? = null
-    private var receivedShouldConsumePurchase: Boolean? = null
+    private var receivedPostReceiptErrorHandlingBehavior: PostReceiptErrorHandlingBehavior? = null
     private var receivedIsServerError: Boolean? = null
     private val noOfferingsResponse = "{'offerings': [], 'current_offering_id': null}"
 
@@ -148,11 +150,10 @@ class BackendTest {
             this@BackendTest.receivedCustomerInfo = info
         }
 
-    private val postReceiptErrorCallback: (PurchasesError, Boolean, Boolean, JSONObject?) -> Unit =
-        { error, shouldConsumePurchase, isServerError, _ ->
+    private val postReceiptErrorCallback: PostReceiptDataErrorCallback =
+        { error, errorHandlingBehavior, _ ->
             this@BackendTest.receivedError = error
-            this@BackendTest.receivedShouldConsumePurchase = shouldConsumePurchase
-            this@BackendTest.receivedIsServerError = isServerError
+            this@BackendTest.receivedPostReceiptErrorHandlingBehavior = errorHandlingBehavior
         }
 
     private val onReceiveCustomerInfoErrorHandler: (PurchasesError, Boolean) -> Unit = { error, isServerError ->
@@ -370,12 +371,13 @@ class BackendTest {
     }
 
     @Test
-    fun `postReceipt passes pricing phases as maps in body`() {
+    fun `postReceipt passes proration mode and pricing phases as maps in body`() {
         val subscriptionOption = storeProduct.subscriptionOptions!!.first()
         val receiptInfo = ReceiptInfo(
             productIDs = productIDs,
             storeProduct = storeProduct,
-            subscriptionOptionId = subscriptionOption.id
+            subscriptionOptionId = subscriptionOption.id,
+            prorationMode = GoogleProrationMode.IMMEDIATE_WITHOUT_PRORATION
         )
 
         mockPostReceiptResponseAndPost(
@@ -404,6 +406,9 @@ class BackendTest {
                 )
             )
         )
+
+        assertThat(requestBodySlot.captured.keys).contains("proration_mode")
+        assertThat(requestBodySlot.captured["proration_mode"]).isEqualTo("IMMEDIATE_WITHOUT_PRORATION")
     }
 
     @Test
@@ -1014,7 +1019,26 @@ class BackendTest {
         assertThat(receivedError!!.code)
             .`as`("Received error code is the right one")
             .isEqualTo(PurchasesErrorCode.UnsupportedError)
-        assertThat(receivedShouldConsumePurchase).`as`("Purchase shouldn't be consumed").isFalse
+        assertThat(receivedPostReceiptErrorHandlingBehavior).isEqualTo(PostReceiptErrorHandlingBehavior.SHOULD_NOT_CONSUME)
+    }
+
+    @Test
+    fun `postReceipt error callback says purchase can be consumed if 4xx error and not unsupported error`() {
+        mockPostReceiptResponseAndPost(
+            backend,
+            responseCode = RCHTTPStatusCodes.BAD_REQUEST,
+            isRestore = false,
+            clientException = null,
+            resultBody = """
+                {"code":7226,
+                "message":"Backend bad request."
+                }""".trimIndent(),
+            observerMode = false,
+            receiptInfo = ReceiptInfo(productIDs),
+            storeAppUserID = null
+        )
+
+        assertThat(receivedPostReceiptErrorHandlingBehavior).isEqualTo(PostReceiptErrorHandlingBehavior.SHOULD_BE_CONSUMED)
     }
 
     @Test
@@ -1033,7 +1057,7 @@ class BackendTest {
             storeAppUserID = null
         )
 
-        assertThat(receivedIsServerError).isEqualTo(true)
+        assertThat(receivedPostReceiptErrorHandlingBehavior).isEqualTo(PostReceiptErrorHandlingBehavior.SHOULD_USE_OFFLINE_ENTITLEMENTS_AND_NOT_CONSUME)
     }
 
     @Test
@@ -1052,7 +1076,7 @@ class BackendTest {
             storeAppUserID = null
         )
 
-        assertThat(receivedIsServerError).isEqualTo(false)
+        assertThat(receivedPostReceiptErrorHandlingBehavior).isEqualTo(PostReceiptErrorHandlingBehavior.SHOULD_NOT_CONSUME)
     }
 
     @Test
@@ -1760,7 +1784,7 @@ class BackendTest {
             body = null,
             responseCode = 200,
             clientException = null,
-            resultBody = "{\"products\":[]}",
+            resultBody = "{\"product_entitlement_mapping\":{}}",
             delayed = true
         )
         val lock = CountDownLatch(3)
@@ -1786,7 +1810,7 @@ class BackendTest {
             body = null,
             responseCode = 200,
             clientException = null,
-            resultBody = "{\"products\":[]}",
+            resultBody = "{\"product_entitlement_mapping\":{}}",
             delayed = true
         )
 
@@ -1874,11 +1898,10 @@ class BackendTest {
 
     @Test
     fun `getProductEntitlementMapping calls success handler`() {
-        val resultBody = "{\"products\":[" +
-            "{\"id\":\"test-product-id\"," +
-            "\"entitlements\":[\"entitlement-1\",\"entitlement-2\"]," +
-            "\"base_plan_id\":\"p1m\"" +
-            "}]}"
+        val resultBody = "{\"product_entitlement_mapping\":{" +
+            "\"test-product-id\":{\"product_identifier\":\"test-product-id\"," +
+            "\"entitlements\":[\"entitlement-1\",\"entitlement-2\"]" +
+            "}}}"
         mockResponse(
             endpoint = productEntitlementMappingEndpoint,
             body = null,
@@ -1892,8 +1915,13 @@ class BackendTest {
             {
                 successCalled = true
                 val expectedMapping = createProductEntitlementMapping(
-                    mappings = mapOf("test-product-id" to listOf("entitlement-1", "entitlement-2")),
-                    basePlans = mapOf("test-product-id" to "p1m")
+                    mapOf(
+                        "test-product-id" to ProductEntitlementMapping.Mapping(
+                            "test-product-id",
+                            null,
+                            listOf("entitlement-1", "entitlement-2")
+                        )
+                    )
                 )
                 assertThat(it).isEqualTo(expectedMapping)
             },
@@ -1909,7 +1937,7 @@ class BackendTest {
             body = null,
             responseCode = 200,
             clientException = null,
-            resultBody = "{\"products\":[]}",
+            resultBody = "{\"product_entitlement_mapping\":{}}",
             baseURL = mockBaseURL
         )
         dispatcher.calledDelay = null
@@ -1980,7 +2008,7 @@ class BackendTest {
         delayed: Boolean = false,
         marketplace: String? = null,
         onSuccess: (CustomerInfo, JSONObject?) -> Unit = onReceivePostReceiptSuccessHandler,
-        onError: (PurchasesError, Boolean, Boolean, JSONObject?) -> Unit = postReceiptErrorCallback
+        onError: PostReceiptDataErrorCallback = postReceiptErrorCallback
     ): CustomerInfo {
         val info = mockPostReceiptResponse(
             isRestore = isRestore,

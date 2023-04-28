@@ -13,6 +13,7 @@ object CustomerInfoStrings {
     const val VENDING_CACHE = "Vending CustomerInfo from cache."
     const val RETRIEVING_CUSTOMER_INFO = "Retrieving customer info with policy: %s"
     const val MISSING_CACHED_CUSTOMER_INFO = "Requested a cached CustomerInfo but it's not available."
+    const val ERROR_FETCHING_CUSTOMER_INFO = "Error fetching customer data: %s."
     const val COMPUTING_OFFLINE_CUSTOMER_INFO_FAILED = "Error computing offline CustomerInfo. " +
         "Will return original error. Creation error: %s"
 }

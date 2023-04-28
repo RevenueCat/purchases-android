@@ -2,47 +2,66 @@ package com.revenuecat.purchases.common.networking
 
 import android.content.Context
 import android.content.SharedPreferences
+import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.VerificationResult
+import com.revenuecat.purchases.common.DateProvider
+import com.revenuecat.purchases.common.DefaultDateProvider
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.strings.NetworkStrings
 import org.json.JSONObject
 import java.util.Date
 
-private const val SERIALIZATION_NAME_ETAG = "eTag"
-private const val SERIALIZATION_NAME_HTTPRESULT = "httpResult"
-
-data class HTTPResultWithETag(
+@VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+data class ETagData(
     val eTag: String,
+    val lastRefreshTime: Date?
+)
+
+@VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+data class HTTPResultWithETag(
+    val eTagData: ETagData,
     val httpResult: HTTPResult
 ) {
     fun serialize(): String {
         return JSONObject().apply {
-            put(SERIALIZATION_NAME_ETAG, eTag)
+            put(SERIALIZATION_NAME_ETAG, eTagData.eTag)
+            eTagData.lastRefreshTime?.let { put(SERIALIZATION_NAME_LAST_REFRESH_TIME, it.time) }
             put(SERIALIZATION_NAME_HTTPRESULT, httpResult.serialize())
         }.toString()
     }
 
     companion object {
+        private const val SERIALIZATION_NAME_ETAG = "eTag"
+        private const val SERIALIZATION_NAME_LAST_REFRESH_TIME = "lastRefreshTime"
+        private const val SERIALIZATION_NAME_HTTPRESULT = "httpResult"
+
         fun deserialize(serialized: String): HTTPResultWithETag {
             val jsonObject = JSONObject(serialized)
             val eTag = jsonObject.getString(SERIALIZATION_NAME_ETAG)
+            val lastRefreshTime = jsonObject.optLong(SERIALIZATION_NAME_LAST_REFRESH_TIME, -1L)
+                .takeIf { it != -1L }
+                ?.let { Date(it) }
             val serializedHTTPResult = jsonObject.getString(SERIALIZATION_NAME_HTTPRESULT)
-            return HTTPResultWithETag(eTag, HTTPResult.deserialize(serializedHTTPResult))
+            return HTTPResultWithETag(ETagData(eTag, lastRefreshTime), HTTPResult.deserialize(serializedHTTPResult))
         }
     }
 }
 
 class ETagManager(
-    private val prefs: SharedPreferences
+    private val prefs: SharedPreferences,
+    private val dateProvider: DateProvider = DefaultDateProvider()
 ) {
 
-    internal fun getETagHeader(
+    internal fun getETagHeaders(
         path: String,
         refreshETag: Boolean = false
-    ): Map<String, String> {
-        val eTagHeader = HTTPRequest.ETAG_HEADER_NAME to if (refreshETag) "" else getETag(path)
-        return mapOf(eTagHeader)
+    ): Map<String, String?> {
+        val eTagData = if (refreshETag) null else getETagData(path)
+        return mapOf(
+            HTTPRequest.ETAG_HEADER_NAME to eTagData?.eTag.orEmpty(),
+            HTTPRequest.ETAG_LAST_REFRESH_NAME to eTagData?.lastRefreshTime?.time?.toString(),
+        )
     }
 
     @Suppress("LongParameterList")
@@ -115,7 +134,8 @@ class ETagManager(
         eTag: String
     ) {
         val cacheResult = result.copy(origin = HTTPResult.Origin.CACHE)
-        val httpResultWithETag = HTTPResultWithETag(eTag, cacheResult)
+        val eTagData = ETagData(eTag, dateProvider.now)
+        val httpResultWithETag = HTTPResultWithETag(eTagData, cacheResult)
         prefs.edit().putString(path, httpResultWithETag.serialize()).apply()
     }
 
@@ -126,8 +146,8 @@ class ETagManager(
         }
     }
 
-    private fun getETag(path: String): String {
-        return getStoredResultSavedInSharedPreferences(path)?.eTag.orEmpty()
+    private fun getETagData(path: String): ETagData? {
+        return getStoredResultSavedInSharedPreferences(path)?.eTagData
     }
 
     private fun shouldStoreBackendResult(resultFromBackend: HTTPResult): Boolean {

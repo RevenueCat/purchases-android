@@ -611,7 +611,7 @@ class DeviceCacheTest {
         verify(exactly = 1) {
             mockEditor.putString(
                 productEntitlementMappingCacheKey,
-                "{\"products\":[{\"id\":\"com.revenuecat.foo_1:p1m\",\"entitlements\":[\"pro_1\"],\"base_plan_id\":\"p1m\"},{\"id\":\"com.revenuecat.foo_1:not_bw\",\"entitlements\":[\"pro_2\"],\"base_plan_id\":\"not_bw\"},{\"id\":\"com.revenuecat.foo_1\",\"entitlements\":[\"pro_1\"],\"base_plan_id\":\"p1m\"},{\"id\":\"com.revenuecat.foo_2\",\"entitlements\":[\"pro_1\",\"pro_2\"],\"base_plan_id\":\"p1m\"},{\"id\":\"com.revenuecat.foo_3\",\"entitlements\":[\"pro_2\"],\"base_plan_id\":\"p1m\"}]}"
+                "{\"product_entitlement_mapping\":{\"com.revenuecat.foo_1:p1m\":{\"product_identifier\":\"com.revenuecat.foo_1\",\"base_plan_id\":\"p1m\",\"entitlements\":[\"pro_1\"]},\"com.revenuecat.foo_1:p1y\":{\"product_identifier\":\"com.revenuecat.foo_1\",\"base_plan_id\":\"p1y\",\"entitlements\":[\"pro_1\",\"pro_2\"]},\"com.revenuecat.foo_1\":{\"product_identifier\":\"com.revenuecat.foo_1\",\"base_plan_id\":\"p1m\",\"entitlements\":[\"pro_1\"]},\"com.revenuecat.foo_2\":{\"product_identifier\":\"com.revenuecat.foo_2\",\"entitlements\":[\"pro_3\"]}}}"
             )
         }
         verify(exactly = 1) {
@@ -624,7 +624,7 @@ class DeviceCacheTest {
     fun `cacheProductEntitlementMapping caches empty mappings in shared preferences correctly`() {
         cache.cacheProductEntitlementMapping(createProductEntitlementMapping(emptyMap()))
         verify(exactly = 1) {
-            mockEditor.putString(productEntitlementMappingCacheKey, "{\"products\":[]}")
+            mockEditor.putString(productEntitlementMappingCacheKey, "{\"product_entitlement_mapping\":{}}")
         }
         verify(exactly = 1) {
             mockEditor.putLong(productEntitlementMappingLastUpdatedCacheKey, currentTime.time)
@@ -675,6 +675,27 @@ class DeviceCacheTest {
     fun `getProductEntitlementMapping returns null if nothing in cache`() {
         every { mockPrefs.getString(productEntitlementMappingCacheKey, null) } returns null
         assertThat(cache.getProductEntitlementMapping()).isNull()
+    }
+
+    @Test
+    fun `getProductEntitlementMapping returns null if cache has invalid value`() {
+        every {
+            mockPrefs.getString(productEntitlementMappingCacheKey, null)
+        } returns "invalid-json"
+        assertThat(cache.getProductEntitlementMapping()).isNull()
+    }
+
+    @Test
+    fun `getProductEntitlementMapping clears cache if cache has invalid value`() {
+        every {
+            mockPrefs.getString(productEntitlementMappingCacheKey, null)
+        } returns "invalid-json"
+        every {
+            mockEditor.remove(productEntitlementMappingCacheKey)
+        } returns mockEditor
+        cache.getProductEntitlementMapping()
+        verify(exactly = 1) { mockEditor.remove(productEntitlementMappingCacheKey) }
+        verify(exactly = 1) { mockEditor.apply() }
     }
 
     @Test

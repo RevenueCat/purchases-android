@@ -414,6 +414,7 @@ class OfflineCustomerInfoCalculatorTest {
             )
             PurchasedProduct(
                 productIdentifier,
+                null,
                 storeTransaction,
                 true,
                 entitlements,

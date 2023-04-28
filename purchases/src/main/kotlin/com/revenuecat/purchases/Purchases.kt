@@ -16,7 +16,6 @@ import androidx.annotation.VisibleForTesting
 import androidx.lifecycle.ProcessLifecycleOwner
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingClientStateListener
-import com.android.billingclient.api.BillingFlowParams
 import com.android.billingclient.api.BillingResult
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
@@ -50,6 +49,7 @@ import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import com.revenuecat.purchases.models.BillingFeature
+import com.revenuecat.purchases.models.GoogleProrationMode
 import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreProduct
@@ -174,8 +174,7 @@ class Purchases internal constructor(
             log(LogIntent.WARNING, AUTO_SYNC_PURCHASES_DISABLED)
         }
 
-        // Offline entitlements: Commenting out for now until backend is ready
-        // offlineEntitlementsManager.updateProductEntitlementMappingCacheIfStale()
+        offlineEntitlementsManager.updateProductEntitlementMappingCacheIfStale()
         diagnosticsSynchronizer?.syncDiagnosticsFileIfNeeded()
     }
 
@@ -209,8 +208,7 @@ class Purchases internal constructor(
             fetchAndCacheOfferings(identityManager.currentAppUserID, appInBackground = false)
             log(LogIntent.RC_SUCCESS, OfferingStrings.OFFERINGS_UPDATED_FROM_NETWORK)
         }
-        // Offline entitlements: Commenting out for now until backend is ready
-        // offlineEntitlementsManager.updateProductEntitlementMappingCacheIfStale()
+        offlineEntitlementsManager.updateProductEntitlementMappingCacheIfStale()
         updatePendingPurchaseQueue()
         synchronizeSubscriberAttributesIfNeeded()
     }
@@ -425,7 +423,7 @@ class Purchases internal constructor(
                     purchasingData,
                     presentedOfferingIdentifier,
                     productId,
-                    googleProrationMode.playBillingClientMode,
+                    googleProrationMode,
                     isPersonalizedPrice,
                     callback
                 )
@@ -474,7 +472,7 @@ class Purchases internal constructor(
             storeProduct.purchasingData,
             null,
             upgradeInfo.oldSku,
-            upgradeInfo.prorationMode,
+            GoogleProrationMode.fromPlayBillingClientMode(upgradeInfo.prorationMode),
             listener
         )
     }
@@ -542,7 +540,7 @@ class Purchases internal constructor(
             packageToPurchase.product.purchasingData,
             packageToPurchase.offering,
             upgradeInfo.oldSku,
-            upgradeInfo.prorationMode,
+            GoogleProrationMode.fromPlayBillingClientMode(upgradeInfo.prorationMode),
             callback
         )
     }
@@ -1524,7 +1522,7 @@ class Purchases internal constructor(
         purchasingData: PurchasingData,
         offeringIdentifier: String?,
         oldProductId: String,
-        @BillingFlowParams.ProrationMode googleProrationMode: Int?,
+        googleProrationMode: GoogleProrationMode,
         isPersonalizedPrice: Boolean?,
         purchaseCallback: PurchaseCallback
     ) {
@@ -1584,7 +1582,7 @@ class Purchases internal constructor(
         purchasingData: PurchasingData,
         offeringIdentifier: String?,
         oldProductId: String,
-        @BillingFlowParams.ProrationMode googleProrationMode: Int?,
+        googleProrationMode: GoogleProrationMode?,
         listener: ProductChangeCallback
     ) {
         if (purchasingData.productType != ProductType.SUBS) {
@@ -1636,7 +1634,7 @@ class Purchases internal constructor(
     private fun replaceOldPurchaseWithNewProduct(
         purchasingData: PurchasingData,
         oldProductId: String,
-        @BillingFlowParams.ProrationMode googleProrationMode: Int?,
+        googleProrationMode: GoogleProrationMode?,
         activity: Activity,
         appUserID: String,
         presentedOfferingIdentifier: String?,

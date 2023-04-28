@@ -476,9 +476,9 @@ class PurchasedProductsFetcherTest {
     private fun mockEntitlementMapping(
         productIdentifierToEntitlements: Map<String, List<String>>
     ) {
-        val mappings = productIdentifierToEntitlements.map { (identifier, entitlements) ->
-            ProductEntitlementMapping.Mapping(identifier, entitlements, "p1m")
-        }.toList()
+        val mappings = productIdentifierToEntitlements.mapValues { (identifier, entitlements) ->
+            ProductEntitlementMapping.Mapping(identifier, null, entitlements)
+        }
         val productEntitlementMapping = ProductEntitlementMapping(mappings)
         every {
             deviceCache.getProductEntitlementMapping()

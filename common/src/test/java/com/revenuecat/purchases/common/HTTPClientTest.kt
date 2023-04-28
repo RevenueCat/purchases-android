@@ -10,6 +10,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.networking.Endpoint
+import com.revenuecat.purchases.common.networking.HTTPRequest
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
 import com.revenuecat.purchases.utils.Responses
@@ -146,6 +147,60 @@ class HTTPClientTest: BaseHTTPClientTest() {
     }
 
     @Test
+    fun addsETagHeadersToRequest() {
+        val expectedResult = HTTPResult.createResult()
+        val endpoint = Endpoint.LogIn
+
+        every {
+            mockETagManager.getETagHeaders(any(), any())
+        } answers {
+            mapOf(
+                HTTPRequest.ETAG_HEADER_NAME to "mock-etag",
+                HTTPRequest.ETAG_LAST_REFRESH_NAME to "1234567890"
+            )
+        }
+
+        enqueue(
+            endpoint,
+            expectedResult
+        )
+
+        client.performRequest(baseURL, endpoint, null, mapOf("" to ""))
+
+        val request = server.takeRequest()
+
+        assertThat(request.getHeader(HTTPRequest.ETAG_HEADER_NAME)).isEqualTo("mock-etag")
+        assertThat(request.getHeader(HTTPRequest.ETAG_LAST_REFRESH_NAME)).isEqualTo("1234567890")
+    }
+
+    @Test
+    fun doesNotAddNullETagHeadersToRequest() {
+        val expectedResult = HTTPResult.createResult()
+        val endpoint = Endpoint.LogIn
+
+        every {
+            mockETagManager.getETagHeaders(any(), any())
+        } answers {
+            mapOf(
+                HTTPRequest.ETAG_HEADER_NAME to "mock-etag",
+                HTTPRequest.ETAG_LAST_REFRESH_NAME to null
+            )
+        }
+
+        enqueue(
+            endpoint,
+            expectedResult
+        )
+
+        client.performRequest(baseURL, endpoint, null, mapOf("" to ""))
+
+        val request = server.takeRequest()
+
+        assertThat(request.getHeader(HTTPRequest.ETAG_HEADER_NAME)).isEqualTo("mock-etag")
+        assertThat(request.headers.names().contains(HTTPRequest.ETAG_LAST_REFRESH_NAME)).isFalse
+    }
+
+    @Test
     fun `Given there is no flavor version, flavor version header is not set`() {
         val appConfig = createAppConfig(platformInfo = PlatformInfo("native", null))
 
@@ -267,10 +322,10 @@ class HTTPClientTest: BaseHTTPClientTest() {
         server.takeRequest()
 
         verify(exactly = 1) {
-            mockETagManager.getETagHeader(any(), false)
+            mockETagManager.getETagHeaders(any(), false)
         }
         verify(exactly = 1) {
-            mockETagManager.getETagHeader(any(), true)
+            mockETagManager.getETagHeaders(any(), true)
         }
         assertThat(result.payload).isEqualTo(expectedResult.payload)
         assertThat(result.responseCode).isEqualTo(expectedResult.responseCode)

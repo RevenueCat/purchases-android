@@ -14,44 +14,36 @@ class ProductEntitlementMappingTest {
     private val sampleResponseJson = JSONObject(
         """
             {
-                "products": [
-                    {
-                        "id": "com.revenuecat.foo_1:p1m",
+                "product_entitlement_mapping": {
+                    "com.revenuecat.foo_1:p1m": {
+                        "product_identifier": "com.revenuecat.foo_1",
+                        "base_plan_id": "p1m",
                         "entitlements": [
                             "pro_1"
-                        ],
-                        "base_plan_id": "p1m"
+                        ]
                     },
-                    {
-                        "id": "com.revenuecat.foo_1:not_bw",
-                        "entitlements": [
-                            "pro_2"
-                        ],
-                        "base_plan_id": "not_bw"
-                    },
-                    {
-                        "id": "com.revenuecat.foo_1",
-                        "entitlements": [
-                            "pro_1"
-                        ],
-                        "base_plan_id": "p1m"
-                    },
-                    {
-                        "id": "com.revenuecat.foo_2",
+                    "com.revenuecat.foo_1:p1y": {
+                        "product_identifier": "com.revenuecat.foo_1",
+                        "base_plan_id": "p1y",
                         "entitlements": [
                             "pro_1",
                             "pro_2"
-                        ],
-                        "base_plan_id": "p1m"
+                        ]
                     },
-                    {
-                        "id": "com.revenuecat.foo_3",
+                    "com.revenuecat.foo_1": {
+                        "product_identifier": "com.revenuecat.foo_1",
+                        "base_plan_id": "p1m",
                         "entitlements": [
-                            "pro_2"
-                        ],
-                        "base_plan_id": "p1m"
+                            "pro_1"
+                        ]
+                    },
+                    "com.revenuecat.foo_2": {
+                        "product_identifier": "com.revenuecat.foo_2",
+                        "entitlements": [
+                            "pro_3"
+                        ]
                     }
-                ]
+                }
             }
         """.trimIndent()
     )
@@ -59,6 +51,25 @@ class ProductEntitlementMappingTest {
     @Test
     fun `fromJson parses mappings correctly`() {
         val productEntitlementMapping = ProductEntitlementMapping.fromJson(sampleResponseJson)
+        assertThat(productEntitlementMapping.mappings.size).isEqualTo(4)
+        assertThat(productEntitlementMapping.mappings).containsKeys(
+            "com.revenuecat.foo_1:p1m",
+            "com.revenuecat.foo_1:p1y",
+            "com.revenuecat.foo_1",
+            "com.revenuecat.foo_2"
+        )
+        assertThat(productEntitlementMapping.mappings["com.revenuecat.foo_1:p1m"]).isEqualTo(
+            ProductEntitlementMapping.Mapping("com.revenuecat.foo_1", "p1m", listOf("pro_1"))
+        )
+        assertThat(productEntitlementMapping.mappings["com.revenuecat.foo_1:p1y"]).isEqualTo(
+            ProductEntitlementMapping.Mapping("com.revenuecat.foo_1", "p1y", listOf("pro_1", "pro_2"))
+        )
+        assertThat(productEntitlementMapping.mappings["com.revenuecat.foo_1"]).isEqualTo(
+            ProductEntitlementMapping.Mapping("com.revenuecat.foo_1", "p1m", listOf("pro_1"))
+        )
+        assertThat(productEntitlementMapping.mappings["com.revenuecat.foo_2"]).isEqualTo(
+            ProductEntitlementMapping.Mapping("com.revenuecat.foo_2", null, listOf("pro_3"))
+        )
         val expectedEntitlementMapping = createProductEntitlementMapping()
         assertThat(productEntitlementMapping).isEqualTo(expectedEntitlementMapping)
     }
@@ -68,7 +79,7 @@ class ProductEntitlementMappingTest {
         val json = JSONObject(
             """
                 {
-                    "products": []
+                    "product_entitlement_mapping": {}
                 }
             """.trimIndent()
         )
@@ -84,29 +95,15 @@ class ProductEntitlementMappingTest {
     }
 
     @Test
-    fun `equals returns false if any mapping has different entitlements`() {
+    fun `equals returns false if mapping are different`() {
         val mappings1 = createProductEntitlementMapping()
         val mappings2 = createProductEntitlementMapping(
-            mapOf(
-                "com.revenuecat.foo_1" to listOf("pro_1"),
-                "com.revenuecat.foo_2" to listOf("pro_1", "pro_3"),
-                "com.revenuecat.foo_3" to listOf("pro_2")
-            )
+            mappings1.mappings.toMutableMap().apply {
+                put("com.revenuecat.foo_1:p1m",
+                    ProductEntitlementMapping.Mapping("com.revenuecat.foo_1", "p1m", listOf("pro_2")))
+            }
         )
         assertThat(mappings1).isNotEqualTo(mappings2)
-    }
-
-    @Test
-    fun `toMap transforms mappings to map`() {
-        val mappingsMap = createProductEntitlementMapping().toMap()
-        val expectedMap = mapOf(
-            "com.revenuecat.foo_1:p1m" to listOf("pro_1"),
-            "com.revenuecat.foo_1:not_bw" to listOf("pro_2"),
-            "com.revenuecat.foo_1" to listOf("pro_1"),
-            "com.revenuecat.foo_2" to listOf("pro_1", "pro_2"),
-            "com.revenuecat.foo_3" to listOf("pro_2")
-        )
-        assertThat(mappingsMap).isEqualTo(expectedMap)
     }
 
     @Test
