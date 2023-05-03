@@ -266,6 +266,7 @@ class OfflineCustomerInfoCalculatorTest {
         val products = listOf(
             PurchasedProduct(
                 productId,
+                null,
                 storeTransaction,
                 true,
                 listOf("pro"),
@@ -303,6 +304,7 @@ class OfflineCustomerInfoCalculatorTest {
         val products = listOf(
             PurchasedProduct(
                 productId,
+                null,
                 storeTransaction,
                 false,
                 listOf("pro"),
