@@ -66,6 +66,7 @@ class EntitlementInfosTests {
                     put("purchase_date", "2019-07-26T23:45:40Z")
                     put("store", "app_store")
                     put("unsubscribe_detected_at", JSONObject.NULL)
+                    put("product_plan_identifier", "monthly")
                 })
             }
         )
@@ -152,6 +153,7 @@ class EntitlementInfosTests {
                     put("purchase_date", "1999-07-26T23:30:41Z")
                     put("store", "app_store")
                     put("unsubscribe_detected_at", JSONObject.NULL)
+                    put("product_plan_identifier", "monthly")
                 })
             }
         )
@@ -182,6 +184,7 @@ class EntitlementInfosTests {
                     put("purchase_date", "1999-07-26T23:30:41Z")
                     put("store", "app_store")
                     put("unsubscribe_detected_at", JSONObject.NULL)
+                    put("product_plan_identifier", "monthly")
                 })
             }
         )
@@ -210,6 +213,7 @@ class EntitlementInfosTests {
                     put("purchase_date", "1999-07-26T23:30:41Z")
                     put("store", "app_store")
                     put("unsubscribe_detected_at", JSONObject.NULL)
+                    put("product_plan_identifier", "monthly")
                 })
             }
         )
@@ -248,6 +252,7 @@ class EntitlementInfosTests {
                     put("purchase_date", "2019-07-26T23:45:40Z")
                     put("store", "app_store")
                     put("unsubscribe_detected_at", JSONObject.NULL)
+                    put("product_plan_identifier", "monthly")
                 })
             }
         )
@@ -299,6 +304,7 @@ class EntitlementInfosTests {
                     put("purchase_date", "2019-07-26T23:45:40Z")
                     put("store", "app_store")
                     put("unsubscribe_detected_at", JSONObject.NULL)
+                    put("product_plan_identifier", "monthly")
                 })
             }
         )
@@ -339,6 +345,7 @@ class EntitlementInfosTests {
                     put("purchase_date", "2019-07-26T23:45:40Z")
                     put("store", "app_store")
                     put("unsubscribe_detected_at", JSONObject.NULL)
+                    put("product_plan_identifier", "monthly")
                 })
             }
         )
@@ -373,6 +380,7 @@ class EntitlementInfosTests {
                     put("purchase_date", "2019-07-26T23:45:40Z")
                     put("store", "app_store")
                     put("unsubscribe_detected_at", JSONObject.NULL)
+                    put("product_plan_identifier", "monthly")
                 })
             }
         )
@@ -407,6 +415,7 @@ class EntitlementInfosTests {
                     put("purchase_date", "2019-07-26T23:45:40Z")
                     put("store", "app_store")
                     put("unsubscribe_detected_at", "2019-07-27T23:30:41Z")
+                    put("product_plan_identifier", "monthly")
                 })
             }
         )
@@ -441,6 +450,7 @@ class EntitlementInfosTests {
                     put("purchase_date", "2019-07-26T23:45:40Z")
                     put("store", "app_store")
                     put("unsubscribe_detected_at", "2019-07-27T23:30:41Z")
+                    put("product_plan_identifier", "monthly")
                 })
             }
         )
@@ -480,6 +490,7 @@ class EntitlementInfosTests {
                     put("purchase_date", "1999-07-26T23:30:41Z")
                     put("store", "app_store")
                     put("unsubscribe_detected_at", JSONObject.NULL)
+                    put("product_plan_identifier", "monthly")
                 })
             }
         )
@@ -558,6 +569,7 @@ class EntitlementInfosTests {
                     put("purchase_date",  "2019-07-26T23:45:40Z")
                     put("store", "app_store")
                     put("unsubscribe_detected_at", JSONObject.NULL)
+                    put("product_plan_identifier", "monthly")
                 })
             }
         )
@@ -583,6 +595,7 @@ class EntitlementInfosTests {
                     put("purchase_date",  "2019-07-26T23:45:40Z")
                     put("store", "mac_app_store")
                     put("unsubscribe_detected_at", JSONObject.NULL)
+                    put("product_plan_identifier", "monthly")
                 })
             }
         )
@@ -608,6 +621,7 @@ class EntitlementInfosTests {
                     put("purchase_date",  "2019-07-26T23:45:40Z")
                     put("store", "play_store")
                     put("unsubscribe_detected_at", JSONObject.NULL)
+                    put("product_plan_identifier", "monthly")
                 })
             }
         )
@@ -894,6 +908,7 @@ class EntitlementInfosTests {
                     put("purchase_date",  "2019-07-26T23:45:40Z")
                     put("store", "app_store")
                     put("unsubscribe_detected_at", JSONObject.NULL)
+                    put("product_plan_identifier", "monthly")
                 })
             }
         )
@@ -919,6 +934,7 @@ class EntitlementInfosTests {
                     put("purchase_date",  "2019-07-26T23:45:40Z")
                     put("store", "app_store")
                     put("unsubscribe_detected_at", JSONObject.NULL)
+                    put("product_plan_identifier", "monthly")
                 })
             }
         )
@@ -944,6 +960,7 @@ class EntitlementInfosTests {
                     put("purchase_date",  "2019-07-26T23:45:40Z")
                     put("store", "app_store")
                     put("unsubscribe_detected_at", JSONObject.NULL)
+                    put("product_plan_identifier", "monthly")
                 })
             }
         )
@@ -969,6 +986,7 @@ class EntitlementInfosTests {
                     put("purchase_date",  "2019-07-26T23:45:40Z")
                     put("store", "app_store")
                     put("unsubscribe_detected_at", JSONObject.NULL)
+                    put("product_plan_identifier", "monthly")
                 })
             }
         )
@@ -1076,6 +1094,7 @@ class EntitlementInfosTests {
                     put("store", "app_store")
                     put("unsubscribe_detected_at", JSONObject.NULL)
                     put("ownership_type", "PURCHASED")
+                    put("product_plan_identifier", "monthly")
                 })
             }
         )
@@ -1102,6 +1121,7 @@ class EntitlementInfosTests {
                     put("store", "app_store")
                     put("unsubscribe_detected_at", JSONObject.NULL)
                     put("ownership_type", "FAMILY_SHARED")
+                    put("product_plan_identifier", "monthly")
                 })
             }
         )
@@ -1128,6 +1148,7 @@ class EntitlementInfosTests {
                     put("store", "app_store")
                     put("unsubscribe_detected_at", JSONObject.NULL)
                     put("ownership_type", "UNKNOWN")
+                    put("product_plan_identifier", "monthly")
                 })
             }
         )
@@ -1157,6 +1178,7 @@ class EntitlementInfosTests {
                     put("store", "app_store")
                     put("unsubscribe_detected_at", JSONObject.NULL)
                     put("ownership_type", "AN_UNKNOWN_OWNERSHIP_TYPE")
+                    put("product_plan_identifier", "monthly")
                 })
             }
         )
@@ -1185,6 +1207,7 @@ class EntitlementInfosTests {
                     put("purchase_date", "2019-07-26T23:45:40Z")
                     put("store", "app_store")
                     put("unsubscribe_detected_at", JSONObject.NULL)
+                    put("product_plan_identifier", "monthly")
                 })
             }
         )
@@ -1228,6 +1251,7 @@ class EntitlementInfosTests {
                     put("expires_date", Iso8601Utils.format(1.days.ago()))
                     put("product_identifier", "monthly_freetrial")
                     put("purchase_date", "2019-07-26T23:45:40Z")
+                    put("product_plan_identifier", "monthly")
                 })
             },
             subscriptions = JSONObject().apply {
@@ -1240,6 +1264,7 @@ class EntitlementInfosTests {
                     put("purchase_date", "2019-07-26T23:45:40Z")
                     put("store", "app_store")
                     put("unsubscribe_detected_at", JSONObject.NULL)
+                    put("product_plan_identifier", "monthly")
                 })
             },
             requestDate = 2.days.ago()
@@ -1258,6 +1283,7 @@ class EntitlementInfosTests {
                 put("pro_cat", JSONObject().apply {
                     put("expires_date", Iso8601Utils.format(1.days.ago()))
                     put("product_identifier", "monthly_freetrial")
+                    put("product_plan_identifier", "monthly")
                     put("purchase_date", "2019-07-26T23:45:40Z")
                 })
             },
@@ -1271,6 +1297,7 @@ class EntitlementInfosTests {
                     put("purchase_date", "2019-07-26T23:45:40Z")
                     put("store", "app_store")
                     put("unsubscribe_detected_at", JSONObject.NULL)
+                    put("product_plan_identifier", "monthly")
                 })
             },
             requestDate = 5.days.ago()
@@ -1290,6 +1317,7 @@ class EntitlementInfosTests {
                     put("expires_date", Iso8601Utils.format(1.days.fromNow()))
                     put("product_identifier", "monthly_freetrial")
                     put("purchase_date", "2019-07-26T23:45:40Z")
+                    put("product_plan_identifier", "monthly")
                 })
             },
             subscriptions = JSONObject().apply {
@@ -1302,6 +1330,7 @@ class EntitlementInfosTests {
                     put("purchase_date", "2019-07-26T23:45:40Z")
                     put("store", "app_store")
                     put("unsubscribe_detected_at", JSONObject.NULL)
+                    put("product_plan_identifier", "monthly")
                 })
             },
             requestDate = 5.days.ago()

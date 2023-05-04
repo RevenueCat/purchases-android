@@ -1925,7 +1925,7 @@ class BackendTest {
                 )
                 assertThat(it).isEqualTo(expectedMapping)
             },
-            { fail("expected success") }
+            { error -> fail("expected success $error", error) }
         )
         assertTrue(successCalled)
     }
