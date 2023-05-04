@@ -474,21 +474,21 @@ class PurchasesTest {
     }
 
     @Test
-    fun `when making a deferred upgrade, completion is called with null purchase for new version`() {
-        val productId = "onemonth_freetrial"
-
-        val receiptInfo = mockQueryingProductDetails(productId, ProductType.SUBS, null)
+    fun `when making a deferred upgrade, completion is called with the transaction for the old product`() {
+        val productId = listOf("newproduct")
+        val storeProduct = mockStoreProduct(productId, productId, ProductType.SUBS)
 
         val oldPurchase = mockPurchaseFound()
+        mockQueryingProductDetails(oldPurchase.productIds.first(), ProductType.SUBS, null)
 
         var callCount = 0
 
         val productChangeParams = getPurchaseParams(
-            receiptInfo.storeProduct!!.subscriptionOptions!!.first(),
+            storeProduct.first().subscriptionOptions!!.first(),
             oldPurchase.productIds.first(),
             googleProrationMode = GoogleProrationMode.DEFERRED
         )
-        val oldTransaction = getMockedStoreTransaction(productId, "token", ProductType.SUBS)
+        val oldTransaction = getMockedStoreTransaction(oldPurchase.productIds.first(), "token", ProductType.SUBS)
         every {
             mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(oldTransaction, any(), false, appUserId, captureLambda(), any())
         } answers {
