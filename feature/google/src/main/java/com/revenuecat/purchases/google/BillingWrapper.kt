@@ -603,11 +603,13 @@ class BillingWrapper(
         if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
             val storeTransactions = mutableListOf<StoreTransaction>()
             notNullPurchasesList.forEach { purchase ->
-                getStoreTransaction(
-                    purchase,
-                    { tx -> storeTransactions.add(tx) })
+                getStoreTransaction(purchase) { storeTxn ->
+                    storeTransactions.add(storeTxn)
+                    if (storeTransactions.size == notNullPurchasesList.size) {
+                        purchasesUpdatedListener?.onPurchasesUpdated(storeTransactions)
+                    }
+                }
             }
-            purchasesUpdatedListener?.onPurchasesUpdated(storeTransactions)
         } else {
             log(LogIntent.GOOGLE_ERROR, BillingStrings.BILLING_WRAPPER_PURCHASES_ERROR
                 .format(billingResult.toHumanReadableDescription()) +
