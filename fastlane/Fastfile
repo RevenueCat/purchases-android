@@ -316,8 +316,8 @@ DESC
         project_dir: project_dir,
         task: task,
         properties: {
-          "android.injected.version.code" => version_code,
-          "android.injected.version.name" => version_name,
+          "versionCode" => version_code,
+          "versionName" => version_name,
         }
       )
 
