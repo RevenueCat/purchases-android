@@ -500,8 +500,9 @@ class PurchasesTest {
             onError = { _, _ ->
                 fail("should be successful")
             },
-            onSuccess = { _, _ ->
+            onSuccess = { purchase, _ ->
                 callCount++
+                assertThat(purchase == oldPurchase)
             }
         )
 
