@@ -448,26 +448,27 @@ class PurchasesTest {
     }
 
     @Test
-    fun `when making a deferred upgrade using the deprecated function, completion is called with the transaction for the old product`() {
-        val productId = listOf("newproduct")
-        val storeProduct = mockStoreProduct(productId, productId, ProductType.SUBS).first()
+    fun `when making a deferred upgrade, completion is called with null purchase`() {
+        val productId = "onemonth_freetrial"
+
+        val receiptInfo = mockQueryingProductDetails(productId, ProductType.SUBS, null)
 
         val oldPurchase = mockPurchaseFound()
-        mockQueryingProductDetails(oldPurchase.productIds.first(), ProductType.SUBS, null)
 
         var callCount = 0
+        // use deprecated version of function because deferred upgrades not allowed with new version
         purchases.purchaseProductWith(
             mockActivity,
-            storeProduct,
-            UpgradeInfo(oldPurchase.productIds[0], ProrationMode.DEFERRED),
+            receiptInfo.storeProduct!!,
+            UpgradeInfo(oldPurchase.productIds[0]),
             onError = { _, _ ->
                 fail("should be success")
             }, onSuccess = { purchase, _ ->
                 callCount++
-                assertThat(purchase == oldPurchase)
+                assertThat(purchase).isNull()
             })
 
-        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(listOf(oldPurchase))
+        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(emptyList())
         assertThat(callCount).isEqualTo(1)
     }
 
