@@ -5,6 +5,7 @@ import com.ibm.icu.impl.Assert.fail
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.OwnershipType
 import com.revenuecat.purchases.PeriodType
+import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.Store
@@ -13,22 +14,18 @@ import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.ago
 import com.revenuecat.purchases.common.fromNow
 import com.revenuecat.purchases.models.StoreTransaction
-import com.revenuecat.purchases.utils.add
-import com.revenuecat.purchases.utils.stubPurchaseHistoryRecord
 import com.revenuecat.purchases.utils.stubStoreTransactionFromPurchaseHistoryRecord
-import com.revenuecat.purchases.utils.subtract
 import io.mockk.every
 import io.mockk.mockk
+import org.assertj.core.api.Assertions.assertThat
+import org.json.JSONObject
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import java.util.Date
-import org.assertj.core.api.Assertions.assertThat
-import org.json.JSONObject
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.hours
-import kotlin.time.Duration.Companion.minutes
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
