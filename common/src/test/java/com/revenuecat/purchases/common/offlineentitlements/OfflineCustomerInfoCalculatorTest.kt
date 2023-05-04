@@ -141,7 +141,7 @@ class OfflineCustomerInfoCalculatorTest {
 
     @Test
     fun `product with different entitlement per base plan`() {
-        // Due to an issue with the way the backend returns the data, we are going to be using the wrong
+        // Due to an issue with the way the backend returns the data, we are going to be using
         // the wrong original_purchase_date for the first entitlement
         // See https://github.com/RevenueCat/purchases-android/pull/970
         val entitlementID = "pro_1"
