@@ -457,13 +457,12 @@ workflows:
       not:
         equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
     jobs:
-      - integration-tests-build: *release-branches
-      - purchases-integration-tests-build: *release-branches
+      - integration-tests-build
+      - purchases-integration-tests-build
       - run-firebase-tests-purchases-integration-test:
           requires:
             - purchases-integration-tests-build
       - run-firebase-tests-purchases-load-shedder-integration-test:
-          <<: *release-branches
           context:
             - slack-secrets
       - run-firebase-tests:
