@@ -78,7 +78,6 @@ class OfflineCustomerInfoCalculator(
         return minPurchaseDate?.let { ISO8601Utils.format(Date(minPurchaseDate)) }
     }
 
-    @SuppressWarnings("ForbiddenComment")
     private fun generateSubscriptions(
         purchasedProducts: List<PurchasedProduct>,
     ): JSONObject {
@@ -93,7 +92,7 @@ class OfflineCustomerInfoCalculator(
                 put(ProductResponseJsonKeys.PURCHASE_DATE, Iso8601Utils.format(purchaseDate))
                 put(ProductResponseJsonKeys.STORE, appConfig.store.name.lowercase())
                 put(ProductResponseJsonKeys.UNSUBSCRIBE_DETECTED_AT, JSONObject.NULL)
-                // TODO: in post receipt we might be able to have the subscription option id
+                // TODO in post receipt we might be able to have the subscription option id
                 put(ProductResponseJsonKeys.PRODUCT_PLAN_IDENTIFIER, product.basePlanId)
                 put(
                     ProductResponseJsonKeys.EXPIRES_DATE,
