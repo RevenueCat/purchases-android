@@ -18,7 +18,6 @@ import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingFlowParams.ProrationMode
 import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.Purchase
-import com.android.billingclient.api.Purchase.PurchaseState
 import com.android.billingclient.api.PurchaseHistoryRecord
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
@@ -449,27 +448,26 @@ class PurchasesTest {
     }
 
     @Test
-    fun `when making a deferred upgrade, completion is called with null purchase`() {
-        val productId = "onemonth_freetrial"
-
-        val receiptInfo = mockQueryingProductDetails(productId, ProductType.SUBS, null)
+    fun `when making a deferred upgrade using the deprecated function, completion is called with the transaction for the old product`() {
+        val productId = listOf("newproduct")
+        val storeProduct = mockStoreProduct(productId, productId, ProductType.SUBS).first()
 
         val oldPurchase = mockPurchaseFound()
+        mockQueryingProductDetails(oldPurchase.productIds.first(), ProductType.SUBS, null)
 
         var callCount = 0
-        // use deprecated version of function because deferred upgrades not allowed with new version
         purchases.purchaseProductWith(
             mockActivity,
-            receiptInfo.storeProduct!!,
-            UpgradeInfo(oldPurchase.productIds[0]),
+            storeProduct,
+            UpgradeInfo(oldPurchase.productIds[0], ProrationMode.DEFERRED),
             onError = { _, _ ->
                 fail("should be success")
             }, onSuccess = { purchase, _ ->
                 callCount++
-                assertThat(purchase).isNull()
+                assertThat(purchase == oldPurchase)
             })
 
-        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(emptyList())
+        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(listOf(oldPurchase))
         assertThat(callCount).isEqualTo(1)
     }
 
