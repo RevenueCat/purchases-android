@@ -33,14 +33,6 @@ enum class GoogleProrationMode(
     IMMEDIATE_WITH_TIME_PRORATION(BillingFlowParams.ProrationMode.IMMEDIATE_WITH_TIME_PRORATION),
 
     /**
-     * Replacement takes effect when the old plan expires, and the new price will be charged at the same time.
-     *
-     * Example: Samwise's Tier 1 subscription continues until it expires on April 30. On May 1st, the
-     * Tier 2 subscription takes effect, and Samwise is charged $36 for his new subscription tier.
-     */
-    DEFERRED(BillingFlowParams.ProrationMode.DEFERRED),
-
-    /**
      * Replacement takes effect immediately, and the user is charged full price of new plan and is
      * given a full billing cycle of subscription, plus remaining prorated time from the old plan.
      *
@@ -63,7 +55,15 @@ enum class GoogleProrationMode(
      * so he is charged the difference of $0.50 for his new subscription.
      * On May 1st, Samwise is charged $36 for his new subscription tier and another $36 on May 1 of each year following.
      */
-    IMMEDIATE_AND_CHARGE_PRORATED_PRICE(BillingFlowParams.ProrationMode.IMMEDIATE_AND_CHARGE_PRORATED_PRICE);
+    IMMEDIATE_AND_CHARGE_PRORATED_PRICE(BillingFlowParams.ProrationMode.IMMEDIATE_AND_CHARGE_PRORATED_PRICE),
+
+    /**
+     * Replacement takes effect when the old plan expires, and the new price will be charged at the same time.
+     *
+     * Example: Samwise's Tier 1 subscription continues until it expires on April 30. On May 1st, the
+     * Tier 2 subscription takes effect, and Samwise is charged $36 for his new subscription tier.
+     */
+    DEFERRED(BillingFlowParams.ProrationMode.DEFERRED);
 
     override fun describeContents(): Int {
         return 0
