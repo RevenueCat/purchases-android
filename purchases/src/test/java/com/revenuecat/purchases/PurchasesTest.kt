@@ -448,52 +448,53 @@ class PurchasesTest {
     }
 
     @Test
-    fun `when making a deferred upgrade, completion is called with null purchase`() {
-        val productId = "onemonth_freetrial"
-
-        val receiptInfo = mockQueryingProductDetails(productId, ProductType.SUBS, null)
-
+    fun `when making a deferred product change using the deprecated method, completion is called with the old product`() {
+        val newProductId = listOf("newproduct")
+        val receiptInfo = mockQueryingProductDetails(newProductId.first(), ProductType.SUBS, null)
         val oldPurchase = mockPurchaseFound()
-
+        mockQueryingProductDetails(oldPurchase.productIds.first(), ProductType.SUBS, null)
         var callCount = 0
-        // use deprecated version of function because deferred upgrades not allowed with new version
         purchases.purchaseProductWith(
             mockActivity,
             receiptInfo.storeProduct!!,
-            UpgradeInfo(oldPurchase.productIds[0]),
+            UpgradeInfo(oldPurchase.productIds[0], ProrationMode.DEFERRED),
             onError = { _, _ ->
-                fail("should be success")
+                fail("should be successful")
             }, onSuccess = { purchase, _ ->
                 callCount++
-                assertThat(purchase).isNull()
+                assertThat(purchase).isEqualTo(oldPurchase)
             })
-
-        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(emptyList())
+        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(listOf(oldPurchase))
         assertThat(callCount).isEqualTo(1)
+        verify(exactly = 1) {
+            mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(
+                purchase = oldPurchase,
+                storeProduct = any(),
+                isRestore = false,
+                appUserID = appUserId,
+                onSuccess = any(),
+                onError = any()
+            )
+        }
     }
 
     @Test
-    fun `when making a deferred upgrade, completion is called with the transaction for the old product`() {
-        val productId = listOf("newproduct")
-        val storeProduct = mockStoreProduct(productId, productId, ProductType.SUBS)
-
+    fun `when making a deferred product change, completion is called with the transaction for the old product`() {
+        val newProductId = listOf("newproduct")
+        val storeProduct = mockStoreProduct(newProductId, newProductId, ProductType.SUBS)
         val oldPurchase = mockPurchaseFound()
         mockQueryingProductDetails(oldPurchase.productIds.first(), ProductType.SUBS, null)
-
-        var callCount = 0
-
+        every {
+            mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(oldPurchase, any(), false, appUserId, captureLambda(), any())
+        } answers {
+            lambda<SuccessfulPurchaseCallback>().captured.invoke(oldPurchase, mockk())
+        }
         val productChangeParams = getPurchaseParams(
             storeProduct.first().subscriptionOptions!!.first(),
             oldPurchase.productIds.first(),
             googleProrationMode = GoogleProrationMode.DEFERRED
         )
-        val oldTransaction = getMockedStoreTransaction(oldPurchase.productIds.first(), "token", ProductType.SUBS)
-        every {
-            mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(oldTransaction, any(), false, appUserId, captureLambda(), any())
-        } answers {
-            lambda<SuccessfulPurchaseCallback>().captured.invoke(oldTransaction, mockk())
-        }
-
+        var callCount = 0
         purchases.purchaseWith(
             productChangeParams,
             onError = { _, _ ->
@@ -501,12 +502,21 @@ class PurchasesTest {
             },
             onSuccess = { purchase, _ ->
                 callCount++
-                assertThat(purchase == oldPurchase)
+                assertThat(purchase).isEqualTo(oldPurchase)
             }
         )
-
-        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(listOf(oldTransaction))
+        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(listOf(oldPurchase))
         assertThat(callCount).isEqualTo(1)
+        verify(exactly = 1) {
+            mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(
+                purchase = oldPurchase,
+                storeProduct = any(),
+                isRestore = false,
+                appUserID = appUserId,
+                onSuccess = any(),
+                onError = any()
+            )
+        }
     }
 
     @Test
@@ -1224,30 +1234,7 @@ class PurchasesTest {
         assertThat(callCount).isEqualTo(1)
     }
 
-    @Test
-    fun `when purchasing a package as product change, completion is called with null purchase if product change is deferred`() {
-        val productId = "onemonth_freetrial"
-        val (_, offerings) = stubOfferings(productId)
 
-        val oldPurchase = mockPurchaseFound()
-
-        var callCount = 0
-
-        // use deprecated version of method because deferred purchases aren't supported with new version
-        purchases.purchasePackageWith(
-            mockActivity,
-            offerings[STUB_OFFERING_IDENTIFIER]!!.monthly!!,
-            UpgradeInfo(oldPurchase.productIds[0]),
-            onError = { _, _ ->
-                fail("should be success")
-            }, onSuccess = { purchase, _ ->
-                callCount++
-                assertThat(purchase).isNull()
-            }
-        )
-        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(emptyList())
-        assertThat(callCount).isEqualTo(1)
-    }
 
     @Test
     fun `when purchasing a package as product change, error is forwarded`() {
@@ -1412,37 +1399,6 @@ class PurchasesTest {
         assertThat(receivedError).isNotNull
         assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
         assertThat(receivedUserCancelled).isFalse()
-    }
-
-    @Test
-    fun `Deferred downgrade`() {
-        // TODO huh? how was this deferred?
-        val (_, offerings) = stubOfferings("onemonth_freetrial")
-        val oldProductId = "oldProductId"
-
-        val oldPurchase = mockk<StoreTransaction>()
-        every { oldPurchase.productIds[0] } returns oldProductId
-        every { oldPurchase.type } returns ProductType.SUBS
-
-        every {
-            mockBillingAbstract.findPurchaseInPurchaseHistory(
-                appUserId,
-                ProductType.SUBS,
-                oldProductId,
-                captureLambda(),
-                any()
-            )
-        } answers {
-            lambda<(StoreTransaction) -> Unit>().captured.invoke(oldPurchase)
-        }
-
-        purchases.purchasePackageWith(
-            mockActivity,
-            offerings[STUB_OFFERING_IDENTIFIER]!!.monthly!!,
-            UpgradeInfo(oldPurchase.productIds[0])
-        ) { _, _ -> }
-
-        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(emptyList())
     }
 
     @Test
