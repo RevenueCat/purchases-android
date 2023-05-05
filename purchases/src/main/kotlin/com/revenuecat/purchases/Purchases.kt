@@ -1385,19 +1385,6 @@ class Purchases internal constructor(
                     }
                 }
 
-                if (purchases.isEmpty() && isDeprecatedProductChangeInProgress) {
-                    // Can happen if the product change is ProrationMode.DEFERRED
-                    invalidateCustomerInfoCache()
-                    getCustomerInfoWith { customerInfo ->
-                        deprecatedProductChangeListener?.let { callback ->
-                            dispatch {
-                                callback.onCompleted(null, customerInfo)
-                            }
-                        }
-                    }
-                    return
-                }
-
                 postPurchases(
                     purchases,
                     allowSharingPlayStoreAccount,
