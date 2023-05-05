@@ -2,11 +2,13 @@ package com.revenuecat.purchases.common.offlineentitlements
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.strings.OfflineEntitlementsStrings
 import com.revenuecat.purchases.utils.stubStoreTransactionFromGooglePurchase
 import com.revenuecat.purchases.utils.stubStoreTransactionFromPurchaseHistoryRecord
 import io.mockk.every
@@ -49,36 +51,22 @@ class PurchasedProductsFetcherTest {
     }
 
     @Test
-    fun `creates a product with no entitlement from one transaction`() {
+    fun `fails fetching products if product entitlement mappings not available`() {
         every {
             deviceCache.getProductEntitlementMapping()
         } returns null
 
-        val activePurchase = stubStoreTransactionFromGooglePurchase(
-            productIds = listOf("product1", "product2"),
-            purchaseTime = testDate.time
-        )
-        val purchaseRecord = stubStoreTransactionFromPurchaseHistoryRecord(
-            productIds = listOf("product1", "product2"),
-            purchaseTime = testDate.time
-        )
-
-        mockActivePurchases(activePurchase)
-        mockAllPurchases(purchaseRecord)
-
-        var receivedListOfPurchasedProducts: List<PurchasedProduct>? = null
-
+        var error: PurchasesError? = null
         fetcher.queryPurchasedProducts(
             appUserID = "appUserID",
-            onSuccess = {
-                receivedListOfPurchasedProducts = it
-            },
-            unexpectedOnError
+            onSuccess = { fail("Should not have succeeded") },
+            onError = { error = it }
         )
-        assertThat(receivedListOfPurchasedProducts).isNotNull
-        assertThat(receivedListOfPurchasedProducts!!.size).isEqualTo(1)
-        val purchasedProduct = receivedListOfPurchasedProducts!![0]
-        assertThat(purchasedProduct.entitlements).isEmpty()
+        assertThat(error).isNotNull
+        assertThat(error?.code).isEqualTo(PurchasesErrorCode.CustomerInfoError)
+        assertThat(error?.underlyingErrorMessage).isEqualTo(
+            OfflineEntitlementsStrings.PRODUCT_ENTITLEMENT_MAPPING_REQUIRED
+        )
     }
 
     @Test

@@ -12,4 +12,6 @@ object OfflineEntitlementsStrings {
     const val ERROR_PARSING_PRODUCT_ENTITLEMENT_MAPPING = "Error parsing cached product entitlement mapping: %s"
     const val OFFLINE_ENTITLEMENTS_UNSUPPORTED_INAPP_PURCHASES = "Offline entitlements are not supported for " +
         "active inapp purchases. Found active inapp purchases."
+    const val PRODUCT_ENTITLEMENT_MAPPING_REQUIRED = "Product entitlement mapping is required for offline " +
+        "entitlements. Skipping offline customer info calculation."
 }

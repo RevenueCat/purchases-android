@@ -2,11 +2,13 @@ package com.revenuecat.purchases.common.offlineentitlements
 
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.DefaultDateProvider
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.strings.OfflineEntitlementsStrings
 import java.util.Date
 import java.util.concurrent.TimeUnit
 
@@ -21,7 +23,15 @@ class PurchasedProductsFetcher(
         onSuccess: (List<PurchasedProduct>) -> Unit,
         onError: (PurchasesError) -> Unit
     ) {
-        val productEntitlementMapping = deviceCache.getProductEntitlementMapping()
+        val productEntitlementMapping = deviceCache.getProductEntitlementMapping() ?: run {
+            onError(
+                PurchasesError(
+                    PurchasesErrorCode.CustomerInfoError,
+                    OfflineEntitlementsStrings.PRODUCT_ENTITLEMENT_MAPPING_REQUIRED
+                )
+            )
+            return
+        }
 
         billing.queryAllPurchases(
             appUserID,
@@ -52,12 +62,12 @@ class PurchasedProductsFetcher(
         allPurchases: List<StoreTransaction>,
         productIdentifier: String,
         activeProducts: Set<String>,
-        productEntitlementMapping: ProductEntitlementMapping?
+        productEntitlementMapping: ProductEntitlementMapping
     ): PurchasedProduct {
         val purchaseAssociatedToProduct = allPurchases.first { it.skus[0] == productIdentifier }
         val isActive = activeProducts.contains(productIdentifier)
         val expirationDate = getExpirationDate(isActive, purchaseAssociatedToProduct)
-        val mapping = productEntitlementMapping?.mappings?.get(productIdentifier)
+        val mapping = productEntitlementMapping.mappings[productIdentifier]
         return PurchasedProduct(
             productIdentifier,
             mapping?.basePlanId,
