@@ -208,7 +208,7 @@ class PurchasesIntegrationTest {
                       },
                 replaceProductInfo = null,
                 presentedOfferingIdentifier = null,
-                isPersonalizedPrice = false
+                isPersonalizedPrice = null
             )
         }
     }

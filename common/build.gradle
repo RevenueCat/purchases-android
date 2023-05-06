@@ -5,6 +5,18 @@ android {
     buildFeatures {
         buildConfig true
     }
+
+    testOptions {
+        unitTests {
+            all {
+                if (project.hasProperty('RUN_INTEGRATION_TESTS')) {
+                    include "com/revenuecat/purchases/backend_integration_tests/**"
+                } else {
+                    exclude "com/revenuecat/purchases/backend_integration_tests/**"
+                }
+            }
+        }
+    }
 }
 
 dependencies {

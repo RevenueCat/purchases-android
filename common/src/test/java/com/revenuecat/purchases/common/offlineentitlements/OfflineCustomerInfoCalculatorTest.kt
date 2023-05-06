@@ -14,7 +14,9 @@ import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.ago
 import com.revenuecat.purchases.common.fromNow
 import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.utils.add
 import com.revenuecat.purchases.utils.stubStoreTransactionFromPurchaseHistoryRecord
+import com.revenuecat.purchases.utils.subtract
 import io.mockk.every
 import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
@@ -26,12 +28,14 @@ import org.robolectric.annotation.Config
 import java.util.Date
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.seconds
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
 class OfflineCustomerInfoCalculatorTest {
-    private val dateInThePast = 1.hours.ago()
-    private val dateInTheFuture = 1.days.fromNow()
+    private val oneHourAgo = 1.hours.ago()
+    private val oneDayFromNow = 1.days.fromNow()
+    private val requestDate = Date()
     private val appUserID = "appUserID"
 
     private lateinit var purchasedProductsFetcher: PurchasedProductsFetcher
@@ -49,7 +53,7 @@ class OfflineCustomerInfoCalculatorTest {
         }
         testDateProvider = object : DateProvider {
             override val now: Date
-                get() = dateInThePast
+                get() = requestDate
         }
         offlineCustomerInfoCalculator = OfflineCustomerInfoCalculator(
             purchasedProductsFetcher,
@@ -122,7 +126,7 @@ class OfflineCustomerInfoCalculatorTest {
                     )
                 ),
             ),
-            expirationDates = mapOf(productIdentifier to dateInTheFuture)
+            expirationDates = mapOf(productIdentifier to oneDayFromNow)
         ).first()
 
         var receivedCustomerInfo: CustomerInfo? = null
@@ -154,8 +158,7 @@ class OfflineCustomerInfoCalculatorTest {
 
         // Made a purchase for p1m and then a purchase for not_bw after that one expired
         // You can't have an active purchase of the same product different base plans at the same time
-        val oneHourAgo = 1.hours.ago()
-        val twoHoursAgo = 2.hours.ago()
+        val twoHoursAgo = oneHourAgo.subtract(1.hours)
         val p1mProduct = PurchasedProduct(
             productIdentifier,
             basePlan,
@@ -163,21 +166,22 @@ class OfflineCustomerInfoCalculatorTest {
                 productIds = listOf(productIdentifier),
                 purchaseTime = twoHoursAgo.time,
             ),
-            false,
+            isActive = false,
             listOf(entitlementID),
             expiresDate = oneHourAgo
         )
 
+        val notBwProductPurchaseDate = oneHourAgo.add(1.seconds)
         val notBwProduct = PurchasedProduct(
             productIdentifier,
             nonBackwardsCompatibleBasePlan,
             stubStoreTransactionFromPurchaseHistoryRecord(
                 productIds = listOf(productIdentifier),
-                purchaseTime = oneHourAgo.time,
+                purchaseTime = notBwProductPurchaseDate.time,
             ),
-            true,
+            isActive = true,
             listOf(secondEntitlementID),
-            dateInTheFuture
+            expiresDate = oneDayFromNow
         )
 
         every {
@@ -204,9 +208,21 @@ class OfflineCustomerInfoCalculatorTest {
 
         // This entitlement will have the original purchase date of the second purchase
         // instead of the first one until the backend starts returning original purchase date per entitlement
-        verifyEntitlement(receivedCustomerInfo, entitlementID, p1mProduct, expirationDate = oneHourAgo,
-            purchaseDate = twoHoursAgo, originalPurchaseDate = oneHourAgo)
-        verifyEntitlement(receivedCustomerInfo, secondEntitlementID, notBwProduct, purchaseDate = oneHourAgo)
+        verifyEntitlement(
+            receivedCustomerInfo,
+            entitlementID,
+            p1mProduct,
+            expirationDate = oneHourAgo,
+            purchaseDate = twoHoursAgo,
+            originalPurchaseDate = notBwProductPurchaseDate,
+            isActive = false)
+        verifyEntitlement(
+            receivedCustomerInfo,
+            secondEntitlementID,
+            notBwProduct,
+            expirationDate = oneDayFromNow,
+            purchaseDate = notBwProductPurchaseDate
+        )
     }
 
     @Test
@@ -231,8 +247,8 @@ class OfflineCustomerInfoCalculatorTest {
                 )
             ),
             expirationDates = mapOf(
-                "prod_1" to dateInTheFuture,
-                "prod_2" to dateInTheFuture
+                "prod_1" to oneDayFromNow,
+                "prod_2" to oneDayFromNow
             )
         )
 
@@ -277,7 +293,7 @@ class OfflineCustomerInfoCalculatorTest {
             ),
             expirationDates = mapOf(
                 "prod_1" to twoDaysFromNow,
-                "prod_2" to dateInTheFuture
+                "prod_2" to oneDayFromNow
             )
         )
 
@@ -318,7 +334,7 @@ class OfflineCustomerInfoCalculatorTest {
             ),
             expirationDates = mapOf(
                 "prod_1" to null,
-                "prod_2" to dateInTheFuture
+                "prod_2" to oneDayFromNow
             )
         )
 
@@ -475,12 +491,15 @@ class OfflineCustomerInfoCalculatorTest {
         receivedCustomerInfo: CustomerInfo?,
         entitlementID: String,
         purchasedProduct: PurchasedProduct,
-        expirationDate: Date? = dateInTheFuture,
-        purchaseDate: Date? = dateInThePast,
-        originalPurchaseDate: Date? = purchaseDate
+        expirationDate: Date? = oneDayFromNow,
+        purchaseDate: Date? = oneHourAgo,
+        originalPurchaseDate: Date? = purchaseDate,
+        isActive: Boolean = true
     ) {
         val receivedEntitlement = receivedCustomerInfo?.entitlements?.get(entitlementID)
-        assertThat(receivedEntitlement?.isActive).isTrue
+        assertThat(receivedEntitlement?.isActive)
+            .withFailMessage("purchase date ${purchaseDate}; expiration date ${expirationDate}; requestDate ${receivedCustomerInfo?.requestDate}")
+            .isEqualTo(isActive)
         assertThat(receivedEntitlement?.identifier).isEqualTo(entitlementID)
         assertThat(receivedEntitlement?.productIdentifier).isEqualTo(purchasedProduct.productIdentifier)
         assertThat(receivedEntitlement?.billingIssueDetectedAt).isNull()
@@ -504,13 +523,13 @@ class OfflineCustomerInfoCalculatorTest {
                 )
             )
         ),
-        expirationDates: Map<String, Date?> = mapOf("product_1" to dateInTheFuture)
+        expirationDates: Map<String, Date?> = mapOf("product_1" to oneDayFromNow)
     ): List<PurchasedProduct> {
         val products = entitlementMap.mappings.map { (productIdentifier, mapping) ->
             val expiresDate = expirationDates[productIdentifier]
             val storeTransaction = stubStoreTransactionFromPurchaseHistoryRecord(
                 productIds = listOf(productIdentifier),
-                purchaseTime = dateInThePast.time
+                purchaseTime = oneHourAgo.time
             )
             PurchasedProduct(
                 productIdentifier,
