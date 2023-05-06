@@ -11,8 +11,8 @@ android {
         applicationId "com.revenuecat.purchases_sample"
         minSdkVersion 26
         targetSdkVersion compileVersion
-        versionCode = rootProject.ext.get("versionCode").toInteger()
-        versionName = rootProject.ext.get("versionName").toString()
+        versionCode rootProject.ext.get("versionCode").toInteger()
+        versionName rootProject.ext.get("versionName").toString()
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
