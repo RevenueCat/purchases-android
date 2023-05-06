@@ -601,7 +601,7 @@ class BillingWrapper(
         purchases: List<Purchase>?
     ) {
         val notNullPurchasesList = purchases ?: emptyList()
-        if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
+        if (billingResult.responseCode == BillingClient.BillingResponseCode.OK && notNullPurchasesList.isNotEmpty()) {
             val storeTransactions = mutableListOf<StoreTransaction>()
             notNullPurchasesList.forEach { purchase ->
                 getStoreTransaction(purchase) { storeTxn ->
@@ -611,6 +611,10 @@ class BillingWrapper(
                     }
                 }
             }
+        } else if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
+            // Forward empty list if result is ok but with a null purchase. Used to happen when doing a product change
+            // in DEFERRED proration mode. Should not happen since Billing Client 5.
+            purchasesUpdatedListener?.onPurchasesUpdated(emptyList())
         } else {
             log(LogIntent.GOOGLE_ERROR, BillingStrings.BILLING_WRAPPER_PURCHASES_ERROR
                 .format(billingResult.toHumanReadableDescription()) +
