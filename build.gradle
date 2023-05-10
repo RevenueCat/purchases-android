@@ -3,7 +3,7 @@ buildscript {
     ext.compileVersion = 31
     ext.buildToolsVersion = "30.0.3"
     ext.minVersion = 14
-    ext.billingVersion = "5.1.0"
+    ext.billingVersion = "6.0.0"
     ext.lifecycleVersion = "2.5.0"
     ext.testLibrariesVersion = "1.4.0"
     ext.testJUnitVersion  = "1.1.3"
