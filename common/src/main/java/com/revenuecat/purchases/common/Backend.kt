@@ -13,6 +13,7 @@ import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
 import com.revenuecat.purchases.common.offlineentitlements.ProductEntitlementMapping
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
+import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.PricingPhase
 import com.revenuecat.purchases.strings.NetworkStrings
 import com.revenuecat.purchases.utils.filterNotNullValues
@@ -189,7 +190,7 @@ class Backend(
             "normal_duration" to receiptInfo.duration,
             "store_user_id" to storeAppUserID,
             "pricing_phases" to receiptInfo.pricingPhases?.map { it.toMap() },
-            "replacement_mode" to receiptInfo.replacementMode?.name
+            "proration_mode" to (receiptInfo.replacementMode as? GoogleReplacementMode)?.asGoogleProrationMode?.name
         ).filterNotNullValues()
 
         val extraHeaders = mapOf(

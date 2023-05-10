@@ -1,6 +1,5 @@
 package com.revenuecat.purchases.common
 
-import com.revenuecat.purchases.ProrationMode
 import com.revenuecat.purchases.ReplacementMode
 import com.revenuecat.purchases.models.GoogleSubscriptionOption
 import com.revenuecat.purchases.models.PricingPhase

@@ -14,6 +14,7 @@ import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
 import com.revenuecat.purchases.google.toStoreTransaction
 import com.revenuecat.purchases.models.GoogleProrationMode
+import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttribute
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
@@ -54,7 +55,7 @@ class PostReceiptHelperTest {
         ProductType.SUBS,
         null,
         subscriptionOptionId,
-        prorationMode = GoogleProrationMode.IMMEDIATE_AND_CHARGE_FULL_PRICE
+        replacementMode = GoogleReplacementMode.CHARGE_FULL_PRICE
     )
     private val testReceiptInfo = ReceiptInfo(
         productIDs = listOf("test-product-id-1", "test-product-id-2"),
@@ -619,7 +620,7 @@ class PostReceiptHelperTest {
             onError = { _, _ -> fail("Should succeed") }
         )
         assertThat(postedReceiptInfoSlot.isCaptured).isTrue
-        assertThat(postedReceiptInfoSlot.captured.prorationMode).isEqualTo(GoogleProrationMode.IMMEDIATE_AND_CHARGE_FULL_PRICE)
+        assertThat(postedReceiptInfoSlot.captured.replacementMode).isEqualTo(GoogleReplacementMode.CHARGE_FULL_PRICE)
     }
 
     @Test

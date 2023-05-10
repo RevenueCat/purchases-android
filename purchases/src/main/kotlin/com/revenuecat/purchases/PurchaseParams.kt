@@ -102,7 +102,7 @@ data class PurchaseParams(val builder: Builder) {
             ReplaceWith("googleReplacementMode()")
         )
         fun googleProrationMode(googleProrationMode: GoogleProrationMode) = apply {
-            this.googleReplacementMode = googleProrationMode.toGoogleReplacementMode
+            this.googleReplacementMode = googleProrationMode.asGoogleReplacementMode
         }
 
         /*

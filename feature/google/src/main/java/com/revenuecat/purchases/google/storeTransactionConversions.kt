@@ -3,7 +3,6 @@ package com.revenuecat.purchases.google
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchaseHistoryRecord
 import com.revenuecat.purchases.ProductType
-import com.revenuecat.purchases.models.GoogleProrationMode
 import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.PurchaseType
@@ -14,7 +13,7 @@ fun Purchase.toStoreTransaction(
     productType: ProductType,
     presentedOfferingIdentifier: String? = null,
     subscriptionOptionId: String? = null,
-    replaceMode: GoogleReplacementMode? = null
+    replacementMode: GoogleReplacementMode? = null
 ): StoreTransaction = StoreTransaction(
     orderId = this.orderId,
     productIds = this.products,
@@ -30,8 +29,7 @@ fun Purchase.toStoreTransaction(
     purchaseType = PurchaseType.GOOGLE_PURCHASE,
     marketplace = null,
     subscriptionOptionId = subscriptionOptionId,
-    prorationMode = GoogleProrationMode.IMMEDIATE_WITH_TIME_PRORATION, // TODO: JOSH FIX THIS
-    replacementMode = replaceMode
+    replacementMode = replacementMode
 )
 
 fun Purchase.toStoreTransaction(purchaseContext: PurchaseContext): StoreTransaction =
@@ -66,7 +64,6 @@ fun PurchaseHistoryRecord.toStoreTransaction(
         purchaseType = PurchaseType.GOOGLE_RESTORED_PURCHASE,
         marketplace = null,
         subscriptionOptionId = null,
-        prorationMode = null,
         replacementMode = null
     )
 }

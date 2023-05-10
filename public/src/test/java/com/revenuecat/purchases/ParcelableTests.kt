@@ -68,7 +68,7 @@ class ParcelableTests {
                 PurchaseType.GOOGLE_PURCHASE,
                 null,
                 "optionId",
-                null
+                replacementMode = null
             )
         )
     }

@@ -3,7 +3,6 @@ package com.revenuecat.purchases.google
 import com.android.billingclient.api.BillingFlowParams
 import com.revenuecat.purchases.common.ReplaceProductInfo
 import com.revenuecat.purchases.common.errorLog
-import com.revenuecat.purchases.models.GoogleProrationMode
 import com.revenuecat.purchases.models.GoogleReplacementMode
 
 fun BillingFlowParams.Builder.setUpgradeInfo(replaceProductInfo: ReplaceProductInfo) {

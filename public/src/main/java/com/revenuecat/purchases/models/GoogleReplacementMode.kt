@@ -3,7 +3,6 @@ package com.revenuecat.purchases.models
 import android.os.Parcel
 import android.os.Parcelable
 import com.android.billingclient.api.BillingFlowParams
-import com.revenuecat.purchases.ProrationMode
 import com.revenuecat.purchases.ReplacementMode
 
 /**
@@ -57,6 +56,17 @@ enum class GoogleReplacementMode(
      * On May 1st, Samwise is charged $36 for his new subscription tier and another $36 on May 1 of each year following.
      */
     CHARGE_PRORATED_PRICE(BillingFlowParams.SubscriptionUpdateParams.ReplacementMode.CHARGE_PRORATED_PRICE);
+
+    /**
+     * For internal use only :)
+     */
+    val asGoogleProrationMode: GoogleProrationMode
+        get() = when (this) {
+            GoogleReplacementMode.WITHOUT_PRORATION -> GoogleProrationMode.IMMEDIATE_WITHOUT_PRORATION
+            GoogleReplacementMode.WITH_TIME_PRORATION -> GoogleProrationMode.IMMEDIATE_WITH_TIME_PRORATION
+            GoogleReplacementMode.CHARGE_FULL_PRICE -> GoogleProrationMode.IMMEDIATE_AND_CHARGE_FULL_PRICE
+            GoogleReplacementMode.CHARGE_PRORATED_PRICE -> GoogleProrationMode.IMMEDIATE_AND_CHARGE_PRORATED_PRICE
+        }
 
     override fun describeContents(): Int {
         return 0

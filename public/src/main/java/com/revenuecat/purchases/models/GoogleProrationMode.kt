@@ -61,8 +61,11 @@ enum class GoogleProrationMode(
      */
     IMMEDIATE_AND_CHARGE_PRORATED_PRICE(BillingFlowParams.ProrationMode.IMMEDIATE_AND_CHARGE_PRORATED_PRICE);
 
-    val toGoogleReplacementMode: GoogleReplacementMode
-        get() = when(this) {
+    /**
+     * For internal use only :)
+     */
+    val asGoogleReplacementMode: GoogleReplacementMode
+        get() = when (this) {
             GoogleProrationMode.IMMEDIATE_WITHOUT_PRORATION -> GoogleReplacementMode.WITHOUT_PRORATION
             GoogleProrationMode.IMMEDIATE_WITH_TIME_PRORATION -> GoogleReplacementMode.WITH_TIME_PRORATION
             GoogleProrationMode.IMMEDIATE_AND_CHARGE_FULL_PRICE -> GoogleReplacementMode.CHARGE_FULL_PRICE

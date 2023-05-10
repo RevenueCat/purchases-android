@@ -36,6 +36,7 @@ import com.revenuecat.purchases.common.firstSku
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.sha256
 import com.revenuecat.purchases.models.GoogleProrationMode
+import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.PricingPhase
@@ -396,7 +397,7 @@ class BillingWrapperTest {
 
         val prorationModeSlot = slot<Int>()
         every {
-            mockSubscriptionUpdateParamsBuilder.setReplaceProrationMode(capture(prorationModeSlot))
+            mockSubscriptionUpdateParamsBuilder.setSubscriptionReplacementMode(capture(prorationModeSlot))
         } returns mockSubscriptionUpdateParamsBuilder
 
         val isPersonalizedPriceSlot = slot<Boolean>()
@@ -424,7 +425,7 @@ class BillingWrapperTest {
             assertThat(subsGoogleProductType).isEqualTo(capturedProductDetailsParams[0].zza().productType)
 
             assertThat(upgradeInfo.oldPurchase.purchaseToken).isEqualTo(oldPurchaseTokenSlot.captured)
-            assertThat((upgradeInfo.prorationMode as GoogleProrationMode?)?.playBillingClientMode).isEqualTo(prorationModeSlot.captured)
+            assertThat((upgradeInfo.replacementMode as GoogleReplacementMode?)?.playBillingClientMode).isEqualTo(prorationModeSlot.captured)
 
             assertThat(isPersonalizedPrice).isEqualTo(isPersonalizedPriceSlot.captured)
             billingClientOKResult
@@ -2514,7 +2515,7 @@ class BillingWrapperTest {
 
     private fun mockReplaceSkuInfo(): ReplaceProductInfo {
         val oldPurchase = mockPurchaseHistoryRecordWrapper()
-        return ReplaceProductInfo(oldPurchase, GoogleProrationMode.IMMEDIATE_AND_CHARGE_FULL_PRICE)
+        return ReplaceProductInfo(oldPurchase, GoogleReplacementMode.CHARGE_FULL_PRICE)
     }
 
     private fun mockQueryPurchasesAsyncResponse(

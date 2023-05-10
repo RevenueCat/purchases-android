@@ -26,6 +26,7 @@ fun Int.billingResponseToPurchasesError(underlyingErrorMessage: String): Purchas
         BillingClient.BillingResponseCode.ITEM_UNAVAILABLE -> PurchasesErrorCode.ProductNotAvailableForPurchaseError
         BillingClient.BillingResponseCode.DEVELOPER_ERROR -> PurchasesErrorCode.PurchaseInvalidError
         BillingClient.BillingResponseCode.ITEM_ALREADY_OWNED -> PurchasesErrorCode.ProductAlreadyPurchasedError
+        BillingClient.BillingResponseCode.NETWORK_ERROR -> PurchasesErrorCode.NetworkError
         else -> PurchasesErrorCode.UnknownError
     }
     return PurchasesError(errorCode, underlyingErrorMessage)
