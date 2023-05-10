@@ -50,6 +50,7 @@ import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import com.revenuecat.purchases.models.BillingFeature
 import com.revenuecat.purchases.models.GoogleProrationMode
+import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreProduct
@@ -423,7 +424,7 @@ class Purchases internal constructor(
                     purchasingData,
                     presentedOfferingIdentifier,
                     productId,
-                    googleProrationMode,
+                    googleReplacementMode,
                     isPersonalizedPrice,
                     callback
                 )
@@ -472,7 +473,7 @@ class Purchases internal constructor(
             storeProduct.purchasingData,
             null,
             upgradeInfo.oldSku,
-            GoogleProrationMode.fromPlayBillingClientMode(upgradeInfo.prorationMode),
+            GoogleReplacementMode.fromPlayBillingClientMode(upgradeInfo.prorationMode),
             listener
         )
     }
@@ -540,7 +541,7 @@ class Purchases internal constructor(
             packageToPurchase.product.purchasingData,
             packageToPurchase.offering,
             upgradeInfo.oldSku,
-            GoogleProrationMode.fromPlayBillingClientMode(upgradeInfo.prorationMode),
+            GoogleReplacementMode.fromPlayBillingClientMode(upgradeInfo.prorationMode),
             callback
         )
     }
@@ -1522,7 +1523,7 @@ class Purchases internal constructor(
         purchasingData: PurchasingData,
         offeringIdentifier: String?,
         oldProductId: String,
-        googleProrationMode: GoogleProrationMode,
+        googleReplacementMode: GoogleReplacementMode,
         isPersonalizedPrice: Boolean?,
         purchaseCallback: PurchaseCallback
     ) {
@@ -1540,7 +1541,7 @@ class Purchases internal constructor(
                     offeringIdentifier?.let {
                         PurchaseStrings.OFFERING + "$offeringIdentifier"
                     }
-                } oldProductId: $oldProductId googleProrationMode $googleProrationMode"
+                } oldProductId: $oldProductId googleReplacementMode $googleReplacementMode"
 
             )
         )
@@ -1562,7 +1563,7 @@ class Purchases internal constructor(
             replaceOldPurchaseWithNewProduct(
                 purchasingData,
                 oldProductId,
-                googleProrationMode,
+                googleReplacementMode,
                 activity,
                 appUserID,
                 offeringIdentifier,
@@ -1582,7 +1583,7 @@ class Purchases internal constructor(
         purchasingData: PurchasingData,
         offeringIdentifier: String?,
         oldProductId: String,
-        googleProrationMode: GoogleProrationMode?,
+        googleReplacementMode: GoogleReplacementMode?,
         listener: ProductChangeCallback
     ) {
         if (purchasingData.productType != ProductType.SUBS) {
@@ -1600,8 +1601,7 @@ class Purchases internal constructor(
                     offeringIdentifier?.let {
                         PurchaseStrings.OFFERING + "$offeringIdentifier"
                     }
-                } oldProductId: $oldProductId googleProrationMode $googleProrationMode"
-
+                } oldProductId: $oldProductId googleReplacementMode $googleReplacementMode"
             )
         )
         var userPurchasing: String? = null // Avoids race condition for userid being modified before purchase is made
@@ -1618,7 +1618,7 @@ class Purchases internal constructor(
             replaceOldPurchaseWithNewProduct(
                 purchasingData,
                 oldProductId,
-                googleProrationMode,
+                googleReplacementMode,
                 activity,
                 appUserID,
                 offeringIdentifier,
@@ -1634,7 +1634,7 @@ class Purchases internal constructor(
     private fun replaceOldPurchaseWithNewProduct(
         purchasingData: PurchasingData,
         oldProductId: String,
-        googleProrationMode: GoogleProrationMode?,
+        googleReplacementMode: GoogleReplacementMode?,
         activity: Activity,
         appUserID: String,
         presentedOfferingIdentifier: String?,
@@ -1662,7 +1662,7 @@ class Purchases internal constructor(
                     activity,
                     appUserID,
                     purchasingData,
-                    ReplaceProductInfo(purchaseRecord, googleProrationMode),
+                    ReplaceProductInfo(purchaseRecord, googleReplacementMode),
                     presentedOfferingIdentifier,
                     isPersonalizedPrice
                 )

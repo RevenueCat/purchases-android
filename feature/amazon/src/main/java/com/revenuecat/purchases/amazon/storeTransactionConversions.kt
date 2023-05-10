@@ -30,5 +30,6 @@ fun Receipt.toStoreTransaction(
         marketplace = userData.marketplace,
         subscriptionOptionId = null,
         prorationMode = null,
+        replacementMode = null
     )
 }

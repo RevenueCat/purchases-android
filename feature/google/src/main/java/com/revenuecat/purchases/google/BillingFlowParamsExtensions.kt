@@ -4,16 +4,17 @@ import com.android.billingclient.api.BillingFlowParams
 import com.revenuecat.purchases.common.ReplaceProductInfo
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.models.GoogleProrationMode
+import com.revenuecat.purchases.models.GoogleReplacementMode
 
 fun BillingFlowParams.Builder.setUpgradeInfo(replaceProductInfo: ReplaceProductInfo) {
     val subscriptionUpdateParams = BillingFlowParams.SubscriptionUpdateParams.newBuilder().apply {
         setOldPurchaseToken(replaceProductInfo.oldPurchase.purchaseToken)
-        replaceProductInfo.prorationMode?.let {
-            val googleProrationMode = it as? GoogleProrationMode
-            if (googleProrationMode == null) {
-                errorLog("Got non-Google proration mode")
+        replaceProductInfo.replacementMode?.let {
+            val googleReplacementMode = it as? GoogleReplacementMode
+            if (googleReplacementMode == null) {
+                errorLog("Got non-Google replacement mode")
             } else {
-                setReplaceProrationMode(googleProrationMode.playBillingClientMode)
+                setSubscriptionReplacementMode(googleReplacementMode.playBillingClientMode)
             }
         }
     }

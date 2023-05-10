@@ -46,6 +46,7 @@ import com.revenuecat.purchases.common.sha256
 import com.revenuecat.purchases.common.toHumanReadableDescription
 import com.revenuecat.purchases.models.GoogleProrationMode
 import com.revenuecat.purchases.models.GooglePurchasingData
+import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.StoreTransaction
@@ -254,7 +255,7 @@ class BillingWrapper(
                 googlePurchasingData.productType,
                 presentedOfferingIdentifier,
                 subscriptionOptionId,
-                replaceProductInfo?.prorationMode as? GoogleProrationMode?
+                replaceProductInfo?.replacementMode as? GoogleReplacementMode?
             )
         }
         executeRequestOnUIThread {

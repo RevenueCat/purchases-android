@@ -89,7 +89,7 @@ internal class PostReceiptHelper(
             offeringIdentifier = purchase.presentedOfferingIdentifier,
             storeProduct = storeProduct,
             subscriptionOptionId = purchase.subscriptionOptionId,
-            replacementMode = purchase
+            replacementMode = purchase.replacementMode
         )
         postReceiptAndSubscriberAttributes(
             appUserID = appUserID,

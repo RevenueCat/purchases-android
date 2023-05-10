@@ -2,6 +2,7 @@ package com.revenuecat.apitester.kotlin
 
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.ProrationMode
+import com.revenuecat.purchases.ReplacementMode
 import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.PurchaseType
 import com.revenuecat.purchases.models.StoreTransaction
@@ -26,6 +27,7 @@ private class StoreTransactionAPI {
             val purchaseType: PurchaseType = purchaseType
             val subscriptionOptionId: String? = subscriptionOptionId
             val prorationMode: ProrationMode? = prorationMode
+            val replacementMode: ReplacementMode? = replacementMode
 
             val constructedStoreTransaction = StoreTransaction(
                 orderId,
@@ -42,7 +44,8 @@ private class StoreTransactionAPI {
                 purchaseType,
                 marketplace,
                 subscriptionOptionId,
-                prorationMode
+                prorationMode,
+                replacementMode
             )
         }
     }
