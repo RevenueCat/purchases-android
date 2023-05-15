@@ -116,7 +116,7 @@ class PurchasesTest: BasePurchasesTest() {
 
     private val mockLifecycle = mockk<Lifecycle>()
     private val mockLifecycleOwner = mockk<LifecycleOwner>()
-    
+
     @Test
     fun canBeCreated() {
         assertThat(purchases).isNotNull
@@ -2644,145 +2644,58 @@ class PurchasesTest: BasePurchasesTest() {
     // region syncPurchases
 
     @Test
-    fun `syncing transactions gets whole history and posts it to backend`() {
-        purchases.finishTransactions = false
+    fun `syncing transactions calls helper with correct parameters`() {
+        val allowSharingAccount = true
+        purchases.allowSharingPlayStoreAccount = allowSharingAccount
 
-        var capturedLambda: ((List<StoreTransaction>) -> Unit)? = null
-        every {
-            mockBillingAbstract.queryAllPurchases(
-                appUserId,
-                captureLambda(),
-                any()
-            )
-        } answers {
-            capturedLambda = lambda<(List<StoreTransaction>) -> Unit>().captured.also {
-                it.invoke(
-                    getMockedPurchaseHistoryList(inAppProductId, inAppPurchaseToken, ProductType.INAPP) +
-                        getMockedPurchaseHistoryList(subProductId, subPurchaseToken, ProductType.SUBS)
-                )
-            }
-        }
+        every { mockSyncPurchasesHelper.syncPurchases(any(), any(), any()) } just Runs
 
         purchases.syncPurchases()
 
-        val productInfo = ReceiptInfo(productIDs = listOf(inAppProductId))
-        assertThat(capturedLambda).isNotNull
         verify(exactly = 1) {
-            mockPostReceiptHelper.postTokenWithoutConsuming(
-                purchaseToken = inAppPurchaseToken,
-                storeUserID = null,
-                receiptInfo = productInfo,
-                isRestore = false,
-                appUserID = appUserId,
-                marketplace = null,
-                onSuccess = any(),
-                onError = any()
-            )
-        }
-        val productInfo1 = ReceiptInfo(productIDs = listOf(subProductId))
-        verify(exactly = 1) {
-            mockPostReceiptHelper.postTokenWithoutConsuming(
-                purchaseToken = subPurchaseToken,
-                storeUserID = null,
-                receiptInfo = productInfo1,
-                isRestore = false,
-                appUserID = appUserId,
-                marketplace = null,
-                onSuccess = any(),
-                onError = any()
+            mockSyncPurchasesHelper.syncPurchases(
+                allowSharingAccount,
+                any(),
+                any()
             )
         }
     }
 
     @Test
-    fun `syncing transactions respects allow sharing account settings`() {
-        purchases.finishTransactions = false
-        purchases.allowSharingPlayStoreAccount = true
-
-        var capturedLambda: ((List<StoreTransaction>) -> Unit)? = null
+    fun `syncing transactions calls success callback when process completes successfully`() {
         every {
-            mockBillingAbstract.queryAllPurchases(
-                appUserId,
-                captureLambda(),
-                any()
-            )
+            mockSyncPurchasesHelper.syncPurchases(any(), captureLambda(), any())
         } answers {
-            capturedLambda = lambda<(List<StoreTransaction>) -> Unit>().captured.also {
-                it.invoke(
-                    getMockedPurchaseHistoryList(inAppProductId, inAppPurchaseToken, ProductType.INAPP) +
-                        getMockedPurchaseHistoryList(subProductId, subPurchaseToken, ProductType.SUBS)
-                )
-            }
+            lambda<() -> Unit>().captured.invoke()
         }
 
-        purchases.syncPurchases()
+        var successCallCount = 0
+        purchases.syncPurchasesWith(
+            { fail("Expected to succeed") },
+            { successCallCount++ }
+        )
 
-        val productInfo = ReceiptInfo(productIDs = listOf(inAppProductId))
-        assertThat(capturedLambda).isNotNull
-        verify(exactly = 1) {
-            mockPostReceiptHelper.postTokenWithoutConsuming(
-                purchaseToken = inAppPurchaseToken,
-                storeUserID = null,
-                receiptInfo = productInfo,
-                isRestore = true,
-                appUserID = appUserId,
-                marketplace = null,
-                onSuccess = any(),
-                onError = any()
-            )
-        }
-
-        val productInfo1 = ReceiptInfo(productIDs = listOf(subProductId))
-        verify(exactly = 1) {
-            mockPostReceiptHelper.postTokenWithoutConsuming(
-                purchaseToken = subPurchaseToken,
-                storeUserID = null,
-                receiptInfo = productInfo1,
-                isRestore = true,
-                appUserID = appUserId,
-                marketplace = null,
-                onSuccess = any(),
-                onError = any()
-            )
-        }
+        assertThat(successCallCount).isEqualTo(1)
     }
 
     @Test
-    fun `syncing transactions posts token and receipt info to backend to not consume purchase`() {
-        purchases.finishTransactions = false
-        val productId = "onemonth_freetrial"
-        val purchaseToken = "crazy_purchase_token"
-        purchases.allowSharingPlayStoreAccount = true
-
-        var capturedLambda: ((List<StoreTransaction>) -> Unit)? = null
+    fun `syncing transactions calls error callback when process completes with error`() {
         every {
-            mockBillingAbstract.queryAllPurchases(
-                appUserId,
-                captureLambda(),
-                any()
-            )
+            mockSyncPurchasesHelper.syncPurchases(any(), any(), captureLambda())
         } answers {
-            capturedLambda = lambda<(List<StoreTransaction>) -> Unit>().captured.also {
-                it.invoke(getMockedPurchaseHistoryList(productId, purchaseToken, ProductType.INAPP))
-            }
+            lambda<(PurchasesError) -> Unit>().captured.invoke(PurchasesError(PurchasesErrorCode.UnknownError))
         }
 
-        purchases.syncPurchases()
+        var errorCallCount = 0
+        purchases.syncPurchasesWith(
+            {
+                assertThat(it.code).isEqualTo(PurchasesErrorCode.UnknownError)
+                errorCallCount++
+            },
+            { fail("Expected to error") }
+        )
 
-        val productInfo = ReceiptInfo(productIDs = listOf(productId))
-        verify {
-            mockPostReceiptHelper.postTokenWithoutConsuming(
-                purchaseToken = purchaseToken,
-                storeUserID = null,
-                receiptInfo = productInfo,
-                isRestore = true,
-                appUserID = appUserId,
-                marketplace = null,
-                onSuccess = any(),
-                onError = any()
-            )
-        }
-        assertThat(capturedLambda).isNotNull
+        assertThat(errorCallCount).isEqualTo(1)
     }
 
     @Test

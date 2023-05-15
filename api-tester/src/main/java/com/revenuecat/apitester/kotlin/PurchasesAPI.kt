@@ -22,6 +22,7 @@ import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback
+import com.revenuecat.purchases.interfaces.SyncPurchasesCallback
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import com.revenuecat.purchases.logInWith
 import com.revenuecat.purchases.logOutWith
@@ -32,11 +33,13 @@ import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.purchaseWith
 import com.revenuecat.purchases.restorePurchasesWith
+import com.revenuecat.purchases.syncPurchasesWith
 import java.net.URL
 import java.util.concurrent.ExecutorService
 
 @Suppress("unused", "UNUSED_VARIABLE", "EmptyFunctionBlock", "RemoveExplicitTypeArguments", "RedundantLambdaArrow")
 private class PurchasesAPI {
+    val noParametersCallback: () -> Unit = {}
     @SuppressWarnings("LongParameterList")
     fun check(
         purchases: Purchases
@@ -58,7 +61,13 @@ private class PurchasesAPI {
             override fun onReceived(customerInfo: CustomerInfo, created: Boolean) {}
             override fun onError(error: PurchasesError) {}
         }
+        val syncPurchasesCallback = object : SyncPurchasesCallback {
+            override fun onSuccess() {}
+            override fun onError(error: PurchasesError) {}
+        }
+
         purchases.syncPurchases()
+        purchases.syncPurchases(syncPurchasesCallback)
         purchases.getOfferings(receiveOfferingsCallback)
 
         purchases.getProducts(productIds, productsResponseCallback)
@@ -145,6 +154,13 @@ private class PurchasesAPI {
         purchases.restorePurchasesWith(
             onError = { _: PurchasesError -> },
             onSuccess = { _: CustomerInfo -> }
+        )
+        purchases.syncPurchasesWith(
+            onError = { _: PurchasesError -> },
+            onSuccess = noParametersCallback
+        )
+        purchases.syncPurchasesWith(
+            onSuccess = noParametersCallback
         )
         purchases.logInWith(
             "",

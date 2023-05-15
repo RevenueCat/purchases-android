@@ -164,6 +164,12 @@ internal class PurchasesFactory(
                 offlineEntitlementsManager
             )
 
+            val syncPurchasesHelper = SyncPurchasesHelper(
+                billing,
+                identityManager,
+                postReceiptHelper
+            )
+
             return Purchases(
                 application,
                 appUserID,
@@ -178,7 +184,8 @@ internal class PurchasesFactory(
                 offeringParser,
                 diagnosticsSynchronizer,
                 offlineEntitlementsManager,
-                postReceiptHelper
+                postReceiptHelper,
+                syncPurchasesHelper
             )
         }
     }

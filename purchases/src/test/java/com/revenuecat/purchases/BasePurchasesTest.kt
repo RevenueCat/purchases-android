@@ -65,6 +65,7 @@ open class BasePurchasesTest {
     protected val mockDiagnosticsSynchronizer = mockk<DiagnosticsSynchronizer>()
     protected val mockOfflineEntitlementsManager = mockk<OfflineEntitlementsManager>()
     internal val mockPostReceiptHelper = mockk<PostReceiptHelper>()
+    protected val mockSyncPurchasesHelper = mockk<SyncPurchasesHelper>()
 
     protected var capturedPurchasesUpdatedListener = slot<BillingAbstract.PurchasesUpdatedListener>()
     protected var capturedBillingWrapperStateListener = slot<BillingAbstract.StateListener>()
@@ -107,7 +108,7 @@ open class BasePurchasesTest {
     @After
     fun tearDown() {
         Purchases.backingFieldSharedInstance = null
-        clearMocks(mockCustomerInfoHelper, mockPostReceiptHelper)
+        clearMocks(mockCustomerInfoHelper, mockPostReceiptHelper, mockSyncPurchasesHelper)
     }
 
     // region Private Methods
@@ -315,7 +316,8 @@ open class BasePurchasesTest {
             offeringParser = OfferingParserFactory.createOfferingParser(Store.PLAY_STORE),
             diagnosticsSynchronizer = mockDiagnosticsSynchronizer,
             offlineEntitlementsManager = mockOfflineEntitlementsManager,
-            postReceiptHelper = mockPostReceiptHelper
+            postReceiptHelper = mockPostReceiptHelper,
+            syncPurchasesHelper = mockSyncPurchasesHelper
         )
         Purchases.sharedInstance = purchases
         purchases.state = purchases.state.copy(appInBackground = false)
