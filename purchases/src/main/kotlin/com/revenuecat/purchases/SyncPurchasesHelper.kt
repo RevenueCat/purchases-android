@@ -36,7 +36,7 @@ internal class SyncPurchasesHelper(
                         if (currentPurchase == lastPurchase) {
                             if (errors.isEmpty()) {
                                 debugLog(PurchaseStrings.SYNCED_PURCHASES_SUCCESSFULLY)
-                                retrieveCustomerInfo(appUserID, onSuccess, onError)
+                                retrieveCustomerInfoFromCache(appUserID, onSuccess, onError)
                             } else {
                                 errorLog(PurchaseStrings.SYNCING_PURCHASES_ERROR.format(errors))
                                 onError(errors.first())
@@ -67,7 +67,7 @@ internal class SyncPurchasesHelper(
                         )
                     }
                 } else {
-                    retrieveCustomerInfo(appUserID, onSuccess, onError)
+                    retrieveCustomerInfoFromCache(appUserID, onSuccess, onError)
                 }
             },
             onReceivePurchaseHistoryError = {
@@ -77,7 +77,7 @@ internal class SyncPurchasesHelper(
         )
     }
 
-    private fun retrieveCustomerInfo(
+    private fun retrieveCustomerInfoFromCache(
         appUserID: String,
         onSuccess: (CustomerInfo) -> Unit,
         onError: (PurchasesError) -> Unit
