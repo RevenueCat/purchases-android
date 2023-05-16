@@ -175,10 +175,13 @@ fun stubPurchaseHistoryRecord(
 fun stubStoreTransactionFromGooglePurchase(
     productIds: List<String>,
     purchaseTime: Long,
+    purchaseToken: String = "abcdefghijipehfnbbnldmai.AO-J1OxqriTepvB7suzlIhxqPIveA0IHtX9amMedK0KK9CsO0S3Zk5H6gdwvV" +
+        "7HzZIJeTzqkY4okyVk8XKTmK1WZKAKSNTKop4dgwSmFnLWsCxYbahUmADg"
 ): StoreTransaction {
     return stubGooglePurchase(
         productIds,
-        purchaseTime
+        purchaseTime,
+        purchaseToken = purchaseToken
     ).toStoreTransaction(ProductType.SUBS, null)
 }
 

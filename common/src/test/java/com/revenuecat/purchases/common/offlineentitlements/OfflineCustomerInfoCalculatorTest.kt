@@ -65,7 +65,7 @@ class OfflineCustomerInfoCalculatorTest {
     @Test
     fun `simple customer info`() {
         val entitlementID = "pro_1"
-        val purchasedProduct = mockPurchasedProducts().first()
+        val purchasedProduct = mockActiveProducts().first()
 
         var receivedCustomerInfo: CustomerInfo? = null
         offlineCustomerInfoCalculator.computeOfflineCustomerInfo(
@@ -85,7 +85,7 @@ class OfflineCustomerInfoCalculatorTest {
     @Test
     fun `raw data`() {
         val entitlementID = "pro_1"
-        val purchasedProduct = mockPurchasedProducts().first()
+        val purchasedProduct = mockActiveProducts().first()
 
         var receivedCustomerInfo: CustomerInfo? = null
         offlineCustomerInfoCalculator.computeOfflineCustomerInfo(
@@ -116,7 +116,7 @@ class OfflineCustomerInfoCalculatorTest {
         val entitlementID = "pro_1"
         val secondEntitlementID = "pro_2"
         val productIdentifier = "prod_1"
-        val purchasedProduct = mockPurchasedProducts(
+        val purchasedProduct = mockActiveProducts(
             entitlementMap = ProductEntitlementMapping(
                 mapOf(
                     productIdentifier to ProductEntitlementMapping.Mapping(
@@ -166,7 +166,6 @@ class OfflineCustomerInfoCalculatorTest {
                 productIds = listOf(productIdentifier),
                 purchaseTime = twoHoursAgo.time,
             ),
-            isActive = false,
             listOf(entitlementID),
             expiresDate = oneHourAgo
         )
@@ -179,13 +178,12 @@ class OfflineCustomerInfoCalculatorTest {
                 productIds = listOf(productIdentifier),
                 purchaseTime = notBwProductPurchaseDate.time,
             ),
-            isActive = true,
             listOf(secondEntitlementID),
             expiresDate = oneDayFromNow
         )
 
         every {
-            purchasedProductsFetcher.queryPurchasedProducts(
+            purchasedProductsFetcher.queryActiveProducts(
                 appUserID,
                 captureLambda(),
                 any()
@@ -231,7 +229,7 @@ class OfflineCustomerInfoCalculatorTest {
         val secondEntitlementID = "pro_2"
         val thirdEntitlementID = "pro_3"
 
-        val purchasedProducts = mockPurchasedProducts(
+        val purchasedProducts = mockActiveProducts(
             entitlementMap = ProductEntitlementMapping(
                 mapOf(
                     "prod_1" to ProductEntitlementMapping.Mapping(
@@ -276,7 +274,7 @@ class OfflineCustomerInfoCalculatorTest {
         val entitlementID = "pro_1"
 
         val twoDaysFromNow = 2.days.fromNow()
-        val purchasedProducts = mockPurchasedProducts(
+        val purchasedProducts = mockActiveProducts(
             entitlementMap = ProductEntitlementMapping(
                 mapOf(
                     "prod_1" to ProductEntitlementMapping.Mapping(
@@ -317,7 +315,7 @@ class OfflineCustomerInfoCalculatorTest {
     fun `two products with overlapping entitlements prioritizes the one with no expiration`() {
         val entitlementID = "pro_1"
 
-        val purchasedProducts = mockPurchasedProducts(
+        val purchasedProducts = mockActiveProducts(
             entitlementMap = ProductEntitlementMapping(
                 mapOf(
                     "prod_1" to ProductEntitlementMapping.Mapping(
@@ -359,7 +357,7 @@ class OfflineCustomerInfoCalculatorTest {
         val entitlementID = "pro_1"
 
         val productIdentifier = "consumable"
-        val purchasedProducts = mockPurchasedProducts(
+        val purchasedProducts = mockActiveProducts(
             entitlementMap = ProductEntitlementMapping(
                 mapOf(
                     productIdentifier to ProductEntitlementMapping.Mapping(
@@ -399,14 +397,13 @@ class OfflineCustomerInfoCalculatorTest {
                 productId,
                 null,
                 storeTransaction,
-                true,
                 listOf("pro"),
                 null
             )
         )
 
         every {
-            purchasedProductsFetcher.queryPurchasedProducts(
+            purchasedProductsFetcher.queryActiveProducts(
                 appUserID,
                 captureLambda(),
                 any()
@@ -426,48 +423,9 @@ class OfflineCustomerInfoCalculatorTest {
     }
 
     @Test
-    fun `success is triggered if non active inapp purchase exists`() {
-        val productId = "test-product-id"
-        val storeTransaction = mockk<StoreTransaction>().apply {
-            every { type } returns ProductType.INAPP
-            every { purchaseTime } returns Date().time
-        }
-        val products = listOf(
-            PurchasedProduct(
-                productId,
-                null,
-                storeTransaction,
-                false,
-                listOf("pro"),
-                null
-            )
-        )
-
-        every {
-            purchasedProductsFetcher.queryPurchasedProducts(
-                appUserID,
-                captureLambda(),
-                any()
-            )
-        } answers {
-            lambda<(List<PurchasedProduct>) -> Unit>().captured.invoke(products)
-        }
-
-        var receivedCustomerInfo: CustomerInfo? = null
-        offlineCustomerInfoCalculator.computeOfflineCustomerInfo(
-            appUserID,
-            { receivedCustomerInfo = it },
-            { fail("Should be success") }
-        )
-        assertThat(receivedCustomerInfo).isNotNull
-        assertThat(receivedCustomerInfo?.allPurchaseDatesByProduct).containsOnlyKeys(productId)
-        assertThat(receivedCustomerInfo?.allPurchaseDatesByProduct?.get(productId)?.time).isEqualTo(storeTransaction.purchaseTime)
-    }
-
-    @Test
     fun `error is triggered when fetching products fails`() {
         every {
-            purchasedProductsFetcher.queryPurchasedProducts(
+            purchasedProductsFetcher.queryActiveProducts(
                 appUserID,
                 any(),
                 captureLambda()
@@ -513,7 +471,7 @@ class OfflineCustomerInfoCalculatorTest {
         assertThat(receivedEntitlement?.unsubscribeDetectedAt).isNull()
     }
 
-    private fun mockPurchasedProducts(
+    private fun mockActiveProducts(
         entitlementMap: ProductEntitlementMapping = ProductEntitlementMapping(
             mapOf(
                 "product_1" to ProductEntitlementMapping.Mapping(
@@ -535,14 +493,13 @@ class OfflineCustomerInfoCalculatorTest {
                 productIdentifier,
                 mapping.basePlanId,
                 storeTransaction,
-                true,
                 mapping.entitlements,
                 expiresDate
             )
         }
 
         every {
-            purchasedProductsFetcher.queryPurchasedProducts(
+            purchasedProductsFetcher.queryActiveProducts(
                 appUserID,
                 captureLambda(),
                 any()

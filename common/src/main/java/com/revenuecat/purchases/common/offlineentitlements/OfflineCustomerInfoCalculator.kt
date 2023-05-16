@@ -41,11 +41,11 @@ class OfflineCustomerInfoCalculator(
         onSuccess: (CustomerInfo) -> Unit,
         onError: (PurchasesError) -> Unit
     ) {
-        purchasedProductsFetcher.queryPurchasedProducts(
+        purchasedProductsFetcher.queryActiveProducts(
             appUserID,
             onSuccess = { purchasedProducts ->
                 val containsAnyActiveInAppPurchase = purchasedProducts.any {
-                    it.storeTransaction.type == ProductType.INAPP && it.isActive
+                    it.storeTransaction.type == ProductType.INAPP
                 }
                 if (containsAnyActiveInAppPurchase) {
                     val error = PurchasesError(
@@ -54,7 +54,7 @@ class OfflineCustomerInfoCalculator(
                     )
                     errorLog(COMPUTING_OFFLINE_CUSTOMER_INFO_FAILED.format(error))
                     onError(error)
-                    return@queryPurchasedProducts
+                    return@queryActiveProducts
                 }
                 val customerInfo = buildCustomerInfoUsingListOfPurchases(appUserID, purchasedProducts)
                 onSuccess.invoke(customerInfo)

@@ -10,7 +10,6 @@ import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.strings.OfflineEntitlementsStrings
 import com.revenuecat.purchases.utils.stubStoreTransactionFromGooglePurchase
-import com.revenuecat.purchases.utils.stubStoreTransactionFromPurchaseHistoryRecord
 import io.mockk.every
 import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
@@ -35,7 +34,7 @@ class PurchasedProductsFetcherTest {
 
     private val appUserID = "appUserID"
 
-    val unexpectedOnError: (PurchasesError) -> Unit = {
+    private val unexpectedOnError: (PurchasesError) -> Unit = {
         fail("Should not have errored")
     }
 
@@ -57,7 +56,7 @@ class PurchasedProductsFetcherTest {
         } returns null
 
         var error: PurchasesError? = null
-        fetcher.queryPurchasedProducts(
+        fetcher.queryActiveProducts(
             appUserID = "appUserID",
             onSuccess = { fail("Should not have succeeded") },
             onError = { error = it }
@@ -73,8 +72,6 @@ class PurchasedProductsFetcherTest {
     fun `returns empty list if there are no purchases`() {
         mockEntitlementMapping(mapOf("monthly" to listOf("pro")))
 
-        mockAllPurchases()
-
         every {
             billing.queryPurchases(
                 appUserID,
@@ -87,7 +84,7 @@ class PurchasedProductsFetcherTest {
 
         var receivedListOfPurchasedProducts: List<PurchasedProduct>? = null
 
-        fetcher.queryPurchasedProducts(
+        fetcher.queryActiveProducts(
             appUserID = "appUserID",
             onSuccess = {
                 receivedListOfPurchasedProducts = it
@@ -109,17 +106,12 @@ class PurchasedProductsFetcherTest {
             productIds = listOf(productIdentifier),
             purchaseTime = testDate.time
         )
-        val purchaseRecord = stubStoreTransactionFromPurchaseHistoryRecord(
-            productIds = listOf(productIdentifier),
-            purchaseTime = testDate.time
-        )
 
-        mockAllPurchases(purchaseRecord)
-        mockActivePurchases(activePurchase)
+        mockActivePurchases(listOf(activePurchase))
 
         var receivedListOfPurchasedProducts: List<PurchasedProduct>? = null
 
-        fetcher.queryPurchasedProducts(
+        fetcher.queryActiveProducts(
             appUserID = "appUserID",
             onSuccess = {
                 receivedListOfPurchasedProducts = it
@@ -132,9 +124,8 @@ class PurchasedProductsFetcherTest {
 
         assertPurchasedProduct(
             receivedListOfPurchasedProducts!![0],
-            purchaseRecord,
-            productIdentifierToEntitlements,
-            isActive = true
+            activePurchase,
+            productIdentifierToEntitlements
         )
     }
 
@@ -149,17 +140,12 @@ class PurchasedProductsFetcherTest {
             productIds = listOf(productIdentifier),
             purchaseTime = testDate.time
         )
-        val purchaseRecord = stubStoreTransactionFromPurchaseHistoryRecord(
-            productIds = listOf(productIdentifier),
-            purchaseTime = testDate.time
-        )
 
-        mockAllPurchases(purchaseRecord)
-        mockActivePurchases(activePurchase)
+        mockActivePurchases(listOf(activePurchase))
 
         var receivedListOfPurchasedProducts: List<PurchasedProduct>? = null
 
-        fetcher.queryPurchasedProducts(
+        fetcher.queryActiveProducts(
             appUserID = "appUserID",
             onSuccess = {
                 receivedListOfPurchasedProducts = it
@@ -172,127 +158,8 @@ class PurchasedProductsFetcherTest {
 
         assertPurchasedProduct(
             receivedListOfPurchasedProducts!![0],
-            purchaseRecord,
-            productIdentifierToEntitlements,
-            isActive = true
-        )
-    }
-
-    @Test
-    fun `two purchased products, one active with entitlement`() {
-        val entitlements = listOf("pro", "premium")
-        val productIdentifierMonthly = "monthly"
-        val productIdentifierAnnual = "annual"
-
-        val productIdentifierToEntitlements = mapOf(
-            productIdentifierMonthly to entitlements,
-            productIdentifierAnnual to emptyList()
-        )
-        mockEntitlementMapping(
+            activePurchase,
             productIdentifierToEntitlements
-        )
-
-        val activePurchase = stubStoreTransactionFromGooglePurchase(
-            productIds = listOf(productIdentifierMonthly),
-            purchaseTime = testDate.time
-        )
-        val purchaseRecordMonthly = stubStoreTransactionFromPurchaseHistoryRecord(
-            productIds = listOf(productIdentifierMonthly),
-            purchaseTime = testDate.time
-        )
-        val purchaseRecordAnnual = stubStoreTransactionFromPurchaseHistoryRecord(
-            productIds = listOf(productIdentifierAnnual),
-            purchaseTime = testDate.time
-        )
-
-        mockAllPurchases(purchaseRecordMonthly, purchaseRecordAnnual)
-        mockActivePurchases(activePurchase)
-
-        var receivedListOfPurchasedProducts: List<PurchasedProduct>? = null
-
-        fetcher.queryPurchasedProducts(
-            appUserID = "appUserID",
-            onSuccess = {
-                receivedListOfPurchasedProducts = it
-            },
-            unexpectedOnError
-        )
-
-        assertThat(receivedListOfPurchasedProducts).isNotNull
-        assertThat(receivedListOfPurchasedProducts!!.size).isEqualTo(2)
-
-        val monthlyProduct =
-            receivedListOfPurchasedProducts!!.first { it.productIdentifier == productIdentifierMonthly }
-        assertPurchasedProduct(
-            monthlyProduct,
-            purchaseRecordMonthly,
-            productIdentifierToEntitlements,
-            isActive = true
-        )
-
-        val annualProduct = receivedListOfPurchasedProducts!!.first { it.productIdentifier == productIdentifierAnnual }
-        assertPurchasedProduct(
-            annualProduct,
-            purchaseRecordAnnual,
-            productIdentifierToEntitlements,
-            isActive = false
-        )
-    }
-
-    @Test
-    fun `two purchased products, one active without entitlement`() {
-        val productIdentifierMonthly = "monthly"
-        val productIdentifierAnnual = "annual"
-        val mapOfEntitlements = mapOf<String, List<String>>(
-            productIdentifierMonthly to emptyList(),
-            productIdentifierAnnual to emptyList()
-        )
-        mockEntitlementMapping(mapOfEntitlements)
-
-        val activePurchase = stubStoreTransactionFromGooglePurchase(
-            productIds = listOf(productIdentifierMonthly),
-            purchaseTime = testDate.time
-        )
-        val purchaseRecordMonthly = stubStoreTransactionFromPurchaseHistoryRecord(
-            productIds = listOf(productIdentifierMonthly),
-            purchaseTime = testDate.time
-        )
-        val purchaseRecordAnnual = stubStoreTransactionFromPurchaseHistoryRecord(
-            productIds = listOf(productIdentifierAnnual),
-            purchaseTime = testDate.time
-        )
-
-        mockAllPurchases(purchaseRecordMonthly, purchaseRecordAnnual)
-        mockActivePurchases(activePurchase)
-
-        var receivedListOfPurchasedProducts: List<PurchasedProduct>? = null
-
-        fetcher.queryPurchasedProducts(
-            appUserID = "appUserID",
-            onSuccess = {
-                receivedListOfPurchasedProducts = it
-            },
-            unexpectedOnError
-        )
-
-        assertThat(receivedListOfPurchasedProducts).isNotNull
-        assertThat(receivedListOfPurchasedProducts!!.size).isEqualTo(2)
-
-        val monthlyProduct =
-            receivedListOfPurchasedProducts!!.first { it.productIdentifier == productIdentifierMonthly }
-        assertPurchasedProduct(
-            monthlyProduct,
-            purchaseRecordMonthly,
-            mapOfEntitlements,
-            isActive = true
-        )
-
-        val annualProduct = receivedListOfPurchasedProducts!!.first { it.productIdentifier == productIdentifierAnnual }
-        assertPurchasedProduct(
-            annualProduct,
-            purchaseRecordAnnual,
-            mapOfEntitlements,
-            isActive = false
         )
     }
 
@@ -310,25 +177,22 @@ class PurchasedProductsFetcherTest {
 
         mockEntitlementMapping(mapOfEntitlements)
 
-        val activePurchase = stubStoreTransactionFromGooglePurchase(
+        val activePurchaseMonthly = stubStoreTransactionFromGooglePurchase(
             productIds = listOf(productIdentifierMonthly),
-            purchaseTime = testDate.time
+            purchaseTime = testDate.time,
+            purchaseToken = "test-token-1"
         )
-        val purchaseRecordMonthly = stubStoreTransactionFromPurchaseHistoryRecord(
-            productIds = listOf(productIdentifierMonthly),
-            purchaseTime = testDate.time
-        )
-        val purchaseRecordAnnual = stubStoreTransactionFromPurchaseHistoryRecord(
+        val activePurchaseAnnual = stubStoreTransactionFromGooglePurchase(
             productIds = listOf(productIdentifierAnnual),
-            purchaseTime = testDate.time
+            purchaseTime = testDate.time,
+            purchaseToken = "test-token-2"
         )
 
-        mockAllPurchases(purchaseRecordMonthly, purchaseRecordAnnual)
-        mockActivePurchases(activePurchase)
+        mockActivePurchases(listOf(activePurchaseMonthly, activePurchaseAnnual))
 
         var receivedListOfPurchasedProducts: List<PurchasedProduct>? = null
 
-        fetcher.queryPurchasedProducts(
+        fetcher.queryActiveProducts(
             appUserID = "appUserID",
             onSuccess = {
                 receivedListOfPurchasedProducts = it
@@ -343,17 +207,15 @@ class PurchasedProductsFetcherTest {
             receivedListOfPurchasedProducts!!.first { it.productIdentifier == productIdentifierMonthly }
         assertPurchasedProduct(
             monthlyProduct,
-            purchaseRecordMonthly,
-            mapOfEntitlements,
-            isActive = true
+            activePurchaseMonthly,
+            mapOfEntitlements
         )
 
         val annualProduct = receivedListOfPurchasedProducts!!.first { it.productIdentifier == productIdentifierAnnual }
         assertPurchasedProduct(
             annualProduct,
-            purchaseRecordAnnual,
-            mapOfEntitlements,
-            isActive = false
+            activePurchaseAnnual,
+            mapOfEntitlements
         )
     }
 
@@ -371,25 +233,22 @@ class PurchasedProductsFetcherTest {
 
         mockEntitlementMapping(mapOfEntitlements)
 
-        val activePurchase = stubStoreTransactionFromGooglePurchase(
+        val activePurchaseMonthly = stubStoreTransactionFromGooglePurchase(
             productIds = listOf(productIdentifierMonthly),
-            purchaseTime = testDate.time
+            purchaseTime = testDate.time,
+            purchaseToken = "test-token-1"
         )
-        val purchaseRecordMonthly = stubStoreTransactionFromPurchaseHistoryRecord(
-            productIds = listOf(productIdentifierMonthly),
-            purchaseTime = testDate.time
-        )
-        val purchaseRecordAnnual = stubStoreTransactionFromPurchaseHistoryRecord(
+        val activePurchaseAnnual = stubStoreTransactionFromGooglePurchase(
             productIds = listOf(productIdentifierAnnual),
-            purchaseTime = testDate.time
+            purchaseTime = testDate.time,
+            purchaseToken = "test-token-2"
         )
 
-        mockAllPurchases(purchaseRecordMonthly, purchaseRecordAnnual)
-        mockActivePurchases(activePurchase)
+        mockActivePurchases(listOf(activePurchaseMonthly, activePurchaseAnnual))
 
         var receivedListOfPurchasedProducts: List<PurchasedProduct>? = null
 
-        fetcher.queryPurchasedProducts(
+        fetcher.queryActiveProducts(
             appUserID = "appUserID",
             onSuccess = {
                 receivedListOfPurchasedProducts = it
@@ -404,17 +263,15 @@ class PurchasedProductsFetcherTest {
             receivedListOfPurchasedProducts!!.first { it.productIdentifier == productIdentifierMonthly }
         assertPurchasedProduct(
             monthlyProduct,
-            purchaseRecordMonthly,
-            mapOfEntitlements,
-            isActive = true
+            activePurchaseMonthly,
+            mapOfEntitlements
         )
 
         val annualProduct = receivedListOfPurchasedProducts!!.first { it.productIdentifier == productIdentifierAnnual }
         assertPurchasedProduct(
             annualProduct,
-            purchaseRecordAnnual,
-            mapOfEntitlements,
-            isActive = false
+            activePurchaseAnnual,
+            mapOfEntitlements
         )
     }
 
@@ -422,21 +279,19 @@ class PurchasedProductsFetcherTest {
     private fun assertPurchasedProduct(
         purchasedProduct: PurchasedProduct,
         purchaseRecord: StoreTransaction,
-        productIdentifierToEntitlements: Map<String, List<String>>,
-        isActive: Boolean
+        productIdentifierToEntitlements: Map<String, List<String>>
     ) {
-        assertThat(purchasedProduct.productIdentifier).isEqualTo(purchaseRecord.skus[0])
+        assertThat(purchasedProduct.productIdentifier).isEqualTo(purchaseRecord.productIds[0])
         assertThat(purchasedProduct.storeTransaction).isEqualTo(purchaseRecord)
-        assertThat(purchasedProduct.isActive).isEqualTo(isActive)
         assertThat(purchasedProduct.entitlements.size).isEqualTo(productIdentifierToEntitlements[purchasedProduct.productIdentifier]!!.size)
         assertThat(purchasedProduct.entitlements).containsAll(productIdentifierToEntitlements[purchasedProduct.productIdentifier])
-        val expiresDate = if (isActive) testDatePlusOneDay else testDate
+        val expiresDate = testDatePlusOneDay
         assertThat(purchasedProduct.expiresDate)
             .withFailMessage("Expires date should be $expiresDate, but it was ${purchasedProduct.expiresDate}")
             .isEqualTo(expiresDate)
     }
 
-    private fun mockActivePurchases(storeTransaction: StoreTransaction) {
+    private fun mockActivePurchases(activePurchases: List<StoreTransaction>) {
         every {
             billing.queryPurchases(
                 appUserID,
@@ -444,20 +299,8 @@ class PurchasedProductsFetcherTest {
                 onError = any()
             )
         } answers {
-            val map = mapOf(storeTransaction.purchaseToken.sha1() to storeTransaction)
+            val map = activePurchases.associateBy { it.purchaseToken.sha1() }
             lambda<(Map<String, StoreTransaction>) -> Unit>().captured.invoke(map)
-        }
-    }
-
-    private fun mockAllPurchases(vararg storeTransactions: StoreTransaction) {
-        every {
-            billing.queryAllPurchases(
-                appUserID,
-                onReceivePurchaseHistory = captureLambda(),
-                onReceivePurchaseHistoryError = any()
-            )
-        } answers {
-            lambda<(List<StoreTransaction>) -> Unit>().captured.invoke(storeTransactions.toList())
         }
     }
 
