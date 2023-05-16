@@ -10,6 +10,7 @@
             android:supportsRtl="true"
             android:debuggable="true"
             android:theme="@style/Theme.MaterialComponents.DayNight.DarkActionBar"
+            android:usesCleartextTraffic="true"
             tools:ignore="HardcodedDebugMode">
         <activity android:name="com.revenuecat.purchases.MainActivity" android:exported="true"/>
     </application>
