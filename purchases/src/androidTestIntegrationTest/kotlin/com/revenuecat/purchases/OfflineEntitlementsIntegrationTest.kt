@@ -85,10 +85,11 @@ class OfflineEntitlementsIntegrationTest : BasePurchasesIntegrationTest() {
     fun entersOfflineEntitlementsModeIfNoCachedCustomerInfoAndCustomerInfoRequestReturns500() {
         ensureBlockFinishes { latch ->
             setupTest(
-                buildSharedPreferencesMap(),
+                buildSharedPreferencesMap(shouldIncludeCustomerInfo = false),
                 initialActivePurchases
             ) {
                 Purchases.sharedInstance.getCustomerInfoWith(
+                    fetchPolicy = CacheFetchPolicy.FETCH_CURRENT,
                     onError = {
                         latch.countDown()
                         fail("Expected success but got error: $it")
@@ -112,14 +113,13 @@ class OfflineEntitlementsIntegrationTest : BasePurchasesIntegrationTest() {
                 initialActivePurchases
             ) {
                 Purchases.sharedInstance.getCustomerInfoWith(
+                    fetchPolicy = CacheFetchPolicy.FETCH_CURRENT,
                     onError = {
                         latch.countDown()
-                        fail("Expected success but got error: $it")
                     },
-                    onSuccess = { receivedCustomerInfo ->
-                        // It's returning the cached customer info. That's why it's successful.
-                        assertThat(receivedCustomerInfo.entitlements.active).isEmpty()
+                    onSuccess = {
                         latch.countDown()
+                        fail("Expected error but got success: $it")
                     }
                 )
             }
