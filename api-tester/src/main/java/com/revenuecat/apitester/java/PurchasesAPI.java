@@ -84,7 +84,7 @@ final class PurchasesAPI {
         };
         final SyncPurchasesCallback syncPurchasesCallback = new SyncPurchasesCallback() {
             @Override
-            public void onSuccess() {
+            public void onSuccess(@NonNull CustomerInfo customerInfo) {
             }
 
             @Override

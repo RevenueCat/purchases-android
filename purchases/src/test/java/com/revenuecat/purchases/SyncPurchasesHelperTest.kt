@@ -3,9 +3,11 @@ package com.revenuecat.purchases
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.identity.IdentityManager
+import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.models.StoreTransaction
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.slot
 import io.mockk.verify
 import io.mockk.verifyAll
 import org.assertj.core.api.Assertions.assertThat
@@ -18,9 +20,12 @@ import org.junit.runner.RunWith
 class SyncPurchasesHelperTest {
 
     private val appUserID = "test-app-user-id"
+    private val testError = PurchasesError(PurchasesErrorCode.CustomerInfoError)
+    private val customerInfoMock = mockk<CustomerInfo>()
 
     private lateinit var billing: BillingAbstract
     private lateinit var identityManager: IdentityManager
+    private lateinit var customerInfoHelper: CustomerInfoHelper
     private lateinit var postReceiptHelper: PostReceiptHelper
 
     private lateinit var syncPurchasesHelper: SyncPurchasesHelper
@@ -29,13 +34,17 @@ class SyncPurchasesHelperTest {
     fun setUp() {
         billing = mockk()
         identityManager = mockk()
+        customerInfoHelper = mockk()
         postReceiptHelper = mockk()
 
         every { identityManager.currentAppUserID } returns appUserID
 
+        mockRetrieveCustomerInfoSuccess()
+
         syncPurchasesHelper = SyncPurchasesHelper(
             billing,
             identityManager,
+            customerInfoHelper,
             postReceiptHelper
         )
     }
@@ -44,19 +53,34 @@ class SyncPurchasesHelperTest {
     fun `does not sync if no purchases`() {
         mockBillingQueryAllPurchasesSuccess(emptyList())
 
-        var successCallCount = 0
+        var receivedCustomerInfo: CustomerInfo? = null
         syncPurchasesHelper.syncPurchases(
             isRestore = false,
-            onSuccess = { successCallCount++ },
+            onSuccess = { receivedCustomerInfo = it },
             onError = { fail("Should not call onError") }
         )
 
-        assertThat(successCallCount).isEqualTo(1)
+        assertThat(receivedCustomerInfo).isEqualTo(customerInfoMock)
         verify(exactly = 0) {
             postReceiptHelper.postTokenWithoutConsuming(
                 any(), any(), any(), any(), any(), any(), any(), any()
             )
         }
+    }
+
+    @Test
+    fun `returns error if error getting cached customer info`() {
+        mockBillingQueryAllPurchasesSuccess(emptyList())
+        mockRetrieveCustomerInfoError()
+
+        var receivedError: PurchasesError? = null
+        syncPurchasesHelper.syncPurchases(
+            isRestore = false,
+            onSuccess = { fail("Should not call onSuccess") },
+            onError = { receivedError = it }
+        )
+
+        assertThat(receivedError).isEqualTo(testError)
     }
 
     @Test
@@ -97,17 +121,17 @@ class SyncPurchasesHelperTest {
         every {
             postReceiptHelper.postTokenWithoutConsuming(any(), any(), any(), any(), any(), any(), captureLambda(), any())
         } answers {
-            lambda<() -> Unit>().captured.invoke()
+            lambda<(CustomerInfo) -> Unit>().captured.invoke(mockk())
         }
 
-        var successCallCount = 0
+        var receivedCustomerInfo: CustomerInfo? = null
         syncPurchasesHelper.syncPurchases(
             isRestore = false,
-            onSuccess = { successCallCount++ },
+            onSuccess = { receivedCustomerInfo = it },
             onError = { fail("Should have succeeded") }
         )
 
-        assertThat(successCallCount).isEqualTo(1)
+        assertThat(receivedCustomerInfo).isEqualTo(customerInfoMock)
         verifyAll {
             postReceiptHelper.postTokenWithoutConsuming(
                 purchaseToken = "test-purchase-token-1",
@@ -151,7 +175,7 @@ class SyncPurchasesHelperTest {
         every {
             postReceiptHelper.postTokenWithoutConsuming(any(), any(), any(), any(), any(), any(), any(), captureLambda())
         } answers {
-            lambda<(PurchasesError) -> Unit>().captured.invoke(PurchasesError(PurchasesErrorCode.UnknownError))
+            lambda<(PurchasesError) -> Unit>().captured.invoke(testError)
         }
 
         var errorCallCount = 0
@@ -218,6 +242,38 @@ class SyncPurchasesHelperTest {
             billing.queryAllPurchases(appUserID, any(), captureLambda())
         } answers {
             lambda<(PurchasesError) -> Unit>().captured.invoke(error)
+        }
+    }
+
+    private fun mockRetrieveCustomerInfoSuccess(
+        customerInfo: CustomerInfo = customerInfoMock
+    ) {
+        val callbackSlot = slot<ReceiveCustomerInfoCallback>()
+        every {
+            customerInfoHelper.retrieveCustomerInfo(
+                appUserID,
+                CacheFetchPolicy.CACHE_ONLY,
+                false,
+                capture(callbackSlot)
+            )
+        } answers {
+            callbackSlot.captured.onReceived(customerInfo)
+        }
+    }
+
+    private fun mockRetrieveCustomerInfoError(
+        error: PurchasesError = testError
+    ) {
+        val callbackSlot = slot<ReceiveCustomerInfoCallback>()
+        every {
+            customerInfoHelper.retrieveCustomerInfo(
+                appUserID,
+                CacheFetchPolicy.CACHE_ONLY,
+                false,
+                capture(callbackSlot)
+            )
+        } answers {
+            callbackSlot.captured.onError(error)
         }
     }
 

@@ -94,11 +94,11 @@ internal fun logInSuccessListener(
 }
 
 internal fun syncPurchasesListener(
-    onSuccess: () -> Unit,
+    onSuccess: (CustomerInfo) -> Unit,
     onError: (error: PurchasesError) -> Unit
 ) = object : SyncPurchasesCallback {
-    override fun onSuccess() {
-        onSuccess()
+    override fun onSuccess(customerInfo: CustomerInfo) {
+        onSuccess(customerInfo)
     }
 
     override fun onError(error: PurchasesError) {
@@ -258,7 +258,7 @@ fun Purchases.restorePurchasesWith(
  */
 fun Purchases.syncPurchasesWith(
     onError: (error: PurchasesError) -> Unit = ON_ERROR_STUB,
-    onSuccess: () -> Unit
+    onSuccess: (CustomerInfo) -> Unit
 ) {
     syncPurchases(syncPurchasesListener(onSuccess, onError))
 }

@@ -39,7 +39,6 @@ import java.util.concurrent.ExecutorService
 
 @Suppress("unused", "UNUSED_VARIABLE", "EmptyFunctionBlock", "RemoveExplicitTypeArguments", "RedundantLambdaArrow")
 private class PurchasesAPI {
-    val noParametersCallback: () -> Unit = {}
     @SuppressWarnings("LongParameterList")
     fun check(
         purchases: Purchases
@@ -62,7 +61,7 @@ private class PurchasesAPI {
             override fun onError(error: PurchasesError) {}
         }
         val syncPurchasesCallback = object : SyncPurchasesCallback {
-            override fun onSuccess() {}
+            override fun onSuccess(customerInfo: CustomerInfo) {}
             override fun onError(error: PurchasesError) {}
         }
 
@@ -157,10 +156,10 @@ private class PurchasesAPI {
         )
         purchases.syncPurchasesWith(
             onError = { _: PurchasesError -> },
-            onSuccess = noParametersCallback
+            onSuccess = { _: CustomerInfo -> }
         )
         purchases.syncPurchasesWith(
-            onSuccess = noParametersCallback
+            onSuccess = { _: CustomerInfo -> }
         )
         purchases.logInWith(
             "",

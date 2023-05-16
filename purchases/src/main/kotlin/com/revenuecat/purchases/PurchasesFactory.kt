@@ -167,6 +167,7 @@ internal class PurchasesFactory(
             val syncPurchasesHelper = SyncPurchasesHelper(
                 billing,
                 identityManager,
+                customerInfoHelper,
                 postReceiptHelper
             )
 

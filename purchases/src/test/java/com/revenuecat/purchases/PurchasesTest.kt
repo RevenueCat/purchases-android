@@ -2666,16 +2666,21 @@ class PurchasesTest: BasePurchasesTest() {
         every {
             mockSyncPurchasesHelper.syncPurchases(any(), captureLambda(), any())
         } answers {
-            lambda<() -> Unit>().captured.invoke()
+            lambda<(CustomerInfo) -> Unit>().captured.invoke(mockInfo)
         }
 
         var successCallCount = 0
+        var receivedCustomerInfo: CustomerInfo? = null
         purchases.syncPurchasesWith(
             { fail("Expected to succeed") },
-            { successCallCount++ }
+            {
+                successCallCount++
+                receivedCustomerInfo = it
+            }
         )
 
         assertThat(successCallCount).isEqualTo(1)
+        assertThat(receivedCustomerInfo).isEqualTo(mockInfo)
     }
 
     @Test
