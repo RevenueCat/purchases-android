@@ -49,7 +49,7 @@ interface SubscriptionOption {
      * Not applicable for Amazon subscriptions.
      */
     val isPrepaid: Boolean
-        get() =  this.fullPricePhase?.recurrenceMode == RecurrenceMode.NON_RECURRING
+        get() = this.fullPricePhase?.recurrenceMode == RecurrenceMode.NON_RECURRING
 
     /**
      * The full price [PricingPhase] of the subscription.
