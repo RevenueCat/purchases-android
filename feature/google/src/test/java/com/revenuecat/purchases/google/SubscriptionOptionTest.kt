@@ -79,6 +79,7 @@ class SubscriptionOptionTest {
         assertThat(subscriptionOption.freePhase).isNull()
         assertThat(subscriptionOption.introPhase).isNull()
         assertThat(subscriptionOption.fullPricePhase).isEqualTo(recurringPhase)
+        assertThat(subscriptionOption.isPrepaid).isTrue
     }
 
     @Test
