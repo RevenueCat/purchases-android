@@ -932,16 +932,20 @@ class BillingWrapperTest {
     }
 
     @Test
-    fun `purchasesUpdatedCalls are forwarded with empty list if result is ok but with a null purchase`() {
-        val slot = slot<List<StoreTransaction>>()
+    fun `purchasesUpdatedCalls call the error callback if result is ok but with a null purchase`() {
         every {
-            mockPurchasesListener.onPurchasesUpdated(capture(slot))
+            mockPurchasesListener.onPurchasesFailedToUpdate(any())
         } just Runs
-
-        purchasesUpdatedListener!!.onPurchasesUpdated(billingClientOKResult, null)
-
-        assertThat(slot.isCaptured).isTrue
-        assertThat(slot.captured.isEmpty()).isTrue
+        purchasesUpdatedListener!!.onPurchasesUpdated(
+            BillingClient.BillingResponseCode.OK.buildResult(),
+            null
+        )
+        verify(exactly = 0) {
+            mockPurchasesListener.onPurchasesUpdated(any())
+        }
+        verify {
+            mockPurchasesListener.onPurchasesFailedToUpdate(any())
+        }
     }
 
     @Test

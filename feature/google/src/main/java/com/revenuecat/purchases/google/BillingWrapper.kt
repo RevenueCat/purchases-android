@@ -611,10 +611,6 @@ class BillingWrapper(
                     }
                 }
             }
-        } else if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
-            // Forward empty list if result is ok but with a null purchase. Used to happen when doing a product change
-            // in DEFERRED proration mode. Should not happen since Billing Client 5.
-            purchasesUpdatedListener?.onPurchasesUpdated(emptyList())
         } else {
             log(LogIntent.GOOGLE_ERROR, BillingStrings.BILLING_WRAPPER_PURCHASES_ERROR
                 .format(billingResult.toHumanReadableDescription()) +
@@ -630,6 +626,9 @@ class BillingWrapper(
 
             val responseCode =
                 if (purchases == null && billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
+                    // Result being ok but with a Null purchase used to happen when doing a product change
+                    // in DEFERRED proration mode in Billing Client <= 4. Should not happen in Billing Client 5+ since
+                    // we get the transaction for the previous product.
                     BillingClient.BillingResponseCode.ERROR
                 } else {
                     billingResult.responseCode
