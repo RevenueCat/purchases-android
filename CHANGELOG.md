@@ -1,13 +1,7 @@
 ## 6.2.0
 ### New Features
 * CAT-859 Expose whether or not a SubscriptionOption is Prepaid in the SDK (#1005) via Deema AlShamaa (@dalshamaa)
-* Add proration modes to post to backend (#977) via swehner (@swehner)
-* Added ENTITLEMENTS_COMPUTED_ON_DEVICE (#939) via Cesar de la Vega (@vegaro)
 ### Bugfixes
-* Fix flaky test in OfflineCustomerInfoCalculatorTest (#997) via Cesar de la Vega (@vegaro)
-* Fix `OfflineCustomerInfoCalculatorTest` `Unresolved reference: ProducType` (#995) via Cesar de la Vega (@vegaro)
-* Add support for product_plan_identifier for offline customer info (#959) via Cesar de la Vega (@vegaro)
-* Add non-subscriptions support to offline customer info (#958) via Cesar de la Vega (@vegaro)
 * [CF-1324] Fix personalizedPrice defaulting to false (#952) via beylmk (@beylmk)
 ### Performance Improvements
 * Store and return ETag last refresh time header (#978) via Toni Rico (@tonidero)
@@ -18,6 +12,12 @@
 * Bump fastlane from 2.212.1 to 2.212.2 (#973) via dependabot[bot] (@dependabot[bot])
 * Bump fastlane-plugin-revenuecat_internal from `9255366` to `8482a43` (#961) via dependabot[bot] (@dependabot[bot])
 ### Other Changes
+* Add proration modes to post to backend (#977) via swehner (@swehner)
+* Added ENTITLEMENTS_COMPUTED_ON_DEVICE (#939) via Cesar de la Vega (@vegaro)
+* Fix flaky test in OfflineCustomerInfoCalculatorTest (#997) via Cesar de la Vega (@vegaro)
+* Fix `OfflineCustomerInfoCalculatorTest` `Unresolved reference: ProducType` (#995) via Cesar de la Vega (@vegaro)
+* Add support for product_plan_identifier for offline customer info (#959) via Cesar de la Vega (@vegaro)
+* Add non-subscriptions support to offline customer info (#958) via Cesar de la Vega (@vegaro)
 * Query only active purchases when generating offline entitlements customer info (#1003) via Toni Rico (@tonidero)
 * Fix `PurchasesIntegrationTest` building issue (#996 into main) (#998) via Cesar de la Vega (@vegaro)
 * Fail offline entitlements computation if product entitlement mapping not available (#999) via Toni Rico (@tonidero)
