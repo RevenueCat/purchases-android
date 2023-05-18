@@ -102,7 +102,7 @@ class HTTPClient(
         refreshETag: Boolean = false
     ): HTTPResult {
         if (appConfig.forceServerErrors) {
-            debugLog("Forcing server error for request to ${endpoint.getPath()}")
+            warnLog("Forcing server error for request to ${endpoint.getPath()}")
             return HTTPResult(
                 RCHTTPStatusCodes.ERROR,
                 payload = "",
