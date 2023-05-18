@@ -73,6 +73,7 @@ abstract class BaseBackendIntegrationTest {
             every { versionName } returns "test-version-name"
             every { packageName } returns "com.revenuecat.purchases.backend_tests"
             every { finishTransactions } returns true
+            every { forceServerErrors } returns false
         }
         dispatcher = Dispatcher(Executors.newSingleThreadScheduledExecutor())
         diagnosticsDispatcher = Dispatcher(Executors.newSingleThreadScheduledExecutor())
