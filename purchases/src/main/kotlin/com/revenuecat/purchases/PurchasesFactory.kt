@@ -44,7 +44,8 @@ internal class PurchasesFactory(
         configuration: PurchasesConfiguration,
         platformInfo: PlatformInfo,
         proxyURL: URL?,
-        overrideBillingAbstract: BillingAbstract? = null
+        overrideBillingAbstract: BillingAbstract? = null,
+        forceServerErrors: Boolean = false
     ): Purchases {
         validateConfiguration(configuration)
 
@@ -56,7 +57,8 @@ internal class PurchasesFactory(
                 platformInfo,
                 proxyURL,
                 store,
-                dangerousSettings
+                dangerousSettings,
+                forceServerErrors
             )
 
             val prefs = PreferenceManager.getDefaultSharedPreferences(application)
