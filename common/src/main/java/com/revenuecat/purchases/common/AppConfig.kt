@@ -6,13 +6,16 @@ import com.revenuecat.purchases.Store
 import java.net.URL
 import com.revenuecat.purchases.strings.ConfigureStrings
 
+@Suppress("LongParameterList")
 class AppConfig(
     context: Context,
     observerMode: Boolean,
     val platformInfo: PlatformInfo,
     proxyURL: URL?,
     val store: Store,
-    val dangerousSettings: DangerousSettings = DangerousSettings(autoSyncPurchases = true)
+    val dangerousSettings: DangerousSettings = DangerousSettings(autoSyncPurchases = true),
+    // Should only be used for tests
+    var forceServerErrors: Boolean = false
 ) {
 
     val languageTag: String = context.getLocale()?.toBCP47() ?: ""
@@ -39,6 +42,7 @@ class AppConfig(
         if (versionName != other.versionName) return false
         if (packageName != other.packageName) return false
         if (finishTransactions != other.finishTransactions) return false
+        if (forceServerErrors != other.forceServerErrors) return false
         if (baseURL != other.baseURL) return false
 
         return true
@@ -52,6 +56,7 @@ class AppConfig(
         result = 31 * result + versionName.hashCode()
         result = 31 * result + packageName.hashCode()
         result = 31 * result + finishTransactions.hashCode()
+        result = 31 * result + forceServerErrors.hashCode()
         result = 31 * result + baseURL.hashCode()
         return result
     }

@@ -101,6 +101,16 @@ class HTTPClient(
         requestHeaders: Map<String, String>,
         refreshETag: Boolean = false
     ): HTTPResult {
+        if (appConfig.forceServerErrors) {
+            warnLog("Forcing server error for request to ${endpoint.getPath()}")
+            return HTTPResult(
+                RCHTTPStatusCodes.ERROR,
+                payload = "",
+                HTTPResult.Origin.BACKEND,
+                requestDate = null,
+                VerificationResult.NOT_REQUESTED
+            )
+        }
         var callSuccessful = false
         val requestStartTime = dateProvider.now
         var callResult: HTTPResult? = null
@@ -112,7 +122,7 @@ class HTTPClient(
         }
         if (callResult == null) {
             log(LogIntent.WARNING, NetworkStrings.ETAG_RETRYING_CALL)
-            return performRequest(baseURL, endpoint, body, requestHeaders, refreshETag = true)
+            callResult = performRequest(baseURL, endpoint, body, requestHeaders, refreshETag = true)
         }
         return callResult
     }
