@@ -75,7 +75,6 @@ dependencies {
     androidTestIntegrationTestImplementation 'org.assertj:assertj-core:3.22.0'
     androidTestIntegrationTestImplementation "io.mockk:mockk-android:$mockkVersion"
     androidTestIntegrationTestImplementation "io.mockk:mockk-agent:$mockkVersion"
-    androidTestIntegrationTestImplementation "com.squareup.okhttp3:mockwebserver:$mockwebserverVersion"
 }
 
 tasks.dokkaHtmlPartial.configure {

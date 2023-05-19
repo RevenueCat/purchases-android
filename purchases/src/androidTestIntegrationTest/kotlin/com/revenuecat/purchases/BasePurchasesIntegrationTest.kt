@@ -36,6 +36,7 @@ open class BasePurchasesIntegrationTest {
     protected fun setupTest(
         initialSharedPreferences: Map<String, String> = emptyMap(),
         initialActivePurchases: Map<String, StoreTransaction> = emptyMap(),
+        forceServerErrors: Boolean = false,
         postSetupTestCallback: (MainActivity) -> Unit = {}
     ) {
         latestPurchasesUpdatedListener = null
@@ -59,7 +60,8 @@ open class BasePurchasesIntegrationTest {
                 PurchasesConfiguration.Builder(it, Constants.apiKey)
                     .appUserID(testUserId)
                     .build(),
-                mockBillingAbstract
+                mockBillingAbstract,
+                forceServerErrors
             )
 
             postSetupTestCallback(it)

@@ -1,28 +1,20 @@
 package com.revenuecat.purchases
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.factories.StoreProductFactory
 import com.revenuecat.purchases.factories.StoreTransactionFactory
 import com.revenuecat.purchases.helpers.mockQueryProductDetails
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import io.mockk.every
-import okhttp3.mockwebserver.Dispatcher
-import okhttp3.mockwebserver.MockResponse
-import okhttp3.mockwebserver.MockWebServer
-import okhttp3.mockwebserver.RecordedRequest
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
 import org.junit.After
-import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class OfflineEntitlementsIntegrationTest : BasePurchasesIntegrationTest() {
-
-    private lateinit var server: MockWebServer
 
     private val testProductId = "annual_freetrial"
     private val testBasePlanId = "p1y"
@@ -69,15 +61,9 @@ class OfflineEntitlementsIntegrationTest : BasePurchasesIntegrationTest() {
         initialActiveTransaction.purchaseToken.sha1() to initialActiveTransaction
     )
 
-    @Before
-    fun setup() {
-        setupMockServer()
-    }
-
     @After
     fun tearDown() {
         tearDownTest()
-        server.shutdown()
         Purchases.proxyURL = null
     }
 
@@ -86,7 +72,8 @@ class OfflineEntitlementsIntegrationTest : BasePurchasesIntegrationTest() {
         ensureBlockFinishes { latch ->
             setupTest(
                 buildSharedPreferencesMap(shouldIncludeCustomerInfo = false),
-                initialActivePurchases
+                initialActivePurchases,
+                forceServerErrors = true
             ) {
                 Purchases.sharedInstance.getCustomerInfoWith(
                     fetchPolicy = CacheFetchPolicy.FETCH_CURRENT,
@@ -110,7 +97,8 @@ class OfflineEntitlementsIntegrationTest : BasePurchasesIntegrationTest() {
         ensureBlockFinishes { latch ->
             setupTest(
                 buildSharedPreferencesMap(shouldIncludeCustomerInfo = true),
-                initialActivePurchases
+                initialActivePurchases,
+                forceServerErrors = true
             ) {
                 Purchases.sharedInstance.getCustomerInfoWith(
                     fetchPolicy = CacheFetchPolicy.FETCH_CURRENT,
@@ -142,7 +130,8 @@ class OfflineEntitlementsIntegrationTest : BasePurchasesIntegrationTest() {
         ensureBlockFinishes { latch ->
             setupTest(
                 buildSharedPreferencesMap(shouldIncludeCustomerInfo = true),
-                initialActivePurchases = emptyMap()
+                initialActivePurchases = emptyMap(),
+                forceServerErrors = true
             ) { activity ->
                 val receivedCustomerInfos = mutableListOf<CustomerInfo>()
                 Purchases.sharedInstance.updatedCustomerInfoListener = UpdatedCustomerInfoListener {
@@ -176,17 +165,6 @@ class OfflineEntitlementsIntegrationTest : BasePurchasesIntegrationTest() {
     }
 
     // region helpers
-
-    private fun setupMockServer() {
-        server = MockWebServer()
-        server.start()
-        Purchases.proxyURL = server.url("").toUrl()
-        server.dispatcher = object : Dispatcher() {
-            override fun dispatch(request: RecordedRequest): MockResponse {
-                return MockResponse().setResponseCode(RCHTTPStatusCodes.ERROR)
-            }
-        }
-    }
 
     private fun buildSharedPreferencesMap(
         shouldIncludeProductEntitlementMapping: Boolean = true,
