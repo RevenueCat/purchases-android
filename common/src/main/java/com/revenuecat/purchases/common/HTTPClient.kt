@@ -14,6 +14,7 @@ import com.revenuecat.purchases.common.networking.ETagManager
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPRequest
 import com.revenuecat.purchases.common.networking.HTTPResult
+import com.revenuecat.purchases.common.networking.MapConverter
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
 import com.revenuecat.purchases.common.verification.SignatureVerificationException
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
@@ -21,7 +22,6 @@ import com.revenuecat.purchases.common.verification.SigningManager
 import com.revenuecat.purchases.strings.NetworkStrings
 import com.revenuecat.purchases.utils.filterNotNullValues
 import org.json.JSONException
-import org.json.JSONObject
 import java.io.BufferedReader
 import java.io.BufferedWriter
 import java.io.IOException
@@ -41,7 +41,8 @@ class HTTPClient(
     private val eTagManager: ETagManager,
     private val diagnosticsTrackerIfEnabled: DiagnosticsTracker?,
     val signingManager: SigningManager,
-    private val dateProvider: DateProvider = DefaultDateProvider()
+    private val dateProvider: DateProvider = DefaultDateProvider(),
+    private val mapConverter: MapConverter = MapConverter()
 ) {
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     internal companion object {
@@ -135,7 +136,7 @@ class HTTPClient(
         requestHeaders: Map<String, String>,
         refreshETag: Boolean
     ): HTTPResult? {
-        val jsonBody = body?.convert()
+        val jsonBody = body?.let { mapConverter.convertToJSON(it) }
         val path = endpoint.getPath()
         val urlPathWithVersion = "/v1$path"
         val connection: HttpURLConnection
@@ -244,30 +245,6 @@ class HTTPClient(
             .plus(authenticationHeaders)
             .plus(eTagManager.getETagHeaders(urlPath, refreshETag))
             .filterNotNullValues()
-    }
-
-    private fun Map<String, Any?>.convert(): JSONObject {
-        val mapWithoutInnerMaps = mapValues { (_, value) ->
-            value.tryCast<Map<String, Any?>>(ifSuccess = { convert() })
-        }
-        return JSONObject(mapWithoutInnerMaps)
-    }
-
-    // To avoid Java type erasure, we use a Kotlin inline function with a reified parameter
-    // so that we can check the type on runtime.
-    //
-    // Doing something like:
-    // if (value is Map<*, *>) (value as Map<String, Any?>).convert()
-    //
-    // Would give an unchecked cast warning due to Java type erasure
-    private inline fun <reified T> Any?.tryCast(
-        ifSuccess: T.() -> Any?
-    ): Any? {
-        return if (this is T) {
-            this.ifSuccess()
-        } else {
-            this
-        }
     }
 
     private fun getConnection(request: HTTPRequest): HttpURLConnection {
