@@ -252,7 +252,7 @@ class SyncPurchasesHelperTest {
         every {
             customerInfoHelper.retrieveCustomerInfo(
                 appUserID,
-                CacheFetchPolicy.CACHE_ONLY,
+                CacheFetchPolicy.CACHED_OR_FETCHED,
                 false,
                 capture(callbackSlot)
             )
@@ -268,7 +268,7 @@ class SyncPurchasesHelperTest {
         every {
             customerInfoHelper.retrieveCustomerInfo(
                 appUserID,
-                CacheFetchPolicy.CACHE_ONLY,
+                CacheFetchPolicy.CACHED_OR_FETCHED,
                 false,
                 capture(callbackSlot)
             )
