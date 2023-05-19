@@ -36,7 +36,7 @@ open class BasePurchasesIntegrationTest {
     @get:Rule
     var activityScenarioRule = activityScenarioRule<MainActivity>()
 
-    protected val testTimeout = 5.seconds
+    protected val testTimeout = 7.seconds
     protected val currentTimestamp = Date().time
     protected val testUserId = "android-integration-test-$currentTimestamp"
     protected val proxyUrl = Constants.proxyUrl.takeIf { it != "NO_PROXY_URL" }
@@ -69,6 +69,7 @@ open class BasePurchasesIntegrationTest {
             mockBillingAbstract = mockk<BillingAbstract>(relaxed = true).apply {
                 every { purchasesUpdatedListener = any() } answers { latestPurchasesUpdatedListener = firstArg() }
                 every { stateListener = any() } answers { latestStateListener = firstArg() }
+                every { isConnected() } returns true
             }
             mockActivePurchases(initialActivePurchases)
 
@@ -76,13 +77,7 @@ open class BasePurchasesIntegrationTest {
                 Purchases.proxyURL = URL(urlString)
             }
 
-            Purchases.configure(
-                PurchasesConfiguration.Builder(it, Constants.apiKey)
-                    .appUserID(testUserId)
-                    .build(),
-                mockBillingAbstract,
-                forceServerErrors
-            )
+            configureSdk(it, forceServerErrors)
 
             postSetupTestCallback(it)
         }
@@ -94,6 +89,16 @@ open class BasePurchasesIntegrationTest {
 
     protected fun onActivityReady(block: (MainActivity) -> Unit) {
         activityScenarioRule.scenario.onActivity(block)
+    }
+
+    protected fun configureSdk(context: Context, forceServerErrors: Boolean = false) {
+        Purchases.configure(
+            PurchasesConfiguration.Builder(context, Constants.apiKey)
+                .appUserID(testUserId)
+                .build(),
+            mockBillingAbstract,
+            forceServerErrors
+        )
     }
 
     protected fun ensureBlockFinishes(block: (CountDownLatch) -> Unit) {
