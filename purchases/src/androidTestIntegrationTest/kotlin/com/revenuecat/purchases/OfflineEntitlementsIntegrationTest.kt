@@ -6,6 +6,7 @@ import com.revenuecat.purchases.factories.StoreProductFactory
 import com.revenuecat.purchases.factories.StoreTransactionFactory
 import com.revenuecat.purchases.helpers.mockQueryProductDetails
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
+import com.revenuecat.purchases.models.StoreTransaction
 import io.mockk.every
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
@@ -16,46 +17,9 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class OfflineEntitlementsIntegrationTest : BasePurchasesIntegrationTest() {
 
-    private val testProductId = "annual_freetrial"
-    private val testBasePlanId = "p1y"
-    private val productEntitlementMappingMockResponse = """
-        {
-          "product_entitlement_mapping": {
-            "$testProductId": {
-              "base_plan_id": "$testBasePlanId",
-              "entitlements": [
-                "pro_cat"
-              ],
-              "product_identifier": "$testProductId"
-            }
-          }
-        }
-    """.trimIndent()
-    private val customerInfoCacheString = """
-        {
-          "request_date": "2023-05-16T14:06:28Z",
-          "request_date_ms": 1684245988765,
-          "subscriber": {
-            "entitlements": {},
-            "first_seen": "2023-05-16T14:06:28Z",
-            "last_seen": "2023-05-16T14:06:28Z",
-            "management_url": null,
-            "non_subscriptions": {},
-            "original_app_user_id": "$testUserId",
-            "original_application_version": null,
-            "original_purchase_date": null,
-            "other_purchases": {},
-            "subscriptions": {}
-          },
-          "schema_version": 3,
-          "customer_info_request_date": 1684245988766
-        }
-    """.trimIndent()
-    private val cacheKeyPrefix = "com.revenuecat.purchases.${Constants.apiKey}"
-    private val productEntitlementMappingCacheKey = "$cacheKeyPrefix.productEntitlementMapping"
     private val initialActiveTransaction = StoreTransactionFactory.createStoreTransaction(
-        skus = listOf(testProductId),
-        purchaseToken = "test-token"
+        skus = listOf(Constants.productIdToPurchase),
+        purchaseToken = Constants.googlePurchaseToken
     )
     private val initialActivePurchases = mapOf(
         initialActiveTransaction.purchaseToken.sha1() to initialActiveTransaction
@@ -64,17 +28,18 @@ class OfflineEntitlementsIntegrationTest : BasePurchasesIntegrationTest() {
     @After
     fun tearDown() {
         tearDownTest()
-        Purchases.proxyURL = null
     }
 
     @Test
     fun entersOfflineEntitlementsModeIfNoCachedCustomerInfoAndCustomerInfoRequestReturns500() {
         ensureBlockFinishes { latch ->
-            setupTest(
-                buildSharedPreferencesMap(shouldIncludeCustomerInfo = false),
-                initialActivePurchases,
-                forceServerErrors = true
+            setupTestWaitingForInitialRequests(
+                initialActivePurchases = initialActivePurchases
             ) {
+                Purchases.sharedInstance.forceServerErrors = true
+
+                Purchases.sharedInstance.invalidateCustomerInfoCache()
+
                 Purchases.sharedInstance.getCustomerInfoWith(
                     fetchPolicy = CacheFetchPolicy.FETCH_CURRENT,
                     onError = {
@@ -82,8 +47,11 @@ class OfflineEntitlementsIntegrationTest : BasePurchasesIntegrationTest() {
                         fail("Expected success but got error: $it")
                     },
                     onSuccess = { receivedCustomerInfo ->
-                        assertThat(receivedCustomerInfo.entitlements.active.keys).containsExactly(
-                            "pro_cat"
+                        assertThat(receivedCustomerInfo.entitlements.active.keys).containsExactlyInAnyOrderElementsOf(
+                            entitlementsToVerify
+                        )
+                        assertThat(receivedCustomerInfo.activeSubscriptions).containsExactly(
+                            "${Constants.productIdToPurchase}:${Constants.basePlanIdToPurchase}"
                         )
                         latch.countDown()
                     }
@@ -95,15 +63,26 @@ class OfflineEntitlementsIntegrationTest : BasePurchasesIntegrationTest() {
     @Test
     fun doesNotEnterOfflineEntitlementsModeIfCachedCustomerInfoAndCustomerInfoRequestReturns500() {
         ensureBlockFinishes { latch ->
-            setupTest(
-                buildSharedPreferencesMap(shouldIncludeCustomerInfo = true),
-                initialActivePurchases,
-                forceServerErrors = true
+            setupTestWaitingForInitialRequests(
+                initialActivePurchases = initialActivePurchases
             ) {
+                Purchases.sharedInstance.forceServerErrors = true
+
                 Purchases.sharedInstance.getCustomerInfoWith(
                     fetchPolicy = CacheFetchPolicy.FETCH_CURRENT,
                     onError = {
-                        latch.countDown()
+                        Purchases.sharedInstance.getCustomerInfoWith(
+                            fetchPolicy = CacheFetchPolicy.CACHE_ONLY,
+                            onError = {
+                                latch.countDown()
+                                fail("Expected success but got error: $it")
+                            },
+                            onSuccess = {
+                                assertThat(it.entitlements.active).isEmpty()
+                                assertThat(it.activeSubscriptions).isEmpty()
+                                latch.countDown()
+                            }
+                        )
                     },
                     onSuccess = {
                         latch.countDown()
@@ -116,23 +95,14 @@ class OfflineEntitlementsIntegrationTest : BasePurchasesIntegrationTest() {
 
     @Test
     fun entersOfflineEntitlementsModeIfPurchaseRequestReturns500() {
-        val storeProduct = StoreProductFactory.createGoogleStoreProduct(
-            productId = testProductId,
-            basePlanId = testBasePlanId,
-            subscriptionOptionsList = listOf(
-                StoreProductFactory.createGoogleSubscriptionOption(
-                    productId = testProductId,
-                    basePlanId = testBasePlanId,
-                )
-            )
-        )
+        val storeProduct = StoreProductFactory.createGoogleStoreProduct()
 
         ensureBlockFinishes { latch ->
-            setupTest(
-                buildSharedPreferencesMap(shouldIncludeCustomerInfo = true),
-                initialActivePurchases = emptyMap(),
-                forceServerErrors = true
+            setupTestWaitingForInitialRequests(
+                initialActivePurchases = emptyMap()
             ) { activity ->
+                Purchases.sharedInstance.forceServerErrors = true
+
                 val receivedCustomerInfos = mutableListOf<CustomerInfo>()
                 Purchases.sharedInstance.updatedCustomerInfoListener = UpdatedCustomerInfoListener {
                     receivedCustomerInfos.add(it)
@@ -151,12 +121,14 @@ class OfflineEntitlementsIntegrationTest : BasePurchasesIntegrationTest() {
                         fail("Expected success but got error: $error")
                     },
                     onSuccess = { _, customerInfo ->
-                        assertThat(customerInfo.entitlements.active.keys).containsExactly(
-                            "pro_cat"
+                        assertThat(customerInfo.entitlements.active.keys).containsExactlyInAnyOrderElementsOf(
+                            entitlementsToVerify
                         )
                         assertThat(receivedCustomerInfos).hasSize(2)
                         assertThat(receivedCustomerInfos.first().entitlements.active).isEmpty()
-                        assertThat(receivedCustomerInfos.last().entitlements.active.keys).containsExactly("pro_cat")
+                        assertThat(
+                            receivedCustomerInfos.last().entitlements.active.keys
+                        ).containsExactlyInAnyOrderElementsOf(entitlementsToVerify)
                         latch.countDown()
                     }
                 )
@@ -166,23 +138,28 @@ class OfflineEntitlementsIntegrationTest : BasePurchasesIntegrationTest() {
 
     // region helpers
 
-    private fun buildSharedPreferencesMap(
-        shouldIncludeProductEntitlementMapping: Boolean = true,
-        shouldIncludeCustomerInfo: Boolean = false
-    ): Map<String, String> {
-        val result = mutableMapOf<String, String>()
-        if (shouldIncludeProductEntitlementMapping) {
-            result += mapOf(
-                productEntitlementMappingCacheKey to productEntitlementMappingMockResponse
+    private fun setupTestWaitingForInitialRequests(
+        initialActivePurchases: Map<String, StoreTransaction> = emptyMap(),
+        postSetupTestCallback: (MainActivity) -> Unit = {}
+    ) {
+        setupTest(
+            initialActivePurchases = initialActivePurchases
+        ) {
+            waitForInitialRequestsToEnd {
+                postSetupTestCallback(it)
+            }
+        }
+    }
+
+    private fun waitForInitialRequestsToEnd(completion: () -> Unit) {
+        Purchases.sharedInstance.offlineEntitlementsManager.updateProductEntitlementMappingCacheIfStale {
+            Purchases.sharedInstance.getCustomerInfoWith(
+                onError = { fail("Expected to succeed") },
+                onSuccess = {
+                    completion()
+                }
             )
         }
-        if (shouldIncludeCustomerInfo) {
-            result += mapOf(
-                "$cacheKeyPrefix.new" to testUserId,
-                "$cacheKeyPrefix.$testUserId" to customerInfoCacheString,
-            )
-        }
-        return result
     }
 
     // endregion helpers

@@ -11,7 +11,6 @@ import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
 import org.junit.After
 import org.junit.Before
-import org.junit.BeforeClass
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.util.concurrent.CountDownLatch
@@ -19,24 +18,6 @@ import java.util.concurrent.TimeUnit
 
 @RunWith(AndroidJUnit4::class)
 class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
-
-    companion object {
-        @BeforeClass @JvmStatic
-        fun setupClass() {
-            if (!canRunIntegrationTests()) {
-                error("You need to set required constants in Constants.kt")
-            }
-        }
-
-        private fun canRunIntegrationTests() = Constants.apiKey != "REVENUECAT_API_KEY" &&
-            Constants.googlePurchaseToken != "GOOGLE_PURCHASE_TOKEN" &&
-            Constants.productIdToPurchase != "PRODUCT_ID_TO_PURCHASE"
-    }
-
-    private val entitlementsToVerify = Constants.activeEntitlementIdsToVerify
-        .split(",")
-        .map { it.trim() }
-        .filter { it.isNotEmpty() }
 
     @Before
     fun setup() {

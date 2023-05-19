@@ -9,6 +9,7 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
 import org.assertj.core.api.Assertions
+import org.junit.BeforeClass
 import org.junit.Rule
 import java.net.URL
 import java.util.Date
@@ -17,6 +18,20 @@ import java.util.concurrent.TimeUnit
 import kotlin.time.Duration.Companion.seconds
 
 open class BasePurchasesIntegrationTest {
+
+    companion object {
+        @BeforeClass
+        @JvmStatic
+        fun setupClass() {
+            if (!canRunIntegrationTests()) {
+                error("You need to set required constants in Constants.kt")
+            }
+        }
+
+        private fun canRunIntegrationTests() = Constants.apiKey != "REVENUECAT_API_KEY" &&
+            Constants.googlePurchaseToken != "GOOGLE_PURCHASE_TOKEN" &&
+            Constants.productIdToPurchase != "PRODUCT_ID_TO_PURCHASE"
+    }
 
     @get:Rule
     var activityScenarioRule = activityScenarioRule<MainActivity>()
@@ -30,6 +45,11 @@ open class BasePurchasesIntegrationTest {
 
     protected var latestPurchasesUpdatedListener: BillingAbstract.PurchasesUpdatedListener? = null
     protected var latestStateListener: BillingAbstract.StateListener? = null
+
+    protected val entitlementsToVerify = Constants.activeEntitlementIdsToVerify
+        .split(",")
+        .map { it.trim() }
+        .filter { it.isNotEmpty() }
 
     // region helpers
 
