@@ -94,8 +94,8 @@ class Purchases internal constructor(
     private val customerInfoHelper: CustomerInfoHelper,
     private val offeringParser: OfferingParser,
     diagnosticsSynchronizer: DiagnosticsSynchronizer?,
-    @Suppress("UnusedPrivateMember")
-    private val offlineEntitlementsManager: OfflineEntitlementsManager,
+    @get:VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    internal val offlineEntitlementsManager: OfflineEntitlementsManager,
     private val postReceiptHelper: PostReceiptHelper,
     // This is nullable due to: https://github.com/RevenueCat/purchases-flutter/issues/408
     private val mainHandler: Handler? = Handler(Looper.getMainLooper())
