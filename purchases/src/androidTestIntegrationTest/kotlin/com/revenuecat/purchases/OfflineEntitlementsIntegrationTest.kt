@@ -47,12 +47,7 @@ class OfflineEntitlementsIntegrationTest : BasePurchasesIntegrationTest() {
                         fail("Expected success but got error: $it")
                     },
                     onSuccess = { receivedCustomerInfo ->
-                        assertThat(receivedCustomerInfo.entitlements.active.keys).containsExactlyInAnyOrderElementsOf(
-                            entitlementsToVerify
-                        )
-                        assertThat(receivedCustomerInfo.activeSubscriptions).containsExactly(
-                            "${Constants.productIdToPurchase}:${Constants.basePlanIdToPurchase}"
-                        )
+                        assertCustomerInfoHasPurchaseData(receivedCustomerInfo)
                         latch.countDown()
                     }
                 )
@@ -78,8 +73,7 @@ class OfflineEntitlementsIntegrationTest : BasePurchasesIntegrationTest() {
                                 fail("Expected success but got error: $it")
                             },
                             onSuccess = {
-                                assertThat(it.entitlements.active).isEmpty()
-                                assertThat(it.activeSubscriptions).isEmpty()
+                                assertCustomerInfoDoesNotHavePurchaseData(it)
                                 latch.countDown()
                             }
                         )
@@ -103,16 +97,11 @@ class OfflineEntitlementsIntegrationTest : BasePurchasesIntegrationTest() {
             ) { activity ->
                 Purchases.sharedInstance.forceServerErrors = true
 
-                val receivedCustomerInfos = mutableListOf<CustomerInfo>()
+                val receivedCustomerInfosInListener = mutableListOf<CustomerInfo>()
                 Purchases.sharedInstance.updatedCustomerInfoListener = UpdatedCustomerInfoListener {
-                    receivedCustomerInfos.add(it)
+                    receivedCustomerInfosInListener.add(it)
                 }
-                every {
-                    mockBillingAbstract.makePurchaseAsync(any(), any(), any(), any(), any(), any())
-                } answers {
-                    mockActivePurchases(initialActivePurchases)
-                    latestPurchasesUpdatedListener!!.onPurchasesUpdated(listOf(initialActiveTransaction))
-                }
+                mockPurchaseResult()
                 mockBillingAbstract.mockQueryProductDetails(queryProductDetailsSubsReturn = listOf(storeProduct))
                 Purchases.sharedInstance.purchaseWith(
                     PurchaseParams.Builder(activity, storeProduct).build(),
@@ -121,14 +110,37 @@ class OfflineEntitlementsIntegrationTest : BasePurchasesIntegrationTest() {
                         fail("Expected success but got error: $error")
                     },
                     onSuccess = { _, customerInfo ->
-                        assertThat(customerInfo.entitlements.active.keys).containsExactlyInAnyOrderElementsOf(
-                            entitlementsToVerify
-                        )
-                        assertThat(receivedCustomerInfos).hasSize(2)
-                        assertThat(receivedCustomerInfos.first().entitlements.active).isEmpty()
-                        assertThat(
-                            receivedCustomerInfos.last().entitlements.active.keys
-                        ).containsExactlyInAnyOrderElementsOf(entitlementsToVerify)
+                        assertCustomerInfoHasPurchaseData(customerInfo)
+                        assertThat(receivedCustomerInfosInListener).hasSize(2)
+                        assertCustomerInfoDoesNotHavePurchaseData(receivedCustomerInfosInListener.first())
+                        assertCustomerInfoHasPurchaseData(receivedCustomerInfosInListener.last())
+                        latch.countDown()
+                    }
+                )
+            }
+        }
+    }
+
+    @Test
+    fun sendsOfflinePurchasesAfterForegroundingApp() {
+        val storeProduct = StoreProductFactory.createGoogleStoreProduct()
+
+        ensureBlockFinishes { latch ->
+            setupTestWaitingForInitialRequests(
+                initialActivePurchases = emptyMap()
+            ) { activity ->
+                Purchases.sharedInstance.forceServerErrors = true
+
+                mockPurchaseResult()
+                mockBillingAbstract.mockQueryProductDetails(queryProductDetailsSubsReturn = listOf(storeProduct))
+                Purchases.sharedInstance.purchaseWith(
+                    PurchaseParams.Builder(activity, storeProduct).build(),
+                    onError = { error, _ ->
+                        latch.countDown()
+                        fail("Expected success but got error: $error")
+                    },
+                    onSuccess = { _, customerInfo ->
+                        assertCustomerInfoHasPurchaseData(customerInfo)
                         latch.countDown()
                     }
                 )
@@ -160,6 +172,29 @@ class OfflineEntitlementsIntegrationTest : BasePurchasesIntegrationTest() {
                 }
             )
         }
+    }
+
+    private fun mockPurchaseResult() {
+        every {
+            mockBillingAbstract.makePurchaseAsync(any(), any(), any(), any(), any(), any())
+        } answers {
+            mockActivePurchases(initialActivePurchases)
+            latestPurchasesUpdatedListener!!.onPurchasesUpdated(listOf(initialActiveTransaction))
+        }
+    }
+
+    private fun assertCustomerInfoDoesNotHavePurchaseData(customerInfo: CustomerInfo) {
+        assertThat(customerInfo.entitlements.active).isEmpty()
+        assertThat(customerInfo.activeSubscriptions).isEmpty()
+    }
+
+    private fun assertCustomerInfoHasPurchaseData(customerInfo: CustomerInfo) {
+        assertThat(customerInfo.entitlements.active.keys).containsExactlyInAnyOrderElementsOf(
+            entitlementsToVerify
+        )
+        assertThat(customerInfo.activeSubscriptions).containsExactly(
+            "${Constants.productIdToPurchase}:${Constants.basePlanIdToPurchase}"
+        )
     }
 
     // endregion helpers
