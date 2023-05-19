@@ -284,6 +284,51 @@ class OfflineEntitlementsIntegrationTest : BasePurchasesIntegrationTest() {
         }
     }
 
+    @Test
+    fun recoversFromOfflineEntitlementsModeIfGetCustomerInfoSucceeds() {
+        val storeProduct = StoreProductFactory.createGoogleStoreProduct()
+
+        ensureBlockFinishes { latch ->
+            setupTestWaitingForInitialRequests(
+                initialActivePurchases = emptyMap()
+            ) { activity ->
+                Purchases.sharedInstance.forceServerErrors = true
+
+                mockPurchaseResult()
+                mockBillingAbstract.mockQueryProductDetails(queryProductDetailsSubsReturn = listOf(storeProduct))
+                Purchases.sharedInstance.purchaseWith(
+                    PurchaseParams.Builder(activity, storeProduct).build(),
+                    onError = { error, _ ->
+                        latch.countDown()
+                        fail("Expected success but got error: $error")
+                    },
+                    onSuccess = { _, customerInfo ->
+                        assertCustomerInfoHasExpectedPurchaseData(customerInfo)
+                        assertAcknowledgePurchaseDidNotHappen()
+
+                        Purchases.sharedInstance.forceServerErrors = false
+
+                        Purchases.sharedInstance.getCustomerInfoWith(
+                            CacheFetchPolicy.FETCH_CURRENT,
+                            onError = {
+                                latch.countDown()
+                                fail("Expected success but got error: $it")
+                            },
+                            onSuccess = {
+                                // This is a known limitation. Ideally we would sync unsynced purchases
+                                // as soon as possible to avoid getting outdated info from the backend.
+                                assertCustomerInfoDoesNotHavePurchaseData(it)
+                                assertAcknowledgePurchaseDidNotHappen()
+
+                                latch.countDown()
+                            }
+                        )
+                    }
+                )
+            }
+        }
+    }
+
     // region helpers
 
     private fun setupTestWaitingForInitialRequests(
