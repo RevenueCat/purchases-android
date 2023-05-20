@@ -69,13 +69,7 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
                 viewModel?.customerInfo?.value = info
             }
         }
-//        Purchases.sharedInstance.getCustomerInfoWith(::showError) { info ->
-//            with(binding) {
-//                viewModel?.customerInfo?.value = info
-//            }
-//        }
 
-        // getCustomerInfo coroutine friendly version
         viewModel.retrieveCustomerInfo()
 
         Purchases.sharedInstance.getOfferingsWith(::showError, ::populateOfferings)
