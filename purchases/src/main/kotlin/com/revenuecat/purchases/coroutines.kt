@@ -1,7 +1,6 @@
 package com.revenuecat.purchases
 
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
-import com.revenuecat.purchases.utils.Result
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 

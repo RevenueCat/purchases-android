@@ -11,7 +11,6 @@ import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.getCustomerInfoSuspend
 import com.revenuecat.purchases.restorePurchasesWith
-import com.revenuecat.purchases.utils.Result
 import kotlinx.coroutines.launch
 
 class OverviewViewModel(private val interactionHandler: OverviewInteractionHandler) : ViewModel() {

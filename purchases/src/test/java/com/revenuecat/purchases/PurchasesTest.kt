@@ -37,7 +37,6 @@ import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.strings.PurchaseStrings
 import com.revenuecat.purchases.utils.Responses
-import com.revenuecat.purchases.utils.Result
 import com.revenuecat.purchases.utils.STUB_OFFERING_IDENTIFIER
 import com.revenuecat.purchases.utils.createMockOneTimeProductDetails
 import com.revenuecat.purchases.utils.createMockProductDetailsFreeTrial
@@ -1606,7 +1605,7 @@ class PurchasesTest: BasePurchasesTest() {
     fun `retrieve customer info - Success`() = runTest {
         mockCustomerInfoHelper()
 
-        val result = purchases.getCustomerInfo()
+        val result = purchases.getCustomerInfoSuspend()
 
         verify(exactly = 1) {
             mockCustomerInfoHelper.retrieveCustomerInfo(
@@ -1623,7 +1622,7 @@ class PurchasesTest: BasePurchasesTest() {
     fun `retrieve customer info - Error`() = runTest {
         mockCustomerInfoHelper(PurchasesError(PurchasesErrorCode.CustomerInfoError, "Customer info error"))
 
-        val result = purchases.getCustomerInfo()
+        val result = purchases.getCustomerInfoSuspend()
 
         verify(exactly = 1) {
             mockCustomerInfoHelper.retrieveCustomerInfo(
@@ -1640,7 +1639,7 @@ class PurchasesTest: BasePurchasesTest() {
     fun `retrieve customer info - CustomerInfoError`() = runTest {
         mockCustomerInfoHelper(PurchasesError(PurchasesErrorCode.CustomerInfoError, "Customer info error"))
 
-        val result = purchases.getCustomerInfo() as Result.Error
+        val result = purchases.getCustomerInfoSuspend() as Result.Error
 
         assertThat(result.value.code).isEqualTo(PurchasesErrorCode.CustomerInfoError)
     }
