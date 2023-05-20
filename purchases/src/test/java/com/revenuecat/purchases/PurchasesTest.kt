@@ -3346,6 +3346,8 @@ class PurchasesTest: BasePurchasesTest() {
             notInCache = listOf(activePurchasedPurchase, activePendingPurchase, activeUnspecifiedPurchase)
         )
 
+        mockQueryingProductDetails("product", ProductType.SUBS, null)
+
         every {
             mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(any(), any(), any(), any(), null, null)
         } just Runs
