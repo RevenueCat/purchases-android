@@ -13,7 +13,6 @@ import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingClientStateListener
-import com.android.billingclient.api.BillingFlowParams.ProrationMode
 import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.Purchase
 import com.revenuecat.purchases.common.AppConfig
@@ -38,6 +37,7 @@ import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.strings.PurchaseStrings
 import com.revenuecat.purchases.utils.Responses
+import com.revenuecat.purchases.utils.Result
 import com.revenuecat.purchases.utils.STUB_OFFERING_IDENTIFIER
 import com.revenuecat.purchases.utils.createMockOneTimeProductDetails
 import com.revenuecat.purchases.utils.createMockProductDetailsFreeTrial
@@ -60,6 +60,8 @@ import io.mockk.slot
 import io.mockk.verify
 import io.mockk.verifyAll
 import io.mockk.verifyOrder
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.AssertionsForClassTypes
 import org.json.JSONObject
@@ -73,6 +75,7 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import kotlin.random.Random
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
 @Suppress("DEPRECATION")
@@ -1597,6 +1600,49 @@ class PurchasesTest: BasePurchasesTest() {
         })
         lock.await(200, TimeUnit.MILLISECONDS)
         assertThat(lock.count).isZero()
+    }
+
+    @Test
+    fun `retrieve customer info - Success`() = runTest {
+        mockCustomerInfoHelper()
+
+        val result = purchases.getCustomerInfo()
+
+        verify(exactly = 1) {
+            mockCustomerInfoHelper.retrieveCustomerInfo(
+                appUserId,
+                any(),
+                any(),
+                any(),
+            )
+        }
+        assertThat(result is Result.Success).isTrue
+    }
+
+    @Test
+    fun `retrieve customer info - Error`() = runTest {
+        mockCustomerInfoHelper(PurchasesError(PurchasesErrorCode.CustomerInfoError, "Customer info error"))
+
+        val result = purchases.getCustomerInfo()
+
+        verify(exactly = 1) {
+            mockCustomerInfoHelper.retrieveCustomerInfo(
+                appUserId,
+                any(),
+                any(),
+                any(),
+            )
+        }
+        assertThat(result is Result.Error).isTrue
+    }
+
+    @Test
+    fun `retrieve customer info - CustomerInfoError`() = runTest {
+        mockCustomerInfoHelper(PurchasesError(PurchasesErrorCode.CustomerInfoError, "Customer info error"))
+
+        val result = purchases.getCustomerInfo() as Result.Error
+
+        assertThat(result.value.code).isEqualTo(PurchasesErrorCode.CustomerInfoError)
     }
 
     // endregion
