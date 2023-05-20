@@ -76,14 +76,8 @@ open class BasePurchasesTest {
     protected lateinit var purchases: Purchases
     protected val mockInfo = mockk<CustomerInfo>()
 
-    @After
-    fun tearDown() {
-        Purchases.backingFieldSharedInstance = null
-        clearMocks(mockCustomerInfoHelper, mockPostReceiptHelper)
-    }
-
     @Before
-    fun setup() {
+    fun setUp() {
         mockkStatic(ProcessLifecycleOwner::class)
 
         val productIds = listOf(STUB_PRODUCT_IDENTIFIER)
@@ -108,6 +102,12 @@ open class BasePurchasesTest {
         } just Runs
 
         anonymousSetup(false)
+    }
+
+    @After
+    fun tearDown() {
+        Purchases.backingFieldSharedInstance = null
+        clearMocks(mockCustomerInfoHelper, mockPostReceiptHelper)
     }
 
     // region Private Methods
