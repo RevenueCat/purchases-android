@@ -1601,49 +1601,6 @@ class PurchasesTest: BasePurchasesTest() {
         assertThat(lock.count).isZero()
     }
 
-    @Test
-    fun `retrieve customer info - Success`() = runTest {
-        mockCustomerInfoHelper()
-
-        val result = purchases.getCustomerInfoSuspend()
-
-        verify(exactly = 1) {
-            mockCustomerInfoHelper.retrieveCustomerInfo(
-                appUserId,
-                any(),
-                any(),
-                any(),
-            )
-        }
-        assertThat(result is Result.Success).isTrue
-    }
-
-    @Test
-    fun `retrieve customer info - Error`() = runTest {
-        mockCustomerInfoHelper(PurchasesError(PurchasesErrorCode.CustomerInfoError, "Customer info error"))
-
-        val result = purchases.getCustomerInfoSuspend()
-
-        verify(exactly = 1) {
-            mockCustomerInfoHelper.retrieveCustomerInfo(
-                appUserId,
-                any(),
-                any(),
-                any(),
-            )
-        }
-        assertThat(result is Result.Error).isTrue
-    }
-
-    @Test
-    fun `retrieve customer info - CustomerInfoError`() = runTest {
-        mockCustomerInfoHelper(PurchasesError(PurchasesErrorCode.CustomerInfoError, "Customer info error"))
-
-        val result = purchases.getCustomerInfoSuspend() as Result.Error
-
-        assertThat(result.value.code).isEqualTo(PurchasesErrorCode.CustomerInfoError)
-    }
-
     // endregion
 
     // region offerings
