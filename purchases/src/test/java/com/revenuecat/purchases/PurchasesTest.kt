@@ -2433,7 +2433,7 @@ class PurchasesTest: BasePurchasesTest() {
 
     @Test
     fun `logOut clears backend caches when successful`() {
-        setup()
+        setUp()
 
         every {
             mockCache.cleanupOldAttributionData()
