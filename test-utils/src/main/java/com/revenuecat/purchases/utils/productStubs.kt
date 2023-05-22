@@ -207,27 +207,7 @@ fun stubSubscriptionOption(
         )
 }
 
-fun stubFreeTrialPriSuppressWarnings("EmptyFunctionBlock")
-fun stubSubscriptionOption(
-    id: String,
-    productId: String,
-    duration: Period = Period(1, Period.Unit.MONTH, "P1M"),
-    pricingPhases: List<PricingPhase> = listOf(stubPricingPhase(billingPeriod = duration)),
-    presentedOfferingId: String? = null
-): SubscriptionOption = object : SubscriptionOption {
-    override val id: String
-        get() = id
-    override val pricingPhases: List<PricingPhase>
-        get() = pricingPhases
-    override val tags: List<String>
-        get() = listOf("tag")
-    override val presentedOfferingIdentifier: String?
-        get() = presentedOfferingId
-    override val purchasingData: PurchasingData
-        get() = StubPurchasingData(
-            productId = productId
-        )
-}cingPhase(
+fun stubFreeTrialPricingPhase(
     billingPeriod: Period = Period(1, Period.Unit.MONTH, "P1M"),
     priceCurrencyCodeValue: String = "USD",
 ) = stubPricingPhase(
