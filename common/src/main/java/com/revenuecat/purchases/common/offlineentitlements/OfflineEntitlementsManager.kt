@@ -2,6 +2,7 @@ package com.revenuecat.purchases.common.offlineentitlements
 
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.debugLog
@@ -11,7 +12,8 @@ import com.revenuecat.purchases.strings.OfflineEntitlementsStrings
 class OfflineEntitlementsManager(
     private val backend: Backend,
     private val offlineCustomerInfoCalculator: OfflineCustomerInfoCalculator,
-    private val deviceCache: DeviceCache
+    private val deviceCache: DeviceCache,
+    private val appConfig: AppConfig
 ) {
     // We cache the offline customer info in memory, so it's not persisted.
     val offlineCustomerInfo: CustomerInfo?
@@ -33,11 +35,12 @@ class OfflineEntitlementsManager(
         isServerError: Boolean,
         appUserId: String
     ) = isServerError &&
+        isOfflineEntitlementsEnabled() &&
         deviceCache.getCachedCustomerInfo(appUserId) == null
 
     fun shouldCalculateOfflineCustomerInfoInPostReceipt(
         isServerError: Boolean
-    ) = isServerError
+    ) = isServerError && isOfflineEntitlementsEnabled()
 
     @Suppress("FunctionOnlyReturningConstant")
     fun calculateAndCacheOfflineCustomerInfo(
@@ -79,7 +82,7 @@ class OfflineEntitlementsManager(
     }
 
     fun updateProductEntitlementMappingCacheIfStale() {
-        if (deviceCache.isProductEntitlementMappingCacheStale()) {
+        if (isOfflineEntitlementsEnabled() && deviceCache.isProductEntitlementMappingCacheStale()) {
             debugLog(OfflineEntitlementsStrings.UPDATING_PRODUCT_ENTITLEMENT_MAPPING)
             backend.getProductEntitlementMapping(
                 onSuccessHandler = { productEntitlementMapping ->
@@ -92,6 +95,8 @@ class OfflineEntitlementsManager(
             )
         }
     }
+
+    private fun isOfflineEntitlementsEnabled() = appConfig.finishTransactions
 }
 
 private typealias OfflineCustomerInfoCallback = Pair<(CustomerInfo) -> Unit, (PurchasesError) -> Unit>
