@@ -42,7 +42,7 @@ abstract class OfferingParser {
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     fun createOffering(offeringJson: JSONObject, productsById: Map<String, List<StoreProduct>>): Offering? {
         val offeringIdentifier = offeringJson.getString("identifier")
-        var metadata = offeringJson.optJSONObject("metadata")?.toMap<Any>() ?: emptyMap()
+        val metadata = offeringJson.optJSONObject("metadata")?.toMap<Any>() ?: emptyMap()
         val jsonPackages = offeringJson.getJSONArray("packages")
 
         val availablePackages = mutableListOf<Package>()

@@ -233,14 +233,26 @@ class OfferingsTest {
             storeProductAnnual.subscriptionOptions!!.basePlan!!.id
         )
         val offeringId = "offering_a"
+        val metadata = mapOf(
+            "int" to 5,
+            "double" to 5.5,
+            "boolean" to true,
+            "string" to "five",
+            "array" to arrayOf("five"),
+            "dictionary" to mapOf(
+                "string" to "five"
+            )
+        )
         val offeringJSON = getOfferingJSON(
             offeringIdentifier = offeringId,
-            packagesJSON = listOf(monthlyPackageJSON, annualPackageJSON)
+            packagesJSON = listOf(monthlyPackageJSON, annualPackageJSON),
+            metadata = metadata
         )
 
         val offering = offeringsParser.createOffering(offeringJSON, products)
         assertThat(offering).isNotNull
         assertThat(offering!!.identifier).isEqualTo(offeringId)
+        assertThat(offering!!.metadata).isEqualTo(metadata)
 
         val packages = offering.availablePackages
         assertThat(packages.size).isEqualTo(2)
@@ -443,7 +455,8 @@ class OfferingsTest {
             offeringIdentifier = "offering_a",
             listOf(
                 getPackageJSON(packageIdentifier = identifier)
-            )
+            ),
+            null
         )
         val offerings = offeringsParser.createOfferings(
             JSONObject(
@@ -508,7 +521,8 @@ class OfferingsTest {
             offeringJsons.add(
                 getOfferingJSON(
                     offeringId,
-                    packages
+                    packages,
+                    null
                 )
             )
         }
@@ -529,7 +543,28 @@ class OfferingsTest {
                 this.productIdentifier,
                 monthlyBasePlanId
             ),
-        )
+        ),
+        metadata: Map<String, Any>? = null
+    ) = JSONObject(
+        """
+            {
+                'description': 'This is the base offering',
+                'identifier': '$offeringIdentifier',
+                'packages': $packagesJSON,
+                'metadata': ${if (metadata != null) JSONObject(metadata).toString() else "null"}
+            }
+        """.trimIndent()
+    )
+
+    private fun getOfferingJSONWithoutMetadata(
+        offeringIdentifier: String = "offering_a",
+        packagesJSON: List<JSONObject> = listOf(
+            getPackageJSON(
+                monthlyPackageID,
+                this.productIdentifier,
+                monthlyBasePlanId
+            ),
+        ),
     ) = JSONObject(
         """
             {
