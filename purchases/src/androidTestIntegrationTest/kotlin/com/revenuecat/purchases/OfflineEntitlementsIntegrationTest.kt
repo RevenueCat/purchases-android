@@ -36,7 +36,7 @@ class OfflineEntitlementsIntegrationTest : BasePurchasesIntegrationTest() {
     @Test
     fun doesNotEnterOfflineEntitlementsModeIfNoProductEntitlementMappingAvailable() {
         ensureBlockFinishes { latch ->
-            setupTest(
+            setUpTest(
                 initialActivePurchases = initialActivePurchases,
                 forceServerErrors = true
             ) {
@@ -335,7 +335,7 @@ class OfflineEntitlementsIntegrationTest : BasePurchasesIntegrationTest() {
         initialActivePurchases: Map<String, StoreTransaction> = emptyMap(),
         postSetupTestCallback: (MainActivity) -> Unit = {}
     ) {
-        setupTest(
+        setUpTest(
             initialActivePurchases = initialActivePurchases
         ) {
             waitForInitialRequestsToEnd {

@@ -9,6 +9,7 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
 import org.assertj.core.api.Assertions
+import org.junit.After
 import org.junit.BeforeClass
 import org.junit.Rule
 import java.net.URL
@@ -46,14 +47,22 @@ open class BasePurchasesIntegrationTest {
     protected var latestPurchasesUpdatedListener: BillingAbstract.PurchasesUpdatedListener? = null
     protected var latestStateListener: BillingAbstract.StateListener? = null
 
+    private val eTagsSharedPreferencesNameTemplate = "%s_preferences_etags"
+    private val diagnosticsSharedPreferencesNameTemplate = "com_revenuecat_purchases_%s_preferences_diagnostics"
+
     protected val entitlementsToVerify = Constants.activeEntitlementIdsToVerify
         .split(",")
         .map { it.trim() }
         .filter { it.isNotEmpty() }
 
+    @After
+    fun tearDown() {
+        Purchases.resetSingleton()
+    }
+
     // region helpers
 
-    protected fun setupTest(
+    protected fun setUpTest(
         initialSharedPreferences: Map<String, String> = emptyMap(),
         initialActivePurchases: Map<String, StoreTransaction> = emptyMap(),
         forceServerErrors: Boolean = false,
@@ -81,10 +90,6 @@ open class BasePurchasesIntegrationTest {
 
             postSetupTestCallback(it)
         }
-    }
-
-    protected fun tearDownTest() {
-        Purchases.sharedInstance.close()
     }
 
     protected fun onActivityReady(block: (MainActivity) -> Unit) {
@@ -124,11 +129,11 @@ open class BasePurchasesIntegrationTest {
     private fun clearAllSharedPreferences(context: Context) {
         PreferenceManager.getDefaultSharedPreferences(context).edit().clear().commit()
         context.getSharedPreferences(
-            "${context.packageName}_preferences_etags",
+            eTagsSharedPreferencesNameTemplate.format(context.packageName),
             Context.MODE_PRIVATE
         ).edit().clear().commit()
         context.getSharedPreferences(
-            "com_revenuecat_purchases_${context.packageName}_preferences_diagnostics",
+            diagnosticsSharedPreferencesNameTemplate.format(context.packageName),
             Context.MODE_PRIVATE
         ).edit().clear().commit()
     }

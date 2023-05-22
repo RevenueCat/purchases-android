@@ -9,7 +9,6 @@ import com.revenuecat.purchases.models.GoogleStoreProduct
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
-import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -21,12 +20,7 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
 
     @Before
     fun setup() {
-        setupTest()
-    }
-
-    @After
-    fun tearDown() {
-        tearDownTest()
+        setUpTest()
     }
 
     // region tests
