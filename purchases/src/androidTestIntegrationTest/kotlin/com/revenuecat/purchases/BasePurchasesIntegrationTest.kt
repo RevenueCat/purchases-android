@@ -37,6 +37,9 @@ open class BasePurchasesIntegrationTest {
     @get:Rule
     var activityScenarioRule = activityScenarioRule<MainActivity>()
 
+    protected open val initialActivePurchasesToUse: Map<String, StoreTransaction> = emptyMap()
+    protected open val initialForceServerErrors: Boolean = false
+
     protected val testTimeout = 7.seconds
     protected val currentTimestamp = Date().time
     protected val testUserId = "android-integration-test-$currentTimestamp"
@@ -46,6 +49,12 @@ open class BasePurchasesIntegrationTest {
 
     protected var latestPurchasesUpdatedListener: BillingAbstract.PurchasesUpdatedListener? = null
     protected var latestStateListener: BillingAbstract.StateListener? = null
+
+    // We shouldn't cache the whole activity, but considering that these are simple integration tests
+    // and we don't perform any configuration changes, it shouldn't cause any leaks.
+    protected val activity: MainActivity
+        get() = _activity ?: Assertions.fail("Expected activity to not be null")
+    private var _activity: MainActivity? = null
 
     private val eTagsSharedPreferencesNameTemplate = "%s_preferences_etags"
     private val diagnosticsSharedPreferencesNameTemplate = "com_revenuecat_purchases_%s_preferences_diagnostics"
@@ -57,6 +66,7 @@ open class BasePurchasesIntegrationTest {
 
     @After
     fun tearDown() {
+        _activity = null
         Purchases.resetSingleton()
     }
 
@@ -64,14 +74,15 @@ open class BasePurchasesIntegrationTest {
 
     protected fun setUpTest(
         initialSharedPreferences: Map<String, String> = emptyMap(),
-        initialActivePurchases: Map<String, StoreTransaction> = emptyMap(),
-        forceServerErrors: Boolean = false,
+        initialActivePurchases: Map<String, StoreTransaction> = initialActivePurchasesToUse,
+        forceServerErrors: Boolean = initialForceServerErrors,
         postSetupTestCallback: (MainActivity) -> Unit = {}
     ) {
         latestPurchasesUpdatedListener = null
         latestStateListener = null
 
         onActivityReady {
+            _activity = it
             clearAllSharedPreferences(it)
             writeSharedPreferences(it, initialSharedPreferences)
 
