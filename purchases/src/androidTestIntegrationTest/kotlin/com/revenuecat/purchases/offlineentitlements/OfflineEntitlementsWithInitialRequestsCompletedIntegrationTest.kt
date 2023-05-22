@@ -83,7 +83,6 @@ class OfflineEntitlementsWithInitialRequestsCompletedAndInitialPurchasesIntegrat
             Purchases.sharedInstance.getCustomerInfoWith(
                 fetchPolicy = CacheFetchPolicy.FETCH_CURRENT,
                 onError = {
-                    latch.countDown()
                     fail("Expected success but got error: $it")
                 },
                 onSuccess = { receivedCustomerInfo ->
@@ -105,7 +104,6 @@ class OfflineEntitlementsWithInitialRequestsCompletedAndInitialPurchasesIntegrat
                     Purchases.sharedInstance.getCustomerInfoWith(
                         fetchPolicy = CacheFetchPolicy.CACHE_ONLY,
                         onError = {
-                            latch.countDown()
                             fail("Expected success but got error: $it")
                         },
                         onSuccess = {
@@ -115,7 +113,6 @@ class OfflineEntitlementsWithInitialRequestsCompletedAndInitialPurchasesIntegrat
                     )
                 },
                 onSuccess = {
-                    latch.countDown()
                     fail("Expected error but got success: $it")
                 }
             )
@@ -143,7 +140,6 @@ class OfflineEntitlementsWithInitialRequestsCompletedAndNoInitialPurchasesIntegr
             Purchases.sharedInstance.purchaseWith(
                 PurchaseParams.Builder(activity, storeProduct).build(),
                 onError = { error, _ ->
-                    latch.countDown()
                     fail("Expected success but got error: $error")
                 },
                 onSuccess = { _, customerInfo ->
@@ -177,7 +173,6 @@ class OfflineEntitlementsWithInitialRequestsCompletedAndNoInitialPurchasesIntegr
                     latch.countDown()
                 },
                 onSuccess = { _, _ ->
-                    latch.countDown()
                     fail("Expected error")
                 }
             )
@@ -196,7 +191,6 @@ class OfflineEntitlementsWithInitialRequestsCompletedAndNoInitialPurchasesIntegr
             Purchases.sharedInstance.purchaseWith(
                 PurchaseParams.Builder(activity, storeProduct).build(),
                 onError = { error, _ ->
-                    latch.countDown()
                     fail("Expected success but got error: $error")
                 },
                 onSuccess = { _, customerInfo ->
@@ -205,7 +199,6 @@ class OfflineEntitlementsWithInitialRequestsCompletedAndNoInitialPurchasesIntegr
 
                     Purchases.sharedInstance.getCustomerInfoWith(
                         onError = {
-                            latch.countDown()
                             fail("Expected success but got error: $it")
                         },
                         onSuccess = {
@@ -230,7 +223,6 @@ class OfflineEntitlementsWithInitialRequestsCompletedAndNoInitialPurchasesIntegr
             Purchases.sharedInstance.purchaseWith(
                 PurchaseParams.Builder(activity, storeProduct).build(),
                 onError = { error, _ ->
-                    latch.countDown()
                     fail("Expected success but got error: $error")
                 },
                 onSuccess = { _, customerInfo ->
@@ -261,7 +253,6 @@ class OfflineEntitlementsWithInitialRequestsCompletedAndNoInitialPurchasesIntegr
             Purchases.sharedInstance.purchaseWith(
                 PurchaseParams.Builder(activity, storeProduct).build(),
                 onError = { error, _ ->
-                    latch.countDown()
                     fail("Expected success but got error: $error")
                 },
                 onSuccess = { _, customerInfo ->
@@ -292,7 +283,6 @@ class OfflineEntitlementsWithInitialRequestsCompletedAndNoInitialPurchasesIntegr
             Purchases.sharedInstance.purchaseWith(
                 PurchaseParams.Builder(activity, storeProduct).build(),
                 onError = { error, _ ->
-                    latch.countDown()
                     fail("Expected success but got error: $error")
                 },
                 onSuccess = { _, customerInfo ->
@@ -304,7 +294,6 @@ class OfflineEntitlementsWithInitialRequestsCompletedAndNoInitialPurchasesIntegr
                     Purchases.sharedInstance.getCustomerInfoWith(
                         CacheFetchPolicy.FETCH_CURRENT,
                         onError = {
-                            latch.countDown()
                             fail("Expected success but got error: $it")
                         },
                         onSuccess = {

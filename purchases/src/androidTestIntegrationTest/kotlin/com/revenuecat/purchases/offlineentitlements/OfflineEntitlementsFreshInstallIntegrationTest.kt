@@ -35,7 +35,6 @@ class OfflineEntitlementsFreshInstallIntegrationTest : BaseOfflineEntitlementsIn
                     assertThat(it.code).isEqualTo(PurchasesErrorCode.UnknownBackendError)
                 },
                 onSuccess = {
-                    latch.countDown()
                     fail("Expected error")
                 }
             )
