@@ -30,7 +30,7 @@ abstract class BaseOfflineEntitlementsWithInitialRequestsCompletedIntegrationTes
     @Before
     fun setUp() {
         ensureBlockFinishes { latch ->
-            setupTestWaitingForInitialRequests {
+            setUpTestWaitingForInitialRequests {
                 latch.countDown()
             }
         }
@@ -38,7 +38,7 @@ abstract class BaseOfflineEntitlementsWithInitialRequestsCompletedIntegrationTes
 
     // region helpers
 
-    private fun setupTestWaitingForInitialRequests(
+    private fun setUpTestWaitingForInitialRequests(
         postSetupTestCallback: (MainActivity) -> Unit = {}
     ) {
         setUpTest {
