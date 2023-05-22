@@ -7,6 +7,7 @@ import com.revenuecat.purchases.MainActivity
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchaseParams
 import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.factories.StoreProductFactory
 import com.revenuecat.purchases.factories.StoreTransactionFactory
@@ -17,7 +18,7 @@ import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.purchaseWith
 import com.revenuecat.purchases.resetSingleton
-import org.assertj.core.api.Assertions
+import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
 import org.junit.Before
 import org.junit.Test
@@ -101,6 +102,7 @@ class OfflineEntitlementsWithInitialRequestsCompletedAndInitialPurchasesIntegrat
             Purchases.sharedInstance.getCustomerInfoWith(
                 fetchPolicy = CacheFetchPolicy.FETCH_CURRENT,
                 onError = {
+                    assertThat(it.code).isEqualTo(PurchasesErrorCode.UnknownBackendError)
                     Purchases.sharedInstance.getCustomerInfoWith(
                         fetchPolicy = CacheFetchPolicy.CACHE_ONLY,
                         onError = {
@@ -144,7 +146,7 @@ class OfflineEntitlementsWithInitialRequestsCompletedAndNoInitialPurchasesIntegr
                 },
                 onSuccess = { _, customerInfo ->
                     assertCustomerInfoHasExpectedPurchaseData(customerInfo)
-                    Assertions.assertThat(receivedCustomerInfosInListener).hasSize(2)
+                    assertThat(receivedCustomerInfosInListener).hasSize(2)
                     assertCustomerInfoDoesNotHavePurchaseData(receivedCustomerInfosInListener.first())
                     assertCustomerInfoHasExpectedPurchaseData(receivedCustomerInfosInListener.last())
                     assertAcknowledgePurchaseDidNotHappen()
@@ -169,7 +171,8 @@ class OfflineEntitlementsWithInitialRequestsCompletedAndNoInitialPurchasesIntegr
             mockBillingAbstract.mockQueryProductDetails(queryProductDetailsInAppReturn = listOf(inAppProduct))
             Purchases.sharedInstance.purchaseWith(
                 PurchaseParams.Builder(activity, inAppProduct).build(),
-                onError = { _, _ ->
+                onError = { error, _ ->
+                    assertThat(error.code).isEqualTo(PurchasesErrorCode.UnknownBackendError)
                     latch.countDown()
                 },
                 onSuccess = { _, _ ->

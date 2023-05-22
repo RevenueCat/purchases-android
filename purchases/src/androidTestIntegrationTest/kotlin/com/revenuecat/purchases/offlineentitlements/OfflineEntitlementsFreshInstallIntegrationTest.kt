@@ -31,8 +31,8 @@ class OfflineEntitlementsFreshInstallIntegrationTest : BaseOfflineEntitlementsIn
         ensureBlockFinishes { latch ->
             Purchases.sharedInstance.getCustomerInfoWith(
                 onError = {
-                    latch.countDown()
                     assertThat(it.code).isEqualTo(PurchasesErrorCode.UnknownBackendError)
+                    latch.countDown()
                 },
                 onSuccess = {
                     fail("Expected error")
