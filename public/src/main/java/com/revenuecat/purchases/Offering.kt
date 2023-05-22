@@ -15,6 +15,7 @@ package com.revenuecat.purchases
 data class Offering constructor(
     val identifier: String,
     val serverDescription: String,
+    val metadata: Map<String, Any>,
     val availablePackages: List<Package>
 ) {
 

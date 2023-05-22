@@ -520,6 +520,7 @@ class DeviceCacheTest {
         val offering = Offering(
             "offering_a",
             "This is the base offering",
+            emptyMap(),
             listOf(packageObject)
         )
         val offerings = Offerings(
