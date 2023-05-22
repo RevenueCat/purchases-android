@@ -346,12 +346,16 @@ class OfflineEntitlementsIntegrationTest : BasePurchasesIntegrationTest() {
 
     private fun waitForInitialRequestsToEnd(completion: () -> Unit) {
         Purchases.sharedInstance.offlineEntitlementsManager.updateProductEntitlementMappingCacheIfStale {
-            Purchases.sharedInstance.getCustomerInfoWith(
-                onError = { fail("Expected to succeed") },
-                onSuccess = {
-                    completion()
-                }
-            )
+            if (it != null) {
+                fail("Expected to get product entitlement mapping but got error: $it")
+            } else {
+                Purchases.sharedInstance.getCustomerInfoWith(
+                    onError = { fail("Expected to succeed") },
+                    onSuccess = {
+                        completion()
+                    }
+                )
+            }
         }
     }
 

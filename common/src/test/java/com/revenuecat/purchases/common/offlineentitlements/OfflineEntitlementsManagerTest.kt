@@ -316,6 +316,7 @@ class OfflineEntitlementsManagerTest {
         every { deviceCache.isProductEntitlementMappingCacheStale() } returns false
         var completionCallCount = 0
         offlineEntitlementsManager.updateProductEntitlementMappingCacheIfStale {
+            assertThat(it).isNull()
             completionCallCount++
         }
         assertThat(completionCallCount).isEqualTo(1)
@@ -335,6 +336,7 @@ class OfflineEntitlementsManagerTest {
         every { deviceCache.isProductEntitlementMappingCacheStale() } returns true
         var completionCallCount = 0
         offlineEntitlementsManager.updateProductEntitlementMappingCacheIfStale {
+            assertThat(it).isNotNull
             completionCallCount++
         }
         verify(exactly = 1) { backend.getProductEntitlementMapping(any(), any()) }
@@ -349,6 +351,7 @@ class OfflineEntitlementsManagerTest {
         every { deviceCache.cacheProductEntitlementMapping(any()) } just Runs
         var completionCallCount = 0
         offlineEntitlementsManager.updateProductEntitlementMappingCacheIfStale {
+            assertThat(it).isNull()
             completionCallCount++
         }
         verify(exactly = 1) { backend.getProductEntitlementMapping(any(), any()) }
