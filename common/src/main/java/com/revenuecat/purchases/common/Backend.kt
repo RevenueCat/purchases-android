@@ -454,7 +454,7 @@ class Backend(
                 dispatcher,
                 path,
                 onSuccessHandler to onErrorHandler,
-                Delay.DEFAULT
+                Delay.LONG
             )
         }
     }

@@ -13,14 +13,16 @@ import java.io.IOException
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.TimeUnit
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
 
 private const val JITTERING_DELAY_MILLISECONDS = 5000L
 private const val JITTERING_LONG_DELAY_MILLISECONDS = 10000L
 
-enum class Delay(val delayMillis: Long) {
-    NONE(0),
-    DEFAULT(JITTERING_DELAY_MILLISECONDS),
-    LONG(JITTERING_LONG_DELAY_MILLISECONDS)
+enum class Delay(val minDelay: Duration, val maxDelay: Duration) {
+    NONE(0.milliseconds, 0.milliseconds),
+    DEFAULT(0.milliseconds, JITTERING_DELAY_MILLISECONDS.milliseconds),
+    LONG(JITTERING_DELAY_MILLISECONDS.milliseconds, JITTERING_LONG_DELAY_MILLISECONDS.milliseconds)
 }
 
 open class Dispatcher(
@@ -57,7 +59,8 @@ open class Dispatcher(
         synchronized(this.executorService) {
             if (!executorService.isShutdown) {
                 val future = if (delay != Delay.NONE && executorService is ScheduledExecutorService) {
-                    val delayToApply = (0..delay.delayMillis).random()
+                    val delayToApply = (delay.minDelay.inWholeMilliseconds..delay.maxDelay.inWholeMilliseconds).random()
+                    errorLog("TEST: EXECUTING REQUEST WITH DELAY: $delayToApply")
                     executorService.schedule(command, delayToApply, TimeUnit.MILLISECONDS)
                 } else {
                     executorService.submit(command)
