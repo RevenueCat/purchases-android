@@ -263,7 +263,7 @@ class AppConfigTest {
             "AppConfig(" +
                 "platformInfo=PlatformInfo(flavor=native, version=3.2.0), " +
                 "store=PLAY_STORE, " +
-                "dangerousSettings=DangerousSettings(autoSyncPurchases=true), " +
+                "dangerousSettings=DangerousSettings(autoSyncPurchases=true, offlineEntitlementsEnabled=true), " +
                 "languageTag='', " +
                 "versionName='', " +
                 "packageName='', " +
