@@ -1,7 +1,7 @@
 # V5 API Migration Guide
 
 There were various updates to our API in this release, in order to best support the Amazon Appstore and to maintain parity 
-with our iOS SDK, which recently [migrated from ObjC to Swift](https://github.com/RevenueCat/purchases-ios/blob/main/docs/V4_API_Updates.md).
+with our iOS SDK, which recently [migrated from ObjC to Swift](https://revenuecat.github.io/purchases-ios-docs/v4_api_migration_guide.html).
 
 ## Type Changes
 - `PurchaserInfo` has been deprecated and renamed to `CustomerInfo`. This rename also affects to all functions that had
