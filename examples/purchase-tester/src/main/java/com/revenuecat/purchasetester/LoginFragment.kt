@@ -49,6 +49,10 @@ class LoginFragment : Fragment() {
             navigateToLogsFragment()
         }
 
+        binding.proxyButton.setOnClickListener {
+            navigateToProxyFragment()
+        }
+
         return binding.root
     }
 
@@ -68,6 +72,11 @@ class LoginFragment : Fragment() {
 
     private fun navigateToLogsFragment() {
         val directions = LoginFragmentDirections.actionLoginFragmentToLogsFragment()
+        findNavController().navigate(directions)
+    }
+
+    private fun navigateToProxyFragment() {
+        val directions = LoginFragmentDirections.actionLoginFragmentToProxySettingsBottomSheetFragment()
         findNavController().navigate(directions)
     }
 }

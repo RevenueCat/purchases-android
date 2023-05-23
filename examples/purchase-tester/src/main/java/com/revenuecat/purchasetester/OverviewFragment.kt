@@ -47,6 +47,10 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
             navigateToLogsFragment()
         }
 
+        binding.proxyButton.setOnClickListener {
+            navigateToProxyFragment()
+        }
+
         viewModel = OverviewViewModel(this)
         binding.lifecycleOwner = this
         binding.viewModel = viewModel
@@ -134,6 +138,11 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
 
     private fun navigateToLogsFragment() {
         val directions = OverviewFragmentDirections.actionOverviewFragmentToLogsFragment()
+        findNavController().navigate(directions)
+    }
+
+    private fun navigateToProxyFragment() {
+        val directions = OverviewFragmentDirections.actionOverviewFragmentToProxySettingsBottomSheetFragment()
         findNavController().navigate(directions)
     }
 }

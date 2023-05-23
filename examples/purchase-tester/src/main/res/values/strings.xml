@@ -14,4 +14,9 @@
     <string name="google_store_is_unavailable">Google Store is unavailable in this build. Download a version from the Play Store or build locally to enable it.</string>
     <string name="amazon_store_is_unavailable">Amazon Store is unavailable in this build. Download a version from LAT or build locally to enable it.</string>
     <string name="subscription_options">Subscription Options:</string>
+    <string name="proxy_settings">Proxy settings</string>
+    <string name="proxy_disabled">Disabled (Will hit production)</string>
+    <string name="proxy_entitlement_override">Entitlement override (Will grant entitlements)</string>
+    <string name="proxy_server_down">Server down (All requests will return 500)</string>
+    <string name="proxy">Proxy</string>
 </resources>

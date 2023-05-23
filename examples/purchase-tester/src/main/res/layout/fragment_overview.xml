@@ -236,6 +236,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="@dimen/padding_small"
                         android:transitionGroup="true"
+                        tools:listitem="@layout/offering_card"
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintTop_toBottomOf="@+id/offering_header"
@@ -244,13 +245,27 @@
             </androidx.constraintlayout.widget.ConstraintLayout>
         </ScrollView>
 
-        <com.google.android.material.button.MaterialButton
-                android:id="@+id/logs_button"
-                android:text="@string/logs"
+        <LinearLayout
+                android:orientation="horizontal"
                 android:layout_gravity="end|bottom"
-                android:layout_margin="@dimen/padding_large"
+                android:layout_marginBottom="@dimen/padding_medium"
+                android:layout_marginEnd="@dimen/padding_large"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"/>
+                android:layout_height="wrap_content">
+            <com.google.android.material.button.MaterialButton
+                    android:id="@+id/proxy_button"
+                    android:text="@string/proxy"
+                    android:layout_gravity="end|bottom"
+                    android:layout_marginEnd="@dimen/padding_small"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+            <com.google.android.material.button.MaterialButton
+                    android:id="@+id/logs_button"
+                    android:text="@string/logs"
+                    android:layout_gravity="end|bottom"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+        </LinearLayout>
     </FrameLayout>
 
 </layout>
