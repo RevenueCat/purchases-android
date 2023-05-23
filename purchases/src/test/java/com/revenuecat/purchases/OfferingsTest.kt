@@ -238,7 +238,7 @@ class OfferingsTest {
             "double" to 5.5,
             "boolean" to true,
             "string" to "five",
-            "array" to arrayOf("five"),
+            "array" to listOf("five"),
             "dictionary" to mapOf(
                 "string" to "five"
             )
