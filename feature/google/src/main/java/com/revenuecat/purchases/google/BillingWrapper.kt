@@ -624,17 +624,16 @@ class BillingWrapper(
                 }"
             )
 
-            val responseCode =
-                if (purchases == null && billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
-                    // Result being ok but with a Null purchase used to happen when doing a product change
-                    // in DEFERRED proration mode in Billing Client <= 4. Should not happen in Billing Client 5+ since
-                    // we get the transaction for the previous product.
-                    BillingClient.BillingResponseCode.ERROR
-                } else {
-                    billingResult.responseCode
-                }
+            var message = "Error updating purchases. ${billingResult.toHumanReadableDescription()}"
+            var responseCode = billingResult.responseCode
 
-            val message = "Error updating purchases. ${billingResult.toHumanReadableDescription()}"
+            if (purchases == null && billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
+                // Result being ok but with a Null purchase used to happen when doing a product change
+                // in DEFERRED proration mode in Billing Client <= 4. Should not happen in Billing Client 5+ since
+                // we get the transaction for the previous product.
+                message = "Error: onPurchasesUpdated received an OK BillingResult with a Null purchases list."
+                responseCode = BillingClient.BillingResponseCode.ERROR
+            }
 
             val purchasesError = responseCode.billingResponseToPurchasesError(message).also { errorLog(it) }
 
