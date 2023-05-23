@@ -60,7 +60,6 @@ open class Dispatcher(
             if (!executorService.isShutdown) {
                 val future = if (delay != Delay.NONE && executorService is ScheduledExecutorService) {
                     val delayToApply = (delay.minDelay.inWholeMilliseconds..delay.maxDelay.inWholeMilliseconds).random()
-                    errorLog("TEST: EXECUTING REQUEST WITH DELAY: $delayToApply")
                     executorService.schedule(command, delayToApply, TimeUnit.MILLISECONDS)
                 } else {
                     executorService.submit(command)
