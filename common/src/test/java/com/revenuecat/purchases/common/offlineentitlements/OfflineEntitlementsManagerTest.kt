@@ -4,10 +4,8 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
-import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.caching.DeviceCache
-import com.revenuecat.purchases.strings.OfflineEntitlementsStrings
 import io.mockk.CapturingSlot
 import io.mockk.Runs
 import io.mockk.every
@@ -32,7 +30,6 @@ class OfflineEntitlementsManagerTest {
     private lateinit var backendSuccessSlot: CapturingSlot<(ProductEntitlementMapping) -> Unit>
     private lateinit var backendErrorSlot: CapturingSlot<(PurchasesError) -> Unit>
 
-    private lateinit var appConfig: AppConfig
     private lateinit var backend: Backend
     private lateinit var deviceCache: DeviceCache
     private lateinit var offlineEntitlementsCalculator: OfflineCustomerInfoCalculator
@@ -44,7 +41,6 @@ class OfflineEntitlementsManagerTest {
         backendSuccessSlot = slot()
         backendErrorSlot = slot()
 
-        appConfig = mockk()
         backend = mockk()
         deviceCache = mockk()
         offlineEntitlementsCalculator = mockk()
@@ -58,12 +54,8 @@ class OfflineEntitlementsManagerTest {
         every {
             backend.getProductEntitlementMapping(capture(backendSuccessSlot), capture(backendErrorSlot))
         } just Runs
-        every {
-            appConfig.areOfflineEntitlementsEnabled
-        } returns true
 
         offlineEntitlementsManager = OfflineEntitlementsManager(
-            appConfig,
             backend,
             offlineEntitlementsCalculator,
             deviceCache
@@ -81,28 +73,6 @@ class OfflineEntitlementsManagerTest {
             appUserID
         )
         assertThat(result).isTrue
-    }
-
-    @Test
-    fun `shouldCalculateOfflineCustomerInfoInGetCustomerInfoRequest returns false if offline mode disabled`() {
-        every { appConfig.areOfflineEntitlementsEnabled } returns false
-        val isServerError = true
-        val result = offlineEntitlementsManager.shouldCalculateOfflineCustomerInfoInGetCustomerInfoRequest(
-            isServerError,
-            appUserID
-        )
-        assertThat(result).isFalse
-    }
-
-    @Test
-    fun `shouldCalculateOfflineCustomerInfoInGetCustomerInfoRequest returns false if not server error and offline mode disabled`() {
-        every { appConfig.areOfflineEntitlementsEnabled } returns false
-        val isServerError = false
-        val result = offlineEntitlementsManager.shouldCalculateOfflineCustomerInfoInGetCustomerInfoRequest(
-            isServerError,
-            appUserID
-        )
-        assertThat(result).isFalse
     }
 
     @Test
@@ -149,20 +119,6 @@ class OfflineEntitlementsManagerTest {
     }
 
     @Test
-    fun `shouldCalculateOfflineCustomerInfoInPostReceipt returns false if offline entitlements disabled`() {
-        every { appConfig.areOfflineEntitlementsEnabled } returns false
-        val isServerError = true
-        assertThat(offlineEntitlementsManager.shouldCalculateOfflineCustomerInfoInPostReceipt(isServerError)).isFalse
-    }
-
-    @Test
-    fun `shouldCalculateOfflineCustomerInfoInPostReceipt returns false if not server error and offline entitlements disabled`() {
-        every { appConfig.areOfflineEntitlementsEnabled } returns false
-        val isServerError = false
-        assertThat(offlineEntitlementsManager.shouldCalculateOfflineCustomerInfoInPostReceipt(isServerError)).isFalse
-    }
-
-    @Test
     fun `shouldCalculateOfflineCustomerInfoInPostReceipt returns false if not server error`() {
         val isServerError = false
         assertThat(offlineEntitlementsManager.shouldCalculateOfflineCustomerInfoInPostReceipt(isServerError)).isFalse
@@ -192,19 +148,6 @@ class OfflineEntitlementsManagerTest {
     // endregion
 
     // region calculateAndCacheOfflineCustomerInfo
-
-    @Test
-    fun `calculateAndCacheOfflineCustomerInfo does nothing if offline entitlements disabled`() {
-        every { appConfig.areOfflineEntitlementsEnabled } returns false
-        var receivedError: PurchasesError? = null
-        offlineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(
-            appUserID,
-            onSuccess = { fail("Should error") },
-            onError = { receivedError = it }
-        )
-        verify(exactly = 0) { offlineEntitlementsCalculator.computeOfflineCustomerInfo(any(), any(), any()) }
-        assertThat(receivedError?.code).isEqualTo(PurchasesErrorCode.UnsupportedError)
-    }
 
     @Test
     fun `calculateAndCacheOfflineCustomerInfo returns customer info on success callback`() {
@@ -367,14 +310,6 @@ class OfflineEntitlementsManagerTest {
         val expectedMappings = createProductEntitlementMapping()
         backendSuccessSlot.captured(expectedMappings)
         verify(exactly = 1) { deviceCache.cacheProductEntitlementMapping(expectedMappings) }
-    }
-
-    @Test
-    fun `updateProductEntitlementMappingCacheIfStale does nothing if offline entitlements disabled`() {
-        every { appConfig.areOfflineEntitlementsEnabled } returns false
-        offlineEntitlementsManager.updateProductEntitlementMappingCacheIfStale()
-        verify(exactly = 0) { deviceCache.isProductEntitlementMappingCacheStale() }
-        verify(exactly = 0) { backend.getProductEntitlementMapping(any(), any()) }
     }
 
     // endregion

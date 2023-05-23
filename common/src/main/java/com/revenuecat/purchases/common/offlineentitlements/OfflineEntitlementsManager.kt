@@ -2,8 +2,6 @@ package com.revenuecat.purchases.common.offlineentitlements
 
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.PurchasesError
-import com.revenuecat.purchases.PurchasesErrorCode
-import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.debugLog
@@ -11,7 +9,6 @@ import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.strings.OfflineEntitlementsStrings
 
 class OfflineEntitlementsManager(
-    private val appConfig: AppConfig,
     private val backend: Backend,
     private val offlineCustomerInfoCalculator: OfflineCustomerInfoCalculator,
     private val deviceCache: DeviceCache
@@ -35,13 +32,12 @@ class OfflineEntitlementsManager(
     fun shouldCalculateOfflineCustomerInfoInGetCustomerInfoRequest(
         isServerError: Boolean,
         appUserId: String
-    ) = appConfig.areOfflineEntitlementsEnabled &&
-        isServerError &&
+    ) = isServerError &&
         deviceCache.getCachedCustomerInfo(appUserId) == null
 
     fun shouldCalculateOfflineCustomerInfoInPostReceipt(
         isServerError: Boolean
-    ) = appConfig.areOfflineEntitlementsEnabled && isServerError
+    ) = isServerError
 
     @Suppress("FunctionOnlyReturningConstant")
     fun calculateAndCacheOfflineCustomerInfo(
@@ -49,13 +45,6 @@ class OfflineEntitlementsManager(
         onSuccess: (CustomerInfo) -> Unit,
         onError: (PurchasesError) -> Unit
     ) {
-        if (!appConfig.areOfflineEntitlementsEnabled) {
-            onError(PurchasesError(
-                PurchasesErrorCode.UnsupportedError,
-                OfflineEntitlementsStrings.OFFLINE_ENTITLEMENTS_NOT_ENABLED
-            ))
-            return
-        }
         synchronized(this@OfflineEntitlementsManager) {
             val alreadyProcessing = offlineCustomerInfoCallbackCache.containsKey(appUserId)
             val callbacks = offlineCustomerInfoCallbackCache[appUserId] ?: emptyList()
@@ -90,7 +79,7 @@ class OfflineEntitlementsManager(
     }
 
     fun updateProductEntitlementMappingCacheIfStale() {
-        if (appConfig.areOfflineEntitlementsEnabled && deviceCache.isProductEntitlementMappingCacheStale()) {
+        if (deviceCache.isProductEntitlementMappingCacheStale()) {
             debugLog(OfflineEntitlementsStrings.UPDATING_PRODUCT_ENTITLEMENT_MAPPING)
             backend.getProductEntitlementMapping(
                 onSuccessHandler = { productEntitlementMapping ->
