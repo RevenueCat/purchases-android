@@ -314,7 +314,12 @@ class OfflineEntitlementsManagerTest {
     @Test
     fun `updateProductEntitlementMappingCacheIfStale does nothing if cache not stale`() {
         every { deviceCache.isProductEntitlementMappingCacheStale() } returns false
-        offlineEntitlementsManager.updateProductEntitlementMappingCacheIfStale()
+        var completionCallCount = 0
+        offlineEntitlementsManager.updateProductEntitlementMappingCacheIfStale {
+            assertThat(it).isNull()
+            completionCallCount++
+        }
+        assertThat(completionCallCount).isEqualTo(1)
         verify(exactly = 0) { backend.getProductEntitlementMapping(any(), any()) }
     }
 
@@ -329,9 +334,14 @@ class OfflineEntitlementsManagerTest {
     @Test
     fun `updateProductEntitlementMappingCacheIfStale does nothing if backend request errors`() {
         every { deviceCache.isProductEntitlementMappingCacheStale() } returns true
-        offlineEntitlementsManager.updateProductEntitlementMappingCacheIfStale()
+        var completionCallCount = 0
+        offlineEntitlementsManager.updateProductEntitlementMappingCacheIfStale {
+            assertThat(it).isNotNull
+            completionCallCount++
+        }
         verify(exactly = 1) { backend.getProductEntitlementMapping(any(), any()) }
         backendErrorSlot.captured(PurchasesError(PurchasesErrorCode.NetworkError))
+        assertThat(completionCallCount).isEqualTo(1)
         verify(exactly = 0) { deviceCache.cacheProductEntitlementMapping(any()) }
     }
 
@@ -339,10 +349,15 @@ class OfflineEntitlementsManagerTest {
     fun `updateProductEntitlementMappingCacheIfStale caches mapping from backend if request successful`() {
         every { deviceCache.isProductEntitlementMappingCacheStale() } returns true
         every { deviceCache.cacheProductEntitlementMapping(any()) } just Runs
-        offlineEntitlementsManager.updateProductEntitlementMappingCacheIfStale()
+        var completionCallCount = 0
+        offlineEntitlementsManager.updateProductEntitlementMappingCacheIfStale {
+            assertThat(it).isNull()
+            completionCallCount++
+        }
         verify(exactly = 1) { backend.getProductEntitlementMapping(any(), any()) }
         val expectedMappings = createProductEntitlementMapping()
         backendSuccessSlot.captured(expectedMappings)
+        assertThat(completionCallCount).isEqualTo(1)
         verify(exactly = 1) { deviceCache.cacheProductEntitlementMapping(expectedMappings) }
     }
 

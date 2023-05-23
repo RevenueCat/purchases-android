@@ -81,18 +81,22 @@ class OfflineEntitlementsManager(
         )
     }
 
-    fun updateProductEntitlementMappingCacheIfStale() {
+    fun updateProductEntitlementMappingCacheIfStale(completion: ((PurchasesError?) -> Unit)? = null) {
         if (isOfflineEntitlementsEnabled() && deviceCache.isProductEntitlementMappingCacheStale()) {
             debugLog(OfflineEntitlementsStrings.UPDATING_PRODUCT_ENTITLEMENT_MAPPING)
             backend.getProductEntitlementMapping(
                 onSuccessHandler = { productEntitlementMapping ->
                     deviceCache.cacheProductEntitlementMapping(productEntitlementMapping)
                     debugLog(OfflineEntitlementsStrings.SUCCESSFULLY_UPDATED_PRODUCT_ENTITLEMENTS)
+                    completion?.invoke(null)
                 },
                 onErrorHandler = { e ->
                     errorLog(OfflineEntitlementsStrings.ERROR_UPDATING_PRODUCT_ENTITLEMENTS.format(e))
+                    completion?.invoke(e)
                 }
             )
+        } else {
+            completion?.invoke(null)
         }
     }
 

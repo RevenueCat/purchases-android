@@ -20,6 +20,11 @@ fun Purchases.Companion.configure(
     }
 }
 
+fun Purchases.Companion.resetSingleton() {
+    backingFieldSharedInstance?.close()
+    backingFieldSharedInstance = null
+}
+
 var Purchases.forceServerErrors: Boolean
     get() = appConfig.forceServerErrors
     set(value) {
