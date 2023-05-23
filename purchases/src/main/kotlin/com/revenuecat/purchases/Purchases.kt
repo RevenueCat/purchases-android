@@ -173,7 +173,6 @@ class Purchases internal constructor(
             log(LogIntent.WARNING, AUTO_SYNC_PURCHASES_DISABLED)
         }
 
-        offlineEntitlementsManager.updateProductEntitlementMappingCacheIfStale()
         diagnosticsSynchronizer?.syncDiagnosticsFileIfNeeded()
     }
 
@@ -203,9 +202,9 @@ class Purchases internal constructor(
             )
         }
         offeringsManager.onAppForeground(identityManager.currentAppUserID)
-        offlineEntitlementsManager.updateProductEntitlementMappingCacheIfStale()
         updatePendingPurchaseQueue()
         synchronizeSubscriberAttributesIfNeeded()
+        offlineEntitlementsManager.updateProductEntitlementMappingCacheIfStale()
     }
 
     // region Public Methods
