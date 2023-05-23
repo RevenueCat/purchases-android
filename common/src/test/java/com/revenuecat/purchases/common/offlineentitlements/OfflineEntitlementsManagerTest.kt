@@ -2,6 +2,7 @@ package com.revenuecat.purchases.common.offlineentitlements
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.DangerousSettings
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.AppConfig
@@ -35,6 +36,7 @@ class OfflineEntitlementsManagerTest {
     private lateinit var deviceCache: DeviceCache
     private lateinit var offlineEntitlementsCalculator: OfflineCustomerInfoCalculator
     private lateinit var appConfig: AppConfig
+    private lateinit var dangerousSettings: DangerousSettings
 
     private lateinit var offlineEntitlementsManager: OfflineEntitlementsManager
 
@@ -47,6 +49,7 @@ class OfflineEntitlementsManagerTest {
         deviceCache = mockk()
         offlineEntitlementsCalculator = mockk()
         appConfig = mockk()
+        dangerousSettings = mockk()
 
         every {
             deviceCache.getCachedAppUserID()
@@ -59,6 +62,12 @@ class OfflineEntitlementsManagerTest {
         } just Runs
         every {
             appConfig.finishTransactions
+        } returns true
+        every {
+            appConfig.dangerousSettings
+        } returns dangerousSettings
+        every {
+            dangerousSettings.offlineEntitlementsEnabled
         } returns true
 
         offlineEntitlementsManager = OfflineEntitlementsManager(
@@ -83,8 +92,20 @@ class OfflineEntitlementsManagerTest {
     }
 
     @Test
-    fun `shouldCalculateOfflineCustomerInfoInGetCustomerInfoRequest returns false if not finishing transactions`() {
+    fun `shouldCalculateOfflineCustomerInfoInGetCustomerInfoRequest returns false if observer mode`() {
         every { appConfig.finishTransactions } returns false
+        every { deviceCache.getCachedCustomerInfo(appUserID) } returns null
+        val isServerError = true
+        val result = offlineEntitlementsManager.shouldCalculateOfflineCustomerInfoInGetCustomerInfoRequest(
+            isServerError,
+            appUserID
+        )
+        assertThat(result).isFalse
+    }
+
+    @Test
+    fun `shouldCalculateOfflineCustomerInfoInGetCustomerInfoRequest returns false if dangerous setting is disabled`() {
+        every { dangerousSettings.offlineEntitlementsEnabled } returns false
         every { deviceCache.getCachedCustomerInfo(appUserID) } returns null
         val isServerError = true
         val result = offlineEntitlementsManager.shouldCalculateOfflineCustomerInfoInGetCustomerInfoRequest(
@@ -138,9 +159,16 @@ class OfflineEntitlementsManagerTest {
     }
 
     @Test
-    fun `shouldCalculateOfflineCustomerInfoInPostReceipt returns true if server error but not finishing transactions`() {
+    fun `shouldCalculateOfflineCustomerInfoInPostReceipt returns false if observer mode`() {
         val isServerError = true
         every { appConfig.finishTransactions } returns false
+        assertThat(offlineEntitlementsManager.shouldCalculateOfflineCustomerInfoInPostReceipt(isServerError)).isFalse
+    }
+
+    @Test
+    fun `shouldCalculateOfflineCustomerInfoInPostReceipt returns false if dangerous setting disabled`() {
+        val isServerError = true
+        every { dangerousSettings.offlineEntitlementsEnabled } returns false
         assertThat(offlineEntitlementsManager.shouldCalculateOfflineCustomerInfoInPostReceipt(isServerError)).isFalse
     }
 
@@ -324,9 +352,17 @@ class OfflineEntitlementsManagerTest {
     }
 
     @Test
-    fun `updateProductEntitlementMappingCacheIfStale does nothing if not finishing transactions`() {
+    fun `updateProductEntitlementMappingCacheIfStale does nothing if observer mode`() {
         every { deviceCache.isProductEntitlementMappingCacheStale() } returns true
         every { appConfig.finishTransactions } returns false
+        offlineEntitlementsManager.updateProductEntitlementMappingCacheIfStale()
+        verify(exactly = 0) { backend.getProductEntitlementMapping(any(), any()) }
+    }
+
+    @Test
+    fun `updateProductEntitlementMappingCacheIfStale does nothing if dangerous setting disabled`() {
+        every { deviceCache.isProductEntitlementMappingCacheStale() } returns true
+        every { dangerousSettings.offlineEntitlementsEnabled } returns false
         offlineEntitlementsManager.updateProductEntitlementMappingCacheIfStale()
         verify(exactly = 0) { backend.getProductEntitlementMapping(any(), any()) }
     }

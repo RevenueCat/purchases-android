@@ -13,7 +13,7 @@ class AppConfig(
     val platformInfo: PlatformInfo,
     proxyURL: URL?,
     val store: Store,
-    val dangerousSettings: DangerousSettings = DangerousSettings(autoSyncPurchases = true),
+    val dangerousSettings: DangerousSettings = DangerousSettings(),
     // Should only be used for tests
     var forceServerErrors: Boolean = false
 ) {

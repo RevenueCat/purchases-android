@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.Context
 import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.DangerousSettings
 import com.revenuecat.purchases.LogHandler
 import com.revenuecat.purchases.LogLevel
 import com.revenuecat.purchases.Offerings
@@ -199,8 +200,22 @@ private class PurchasesAPI {
         }
     }
 
+    fun checkDangerousSettings(autoSyncPurchases: Boolean, offlineEntitlementsEnabled: Boolean) {
+        val dangerousSettings = DangerousSettings(
+            autoSyncPurchases = autoSyncPurchases,
+            offlineEntitlementsEnabled = offlineEntitlementsEnabled
+        )
+        val dangerousSettings2 = DangerousSettings(
+            autoSyncPurchases = autoSyncPurchases
+        )
+        val dangerousSettings3 = DangerousSettings(
+            offlineEntitlementsEnabled = offlineEntitlementsEnabled
+        )
+        val dangerousSettings4 = DangerousSettings()
+    }
+
     @Suppress("RemoveRedundantQualifierName", "RedundantLambdaArrow", "ForbiddenComment")
-    fun checkConfiguration(context: Context, executorService: ExecutorService) {
+    fun checkConfiguration(context: Context, executorService: ExecutorService, dangerousSettings: DangerousSettings) {
         val features: List<BillingFeature> = ArrayList()
         val configured: Boolean = Purchases.isConfigured
 
@@ -210,6 +225,7 @@ private class PurchasesAPI {
             .observerMode(false)
             .service(executorService)
             .diagnosticsEnabled(true)
+            .dangerousSettings(dangerousSettings)
             // Trusted entitlements: Commented out until ready to be made public
             // .entitlementVerificationMode(EntitlementVerificationMode.INFORMATIONAL)
             .build()

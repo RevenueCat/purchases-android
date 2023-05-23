@@ -8,7 +8,7 @@ import androidx.annotation.Nullable;
 
 import com.revenuecat.purchases.CacheFetchPolicy;
 import com.revenuecat.purchases.CustomerInfo;
-import com.revenuecat.purchases.EntitlementVerificationMode;
+import com.revenuecat.purchases.DangerousSettings;
 import com.revenuecat.purchases.LogHandler;
 import com.revenuecat.purchases.LogLevel;
 import com.revenuecat.purchases.Offerings;
@@ -173,8 +173,19 @@ final class PurchasesAPI {
         purchases.setCreative("");
     }
 
+    static void checkDangerousSettings(final Boolean autoSyncPurchases,
+                                       final Boolean offlineEntitlementsEnabled) {
+        final DangerousSettings dangerousSettings = new DangerousSettings(
+                autoSyncPurchases,
+                offlineEntitlementsEnabled
+        );
+        final DangerousSettings dangerousSettings2 = new DangerousSettings(autoSyncPurchases);
+        final DangerousSettings dangerousSettings3 = new DangerousSettings();
+    }
+
     static void checkConfiguration(final Context context,
-                                   final ExecutorService executorService) throws MalformedURLException {
+                                   final ExecutorService executorService,
+                                   final DangerousSettings dangerousSettings) throws MalformedURLException {
         final List<? extends BillingFeature> features = new ArrayList<>();
 
         final boolean configured = Purchases.isConfigured();
@@ -185,6 +196,7 @@ final class PurchasesAPI {
                 .observerMode(false)
                 .service(executorService)
                 .diagnosticsEnabled(true)
+                .dangerousSettings(dangerousSettings)
                 // Trusted entitlements: Commented out until ready to be made public
                 // .entitlementVerificationMode(EntitlementVerificationMode.INFORMATIONAL)
                 .build();
