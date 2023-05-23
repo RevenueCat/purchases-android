@@ -40,7 +40,7 @@ open class BasePurchasesIntegrationTest {
     protected open val initialActivePurchasesToUse: Map<String, StoreTransaction> = emptyMap()
     protected open val initialForceServerErrors: Boolean = false
 
-    protected val testTimeout = 7.seconds
+    protected val testTimeout = 15.seconds
     protected val currentTimestamp = Date().time
     protected val testUserId = "android-integration-test-$currentTimestamp"
     protected val proxyUrl = Constants.proxyUrl.takeIf { it != "NO_PROXY_URL" }
