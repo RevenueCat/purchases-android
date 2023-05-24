@@ -16,13 +16,10 @@ import java.util.concurrent.TimeUnit
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 
-private const val JITTERING_DELAY_MILLISECONDS = 5000L
-private const val JITTERING_LONG_DELAY_MILLISECONDS = 10000L
-
 enum class Delay(val minDelay: Duration, val maxDelay: Duration) {
     NONE(0.milliseconds, 0.milliseconds),
-    DEFAULT(0.milliseconds, JITTERING_DELAY_MILLISECONDS.milliseconds),
-    LONG(JITTERING_DELAY_MILLISECONDS.milliseconds, JITTERING_LONG_DELAY_MILLISECONDS.milliseconds)
+    DEFAULT(0.milliseconds, DispatcherConstants.jitterDelay),
+    LONG(DispatcherConstants.jitterDelay, DispatcherConstants.jitterLongDelay)
 }
 
 open class Dispatcher(
