@@ -65,7 +65,7 @@ open class BasePurchasesTest {
     protected val mockDiagnosticsSynchronizer = mockk<DiagnosticsSynchronizer>()
     protected val mockOfflineEntitlementsManager = mockk<OfflineEntitlementsManager>()
     internal val mockPostReceiptHelper = mockk<PostReceiptHelper>()
-    protected val mockSyncPurchasesHelper = mockk<SyncPurchasesHelper>()
+    internal val mockSyncPurchasesHelper = mockk<SyncPurchasesHelper>()
 
     protected var capturedPurchasesUpdatedListener = slot<BillingAbstract.PurchasesUpdatedListener>()
     protected var capturedBillingWrapperStateListener = slot<BillingAbstract.StateListener>()
@@ -166,7 +166,7 @@ open class BasePurchasesTest {
             every {
                 postTokenWithoutConsuming(any(), any(), any(), any(), any(), any(), captureLambda(), any())
             } answers {
-                lambda<() -> Unit>().captured.invoke()
+                lambda<(CustomerInfo) -> Unit>().captured.invoke(mockInfo)
             }
         }
     }

@@ -236,6 +236,7 @@ class Purchases internal constructor(
     ) {
         syncPurchasesHelper.syncPurchases(
             isRestore = this.allowSharingPlayStoreAccount,
+            appInBackground = this.state.appInBackground,
             onSuccess = { listener?.onSuccess(it) },
             onError = { listener?.onError(it) }
         )

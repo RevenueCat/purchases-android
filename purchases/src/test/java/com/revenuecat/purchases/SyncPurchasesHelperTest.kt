@@ -22,6 +22,7 @@ class SyncPurchasesHelperTest {
     private val appUserID = "test-app-user-id"
     private val testError = PurchasesError(PurchasesErrorCode.CustomerInfoError)
     private val customerInfoMock = mockk<CustomerInfo>()
+    private val appInBackground = false
 
     private lateinit var billing: BillingAbstract
     private lateinit var identityManager: IdentityManager
@@ -56,6 +57,7 @@ class SyncPurchasesHelperTest {
         var receivedCustomerInfo: CustomerInfo? = null
         syncPurchasesHelper.syncPurchases(
             isRestore = false,
+            appInBackground = appInBackground,
             onSuccess = { receivedCustomerInfo = it },
             onError = { fail("Should not call onError") }
         )
@@ -76,6 +78,7 @@ class SyncPurchasesHelperTest {
         var receivedError: PurchasesError? = null
         syncPurchasesHelper.syncPurchases(
             isRestore = false,
+            appInBackground = appInBackground,
             onSuccess = { fail("Should not call onSuccess") },
             onError = { receivedError = it }
         )
@@ -90,6 +93,7 @@ class SyncPurchasesHelperTest {
         var error: PurchasesError? = null
         syncPurchasesHelper.syncPurchases(
             isRestore = false,
+            appInBackground = appInBackground,
             onSuccess = { fail("Should not call onSuccess") },
             onError = { error = it }
         )
@@ -127,6 +131,7 @@ class SyncPurchasesHelperTest {
         var receivedCustomerInfo: CustomerInfo? = null
         syncPurchasesHelper.syncPurchases(
             isRestore = false,
+            appInBackground = appInBackground,
             onSuccess = { receivedCustomerInfo = it },
             onError = { fail("Should have succeeded") }
         )
@@ -181,6 +186,7 @@ class SyncPurchasesHelperTest {
         var errorCallCount = 0
         syncPurchasesHelper.syncPurchases(
             isRestore = false,
+            appInBackground = appInBackground,
             onSuccess = { fail("Should error") },
             onError = { errorCallCount++ }
         )
@@ -218,6 +224,7 @@ class SyncPurchasesHelperTest {
         var successCallCount = 0
         syncPurchasesHelper.syncPurchases(
             isRestore = false,
+            appInBackground = appInBackground,
             onSuccess = { successCallCount++ },
             onError = { fail("Should have succeeded") }
         )
@@ -253,7 +260,7 @@ class SyncPurchasesHelperTest {
             customerInfoHelper.retrieveCustomerInfo(
                 appUserID,
                 CacheFetchPolicy.CACHED_OR_FETCHED,
-                false,
+                appInBackground,
                 capture(callbackSlot)
             )
         } answers {
@@ -269,7 +276,7 @@ class SyncPurchasesHelperTest {
             customerInfoHelper.retrieveCustomerInfo(
                 appUserID,
                 CacheFetchPolicy.CACHED_OR_FETCHED,
-                false,
+                appInBackground,
                 capture(callbackSlot)
             )
         } answers {

@@ -2646,15 +2646,18 @@ class PurchasesTest: BasePurchasesTest() {
     @Test
     fun `syncing transactions calls helper with correct parameters`() {
         val allowSharingAccount = true
+        val appInBackground = true
         purchases.allowSharingPlayStoreAccount = allowSharingAccount
+        purchases.state = purchases.state.copy(appInBackground = appInBackground)
 
-        every { mockSyncPurchasesHelper.syncPurchases(any(), any(), any()) } just Runs
+        every { mockSyncPurchasesHelper.syncPurchases(any(), any(), any(), any()) } just Runs
 
         purchases.syncPurchases()
 
         verify(exactly = 1) {
             mockSyncPurchasesHelper.syncPurchases(
                 allowSharingAccount,
+                appInBackground,
                 any(),
                 any()
             )
@@ -2664,7 +2667,7 @@ class PurchasesTest: BasePurchasesTest() {
     @Test
     fun `syncing transactions calls success callback when process completes successfully`() {
         every {
-            mockSyncPurchasesHelper.syncPurchases(any(), captureLambda(), any())
+            mockSyncPurchasesHelper.syncPurchases(any(), any(), captureLambda(), any())
         } answers {
             lambda<(CustomerInfo) -> Unit>().captured.invoke(mockInfo)
         }
@@ -2686,7 +2689,7 @@ class PurchasesTest: BasePurchasesTest() {
     @Test
     fun `syncing transactions calls error callback when process completes with error`() {
         every {
-            mockSyncPurchasesHelper.syncPurchases(any(), any(), captureLambda())
+            mockSyncPurchasesHelper.syncPurchases(any(), any(), any(), captureLambda())
         } answers {
             lambda<(PurchasesError) -> Unit>().captured.invoke(PurchasesError(PurchasesErrorCode.UnknownError))
         }
