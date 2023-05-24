@@ -54,7 +54,7 @@ class PostReceiptHelperTest {
         ProductType.SUBS,
         null,
         subscriptionOptionId,
-        prorationMode = GoogleProrationMode.IMMEDIATE_AND_CHARGE_FULL_PRICE
+        prorationMode = GoogleProrationMode.DEFERRED
     )
     private val testReceiptInfo = ReceiptInfo(
         productIDs = listOf("test-product-id-1", "test-product-id-2"),
@@ -619,7 +619,7 @@ class PostReceiptHelperTest {
             onError = { _, _ -> fail("Should succeed") }
         )
         assertThat(postedReceiptInfoSlot.isCaptured).isTrue
-        assertThat(postedReceiptInfoSlot.captured.prorationMode).isEqualTo(GoogleProrationMode.IMMEDIATE_AND_CHARGE_FULL_PRICE)
+        assertThat(postedReceiptInfoSlot.captured.prorationMode).isEqualTo(GoogleProrationMode.DEFERRED)
     }
 
     @Test

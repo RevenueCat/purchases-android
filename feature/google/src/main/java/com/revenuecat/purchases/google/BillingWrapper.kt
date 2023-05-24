@@ -250,7 +250,13 @@ class BillingWrapper(
         }
 
         synchronized(this@BillingWrapper) {
-            purchaseContext[googlePurchasingData.productId] = PurchaseContext(
+            // When using DEFERRED proration mode, callback needs to be associated with the *old* product we are
+            // switching from, because the transaction we receive on successful purchase is for the old product.
+            val productId =
+                if (replaceProductInfo?.prorationMode == GoogleProrationMode.DEFERRED) {
+                    replaceProductInfo.oldPurchase.productIds.first()
+                } else googlePurchasingData.productId
+            purchaseContext[productId] = PurchaseContext(
                 googlePurchasingData.productType,
                 presentedOfferingIdentifier,
                 subscriptionOptionId,
@@ -302,7 +308,6 @@ class BillingWrapper(
                 withConnectedClient {
                     queryPurchaseHistoryAsyncEnsuringOneResponse(productType) {
                             billingResult, purchaseHistoryRecordList ->
-
                         if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
                             purchaseHistoryRecordList.takeUnless { it.isNullOrEmpty() }?.forEach {
                                 log(
@@ -598,7 +603,6 @@ class BillingWrapper(
         val notNullPurchasesList = purchases ?: emptyList()
         if (billingResult.responseCode == BillingClient.BillingResponseCode.OK && notNullPurchasesList.isNotEmpty()) {
             val storeTransactions = mutableListOf<StoreTransaction>()
-
             notNullPurchasesList.forEach { purchase ->
                 getStoreTransaction(purchase) { storeTxn ->
                     storeTransactions.add(storeTxn)
@@ -607,9 +611,6 @@ class BillingWrapper(
                     }
                 }
             }
-        } else if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
-            // When doing a DEFERRED downgrade, the result is OK, but the list of purchases is null
-            purchasesUpdatedListener?.onPurchasesUpdated(emptyList())
         } else {
             log(LogIntent.GOOGLE_ERROR, BillingStrings.BILLING_WRAPPER_PURCHASES_ERROR
                 .format(billingResult.toHumanReadableDescription()) +
@@ -623,14 +624,16 @@ class BillingWrapper(
                 }"
             )
 
-            val responseCode =
-                if (purchases == null && billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
-                    BillingClient.BillingResponseCode.ERROR
-                } else {
-                    billingResult.responseCode
-                }
+            var message = "Error updating purchases. ${billingResult.toHumanReadableDescription()}"
+            var responseCode = billingResult.responseCode
 
-            val message = "Error updating purchases. ${billingResult.toHumanReadableDescription()}"
+            if (purchases == null && billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
+                // Result being ok but with a Null purchase used to happen when doing a product change
+                // in DEFERRED proration mode in Billing Client <= 4. Should not happen in Billing Client 5+ since
+                // we get the transaction for the previous product.
+                message = "Error: onPurchasesUpdated received an OK BillingResult with a Null purchases list."
+                responseCode = BillingClient.BillingResponseCode.ERROR
+            }
 
             val purchasesError = responseCode.billingResponseToPurchasesError(message).also { errorLog(it) }
 
