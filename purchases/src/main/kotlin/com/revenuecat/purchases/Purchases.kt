@@ -47,6 +47,7 @@ import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.interfaces.PurchaseErrorCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback
+import com.revenuecat.purchases.interfaces.SyncPurchasesCallback
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import com.revenuecat.purchases.models.BillingFeature
 import com.revenuecat.purchases.models.GoogleProrationMode
@@ -97,6 +98,7 @@ class Purchases internal constructor(
     @get:VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     internal val offlineEntitlementsManager: OfflineEntitlementsManager,
     private val postReceiptHelper: PostReceiptHelper,
+    private val syncPurchasesHelper: SyncPurchasesHelper,
     // This is nullable due to: https://github.com/RevenueCat/purchases-flutter/issues/408
     private val mainHandler: Handler? = Handler(Looper.getMainLooper())
 ) : LifecycleDelegate {
@@ -217,44 +219,26 @@ class Purchases internal constructor(
 
     /**
      * This method will send all the purchases to the RevenueCat backend. Call this when using your own implementation
-     * for subscriptions anytime a sync is needed, such as when migrating existing users to RevenueCat
+     * for subscriptions anytime a sync is needed, such as when migrating existing users to RevenueCat. The
+     * [SyncPurchasesCallback.onSuccess] callback will be called if all purchases have been synced successfully or
+     * there are no purchases. Otherwise, the [SyncPurchasesCallback.onError] callback will be called with a
+     * [PurchasesError] indicating the first error found.
      *
+     * @param [listener] Called when all purchases have been synced with the backend, either successfully or with
+     * an error. If no purchases are present, the success function will be called.
      * @warning This function should only be called if you're migrating to RevenueCat or in observer mode.
+     * @warning This function could take a relatively long time to execute, depending on the amount of purchases
+     * the user has. Consider that when waiting for this operation to complete.
      */
-    fun syncPurchases() {
-        log(LogIntent.DEBUG, PurchaseStrings.SYNCING_PURCHASES)
-
-        val appUserID = identityManager.currentAppUserID
-
-        billing.queryAllPurchases(
-            appUserID,
-            onReceivePurchaseHistory = { allPurchases ->
-                if (allPurchases.isNotEmpty()) {
-                    allPurchases.forEach { purchase ->
-                        val productInfo = ReceiptInfo(productIDs = purchase.productIds)
-                        postReceiptHelper.postTokenWithoutConsuming(
-                            purchase.purchaseToken,
-                            purchase.storeUserID,
-                            productInfo,
-                            this.allowSharingPlayStoreAccount,
-                            appUserID,
-                            purchase.marketplace,
-                            {
-                                log(LogIntent.PURCHASE, PurchaseStrings.PURCHASE_SYNCED.format(purchase))
-                            },
-                            { error ->
-                                log(
-                                    LogIntent.RC_ERROR, PurchaseStrings.SYNCING_PURCHASES_ERROR_DETAILS
-                                        .format(purchase, error)
-                                )
-                            }
-                        )
-                    }
-                }
-            },
-            onReceivePurchaseHistoryError = {
-                log(LogIntent.RC_ERROR, PurchaseStrings.SYNCING_PURCHASES_ERROR.format(it))
-            }
+    @JvmOverloads
+    fun syncPurchases(
+        listener: SyncPurchasesCallback? = null
+    ) {
+        syncPurchasesHelper.syncPurchases(
+            isRestore = this.allowSharingPlayStoreAccount,
+            appInBackground = this.state.appInBackground,
+            onSuccess = { listener?.onSuccess(it) },
+            onError = { listener?.onError(it) }
         )
     }
 

@@ -7,6 +7,7 @@ import com.revenuecat.purchases.interfaces.ProductChangeCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback
+import com.revenuecat.purchases.interfaces.SyncPurchasesCallback
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.SubscriptionOption
@@ -89,6 +90,19 @@ internal fun logInSuccessListener(
 
     override fun onError(error: PurchasesError) {
         onError?.invoke(error)
+    }
+}
+
+internal fun syncPurchasesListener(
+    onSuccess: (CustomerInfo) -> Unit,
+    onError: (error: PurchasesError) -> Unit
+) = object : SyncPurchasesCallback {
+    override fun onSuccess(customerInfo: CustomerInfo) {
+        onSuccess(customerInfo)
+    }
+
+    override fun onError(error: PurchasesError) {
+        onError(error)
     }
 }
 
@@ -225,6 +239,28 @@ fun Purchases.restorePurchasesWith(
     onSuccess: (customerInfo: CustomerInfo) -> Unit
 ) {
     restorePurchases(receiveCustomerInfoCallback(onSuccess, onError))
+}
+
+/**
+ * This method will send all the purchases to the RevenueCat backend. Call this when using your own implementation
+ * for subscriptions anytime a sync is needed, such as when migrating existing users to RevenueCat. The
+ * [onSuccess] callback will be called if all purchases have been synced successfully or
+ * there are no purchases. Otherwise, the [onError] callback will be called with a
+ * [PurchasesError] indicating the first error found.
+ *
+ * @param [onError] Called when there was an error syncing one or more of the purchases. Will return the first error
+ * found syncing the purchases.
+ * @param [onSuccess] Called when all purchases have been successfully synced with the backend or if no purchases are
+ * present.
+ * @warning This function should only be called if you're migrating to RevenueCat or in observer mode.
+ * @warning This function could take a relatively long time to execute, depending on the amount of purchases
+ * the user has. Consider that when waiting for this operation to complete.
+ */
+fun Purchases.syncPurchasesWith(
+    onError: (error: PurchasesError) -> Unit = ON_ERROR_STUB,
+    onSuccess: (CustomerInfo) -> Unit
+) {
+    syncPurchases(syncPurchasesListener(onSuccess, onError))
 }
 
 /**

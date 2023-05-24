@@ -70,7 +70,8 @@ class SubscriberAttributesPurchasesTests {
             offeringParser = OfferingParserFactory.createOfferingParser(Store.PLAY_STORE),
             diagnosticsSynchronizer = null,
             offlineEntitlementsManager = offlineEntitlementsManagerMock,
-            postReceiptHelper = postReceiptHelperMock
+            postReceiptHelper = postReceiptHelperMock,
+            syncPurchasesHelper = mockk()
         )
     }
 

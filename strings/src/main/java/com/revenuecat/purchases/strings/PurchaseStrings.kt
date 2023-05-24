@@ -21,10 +21,10 @@ object PurchaseStrings {
     const val PURCHASE_STARTED = "Purchase started - product: %s"
     const val SYNCING_PURCHASES = "Syncing purchases"
     const val SYNCING_PURCHASE_STORE_USER_ID = "Syncing purchase with token %s, for store user ID %s"
-    const val SYNCING_PURCHASES_ERROR = "Error syncing purchases %s"
+    const val SYNCING_PURCHASES_ERROR = "Error syncing purchases. Error: %s"
     const val SYNCING_PURCHASES_ERROR_DETAILS = "Error syncing purchases %s. Error: %s"
-    const val SYNCING_PURCHASE_ERROR_DETAILS = "Error syncing purchase %s. Error: %s"
     const val SYNCING_PURCHASE_ERROR_DETAILS_USER_ID = "Error syncing purchase %s for store user ID %s. Error: %s"
+    const val SYNCED_PURCHASES_SUCCESSFULLY = "Synced purchases successfully"
     const val SYNCING_PURCHASE_SKIPPING = "Skipping syncing purchase %s for store user ID %s. " +
         "It has already been posted"
     const val UPDATING_PENDING_PURCHASE_QUEUE = "Updating pending purchase queue"

@@ -40,7 +40,7 @@ internal class PostReceiptHelper(
         isRestore: Boolean,
         appUserID: String,
         marketplace: String?,
-        onSuccess: () -> Unit,
+        onSuccess: (CustomerInfo) -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {
         postReceiptAndSubscriberAttributes(
@@ -52,7 +52,7 @@ internal class PostReceiptHelper(
             marketplace,
             onSuccess = {
                 deviceCache.addSuccessfullyPostedToken(purchaseToken)
-                onSuccess()
+                onSuccess(it)
             },
             onError = { backendError, errorHandlingBehavior, _ ->
                 if (errorHandlingBehavior == PostReceiptErrorHandlingBehavior.SHOULD_BE_CONSUMED) {
@@ -62,7 +62,7 @@ internal class PostReceiptHelper(
                     errorHandlingBehavior,
                     appUserID,
                     onSuccess = {
-                        onSuccess()
+                        onSuccess(it)
                     },
                     onError = {
                         onError(backendError)

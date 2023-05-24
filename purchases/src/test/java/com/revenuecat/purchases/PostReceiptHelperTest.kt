@@ -889,6 +889,25 @@ class PostReceiptHelperTest {
     }
 
     @Test
+    fun `postTokenWithoutConsuming returns customer info on success`() {
+        mockPostReceiptSuccess(postType = PostType.TOKEN_WITHOUT_CONSUMING)
+
+        var receivedCustomerInfo: CustomerInfo? = null
+        postReceiptHelper.postTokenWithoutConsuming(
+            purchaseToken = postToken,
+            storeUserID = storeUserId,
+            receiptInfo = testReceiptInfo,
+            isRestore = true,
+            appUserID = appUserID,
+            marketplace = marketplace,
+            onSuccess = { receivedCustomerInfo = it },
+            onError = { fail("Should succeed") }
+        )
+
+        assertThat(receivedCustomerInfo).isEqualTo(defaultCustomerInfo)
+    }
+
+    @Test
     fun `postTokenWithoutConsuming adds sent token on success`() {
         val expectedShouldConsumeFlag = true
         every { appConfig.finishTransactions } returns expectedShouldConsumeFlag
