@@ -19,7 +19,7 @@ abstract class BaseOfflineEntitlementsIntegrationTest : BasePurchasesIntegration
     protected val initialActivePurchases = mapOf(
         initialActiveTransaction.purchaseToken.sha1() to initialActiveTransaction
     )
-    private val entitlementsToGrant = listOf("pro_cat", "another_pro_4")
+    private val expectedEntitlements = listOf("pro_cat", "another_pro_4")
 
     // region helpers
 
@@ -39,7 +39,7 @@ abstract class BaseOfflineEntitlementsIntegrationTest : BasePurchasesIntegration
 
     protected fun assertCustomerInfoHasExpectedPurchaseData(customerInfo: CustomerInfo) {
         Assertions.assertThat(customerInfo.entitlements.active.keys).containsExactlyInAnyOrderElementsOf(
-            entitlementsToGrant
+            expectedEntitlements
         )
         Assertions.assertThat(customerInfo.activeSubscriptions).containsExactly(
             "${Constants.productIdToPurchase}:${Constants.basePlanIdToPurchase}"
