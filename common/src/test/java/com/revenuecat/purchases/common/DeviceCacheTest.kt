@@ -523,9 +523,27 @@ class DeviceCacheTest {
             emptyMap(),
             listOf(packageObject)
         )
+        val offeringWithMetadata = Offering(
+            "offering_b",
+            "This is the metadata offering",
+            mapOf(
+                "int" to 5,
+                "double" to 5.5,
+                "boolean" to true,
+                "string" to "five",
+                "array" to listOf("five"),
+                "dictionary" to mapOf(
+                    "string" to "five"
+                )
+            ),
+            listOf(packageObject)
+        )
         val offerings = Offerings(
             offering,
-            mapOf(offering.identifier to offering)
+            mapOf(
+                offering.identifier to offering,
+                offeringWithMetadata.identifier to offeringWithMetadata
+            )
         )
 
         cache.cacheOfferings(offerings)
