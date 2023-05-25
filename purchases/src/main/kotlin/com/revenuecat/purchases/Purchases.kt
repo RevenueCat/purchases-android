@@ -61,7 +61,6 @@ import com.revenuecat.purchases.strings.BillingStrings
 import com.revenuecat.purchases.strings.ConfigureStrings
 import com.revenuecat.purchases.strings.ConfigureStrings.AUTO_SYNC_PURCHASES_DISABLED
 import com.revenuecat.purchases.strings.CustomerInfoStrings
-import com.revenuecat.purchases.strings.OfferingStrings
 import com.revenuecat.purchases.strings.PurchaseStrings
 import com.revenuecat.purchases.strings.RestoreStrings
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
@@ -203,11 +202,7 @@ class Purchases internal constructor(
                 appInBackground = false
             )
         }
-        if (offeringsManager.isOfferingsCacheStale(appInBackground = false)) {
-            log(LogIntent.DEBUG, OfferingStrings.OFFERINGS_STALE_UPDATING_IN_FOREGROUND)
-            offeringsManager.fetchAndCacheOfferings(identityManager.currentAppUserID, appInBackground = false)
-            log(LogIntent.RC_SUCCESS, OfferingStrings.OFFERINGS_UPDATED_FROM_NETWORK)
-        }
+        offeringsManager.onAppForeground(identityManager.currentAppUserID)
         offlineEntitlementsManager.updateProductEntitlementMappingCacheIfStale()
         updatePendingPurchaseQueue()
         synchronizeSubscriberAttributesIfNeeded()

@@ -54,6 +54,14 @@ class OfferingsManager(
         }
     }
 
+    fun onAppForeground(appUserID: String) {
+        if (isOfferingsCacheStale(appInBackground = false)) {
+            log(LogIntent.DEBUG, OfferingStrings.OFFERINGS_STALE_UPDATING_IN_FOREGROUND)
+            fetchAndCacheOfferings(appUserID, appInBackground = false)
+            log(LogIntent.RC_SUCCESS, OfferingStrings.OFFERINGS_UPDATED_FROM_NETWORK)
+        }
+    }
+
     fun fetchAndCacheOfferings(
         appUserID: String,
         appInBackground: Boolean,
