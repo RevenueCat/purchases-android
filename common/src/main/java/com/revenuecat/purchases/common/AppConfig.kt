@@ -18,6 +18,7 @@ class AppConfig(
     var forceServerErrors: Boolean = false
 ) {
 
+    val enableOfflineEntitlements = false
     val languageTag: String = context.getLocale()?.toBCP47() ?: ""
     val versionName: String = context.versionName ?: ""
     val packageName: String = context.packageName
