@@ -24,5 +24,6 @@ final class OfferingAPI {
         final Package p2 = offering.getPackage("");
 
         final Map<String, Object> metadata = offering.getMetadata();
+        final String metadataString = offering.getMetadataString("key", "default");
     }
 }
