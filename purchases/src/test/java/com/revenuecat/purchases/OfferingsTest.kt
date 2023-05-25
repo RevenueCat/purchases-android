@@ -254,6 +254,9 @@ class OfferingsTest {
         assertThat(offering!!.identifier).isEqualTo(offeringId)
         assertThat(offering!!.metadata).isEqualTo(metadata)
 
+        assertThat(offering!!.getMetadataString("string", "")).isEqualTo("five")
+        assertThat(offering!!.getMetadataString("double", "not a string")).isEqualTo("not a string")
+
         val packages = offering.availablePackages
         assertThat(packages.size).isEqualTo(2)
 

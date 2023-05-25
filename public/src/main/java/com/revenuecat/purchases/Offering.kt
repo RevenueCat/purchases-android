@@ -72,4 +72,12 @@ data class Offering constructor(
     @Suppress("MemberVisibilityCanBePrivate")
     fun getPackage(identifier: String) =
         availablePackages.first { it.identifier == identifier }
+
+    /**
+     * Returns the `metadata` value associated to `key` for the expected `String` type
+     * or `default` if not found, or it's not the expected `String` type.
+     */
+    fun getMetadataString(key: String, default: String): String? {
+        return this.metadata[key] as? String ?: default
+    }
 }
