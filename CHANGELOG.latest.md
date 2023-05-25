@@ -1,5 +1,4 @@
 ### New Features
-* `Offering` metadata (#1013) via Josh Holtz (@joshdholtz)
 * Support DEFERRED mode (#985) via swehner (@swehner)
 * Add completion callback to syncPurchases API (#1002) via Toni Rico (@tonidero)
 ### Bugfixes
