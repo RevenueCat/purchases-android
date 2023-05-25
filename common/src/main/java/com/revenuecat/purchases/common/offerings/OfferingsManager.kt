@@ -31,8 +31,8 @@ class OfferingsManager(
     fun fetchAndCacheOfferings(
         appUserID: String,
         appInBackground: Boolean,
-        onSuccess: ((Offerings) -> Unit)? = null,
-        onError: ((PurchasesError) -> Unit)? = null
+        onError: ((PurchasesError) -> Unit)? = null,
+        onSuccess: ((Offerings) -> Unit)? = null
     ) {
         deviceCache.setOfferingsCacheTimestampToNow()
         backend.getOfferings(

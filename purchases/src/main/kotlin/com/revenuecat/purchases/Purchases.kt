@@ -328,8 +328,8 @@ class Purchases internal constructor(
             offeringsManager.fetchAndCacheOfferings(
                 appUserID,
                 state.appInBackground,
-                { listener.onReceived(it) },
-                { listener.onError(it) }
+                { listener.onError(it) },
+                { listener.onReceived(it) }
             )
         } else {
             log(LogIntent.DEBUG, OfferingStrings.VENDING_OFFERINGS_CACHE)
