@@ -11,6 +11,7 @@ package com.revenuecat.purchases
  * @property identifier Unique identifier defined in RevenueCat dashboard.
  * @property serverDescription Offering description defined in RevenueCat dashboard.
  * @property availablePackages Array of [Package] objects available for purchase.
+ * @property metadata Offering metadata defined in RevenueCat dashboard.
  */
 data class Offering constructor(
     val identifier: String,
