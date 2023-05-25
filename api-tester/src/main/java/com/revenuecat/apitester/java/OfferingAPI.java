@@ -4,6 +4,7 @@ import com.revenuecat.purchases.Offering;
 import com.revenuecat.purchases.Package;
 
 import java.util.List;
+import java.util.Map;
 
 @SuppressWarnings({"unused"})
 final class OfferingAPI {
@@ -21,5 +22,8 @@ final class OfferingAPI {
         final Package weekly = offering.getWeekly();
         final Package p = offering.get("");
         final Package p2 = offering.getPackage("");
+
+        final Map<String, Object> metadata = offering.getMetadata();
+        final String metadataString = offering.getMetadataString("key", "default");
     }
 }

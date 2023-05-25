@@ -90,6 +90,9 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
                     assertThat(offerings.current?.availablePackages?.size).isEqualTo(1)
                     assertThat(offerings.current?.monthly?.product?.sku).isEqualTo(Constants.productIdToPurchase)
 
+                    assertThat(offerings.current?.metadata).isNotNull
+                    assertThat(offerings.current?.metadata?.get("dontdeletethis")).isEqualTo("useforintegrationtesting")
+
                     lock.countDown()
                 }
             )

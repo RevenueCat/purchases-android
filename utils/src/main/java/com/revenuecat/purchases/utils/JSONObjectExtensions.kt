@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.utils
 
+import org.json.JSONArray
 import org.json.JSONObject
 import java.util.Date
 
@@ -11,9 +12,20 @@ fun JSONObject.getNullableString(name: String): String? = takeUnless { this.isNu
 
 fun JSONObject.optNullableString(name: String): String? = takeIf { this.has(name) }?.getNullableString(name)
 
-fun <T> JSONObject.toMap(): Map<String, T>? {
+fun <T> JSONObject.toMap(deep: Boolean = false): Map<String, T>? {
     return this.keys()?.asSequence()?.map { jsonKey ->
-        @Suppress("UNCHECKED_CAST")
-        jsonKey to this[jsonKey] as T
+        if (deep) {
+            val value = when (val rawValue = this[jsonKey]) {
+                is JSONObject -> rawValue.toMap<T>()
+                is JSONArray -> rawValue.toList<T>()
+                else -> rawValue
+            }
+
+            @Suppress("UNCHECKED_CAST")
+            jsonKey to value as T
+        } else {
+            @Suppress("UNCHECKED_CAST")
+            jsonKey to this[jsonKey] as T
+        }
     }?.toMap()
 }

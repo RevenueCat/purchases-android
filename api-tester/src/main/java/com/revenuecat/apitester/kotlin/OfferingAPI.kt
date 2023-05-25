@@ -19,6 +19,8 @@ private class OfferingAPI {
             val weekly: Package? = weekly
             val p1: Package = offering[""]
             val p2: Package = getPackage("")
+            val metadata: Map<String, Any> = metadata
+            val metadataString: String = getMetadataString("key", "default")
         }
     }
 }

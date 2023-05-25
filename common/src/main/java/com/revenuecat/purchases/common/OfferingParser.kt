@@ -7,6 +7,7 @@ import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.strings.OfferingStrings
+import com.revenuecat.purchases.utils.toMap
 import org.json.JSONObject
 
 abstract class OfferingParser {
@@ -41,6 +42,7 @@ abstract class OfferingParser {
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     fun createOffering(offeringJson: JSONObject, productsById: Map<String, List<StoreProduct>>): Offering? {
         val offeringIdentifier = offeringJson.getString("identifier")
+        val metadata = offeringJson.optJSONObject("metadata")?.toMap<Any>(deep = true) ?: emptyMap()
         val jsonPackages = offeringJson.getJSONArray("packages")
 
         val availablePackages = mutableListOf<Package>()
@@ -52,7 +54,7 @@ abstract class OfferingParser {
         }
 
         return if (availablePackages.isNotEmpty()) {
-            Offering(offeringIdentifier, offeringJson.getString("description"), availablePackages)
+            Offering(offeringIdentifier, offeringJson.getString("description"), metadata, availablePackages)
         } else {
             null
         }
