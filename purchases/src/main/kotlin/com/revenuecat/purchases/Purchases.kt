@@ -320,34 +320,12 @@ class Purchases internal constructor(
     fun getOfferings(
         listener: ReceiveOfferingsCallback
     ) {
-        val (appUserID, cachedOfferings) = synchronized(this@Purchases) {
-            identityManager.currentAppUserID to offeringsManager.cachedOfferings
-        }
-        if (cachedOfferings == null) {
-            log(LogIntent.DEBUG, OfferingStrings.NO_CACHED_OFFERINGS_FETCHING_NETWORK)
-            offeringsManager.fetchAndCacheOfferings(
-                appUserID,
-                state.appInBackground,
-                { listener.onError(it) },
-                { listener.onReceived(it) }
-            )
-        } else {
-            log(LogIntent.DEBUG, OfferingStrings.VENDING_OFFERINGS_CACHE)
-            dispatch {
-                listener.onReceived(cachedOfferings)
-            }
-            state.appInBackground.let { appInBackground ->
-                if (deviceCache.isOfferingsCacheStale(appInBackground)) {
-                    log(
-                        LogIntent.DEBUG,
-                        if (appInBackground) OfferingStrings.OFFERINGS_STALE_UPDATING_IN_BACKGROUND
-                        else OfferingStrings.OFFERINGS_STALE_UPDATING_IN_FOREGROUND
-                    )
-                    offeringsManager.fetchAndCacheOfferings(appUserID, appInBackground)
-                    log(LogIntent.RC_SUCCESS, OfferingStrings.OFFERINGS_UPDATED_FROM_NETWORK)
-                }
-            }
-        }
+        offeringsManager.getOfferings(
+            identityManager.currentAppUserID,
+            state.appInBackground,
+            { listener.onError(it) },
+            { listener.onReceived(it) }
+        )
     }
 
     /**

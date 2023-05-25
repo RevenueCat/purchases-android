@@ -25,10 +25,34 @@ class OfferingsManager(
     // This is nullable due to: https://github.com/RevenueCat/purchases-flutter/issues/408
     private val mainHandler: Handler? = Handler(Looper.getMainLooper())
 ) {
-    val cachedOfferings: Offerings?
-        get() = deviceCache.cachedOfferings
-
     fun isOfferingsCacheStale(appInBackground: Boolean) = deviceCache.isOfferingsCacheStale(appInBackground)
+
+    fun getOfferings(
+        appUserID: String,
+        appInBackground: Boolean,
+        onError: ((PurchasesError) -> Unit)? = null,
+        onSuccess: ((Offerings) -> Unit)? = null
+    ) {
+        val cachedOfferings = deviceCache.cachedOfferings
+        if (cachedOfferings == null) {
+            log(LogIntent.DEBUG, OfferingStrings.NO_CACHED_OFFERINGS_FETCHING_NETWORK)
+            fetchAndCacheOfferings(appUserID, appInBackground, onError, onSuccess)
+        } else {
+            log(LogIntent.DEBUG, OfferingStrings.VENDING_OFFERINGS_CACHE)
+            dispatch {
+                onSuccess?.invoke(cachedOfferings)
+            }
+            if (deviceCache.isOfferingsCacheStale(appInBackground)) {
+                log(
+                    LogIntent.DEBUG,
+                    if (appInBackground) OfferingStrings.OFFERINGS_STALE_UPDATING_IN_BACKGROUND
+                    else OfferingStrings.OFFERINGS_STALE_UPDATING_IN_FOREGROUND
+                )
+                fetchAndCacheOfferings(appUserID, appInBackground)
+                log(LogIntent.RC_SUCCESS, OfferingStrings.OFFERINGS_UPDATED_FROM_NETWORK)
+            }
+        }
+    }
 
     fun fetchAndCacheOfferings(
         appUserID: String,
