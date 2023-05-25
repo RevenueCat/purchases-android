@@ -60,6 +60,9 @@ class OfflineEntitlementsManagerTest {
         every {
             appConfig.finishTransactions
         } returns true
+        every {
+            appConfig.enableOfflineEntitlements
+        } returns true
 
         offlineEntitlementsManager = OfflineEntitlementsManager(
             backend,
@@ -85,6 +88,18 @@ class OfflineEntitlementsManagerTest {
     @Test
     fun `shouldCalculateOfflineCustomerInfoInGetCustomerInfoRequest returns false if not finishing transactions`() {
         every { appConfig.finishTransactions } returns false
+        every { deviceCache.getCachedCustomerInfo(appUserID) } returns null
+        val isServerError = true
+        val result = offlineEntitlementsManager.shouldCalculateOfflineCustomerInfoInGetCustomerInfoRequest(
+            isServerError,
+            appUserID
+        )
+        assertThat(result).isFalse
+    }
+
+    @Test
+    fun `shouldCalculateOfflineCustomerInfoInGetCustomerInfoRequest returns false if offline entitlements disabled`() {
+        every { appConfig.enableOfflineEntitlements } returns false
         every { deviceCache.getCachedCustomerInfo(appUserID) } returns null
         val isServerError = true
         val result = offlineEntitlementsManager.shouldCalculateOfflineCustomerInfoInGetCustomerInfoRequest(
@@ -141,6 +156,13 @@ class OfflineEntitlementsManagerTest {
     fun `shouldCalculateOfflineCustomerInfoInPostReceipt returns true if server error but not finishing transactions`() {
         val isServerError = true
         every { appConfig.finishTransactions } returns false
+        assertThat(offlineEntitlementsManager.shouldCalculateOfflineCustomerInfoInPostReceipt(isServerError)).isFalse
+    }
+
+    @Test
+    fun `shouldCalculateOfflineCustomerInfoInPostReceipt returns false if offline entitlements disabled`() {
+        val isServerError = true
+        every { appConfig.enableOfflineEntitlements } returns false
         assertThat(offlineEntitlementsManager.shouldCalculateOfflineCustomerInfoInPostReceipt(isServerError)).isFalse
     }
 
@@ -327,6 +349,14 @@ class OfflineEntitlementsManagerTest {
     fun `updateProductEntitlementMappingCacheIfStale does nothing if not finishing transactions`() {
         every { deviceCache.isProductEntitlementMappingCacheStale() } returns true
         every { appConfig.finishTransactions } returns false
+        offlineEntitlementsManager.updateProductEntitlementMappingCacheIfStale()
+        verify(exactly = 0) { backend.getProductEntitlementMapping(any(), any()) }
+    }
+
+    @Test
+    fun `updateProductEntitlementMappingCacheIfStale does nothing if offline entitlements disabled`() {
+        every { deviceCache.isProductEntitlementMappingCacheStale() } returns true
+        every { appConfig.enableOfflineEntitlements } returns false
         offlineEntitlementsManager.updateProductEntitlementMappingCacheIfStale()
         verify(exactly = 0) { backend.getProductEntitlementMapping(any(), any()) }
     }
