@@ -1,7 +1,6 @@
-package com.revenuecat.purchases.google
+package com.revenuecat.purchases.common
 
 import com.revenuecat.purchases.ProductType
-import com.revenuecat.purchases.common.OfferingParser
 import com.revenuecat.purchases.models.StoreProduct
 import org.json.JSONObject
 

@@ -25,8 +25,6 @@ class OfferingsManager(
     // This is nullable due to: https://github.com/RevenueCat/purchases-flutter/issues/408
     private val mainHandler: Handler? = Handler(Looper.getMainLooper())
 ) {
-    fun isOfferingsCacheStale(appInBackground: Boolean) = deviceCache.isOfferingsCacheStale(appInBackground)
-
     fun getOfferings(
         appUserID: String,
         appInBackground: Boolean,
@@ -42,7 +40,7 @@ class OfferingsManager(
             dispatch {
                 onSuccess?.invoke(cachedOfferings)
             }
-            if (deviceCache.isOfferingsCacheStale(appInBackground)) {
+            if (isOfferingsCacheStale(appInBackground)) {
                 log(
                     LogIntent.DEBUG,
                     if (appInBackground) OfferingStrings.OFFERINGS_STALE_UPDATING_IN_BACKGROUND
@@ -122,6 +120,8 @@ class OfferingsManager(
                 handleErrorFetchingOfferings(error, onError)
             })
     }
+
+    private fun isOfferingsCacheStale(appInBackground: Boolean) = deviceCache.isOfferingsCacheStale(appInBackground)
 
     private fun extractProductIdentifiers(offeringsJSON: JSONObject): Set<String> {
         val jsonOfferingsArray = offeringsJSON.getJSONArray("offerings")
