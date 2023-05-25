@@ -25,6 +25,8 @@ class OfferingsManager(
     // This is nullable due to: https://github.com/RevenueCat/purchases-flutter/issues/408
     private val mainHandler: Handler? = Handler(Looper.getMainLooper())
 ) {
+    val cachedOfferings: Offerings?
+        get() = deviceCache.cachedOfferings
 
     fun isOfferingsCacheStale(appInBackground: Boolean) = deviceCache.isOfferingsCacheStale(appInBackground)
 

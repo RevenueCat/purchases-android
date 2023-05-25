@@ -321,7 +321,7 @@ class Purchases internal constructor(
         listener: ReceiveOfferingsCallback
     ) {
         val (appUserID, cachedOfferings) = synchronized(this@Purchases) {
-            identityManager.currentAppUserID to deviceCache.cachedOfferings
+            identityManager.currentAppUserID to offeringsManager.cachedOfferings
         }
         if (cachedOfferings == null) {
             log(LogIntent.DEBUG, OfferingStrings.NO_CACHED_OFFERINGS_FETCHING_NETWORK)
