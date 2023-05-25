@@ -2,6 +2,7 @@ package com.revenuecat.purchases.common.offlineentitlements
 
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.caching.DeviceCache
@@ -48,6 +49,13 @@ class OfflineEntitlementsManager(
         onSuccess: (CustomerInfo) -> Unit,
         onError: (PurchasesError) -> Unit
     ) {
+        if (!appConfig.enableOfflineEntitlements) {
+            onError(PurchasesError(
+                PurchasesErrorCode.UnsupportedError,
+                OfflineEntitlementsStrings.OFFLINE_ENTITLEMENTS_NOT_ENABLED
+            ))
+            return
+        }
         synchronized(this@OfflineEntitlementsManager) {
             val alreadyProcessing = offlineCustomerInfoCallbackCache.containsKey(appUserId)
             val callbacks = offlineCustomerInfoCallbackCache[appUserId] ?: emptyList()
