@@ -26,6 +26,8 @@ class OfferingsManager(
     private val mainHandler: Handler? = Handler(Looper.getMainLooper())
 ) {
 
+    fun isOfferingsCacheStale(appInBackground: Boolean) = deviceCache.isOfferingsCacheStale(appInBackground)
+
     fun fetchAndCacheOfferings(
         appUserID: String,
         appInBackground: Boolean,

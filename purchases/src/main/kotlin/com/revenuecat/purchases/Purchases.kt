@@ -203,7 +203,7 @@ class Purchases internal constructor(
                 appInBackground = false
             )
         }
-        if (deviceCache.isOfferingsCacheStale(appInBackground = false)) {
+        if (offeringsManager.isOfferingsCacheStale(appInBackground = false)) {
             log(LogIntent.DEBUG, OfferingStrings.OFFERINGS_STALE_UPDATING_IN_FOREGROUND)
             offeringsManager.fetchAndCacheOfferings(identityManager.currentAppUserID, appInBackground = false)
             log(LogIntent.RC_SUCCESS, OfferingStrings.OFFERINGS_UPDATED_FROM_NETWORK)
