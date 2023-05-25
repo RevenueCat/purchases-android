@@ -12,6 +12,7 @@ import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.caching.DeviceCache
+import com.revenuecat.purchases.common.offerings.OfferingsManager
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
 import com.revenuecat.purchases.common.subscriberattributes.SubscriberAttributeKey
 import com.revenuecat.purchases.identity.IdentityManager
@@ -40,6 +41,7 @@ class SubscriberAttributesPurchasesTests {
     private val customerInfoHelperMock = mockk<CustomerInfoHelper>()
     private val offlineEntitlementsManagerMock = mockk<OfflineEntitlementsManager>()
     private val postReceiptHelperMock = mockk<PostReceiptHelper>()
+    private val offeringsManagerMock = mockk<OfferingsManager>()
     private lateinit var applicationMock: Application
 
     @Before
@@ -72,13 +74,13 @@ class SubscriberAttributesPurchasesTests {
             offlineEntitlementsManager = offlineEntitlementsManagerMock,
             postReceiptHelper = postReceiptHelperMock,
             syncPurchasesHelper = mockk(),
-            offeringsManager = mockk()
+            offeringsManager = offeringsManagerMock
         )
     }
 
     @After
     fun tearDown() {
-        clearMocks(customerInfoHelperMock)
+        clearMocks(customerInfoHelperMock, offeringsManagerMock)
     }
 
     @Test
@@ -162,6 +164,7 @@ class SubscriberAttributesPurchasesTests {
         every {
             customerInfoHelperMock.retrieveCustomerInfo(appUserId, CacheFetchPolicy.FETCH_CURRENT,false, any())
         } just Runs
+        every { offeringsManagerMock.isOfferingsCacheStale(any()) } returns false
         underTest.onAppForegrounded()
         verify(exactly = 1) {
             subscriberAttributesManagerMock.synchronizeSubscriberAttributesForAllUsers(appUserId)
