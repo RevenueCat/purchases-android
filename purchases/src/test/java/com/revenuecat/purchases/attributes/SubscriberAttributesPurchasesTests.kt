@@ -4,7 +4,6 @@ import android.app.Application
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfoHelper
-import com.revenuecat.purchases.OfferingParserFactory
 import com.revenuecat.purchases.PostReceiptHelper
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.Store
@@ -12,6 +11,7 @@ import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.PlatformInfo
+import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
 import com.revenuecat.purchases.common.subscriberattributes.SubscriberAttributeKey
 import com.revenuecat.purchases.identity.IdentityManager
@@ -48,12 +48,13 @@ class SubscriberAttributesPurchasesTests {
             offlineEntitlementsManagerMock.updateProductEntitlementMappingCacheIfStale()
         } just runs
 
+        val cache: DeviceCache = mockk(relaxed = true)
         underTest = Purchases(
             application = mockk<Application>(relaxed = true).also { applicationMock = it },
             backingFieldAppUserID = appUserId,
             backend = backendMock,
             billing = billingWrapperMock,
-            deviceCache = mockk(relaxed = true),
+            deviceCache = cache,
             dispatcher = SyncDispatcher(),
             identityManager = mockk<IdentityManager>(relaxed = true).apply {
                 every { currentAppUserID } returns appUserId
@@ -67,11 +68,11 @@ class SubscriberAttributesPurchasesTests {
                 store = Store.PLAY_STORE
             ),
             customerInfoHelper = customerInfoHelperMock,
-            offeringParser = OfferingParserFactory.createOfferingParser(Store.PLAY_STORE),
             diagnosticsSynchronizer = null,
             offlineEntitlementsManager = offlineEntitlementsManagerMock,
             postReceiptHelper = postReceiptHelperMock,
-            syncPurchasesHelper = mockk()
+            syncPurchasesHelper = mockk(),
+            offeringsManager = mockk()
         )
     }
 

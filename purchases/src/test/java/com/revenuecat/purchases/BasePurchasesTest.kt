@@ -17,6 +17,7 @@ import com.revenuecat.purchases.common.OfferingParser
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsSynchronizer
+import com.revenuecat.purchases.common.offerings.OfferingsManager
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
 import com.revenuecat.purchases.google.toInAppStoreProduct
 import com.revenuecat.purchases.google.toStoreTransaction
@@ -61,7 +62,6 @@ open class BasePurchasesTest {
     protected val mockIdentityManager = mockk<IdentityManager>()
     protected val mockSubscriberAttributesManager = mockk<SubscriberAttributesManager>()
     internal val mockCustomerInfoHelper = mockk<CustomerInfoHelper>()
-    lateinit var mockOfferingParser: OfferingParser
     protected val mockDiagnosticsSynchronizer = mockk<DiagnosticsSynchronizer>()
     protected val mockOfflineEntitlementsManager = mockk<OfflineEntitlementsManager>()
     internal val mockPostReceiptHelper = mockk<PostReceiptHelper>()
@@ -313,11 +313,16 @@ open class BasePurchasesTest {
                 dangerousSettings = DangerousSettings(autoSyncPurchases = autoSync)
             ),
             customerInfoHelper = mockCustomerInfoHelper,
-            offeringParser = OfferingParserFactory.createOfferingParser(Store.PLAY_STORE),
             diagnosticsSynchronizer = mockDiagnosticsSynchronizer,
             offlineEntitlementsManager = mockOfflineEntitlementsManager,
             postReceiptHelper = mockPostReceiptHelper,
-            syncPurchasesHelper = mockSyncPurchasesHelper
+            syncPurchasesHelper = mockSyncPurchasesHelper,
+            offeringsManager = OfferingsManager(
+                mockCache,
+                mockBackend,
+                mockBillingAbstract,
+                OfferingParserFactory.createOfferingParser(Store.PLAY_STORE)
+            )
         )
         Purchases.sharedInstance = purchases
         purchases.state = purchases.state.copy(appInBackground = false)
