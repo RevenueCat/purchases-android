@@ -20,7 +20,11 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
 
     @Before
     fun setup() {
-        setUpTest()
+        ensureBlockFinishes { latch ->
+            setUpTest {
+                latch.countDown()
+            }
+        }
     }
 
     // region tests
@@ -99,6 +103,39 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
         }
         lock.await(testTimeout.inWholeSeconds, TimeUnit.SECONDS)
         assertThat(lock.count).isZero
+    }
+
+    @Test
+    fun offeringsArePersisted() {
+        val storeProduct = StoreProductFactory.createGoogleStoreProduct()
+        mockBillingAbstract.mockQueryProductDetails(queryProductDetailsSubsReturn = listOf(storeProduct))
+
+        ensureBlockFinishes { latch ->
+            Purchases.sharedInstance.getOfferingsWith(
+                onError = { error -> fail("Get offerings should succeed. Error: ${error.underlyingErrorMessage}") },
+                onSuccess = { offerings ->
+                    assertThat(offerings.current).isNotNull
+                    assertThat(offerings.current?.availablePackages?.size).isEqualTo(1)
+                    assertThat(offerings.current?.monthly?.product?.sku).isEqualTo(Constants.productIdToPurchase)
+                    latch.countDown()
+                }
+            )
+        }
+
+        simulateSdkRestart(activity, forceServerErrors = true)
+
+        ensureBlockFinishes { latch ->
+            Purchases.sharedInstance.getOfferingsWith(
+                onError = { error -> fail("Get offerings should succeed. Error: ${error.underlyingErrorMessage}") },
+                onSuccess = { newOfferings ->
+                    assertThat(newOfferings.current).isNotNull
+                    assertThat(newOfferings.current?.availablePackages?.size).isEqualTo(1)
+                    assertThat(newOfferings.current?.monthly?.product?.sku).isEqualTo(Constants.productIdToPurchase)
+
+                    latch.countDown()
+                }
+            )
+        }
     }
 
     @Test
