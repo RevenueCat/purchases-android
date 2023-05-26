@@ -8,7 +8,9 @@ import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.log
+import com.revenuecat.purchases.common.warnLog
 import com.revenuecat.purchases.strings.OfferingStrings
+import org.json.JSONObject
 
 class OfferingsManager(
     private val offeringsCache: OfferingsCache,
@@ -62,24 +64,35 @@ class OfferingsManager(
         backend.getOfferings(
             appUserID,
             appInBackground,
-            { offeringsJSON ->
-                offeringsFactory.createOfferings(
-                    offeringsJSON,
-                    onError = { error ->
-                        handleErrorFetchingOfferings(error, onError)
-                    },
-                    onSuccess = { offerings ->
-                        synchronized(this@OfferingsManager) {
-                            offeringsCache.cacheOfferings(offerings, offeringsJSON)
-                        }
-                        dispatch {
-                            onSuccess?.invoke(offerings)
-                        }
-                    }
-                )
-            }, { error ->
-                handleErrorFetchingOfferings(error, onError)
+            { createAndCacheOfferings(it, onError, onSuccess) },
+            { backendError ->
+                val cachedOfferingsResponse = offeringsCache.cachedOfferingsResponse
+                if (cachedOfferingsResponse == null) {
+                    handleErrorFetchingOfferings(backendError, onError)
+                } else {
+                    warnLog(OfferingStrings.ERROR_FETCHING_OFFERINGS_USING_DISK_CACHE)
+                    createAndCacheOfferings(cachedOfferingsResponse, onError, onSuccess)
+                }
             })
+    }
+
+    private fun createAndCacheOfferings(
+        offeringsJSON: JSONObject,
+        onError: ((PurchasesError) -> Unit)? = null,
+        onSuccess: ((Offerings) -> Unit)? = null
+    ) {
+        offeringsFactory.createOfferings(
+            offeringsJSON,
+            onError = { error ->
+                handleErrorFetchingOfferings(error, onError)
+            },
+            onSuccess = { offerings ->
+                offeringsCache.cacheOfferings(offerings, offeringsJSON)
+                dispatch {
+                    onSuccess?.invoke(offerings)
+                }
+            }
+        )
     }
 
     private fun handleErrorFetchingOfferings(

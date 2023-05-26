@@ -293,7 +293,7 @@ class OfferingsManagerTest {
     }
 
     @Test
-    fun getOfferingsErrorIsCalledIfNoBackendResponse() {
+    fun `get offerings error is called if backend error and no cached response`() {
         every {
             cache.cachedOfferings
         } returns null
@@ -313,7 +313,7 @@ class OfferingsManagerTest {
                 PurchasesError(PurchasesErrorCode.StoreProblemError)
             )
         }
-
+        every { cache.cachedOfferingsResponse } returns null
         mockDeviceCache(wasSuccessful = false)
 
         var purchasesError: PurchasesError? = null
@@ -328,6 +328,88 @@ class OfferingsManagerTest {
         verify(exactly = 1) {
             cache.clearOfferingsCacheTimestamp()
         }
+    }
+
+    @Test
+    fun `get offerings success is called if backend error but cached response`() {
+        every {
+            cache.cachedOfferings
+        } returns null
+        every {
+            cache.cacheOfferings(any(), any())
+        } just Runs
+
+        every {
+            backend.getOfferings(
+                any(),
+                any(),
+                any(),
+                captureLambda()
+            )
+        } answers {
+            lambda<(PurchasesError) -> Unit>().captured.invoke(
+                PurchasesError(PurchasesErrorCode.UnknownBackendError)
+            )
+        }
+        val backendResponse = JSONObject(ONE_OFFERINGS_RESPONSE)
+        every { cache.cachedOfferingsResponse } returns backendResponse
+        mockDeviceCache(wasSuccessful = false)
+        mockOfferingsFactory()
+
+        var receivedOfferings: Offerings? = null
+        offeringsManager.getOfferings(
+            appUserId,
+            appInBackground = false,
+            onError = { fail("Should be success") },
+            onSuccess = { receivedOfferings = it }
+        )
+
+        assertThat(receivedOfferings).isEqualTo(testOfferings)
+
+        verify(exactly = 1) { cache.cacheOfferings(testOfferings, backendResponse) }
+        verify(exactly = 1) { offeringsFactory.createOfferings(backendResponse, any(), any()) }
+    }
+
+    // This situation shouldn't happen normally since we only cache when we have loaded the offerings at least once,
+    // but it's possible something changed in the store. So better to handle it.
+    @Test
+    fun `get offerings error is called if backend error and cached response with invalid offerings`() {
+        every {
+            cache.cachedOfferings
+        } returns null
+        every {
+            cache.cacheOfferings(any(), any())
+        } just Runs
+
+        every {
+            backend.getOfferings(
+                any(),
+                any(),
+                any(),
+                captureLambda()
+            )
+        } answers {
+            lambda<(PurchasesError) -> Unit>().captured.invoke(
+                PurchasesError(PurchasesErrorCode.UnknownBackendError)
+            )
+        }
+        val backendResponse = JSONObject(ONE_OFFERINGS_RESPONSE)
+        every { cache.cachedOfferingsResponse } returns backendResponse
+        mockDeviceCache(wasSuccessful = false)
+        val expectedError = PurchasesError(PurchasesErrorCode.StoreProblemError)
+        mockOfferingsFactory(error = expectedError)
+
+        var receivedError: PurchasesError? = null
+        offeringsManager.getOfferings(
+            appUserId,
+            appInBackground = false,
+            onError = { receivedError = it },
+            onSuccess = { fail("Should be error") }
+        )
+
+        assertThat(receivedError).isEqualTo(expectedError)
+
+        verify(exactly = 1) { cache.clearOfferingsCacheTimestamp() }
     }
 
     // endregion getOfferings
