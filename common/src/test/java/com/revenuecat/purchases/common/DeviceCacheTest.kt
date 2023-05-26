@@ -7,17 +7,11 @@ package com.revenuecat.purchases.common
 
 import android.content.SharedPreferences
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.revenuecat.purchases.Offering
-import com.revenuecat.purchases.Offerings
-import com.revenuecat.purchases.Package
-import com.revenuecat.purchases.PackageType
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.caching.CUSTOMER_INFO_SCHEMA_VERSION
 import com.revenuecat.purchases.common.caching.DeviceCache
-import com.revenuecat.purchases.common.caching.InMemoryCachedObject
 import com.revenuecat.purchases.common.offlineentitlements.createProductEntitlementMapping
-import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.utils.Responses
 import com.revenuecat.purchases.utils.subtract
@@ -34,7 +28,6 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
-import java.util.Calendar
 import java.util.Date
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
@@ -64,6 +57,7 @@ class DeviceCacheTest {
 
     private val productEntitlementMappingLastUpdatedCacheKey = "com.revenuecat.purchases.api_key.productEntitlementMappingLastUpdated"
     private val productEntitlementMappingCacheKey = "com.revenuecat.purchases.api_key.productEntitlementMapping"
+    private val offeringsResponseCacheKey = "com.revenuecat.purchases.api_key.offeringsResponse"
 
     private val slotForPutLong = slot<Long>()
 
@@ -421,7 +415,6 @@ class DeviceCacheTest {
             mockEditor.putLong(cache.customerInfoLastUpdatedCacheKey("appUserID"), date.time)
         } returns mockEditor
         cache.setCustomerInfoCacheTimestamp("appUserID", date)
-        cache.setOfferingsCacheTimestampToNow()
 
         mockString(cache.appUserIDCacheKey, "appUserID")
         mockString(cache.legacyAppUserIDCacheKey, "legacyAppUserID")
@@ -431,21 +424,10 @@ class DeviceCacheTest {
         verify {
             mockEditor.remove(cache.customerInfoLastUpdatedCacheKey("appUserID"))
         }
-        assertThat(cache.isOfferingsCacheStale(appInBackground = false)).isTrue
-    }
-
-    @Test
-    fun `invalidating offerings caches`() {
-        assertThat(cache.isOfferingsCacheStale(appInBackground = false)).isTrue
-        cache.setOfferingsCacheTimestampToNow()
-        assertThat(cache.isOfferingsCacheStale(appInBackground = false)).isFalse
-        cache.clearOfferingsCacheTimestamp()
-        assertThat(cache.isOfferingsCacheStale(appInBackground = false)).isTrue
     }
 
     @Test
     fun `stale if no caches`() {
-        assertThat(cache.isOfferingsCacheStale(appInBackground = false)).isTrue
         mockLong(cache.customerInfoLastUpdatedCacheKey(appUserID), 0L)
         assertThat(cache.isCustomerInfoCacheStale(appUserID, appInBackground = false)).isTrue
     }
@@ -466,88 +448,6 @@ class DeviceCacheTest {
         assertThat(cache.isCustomerInfoCacheStale(appUserID, appInBackground = true)).isTrue
         mockLong(cache.customerInfoLastUpdatedCacheKey(appUserID), Date().time)
         assertThat(cache.isCustomerInfoCacheStale(appUserID, appInBackground = true)).isFalse
-    }
-
-    @Test
-    fun `isOfferingsCacheStale returns true if the cached object is stale`() {
-        val offeringsCachedObject = mockk<InMemoryCachedObject<Offerings>>(relaxed = true)
-        cache = DeviceCache(mockPrefs, apiKey, offeringsCachedObject)
-        cache.cacheOfferings(mockk())
-        every {
-            offeringsCachedObject.lastUpdatedAt
-        } returns Date()
-        assertThat(cache.isOfferingsCacheStale(appInBackground = false)).isFalse
-
-        val cal = Calendar.getInstance()
-        cal.time = Date()
-        cal.add(Calendar.MINUTE, -6)
-        every {
-            offeringsCachedObject.lastUpdatedAt
-        } returns cal.time
-        assertThat(cache.isOfferingsCacheStale(appInBackground = false)).isTrue
-    }
-
-    @Test
-    fun `isOfferingsCacheStale in background returns true if the cached object is stale`() {
-        val offeringsCachedObject = mockk<InMemoryCachedObject<Offerings>>(relaxed = true)
-        cache = DeviceCache(mockPrefs, apiKey, offeringsCachedObject)
-        cache.cacheOfferings(mockk())
-        every {
-            offeringsCachedObject.lastUpdatedAt
-        } returns Date()
-        assertThat(cache.isOfferingsCacheStale(appInBackground = true)).isFalse
-
-        val cal = Calendar.getInstance()
-        cal.time = Date()
-        cal.add(Calendar.DATE, -2)
-        every {
-            offeringsCachedObject.lastUpdatedAt
-        } returns cal.time
-        assertThat(cache.isOfferingsCacheStale(appInBackground = true)).isTrue
-    }
-
-    @Test
-    fun `caching offerings works`() {
-        val storeProduct = mockk<StoreProduct>().also {
-            every { it.id } returns "onemonth_freetrial"
-        }
-        val packageObject = Package(
-            "custom",
-            PackageType.CUSTOM,
-            storeProduct,
-            "offering_a"
-        )
-        val offering = Offering(
-            "offering_a",
-            "This is the base offering",
-            emptyMap(),
-            listOf(packageObject)
-        )
-        val offeringWithMetadata = Offering(
-            "offering_b",
-            "This is the metadata offering",
-            mapOf(
-                "int" to 5,
-                "double" to 5.5,
-                "boolean" to true,
-                "string" to "five",
-                "array" to listOf("five"),
-                "dictionary" to mapOf(
-                    "string" to "five"
-                )
-            ),
-            listOf(packageObject)
-        )
-        val offerings = Offerings(
-            offering,
-            mapOf(
-                offering.identifier to offering,
-                offeringWithMetadata.identifier to offeringWithMetadata
-            )
-        )
-
-        cache.cacheOfferings(offerings)
-        assertThat(cache.cachedOfferings).isEqualTo(offerings)
     }
 
     @Test
@@ -727,6 +627,38 @@ class DeviceCacheTest {
     }
 
     // endregion
+
+    // region offerings response
+
+    @Test
+    fun `gets offerings from shared preferences`() {
+        every { mockPrefs.getString(offeringsResponseCacheKey, null) } returns "{\"test-key\": \"test-value\"}"
+        val offeringsResponse = cache.getOfferingsResponseCache()
+        assertThat(offeringsResponse).isNotNull
+        assertThat(offeringsResponse!!.getString("test-key")).isEqualTo("test-value")
+    }
+
+    @Test
+    fun `cache offerings response works`() {
+        val jsonSample = "{\"test-key\":\"test-value\"}"
+        val offeringsResponse = JSONObject(jsonSample)
+        cache.cacheOfferingsResponse(offeringsResponse)
+        verifyAll {
+            mockEditor.putString(offeringsResponseCacheKey, jsonSample)
+            mockEditor.apply()
+        }
+    }
+
+    @Test
+    fun `clear offerings response cache works`() {
+        cache.clearOfferingsResponseCache()
+        verifyAll {
+            mockEditor.remove(offeringsResponseCacheKey)
+            mockEditor.apply()
+        }
+    }
+
+    // endregion offerings response
 
     private fun mockString(key: String, value: String?) {
         every {

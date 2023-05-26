@@ -183,28 +183,16 @@ open class BasePurchasesTest {
                 setCustomerInfoCacheTimestampToNow(appUserId)
             } just Runs
             every {
-                setOfferingsCacheTimestampToNow()
-            } just Runs
-            every {
                 clearCustomerInfoCacheTimestamp(appUserId)
             } just Runs
             every {
                 clearCustomerInfoCache(appUserId)
             } just Runs
             every {
-                clearOfferingsCacheTimestamp()
-            } just Runs
-            every {
                 isCustomerInfoCacheStale(appUserId, any())
             } returns false
             every {
-                isOfferingsCacheStale(any())
-            } returns false
-            every {
                 addSuccessfullyPostedToken(any())
-            } just Runs
-            every {
-                mockCache.cacheOfferings(any())
             } just Runs
         }
     }

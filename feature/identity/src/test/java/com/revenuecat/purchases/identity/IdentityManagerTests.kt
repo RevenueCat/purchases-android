@@ -8,6 +8,7 @@ import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.caching.DeviceCache
+import com.revenuecat.purchases.common.offerings.OfferingsCache
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
@@ -34,6 +35,7 @@ class IdentityManagerTests {
     private lateinit var mockDeviceCache: DeviceCache
     private lateinit var mockSubscriberAttributesCache: SubscriberAttributesCache
     private lateinit var mockSubscriberAttributesManager: SubscriberAttributesManager
+    private lateinit var mockOfferingsCache: OfferingsCache
     private lateinit var mockBackend: Backend
     private lateinit var mockOfflineEntitlementsManager: OfflineEntitlementsManager
     private lateinit var identityManager: IdentityManager
@@ -55,6 +57,9 @@ class IdentityManagerTests {
             } just Runs
         }
         mockSubscriberAttributesManager = mockk()
+        mockOfferingsCache = mockk<OfferingsCache>().apply {
+            every { clearCache() } just Runs
+        }
 
         mockBackend = mockk()
         mockOfflineEntitlementsManager = mockk<OfflineEntitlementsManager>().apply {
@@ -215,6 +220,7 @@ class IdentityManagerTests {
         verify(exactly = 1) {
             mockSubscriberAttributesCache.clearSubscriberAttributesIfSyncedForSubscriber(oldAppUserID)
         }
+        verify(exactly = 1) { mockOfferingsCache.clearCache() }
     }
 
     @Test
@@ -368,6 +374,7 @@ class IdentityManagerTests {
                 identifiedUserID
             )
         }
+        verify(exactly = 1) { mockOfferingsCache.clearCache() }
     }
 
     @Test
@@ -650,11 +657,17 @@ class IdentityManagerTests {
         deviceCache: DeviceCache = mockDeviceCache,
         subscriberAttributesCache: SubscriberAttributesCache = mockSubscriberAttributesCache,
         subscriberAttributesManager: SubscriberAttributesManager = mockSubscriberAttributesManager,
+        offeringsCache: OfferingsCache = mockOfferingsCache,
         backend: Backend = mockBackend,
         offlineEntitlementsManager: OfflineEntitlementsManager = mockOfflineEntitlementsManager
     ): IdentityManager {
         return IdentityManager(
-            deviceCache, subscriberAttributesCache, subscriberAttributesManager, backend, offlineEntitlementsManager
+            deviceCache,
+            subscriberAttributesCache,
+            subscriberAttributesManager,
+            offeringsCache,
+            backend,
+            offlineEntitlementsManager
         )
     }
 
