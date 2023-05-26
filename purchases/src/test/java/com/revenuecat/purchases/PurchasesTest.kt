@@ -6,8 +6,6 @@
 package com.revenuecat.purchases
 
 import android.app.Activity
-import android.app.Application
-import android.content.Context
 import android.os.Handler
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
@@ -18,43 +16,29 @@ import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingFlowParams.ProrationMode
 import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.Purchase
-import com.android.billingclient.api.PurchaseHistoryRecord
 import com.revenuecat.purchases.common.AppConfig
-import com.revenuecat.purchases.common.Backend
-import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.CustomerInfoFactory
-import com.revenuecat.purchases.common.OfferingParser
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.ReplaceProductInfo
-import com.revenuecat.purchases.common.caching.DeviceCache
-import com.revenuecat.purchases.common.diagnostics.DiagnosticsSynchronizer
-import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.google.billingResponseToPurchasesError
 import com.revenuecat.purchases.google.toGoogleProductType
 import com.revenuecat.purchases.google.toInAppStoreProduct
 import com.revenuecat.purchases.google.toStoreProduct
 import com.revenuecat.purchases.google.toStoreTransaction
-import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
 import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
-import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import com.revenuecat.purchases.models.BillingFeature
 import com.revenuecat.purchases.models.GoogleProrationMode
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.SubscriptionOption
-import com.revenuecat.purchases.strings.OfferingStrings
 import com.revenuecat.purchases.strings.PurchaseStrings
-import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
-import com.revenuecat.purchases.utils.ONE_OFFERINGS_RESPONSE
 import com.revenuecat.purchases.utils.Responses
 import com.revenuecat.purchases.utils.STUB_OFFERING_IDENTIFIER
-import com.revenuecat.purchases.utils.STUB_PRODUCT_IDENTIFIER
-import com.revenuecat.purchases.utils.SyncDispatcher
 import com.revenuecat.purchases.utils.createMockOneTimeProductDetails
 import com.revenuecat.purchases.utils.createMockProductDetailsFreeTrial
 import com.revenuecat.purchases.utils.stubFreeTrialPricingPhase
@@ -63,18 +47,15 @@ import com.revenuecat.purchases.utils.stubINAPPStoreProduct
 import com.revenuecat.purchases.utils.stubOTPOffering
 import com.revenuecat.purchases.utils.stubOfferings
 import com.revenuecat.purchases.utils.stubPricingPhase
-import com.revenuecat.purchases.utils.stubPurchaseHistoryRecord
 import com.revenuecat.purchases.utils.stubStoreProduct
 import com.revenuecat.purchases.utils.stubSubscriptionOption
 import io.mockk.CapturingSlot
 import io.mockk.Runs
-import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.mockkConstructor
 import io.mockk.mockkStatic
-import io.mockk.runs
 import io.mockk.slot
 import io.mockk.verify
 import io.mockk.verifyAll
@@ -82,9 +63,7 @@ import io.mockk.verifyOrder
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.AssertionsForClassTypes
 import org.json.JSONObject
-import org.junit.After
 import org.junit.Assert.fail
-import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
@@ -100,13 +79,6 @@ import kotlin.random.Random
 class PurchasesTest: BasePurchasesTest() {
     private val mockActivity: Activity = mockk()
     private var receivedProducts: List<StoreProduct>? = null
-    private var receivedOfferings: Offerings? = null
-
-    private val oneOfferingWithNoProductsResponse = "{'offerings': [" +
-        "{'identifier': '$STUB_OFFERING_IDENTIFIER', " +
-        "'description': 'This is the base offering', " +
-        "'packages': []}]," +
-        "'current_offering_id': '$STUB_OFFERING_IDENTIFIER'}"
 
     private val inAppProductId = "inapp"
     private val inAppPurchaseToken = "token_inapp"
@@ -1544,6 +1516,7 @@ class PurchasesTest: BasePurchasesTest() {
             notInCache = emptyList()
         )
         mockSynchronizeSubscriberAttributesForAllUsers()
+        mockOfferingsManagerAppForeground()
         Purchases.sharedInstance.onAppForegrounded()
         verify(exactly = 1) {
             mockCustomerInfoHelper.retrieveCustomerInfo(
@@ -1562,6 +1535,7 @@ class PurchasesTest: BasePurchasesTest() {
             queriedINAPP = emptyMap(),
             notInCache = emptyList()
         )
+        mockOfferingsManagerAppForeground()
         Purchases.sharedInstance.onAppForegrounded()
         verify(exactly = 2) {
             mockOfflineEntitlementsManager.updateProductEntitlementMappingCacheIfStale()
@@ -1578,6 +1552,7 @@ class PurchasesTest: BasePurchasesTest() {
         )
         mockSynchronizeSubscriberAttributesForAllUsers()
         purchases.state = purchases.state.copy(firstTimeInForeground = false)
+        mockOfferingsManagerAppForeground()
         Purchases.sharedInstance.onAppForegrounded()
         verify(exactly = 0) {
             mockCustomerInfoHelper.retrieveCustomerInfo(
@@ -1634,337 +1609,50 @@ class PurchasesTest: BasePurchasesTest() {
     // region offerings
 
     @Test
-    fun `fetch offerings on foregrounded if it's stale`() {
-        mockCacheStale(offeringsStale = true)
+    fun `on foreground delegates logic`() {
         mockSuccessfulQueryPurchases(
             queriedSUBS = emptyMap(),
             queriedINAPP = emptyMap(),
             notInCache = emptyList()
         )
         mockSynchronizeSubscriberAttributesForAllUsers()
+        every { mockOfferingsManager.onAppForeground(any()) } just Runs
         Purchases.sharedInstance.onAppForegrounded()
-        verify(exactly = 1) {
-            mockBackend.getOfferings(appUserId, appInBackground = false, onSuccess = any(), onError = any())
-        }
-        verify(exactly = 1) {
-            mockCache.isOfferingsCacheStale(appInBackground = false)
-        }
+        verify(exactly = 1) { mockOfferingsManager.onAppForeground(appUserId) }
     }
 
     @Test
-    fun `does not fetch offerings on foregrounded if it's not stale`() {
-        mockCacheStale()
-        mockSuccessfulQueryPurchases(
-            queriedSUBS = emptyMap(),
-            queriedINAPP = emptyMap(),
-            notInCache = emptyList()
-        )
-        mockSynchronizeSubscriberAttributesForAllUsers()
-        Purchases.sharedInstance.onAppForegrounded()
-        verify(exactly = 0) {
-            mockBackend.getOfferings(appUserId, appInBackground = false, onSuccess = any(), onError = any())
-        }
-        verify(exactly = 1) {
-            mockCache.isOfferingsCacheStale(appInBackground = false)
-        }
-    }
-
-    @Test
-    fun `if no cached offerings, backend is hit when getting offerings`() {
-        val productIds = listOf(STUB_PRODUCT_IDENTIFIER)
-        mockProducts()
-        mockStoreProduct(productIds, productIds, ProductType.SUBS)
-        val (_, _) = stubOfferings("onemonth_freetrial")
-
+    fun `getOfferings success calls success callback`() {
+        val slotList = mutableListOf<((Offerings) -> Unit)?>()
+        val offerings = mockk<Offerings>()
         every {
-            mockCache.cachedOfferings
-        } returns null
-        every {
-            mockCache.cacheOfferings(any())
-        } just Runs
-
-        purchases.getOfferingsWith({ fail("should be a success") }) {
-            receivedOfferings = it
-        }
-
-        assertThat(receivedOfferings).isNotNull
-
-        verify(exactly = 1) {
-            mockBackend.getOfferings(appUserId, appInBackground = false, onSuccess = any(), onError = any())
-        }
-        verify(exactly = 1) {
-            mockCache.cacheOfferings(any())
-        }
-    }
-
-    @Test
-    fun `if no cached offerings, backend is hit when getting offerings when on background`() {
-        val productIds = listOf(STUB_PRODUCT_IDENTIFIER)
-        mockProducts()
-        mockStoreProduct(productIds, productIds, ProductType.SUBS)
-        val (_, _) = stubOfferings("onemonth_freetrial")
-
-        every {
-            mockCache.cachedOfferings
-        } returns null
-        every {
-            mockCache.cacheOfferings(any())
-        } just Runs
-
-        purchases.state = purchases.state.copy(appInBackground = true)
-
-        purchases.getOfferingsWith({ fail("should be a success") }) {
-            receivedOfferings = it
-        }
-
-        assertThat(receivedOfferings).isNotNull
-
-        verify(exactly = 1) {
-            mockBackend.getOfferings(appUserId, appInBackground = true, onSuccess = any(), onError = any())
-        }
-        verify(exactly = 1) {
-            mockCache.cacheOfferings(any())
-        }
-    }
-
-    @Test
-    fun `products are populated when getting offerings`() {
-        val productIds = listOf(STUB_PRODUCT_IDENTIFIER)
-        mockProducts()
-        mockStoreProduct(productIds, productIds, ProductType.SUBS)
-        val (_, _) = stubOfferings("onemonth_freetrial")
-
-        every {
-            mockCache.cachedOfferings
-        } returns null
-        every {
-            mockCache.cacheOfferings(any())
-        } just Runs
-
-        purchases.getOfferingsWith({ fail("should be a success") }) {
-            receivedOfferings = it
-        }
-
-        assertThat(receivedOfferings).isNotNull
-        assertThat(receivedOfferings!!.all.size).isEqualTo(1)
-        assertThat(receivedOfferings!![STUB_OFFERING_IDENTIFIER]!!.monthly!!.product).isNotNull
-    }
-
-    @Test
-    fun `configuration error if no products are found when fetching offerings`() {
-        mockProducts(oneOfferingWithNoProductsResponse)
-
-        every {
-            mockCache.cachedOfferings
-        } returns null
-
-        var purchasesError: PurchasesError? = null
-
-        purchases.getOfferingsWith({ error ->
-            purchasesError = error
-        }) {
-            fail("should be an error")
-        }
-
-        assertThat(purchasesError).isNotNull
-        assertThat(purchasesError!!.code).isEqualTo(PurchasesErrorCode.ConfigurationError)
-        assertThat(purchasesError!!.underlyingErrorMessage).contains(
-            OfferingStrings.CONFIGURATION_ERROR_NO_PRODUCTS_FOR_OFFERINGS
-        )
-        verify(exactly = 1) {
-            mockCache.clearOfferingsCacheTimestamp()
-        }
-    }
-
-    @Test
-    fun `configuration error if products are not set up when fetching offerings`() {
-        val productIds = listOf(STUB_PRODUCT_IDENTIFIER)
-
-        mockProducts()
-        clearMocks(mockBillingAbstract)
-        mockStoreProduct(productIds, listOf(), ProductType.SUBS)
-        mockStoreProduct(productIds, listOf(), ProductType.INAPP)
-
-        every {
-            mockCache.cachedOfferings
-        } returns null
-
-        var purchasesError: PurchasesError? = null
-
-        purchases.getOfferingsWith({ error ->
-            purchasesError = error
-        }) {
-            fail("should be an error")
-        }
-
-        assertThat(purchasesError).isNotNull
-        assertThat(purchasesError!!.code).isEqualTo(PurchasesErrorCode.ConfigurationError)
-        assertThat(purchasesError!!.underlyingErrorMessage).contains(
-            OfferingStrings.CONFIGURATION_ERROR_PRODUCTS_NOT_FOUND
-        )
-        verify(exactly = 1) {
-            mockCache.clearOfferingsCacheTimestamp()
-        }
-    }
-
-    @Test
-    fun `if cached offerings are not stale`() {
-        mockProducts()
-        mockStoreProduct(listOf(), listOf(), ProductType.SUBS)
-        val (_, offerings) = stubOfferings("onemonth_freetrial")
-
-        every {
-            mockCache.cachedOfferings
-        } returns offerings
-        mockCacheStale(offeringsStale = true)
-
-        purchases.getOfferingsWith({ fail("should be a success") }) {
-            receivedOfferings = it
-        }
-
-        assertThat(receivedOfferings).isEqualTo(offerings)
-    }
-
-    @Test
-    fun `if cached offerings are not stale in background`() {
-        mockProducts()
-        mockStoreProduct(listOf(), listOf(), ProductType.SUBS)
-        val (_, offerings) = stubOfferings("onemonth_freetrial")
-
-        every {
-            mockCache.cachedOfferings
-        } returns offerings
-        mockCacheStale(offeringsStale = true, appInBackground = true)
-
-        purchases.getOfferingsWith({ fail("should be a success") }) {
-            receivedOfferings = it
-        }
-
-        assertThat(receivedOfferings).isEqualTo(offerings)
-    }
-
-    @Test
-    fun `if cached offerings are stale, call backend`() {
-        mockProducts()
-        mockStoreProduct(listOf(), listOf(), ProductType.SUBS)
-        val (_, offerings) = stubOfferings("onemonth_freetrial")
-
-        every {
-            mockCache.cachedOfferings
-        } returns offerings
-        mockCacheStale(offeringsStale = true)
-
-        purchases.getOfferingsWith({ fail("should be a success") }) {
-            receivedOfferings = it
-        }
-
-        assertThat(receivedOfferings).isEqualTo(offerings)
-        verify(exactly = 1) {
-            mockBackend.getOfferings(appUserId, appInBackground = false, onSuccess = any(), onError = any())
-        }
-    }
-
-    @Test
-    fun `if cached offerings are stale when on background, call backend`() {
-        mockProducts()
-        mockStoreProduct(listOf(), listOf(), ProductType.SUBS)
-        val (_, offerings) = stubOfferings("onemonth_freetrial")
-
-        every {
-            mockCache.cachedOfferings
-        } returns offerings
-        mockCacheStale(offeringsStale = true, appInBackground = true)
-
-        purchases.state = purchases.state.copy(appInBackground = true)
-        purchases.getOfferingsWith({ fail("should be a success") }) {
-            receivedOfferings = it
-        }
-
-        assertThat(receivedOfferings).isEqualTo(offerings)
-        verify(exactly = 1) {
-            mockBackend.getOfferings(appUserId, appInBackground = true, onSuccess = any(), onError = any())
-        }
-    }
-
-    @Test
-    fun getOfferingsIsCached() {
-        every {
-            mockCache.cachedOfferings
-        } returns null
-        every {
-            mockCache.cacheOfferings(any())
-        } just Runs
-
-        purchases.getOfferingsWith({ fail("should be a success") }) {
-            receivedOfferings = it
-        }
-
-        assertThat(receivedOfferings).isNotNull
-        verify {
-            mockCache.cacheOfferings(any())
-        }
-    }
-
-    @Test
-    fun getOfferingsErrorIsCalledIfNoBackendResponse() {
-        every {
-            mockCache.cachedOfferings
-        } returns null
-        every {
-            mockCache.cacheOfferings(any())
-        } just Runs
-
-        every {
-            mockBackend.getOfferings(
-                any(),
-                any(),
-                any(),
-                captureLambda()
-            )
+            mockOfferingsManager.getOfferings(appUserId, appInBackground = false, any(), captureNullable(slotList))
         } answers {
-            lambda<(PurchasesError) -> Unit>().captured.invoke(
-                PurchasesError(PurchasesErrorCode.StoreProblemError)
-            )
+            slotList.first()?.invoke(offerings)
         }
-
-        var purchasesError: PurchasesError? = null
-
-        purchases.getOfferingsWith({ error ->
-            purchasesError = error
-        }) {
-            fail("should be an error")
-        }
-
-        assertThat(purchasesError).isNotNull
-        verify(exactly = 1) {
-            mockCache.clearOfferingsCacheTimestamp()
-        }
+        var receivedOfferings: Offerings? = null
+        Purchases.sharedInstance.getOfferingsWith(
+            onError = { fail("Expected success") },
+            onSuccess = { receivedOfferings = it }
+        )
+        assertThat(receivedOfferings).isEqualTo(offerings)
     }
 
     @Test
-    fun getOfferingsErrorIsCalledIfBadBackendResponse() {
+    fun `getOfferings success calls error callback`() {
+        val slotList = mutableListOf<((PurchasesError) -> Unit)?>()
+        val error = PurchasesError(PurchasesErrorCode.UnknownError)
         every {
-            mockBackend.getOfferings(any(), any(), captureLambda(), any())
+            mockOfferingsManager.getOfferings(appUserId, appInBackground = false, captureNullable(slotList), any())
         } answers {
-            lambda<(JSONObject) -> Unit>().captured.invoke(JSONObject("{}"))
+            slotList.first()?.invoke(error)
         }
-        every {
-            mockCache.cachedOfferings
-        } returns null
-
-        var purchasesError: PurchasesError? = null
-
-        purchases.getOfferingsWith({ error ->
-            purchasesError = error
-        }) {
-            fail("should be an error")
-        }
-
-        assertThat(purchasesError).isNotNull
-        assertThat(purchasesError!!.code).isEqualTo(PurchasesErrorCode.UnexpectedBackendResponseError)
-        verify(exactly = 1) {
-            mockCache.clearOfferingsCacheTimestamp()
-        }
+        var receivedError: PurchasesError? = null
+        Purchases.sharedInstance.getOfferingsWith(
+            onError = { receivedError = it },
+            onSuccess = { fail("Expected error") }
+        )
+        assertThat(receivedError).isEqualTo(error)
     }
 
     // endregion
@@ -2248,6 +1936,8 @@ class PurchasesTest: BasePurchasesTest() {
 
         val mockCompletion = mockk<LogInCallback>(relaxed = true)
         val newAppUserID = "newAppUserID"
+        mockOfferingsManagerFetchOfferings(newAppUserID)
+
         purchases.logIn(newAppUserID, mockCompletion)
 
         verify(exactly = 1) {
@@ -2286,8 +1976,11 @@ class PurchasesTest: BasePurchasesTest() {
             lambda<(CustomerInfo, Boolean) -> Unit>().captured.invoke(mockInfo, mockCreated)
         }
 
+
         val mockCompletion = mockk<LogInCallback>(relaxed = true)
         val newAppUserID = "newAppUserID"
+        mockOfferingsManagerFetchOfferings(newAppUserID)
+
         purchases.logIn(newAppUserID, mockCompletion)
 
         verify(exactly = 1) {
@@ -2308,8 +2001,11 @@ class PurchasesTest: BasePurchasesTest() {
             lambda<(CustomerInfo, Boolean) -> Unit>().captured.invoke(mockInfo, mockCreated)
         }
 
+
         val mockCompletion = mockk<LogInCallback>(relaxed = true)
         val newAppUserID = "newAppUserID"
+        mockOfferingsManagerFetchOfferings(newAppUserID)
+
         purchases.logIn(newAppUserID, mockCompletion)
 
         verify(exactly = 1) {
@@ -2330,10 +2026,12 @@ class PurchasesTest: BasePurchasesTest() {
 
         val mockCompletion = mockk<LogInCallback>(relaxed = true)
         val newAppUserID = "newAppUserID"
+        mockOfferingsManagerFetchOfferings(newAppUserID)
+
         purchases.logIn(newAppUserID, mockCompletion)
 
         verify(exactly = 1) {
-            mockBackend.getOfferings(newAppUserID, any(), any(), any())
+            mockOfferingsManager.fetchAndCacheOfferings(newAppUserID, any(), any(), any())
         }
     }
 
@@ -2344,12 +2042,10 @@ class PurchasesTest: BasePurchasesTest() {
             mockCache.cleanupOldAttributionData()
         } just Runs
         mockIdentityManagerLogout()
+        mockOfferingsManagerFetchOfferings()
         val mockCompletion = mockk<ReceiveCustomerInfoCallback>(relaxed = true)
         purchases.logOut(mockCompletion)
 
-        verify(exactly = 1) {
-            mockCache.setOfferingsCacheTimestampToNow()
-        }
         verify(exactly = 1) {
             mockCustomerInfoHelper.retrieveCustomerInfo(
                 appUserID,
@@ -2359,7 +2055,7 @@ class PurchasesTest: BasePurchasesTest() {
             )
         }
         verify(exactly = 1) {
-            mockBackend.getOfferings(appUserID, any(), any(), any())
+            mockOfferingsManager.fetchAndCacheOfferings(appUserID, false, any(), any())
         }
     }
 
@@ -2369,6 +2065,7 @@ class PurchasesTest: BasePurchasesTest() {
             mockCache.cleanupOldAttributionData()
         } just Runs
         mockIdentityManagerLogout()
+        mockOfferingsManagerFetchOfferings()
 
         purchases.logOut()
         verify(exactly = 1) {
@@ -2382,6 +2079,7 @@ class PurchasesTest: BasePurchasesTest() {
             mockCache.cleanupOldAttributionData()
         } just Runs
         mockIdentityManagerLogout()
+        mockOfferingsManagerFetchOfferings()
 
         purchases.logOut()
         verify(exactly = 1) {
@@ -2417,6 +2115,7 @@ class PurchasesTest: BasePurchasesTest() {
 
         val mockCompletion = mockk<ReceiveCustomerInfoCallback>(relaxed = true)
         mockIdentityManagerLogout()
+        mockOfferingsManagerFetchOfferings()
 
         purchases.logOut(mockCompletion)
         verify(exactly = 1) {
@@ -2438,6 +2137,7 @@ class PurchasesTest: BasePurchasesTest() {
 
         val mockCompletion = mockk<ReceiveCustomerInfoCallback>(relaxed = true)
         mockIdentityManagerLogout()
+        mockOfferingsManagerFetchOfferings()
 
         purchases.logOut(mockCompletion)
         verify(exactly = 1) {
@@ -3327,6 +3027,7 @@ class PurchasesTest: BasePurchasesTest() {
             notInCache = emptyList()
         )
         mockSynchronizeSubscriberAttributesForAllUsers()
+        mockOfferingsManagerAppForeground()
         purchases.onAppForegrounded()
         verify(exactly = 1) {
             mockBillingAbstract.queryPurchases(appUserId, any(), any())
@@ -3358,6 +3059,7 @@ class PurchasesTest: BasePurchasesTest() {
             queriedINAPP = emptyMap(),
             notInCache = emptyList()
         )
+        mockOfferingsManagerAppForeground()
         purchases.state = purchases.state.copy(appInBackground = true)
         Purchases.sharedInstance.onAppForegrounded()
         assertThat(purchases.state.appInBackground).isFalse()
@@ -3377,6 +3079,7 @@ class PurchasesTest: BasePurchasesTest() {
             queriedINAPP = emptyMap(),
             notInCache = emptyList()
         )
+        mockOfferingsManagerAppForeground()
         purchases.state = purchases.state.copy(appInBackground = false, firstTimeInForeground = true)
         Purchases.sharedInstance.onAppForegrounded()
         assertThat(purchases.state.firstTimeInForeground).isFalse()
@@ -3403,6 +3106,7 @@ class PurchasesTest: BasePurchasesTest() {
         every {
             mockCache.isCustomerInfoCacheStale(appInBackground = false, appUserID = appUserId)
         } returns false
+        mockOfferingsManagerAppForeground()
         purchases.state = purchases.state.copy(appInBackground = false, firstTimeInForeground = false)
         Purchases.sharedInstance.onAppForegrounded()
         assertThat(purchases.state.firstTimeInForeground).isFalse()
@@ -3429,6 +3133,7 @@ class PurchasesTest: BasePurchasesTest() {
         every {
             mockCache.isCustomerInfoCacheStale(appInBackground = false, appUserID = appUserId)
         } returns true
+        mockOfferingsManagerAppForeground()
         purchases.state = purchases.state.copy(appInBackground = false, firstTimeInForeground = false)
         Purchases.sharedInstance.onAppForegrounded()
         assertThat(purchases.state.firstTimeInForeground).isFalse()
@@ -3480,33 +3185,6 @@ class PurchasesTest: BasePurchasesTest() {
         }
         return builder!!.build()
     }
-
-//    private fun mockOfferingsParser() {
-//        with(mockOfferingParser) {
-//            every {
-//                retrieveCustomerInfo(any(), any(), false, any())
-//            } answers {
-//                val callback = arg<ReceiveCustomerInfoCallback?>(3)
-//                if (errorGettingCustomerInfo == null) {
-//                    callback?.onReceived(mockInfo)
-//                } else {
-//                    callback?.onError(errorGettingCustomerInfo)
-//                }
-//            }
-//            every {
-//                cacheCustomerInfo(any())
-//            } just runs
-//            every {
-//                sendUpdatedCustomerInfoToDelegateIfChanged(any())
-//            } just runs
-//            every {
-//                updatedCustomerInfoListener = any()
-//            } just runs
-//            every {
-//                updatedCustomerInfoListener
-//            } returns null
-//        }
-//    }
 
     private fun mockCloseActions() {
         every {

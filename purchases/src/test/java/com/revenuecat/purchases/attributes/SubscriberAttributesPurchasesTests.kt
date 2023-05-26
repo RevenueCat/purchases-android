@@ -164,7 +164,9 @@ class SubscriberAttributesPurchasesTests {
         every {
             customerInfoHelperMock.retrieveCustomerInfo(appUserId, CacheFetchPolicy.FETCH_CURRENT,false, any())
         } just Runs
-        every { offeringsManagerMock.isOfferingsCacheStale(any()) } returns false
+        every {
+            offeringsManagerMock.onAppForeground(appUserId)
+        } just Runs
         underTest.onAppForegrounded()
         verify(exactly = 1) {
             subscriberAttributesManagerMock.synchronizeSubscriberAttributesForAllUsers(appUserId)
