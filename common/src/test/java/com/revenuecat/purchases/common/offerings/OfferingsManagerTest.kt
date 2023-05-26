@@ -43,7 +43,7 @@ class OfferingsManagerTest {
         backend = mockk()
         offeringsFactory = mockk()
 
-        mockBackendResponse()
+        mockBackendResponseSuccess()
 
         offeringsManager = OfferingsManager(
             cache,
@@ -301,18 +301,7 @@ class OfferingsManagerTest {
             cache.cacheOfferings(any(), any())
         } just Runs
 
-        every {
-            backend.getOfferings(
-                any(),
-                any(),
-                any(),
-                captureLambda()
-            )
-        } answers {
-            lambda<(PurchasesError) -> Unit>().captured.invoke(
-                PurchasesError(PurchasesErrorCode.StoreProblemError)
-            )
-        }
+        mockBackendResponseError()
         every { cache.cachedOfferingsResponse } returns null
         mockDeviceCache(wasSuccessful = false)
 
@@ -339,18 +328,7 @@ class OfferingsManagerTest {
             cache.cacheOfferings(any(), any())
         } just Runs
 
-        every {
-            backend.getOfferings(
-                any(),
-                any(),
-                any(),
-                captureLambda()
-            )
-        } answers {
-            lambda<(PurchasesError) -> Unit>().captured.invoke(
-                PurchasesError(PurchasesErrorCode.UnknownBackendError)
-            )
-        }
+        mockBackendResponseError()
         val backendResponse = JSONObject(ONE_OFFERINGS_RESPONSE)
         every { cache.cachedOfferingsResponse } returns backendResponse
         mockDeviceCache(wasSuccessful = false)
@@ -381,18 +359,7 @@ class OfferingsManagerTest {
             cache.cacheOfferings(any(), any())
         } just Runs
 
-        every {
-            backend.getOfferings(
-                any(),
-                any(),
-                any(),
-                captureLambda()
-            )
-        } answers {
-            lambda<(PurchasesError) -> Unit>().captured.invoke(
-                PurchasesError(PurchasesErrorCode.UnknownBackendError)
-            )
-        }
+        mockBackendResponseError()
         val backendResponse = JSONObject(ONE_OFFERINGS_RESPONSE)
         every { cache.cachedOfferingsResponse } returns backendResponse
         mockDeviceCache(wasSuccessful = false)
@@ -435,11 +402,21 @@ class OfferingsManagerTest {
         }
     }
 
-    private fun mockBackendResponse(response: String = ONE_OFFERINGS_RESPONSE) {
+    private fun mockBackendResponseSuccess(response: String = ONE_OFFERINGS_RESPONSE) {
         every {
             backend.getOfferings(any(), any(), captureLambda(), any())
         } answers {
             lambda<(JSONObject) -> Unit>().captured.invoke(JSONObject(response))
+        }
+    }
+
+    private fun mockBackendResponseError(
+        error: PurchasesError = PurchasesError(PurchasesErrorCode.UnknownBackendError)
+    ) {
+        every {
+            backend.getOfferings(any(), any(), any(), captureLambda())
+        } answers {
+            lambda<(PurchasesError) -> Unit>().captured.invoke(error)
         }
     }
 
