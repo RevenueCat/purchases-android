@@ -293,7 +293,7 @@ class OfferingsManagerTest {
     }
 
     @Test
-    fun `get offerings error is called if backend error and no cached response`() {
+    fun `get offerings error is called if server error and no cached response`() {
         every {
             cache.cachedOfferings
         } returns null
@@ -320,7 +320,7 @@ class OfferingsManagerTest {
     }
 
     @Test
-    fun `get offerings success is called if backend error but cached response`() {
+    fun `get offerings success is called if server error and cached response`() {
         every {
             cache.cachedOfferings
         } returns null
@@ -346,6 +346,34 @@ class OfferingsManagerTest {
 
         verify(exactly = 1) { cache.cacheOfferings(testOfferings, backendResponse) }
         verify(exactly = 1) { offeringsFactory.createOfferings(backendResponse, any(), any()) }
+    }
+
+    @Test
+    fun `get offerings error is called if cached response but not a server error`() {
+        every {
+            cache.cachedOfferings
+        } returns null
+        every {
+            cache.cacheOfferings(any(), any())
+        } just Runs
+
+        val expectedError = PurchasesError(PurchasesErrorCode.NetworkError)
+        mockBackendResponseError(error = expectedError, isServerError = false)
+        val backendResponse = JSONObject(ONE_OFFERINGS_RESPONSE)
+        every { cache.cachedOfferingsResponse } returns backendResponse
+        mockDeviceCache(wasSuccessful = false)
+        mockOfferingsFactory()
+
+        var receivedError: PurchasesError? = null
+        offeringsManager.getOfferings(
+            appUserId,
+            appInBackground = false,
+            onError = { receivedError = it },
+            onSuccess = { fail("Should be success") }
+        )
+
+        assertThat(receivedError).isEqualTo(expectedError)
+        verify(exactly = 1) { cache.clearOfferingsCacheTimestamp() }
     }
 
     // This situation shouldn't happen normally since we only cache when we have loaded the offerings at least once,
@@ -411,12 +439,13 @@ class OfferingsManagerTest {
     }
 
     private fun mockBackendResponseError(
-        error: PurchasesError = PurchasesError(PurchasesErrorCode.UnknownBackendError)
+        error: PurchasesError = PurchasesError(PurchasesErrorCode.UnknownBackendError),
+        isServerError: Boolean = true
     ) {
         every {
             backend.getOfferings(any(), any(), any(), captureLambda())
         } answers {
-            lambda<(PurchasesError) -> Unit>().captured.invoke(error)
+            lambda<(PurchasesError, Boolean) -> Unit>().captured.invoke(error, isServerError)
         }
     }
 

@@ -65,13 +65,17 @@ class OfferingsManager(
             appUserID,
             appInBackground,
             { createAndCacheOfferings(it, onError, onSuccess) },
-            { backendError ->
-                val cachedOfferingsResponse = offeringsCache.cachedOfferingsResponse
-                if (cachedOfferingsResponse == null) {
-                    handleErrorFetchingOfferings(backendError, onError)
+            { backendError, isServerError ->
+                if (isServerError) {
+                    val cachedOfferingsResponse = offeringsCache.cachedOfferingsResponse
+                    if (cachedOfferingsResponse == null) {
+                        handleErrorFetchingOfferings(backendError, onError)
+                    } else {
+                        warnLog(OfferingStrings.ERROR_FETCHING_OFFERINGS_USING_DISK_CACHE)
+                        createAndCacheOfferings(cachedOfferingsResponse, onError, onSuccess)
+                    }
                 } else {
-                    warnLog(OfferingStrings.ERROR_FETCHING_OFFERINGS_USING_DISK_CACHE)
-                    createAndCacheOfferings(cachedOfferingsResponse, onError, onSuccess)
+                    handleErrorFetchingOfferings(backendError, onError)
                 }
             })
     }
