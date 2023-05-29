@@ -24,7 +24,7 @@ import kotlin.time.Duration.Companion.minutes
 class OfferingsCacheTest {
 
     private val initialDate = Date(1685098228L) // Friday, May 26, 2023 10:50:28 AM GMT
-    private var currentDate = initialDate
+    private lateinit var currentDate: Date
 
     private lateinit var deviceCache: DeviceCache
     private lateinit var dateProvider: DateProvider
@@ -33,6 +33,7 @@ class OfferingsCacheTest {
 
     @Before
     fun setUp() {
+        currentDate = initialDate
         deviceCache = mockk()
         dateProvider = object : DateProvider {
             override val now: Date

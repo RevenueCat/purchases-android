@@ -635,7 +635,7 @@ class DeviceCacheTest {
         every { mockPrefs.getString(offeringsResponseCacheKey, null) } returns "{\"test-key\": \"test-value\"}"
         val offeringsResponse = cache.getOfferingsResponseCache()
         assertThat(offeringsResponse).isNotNull
-        assertThat(offeringsResponse!!.getString("test-key")).isEqualTo("test-value")
+        assertThat(offeringsResponse?.getString("test-key")).isEqualTo("test-value")
     }
 
     @Test
