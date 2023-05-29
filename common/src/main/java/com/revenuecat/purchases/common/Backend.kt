@@ -31,7 +31,7 @@ typealias PostReceiptCallback = Pair<PostReceiptDataSuccessCallback, PostReceipt
 /** @suppress */
 typealias CallbackCacheKey = List<String>
 /** @suppress */
-typealias OfferingsCallback = Pair<(JSONObject) -> Unit, (PurchasesError) -> Unit>
+typealias OfferingsCallback = Pair<(JSONObject) -> Unit, (PurchasesError, isServerError: Boolean) -> Unit>
 /** @suppress */
 typealias PostReceiptDataSuccessCallback = (CustomerInfo, body: JSONObject) -> Unit
 /** @suppress */
@@ -257,7 +257,7 @@ class Backend(
         appUserID: String,
         appInBackground: Boolean,
         onSuccess: (JSONObject) -> Unit,
-        onError: (PurchasesError) -> Unit
+        onError: (PurchasesError, isServerError: Boolean) -> Unit
     ) {
         val endpoint = Endpoint.GetOfferings(appUserID)
         val path = endpoint.getPath()
@@ -272,10 +272,11 @@ class Backend(
             }
 
             override fun onError(error: PurchasesError) {
+                val isServerError = false
                 synchronized(this@Backend) {
                     offeringsCallbacks.remove(path)
                 }?.forEach { (_, onError) ->
-                    onError(error)
+                    onError(error, isServerError)
                 }
             }
 
@@ -287,10 +288,14 @@ class Backend(
                         try {
                             onSuccess(result.body)
                         } catch (e: JSONException) {
-                            onError(e.toPurchasesError().also { errorLog(it) })
+                            val isServerError = false
+                            onError(e.toPurchasesError().also { errorLog(it) }, isServerError)
                         }
                     } else {
-                        onError(result.toPurchasesError().also { errorLog(it) })
+                        onError(
+                            result.toPurchasesError().also { errorLog(it) },
+                            RCHTTPStatusCodes.isServerError(result.responseCode)
+                        )
                     }
                 }
             }

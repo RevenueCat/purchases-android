@@ -165,8 +165,9 @@ class BackendTest {
         this@BackendTest.receivedOfferingsJSON = offeringsJSON
     }
 
-    private val onReceiveOfferingsErrorHandler: (PurchasesError) -> Unit = {
-        this@BackendTest.receivedError = it
+    private val onReceiveOfferingsErrorHandler: (PurchasesError, Boolean) -> Unit = { error, isServerError ->
+        this@BackendTest.receivedError = error
+        this@BackendTest.receivedIsServerError = isServerError
     }
 
     private val onLoginSuccessHandler: (CustomerInfo, Boolean) -> Unit = { customerInfo, created ->
@@ -244,7 +245,7 @@ class BackendTest {
             appUserID = "id",
             appInBackground = false,
             onSuccess = {},
-            onError = {}
+            onError = { _, _ -> }
         )
 
         backend.close()
@@ -253,7 +254,7 @@ class BackendTest {
             appUserID = "id",
             appInBackground = false,
             onSuccess = {},
-            onError = {}
+            onError = { _, _ -> }
         )
     }
 
@@ -1158,12 +1159,42 @@ class BackendTest {
             appUserID,
             appInBackground = false,
             onSuccess = onReceiveOfferingsResponseSuccessHandler,
-            onError = onReceiveOfferingsErrorHandler
+            onError = { _, _ -> fail("Should be success") }
         )
 
         assertThat(receivedOfferingsJSON).`as`("Received offerings response is not null").isNotNull
         assertThat(receivedOfferingsJSON!!.getJSONArray("offerings").length()).isZero
         assertThat(receivedOfferingsJSON!!.getNullableString("current_offering_id")).isNull()
+    }
+
+    @Test
+    fun `given a server error, correct callback values are given`() {
+        mockResponse(Endpoint.GetOfferings(appUserID), null, RCHTTPStatusCodes.ERROR, null, null)
+
+        backend.getOfferings(
+            appUserID,
+            appInBackground = false,
+            onSuccess = { fail("Should be error") },
+            onError = onReceiveOfferingsErrorHandler
+        )
+
+        assertThat(receivedError).isNotNull
+        assertThat(receivedIsServerError).isTrue
+    }
+
+    @Test
+    fun `given a non server error, correct callback values are given`() {
+        mockResponse(Endpoint.GetOfferings(appUserID), null, RCHTTPStatusCodes.BAD_REQUEST, null, null)
+
+        backend.getOfferings(
+            appUserID,
+            appInBackground = false,
+            onSuccess = { fail("Should be error") },
+            onError = onReceiveOfferingsErrorHandler
+        )
+
+        assertThat(receivedError).isNotNull
+        assertThat(receivedIsServerError).isFalse
     }
 
     @Test

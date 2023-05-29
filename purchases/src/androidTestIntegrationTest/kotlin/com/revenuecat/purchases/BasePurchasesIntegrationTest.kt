@@ -107,6 +107,11 @@ open class BasePurchasesIntegrationTest {
         activityScenarioRule.scenario.onActivity(block)
     }
 
+    protected fun simulateSdkRestart(context: Context, forceServerErrors: Boolean = false) {
+        Purchases.resetSingleton()
+        configureSdk(context, forceServerErrors)
+    }
+
     protected fun configureSdk(context: Context, forceServerErrors: Boolean = false) {
         Purchases.configure(
             PurchasesConfiguration.Builder(context, Constants.apiKey)
