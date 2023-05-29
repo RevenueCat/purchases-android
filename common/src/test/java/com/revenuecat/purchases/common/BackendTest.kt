@@ -1931,7 +1931,7 @@ class BackendTest {
     }
 
     @Test
-    fun `getProductEntitlementMapping call is enqueued with default delay`() {
+    fun `getProductEntitlementMapping call is enqueued with long delay`() {
         mockResponse(
             endpoint = productEntitlementMappingEndpoint,
             body = null,
@@ -1948,7 +1948,7 @@ class BackendTest {
 
         val calledDelay = dispatcher.calledDelay
         assertThat(calledDelay).isNotNull
-        assertThat(calledDelay).isEqualTo(Delay.DEFAULT)
+        assertThat(calledDelay).isEqualTo(Delay.LONG)
     }
 
     // endregion

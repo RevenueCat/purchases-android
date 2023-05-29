@@ -108,11 +108,6 @@ class PurchasesTest: BasePurchasesTest() {
     }
 
     @Test
-    fun `product entitlement mappings are updated if staled on constructor`() {
-        verify(exactly = 1) { mockOfflineEntitlementsManager.updateProductEntitlementMappingCacheIfStale() }
-    }
-
-    @Test
     fun getsSubscriptionSkus() {
         val skus = listOf("onemonth_freetrial")
 
@@ -1537,7 +1532,7 @@ class PurchasesTest: BasePurchasesTest() {
         )
         mockOfferingsManagerAppForeground()
         Purchases.sharedInstance.onAppForegrounded()
-        verify(exactly = 2) {
+        verify(exactly = 1) {
             mockOfflineEntitlementsManager.updateProductEntitlementMappingCacheIfStale()
         }
     }
