@@ -88,15 +88,3 @@ tasks.dokkaHtmlMultiModule.configure {
     outputDirectory.set(file("docs/" + project.property("VERSION_NAME")))
     includes.from("README.md")
 }
-
-apply plugin: 'kover'
-
-koverMerged {
-    enable()
-    filters {
-        projects {
-            // Specifies the projects excluded from the merged tasks
-            excludes.addAll(":api-tester", ":integration-tests", ":examples:purchase-tester")
-        }
-    }
-}
