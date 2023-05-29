@@ -106,7 +106,7 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
     }
 
     @Test
-    fun offeringsArePersisted() {
+    fun offeringsArePersistedAndUsedOnServerErrors() {
         val storeProduct = StoreProductFactory.createGoogleStoreProduct()
         mockBillingAbstract.mockQueryProductDetails(queryProductDetailsSubsReturn = listOf(storeProduct))
 
