@@ -451,17 +451,6 @@ workflows:
       - detekt
       - assemble-sample-app
       - run-backend-integration-tests
-      - integration-tests-build
-      - purchases-integration-tests-build
-      - run-firebase-tests-purchases-integration-test:
-          requires:
-            - purchases-integration-tests-build
-      - run-firebase-tests-purchases-load-shedder-integration-test:
-          context:
-            - slack-secrets
-      - run-firebase-tests:
-          requires:
-            - integration-tests-build
 
   deploy:
     when:
