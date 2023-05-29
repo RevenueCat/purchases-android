@@ -2,6 +2,7 @@
 
 [![License](https://img.shields.io/github/license/RevenueCat/purchases-android.svg?style=flat)](https://github.com/RevenueCat/purchases-android/blob/main/LICENSE)
 [![Release](https://img.shields.io/github/release/RevenueCat/purchases-android.svg?style=flat)](https://github.com/RevenueCat/purchases-android/releases)
+[![Coverage Status](https://coveralls.io/repos/github/RevenueCat/purchases-android/badge.svg?branch=main)](https://coveralls.io/github/RevenueCat/purchases-android?branch=main)
 
 RevenueCat is a powerful, reliable, and free to use in-app purchase server with cross-platform support. Our open-source framework provides a backend and a wrapper around StoreKit and Google Play Billing to make implementing in-app purchases and subscriptions easy. 
 
