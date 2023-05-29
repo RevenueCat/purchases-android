@@ -21,6 +21,8 @@ import com.revenuecat.purchases.common.diagnostics.DiagnosticsFileHelper
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsSynchronizer
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.networking.ETagManager
+import com.revenuecat.purchases.common.offerings.OfferingsFactory
+import com.revenuecat.purchases.common.offerings.OfferingsManager
 import com.revenuecat.purchases.common.offlineentitlements.OfflineCustomerInfoCalculator
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
 import com.revenuecat.purchases.common.offlineentitlements.PurchasedProductsFetcher
@@ -171,6 +173,12 @@ internal class PurchasesFactory(
                 postReceiptHelper
             )
 
+            val offeringsManager = OfferingsManager(
+                cache,
+                backend,
+                OfferingsFactory(billing, offeringParser)
+            )
+
             return Purchases(
                 application,
                 appUserID,
@@ -182,11 +190,11 @@ internal class PurchasesFactory(
                 subscriberAttributesManager,
                 appConfig,
                 customerInfoHelper,
-                offeringParser,
                 diagnosticsSynchronizer,
                 offlineEntitlementsManager,
                 postReceiptHelper,
-                syncPurchasesHelper
+                syncPurchasesHelper,
+                offeringsManager
             )
         }
     }

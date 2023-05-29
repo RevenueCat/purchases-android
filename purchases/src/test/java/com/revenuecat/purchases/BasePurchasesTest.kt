@@ -8,15 +8,14 @@ package com.revenuecat.purchases
 import android.app.Application
 import android.content.Context
 import androidx.lifecycle.ProcessLifecycleOwner
-import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.billingclient.api.PurchaseHistoryRecord
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BillingAbstract
-import com.revenuecat.purchases.common.OfferingParser
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsSynchronizer
+import com.revenuecat.purchases.common.offerings.OfferingsManager
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
 import com.revenuecat.purchases.google.toInAppStoreProduct
 import com.revenuecat.purchases.google.toStoreTransaction
@@ -26,7 +25,6 @@ import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
-import com.revenuecat.purchases.utils.ONE_OFFERINGS_RESPONSE
 import com.revenuecat.purchases.utils.STUB_PRODUCT_IDENTIFIER
 import com.revenuecat.purchases.utils.SyncDispatcher
 import com.revenuecat.purchases.utils.createMockOneTimeProductDetails
@@ -41,11 +39,8 @@ import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.runs
 import io.mockk.slot
-import org.json.JSONObject
 import org.junit.After
 import org.junit.Before
-import org.junit.runner.RunWith
-import org.robolectric.annotation.Config
 
 open class BasePurchasesTest {
     protected val mockBillingAbstract: BillingAbstract = mockk()
@@ -61,11 +56,11 @@ open class BasePurchasesTest {
     protected val mockIdentityManager = mockk<IdentityManager>()
     protected val mockSubscriberAttributesManager = mockk<SubscriberAttributesManager>()
     internal val mockCustomerInfoHelper = mockk<CustomerInfoHelper>()
-    lateinit var mockOfferingParser: OfferingParser
     protected val mockDiagnosticsSynchronizer = mockk<DiagnosticsSynchronizer>()
     protected val mockOfflineEntitlementsManager = mockk<OfflineEntitlementsManager>()
     internal val mockPostReceiptHelper = mockk<PostReceiptHelper>()
     internal val mockSyncPurchasesHelper = mockk<SyncPurchasesHelper>()
+    protected val mockOfferingsManager = mockk<OfferingsManager>()
 
     protected var capturedPurchasesUpdatedListener = slot<BillingAbstract.PurchasesUpdatedListener>()
     protected var capturedBillingWrapperStateListener = slot<BillingAbstract.StateListener>()
@@ -108,7 +103,7 @@ open class BasePurchasesTest {
     @After
     fun tearDown() {
         Purchases.backingFieldSharedInstance = null
-        clearMocks(mockCustomerInfoHelper, mockPostReceiptHelper, mockSyncPurchasesHelper)
+        clearMocks(mockCustomerInfoHelper, mockPostReceiptHelper, mockSyncPurchasesHelper, mockOfferingsManager)
     }
 
     // region Private Methods
@@ -143,7 +138,6 @@ open class BasePurchasesTest {
 
     private fun mockBackend() {
         with(mockBackend) {
-            mockProducts()
             every {
                 close()
             } just Runs
@@ -250,12 +244,16 @@ open class BasePurchasesTest {
         }
     }
 
-    protected fun mockProducts(response: String = ONE_OFFERINGS_RESPONSE) {
+    protected fun mockOfferingsManagerAppForeground() {
         every {
-            mockBackend.getOfferings(any(), any(), captureLambda(), any())
-        } answers {
-            lambda<(JSONObject) -> Unit>().captured.invoke(JSONObject(response))
-        }
+            mockOfferingsManager.onAppForeground(appUserId)
+        } just Runs
+    }
+
+    protected fun mockOfferingsManagerFetchOfferings(userId: String = appUserId) {
+        every {
+            mockOfferingsManager.fetchAndCacheOfferings(userId, any(), any(), any())
+        } just Runs
     }
 
     protected fun mockStoreProduct(
@@ -313,11 +311,11 @@ open class BasePurchasesTest {
                 dangerousSettings = DangerousSettings(autoSyncPurchases = autoSync)
             ),
             customerInfoHelper = mockCustomerInfoHelper,
-            offeringParser = OfferingParserFactory.createOfferingParser(Store.PLAY_STORE),
             diagnosticsSynchronizer = mockDiagnosticsSynchronizer,
             offlineEntitlementsManager = mockOfflineEntitlementsManager,
             postReceiptHelper = mockPostReceiptHelper,
-            syncPurchasesHelper = mockSyncPurchasesHelper
+            syncPurchasesHelper = mockSyncPurchasesHelper,
+            offeringsManager = mockOfferingsManager
         )
         Purchases.sharedInstance = purchases
         purchases.state = purchases.state.copy(appInBackground = false)
@@ -340,15 +338,11 @@ open class BasePurchasesTest {
 
     protected fun mockCacheStale(
         customerInfoStale: Boolean = false,
-        offeringsStale: Boolean = false,
         appInBackground: Boolean = false
     ) {
         every {
             mockCache.isCustomerInfoCacheStale(appUserId, appInBackground)
         } returns customerInfoStale
-        every {
-            mockCache.isOfferingsCacheStale(appInBackground)
-        } returns offeringsStale
     }
 
     // endregion

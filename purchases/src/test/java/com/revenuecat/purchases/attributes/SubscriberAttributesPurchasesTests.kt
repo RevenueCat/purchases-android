@@ -4,7 +4,6 @@ import android.app.Application
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfoHelper
-import com.revenuecat.purchases.OfferingParserFactory
 import com.revenuecat.purchases.PostReceiptHelper
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.Store
@@ -12,6 +11,8 @@ import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.PlatformInfo
+import com.revenuecat.purchases.common.caching.DeviceCache
+import com.revenuecat.purchases.common.offerings.OfferingsManager
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
 import com.revenuecat.purchases.common.subscriberattributes.SubscriberAttributeKey
 import com.revenuecat.purchases.identity.IdentityManager
@@ -40,6 +41,7 @@ class SubscriberAttributesPurchasesTests {
     private val customerInfoHelperMock = mockk<CustomerInfoHelper>()
     private val offlineEntitlementsManagerMock = mockk<OfflineEntitlementsManager>()
     private val postReceiptHelperMock = mockk<PostReceiptHelper>()
+    private val offeringsManagerMock = mockk<OfferingsManager>()
     private lateinit var applicationMock: Application
 
     @Before
@@ -48,12 +50,13 @@ class SubscriberAttributesPurchasesTests {
             offlineEntitlementsManagerMock.updateProductEntitlementMappingCacheIfStale()
         } just runs
 
+        val cache: DeviceCache = mockk(relaxed = true)
         underTest = Purchases(
             application = mockk<Application>(relaxed = true).also { applicationMock = it },
             backingFieldAppUserID = appUserId,
             backend = backendMock,
             billing = billingWrapperMock,
-            deviceCache = mockk(relaxed = true),
+            deviceCache = cache,
             dispatcher = SyncDispatcher(),
             identityManager = mockk<IdentityManager>(relaxed = true).apply {
                 every { currentAppUserID } returns appUserId
@@ -67,17 +70,17 @@ class SubscriberAttributesPurchasesTests {
                 store = Store.PLAY_STORE
             ),
             customerInfoHelper = customerInfoHelperMock,
-            offeringParser = OfferingParserFactory.createOfferingParser(Store.PLAY_STORE),
             diagnosticsSynchronizer = null,
             offlineEntitlementsManager = offlineEntitlementsManagerMock,
             postReceiptHelper = postReceiptHelperMock,
-            syncPurchasesHelper = mockk()
+            syncPurchasesHelper = mockk(),
+            offeringsManager = offeringsManagerMock
         )
     }
 
     @After
     fun tearDown() {
-        clearMocks(customerInfoHelperMock)
+        clearMocks(customerInfoHelperMock, offeringsManagerMock)
     }
 
     @Test
@@ -160,6 +163,9 @@ class SubscriberAttributesPurchasesTests {
         } just Runs
         every {
             customerInfoHelperMock.retrieveCustomerInfo(appUserId, CacheFetchPolicy.FETCH_CURRENT,false, any())
+        } just Runs
+        every {
+            offeringsManagerMock.onAppForeground(appUserId)
         } just Runs
         underTest.onAppForegrounded()
         verify(exactly = 1) {

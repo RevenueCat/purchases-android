@@ -34,6 +34,12 @@ const val ONE_OFFERINGS_RESPONSE = "{'offerings': [" +
     "{'identifier': '\$rc_monthly','platform_product_identifier': '$STUB_PRODUCT_IDENTIFIER'," +
     "'platform_product_plan_identifier': 'p1m'}]}]," +
     "'current_offering_id': '$STUB_OFFERING_IDENTIFIER'}"
+const val ONE_OFFERINGS_INAPP_PRODUCT_RESPONSE = "{'offerings': [" +
+    "{'identifier': '$STUB_OFFERING_IDENTIFIER', " +
+    "'description': 'This is the base offering', " +
+    "'packages': [" +
+    "{'identifier': '\$rc_monthly','platform_product_identifier': '$STUB_PRODUCT_IDENTIFIER'}]}]," +
+    "'current_offering_id': '$STUB_OFFERING_IDENTIFIER'}"
 
 @SuppressWarnings("EmptyFunctionBlock")
 fun stubStoreProduct(
