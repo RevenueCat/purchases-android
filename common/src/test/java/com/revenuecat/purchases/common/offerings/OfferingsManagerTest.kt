@@ -5,7 +5,6 @@ import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.Backend
-import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.utils.ONE_OFFERINGS_RESPONSE
 import com.revenuecat.purchases.utils.STUB_OFFERING_IDENTIFIER
 import com.revenuecat.purchases.utils.STUB_PRODUCT_IDENTIFIER
@@ -32,7 +31,7 @@ class OfferingsManagerTest {
     private val productId = STUB_PRODUCT_IDENTIFIER
     private val testOfferings = stubOfferings(productId).second
 
-    private lateinit var deviceCache: DeviceCache
+    private lateinit var cache: OfferingsCache
     private lateinit var backend: Backend
     private lateinit var offeringsFactory: OfferingsFactory
 
@@ -40,14 +39,14 @@ class OfferingsManagerTest {
 
     @Before
     fun setUp() {
-        deviceCache = mockk()
+        cache = mockk()
         backend = mockk()
         offeringsFactory = mockk()
 
         mockBackendResponse()
 
         offeringsManager = OfferingsManager(
-            deviceCache,
+            cache,
             backend,
             offeringsFactory
         )
@@ -65,7 +64,7 @@ class OfferingsManagerTest {
             backend.getOfferings(appUserId, appInBackground = false, onSuccess = any(), onError = any())
         }
         verify(exactly = 1) {
-            deviceCache.isOfferingsCacheStale(appInBackground = false)
+            cache.isOfferingsCacheStale(appInBackground = false)
         }
     }
 
@@ -77,7 +76,7 @@ class OfferingsManagerTest {
             backend.getOfferings(appUserId, appInBackground = false, onSuccess = any(), onError = any())
         }
         verify(exactly = 1) {
-            deviceCache.isOfferingsCacheStale(appInBackground = false)
+            cache.isOfferingsCacheStale(appInBackground = false)
         }
     }
 
@@ -90,7 +89,7 @@ class OfferingsManagerTest {
         mockOfferingsFactory()
 
         every {
-            deviceCache.cachedOfferings
+            cache.cachedOfferings
         } returns testOfferings
         mockCacheStale(offeringsStale = false)
         mockDeviceCache()
@@ -112,7 +111,7 @@ class OfferingsManagerTest {
         mockOfferingsFactory()
 
         every {
-            deviceCache.cachedOfferings
+            cache.cachedOfferings
         } returns testOfferings
         mockCacheStale(offeringsStale = true, appInBackground = true)
         mockDeviceCache()
@@ -134,10 +133,10 @@ class OfferingsManagerTest {
         mockOfferingsFactory()
 
         every {
-            deviceCache.cachedOfferings
+            cache.cachedOfferings
         } returns null
         every {
-            deviceCache.cacheOfferings(any())
+            cache.cacheOfferings(any(), any())
         } just Runs
 
         mockDeviceCache()
@@ -156,7 +155,7 @@ class OfferingsManagerTest {
             backend.getOfferings(appUserId, appInBackground = false, onSuccess = any(), onError = any())
         }
         verify(exactly = 1) {
-            deviceCache.cacheOfferings(any())
+            cache.cacheOfferings(any(), any())
         }
     }
 
@@ -166,10 +165,10 @@ class OfferingsManagerTest {
         mockOfferingsFactory()
 
         every {
-            deviceCache.cachedOfferings
+            cache.cachedOfferings
         } returns null
         every {
-            deviceCache.cacheOfferings(any())
+            cache.cacheOfferings(any(), any())
         } just Runs
 
         var receivedOfferings: Offerings? = null
@@ -186,7 +185,7 @@ class OfferingsManagerTest {
             backend.getOfferings(appUserId, appInBackground = true, onSuccess = any(), onError = any())
         }
         verify(exactly = 1) {
-            deviceCache.cacheOfferings(any())
+            cache.cacheOfferings(any(), any())
         }
     }
 
@@ -195,10 +194,10 @@ class OfferingsManagerTest {
         mockOfferingsFactory()
 
         every {
-            deviceCache.cachedOfferings
+            cache.cachedOfferings
         } returns null
         every {
-            deviceCache.cacheOfferings(any())
+            cache.cacheOfferings(any(), any())
         } just Runs
 
         mockDeviceCache()
@@ -222,7 +221,7 @@ class OfferingsManagerTest {
         mockOfferingsFactory(offerings)
 
         every {
-            deviceCache.cachedOfferings
+            cache.cachedOfferings
         } returns offerings
         mockCacheStale(offeringsStale = true)
         mockDeviceCache()
@@ -247,7 +246,7 @@ class OfferingsManagerTest {
         mockOfferingsFactory(offerings)
 
         every {
-            deviceCache.cachedOfferings
+            cache.cachedOfferings
         } returns offerings
         mockCacheStale(offeringsStale = true, appInBackground = true)
         mockDeviceCache()
@@ -269,10 +268,10 @@ class OfferingsManagerTest {
     @Test
     fun getOfferingsIsCached() {
         every {
-            deviceCache.cachedOfferings
+            cache.cachedOfferings
         } returns null
         every {
-            deviceCache.cacheOfferings(any())
+            cache.cacheOfferings(any(), any())
         } just Runs
         mockDeviceCache()
         val (_, offerings) = stubOfferings(productId)
@@ -289,17 +288,17 @@ class OfferingsManagerTest {
         assertThat(receivedOfferings).isNotNull
         assertThat(receivedOfferings).isEqualTo(offerings)
         verify {
-            deviceCache.cacheOfferings(offerings)
+            cache.cacheOfferings(offerings, any())
         }
     }
 
     @Test
     fun getOfferingsErrorIsCalledIfNoBackendResponse() {
         every {
-            deviceCache.cachedOfferings
+            cache.cachedOfferings
         } returns null
         every {
-            deviceCache.cacheOfferings(any())
+            cache.cacheOfferings(any(), any())
         } just Runs
 
         every {
@@ -327,7 +326,7 @@ class OfferingsManagerTest {
 
         assertThat(purchasesError).isNotNull
         verify(exactly = 1) {
-            deviceCache.clearOfferingsCacheTimestamp()
+            cache.clearOfferingsCacheTimestamp()
         }
     }
 
@@ -367,16 +366,16 @@ class OfferingsManagerTest {
         appInBackground: Boolean = false
     ) {
         every {
-            deviceCache.isOfferingsCacheStale(appInBackground)
+            cache.isOfferingsCacheStale(appInBackground)
         } returns offeringsStale
     }
 
     private fun mockDeviceCache(wasSuccessful: Boolean = true) {
-        every { deviceCache.setOfferingsCacheTimestampToNow() } just Runs
+        every { cache.setOfferingsCacheTimestampToNow() } just Runs
         if (wasSuccessful) {
-            every { deviceCache.cacheOfferings(any()) } just Runs
+            every { cache.cacheOfferings(any(), any()) } just Runs
         } else {
-            every { deviceCache.clearOfferingsCacheTimestamp() } just Runs
+            every { cache.clearOfferingsCacheTimestamp() } just Runs
         }
     }
 

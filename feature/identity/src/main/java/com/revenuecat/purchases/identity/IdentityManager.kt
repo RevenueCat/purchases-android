@@ -9,6 +9,7 @@ import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.infoLog
 import com.revenuecat.purchases.common.log
+import com.revenuecat.purchases.common.offerings.OfferingsCache
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
 import com.revenuecat.purchases.strings.IdentityStrings
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
@@ -20,6 +21,7 @@ class IdentityManager(
     private val deviceCache: DeviceCache,
     private val subscriberAttributesCache: SubscriberAttributesCache,
     private val subscriberAttributesManager: SubscriberAttributesManager,
+    private val offeringsCache: OfferingsCache,
     private val backend: Backend,
     private val offlineEntitlementsManager: OfflineEntitlementsManager
 ) {
@@ -73,6 +75,7 @@ class IdentityManager(
                             IdentityStrings.LOG_IN_SUCCESSFUL.format(newAppUserID, created)
                         )
                         deviceCache.clearCachesForAppUserID(oldAppUserID)
+                        offeringsCache.clearCache()
                         subscriberAttributesCache.clearSubscriberAttributesIfSyncedForSubscriber(oldAppUserID)
 
                         deviceCache.cacheAppUserID(newAppUserID)
@@ -90,6 +93,7 @@ class IdentityManager(
     @Synchronized
     private fun reset() {
         deviceCache.clearCachesForAppUserID(currentAppUserID)
+        offeringsCache.clearCache()
         subscriberAttributesCache.clearSubscriberAttributesIfSyncedForSubscriber(currentAppUserID)
         offlineEntitlementsManager.resetOfflineCustomerInfoCache()
         deviceCache.cacheAppUserID(generateRandomID())
