@@ -1,6 +1,8 @@
 package com.revenuecat.purchasetester
 
 import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -56,6 +58,26 @@ class ConfigureFragment : Fragment() {
             }.collect()
         }
 
+        @Suppress("EmptyFunctionBlock")
+        binding.proxyUrlInput.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                try {
+                    if (!s.isNullOrEmpty()) {
+                        val url = URL(s.toString())
+                        Purchases.proxyURL = url
+                    } else {
+                        Purchases.proxyURL = null
+                    }
+                } catch (e: MalformedURLException) {
+                    Purchases.proxyURL = null
+                }
+            }
+
+            override fun afterTextChanged(s: Editable?) {}
+        })
+
         binding.continueButton.setOnClickListener {
             if (!validateInputs()) return@setOnClickListener
             binding.continueButton.isEnabled = false
@@ -70,7 +92,11 @@ class ConfigureFragment : Fragment() {
             navigateToLogsFragment()
         }
 
-        binding.amazonStoreRadioId.setOnCheckedChangeListener { buttonView, isChecked ->
+        binding.proxyButton.setOnClickListener {
+            navigateToProxyFragment()
+        }
+
+        binding.amazonStoreRadioId.setOnCheckedChangeListener { _, isChecked ->
             // Disable observer mode options if Amazon
             binding.observerModeCheckbox.isEnabled = !isChecked
 
@@ -144,6 +170,11 @@ class ConfigureFragment : Fragment() {
 
     private fun navigateToLogsFragment() {
         val directions = ConfigureFragmentDirections.actionConfigureFragmentToLogsFragment()
+        findNavController().navigate(directions)
+    }
+
+    private fun navigateToProxyFragment() {
+        val directions = ConfigureFragmentDirections.actionConfigureFragmentToProxySettingsBottomSheetFragment()
         findNavController().navigate(directions)
     }
 

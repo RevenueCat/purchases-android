@@ -20,6 +20,9 @@
         <action
                 android:id="@+id/action_loginFragment_to_logsFragment"
                 app:destination="@id/logsFragment" />
+        <action
+                android:id="@+id/action_loginFragment_to_proxySettingsBottomSheetFragment"
+                app:destination="@id/proxySettingsBottomSheetFragment" />
     </fragment>
 
     <fragment
@@ -39,6 +42,9 @@
         <action
                 android:id="@+id/action_overviewFragment_to_logsFragment"
                 app:destination="@id/logsFragment" />
+        <action
+                android:id="@+id/action_overviewFragment_to_proxySettingsBottomSheetFragment"
+                app:destination="@id/proxySettingsBottomSheetFragment" />
     </fragment>
 
     <fragment
@@ -68,11 +74,18 @@
         <action
                 android:id="@+id/action_configureFragment_to_logsFragment"
                 app:destination="@id/logsFragment" />
+        <action
+                android:id="@+id/action_configureFragment_to_proxySettingsBottomSheetFragment"
+                app:destination="@id/proxySettingsBottomSheetFragment" />
     </fragment>
     <fragment
             android:id="@+id/logsFragment"
             android:name="com.revenuecat.purchasetester.LogsFragment"
             android:label="fragment_logs"
             tools:layout="@layout/fragment_logs" />
+    <dialog
+            android:id="@+id/proxySettingsBottomSheetFragment"
+            android:name="com.revenuecat.purchasetester.proxysettings.ProxySettingsBottomSheetFragment"
+            android:label="ProxySettingsBottomSheetFragment" />
 
 </navigation>
