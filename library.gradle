@@ -1,7 +1,6 @@
 apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-parcelize'
-apply plugin: 'kover'
 
 android {
     compileSdkVersion compileVersion
@@ -43,3 +42,9 @@ android {
 }
 
 apply plugin: 'com.vanniktech.maven.publish'
+
+project.afterEvaluate {
+    // Remove afterEvaluate
+    // after https://github.com/Kotlin/kotlinx-kover/issues/362 is fixed
+    project.pluginManager.apply("org.jetbrains.kotlinx.kover")
+}
