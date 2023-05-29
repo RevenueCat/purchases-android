@@ -5,7 +5,7 @@ import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.DefaultDateProvider
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.caching.InMemoryCachedObject
-import com.revenuecat.purchases.common.caching.isStale
+import com.revenuecat.purchases.common.caching.isCacheStale
 import org.json.JSONObject
 
 class OfferingsCache(
@@ -36,7 +36,7 @@ class OfferingsCache(
 
     @Synchronized
     fun isOfferingsCacheStale(appInBackground: Boolean): Boolean {
-        return offeringsCachedObject.lastUpdatedAt.isStale(appInBackground, dateProvider)
+        return offeringsCachedObject.lastUpdatedAt.isCacheStale(appInBackground, dateProvider)
     }
 
     @Synchronized

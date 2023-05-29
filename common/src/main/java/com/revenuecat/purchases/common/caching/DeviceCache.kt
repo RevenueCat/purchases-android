@@ -153,7 +153,7 @@ open class DeviceCache(
 
     @Synchronized
     fun isCustomerInfoCacheStale(appUserID: String, appInBackground: Boolean) =
-        getCustomerInfoCachesLastUpdated(appUserID).isStale(appInBackground, dateProvider)
+        getCustomerInfoCachesLastUpdated(appUserID).isCacheStale(appInBackground, dateProvider)
 
     @Synchronized
     fun clearCustomerInfoCacheTimestamp(appUserID: String) {
@@ -306,7 +306,7 @@ open class DeviceCache(
 
     @Synchronized
     fun isProductEntitlementMappingCacheStale(): Boolean {
-        return getProductEntitlementMappingLastUpdated().isStale(
+        return getProductEntitlementMappingLastUpdated().isCacheStale(
             PRODUCT_ENTITLEMENT_MAPPING_CACHE_REFRESH_PERIOD,
             dateProvider
         )

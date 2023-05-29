@@ -14,7 +14,7 @@ import kotlin.time.Duration.Companion.minutes
 private val CACHE_REFRESH_PERIOD_IN_FOREGROUND = 5.minutes
 private val CACHE_REFRESH_PERIOD_IN_BACKGROUND = 25.hours
 
-internal fun Date?.isStale(appInBackground: Boolean, dateProvider: DateProvider = DefaultDateProvider()): Boolean {
+internal fun Date?.isCacheStale(appInBackground: Boolean, dateProvider: DateProvider = DefaultDateProvider()): Boolean {
     return this?.let {
         log(LogIntent.DEBUG, ReceiptStrings.CHECKING_IF_CACHE_STALE.format(appInBackground))
         val cacheDuration = when {
@@ -22,11 +22,11 @@ internal fun Date?.isStale(appInBackground: Boolean, dateProvider: DateProvider 
             else -> CACHE_REFRESH_PERIOD_IN_FOREGROUND
         }
 
-        isStale(cacheDuration, dateProvider)
+        isCacheStale(cacheDuration, dateProvider)
     } ?: true
 }
 
-internal fun Date?.isStale(cacheDuration: Duration, dateProvider: DateProvider = DefaultDateProvider()): Boolean {
+internal fun Date?.isCacheStale(cacheDuration: Duration, dateProvider: DateProvider = DefaultDateProvider()): Boolean {
     return this?.let { cacheLastUpdated ->
         (dateProvider.now.time - cacheLastUpdated.time).milliseconds >= cacheDuration
     } ?: true
