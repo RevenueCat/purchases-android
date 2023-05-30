@@ -51,6 +51,8 @@ assertJ = "org.assertj:assertj-core:3.22.0"
 
 billing = "com.android.billingclient:billing:5.1.0"
 
+detekt-formatting = "io.gitlab.arturbosch.detekt:detekt-formatting:1.20.0"
+
 kotlin-stdlib = { module = "org.jetbrains.kotlin:kotlin-stdlib", version.ref = "kotlin" }
 
 material = "com.google.android.material:material:1.6.0"
