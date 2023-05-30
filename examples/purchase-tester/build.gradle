@@ -1,17 +1,10 @@
-apply from: "$rootProject.projectDir/base-application.gradle"
-
-apply plugin: 'androidx.navigation.safeargs.kotlin'
-
-buildscript {
-    repositories {
-        google()
-        mavenCentral()
-    }
-    dependencies {
-        classpath 'androidx.navigation:navigation-safe-args-gradle-plugin:2.5.3'
-    }
+plugins {
+    alias libs.plugins.android.application
+    alias libs.plugins.kotlin.android
+    alias libs.plugins.androidx.navigation.safeargs
 }
 
+apply from: "$rootProject.projectDir/base-application.gradle"
 
 android {
     buildFeatures {

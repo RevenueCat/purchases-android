@@ -1,3 +1,8 @@
+plugins {
+    alias libs.plugins.android.application
+    alias libs.plugins.kotlin.android
+}
+
 apply from: "$rootProject.projectDir/base-application.gradle"
 
 android {
