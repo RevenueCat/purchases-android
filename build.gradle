@@ -1,23 +1,20 @@
 buildscript {
     ext.compileVersion = 31
     ext.minVersion = 14
-
-    repositories {
-        mavenCentral()
-        google()
-    }
-    dependencies {
-        classpath "com.vanniktech:gradle-maven-publish-plugin:0.22.0"
-        classpath 'com.android.tools.build:gradle:8.0.0'
-        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion"
-        classpath "org.jetbrains.dokka:dokka-gradle-plugin:1.8.10"
-        classpath "org.jetbrains.kotlinx:kover:0.6.1"
-    }
 }
 
 plugins {
-    id "io.gitlab.arturbosch.detekt" version "1.17.0-RC3"
-    id "com.savvasdalkitsis.module-dependency-graph" version "0.9"
+    alias libs.plugins.android.application apply false
+    alias libs.plugins.android.library apply false
+    alias libs.plugins.androidx.navigation.safeargs apply false
+    alias libs.plugins.dependencyGraph
+    alias libs.plugins.detekt
+    alias libs.plugins.dokka
+    alias libs.plugins.kotlin.android apply false
+    alias libs.plugins.kotlin.kapt apply false
+    alias libs.plugins.kotlin.parcelize apply false
+    alias libs.plugins.kover
+    alias libs.plugins.mavenPublish apply false
 }
 
 dependencies {
@@ -69,14 +66,10 @@ task detektAllBaseline(type: io.gitlab.arturbosch.detekt.DetektCreateBaselineTas
     exclude("**/test/**/*.kt")
 }
 
-apply plugin: 'org.jetbrains.dokka'
-
 tasks.dokkaHtmlMultiModule.configure {
     outputDirectory.set(file("docs/" + project.property("VERSION_NAME")))
     includes.from("README.md")
 }
-
-apply plugin: 'kover'
 
 koverMerged {
     enable()
