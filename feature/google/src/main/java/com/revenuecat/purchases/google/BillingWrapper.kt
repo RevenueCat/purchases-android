@@ -440,64 +440,66 @@ class BillingWrapper(
         onSuccess: (Map<String, StoreTransaction>) -> Unit,
         onError: (PurchasesError) -> Unit
     ) {
-        withConnectedClient {
-            log(LogIntent.DEBUG, RestoreStrings.QUERYING_PURCHASE)
+        executeRequestOnUIThread {
+            withConnectedClient {
+                log(LogIntent.DEBUG, RestoreStrings.QUERYING_PURCHASE)
 
-            val querySubsPurchasesParams = BillingClient.ProductType.SUBS.buildQueryPurchasesParams()
-            if (querySubsPurchasesParams == null) {
-                onError(
-                    PurchasesError(
-                        PurchasesErrorCode.PurchaseInvalidError,
-                        PurchaseStrings.INVALID_PRODUCT_TYPE.format("queryPurchases")
-                    )
-                )
-                return@withConnectedClient
-            }
-            this.queryPurchasesAsyncWithTracking(
-                BillingClient.ProductType.SUBS,
-                querySubsPurchasesParams
-            ) querySubPurchasesAsync@{ activeSubsResult, activeSubsPurchases ->
-
-                if (!activeSubsResult.isSuccessful()) {
-                    val purchasesError = activeSubsResult.responseCode.billingResponseToPurchasesError(
-                        RestoreStrings.QUERYING_SUBS_ERROR.format(activeSubsResult.toHumanReadableDescription())
-                    )
-                    onError(purchasesError)
-                    return@querySubPurchasesAsync
-                }
-
-                val mapOfActiveSubscriptions =
-                    activeSubsPurchases.toMapOfGooglePurchaseWrapper(BillingClient.ProductType.SUBS)
-
-                val queryInAppsPurchasesParams = BillingClient.ProductType.INAPP.buildQueryPurchasesParams()
-                if (queryInAppsPurchasesParams == null) {
+                val querySubsPurchasesParams = BillingClient.ProductType.SUBS.buildQueryPurchasesParams()
+                if (querySubsPurchasesParams == null) {
                     onError(
                         PurchasesError(
                             PurchasesErrorCode.PurchaseInvalidError,
                             PurchaseStrings.INVALID_PRODUCT_TYPE.format("queryPurchases")
                         )
                     )
-                    return@querySubPurchasesAsync
+                    return@withConnectedClient
                 }
-
                 this.queryPurchasesAsyncWithTracking(
-                    BillingClient.ProductType.INAPP,
-                    queryInAppsPurchasesParams
-                ) queryInAppsPurchasesAsync@{ unconsumedInAppsResult, unconsumedInAppsPurchases ->
+                    BillingClient.ProductType.SUBS,
+                    querySubsPurchasesParams
+                ) querySubPurchasesAsync@{ activeSubsResult, activeSubsPurchases ->
 
-                    if (!unconsumedInAppsResult.isSuccessful()) {
-                        val purchasesError =
-                            unconsumedInAppsResult.responseCode.billingResponseToPurchasesError(
-                                RestoreStrings.QUERYING_INAPP_ERROR.format(
-                                    unconsumedInAppsResult.toHumanReadableDescription()
-                                )
-                            )
+                    if (!activeSubsResult.isSuccessful()) {
+                        val purchasesError = activeSubsResult.responseCode.billingResponseToPurchasesError(
+                            RestoreStrings.QUERYING_SUBS_ERROR.format(activeSubsResult.toHumanReadableDescription())
+                        )
                         onError(purchasesError)
-                        return@queryInAppsPurchasesAsync
+                        return@querySubPurchasesAsync
                     }
-                    val mapOfUnconsumedInApps =
-                        unconsumedInAppsPurchases.toMapOfGooglePurchaseWrapper(BillingClient.ProductType.INAPP)
-                    onSuccess(mapOfActiveSubscriptions + mapOfUnconsumedInApps)
+
+                    val mapOfActiveSubscriptions =
+                        activeSubsPurchases.toMapOfGooglePurchaseWrapper(BillingClient.ProductType.SUBS)
+
+                    val queryInAppsPurchasesParams = BillingClient.ProductType.INAPP.buildQueryPurchasesParams()
+                    if (queryInAppsPurchasesParams == null) {
+                        onError(
+                            PurchasesError(
+                                PurchasesErrorCode.PurchaseInvalidError,
+                                PurchaseStrings.INVALID_PRODUCT_TYPE.format("queryPurchases")
+                            )
+                        )
+                        return@querySubPurchasesAsync
+                    }
+
+                    this.queryPurchasesAsyncWithTracking(
+                        BillingClient.ProductType.INAPP,
+                        queryInAppsPurchasesParams
+                    ) queryInAppsPurchasesAsync@{ unconsumedInAppsResult, unconsumedInAppsPurchases ->
+
+                        if (!unconsumedInAppsResult.isSuccessful()) {
+                            val purchasesError =
+                                unconsumedInAppsResult.responseCode.billingResponseToPurchasesError(
+                                    RestoreStrings.QUERYING_INAPP_ERROR.format(
+                                        unconsumedInAppsResult.toHumanReadableDescription()
+                                    )
+                                )
+                            onError(purchasesError)
+                            return@queryInAppsPurchasesAsync
+                        }
+                        val mapOfUnconsumedInApps =
+                            unconsumedInAppsPurchases.toMapOfGooglePurchaseWrapper(BillingClient.ProductType.INAPP)
+                        onSuccess(mapOfActiveSubscriptions + mapOfUnconsumedInApps)
+                    }
                 }
             }
         }
