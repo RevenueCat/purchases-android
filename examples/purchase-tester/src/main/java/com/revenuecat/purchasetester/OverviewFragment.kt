@@ -64,10 +64,9 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
         postponeEnterTransition()
         view.doOnPreDraw { startPostponedEnterTransition() }
 
-        (activity?.application as? MainApplication)?.addCustomerInfoListener { info ->
-            with(binding) {
-                viewModel?.customerInfo?.value = info
-            }
+        // This should be done in a ViewModel, but it's a test app ¯\_(ツ)_/¯
+        (activity?.application as? MainApplication)?.lastCustomerInfoLiveData?.observe(viewLifecycleOwner) {
+            viewModel.customerInfo.value = it
         }
 
         Purchases.sharedInstance.getCustomerInfoWith(::showError) { info ->

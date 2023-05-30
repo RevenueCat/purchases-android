@@ -8,6 +8,8 @@ import android.content.Context
 import android.util.Log
 import android.widget.Toast
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.LogLevel
@@ -19,8 +21,10 @@ class MainApplication : Application(), UpdatedCustomerInfoListener {
 
     val logHandler = TesterLogHandler(this)
 
-    private val customerInfoListeners: MutableSet<UpdatedCustomerInfoListener> = mutableSetOf()
-    private var lastCustomerInfo: CustomerInfo? = null
+    // This should live in a repository, but for the sake of simplicity we'll keep it here
+    val lastCustomerInfoLiveData: LiveData<CustomerInfo?>
+        get() = lastCustomerInfoMutableLiveData
+    private var lastCustomerInfoMutableLiveData = MutableLiveData<CustomerInfo?>(null)
 
     override fun onCreate() {
         super.onCreate()
@@ -30,22 +34,14 @@ class MainApplication : Application(), UpdatedCustomerInfoListener {
         Purchases.logHandler = logHandler
     }
 
-    @Synchronized
     override fun onReceived(customerInfo: CustomerInfo) {
-        lastCustomerInfo = customerInfo
+        lastCustomerInfoMutableLiveData.postValue(customerInfo)
         val message = "CustomerInfoListener received update at ${customerInfo.requestDate}"
         Toast.makeText(this,
             message,
             Toast.LENGTH_SHORT
         ).show()
         Log.d("CustomerInfoListener", "$message: $customerInfo")
-        customerInfoListeners.forEach { it.onReceived(customerInfo) }
-    }
-
-    @Synchronized
-    fun addCustomerInfoListener(listener: UpdatedCustomerInfoListener) {
-        lastCustomerInfo?.let { listener.onReceived(it) }
-        customerInfoListeners.add(listener)
     }
 }
 
