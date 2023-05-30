@@ -30,6 +30,7 @@ class MainApplication : Application(), UpdatedCustomerInfoListener {
         Purchases.logHandler = logHandler
     }
 
+    @Synchronized
     override fun onReceived(customerInfo: CustomerInfo) {
         lastCustomerInfo = customerInfo
         val message = "CustomerInfoListener received update at ${customerInfo.requestDate}"
@@ -41,6 +42,7 @@ class MainApplication : Application(), UpdatedCustomerInfoListener {
         customerInfoListeners.forEach { it.onReceived(customerInfo) }
     }
 
+    @Synchronized
     fun addCustomerInfoListener(listener: UpdatedCustomerInfoListener) {
         lastCustomerInfo?.let { listener.onReceived(it) }
         customerInfoListeners.add(listener)
