@@ -5,25 +5,23 @@ android {
 
 dependencies {
     implementation fileTree(dir: "libs", include: ["*.jar"])
-
     implementation project(":common")
     implementation project(":public")
     implementation project(":strings")
     implementation project(":utils")
 
-    implementation 'com.google.android.gms:play-services-ads-identifier:17.0.1'
-    implementation "androidx.core:core-ktx:$androidxCoreVersion"
-    implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
-    implementation "com.android.billingclient:billing:$billingVersion"
+    implementation libs.androidx.core
+    implementation libs.billing
+    implementation libs.kotlin.stdlib
+    implementation libs.playServices.ads.identifier
 
     testImplementation project(":test-utils")
-    testImplementation "androidx.test:core:$testLibrariesVersion"
-    testImplementation "androidx.test:runner:$testLibrariesVersion"
-    testImplementation "androidx.test:rules:$testLibrariesVersion"
-    testImplementation "androidx.test.ext:junit:$testJUnitVersion"
-    testImplementation "org.robolectric:robolectric:$robolectricVersion"
-    testImplementation "io.mockk:mockk:$mockkVersion"
-    testImplementation "org.assertj:assertj-core:$assertJVersion"
-    testImplementation 'com.google.android.gms:play-services-ads-identifier:17.0.1'
-
+    testImplementation libs.androidx.test.core
+    testImplementation libs.androidx.test.junit
+    testImplementation libs.androidx.test.rules
+    testImplementation libs.androidx.test.runner
+    testImplementation libs.assertJ
+    testImplementation libs.mockk
+    testImplementation libs.robolectric
+    testImplementation libs.playServices.ads.identifier
 }
