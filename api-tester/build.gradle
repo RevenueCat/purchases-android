@@ -13,6 +13,7 @@ android {
 dependencies {
     implementation project(path: ':public')
     implementation project(path: ':purchases')
-    implementation "androidx.annotation:annotation:$annotationVersion"
     implementation project(path: ':feature:amazon')
+
+    implementation libs.androidx.annotation
 }
