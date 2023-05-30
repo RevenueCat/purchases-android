@@ -1,6 +1,13 @@
+plugins {
+    alias libs.plugins.android.library
+    alias libs.plugins.dokka
+    alias libs.plugins.kotlin.android
+    alias libs.plugins.kotlin.kapt
+    alias libs.plugins.kover
+    alias libs.plugins.mavenPublish
+}
+
 apply from: "$rootProject.projectDir/library.gradle"
-apply plugin: 'kotlin-kapt'
-apply plugin: 'org.jetbrains.dokka'
 
 android {
     namespace 'com.revenuecat.purchases.api'
