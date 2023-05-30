@@ -3,6 +3,7 @@ package com.revenuecat.purchasetester
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -63,10 +64,14 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
         postponeEnterTransition()
         view.doOnPreDraw { startPostponedEnterTransition() }
 
-        Purchases.sharedInstance.getCustomerInfoWith(::showError) { info ->
+        (activity?.application as? MainApplication)?.addCustomerInfoListener { info ->
             with(binding) {
                 viewModel?.customerInfo?.value = info
             }
+        }
+
+        Purchases.sharedInstance.getCustomerInfoWith(::showError) { info ->
+            Log.i("PurchaseTester", "Get Customer info returned Customer info: $info")
         }
 
         Purchases.sharedInstance.getOfferingsWith(::showError, ::populateOfferings)

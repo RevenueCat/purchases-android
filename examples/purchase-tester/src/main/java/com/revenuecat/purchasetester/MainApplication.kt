@@ -19,6 +19,9 @@ class MainApplication : Application(), UpdatedCustomerInfoListener {
 
     val logHandler = TesterLogHandler(this)
 
+    private val customerInfoListeners: MutableSet<UpdatedCustomerInfoListener> = mutableSetOf()
+    private var lastCustomerInfo: CustomerInfo? = null
+
     override fun onCreate() {
         super.onCreate()
 
@@ -28,12 +31,19 @@ class MainApplication : Application(), UpdatedCustomerInfoListener {
     }
 
     override fun onReceived(customerInfo: CustomerInfo) {
+        lastCustomerInfo = customerInfo
         val message = "CustomerInfoListener received update at ${customerInfo.requestDate}"
         Toast.makeText(this,
             message,
             Toast.LENGTH_SHORT
         ).show()
         Log.d("CustomerInfoListener", "$message: $customerInfo")
+        customerInfoListeners.forEach { it.onReceived(customerInfo) }
+    }
+
+    fun addCustomerInfoListener(listener: UpdatedCustomerInfoListener) {
+        lastCustomerInfo?.let { listener.onReceived(it) }
+        customerInfoListeners.add(listener)
     }
 }
 
