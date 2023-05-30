@@ -1218,6 +1218,45 @@ class BillingWrapperTest {
     }
 
     @Test
+    fun `defers query purchases if client not connected`() {
+        every { mockClient.isReady } returns false
+
+        var purchasesByHashedToken: Map<String, StoreTransaction>? = null
+        wrapper.queryPurchases(
+            appUserID = "appUserID",
+            onSuccess = {
+                purchasesByHashedToken = it
+            },
+            onError = {
+                fail("should be a success)")
+            }
+        )
+
+        assertThat(purchasesByHashedToken).isNull()
+
+        verify(exactly = 0) {
+            mockClient.queryPurchasesAsync(any<QueryPurchasesParams>(), any())
+        }
+
+        mockClient.mockQueryPurchasesAsync(
+            billingClientOKResult,
+            billingClientOKResult,
+            emptyList(),
+            emptyList()
+        )
+
+        every { mockClient.isReady } returns true
+
+        billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
+
+        verify(exactly = 2) {
+            mockClient.queryPurchasesAsync(any<QueryPurchasesParams>(), any())
+        }
+
+        assertThat(purchasesByHashedToken).isNotNull
+    }
+
+    @Test
     fun `when querying INAPPs result is created properly`() {
         val token = "token"
         val type = ProductType.INAPP
