@@ -9,9 +9,10 @@ dependencies {
     implementation project(":public")
     implementation project(":feature:google")
     implementation project(":utils")
-    implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
-    implementation "com.android.billingclient:billing:$billingVersion"
-    implementation "org.assertj:assertj-core:$assertJVersion"
-    implementation "io.mockk:mockk:$mockkVersion"
-    implementation "androidx.test.ext:junit:$testJUnitVersion"
+
+    implementation libs.androidx.test.junit
+    implementation libs.assertJ
+    implementation libs.billing
+    implementation libs.kotlin.stdlib
+    implementation libs.mockk
 }
