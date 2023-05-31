@@ -28,14 +28,20 @@ class CoroutinesTest : BasePurchasesTest() {
                 any(),
             )
         }
-        Assertions.assertThat(result is Result.Success).isTrue
+        Assertions.assertThat(result).isNotNull
     }
 
     @Test
     fun `retrieve customer info - Error`() = runTest {
         mockCustomerInfoHelper(PurchasesError(PurchasesErrorCode.CustomerInfoError, "Customer info error"))
 
-        val result = purchases.awaitCustomerInfo()
+        var result: CustomerInfo? = null
+        var exception: PurchasesException? = null
+        try {
+            result = purchases.awaitCustomerInfo()
+        } catch (e: PurchasesException) {
+            exception = e
+        }
 
         verify(exactly = 1) {
             mockCustomerInfoHelper.retrieveCustomerInfo(
@@ -45,16 +51,23 @@ class CoroutinesTest : BasePurchasesTest() {
                 any(),
             )
         }
-        Assertions.assertThat(result is Result.Error).isTrue
+        Assertions.assertThat(result).isNull()
+        Assertions.assertThat(exception).isNotNull
     }
 
     @Test
     fun `retrieve customer info - CustomerInfoError`() = runTest {
         mockCustomerInfoHelper(PurchasesError(PurchasesErrorCode.CustomerInfoError, "Customer info error"))
 
-        val result = purchases.awaitCustomerInfo() as Result.Error
+        var exception: PurchasesException? = null
+        try {
+            purchases.awaitCustomerInfo()
+        } catch (e: PurchasesException) {
+            exception = e
+        }
 
-        Assertions.assertThat(result.value.code).isEqualTo(PurchasesErrorCode.CustomerInfoError)
+        Assertions.assertThat(exception).isNotNull
+        Assertions.assertThat(exception!!.code).isEqualTo(PurchasesErrorCode.CustomerInfoError)
     }
 
     // endregion

@@ -9,6 +9,7 @@ import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.EntitlementInfo
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.awaitCustomerInfo
 import com.revenuecat.purchases.restorePurchasesWith
 import kotlinx.coroutines.launch
@@ -85,9 +86,12 @@ class OverviewViewModel(private val interactionHandler: OverviewInteractionHandl
 
     fun retrieveCustomerInfo() {
         viewModelScope.launch {
-            when (val result = Purchases.sharedInstance.awaitCustomerInfo()) {
-                is Result.Success -> interactionHandler.customerInfo(result.value)
-                is Result.Error -> interactionHandler.customerInfoError(result.value)
+            try {
+                Purchases.sharedInstance.awaitCustomerInfo().let {
+                    interactionHandler.customerInfo(it)
+                }
+            } catch (e: PurchasesException) {
+                interactionHandler.customerInfoError(e.error)
             }
         }
     }
