@@ -1,4 +1,4 @@
-package com.revenuecat.purchases
+package com.revenuecat.purchases.utils
 
 sealed class Result<out A, out B> {
     class Success<A>(val value: A) : Result<A, Nothing>()
