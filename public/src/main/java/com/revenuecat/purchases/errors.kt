@@ -34,7 +34,7 @@ enum class PurchasesErrorCode(val code: Int, val description: String) {
     MissingReceiptFileError(9, "The receipt is missing."),
     NetworkError(10, "Error performing request."),
     InvalidCredentialsError(11, "There was a credentials issue. Check the underlying error for more details."),
-    UnexpectedBackendResponseError(12, "Received malformed response from the backend."),
+    UnexpectedBackendResponseError(12, "Received unexpected response from the backend."),
     InvalidAppUserIdError(14, "The app user id is not valid."),
     OperationAlreadyInProgressError(15, "The operation is already in progress."),
     UnknownBackendError(16, "There was an unknown backend error."),
