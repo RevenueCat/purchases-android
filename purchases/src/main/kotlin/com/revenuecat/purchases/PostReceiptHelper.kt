@@ -8,10 +8,8 @@ import com.revenuecat.purchases.common.PostReceiptErrorHandlingBehavior
 import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
-import com.revenuecat.purchases.common.warnLog
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
-import com.revenuecat.purchases.strings.OfflineEntitlementsStrings
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.subscriberattributes.getAttributeErrors
 import com.revenuecat.purchases.subscriberattributes.toBackendMap
@@ -194,7 +192,6 @@ internal class PostReceiptHelper(
         offlineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(
             appUserID,
             onSuccess = { customerInfo ->
-                warnLog(OfflineEntitlementsStrings.USING_OFFLINE_ENTITLEMENTS_CUSTOMER_INFO)
                 customerInfoHelper.sendUpdatedCustomerInfoToDelegateIfChanged(customerInfo)
                 onSuccess(customerInfo)
             },

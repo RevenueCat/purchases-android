@@ -8,6 +8,7 @@ import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
+import com.revenuecat.purchases.common.warnLog
 import com.revenuecat.purchases.strings.OfflineEntitlementsStrings
 
 class OfflineEntitlementsManager(
@@ -69,7 +70,7 @@ class OfflineEntitlementsManager(
             appUserId,
             onSuccess = { customerInfo ->
                 synchronized(this@OfflineEntitlementsManager) {
-                    debugLog(OfflineEntitlementsStrings.UPDATING_OFFLINE_CUSTOMER_INFO_CACHE)
+                    warnLog(OfflineEntitlementsStrings.USING_OFFLINE_ENTITLEMENTS_CUSTOMER_INFO)
                     _offlineCustomerInfo = customerInfo
                     deviceCache.getCachedAppUserID()?.let { deviceCache.clearCustomerInfoCache(it) }
                     val callbacks = offlineCustomerInfoCallbackCache.remove(appUserId)
