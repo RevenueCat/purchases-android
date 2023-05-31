@@ -36,11 +36,11 @@ class CoroutinesTest : BasePurchasesTest() {
         mockCustomerInfoHelper(PurchasesError(PurchasesErrorCode.CustomerInfoError, "Customer info error"))
 
         var result: CustomerInfo? = null
-        var exception: PurchasesException? = null
-        try {
+        var exception: Throwable? = null
+        runCatching {
             result = purchases.awaitCustomerInfo()
-        } catch (e: PurchasesException) {
-            exception = e
+        }.onFailure {
+            exception = it
         }
 
         verify(exactly = 1) {
@@ -59,15 +59,17 @@ class CoroutinesTest : BasePurchasesTest() {
     fun `retrieve customer info - CustomerInfoError`() = runTest {
         mockCustomerInfoHelper(PurchasesError(PurchasesErrorCode.CustomerInfoError, "Customer info error"))
 
-        var exception: PurchasesException? = null
-        try {
+        var exception: Throwable? = null
+
+        runCatching {
             purchases.awaitCustomerInfo()
-        } catch (e: PurchasesException) {
-            exception = e
+        }.onFailure {
+            exception = it
         }
 
         Assertions.assertThat(exception).isNotNull
-        Assertions.assertThat(exception!!.code).isEqualTo(PurchasesErrorCode.CustomerInfoError)
+        Assertions.assertThat(exception).isInstanceOf(PurchasesException::class.java)
+        Assertions.assertThat((exception as PurchasesException).code).isEqualTo(PurchasesErrorCode.CustomerInfoError)
     }
 
     // endregion
