@@ -12,14 +12,13 @@ import org.robolectric.annotation.Config
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
-@Suppress("DEPRECATION")
 class CoroutinesTest : BasePurchasesTest() {
 
     @Test
     fun `retrieve customer info - Success`() = runTest {
         mockCustomerInfoHelper()
 
-        val result = purchases.getCustomerInfoSuspend()
+        val result = purchases.awaitCustomerInfo()
 
         verify(exactly = 1) {
             mockCustomerInfoHelper.retrieveCustomerInfo(
@@ -36,7 +35,7 @@ class CoroutinesTest : BasePurchasesTest() {
     fun `retrieve customer info - Error`() = runTest {
         mockCustomerInfoHelper(PurchasesError(PurchasesErrorCode.CustomerInfoError, "Customer info error"))
 
-        val result = purchases.getCustomerInfoSuspend()
+        val result = purchases.awaitCustomerInfo()
 
         verify(exactly = 1) {
             mockCustomerInfoHelper.retrieveCustomerInfo(
@@ -53,7 +52,7 @@ class CoroutinesTest : BasePurchasesTest() {
     fun `retrieve customer info - CustomerInfoError`() = runTest {
         mockCustomerInfoHelper(PurchasesError(PurchasesErrorCode.CustomerInfoError, "Customer info error"))
 
-        val result = purchases.getCustomerInfoSuspend() as Result.Error
+        val result = purchases.awaitCustomerInfo() as Result.Error
 
         Assertions.assertThat(result.value.code).isEqualTo(PurchasesErrorCode.CustomerInfoError)
     }
