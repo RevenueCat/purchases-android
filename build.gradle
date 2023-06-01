@@ -24,7 +24,7 @@ buildscript {
         classpath 'com.android.tools.build:gradle:8.0.0'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion"
         classpath "org.jetbrains.dokka:dokka-gradle-plugin:1.8.10"
-        classpath "org.jetbrains.kotlinx:kover:0.6.1"
+        classpath "org.jetbrains.kotlinx:kover-gradle-plugin:0.7.0"
     }
 }
 
@@ -87,16 +87,4 @@ apply plugin: 'org.jetbrains.dokka'
 tasks.dokkaHtmlMultiModule.configure {
     outputDirectory.set(file("docs/" + project.property("VERSION_NAME")))
     includes.from("README.md")
-}
-
-apply plugin: 'kover'
-
-koverMerged {
-    enable()
-    filters {
-        projects {
-            // Specifies the projects excluded from the merged tasks
-            excludes.addAll(":api-tester", ":integration-tests", ":examples:purchase-tester")
-        }
-    }
 }
