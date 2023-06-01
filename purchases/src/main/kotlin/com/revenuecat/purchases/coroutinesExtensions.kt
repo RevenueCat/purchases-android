@@ -1,6 +1,5 @@
 package com.revenuecat.purchases
 
-import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
@@ -13,15 +12,9 @@ import kotlin.coroutines.suspendCoroutine
  */
 suspend fun Purchases.awaitCustomerInfo(): CustomerInfo {
     return suspendCoroutine { continuation ->
-        val receiveCustomerInfoCallback = object : ReceiveCustomerInfoCallback {
-            override fun onReceived(customerInfo: CustomerInfo) {
-                continuation.resume(customerInfo)
-            }
-
-            override fun onError(error: PurchasesError) {
-                continuation.resumeWithException(PurchasesException(error))
-            }
-        }
-        getCustomerInfo(receiveCustomerInfoCallback)
+        getCustomerInfoWith(
+            onSuccess = continuation::resume,
+            onError = { continuation.resumeWithException(PurchasesException(it)) }
+        )
     }
 }
