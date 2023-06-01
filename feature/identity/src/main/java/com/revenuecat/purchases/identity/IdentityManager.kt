@@ -3,6 +3,7 @@ package com.revenuecat.purchases.identity
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.caching.DeviceCache
@@ -11,6 +12,7 @@ import com.revenuecat.purchases.common.infoLog
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.offerings.OfferingsCache
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
+import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import com.revenuecat.purchases.strings.IdentityStrings
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesCache
@@ -140,11 +142,9 @@ class IdentityManager(
 
     @Suppress("UnusedPrivateMember", "FunctionOnlyReturningConstant")
     private fun shouldInvalidateCustomerInfoAndETagCache(customerInfo: CustomerInfo?): Boolean {
-        // Trusted entitlements: Commented out until ready to be made public
-//        return customerInfo != null &&
-//             customerInfo.entitlements.verification == VerificationResult.NOT_REQUESTED &&
-//            backend.verificationMode != SignatureVerificationMode.Disabled
-        return false
+        return customerInfo != null &&
+            customerInfo.entitlements.verification == VerificationResult.NOT_REQUESTED &&
+            backend.verificationMode != SignatureVerificationMode.Disabled
     }
 
     private fun isUserIDAnonymous(appUserID: String): Boolean {

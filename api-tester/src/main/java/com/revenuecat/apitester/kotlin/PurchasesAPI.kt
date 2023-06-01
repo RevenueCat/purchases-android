@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.Context
 import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.EntitlementVerificationMode
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.LogHandler
 import com.revenuecat.purchases.LogLevel
@@ -235,8 +236,7 @@ private class PurchasesAPI {
             .observerMode(false)
             .service(executorService)
             .diagnosticsEnabled(true)
-            // Trusted entitlements: Commented out until ready to be made public
-            // .entitlementVerificationMode(EntitlementVerificationMode.INFORMATIONAL)
+            .entitlementVerificationMode(EntitlementVerificationMode.INFORMATIONAL)
             .build()
 
         Purchases.configure(build)

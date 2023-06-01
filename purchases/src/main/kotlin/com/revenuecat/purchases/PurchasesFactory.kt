@@ -83,11 +83,9 @@ internal class PurchasesFactory(
                 )
             }
 
-            // Trusted entitlements: Commented out until ready to be made public
-//            val signatureVerificationMode = SignatureVerificationMode.fromEntitlementVerificationMode(
-//                verificationMode
-//            )
-            val signatureVerificationMode = SignatureVerificationMode.Disabled
+            val signatureVerificationMode = SignatureVerificationMode.fromEntitlementVerificationMode(
+                verificationMode
+            )
             val signingManager = SigningManager(signatureVerificationMode)
 
             val httpClient = HTTPClient(appConfig, eTagManager, diagnosticsTracker, signingManager)

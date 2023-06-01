@@ -3,6 +3,7 @@ package com.revenuecat.purchases.common
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.networking.HTTPResult
+import com.revenuecat.purchases.common.verification.SignatureVerificationException
 import org.json.JSONException
 import java.io.IOException
 
@@ -46,10 +47,9 @@ fun Exception.toPurchasesError(): PurchasesError {
         is SecurityException -> {
             PurchasesError(PurchasesErrorCode.InsufficientPermissionsError, localizedMessage)
         }
-        // Trusted entitlements: Commented out until ready to be made public
-        // is SignatureVerificationException -> {
-        //     PurchasesError(PurchasesErrorCode.SignatureVerificationError, localizedMessage)
-        // }
+        is SignatureVerificationException -> {
+            PurchasesError(PurchasesErrorCode.SignatureVerificationError, localizedMessage)
+        }
         else -> PurchasesError(PurchasesErrorCode.UnknownError, localizedMessage)
     }
 }

@@ -12,6 +12,7 @@ import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesException
+import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.awaitCustomerInfo
 import com.revenuecat.purchases.restorePurchasesWith
 import kotlinx.coroutines.launch
@@ -33,8 +34,7 @@ class OverviewViewModel(private val interactionHandler: OverviewInteractionHandl
 
     val customerInfoJson = MediatorLiveData<String>()
 
-    // Trusted entitlements: Commented out until ready to be made public
-    // val verificationResult = MediatorLiveData<VerificationResult>()
+    val verificationResult = MediatorLiveData<VerificationResult>()
 
     init {
         activeEntitlements.addSource(customerInfo) { info ->
@@ -49,12 +49,11 @@ class OverviewViewModel(private val interactionHandler: OverviewInteractionHandl
             }
         }
 
-        // Trusted entitlements: Commented out until ready to be made public
-//        verificationResult.addSource(customerInfo) { info ->
-//            info?.entitlements?.verification?.let {
-//                verificationResult.value = it
-//            }
-//        }
+        verificationResult.addSource(customerInfo) { info ->
+            info?.entitlements?.verification?.let {
+                verificationResult.value = it
+            }
+        }
 
         customerInfoJson.addSource(customerInfo) { info ->
             customerInfoJson.value = info?.rawData?.toString(JSON_FORMATTER_INDENT_SPACES)

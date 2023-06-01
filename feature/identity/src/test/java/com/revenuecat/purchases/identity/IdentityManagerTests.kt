@@ -484,60 +484,59 @@ class IdentityManagerTests {
         verify(exactly = 1) { mockDeviceCache.cleanupOldAttributionData() }
     }
 
-    // Trusted entitlements: Commented out until ready to be made public
-//    @Test
-//    fun `we invalidate customer info and etag caches if verification is informational and cached customer info is not requested`() {
-//        val userId = "test-app-user-id"
-//        setupCustomerInfoCacheInvalidationTest(
-//            userId,
-//            VerificationResult.NOT_REQUESTED,
-//            SignatureVerificationMode.Informational(mockk()),
-//            true
-//        )
-//        identityManager.configure(userId)
-//        verify(exactly = 1) {
-//            mockDeviceCache.clearCustomerInfoCache(userId)
-//        }
-//        verify(exactly = 1) {
-//            mockBackend.clearCaches()
-//        }
-//    }
-//
-//    @Test
-//    fun `we invalidate customer info and etag caches if verification is enforced and cached customer info is not requested`() {
-//        val userId = "test-app-user-id"
-//        setupCustomerInfoCacheInvalidationTest(
-//            userId,
-//            VerificationResult.NOT_REQUESTED,
-//            SignatureVerificationMode.Enforced(mockk()),
-//            true
-//        )
-//        identityManager.configure(userId)
-//        verify(exactly = 1) {
-//            mockDeviceCache.clearCustomerInfoCache(userId)
-//        }
-//        verify(exactly = 1) {
-//            mockBackend.clearCaches()
-//        }
-//    }
-//
-//    @Test
-//    fun `we don't invalidate customer info and etag caches if verification is enabled and cached customer info is success`() {
-//        val userId = "test-app-user-id"
-//        setupCustomerInfoCacheInvalidationTest(
-//            userId,
-//            VerificationResult.VERIFIED,
-//            SignatureVerificationMode.Informational(mockk()),
-//            shouldClearCustomerInfoAndETagCaches = false
-//        )
-//        identityManager.configure(userId)
-//        verify(exactly = 0) {
-//            mockDeviceCache.clearCustomerInfoCache(userId)
-//        }
-//        verify(exactly = 0) {
-//            mockBackend.clearCaches()
-//        }
-//    }
+    @Test
+    fun `we invalidate customer info and etag caches if verification is informational and cached customer info is not requested`() {
+        val userId = "test-app-user-id"
+        setupCustomerInfoCacheInvalidationTest(
+            userId,
+            VerificationResult.NOT_REQUESTED,
+            SignatureVerificationMode.Informational(mockk()),
+            true
+        )
+        identityManager.configure(userId)
+        verify(exactly = 1) {
+            mockDeviceCache.clearCustomerInfoCache(userId)
+        }
+        verify(exactly = 1) {
+            mockBackend.clearCaches()
+        }
+    }
+
+    @Test
+    fun `we invalidate customer info and etag caches if verification is enforced and cached customer info is not requested`() {
+        val userId = "test-app-user-id"
+        setupCustomerInfoCacheInvalidationTest(
+            userId,
+            VerificationResult.NOT_REQUESTED,
+            SignatureVerificationMode.Enforced(mockk()),
+            true
+        )
+        identityManager.configure(userId)
+        verify(exactly = 1) {
+            mockDeviceCache.clearCustomerInfoCache(userId)
+        }
+        verify(exactly = 1) {
+            mockBackend.clearCaches()
+        }
+    }
+
+    @Test
+    fun `we don't invalidate customer info and etag caches if verification is enabled and cached customer info is success`() {
+        val userId = "test-app-user-id"
+        setupCustomerInfoCacheInvalidationTest(
+            userId,
+            VerificationResult.VERIFIED,
+            SignatureVerificationMode.Informational(mockk()),
+            shouldClearCustomerInfoAndETagCaches = false
+        )
+        identityManager.configure(userId)
+        verify(exactly = 0) {
+            mockDeviceCache.clearCustomerInfoCache(userId)
+        }
+        verify(exactly = 0) {
+            mockBackend.clearCaches()
+        }
+    }
 
     @Test
     fun `we don't invalidate customer info and etag caches if verification is disabled and cached customer info is not requested`() {
@@ -582,8 +581,7 @@ class IdentityManagerTests {
     ) {
         val mockCustomerInfo = mockk<CustomerInfo>().apply {
             every { entitlements } returns mockk<EntitlementInfos>().apply {
-                // Trusted entitlements: Commented out until ready to be made public
-                // every { verification } returns verificationResult
+                 every { verification } returns verificationResult
             }
         }
         every { mockDeviceCache.getCachedCustomerInfo(userId) } returns mockCustomerInfo

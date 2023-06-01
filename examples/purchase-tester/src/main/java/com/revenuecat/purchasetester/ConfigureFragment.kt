@@ -11,6 +11,7 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.revenuecat.purchases.EntitlementVerificationMode
 import com.revenuecat.purchases.LogLevel
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesConfiguration
@@ -41,9 +42,7 @@ class ConfigureFragment : Fragment() {
         binding.verificationOptionsInput.adapter = ArrayAdapter(
             requireContext(),
             android.R.layout.simple_spinner_item,
-            // Trusted entitlements: Commented out until ready to be made public
-            // EntitlementVerificationMode.values()
-            emptyList<String>(),
+            EntitlementVerificationMode.values(),
         )
         setupSupportedStoresRadioButtons()
 
@@ -113,11 +112,9 @@ class ConfigureFragment : Fragment() {
     private suspend fun configureSDK() {
         val apiKey = binding.apiKeyInput.text.toString()
         val proxyUrl = binding.proxyUrlInput.text?.toString() ?: ""
-        // Trusted entitlements: Commented out until ready to be made public
-        // val verificationModeIndex = binding.verificationOptionsInput.selectedItemPosition
+        val verificationModeIndex = binding.verificationOptionsInput.selectedItemPosition
 
-        // Trusted entitlements: Commented out until ready to be made public
-        // val entitlementVerificationMode = EntitlementVerificationMode.values()[verificationModeIndex]
+        val entitlementVerificationMode = EntitlementVerificationMode.values()[verificationModeIndex]
         val useAmazonStore = binding.storeRadioGroup.checkedRadioButtonId == R.id.amazon_store_radio_id
         val useObserverMode = binding.observerModeCheckbox.isChecked
 
@@ -134,8 +131,7 @@ class ConfigureFragment : Fragment() {
 
         val configuration = configurationBuilder
             .diagnosticsEnabled(true)
-            // Trusted entitlements: Commented out until ready to be made public
-            // .entitlementVerificationMode(entitlementVerificationMode)
+            .entitlementVerificationMode(entitlementVerificationMode)
             .observerMode(useObserverMode)
             .build()
         Purchases.configure(configuration)

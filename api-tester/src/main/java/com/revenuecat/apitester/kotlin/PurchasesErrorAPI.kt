@@ -39,8 +39,7 @@ private class PurchasesErrorAPI {
             PurchasesErrorCode.UnsupportedError,
             PurchasesErrorCode.EmptySubscriberAttributesError,
             PurchasesErrorCode.CustomerInfoError,
-            // Trusted entitlements: Commented out until ready to be made public
-            // PurchasesErrorCode.SignatureVerificationError
+            PurchasesErrorCode.SignatureVerificationError
             -> {}
         }.exhaustive
     }

@@ -13,8 +13,7 @@ open class PurchasesConfiguration(builder: Builder) {
     val store: Store
     val diagnosticsEnabled: Boolean
     val dangerousSettings: DangerousSettings
-    // Trusted entitlements: Commented out until ready to be made public
-    // val verificationMode: EntitlementVerificationMode
+    val verificationMode: EntitlementVerificationMode
 
     init {
         this.context = builder.context
@@ -24,8 +23,7 @@ open class PurchasesConfiguration(builder: Builder) {
         this.service = builder.service
         this.store = builder.store
         this.diagnosticsEnabled = builder.diagnosticsEnabled
-        // Trusted entitlements: Commented out until ready to be made public
-        // this.verificationMode = builder.verificationMode
+        this.verificationMode = builder.verificationMode
         this.dangerousSettings = builder.dangerousSettings
     }
 
@@ -49,9 +47,9 @@ open class PurchasesConfiguration(builder: Builder) {
         @set:JvmSynthetic @get:JvmSynthetic
         internal var diagnosticsEnabled: Boolean = false
 
-        // Trusted entitlements: Commented out until ready to be made public
-        // @set:JvmSynthetic @get:JvmSynthetic internal var verificationMode: EntitlementVerificationMode =
-        //    EntitlementVerificationMode.default
+        @set:JvmSynthetic @get:JvmSynthetic
+        internal var verificationMode: EntitlementVerificationMode = EntitlementVerificationMode.default
+
         @set:JvmSynthetic @get:JvmSynthetic
         internal var dangerousSettings: DangerousSettings = DangerousSettings()
 
@@ -81,24 +79,23 @@ open class PurchasesConfiguration(builder: Builder) {
             this.diagnosticsEnabled = diagnosticsEnabled
         }
 
-        // Trusted entitlements: Commented out until ready to be made public
-//        /**
-//         * **Feature in beta**. Defines how strict [EntitlementInfo] verification ought to be.
-//         *
-//         * When changing from [EntitlementVerificationMode.DISABLED] to [EntitlementVerificationMode.INFORMATIONAL],
-//         * the SDK will clear the CustomerInfo cache. This means users will need to connect to the internet to get
-//         * back their entitlements.
-//         *
-//         * The result of the verification can be obtained from [EntitlementInfos.verification] or
-//         * [EntitlementInfo.verification].
-//         *
-//         * This feature is currently in beta and the behavior may change.
-//         *
-//         * Default mode is [EntitlementVerificationMode.DISABLED].
-//         */
-//         fun entitlementVerificationMode(entitlementVerificationMode: EntitlementVerificationMode) = apply {
-//             this.verificationMode = entitlementVerificationMode
-//         }
+        /**
+         * **Feature in beta**. Defines how strict [EntitlementInfo] verification ought to be.
+         *
+         * When changing from [EntitlementVerificationMode.DISABLED] to [EntitlementVerificationMode.INFORMATIONAL],
+         * the SDK will clear the CustomerInfo cache. This means users will need to connect to the internet to get
+         * back their entitlements.
+         *
+         * The result of the verification can be obtained from [EntitlementInfos.verification] or
+         * [EntitlementInfo.verification].
+         *
+         * This feature is currently in beta and the behavior may change.
+         *
+         * Default mode is [EntitlementVerificationMode.DISABLED].
+         */
+         fun entitlementVerificationMode(entitlementVerificationMode: EntitlementVerificationMode) = apply {
+             this.verificationMode = entitlementVerificationMode
+         }
 
         /**
          * Only use a Dangerous Setting if suggested by RevenueCat support team.

@@ -4,6 +4,7 @@ import com.revenuecat.purchases.EntitlementInfo
 import com.revenuecat.purchases.OwnershipType
 import com.revenuecat.purchases.PeriodType
 import com.revenuecat.purchases.Store
+import com.revenuecat.purchases.VerificationResult
 import org.json.JSONObject
 import java.util.Date
 
@@ -25,8 +26,7 @@ private class EntitlementInfoAPI {
             val unsubscribeDetectedAt: Date? = unsubscribeDetectedAt
             val billingIssueDetectedAt: Date? = billingIssueDetectedAt
             val ownershipType: OwnershipType = ownershipType
-            // Trusted entitlements: Commented out until ready to be made public
-            // val verification: VerificationResult = verification
+            val verification: VerificationResult = verification
         }
     }
 
@@ -46,8 +46,7 @@ private class EntitlementInfoAPI {
         billingIssueDetectedAt: Date?,
         ownershipType: OwnershipType,
         jsonObject: JSONObject,
-        // Trusted entitlements: Commented out until ready to be made public
-        // verification: VerificationResult
+        verification: VerificationResult
     ) {
         val entitlementInfo = EntitlementInfo(
             identifier = identifier,
@@ -65,8 +64,7 @@ private class EntitlementInfoAPI {
             billingIssueDetectedAt = billingIssueDetectedAt,
             ownershipType = ownershipType,
             jsonObject = jsonObject,
-            // Trusted entitlements: Commented out until ready to be made public
-            // verification = verification
+            verification = verification
         )
         val entitlementInfo2 = EntitlementInfo(
             identifier = identifier,
