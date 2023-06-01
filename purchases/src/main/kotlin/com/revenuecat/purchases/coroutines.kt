@@ -6,7 +6,7 @@ import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
 
 /**
- * Get latest available purchaser info.
+ * Get latest available customer info.
  * Coroutine friendly version of [Purchases.getCustomerInfo].
  *
  * @return The [CustomerInfo] or a [PurchasesException] with the [PurchasesError]

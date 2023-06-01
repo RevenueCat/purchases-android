@@ -672,7 +672,7 @@ class Purchases internal constructor(
     }
 
     /**
-     * Get latest available purchaser info.
+     * Get latest available customer info.
      * @param callback A listener called when purchaser info is available and not stale.
      * Called immediately if purchaser info is cached. Purchaser info can be null if an error occurred.
      */
@@ -683,7 +683,7 @@ class Purchases internal constructor(
     }
 
     /**
-     * Get latest available purchaser info.
+     * Get latest available customer info.
      * @param fetchPolicy Specifies cache behavior for customer info retrieval
      * @param callback A listener called when purchaser info is available and not stale.
      * Purchaser info can be null if an error occurred.
