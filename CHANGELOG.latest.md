@@ -1,15 +1,16 @@
 ### New Features
-* Support DEFERRED mode (#985) via swehner (@swehner)
-* Add completion callback to syncPurchases API (#1002) via Toni Rico (@tonidero)
+* Offline entitlements support (#1030) via Toni Rico (@tonidero)
 ### Bugfixes
-* Workaround bug in android 4 for JSON objects with List<String> (#942) via Andy Boedo (@aboedo)
+* Fix billing connection error when querying purchases early in the process lifetime (#1032) via Toni Rico (@tonidero)
+### Performance Improvements
+* Perform product entitlement mapping request after more critical requests (#1017) via Toni Rico (@tonidero)
 ### Dependency Updates
-* Bump fastlane-plugin-revenuecat_internal from `fe45299` to `13773d2` (#1015) via dependabot[bot] (@dependabot[bot])
+* Bump fastlane from 2.212.2 to 2.213.0 (#1024) via dependabot[bot] (@dependabot[bot])
 ### Other Changes
-* Bump dokka to 1.8.10 to support Gradle 8 (#1009) via Toni Rico (@tonidero)
-* Disable offline entitlements temporarily (#1023) via Toni Rico (@tonidero)
-* Fix integration tests in CI (#1019) via Toni Rico (@tonidero)
-* Add offline entitlements integration tests (#1006) via Toni Rico (@tonidero)
-* Disable offline entitlements in observer mode (#1014) via Toni Rico (@tonidero)
-* Extracts setup and teardown to BasePurchasesTest (#1011) via Cesar de la Vega (@vegaro)
-* Support forcing server errors for tests (#1008) via Toni Rico (@tonidero)
+* Get offerings response from disk cache if available (#1029) via Toni Rico (@tonidero)
+* Improve offline entitlements logs to mention limitations of this mode (#1039) via Toni Rico (@tonidero)
+* Improve error message when backend returns internal error code (#1038) via Toni Rico (@tonidero)
+* PurchaseTester: Add new UI to configure internal proxy behavior (#1016) via Toni Rico (@tonidero)
+* Updated readme to include links to migration guides (#1021) via Marcos Castany (@mcastany)
+* Store offerings response in SharedPreferences (#1028) via Toni Rico (@tonidero)
+* Refactor offerings code out of Purchases (#1027) via Toni Rico (@tonidero)
