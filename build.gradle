@@ -14,7 +14,7 @@ buildscript {
     ext.androidxCoreVersion = "1.8.0"
     ext.mockwebserverVersion = "4.2.0"
     ext.tinkVersion = "1.8.0"
-    ext.coroutinesVersion = "1.7.1"
+    ext.coroutinesVersion = "1.6.4"
 
     repositories {
         mavenCentral()
