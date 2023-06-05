@@ -237,7 +237,11 @@ fun stubPricingPhase(
     billingPeriod,
     recurrenceMode.toRecurrenceMode(),
     billingCycleCount,
-    Price(if (price == 0.0) "Free" else "${'$'}$price", price.times(MICROS_MULTIPLIER).toLong(), priceCurrencyCodeValue),
+    Price(
+        if (price == 0.0) "Free" else "${'$'}$price",
+        price.times(MICROS_MULTIPLIER).toLong(),
+        priceCurrencyCodeValue,
+    ),
 )
 
 fun stubOfferings(storeProduct: StoreProduct): Pair<StoreProduct, Offerings> {

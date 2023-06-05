@@ -654,6 +654,7 @@ class BillingWrapper(
         }
     }
 
+    @Suppress("LongMethod")
     override fun onBillingSetupFinished(billingResult: BillingResult) {
         mainHandler.post {
             when (billingResult.responseCode) {
