@@ -299,7 +299,8 @@ class Purchases internal constructor(
                 )
             },
             { error ->
-                val logMessage = PurchaseStrings.SYNCING_PURCHASE_ERROR_DETAILS_USER_ID.format(receiptID, amazonUserID, error)
+                val logMessage =
+                    PurchaseStrings.SYNCING_PURCHASE_ERROR_DETAILS_USER_ID.format(receiptID, amazonUserID, error)
                 log(LogIntent.RC_ERROR, logMessage)
             }
         )
