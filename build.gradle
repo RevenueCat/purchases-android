@@ -59,7 +59,6 @@ task detektAll(type: io.gitlab.arturbosch.detekt.Detekt) {
     include("**/*.kts")
     exclude("**/build/**")
     exclude("**/test/**/*.kt")
-    exclude("examples/MagicWeather/**")
     baseline.set(file("$rootDir/config/detekt/detekt-baseline.xml"))
     reports {
         xml.enabled = true

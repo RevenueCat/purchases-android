@@ -13,7 +13,7 @@ class UserViewModel : ViewModel() {
     The latest CustomerInfo from RevenueCat.
 
     Updated by PurchasesDelegate whenever the Purchases SDK updates the cache
-    */
+     */
     val customerInfo: MutableLiveData<CustomerInfo> by lazy {
         MutableLiveData<CustomerInfo>().apply {
             value = null

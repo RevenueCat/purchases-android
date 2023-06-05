@@ -6,7 +6,7 @@ object Constants {
      App specific keys in the RevenueCat dashboard.
 
      Modify this property to reflect your Google Play app's API key.
-    */
+     */
     const val GOOGLE_API_KEY = "googl_api_key"
 
     /*
@@ -14,7 +14,7 @@ object Constants {
     API keys > App specific keys in the RevenueCat dashboard.
 
     Modify this property to reflect your Amazon App Store app's API key.
-    */
+     */
     const val AMAZON_API_KEY = "amzn_api_key"
 
     /*
