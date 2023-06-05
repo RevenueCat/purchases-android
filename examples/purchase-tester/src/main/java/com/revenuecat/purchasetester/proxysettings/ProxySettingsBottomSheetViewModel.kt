@@ -57,7 +57,7 @@ class ProxySettingsBottomSheetViewModel(
                 val inputStream = httpURLConnection.inputStream
                 val responseCode = httpURLConnection.responseCode
                 if (responseCode != OK_CODE) {
-                    throw IllegalStateException("Invalid response code while executing request to $url: $responseCode")
+                    error("Invalid response code while executing request to $url: $responseCode")
                 }
                 val responseBody = BufferedReader(InputStreamReader(inputStream)).readText()
                 Log.w("PurchaseTester", "Received response from proxy: $responseBody")
