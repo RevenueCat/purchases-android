@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.common.diagnostics
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.SyncDispatcher
 import com.revenuecat.purchases.common.networking.Endpoint
@@ -83,10 +84,11 @@ class DiagnosticsTrackerTest {
             "response_time_millis" to 1234L,
             "successful" to true,
             "response_code" to 200,
-            "etag_hit" to true
+            "etag_hit" to true,
+            "verification_result" to "NOT_REQUESTED"
         )
         every { diagnosticsFileHelper.appendEntryToDiagnosticsFile(any()) } just Runs
-        diagnosticsTracker.trackHttpRequestPerformed(Endpoint.PostReceipt, 1234L.milliseconds, true, 200, HTTPResult.Origin.CACHE)
+        diagnosticsTracker.trackHttpRequestPerformed(Endpoint.PostReceipt, 1234L.milliseconds, true, 200, HTTPResult.Origin.CACHE, VerificationResult.NOT_REQUESTED)
         verify(exactly = 1) {
             diagnosticsFileHelper.appendEntryToDiagnosticsFile(match { event ->
                 event is DiagnosticsEntry.Event &&
@@ -103,15 +105,37 @@ class DiagnosticsTrackerTest {
             "response_time_millis" to 1234L,
             "successful" to true,
             "response_code" to 200,
-            "etag_hit" to false
+            "etag_hit" to false,
+            "verification_result" to "NOT_REQUESTED"
         )
         every { diagnosticsFileHelper.appendEntryToDiagnosticsFile(any()) } just Runs
-        diagnosticsTracker.trackHttpRequestPerformed(Endpoint.GetOfferings("test id"), 1234L.milliseconds, true, 200, HTTPResult.Origin.BACKEND)
+        diagnosticsTracker.trackHttpRequestPerformed(Endpoint.GetOfferings("test id"), 1234L.milliseconds, true, 200, HTTPResult.Origin.BACKEND, VerificationResult.NOT_REQUESTED)
         verify(exactly = 1) {
             diagnosticsFileHelper.appendEntryToDiagnosticsFile(match { event ->
                 event is DiagnosticsEntry.Event &&
                     event.name == DiagnosticsEventName.HTTP_REQUEST_PERFORMED &&
                     event.properties == expectedProperties
+            })
+        }
+    }
+
+    @Test
+    fun `trackHttpRequestPerformed tracks counter`() {
+        val expectedProperties = mapOf(
+            "endpoint_name" to "post_receipt",
+            "successful" to "true",
+            "response_code" to "200",
+            "etag_hit" to "true",
+            "verification_result" to "NOT_REQUESTED"
+        )
+        every { diagnosticsFileHelper.appendEntryToDiagnosticsFile(any()) } just Runs
+        diagnosticsTracker.trackHttpRequestPerformed(Endpoint.PostReceipt, 1234L.milliseconds, true, 200, HTTPResult.Origin.CACHE, VerificationResult.NOT_REQUESTED)
+        verify(exactly = 1) {
+            diagnosticsFileHelper.appendEntryToDiagnosticsFile(match { event ->
+                event is DiagnosticsEntry.Counter &&
+                    event.name == DiagnosticsCounterName.HTTP_REQUEST_PERFORMED &&
+                    event.tags == expectedProperties &&
+                    event.value == 1
             })
         }
     }

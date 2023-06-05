@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.common.diagnostics
 
+import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
@@ -17,27 +18,50 @@ class DiagnosticsTracker(
     private val diagnosticsDispatcher: Dispatcher,
 ) {
     private companion object {
+        const val ENDPOINT_NAME_KEY = "endpoint_name"
+        const val SUCCESSFUL_KEY = "successful"
+        const val RESPONSE_CODE_KEY = "response_code"
+        const val ETAG_HIT_KEY = "etag_hit"
+        const val VERIFICATION_RESULT_KEY = "verification_result"
         const val RESPONSE_TIME_MILLIS_KEY = "response_time_millis"
         const val PRODUCT_TYPE_QUERIED_KEY = "product_type_queried"
     }
 
+    @Suppress("LongParameterList")
     fun trackHttpRequestPerformed(
         endpoint: Endpoint,
         responseTime: Duration,
         wasSuccessful: Boolean,
         responseCode: Int,
         resultOrigin: HTTPResult.Origin?,
+        verificationResult: VerificationResult,
     ) {
+        val eTagHit = resultOrigin == HTTPResult.Origin.CACHE
         trackEvent(
             DiagnosticsEntry.Event(
                 name = DiagnosticsEventName.HTTP_REQUEST_PERFORMED,
                 properties = mapOf(
-                    "endpoint_name" to endpoint.name,
+                    ENDPOINT_NAME_KEY to endpoint.name,
                     RESPONSE_TIME_MILLIS_KEY to responseTime.inWholeMilliseconds,
-                    "successful" to wasSuccessful,
-                    "response_code" to responseCode,
-                    "etag_hit" to (resultOrigin == HTTPResult.Origin.CACHE),
+                    SUCCESSFUL_KEY to wasSuccessful,
+                    RESPONSE_CODE_KEY to responseCode,
+                    ETAG_HIT_KEY to eTagHit,
+                    VERIFICATION_RESULT_KEY to verificationResult.name,
                 ),
+            ),
+        )
+        // We also send http requests as a counter to have more real-time data
+        trackEvent(
+            DiagnosticsEntry.Counter(
+                name = DiagnosticsCounterName.HTTP_REQUEST_PERFORMED,
+                tags = mapOf(
+                    ENDPOINT_NAME_KEY to endpoint.name,
+                    SUCCESSFUL_KEY to wasSuccessful.toString(),
+                    RESPONSE_CODE_KEY to responseCode.toString(),
+                    ETAG_HIT_KEY to eTagHit.toString(),
+                    VERIFICATION_RESULT_KEY to verificationResult.name,
+                ),
+                value = 1,
             ),
         )
     }
