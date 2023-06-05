@@ -137,7 +137,7 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
         subscriptionOption: SubscriptionOption,
         isUpgrade: Boolean,
         isPersonalizedPrice: Boolean,
-        ) {
+    ) {
         if (Purchases.sharedInstance.finishTransactions) {
             startPurchase(isUpgrade, isPersonalizedPrice, PurchaseParams.Builder(requireActivity(), subscriptionOption))
         } else {

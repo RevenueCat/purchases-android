@@ -8,6 +8,7 @@ private class UpgradeInfoAPI {
     fun check(upgradeInfo: UpgradeInfo) {
         with(upgradeInfo) {
             val oldProductId: String = oldSku
+
             @ProrationMode val prorationMode: Int? = prorationMode
 
             val constructedUpgradeInfo =

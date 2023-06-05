@@ -203,6 +203,7 @@ class SubscriberAttributesManager(
         var numberOfProcesses: Int = 0
             @Synchronized
             get
+
             @Synchronized
             set(value) {
                 if (field == value) return
@@ -228,8 +229,9 @@ class SubscriberAttributesManager(
 
         @Synchronized
         fun waitUntilIdle(completion: () -> Unit) {
-            if (numberOfProcesses == 0) completion()
-            else listeners.add { completion() }
+            if (numberOfProcesses == 0) {
+                completion()
+            } else listeners.add { completion() }
         }
     }
 }

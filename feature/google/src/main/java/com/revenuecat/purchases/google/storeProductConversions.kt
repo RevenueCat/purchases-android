@@ -52,7 +52,9 @@ private fun ProductDetails.createOneTimeProductPrice(): Price? {
                 it.priceCurrencyCode
             )
         }
-    } else null
+    } else {
+        null
+    }
 }
 
 @SuppressWarnings("NestedBlockDepth")
@@ -73,12 +75,14 @@ fun List<ProductDetails>.toStoreProducts(): List<StoreProduct> {
             productDetails.toStoreProduct(offerDetailsForBasePlan)?.let {
                 storeProducts.add(it)
             } ?: log(
-                LogIntent.RC_ERROR, PurchaseStrings.INVALID_PRODUCT_NO_PRICE.format(productDetails.productId)
+                LogIntent.RC_ERROR,
+                PurchaseStrings.INVALID_PRODUCT_NO_PRICE.format(productDetails.productId)
             )
         } ?: productDetails.toInAppStoreProduct()?.let {
             storeProducts.add(it)
         } ?: log(
-            LogIntent.RC_ERROR, PurchaseStrings.INVALID_PRODUCT_NO_PRICE.format(productDetails.productId)
+            LogIntent.RC_ERROR,
+            PurchaseStrings.INVALID_PRODUCT_NO_PRICE.format(productDetails.productId)
         )
     }
     return storeProducts

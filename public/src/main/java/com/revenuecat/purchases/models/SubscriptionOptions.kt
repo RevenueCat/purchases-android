@@ -4,7 +4,7 @@ import androidx.annotation.VisibleForTesting
 
 class SubscriptionOptions(
     private val subscriptionOptions: List<SubscriptionOption>
-    ) : List<SubscriptionOption> by subscriptionOptions {
+) : List<SubscriptionOption> by subscriptionOptions {
 
     private companion object {
         const val RC_IGNORE_OFFER_TAG = "rc-ignore-offer"

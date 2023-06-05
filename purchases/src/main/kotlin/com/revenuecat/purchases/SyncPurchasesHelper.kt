@@ -59,7 +59,8 @@ internal class SyncPurchasesHelper(
                             },
                             { error ->
                                 log(
-                                    LogIntent.RC_ERROR, PurchaseStrings.SYNCING_PURCHASES_ERROR_DETAILS
+                                    LogIntent.RC_ERROR,
+                                    PurchaseStrings.SYNCING_PURCHASES_ERROR_DETAILS
                                         .format(purchase, error)
                                 )
                                 errors.add(error)

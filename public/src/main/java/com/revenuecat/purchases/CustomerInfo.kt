@@ -189,7 +189,8 @@ data class CustomerInfo constructor(
 
     private fun activeIdentifiers(expirations: Map<String, Date?>): Set<String> {
         return expirations.filterValues {
-                expirationDate -> DateHelper.isDateActive(expirationDate, requestDate).isActive
+                expirationDate ->
+            DateHelper.isDateActive(expirationDate, requestDate).isActive
         }.keys
     }
 
@@ -201,14 +202,14 @@ data class CustomerInfo constructor(
      */
     override fun toString() =
         "<CustomerInfo\n " +
-                "latestExpirationDate: $latestExpirationDate\n" +
-                "activeSubscriptions:  ${activeSubscriptions.map {
-                    it to mapOf("expiresDate" to getExpirationDateForProductId(it))
-                }.toMap()},\n" +
-                "activeEntitlements: ${entitlements.active.map { it.toString() }},\n" +
-                "entitlements: ${entitlements.all.map { it.toString() }},\n" +
-                "nonSubscriptionTransactions: $nonSubscriptionTransactions,\n" +
-                "requestDate: $requestDate\n>"
+            "latestExpirationDate: $latestExpirationDate\n" +
+            "activeSubscriptions:  ${activeSubscriptions.map {
+                it to mapOf("expiresDate" to getExpirationDateForProductId(it))
+            }.toMap()},\n" +
+            "activeEntitlements: ${entitlements.active.map { it.toString() }},\n" +
+            "entitlements: ${entitlements.all.map { it.toString() }},\n" +
+            "nonSubscriptionTransactions: $nonSubscriptionTransactions,\n" +
+            "requestDate: $requestDate\n>"
 
     override fun equals(other: Any?) = other is CustomerInfo && ComparableData(this) == ComparableData(other)
     override fun hashCode() = ComparableData(this).hashCode()

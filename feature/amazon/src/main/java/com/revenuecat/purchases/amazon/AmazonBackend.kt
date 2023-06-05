@@ -7,6 +7,7 @@ import org.json.JSONObject
 
 /** @suppress */
 typealias PostAmazonReceiptCallback = Pair<(response: JSONObject) -> Unit, (PurchasesError) -> Unit>
+
 /** @suppress */
 typealias CallbackCacheKey = List<String>
 

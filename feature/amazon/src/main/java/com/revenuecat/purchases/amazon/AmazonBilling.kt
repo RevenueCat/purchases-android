@@ -34,8 +34,8 @@ import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.sha1
-import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.PurchaseState
+import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.strings.PurchaseStrings
@@ -144,7 +144,8 @@ internal class AmazonBilling constructor(
                 }
                 cache.cacheSkusByToken(mapOf(purchaseToken to termSku))
                 onSuccess(termSku)
-            }, onError = { error ->
+            },
+            onError = { error ->
                 onError(errorGettingReceiptInfo(error))
             }
         )
@@ -441,7 +442,8 @@ internal class AmazonBilling constructor(
                         cache.cacheSkusByToken(successMap)
                         onCompletion(successMap, errorMap)
                     }
-                }, onError = { error ->
+                },
+                onError = { error ->
                     log(LogIntent.AMAZON_ERROR, AmazonStrings.ERROR_FETCHING_RECEIPT_INFO.format(error))
 
                     errorMap[receipt.receiptId] = error
@@ -503,7 +505,9 @@ internal class AmazonBilling constructor(
         return if (observerMode) {
             log(LogIntent.AMAZON_WARNING, AmazonStrings.WARNING_AMAZON_OBSERVER_MODE)
             true
-        } else false
+        } else {
+            false
+        }
     }
 
     private val serviceRequests = ConcurrentLinkedQueue<(connectionError: PurchasesError?) -> Unit>()

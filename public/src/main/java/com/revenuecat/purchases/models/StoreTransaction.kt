@@ -143,18 +143,18 @@ private data class ComparableData(
         storeTransaction: StoreTransaction
     ) : this(
         orderId = storeTransaction.orderId,
-            productIds = storeTransaction.productIds,
-            type = storeTransaction.type,
-            purchaseTime = storeTransaction.purchaseTime,
-            purchaseToken = storeTransaction.purchaseToken,
-            purchaseState = storeTransaction.purchaseState,
-            isAutoRenewing = storeTransaction.isAutoRenewing,
-            signature = storeTransaction.signature,
-            presentedOfferingIdentifier = storeTransaction.presentedOfferingIdentifier,
-            storeUserID = storeTransaction.storeUserID,
-            purchaseType = storeTransaction.purchaseType,
-            marketplace = storeTransaction.marketplace,
-            subscriptionOptionId = storeTransaction.subscriptionOptionId
+        productIds = storeTransaction.productIds,
+        type = storeTransaction.type,
+        purchaseTime = storeTransaction.purchaseTime,
+        purchaseToken = storeTransaction.purchaseToken,
+        purchaseState = storeTransaction.purchaseState,
+        isAutoRenewing = storeTransaction.isAutoRenewing,
+        signature = storeTransaction.signature,
+        presentedOfferingIdentifier = storeTransaction.presentedOfferingIdentifier,
+        storeUserID = storeTransaction.storeUserID,
+        purchaseType = storeTransaction.purchaseType,
+        marketplace = storeTransaction.marketplace,
+        subscriptionOptionId = storeTransaction.subscriptionOptionId
     )
 }
 

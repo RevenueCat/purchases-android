@@ -37,8 +37,9 @@ class OfferingsManager(
             if (offeringsCache.isOfferingsCacheStale(appInBackground)) {
                 log(
                     LogIntent.DEBUG,
-                    if (appInBackground) OfferingStrings.OFFERINGS_STALE_UPDATING_IN_BACKGROUND
-                    else OfferingStrings.OFFERINGS_STALE_UPDATING_IN_FOREGROUND
+                    if (appInBackground) {
+                        OfferingStrings.OFFERINGS_STALE_UPDATING_IN_BACKGROUND
+                    } else OfferingStrings.OFFERINGS_STALE_UPDATING_IN_FOREGROUND
                 )
                 fetchAndCacheOfferings(appUserID, appInBackground)
                 log(LogIntent.RC_SUCCESS, OfferingStrings.OFFERINGS_UPDATED_FROM_NETWORK)
@@ -77,7 +78,8 @@ class OfferingsManager(
                 } else {
                     handleErrorFetchingOfferings(backendError, onError)
                 }
-            })
+            }
+        )
     }
 
     private fun createAndCacheOfferings(

@@ -4,7 +4,7 @@ object PurchaseStrings {
     const val ACKNOWLEDGING_PURCHASE = "Acknowledging purchase with token %s"
     const val ACKNOWLEDGING_PURCHASE_ERROR = "Error acknowledging purchase. Will retry next queryPurchases. %s"
     const val BILLING_CLIENT_NOT_CONNECTED = "Skipping updating pending purchase queue since " +
-            "BillingClient is not connected yet."
+        "BillingClient is not connected yet."
     const val CONSUMING_PURCHASE = "Consuming purchase with token %s"
     const val CONSUMING_PURCHASE_ERROR = "Error consuming purchase. Will retry next queryPurchases. %s"
     const val FOUND_EXISTING_PURCHASE = "Found existing purchase for SKU: %s"
@@ -13,8 +13,8 @@ object PurchaseStrings {
     const val OFFERING = " - offering: "
     const val PRODUCT_CHANGE_STARTED = "Product change started: %s"
     const val PURCHASE_FINISH_TRANSACTION_FALSE = "finishTransactions is set to false " +
-            "and a purchase has been started. Are you sure you want to do this? " +
-            "More info here: https://errors.rev.cat/finishTransactions"
+        "and a purchase has been started. Are you sure you want to do this? " +
+        "More info here: https://errors.rev.cat/finishTransactions"
     const val PURCHASE_SYNCED = "Purchase %s synced"
     const val PURCHASE_SYNCED_USER_ID = "Purchase %s synced %s"
     const val PURCHASING_PRODUCT = "Purchasing product: %s"

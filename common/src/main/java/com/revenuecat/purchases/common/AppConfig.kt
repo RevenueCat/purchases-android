@@ -3,8 +3,8 @@ package com.revenuecat.purchases.common
 import android.content.Context
 import com.revenuecat.purchases.DangerousSettings
 import com.revenuecat.purchases.Store
-import java.net.URL
 import com.revenuecat.purchases.strings.ConfigureStrings
+import java.net.URL
 
 @Suppress("LongParameterList")
 class AppConfig(

@@ -1,7 +1,7 @@
 package com.revenuecat.purchases.google
 
-import com.revenuecat.purchases.models.PurchaseState as RevenueCatPurchaseState
 import com.android.billingclient.api.Purchase.PurchaseState as GooglePurchaseState
+import com.revenuecat.purchases.models.PurchaseState as RevenueCatPurchaseState
 
 fun Int.toRevenueCatPurchaseState(): RevenueCatPurchaseState {
     return when (this) {

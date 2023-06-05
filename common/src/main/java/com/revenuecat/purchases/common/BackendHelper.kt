@@ -20,29 +20,32 @@ class BackendHelper(
         onError: (PurchasesError) -> Unit,
         onCompleted: (PurchasesError?, Int, JSONObject) -> Unit
     ) {
-        enqueue(object : Dispatcher.AsyncCall() {
-            override fun call(): HTTPResult {
-                return httpClient.performRequest(
-                    appConfig.baseURL,
-                    endpoint,
-                    body,
-                    authenticationHeaders
-                )
-            }
-
-            override fun onError(error: PurchasesError) {
-                onError(error)
-            }
-
-            override fun onCompletion(result: HTTPResult) {
-                val error = if (!result.isSuccessful()) {
-                    result.toPurchasesError().also { errorLog(it) }
-                } else {
-                    null
+        enqueue(
+            object : Dispatcher.AsyncCall() {
+                override fun call(): HTTPResult {
+                    return httpClient.performRequest(
+                        appConfig.baseURL,
+                        endpoint,
+                        body,
+                        authenticationHeaders
+                    )
                 }
-                onCompleted(error, result.responseCode, result.body)
-            }
-        }, dispatcher)
+
+                override fun onError(error: PurchasesError) {
+                    onError(error)
+                }
+
+                override fun onCompletion(result: HTTPResult) {
+                    val error = if (!result.isSuccessful()) {
+                        result.toPurchasesError().also { errorLog(it) }
+                    } else {
+                        null
+                    }
+                    onCompleted(error, result.responseCode, result.body)
+                }
+            },
+            dispatcher
+        )
     }
 
     fun enqueue(

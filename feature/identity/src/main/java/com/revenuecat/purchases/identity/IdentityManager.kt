@@ -55,10 +55,12 @@ class IdentityManager(
         onError: (PurchasesError) -> Unit
     ) {
         if (newAppUserID.isBlank()) {
-            onError(PurchasesError(
-                PurchasesErrorCode.InvalidAppUserIdError,
-                IdentityStrings.LOG_IN_ERROR_MISSING_APP_USER_ID
-            ).also { errorLog(it) })
+            onError(
+                PurchasesError(
+                    PurchasesErrorCode.InvalidAppUserIdError,
+                    IdentityStrings.LOG_IN_ERROR_MISSING_APP_USER_ID
+                ).also { errorLog(it) }
+            )
             return
         }
 

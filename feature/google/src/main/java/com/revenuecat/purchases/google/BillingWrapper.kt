@@ -46,8 +46,8 @@ import com.revenuecat.purchases.common.sha256
 import com.revenuecat.purchases.common.toHumanReadableDescription
 import com.revenuecat.purchases.models.GoogleProrationMode
 import com.revenuecat.purchases.models.GooglePurchasingData
-import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.PurchaseState
+import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.strings.BillingStrings
 import com.revenuecat.purchases.strings.OfferingStrings
@@ -176,11 +176,13 @@ class BillingWrapper(
                     ) { billingResult, productDetailsList ->
                         if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
                             log(
-                                LogIntent.DEBUG, OfferingStrings.FETCHING_PRODUCTS_FINISHED
+                                LogIntent.DEBUG,
+                                OfferingStrings.FETCHING_PRODUCTS_FINISHED
                                     .format(productIds.joinToString())
                             )
                             log(
-                                LogIntent.PURCHASE, OfferingStrings.RETRIEVED_PRODUCTS
+                                LogIntent.PURCHASE,
+                                OfferingStrings.RETRIEVED_PRODUCTS
                                     .format(productDetailsList.joinToString { it.toString() })
                             )
                             productDetailsList.takeUnless { it.isEmpty() }?.forEach {
@@ -191,7 +193,8 @@ class BillingWrapper(
                             onReceive(storeProducts)
                         } else {
                             log(
-                                LogIntent.GOOGLE_ERROR, OfferingStrings.FETCHING_PRODUCTS_ERROR
+                                LogIntent.GOOGLE_ERROR,
+                                OfferingStrings.FETCHING_PRODUCTS_ERROR
                                     .format(billingResult.toHumanReadableDescription())
                             )
                             onError(
@@ -242,7 +245,8 @@ class BillingWrapper(
 
         if (replaceProductInfo != null) {
             log(
-                LogIntent.PURCHASE, PurchaseStrings.UPGRADING_SKU
+                LogIntent.PURCHASE,
+                PurchaseStrings.UPGRADING_SKU
                     .format(replaceProductInfo.oldPurchase.productIds[0], googlePurchasingData.productId)
             )
         } else {
@@ -290,7 +294,8 @@ class BillingWrapper(
                 .takeIf { billingResult -> billingResult.responseCode != BillingClient.BillingResponseCode.OK }
                 ?.let { billingResult ->
                     log(
-                        LogIntent.GOOGLE_ERROR, BillingStrings.BILLING_INTENT_FAILED
+                        LogIntent.GOOGLE_ERROR,
+                        BillingStrings.BILLING_INTENT_FAILED
                             .format(billingResult.toHumanReadableDescription())
                     )
                 }
@@ -311,7 +316,8 @@ class BillingWrapper(
                         if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
                             purchaseHistoryRecordList.takeUnless { it.isNullOrEmpty() }?.forEach {
                                 log(
-                                    LogIntent.RC_PURCHASE_SUCCESS, RestoreStrings.PURCHASE_HISTORY_RETRIEVED
+                                    LogIntent.RC_PURCHASE_SUCCESS,
+                                    RestoreStrings.PURCHASE_HISTORY_RETRIEVED
                                         .format(it.toHumanReadableDescription())
                                 )
                             } ?: log(LogIntent.DEBUG, RestoreStrings.PURCHASE_HISTORY_EMPTY)
@@ -379,7 +385,8 @@ class BillingWrapper(
                     deviceCache.addSuccessfullyPostedToken(purchaseToken)
                 } else {
                     log(
-                        LogIntent.GOOGLE_ERROR, PurchaseStrings.CONSUMING_PURCHASE_ERROR
+                        LogIntent.GOOGLE_ERROR,
+                        PurchaseStrings.CONSUMING_PURCHASE_ERROR
                             .format(billingResult.toHumanReadableDescription())
                     )
                 }
@@ -390,7 +397,8 @@ class BillingWrapper(
                     deviceCache.addSuccessfullyPostedToken(purchaseToken)
                 } else {
                     log(
-                        LogIntent.GOOGLE_ERROR, PurchaseStrings.ACKNOWLEDGING_PURCHASE_ERROR
+                        LogIntent.GOOGLE_ERROR,
+                        PurchaseStrings.ACKNOWLEDGING_PURCHASE_ERROR
                             .format(billingResult.toHumanReadableDescription())
                     )
                 }
@@ -409,7 +417,8 @@ class BillingWrapper(
             if (connectionError == null) {
                 withConnectedClient {
                     consumeAsync(
-                        ConsumeParams.newBuilder().setPurchaseToken(token).build(), onConsumed
+                        ConsumeParams.newBuilder().setPurchaseToken(token).build(),
+                        onConsumed
                     )
                 }
             }
@@ -614,16 +623,18 @@ class BillingWrapper(
                 }
             }
         } else {
-            log(LogIntent.GOOGLE_ERROR, BillingStrings.BILLING_WRAPPER_PURCHASES_ERROR
-                .format(billingResult.toHumanReadableDescription()) +
-                "${
-                    notNullPurchasesList.takeUnless { it.isEmpty() }?.let { purchase ->
-                        "Purchases:" + purchase.joinToString(
-                            ", ",
-                            transform = { it.toHumanReadableDescription() }
-                        )
-                    }
-                }"
+            log(
+                LogIntent.GOOGLE_ERROR,
+                BillingStrings.BILLING_WRAPPER_PURCHASES_ERROR
+                    .format(billingResult.toHumanReadableDescription()) +
+                    "${
+                        notNullPurchasesList.takeUnless { it.isEmpty() }?.let { purchase ->
+                            "Purchases:" + purchase.joinToString(
+                                ", ",
+                                transform = { it.toHumanReadableDescription() }
+                            )
+                        }
+                    }"
             )
 
             var message = "Error updating purchases. ${billingResult.toHumanReadableDescription()}"
@@ -648,7 +659,8 @@ class BillingWrapper(
             when (billingResult.responseCode) {
                 BillingClient.BillingResponseCode.OK -> {
                     log(
-                        LogIntent.DEBUG, BillingStrings.BILLING_SERVICE_SETUP_FINISHED
+                        LogIntent.DEBUG,
+                        BillingStrings.BILLING_SERVICE_SETUP_FINISHED
                             .format(billingClient?.toString())
                     )
                     stateListener?.onConnected()
@@ -682,7 +694,8 @@ class BillingWrapper(
                 BillingClient.BillingResponseCode.USER_CANCELED,
                 BillingClient.BillingResponseCode.SERVICE_DISCONNECTED -> {
                     log(
-                        LogIntent.GOOGLE_WARNING, BillingStrings.BILLING_CLIENT_ERROR
+                        LogIntent.GOOGLE_WARNING,
+                        BillingStrings.BILLING_CLIENT_ERROR
                             .format(billingResult.toHumanReadableDescription())
                     )
                     retryBillingServiceConnectionWithExponentialBackoff()
@@ -691,7 +704,8 @@ class BillingWrapper(
                 BillingClient.BillingResponseCode.ITEM_ALREADY_OWNED,
                 BillingClient.BillingResponseCode.ITEM_NOT_OWNED -> {
                     log(
-                        LogIntent.GOOGLE_WARNING, BillingStrings.BILLING_CLIENT_ERROR
+                        LogIntent.GOOGLE_WARNING,
+                        BillingStrings.BILLING_CLIENT_ERROR
                             .format(billingResult.toHumanReadableDescription())
                     )
                 }
@@ -744,7 +758,8 @@ class BillingWrapper(
         completion: (storeTxn: StoreTransaction) -> Unit
     ) {
         log(
-            LogIntent.DEBUG, BillingStrings.BILLING_WRAPPER_PURCHASES_UPDATED
+            LogIntent.DEBUG,
+            BillingStrings.BILLING_WRAPPER_PURCHASES_UPDATED
                 .format(purchase.toHumanReadableDescription())
         )
 
