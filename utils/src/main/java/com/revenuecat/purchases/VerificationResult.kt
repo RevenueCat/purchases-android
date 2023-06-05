@@ -31,5 +31,5 @@ enum class VerificationResult {
     /**
      * Verification was performed on device.
      */
-    VERIFIED_ON_DEVICE
+    VERIFIED_ON_DEVICE,
 }

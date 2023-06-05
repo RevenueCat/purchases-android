@@ -59,7 +59,7 @@ class ProxySettingsBottomSheetFragment : BottomSheetDialogFragment() {
                 ProxyMode.OFF -> R.id.proxy_setting_disabled_radio_id
                 ProxyMode.ENTITLEMENT_OVERRIDE -> R.id.proxy_setting_override_entitlement_radio_id
                 ProxyMode.SERVER_DOWN -> R.id.proxy_setting_server_down_radio_id
-            }
+            },
         )
     }
 }

@@ -13,7 +13,7 @@ internal fun SubscriberAttributesCache.migrateSubscriberAttributesIfNeeded() {
 
 @Synchronized
 internal fun SubscriberAttributesCache.migrateSubscriberAttributes(
-    legacySubscriberAttributesForAppUserID: SubscriberAttributesPerAppUserIDMap
+    legacySubscriberAttributesForAppUserID: SubscriberAttributesPerAppUserIDMap,
 ) {
     val storedSubscriberAttributesForAll: SubscriberAttributesPerAppUserIDMap =
         getAllStoredSubscriberAttributes()

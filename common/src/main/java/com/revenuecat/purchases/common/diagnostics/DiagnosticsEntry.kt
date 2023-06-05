@@ -18,7 +18,7 @@ sealed class DiagnosticsEntry(val diagnosticType: String) {
         val name: DiagnosticsEventName,
         val properties: Map<String, Any>,
         val dateProvider: DateProvider = DefaultDateProvider(),
-        val dateTime: Date = dateProvider.now
+        val dateTime: Date = dateProvider.now,
     ) : DiagnosticsEntry("event") {
         private companion object {
             const val NAME_KEY = "name"
@@ -42,7 +42,7 @@ sealed class DiagnosticsEntry(val diagnosticType: String) {
     data class Counter(
         val name: DiagnosticsCounterName,
         val tags: Map<String, String>,
-        val value: Int
+        val value: Int,
     ) : DiagnosticsEntry("counter") {
         private companion object {
             const val NAME_KEY = "name"
@@ -66,7 +66,7 @@ sealed class DiagnosticsEntry(val diagnosticType: String) {
     data class Histogram(
         val name: String,
         val tags: Map<String, String>,
-        val values: List<Double>
+        val values: List<Double>,
     ) : DiagnosticsEntry("histogram") {
         private companion object {
             const val NAME_KEY = "name"

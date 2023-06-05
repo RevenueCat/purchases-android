@@ -15,20 +15,20 @@ import java.util.concurrent.TimeUnit
 class PurchasedProductsFetcher(
     private val deviceCache: DeviceCache,
     private val billing: BillingAbstract,
-    private val dateProvider: DateProvider = DefaultDateProvider()
+    private val dateProvider: DateProvider = DefaultDateProvider(),
 ) {
 
     fun queryActiveProducts(
         appUserID: String,
         onSuccess: (List<PurchasedProduct>) -> Unit,
-        onError: (PurchasesError) -> Unit
+        onError: (PurchasesError) -> Unit,
     ) {
         val productEntitlementMapping = deviceCache.getProductEntitlementMapping() ?: run {
             onError(
                 PurchasesError(
                     PurchasesErrorCode.CustomerInfoError,
-                    OfflineEntitlementsStrings.PRODUCT_ENTITLEMENT_MAPPING_REQUIRED
-                )
+                    OfflineEntitlementsStrings.PRODUCT_ENTITLEMENT_MAPPING_REQUIRED,
+                ),
             )
             return
         }
@@ -42,13 +42,13 @@ class PurchasedProductsFetcher(
                 }
                 onSuccess(purchasedProducts)
             },
-            onError
+            onError,
         )
     }
 
     private fun createPurchasedProduct(
         transaction: StoreTransaction,
-        productEntitlementMapping: ProductEntitlementMapping
+        productEntitlementMapping: ProductEntitlementMapping,
     ): PurchasedProduct {
         val expirationDate = getExpirationDate(transaction)
         val productIdentifier = transaction.productIds.first()
@@ -58,12 +58,12 @@ class PurchasedProductsFetcher(
             mapping?.basePlanId,
             transaction,
             mapping?.entitlements ?: emptyList(),
-            expirationDate
+            expirationDate,
         )
     }
 
     private fun getExpirationDate(
-        purchaseAssociatedToProduct: StoreTransaction
+        purchaseAssociatedToProduct: StoreTransaction,
     ): Date? {
         return if (purchaseAssociatedToProduct.type == ProductType.SUBS) {
             Date(dateProvider.now.time + TimeUnit.DAYS.toMillis(1))

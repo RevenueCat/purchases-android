@@ -6,14 +6,14 @@ import com.revenuecat.purchases.ProductType
 sealed class GooglePurchasingData : PurchasingData {
     data class InAppProduct(
         override val productId: String,
-        val productDetails: ProductDetails
+        val productDetails: ProductDetails,
     ) : GooglePurchasingData()
 
     data class Subscription(
         override val productId: String,
         val optionId: String,
         val productDetails: ProductDetails,
-        val token: String
+        val token: String,
     ) : GooglePurchasingData()
 
     override val productType: ProductType

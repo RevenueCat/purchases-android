@@ -10,7 +10,7 @@ private class CacheFetchPolicyAPI {
             CacheFetchPolicy.CACHE_ONLY,
             CacheFetchPolicy.FETCH_CURRENT,
             CacheFetchPolicy.CACHED_OR_FETCHED,
-            CacheFetchPolicy.NOT_STALE_CACHED_OR_CURRENT
+            CacheFetchPolicy.NOT_STALE_CACHED_OR_CURRENT,
             -> {}
         }.exhaustive
     }

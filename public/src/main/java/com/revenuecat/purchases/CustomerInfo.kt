@@ -49,7 +49,7 @@ data class CustomerInfo constructor(
     val originalAppUserId: String,
     val managementURL: Uri?,
     val originalPurchaseDate: Date?,
-    private val jsonObject: JSONObject
+    private val jsonObject: JSONObject,
 ) : Parcelable, RawDataContainer<JSONObject> {
 
     /**
@@ -69,7 +69,7 @@ data class CustomerInfo constructor(
     @IgnoredOnParcel
     @Deprecated(
         "Use allPurchasedProductIds instead",
-        ReplaceWith("allPurchasedProductIds")
+        ReplaceWith("allPurchasedProductIds"),
     )
     val allPurchasedSkus: Set<String> by lazy {
         this.nonSubscriptionTransactions.map { it.productIdentifier }.toSet() + allExpirationDatesByProduct.keys
@@ -122,7 +122,7 @@ data class CustomerInfo constructor(
      */
     @Deprecated(
         "Use getExpirationDateForProductId instead",
-        ReplaceWith("getExpirationDateForProductId")
+        ReplaceWith("getExpirationDateForProductId"),
     )
     fun getExpirationDateForSku(sku: String): Date? {
         return allExpirationDatesByProduct[sku]
@@ -147,7 +147,7 @@ data class CustomerInfo constructor(
      */
     @Deprecated(
         "Use getPurchaseDateForProductId instead",
-        ReplaceWith("getPurchaseDateForProductId")
+        ReplaceWith("getPurchaseDateForProductId"),
     )
     fun getPurchaseDateForSku(sku: String): Date? {
         return allPurchaseDatesByProduct[sku]
@@ -228,10 +228,10 @@ private data class ComparableData(
     val schemaVersion: Int,
     val firstSeen: Date,
     val originalAppUserId: String,
-    val originalPurchaseDate: Date?
+    val originalPurchaseDate: Date?,
 ) {
     constructor(
-        customerInfo: CustomerInfo
+        customerInfo: CustomerInfo,
     ) : this(
         entitlements = customerInfo.entitlements,
         allExpirationDatesByProduct = customerInfo.allExpirationDatesByProduct,
@@ -239,6 +239,6 @@ private data class ComparableData(
         schemaVersion = customerInfo.schemaVersion,
         firstSeen = customerInfo.firstSeen,
         originalAppUserId = customerInfo.originalAppUserId,
-        originalPurchaseDate = customerInfo.originalPurchaseDate
+        originalPurchaseDate = customerInfo.originalPurchaseDate,
     )
 }

@@ -10,7 +10,7 @@ typealias PurchasesErrorCallback = (PurchasesError) -> Unit
  */
 class PurchasesError(
     val code: PurchasesErrorCode,
-    val underlyingErrorMessage: String? = null
+    val underlyingErrorMessage: String? = null,
 ) {
     // Message explaining the error
     val message: String = code.description
@@ -42,7 +42,7 @@ enum class PurchasesErrorCode(val code: Int, val description: String) {
         17,
         "Apple Subscription Key is invalid or not present. " +
             "In order to provide subscription offers, you must first generate a subscription key. " +
-            "Please see https://docs.revenuecat.com/docs/ios-subscription-offers for more info."
+            "Please see https://docs.revenuecat.com/docs/ios-subscription-offers for more info.",
     ),
     IneligibleError(18, "The User is ineligible for that action."),
     InsufficientPermissionsError(19, "App does not have sufficient permissions to make purchases."),
@@ -53,7 +53,7 @@ enum class PurchasesErrorCode(val code: Int, val description: String) {
     UnsupportedError(
         24,
         "There was a problem with the operation. Looks like we doesn't support " +
-            "that yet. Check the underlying error for more details."
+            "that yet. Check the underlying error for more details.",
     ),
     EmptySubscriberAttributesError(25, "A request for subscriber attributes returned none."),
     CustomerInfoError(28, "There was a problem related to the customer info."),

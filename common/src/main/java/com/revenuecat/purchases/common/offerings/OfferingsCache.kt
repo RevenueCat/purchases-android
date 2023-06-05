@@ -12,8 +12,8 @@ class OfferingsCache(
     private val deviceCache: DeviceCache,
     private val dateProvider: DateProvider = DefaultDateProvider(),
     private val offeringsCachedObject: InMemoryCachedObject<Offerings> = InMemoryCachedObject(
-        dateProvider = dateProvider
-    )
+        dateProvider = dateProvider,
+    ),
 ) {
 
     @Synchronized

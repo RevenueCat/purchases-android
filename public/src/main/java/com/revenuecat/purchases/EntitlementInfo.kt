@@ -54,7 +54,7 @@ data class EntitlementInfo internal constructor(
     val billingIssueDetectedAt: Date?,
     val ownershipType: OwnershipType,
     private val jsonObject: JSONObject,
-    internal val verification: VerificationResult
+    internal val verification: VerificationResult,
 ) : Parcelable, RawDataContainer<JSONObject> {
 
     constructor(
@@ -72,7 +72,7 @@ data class EntitlementInfo internal constructor(
         unsubscribeDetectedAt: Date?,
         billingIssueDetectedAt: Date?,
         ownershipType: OwnershipType,
-        jsonObject: JSONObject
+        jsonObject: JSONObject,
     ) : this(
         identifier,
         isActive,
@@ -88,7 +88,7 @@ data class EntitlementInfo internal constructor(
         billingIssueDetectedAt,
         ownershipType,
         jsonObject,
-        VerificationResult.NOT_REQUESTED
+        VerificationResult.NOT_REQUESTED,
     )
 
     @IgnoredOnParcel
@@ -197,7 +197,7 @@ enum class Store {
     /**
      * For entitlements granted via Amazon store.
      */
-    AMAZON
+    AMAZON,
 }
 
 /**

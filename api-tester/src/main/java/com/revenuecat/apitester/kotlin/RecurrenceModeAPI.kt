@@ -9,7 +9,8 @@ private class RecurrenceModeAPI {
             RecurrenceMode.INFINITE_RECURRING,
             RecurrenceMode.FINITE_RECURRING,
             RecurrenceMode.NON_RECURRING,
-            RecurrenceMode.UNKNOWN -> {
+            RecurrenceMode.UNKNOWN,
+            -> {
             }
         }.exhaustive
     }

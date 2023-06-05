@@ -39,7 +39,7 @@ abstract class BaseOfflineEntitlementsWithInitialRequestsCompletedIntegrationTes
     // region helpers
 
     private fun setUpTestWaitingForInitialRequests(
-        postSetupTestCallback: (MainActivity) -> Unit = {}
+        postSetupTestCallback: (MainActivity) -> Unit = {},
     ) {
         setUpTest {
             waitForInitialRequestsToEnd {
@@ -59,7 +59,7 @@ abstract class BaseOfflineEntitlementsWithInitialRequestsCompletedIntegrationTes
                     },
                     onSuccess = {
                         completion()
-                    }
+                    },
                 )
             }
         }
@@ -89,7 +89,7 @@ class OfflineEntitlementsWithInitialRequestsCompletedAndInitialPurchasesIntegrat
                 onSuccess = { receivedCustomerInfo ->
                     assertCustomerInfoHasExpectedPurchaseData(receivedCustomerInfo)
                     latch.countDown()
-                }
+                },
             )
         }
     }
@@ -111,12 +111,12 @@ class OfflineEntitlementsWithInitialRequestsCompletedAndInitialPurchasesIntegrat
                         onSuccess = {
                             assertCustomerInfoDoesNotHavePurchaseData(it)
                             latch.countDown()
-                        }
+                        },
                     )
                 },
                 onSuccess = {
                     fail("Expected error but got success: $it")
-                }
+                },
             )
         }
     }
@@ -151,7 +151,7 @@ class OfflineEntitlementsWithInitialRequestsCompletedAndNoInitialPurchasesIntegr
                     assertCustomerInfoHasExpectedPurchaseData(receivedCustomerInfosInListener.last())
                     assertAcknowledgePurchaseDidNotHappen()
                     latch.countDown()
-                }
+                },
             )
         }
     }
@@ -161,7 +161,7 @@ class OfflineEntitlementsWithInitialRequestsCompletedAndNoInitialPurchasesIntegr
         val inAppProduct = StoreProductFactory.createGoogleStoreProduct(type = ProductType.INAPP)
         val inAppTransaction = StoreTransactionFactory.createStoreTransaction(
             skus = listOf(inAppProduct.id),
-            type = ProductType.INAPP
+            type = ProductType.INAPP,
         )
 
         ensureBlockFinishes { latch ->
@@ -177,7 +177,7 @@ class OfflineEntitlementsWithInitialRequestsCompletedAndNoInitialPurchasesIntegr
                 },
                 onSuccess = { _, _ ->
                     fail("Expected error")
-                }
+                },
             )
         }
     }
@@ -207,9 +207,9 @@ class OfflineEntitlementsWithInitialRequestsCompletedAndNoInitialPurchasesIntegr
                         onSuccess = {
                             assertCustomerInfoHasExpectedPurchaseData(it)
                             latch.countDown()
-                        }
+                        },
                     )
-                }
+                },
             )
         }
     }
@@ -239,7 +239,7 @@ class OfflineEntitlementsWithInitialRequestsCompletedAndNoInitialPurchasesIntegr
                     assertAcknowledgePurchaseDidHappen()
 
                     latch.countDown()
-                }
+                },
             )
         }
     }
@@ -269,7 +269,7 @@ class OfflineEntitlementsWithInitialRequestsCompletedAndNoInitialPurchasesIntegr
                     assertAcknowledgePurchaseDidHappen()
 
                     latch.countDown()
-                }
+                },
             )
         }
     }
@@ -306,9 +306,9 @@ class OfflineEntitlementsWithInitialRequestsCompletedAndNoInitialPurchasesIntegr
                             assertAcknowledgePurchaseDidNotHappen()
 
                             latch.countDown()
-                        }
+                        },
                     )
-                }
+                },
             )
         }
     }

@@ -14,11 +14,11 @@ import com.revenuecat.purchases.strings.PurchaseStrings
 fun ProductDetails.toInAppStoreProduct(): StoreProduct? = this.toStoreProduct(emptyList())
 
 fun ProductDetails.toStoreProduct(
-    offerDetails: List<ProductDetails.SubscriptionOfferDetails>
+    offerDetails: List<ProductDetails.SubscriptionOfferDetails>,
 ): GoogleStoreProduct? {
     val subscriptionOptions = if (productType.toRevenueCatProductType() == ProductType.SUBS) {
         SubscriptionOptions(
-            offerDetails.map { it.toSubscriptionOption(productId, this) }
+            offerDetails.map { it.toSubscriptionOption(productId, this) },
         )
     } else {
         null
@@ -39,7 +39,7 @@ fun ProductDetails.toStoreProduct(
         subscriptionOptions = subscriptionOptions,
         defaultOption = subscriptionOptions?.defaultOffer,
         productDetails = this,
-        presentedOfferingIdentifier = null
+        presentedOfferingIdentifier = null,
     )
 }
 
@@ -49,7 +49,7 @@ private fun ProductDetails.createOneTimeProductPrice(): Price? {
             Price(
                 it.formattedPrice,
                 it.priceAmountMicros,
-                it.priceCurrencyCode
+                it.priceCurrencyCode,
             )
         }
     } else {
@@ -76,13 +76,13 @@ fun List<ProductDetails>.toStoreProducts(): List<StoreProduct> {
                 storeProducts.add(it)
             } ?: log(
                 LogIntent.RC_ERROR,
-                PurchaseStrings.INVALID_PRODUCT_NO_PRICE.format(productDetails.productId)
+                PurchaseStrings.INVALID_PRODUCT_NO_PRICE.format(productDetails.productId),
             )
         } ?: productDetails.toInAppStoreProduct()?.let {
             storeProducts.add(it)
         } ?: log(
             LogIntent.RC_ERROR,
-            PurchaseStrings.INVALID_PRODUCT_NO_PRICE.format(productDetails.productId)
+            PurchaseStrings.INVALID_PRODUCT_NO_PRICE.format(productDetails.productId),
         )
     }
     return storeProducts

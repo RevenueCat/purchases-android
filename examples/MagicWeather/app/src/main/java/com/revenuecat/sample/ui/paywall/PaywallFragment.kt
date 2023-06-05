@@ -22,7 +22,7 @@ class PaywallFragment : Fragment() {
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
-        savedInstanceState: Bundle?
+        savedInstanceState: Bundle?,
     ): View {
         root = inflater.inflate(R.layout.fragment_paywall, container, false)
 
@@ -74,7 +74,7 @@ class PaywallFragment : Fragment() {
             },
             onSuccess = { _, _ ->
                 activity?.finish()
-            }
+            },
         )
     }
 
@@ -88,7 +88,7 @@ class PaywallFragment : Fragment() {
             },
             onSuccess = { _, _ ->
                 activity?.finish()
-            }
+            },
         )
     }
 }

@@ -36,7 +36,7 @@ class OfflineEntitlementsFreshInstallIntegrationTest : BaseOfflineEntitlementsIn
                 },
                 onSuccess = {
                     fail("Expected error")
-                }
+                },
             )
         }
     }

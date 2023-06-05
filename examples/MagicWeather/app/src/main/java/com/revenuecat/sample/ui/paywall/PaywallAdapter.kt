@@ -14,12 +14,12 @@ import com.revenuecat.sample.R
 
 class PaywallAdapter(
     var offering: Offering?,
-    var didChoosePaywallItem: (PaywallItem) -> Unit
+    var didChoosePaywallItem: (PaywallItem) -> Unit,
 ) : RecyclerView.Adapter<PaywallAdapter.PackageViewHolder>() {
 
     class PackageViewHolder(
         val view: View,
-        val didChoosePaywallItem: (PaywallItem) -> Unit
+        val didChoosePaywallItem: (PaywallItem) -> Unit,
     ) : RecyclerView.ViewHolder(view), View.OnClickListener {
         var item: PaywallItem? = null
 
@@ -94,7 +94,7 @@ class PaywallAdapter(
             } ?: run {
                 listOf(
                     PaywallItem.Title(product.title),
-                    PaywallItem.Product(product)
+                    PaywallItem.Product(product),
                 )
             }
         } ?: emptyList()
@@ -102,16 +102,16 @@ class PaywallAdapter(
 
 sealed class PaywallItem {
     data class Title(
-        val title: String
+        val title: String,
     ) : PaywallItem()
 
     data class Product(
-        val storeProduct: StoreProduct
+        val storeProduct: StoreProduct,
     ) : PaywallItem()
 
     data class Option(
         val subscriptionOption: SubscriptionOption,
-        val defaultOffer: Boolean
+        val defaultOffer: Boolean,
     ) : PaywallItem()
 }
 

@@ -19,11 +19,11 @@ import kotlin.time.Duration.Companion.milliseconds
 enum class Delay(val minDelay: Duration, val maxDelay: Duration) {
     NONE(0.milliseconds, 0.milliseconds),
     DEFAULT(0.milliseconds, DispatcherConstants.jitterDelay),
-    LONG(DispatcherConstants.jitterDelay, DispatcherConstants.jitterLongDelay)
+    LONG(DispatcherConstants.jitterDelay, DispatcherConstants.jitterLongDelay),
 }
 
 open class Dispatcher(
-    private val executorService: ExecutorService
+    private val executorService: ExecutorService,
 ) {
 
     abstract class AsyncCall : Runnable {
@@ -51,7 +51,7 @@ open class Dispatcher(
 
     open fun enqueue(
         command: Runnable,
-        delay: Delay = Delay.NONE
+        delay: Delay = Delay.NONE,
     ) {
         synchronized(this.executorService) {
             if (!executorService.isShutdown) {

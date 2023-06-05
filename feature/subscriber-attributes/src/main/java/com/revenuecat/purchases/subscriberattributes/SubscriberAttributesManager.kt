@@ -16,7 +16,7 @@ import java.util.Observable
 class SubscriberAttributesManager(
     val deviceCache: SubscriberAttributesCache,
     val backend: SubscriberAttributesPoster,
-    private val deviceIdentifiersFetcher: DeviceIdentifiersFetcher
+    private val deviceIdentifiersFetcher: DeviceIdentifiersFetcher,
 ) {
 
     private val obtainingDeviceIdentifiersObservable = ObtainDeviceIdentifiersObservable()
@@ -32,7 +32,7 @@ class SubscriberAttributesManager(
 
     private fun storeAttributesIfNeeded(
         attributesAsObjects: Map<String, SubscriberAttribute>,
-        appUserID: String
+        appUserID: String,
     ) {
         val currentlyStoredAttributes = deviceCache.getAllStoredSubscriberAttributes(appUserID)
         val attributesToUpdate = attributesAsObjects.filter { (key, attribute) ->
@@ -48,14 +48,14 @@ class SubscriberAttributesManager(
     fun setAttribute(
         key: SubscriberAttributeKey,
         value: String?,
-        appUserID: String
+        appUserID: String,
     ) {
         setAttributes(mapOf(key.backendKey to value), appUserID)
     }
 
     fun synchronizeSubscriberAttributesForAllUsers(
         currentAppUserID: AppUserID,
-        completion: (() -> Unit)? = null
+        completion: (() -> Unit)? = null,
     ) {
         obtainingDeviceIdentifiersObservable.waitUntilIdle {
             // We are filtering out blank user IDs to skip requests for attributes that might have been stored
@@ -95,13 +95,13 @@ class SubscriberAttributesManager(
                         }
                         log(
                             LogIntent.RC_ERROR,
-                            AttributionStrings.ATTRIBUTES_SYNC_ERROR.format(syncingAppUserID, error)
+                            AttributionStrings.ATTRIBUTES_SYNC_ERROR.format(syncingAppUserID, error),
                         )
                         currentSyncedAttributeCount++
                         if (completion != null && currentSyncedAttributeCount == unsyncedStoredAttributesCount) {
                             completion()
                         }
-                    }
+                    },
                 )
             }
         }
@@ -129,7 +129,7 @@ class SubscriberAttributesManager(
     fun markAsSynced(
         appUserID: String,
         attributesToMarkAsSynced: Map<String, SubscriberAttribute>,
-        attributeErrors: List<SubscriberAttributeError>
+        attributeErrors: List<SubscriberAttributeError>,
     ) {
         if (attributeErrors.isNotEmpty()) {
             log(LogIntent.RC_ERROR, AttributionStrings.SUBSCRIBER_ATTRIBUTES_ERROR.format(attributeErrors))
@@ -140,7 +140,7 @@ class SubscriberAttributesManager(
         log(
             LogIntent.INFO,
             AttributionStrings.MARKING_ATTRIBUTES_SYNCED.format(appUserID) +
-                attributesToMarkAsSynced.values.joinToString("\n")
+                attributesToMarkAsSynced.values.joinToString("\n"),
         )
         val currentlyStoredAttributes = deviceCache.getAllStoredSubscriberAttributes(appUserID)
         val attributesToBeSet = currentlyStoredAttributes.toMutableMap()
@@ -161,7 +161,7 @@ class SubscriberAttributesManager(
      */
     fun collectDeviceIdentifiers(
         appUserID: String,
-        applicationContext: Application
+        applicationContext: Application,
     ) {
         getDeviceIdentifiers(applicationContext) { deviceIdentifiers ->
             setAttributes(deviceIdentifiers, appUserID)
@@ -176,7 +176,7 @@ class SubscriberAttributesManager(
         attributionKey: SubscriberAttributeKey.AttributionIds,
         value: String?,
         appUserID: String,
-        applicationContext: Application
+        applicationContext: Application,
     ) {
         getDeviceIdentifiers(applicationContext) { deviceIdentifiers ->
             val attributesToSet = mapOf(attributionKey.backendKey to value) + deviceIdentifiers
@@ -186,7 +186,7 @@ class SubscriberAttributesManager(
 
     private fun getDeviceIdentifiers(
         applicationContext: Application,
-        completion: (deviceIdentifiers: Map<String, String?>) -> Unit
+        completion: (deviceIdentifiers: Map<String, String?>) -> Unit,
     ) {
         obtainingDeviceIdentifiersObservable.numberOfProcesses++
         deviceIdentifiersFetcher.getDeviceIdentifiers(applicationContext) { deviceIdentifiers ->

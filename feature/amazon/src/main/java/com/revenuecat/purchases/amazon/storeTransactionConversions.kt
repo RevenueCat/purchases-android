@@ -11,7 +11,7 @@ fun Receipt.toStoreTransaction(
     productId: String,
     presentedOfferingIdentifier: String?,
     purchaseState: PurchaseState,
-    userData: UserData
+    userData: UserData,
 ): StoreTransaction {
     val type = this.productType.toRevenueCatProductType()
     return StoreTransaction(

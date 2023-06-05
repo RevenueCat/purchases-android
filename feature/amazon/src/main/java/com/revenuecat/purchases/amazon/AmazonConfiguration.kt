@@ -8,7 +8,7 @@ class AmazonConfiguration(builder: Builder) : PurchasesConfiguration(builder) {
 
     class Builder(
         context: Context,
-        apiKey: String
+        apiKey: String,
     ) : PurchasesConfiguration.Builder(context, apiKey) {
 
         init {

@@ -59,6 +59,7 @@ task detektAll(type: io.gitlab.arturbosch.detekt.Detekt) {
     include("**/*.kts")
     exclude("**/build/**")
     exclude("**/test/**/*.kt")
+    config.setFrom(files("$rootDir/config/detekt/detekt.yml"))
     baseline.set(file("$rootDir/config/detekt/detekt-baseline.xml"))
     reports {
         xml.enabled = true
@@ -75,6 +76,7 @@ task detektAllBaseline(type: io.gitlab.arturbosch.detekt.DetektCreateBaselineTas
     ignoreFailures.set(true)
     parallel.set(true)
     setSource(files(rootDir))
+    config.setFrom(files("$rootDir/config/detekt/detekt.yml"))
     baseline.set(file("$rootDir/config/detekt/detekt-baseline.xml"))
     include("**/*.kt")
     include("**/*.kts")

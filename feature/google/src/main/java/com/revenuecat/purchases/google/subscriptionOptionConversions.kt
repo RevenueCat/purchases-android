@@ -5,7 +5,7 @@ import com.revenuecat.purchases.models.GoogleSubscriptionOption
 
 fun ProductDetails.SubscriptionOfferDetails.toSubscriptionOption(
     productId: String,
-    productDetails: ProductDetails
+    productDetails: ProductDetails,
 ): GoogleSubscriptionOption {
     val pricingPhases = pricingPhases.pricingPhaseList.map { it.toRevenueCatPricingPhase() }
     return GoogleSubscriptionOption(
@@ -15,7 +15,7 @@ fun ProductDetails.SubscriptionOfferDetails.toSubscriptionOption(
         pricingPhases,
         offerTags,
         productDetails,
-        offerToken
+        offerToken,
     )
 }
 

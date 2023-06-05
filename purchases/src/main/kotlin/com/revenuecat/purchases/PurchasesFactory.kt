@@ -48,7 +48,7 @@ internal class PurchasesFactory(
         platformInfo: PlatformInfo,
         proxyURL: URL?,
         overrideBillingAbstract: BillingAbstract? = null,
-        forceServerErrors: Boolean = false
+        forceServerErrors: Boolean = false,
     ): Purchases {
         validateConfiguration(configuration)
 
@@ -61,7 +61,7 @@ internal class PurchasesFactory(
                 proxyURL,
                 store,
                 dangerousSettings,
-                forceServerErrors
+                forceServerErrors,
             )
 
             val prefs = PreferenceManager.getDefaultSharedPreferences(application)
@@ -79,7 +79,7 @@ internal class PurchasesFactory(
                 diagnosticsTracker = DiagnosticsTracker(
                     diagnosticsFileHelper,
                     DiagnosticsAnonymizer(Anonymizer()),
-                    diagnosticsDispatcher
+                    diagnosticsDispatcher,
                 )
             }
 
@@ -97,7 +97,7 @@ internal class PurchasesFactory(
                 dispatcher,
                 diagnosticsDispatcher,
                 httpClient,
-                backendHelper
+                backendHelper,
             )
             val cache = DeviceCache(prefs, apiKey)
 
@@ -108,7 +108,7 @@ internal class PurchasesFactory(
                 backendHelper,
                 cache,
                 observerMode,
-                diagnosticsTracker
+                diagnosticsTracker,
             )
 
             val subscriberAttributesPoster = SubscriberAttributesPoster(backendHelper)
@@ -120,19 +120,19 @@ internal class PurchasesFactory(
             val subscriberAttributesManager = SubscriberAttributesManager(
                 subscriberAttributesCache,
                 subscriberAttributesPoster,
-                attributionFetcher
+                attributionFetcher,
             )
 
             val offlineCustomerInfoCalculator = OfflineCustomerInfoCalculator(
                 PurchasedProductsFetcher(cache, billing),
-                appConfig
+                appConfig,
             )
 
             val offlineEntitlementsManager = OfflineEntitlementsManager(
                 backend,
                 offlineCustomerInfoCalculator,
                 cache,
-                appConfig
+                appConfig,
             )
 
             val offeringsCache = OfferingsCache(cache)
@@ -143,7 +143,7 @@ internal class PurchasesFactory(
                 subscriberAttributesManager,
                 offeringsCache,
                 backend,
-                offlineEntitlementsManager
+                offlineEntitlementsManager,
             )
 
             val customerInfoHelper = CustomerInfoHelper(cache, backend, identityManager, offlineEntitlementsManager)
@@ -156,7 +156,7 @@ internal class PurchasesFactory(
                     diagnosticsTracker,
                     backend,
                     diagnosticsDispatcher,
-                    DiagnosticsSynchronizer.initializeSharedPreferences(context)
+                    DiagnosticsSynchronizer.initializeSharedPreferences(context),
                 )
             }
 
@@ -167,20 +167,20 @@ internal class PurchasesFactory(
                 customerInfoHelper,
                 cache,
                 subscriberAttributesManager,
-                offlineEntitlementsManager
+                offlineEntitlementsManager,
             )
 
             val syncPurchasesHelper = SyncPurchasesHelper(
                 billing,
                 identityManager,
                 customerInfoHelper,
-                postReceiptHelper
+                postReceiptHelper,
             )
 
             val offeringsManager = OfferingsManager(
                 offeringsCache,
                 backend,
-                OfferingsFactory(billing, offeringParser)
+                OfferingsFactory(billing, offeringParser),
             )
 
             return Purchases(
@@ -198,7 +198,7 @@ internal class PurchasesFactory(
                 offlineEntitlementsManager,
                 postReceiptHelper,
                 syncPurchasesHelper,
-                offeringsManager
+                offeringsManager,
             )
         }
     }

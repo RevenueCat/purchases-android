@@ -26,7 +26,8 @@ sealed class SignatureVerificationMode {
             Disabled ->
                 false
             is Informational,
-            is Enforced ->
+            is Enforced,
+            ->
                 true
         }
 

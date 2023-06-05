@@ -23,7 +23,7 @@ data class Period(
      * P1M equates to one month, P3M equates to three months, P6M equates to six months,
      * and P1Y equates to one year
      */
-    val iso8601: String
+    val iso8601: String,
 ) : Parcelable {
 
     companion object Factory {
@@ -39,7 +39,7 @@ data class Period(
         WEEK,
         MONTH,
         YEAR,
-        UNKNOWN
+        UNKNOWN,
     }
 }
 

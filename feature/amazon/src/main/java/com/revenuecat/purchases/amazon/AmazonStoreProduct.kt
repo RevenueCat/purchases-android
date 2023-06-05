@@ -75,7 +75,7 @@ data class AmazonStoreProduct(
      *
      * Null if not using RevenueCat offerings system, or if fetched directly via `Purchases.getProducts`
      */
-    override val presentedOfferingIdentifier: String? = null
+    override val presentedOfferingIdentifier: String? = null,
 ) : StoreProduct {
 
     /**
@@ -86,7 +86,7 @@ data class AmazonStoreProduct(
 
     @Deprecated(
         "Replaced with id",
-        ReplaceWith("id")
+        ReplaceWith("id"),
     )
     override val sku: String
         get() = id
@@ -109,7 +109,7 @@ data class AmazonStoreProduct(
             this.iconUrl,
             this.freeTrialPeriod,
             this.originalProductJSON,
-            offeringId
+            offeringId,
         )
     }
 
@@ -143,10 +143,10 @@ private data class ComparableData(
     val defaultOption: SubscriptionOption?,
     val iconUrl: String,
     val freeTrialPeriod: Period?,
-    val offeringId: String?
+    val offeringId: String?,
 ) {
     constructor(
-        amazonStoreProduct: AmazonStoreProduct
+        amazonStoreProduct: AmazonStoreProduct,
     ) : this(
         id = amazonStoreProduct.id,
         type = amazonStoreProduct.type,
@@ -158,6 +158,6 @@ private data class ComparableData(
         defaultOption = amazonStoreProduct.defaultOption,
         iconUrl = amazonStoreProduct.iconUrl,
         freeTrialPeriod = amazonStoreProduct.freeTrialPeriod,
-        offeringId = amazonStoreProduct.presentedOfferingIdentifier
+        offeringId = amazonStoreProduct.presentedOfferingIdentifier,
     )
 }

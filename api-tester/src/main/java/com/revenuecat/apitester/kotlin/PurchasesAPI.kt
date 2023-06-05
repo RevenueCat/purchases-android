@@ -41,7 +41,7 @@ import java.util.concurrent.ExecutorService
 private class PurchasesAPI {
     @SuppressWarnings("LongParameterList")
     fun check(
-        purchases: Purchases
+        purchases: Purchases,
     ) {
         val productIds = ArrayList<String>()
         val receiveOfferingsCallback = object : ReceiveOfferingsCallback {
@@ -103,7 +103,7 @@ private class PurchasesAPI {
         activity: Activity,
         storeProduct: StoreProduct,
         packageToPurchase: Package,
-        subscriptionOption: SubscriptionOption
+        subscriptionOption: SubscriptionOption,
     ) {
         val purchaseCallback = object : PurchaseCallback {
             override fun onCompleted(storeTransaction: StoreTransaction, customerInfo: CustomerInfo) {}
@@ -133,59 +133,59 @@ private class PurchasesAPI {
     @Suppress("RedundantLambdaArrow", "LongMethod", "LongParameterList")
     fun checkListenerConversions(
         purchases: Purchases,
-        purchaseParams: PurchaseParams
+        purchaseParams: PurchaseParams,
     ) {
         purchases.getOfferingsWith(
             onError = { _: PurchasesError -> },
-            onSuccess = { _: Offerings -> }
+            onSuccess = { _: Offerings -> },
         )
         purchases.getProductsWith(
             listOf(""),
             onError = { _: PurchasesError -> },
-            onGetStoreProducts = { _: List<StoreProduct> -> }
+            onGetStoreProducts = { _: List<StoreProduct> -> },
         )
         purchases.getProductsWith(
             listOf(""),
             ProductType.SUBS,
             onError = { _: PurchasesError -> },
-            onGetStoreProducts = { _: List<StoreProduct> -> }
+            onGetStoreProducts = { _: List<StoreProduct> -> },
         )
         purchases.restorePurchasesWith(
             onError = { _: PurchasesError -> },
-            onSuccess = { _: CustomerInfo -> }
+            onSuccess = { _: CustomerInfo -> },
         )
         purchases.syncPurchasesWith(
             onError = { _: PurchasesError -> },
-            onSuccess = { _: CustomerInfo -> }
+            onSuccess = { _: CustomerInfo -> },
         )
         purchases.syncPurchasesWith(
-            onSuccess = { _: CustomerInfo -> }
+            onSuccess = { _: CustomerInfo -> },
         )
         purchases.logInWith(
             "",
             onError = { _: PurchasesError -> },
-            onSuccess = { _: CustomerInfo, _: Boolean -> }
+            onSuccess = { _: CustomerInfo, _: Boolean -> },
         )
         purchases.logOutWith(
             onError = { _: PurchasesError -> },
-            onSuccess = { _: CustomerInfo -> }
+            onSuccess = { _: CustomerInfo -> },
         )
         purchases.getCustomerInfoWith(
             onError = { _: PurchasesError -> },
-            onSuccess = { _: CustomerInfo -> }
+            onSuccess = { _: CustomerInfo -> },
         )
         purchases.getCustomerInfoWith(
             fetchPolicy = CacheFetchPolicy.CACHED_OR_FETCHED,
             onError = { _: PurchasesError -> },
-            onSuccess = { _: CustomerInfo -> }
+            onSuccess = { _: CustomerInfo -> },
         )
         purchases.purchaseWith(
             purchaseParams,
             onError = { _: PurchasesError, _: Boolean -> },
-            onSuccess = { _: StoreTransaction?, _: CustomerInfo -> }
+            onSuccess = { _: StoreTransaction?, _: CustomerInfo -> },
         )
         purchases.purchaseWith(
-            purchaseParams
+            purchaseParams,
         ) { _: StoreTransaction?, _: CustomerInfo -> }
     }
 
@@ -261,7 +261,7 @@ private class PurchasesAPI {
             LogLevel.DEBUG,
             LogLevel.INFO,
             LogLevel.WARN,
-            LogLevel.ERROR
+            LogLevel.ERROR,
             -> {}
         }.exhaustive
     }

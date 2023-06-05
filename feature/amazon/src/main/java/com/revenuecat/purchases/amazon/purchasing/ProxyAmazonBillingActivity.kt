@@ -21,7 +21,7 @@ internal class ProxyAmazonBillingActivity : Activity() {
             context: Context,
             resultReceiver: ResultReceiver,
             sku: String,
-            purchasingServiceProvider: PurchasingServiceProvider
+            purchasingServiceProvider: PurchasingServiceProvider,
         ): Intent {
             val intent = Intent(context, ProxyAmazonBillingActivity::class.java)
             intent.putExtra(EXTRAS_RESULT_RECEIVER, resultReceiver)

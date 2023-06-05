@@ -14,7 +14,7 @@ internal class APIKeyValidator {
         GOOGLE,
         AMAZON,
         LEGACY,
-        OTHER_PLATFORM
+        OTHER_PLATFORM,
     }
 
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
@@ -23,7 +23,7 @@ internal class APIKeyValidator {
         GOOGLE_KEY_AMAZON_STORE,
         AMAZON_KEY_GOOGLE_STORE,
         LEGACY,
-        OTHER_PLATFORM
+        OTHER_PLATFORM,
     }
 
     fun validateAndLog(apiKey: String, configuredStore: Store) {

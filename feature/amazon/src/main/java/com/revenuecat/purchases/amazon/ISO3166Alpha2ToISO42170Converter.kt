@@ -249,6 +249,6 @@ internal object ISO3166Alpha2ToISO42170Converter {
         "YE" to "YER",
         "ZM" to "ZMW",
         "ZW" to "ZWL",
-        "AX" to "EUR"
+        "AX" to "EUR",
     )
 }

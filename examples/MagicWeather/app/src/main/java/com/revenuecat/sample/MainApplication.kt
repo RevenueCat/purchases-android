@@ -33,7 +33,7 @@ class MainApplication : Application() {
             builder
                 .observerMode(false)
                 .appUserID(null)
-                .build()
+                .build(),
         )
 
         /*

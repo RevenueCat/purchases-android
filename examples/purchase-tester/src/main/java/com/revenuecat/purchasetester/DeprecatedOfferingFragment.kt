@@ -75,7 +75,7 @@ class DeprecatedOfferingFragment : Fragment(), DeprecatedPackageCardAdapter.Pack
             DeprecatedPackageCardAdapter(
                 offering.availablePackages,
                 activeSubscriptions,
-                this
+                this,
             )
     }
 
@@ -96,7 +96,7 @@ class DeprecatedOfferingFragment : Fragment(), DeprecatedPackageCardAdapter.Pack
     override fun onPurchasePackageClicked(
         cardView: View,
         currentPackage: Package,
-        isUpgrade: Boolean
+        isUpgrade: Boolean,
     ) {
         toggleLoadingIndicator(true)
 
@@ -114,7 +114,7 @@ class DeprecatedOfferingFragment : Fragment(), DeprecatedPackageCardAdapter.Pack
     override fun onPurchaseProductClicked(
         cardView: View,
         currentProduct: StoreProduct,
-        isUpgrade: Boolean
+        isUpgrade: Boolean,
     ) {
         toggleLoadingIndicator(true)
 
@@ -147,21 +147,21 @@ class DeprecatedOfferingFragment : Fragment(), DeprecatedPackageCardAdapter.Pack
 
     private fun startPurchaseProduct(
         currentProduct: StoreProduct,
-        upgradeInfo: UpgradeInfo?
+        upgradeInfo: UpgradeInfo?,
     ) {
         when {
             upgradeInfo == null -> Purchases.sharedInstance.purchaseProductWith(
                 requireActivity(),
                 currentProduct,
                 purchaseErrorCallback,
-                successfulPurchaseCallback
+                successfulPurchaseCallback,
             )
             upgradeInfo != null -> Purchases.sharedInstance.purchaseProductWith(
                 requireActivity(),
                 currentProduct,
                 upgradeInfo,
                 purchaseErrorCallback,
-                successfulUpgradeCallback
+                successfulUpgradeCallback,
             )
         }
     }
@@ -171,7 +171,7 @@ class DeprecatedOfferingFragment : Fragment(), DeprecatedPackageCardAdapter.Pack
             Toast.makeText(
                 it,
                 "Successful purchase, order id: $orderId",
-                Toast.LENGTH_SHORT
+                Toast.LENGTH_SHORT,
             ).show()
             findNavController().navigateUp()
         }
@@ -179,21 +179,21 @@ class DeprecatedOfferingFragment : Fragment(), DeprecatedPackageCardAdapter.Pack
 
     private fun startPurchasePackage(
         currentPackage: Package,
-        upgradeInfo: UpgradeInfo?
+        upgradeInfo: UpgradeInfo?,
     ) {
         when {
             upgradeInfo == null -> Purchases.sharedInstance.purchasePackageWith(
                 requireActivity(),
                 currentPackage,
                 purchaseErrorCallback,
-                successfulPurchaseCallback
+                successfulPurchaseCallback,
             )
             upgradeInfo != null -> Purchases.sharedInstance.purchasePackageWith(
                 requireActivity(),
                 currentPackage,
                 upgradeInfo,
                 purchaseErrorCallback,
-                successfulUpgradeCallback
+                successfulUpgradeCallback,
             )
         }
     }
@@ -209,7 +209,7 @@ class DeprecatedOfferingFragment : Fragment(), DeprecatedPackageCardAdapter.Pack
             Toast.makeText(
                 requireContext(),
                 "Cannot upgrade without an existing active subscription.",
-                Toast.LENGTH_LONG
+                Toast.LENGTH_LONG,
             ).show()
             toggleLoadingIndicator(false)
             callback(null)

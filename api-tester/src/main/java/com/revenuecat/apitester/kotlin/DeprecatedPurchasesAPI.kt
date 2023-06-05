@@ -24,7 +24,7 @@ private class DeprecatedPurchasesAPI {
         storeProduct: StoreProduct,
         upgradeInfo: UpgradeInfo,
         subscriptionOption: SubscriptionOption,
-        packageToPurchase: com.revenuecat.purchases.Package
+        packageToPurchase: com.revenuecat.purchases.Package,
     ) {
         val purchaseChangeCallback = object : ProductChangeCallback {
             override fun onCompleted(storeTransaction: StoreTransaction?, customerInfo: CustomerInfo) {}
@@ -44,23 +44,23 @@ private class DeprecatedPurchasesAPI {
             activity,
             storeProduct,
             onError = { _: PurchasesError, _: Boolean -> },
-            onSuccess = { _: StoreTransaction, _: CustomerInfo -> }
+            onSuccess = { _: StoreTransaction, _: CustomerInfo -> },
         )
         purchases.purchaseProductWith(
             activity,
-            storeProduct
+            storeProduct,
         ) { _: StoreTransaction, _: CustomerInfo -> }
         purchases.purchaseProductWith(
             activity,
             storeProduct,
             upgradeInfo,
             onError = { _: PurchasesError, _: Boolean -> },
-            onSuccess = { _: StoreTransaction?, _: CustomerInfo -> }
+            onSuccess = { _: StoreTransaction?, _: CustomerInfo -> },
         )
         purchases.purchaseProductWith(
             activity,
             storeProduct,
-            upgradeInfo
+            upgradeInfo,
         ) { _: StoreTransaction?, _: CustomerInfo -> }
 
         purchases.purchasePackageWith(
@@ -68,36 +68,36 @@ private class DeprecatedPurchasesAPI {
             packageToPurchase,
             upgradeInfo,
             onError = { _: PurchasesError, _: Boolean -> },
-            onSuccess = { _: StoreTransaction?, _: CustomerInfo -> }
+            onSuccess = { _: StoreTransaction?, _: CustomerInfo -> },
         )
         purchases.purchasePackageWith(
             activity,
             packageToPurchase,
-            upgradeInfo
+            upgradeInfo,
         ) { _: StoreTransaction?, _: CustomerInfo -> }
 
         purchases.purchasePackageWith(
             activity,
             packageToPurchase,
             onError = { _: PurchasesError, _: Boolean -> },
-            onSuccess = { _: StoreTransaction, _: CustomerInfo -> }
+            onSuccess = { _: StoreTransaction, _: CustomerInfo -> },
         )
 
         purchases.purchasePackageWith(
             activity,
-            packageToPurchase
+            packageToPurchase,
         ) { _: StoreTransaction, _: CustomerInfo -> }
 
         purchases.allowSharingPlayStoreAccount = true
         purchases.getSubscriptionSkusWith(
             ArrayList<String>(),
             onError = { _: PurchasesError -> },
-            onReceiveSkus = { _: List<StoreProduct> -> }
+            onReceiveSkus = { _: List<StoreProduct> -> },
         )
         purchases.getNonSubscriptionSkusWith(
             ArrayList<String>(),
             onError = { _: PurchasesError -> },
-            onReceiveSkus = { _: List<StoreProduct> -> }
+            onReceiveSkus = { _: List<StoreProduct> -> },
         )
 
         Purchases.debugLogsEnabled = false

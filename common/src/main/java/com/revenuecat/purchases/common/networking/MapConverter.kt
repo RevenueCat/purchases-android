@@ -46,7 +46,7 @@ class MapConverter {
      * Would give an unchecked cast warning due to Java type erasure
      */
     private inline fun <reified T> Any?.tryCast(
-        ifSuccess: T.() -> Any?
+        ifSuccess: T.() -> Any?,
     ): Any? {
         return if (this is T) {
             this.ifSuccess()

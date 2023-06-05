@@ -24,7 +24,7 @@ class UserFragment : Fragment() {
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
-        savedInstanceState: Bundle?
+        savedInstanceState: Bundle?,
     ): View {
         userViewModel = UserViewModel.shared
 
@@ -49,7 +49,7 @@ class UserFragment : Fragment() {
                 it?.let {
                     updateUserDetails(it)
                 }
-            }
+            },
         )
 
         return root
@@ -116,7 +116,7 @@ class UserFragment : Fragment() {
                         },
                         onSuccess = { info, _ ->
                             updateUserDetails(info)
-                        }
+                        },
                     )
                 }
                 .setNegativeButton("Cancel") { _, _ -> }

@@ -27,7 +27,7 @@ data class PricingPhase(
     /**
      * [Price] of the [PricingPhase]
      */
-    val price: Price
+    val price: Price,
 ) : Parcelable {
 
     /**

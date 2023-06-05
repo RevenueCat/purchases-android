@@ -3,7 +3,7 @@ package com.revenuecat.purchases.common.diagnostics
 import com.revenuecat.purchases.common.Anonymizer
 
 class DiagnosticsAnonymizer(
-    private val anonymizer: Anonymizer
+    private val anonymizer: Anonymizer,
 ) {
     fun anonymizeEntryIfNeeded(diagnosticsEntry: DiagnosticsEntry): DiagnosticsEntry {
         return when (diagnosticsEntry) {
@@ -15,13 +15,13 @@ class DiagnosticsAnonymizer(
 
     private fun anonymizeEvent(diagnosticsEvent: DiagnosticsEntry.Event): DiagnosticsEntry {
         return diagnosticsEvent.copy(
-            properties = anonymizer.anonymizedMap(diagnosticsEvent.properties)
+            properties = anonymizer.anonymizedMap(diagnosticsEvent.properties),
         )
     }
 
     private fun anonymizeCounter(diagnosticsCounter: DiagnosticsEntry.Counter): DiagnosticsEntry {
         return diagnosticsCounter.copy(
-            tags = anonymizer.anonymizedStringMap(diagnosticsCounter.tags)
+            tags = anonymizer.anonymizedStringMap(diagnosticsCounter.tags),
         )
     }
 }

@@ -11,5 +11,5 @@ enum class OfferPaymentMode {
     SINGLE_PAYMENT,
 
     // Subscribers pay a discounted amount for a specified number of periods
-    DISCOUNTED_RECURRING_PAYMENT
+    DISCOUNTED_RECURRING_PAYMENT,
 }

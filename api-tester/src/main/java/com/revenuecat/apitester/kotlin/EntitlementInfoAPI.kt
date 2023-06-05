@@ -83,7 +83,7 @@ private class EntitlementInfoAPI {
             unsubscribeDetectedAt = unsubscribeDetectedAt,
             billingIssueDetectedAt = billingIssueDetectedAt,
             ownershipType = ownershipType,
-            jsonObject = jsonObject
+            jsonObject = jsonObject,
         )
     }
 
@@ -95,7 +95,7 @@ private class EntitlementInfoAPI {
             Store.STRIPE,
             Store.PROMOTIONAL,
             Store.UNKNOWN_STORE,
-            Store.AMAZON
+            Store.AMAZON,
             -> {}
         }.exhaustive
     }
@@ -104,7 +104,7 @@ private class EntitlementInfoAPI {
         when (type) {
             PeriodType.NORMAL,
             PeriodType.INTRO,
-            PeriodType.TRIAL
+            PeriodType.TRIAL,
             -> {}
         }.exhaustive
     }
@@ -113,7 +113,8 @@ private class EntitlementInfoAPI {
         when (type) {
             OwnershipType.PURCHASED,
             OwnershipType.FAMILY_SHARED,
-            OwnershipType.UNKNOWN -> {}
+            OwnershipType.UNKNOWN,
+            -> {}
         }.exhaustive
     }
 }
