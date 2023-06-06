@@ -93,8 +93,12 @@ internal fun JSONObject.buildEntitlementInfo(
     return EntitlementInfo(
         identifier = identifier,
         isActive = isDateActive(identifier, expirationDate, requestDate),
-        willRenew = getWillRenew(store, expirationDate, unsubscribeDetectedAt,
-            billingIssueDetectedAt),
+        willRenew = getWillRenew(
+            store,
+            expirationDate,
+            unsubscribeDetectedAt,
+            billingIssueDetectedAt
+        ),
         periodType = productData.optPeriodType(ProductResponseJsonKeys.PERIOD_TYPE),
         latestPurchaseDate = getDate(ProductResponseJsonKeys.PURCHASE_DATE),
         originalPurchaseDate = productData.getDate(ProductResponseJsonKeys.ORIGINAL_PURCHASE_DATE),

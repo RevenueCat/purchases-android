@@ -38,7 +38,8 @@ enum class PurchasesErrorCode(val code: Int, val description: String) {
     InvalidAppUserIdError(14, "The app user id is not valid."),
     OperationAlreadyInProgressError(15, "The operation is already in progress."),
     UnknownBackendError(16, "There was an unknown backend error."),
-    InvalidAppleSubscriptionKeyError(17,
+    InvalidAppleSubscriptionKeyError(
+        17,
         "Apple Subscription Key is invalid or not present. " +
             "In order to provide subscription offers, you must first generate a subscription key. " +
             "Please see https://docs.revenuecat.com/docs/ios-subscription-offers for more info."
@@ -49,8 +50,11 @@ enum class PurchasesErrorCode(val code: Int, val description: String) {
     InvalidSubscriberAttributesError(21, "One or more of the attributes sent could not be saved."),
     LogOutWithAnonymousUserError(22, "Called logOut but the current user is anonymous."),
     ConfigurationError(23, "There is an issue with your configuration. Check the underlying error for more details."),
-    UnsupportedError(24, "There was a problem with the operation. Looks like we doesn't support " +
-        "that yet. Check the underlying error for more details."),
+    UnsupportedError(
+        24,
+        "There was a problem with the operation. Looks like we doesn't support " +
+            "that yet. Check the underlying error for more details."
+    ),
     EmptySubscriberAttributesError(25, "A request for subscriber attributes returned none."),
     CustomerInfoError(28, "There was a problem related to the customer info."),
     // Trusted entitlements: Commented out until ready to be made public (verify code is the same in iOS)

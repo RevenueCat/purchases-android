@@ -34,15 +34,26 @@ open class PurchasesConfiguration(builder: Builder) {
         @get:JvmSynthetic internal val apiKey: String
     ) {
 
-        @set:JvmSynthetic @get:JvmSynthetic internal var appUserID: String? = null
-        @set:JvmSynthetic @get:JvmSynthetic internal var observerMode: Boolean = false
-        @set:JvmSynthetic @get:JvmSynthetic internal var service: ExecutorService? = null
-        @set:JvmSynthetic @get:JvmSynthetic internal var store: Store = Store.PLAY_STORE
-        @set:JvmSynthetic @get:JvmSynthetic internal var diagnosticsEnabled: Boolean = false
+        @set:JvmSynthetic @get:JvmSynthetic
+        internal var appUserID: String? = null
+
+        @set:JvmSynthetic @get:JvmSynthetic
+        internal var observerMode: Boolean = false
+
+        @set:JvmSynthetic @get:JvmSynthetic
+        internal var service: ExecutorService? = null
+
+        @set:JvmSynthetic @get:JvmSynthetic
+        internal var store: Store = Store.PLAY_STORE
+
+        @set:JvmSynthetic @get:JvmSynthetic
+        internal var diagnosticsEnabled: Boolean = false
+
         // Trusted entitlements: Commented out until ready to be made public
         // @set:JvmSynthetic @get:JvmSynthetic internal var verificationMode: EntitlementVerificationMode =
         //    EntitlementVerificationMode.default
-        @set:JvmSynthetic @get:JvmSynthetic internal var dangerousSettings: DangerousSettings = DangerousSettings()
+        @set:JvmSynthetic @get:JvmSynthetic
+        internal var dangerousSettings: DangerousSettings = DangerousSettings()
 
         fun appUserID(appUserID: String?) = apply {
             this.appUserID = appUserID

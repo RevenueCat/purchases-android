@@ -28,22 +28,29 @@ internal typealias CustomerInfoCallback = Pair<(CustomerInfo) -> Unit, (Purchase
 
 /** @suppress */
 typealias PostReceiptCallback = Pair<PostReceiptDataSuccessCallback, PostReceiptDataErrorCallback>
+
 /** @suppress */
 typealias CallbackCacheKey = List<String>
+
 /** @suppress */
 typealias OfferingsCallback = Pair<(JSONObject) -> Unit, (PurchasesError, isServerError: Boolean) -> Unit>
+
 /** @suppress */
 typealias PostReceiptDataSuccessCallback = (CustomerInfo, body: JSONObject) -> Unit
+
 /** @suppress */
 typealias PostReceiptDataErrorCallback = (
     PurchasesError,
     postReceiptErrorHandlingBehavior: PostReceiptErrorHandlingBehavior,
     body: JSONObject?
 ) -> Unit
+
 /** @suppress */
 typealias IdentifyCallback = Pair<(CustomerInfo, Boolean) -> Unit, (PurchasesError) -> Unit>
+
 /** @suppress */
 typealias DiagnosticsCallback = Pair<(JSONObject) -> Unit, (PurchasesError, Boolean) -> Unit>
+
 /** @suppress */
 typealias ProductEntitlementCallback = Pair<(ProductEntitlementMapping) -> Unit, (PurchasesError) -> Unit>
 
@@ -218,7 +225,8 @@ class Backend(
                         } else {
                             val purchasesError = result.toPurchasesError().also { errorLog(it) }
                             val errorHandlingBehavior = determinePostReceiptErrorHandlingBehavior(
-                                result.responseCode, purchasesError
+                                result.responseCode,
+                                purchasesError
                             )
                             onError(
                                 purchasesError,
@@ -347,8 +355,10 @@ class Backend(
                             val customerInfo = CustomerInfoFactory.buildCustomerInfo(result)
                             onSuccessHandler(customerInfo, created)
                         } else {
-                            onErrorHandler(PurchasesError(PurchasesErrorCode.UnknownError)
-                                .also { errorLog(it) })
+                            onErrorHandler(
+                                PurchasesError(PurchasesErrorCode.UnknownError)
+                                    .also { errorLog(it) }
+                            )
                         }
                     }
                 } else {

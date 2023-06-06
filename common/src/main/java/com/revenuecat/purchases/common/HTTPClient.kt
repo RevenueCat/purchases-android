@@ -183,7 +183,8 @@ class HTTPClient(
         }
 
         if (verificationResult == VerificationResult.FAILED &&
-            signingManager.signatureVerificationMode is SignatureVerificationMode.Enforced) {
+            signingManager.signatureVerificationMode is SignatureVerificationMode.Enforced
+        ) {
             throw SignatureVerificationException(path)
         }
 

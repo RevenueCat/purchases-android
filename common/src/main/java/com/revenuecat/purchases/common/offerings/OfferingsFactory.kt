@@ -100,16 +100,19 @@ class OfferingsFactory(
                         { inAppProducts ->
                             productsById.putAll(inAppProducts.map { it.purchasingData.productId to listOf(it) })
                             onCompleted(productsById)
-                        }, {
+                        },
+                        {
                             onError(it)
                         }
                     )
                 } else {
                     onCompleted(productsById)
                 }
-            }, {
+            },
+            {
                 onError(it)
-            })
+            }
+        )
     }
 
     private fun logMissingProducts(
@@ -120,7 +123,8 @@ class OfferingsFactory(
         .takeIf { it.isNotEmpty() }
         ?.let { missingProducts ->
             log(
-                LogIntent.GOOGLE_WARNING, OfferingStrings.CANNOT_FIND_PRODUCT_CONFIGURATION_ERROR
+                LogIntent.GOOGLE_WARNING,
+                OfferingStrings.CANNOT_FIND_PRODUCT_CONFIGURATION_ERROR
                     .format(missingProducts.joinToString(", "))
             )
         }

@@ -134,7 +134,8 @@ internal class CustomerInfoHelper(
                 if (offlineEntitlementsManager.shouldCalculateOfflineCustomerInfoInGetCustomerInfoRequest(
                         isServerError,
                         appUserID
-                    )) {
+                    )
+                ) {
                     offlineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(
                         appUserID,
                         onSuccess = { offlineComputedCustomerInfo ->
@@ -148,7 +149,8 @@ internal class CustomerInfoHelper(
                 } else {
                     dispatch { callback?.onError(backendError) }
                 }
-            })
+            }
+        )
     }
 
     private fun getCustomerInfoCachedOrFetched(
@@ -191,8 +193,10 @@ internal class CustomerInfoHelper(
         if (deviceCache.isCustomerInfoCacheStale(appUserID, appInBackground)) {
             log(
                 LogIntent.DEBUG,
-                if (appInBackground) CustomerInfoStrings.CUSTOMERINFO_STALE_UPDATING_BACKGROUND
-                else CustomerInfoStrings.CUSTOMERINFO_STALE_UPDATING_FOREGROUND)
+                if (appInBackground) {
+                    CustomerInfoStrings.CUSTOMERINFO_STALE_UPDATING_BACKGROUND
+                } else CustomerInfoStrings.CUSTOMERINFO_STALE_UPDATING_FOREGROUND
+            )
             getCustomerInfoFetchOnly(appUserID, appInBackground)
         }
     }

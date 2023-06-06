@@ -111,13 +111,15 @@ class SubscriberAttributesCache(
     private fun SubscriberAttributeMap.filterUnsynced(appUserID: AppUserID): SubscriberAttributeMap =
         this.filterValues { !it.isSynced }
             .also { unsyncedAttributesByKey ->
-                log(LogIntent.DEBUG, AttributionStrings.UNSYNCED_ATTRIBUTES_COUNT
+                log(
+                    LogIntent.DEBUG,
+                    AttributionStrings.UNSYNCED_ATTRIBUTES_COUNT
                         .format(unsyncedAttributesByKey.count(), appUserID) +
-                    if (unsyncedAttributesByKey.isNotEmpty()) {
-                        unsyncedAttributesByKey.values.joinToString("\n")
-                    } else {
-                        ""
-                    }
+                        if (unsyncedAttributesByKey.isNotEmpty()) {
+                            unsyncedAttributesByKey.values.joinToString("\n")
+                        } else {
+                            ""
+                        }
                 )
             }
 }

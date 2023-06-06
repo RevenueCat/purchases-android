@@ -43,11 +43,14 @@ class UserFragment : Fragment() {
         /*
         Observe changes to weather data
          */
-        userViewModel.customerInfo.observe(viewLifecycleOwner, Observer {
-            it?.let {
-                updateUserDetails(it)
+        userViewModel.customerInfo.observe(
+            viewLifecycleOwner,
+            Observer {
+                it?.let {
+                    updateUserDetails(it)
+                }
             }
-        })
+        )
 
         return root
     }
@@ -106,13 +109,15 @@ class UserFragment : Fragment() {
                     /*
                     Call `identify` with the Purchases SDK with the unique user ID
                      */
-                    Purchases.sharedInstance.logInWith(input.text.toString(),
-                            onError = { error ->
-                                buildError(context, error.message)
-                            },
-                            onSuccess = { info, _ ->
-                                updateUserDetails(info)
-                            })
+                    Purchases.sharedInstance.logInWith(
+                        input.text.toString(),
+                        onError = { error ->
+                            buildError(context, error.message)
+                        },
+                        onSuccess = { info, _ ->
+                            updateUserDetails(info)
+                        }
+                    )
                 }
                 .setNegativeButton("Cancel") { _, _ -> }
                 .create()

@@ -177,7 +177,7 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
                         storeProduct is GoogleStoreProduct &&
                         it.productId == storeProduct.productId &&
                         it.optionId == storeProduct.basePlanId
-                      },
+                },
                 replaceProductInfo = null,
                 presentedOfferingIdentifier = null,
                 isPersonalizedPrice = null

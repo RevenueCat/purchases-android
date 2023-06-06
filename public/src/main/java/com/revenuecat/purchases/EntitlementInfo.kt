@@ -168,26 +168,32 @@ enum class Store {
      * For entitlements granted via Apple App Store.
      */
     APP_STORE,
+
     /**
      * For entitlements granted via Apple Mac App Store.
      */
     MAC_APP_STORE,
+
     /**
      * For entitlements granted via Google Play Store.
      */
     PLAY_STORE,
+
     /**
      * For entitlements granted via Stripe.
      */
     STRIPE,
+
     /**
      * For entitlements granted via a promo in RevenueCat.
      */
     PROMOTIONAL,
+
     /**
      * For entitlements granted via an unknown store.
      */
     UNKNOWN_STORE,
+
     /**
      * For entitlements granted via Amazon store.
      */
@@ -202,10 +208,12 @@ enum class PeriodType {
      * If the entitlement is not under an introductory or trial period.
      */
     NORMAL,
+
     /**
      * If the entitlement is under a introductory price period.
      */
     INTRO,
+
     /**
      * If the entitlement is under a trial period.
      */
@@ -220,10 +228,12 @@ enum class OwnershipType {
      * The purchase was made directly by this user.
      */
     PURCHASED,
+
     /**
      * The purchase has been shared to this user by a family member.
      */
     FAMILY_SHARED,
+
     /**
      * The purchase has no or an unknown ownership type.
      */

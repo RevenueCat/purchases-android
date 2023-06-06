@@ -20,6 +20,7 @@ class OfflineEntitlementsManager(
     // We cache the offline customer info in memory, so it's not persisted.
     val offlineCustomerInfo: CustomerInfo?
         get() = _offlineCustomerInfo
+
     @get:Synchronized @set:Synchronized
     private var _offlineCustomerInfo: CustomerInfo? = null
 
@@ -51,10 +52,12 @@ class OfflineEntitlementsManager(
         onError: (PurchasesError) -> Unit
     ) {
         if (!appConfig.enableOfflineEntitlements) {
-            onError(PurchasesError(
-                PurchasesErrorCode.UnsupportedError,
-                OfflineEntitlementsStrings.OFFLINE_ENTITLEMENTS_NOT_ENABLED
-            ))
+            onError(
+                PurchasesError(
+                    PurchasesErrorCode.UnsupportedError,
+                    OfflineEntitlementsStrings.OFFLINE_ENTITLEMENTS_NOT_ENABLED
+                )
+            )
             return
         }
         synchronized(this@OfflineEntitlementsManager) {

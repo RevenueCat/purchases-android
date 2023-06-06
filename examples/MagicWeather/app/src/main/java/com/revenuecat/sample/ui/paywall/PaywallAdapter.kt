@@ -72,7 +72,8 @@ class PaywallAdapter(
                     }
 
                     viewHolder.view.findViewById<TextView>(R.id.paywall_item_price).text = price
-                    viewHolder.view.findViewById<TextView>(R.id.paywall_item_best_offer).visibility =  if (it.defaultOffer) View.VISIBLE else View.GONE
+                    viewHolder.view.findViewById<TextView>(R.id.paywall_item_best_offer).visibility =
+                        if (it.defaultOffer) View.VISIBLE else View.GONE
                 }
             }
         }

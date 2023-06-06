@@ -11,10 +11,13 @@ data class PurchaseParams(val builder: Builder) {
     val isPersonalizedPrice: Boolean?
     val oldProductId: String?
     val googleProrationMode: GoogleProrationMode
+
     @get:JvmSynthetic
     internal val purchasingData: PurchasingData
+
     @get:JvmSynthetic
     internal val activity: Activity
+
     @get:JvmSynthetic
     internal val presentedOfferingIdentifier: String?
 

@@ -1,30 +1,30 @@
- package com.revenuecat.purchases.offlineentitlements
+package com.revenuecat.purchases.offlineentitlements
 
- import androidx.test.ext.junit.runners.AndroidJUnit4
- import com.revenuecat.purchases.CacheFetchPolicy
- import com.revenuecat.purchases.CustomerInfo
- import com.revenuecat.purchases.MainActivity
- import com.revenuecat.purchases.ProductType
- import com.revenuecat.purchases.PurchaseParams
- import com.revenuecat.purchases.Purchases
- import com.revenuecat.purchases.PurchasesErrorCode
- import com.revenuecat.purchases.common.sha1
- import com.revenuecat.purchases.factories.StoreProductFactory
- import com.revenuecat.purchases.factories.StoreTransactionFactory
- import com.revenuecat.purchases.forceServerErrors
- import com.revenuecat.purchases.getCustomerInfoWith
- import com.revenuecat.purchases.helpers.mockQueryProductDetails
- import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
- import com.revenuecat.purchases.models.StoreTransaction
- import com.revenuecat.purchases.purchaseWith
- import com.revenuecat.purchases.resetSingleton
- import org.assertj.core.api.Assertions.assertThat
- import org.assertj.core.api.Assertions.fail
- import org.junit.Before
- import org.junit.Test
- import org.junit.runner.RunWith
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.CacheFetchPolicy
+import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.MainActivity
+import com.revenuecat.purchases.ProductType
+import com.revenuecat.purchases.PurchaseParams
+import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.common.sha1
+import com.revenuecat.purchases.factories.StoreProductFactory
+import com.revenuecat.purchases.factories.StoreTransactionFactory
+import com.revenuecat.purchases.forceServerErrors
+import com.revenuecat.purchases.getCustomerInfoWith
+import com.revenuecat.purchases.helpers.mockQueryProductDetails
+import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
+import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.purchaseWith
+import com.revenuecat.purchases.resetSingleton
+import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.fail
+import org.junit.Before
+import org.junit.Test
+import org.junit.runner.RunWith
 
- abstract class BaseOfflineEntitlementsWithInitialRequestsCompletedIntegrationTest :
+abstract class BaseOfflineEntitlementsWithInitialRequestsCompletedIntegrationTest :
     BaseOfflineEntitlementsIntegrationTest() {
 
     @Before
@@ -66,10 +66,10 @@
     }
 
     // endregion helpers
- }
+}
 
- @RunWith(AndroidJUnit4::class)
- class OfflineEntitlementsWithInitialRequestsCompletedAndInitialPurchasesIntegrationTest :
+@RunWith(AndroidJUnit4::class)
+class OfflineEntitlementsWithInitialRequestsCompletedAndInitialPurchasesIntegrationTest :
     BaseOfflineEntitlementsWithInitialRequestsCompletedIntegrationTest() {
 
     override val initialActivePurchasesToUse: Map<String, StoreTransaction> = initialActivePurchases
@@ -120,10 +120,10 @@
             )
         }
     }
- }
+}
 
- @RunWith(AndroidJUnit4::class)
- class OfflineEntitlementsWithInitialRequestsCompletedAndNoInitialPurchasesIntegrationTest :
+@RunWith(AndroidJUnit4::class)
+class OfflineEntitlementsWithInitialRequestsCompletedAndNoInitialPurchasesIntegrationTest :
     BaseOfflineEntitlementsWithInitialRequestsCompletedIntegrationTest() {
 
     @Test
@@ -312,4 +312,4 @@
             )
         }
     }
- }
+}

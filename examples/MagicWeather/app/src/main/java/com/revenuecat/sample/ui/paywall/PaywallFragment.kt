@@ -74,7 +74,8 @@ class PaywallFragment : Fragment() {
             },
             onSuccess = { _, _ ->
                 activity?.finish()
-            })
+            }
+        )
     }
 
     private fun purchaseOption(item: SubscriptionOption) {
@@ -87,6 +88,7 @@ class PaywallFragment : Fragment() {
             },
             onSuccess = { _, _ ->
                 activity?.finish()
-            })
+            }
+        )
     }
 }

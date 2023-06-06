@@ -105,8 +105,11 @@ class Purchases internal constructor(
     @Volatile
     @JvmSynthetic
     internal var state = PurchasesState()
-        @JvmSynthetic @Synchronized get() = field
-        @JvmSynthetic @Synchronized set(value) {
+        @JvmSynthetic @Synchronized
+        get() = field
+
+        @JvmSynthetic @Synchronized
+        set(value) {
             field = value
         }
 
@@ -116,6 +119,7 @@ class Purchases internal constructor(
      */
     var finishTransactions: Boolean
         @Synchronized get() = appConfig.finishTransactions
+
         @Synchronized set(value) {
             appConfig.finishTransactions = value
         }
@@ -132,6 +136,7 @@ class Purchases internal constructor(
      */
     var updatedCustomerInfoListener: UpdatedCustomerInfoListener?
         @Synchronized get() = customerInfoHelper.updatedCustomerInfoListener
+
         @Synchronized set(value) {
             customerInfoHelper.updatedCustomerInfoListener = value
         }
@@ -347,15 +352,19 @@ class Purchases internal constructor(
     ) {
         val types = type?.let { setOf(type) } ?: setOf(ProductType.SUBS, ProductType.INAPP)
 
-        getProductsOfTypes(productIds.toSet(), types, object : GetStoreProductsCallback {
-            override fun onReceived(storeProducts: List<StoreProduct>) {
-                callback.onReceived(storeProducts)
-            }
+        getProductsOfTypes(
+            productIds.toSet(),
+            types,
+            object : GetStoreProductsCallback {
+                override fun onReceived(storeProducts: List<StoreProduct>) {
+                    callback.onReceived(storeProducts)
+                }
 
-            override fun onError(error: PurchasesError) {
-                callback.onError(error)
+                override fun onError(error: PurchasesError) {
+                    callback.onError(error)
+                }
             }
-        })
+        )
     }
 
     /**
@@ -577,7 +586,8 @@ class Purchases internal constructor(
                                 },
                                 onError = { _, error ->
                                     log(
-                                        LogIntent.RC_ERROR, RestoreStrings.RESTORING_PURCHASE_ERROR
+                                        LogIntent.RC_ERROR,
+                                        RestoreStrings.RESTORING_PURCHASE_ERROR
                                             .format(purchase, error)
                                     )
                                     if (sortedByTime.last() == purchase) {
@@ -607,7 +617,8 @@ class Purchases internal constructor(
         callback: LogInCallback? = null
     ) {
         identityManager.currentAppUserID.takeUnless { it == newAppUserID }?.let {
-            identityManager.logIn(newAppUserID,
+            identityManager.logIn(
+                newAppUserID,
                 onSuccess = { customerInfo, created ->
                     dispatch {
                         callback?.onReceived(customerInfo, created)
@@ -617,7 +628,8 @@ class Purchases internal constructor(
                 },
                 onError = { error ->
                     dispatch { callback?.onError(error) }
-                })
+                }
+            )
         }
             ?: customerInfoHelper.retrieveCustomerInfo(
                 identityManager.currentAppUserID,
@@ -1079,11 +1091,13 @@ class Purchases internal constructor(
                             callback
                         )
                     }
-                }, {
+                },
+                {
                     dispatch {
                         callback.onError(it)
                     }
-                })
+                }
+            )
         } ?: run {
             callback.onReceived(collectedStoreProducts)
         }
@@ -1275,7 +1289,8 @@ class Purchases internal constructor(
         listener: PurchaseCallback
     ) {
         log(
-            LogIntent.PURCHASE, PurchaseStrings.PURCHASE_STARTED.format(
+            LogIntent.PURCHASE,
+            PurchaseStrings.PURCHASE_STARTED.format(
                 " $purchasingData ${
                     presentedOfferingIdentifier?.let {
                         PurchaseStrings.OFFERING + "$presentedOfferingIdentifier"
@@ -1319,15 +1334,18 @@ class Purchases internal constructor(
         purchaseCallback: PurchaseCallback
     ) {
         if (purchasingData.productType != ProductType.SUBS) {
-            purchaseCallback.dispatch(PurchasesError(
-                PurchasesErrorCode.PurchaseNotAllowedError,
-                PurchaseStrings.UPGRADING_INVALID_TYPE
-            ).also { errorLog(it) })
+            purchaseCallback.dispatch(
+                PurchasesError(
+                    PurchasesErrorCode.PurchaseNotAllowedError,
+                    PurchaseStrings.UPGRADING_INVALID_TYPE
+                ).also { errorLog(it) }
+            )
             return
         }
 
         log(
-            LogIntent.PURCHASE, PurchaseStrings.PRODUCT_CHANGE_STARTED.format(
+            LogIntent.PURCHASE,
+            PurchaseStrings.PRODUCT_CHANGE_STARTED.format(
                 " $purchasingData ${
                     offeringIdentifier?.let {
                         PurchaseStrings.OFFERING + "$offeringIdentifier"
@@ -1383,15 +1401,18 @@ class Purchases internal constructor(
     ) {
         if (purchasingData.productType != ProductType.SUBS) {
             getAndClearProductChangeCallback()
-            listener.dispatch(PurchasesError(
-                PurchasesErrorCode.PurchaseNotAllowedError,
-                PurchaseStrings.UPGRADING_INVALID_TYPE
-            ).also { errorLog(it) })
+            listener.dispatch(
+                PurchasesError(
+                    PurchasesErrorCode.PurchaseNotAllowedError,
+                    PurchaseStrings.UPGRADING_INVALID_TYPE
+                ).also { errorLog(it) }
+            )
             return
         }
 
         log(
-            LogIntent.PURCHASE, PurchaseStrings.PRODUCT_CHANGE_STARTED.format(
+            LogIntent.PURCHASE,
+            PurchaseStrings.PRODUCT_CHANGE_STARTED.format(
                 " $purchasingData ${
                     offeringIdentifier?.let {
                         PurchaseStrings.OFFERING + "$offeringIdentifier"
@@ -1468,7 +1489,8 @@ class Purchases internal constructor(
                 getAndClearProductChangeCallback()
                 getAndClearAllPurchaseCallbacks()
                 listener.dispatch(error)
-            })
+            }
+        )
     }
 
     @JvmSynthetic
@@ -1499,7 +1521,8 @@ class Purchases internal constructor(
                         },
                         onError = { error ->
                             log(LogIntent.GOOGLE_ERROR, error.toString())
-                        })
+                        }
+                    )
                 }
             })
         } else {
@@ -1527,6 +1550,7 @@ class Purchases internal constructor(
     var allowSharingPlayStoreAccount: Boolean
         @Synchronized get() =
             state.allowSharingPlayStoreAccount ?: identityManager.currentUserIsAnonymous()
+
         @Synchronized set(value) {
             state = state.copy(allowSharingPlayStoreAccount = value)
         }
@@ -1606,6 +1630,7 @@ class Purchases internal constructor(
         @JvmStatic
         var logHandler: LogHandler
             @Synchronized get() = currentLogHandler
+
             @Synchronized set(value) {
                 currentLogHandler = value
             }
@@ -1623,6 +1648,7 @@ class Purchases internal constructor(
             get() =
                 backingFieldSharedInstance
                     ?: throw UninitializedPropertyAccessException(ConfigureStrings.NO_SINGLETON_INSTANCE)
+
             @VisibleForTesting(otherwise = VisibleForTesting.NONE)
             internal set(value) {
                 backingFieldSharedInstance?.close()
@@ -1741,7 +1767,8 @@ class Purchases internal constructor(
                                     }
                                 }
                             }
-                        })
+                        }
+                    )
                 }
         }
     }

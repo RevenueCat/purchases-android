@@ -45,7 +45,8 @@ const val ONE_OFFERINGS_INAPP_PRODUCT_RESPONSE = "{'offerings': [" +
 fun stubStoreProduct(
     productId: String,
     defaultOption: SubscriptionOption? = stubSubscriptionOption(
-        "monthly_base_plan", productId,
+        "monthly_base_plan",
+        productId,
         Period(1, Period.Unit.MONTH, "P1M"),
     ),
     subscriptionOptions: List<SubscriptionOption>? = defaultOption?.let { listOf(defaultOption) } ?: emptyList(),
@@ -67,15 +68,17 @@ fun stubStoreProduct(
     override val subscriptionOptions: SubscriptionOptions?
         get() {
             return subscriptionOptions?.let {
-                SubscriptionOptions(it.map { option ->
-                    stubSubscriptionOption(
-                        id = option.id,
-                        productId = productId,
-                        duration = option.billingPeriod!!,
-                        pricingPhases = option.pricingPhases,
-                        presentedOfferingId = presentedOfferingId
-                    )
-                })
+                SubscriptionOptions(
+                    it.map { option ->
+                        stubSubscriptionOption(
+                            id = option.id,
+                            productId = productId,
+                            duration = option.billingPeriod!!,
+                            pricingPhases = option.pricingPhases,
+                            presentedOfferingId = presentedOfferingId
+                        )
+                    }
+                )
             }
         }
     override val defaultOption: SubscriptionOption?
@@ -289,7 +292,7 @@ fun getLifetimePackageJSON() =
                     'identifier': '${PackageType.LIFETIME.identifier}',
                     'platform_product_identifier': 'com.myproduct.lifetime'
                 }
-            """.trimIndent()
+        """.trimIndent()
     )
 
 fun getAmazonPackageJSON(
@@ -302,5 +305,5 @@ fun getAmazonPackageJSON(
                     'identifier': '$packageIdentifier',
                     'platform_product_identifier': '$productIdentifier'
                 }
-            """.trimIndent()
+        """.trimIndent()
     )
