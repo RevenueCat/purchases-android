@@ -64,8 +64,8 @@ data class EntitlementInfo(
                 "originalPurchaseDate, expirationDate, store, productIdentifier, productPlanIdentifier, isSandbox, " +
                 "unsubscribeDetectedAt, billingIssueDetectedAt, ownershipType, jsonObject, " +
                 "VerificationResult.NOT_REQUESTED)",
-            "com.revenuecat.purchases.VerificationResult"
-        )
+            "com.revenuecat.purchases.VerificationResult",
+        ),
     )
     constructor(
         identifier: String,

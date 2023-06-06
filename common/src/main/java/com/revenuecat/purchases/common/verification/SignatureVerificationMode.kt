@@ -6,7 +6,7 @@ sealed class SignatureVerificationMode {
     companion object {
         fun fromEntitlementVerificationMode(
             verificationMode: EntitlementVerificationMode,
-            signatureVerifier: SignatureVerifier? = null
+            signatureVerifier: SignatureVerifier? = null,
         ): SignatureVerificationMode {
             return when (verificationMode) {
                 EntitlementVerificationMode.DISABLED -> Disabled

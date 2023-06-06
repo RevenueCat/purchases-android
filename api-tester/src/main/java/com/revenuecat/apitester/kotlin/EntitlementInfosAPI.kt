@@ -15,11 +15,11 @@ private class EntitlementInfosAPI {
 
     fun checkConstructor(
         all: Map<String, EntitlementInfo>,
-        verificationResult: VerificationResult
+        verificationResult: VerificationResult,
     ) {
         val entitlementInfos = EntitlementInfos(
             all = all,
-            verification = verificationResult
+            verification = verificationResult,
         )
         val entitlementInfos2 = EntitlementInfos(all = all)
     }

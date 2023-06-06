@@ -66,7 +66,7 @@ object CustomerInfoFactory {
         ) ?: EntitlementInfos(
             emptyMap(),
             // TODO Check if this should be NOT_REQUESTED
-            verificationResult
+            verificationResult,
         )
 
         val managementURL = subscriber.optNullableString(CustomerInfoResponseJsonKeys.MANAGEMENT_URL)

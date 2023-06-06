@@ -46,7 +46,7 @@ private class EntitlementInfoAPI {
         billingIssueDetectedAt: Date?,
         ownershipType: OwnershipType,
         jsonObject: JSONObject,
-        verification: VerificationResult
+        verification: VerificationResult,
     ) {
         val entitlementInfo = EntitlementInfo(
             identifier = identifier,
@@ -64,7 +64,7 @@ private class EntitlementInfoAPI {
             billingIssueDetectedAt = billingIssueDetectedAt,
             ownershipType = ownershipType,
             jsonObject = jsonObject,
-            verification = verification
+            verification = verification,
         )
         val entitlementInfo2 = EntitlementInfo(
             identifier = identifier,

@@ -84,7 +84,7 @@ internal class PurchasesFactory(
             }
 
             val signatureVerificationMode = SignatureVerificationMode.fromEntitlementVerificationMode(
-                verificationMode
+                verificationMode,
             )
             val signingManager = SigningManager(signatureVerificationMode)
 

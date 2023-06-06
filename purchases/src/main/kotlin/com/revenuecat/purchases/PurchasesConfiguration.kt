@@ -93,9 +93,9 @@ open class PurchasesConfiguration(builder: Builder) {
          *
          * Default mode is [EntitlementVerificationMode.DISABLED].
          */
-         fun entitlementVerificationMode(entitlementVerificationMode: EntitlementVerificationMode) = apply {
-             this.verificationMode = entitlementVerificationMode
-         }
+        fun entitlementVerificationMode(entitlementVerificationMode: EntitlementVerificationMode) = apply {
+            this.verificationMode = entitlementVerificationMode
+        }
 
         /**
          * Only use a Dangerous Setting if suggested by RevenueCat support team.

@@ -39,7 +39,7 @@ private class PurchasesErrorAPI {
             PurchasesErrorCode.UnsupportedError,
             PurchasesErrorCode.EmptySubscriberAttributesError,
             PurchasesErrorCode.CustomerInfoError,
-            PurchasesErrorCode.SignatureVerificationError
+            PurchasesErrorCode.SignatureVerificationError,
             -> {}
         }.exhaustive
     }

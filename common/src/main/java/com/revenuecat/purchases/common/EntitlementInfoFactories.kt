@@ -48,7 +48,7 @@ internal fun JSONObject.buildEntitlementInfos(
     }
     return EntitlementInfos(
         all,
-        verificationResult
+        verificationResult,
     )
 }
 
@@ -109,7 +109,7 @@ internal fun JSONObject.buildEntitlementInfo(
         billingIssueDetectedAt = billingIssueDetectedAt,
         ownershipType = productData.optOwnershipType(ProductResponseJsonKeys.OWNERSHIP_TYPE),
         jsonObject = this,
-        verification = verificationResult
+        verification = verificationResult,
     )
 }
 

@@ -18,7 +18,7 @@ class EntitlementInfos(
 
     @Deprecated(
         "Use the constructor with the verification parameter",
-        ReplaceWith("EntitlementInfos(all, verification)")
+        ReplaceWith("EntitlementInfos(all, verification)"),
     )
     constructor(
         all: Map<String, EntitlementInfo>,
