@@ -10,7 +10,7 @@ class BackendHelper(
     private val apiKey: String,
     private val dispatcher: Dispatcher,
     private val appConfig: AppConfig,
-    private val httpClient: HTTPClient
+    private val httpClient: HTTPClient,
 ) {
     internal val authenticationHeaders = mapOf("Authorization" to "Bearer ${this.apiKey}")
 
@@ -18,7 +18,7 @@ class BackendHelper(
         endpoint: Endpoint,
         body: Map<String, Any?>?,
         onError: (PurchasesError) -> Unit,
-        onCompleted: (PurchasesError?, Int, JSONObject) -> Unit
+        onCompleted: (PurchasesError?, Int, JSONObject) -> Unit,
     ) {
         enqueue(
             object : Dispatcher.AsyncCall() {
@@ -27,7 +27,7 @@ class BackendHelper(
                         appConfig.baseURL,
                         endpoint,
                         body,
-                        authenticationHeaders
+                        authenticationHeaders,
                     )
                 }
 
@@ -44,14 +44,14 @@ class BackendHelper(
                     onCompleted(error, result.responseCode, result.body)
                 }
             },
-            dispatcher
+            dispatcher,
         )
     }
 
     fun enqueue(
         call: Dispatcher.AsyncCall,
         dispatcher: Dispatcher,
-        delay: Delay = Delay.NONE
+        delay: Delay = Delay.NONE,
     ) {
         if (dispatcher.isClosed()) {
             errorLog("Enqueuing operation in closed dispatcher.")

@@ -26,7 +26,7 @@ import java.util.Date
 class OfflineCustomerInfoCalculator(
     private val purchasedProductsFetcher: PurchasedProductsFetcher,
     private val appConfig: AppConfig,
-    private val dateProvider: DateProvider = DefaultDateProvider()
+    private val dateProvider: DateProvider = DefaultDateProvider(),
 ) {
 
     /**
@@ -39,7 +39,7 @@ class OfflineCustomerInfoCalculator(
     fun computeOfflineCustomerInfo(
         appUserID: String,
         onSuccess: (CustomerInfo) -> Unit,
-        onError: (PurchasesError) -> Unit
+        onError: (PurchasesError) -> Unit,
     ) {
         purchasedProductsFetcher.queryActiveProducts(
             appUserID,
@@ -50,7 +50,7 @@ class OfflineCustomerInfoCalculator(
                 if (containsAnyActiveInAppPurchase) {
                     val error = PurchasesError(
                         PurchasesErrorCode.UnsupportedError,
-                        OfflineEntitlementsStrings.OFFLINE_ENTITLEMENTS_UNSUPPORTED_INAPP_PURCHASES
+                        OfflineEntitlementsStrings.OFFLINE_ENTITLEMENTS_UNSUPPORTED_INAPP_PURCHASES,
                     )
                     errorLog(COMPUTING_OFFLINE_CUSTOMER_INFO_FAILED.format(error))
                     onError(error)
@@ -62,13 +62,13 @@ class OfflineCustomerInfoCalculator(
             onError = { error ->
                 errorLog(COMPUTING_OFFLINE_CUSTOMER_INFO_FAILED.format(error))
                 onError(error)
-            }
+            },
         )
     }
 
     private fun buildCustomerInfoUsingListOfPurchases(
         appUserID: String,
-        purchasedProducts: List<PurchasedProduct>
+        purchasedProducts: List<PurchasedProduct>,
     ): CustomerInfo {
         val jsonObject = JSONObject()
         val requestDate = dateProvider.now
@@ -88,14 +88,14 @@ class OfflineCustomerInfoCalculator(
                     put(CustomerInfoResponseJsonKeys.NON_SUBSCRIPTIONS, JSONObject())
                     put(CustomerInfoResponseJsonKeys.SUBSCRIPTIONS, generateSubscriptions(purchasedProducts))
                     put(CustomerInfoResponseJsonKeys.MANAGEMENT_URL, determineManagementURL())
-                }
+                },
             )
         }
 
         return CustomerInfoFactory.buildCustomerInfo(
             jsonObject,
             requestDate,
-            VerificationResult.VERIFIED_ON_DEVICE
+            VerificationResult.VERIFIED_ON_DEVICE,
         )
     }
 
@@ -127,13 +127,13 @@ class OfflineCustomerInfoCalculator(
                     put(ProductResponseJsonKeys.PRODUCT_PLAN_IDENTIFIER, product.basePlanId)
                     put(
                         ProductResponseJsonKeys.EXPIRES_DATE,
-                        product.expiresDate?.let { Iso8601Utils.format(it) } ?: JSONObject.NULL
+                        product.expiresDate?.let { Iso8601Utils.format(it) } ?: JSONObject.NULL,
                     )
                     put(
                         ProductResponseJsonKeys.PERIOD_TYPE,
-                        PeriodType.NORMAL.name.lowercase()
+                        PeriodType.NORMAL.name.lowercase(),
                     ) // Best guess, we don't know what period type was purchased
-                }
+                },
             )
         }
         return subscriptions

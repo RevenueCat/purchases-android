@@ -13,7 +13,7 @@ class AmazonDeviceIdentifiersFetcher : DeviceIdentifiersFetcher {
 
     override fun getDeviceIdentifiers(
         applicationContext: Application,
-        completion: (deviceIdentifiers: Map<String, String>) -> Unit
+        completion: (deviceIdentifiers: Map<String, String>) -> Unit,
     ) {
         var advertisingID: String? = null
         try {
@@ -27,12 +27,12 @@ class AmazonDeviceIdentifiersFetcher : DeviceIdentifiersFetcher {
         } catch (e: Settings.SettingNotFoundException) {
             log(
                 LogIntent.AMAZON_ERROR,
-                AttributionStrings.AMAZON_COULD_NOT_GET_ADID.format(e.localizedMessage)
+                AttributionStrings.AMAZON_COULD_NOT_GET_ADID.format(e.localizedMessage),
             )
         }
         val deviceIdentifiers = mapOf(
             SubscriberAttributeKey.DeviceIdentifiers.AmazonAdID.backendKey to advertisingID,
-            SubscriberAttributeKey.DeviceIdentifiers.IP.backendKey to "true"
+            SubscriberAttributeKey.DeviceIdentifiers.IP.backendKey to "true",
         ).filterNotNullValues()
         completion(deviceIdentifiers)
     }

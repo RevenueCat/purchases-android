@@ -10,7 +10,7 @@ import com.revenuecat.purchases.LogLevel
 
 class TesterLogHandler(
     private val applicationContext: Context,
-    private val mainHandler: Handler = Handler(Looper.getMainLooper())
+    private val mainHandler: Handler = Handler(Looper.getMainLooper()),
 ) : LogHandler {
 
     val storedLogs: List<LogMessage>

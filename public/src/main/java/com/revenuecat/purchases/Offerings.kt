@@ -8,7 +8,7 @@ package com.revenuecat.purchases
  */
 data class Offerings(
     val current: Offering?,
-    val all: Map<String, Offering>
+    val all: Map<String, Offering>,
 ) {
 
     /**

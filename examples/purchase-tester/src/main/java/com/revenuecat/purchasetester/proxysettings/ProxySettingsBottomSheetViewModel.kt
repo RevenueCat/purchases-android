@@ -14,7 +14,7 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
 class ProxySettingsBottomSheetViewModel(
-    private val executor: ExecutorService = Executors.newSingleThreadExecutor()
+    private val executor: ExecutorService = Executors.newSingleThreadExecutor(),
 ) : ViewModel() {
 
     companion object {

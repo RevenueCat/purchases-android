@@ -39,7 +39,7 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
             } else {
                 Purchases.sharedInstance.logOutWith(
                     { error -> showUserError(requireActivity(), error) },
-                    { navigateToLoginFragment() }
+                    { navigateToLoginFragment() },
                 )
             }
         }
@@ -86,7 +86,7 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
         binding.overviewOfferingsRecycler.adapter = OfferingCardAdapter(
             offerings.all.values.toList(),
             offerings.current,
-            this
+            this,
         )
     }
 
@@ -115,7 +115,7 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
         Toast.makeText(
             requireContext(),
             message,
-            Toast.LENGTH_LONG
+            Toast.LENGTH_LONG,
         ).show()
     }
 

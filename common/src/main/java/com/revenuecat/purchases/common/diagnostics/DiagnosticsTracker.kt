@@ -14,7 +14,7 @@ import kotlin.time.Duration
 class DiagnosticsTracker(
     private val diagnosticsFileHelper: DiagnosticsFileHelper,
     private val diagnosticsAnonymizer: DiagnosticsAnonymizer,
-    private val diagnosticsDispatcher: Dispatcher
+    private val diagnosticsDispatcher: Dispatcher,
 ) {
     private companion object {
         const val RESPONSE_TIME_MILLIS_KEY = "response_time_millis"
@@ -26,7 +26,7 @@ class DiagnosticsTracker(
         responseTime: Duration,
         wasSuccessful: Boolean,
         responseCode: Int,
-        resultOrigin: HTTPResult.Origin?
+        resultOrigin: HTTPResult.Origin?,
     ) {
         trackEvent(
             DiagnosticsEntry.Event(
@@ -36,9 +36,9 @@ class DiagnosticsTracker(
                     RESPONSE_TIME_MILLIS_KEY to responseTime.inWholeMilliseconds,
                     "successful" to wasSuccessful,
                     "response_code" to responseCode,
-                    "etag_hit" to (resultOrigin == HTTPResult.Origin.CACHE)
-                )
-            )
+                    "etag_hit" to (resultOrigin == HTTPResult.Origin.CACHE),
+                ),
+            ),
         )
     }
 
@@ -46,7 +46,7 @@ class DiagnosticsTracker(
         productType: String,
         billingResponseCode: Int,
         billingDebugMessage: String,
-        responseTime: Duration
+        responseTime: Duration,
     ) {
         trackEvent(
             DiagnosticsEntry.Event(
@@ -55,9 +55,9 @@ class DiagnosticsTracker(
                     PRODUCT_TYPE_QUERIED_KEY to productType,
                     "billing_response_code" to billingResponseCode,
                     "billing_debug_message" to billingDebugMessage,
-                    RESPONSE_TIME_MILLIS_KEY to responseTime.inWholeMilliseconds
-                )
-            )
+                    RESPONSE_TIME_MILLIS_KEY to responseTime.inWholeMilliseconds,
+                ),
+            ),
         )
     }
 
@@ -65,7 +65,7 @@ class DiagnosticsTracker(
         productType: String,
         billingResponseCode: Int,
         billingDebugMessage: String,
-        responseTime: Duration
+        responseTime: Duration,
     ) {
         trackEvent(
             DiagnosticsEntry.Event(
@@ -74,9 +74,9 @@ class DiagnosticsTracker(
                     PRODUCT_TYPE_QUERIED_KEY to productType,
                     "billing_response_code" to billingResponseCode,
                     "billing_debug_message" to billingDebugMessage,
-                    RESPONSE_TIME_MILLIS_KEY to responseTime.inWholeMilliseconds
-                )
-            )
+                    RESPONSE_TIME_MILLIS_KEY to responseTime.inWholeMilliseconds,
+                ),
+            ),
         )
     }
 
@@ -84,7 +84,7 @@ class DiagnosticsTracker(
         productType: String,
         billingResponseCode: Int,
         billingDebugMessage: String,
-        responseTime: Duration
+        responseTime: Duration,
     ) {
         trackEvent(
             DiagnosticsEntry.Event(
@@ -93,9 +93,9 @@ class DiagnosticsTracker(
                     PRODUCT_TYPE_QUERIED_KEY to productType,
                     "billing_response_code" to billingResponseCode,
                     "billing_debug_message" to billingDebugMessage,
-                    RESPONSE_TIME_MILLIS_KEY to responseTime.inWholeMilliseconds
-                )
-            )
+                    RESPONSE_TIME_MILLIS_KEY to responseTime.inWholeMilliseconds,
+                ),
+            ),
         )
     }
 
@@ -104,8 +104,8 @@ class DiagnosticsTracker(
             name = DiagnosticsEventName.MAX_EVENTS_STORED_LIMIT_REACHED,
             properties = mapOf(
                 "total_number_events_stored" to totalEventsStored,
-                "events_removed" to eventsRemoved
-            )
+                "events_removed" to eventsRemoved,
+            ),
         )
         if (useCurrentThread) {
             trackEventInCurrentThread(event)

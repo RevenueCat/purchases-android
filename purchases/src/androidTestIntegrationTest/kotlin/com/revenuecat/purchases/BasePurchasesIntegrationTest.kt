@@ -76,7 +76,7 @@ open class BasePurchasesIntegrationTest {
         initialSharedPreferences: Map<String, String> = emptyMap(),
         initialActivePurchases: Map<String, StoreTransaction> = initialActivePurchasesToUse,
         forceServerErrors: Boolean = initialForceServerErrors,
-        postSetupTestCallback: (MainActivity) -> Unit = {}
+        postSetupTestCallback: (MainActivity) -> Unit = {},
     ) {
         latestPurchasesUpdatedListener = null
         latestStateListener = null
@@ -118,7 +118,7 @@ open class BasePurchasesIntegrationTest {
                 .appUserID(testUserId)
                 .build(),
             mockBillingAbstract,
-            forceServerErrors
+            forceServerErrors,
         )
     }
 
@@ -135,7 +135,7 @@ open class BasePurchasesIntegrationTest {
             mockBillingAbstract.queryPurchases(
                 testUserId,
                 capture(callbackSlot),
-                any()
+                any(),
             )
         } answers {
             callbackSlot.captured.invoke(activePurchases)
@@ -146,11 +146,11 @@ open class BasePurchasesIntegrationTest {
         PreferenceManager.getDefaultSharedPreferences(context).edit().clear().commit()
         context.getSharedPreferences(
             eTagsSharedPreferencesNameTemplate.format(context.packageName),
-            Context.MODE_PRIVATE
+            Context.MODE_PRIVATE,
         ).edit().clear().commit()
         context.getSharedPreferences(
             diagnosticsSharedPreferencesNameTemplate.format(context.packageName),
-            Context.MODE_PRIVATE
+            Context.MODE_PRIVATE,
         ).edit().clear().commit()
     }
 

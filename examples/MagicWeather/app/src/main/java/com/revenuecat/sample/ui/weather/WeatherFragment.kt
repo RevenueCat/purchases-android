@@ -25,7 +25,7 @@ class WeatherFragment : Fragment() {
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
-        savedInstanceState: Bundle?
+        savedInstanceState: Bundle?,
     ): View {
         weatherViewModel = WeatherViewModel.shared
 
@@ -46,7 +46,7 @@ class WeatherFragment : Fragment() {
             viewLifecycleOwner,
             Observer {
                 setWeatherData(it)
-            }
+            },
         )
 
         /*

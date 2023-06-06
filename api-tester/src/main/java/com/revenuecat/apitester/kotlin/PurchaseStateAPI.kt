@@ -8,7 +8,7 @@ private class PurchaseStateAPI {
         when (state) {
             PurchaseState.UNSPECIFIED_STATE,
             PurchaseState.PURCHASED,
-            PurchaseState.PENDING
+            PurchaseState.PENDING,
             -> {}
         }.exhaustive
     }

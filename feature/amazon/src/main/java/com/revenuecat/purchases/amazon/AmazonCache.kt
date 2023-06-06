@@ -9,7 +9,7 @@ import org.json.JSONObject
 const val RECEIPTS_TO_SKUS_KEY = "receiptsToSkus"
 
 internal class AmazonCache(
-    private val deviceCache: DeviceCache
+    private val deviceCache: DeviceCache,
 ) {
 
     internal val amazonPostedTokensKey: String by lazy {

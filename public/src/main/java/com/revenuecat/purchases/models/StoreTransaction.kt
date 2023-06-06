@@ -100,7 +100,7 @@ data class StoreTransaction(
      * Null if it was not an upgrade/downgrade or if the purchase was restored.
      * This is not available for Amazon purchases.
      */
-    val prorationMode: ProrationMode?
+    val prorationMode: ProrationMode?,
 ) : Parcelable {
 
     /**
@@ -109,7 +109,7 @@ data class StoreTransaction(
     @IgnoredOnParcel
     @Deprecated(
         "Replaced with productIds",
-        ReplaceWith("productIds")
+        ReplaceWith("productIds"),
     )
     val skus: List<String>
         get() = productIds
@@ -137,10 +137,10 @@ private data class ComparableData(
     val storeUserID: String?,
     val purchaseType: PurchaseType,
     val marketplace: String?,
-    val subscriptionOptionId: String?
+    val subscriptionOptionId: String?,
 ) {
     constructor(
-        storeTransaction: StoreTransaction
+        storeTransaction: StoreTransaction,
     ) : this(
         orderId = storeTransaction.orderId,
         productIds = storeTransaction.productIds,
@@ -154,12 +154,12 @@ private data class ComparableData(
         storeUserID = storeTransaction.storeUserID,
         purchaseType = storeTransaction.purchaseType,
         marketplace = storeTransaction.marketplace,
-        subscriptionOptionId = storeTransaction.subscriptionOptionId
+        subscriptionOptionId = storeTransaction.subscriptionOptionId,
     )
 }
 
 enum class PurchaseType {
     GOOGLE_PURCHASE,
     GOOGLE_RESTORED_PURCHASE,
-    AMAZON_PURCHASE
+    AMAZON_PURCHASE,
 }

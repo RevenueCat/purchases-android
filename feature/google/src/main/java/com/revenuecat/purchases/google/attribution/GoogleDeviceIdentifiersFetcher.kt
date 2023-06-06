@@ -17,12 +17,12 @@ import java.io.IOException
 import java.util.concurrent.TimeoutException
 
 class GoogleDeviceIdentifiersFetcher(
-    private val dispatcher: Dispatcher
+    private val dispatcher: Dispatcher,
 ) : DeviceIdentifiersFetcher {
 
     override fun getDeviceIdentifiers(
         applicationContext: Application,
-        completion: (deviceIdentifiers: Map<String, String>) -> Unit
+        completion: (deviceIdentifiers: Map<String, String>) -> Unit,
     ) {
         dispatcher.enqueue({
             val advertisingID: String? = getAdvertisingID(applicationContext)
@@ -30,7 +30,7 @@ class GoogleDeviceIdentifiersFetcher(
             val deviceIdentifiers = mapOf(
                 SubscriberAttributeKey.DeviceIdentifiers.GPSAdID.backendKey to advertisingID,
                 SubscriberAttributeKey.DeviceIdentifiers.AndroidID.backendKey to androidID,
-                SubscriberAttributeKey.DeviceIdentifiers.IP.backendKey to "true"
+                SubscriberAttributeKey.DeviceIdentifiers.IP.backendKey to "true",
             ).filterNotNullValues()
             completion(deviceIdentifiers)
         })
@@ -51,25 +51,25 @@ class GoogleDeviceIdentifiersFetcher(
             log(
                 LogIntent.GOOGLE_ERROR,
                 AttributionStrings.GOOGLE_PLAY_SERVICES_NOT_INSTALLED_FETCHING_ADVERTISING_IDENTIFIER
-                    .format(e.localizedMessage)
+                    .format(e.localizedMessage),
             )
         } catch (e: GooglePlayServicesRepairableException) {
             log(
                 LogIntent.GOOGLE_ERROR,
                 AttributionStrings.GOOGLE_PLAY_SERVICES_REPAIRABLE_EXCEPTION_WHEN_FETCHING_ADVERTISING_IDENTIFIER
-                    .format(e.localizedMessage)
+                    .format(e.localizedMessage),
             )
         } catch (e: TimeoutException) {
             log(
                 LogIntent.GOOGLE_ERROR,
                 AttributionStrings.TIMEOUT_EXCEPTION_WHEN_FETCHING_ADVERTISING_IDENTIFIER
-                    .format(e.localizedMessage)
+                    .format(e.localizedMessage),
             )
         } catch (e: IOException) {
             log(
                 LogIntent.GOOGLE_ERROR,
                 AttributionStrings.IO_EXCEPTION_WHEN_FETCHING_ADVERTISING_IDENTIFIER
-                    .format(e.localizedMessage)
+                    .format(e.localizedMessage),
             )
         }
         return advertisingID

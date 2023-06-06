@@ -31,7 +31,7 @@ open class PurchasesConfiguration(builder: Builder) {
 
     open class Builder(
         @get:JvmSynthetic internal val context: Context,
-        @get:JvmSynthetic internal val apiKey: String
+        @get:JvmSynthetic internal val apiKey: String,
     ) {
 
         @set:JvmSynthetic @get:JvmSynthetic

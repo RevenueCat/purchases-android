@@ -9,7 +9,7 @@ import com.revenuecat.purchases.common.errorLog
 object OfferingParserFactory {
 
     fun createOfferingParser(
-        store: Store
+        store: Store,
     ) = when (store) {
         Store.PLAY_STORE -> GoogleOfferingParser()
         Store.AMAZON -> {

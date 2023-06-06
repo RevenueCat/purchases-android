@@ -11,7 +11,7 @@ import com.revenuecat.purchases_sample.databinding.OfferingCardBinding
 class OfferingCardAdapter(
     private val offerings: List<Offering>,
     private val currentOffering: Offering?,
-    private val listener: OfferingCardAdapterListener
+    private val listener: OfferingCardAdapterListener,
 ) :
     RecyclerView.Adapter<OfferingCardAdapter.OfferingViewHolder>() {
 

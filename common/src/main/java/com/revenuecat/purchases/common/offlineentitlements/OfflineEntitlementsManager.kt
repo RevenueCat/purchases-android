@@ -15,7 +15,7 @@ class OfflineEntitlementsManager(
     private val backend: Backend,
     private val offlineCustomerInfoCalculator: OfflineCustomerInfoCalculator,
     private val deviceCache: DeviceCache,
-    private val appConfig: AppConfig
+    private val appConfig: AppConfig,
 ) {
     // We cache the offline customer info in memory, so it's not persisted.
     val offlineCustomerInfo: CustomerInfo?
@@ -36,27 +36,27 @@ class OfflineEntitlementsManager(
 
     fun shouldCalculateOfflineCustomerInfoInGetCustomerInfoRequest(
         isServerError: Boolean,
-        appUserId: String
+        appUserId: String,
     ) = isServerError &&
         isOfflineEntitlementsEnabled() &&
         deviceCache.getCachedCustomerInfo(appUserId) == null
 
     fun shouldCalculateOfflineCustomerInfoInPostReceipt(
-        isServerError: Boolean
+        isServerError: Boolean,
     ) = isServerError && isOfflineEntitlementsEnabled()
 
     @Suppress("FunctionOnlyReturningConstant")
     fun calculateAndCacheOfflineCustomerInfo(
         appUserId: String,
         onSuccess: (CustomerInfo) -> Unit,
-        onError: (PurchasesError) -> Unit
+        onError: (PurchasesError) -> Unit,
     ) {
         if (!appConfig.enableOfflineEntitlements) {
             onError(
                 PurchasesError(
                     PurchasesErrorCode.UnsupportedError,
-                    OfflineEntitlementsStrings.OFFLINE_ENTITLEMENTS_NOT_ENABLED
-                )
+                    OfflineEntitlementsStrings.OFFLINE_ENTITLEMENTS_NOT_ENABLED,
+                ),
             )
             return
         }
@@ -89,7 +89,7 @@ class OfflineEntitlementsManager(
                         onError(it)
                     }
                 }
-            }
+            },
         )
     }
 
@@ -105,7 +105,7 @@ class OfflineEntitlementsManager(
                 onErrorHandler = { e ->
                     errorLog(OfflineEntitlementsStrings.ERROR_UPDATING_PRODUCT_ENTITLEMENTS.format(e))
                     completion?.invoke(e)
-                }
+                },
             )
         } else {
             completion?.invoke(null)

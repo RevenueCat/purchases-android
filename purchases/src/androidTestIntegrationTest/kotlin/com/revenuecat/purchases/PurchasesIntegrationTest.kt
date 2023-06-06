@@ -70,9 +70,9 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
                         onSuccess = { cachedCustomerInfo ->
                             assertThat(cachedCustomerInfo).isEqualTo(fetchedCustomerInfo)
                             lock.countDown()
-                        }
+                        },
                     )
-                }
+                },
             )
         }
         lock.await(testTimeout.inWholeSeconds, TimeUnit.SECONDS)
@@ -98,7 +98,7 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
                     assertThat(offerings.current?.metadata?.get("dontdeletethis")).isEqualTo("useforintegrationtesting")
 
                     lock.countDown()
-                }
+                },
             )
         }
         lock.await(testTimeout.inWholeSeconds, TimeUnit.SECONDS)
@@ -118,7 +118,7 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
                     assertThat(offerings.current?.availablePackages?.size).isEqualTo(1)
                     assertThat(offerings.current?.monthly?.product?.sku).isEqualTo(Constants.productIdToPurchase)
                     latch.countDown()
-                }
+                },
             )
         }
 
@@ -133,7 +133,7 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
                     assertThat(newOfferings.current?.monthly?.product?.sku).isEqualTo(Constants.productIdToPurchase)
 
                     latch.countDown()
-                }
+                },
             )
         }
     }
@@ -161,7 +161,7 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
                         assertThat(customerInfo.entitlements.active[entitlementId]).isNotNull
                     }
                     lock.countDown()
-                }
+                },
             )
             latestPurchasesUpdatedListener!!.onPurchasesUpdated(listOf(storeTransaction))
         }
@@ -180,7 +180,7 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
                 },
                 replaceProductInfo = null,
                 presentedOfferingIdentifier = null,
-                isPersonalizedPrice = null
+                isPersonalizedPrice = null,
             )
         }
     }

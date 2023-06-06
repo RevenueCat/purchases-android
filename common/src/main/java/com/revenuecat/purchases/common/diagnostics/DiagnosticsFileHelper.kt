@@ -8,7 +8,7 @@ import org.json.JSONObject
  * All methods in this file should be executed within the diagnostics thread to ensure there are no threading issues.
  */
 class DiagnosticsFileHelper(
-    private val fileHelper: FileHelper
+    private val fileHelper: FileHelper,
 ) {
     companion object {
         const val DIAGNOSTICS_FILE_PATH = "RevenueCat/diagnostics/diagnostic_entries.jsonl"

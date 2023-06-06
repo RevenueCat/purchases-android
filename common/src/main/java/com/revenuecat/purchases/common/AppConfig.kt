@@ -15,7 +15,7 @@ class AppConfig(
     val store: Store,
     val dangerousSettings: DangerousSettings = DangerousSettings(autoSyncPurchases = true),
     // Should only be used for tests
-    var forceServerErrors: Boolean = false
+    var forceServerErrors: Boolean = false,
 ) {
 
     val enableOfflineEntitlements = true

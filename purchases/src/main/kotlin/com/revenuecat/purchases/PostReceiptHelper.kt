@@ -22,7 +22,7 @@ internal class PostReceiptHelper(
     private val customerInfoHelper: CustomerInfoHelper,
     private val deviceCache: DeviceCache,
     private val subscriberAttributesManager: SubscriberAttributesManager,
-    private val offlineEntitlementsManager: OfflineEntitlementsManager
+    private val offlineEntitlementsManager: OfflineEntitlementsManager,
 ) {
     private val finishTransactions: Boolean
         get() = appConfig.finishTransactions
@@ -64,9 +64,9 @@ internal class PostReceiptHelper(
                     },
                     onError = {
                         onError(backendError)
-                    }
+                    },
                 )
-            }
+            },
         )
     }
 
@@ -80,14 +80,14 @@ internal class PostReceiptHelper(
         isRestore: Boolean,
         appUserID: String,
         onSuccess: (SuccessfulPurchaseCallback)? = null,
-        onError: (ErrorPurchaseCallback)? = null
+        onError: (ErrorPurchaseCallback)? = null,
     ) {
         val receiptInfo = ReceiptInfo(
             productIDs = purchase.productIds,
             offeringIdentifier = purchase.presentedOfferingIdentifier,
             storeProduct = storeProduct,
             subscriptionOptionId = purchase.subscriptionOptionId,
-            prorationMode = purchase.prorationMode
+            prorationMode = purchase.prorationMode,
         )
         postReceiptAndSubscriberAttributes(
             appUserID = appUserID,
@@ -112,9 +112,9 @@ internal class PostReceiptHelper(
                     },
                     onError = {
                         onError?.let { it(purchase, backendError) }
-                    }
+                    },
                 )
-            }
+            },
         )
     }
 
@@ -126,7 +126,7 @@ internal class PostReceiptHelper(
         storeUserID: String?,
         marketplace: String?,
         onSuccess: (CustomerInfo) -> Unit,
-        onError: PostReceiptDataErrorCallback
+        onError: PostReceiptDataErrorCallback,
     ) {
         subscriberAttributesManager.getUnsyncedSubscriberAttributes(appUserID) { unsyncedSubscriberAttributesByKey ->
             backend.postReceiptData(
@@ -143,7 +143,7 @@ internal class PostReceiptHelper(
                     subscriberAttributesManager.markAsSynced(
                         appUserID,
                         unsyncedSubscriberAttributesByKey,
-                        responseBody.getAttributeErrors()
+                        responseBody.getAttributeErrors(),
                     )
                     customerInfoHelper.cacheCustomerInfo(customerInfo)
                     customerInfoHelper.sendUpdatedCustomerInfoToDelegateIfChanged(customerInfo)
@@ -154,11 +154,11 @@ internal class PostReceiptHelper(
                         subscriberAttributesManager.markAsSynced(
                             appUserID,
                             unsyncedSubscriberAttributesByKey,
-                            responseBody.getAttributeErrors()
+                            responseBody.getAttributeErrors(),
                         )
                     }
                     onError(error, errorHandlingBehavior, responseBody)
-                }
+                },
             )
         }
     }
@@ -167,7 +167,7 @@ internal class PostReceiptHelper(
         errorHandlingBehavior: PostReceiptErrorHandlingBehavior,
         appUserID: String,
         onSuccess: (CustomerInfo) -> Unit,
-        onError: () -> Unit
+        onError: () -> Unit,
     ) {
         val isServerError =
             errorHandlingBehavior == PostReceiptErrorHandlingBehavior.SHOULD_USE_OFFLINE_ENTITLEMENTS_AND_NOT_CONSUME
@@ -177,7 +177,7 @@ internal class PostReceiptHelper(
                 onSuccess = onSuccess,
                 onError = {
                     onError()
-                }
+                },
             )
         } else {
             onError()
@@ -187,7 +187,7 @@ internal class PostReceiptHelper(
     private fun calculateOfflineCustomerInfo(
         appUserID: String,
         onSuccess: (CustomerInfo) -> Unit,
-        onError: (PurchasesError) -> Unit
+        onError: (PurchasesError) -> Unit,
     ) {
         offlineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(
             appUserID,
@@ -197,7 +197,7 @@ internal class PostReceiptHelper(
             },
             onError = { error ->
                 onError(error)
-            }
+            },
         )
     }
 }

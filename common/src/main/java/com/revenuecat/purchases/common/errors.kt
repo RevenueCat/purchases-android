@@ -28,7 +28,8 @@ private enum class BackendErrorCode(val value: Int) {
     BackendInvalidAppleSubscriptionKey(7234),
     BackendInvalidSubscriberAttributes(7263),
     BackendInvalidSubscriberAttributesBody(7264),
-    BackendProductIDsMalformed(7662);
+    BackendProductIDsMalformed(7662),
+    ;
 
     companion object {
         fun valueOf(backendErrorCode: Int): BackendErrorCode? {
@@ -63,7 +64,7 @@ internal fun HTTPResult.toPurchasesError(): PurchasesError {
     return errorCode?.let { BackendErrorCode.valueOf(it) }?.toPurchasesError(errorMessage)
         ?: PurchasesError(
             PurchasesErrorCode.UnknownBackendError,
-            "Backend Code: ${errorCode ?: "N/A"} - $errorMessage"
+            "Backend Code: ${errorCode ?: "N/A"} - $errorMessage",
         )
 }
 
@@ -75,26 +76,31 @@ private fun BackendErrorCode.toPurchasesErrorCode(): PurchasesErrorCode {
         BackendErrorCode.BackendInvalidReceiptToken -> PurchasesErrorCode.InvalidReceiptError
         BackendErrorCode.BackendInvalidPlayStoreCredentials,
         BackendErrorCode.BackendInvalidAuthToken,
-        BackendErrorCode.BackendInvalidAPIKey -> PurchasesErrorCode.InvalidCredentialsError
+        BackendErrorCode.BackendInvalidAPIKey,
+        -> PurchasesErrorCode.InvalidCredentialsError
         BackendErrorCode.BackendInvalidPaymentModeOrIntroPriceNotProvided,
-        BackendErrorCode.BackendProductIdForGoogleReceiptNotProvided -> PurchasesErrorCode.PurchaseInvalidError
+        BackendErrorCode.BackendProductIdForGoogleReceiptNotProvided,
+        -> PurchasesErrorCode.PurchaseInvalidError
         BackendErrorCode.BackendEmptyAppUserId -> PurchasesErrorCode.InvalidAppUserIdError
         BackendErrorCode.BackendPlayStoreQuotaExceeded -> PurchasesErrorCode.StoreProblemError
         BackendErrorCode.BackendPlayStoreInvalidPackageName,
-        BackendErrorCode.BackendInvalidPlatform -> PurchasesErrorCode.ConfigurationError
+        BackendErrorCode.BackendInvalidPlatform,
+        -> PurchasesErrorCode.ConfigurationError
         BackendErrorCode.BackendPlayStoreGenericError -> PurchasesErrorCode.StoreProblemError
         BackendErrorCode.BackendUserIneligibleForPromoOffer -> PurchasesErrorCode.IneligibleError
         BackendErrorCode.BackendInvalidSubscriberAttributes,
-        BackendErrorCode.BackendInvalidSubscriberAttributesBody -> PurchasesErrorCode.InvalidSubscriberAttributesError
+        BackendErrorCode.BackendInvalidSubscriberAttributesBody,
+        -> PurchasesErrorCode.InvalidSubscriberAttributesError
         BackendErrorCode.BackendInvalidAppStoreSharedSecret,
         BackendErrorCode.BackendInvalidAppleSubscriptionKey,
         BackendErrorCode.BackendBadRequest,
-        BackendErrorCode.BackendInternalServerError -> PurchasesErrorCode.UnexpectedBackendResponseError
+        BackendErrorCode.BackendInternalServerError,
+        -> PurchasesErrorCode.UnexpectedBackendResponseError
         BackendErrorCode.BackendProductIDsMalformed -> PurchasesErrorCode.UnsupportedError
     }
 }
 
 data class SubscriberAttributeError(
     val keyName: String,
-    val message: String
+    val message: String,
 )

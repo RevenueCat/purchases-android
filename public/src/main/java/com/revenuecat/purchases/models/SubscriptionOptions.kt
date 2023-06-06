@@ -3,7 +3,7 @@ package com.revenuecat.purchases.models
 import androidx.annotation.VisibleForTesting
 
 class SubscriptionOptions(
-    private val subscriptionOptions: List<SubscriptionOption>
+    private val subscriptionOptions: List<SubscriptionOption>,
 ) : List<SubscriptionOption> by subscriptionOptions {
 
     private companion object {

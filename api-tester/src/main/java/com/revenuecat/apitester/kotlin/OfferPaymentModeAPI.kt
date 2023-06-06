@@ -8,7 +8,8 @@ private class OfferPaymentModeAPI {
         when (offerPaymentMode) {
             OfferPaymentMode.DISCOUNTED_RECURRING_PAYMENT,
             OfferPaymentMode.SINGLE_PAYMENT,
-            OfferPaymentMode.FREE_TRIAL -> {
+            OfferPaymentMode.FREE_TRIAL,
+            -> {
             }
         }.exhaustive
     }

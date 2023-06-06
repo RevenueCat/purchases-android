@@ -8,7 +8,7 @@ import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
 
 class SubscriberAttributesPoster(
-    private val backendHelper: BackendHelper
+    private val backendHelper: BackendHelper,
 ) {
 
     fun postSubscriberAttributes(
@@ -18,8 +18,8 @@ class SubscriberAttributesPoster(
         onErrorHandler: (
             PurchasesError,
             didBackendGetAttributes: Boolean,
-            attributeErrors: List<SubscriberAttributeError>
-        ) -> Unit
+            attributeErrors: List<SubscriberAttributeError>,
+        ) -> Unit,
     ) {
         backendHelper.performRequest(
             Endpoint.PostAttributes(appUserID),
@@ -38,7 +38,7 @@ class SubscriberAttributesPoster(
                     }
                     onErrorHandler(error, successfullySynced, attributeErrors)
                 } ?: onSuccessHandler()
-            }
+            },
         )
     }
 }

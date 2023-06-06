@@ -15,7 +15,7 @@ import com.revenuecat.purchases_sample.databinding.PackageCardBinding
 class DeprecatedPackageCardAdapter(
     private val packages: List<Package>,
     private val activeSubscriptions: Set<String>,
-    private val listener: PackageCardAdapterListener
+    private val listener: PackageCardAdapterListener,
 ) :
     RecyclerView.Adapter<DeprecatedPackageCardAdapter.PackageViewHolder>() {
 
@@ -43,7 +43,7 @@ class DeprecatedPackageCardAdapter(
                 listener.onPurchasePackageClicked(
                     binding.root,
                     currentPackage,
-                    binding.isUpgradeCheckbox.isChecked
+                    binding.isUpgradeCheckbox.isChecked,
                 )
             }
 
@@ -53,7 +53,7 @@ class DeprecatedPackageCardAdapter(
                 listener.onPurchaseProductClicked(
                     binding.root,
                     product,
-                    binding.isUpgradeCheckbox.isChecked
+                    binding.isUpgradeCheckbox.isChecked,
                 )
             }
             binding.productBuyButton.text = "Buy product (deprecated)"
@@ -82,12 +82,12 @@ class DeprecatedPackageCardAdapter(
         fun onPurchasePackageClicked(
             cardView: View,
             currentPackage: Package,
-            isUpgrade: Boolean
+            isUpgrade: Boolean,
         )
         fun onPurchaseProductClicked(
             cardView: View,
             currentProduct: StoreProduct,
-            isUpgrade: Boolean
+            isUpgrade: Boolean,
         )
     }
 }

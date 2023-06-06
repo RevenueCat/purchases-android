@@ -5,7 +5,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 data class ProductEntitlementMapping(
-    val mappings: Map<String, Mapping>
+    val mappings: Map<String, Mapping>,
 ) {
     companion object {
         private const val PRODUCT_ENTITLEMENT_MAPPING_KEY = "product_entitlement_mapping"
@@ -34,7 +34,7 @@ data class ProductEntitlementMapping(
     data class Mapping(
         val productIdentifier: String,
         val basePlanId: String?,
-        val entitlements: List<String>
+        val entitlements: List<String>,
     )
 
     fun toJson() = JSONObject().apply {

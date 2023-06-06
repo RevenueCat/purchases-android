@@ -7,7 +7,7 @@ import org.json.JSONObject
 class GoogleOfferingParser : OfferingParser() {
     override fun findMatchingProduct(
         productsById: Map<String, List<StoreProduct>>,
-        packageJson: JSONObject
+        packageJson: JSONObject,
     ): StoreProduct? {
         val productIdentifier = packageJson.getString("platform_product_identifier")
 

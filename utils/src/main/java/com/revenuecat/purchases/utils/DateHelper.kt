@@ -17,7 +17,7 @@ class DateHelper private constructor() {
         fun isDateActive(
             expirationDate: Date?,
             requestDate: Date,
-            gracePeriod: Duration = ENTITLEMENT_GRACE_PERIOD
+            gracePeriod: Duration = ENTITLEMENT_GRACE_PERIOD,
         ): DateActive {
             if (expirationDate == null) return DateActive(isActive = true, inGracePeriod = true)
 

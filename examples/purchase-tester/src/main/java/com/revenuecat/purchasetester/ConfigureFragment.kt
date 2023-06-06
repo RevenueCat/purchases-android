@@ -33,7 +33,7 @@ class ConfigureFragment : Fragment() {
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
-        savedInstanceState: Bundle?
+        savedInstanceState: Bundle?,
     ): View {
         dataStoreUtils = DataStoreUtils(requireActivity().applicationContext.configurationDataStore)
         binding = FragmentConfigureBinding.inflate(inflater)
@@ -43,7 +43,7 @@ class ConfigureFragment : Fragment() {
             android.R.layout.simple_spinner_item,
             // Trusted entitlements: Commented out until ready to be made public
             // EntitlementVerificationMode.values()
-            emptyList<String>()
+            emptyList<String>(),
         )
         setupSupportedStoresRadioButtons()
 

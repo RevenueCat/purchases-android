@@ -24,8 +24,8 @@ class MainActivity : AppCompatActivity() {
         val appBarConfiguration = AppBarConfiguration(
             setOf(
                 R.id.navigation_weather,
-                R.id.navigation_user
-            )
+                R.id.navigation_user,
+            ),
         )
         setupActionBarWithNavController(navController, appBarConfiguration)
         navView.setupWithNavController(navController)

@@ -40,7 +40,7 @@ class MainApplication : Application(), UpdatedCustomerInfoListener {
         Toast.makeText(
             this,
             message,
-            Toast.LENGTH_SHORT
+            Toast.LENGTH_SHORT,
         ).show()
         Log.d("CustomerInfoListener", "$message: $customerInfo")
     }

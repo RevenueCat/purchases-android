@@ -24,7 +24,7 @@ sealed class Endpoint(val pathTemplate: String, val name: String) {
     }
     data class GetAmazonReceipt(
         val userId: String,
-        val receiptId: String
+        val receiptId: String,
     ) : Endpoint("/receipts/amazon/%s/%s", "get_amazon_receipt") {
         override fun getPath() = pathTemplate.format(Uri.encode(userId), receiptId)
     }
@@ -36,13 +36,15 @@ sealed class Endpoint(val pathTemplate: String, val name: String) {
         get() = when (this) {
             is GetCustomerInfo,
             LogIn,
-            PostReceipt ->
+            PostReceipt,
+            ->
                 true
             is GetAmazonReceipt,
             is GetOfferings,
             is PostAttributes,
             PostDiagnostics,
-            GetProductEntitlementMapping ->
+            GetProductEntitlementMapping,
+            ->
                 false
         }
 }

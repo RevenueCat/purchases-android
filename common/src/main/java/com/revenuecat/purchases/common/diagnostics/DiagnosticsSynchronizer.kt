@@ -21,7 +21,7 @@ class DiagnosticsSynchronizer(
     private val diagnosticsTracker: DiagnosticsTracker,
     private val backend: Backend,
     private val diagnosticsDispatcher: Dispatcher,
-    private val sharedPreferences: SharedPreferences
+    private val sharedPreferences: SharedPreferences,
 ) {
     companion object {
         @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
@@ -36,7 +36,7 @@ class DiagnosticsSynchronizer(
         fun initializeSharedPreferences(context: Context): SharedPreferences =
             context.getSharedPreferences(
                 "com_revenuecat_purchases_${context.packageName}_preferences_diagnostics",
-                Context.MODE_PRIVATE
+                Context.MODE_PRIVATE,
             )
     }
 
@@ -60,24 +60,24 @@ class DiagnosticsSynchronizer(
                         if (shouldRetry) {
                             verboseLog(
                                 "Error syncing diagnostics file: $error. " +
-                                    "Will retry the next time the SDK is initialized"
+                                    "Will retry the next time the SDK is initialized",
                             )
                             if (increaseConsecutiveNumberOfErrors() >= MAX_NUMBER_POST_RETRIES) {
                                 verboseLog(
                                     "Error syncing diagnostics file: $error. " +
                                         "This was the final attempt ($MAX_NUMBER_POST_RETRIES). " +
-                                        "Deleting diagnostics file without posting."
+                                        "Deleting diagnostics file without posting.",
                                 )
                                 resetDiagnosticsStatus()
                             }
                         } else {
                             verboseLog(
                                 "Error syncing diagnostics file: $error. " +
-                                    "Deleting diagnostics file without retrying."
+                                    "Deleting diagnostics file without retrying.",
                             )
                             resetDiagnosticsStatus()
                         }
-                    }
+                    },
                 )
             } catch (e: IOException) {
                 verboseLog("Error syncing diagnostics file: $e")

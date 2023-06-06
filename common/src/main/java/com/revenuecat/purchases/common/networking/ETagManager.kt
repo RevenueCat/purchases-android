@@ -15,13 +15,13 @@ import java.util.Date
 @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
 data class ETagData(
     val eTag: String,
-    val lastRefreshTime: Date?
+    val lastRefreshTime: Date?,
 )
 
 @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
 data class HTTPResultWithETag(
     val eTagData: ETagData,
-    val httpResult: HTTPResult
+    val httpResult: HTTPResult,
 ) {
     fun serialize(): String {
         return JSONObject().apply {
@@ -50,12 +50,12 @@ data class HTTPResultWithETag(
 
 class ETagManager(
     private val prefs: SharedPreferences,
-    private val dateProvider: DateProvider = DefaultDateProvider()
+    private val dateProvider: DateProvider = DefaultDateProvider(),
 ) {
 
     internal fun getETagHeaders(
         path: String,
-        refreshETag: Boolean = false
+        refreshETag: Boolean = false,
     ): Map<String, String?> {
         val eTagData = if (refreshETag) null else getETagData(path)
         return mapOf(
@@ -72,14 +72,14 @@ class ETagManager(
         urlPathWithVersion: String,
         refreshETag: Boolean,
         requestDate: Date?,
-        verificationResult: VerificationResult
+        verificationResult: VerificationResult,
     ): HTTPResult? {
         val resultFromBackend = HTTPResult(
             responseCode,
             payload,
             HTTPResult.Origin.BACKEND,
             requestDate,
-            verificationResult
+            verificationResult,
         )
         eTagHeader?.let { eTagInResponse ->
             if (shouldUseCachedVersion(responseCode)) {
@@ -88,7 +88,7 @@ class ETagManager(
                         // This assumes we won't store verification failures in the cache and we will clear the cache
                         // when enabling verification.
                         verificationResult = verificationResult,
-                        requestDate = requestDate ?: storedResult.requestDate
+                        requestDate = requestDate ?: storedResult.requestDate,
                     )
                 }
                 return storedResult
@@ -115,7 +115,7 @@ class ETagManager(
     internal fun storeBackendResultIfNoError(
         path: String,
         resultFromBackend: HTTPResult,
-        eTagInResponse: String
+        eTagInResponse: String,
     ) {
         if (shouldStoreBackendResult(resultFromBackend)) {
             storeResult(path, resultFromBackend, eTagInResponse)
@@ -131,7 +131,7 @@ class ETagManager(
     private fun storeResult(
         path: String,
         result: HTTPResult,
-        eTag: String
+        eTag: String,
     ) {
         val cacheResult = result.copy(origin = HTTPResult.Origin.CACHE)
         val eTagData = ETagData(eTag, dateProvider.now)
@@ -161,7 +161,7 @@ class ETagManager(
         fun initializeSharedPreferences(context: Context): SharedPreferences =
             context.getSharedPreferences(
                 "${context.packageName}_preferences_etags",
-                Context.MODE_PRIVATE
+                Context.MODE_PRIVATE,
             )
     }
 }

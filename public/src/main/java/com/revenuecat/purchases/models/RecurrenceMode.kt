@@ -16,7 +16,7 @@ enum class RecurrenceMode(@ProductDetails.RecurrenceMode val identifier: Int?) {
 
     // Pricing phase does not repeat
     NON_RECURRING(3),
-    UNKNOWN(null)
+    UNKNOWN(null),
 }
 
 fun Int?.toRecurrenceMode(): RecurrenceMode =

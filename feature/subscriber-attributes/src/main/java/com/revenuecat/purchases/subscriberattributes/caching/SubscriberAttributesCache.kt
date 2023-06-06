@@ -17,7 +17,7 @@ internal typealias SubscriberAttributeMap = Map<String, SubscriberAttribute>
 internal typealias SubscriberAttributesPerAppUserIDMap = Map<AppUserID, SubscriberAttributeMap>
 
 class SubscriberAttributesCache(
-    internal val deviceCache: DeviceCache
+    internal val deviceCache: DeviceCache,
 ) {
 
     internal val subscriberAttributesCacheKey: String by lazy {
@@ -82,11 +82,11 @@ class SubscriberAttributesCache(
     }
 
     internal fun DeviceCache.putAttributes(
-        updatedSubscriberAttributesForAll: SubscriberAttributesPerAppUserIDMap
+        updatedSubscriberAttributesForAll: SubscriberAttributesPerAppUserIDMap,
     ) {
         return deviceCache.putString(
             subscriberAttributesCacheKey,
-            updatedSubscriberAttributesForAll.toJSONObject().toString()
+            updatedSubscriberAttributesForAll.toJSONObject().toString(),
         )
     }
 
@@ -119,7 +119,7 @@ class SubscriberAttributesCache(
                             unsyncedAttributesByKey.values.joinToString("\n")
                         } else {
                             ""
-                        }
+                        },
                 )
             }
 }

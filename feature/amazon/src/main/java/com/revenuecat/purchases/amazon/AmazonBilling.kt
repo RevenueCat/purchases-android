@@ -60,10 +60,10 @@ internal class AmazonBilling constructor(
     private val purchaseHandler: PurchaseResponseListener =
         PurchaseHandler(purchasingServiceProvider, applicationContext),
     private val purchaseUpdatesHandler: PurchaseUpdatesResponseListener = PurchaseUpdatesHandler(
-        purchasingServiceProvider
+        purchasingServiceProvider,
     ),
     private val userDataHandler: UserDataResponseListener = UserDataHandler(purchasingServiceProvider, mainHandler),
-    private val dateProvider: DateProvider = DefaultDateProvider()
+    private val dateProvider: DateProvider = DefaultDateProvider(),
 ) : BillingAbstract(),
     ProductDataResponseListener by productDataHandler,
     PurchaseResponseListener by purchaseHandler,
@@ -77,7 +77,7 @@ internal class AmazonBilling constructor(
         cache: DeviceCache,
         observerMode: Boolean,
         mainHandler: Handler,
-        backendHelper: BackendHelper
+        backendHelper: BackendHelper,
     ) : this(applicationContext, AmazonBackend(backendHelper), AmazonCache(cache), observerMode, mainHandler)
 
     var connected = false
@@ -106,14 +106,14 @@ internal class AmazonBilling constructor(
     override fun queryAllPurchases(
         appUserID: String,
         onReceivePurchaseHistory: (List<StoreTransaction>) -> Unit,
-        onReceivePurchaseHistoryError: PurchasesErrorCallback
+        onReceivePurchaseHistoryError: PurchasesErrorCallback,
     ) {
         queryPurchases(
             filterOnlyActivePurchases = false,
             onSuccess = {
                 onReceivePurchaseHistory(it.values.toList())
             },
-            onReceivePurchaseHistoryError
+            onReceivePurchaseHistoryError,
         )
     }
 
@@ -122,7 +122,7 @@ internal class AmazonBilling constructor(
         purchaseToken: String,
         storeUserID: String,
         onSuccess: (correctProductID: String) -> Unit,
-        onError: (PurchasesError) -> Unit
+        onError: (PurchasesError) -> Unit,
     ) {
         val currentlyCachedTokensToSkus = cache.getReceiptSkus()
 
@@ -147,7 +147,7 @@ internal class AmazonBilling constructor(
             },
             onError = { error ->
                 onError(errorGettingReceiptInfo(error))
-            }
+            },
         )
     }
 
@@ -157,7 +157,7 @@ internal class AmazonBilling constructor(
         productType: RevenueCatProductType,
         productIds: Set<String>,
         onReceive: StoreProductsCallback,
-        onError: PurchasesErrorCallback
+        onError: PurchasesErrorCallback,
     ) {
         if (checkObserverMode()) return
         executeRequestOnUIThread { connectionError ->
@@ -166,7 +166,7 @@ internal class AmazonBilling constructor(
                     onSuccess = { userData ->
                         productDataHandler.getProductData(productIds, userData.marketplace, onReceive, onError)
                     },
-                    onError
+                    onError,
                 )
             } else {
                 onError(connectionError)
@@ -178,7 +178,7 @@ internal class AmazonBilling constructor(
 
     override fun consumeAndSave(
         shouldTryToConsume: Boolean,
-        purchase: StoreTransaction
+        purchase: StoreTransaction,
     ) {
         if (checkObserverMode() || purchase.type == RevenueCatProductType.UNKNOWN) return
 
@@ -203,7 +203,7 @@ internal class AmazonBilling constructor(
         productType: RevenueCatProductType,
         sku: String,
         onCompletion: (StoreTransaction) -> Unit,
-        onError: (PurchasesError) -> Unit
+        onError: (PurchasesError) -> Unit,
     ) {
         log(LogIntent.DEBUG, RestoreStrings.QUERYING_PURCHASE_WITH_TYPE.format(sku, productType.name))
         queryAllPurchases(
@@ -219,7 +219,7 @@ internal class AmazonBilling constructor(
                     onError(error)
                 }
             },
-            onError
+            onError,
         )
     }
 
@@ -230,7 +230,7 @@ internal class AmazonBilling constructor(
         purchasingData: PurchasingData,
         replaceProductInfo: ReplaceProductInfo?,
         presentedOfferingIdentifier: String?,
-        isPersonalizedPrice: Boolean?
+        isPersonalizedPrice: Boolean?,
     ) {
         val amazonPurchaseInfo = purchasingData as? AmazonPurchasingData.Product
         if (amazonPurchaseInfo == null) {
@@ -238,8 +238,8 @@ internal class AmazonBilling constructor(
                 PurchasesErrorCode.UnknownError,
                 PurchaseStrings.INVALID_PURCHASE_TYPE.format(
                     "Amazon",
-                    "AmazonPurchaseInfo"
-                )
+                    "AmazonPurchaseInfo",
+                ),
             )
             errorLog(error)
             purchasesUpdatedListener?.onPurchasesFailedToUpdate(error)
@@ -266,7 +266,7 @@ internal class AmazonBilling constructor(
                     },
                     onError = {
                         onPurchaseError(it)
-                    }
+                    },
                 )
             } else {
                 onPurchaseError(connectionError)
@@ -279,19 +279,19 @@ internal class AmazonBilling constructor(
     override fun queryPurchases(
         appUserID: String,
         onSuccess: (Map<String, StoreTransaction>) -> Unit,
-        onError: (PurchasesError) -> Unit
+        onError: (PurchasesError) -> Unit,
     ) {
         if (checkObserverMode()) return
         queryPurchases(
             filterOnlyActivePurchases = true,
             onSuccess,
-            onError
+            onError,
         )
     }
 
     private fun List<Receipt>.toMapOfReceiptHashesToRestoredPurchases(
         tokensToSkusMap: Map<String, String>,
-        userData: UserData
+        userData: UserData,
     ) = mapNotNull { receipt ->
         val sku = tokensToSkusMap[receipt.receiptId]
         if (sku == null) {
@@ -302,7 +302,7 @@ internal class AmazonBilling constructor(
             productId = sku,
             presentedOfferingIdentifier = null,
             purchaseState = PurchaseState.UNSPECIFIED_STATE,
-            userData
+            userData,
         )
         val hash = receipt.receiptId.sha1()
         hash to amazonPurchaseWrapper
@@ -345,7 +345,7 @@ internal class AmazonBilling constructor(
             val receiptsWithErrors = errors.keys.joinToString("\n")
             log(
                 LogIntent.AMAZON_ERROR,
-                AmazonStrings.ERROR_FETCHING_RECEIPTS.format(receiptsWithErrors)
+                AmazonStrings.ERROR_FETCHING_RECEIPTS.format(receiptsWithErrors),
             )
         }
     }
@@ -353,7 +353,7 @@ internal class AmazonBilling constructor(
     private fun queryPurchases(
         filterOnlyActivePurchases: Boolean,
         onSuccess: (Map<String, StoreTransaction>) -> Unit,
-        onError: (PurchasesError) -> Unit
+        onError: (PurchasesError) -> Unit,
     ) {
         executeRequestOnUIThread { connectionError ->
             if (connectionError == null) {
@@ -374,14 +374,14 @@ internal class AmazonBilling constructor(
 
                         getMissingSkusForReceipts(
                             userData.userId,
-                            filteredReceipts
+                            filteredReceipts,
                         ) { tokensToSkusMap, errors ->
                             logErrorsIfAny(errors)
 
                             if (tokensToSkusMap.isEmpty()) {
                                 val error = PurchasesError(
                                     PurchasesErrorCode.InvalidReceiptError,
-                                    AmazonStrings.ERROR_FETCHING_PURCHASE_HISTORY_ALL_RECEIPTS_INVALID
+                                    AmazonStrings.ERROR_FETCHING_PURCHASE_HISTORY_ALL_RECEIPTS_INVALID,
                                 )
                                 onError(error)
                                 return@getMissingSkusForReceipts
@@ -393,7 +393,7 @@ internal class AmazonBilling constructor(
                             onSuccess(purchasesByHashedToken)
                         }
                     },
-                    onError
+                    onError,
                 )
             } else {
                 onError(connectionError)
@@ -404,7 +404,7 @@ internal class AmazonBilling constructor(
     private fun getMissingSkusForReceipts(
         amazonUserID: String,
         receipts: List<Receipt>,
-        onCompletion: (tokensToSkusMap: Map<String, String>, errors: Map<String, PurchasesError>) -> Unit
+        onCompletion: (tokensToSkusMap: Map<String, String>, errors: Map<String, PurchasesError>) -> Unit,
     ) {
         val currentlyCachedTokensToSkus: Map<String, String> = cache.getReceiptSkus()
 
@@ -452,7 +452,7 @@ internal class AmazonBilling constructor(
                     if (receiptsLeft == 0) {
                         onCompletion(successMap, errorMap)
                     }
-                }
+                },
             )
         }
     }
@@ -461,7 +461,7 @@ internal class AmazonBilling constructor(
         receipt: Receipt,
         userData: UserData,
         storeProduct: StoreProduct,
-        presentedOfferingIdentifier: String?
+        presentedOfferingIdentifier: String?,
     ) {
         if (receipt.productType != ProductType.SUBSCRIPTION) {
             /**
@@ -474,7 +474,7 @@ internal class AmazonBilling constructor(
                 productId = storeProduct.id,
                 presentedOfferingIdentifier = presentedOfferingIdentifier,
                 purchaseState = PurchaseState.PURCHASED,
-                userData
+                userData,
             )
             purchasesUpdatedListener?.onPurchasesUpdated(listOf(amazonPurchaseWrapper))
             return
@@ -489,11 +489,11 @@ internal class AmazonBilling constructor(
                     productId = termSku,
                     presentedOfferingIdentifier = presentedOfferingIdentifier,
                     purchaseState = PurchaseState.PURCHASED,
-                    userData
+                    userData,
                 )
                 purchasesUpdatedListener?.onPurchasesUpdated(listOf(amazonPurchaseWrapper))
             },
-            onError = ::onPurchaseError
+            onError = ::onPurchaseError,
         )
     }
 
