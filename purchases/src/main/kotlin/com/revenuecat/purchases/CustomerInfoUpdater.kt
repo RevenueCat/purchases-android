@@ -11,6 +11,9 @@ import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import com.revenuecat.purchases.strings.ConfigureStrings
 import com.revenuecat.purchases.strings.CustomerInfoStrings
 
+/**
+ * This class is responsible for updating the customer info cache and notifying the listeners.
+ */
 internal class CustomerInfoUpdater(
     private val deviceCache: DeviceCache,
     private val identityManager: IdentityManager,
