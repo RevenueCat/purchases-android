@@ -49,7 +49,7 @@ class GoogleDeviceIdentifiersFetcher(
             if (!adInfo.isLimitAdTrackingEnabled) {
                 if (adInfo.id == noPermissionAdvertisingIdValue) {
                     log(
-                        LogIntent.USER,
+                        LogIntent.WARNING,
                         AttributionStrings.GOOGLE_PLAY_ADVERTISING_ID_NOT_AVAILABLE,
                     )
                 } else {
