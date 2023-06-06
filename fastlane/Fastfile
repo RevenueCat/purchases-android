@@ -176,7 +176,7 @@ platform :android do
       paths_of_files_to_update: [constants_path]
     )
     gradle(
-      task: ':common:test',
+      task: ':common:testIntegrationTestDebugUnitTest',
       properties: {
         "RUN_INTEGRATION_TESTS" => true
       }
