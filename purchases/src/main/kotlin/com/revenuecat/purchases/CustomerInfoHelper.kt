@@ -12,7 +12,6 @@ import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsMa
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.strings.CustomerInfoStrings
 
-@Suppress("TooManyFunctions")
 internal class CustomerInfoHelper(
     private val deviceCache: DeviceCache,
     private val backend: Backend,

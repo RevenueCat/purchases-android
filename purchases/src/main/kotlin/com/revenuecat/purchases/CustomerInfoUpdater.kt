@@ -11,7 +11,7 @@ import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import com.revenuecat.purchases.strings.ConfigureStrings
 import com.revenuecat.purchases.strings.CustomerInfoStrings
 
-class CustomerInfoUpdater(
+internal class CustomerInfoUpdater(
     private val deviceCache: DeviceCache,
     private val identityManager: IdentityManager,
     private val offlineEntitlementsManager: OfflineEntitlementsManager,
