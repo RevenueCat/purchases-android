@@ -90,6 +90,7 @@ class Purchases internal constructor(
     private val subscriberAttributesManager: SubscriberAttributesManager,
     @set:JvmSynthetic @get:JvmSynthetic internal var appConfig: AppConfig,
     private val customerInfoHelper: CustomerInfoHelper,
+    private val customerInfoUpdater: CustomerInfoUpdater,
     diagnosticsSynchronizer: DiagnosticsSynchronizer?,
     @get:VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     internal val offlineEntitlementsManager: OfflineEntitlementsManager,
@@ -135,10 +136,10 @@ class Purchases internal constructor(
      * Make sure [removeUpdatedCustomerInfoListener] is called when the listener needs to be destroyed.
      */
     var updatedCustomerInfoListener: UpdatedCustomerInfoListener?
-        @Synchronized get() = customerInfoHelper.updatedCustomerInfoListener
+        @Synchronized get() = customerInfoUpdater.updatedCustomerInfoListener
 
         @Synchronized set(value) {
-            customerInfoHelper.updatedCustomerInfoListener = value
+            customerInfoUpdater.updatedCustomerInfoListener = value
         }
 
     /**
@@ -622,7 +623,7 @@ class Purchases internal constructor(
                 onSuccess = { customerInfo, created ->
                     dispatch {
                         callback?.onReceived(customerInfo, created)
-                        customerInfoHelper.sendUpdatedCustomerInfoToDelegateIfChanged(customerInfo)
+                        customerInfoUpdater.notifyListeners(customerInfo)
                     }
                     offeringsManager.fetchAndCacheOfferings(newAppUserID, state.appInBackground)
                 },

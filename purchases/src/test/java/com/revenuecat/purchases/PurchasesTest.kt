@@ -169,11 +169,11 @@ class PurchasesTest: BasePurchasesTest() {
     }
 
     @Test
-    fun `when setting listener, we set customer info helper listener`() {
+    fun `when setting listener, we set customer info updater listener`() {
         purchases.updatedCustomerInfoListener = updatedCustomerInfoListener
 
         verify(exactly = 1) {
-            mockCustomerInfoHelper.updatedCustomerInfoListener = updatedCustomerInfoListener
+            mockCustomerInfoUpdater.updatedCustomerInfoListener = updatedCustomerInfoListener
         }
     }
 
@@ -190,10 +190,10 @@ class PurchasesTest: BasePurchasesTest() {
         purchases.updatedCustomerInfoListener = updatedCustomerInfoListener
 
         verify(exactly = 1) {
-            mockCustomerInfoHelper.updatedCustomerInfoListener = null
+            mockCustomerInfoUpdater.updatedCustomerInfoListener = null
         }
         verify(exactly = 1) {
-            mockCustomerInfoHelper.updatedCustomerInfoListener = updatedCustomerInfoListener
+            mockCustomerInfoUpdater.updatedCustomerInfoListener = updatedCustomerInfoListener
         }
     }
 
@@ -1984,7 +1984,7 @@ class PurchasesTest: BasePurchasesTest() {
     }
 
     @Test
-    fun `login successful with new appUserID calls customer info helper to update delegate if changed`() {
+    fun `login successful with new appUserID calls customer info updater to update delegate if changed`() {
         purchases.updatedCustomerInfoListener = updatedCustomerInfoListener
 
         val mockCreated = Random.nextBoolean()
@@ -2004,7 +2004,7 @@ class PurchasesTest: BasePurchasesTest() {
         purchases.logIn(newAppUserID, mockCompletion)
 
         verify(exactly = 1) {
-            mockCustomerInfoHelper.sendUpdatedCustomerInfoToDelegateIfChanged(mockInfo)
+            mockCustomerInfoUpdater.notifyListeners(mockInfo)
         }
     }
 

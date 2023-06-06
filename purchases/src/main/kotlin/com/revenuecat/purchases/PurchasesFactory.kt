@@ -149,7 +149,9 @@ internal class PurchasesFactory(
                 offlineEntitlementsManager,
             )
 
-            val customerInfoHelper = CustomerInfoHelper(cache, backend, identityManager, offlineEntitlementsManager)
+            val customerInfoUpdater = CustomerInfoUpdater(cache, identityManager, offlineEntitlementsManager)
+
+            val customerInfoHelper = CustomerInfoHelper(cache, backend, offlineEntitlementsManager, customerInfoUpdater)
             val offeringParser = OfferingParserFactory.createOfferingParser(store)
 
             var diagnosticsSynchronizer: DiagnosticsSynchronizer? = null
@@ -167,7 +169,7 @@ internal class PurchasesFactory(
                 appConfig,
                 backend,
                 billing,
-                customerInfoHelper,
+                customerInfoUpdater,
                 cache,
                 subscriberAttributesManager,
                 offlineEntitlementsManager,
@@ -197,6 +199,7 @@ internal class PurchasesFactory(
                 subscriberAttributesManager,
                 appConfig,
                 customerInfoHelper,
+                customerInfoUpdater,
                 diagnosticsSynchronizer,
                 offlineEntitlementsManager,
                 postReceiptHelper,

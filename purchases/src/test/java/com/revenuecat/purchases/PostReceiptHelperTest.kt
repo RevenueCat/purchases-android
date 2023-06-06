@@ -75,7 +75,7 @@ class PostReceiptHelperTest {
     private lateinit var appConfig: AppConfig
     private lateinit var backend: Backend
     private lateinit var billing: BillingAbstract
-    private lateinit var customerInfoHelper: CustomerInfoHelper
+    private lateinit var customerInfoUpdater: CustomerInfoUpdater
     private lateinit var deviceCache: DeviceCache
     private lateinit var subscriberAttributesManager: SubscriberAttributesManager
     private lateinit var offlineEntitlementsManager: OfflineEntitlementsManager
@@ -87,7 +87,7 @@ class PostReceiptHelperTest {
         appConfig = mockk()
         backend = mockk()
         billing = mockk()
-        customerInfoHelper = mockk()
+        customerInfoUpdater = mockk()
         deviceCache = mockk()
         subscriberAttributesManager = mockk()
         offlineEntitlementsManager = mockk()
@@ -98,7 +98,7 @@ class PostReceiptHelperTest {
             appConfig = appConfig,
             backend = backend,
             billing = billing,
-            customerInfoHelper = customerInfoHelper,
+            customerInfoUpdater = customerInfoUpdater,
             deviceCache = deviceCache,
             subscriberAttributesManager = subscriberAttributesManager,
             offlineEntitlementsManager = offlineEntitlementsManager
@@ -203,7 +203,7 @@ class PostReceiptHelperTest {
     }
 
     @Test
-    fun `postTransactionAndConsumeIfNeeded caches customer info on success`() {
+    fun `postTransactionAndConsumeIfNeeded caches and notifies listeners on success`() {
         mockPostReceiptSuccess()
 
         postReceiptHelper.postTransactionAndConsumeIfNeeded(
@@ -216,25 +216,7 @@ class PostReceiptHelperTest {
         )
 
         verify(exactly = 1) {
-            customerInfoHelper.cacheCustomerInfo(defaultCustomerInfo)
-        }
-    }
-
-    @Test
-    fun `postTransactionAndConsumeIfNeeded sends updated customer info on success`() {
-        mockPostReceiptSuccess()
-
-        postReceiptHelper.postTransactionAndConsumeIfNeeded(
-            purchase = mockStoreTransaction,
-            storeProduct = mockStoreProduct,
-            isRestore = true,
-            appUserID = appUserID,
-            onSuccess = { _, _ -> },
-            onError = { _, _ -> fail("Should succeed") }
-        )
-
-        verify(exactly = 1) {
-            customerInfoHelper.sendUpdatedCustomerInfoToDelegateIfChanged(defaultCustomerInfo)
+            customerInfoUpdater.cacheAndNotifyListeners(defaultCustomerInfo)
         }
     }
 
@@ -494,7 +476,7 @@ class PostReceiptHelperTest {
             lambda<(CustomerInfo) -> Unit>().captured(defaultCustomerInfo)
         }
         every {
-            customerInfoHelper.sendUpdatedCustomerInfoToDelegateIfChanged(defaultCustomerInfo)
+            customerInfoUpdater.notifyListeners(defaultCustomerInfo)
         } just Runs
 
         var receivedCustomerInfo: CustomerInfo? = null
@@ -508,7 +490,7 @@ class PostReceiptHelperTest {
         )
 
         assertThat(receivedCustomerInfo).isEqualTo(defaultCustomerInfo)
-        verify(exactly = 1) { customerInfoHelper.sendUpdatedCustomerInfoToDelegateIfChanged(defaultCustomerInfo) }
+        verify(exactly = 1) { customerInfoUpdater.notifyListeners(defaultCustomerInfo) }
     }
 
     @Test
@@ -521,7 +503,7 @@ class PostReceiptHelperTest {
             lambda<(CustomerInfo) -> Unit>().captured(defaultCustomerInfo)
         }
         every {
-            customerInfoHelper.sendUpdatedCustomerInfoToDelegateIfChanged(defaultCustomerInfo)
+            customerInfoUpdater.notifyListeners(defaultCustomerInfo)
         } just Runs
 
         postReceiptHelper.postTransactionAndConsumeIfNeeded(
@@ -533,7 +515,8 @@ class PostReceiptHelperTest {
             onError = { _, _ -> fail("Expected success") }
         )
 
-        verify(exactly = 0) { customerInfoHelper.cacheCustomerInfo(any()) }
+        verify(exactly = 0) { customerInfoUpdater.cacheAndNotifyListeners(any()) }
+        verify(exactly = 1) { customerInfoUpdater.notifyListeners(any()) }
     }
 
     @Test
@@ -546,7 +529,7 @@ class PostReceiptHelperTest {
             lambda<(CustomerInfo) -> Unit>().captured(defaultCustomerInfo)
         }
         every {
-            customerInfoHelper.sendUpdatedCustomerInfoToDelegateIfChanged(defaultCustomerInfo)
+            customerInfoUpdater.notifyListeners(defaultCustomerInfo)
         } just Runs
 
         postReceiptHelper.postTransactionAndConsumeIfNeeded(
@@ -573,7 +556,7 @@ class PostReceiptHelperTest {
             lambda<(CustomerInfo) -> Unit>().captured(defaultCustomerInfo)
         }
         every {
-            customerInfoHelper.sendUpdatedCustomerInfoToDelegateIfChanged(defaultCustomerInfo)
+            customerInfoUpdater.notifyListeners(defaultCustomerInfo)
         } just Runs
 
         postReceiptHelper.postTransactionAndConsumeIfNeeded(
@@ -849,7 +832,7 @@ class PostReceiptHelperTest {
     }
 
     @Test
-    fun `postTokenWithoutConsuming caches customer info on success`() {
+    fun `postTokenWithoutConsuming caches and notifies listeners with new customer info on success`() {
         mockPostReceiptSuccess(postType = PostType.TOKEN_WITHOUT_CONSUMING)
 
         postReceiptHelper.postTokenWithoutConsuming(
@@ -864,27 +847,7 @@ class PostReceiptHelperTest {
         )
 
         verify(exactly = 1) {
-            customerInfoHelper.cacheCustomerInfo(defaultCustomerInfo)
-        }
-    }
-
-    @Test
-    fun `postTokenWithoutConsuming sends updated customer info on success`() {
-        mockPostReceiptSuccess(postType = PostType.TOKEN_WITHOUT_CONSUMING)
-
-        postReceiptHelper.postTokenWithoutConsuming(
-            purchaseToken = postToken,
-            storeUserID = storeUserId,
-            receiptInfo = testReceiptInfo,
-            isRestore = true,
-            appUserID = appUserID,
-            marketplace = marketplace,
-            onSuccess = { },
-            onError = { fail("Should succeed") }
-        )
-
-        verify(exactly = 1) {
-            customerInfoHelper.sendUpdatedCustomerInfoToDelegateIfChanged(defaultCustomerInfo)
+            customerInfoUpdater.cacheAndNotifyListeners(defaultCustomerInfo)
         }
     }
 
@@ -1199,7 +1162,7 @@ class PostReceiptHelperTest {
             lambda<(CustomerInfo) -> Unit>().captured(defaultCustomerInfo)
         }
         every {
-            customerInfoHelper.sendUpdatedCustomerInfoToDelegateIfChanged(defaultCustomerInfo)
+            customerInfoUpdater.notifyListeners(defaultCustomerInfo)
         } just Runs
 
         var successCallCount = 0
@@ -1215,7 +1178,7 @@ class PostReceiptHelperTest {
         )
 
         assertThat(successCallCount).isEqualTo(1)
-        verify(exactly = 1) { customerInfoHelper.sendUpdatedCustomerInfoToDelegateIfChanged(defaultCustomerInfo) }
+        verify(exactly = 1) { customerInfoUpdater.notifyListeners(defaultCustomerInfo) }
     }
 
     @Test
@@ -1231,7 +1194,7 @@ class PostReceiptHelperTest {
             lambda<(CustomerInfo) -> Unit>().captured(defaultCustomerInfo)
         }
         every {
-            customerInfoHelper.sendUpdatedCustomerInfoToDelegateIfChanged(defaultCustomerInfo)
+            customerInfoUpdater.notifyListeners(defaultCustomerInfo)
         } just Runs
 
         postReceiptHelper.postTokenWithoutConsuming(
@@ -1245,7 +1208,8 @@ class PostReceiptHelperTest {
             onError = { fail("Should succeed") }
         )
 
-        verify(exactly = 0) { customerInfoHelper.cacheCustomerInfo(any()) }
+        verify(exactly = 0) { customerInfoUpdater.cacheAndNotifyListeners(any()) }
+        verify(exactly = 1) { customerInfoUpdater.notifyListeners(any()) }
     }
 
     @Test
@@ -1261,7 +1225,7 @@ class PostReceiptHelperTest {
             lambda<(CustomerInfo) -> Unit>().captured(defaultCustomerInfo)
         }
         every {
-            customerInfoHelper.sendUpdatedCustomerInfoToDelegateIfChanged(defaultCustomerInfo)
+            customerInfoUpdater.notifyListeners(defaultCustomerInfo)
         } just Runs
 
         postReceiptHelper.postTokenWithoutConsuming(
@@ -1293,7 +1257,7 @@ class PostReceiptHelperTest {
             lambda<(CustomerInfo) -> Unit>().captured(defaultCustomerInfo)
         }
         every {
-            customerInfoHelper.sendUpdatedCustomerInfoToDelegateIfChanged(defaultCustomerInfo)
+            customerInfoUpdater.notifyListeners(defaultCustomerInfo)
         } just Runs
 
         postReceiptHelper.postTokenWithoutConsuming(
@@ -1353,8 +1317,7 @@ class PostReceiptHelperTest {
 
         every { offlineEntitlementsManager.resetOfflineCustomerInfoCache() } just Runs
         every { subscriberAttributesManager.markAsSynced(appUserID, any(), any()) } just Runs
-        every { customerInfoHelper.cacheCustomerInfo(any()) } just Runs
-        every { customerInfoHelper.sendUpdatedCustomerInfoToDelegateIfChanged(any()) } just Runs
+        every { customerInfoUpdater.cacheAndNotifyListeners(any()) } just Runs
         if (postType == PostType.TRANSACTION_AND_CONSUME) {
             every { billing.consumeAndSave(any(), mockStoreTransaction) } just Runs
         } else {
