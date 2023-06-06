@@ -21,13 +21,13 @@ object BillingFactory {
         backendHelper: BackendHelper,
         cache: DeviceCache,
         observerMode: Boolean,
-        diagnosticsTrackerIfEnabled: DiagnosticsTracker?
+        diagnosticsTrackerIfEnabled: DiagnosticsTracker?,
     ) = when (store) {
         Store.PLAY_STORE -> BillingWrapper(
             BillingWrapper.ClientFactory(application),
             Handler(application.mainLooper),
             cache,
-            diagnosticsTrackerIfEnabled
+            diagnosticsTrackerIfEnabled,
         )
         Store.AMAZON -> {
             try {
@@ -37,13 +37,13 @@ object BillingFactory {
                         DeviceCache::class.java,
                         Boolean::class.java,
                         Handler::class.java,
-                        BackendHelper::class.java
+                        BackendHelper::class.java,
                     ).newInstance(
                         application.applicationContext,
                         cache,
                         observerMode,
                         Handler(application.mainLooper),
-                        backendHelper
+                        backendHelper,
                     ) as BillingAbstract
             } catch (e: ClassNotFoundException) {
                 errorLog("Make sure purchases-amazon is added as dependency", e)

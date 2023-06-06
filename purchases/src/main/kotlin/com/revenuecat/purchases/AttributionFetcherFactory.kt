@@ -9,7 +9,7 @@ object AttributionFetcherFactory {
 
     fun createAttributionFetcher(
         store: Store,
-        dispatcher: Dispatcher
+        dispatcher: Dispatcher,
     ) = when (store) {
         Store.PLAY_STORE -> GoogleDeviceIdentifiersFetcher(dispatcher)
         Store.AMAZON -> {

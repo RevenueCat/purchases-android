@@ -6,6 +6,6 @@ interface DeviceIdentifiersFetcher {
 
     fun getDeviceIdentifiers(
         applicationContext: Application,
-        completion: (deviceIdentifiers: Map<String, String>) -> Unit
+        completion: (deviceIdentifiers: Map<String, String>) -> Unit,
     )
 }

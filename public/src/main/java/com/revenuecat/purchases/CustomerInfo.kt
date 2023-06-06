@@ -49,7 +49,7 @@ data class CustomerInfo constructor(
     val originalAppUserId: String,
     val managementURL: Uri?,
     val originalPurchaseDate: Date?,
-    private val jsonObject: JSONObject
+    private val jsonObject: JSONObject,
 ) : Parcelable, RawDataContainer<JSONObject> {
 
     /**
@@ -69,7 +69,7 @@ data class CustomerInfo constructor(
     @IgnoredOnParcel
     @Deprecated(
         "Use allPurchasedProductIds instead",
-        ReplaceWith("allPurchasedProductIds")
+        ReplaceWith("allPurchasedProductIds"),
     )
     val allPurchasedSkus: Set<String> by lazy {
         this.nonSubscriptionTransactions.map { it.productIdentifier }.toSet() + allExpirationDatesByProduct.keys
@@ -122,7 +122,7 @@ data class CustomerInfo constructor(
      */
     @Deprecated(
         "Use getExpirationDateForProductId instead",
-        ReplaceWith("getExpirationDateForProductId")
+        ReplaceWith("getExpirationDateForProductId"),
     )
     fun getExpirationDateForSku(sku: String): Date? {
         return allExpirationDatesByProduct[sku]
@@ -147,7 +147,7 @@ data class CustomerInfo constructor(
      */
     @Deprecated(
         "Use getPurchaseDateForProductId instead",
-        ReplaceWith("getPurchaseDateForProductId")
+        ReplaceWith("getPurchaseDateForProductId"),
     )
     fun getPurchaseDateForSku(sku: String): Date? {
         return allPurchaseDatesByProduct[sku]
@@ -189,7 +189,8 @@ data class CustomerInfo constructor(
 
     private fun activeIdentifiers(expirations: Map<String, Date?>): Set<String> {
         return expirations.filterValues {
-                expirationDate -> DateHelper.isDateActive(expirationDate, requestDate).isActive
+                expirationDate ->
+            DateHelper.isDateActive(expirationDate, requestDate).isActive
         }.keys
     }
 
@@ -201,14 +202,14 @@ data class CustomerInfo constructor(
      */
     override fun toString() =
         "<CustomerInfo\n " +
-                "latestExpirationDate: $latestExpirationDate\n" +
-                "activeSubscriptions:  ${activeSubscriptions.map {
-                    it to mapOf("expiresDate" to getExpirationDateForProductId(it))
-                }.toMap()},\n" +
-                "activeEntitlements: ${entitlements.active.map { it.toString() }},\n" +
-                "entitlements: ${entitlements.all.map { it.toString() }},\n" +
-                "nonSubscriptionTransactions: $nonSubscriptionTransactions,\n" +
-                "requestDate: $requestDate\n>"
+            "latestExpirationDate: $latestExpirationDate\n" +
+            "activeSubscriptions:  ${activeSubscriptions.map {
+                it to mapOf("expiresDate" to getExpirationDateForProductId(it))
+            }.toMap()},\n" +
+            "activeEntitlements: ${entitlements.active.map { it.toString() }},\n" +
+            "entitlements: ${entitlements.all.map { it.toString() }},\n" +
+            "nonSubscriptionTransactions: $nonSubscriptionTransactions,\n" +
+            "requestDate: $requestDate\n>"
 
     override fun equals(other: Any?) = other is CustomerInfo && ComparableData(this) == ComparableData(other)
     override fun hashCode() = ComparableData(this).hashCode()
@@ -227,10 +228,10 @@ private data class ComparableData(
     val schemaVersion: Int,
     val firstSeen: Date,
     val originalAppUserId: String,
-    val originalPurchaseDate: Date?
+    val originalPurchaseDate: Date?,
 ) {
     constructor(
-        customerInfo: CustomerInfo
+        customerInfo: CustomerInfo,
     ) : this(
         entitlements = customerInfo.entitlements,
         allExpirationDatesByProduct = customerInfo.allExpirationDatesByProduct,
@@ -238,6 +239,6 @@ private data class ComparableData(
         schemaVersion = customerInfo.schemaVersion,
         firstSeen = customerInfo.firstSeen,
         originalAppUserId = customerInfo.originalAppUserId,
-        originalPurchaseDate = customerInfo.originalPurchaseDate
+        originalPurchaseDate = customerInfo.originalPurchaseDate,
     )
 }

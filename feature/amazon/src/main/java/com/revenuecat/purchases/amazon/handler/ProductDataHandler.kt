@@ -19,7 +19,7 @@ import com.revenuecat.purchases.models.StoreProduct
 
 class ProductDataHandler(
     private val purchasingServiceProvider: PurchasingServiceProvider,
-    private val mainHandler: Handler
+    private val mainHandler: Handler,
 ) : ProductDataResponseListener {
 
     companion object {
@@ -30,7 +30,7 @@ class ProductDataHandler(
         val skuList: List<String>,
         val marketplace: String,
         val onReceive: StoreProductsCallback,
-        val onError: PurchasesErrorCallback
+        val onError: PurchasesErrorCallback,
     )
 
     @get:Synchronized
@@ -43,7 +43,7 @@ class ProductDataHandler(
         skus: Set<String>,
         marketplace: String,
         onReceive: (List<StoreProduct>) -> Unit,
-        onError: (PurchasesError) -> Unit
+        onError: (PurchasesError) -> Unit,
     ) {
         log(LogIntent.DEBUG, AmazonStrings.REQUESTING_PRODUCTS.format(skus.joinToString()))
 
@@ -93,7 +93,7 @@ class ProductDataHandler(
     private fun handleSuccessfulProductDataResponse(
         productData: Map<String, Product>,
         marketplace: String,
-        onReceive: StoreProductsCallback
+        onReceive: StoreProductsCallback,
     ) {
         log(LogIntent.DEBUG, AmazonStrings.RETRIEVED_PRODUCT_DATA.format(productData))
 
@@ -107,7 +107,7 @@ class ProductDataHandler(
 
     private fun handleUnsuccessfulProductDataResponse(
         response: ProductDataResponse,
-        onError: PurchasesErrorCallback
+        onError: PurchasesErrorCallback,
     ) {
         val underlyingErrorMessage =
             if (response.requestStatus == ProductDataResponse.RequestStatus.NOT_SUPPORTED) {
@@ -127,11 +127,11 @@ class ProductDataHandler(
                 val request = getRequest(requestId) ?: return@postDelayed
                 val error = PurchasesError(
                     PurchasesErrorCode.UnknownError,
-                    AmazonStrings.ERROR_TIMEOUT_GETTING_PRODUCT_DATA.format(request.skuList.toString())
+                    AmazonStrings.ERROR_TIMEOUT_GETTING_PRODUCT_DATA.format(request.skuList.toString()),
                 )
                 request.onError(error)
             },
-            GET_PRODUCT_DATA_TIMEOUT_MILLIS
+            GET_PRODUCT_DATA_TIMEOUT_MILLIS,
         )
     }
 

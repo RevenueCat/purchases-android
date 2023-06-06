@@ -21,7 +21,7 @@ internal class CustomerInfoHelper(
     private val backend: Backend,
     private val identityManager: IdentityManager,
     private val offlineEntitlementsManager: OfflineEntitlementsManager,
-    private val handler: Handler = Handler(Looper.getMainLooper())
+    private val handler: Handler = Handler(Looper.getMainLooper()),
 ) {
 
     var updatedCustomerInfoListener: UpdatedCustomerInfoListener? = null
@@ -39,7 +39,7 @@ internal class CustomerInfoHelper(
         appUserID: String,
         fetchPolicy: CacheFetchPolicy,
         appInBackground: Boolean,
-        callback: ReceiveCustomerInfoCallback? = null
+        callback: ReceiveCustomerInfoCallback? = null,
     ) {
         debugLog(CustomerInfoStrings.RETRIEVING_CUSTOMER_INFO.format(fetchPolicy))
         when (fetchPolicy) {
@@ -47,17 +47,17 @@ internal class CustomerInfoHelper(
             CacheFetchPolicy.FETCH_CURRENT -> getCustomerInfoFetchOnly(
                 appUserID,
                 appInBackground,
-                callback
+                callback,
             )
             CacheFetchPolicy.CACHED_OR_FETCHED -> getCustomerInfoCachedOrFetched(
                 appUserID,
                 appInBackground,
-                callback
+                callback,
             )
             CacheFetchPolicy.NOT_STALE_CACHED_OR_CURRENT -> getCustomerInfoNotStaledCachedOrFetched(
                 appUserID,
                 appInBackground,
-                callback
+                callback,
             )
         }
     }
@@ -95,7 +95,7 @@ internal class CustomerInfoHelper(
 
     private fun getCustomerInfoCacheOnly(
         appUserID: String,
-        callback: ReceiveCustomerInfoCallback? = null
+        callback: ReceiveCustomerInfoCallback? = null,
     ) {
         if (callback == null) return
         val cachedCustomerInfo = getCachedCustomerInfo(appUserID)
@@ -105,7 +105,7 @@ internal class CustomerInfoHelper(
         } else {
             val error = PurchasesError(
                 PurchasesErrorCode.CustomerInfoError,
-                CustomerInfoStrings.MISSING_CACHED_CUSTOMER_INFO
+                CustomerInfoStrings.MISSING_CACHED_CUSTOMER_INFO,
             )
             errorLog(error)
             dispatch { callback.onError(error) }
@@ -115,7 +115,7 @@ internal class CustomerInfoHelper(
     private fun getCustomerInfoFetchOnly(
         appUserID: String,
         appInBackground: Boolean,
-        callback: ReceiveCustomerInfoCallback? = null
+        callback: ReceiveCustomerInfoCallback? = null,
     ) {
         deviceCache.setCustomerInfoCacheTimestampToNow(appUserID)
         backend.getCustomerInfo(
@@ -133,8 +133,9 @@ internal class CustomerInfoHelper(
                 deviceCache.clearCustomerInfoCacheTimestamp(appUserID)
                 if (offlineEntitlementsManager.shouldCalculateOfflineCustomerInfoInGetCustomerInfoRequest(
                         isServerError,
-                        appUserID
-                    )) {
+                        appUserID,
+                    )
+                ) {
                     offlineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(
                         appUserID,
                         onSuccess = { offlineComputedCustomerInfo ->
@@ -143,18 +144,19 @@ internal class CustomerInfoHelper(
                         },
                         onError = {
                             dispatch { callback?.onError(backendError) }
-                        }
+                        },
                     )
                 } else {
                     dispatch { callback?.onError(backendError) }
                 }
-            })
+            },
+        )
     }
 
     private fun getCustomerInfoCachedOrFetched(
         appUserID: String,
         appInBackground: Boolean,
-        callback: ReceiveCustomerInfoCallback? = null
+        callback: ReceiveCustomerInfoCallback? = null,
     ) {
         val cachedCustomerInfo = getCachedCustomerInfo(appUserID)
         if (cachedCustomerInfo != null) {
@@ -170,7 +172,7 @@ internal class CustomerInfoHelper(
     private fun getCustomerInfoNotStaledCachedOrFetched(
         appUserID: String,
         appInBackground: Boolean,
-        callback: ReceiveCustomerInfoCallback? = null
+        callback: ReceiveCustomerInfoCallback? = null,
     ) {
         if (deviceCache.isCustomerInfoCacheStale(appUserID, appInBackground)) {
             getCustomerInfoFetchOnly(appUserID, appInBackground, callback)
@@ -186,13 +188,15 @@ internal class CustomerInfoHelper(
 
     private fun updateCachedCustomerInfoIfStale(
         appUserID: String,
-        appInBackground: Boolean
+        appInBackground: Boolean,
     ) {
         if (deviceCache.isCustomerInfoCacheStale(appUserID, appInBackground)) {
             log(
                 LogIntent.DEBUG,
-                if (appInBackground) CustomerInfoStrings.CUSTOMERINFO_STALE_UPDATING_BACKGROUND
-                else CustomerInfoStrings.CUSTOMERINFO_STALE_UPDATING_FOREGROUND)
+                if (appInBackground) {
+                    CustomerInfoStrings.CUSTOMERINFO_STALE_UPDATING_BACKGROUND
+                } else CustomerInfoStrings.CUSTOMERINFO_STALE_UPDATING_FOREGROUND,
+            )
             getCustomerInfoFetchOnly(appUserID, appInBackground)
         }
     }

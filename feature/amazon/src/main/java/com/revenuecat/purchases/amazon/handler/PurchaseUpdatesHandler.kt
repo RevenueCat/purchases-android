@@ -19,14 +19,14 @@ private typealias QueryPurchasesSuccessCallback = (List<Receipt>, UserData) -> U
 private typealias QueryPurchasesCallbacks = Pair<QueryPurchasesSuccessCallback, PurchasesErrorCallback>
 
 class PurchaseUpdatesHandler(
-    private val purchasingServiceProvider: PurchasingServiceProvider
+    private val purchasingServiceProvider: PurchasingServiceProvider,
 ) : PurchaseUpdatesResponseListener {
 
     private val requests = mutableMapOf<RequestId, QueryPurchasesCallbacks>()
 
     override fun queryPurchases(
         onSuccess: QueryPurchasesSuccessCallback,
-        onError: PurchasesErrorCallback
+        onError: PurchasesErrorCallback,
     ) {
         val reset = true
         val requestId = purchasingServiceProvider.getPurchaseUpdates(reset)

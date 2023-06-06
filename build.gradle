@@ -14,6 +14,7 @@ buildscript {
     ext.androidxCoreVersion = "1.8.0"
     ext.mockwebserverVersion = "4.2.0"
     ext.tinkVersion = "1.8.0"
+    ext.detektVersion = "1.23.0"
 
     repositories {
         mavenCentral()
@@ -29,12 +30,12 @@ buildscript {
 }
 
 plugins {
-    id "io.gitlab.arturbosch.detekt" version "1.17.0-RC3"
+    id "io.gitlab.arturbosch.detekt" version "$detektVersion"
     id "com.savvasdalkitsis.module-dependency-graph" version "0.9"
 }
 
 dependencies {
-    detektPlugins "io.gitlab.arturbosch.detekt:detekt-formatting:1.20.0"
+    detektPlugins "io.gitlab.arturbosch.detekt:detekt-formatting:$detektVersion"
 }
 
 allprojects {
@@ -58,7 +59,7 @@ task detektAll(type: io.gitlab.arturbosch.detekt.Detekt) {
     include("**/*.kts")
     exclude("**/build/**")
     exclude("**/test/**/*.kt")
-    exclude("examples/MagicWeather/**")
+    config.setFrom(files("$rootDir/config/detekt/detekt.yml"))
     baseline.set(file("$rootDir/config/detekt/detekt-baseline.xml"))
     reports {
         xml.enabled = true
@@ -75,6 +76,7 @@ task detektAllBaseline(type: io.gitlab.arturbosch.detekt.DetektCreateBaselineTas
     ignoreFailures.set(true)
     parallel.set(true)
     setSource(files(rootDir))
+    config.setFrom(files("$rootDir/config/detekt/detekt.yml"))
     baseline.set(file("$rootDir/config/detekt/detekt-baseline.xml"))
     include("**/*.kt")
     include("**/*.kts")

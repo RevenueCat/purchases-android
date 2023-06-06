@@ -7,7 +7,7 @@ object Responses {
     @Suppress("LongMethod")
     fun createFullCustomerResponse(
         oneMonthFreeTrialExpirationDate: Date? = Iso8601Utils.parse("2100-04-06T20:54:45.975000Z"),
-        threeMonthFreeTrialExpirationDate: Date? = Iso8601Utils.parse("1990-08-30T02:40:36Z")
+        threeMonthFreeTrialExpirationDate: Date? = Iso8601Utils.parse("1990-08-30T02:40:36Z"),
     ): String {
         return """
                 {

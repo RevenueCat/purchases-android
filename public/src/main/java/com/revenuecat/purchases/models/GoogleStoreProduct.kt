@@ -71,14 +71,14 @@ data class GoogleStoreProduct(
      *
      * Null if not using RevenueCat offerings system, or if fetched directly via `Purchases.getProducts`
      */
-    override val presentedOfferingIdentifier: String? = null
+    override val presentedOfferingIdentifier: String? = null,
 ) : StoreProduct {
 
     private constructor(
         otherProduct: GoogleStoreProduct,
         defaultOption: SubscriptionOption?,
         subscriptionOptionsWithOfferingId: SubscriptionOptions?,
-        presentedOfferingIdentifier: String?
+        presentedOfferingIdentifier: String?,
     ) :
         this(
             otherProduct.productId,
@@ -91,7 +91,7 @@ data class GoogleStoreProduct(
             subscriptionOptionsWithOfferingId,
             defaultOption,
             otherProduct.productDetails,
-            presentedOfferingIdentifier
+            presentedOfferingIdentifier,
         )
 
     /**
@@ -113,7 +113,7 @@ data class GoogleStoreProduct(
         } else {
             GooglePurchasingData.InAppProduct(
                 id,
-                productDetails
+                productDetails,
             )
         }
 
@@ -122,7 +122,7 @@ data class GoogleStoreProduct(
      */
     @Deprecated(
         "Replaced with productId",
-        ReplaceWith("productId")
+        ReplaceWith("productId"),
     )
     override val sku: String
         get() = productId
@@ -143,7 +143,7 @@ data class GoogleStoreProduct(
         val defaultOptionWithOfferingId = (defaultOption as? GoogleSubscriptionOption)?.let {
             GoogleSubscriptionOption(
                 it,
-                offeringId
+                offeringId,
             )
         }
 
@@ -151,7 +151,7 @@ data class GoogleStoreProduct(
             this,
             defaultOptionWithOfferingId,
             subscriptionOptionsWithOfferingIds?.let { SubscriptionOptions(it) },
-            offeringId
+            offeringId,
         )
     }
 }

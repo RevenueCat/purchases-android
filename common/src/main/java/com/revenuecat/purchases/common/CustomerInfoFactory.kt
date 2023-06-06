@@ -29,7 +29,7 @@ object CustomerInfoFactory {
     fun buildCustomerInfo(
         body: JSONObject,
         overrideRequestDate: Date?,
-        verificationResult: VerificationResult
+        verificationResult: VerificationResult,
     ): CustomerInfo {
         val subscriber = body.getJSONObject(CustomerInfoResponseJsonKeys.SUBSCRIBER)
 
@@ -41,7 +41,7 @@ object CustomerInfoFactory {
             if (numberOfNonSubscriptions > 0) {
                 nonSubscriptionsLatestPurchases.put(
                     productId,
-                    arrayOfNonSubscriptions.getJSONObject(numberOfNonSubscriptions - 1)
+                    arrayOfNonSubscriptions.getJSONObject(numberOfNonSubscriptions - 1),
                 )
             }
         }
@@ -62,7 +62,7 @@ object CustomerInfoFactory {
             subscriptions,
             nonSubscriptionsLatestPurchases,
             requestDate,
-            verificationResult
+            verificationResult,
         ) ?: EntitlementInfos(
             emptyMap(),
             // Trusted entitlements: Commented out until ready to be made public
@@ -85,7 +85,7 @@ object CustomerInfoFactory {
             firstSeen = firstSeen,
             originalAppUserId = subscriber.optString(CustomerInfoResponseJsonKeys.ORIGINAL_APP_USER_ID),
             managementURL = managementURL?.let { Uri.parse(it) },
-            originalPurchaseDate = originalPurchaseDate
+            originalPurchaseDate = originalPurchaseDate,
         )
     }
 

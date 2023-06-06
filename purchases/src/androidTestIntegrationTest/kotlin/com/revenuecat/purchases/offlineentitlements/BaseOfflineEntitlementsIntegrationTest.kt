@@ -14,11 +14,12 @@ import kotlin.time.Duration
 abstract class BaseOfflineEntitlementsIntegrationTest : BasePurchasesIntegrationTest() {
     private val initialActiveTransaction = StoreTransactionFactory.createStoreTransaction(
         skus = listOf(Constants.productIdToPurchase),
-        purchaseToken = Constants.googlePurchaseToken
+        purchaseToken = Constants.googlePurchaseToken,
     )
     protected val initialActivePurchases = mapOf(
-        initialActiveTransaction.purchaseToken.sha1() to initialActiveTransaction
+        initialActiveTransaction.purchaseToken.sha1() to initialActiveTransaction,
     )
+
     // Hack until we get a running token for production API tests. After that, we can just use "entitlementsToVerify"
     private val expectedEntitlements = entitlementsToVerify.ifEmpty { listOf("pro_cat", "another_pro_4") }
 
@@ -40,10 +41,10 @@ abstract class BaseOfflineEntitlementsIntegrationTest : BasePurchasesIntegration
 
     protected fun assertCustomerInfoHasExpectedPurchaseData(customerInfo: CustomerInfo) {
         Assertions.assertThat(customerInfo.entitlements.active.keys).containsExactlyInAnyOrderElementsOf(
-            expectedEntitlements
+            expectedEntitlements,
         )
         Assertions.assertThat(customerInfo.activeSubscriptions).containsExactly(
-            "${Constants.productIdToPurchase}:${Constants.basePlanIdToPurchase}"
+            "${Constants.productIdToPurchase}:${Constants.basePlanIdToPurchase}",
         )
     }
 

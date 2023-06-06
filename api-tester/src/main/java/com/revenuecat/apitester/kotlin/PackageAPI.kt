@@ -25,7 +25,7 @@ private class PackageAPI {
             PackageType.THREE_MONTH,
             PackageType.TWO_MONTH,
             PackageType.MONTHLY,
-            PackageType.WEEKLY
+            PackageType.WEEKLY,
             -> {}
         }.exhaustive
     }

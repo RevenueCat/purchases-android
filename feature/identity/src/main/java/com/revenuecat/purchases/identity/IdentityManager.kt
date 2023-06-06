@@ -23,7 +23,7 @@ class IdentityManager(
     private val subscriberAttributesManager: SubscriberAttributesManager,
     private val offeringsCache: OfferingsCache,
     private val backend: Backend,
-    private val offlineEntitlementsManager: OfflineEntitlementsManager
+    private val offlineEntitlementsManager: OfflineEntitlementsManager,
 ) {
 
     val currentAppUserID: String
@@ -52,13 +52,15 @@ class IdentityManager(
     fun logIn(
         newAppUserID: String,
         onSuccess: (CustomerInfo, Boolean) -> Unit,
-        onError: (PurchasesError) -> Unit
+        onError: (PurchasesError) -> Unit,
     ) {
         if (newAppUserID.isBlank()) {
-            onError(PurchasesError(
-                PurchasesErrorCode.InvalidAppUserIdError,
-                IdentityStrings.LOG_IN_ERROR_MISSING_APP_USER_ID
-            ).also { errorLog(it) })
+            onError(
+                PurchasesError(
+                    PurchasesErrorCode.InvalidAppUserIdError,
+                    IdentityStrings.LOG_IN_ERROR_MISSING_APP_USER_ID,
+                ).also { errorLog(it) },
+            )
             return
         }
 
@@ -72,7 +74,7 @@ class IdentityManager(
                     synchronized(this@IdentityManager) {
                         log(
                             LogIntent.USER,
-                            IdentityStrings.LOG_IN_SUCCESSFUL.format(newAppUserID, created)
+                            IdentityStrings.LOG_IN_SUCCESSFUL.format(newAppUserID, created),
                         )
                         deviceCache.clearCachesForAppUserID(oldAppUserID)
                         offeringsCache.clearCache()
@@ -85,7 +87,7 @@ class IdentityManager(
                     }
                     onSuccess(customerInfo, created)
                 },
-                onError
+                onError,
             )
         }
     }

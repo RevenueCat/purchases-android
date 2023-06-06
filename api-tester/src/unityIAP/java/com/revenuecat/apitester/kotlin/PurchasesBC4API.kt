@@ -10,7 +10,8 @@ private class PurchasesBC4API {
             BillingFeature.SUBSCRIPTIONS,
             BillingFeature.SUBSCRIPTIONS_UPDATE,
             BillingFeature.IN_APP_ITEMS_ON_VR,
-            BillingFeature.SUBSCRIPTIONS_ON_VR -> {}
+            BillingFeature.SUBSCRIPTIONS_ON_VR,
+            -> {}
         }.exhaustive
     }
 }

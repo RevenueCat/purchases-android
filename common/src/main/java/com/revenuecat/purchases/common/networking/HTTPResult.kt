@@ -15,7 +15,7 @@ data class HTTPResult(
     val payload: String,
     val origin: Origin,
     val requestDate: Date?,
-    val verificationResult: VerificationResult
+    val verificationResult: VerificationResult,
 ) {
     companion object {
         const val ETAG_HEADER_NAME = "X-RevenueCat-ETag"

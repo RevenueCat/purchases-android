@@ -28,7 +28,7 @@ class PurchasedProductsFetcher(
                 PurchasesError(
                     PurchasesErrorCode.CustomerInfoError,
                     OfflineEntitlementsStrings.PRODUCT_ENTITLEMENT_MAPPING_REQUIRED,
-                )
+                ),
             )
             return
         }

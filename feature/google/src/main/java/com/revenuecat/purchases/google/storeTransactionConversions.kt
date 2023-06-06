@@ -13,7 +13,7 @@ fun Purchase.toStoreTransaction(
     productType: ProductType,
     presentedOfferingIdentifier: String? = null,
     subscriptionOptionId: String? = null,
-    prorationMode: GoogleProrationMode? = null
+    prorationMode: GoogleProrationMode? = null,
 ): StoreTransaction = StoreTransaction(
     orderId = this.orderId,
     productIds = this.products,
@@ -37,7 +37,7 @@ fun Purchase.toStoreTransaction(purchaseContext: PurchaseContext): StoreTransact
         purchaseContext.productType,
         purchaseContext.presentedOfferingId,
         purchaseContext.selectedSubscriptionOptionId,
-        purchaseContext.prorationMode
+        purchaseContext.prorationMode,
     )
 
 val StoreTransaction.originalGooglePurchase: Purchase?
@@ -47,7 +47,7 @@ val StoreTransaction.originalGooglePurchase: Purchase?
             ?.let { signature -> Purchase(this.originalJson.toString(), signature) }
 
 fun PurchaseHistoryRecord.toStoreTransaction(
-    type: ProductType
+    type: ProductType,
 ): StoreTransaction {
     return StoreTransaction(
         orderId = null,

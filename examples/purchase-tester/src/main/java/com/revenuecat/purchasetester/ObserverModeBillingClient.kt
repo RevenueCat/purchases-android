@@ -29,7 +29,7 @@ object ObserverModeBillingClient : PurchasesUpdatedListener, BillingClientStateL
         activity: Activity,
         productDetails: ProductDetails,
         offerToken: String?,
-        isOfferPersonalized: Boolean = false
+        isOfferPersonalized: Boolean = false,
     ) {
         val flowParams = BillingFlowParams.newBuilder()
             .setProductDetailsParamsList(
@@ -41,8 +41,8 @@ object ObserverModeBillingClient : PurchasesUpdatedListener, BillingClientStateL
                                 params.setOfferToken(it)
                             }
                         }
-                        .build()
-                )
+                        .build(),
+                ),
             )
             .setIsOfferPersonalized(isOfferPersonalized)
             .build()
@@ -59,7 +59,7 @@ object ObserverModeBillingClient : PurchasesUpdatedListener, BillingClientStateL
     override fun onPurchasesUpdated(billingResult: BillingResult, purchases: MutableList<Purchase>?) {
         testerLogHandler.d(
             "[ObserverModeBillingClient]",
-            "Called onPurchasesUpdated with status ${billingResult.responseCode}"
+            "Called onPurchasesUpdated with status ${billingResult.responseCode}",
         )
         if (billingResult.responseCode == BillingClient.BillingResponseCode.OK && purchases != null) {
             Purchases.sharedInstance.syncPurchases()

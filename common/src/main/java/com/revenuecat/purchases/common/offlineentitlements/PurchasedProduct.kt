@@ -8,5 +8,5 @@ data class PurchasedProduct(
     val basePlanId: String?,
     val storeTransaction: StoreTransaction,
     val entitlements: List<String>,
-    val expiresDate: Date?
+    val expiresDate: Date?,
 )

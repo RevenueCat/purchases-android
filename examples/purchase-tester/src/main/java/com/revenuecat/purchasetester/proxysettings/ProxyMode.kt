@@ -3,7 +3,8 @@ package com.revenuecat.purchasetester.proxysettings
 enum class ProxyMode {
     OFF,
     ENTITLEMENT_OVERRIDE,
-    SERVER_DOWN;
+    SERVER_DOWN,
+    ;
 
     fun requestPath(): String {
         return when (this) {

@@ -3,8 +3,8 @@ package com.revenuecat.purchases.common
 import android.content.Context
 import com.revenuecat.purchases.DangerousSettings
 import com.revenuecat.purchases.Store
-import java.net.URL
 import com.revenuecat.purchases.strings.ConfigureStrings
+import java.net.URL
 
 @Suppress("LongParameterList")
 class AppConfig(
@@ -15,7 +15,7 @@ class AppConfig(
     val store: Store,
     val dangerousSettings: DangerousSettings = DangerousSettings(autoSyncPurchases = true),
     // Should only be used for tests
-    var forceServerErrors: Boolean = false
+    var forceServerErrors: Boolean = false,
 ) {
 
     val enableOfflineEntitlements = true

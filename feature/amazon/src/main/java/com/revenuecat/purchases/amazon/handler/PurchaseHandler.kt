@@ -13,10 +13,10 @@ import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.amazon.AmazonStrings
-import com.revenuecat.purchases.amazon.purchasing.ProxyAmazonBillingActivity
-import com.revenuecat.purchases.amazon.purchasing.ProxyAmazonBillingActivityBroadcastReceiver
 import com.revenuecat.purchases.amazon.PurchasingServiceProvider
 import com.revenuecat.purchases.amazon.listener.PurchaseResponseListener
+import com.revenuecat.purchases.amazon.purchasing.ProxyAmazonBillingActivity
+import com.revenuecat.purchases.amazon.purchasing.ProxyAmazonBillingActivityBroadcastReceiver
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.log
@@ -25,7 +25,7 @@ import com.revenuecat.purchases.strings.PurchaseStrings
 
 class PurchaseHandler(
     private val purchasingServiceProvider: PurchasingServiceProvider,
-    private val applicationContext: Context
+    private val applicationContext: Context,
 ) : PurchaseResponseListener {
 
     private val productTypes = mutableMapOf<String, ProductType>()
@@ -40,7 +40,7 @@ class PurchaseHandler(
         storeProduct: StoreProduct,
         presentedOfferingIdentifier: String?,
         onSuccess: (Receipt, UserData) -> Unit,
-        onError: (PurchasesError) -> Unit
+        onError: (PurchasesError) -> Unit,
     ) {
         log(LogIntent.PURCHASE, PurchaseStrings.PURCHASING_PRODUCT.format(storeProduct.id))
 
@@ -54,7 +54,7 @@ class PurchaseHandler(
         storeProduct: StoreProduct,
         presentedOfferingIdentifier: String?,
         onSuccess: (Receipt, UserData) -> Unit,
-        onError: (PurchasesError) -> Unit
+        onError: (PurchasesError) -> Unit,
     ) {
         val resultReceiver =
             createRequestIdResultReceiver(mainHandler, storeProduct, presentedOfferingIdentifier, onSuccess, onError)
@@ -62,7 +62,7 @@ class PurchaseHandler(
             activity,
             resultReceiver,
             storeProduct.id,
-            purchasingServiceProvider
+            purchasingServiceProvider,
         )
         // ProxyAmazonBillingActivity will initiate the purchase
         activity.startActivity(intent)
@@ -73,7 +73,7 @@ class PurchaseHandler(
         storeProduct: StoreProduct,
         presentedOfferingIdentifier: String?,
         onSuccess: (Receipt, UserData) -> Unit,
-        onError: (PurchasesError) -> Unit
+        onError: (PurchasesError) -> Unit,
     ) = object : ResultReceiver(mainHandler) {
         override fun onReceiveResult(resultCode: Int, resultData: Bundle?) {
             synchronized(this@PurchaseHandler) {
@@ -123,7 +123,7 @@ class PurchaseHandler(
     private fun onSuccessfulPurchase(
         receipt: Receipt,
         userData: UserData,
-        onSuccess: (Receipt, UserData) -> Unit
+        onSuccess: (Receipt, UserData) -> Unit,
     ) {
         onSuccess(receipt, userData)
     }
@@ -138,7 +138,7 @@ class PurchaseHandler(
 
     private fun onAlreadyPurchased(onError: (PurchasesError) -> Unit) {
         onError(
-            PurchasesError(PurchasesErrorCode.ProductAlreadyPurchasedError, AmazonStrings.ERROR_PURCHASE_ALREADY_OWNED)
+            PurchasesError(PurchasesErrorCode.ProductAlreadyPurchasedError, AmazonStrings.ERROR_PURCHASE_ALREADY_OWNED),
         )
     }
 
@@ -146,8 +146,8 @@ class PurchaseHandler(
         onError(
             PurchasesError(
                 PurchasesErrorCode.ProductNotAvailableForPurchaseError,
-                AmazonStrings.ERROR_PURCHASE_INVALID_SKU
-            )
+                AmazonStrings.ERROR_PURCHASE_INVALID_SKU,
+            ),
         )
     }
 

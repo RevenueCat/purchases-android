@@ -37,9 +37,10 @@ class MainApplication : Application(), UpdatedCustomerInfoListener {
     override fun onReceived(customerInfo: CustomerInfo) {
         lastCustomerInfoMutableLiveData.postValue(customerInfo)
         val message = "CustomerInfoListener received update at ${customerInfo.requestDate}"
-        Toast.makeText(this,
+        Toast.makeText(
+            this,
             message,
-            Toast.LENGTH_SHORT
+            Toast.LENGTH_SHORT,
         ).show()
         Log.d("CustomerInfoListener", "$message: $customerInfo")
     }

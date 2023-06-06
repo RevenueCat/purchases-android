@@ -27,7 +27,7 @@ object StoreProductFactory {
     fun createPeriod(
         value: Int = 1,
         unit: Period.Unit = Period.Unit.MONTH,
-        iso8601: String = "P1M"
+        iso8601: String = "P1M",
     ): Period {
         return Period(value, unit, iso8601)
     }
@@ -36,7 +36,7 @@ object StoreProductFactory {
         period: Period = createPeriod(),
         recurrenceMode: RecurrenceMode = RecurrenceMode.INFINITE_RECURRING,
         numberOfPeriods: Int = 0,
-        price: Price = createPrice()
+        price: Price = createPrice(),
     ): PricingPhase {
         return PricingPhase(period, recurrenceMode, numberOfPeriods, price)
     }
@@ -49,7 +49,7 @@ object StoreProductFactory {
         pricingPhases: List<PricingPhase> = listOf(createPricingPhase()),
         tags: List<String> = emptyList(),
         productDetails: ProductDetails = mockk(),
-        offerToken: String = "test-offer-token"
+        offerToken: String = "test-offer-token",
     ): GoogleSubscriptionOption {
         return GoogleSubscriptionOption(
             productId,
@@ -58,7 +58,7 @@ object StoreProductFactory {
             pricingPhases,
             tags,
             productDetails,
-            offerToken
+            offerToken,
         )
     }
 
@@ -74,7 +74,7 @@ object StoreProductFactory {
         defaultOptionIndex: Int = 0,
         productDetails: ProductDetails = mockk(),
         subscriptionOptionsList: List<SubscriptionOption>? = listOf(
-            createGoogleSubscriptionOption(productDetails = productDetails)
+            createGoogleSubscriptionOption(productDetails = productDetails),
         ),
     ): StoreProduct {
         val subscriptionOptions = subscriptionOptionsList?.let { SubscriptionOptions(it) }
@@ -88,7 +88,7 @@ object StoreProductFactory {
             period = period,
             subscriptionOptions = subscriptionOptions,
             defaultOption = subscriptionOptions?.let { it[defaultOptionIndex] },
-            productDetails = productDetails
+            productDetails = productDetails,
         )
     }
 }

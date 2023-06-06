@@ -78,7 +78,7 @@ interface StoreProduct {
      */
     @Deprecated(
         "Replaced with id",
-        ReplaceWith("id")
+        ReplaceWith("id"),
     )
     val sku: String
 

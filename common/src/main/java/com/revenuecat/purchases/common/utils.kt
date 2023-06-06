@@ -74,7 +74,7 @@ fun Locale.toBCP47(): String {
 
 data class PlatformInfo(
     val flavor: String,
-    val version: String?
+    val version: String?,
 )
 
 fun String.sha1() =

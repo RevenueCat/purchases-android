@@ -36,7 +36,7 @@ private class StoreProductAPI {
         when (type) {
             ProductType.SUBS,
             ProductType.INAPP,
-            ProductType.UNKNOWN
+            ProductType.UNKNOWN,
             -> {}
         }.exhaustive
     }
@@ -53,7 +53,7 @@ private class StoreProductAPI {
             googleStoreProduct.period,
             googleStoreProduct.subscriptionOptions,
             googleStoreProduct.defaultOption,
-            googleStoreProduct.productDetails
+            googleStoreProduct.productDetails,
         )
 
         val constructedGoogleStoreProductWithOfferingId = GoogleStoreProduct(
@@ -67,7 +67,7 @@ private class StoreProductAPI {
             googleStoreProduct.subscriptionOptions,
             googleStoreProduct.defaultOption,
             googleStoreProduct.productDetails,
-            googleStoreProduct.presentedOfferingIdentifier
+            googleStoreProduct.presentedOfferingIdentifier,
         )
 
         val productId: String = constructedGoogleStoreProduct.productId
@@ -88,7 +88,7 @@ private class StoreProductAPI {
             amazonStoreProduct.defaultOption,
             amazonStoreProduct.iconUrl,
             amazonStoreProduct.freeTrialPeriod,
-            amazonStoreProduct.originalProductJSON
+            amazonStoreProduct.originalProductJSON,
         )
 
         val constructedAmazonStoreProductWithOfferingId = AmazonStoreProduct(
@@ -103,7 +103,7 @@ private class StoreProductAPI {
             amazonStoreProduct.iconUrl,
             amazonStoreProduct.freeTrialPeriod,
             amazonStoreProduct.originalProductJSON,
-            amazonStoreProduct.presentedOfferingIdentifier
+            amazonStoreProduct.presentedOfferingIdentifier,
         )
         val iconUrl: String = amazonStoreProduct.iconUrl
         val freeTrialPeriod: Period? = amazonStoreProduct.freeTrialPeriod

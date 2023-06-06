@@ -7,5 +7,5 @@ class PurchaseContext(
     val productType: ProductType,
     val presentedOfferingId: String?,
     val selectedSubscriptionOptionId: String?,
-    val prorationMode: GoogleProrationMode?
+    val prorationMode: GoogleProrationMode?,
 )
