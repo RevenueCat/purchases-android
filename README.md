@@ -20,7 +20,7 @@ Sign up to [get started for free](https://app.revenuecat.com/signup).
 
 *Purchases* is the client for the [RevenueCat](https://www.revenuecat.com/) subscription and purchase tracking system. It is an open source framework that provides a wrapper around `BillingClient` and the RevenueCat backend to make implementing in-app subscriptions in `Android` easy - receipt validation and status tracking included!
 
-## Migrating Guides
+## Migration Guides
 | Description | Link |
 | --- | --- |
 | Migrating from v4.x.x to v5.x.x | [V5 API Migration Guide](./migrations/v5-MIGRATION.md) |
@@ -45,8 +45,8 @@ For more detailed information, you can view our complete documentation at [docs.
 
 Please follow the [Quickstart Guide](https://docs.revenuecat.com/docs/) for more information on how to install the SDK.
 
-Or view our Android sample app:
-- [MagicWeather](examples/MagicWeather)
+Or view / build our Android sample app:
+- [MagicWeather](examples/MagicWeather) (open it on a different Android Studio window)
 
 ## Requirements
 - Java 8+
