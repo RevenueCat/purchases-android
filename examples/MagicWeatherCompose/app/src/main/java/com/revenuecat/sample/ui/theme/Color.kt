@@ -4,6 +4,7 @@ package com.revenuecat.sample.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
+val green = Color(0xFF32A852)
 val Purple80 = Color(0xFFD0BCFF)
 val PurpleGrey80 = Color(0xFFCCC2DC)
 val Pink80 = Color(0xFFEFB8C8)

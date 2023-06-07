@@ -3,8 +3,8 @@ package com.revenuecat.sample.weather
 import androidx.lifecycle.ViewModel
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.getCustomerInfoWith
-import com.revenuecat.sample.data.Constants
 import com.revenuecat.sample.data.SampleWeatherData
+import com.revenuecat.sample.utils.hasActiveEntitlements
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -29,7 +29,7 @@ class WeatherViewModel : ViewModel() {
                 }
             },
             onSuccess = {
-                if (it.entitlements[Constants.ENTITLEMENT_ID]?.isActive == true) {
+                if (it.entitlements.hasActiveEntitlements()) {
                     _uiState.update { currentState ->
                         currentState.copy(
                             weatherData = SampleWeatherData.generateSampleData(
