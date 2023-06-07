@@ -65,10 +65,9 @@ class PurchasedProductsFetcher(
     private fun getExpirationDate(
         purchaseAssociatedToProduct: StoreTransaction,
     ): Date? {
-        return if (purchaseAssociatedToProduct.type == ProductType.SUBS) {
-            Date(dateProvider.now.time + TimeUnit.DAYS.toMillis(1))
-        } else {
-            null
+        return when (purchaseAssociatedToProduct.type) {
+            ProductType.SUBS -> Date(dateProvider.now.time + TimeUnit.DAYS.toMillis(1))
+            else -> null
         }
     }
 }
