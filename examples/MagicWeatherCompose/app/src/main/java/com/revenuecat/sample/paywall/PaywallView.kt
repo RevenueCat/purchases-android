@@ -9,10 +9,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.Text
-import androidx.compose.material3.ElevatedButton
+import androidx.compose.material3.Button
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -87,7 +88,7 @@ private fun PackageButton(
     onPurchaseClicked: (Activity, Package) -> Unit = { _, _ -> },
 ) {
     val context = LocalContext.current
-    ElevatedButton(
+    Button(
         onClick = { onPurchaseClicked(context.findActivity(), rcPackage) },
         modifier = modifier
             .fillMaxWidth()
@@ -96,6 +97,6 @@ private fun PackageButton(
                 vertical = 8.dp,
             ),
     ) {
-        Text(text = rcPackage.buttonText)
+        Text(text = rcPackage.buttonText, color = Color.White)
     }
 }

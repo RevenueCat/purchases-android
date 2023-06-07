@@ -4,13 +4,16 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.BottomNavigation
 import androidx.compose.material.BottomNavigationItem
 import androidx.compose.material.Icon
+import androidx.compose.material.TopAppBar
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -26,6 +29,14 @@ fun MainScreen(
     changeScreenCallback: (Screen) -> Unit,
 ) {
     Scaffold(
+        topBar = {
+            val currentRoute = currentRoute(navController)
+            TopAppBar(
+                title = { Text(text = currentRoute) },
+                backgroundColor = Color.Transparent,
+                elevation = 0.dp,
+            )
+        },
         bottomBar = { BottomBarNavigation(navController) },
     ) {
         MainNavHost(navController, changeScreenCallback, Modifier.padding(it))
@@ -67,15 +78,24 @@ private fun MainNavHost(
 private fun BottomBarNavigation(
     navController: NavHostController,
 ) {
-    BottomNavigation {
-        val navBackStackEntry by navController.currentBackStackEntryAsState()
-        val currentRoute = navBackStackEntry?.destination?.route
+    BottomNavigation(
+        backgroundColor = Color.White,
+        contentColor = Color.Black,
+    ) {
+        val currentRoute = currentRoute(navController)
         bottomNavigationItems.forEach { screen ->
             BottomNavigationItem(
                 icon = {
-                    Icon(painterResource(id = screen.iconResourceId), contentDescription = null)
+                    Icon(
+                        painterResource(id = screen.iconResourceId),
+                        contentDescription = null,
+                    )
                 },
-                label = { Text(screen.title) },
+                label = {
+                    Text(
+                        screen.title,
+                    )
+                },
                 selected = currentRoute == screen.title,
                 onClick = {
                     if (currentRoute != screen.title) {
@@ -85,4 +105,10 @@ private fun BottomBarNavigation(
             )
         }
     }
+}
+
+@Composable
+fun currentRoute(navController: NavHostController): String {
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    return navBackStackEntry?.destination?.route ?: ""
 }

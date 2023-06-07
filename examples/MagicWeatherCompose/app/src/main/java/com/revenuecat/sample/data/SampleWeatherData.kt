@@ -1,6 +1,7 @@
 package com.revenuecat.sample.data
 
 import com.revenuecat.sample.R
+import java.util.Locale
 import kotlin.random.Random
 
 class SampleWeatherData(val emoji: String, val temperature: String) {
@@ -26,6 +27,14 @@ class SampleWeatherData(val emoji: String, val temperature: String) {
 
     var unit: TemperatureUnit = TemperatureUnit.F
     var environment: Environment = Environment.EARTH
+    val displayText: String
+        get() = "${emoji}\n$temperature°${unit.unit.replaceFirstChar {
+            if (it.isLowerCase()) {
+                it.titlecase(
+                    Locale.ROOT,
+                )
+            } else it.toString()
+        }}"
 
     val weatherColor: Int
         get() {
