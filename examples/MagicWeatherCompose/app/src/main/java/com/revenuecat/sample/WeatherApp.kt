@@ -41,7 +41,11 @@ private fun NavGraph(navController: NavHostController) {
         }
 
         composable(route = Screen.Paywall.route) {
-            PaywallScreen()
+            PaywallScreen(
+                onPurchaseCompleted = {
+                    navController.popBackStack()
+                },
+            )
         }
     }
 }
