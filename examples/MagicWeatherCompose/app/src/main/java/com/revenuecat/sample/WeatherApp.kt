@@ -27,7 +27,6 @@ fun WeatherAppPreview() {
 
 @Composable
 private fun NavGraph(navController: NavHostController) {
-    navController.navigatorProvider.navigators
     NavHost(
         navController = navController,
         startDestination = Screen.Main.route,
@@ -39,7 +38,6 @@ private fun NavGraph(navController: NavHostController) {
                 },
             )
         }
-
         composable(route = Screen.Paywall.route) {
             PaywallScreen(
                 onPurchaseCompleted = {
