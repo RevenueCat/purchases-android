@@ -1,6 +1,7 @@
 package com.revenuecat.purchasetester
 
 import android.net.Uri
+import android.util.Log
 import androidx.lifecycle.MediatorLiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -88,6 +89,7 @@ class OverviewViewModel(private val interactionHandler: OverviewInteractionHandl
         viewModelScope.launch {
             runCatching {
                 customerInfo.value = Purchases.sharedInstance.awaitCustomerInfo()
+                Log.i("PurchaseTester", "Get Customer info returned Customer info: ${customerInfo.value}")
             }.onFailure {
                 when (it) {
                     is PurchasesException -> interactionHandler.displayError(it.error)
