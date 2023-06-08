@@ -23,7 +23,6 @@ import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.ReplaceProductInfo
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.google.billingResponseToPurchasesError
-import com.revenuecat.purchases.google.toGoogleProductType
 import com.revenuecat.purchases.google.toInAppStoreProduct
 import com.revenuecat.purchases.google.toStoreProduct
 import com.revenuecat.purchases.google.toStoreTransaction
@@ -1505,11 +1504,6 @@ class PurchasesTest: BasePurchasesTest() {
     @Test
     fun `fetch customer info on foregrounded if it's stale`() {
         mockCacheStale(customerInfoStale = true)
-        mockSuccessfulQueryPurchases(
-            queriedSUBS = emptyMap(),
-            queriedINAPP = emptyMap(),
-            notInCache = emptyList()
-        )
         mockSynchronizeSubscriberAttributesForAllUsers()
         mockOfferingsManagerAppForeground()
         Purchases.sharedInstance.onAppForegrounded()
@@ -1525,11 +1519,6 @@ class PurchasesTest: BasePurchasesTest() {
 
     @Test
     fun `fetch product entitlement mapping on foreground if it's stale`() {
-        mockSuccessfulQueryPurchases(
-            queriedSUBS = emptyMap(),
-            queriedINAPP = emptyMap(),
-            notInCache = emptyList()
-        )
         mockOfferingsManagerAppForeground()
         Purchases.sharedInstance.onAppForegrounded()
         verify(exactly = 1) {
@@ -1540,11 +1529,6 @@ class PurchasesTest: BasePurchasesTest() {
     @Test
     fun `does not fetch purchaser info on foregrounded if it's not stale`() {
         mockCacheStale()
-        mockSuccessfulQueryPurchases(
-            queriedSUBS = emptyMap(),
-            queriedINAPP = emptyMap(),
-            notInCache = emptyList()
-        )
         mockSynchronizeSubscriberAttributesForAllUsers()
         purchases.state = purchases.state.copy(firstTimeInForeground = false)
         mockOfferingsManagerAppForeground()
@@ -1605,11 +1589,6 @@ class PurchasesTest: BasePurchasesTest() {
 
     @Test
     fun `on foreground delegates logic`() {
-        mockSuccessfulQueryPurchases(
-            queriedSUBS = emptyMap(),
-            queriedINAPP = emptyMap(),
-            notInCache = emptyList()
-        )
         mockSynchronizeSubscriberAttributesForAllUsers()
         every { mockOfferingsManager.onAppForeground(any()) } just Runs
         Purchases.sharedInstance.onAppForegrounded()
@@ -2783,263 +2762,23 @@ class PurchasesTest: BasePurchasesTest() {
 
     // endregion
 
-    // region updatePendingPurchaseQueue
-
-    @Test
-    fun `when updating pending purchases, retrieve both INAPPS and SUBS`() {
-        mockSuccessfulQueryPurchases(
-            queriedSUBS = emptyMap(),
-            queriedINAPP = emptyMap(),
-            notInCache = emptyList()
-        )
-        purchases.updatePendingPurchaseQueue()
-        verify(exactly = 1) {
-            mockBillingAbstract.queryPurchases(appUserId, any(), any())
-        }
-    }
-
-    @Test
-    fun `skip updating pending purchases if autosync is off`() {
-        buildPurchases(anonymous = true, autoSync = false)
-        purchases.updatePendingPurchaseQueue()
-        verify(exactly = 0) {
-            mockBillingAbstract.queryPurchases(appUserId, any(), any())
-        }
-        verify(exactly = 0) {
-            mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(any(), any(), any(), any(), any(), any())
-        }
-    }
-
-    @Test
-    fun `post pending purchases if autosync is on`() {
-        buildPurchases(anonymous = true, autoSync = true)
-
-        val purchase = stubGooglePurchase(
-            purchaseToken = "token",
-            productIds = listOf("product"),
-            purchaseState = Purchase.PurchaseState.PURCHASED
-        )
-        val activePurchase =
-            purchase.toStoreTransaction(ProductType.SUBS, null, subscriptionOptionId = subscriptionOptionId)
-        mockSuccessfulQueryPurchases(
-            queriedSUBS = mapOf(purchase.purchaseToken.sha1() to activePurchase),
-            queriedINAPP = emptyMap(),
-            notInCache = listOf(activePurchase)
-        )
-        mockQueryingProductDetails("product", ProductType.SUBS, null)
-
-        every {
-            mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(any(), any(), any(), any(), null, null)
-        } just Runs
-
-        purchases.updatePendingPurchaseQueue()
-
-        verify(exactly = 1) {
-            mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(
-                purchase = activePurchase,
-                storeProduct = any(),
-                isRestore = false,
-                appUserID = appUserId,
-                onSuccess = any(),
-                onError = any()
-            )
-        }
-    }
-
-    @Test
-    fun `when updating pending purchases, if token has not been sent, send it`() {
-        val purchase = stubGooglePurchase(
-            purchaseToken = "token",
-            productIds = listOf("product"),
-            purchaseState = Purchase.PurchaseState.PURCHASED
-        )
-
-        val purchaseWrapper =
-            purchase.toStoreTransaction(ProductType.SUBS, null, subscriptionOptionId = subscriptionOptionId)
-        mockSuccessfulQueryPurchases(
-            queriedSUBS = mapOf(purchase.purchaseToken.sha1() to purchaseWrapper),
-            queriedINAPP = emptyMap(),
-            notInCache = listOf(purchaseWrapper)
-        )
-        mockQueryingProductDetails("product", ProductType.SUBS, null)
-
-        every {
-            mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(any(), any(), any(), any(), null, null)
-        } just Runs
-
-        purchases.updatePendingPurchaseQueue()
-
-        verify(exactly = 1) {
-            mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(
-                purchase = purchaseWrapper,
-                storeProduct = any(),
-                isRestore = false,
-                appUserID = appUserId,
-                onSuccess = any(),
-                onError = any()
-            )
-        }
-    }
-
-    @Test
-    fun `when updating pending purchases, if token has been sent, don't send it`() {
-        val purchase = stubGooglePurchase(
-            purchaseToken = "token",
-            productIds = listOf("product")
-        )
-        mockSuccessfulQueryPurchases(
-            queriedSUBS = mapOf(
-                purchase.purchaseToken.sha1() to purchase.toStoreTransaction(
-                    ProductType.SUBS,
-                    null
-                )
-            ),
-            queriedINAPP = emptyMap(),
-            notInCache = emptyList()
-        )
-        purchases.updatePendingPurchaseQueue()
-
-        verify(exactly = 0) {
-            mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(any(), any(), any(), any(), null, null)
-        }
-    }
-
-    @Test
-    fun `when updating pending purchases, if result from querying purchases is not successful skip`() {
-        every {
-            mockBillingAbstract.queryPurchases(appUserId, any(), captureLambda())
-        } answers {
-            lambda<(PurchasesError) -> Unit>()
-                .captured(PurchasesError(PurchasesErrorCode.StoreProblemError, "Broken"))
-        }
-
-        purchases.updatePendingPurchaseQueue()
-        verify(exactly = 0) {
-            mockCache.getPreviouslySentHashedTokens()
-        }
-    }
-
-    @Test
-    fun `all non-pending purchases returned from queryPurchases are posted to backend`() {
-        val purchasedPurchase = stubGooglePurchase(
-            purchaseToken = "purchasedToken",
-            productIds = listOf("product"),
-            purchaseState = Purchase.PurchaseState.PURCHASED
-        )
-        val activePurchasedPurchase =
-            purchasedPurchase.toStoreTransaction(ProductType.SUBS, null, subscriptionOptionId = subscriptionOptionId)
-
-        val pendingPurchase = stubGooglePurchase(
-            purchaseToken = "pendingToken",
-            productIds = listOf("product"),
-            purchaseState = Purchase.PurchaseState.PENDING
-        )
-        val activePendingPurchase =
-            pendingPurchase.toStoreTransaction(ProductType.SUBS, null, subscriptionOptionId = subscriptionOptionId)
-
-        val unspecifiedPurchase = stubGooglePurchase(
-            purchaseToken = "unspecifiedToken",
-            productIds = listOf("product"),
-            purchaseState = Purchase.PurchaseState.UNSPECIFIED_STATE
-        )
-        val activeUnspecifiedPurchase =
-            unspecifiedPurchase.toStoreTransaction(ProductType.SUBS, null, subscriptionOptionId = subscriptionOptionId)
-
-        mockSuccessfulQueryPurchases(
-            queriedSUBS = mapOf(
-                purchasedPurchase.purchaseToken.sha1() to activePurchasedPurchase,
-                pendingPurchase.purchaseToken.sha1() to activePendingPurchase,
-                unspecifiedPurchase.purchaseToken.sha1() to activeUnspecifiedPurchase
-            ),
-            queriedINAPP = emptyMap(),
-            notInCache = listOf(activePurchasedPurchase, activePendingPurchase, activeUnspecifiedPurchase)
-        )
-
-        mockQueryingProductDetails("product", ProductType.SUBS, null)
-
-        every {
-            mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(any(), any(), any(), any(), null, null)
-        } just Runs
-
-        purchases.updatePendingPurchaseQueue()
-
-        verify(exactly = 1) {
-            mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(
-                purchase = activePurchasedPurchase,
-                storeProduct = any(),
-                isRestore = false,
-                appUserID = appUserId,
-                onSuccess = any(),
-                onError = any()
-            )
-        }
-
-        verify(exactly = 1) {
-            mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(
-                purchase = activeUnspecifiedPurchase,
-                storeProduct = any(),
-                isRestore = false,
-                appUserID = any(),
-                onSuccess = any(),
-                onError = any()
-            )
-        }
-
-        verify(exactly = 0) {
-            mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(
-                purchase = activePendingPurchase,
-                storeProduct = any(),
-                isRestore = any(),
-                appUserID = any(),
-                onSuccess = any(),
-                onError = any()
-            )
-        }
-    }
-
-    // endregion
-
     // region queryPurchases
 
     @Test
-    fun `on billing wrapper connected, query purchases`() {
-        mockSuccessfulQueryPurchases(
-            queriedSUBS = emptyMap(),
-            queriedINAPP = emptyMap(),
-            notInCache = emptyList()
-        )
+    fun `on billing wrapper connected, sync pending purchases`() {
         capturedBillingWrapperStateListener.captured.onConnected()
         verify(exactly = 1) {
-            mockBillingAbstract.queryPurchases(appUserId, any(), any())
+            mockSyncPendingTransactionsHelper.syncPendingPurchaseQueue(any())
         }
     }
 
     @Test
-    fun `on app foregrounded query purchases`() {
-        mockSuccessfulQueryPurchases(
-            queriedSUBS = emptyMap(),
-            queriedINAPP = emptyMap(),
-            notInCache = emptyList()
-        )
+    fun `on app foregrounded sync pending purchases`() {
         mockSynchronizeSubscriberAttributesForAllUsers()
         mockOfferingsManagerAppForeground()
         purchases.onAppForegrounded()
         verify(exactly = 1) {
-            mockBillingAbstract.queryPurchases(appUserId, any(), any())
-        }
-    }
-
-    @Test
-    fun `if billing client not connected do not query purchases`() {
-        every {
-            mockBillingAbstract.isConnected()
-        } returns false
-        purchases.updatePendingPurchaseQueue()
-        verify(exactly = 0) {
-            mockBillingAbstract.queryPurchases(ProductType.SUBS.toGoogleProductType()!!, any(), any())
-        }
-        verify(exactly = 0) {
-            mockBillingAbstract.queryPurchases(ProductType.INAPP.toGoogleProductType()!!, any(), any())
+            mockSyncPendingTransactionsHelper.syncPendingPurchaseQueue(any())
         }
     }
 
@@ -3049,11 +2788,6 @@ class PurchasesTest: BasePurchasesTest() {
 
     @Test
     fun `state appInBackground is updated when app foregrounded`() {
-        mockSuccessfulQueryPurchases(
-            queriedSUBS = emptyMap(),
-            queriedINAPP = emptyMap(),
-            notInCache = emptyList()
-        )
         mockOfferingsManagerAppForeground()
         purchases.state = purchases.state.copy(appInBackground = true)
         Purchases.sharedInstance.onAppForegrounded()
@@ -3069,11 +2803,6 @@ class PurchasesTest: BasePurchasesTest() {
 
     @Test
     fun `force update of caches when app foregrounded for the first time`() {
-        mockSuccessfulQueryPurchases(
-            queriedSUBS = emptyMap(),
-            queriedINAPP = emptyMap(),
-            notInCache = emptyList()
-        )
         mockOfferingsManagerAppForeground()
         purchases.state = purchases.state.copy(appInBackground = false, firstTimeInForeground = true)
         Purchases.sharedInstance.onAppForegrounded()
@@ -3093,11 +2822,6 @@ class PurchasesTest: BasePurchasesTest() {
 
     @Test
     fun `don't force update of caches when app foregrounded not for the first time`() {
-        mockSuccessfulQueryPurchases(
-            queriedSUBS = emptyMap(),
-            queriedINAPP = emptyMap(),
-            notInCache = emptyList()
-        )
         every {
             mockCache.isCustomerInfoCacheStale(appInBackground = false, appUserID = appUserId)
         } returns false
@@ -3120,11 +2844,6 @@ class PurchasesTest: BasePurchasesTest() {
 
     @Test
     fun `update of caches when app foregrounded not for the first time and caches stale`() {
-        mockSuccessfulQueryPurchases(
-            queriedSUBS = emptyMap(),
-            queriedINAPP = emptyMap(),
-            notInCache = emptyList()
-        )
         every {
             mockCache.isCustomerInfoCacheStale(appInBackground = false, appUserID = appUserId)
         } returns true
@@ -3247,26 +2966,6 @@ class PurchasesTest: BasePurchasesTest() {
                 if (productType == ProductType.SUBS) subscriptionOptionId else null
             )
         )
-    }
-
-    private fun mockSuccessfulQueryPurchases(
-        queriedSUBS: Map<String, StoreTransaction>,
-        queriedINAPP: Map<String, StoreTransaction>,
-        notInCache: List<StoreTransaction>
-    ) {
-        val purchasesByHashedToken = queriedSUBS + queriedINAPP
-        every {
-            mockCache.cleanPreviouslySentTokens(purchasesByHashedToken.keys)
-        } just Runs
-        every {
-            mockCache.getActivePurchasesNotInCache(purchasesByHashedToken)
-        } returns notInCache
-
-        every {
-            mockBillingAbstract.queryPurchases(appUserId, captureLambda(), any())
-        } answers {
-            lambda<(Map<String, StoreTransaction>) -> Unit>().captured(purchasesByHashedToken)
-        }
     }
 
     private fun Int.buildResult(): BillingResult {

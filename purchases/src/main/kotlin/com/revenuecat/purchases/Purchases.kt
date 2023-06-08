@@ -170,7 +170,7 @@ class Purchases internal constructor(
 
         billing.stateListener = object : BillingAbstract.StateListener {
             override fun onConnected() {
-                updatePendingPurchaseQueue()
+                syncPendingTransactionsHelper.syncPendingPurchaseQueue(allowSharingPlayStoreAccount)
             }
         }
         billing.purchasesUpdatedListener = getPurchasesUpdatedListener()
@@ -207,7 +207,7 @@ class Purchases internal constructor(
             )
         }
         offeringsManager.onAppForeground(identityManager.currentAppUserID)
-        updatePendingPurchaseQueue()
+        syncPendingTransactionsHelper.syncPendingPurchaseQueue(allowSharingPlayStoreAccount)
         synchronizeSubscriberAttributesIfNeeded()
         offlineEntitlementsManager.updateProductEntitlementMappingCacheIfStale()
     }
@@ -1436,11 +1436,6 @@ class Purchases internal constructor(
                 listener.dispatch(error)
             },
         )
-    }
-
-    @JvmSynthetic
-    internal fun updatePendingPurchaseQueue() {
-        syncPendingTransactionsHelper.syncPendingPurchaseQueue(allowSharingPlayStoreAccount)
     }
 
     private fun synchronizeSubscriberAttributesIfNeeded() {
