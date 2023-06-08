@@ -14,7 +14,7 @@ suspend fun Purchases.awaitCustomerInfo(): CustomerInfo {
     return suspendCoroutine { continuation ->
         getCustomerInfoWith(
             onSuccess = continuation::resume,
-            onError = { continuation.resumeWithException(PurchasesException(it)) }
+            onError = { continuation.resumeWithException(PurchasesException(it)) },
         )
     }
 }

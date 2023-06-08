@@ -24,7 +24,7 @@ class LoginFragment : Fragment() {
                     .logInWith(
                         userId,
                         { error -> showUserError(requireActivity(), error) },
-                        { _, _ -> advanceToOverviewFragment() }
+                        { _, _ -> advanceToOverviewFragment() },
                     )
             }
         }
@@ -35,7 +35,7 @@ class LoginFragment : Fragment() {
             } else {
                 Purchases.sharedInstance.logOutWith(
                     { error -> showUserError(requireActivity(), error) },
-                    { advanceToOverviewFragment() }
+                    { advanceToOverviewFragment() },
                 )
             }
         }

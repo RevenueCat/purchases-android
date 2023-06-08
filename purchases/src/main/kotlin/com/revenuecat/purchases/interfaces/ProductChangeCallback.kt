@@ -13,7 +13,7 @@ import com.revenuecat.purchases.models.StoreTransaction
  */
 @Deprecated(
     "Use PurchaseCallback for all purchases now, even product changes",
-    ReplaceWith("PurchaseCallback")
+    ReplaceWith("PurchaseCallback"),
 )
 interface ProductChangeCallback : PurchaseErrorCallback {
     /**

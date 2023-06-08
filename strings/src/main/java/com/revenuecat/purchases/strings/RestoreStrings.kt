@@ -12,8 +12,8 @@ object RestoreStrings {
     const val RESTORING_PURCHASE = "Restoring purchases"
     const val RESTORING_PURCHASE_ERROR = "Error restoring purchase: %s. Error: %s"
     const val SHARING_ACC_RESTORE_FALSE = "allowSharingPlayStoreAccount is set to false and restorePurchases " +
-            "has been called. This will 'alias' any app user id's sharing the same receipt. " +
-            "Are you sure you want to do this? More info here: https://errors.rev.cat/allowsSharingPlayStoreAccount"
+        "has been called. This will 'alias' any app user id's sharing the same receipt. " +
+        "Are you sure you want to do this? More info here: https://errors.rev.cat/allowsSharingPlayStoreAccount"
     const val QUERYING_PURCHASE_HISTORY = "Querying purchase history for type %s"
     const val QUERYING_SUBS_ERROR = "Error when querying subscriptions. %s"
     const val QUERYING_INAPP_ERROR = "Error when querying inapps. %s"

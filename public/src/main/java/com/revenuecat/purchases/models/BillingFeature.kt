@@ -9,5 +9,5 @@ import com.android.billingclient.api.BillingClient
 enum class BillingFeature(@BillingClient.FeatureType val playBillingClientName: String) {
     SUBSCRIPTIONS(BillingClient.FeatureType.SUBSCRIPTIONS),
     SUBSCRIPTIONS_UPDATE(BillingClient.FeatureType.SUBSCRIPTIONS_UPDATE),
-    PRICE_CHANGE_CONFIRMATION(BillingClient.FeatureType.PRICE_CHANGE_CONFIRMATION)
+    PRICE_CHANGE_CONFIRMATION(BillingClient.FeatureType.PRICE_CHANGE_CONFIRMATION),
 }

@@ -87,7 +87,7 @@ internal fun SubscriptionOption.platformProductId(): PlatformProductId? {
         is GoogleSubscriptionOption -> GooglePlatformProductId(
             productId,
             basePlanId,
-            offerId
+            offerId,
         )
         else -> null
     }
@@ -96,19 +96,19 @@ internal fun SubscriptionOption.platformProductId(): PlatformProductId? {
 internal open class PlatformProductId(open val productId: String) {
     open val asMap: Map<String, String?>
         get() = mapOf(
-            "product_id" to productId
+            "product_id" to productId,
         )
 }
 
 internal class GooglePlatformProductId(
     override val productId: String,
     val basePlanId: String? = null,
-    val offerId: String? = null
+    val offerId: String? = null,
 ) : PlatformProductId(productId) {
     override val asMap: Map<String, String?>
         get() = mapOf(
             "product_id" to productId,
             "base_plan_id" to basePlanId,
-            "offer_id" to offerId
+            "offer_id" to offerId,
         )
 }

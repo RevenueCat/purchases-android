@@ -8,7 +8,8 @@ private class BillingFeatureAPI {
         when (billingFeature) {
             BillingFeature.PRICE_CHANGE_CONFIRMATION,
             BillingFeature.SUBSCRIPTIONS,
-            BillingFeature.SUBSCRIPTIONS_UPDATE -> {
+            BillingFeature.SUBSCRIPTIONS_UPDATE,
+            -> {
             }
         }.exhaustive
     }

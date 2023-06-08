@@ -24,6 +24,6 @@ interface ProductDataResponseListener : PurchasingListener {
         skus: Set<String>,
         marketplace: String,
         onReceive: (List<StoreProduct>) -> Unit,
-        onError: (PurchasesError) -> Unit
+        onError: (PurchasesError) -> Unit,
     )
 }

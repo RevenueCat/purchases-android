@@ -19,7 +19,7 @@ import com.revenuecat.purchases.utils.TimestampProvider
 class UserDataHandler(
     private val purchasingServiceProvider: PurchasingServiceProvider,
     private val mainHandler: Handler,
-    private val timestampProvider: TimestampProvider = DefaultTimestampProvider()
+    private val timestampProvider: TimestampProvider = DefaultTimestampProvider(),
 ) : UserDataResponseListener {
 
     companion object {
@@ -29,7 +29,7 @@ class UserDataHandler(
 
     private data class Request(
         val onReceive: (UserData) -> Unit,
-        val onError: PurchasesErrorCallback
+        val onError: PurchasesErrorCallback,
     )
 
     @get:Synchronized
@@ -71,7 +71,7 @@ class UserDataHandler(
     @SuppressWarnings("ForbiddenComment")
     override fun getUserData(
         onSuccess: (UserData) -> Unit,
-        onError: PurchasesErrorCallback
+        onError: PurchasesErrorCallback,
     ) {
         getCachedUserDataIfAvailable()?.let { cachedUserData ->
             log(LogIntent.DEBUG, AmazonStrings.USER_DATA_REQUEST_FROM_CACHE)
@@ -108,11 +108,11 @@ class UserDataHandler(
                 val request = getRequest(requestId) ?: return@postDelayed
                 val error = PurchasesError(
                     PurchasesErrorCode.UnknownError,
-                    AmazonStrings.ERROR_TIMEOUT_GETTING_USER_DATA
+                    AmazonStrings.ERROR_TIMEOUT_GETTING_USER_DATA,
                 )
                 request.onError(error)
             },
-            GET_USER_DATA_TIMEOUT_MILLIS
+            GET_USER_DATA_TIMEOUT_MILLIS,
         )
     }
 

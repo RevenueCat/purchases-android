@@ -8,5 +8,5 @@ internal data class PurchasesState(
     val purchaseCallbacksByProductId: Map<String, PurchaseCallback> = emptyMap(),
     val deprecatedProductChangeCallback: ProductChangeCallback? = null,
     val appInBackground: Boolean = true,
-    val firstTimeInForeground: Boolean = true
+    val firstTimeInForeground: Boolean = true,
 )

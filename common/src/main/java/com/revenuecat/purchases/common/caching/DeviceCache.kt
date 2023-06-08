@@ -31,7 +31,7 @@ internal const val CUSTOMER_INFO_SCHEMA_VERSION = 3
 open class DeviceCache(
     private val preferences: SharedPreferences,
     private val apiKey: String,
-    private val dateProvider: DateProvider = DefaultDateProvider()
+    private val dateProvider: DateProvider = DefaultDateProvider(),
 ) {
     companion object {
         private const val CUSTOMER_INFO_SCHEMA_VERSION_KEY = "schema_version"
@@ -145,7 +145,7 @@ open class DeviceCache(
         preferences.edit()
             .putString(
                 customerInfoCacheKey(appUserID),
-                jsonObject.toString()
+                jsonObject.toString(),
             ).apply()
 
         setCustomerInfoCacheTimestampToNow(appUserID)
@@ -234,11 +234,11 @@ open class DeviceCache(
      */
     @Synchronized
     fun cleanPreviouslySentTokens(
-        hashedTokens: Set<String>
+        hashedTokens: Set<String>,
     ) {
         log(LogIntent.DEBUG, ReceiptStrings.CLEANING_PREV_SENT_HASHED_TOKEN)
         setSavedTokenHashes(
-            hashedTokens.intersect(getPreviouslySentHashedTokens())
+            hashedTokens.intersect(getPreviouslySentHashedTokens()),
         )
     }
 
@@ -271,7 +271,7 @@ open class DeviceCache(
         preferences.edit()
             .putString(
                 offeringsResponseCacheKey,
-                offeringsResponse.toString()
+                offeringsResponse.toString(),
             ).apply()
     }
 
@@ -289,7 +289,7 @@ open class DeviceCache(
         preferences.edit()
             .putString(
                 productEntitlementMappingCacheKey,
-                productEntitlementMapping.toJson().toString()
+                productEntitlementMapping.toJson().toString(),
             ).apply()
 
         setProductEntitlementMappingCacheTimestampToNow()
@@ -308,7 +308,7 @@ open class DeviceCache(
     fun isProductEntitlementMappingCacheStale(): Boolean {
         return getProductEntitlementMappingLastUpdated().isCacheStale(
             PRODUCT_ENTITLEMENT_MAPPING_CACHE_REFRESH_PERIOD,
-            dateProvider
+            dateProvider,
         )
     }
 
@@ -349,22 +349,22 @@ open class DeviceCache(
 
     open fun putString(
         cacheKey: String,
-        value: String
+        value: String,
     ) {
         preferences.edit().putString(
             cacheKey,
-            value
+            value,
         ).apply()
     }
 
     fun remove(
-        cacheKey: String
+        cacheKey: String,
     ) {
         preferences.edit().remove(cacheKey).apply()
     }
 
     fun findKeysThatStartWith(
-        cacheKey: String
+        cacheKey: String,
     ): Set<String> {
         return try {
             preferences.all
@@ -376,7 +376,7 @@ open class DeviceCache(
     }
 
     fun newKey(
-        key: String
+        key: String,
     ) = "$apiKeyPrefix.$key"
 
     // endregion

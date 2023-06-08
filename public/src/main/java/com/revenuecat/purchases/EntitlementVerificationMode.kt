@@ -19,7 +19,9 @@ internal enum class EntitlementVerificationMode {
      * This can be useful if you want to handle verification failures to display an error/warning to the user
      * or to track this situation but still grant access.
      */
-    INFORMATIONAL;
+    INFORMATIONAL,
+
+    ;
 
     // Hidden ENFORCED mode during feature beta
     // ENFORCED;

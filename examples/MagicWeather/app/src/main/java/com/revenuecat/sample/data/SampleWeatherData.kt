@@ -21,7 +21,7 @@ class SampleWeatherData(val emoji: String, val temperature: String) {
         /*
          Pluto is still a planet in my ❤️
          */
-        PLUTO("pluto")
+        PLUTO("pluto"),
     }
 
     var unit: TemperatureUnit = TemperatureUnit.F

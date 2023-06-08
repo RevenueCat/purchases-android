@@ -11,16 +11,16 @@ data class Transaction(
     val transactionIdentifier: String,
     @Deprecated(
         "Use transactionIdentifier instead",
-        ReplaceWith("transactionIdentifier")
+        ReplaceWith("transactionIdentifier"),
     )
     val revenuecatId: String,
     val productIdentifier: String,
     @Deprecated(
         "Use productIdentifier instead",
-        ReplaceWith("productIdentifier")
+        ReplaceWith("productIdentifier"),
     )
     val productId: String,
-    val purchaseDate: Date
+    val purchaseDate: Date,
 ) : Parcelable {
 
     internal constructor(productId: String, jsonObject: JSONObject) : this(
@@ -28,6 +28,6 @@ data class Transaction(
         revenuecatId = jsonObject.getString("id"),
         productIdentifier = productId,
         productId = productId,
-        purchaseDate = jsonObject.getDate("purchase_date")
+        purchaseDate = jsonObject.getDate("purchase_date"),
     )
 }

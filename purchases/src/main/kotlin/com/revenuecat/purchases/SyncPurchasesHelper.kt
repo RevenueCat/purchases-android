@@ -15,13 +15,13 @@ internal class SyncPurchasesHelper(
     private val billing: BillingAbstract,
     private val identityManager: IdentityManager,
     private val customerInfoHelper: CustomerInfoHelper,
-    private val postReceiptHelper: PostReceiptHelper
+    private val postReceiptHelper: PostReceiptHelper,
 ) {
     fun syncPurchases(
         isRestore: Boolean,
         appInBackground: Boolean,
         onSuccess: (CustomerInfo) -> Unit,
-        onError: (PurchasesError) -> Unit
+        onError: (PurchasesError) -> Unit,
     ) {
         log(LogIntent.DEBUG, PurchaseStrings.SYNCING_PURCHASES)
 
@@ -59,12 +59,13 @@ internal class SyncPurchasesHelper(
                             },
                             { error ->
                                 log(
-                                    LogIntent.RC_ERROR, PurchaseStrings.SYNCING_PURCHASES_ERROR_DETAILS
-                                        .format(purchase, error)
+                                    LogIntent.RC_ERROR,
+                                    PurchaseStrings.SYNCING_PURCHASES_ERROR_DETAILS
+                                        .format(purchase, error),
                                 )
                                 errors.add(error)
                                 handleLastPurchase(purchase, lastPurchase)
-                            }
+                            },
                         )
                     }
                 } else {
@@ -74,7 +75,7 @@ internal class SyncPurchasesHelper(
             onReceivePurchaseHistoryError = {
                 log(LogIntent.RC_ERROR, PurchaseStrings.SYNCING_PURCHASES_ERROR.format(it))
                 onError(it)
-            }
+            },
         )
     }
 
@@ -82,7 +83,7 @@ internal class SyncPurchasesHelper(
         appUserID: String,
         appInBackground: Boolean,
         onSuccess: (CustomerInfo) -> Unit,
-        onError: (PurchasesError) -> Unit
+        onError: (PurchasesError) -> Unit,
     ) {
         customerInfoHelper.retrieveCustomerInfo(
             appUserID,
@@ -96,7 +97,7 @@ internal class SyncPurchasesHelper(
                 override fun onError(error: PurchasesError) {
                     onError(error)
                 }
-            }
+            },
         )
     }
 }

@@ -15,13 +15,13 @@ import org.json.JSONObject
 
 class OfferingsFactory(
     private val billing: BillingAbstract,
-    private val offeringParser: OfferingParser
+    private val offeringParser: OfferingParser,
 ) {
 
     fun createOfferings(
         offeringsJSON: JSONObject,
         onError: (PurchasesError) -> Unit,
-        onSuccess: (Offerings) -> Unit
+        onSuccess: (Offerings) -> Unit,
     ) {
         try {
             val allRequestedProductIdentifiers = extractProductIdentifiers(offeringsJSON)
@@ -29,8 +29,8 @@ class OfferingsFactory(
                 onError(
                     PurchasesError(
                         PurchasesErrorCode.ConfigurationError,
-                        OfferingStrings.CONFIGURATION_ERROR_NO_PRODUCTS_FOR_OFFERINGS
-                    )
+                        OfferingStrings.CONFIGURATION_ERROR_NO_PRODUCTS_FOR_OFFERINGS,
+                    ),
                 )
             } else {
                 getStoreProductsById(allRequestedProductIdentifiers, { productsById ->
@@ -41,8 +41,8 @@ class OfferingsFactory(
                         onError(
                             PurchasesError(
                                 PurchasesErrorCode.ConfigurationError,
-                                OfferingStrings.CONFIGURATION_ERROR_PRODUCTS_NOT_FOUND
-                            )
+                                OfferingStrings.CONFIGURATION_ERROR_PRODUCTS_NOT_FOUND,
+                            ),
                         )
                     } else {
                         onSuccess(offerings)
@@ -56,8 +56,8 @@ class OfferingsFactory(
             onError(
                 PurchasesError(
                     PurchasesErrorCode.UnexpectedBackendResponseError,
-                    error.localizedMessage
-                )
+                    error.localizedMessage,
+                ),
             )
         }
     }
@@ -81,7 +81,7 @@ class OfferingsFactory(
     private fun getStoreProductsById(
         productIds: Set<String>,
         onCompleted: (Map<String, List<StoreProduct>>) -> Unit,
-        onError: (PurchasesError) -> Unit
+        onError: (PurchasesError) -> Unit,
     ) {
         billing.queryProductDetailsAsync(
             ProductType.SUBS,
@@ -100,28 +100,32 @@ class OfferingsFactory(
                         { inAppProducts ->
                             productsById.putAll(inAppProducts.map { it.purchasingData.productId to listOf(it) })
                             onCompleted(productsById)
-                        }, {
+                        },
+                        {
                             onError(it)
-                        }
+                        },
                     )
                 } else {
                     onCompleted(productsById)
                 }
-            }, {
+            },
+            {
                 onError(it)
-            })
+            },
+        )
     }
 
     private fun logMissingProducts(
         allProductIdsInOfferings: Set<String>,
-        storeProductByID: Map<String, List<StoreProduct>>
+        storeProductByID: Map<String, List<StoreProduct>>,
     ) = allProductIdsInOfferings
         .filterNot { storeProductByID.containsKey(it) }
         .takeIf { it.isNotEmpty() }
         ?.let { missingProducts ->
             log(
-                LogIntent.GOOGLE_WARNING, OfferingStrings.CANNOT_FIND_PRODUCT_CONFIGURATION_ERROR
-                    .format(missingProducts.joinToString(", "))
+                LogIntent.GOOGLE_WARNING,
+                OfferingStrings.CANNOT_FIND_PRODUCT_CONFIGURATION_ERROR
+                    .format(missingProducts.joinToString(", ")),
             )
         }
 }

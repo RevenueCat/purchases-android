@@ -25,7 +25,7 @@ class WeatherFragment : Fragment() {
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
-        savedInstanceState: Bundle?
+        savedInstanceState: Bundle?,
     ): View {
         weatherViewModel = WeatherViewModel.shared
 
@@ -42,9 +42,12 @@ class WeatherFragment : Fragment() {
         /*
         Observe changes to weather data
          */
-        weatherViewModel.currentData.observe(viewLifecycleOwner, Observer {
-            setWeatherData(it)
-        })
+        weatherViewModel.currentData.observe(
+            viewLifecycleOwner,
+            Observer {
+                setWeatherData(it)
+            },
+        )
 
         /*
         Set default weather data
@@ -69,7 +72,7 @@ class WeatherFragment : Fragment() {
     private fun performMagic() {
         /*
         We should check if we can magically change the weather (subscription active) and if not, display the paywall.
-        */
+         */
         Purchases.sharedInstance.getCustomerInfoWith({
             buildError(context, it.message)
         }, {

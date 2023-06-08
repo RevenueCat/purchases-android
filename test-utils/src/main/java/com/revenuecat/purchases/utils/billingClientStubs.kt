@@ -1,4 +1,5 @@
 @file:Suppress("TooManyFunctions")
+
 package com.revenuecat.purchases.utils
 
 import com.android.billingclient.api.BillingClient
@@ -34,7 +35,7 @@ fun mockProductDetails(
     subscriptionOfferDetails: List<SubscriptionOfferDetails>? = listOf(mockSubscriptionOfferDetails()),
     name: String = "subscription_mock_name",
     description: String = "subscription_mock_description",
-    title: String = "subscription_mock_title"
+    title: String = "subscription_mock_title",
 ): ProductDetails = mockk<ProductDetails>().apply {
     every { getProductId() } returns productId
     every { productType } returns type
@@ -49,7 +50,7 @@ fun mockProductDetails(
 @SuppressWarnings("MagicNumber")
 fun mockOneTimePurchaseOfferDetails(
     price: Double = 4.99,
-    priceCurrencyCodeValue: String = "USD"
+    priceCurrencyCodeValue: String = "USD",
 ): OneTimePurchaseOfferDetails = mockk<OneTimePurchaseOfferDetails>().apply {
     every { formattedPrice } returns "${'$'}$price"
     every { priceAmountMicros } returns price.times(1_000_000).toLong()
@@ -61,7 +62,7 @@ fun mockSubscriptionOfferDetails(
     token: String = "mock-subscription-offer-token",
     offerId: String = "mock-offer-id",
     basePlanId: String = "mock-base-plan-id",
-    pricingPhases: List<PricingPhase> = listOf(mockPricingPhase())
+    pricingPhases: List<PricingPhase> = listOf(mockPricingPhase()),
 ): SubscriptionOfferDetails = mockk<SubscriptionOfferDetails>().apply {
     every { offerTags } returns tags
     every { offerToken } returns token
@@ -78,7 +79,7 @@ fun mockPricingPhase(
     priceCurrencyCodeValue: String = "USD",
     billingPeriod: String = "P1M",
     billingCycleCount: Int = 0,
-    recurrenceMode: Int = RecurrenceMode.INFINITE_RECURRING
+    recurrenceMode: Int = RecurrenceMode.INFINITE_RECURRING,
 ): PricingPhase = mockk<PricingPhase>().apply {
     every { formattedPrice } returns "${'$'}$price"
     every { priceAmountMicros } returns price.times(1_000_000).toLong()
@@ -93,7 +94,7 @@ fun createMockProductDetailsFreeTrial(
     productId: String = "mock-free-trial-subscription",
     priceAfterFreeTrial: Double = 4.99,
     freeTrialPeriod: String = "P7D",
-    subscriptionPeriod: String = "P1M"
+    subscriptionPeriod: String = "P1M",
 ): ProductDetails = mockProductDetails(
     productId = productId,
     subscriptionOfferDetails = listOf(
@@ -104,14 +105,14 @@ fun createMockProductDetailsFreeTrial(
                     price = 0.0,
                     billingCycleCount = 1,
                     billingPeriod = freeTrialPeriod,
-                    recurrenceMode = RecurrenceMode.FINITE_RECURRING
+                    recurrenceMode = RecurrenceMode.FINITE_RECURRING,
                 ),
                 mockPricingPhase(
                     price = priceAfterFreeTrial,
                     billingPeriod = subscriptionPeriod,
-                    recurrenceMode = RecurrenceMode.INFINITE_RECURRING
-                )
-            )
+                    recurrenceMode = RecurrenceMode.INFINITE_RECURRING,
+                ),
+            ),
         ),
         mockSubscriptionOfferDetails(
             token = "base_plan_offer",
@@ -119,19 +120,19 @@ fun createMockProductDetailsFreeTrial(
                 mockPricingPhase(
                     price = priceAfterFreeTrial,
                     billingPeriod = subscriptionPeriod,
-                    recurrenceMode = RecurrenceMode.INFINITE_RECURRING
-                )
-            )
-        )
-    )
+                    recurrenceMode = RecurrenceMode.INFINITE_RECURRING,
+                ),
+            ),
+        ),
+    ),
 )
 fun createMockOneTimeProductDetails(productId: String, price: Double = 4.99): ProductDetails = mockProductDetails(
     productId = productId,
     type = BillingClient.ProductType.INAPP,
     oneTimePurchaseOfferDetails = mockOneTimePurchaseOfferDetails(
-        price = price
+        price = price,
     ),
-    subscriptionOfferDetails = null
+    subscriptionOfferDetails = null,
 )
 
 @SuppressWarnings("LongParameterList", "MagicNumber")
@@ -143,7 +144,7 @@ fun stubGooglePurchase(
     signature: String = "signature${System.currentTimeMillis()}",
     purchaseState: Int = Purchase.PurchaseState.PURCHASED,
     acknowledged: Boolean = true,
-    orderId: String = "GPA.3372-4150-8203-17209"
+    orderId: String = "GPA.3372-4150-8203-17209",
 ): Purchase = Purchase(
     """
     {
@@ -155,7 +156,8 @@ fun stubGooglePurchase(
         "purchaseToken":"$purchaseToken",
         "acknowledged":$acknowledged
     }
-        """.trimIndent(), signature
+    """.trimIndent(),
+    signature,
 )
 
 fun stubPurchaseHistoryRecord(
@@ -163,41 +165,44 @@ fun stubPurchaseHistoryRecord(
     purchaseTime: Long = System.currentTimeMillis(),
     purchaseToken: String = "abcdefghijkcopgbomfinlko.AO-J1OxJixLsieYN08n9hV4qBsvqvQo6wXesyAClWs-t7KnYLCm3-" +
         "q6z8adcZnenbzqMHuMIqZ9kQ4KebT_Bge6KfZUhBt-0N0U0s71AEwFpzT7hrtErzdg",
-    signature: String = "signature${System.currentTimeMillis()}"
-): PurchaseHistoryRecord = PurchaseHistoryRecord("""
+    signature: String = "signature${System.currentTimeMillis()}",
+): PurchaseHistoryRecord = PurchaseHistoryRecord(
+    """
             {
                 "productIds": ${JSONArray(productIds)},
                 "purchaseTime": $purchaseTime,
                 "purchaseToken": "$purchaseToken"
             }
-        """.trimIndent(), signature)
+    """.trimIndent(),
+    signature,
+)
 
 fun stubStoreTransactionFromGooglePurchase(
     productIds: List<String>,
     purchaseTime: Long,
     purchaseToken: String = "abcdefghijipehfnbbnldmai.AO-J1OxqriTepvB7suzlIhxqPIveA0IHtX9amMedK0KK9CsO0S3Zk5H6gdwvV" +
-        "7HzZIJeTzqkY4okyVk8XKTmK1WZKAKSNTKop4dgwSmFnLWsCxYbahUmADg"
+        "7HzZIJeTzqkY4okyVk8XKTmK1WZKAKSNTKop4dgwSmFnLWsCxYbahUmADg",
 ): StoreTransaction {
     return stubGooglePurchase(
         productIds,
         purchaseTime,
-        purchaseToken = purchaseToken
+        purchaseToken = purchaseToken,
     ).toStoreTransaction(ProductType.SUBS, null)
 }
 
 fun stubStoreTransactionFromPurchaseHistoryRecord(
     productIds: List<String>,
-    purchaseTime: Long
+    purchaseTime: Long,
 ): StoreTransaction {
     return stubPurchaseHistoryRecord(
         productIds = productIds,
-        purchaseTime = purchaseTime
+        purchaseTime = purchaseTime,
     ).toStoreTransaction(ProductType.SUBS)
 }
 
 fun BillingClient.mockQueryPurchaseHistory(
     result: BillingResult,
-    history: List<PurchaseHistoryRecord>
+    history: List<PurchaseHistoryRecord>,
 ): Any {
     mockkStatic(QueryPurchaseHistoryParams::class)
 
@@ -220,12 +225,12 @@ fun BillingClient.mockQueryPurchaseHistory(
     every {
         queryPurchaseHistoryAsync(
             params,
-            capture(billingClientPurchaseHistoryListenerSlot)
+            capture(billingClientPurchaseHistoryListenerSlot),
         )
     } answers {
         billingClientPurchaseHistoryListenerSlot.captured.onPurchaseHistoryResponse(
             result,
-            history
+            history,
         )
     }
 
@@ -234,7 +239,7 @@ fun BillingClient.mockQueryPurchaseHistory(
 
 fun BillingClient.verifyQueryPurchaseHistoryCalledWithType(
     @BillingClient.ProductType googleType: String,
-    builder: Any
+    builder: Any,
 ) {
     verify(exactly = 1) {
         (builder as QueryPurchaseHistoryParams.Builder).setProductType(googleType)
@@ -251,7 +256,7 @@ fun BillingClient.mockQueryPurchasesAsync(
     subsResult: BillingResult,
     inAppResult: BillingResult,
     subPurchases: List<Purchase>,
-    inAppPurchases: List<Purchase> = listOf()
+    inAppPurchases: List<Purchase> = listOf(),
 ): Any {
     mockkStatic(QueryPurchasesParams::class)
 
@@ -275,20 +280,20 @@ fun BillingClient.mockQueryPurchasesAsync(
     every {
         queryPurchasesAsync(
             params,
-            capture(queryPurchasesListenerSlot)
+            capture(queryPurchasesListenerSlot),
         )
     } answers {
         when (typeSlot.captured) {
             BillingClient.ProductType.SUBS -> {
                 queryPurchasesListenerSlot.captured.onQueryPurchasesResponse(
                     subsResult,
-                    subPurchases
+                    subPurchases,
                 )
             }
             BillingClient.ProductType.INAPP -> {
                 queryPurchasesListenerSlot.captured.onQueryPurchasesResponse(
                     inAppResult,
-                    inAppPurchases
+                    inAppPurchases,
                 )
             }
             else -> {

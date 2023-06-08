@@ -42,7 +42,7 @@ class HTTPClient(
     private val diagnosticsTrackerIfEnabled: DiagnosticsTracker?,
     val signingManager: SigningManager,
     private val dateProvider: DateProvider = DefaultDateProvider(),
-    private val mapConverter: MapConverter = MapConverter()
+    private val mapConverter: MapConverter = MapConverter(),
 ) {
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     internal companion object {
@@ -70,7 +70,8 @@ class HTTPClient(
         } catch (e: Exception) {
             when (e) {
                 is IllegalArgumentException,
-                is IOException -> {
+                is IOException,
+                -> {
                     log(LogIntent.WARNING, NetworkStrings.PROBLEM_CONNECTING.format(e.message))
                     connection.errorStream
                 }
@@ -100,7 +101,7 @@ class HTTPClient(
         endpoint: Endpoint,
         body: Map<String, Any?>?,
         requestHeaders: Map<String, String>,
-        refreshETag: Boolean = false
+        refreshETag: Boolean = false,
     ): HTTPResult {
         if (appConfig.forceServerErrors) {
             warnLog("Forcing server error for request to ${endpoint.getPath()}")
@@ -109,7 +110,7 @@ class HTTPClient(
                 payload = "",
                 HTTPResult.Origin.BACKEND,
                 requestDate = null,
-                VerificationResult.NOT_REQUESTED
+                VerificationResult.NOT_REQUESTED,
             )
         }
         var callSuccessful = false
@@ -134,7 +135,7 @@ class HTTPClient(
         endpoint: Endpoint,
         body: Map<String, Any?>?,
         requestHeaders: Map<String, String>,
-        refreshETag: Boolean
+        refreshETag: Boolean,
     ): HTTPResult? {
         val jsonBody = body?.let { mapConverter.convertToJSON(it) }
         val path = endpoint.getPath()
@@ -183,7 +184,8 @@ class HTTPClient(
         }
 
         if (verificationResult == VerificationResult.FAILED &&
-            signingManager.signatureVerificationMode is SignatureVerificationMode.Enforced) {
+            signingManager.signatureVerificationMode is SignatureVerificationMode.Enforced
+        ) {
             throw SignatureVerificationException(path)
         }
 
@@ -194,7 +196,7 @@ class HTTPClient(
             urlPathWithVersion,
             refreshETag,
             getRequestDateHeader(connection),
-            verificationResult
+            verificationResult,
         )
     }
 
@@ -202,7 +204,7 @@ class HTTPClient(
         endpoint: Endpoint,
         requestStartTime: Date,
         callSuccessful: Boolean,
-        callResult: HTTPResult?
+        callResult: HTTPResult?,
     ) {
         diagnosticsTrackerIfEnabled?.let { tracker ->
             val responseTime = Duration.between(requestStartTime, dateProvider.now)
@@ -227,7 +229,7 @@ class HTTPClient(
         authenticationHeaders: Map<String, String>,
         urlPath: String,
         refreshETag: Boolean,
-        nonce: String?
+        nonce: String?,
     ): Map<String, String> {
         return mapOf(
             "Content-Type" to "application/json",
@@ -240,7 +242,7 @@ class HTTPClient(
             "X-Client-Version" to appConfig.versionName,
             "X-Client-Bundle-ID" to appConfig.packageName,
             "X-Observer-Mode-Enabled" to if (appConfig.finishTransactions) "false" else "true",
-            "X-Nonce" to nonce
+            "X-Nonce" to nonce,
         )
             .plus(authenticationHeaders)
             .plus(eTagManager.getETagHeaders(urlPath, refreshETag))
@@ -271,7 +273,7 @@ class HTTPClient(
         responseCode: Int,
         connection: URLConnection,
         payload: String?,
-        nonce: String
+        nonce: String,
     ): VerificationResult {
         return signingManager.verifyResponse(
             urlPath = urlPath,

@@ -13,14 +13,14 @@ import kotlinx.coroutines.flow.map
 val Context.configurationDataStore: DataStore<Preferences> by preferencesDataStore(name = "configuration")
 
 class DataStoreUtils(
-    private val dataStore: DataStore<Preferences>
+    private val dataStore: DataStore<Preferences>,
 ) {
     private val apiKeyKey = stringPreferencesKey("last_sdk_api_key")
     private val proxyUrlKey = stringPreferencesKey("last_proxy_url_key")
     private val useAmazonKey = booleanPreferencesKey("last_use_amazon_key")
 
     suspend fun saveSdkConfig(
-        sdkConfiguration: SdkConfiguration
+        sdkConfiguration: SdkConfiguration,
     ) {
         dataStore.edit { preferences ->
             preferences[apiKeyKey] = sdkConfiguration.apiKey
@@ -38,7 +38,7 @@ class DataStoreUtils(
             SdkConfiguration(
                 apiKey = preferences[apiKeyKey] ?: "",
                 proxyUrl = preferences[proxyUrlKey],
-                useAmazon = preferences[useAmazonKey] ?: false
+                useAmazon = preferences[useAmazonKey] ?: false,
             )
         }
     }

@@ -102,7 +102,7 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
                 offering.availablePackages,
                 activeSubscriptions,
                 this,
-                isPlayStore
+                isPlayStore,
             )
     }
 
@@ -137,7 +137,7 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
         subscriptionOption: SubscriptionOption,
         isUpgrade: Boolean,
         isPersonalizedPrice: Boolean,
-        ) {
+    ) {
         if (Purchases.sharedInstance.finishTransactions) {
             startPurchase(isUpgrade, isPersonalizedPrice, PurchaseParams.Builder(requireActivity(), subscriptionOption))
         } else {
@@ -148,7 +148,7 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
     private fun startPurchase(
         isUpgrade: Boolean,
         isPersonalizedPrice: Boolean,
-        purchaseParamsBuilder: PurchaseParams.Builder
+        purchaseParamsBuilder: PurchaseParams.Builder,
     ) {
         toggleLoadingIndicator(true)
         if (isUpgrade) {
@@ -167,7 +167,7 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
                     Purchases.sharedInstance.purchaseWith(
                         purchaseParamsBuilder.build(),
                         purchaseErrorCallback,
-                        successfulPurchaseCallback
+                        successfulPurchaseCallback,
                     )
                 }
             }
@@ -179,7 +179,7 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
             Purchases.sharedInstance.purchaseWith(
                 purchaseParamsBuilder.build(),
                 purchaseErrorCallback,
-                successfulPurchaseCallback
+                successfulPurchaseCallback,
             )
         }
     }
@@ -191,7 +191,7 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
                     requireActivity(),
                     purchasingData.productDetails,
                     purchasingData.token,
-                    false
+                    false,
                 )
             }
             is GooglePurchasingData.InAppProduct -> {
@@ -199,7 +199,7 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
                     requireActivity(),
                     purchasingData.productDetails,
                     null,
-                    false
+                    false,
                 )
             }
         }
@@ -226,7 +226,7 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
             Toast.makeText(
                 it,
                 "Successful purchase, order id: $orderId",
-                Toast.LENGTH_SHORT
+                Toast.LENGTH_SHORT,
             ).show()
             findNavController().navigateUp()
         }
@@ -243,7 +243,7 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
             Toast.makeText(
                 requireContext(),
                 "Cannot upgrade without an existing active subscription.",
-                Toast.LENGTH_LONG
+                Toast.LENGTH_LONG,
             ).show()
             toggleLoadingIndicator(false)
             callback(null)

@@ -17,13 +17,13 @@ class OfferingsManager(
     private val backend: Backend,
     private val offeringsFactory: OfferingsFactory,
     // This is nullable due to: https://github.com/RevenueCat/purchases-flutter/issues/408
-    private val mainHandler: Handler? = Handler(Looper.getMainLooper())
+    private val mainHandler: Handler? = Handler(Looper.getMainLooper()),
 ) {
     fun getOfferings(
         appUserID: String,
         appInBackground: Boolean,
         onError: ((PurchasesError) -> Unit)? = null,
-        onSuccess: ((Offerings) -> Unit)? = null
+        onSuccess: ((Offerings) -> Unit)? = null,
     ) {
         val cachedOfferings = offeringsCache.cachedOfferings
         if (cachedOfferings == null) {
@@ -37,8 +37,9 @@ class OfferingsManager(
             if (offeringsCache.isOfferingsCacheStale(appInBackground)) {
                 log(
                     LogIntent.DEBUG,
-                    if (appInBackground) OfferingStrings.OFFERINGS_STALE_UPDATING_IN_BACKGROUND
-                    else OfferingStrings.OFFERINGS_STALE_UPDATING_IN_FOREGROUND
+                    if (appInBackground) {
+                        OfferingStrings.OFFERINGS_STALE_UPDATING_IN_BACKGROUND
+                    } else OfferingStrings.OFFERINGS_STALE_UPDATING_IN_FOREGROUND,
                 )
                 fetchAndCacheOfferings(appUserID, appInBackground)
                 log(LogIntent.RC_SUCCESS, OfferingStrings.OFFERINGS_UPDATED_FROM_NETWORK)
@@ -58,7 +59,7 @@ class OfferingsManager(
         appUserID: String,
         appInBackground: Boolean,
         onError: ((PurchasesError) -> Unit)? = null,
-        onSuccess: ((Offerings) -> Unit)? = null
+        onSuccess: ((Offerings) -> Unit)? = null,
     ) {
         offeringsCache.setOfferingsCacheTimestampToNow()
         backend.getOfferings(
@@ -77,13 +78,14 @@ class OfferingsManager(
                 } else {
                     handleErrorFetchingOfferings(backendError, onError)
                 }
-            })
+            },
+        )
     }
 
     private fun createAndCacheOfferings(
         offeringsJSON: JSONObject,
         onError: ((PurchasesError) -> Unit)? = null,
-        onSuccess: ((Offerings) -> Unit)? = null
+        onSuccess: ((Offerings) -> Unit)? = null,
     ) {
         offeringsFactory.createOfferings(
             offeringsJSON,
@@ -95,23 +97,23 @@ class OfferingsManager(
                 dispatch {
                     onSuccess?.invoke(offerings)
                 }
-            }
+            },
         )
     }
 
     private fun handleErrorFetchingOfferings(
         error: PurchasesError,
-        onError: ((PurchasesError) -> Unit)?
+        onError: ((PurchasesError) -> Unit)?,
     ) {
         val errorCausedByPurchases = setOf(
             PurchasesErrorCode.ConfigurationError,
-            PurchasesErrorCode.UnexpectedBackendResponseError
+            PurchasesErrorCode.UnexpectedBackendResponseError,
         )
             .contains(error.code)
 
         log(
             if (errorCausedByPurchases) LogIntent.RC_ERROR else LogIntent.GOOGLE_ERROR,
-            OfferingStrings.FETCHING_OFFERINGS_ERROR.format(error)
+            OfferingStrings.FETCHING_OFFERINGS_ERROR.format(error),
         )
 
         offeringsCache.clearOfferingsCacheTimestamp()

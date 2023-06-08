@@ -9,9 +9,9 @@ import com.android.billingclient.api.BillingFlowParams
  */
 @Deprecated(
     "Use .oldProductId() and .googleProrationMode() in PurchaseParams.Builder instead",
-    ReplaceWith("PurchaseParams.Builder.oldProductId() and PurchaseParams.Builder.googleProrationMode()")
+    ReplaceWith("PurchaseParams.Builder.oldProductId() and PurchaseParams.Builder.googleProrationMode()"),
 )
 data class UpgradeInfo(
     val oldSku: String,
-    @BillingFlowParams.ProrationMode val prorationMode: Int? = null
+    @BillingFlowParams.ProrationMode val prorationMode: Int? = null,
 )

@@ -7,11 +7,12 @@ import org.json.JSONObject
 
 /** @suppress */
 typealias PostAmazonReceiptCallback = Pair<(response: JSONObject) -> Unit, (PurchasesError) -> Unit>
+
 /** @suppress */
 typealias CallbackCacheKey = List<String>
 
 class AmazonBackend(
-    private val backendHelper: BackendHelper
+    private val backendHelper: BackendHelper,
 ) {
 
     @get:Synchronized @set:Synchronized
@@ -21,11 +22,11 @@ class AmazonBackend(
         receiptId: String,
         storeUserID: String,
         onSuccess: (JSONObject) -> Unit,
-        onError: (PurchasesError) -> Unit
+        onError: (PurchasesError) -> Unit,
     ) {
         val cacheKey = listOfNotNull(
             receiptId,
-            storeUserID
+            storeUserID,
         )
 
         val call = {
@@ -49,7 +50,7 @@ class AmazonBackend(
                             onSuccess(body)
                         }
                     }
-                }
+                },
             )
         }
 

@@ -8,6 +8,8 @@ import android.content.Context
 import android.util.Log
 import android.widget.Toast
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.LogLevel
@@ -19,6 +21,11 @@ class MainApplication : Application(), UpdatedCustomerInfoListener {
 
     val logHandler = TesterLogHandler(this)
 
+    // This should live in a repository, but for the sake of simplicity we'll keep it here
+    val lastCustomerInfoLiveData: LiveData<CustomerInfo?>
+        get() = lastCustomerInfoMutableLiveData
+    private var lastCustomerInfoMutableLiveData = MutableLiveData<CustomerInfo?>(null)
+
     override fun onCreate() {
         super.onCreate()
 
@@ -28,10 +35,12 @@ class MainApplication : Application(), UpdatedCustomerInfoListener {
     }
 
     override fun onReceived(customerInfo: CustomerInfo) {
+        lastCustomerInfoMutableLiveData.postValue(customerInfo)
         val message = "CustomerInfoListener received update at ${customerInfo.requestDate}"
-        Toast.makeText(this,
+        Toast.makeText(
+            this,
             message,
-            Toast.LENGTH_SHORT
+            Toast.LENGTH_SHORT,
         ).show()
         Log.d("CustomerInfoListener", "$message: $customerInfo")
     }

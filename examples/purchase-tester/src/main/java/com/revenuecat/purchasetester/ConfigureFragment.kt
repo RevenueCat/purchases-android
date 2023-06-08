@@ -33,7 +33,7 @@ class ConfigureFragment : Fragment() {
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
-        savedInstanceState: Bundle?
+        savedInstanceState: Bundle?,
     ): View {
         dataStoreUtils = DataStoreUtils(requireActivity().applicationContext.configurationDataStore)
         binding = FragmentConfigureBinding.inflate(inflater)
@@ -43,7 +43,7 @@ class ConfigureFragment : Fragment() {
             android.R.layout.simple_spinner_item,
             // Trusted entitlements: Commented out until ready to be made public
             // EntitlementVerificationMode.values()
-            emptyList<String>()
+            emptyList<String>(),
         )
         setupSupportedStoresRadioButtons()
 
@@ -52,8 +52,9 @@ class ConfigureFragment : Fragment() {
                 binding.apiKeyInput.setText(sdkConfiguration.apiKey)
                 binding.proxyUrlInput.setText(sdkConfiguration.proxyUrl)
                 val storeToCheckId =
-                    if (sdkConfiguration.useAmazon) R.id.amazon_store_radio_id
-                    else R.id.google_store_radio_id
+                    if (sdkConfiguration.useAmazon) {
+                        R.id.amazon_store_radio_id
+                    } else R.id.google_store_radio_id
                 binding.storeRadioGroup.check(storeToCheckId)
             }.collect()
         }
@@ -127,8 +128,9 @@ class ConfigureFragment : Fragment() {
         Purchases.logLevel = LogLevel.VERBOSE
 
         val configurationBuilder =
-            if (useAmazonStore) AmazonConfiguration.Builder(application, apiKey)
-            else PurchasesConfiguration.Builder(application, apiKey)
+            if (useAmazonStore) {
+                AmazonConfiguration.Builder(application, apiKey)
+            } else PurchasesConfiguration.Builder(application, apiKey)
 
         val configuration = configurationBuilder
             .diagnosticsEnabled(true)

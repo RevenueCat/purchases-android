@@ -25,7 +25,9 @@ enum class CacheFetchPolicy {
      * (default) returns the cached data if available (even if stale). If not available, fetches
      *  up-to-date data. If cached data is stale, it initiates a fetch in the background.
      */
-    CACHED_OR_FETCHED;
+    CACHED_OR_FETCHED,
+
+    ;
 
     companion object {
         fun default() = CACHED_OR_FETCHED

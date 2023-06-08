@@ -1,30 +1,30 @@
- package com.revenuecat.purchases.offlineentitlements
+package com.revenuecat.purchases.offlineentitlements
 
- import androidx.test.ext.junit.runners.AndroidJUnit4
- import com.revenuecat.purchases.CacheFetchPolicy
- import com.revenuecat.purchases.CustomerInfo
- import com.revenuecat.purchases.MainActivity
- import com.revenuecat.purchases.ProductType
- import com.revenuecat.purchases.PurchaseParams
- import com.revenuecat.purchases.Purchases
- import com.revenuecat.purchases.PurchasesErrorCode
- import com.revenuecat.purchases.common.sha1
- import com.revenuecat.purchases.factories.StoreProductFactory
- import com.revenuecat.purchases.factories.StoreTransactionFactory
- import com.revenuecat.purchases.forceServerErrors
- import com.revenuecat.purchases.getCustomerInfoWith
- import com.revenuecat.purchases.helpers.mockQueryProductDetails
- import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
- import com.revenuecat.purchases.models.StoreTransaction
- import com.revenuecat.purchases.purchaseWith
- import com.revenuecat.purchases.resetSingleton
- import org.assertj.core.api.Assertions.assertThat
- import org.assertj.core.api.Assertions.fail
- import org.junit.Before
- import org.junit.Test
- import org.junit.runner.RunWith
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.CacheFetchPolicy
+import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.MainActivity
+import com.revenuecat.purchases.ProductType
+import com.revenuecat.purchases.PurchaseParams
+import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.common.sha1
+import com.revenuecat.purchases.factories.StoreProductFactory
+import com.revenuecat.purchases.factories.StoreTransactionFactory
+import com.revenuecat.purchases.forceServerErrors
+import com.revenuecat.purchases.getCustomerInfoWith
+import com.revenuecat.purchases.helpers.mockQueryProductDetails
+import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
+import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.purchaseWith
+import com.revenuecat.purchases.resetSingleton
+import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.fail
+import org.junit.Before
+import org.junit.Test
+import org.junit.runner.RunWith
 
- abstract class BaseOfflineEntitlementsWithInitialRequestsCompletedIntegrationTest :
+abstract class BaseOfflineEntitlementsWithInitialRequestsCompletedIntegrationTest :
     BaseOfflineEntitlementsIntegrationTest() {
 
     @Before
@@ -39,7 +39,7 @@
     // region helpers
 
     private fun setUpTestWaitingForInitialRequests(
-        postSetupTestCallback: (MainActivity) -> Unit = {}
+        postSetupTestCallback: (MainActivity) -> Unit = {},
     ) {
         setUpTest {
             waitForInitialRequestsToEnd {
@@ -59,17 +59,17 @@
                     },
                     onSuccess = {
                         completion()
-                    }
+                    },
                 )
             }
         }
     }
 
     // endregion helpers
- }
+}
 
- @RunWith(AndroidJUnit4::class)
- class OfflineEntitlementsWithInitialRequestsCompletedAndInitialPurchasesIntegrationTest :
+@RunWith(AndroidJUnit4::class)
+class OfflineEntitlementsWithInitialRequestsCompletedAndInitialPurchasesIntegrationTest :
     BaseOfflineEntitlementsWithInitialRequestsCompletedIntegrationTest() {
 
     override val initialActivePurchasesToUse: Map<String, StoreTransaction> = initialActivePurchases
@@ -89,7 +89,7 @@
                 onSuccess = { receivedCustomerInfo ->
                     assertCustomerInfoHasExpectedPurchaseData(receivedCustomerInfo)
                     latch.countDown()
-                }
+                },
             )
         }
     }
@@ -111,19 +111,19 @@
                         onSuccess = {
                             assertCustomerInfoDoesNotHavePurchaseData(it)
                             latch.countDown()
-                        }
+                        },
                     )
                 },
                 onSuccess = {
                     fail("Expected error but got success: $it")
-                }
+                },
             )
         }
     }
- }
+}
 
- @RunWith(AndroidJUnit4::class)
- class OfflineEntitlementsWithInitialRequestsCompletedAndNoInitialPurchasesIntegrationTest :
+@RunWith(AndroidJUnit4::class)
+class OfflineEntitlementsWithInitialRequestsCompletedAndNoInitialPurchasesIntegrationTest :
     BaseOfflineEntitlementsWithInitialRequestsCompletedIntegrationTest() {
 
     @Test
@@ -151,7 +151,7 @@
                     assertCustomerInfoHasExpectedPurchaseData(receivedCustomerInfosInListener.last())
                     assertAcknowledgePurchaseDidNotHappen()
                     latch.countDown()
-                }
+                },
             )
         }
     }
@@ -161,7 +161,7 @@
         val inAppProduct = StoreProductFactory.createGoogleStoreProduct(type = ProductType.INAPP)
         val inAppTransaction = StoreTransactionFactory.createStoreTransaction(
             skus = listOf(inAppProduct.id),
-            type = ProductType.INAPP
+            type = ProductType.INAPP,
         )
 
         ensureBlockFinishes { latch ->
@@ -177,7 +177,7 @@
                 },
                 onSuccess = { _, _ ->
                     fail("Expected error")
-                }
+                },
             )
         }
     }
@@ -207,9 +207,9 @@
                         onSuccess = {
                             assertCustomerInfoHasExpectedPurchaseData(it)
                             latch.countDown()
-                        }
+                        },
                     )
-                }
+                },
             )
         }
     }
@@ -239,7 +239,7 @@
                     assertAcknowledgePurchaseDidHappen()
 
                     latch.countDown()
-                }
+                },
             )
         }
     }
@@ -269,7 +269,7 @@
                     assertAcknowledgePurchaseDidHappen()
 
                     latch.countDown()
-                }
+                },
             )
         }
     }
@@ -306,10 +306,10 @@
                             assertAcknowledgePurchaseDidNotHappen()
 
                             latch.countDown()
-                        }
+                        },
                     )
-                }
+                },
             )
         }
     }
- }
+}

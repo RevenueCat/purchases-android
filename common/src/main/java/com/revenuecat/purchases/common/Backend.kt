@@ -28,29 +28,36 @@ internal typealias CustomerInfoCallback = Pair<(CustomerInfo) -> Unit, (Purchase
 
 /** @suppress */
 typealias PostReceiptCallback = Pair<PostReceiptDataSuccessCallback, PostReceiptDataErrorCallback>
+
 /** @suppress */
 typealias CallbackCacheKey = List<String>
+
 /** @suppress */
 typealias OfferingsCallback = Pair<(JSONObject) -> Unit, (PurchasesError, isServerError: Boolean) -> Unit>
+
 /** @suppress */
 typealias PostReceiptDataSuccessCallback = (CustomerInfo, body: JSONObject) -> Unit
+
 /** @suppress */
 typealias PostReceiptDataErrorCallback = (
     PurchasesError,
     postReceiptErrorHandlingBehavior: PostReceiptErrorHandlingBehavior,
-    body: JSONObject?
+    body: JSONObject?,
 ) -> Unit
+
 /** @suppress */
 typealias IdentifyCallback = Pair<(CustomerInfo, Boolean) -> Unit, (PurchasesError) -> Unit>
+
 /** @suppress */
 typealias DiagnosticsCallback = Pair<(JSONObject) -> Unit, (PurchasesError, Boolean) -> Unit>
+
 /** @suppress */
 typealias ProductEntitlementCallback = Pair<(ProductEntitlementMapping) -> Unit, (PurchasesError) -> Unit>
 
 enum class PostReceiptErrorHandlingBehavior {
     SHOULD_BE_CONSUMED,
     SHOULD_USE_OFFLINE_ENTITLEMENTS_AND_NOT_CONSUME,
-    SHOULD_NOT_CONSUME
+    SHOULD_NOT_CONSUME,
 }
 
 class Backend(
@@ -58,7 +65,7 @@ class Backend(
     private val dispatcher: Dispatcher,
     private val diagnosticsDispatcher: Dispatcher,
     private val httpClient: HTTPClient,
-    private val backendHelper: BackendHelper
+    private val backendHelper: BackendHelper,
 ) {
 
     val verificationMode: SignatureVerificationMode
@@ -90,7 +97,7 @@ class Backend(
         appUserID: String,
         appInBackground: Boolean,
         onSuccess: (CustomerInfo) -> Unit,
-        onError: (PurchasesError, isServerError: Boolean) -> Unit
+        onError: (PurchasesError, isServerError: Boolean) -> Unit,
     ) {
         val endpoint = Endpoint.GetCustomerInfo(appUserID)
         val path = endpoint.getPath()
@@ -112,7 +119,7 @@ class Backend(
                     appConfig.baseURL,
                     endpoint,
                     null,
-                    backendHelper.authenticationHeaders
+                    backendHelper.authenticationHeaders,
                 )
             }
 
@@ -126,7 +133,7 @@ class Backend(
                         } else {
                             onError(
                                 result.toPurchasesError().also { errorLog(it) },
-                                RCHTTPStatusCodes.isServerError(result.responseCode)
+                                RCHTTPStatusCodes.isServerError(result.responseCode),
                             )
                         }
                     } catch (e: JSONException) {
@@ -163,7 +170,7 @@ class Backend(
         @SuppressWarnings("UnusedPrivateMember")
         marketplace: String? = null,
         onSuccess: PostReceiptDataSuccessCallback,
-        onError: PostReceiptDataErrorCallback
+        onError: PostReceiptDataErrorCallback,
     ) {
         val cacheKey = listOfNotNull(
             purchaseToken,
@@ -172,7 +179,7 @@ class Backend(
             observerMode.toString(),
             subscriberAttributes.toString(),
             receiptInfo.toString(),
-            storeAppUserID
+            storeAppUserID,
         )
 
         val body = mapOf(
@@ -189,12 +196,12 @@ class Backend(
             "normal_duration" to receiptInfo.duration,
             "store_user_id" to storeAppUserID,
             "pricing_phases" to receiptInfo.pricingPhases?.map { it.toMap() },
-            "proration_mode" to receiptInfo.prorationMode?.name
+            "proration_mode" to receiptInfo.prorationMode?.name,
         ).filterNotNullValues()
 
         val extraHeaders = mapOf(
             "price_string" to receiptInfo.storeProduct?.price?.formatted,
-            "marketplace" to marketplace
+            "marketplace" to marketplace,
         ).filterNotNullValues()
 
         val call = object : Dispatcher.AsyncCall() {
@@ -204,7 +211,7 @@ class Backend(
                     appConfig.baseURL,
                     Endpoint.PostReceipt,
                     body,
-                    backendHelper.authenticationHeaders + extraHeaders
+                    backendHelper.authenticationHeaders + extraHeaders,
                 )
             }
 
@@ -218,19 +225,20 @@ class Backend(
                         } else {
                             val purchasesError = result.toPurchasesError().also { errorLog(it) }
                             val errorHandlingBehavior = determinePostReceiptErrorHandlingBehavior(
-                                result.responseCode, purchasesError
+                                result.responseCode,
+                                purchasesError,
                             )
                             onError(
                                 purchasesError,
                                 errorHandlingBehavior,
-                                result.body
+                                result.body,
                             )
                         }
                     } catch (e: JSONException) {
                         onError(
                             e.toPurchasesError().also { errorLog(it) },
                             PostReceiptErrorHandlingBehavior.SHOULD_NOT_CONSUME,
-                            null
+                            null,
                         )
                     }
                 }
@@ -243,7 +251,7 @@ class Backend(
                     onError(
                         error,
                         PostReceiptErrorHandlingBehavior.SHOULD_NOT_CONSUME,
-                        null
+                        null,
                     )
                 }
             }
@@ -257,7 +265,7 @@ class Backend(
         appUserID: String,
         appInBackground: Boolean,
         onSuccess: (JSONObject) -> Unit,
-        onError: (PurchasesError, isServerError: Boolean) -> Unit
+        onError: (PurchasesError, isServerError: Boolean) -> Unit,
     ) {
         val endpoint = Endpoint.GetOfferings(appUserID)
         val path = endpoint.getPath()
@@ -267,7 +275,7 @@ class Backend(
                     appConfig.baseURL,
                     endpoint,
                     null,
-                    backendHelper.authenticationHeaders
+                    backendHelper.authenticationHeaders,
                 )
             }
 
@@ -294,7 +302,7 @@ class Backend(
                     } else {
                         onError(
                             result.toPurchasesError().also { errorLog(it) },
-                            RCHTTPStatusCodes.isServerError(result.responseCode)
+                            RCHTTPStatusCodes.isServerError(result.responseCode),
                         )
                     }
                 }
@@ -310,11 +318,11 @@ class Backend(
         appUserID: String,
         newAppUserID: String,
         onSuccessHandler: (CustomerInfo, Boolean) -> Unit,
-        onErrorHandler: (PurchasesError) -> Unit
+        onErrorHandler: (PurchasesError) -> Unit,
     ) {
         val cacheKey = listOfNotNull(
             appUserID,
-            newAppUserID
+            newAppUserID,
         )
         val call = object : Dispatcher.AsyncCall() {
             override fun call(): HTTPResult {
@@ -323,9 +331,9 @@ class Backend(
                     Endpoint.LogIn,
                     mapOf(
                         "new_app_user_id" to newAppUserID,
-                        "app_user_id" to appUserID
+                        "app_user_id" to appUserID,
                     ),
-                    backendHelper.authenticationHeaders
+                    backendHelper.authenticationHeaders,
                 )
             }
 
@@ -347,8 +355,10 @@ class Backend(
                             val customerInfo = CustomerInfoFactory.buildCustomerInfo(result)
                             onSuccessHandler(customerInfo, created)
                         } else {
-                            onErrorHandler(PurchasesError(PurchasesErrorCode.UnknownError)
-                                .also { errorLog(it) })
+                            onErrorHandler(
+                                PurchasesError(PurchasesErrorCode.UnknownError)
+                                    .also { errorLog(it) },
+                            )
                         }
                     }
                 } else {
@@ -364,7 +374,7 @@ class Backend(
     fun postDiagnostics(
         diagnosticsList: List<JSONObject>,
         onSuccessHandler: (JSONObject) -> Unit,
-        onErrorHandler: (PurchasesError, Boolean) -> Unit
+        onErrorHandler: (PurchasesError, Boolean) -> Unit,
     ) {
         val cacheKey = diagnosticsList.map { it.hashCode().toString() }
 
@@ -375,7 +385,7 @@ class Backend(
                     appConfig.diagnosticsURL,
                     Endpoint.PostDiagnostics,
                     body,
-                    backendHelper.authenticationHeaders
+                    backendHelper.authenticationHeaders,
                 )
             }
 
@@ -408,14 +418,14 @@ class Backend(
                 diagnosticsDispatcher,
                 cacheKey,
                 onSuccessHandler to onErrorHandler,
-                Delay.LONG
+                Delay.LONG,
             )
         }
     }
 
     fun getProductEntitlementMapping(
         onSuccessHandler: (ProductEntitlementMapping) -> Unit,
-        onErrorHandler: (PurchasesError) -> Unit
+        onErrorHandler: (PurchasesError) -> Unit,
     ) {
         val endpoint = Endpoint.GetProductEntitlementMapping
         val path = endpoint.getPath()
@@ -425,7 +435,7 @@ class Backend(
                     appConfig.baseURL,
                     endpoint,
                     null,
-                    backendHelper.authenticationHeaders
+                    backendHelper.authenticationHeaders,
                 )
             }
 
@@ -459,7 +469,7 @@ class Backend(
                 dispatcher,
                 path,
                 onSuccessHandler to onErrorHandler,
-                Delay.LONG
+                Delay.LONG,
             )
         }
     }
@@ -470,7 +480,7 @@ class Backend(
 
     private fun determinePostReceiptErrorHandlingBehavior(
         responseCode: Int,
-        purchasesError: PurchasesError
+        purchasesError: PurchasesError,
     ) = if (RCHTTPStatusCodes.isServerError(responseCode)) {
         PostReceiptErrorHandlingBehavior.SHOULD_USE_OFFLINE_ENTITLEMENTS_AND_NOT_CONSUME
     } else if (purchasesError.code == PurchasesErrorCode.UnsupportedError) {
@@ -484,7 +494,7 @@ class Backend(
         dispatcher: Dispatcher,
         cacheKey: K,
         functions: Pair<S, E>,
-        delay: Delay = Delay.NONE
+        delay: Delay = Delay.NONE,
     ) {
         if (!containsKey(cacheKey)) {
             this[cacheKey] = mutableListOf(functions)

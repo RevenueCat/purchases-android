@@ -6,14 +6,14 @@ import com.revenuecat.purchases.common.BillingAbstract
 fun Purchases.Companion.configure(
     configuration: PurchasesConfiguration,
     overrideBillingAbstract: BillingAbstract,
-    forceServerErrors: Boolean = false
+    forceServerErrors: Boolean = false,
 ): Purchases {
     return PurchasesFactory().createPurchases(
         configuration,
         platformInfo,
         proxyURL,
         overrideBillingAbstract,
-        forceServerErrors
+        forceServerErrors,
     ).also {
         @SuppressLint("RestrictedApi")
         sharedInstance = it

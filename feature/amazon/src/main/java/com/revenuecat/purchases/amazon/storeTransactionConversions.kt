@@ -3,15 +3,15 @@ package com.revenuecat.purchases.amazon
 import com.amazon.device.iap.model.Receipt
 import com.amazon.device.iap.model.UserData
 import com.revenuecat.purchases.ProductType
-import com.revenuecat.purchases.models.StoreTransaction
-import com.revenuecat.purchases.models.PurchaseType
 import com.revenuecat.purchases.models.PurchaseState
+import com.revenuecat.purchases.models.PurchaseType
+import com.revenuecat.purchases.models.StoreTransaction
 
 fun Receipt.toStoreTransaction(
     productId: String,
     presentedOfferingIdentifier: String?,
     purchaseState: PurchaseState,
-    userData: UserData
+    userData: UserData,
 ): StoreTransaction {
     val type = this.productType.toRevenueCatProductType()
     return StoreTransaction(

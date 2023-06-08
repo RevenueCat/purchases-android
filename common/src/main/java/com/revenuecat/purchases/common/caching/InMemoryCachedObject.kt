@@ -6,7 +6,7 @@ import java.util.Date
 
 class InMemoryCachedObject<T>(
     internal var lastUpdatedAt: Date? = null,
-    private val dateProvider: DateProvider = DefaultDateProvider()
+    private val dateProvider: DateProvider = DefaultDateProvider(),
 ) {
 
     var cachedInstance: T? = null

@@ -29,7 +29,7 @@ fun JSONObject?.getAttributeErrors(): List<SubscriberAttributeError> {
                 .map {
                     SubscriberAttributeError(
                         it.getString("key_name"),
-                        it.getString("message")
+                        it.getString("message"),
                     )
                 }
                 .toList()

@@ -33,6 +33,6 @@ interface PurchaseResponseListener : PurchasingListener {
         storeProduct: StoreProduct,
         presentedOfferingIdentifier: String?,
         onSuccess: (Receipt, UserData) -> Unit,
-        onError: (PurchasesError) -> Unit
+        onError: (PurchasesError) -> Unit,
     )
 }

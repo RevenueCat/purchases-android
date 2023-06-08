@@ -12,7 +12,7 @@ class DefaultPurchasingServiceProvider : PurchasingServiceProvider {
 
     override fun registerListener(
         context: Context,
-        listener: PurchasingListener
+        listener: PurchasingListener,
     ) {
         PurchasingService.registerListener(context, listener)
     }
@@ -26,20 +26,20 @@ class DefaultPurchasingServiceProvider : PurchasingServiceProvider {
     }
 
     override fun getProductData(
-        skus: Set<String>
+        skus: Set<String>,
     ): RequestId {
         return PurchasingService.getProductData(skus)
     }
 
     override fun getPurchaseUpdates(
-        reset: Boolean
+        reset: Boolean,
     ): RequestId {
         return PurchasingService.getPurchaseUpdates(reset)
     }
 
     override fun notifyFulfillment(
         receiptId: String,
-        fulfillmentResult: FulfillmentResult
+        fulfillmentResult: FulfillmentResult,
     ) {
         return PurchasingService.notifyFulfillment(receiptId, fulfillmentResult)
     }

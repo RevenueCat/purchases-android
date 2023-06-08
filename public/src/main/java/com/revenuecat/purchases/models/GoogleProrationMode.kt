@@ -12,7 +12,7 @@ import com.revenuecat.purchases.ProrationMode
  * See https://developer.android.com/google/play/billing/subscriptions#proration for examples
  */
 enum class GoogleProrationMode(
-    @BillingFlowParams.ProrationMode val playBillingClientMode: Int
+    @BillingFlowParams.ProrationMode val playBillingClientMode: Int,
 ) : ProrationMode {
     /**
      * Old subscription is cancelled, and new subscription takes effect immediately.
@@ -63,7 +63,8 @@ enum class GoogleProrationMode(
      * Example: Samwise's Tier 1 subscription continues until it expires on April 30. On May 1st, the
      * Tier 2 subscription takes effect, and Samwise is charged $36 for his new subscription tier.
      */
-    DEFERRED(BillingFlowParams.ProrationMode.DEFERRED);
+    DEFERRED(BillingFlowParams.ProrationMode.DEFERRED),
+    ;
 
     override fun describeContents(): Int {
         return 0
@@ -75,7 +76,7 @@ enum class GoogleProrationMode(
 
     companion object CREATOR : Parcelable.Creator<GoogleProrationMode?> {
         fun fromPlayBillingClientMode(
-            @BillingFlowParams.ProrationMode playBillingClientMode: Int?
+            @BillingFlowParams.ProrationMode playBillingClientMode: Int?,
         ): GoogleProrationMode? {
             return playBillingClientMode?.let {
                 values().first { playBillingClientMode == it.playBillingClientMode }
