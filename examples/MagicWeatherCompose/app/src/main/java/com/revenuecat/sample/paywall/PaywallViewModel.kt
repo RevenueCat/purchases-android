@@ -10,6 +10,8 @@ import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.getOfferingsWith
 import com.revenuecat.purchases.purchaseWith
+import com.revenuecat.sample.R
+import com.revenuecat.sample.data.paywallDrawableByName
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -27,7 +29,17 @@ class PaywallViewModel : ViewModel() {
             },
             onSuccess = { offerings ->
                 offerings.current?.let { currentOffering ->
-                    _uiState.update { PaywallState.Success(currentOffering) }
+                    val imageResource = paywallDrawableByName[
+                        currentOffering.getMetadataString("imageName", "rainy_cat"),
+                    ] ?: R.drawable.rainy_cat
+                    _uiState.update {
+                        PaywallState.Success(
+                            currentOffering,
+                            currentOffering.getMetadataString("title", "RevenueCat sample paywall"),
+                            currentOffering.getMetadataString("subtitle", "Upgrade to premium and change the weather!"),
+                            imageResource,
+                        )
+                    }
                 } ?: run {
                     _uiState.update { PaywallState.Error("No current offering") }
                 }

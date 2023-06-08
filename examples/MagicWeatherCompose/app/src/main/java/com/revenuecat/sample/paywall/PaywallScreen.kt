@@ -36,8 +36,8 @@ fun PaywallScreen(
                 )
             }
             is PaywallState.Success -> {
-                PaywallView(
-                    offering = currentState.offering,
+                PaywallSuccessView(
+                    uiState = currentState,
                     modifier = modifier.padding(padding),
                     onPurchaseStarted = onPurchaseStarted,
                     onPurchaseCompleted = onPurchaseCompleted,
