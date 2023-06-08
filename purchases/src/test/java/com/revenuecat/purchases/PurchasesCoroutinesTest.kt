@@ -30,6 +30,24 @@ class PurchasesCoroutinesTest : BasePurchasesTest() {
     }
 
     @Test
+    fun `retrieve customer info - Success - customer info matches expectations`() = runTest {
+        mockCustomerInfoHelper()
+
+        val result = purchases.awaitCustomerInfo()
+
+        verify(exactly = 1) {
+            mockCustomerInfoHelper.retrieveCustomerInfo(
+                appUserId,
+                any(),
+                any(),
+                any(),
+            )
+        }
+        assertThat(result).isNotNull
+        assertThat(result).isEqualTo(mockInfo)
+    }
+
+    @Test
     fun `retrieve customer info - Error`() = runTest {
         mockCustomerInfoHelper(PurchasesError(PurchasesErrorCode.CustomerInfoError, "Customer info error"))
 
