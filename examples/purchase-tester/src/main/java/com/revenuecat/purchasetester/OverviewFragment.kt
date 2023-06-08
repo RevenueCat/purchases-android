@@ -14,7 +14,6 @@ import androidx.navigation.fragment.FragmentNavigatorExtras
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.transition.MaterialElevationScale
-import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.Purchases
@@ -136,16 +135,6 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
         val intent = Intent(Intent.ACTION_VIEW)
         intent.data = url
         startActivity(intent)
-    }
-
-    override fun customerInfo(customerInfo: CustomerInfo) {
-        with(binding) {
-            viewModel?.customerInfo?.value = customerInfo
-        }
-    }
-
-    override fun customerInfoError(error: PurchasesError) {
-        showError(error)
     }
 
     private fun navigateToLoginFragment() {

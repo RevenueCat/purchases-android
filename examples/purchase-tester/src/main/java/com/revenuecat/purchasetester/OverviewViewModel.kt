@@ -87,10 +87,10 @@ class OverviewViewModel(private val interactionHandler: OverviewInteractionHandl
     fun retrieveCustomerInfo() {
         viewModelScope.launch {
             runCatching {
-                interactionHandler.customerInfo(Purchases.sharedInstance.awaitCustomerInfo())
+                customerInfo.value = Purchases.sharedInstance.awaitCustomerInfo()
             }.onFailure {
                 when (it) {
-                    is PurchasesException -> interactionHandler.customerInfoError(it.error)
+                    is PurchasesException -> interactionHandler.displayError(it.error)
                     else -> interactionHandler.showToast("Error retrieving customer info: ${it.message}")
                 }
             }
@@ -108,7 +108,4 @@ interface OverviewInteractionHandler {
     fun toggleCard()
     fun copyToClipboard(text: String)
     fun launchURL(url: Uri)
-
-    fun customerInfo(customerInfo: CustomerInfo)
-    fun customerInfoError(error: PurchasesError)
 }
