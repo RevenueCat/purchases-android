@@ -6,8 +6,10 @@ import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfoHelper
 import com.revenuecat.purchases.CustomerInfoUpdateHandler
 import com.revenuecat.purchases.PostReceiptHelper
+import com.revenuecat.purchases.PostTransactionHelper
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.Store
+import com.revenuecat.purchases.SyncPendingTransactionsHelper
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BillingAbstract
@@ -53,29 +55,42 @@ class SubscriberAttributesPurchasesTests {
         } just runs
 
         val cache: DeviceCache = mockk(relaxed = true)
+
+        val appConfig = AppConfig(
+            context = mockk(relaxed = true),
+            observerMode = false,
+            platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
+            proxyURL = null,
+            store = Store.PLAY_STORE
+        )
+        val identityManager = mockk<IdentityManager>(relaxed = true).apply {
+            every { currentAppUserID } returns appUserId
+        }
+        val postTransactionsHelper = PostTransactionHelper(billingWrapperMock, postReceiptHelperMock)
+        val syncPendingTransactionsHelper = SyncPendingTransactionsHelper(
+            appConfig,
+            cache,
+            billingWrapperMock,
+            SyncDispatcher(),
+            identityManager,
+            postTransactionsHelper
+        )
         underTest = Purchases(
             application = mockk<Application>(relaxed = true).also { applicationMock = it },
             backingFieldAppUserID = appUserId,
             backend = backendMock,
             billing = billingWrapperMock,
             deviceCache = cache,
-            dispatcher = SyncDispatcher(),
-            identityManager = mockk<IdentityManager>(relaxed = true).apply {
-                every { currentAppUserID } returns appUserId
-            },
+            identityManager = identityManager,
             subscriberAttributesManager = subscriberAttributesManagerMock,
-            appConfig = AppConfig(
-                context = mockk(relaxed = true),
-                observerMode = false,
-                platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
-                proxyURL = null,
-                store = Store.PLAY_STORE
-            ),
+            appConfig = appConfig,
             customerInfoHelper = customerInfoHelperMock,
             customerInfoUpdateHandler = customerInfoUpdateHandlerMock,
             diagnosticsSynchronizer = null,
             offlineEntitlementsManager = offlineEntitlementsManagerMock,
             postReceiptHelper = postReceiptHelperMock,
+            postTransactionHelper = postTransactionsHelper,
+            syncPendingTransactionsHelper = syncPendingTransactionsHelper,
             syncPurchasesHelper = mockk(),
             offeringsManager = offeringsManagerMock
         )

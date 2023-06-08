@@ -293,28 +293,39 @@ open class BasePurchasesTest {
     }
 
     protected fun buildPurchases(anonymous: Boolean, autoSync: Boolean = true) {
+        val appConfig = AppConfig(
+            context = mockContext,
+            observerMode = false,
+            platformInfo = PlatformInfo("native", "3.2.0"),
+            proxyURL = null,
+            store = Store.PLAY_STORE,
+            dangerousSettings = DangerousSettings(autoSyncPurchases = autoSync)
+        )
+        val postTransactionsHelper = PostTransactionHelper(mockBillingAbstract, mockPostReceiptHelper)
+        val syncPendingTransactionsHelper = SyncPendingTransactionsHelper(
+            appConfig,
+            mockCache,
+            mockBillingAbstract,
+            SyncDispatcher(),
+            mockIdentityManager,
+            postTransactionsHelper
+        )
         purchases = Purchases(
             mockApplication,
             if (anonymous) null else appUserId,
             mockBackend,
             mockBillingAbstract,
             mockCache,
-            dispatcher = SyncDispatcher(),
             identityManager = mockIdentityManager,
             subscriberAttributesManager = mockSubscriberAttributesManager,
-            appConfig = AppConfig(
-                context = mockContext,
-                observerMode = false,
-                platformInfo = PlatformInfo("native", "3.2.0"),
-                proxyURL = null,
-                store = Store.PLAY_STORE,
-                dangerousSettings = DangerousSettings(autoSyncPurchases = autoSync)
-            ),
+            appConfig = appConfig,
             customerInfoHelper = mockCustomerInfoHelper,
             customerInfoUpdateHandler = mockCustomerInfoUpdateHandler,
             diagnosticsSynchronizer = mockDiagnosticsSynchronizer,
             offlineEntitlementsManager = mockOfflineEntitlementsManager,
             postReceiptHelper = mockPostReceiptHelper,
+            postTransactionHelper = postTransactionsHelper,
+            syncPendingTransactionsHelper = syncPendingTransactionsHelper,
             syncPurchasesHelper = mockSyncPurchasesHelper,
             offeringsManager = mockOfferingsManager
         )

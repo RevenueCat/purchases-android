@@ -197,13 +197,26 @@ internal class PurchasesFactory(
                 OfferingsFactory(billing, offeringParser),
             )
 
+            val postTransactionHelper = PostTransactionHelper(
+                billing,
+                postReceiptHelper,
+            )
+
+            val syncPendingTransactionsHelper = SyncPendingTransactionsHelper(
+                appConfig,
+                cache,
+                billing,
+                dispatcher,
+                identityManager,
+                postTransactionHelper,
+            )
+
             return Purchases(
                 application,
                 appUserID,
                 backend,
                 billing,
                 cache,
-                dispatcher,
                 identityManager,
                 subscriberAttributesManager,
                 appConfig,
@@ -212,6 +225,8 @@ internal class PurchasesFactory(
                 diagnosticsSynchronizer,
                 offlineEntitlementsManager,
                 postReceiptHelper,
+                postTransactionHelper,
+                syncPendingTransactionsHelper,
                 syncPurchasesHelper,
                 offeringsManager,
             )

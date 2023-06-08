@@ -28,6 +28,7 @@ object PurchaseStrings {
     const val SYNCING_PURCHASE_SKIPPING = "Skipping syncing purchase %s for store user ID %s. " +
         "It has already been posted"
     const val UPDATING_PENDING_PURCHASE_QUEUE = "Updating pending purchase queue"
+    const val NO_PENDING_PURCHASES_TO_SYNC = "No pending purchases to sync"
     const val UPGRADING_SKU = "Moving from old SKU %s to sku %s"
     const val UPGRADING_INVALID_TYPE = "UpgradeInfo passed to purchase for non-sub product type. No upgrade will " +
         "occur. Consider using non-upgrade purchase flows for this product."

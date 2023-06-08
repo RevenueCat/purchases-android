@@ -2840,8 +2840,8 @@ class PurchasesTest: BasePurchasesTest() {
                 storeProduct = any(),
                 isRestore = false,
                 appUserID = appUserId,
-                onSuccess = null,
-                onError = null
+                onSuccess = any(),
+                onError = any()
             )
         }
     }
@@ -2875,8 +2875,8 @@ class PurchasesTest: BasePurchasesTest() {
                 storeProduct = any(),
                 isRestore = false,
                 appUserID = appUserId,
-                onSuccess = null,
-                onError = null
+                onSuccess = any(),
+                onError = any()
             )
         }
     }
@@ -2969,8 +2969,8 @@ class PurchasesTest: BasePurchasesTest() {
                 storeProduct = any(),
                 isRestore = false,
                 appUserID = appUserId,
-                onSuccess = null,
-                onError = null
+                onSuccess = any(),
+                onError = any()
             )
         }
 
@@ -2980,8 +2980,8 @@ class PurchasesTest: BasePurchasesTest() {
                 storeProduct = any(),
                 isRestore = false,
                 appUserID = any(),
-                onSuccess = null,
-                onError = null
+                onSuccess = any(),
+                onError = any()
             )
         }
 
