@@ -92,7 +92,7 @@ class Purchases internal constructor(
     @get:VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     internal val offlineEntitlementsManager: OfflineEntitlementsManager,
     private val postReceiptHelper: PostReceiptHelper,
-    private val postTransactionHelper: PostTransactionHelper,
+    private val postTransactionWithProductDetailsHelper: PostTransactionWithProductDetailsHelper,
     private val syncPendingTransactionsHelper: SyncPendingTransactionsHelper,
     private val syncPurchasesHelper: SyncPurchasesHelper,
     private val offeringsManager: OfferingsManager,
@@ -1159,7 +1159,7 @@ class Purchases internal constructor(
                     }
                 }
 
-                postTransactionHelper.postTransactions(
+                postTransactionWithProductDetailsHelper.postTransactions(
                     purchases,
                     allowSharingPlayStoreAccount,
                     appUserID,

@@ -301,7 +301,7 @@ open class BasePurchasesTest {
             store = Store.PLAY_STORE,
             dangerousSettings = DangerousSettings(autoSyncPurchases = autoSync)
         )
-        val postTransactionsHelper = PostTransactionHelper(mockBillingAbstract, mockPostReceiptHelper)
+        val postTransactionsHelper = PostTransactionWithProductDetailsHelper(mockBillingAbstract, mockPostReceiptHelper)
         val syncPendingTransactionsHelper = SyncPendingTransactionsHelper(
             appConfig,
             mockCache,
@@ -324,7 +324,7 @@ open class BasePurchasesTest {
             diagnosticsSynchronizer = mockDiagnosticsSynchronizer,
             offlineEntitlementsManager = mockOfflineEntitlementsManager,
             postReceiptHelper = mockPostReceiptHelper,
-            postTransactionHelper = postTransactionsHelper,
+            postTransactionWithProductDetailsHelper = postTransactionsHelper,
             syncPendingTransactionsHelper = syncPendingTransactionsHelper,
             syncPurchasesHelper = mockSyncPurchasesHelper,
             offeringsManager = mockOfferingsManager

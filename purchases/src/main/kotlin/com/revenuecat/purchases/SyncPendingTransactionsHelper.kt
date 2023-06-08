@@ -18,7 +18,7 @@ internal class SyncPendingTransactionsHelper(
     private val billing: BillingAbstract,
     private val dispatcher: Dispatcher,
     private val identityManager: IdentityManager,
-    private val postTransactionHelper: PostTransactionHelper,
+    private val postTransactionWithProductDetailsHelper: PostTransactionWithProductDetailsHelper,
 ) {
 
     fun syncPendingPurchaseQueue(
@@ -78,7 +78,7 @@ internal class SyncPendingTransactionsHelper(
             onSuccess?.invoke(null)
         } else {
             val results: MutableList<Result<CustomerInfo, PurchasesError>> = mutableListOf()
-            postTransactionHelper.postTransactions(
+            postTransactionWithProductDetailsHelper.postTransactions(
                 transactionsToSync,
                 allowSharingPlayStoreAccount,
                 appUserID,

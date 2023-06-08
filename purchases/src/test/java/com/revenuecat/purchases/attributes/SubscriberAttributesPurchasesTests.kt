@@ -6,7 +6,7 @@ import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfoHelper
 import com.revenuecat.purchases.CustomerInfoUpdateHandler
 import com.revenuecat.purchases.PostReceiptHelper
-import com.revenuecat.purchases.PostTransactionHelper
+import com.revenuecat.purchases.PostTransactionWithProductDetailsHelper
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.SyncPendingTransactionsHelper
@@ -66,14 +66,14 @@ class SubscriberAttributesPurchasesTests {
         val identityManager = mockk<IdentityManager>(relaxed = true).apply {
             every { currentAppUserID } returns appUserId
         }
-        val postTransactionsHelper = PostTransactionHelper(billingWrapperMock, postReceiptHelperMock)
+        val postTransactionHelper = PostTransactionWithProductDetailsHelper(billingWrapperMock, postReceiptHelperMock)
         val syncPendingTransactionsHelper = SyncPendingTransactionsHelper(
             appConfig,
             cache,
             billingWrapperMock,
             SyncDispatcher(),
             identityManager,
-            postTransactionsHelper
+            postTransactionHelper
         )
         underTest = Purchases(
             application = mockk<Application>(relaxed = true).also { applicationMock = it },
@@ -89,7 +89,7 @@ class SubscriberAttributesPurchasesTests {
             diagnosticsSynchronizer = null,
             offlineEntitlementsManager = offlineEntitlementsManagerMock,
             postReceiptHelper = postReceiptHelperMock,
-            postTransactionHelper = postTransactionsHelper,
+            postTransactionWithProductDetailsHelper = postTransactionHelper,
             syncPendingTransactionsHelper = syncPendingTransactionsHelper,
             syncPurchasesHelper = mockk(),
             offeringsManager = offeringsManagerMock

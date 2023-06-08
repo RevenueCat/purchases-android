@@ -5,7 +5,10 @@ import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.StoreTransaction
 
-internal class PostTransactionHelper(
+/**
+ * This class will post store transactions after querying the product details to enrich the data.
+ */
+internal class PostTransactionWithProductDetailsHelper(
     private val billing: BillingAbstract,
     private val postReceiptHelper: PostReceiptHelper,
 ) {
