@@ -4,6 +4,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import io.mockk.verify
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
@@ -26,7 +27,7 @@ class CoroutinesTest : BasePurchasesTest() {
                 any(),
             )
         }
-        Assertions.assertThat(result).isNotNull
+        assertThat(result).isNotNull
     }
 
     @Test
@@ -49,8 +50,8 @@ class CoroutinesTest : BasePurchasesTest() {
                 any(),
             )
         }
-        Assertions.assertThat(result).isNull()
-        Assertions.assertThat(exception).isNotNull
+        assertThat(result).isNull()
+        assertThat(exception).isNotNull
     }
 
     @Test
@@ -65,9 +66,9 @@ class CoroutinesTest : BasePurchasesTest() {
             exception = it
         }
 
-        Assertions.assertThat(exception).isNotNull
-        Assertions.assertThat(exception).isInstanceOf(PurchasesException::class.java)
-        Assertions.assertThat((exception as PurchasesException).code).isEqualTo(PurchasesErrorCode.CustomerInfoError)
+        assertThat(exception).isNotNull
+        assertThat(exception).isInstanceOf(PurchasesException::class.java)
+        assertThat((exception as PurchasesException).code).isEqualTo(PurchasesErrorCode.CustomerInfoError)
     }
 
     // endregion
