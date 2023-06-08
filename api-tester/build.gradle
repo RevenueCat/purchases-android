@@ -15,4 +15,5 @@ dependencies {
     implementation project(path: ':purchases')
     implementation "androidx.annotation:annotation:$annotationVersion"
     implementation project(path: ':feature:amazon')
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-jdk8:$coroutinesVersion"
 }
