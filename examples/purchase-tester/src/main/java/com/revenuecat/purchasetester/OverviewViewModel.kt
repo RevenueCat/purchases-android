@@ -87,14 +87,11 @@ class OverviewViewModel(private val interactionHandler: OverviewInteractionHandl
 
     fun retrieveCustomerInfo() {
         viewModelScope.launch {
-            runCatching {
+            try {
                 customerInfo.value = Purchases.sharedInstance.awaitCustomerInfo()
                 Log.i("PurchaseTester", "Get Customer info returned Customer info: ${customerInfo.value}")
-            }.onFailure {
-                when (it) {
-                    is PurchasesException -> interactionHandler.displayError(it.error)
-                    else -> interactionHandler.showToast("Error retrieving customer info: ${it.message}")
-                }
+            } catch (e: PurchasesException) {
+                interactionHandler.displayError(e.error)
             }
         }
     }
