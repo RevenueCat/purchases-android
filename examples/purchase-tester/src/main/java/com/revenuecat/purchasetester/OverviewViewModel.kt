@@ -1,14 +1,19 @@
 package com.revenuecat.purchasetester
 
 import android.net.Uri
+import android.util.Log
 import androidx.lifecycle.MediatorLiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.EntitlementInfo
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.PurchasesException
+import com.revenuecat.purchases.awaitCustomerInfo
 import com.revenuecat.purchases.restorePurchasesWith
+import kotlinx.coroutines.launch
 
 class OverviewViewModel(private val interactionHandler: OverviewInteractionHandler) : ViewModel() {
 
@@ -77,6 +82,17 @@ class OverviewViewModel(private val interactionHandler: OverviewInteractionHandl
     fun onManageClicked() {
         customerInfo.value?.managementURL?.let {
             interactionHandler.launchURL(it)
+        }
+    }
+
+    fun retrieveCustomerInfo() {
+        viewModelScope.launch {
+            try {
+                customerInfo.value = Purchases.sharedInstance.awaitCustomerInfo()
+                Log.i("PurchaseTester", "Get Customer info returned Customer info: ${customerInfo.value}")
+            } catch (e: PurchasesException) {
+                interactionHandler.displayError(e.error)
+            }
         }
     }
 

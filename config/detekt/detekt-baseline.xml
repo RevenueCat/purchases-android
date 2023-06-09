@@ -10,6 +10,7 @@
     <ID>Filename:billingClientStubs.kt$com.revenuecat.purchases.utils.billingClientStubs.kt</ID>
     <ID>Filename:billingResultExtensions.kt$com.revenuecat.purchases.google.billingResultExtensions.kt</ID>
     <ID>Filename:cachingHelpers.kt$com.revenuecat.purchases.subscriberattributes.caching.cachingHelpers.kt</ID>
+    <ID>Filename:coroutinesExtensions.kt$com.revenuecat.purchases.coroutinesExtensions.kt</ID>
     <ID>Filename:dateExtensions.kt$com.revenuecat.purchases.utils.dateExtensions.kt</ID>
     <ID>Filename:durationExtensions.kt$com.revenuecat.purchases.common.durationExtensions.kt</ID>
     <ID>Filename:errors.kt$com.revenuecat.purchases.amazon.errors.kt</ID>

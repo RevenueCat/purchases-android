@@ -14,6 +14,7 @@ import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesConfiguration
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.Store
+import com.revenuecat.purchases.awaitCustomerInfo
 import com.revenuecat.purchases.getCustomerInfoWith
 import com.revenuecat.purchases.getOfferingsWith
 import com.revenuecat.purchases.getProductsWith
@@ -187,6 +188,12 @@ private class PurchasesAPI {
         purchases.purchaseWith(
             purchaseParams,
         ) { _: StoreTransaction?, _: CustomerInfo -> }
+    }
+
+    suspend fun checkCoroutines(
+        purchases: Purchases,
+    ) {
+        val customerInfo: CustomerInfo = purchases.awaitCustomerInfo()
     }
 
     fun check(purchases: Purchases, attributes: Map<String, String>) {
