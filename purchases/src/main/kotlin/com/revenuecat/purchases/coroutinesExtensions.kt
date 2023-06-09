@@ -8,6 +8,7 @@ import kotlin.coroutines.suspendCoroutine
  * Get latest available customer info.
  * Coroutine friendly version of [Purchases.getCustomerInfo].
  *
+ * @throws [PurchasesException] with a [PurchasesError] if there's an error retrieving the customer info.
  * @return The [CustomerInfo] or a [PurchasesException] with the [PurchasesError]
  */
 suspend fun Purchases.awaitCustomerInfo(): CustomerInfo {
