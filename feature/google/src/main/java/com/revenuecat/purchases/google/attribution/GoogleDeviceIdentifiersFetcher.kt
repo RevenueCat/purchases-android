@@ -20,6 +20,8 @@ class GoogleDeviceIdentifiersFetcher(
     private val dispatcher: Dispatcher,
 ) : DeviceIdentifiersFetcher {
 
+    private val noPermissionAdvertisingIdValue = "00000000-0000-0000-0000-000000000000"
+
     override fun getDeviceIdentifiers(
         applicationContext: Application,
         completion: (deviceIdentifiers: Map<String, String>) -> Unit,
@@ -45,7 +47,14 @@ class GoogleDeviceIdentifiersFetcher(
         try {
             val adInfo = AdvertisingIdClient.getAdvertisingIdInfo(applicationContext)
             if (!adInfo.isLimitAdTrackingEnabled) {
-                advertisingID = adInfo.id
+                if (adInfo.id == noPermissionAdvertisingIdValue) {
+                    log(
+                        LogIntent.WARNING,
+                        AttributionStrings.GOOGLE_PLAY_ADVERTISING_ID_NOT_AVAILABLE,
+                    )
+                } else {
+                    advertisingID = adInfo.id
+                }
             }
         } catch (e: GooglePlayServicesNotAvailableException) {
             log(

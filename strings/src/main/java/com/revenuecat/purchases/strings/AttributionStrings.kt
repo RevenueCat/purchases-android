@@ -8,6 +8,8 @@ object AttributionStrings {
     const val COPYING_ATTRIBUTES_FROM_TO_USER = "Copying unsynced subscriber attributes from user %s to user %s"
     const val GOOGLE_PLAY_SERVICES_NOT_INSTALLED_FETCHING_ADVERTISING_IDENTIFIER = "GooglePlayServices is not " +
         "installed. Couldn't get advertising identifier. Message: %s"
+    const val GOOGLE_PLAY_ADVERTISING_ID_NOT_AVAILABLE = "Google Advertising ID is all zeros, ignoring. " +
+        "Make sure you've added the 'com.google.android.gms.permission.AD_ID' permission in your AndroidManifest file."
     const val GOOGLE_PLAY_SERVICES_REPAIRABLE_EXCEPTION_WHEN_FETCHING_ADVERTISING_IDENTIFIER =
         "GooglePlayServicesRepairableException when getting advertising identifier. Message: %s"
     const val IO_EXCEPTION_WHEN_FETCHING_ADVERTISING_IDENTIFIER = "IOException when getting advertising " +

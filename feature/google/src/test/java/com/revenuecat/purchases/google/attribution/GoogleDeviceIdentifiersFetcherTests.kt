@@ -28,6 +28,9 @@ class GoogleDeviceIdentifiersFetcherTests {
         every {
             Log.e(any(), any())
         } returns 0
+        every {
+            Log.w(any(), any<String>())
+        } returns 0
     }
 
     @Test
@@ -135,6 +138,32 @@ class GoogleDeviceIdentifiersFetcherTests {
         }
 
         assertThat(completionCalled).isTrue()
+    }
+
+    @Test
+    fun `getDeviceIdentifiers when returns all zeros`() {
+        val mockContext = mockk<Application>(relaxed = true)
+        mockAdvertisingInfo(
+            mockContext = mockContext,
+            expectedAdID = "00000000-0000-0000-0000-000000000000",
+            expectedAndroidID = "androidid"
+        )
+
+        var completionCalled = false
+        underTest.getDeviceIdentifiers(mockContext) { identifiers ->
+            completionCalled = true
+
+            val advertisingID = identifiers[SubscriberAttributeKey.DeviceIdentifiers.GPSAdID.backendKey]
+            assertThat(advertisingID).isNull()
+
+            val androidID = identifiers[SubscriberAttributeKey.DeviceIdentifiers.AndroidID.backendKey]
+            assertThat(androidID).isEqualTo("androidid")
+
+            val ip = identifiers[SubscriberAttributeKey.DeviceIdentifiers.IP.backendKey]
+            assertThat(ip).isEqualTo("true")
+        }
+
+        assertThat(completionCalled).isTrue
     }
 
     @Test
