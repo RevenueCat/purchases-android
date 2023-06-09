@@ -444,7 +444,7 @@ class HTTPClientTest: BaseHTTPClientTest() {
     fun `performRequest tracks http request performed diagnostic event if request successful`() {
         val dateProvider = mockk<DateProvider>()
         val diagnosticsTracker = mockk<DiagnosticsTracker>()
-        every { diagnosticsTracker.trackHttpRequestPerformed(any(), any(), any(), any(), any()) } just Runs
+        every { diagnosticsTracker.trackHttpRequestPerformed(any(), any(), any(), any(), any(), any()) } just Runs
 
         client = createClient(diagnosticsTracker = diagnosticsTracker, dateProvider = dateProvider)
 
@@ -465,7 +465,7 @@ class HTTPClientTest: BaseHTTPClientTest() {
         server.takeRequest()
 
         verify(exactly = 1) {
-            diagnosticsTracker.trackHttpRequestPerformed(endpoint, responseTime, true, responseCode, HTTPResult.Origin.BACKEND)
+            diagnosticsTracker.trackHttpRequestPerformed(endpoint, responseTime, true, responseCode, HTTPResult.Origin.BACKEND, VerificationResult.NOT_REQUESTED)
         }
     }
 
@@ -473,7 +473,7 @@ class HTTPClientTest: BaseHTTPClientTest() {
     fun `performRequest tracks http request performed diagnostic event if request fails`() {
         val dateProvider = mockk<DateProvider>()
         val diagnosticsTracker = mockk<DiagnosticsTracker>()
-        every { diagnosticsTracker.trackHttpRequestPerformed(any(), any(), any(), any(), any()) } just Runs
+        every { diagnosticsTracker.trackHttpRequestPerformed(any(), any(), any(), any(), any(), any()) } just Runs
 
         client = createClient(diagnosticsTracker = diagnosticsTracker, dateProvider = dateProvider)
 
@@ -494,7 +494,7 @@ class HTTPClientTest: BaseHTTPClientTest() {
         server.takeRequest()
 
         verify(exactly = 1) {
-            diagnosticsTracker.trackHttpRequestPerformed(endpoint, responseTime, false, responseCode, HTTPResult.Origin.BACKEND)
+            diagnosticsTracker.trackHttpRequestPerformed(endpoint, responseTime, false, responseCode, HTTPResult.Origin.BACKEND, VerificationResult.NOT_REQUESTED)
         }
     }
 
@@ -502,7 +502,7 @@ class HTTPClientTest: BaseHTTPClientTest() {
     fun `performRequest tracks http request performed diagnostic event if request throws Exception`() {
         val dateProvider = mockk<DateProvider>()
         val diagnosticsTracker = mockk<DiagnosticsTracker>()
-        every { diagnosticsTracker.trackHttpRequestPerformed(any(), any(), any(), any(), any()) } just Runs
+        every { diagnosticsTracker.trackHttpRequestPerformed(any(), any(), any(), any(), any(), any()) } just Runs
         every { dateProvider.now } returns Date(1676379370000) // Tuesday, February 14, 2023 12:56:10 PM GMT
         client = createClient(diagnosticsTracker = diagnosticsTracker, dateProvider = dateProvider)
 
@@ -527,7 +527,7 @@ class HTTPClientTest: BaseHTTPClientTest() {
             client.performRequest(baseURL, endpoint, null, mapOf("" to ""))
         } catch (e: JSONException) {
             verify(exactly = 1) {
-                diagnosticsTracker.trackHttpRequestPerformed(endpoint, any(), false, HTTPClient.NO_STATUS_CODE, null)
+                diagnosticsTracker.trackHttpRequestPerformed(endpoint, any(), false, HTTPClient.NO_STATUS_CODE, null, VerificationResult.NOT_REQUESTED)
             }
             return
         }

@@ -216,8 +216,16 @@ class HTTPClient(
                 NO_STATUS_CODE
             }
             val origin = callResult?.origin
+            val verificationResult = callResult?.verificationResult ?: VerificationResult.NOT_REQUESTED
             val requestWasError = callSuccessful && RCHTTPStatusCodes.isSuccessful(responseCode)
-            tracker.trackHttpRequestPerformed(endpoint, responseTime, requestWasError, responseCode, origin)
+            tracker.trackHttpRequestPerformed(
+                endpoint,
+                responseTime,
+                requestWasError,
+                responseCode,
+                origin,
+                verificationResult,
+            )
         }
     }
 
