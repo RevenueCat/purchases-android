@@ -175,6 +175,8 @@ platform :android do
       new_text: ENV['LOAD_SHEDDER_REVENUECAT_API_KEY'],
       paths_of_files_to_update: [constants_path]
     )
+    # Runing integration test flavor in order to make backend tests run faster, since the jittering is too
+    # long in the `defaults` flavor.
     gradle(
       task: ':common:testIntegrationTestDebugUnitTest',
       properties: {
