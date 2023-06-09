@@ -193,7 +193,7 @@ private class PurchasesAPI {
     suspend fun checkCoroutines(
         purchases: Purchases,
     ) {
-        purchases.awaitCustomerInfo()
+        val customerInfo: CustomerInfo = purchases.awaitCustomerInfo()
     }
 
     fun check(purchases: Purchases, attributes: Map<String, String>) {
