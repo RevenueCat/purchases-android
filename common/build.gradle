@@ -1,4 +1,12 @@
+plugins {
+    alias libs.plugins.android.library
+    alias libs.plugins.kotlin.android
+    alias libs.plugins.kover
+    alias libs.plugins.mavenPublish
+}
+
 apply from: "$rootProject.projectDir/library.gradle"
+
 android {
     namespace 'com.revenuecat.purchases.common'
 
@@ -24,17 +32,19 @@ dependencies {
     implementation project(":public")
     implementation project(":utils")
     implementation project(":strings")
-    implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
-    implementation "androidx.core:core-ktx:$androidxCoreVersion"
-    implementation "com.google.crypto.tink:tink-android:$tinkVersion"
-    implementation "com.android.billingclient:billing:$billingVersion"
+
+    implementation libs.androidx.core
+    implementation libs.billing
+    implementation libs.kotlin.stdlib
+    implementation libs.tink
+
     testImplementation project(":test-utils")
-    testImplementation "androidx.test:core:$testLibrariesVersion"
-    testImplementation "androidx.test:runner:$testLibrariesVersion"
-    testImplementation "androidx.test:rules:$testLibrariesVersion"
-    testImplementation "androidx.test.ext:junit:$testJUnitVersion"
-    testImplementation "org.robolectric:robolectric:$robolectricVersion"
-    testImplementation "io.mockk:mockk:$mockkVersion"
-    testImplementation "org.assertj:assertj-core:$assertJVersion"
-    testImplementation "com.squareup.okhttp3:mockwebserver:$mockwebserverVersion"
+    testImplementation libs.androidx.test.core
+    testImplementation libs.androidx.test.junit
+    testImplementation libs.androidx.test.rules
+    testImplementation libs.androidx.test.runner
+    testImplementation libs.assertJ
+    testImplementation libs.mockk
+    testImplementation libs.okhttp.mockwebserver
+    testImplementation libs.robolectric
 }

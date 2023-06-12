@@ -1,3 +1,8 @@
+plugins {
+    alias libs.plugins.android.application
+    alias libs.plugins.kotlin.android
+}
+
 apply from: "$rootProject.projectDir/base-application.gradle"
 
 android {
@@ -13,6 +18,7 @@ android {
 dependencies {
     implementation project(path: ':public')
     implementation project(path: ':purchases')
-    implementation "androidx.annotation:annotation:$annotationVersion"
     implementation project(path: ':feature:amazon')
+
+    implementation libs.androidx.annotation
 }

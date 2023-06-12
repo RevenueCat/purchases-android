@@ -1,10 +1,18 @@
+plugins {
+    alias libs.plugins.android.library
+    alias libs.plugins.kotlin.android
+    alias libs.plugins.kotlin.parcelize
+    alias libs.plugins.kover
+    alias libs.plugins.mavenPublish
+}
+
 apply from: "$rootProject.projectDir/library.gradle"
+
 android {
     namespace 'com.revenuecat.purchases.amazon'
 }
 
 ext {
-    amazonVersion = "3.0.3"
     amazon2Version = "2.0.76"
     amazon2FileName = "in-app-purchasing-${amazon2Version}.jar"
 }
@@ -15,22 +23,19 @@ dependencies {
     implementation project(":strings")
     implementation project(":utils")
 
-    implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
-    implementation "androidx.annotation:annotation:$annotationVersion"
+    implementation libs.amazon.appstore.sdk
+    implementation libs.androidx.annotation
+    implementation libs.kotlin.stdlib
 
-    implementation "com.amazon.device:amazon-appstore-sdk:$amazonVersion"
-
-    testImplementation "com.amazon.device:amazon-appstore-sdk:$amazonVersion"
     testImplementation project(":test-utils")
-    testImplementation "androidx.test:core:$testLibrariesVersion"
-    testImplementation "androidx.test:core-ktx:$testLibrariesVersion"
-    testImplementation "androidx.test:runner:$testLibrariesVersion"
-    testImplementation "androidx.test:rules:$testLibrariesVersion"
-    testImplementation "androidx.test.ext:junit:$testJUnitVersion"
-    testImplementation "androidx.test.ext:junit-ktx:$testJUnitVersion"
-    testImplementation "org.robolectric:robolectric:$robolectricVersion"
-    testImplementation "io.mockk:mockk:$mockkVersion"
-    testImplementation "org.assertj:assertj-core:$assertJVersion"
+    testImplementation libs.amazon.appstore.sdk
+    testImplementation libs.androidx.test.core
+    testImplementation libs.androidx.test.junit
+    testImplementation libs.androidx.test.rules
+    testImplementation libs.androidx.test.runner
+    testImplementation libs.assertJ
+    testImplementation libs.mockk
+    testImplementation libs.robolectric
 }
 
 // Not running with this flag causes verification issues due to the way the Amazon jar is compiled
