@@ -49,6 +49,7 @@ class SubscriptionOptionTest {
         assertThat(subscriptionOption.fullPricePhase).isEqualTo(recurringPhase)
         assertThat(subscriptionOption.billingPeriod?.unit).isEqualTo(Period.Unit.MONTH)
         assertThat(subscriptionOption.billingPeriod?.value).isEqualTo(1)
+        assertThat(subscriptionOption.isPrepaid).isFalse
     }
 
     @Test
@@ -79,6 +80,7 @@ class SubscriptionOptionTest {
         assertThat(subscriptionOption.freePhase).isNull()
         assertThat(subscriptionOption.introPhase).isNull()
         assertThat(subscriptionOption.fullPricePhase).isEqualTo(recurringPhase)
+        assertThat(subscriptionOption.isPrepaid).isTrue
     }
 
     @Test
@@ -120,6 +122,7 @@ class SubscriptionOptionTest {
         assertThat(subscriptionOption.freePhase).isEqualTo(freePhase)
         assertThat(subscriptionOption.introPhase).isNull()
         assertThat(subscriptionOption.fullPricePhase).isEqualTo(recurringPhase)
+        assertThat(subscriptionOption.isPrepaid).isFalse
     }
 
     @Test
@@ -161,5 +164,6 @@ class SubscriptionOptionTest {
         assertThat(subscriptionOption.freePhase).isNull()
         assertThat(subscriptionOption.introPhase).isEqualTo(introPhase)
         assertThat(subscriptionOption.fullPricePhase).isEqualTo(recurringPhase)
+        assertThat(subscriptionOption.isPrepaid).isFalse
     }
 }

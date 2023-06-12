@@ -10,7 +10,7 @@ import kotlinx.android.parcel.IgnoredOnParcel
  */
 @Deprecated(
     "Replaced with ReplacementMode",
-    ReplaceWith("ReplacementMode")
+    ReplaceWith("ReplacementMode"),
 )
 interface ProrationMode : Parcelable {
     @IgnoredOnParcel

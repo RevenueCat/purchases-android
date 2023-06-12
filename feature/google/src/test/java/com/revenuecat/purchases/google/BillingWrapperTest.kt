@@ -933,16 +933,20 @@ class BillingWrapperTest {
     }
 
     @Test
-    fun `purchasesUpdatedCalls are forwarded with empty list if result is ok but with a null purchase`() {
-        val slot = slot<List<StoreTransaction>>()
+    fun `purchasesUpdatedCalls call the error callback if result is ok but with a null purchase`() {
         every {
-            mockPurchasesListener.onPurchasesUpdated(capture(slot))
+            mockPurchasesListener.onPurchasesFailedToUpdate(any())
         } just Runs
-
-        purchasesUpdatedListener!!.onPurchasesUpdated(billingClientOKResult, null)
-
-        assertThat(slot.isCaptured).isTrue
-        assertThat(slot.captured.isEmpty()).isTrue
+        purchasesUpdatedListener!!.onPurchasesUpdated(
+            BillingClient.BillingResponseCode.OK.buildResult(),
+            null
+        )
+        verify(exactly = 0) {
+            mockPurchasesListener.onPurchasesUpdated(any())
+        }
+        verify {
+            mockPurchasesListener.onPurchasesFailedToUpdate(any())
+        }
     }
 
     @Test
@@ -1212,6 +1216,45 @@ class BillingWrapperTest {
 
         assertThat(purchasesByHashedToken).isNotNull
         assertThat(purchasesByHashedToken).isEmpty()
+    }
+
+    @Test
+    fun `defers query purchases if client not connected`() {
+        every { mockClient.isReady } returns false
+
+        var purchasesByHashedToken: Map<String, StoreTransaction>? = null
+        wrapper.queryPurchases(
+            appUserID = "appUserID",
+            onSuccess = {
+                purchasesByHashedToken = it
+            },
+            onError = {
+                fail("should be a success)")
+            }
+        )
+
+        assertThat(purchasesByHashedToken).isNull()
+
+        verify(exactly = 0) {
+            mockClient.queryPurchasesAsync(any<QueryPurchasesParams>(), any())
+        }
+
+        mockClient.mockQueryPurchasesAsync(
+            billingClientOKResult,
+            billingClientOKResult,
+            emptyList(),
+            emptyList()
+        )
+
+        every { mockClient.isReady } returns true
+
+        billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
+
+        verify(exactly = 2) {
+            mockClient.queryPurchasesAsync(any<QueryPurchasesParams>(), any())
+        }
+
+        assertThat(purchasesByHashedToken).isNotNull
     }
 
     @Test

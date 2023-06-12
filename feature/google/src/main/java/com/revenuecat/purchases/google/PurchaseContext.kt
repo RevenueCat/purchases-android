@@ -7,5 +7,5 @@ class PurchaseContext(
     val productType: ProductType,
     val presentedOfferingId: String?,
     val selectedSubscriptionOptionId: String?,
-    val replacementMode: GoogleReplacementMode?
+    val replacementMode: GoogleReplacementMode?,
 )

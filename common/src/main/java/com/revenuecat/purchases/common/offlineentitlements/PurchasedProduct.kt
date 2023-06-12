@@ -7,7 +7,6 @@ data class PurchasedProduct(
     val productIdentifier: String,
     val basePlanId: String?,
     val storeTransaction: StoreTransaction,
-    val isActive: Boolean,
     val entitlements: List<String>,
-    val expiresDate: Date?
+    val expiresDate: Date?,
 )

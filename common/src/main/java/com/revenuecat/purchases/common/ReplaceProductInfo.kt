@@ -5,5 +5,5 @@ import com.revenuecat.purchases.models.StoreTransaction
 
 data class ReplaceProductInfo(
     val oldPurchase: StoreTransaction,
-    val replacementMode: ReplacementMode? = null
+    val replacementMode: ReplacementMode? = null,
 )

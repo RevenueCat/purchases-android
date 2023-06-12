@@ -52,7 +52,7 @@ abstract class BaseHTTPClientTest {
         diagnosticsTracker: DiagnosticsTracker? = null,
         dateProvider: DateProvider = DefaultDateProvider(),
         eTagManager: ETagManager = mockETagManager,
-        signingManager: SigningManager? = null
+        signingManager: SigningManager? = null,
     ) = HTTPClient(
         appConfig,
         eTagManager,
@@ -66,14 +66,16 @@ abstract class BaseHTTPClientTest {
         observerMode: Boolean = false,
         platformInfo: PlatformInfo = expectedPlatformInfo,
         proxyURL: URL? = baseURL,
-        store: Store = Store.PLAY_STORE
+        store: Store = Store.PLAY_STORE,
+        forceServerErrors: Boolean = false
     ): AppConfig {
         return AppConfig(
             context = context,
             observerMode = observerMode,
             platformInfo = platformInfo,
             proxyURL = proxyURL,
-            store = store
+            store = store,
+            forceServerErrors = forceServerErrors
         )
     }
 

@@ -8,7 +8,8 @@ import com.android.billingclient.api.QueryPurchasesParams
 fun @receiver:BillingClient.ProductType String.buildQueryPurchaseHistoryParams(): QueryPurchaseHistoryParams? {
     return when (this) {
         BillingClient.ProductType.INAPP,
-        BillingClient.ProductType.SUBS -> QueryPurchaseHistoryParams.newBuilder().setProductType(this).build()
+        BillingClient.ProductType.SUBS,
+        -> QueryPurchaseHistoryParams.newBuilder().setProductType(this).build()
         else -> null
     }
 }
@@ -16,13 +17,14 @@ fun @receiver:BillingClient.ProductType String.buildQueryPurchaseHistoryParams()
 fun @receiver:BillingClient.ProductType String.buildQueryPurchasesParams(): QueryPurchasesParams? {
     return when (this) {
         BillingClient.ProductType.INAPP,
-        BillingClient.ProductType.SUBS -> QueryPurchasesParams.newBuilder().setProductType(this).build()
+        BillingClient.ProductType.SUBS,
+        -> QueryPurchasesParams.newBuilder().setProductType(this).build()
         else -> null
     }
 }
 
 fun @receiver:BillingClient.ProductType String.buildQueryProductDetailsParams(
-    productIds: Set<String>
+    productIds: Set<String>,
 ): QueryProductDetailsParams {
     val productList = productIds.map { productId ->
         QueryProductDetailsParams.Product.newBuilder()

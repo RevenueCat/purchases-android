@@ -16,11 +16,13 @@ fun Int.billingResponseToPurchasesError(underlyingErrorMessage: String): Purchas
     val errorCode = when (this) {
         BillingClient.BillingResponseCode.BILLING_UNAVAILABLE,
         BillingClient.BillingResponseCode.ITEM_NOT_OWNED,
-        BillingClient.BillingResponseCode.FEATURE_NOT_SUPPORTED -> PurchasesErrorCode.PurchaseNotAllowedError
+        BillingClient.BillingResponseCode.FEATURE_NOT_SUPPORTED,
+        -> PurchasesErrorCode.PurchaseNotAllowedError
         BillingClient.BillingResponseCode.ERROR,
         BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE,
         BillingClient.BillingResponseCode.SERVICE_DISCONNECTED,
-        BillingClient.BillingResponseCode.SERVICE_TIMEOUT -> PurchasesErrorCode.StoreProblemError
+        BillingClient.BillingResponseCode.SERVICE_TIMEOUT,
+        -> PurchasesErrorCode.StoreProblemError
         BillingClient.BillingResponseCode.OK -> PurchasesErrorCode.UnknownError
         BillingClient.BillingResponseCode.USER_CANCELED -> PurchasesErrorCode.PurchaseCancelledError
         BillingClient.BillingResponseCode.ITEM_UNAVAILABLE -> PurchasesErrorCode.ProductNotAvailableForPurchaseError

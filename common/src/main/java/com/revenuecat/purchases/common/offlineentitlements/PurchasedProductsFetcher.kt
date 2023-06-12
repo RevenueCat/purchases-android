@@ -15,81 +15,59 @@ import java.util.concurrent.TimeUnit
 class PurchasedProductsFetcher(
     private val deviceCache: DeviceCache,
     private val billing: BillingAbstract,
-    private val dateProvider: DateProvider = DefaultDateProvider()
+    private val dateProvider: DateProvider = DefaultDateProvider(),
 ) {
 
-    fun queryPurchasedProducts(
+    fun queryActiveProducts(
         appUserID: String,
         onSuccess: (List<PurchasedProduct>) -> Unit,
-        onError: (PurchasesError) -> Unit
+        onError: (PurchasesError) -> Unit,
     ) {
         val productEntitlementMapping = deviceCache.getProductEntitlementMapping() ?: run {
             onError(
                 PurchasesError(
                     PurchasesErrorCode.CustomerInfoError,
-                    OfflineEntitlementsStrings.PRODUCT_ENTITLEMENT_MAPPING_REQUIRED
-                )
+                    OfflineEntitlementsStrings.PRODUCT_ENTITLEMENT_MAPPING_REQUIRED,
+                ),
             )
             return
         }
 
-        billing.queryAllPurchases(
+        billing.queryPurchases(
             appUserID,
-            onReceivePurchaseHistory = { allPurchases ->
-                billing.queryPurchases(
-                    appUserID,
-                    onSuccess = { activePurchasesByHashedToken ->
-                        val purchasedProductIdentifiers = allPurchases.map { it.skus[0] }.toSet()
-                        val activeProducts = activePurchasesByHashedToken.values.map { it.skus[0] }.toSet()
-                        val purchasedProducts = purchasedProductIdentifiers.map { productIdentifier ->
-                            createPurchasedProduct(
-                                allPurchases,
-                                productIdentifier,
-                                activeProducts,
-                                productEntitlementMapping
-                            )
-                        }
-                        onSuccess(purchasedProducts)
-                    },
-                    onError
-                )
+            onSuccess = { activePurchasesByHashedToken ->
+                val activePurchases = activePurchasesByHashedToken.values.toList()
+                val purchasedProducts = activePurchases.map {
+                    createPurchasedProduct(it, productEntitlementMapping)
+                }
+                onSuccess(purchasedProducts)
             },
-            onError
+            onError,
         )
     }
 
     private fun createPurchasedProduct(
-        allPurchases: List<StoreTransaction>,
-        productIdentifier: String,
-        activeProducts: Set<String>,
-        productEntitlementMapping: ProductEntitlementMapping
+        transaction: StoreTransaction,
+        productEntitlementMapping: ProductEntitlementMapping,
     ): PurchasedProduct {
-        val purchaseAssociatedToProduct = allPurchases.first { it.skus[0] == productIdentifier }
-        val isActive = activeProducts.contains(productIdentifier)
-        val expirationDate = getExpirationDate(isActive, purchaseAssociatedToProduct)
+        val expirationDate = getExpirationDate(transaction)
+        val productIdentifier = transaction.productIds.first()
         val mapping = productEntitlementMapping.mappings[productIdentifier]
         return PurchasedProduct(
             productIdentifier,
             mapping?.basePlanId,
-            purchaseAssociatedToProduct,
-            isActive,
+            transaction,
             mapping?.entitlements ?: emptyList(),
-            expirationDate
+            expirationDate,
         )
     }
 
     private fun getExpirationDate(
-        isActive: Boolean,
-        purchaseAssociatedToProduct: StoreTransaction
+        purchaseAssociatedToProduct: StoreTransaction,
     ): Date? {
-        return if (purchaseAssociatedToProduct.type == ProductType.SUBS) {
-            if (isActive) {
-                Date(dateProvider.now.time + TimeUnit.DAYS.toMillis(1))
-            } else {
-                Date(purchaseAssociatedToProduct.purchaseTime)
-            }
-        } else {
-            null
+        return when (purchaseAssociatedToProduct.type) {
+            ProductType.SUBS -> Date(dateProvider.now.time + TimeUnit.DAYS.toMillis(1))
+            else -> null
         }
     }
 }

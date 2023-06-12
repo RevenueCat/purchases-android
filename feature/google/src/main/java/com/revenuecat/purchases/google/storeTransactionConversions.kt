@@ -13,7 +13,7 @@ fun Purchase.toStoreTransaction(
     productType: ProductType,
     presentedOfferingIdentifier: String? = null,
     subscriptionOptionId: String? = null,
-    replacementMode: GoogleReplacementMode? = null
+    replacementMode: GoogleReplacementMode? = null,
 ): StoreTransaction = StoreTransaction(
     orderId = this.orderId,
     productIds = this.products,
@@ -29,7 +29,7 @@ fun Purchase.toStoreTransaction(
     purchaseType = PurchaseType.GOOGLE_PURCHASE,
     marketplace = null,
     subscriptionOptionId = subscriptionOptionId,
-    replacementMode = replacementMode
+    replacementMode = replacementMode,
 )
 
 fun Purchase.toStoreTransaction(purchaseContext: PurchaseContext): StoreTransaction =
@@ -37,7 +37,7 @@ fun Purchase.toStoreTransaction(purchaseContext: PurchaseContext): StoreTransact
         purchaseContext.productType,
         purchaseContext.presentedOfferingId,
         purchaseContext.selectedSubscriptionOptionId,
-        purchaseContext.replacementMode
+        purchaseContext.replacementMode,
     )
 
 val StoreTransaction.originalGooglePurchase: Purchase?
@@ -47,7 +47,7 @@ val StoreTransaction.originalGooglePurchase: Purchase?
             ?.let { signature -> Purchase(this.originalJson.toString(), signature) }
 
 fun PurchaseHistoryRecord.toStoreTransaction(
-    type: ProductType
+    type: ProductType,
 ): StoreTransaction {
     return StoreTransaction(
         orderId = null,
@@ -64,6 +64,6 @@ fun PurchaseHistoryRecord.toStoreTransaction(
         purchaseType = PurchaseType.GOOGLE_RESTORED_PURCHASE,
         marketplace = null,
         subscriptionOptionId = null,
-        replacementMode = null
+        replacementMode = null,
     )
 }

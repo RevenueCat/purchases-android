@@ -17,7 +17,6 @@ import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
-import com.revenuecat.purchases.getCustomerInfoWith
 import com.revenuecat.purchases.getOfferingsWith
 import com.revenuecat.purchases.logOutWith
 import com.revenuecat.purchases_sample.R
@@ -38,13 +37,17 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
             } else {
                 Purchases.sharedInstance.logOutWith(
                     { error -> showUserError(requireActivity(), error) },
-                    { navigateToLoginFragment() }
+                    { navigateToLoginFragment() },
                 )
             }
         }
 
         binding.logsButton.setOnClickListener {
             navigateToLogsFragment()
+        }
+
+        binding.proxyButton.setOnClickListener {
+            navigateToProxyFragment()
         }
 
         viewModel = OverviewViewModel(this)
@@ -59,11 +62,12 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
         postponeEnterTransition()
         view.doOnPreDraw { startPostponedEnterTransition() }
 
-        Purchases.sharedInstance.getCustomerInfoWith(::showError) { info ->
-            with(binding) {
-                viewModel?.customerInfo?.value = info
-            }
+        // This should be done in a ViewModel, but it's a test app ¯\_(ツ)_/¯
+        (activity?.application as? MainApplication)?.lastCustomerInfoLiveData?.observe(viewLifecycleOwner) {
+            viewModel.customerInfo.value = it
         }
+
+        viewModel.retrieveCustomerInfo()
 
         Purchases.sharedInstance.getOfferingsWith(::showError, ::populateOfferings)
     }
@@ -78,7 +82,7 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
         binding.overviewOfferingsRecycler.adapter = OfferingCardAdapter(
             offerings.all.values.toList(),
             offerings.current,
-            this
+            this,
         )
     }
 
@@ -107,7 +111,7 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
         Toast.makeText(
             requireContext(),
             message,
-            Toast.LENGTH_LONG
+            Toast.LENGTH_LONG,
         ).show()
     }
 
@@ -134,6 +138,11 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
 
     private fun navigateToLogsFragment() {
         val directions = OverviewFragmentDirections.actionOverviewFragmentToLogsFragment()
+        findNavController().navigate(directions)
+    }
+
+    private fun navigateToProxyFragment() {
+        val directions = OverviewFragmentDirections.actionOverviewFragmentToProxySettingsBottomSheetFragment()
         findNavController().navigate(directions)
     }
 }

@@ -1,3 +1,76 @@
+## 6.4.0
+### New Features
+* Offline entitlements support (#1030) via Toni Rico (@tonidero)
+### Bugfixes
+* Fix billing connection error when querying purchases early in the process lifetime (#1032) via Toni Rico (@tonidero)
+### Performance Improvements
+* Perform product entitlement mapping request after more critical requests (#1017) via Toni Rico (@tonidero)
+### Dependency Updates
+* Bump fastlane from 2.212.2 to 2.213.0 (#1024) via dependabot[bot] (@dependabot[bot])
+### Other Changes
+* Get offerings response from disk cache if available (#1029) via Toni Rico (@tonidero)
+* Improve offline entitlements logs to mention limitations of this mode (#1039) via Toni Rico (@tonidero)
+* Improve error message when backend returns internal error code (#1038) via Toni Rico (@tonidero)
+* PurchaseTester: Add new UI to configure internal proxy behavior (#1016) via Toni Rico (@tonidero)
+* Updated readme to include links to migration guides (#1021) via Marcos Castany (@mcastany)
+* Store offerings response in SharedPreferences (#1028) via Toni Rico (@tonidero)
+* Refactor offerings code out of Purchases (#1027) via Toni Rico (@tonidero)
+
+## 6.3.0
+### New Features
+* Support DEFERRED mode (#985) via swehner (@swehner)
+* Add completion callback to syncPurchases API (#1002) via Toni Rico (@tonidero)
+### Bugfixes
+* Workaround bug in android 4 for JSON objects with List<String> (#942) via Andy Boedo (@aboedo)
+### Dependency Updates
+* Bump fastlane-plugin-revenuecat_internal from `fe45299` to `13773d2` (#1015) via dependabot[bot] (@dependabot[bot])
+### Other Changes
+* Bump dokka to 1.8.10 to support Gradle 8 (#1009) via Toni Rico (@tonidero)
+* Disable offline entitlements temporarily (#1023) via Toni Rico (@tonidero)
+* Fix integration tests in CI (#1019) via Toni Rico (@tonidero)
+* Add offline entitlements integration tests (#1006) via Toni Rico (@tonidero)
+* Disable offline entitlements in observer mode (#1014) via Toni Rico (@tonidero)
+* Extracts setup and teardown to BasePurchasesTest (#1011) via Cesar de la Vega (@vegaro)
+* Support forcing server errors for tests (#1008) via Toni Rico (@tonidero)
+
+## 6.2.0
+### New Features
+* CAT-859 Expose whether or not a SubscriptionOption is Prepaid in the SDK (#1005) via Deema AlShamaa (@dalshamaa)
+### Bugfixes
+* [CF-1324] Fix personalizedPrice defaulting to false (#952) via beylmk (@beylmk)
+### Performance Improvements
+* Store and return ETag last refresh time header (#978) via Toni Rico (@tonidero)
+### Dependency Updates
+* Bump fastlane-plugin-revenuecat_internal from `3b03efa` to `fe45299` (#991) via dependabot[bot] (@dependabot[bot])
+* Bump danger from 9.2.0 to 9.3.0 (#981) via dependabot[bot] (@dependabot[bot])
+* Bump fastlane-plugin-revenuecat_internal from `8482a43` to `3b03efa` (#974) via dependabot[bot] (@dependabot[bot])
+* Bump fastlane from 2.212.1 to 2.212.2 (#973) via dependabot[bot] (@dependabot[bot])
+* Bump fastlane-plugin-revenuecat_internal from `9255366` to `8482a43` (#961) via dependabot[bot] (@dependabot[bot])
+### Other Changes
+* Add proration modes to post to backend (#977) via swehner (@swehner)
+* Added ENTITLEMENTS_COMPUTED_ON_DEVICE (#939) via Cesar de la Vega (@vegaro)
+* Fix flaky test in OfflineCustomerInfoCalculatorTest (#997) via Cesar de la Vega (@vegaro)
+* Fix `OfflineCustomerInfoCalculatorTest` `Unresolved reference: ProducType` (#995) via Cesar de la Vega (@vegaro)
+* Add support for product_plan_identifier for offline customer info (#959) via Cesar de la Vega (@vegaro)
+* Add non-subscriptions support to offline customer info (#958) via Cesar de la Vega (@vegaro)
+* Query only active purchases when generating offline entitlements customer info (#1003) via Toni Rico (@tonidero)
+* Fix `PurchasesIntegrationTest` building issue (#996 into main) (#998) via Cesar de la Vega (@vegaro)
+* Fail offline entitlements computation if product entitlement mapping not available (#999) via Toni Rico (@tonidero)
+* Fix  build_magic_weather lane (#993) via Cesar de la Vega (@vegaro)
+* Add backend integration tests and test product entitlement mapping endpoint (#988) via Toni Rico (@tonidero)
+* Fix purchases integration tests (#980) via Toni Rico (@tonidero)
+* Disable offline entitlements if active inapp purchases exist (#983) via Toni Rico (@tonidero)
+* Clear cached customer info upon entering offline entitlements mode (#989) via Toni Rico (@tonidero)
+* Update product entitlement mapping request to new format (#976) via Toni Rico (@tonidero)
+* Support enabling/disabling offline entitlements (#964) via Toni Rico (@tonidero)
+* Add back integration tests automation (#972) via Toni Rico (@tonidero)
+* Upgrade to AGP 8.0 (#975) via Toni Rico (@tonidero)
+* Extract post receipt logic to PostReceiptHelper (#967) via Toni Rico (@tonidero)
+* Add isServerDown to error callback for postReceipt and getCustomerInfo requests (#963) via Toni Rico (@tonidero)
+* Add back integration test flavors (#962) via Toni Rico (@tonidero)
+* Fix storing test results (#966) via Cesar de la Vega (@vegaro)
+* Extract detekt job from test job (#965) via Cesar de la Vega (@vegaro)
+
 ## 6.1.1
 ### Bugfixes
 * Remove flavors temporarily to fix deployment (#953) via Toni Rico (@tonidero)

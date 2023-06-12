@@ -21,6 +21,9 @@ import com.revenuecat.purchases.common.diagnostics.DiagnosticsFileHelper
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsSynchronizer
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.networking.ETagManager
+import com.revenuecat.purchases.common.offerings.OfferingsCache
+import com.revenuecat.purchases.common.offerings.OfferingsFactory
+import com.revenuecat.purchases.common.offerings.OfferingsManager
 import com.revenuecat.purchases.common.offlineentitlements.OfflineCustomerInfoCalculator
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
 import com.revenuecat.purchases.common.offlineentitlements.PurchasedProductsFetcher
@@ -44,7 +47,8 @@ internal class PurchasesFactory(
         configuration: PurchasesConfiguration,
         platformInfo: PlatformInfo,
         proxyURL: URL?,
-        overrideBillingAbstract: BillingAbstract? = null
+        overrideBillingAbstract: BillingAbstract? = null,
+        forceServerErrors: Boolean = false,
     ): Purchases {
         validateConfiguration(configuration)
 
@@ -56,7 +60,8 @@ internal class PurchasesFactory(
                 platformInfo,
                 proxyURL,
                 store,
-                dangerousSettings
+                dangerousSettings,
+                forceServerErrors,
             )
 
             val prefs = PreferenceManager.getDefaultSharedPreferences(application)
@@ -74,7 +79,7 @@ internal class PurchasesFactory(
                 diagnosticsTracker = DiagnosticsTracker(
                     diagnosticsFileHelper,
                     DiagnosticsAnonymizer(Anonymizer()),
-                    diagnosticsDispatcher
+                    diagnosticsDispatcher,
                 )
             }
 
@@ -92,7 +97,7 @@ internal class PurchasesFactory(
                 dispatcher,
                 diagnosticsDispatcher,
                 httpClient,
-                backendHelper
+                backendHelper,
             )
             val cache = DeviceCache(prefs, apiKey)
 
@@ -103,7 +108,7 @@ internal class PurchasesFactory(
                 backendHelper,
                 cache,
                 observerMode,
-                diagnosticsTracker
+                diagnosticsTracker,
             )
 
             val subscriberAttributesPoster = SubscriberAttributesPoster(backendHelper)
@@ -115,27 +120,30 @@ internal class PurchasesFactory(
             val subscriberAttributesManager = SubscriberAttributesManager(
                 subscriberAttributesCache,
                 subscriberAttributesPoster,
-                attributionFetcher
+                attributionFetcher,
             )
 
             val offlineCustomerInfoCalculator = OfflineCustomerInfoCalculator(
                 PurchasedProductsFetcher(cache, billing),
-                appConfig
+                appConfig,
             )
 
             val offlineEntitlementsManager = OfflineEntitlementsManager(
-                appConfig,
                 backend,
                 offlineCustomerInfoCalculator,
-                cache
+                cache,
+                appConfig,
             )
+
+            val offeringsCache = OfferingsCache(cache)
 
             val identityManager = IdentityManager(
                 cache,
                 subscriberAttributesCache,
                 subscriberAttributesManager,
+                offeringsCache,
                 backend,
-                offlineEntitlementsManager
+                offlineEntitlementsManager,
             )
 
             val customerInfoHelper = CustomerInfoHelper(cache, backend, identityManager, offlineEntitlementsManager)
@@ -148,7 +156,7 @@ internal class PurchasesFactory(
                     diagnosticsTracker,
                     backend,
                     diagnosticsDispatcher,
-                    DiagnosticsSynchronizer.initializeSharedPreferences(context)
+                    DiagnosticsSynchronizer.initializeSharedPreferences(context),
                 )
             }
 
@@ -159,7 +167,20 @@ internal class PurchasesFactory(
                 customerInfoHelper,
                 cache,
                 subscriberAttributesManager,
-                offlineEntitlementsManager
+                offlineEntitlementsManager,
+            )
+
+            val syncPurchasesHelper = SyncPurchasesHelper(
+                billing,
+                identityManager,
+                customerInfoHelper,
+                postReceiptHelper,
+            )
+
+            val offeringsManager = OfferingsManager(
+                offeringsCache,
+                backend,
+                OfferingsFactory(billing, offeringParser),
             )
 
             return Purchases(
@@ -173,10 +194,11 @@ internal class PurchasesFactory(
                 subscriberAttributesManager,
                 appConfig,
                 customerInfoHelper,
-                offeringParser,
                 diagnosticsSynchronizer,
                 offlineEntitlementsManager,
-                postReceiptHelper
+                postReceiptHelper,
+                syncPurchasesHelper,
+                offeringsManager,
             )
         }
     }

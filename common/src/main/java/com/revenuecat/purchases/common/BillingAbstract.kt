@@ -50,19 +50,19 @@ abstract class BillingAbstract {
     abstract fun queryAllPurchases(
         appUserID: String,
         onReceivePurchaseHistory: (List<StoreTransaction>) -> Unit,
-        onReceivePurchaseHistoryError: PurchasesErrorCallback
+        onReceivePurchaseHistoryError: PurchasesErrorCallback,
     )
 
     abstract fun queryProductDetailsAsync(
         productType: ProductType,
         productIds: Set<String>,
         onReceive: StoreProductsCallback,
-        onError: PurchasesErrorCallback
+        onError: PurchasesErrorCallback,
     )
 
     abstract fun consumeAndSave(
         shouldTryToConsume: Boolean,
-        purchase: StoreTransaction
+        purchase: StoreTransaction,
     )
 
     abstract fun findPurchaseInPurchaseHistory(
@@ -70,7 +70,7 @@ abstract class BillingAbstract {
         productType: ProductType,
         sku: String,
         onCompletion: (StoreTransaction) -> Unit,
-        onError: (PurchasesError) -> Unit
+        onError: (PurchasesError) -> Unit,
     )
 
     @SuppressWarnings("LongParameterList")
@@ -80,7 +80,7 @@ abstract class BillingAbstract {
         purchasingData: PurchasingData,
         replaceProductInfo: ReplaceProductInfo?,
         presentedOfferingIdentifier: String?,
-        isPersonalizedPrice: Boolean? = null
+        isPersonalizedPrice: Boolean? = null,
     )
 
     abstract fun isConnected(): Boolean
@@ -88,7 +88,7 @@ abstract class BillingAbstract {
     abstract fun queryPurchases(
         appUserID: String,
         onSuccess: (Map<String, StoreTransaction>) -> Unit,
-        onError: (PurchasesError) -> Unit
+        onError: (PurchasesError) -> Unit,
     )
 
     /**
@@ -101,7 +101,7 @@ abstract class BillingAbstract {
         purchaseToken: String,
         storeUserID: String,
         onSuccess: (normalizedProductID: String) -> Unit,
-        onError: (PurchasesError) -> Unit
+        onError: (PurchasesError) -> Unit,
     ) {
         onSuccess(productID)
     }

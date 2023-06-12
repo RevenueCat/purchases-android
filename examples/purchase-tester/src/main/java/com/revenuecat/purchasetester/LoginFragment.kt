@@ -24,7 +24,7 @@ class LoginFragment : Fragment() {
                     .logInWith(
                         userId,
                         { error -> showUserError(requireActivity(), error) },
-                        { _, _ -> advanceToOverviewFragment() }
+                        { _, _ -> advanceToOverviewFragment() },
                     )
             }
         }
@@ -35,7 +35,7 @@ class LoginFragment : Fragment() {
             } else {
                 Purchases.sharedInstance.logOutWith(
                     { error -> showUserError(requireActivity(), error) },
-                    { advanceToOverviewFragment() }
+                    { advanceToOverviewFragment() },
                 )
             }
         }
@@ -47,6 +47,10 @@ class LoginFragment : Fragment() {
 
         binding.logsButton.setOnClickListener {
             navigateToLogsFragment()
+        }
+
+        binding.proxyButton.setOnClickListener {
+            navigateToProxyFragment()
         }
 
         return binding.root
@@ -68,6 +72,11 @@ class LoginFragment : Fragment() {
 
     private fun navigateToLogsFragment() {
         val directions = LoginFragmentDirections.actionLoginFragmentToLogsFragment()
+        findNavController().navigate(directions)
+    }
+
+    private fun navigateToProxyFragment() {
+        val directions = LoginFragmentDirections.actionLoginFragmentToProxySettingsBottomSheetFragment()
         findNavController().navigate(directions)
     }
 }

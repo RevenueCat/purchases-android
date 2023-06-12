@@ -101,12 +101,12 @@ data class StoreTransaction(
      * Null if it was not an upgrade/downgrade or if the purchase was restored.
      * This is not available for Amazon purchases.
      */
-    val replacementMode: ReplacementMode?
+    val replacementMode: ReplacementMode?,
 ) : Parcelable {
 
     @Deprecated(
         "Use replacementMode",
-        ReplaceWith("replacementMode()")
+        ReplaceWith("replacementMode()"),
     )
     constructor(
         orderId: String?,
@@ -139,7 +139,8 @@ data class StoreTransaction(
         purchaseType,
         marketplace,
         subscriptionOptionId,
-        (prorationMode as? GoogleProrationMode)?.asGoogleReplacementMode)
+        (prorationMode as? GoogleProrationMode)?.asGoogleReplacementMode,
+    )
 
     /**
      * Skus associated with the transaction
@@ -147,7 +148,7 @@ data class StoreTransaction(
     @IgnoredOnParcel
     @Deprecated(
         "Replaced with productIds",
-        ReplaceWith("productIds")
+        ReplaceWith("productIds"),
     )
     val skus: List<String>
         get() = productIds
@@ -175,29 +176,29 @@ private data class ComparableData(
     val storeUserID: String?,
     val purchaseType: PurchaseType,
     val marketplace: String?,
-    val subscriptionOptionId: String?
+    val subscriptionOptionId: String?,
 ) {
     constructor(
-        storeTransaction: StoreTransaction
+        storeTransaction: StoreTransaction,
     ) : this(
         orderId = storeTransaction.orderId,
-            productIds = storeTransaction.productIds,
-            type = storeTransaction.type,
-            purchaseTime = storeTransaction.purchaseTime,
-            purchaseToken = storeTransaction.purchaseToken,
-            purchaseState = storeTransaction.purchaseState,
-            isAutoRenewing = storeTransaction.isAutoRenewing,
-            signature = storeTransaction.signature,
-            presentedOfferingIdentifier = storeTransaction.presentedOfferingIdentifier,
-            storeUserID = storeTransaction.storeUserID,
-            purchaseType = storeTransaction.purchaseType,
-            marketplace = storeTransaction.marketplace,
-            subscriptionOptionId = storeTransaction.subscriptionOptionId
+        productIds = storeTransaction.productIds,
+        type = storeTransaction.type,
+        purchaseTime = storeTransaction.purchaseTime,
+        purchaseToken = storeTransaction.purchaseToken,
+        purchaseState = storeTransaction.purchaseState,
+        isAutoRenewing = storeTransaction.isAutoRenewing,
+        signature = storeTransaction.signature,
+        presentedOfferingIdentifier = storeTransaction.presentedOfferingIdentifier,
+        storeUserID = storeTransaction.storeUserID,
+        purchaseType = storeTransaction.purchaseType,
+        marketplace = storeTransaction.marketplace,
+        subscriptionOptionId = storeTransaction.subscriptionOptionId,
     )
 }
 
 enum class PurchaseType {
     GOOGLE_PURCHASE,
     GOOGLE_RESTORED_PURCHASE,
-    AMAZON_PURCHASE
+    AMAZON_PURCHASE,
 }

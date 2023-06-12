@@ -8,7 +8,6 @@ import androidx.annotation.Nullable;
 
 import com.revenuecat.purchases.CacheFetchPolicy;
 import com.revenuecat.purchases.CustomerInfo;
-import com.revenuecat.purchases.EntitlementVerificationMode;
 import com.revenuecat.purchases.LogHandler;
 import com.revenuecat.purchases.LogLevel;
 import com.revenuecat.purchases.Offerings;
@@ -24,6 +23,7 @@ import com.revenuecat.purchases.interfaces.LogInCallback;
 import com.revenuecat.purchases.interfaces.PurchaseCallback;
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback;
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback;
+import com.revenuecat.purchases.interfaces.SyncPurchasesCallback;
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener;
 import com.revenuecat.purchases.models.BillingFeature;
 import com.revenuecat.purchases.models.GoogleProrationMode;
@@ -83,8 +83,18 @@ final class PurchasesAPI {
             public void onError(@NotNull PurchasesError error) {
             }
         };
+        final SyncPurchasesCallback syncPurchasesCallback = new SyncPurchasesCallback() {
+            @Override
+            public void onSuccess(@NonNull CustomerInfo customerInfo) {
+            }
+
+            @Override
+            public void onError(@NonNull PurchasesError error) {
+            }
+        };
 
         purchases.syncPurchases();
+        purchases.syncPurchases(syncPurchasesCallback);
         purchases.getOfferings(receiveOfferingsListener);
         purchases.getProducts(productIds, productResponseListener);
         purchases.getProducts(productIds, ProductType.SUBS, productResponseListener);

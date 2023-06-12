@@ -22,7 +22,7 @@ data class SubscriberAttribute(
     val value: String?,
     val dateProvider: DateProvider = DefaultDateProvider(),
     val setTime: Date = dateProvider.now,
-    val isSynced: Boolean = false
+    val isSynced: Boolean = false,
 ) {
 
     constructor(
@@ -30,7 +30,7 @@ data class SubscriberAttribute(
         value: String?,
         dateProvider: DateProvider = DefaultDateProvider(),
         setTime: Date = dateProvider.now,
-        isSynced: Boolean = false
+        isSynced: Boolean = false,
     ) : this(key.getSubscriberAttributeKey(), value, setTime = setTime, isSynced = isSynced)
 
     @Throws(JSONException::class)
@@ -38,13 +38,15 @@ data class SubscriberAttribute(
         key = jsonObject.getString(JSON_NAME_KEY).getSubscriberAttributeKey(),
         value = jsonObject.getNullableString(JSON_NAME_VALUE),
         setTime = Date(jsonObject.getLong(JSON_NAME_SET_TIME)),
-        isSynced = jsonObject.getBoolean(JSON_NAME_IS_SYNCED)
+        isSynced = jsonObject.getBoolean(JSON_NAME_IS_SYNCED),
     )
 
     fun toJSONObject() = JSONObject().apply {
         put(JSON_NAME_KEY, key.backendKey)
         value?.let { put(JSON_NAME_VALUE, value) } ?: put(
-            JSON_NAME_VALUE, JSONObject.NULL)
+            JSON_NAME_VALUE,
+            JSONObject.NULL,
+        )
         put(JSON_NAME_SET_TIME, setTime.time)
         put(JSON_NAME_IS_SYNCED, isSynced)
     }

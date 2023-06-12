@@ -64,6 +64,7 @@ dependencies {
     testImplementation "io.mockk:mockk:$mockkVersion"
     testImplementation "org.assertj:assertj-core:$assertJVersion"
     testImplementation "com.android.billingclient:billing:$billingVersion"
+    testImplementation "org.jetbrains.kotlinx:kotlinx-coroutines-test:$coroutinesVersion"
 
     integrationTestImplementation 'androidx.appcompat:appcompat:1.4.1'
     integrationTestImplementation 'com.google.android.material:material:1.6.0'
@@ -93,5 +94,21 @@ tasks.dokkaHtmlPartial.configure {
                 remoteLineSuffix.set("#L")
             }
         }
+    }
+}
+
+// Remove afterEvaluate
+// after https://github.com/Kotlin/kotlinx-kover/issues/362 is fixed
+project.afterEvaluate {
+    dependencies {
+        kover(project(":common"))
+        kover(project(":feature:amazon"))
+        kover(project(":feature:google"))
+        kover(project(":feature:identity"))
+        kover(project(":feature:subscriber-attributes"))
+        kover(project(":public"))
+        kover(project(":strings"))
+        kover(project(":test-utils"))
+        kover(project(":utils"))
     }
 }

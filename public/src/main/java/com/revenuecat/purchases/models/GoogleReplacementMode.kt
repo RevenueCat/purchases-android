@@ -12,7 +12,7 @@ import com.revenuecat.purchases.ReplacementMode
  * See https://developer.android.com/google/play/billing/subscriptions#proration for examples
  */
 enum class GoogleReplacementMode(
-    @BillingFlowParams.SubscriptionUpdateParams.ReplacementMode val playBillingClientMode: Int
+    @BillingFlowParams.SubscriptionUpdateParams.ReplacementMode val playBillingClientMode: Int,
 ) : ReplacementMode {
     /**
      * Old subscription is cancelled, and new subscription takes effect immediately.
@@ -55,7 +55,10 @@ enum class GoogleReplacementMode(
      * so he is charged the difference of $0.50 for his new subscription.
      * On May 1st, Samwise is charged $36 for his new subscription tier and another $36 on May 1 of each year following.
      */
-    CHARGE_PRORATED_PRICE(BillingFlowParams.SubscriptionUpdateParams.ReplacementMode.CHARGE_PRORATED_PRICE);
+    CHARGE_PRORATED_PRICE(BillingFlowParams.SubscriptionUpdateParams.ReplacementMode.CHARGE_PRORATED_PRICE),
+
+    DEFERRED(BillingFlowParams.SubscriptionUpdateParams.ReplacementMode.DEFERRED),
+    ;
 
     /**
      * For internal use only :)
@@ -66,6 +69,7 @@ enum class GoogleReplacementMode(
             GoogleReplacementMode.WITH_TIME_PRORATION -> GoogleProrationMode.IMMEDIATE_WITH_TIME_PRORATION
             GoogleReplacementMode.CHARGE_FULL_PRICE -> GoogleProrationMode.IMMEDIATE_AND_CHARGE_FULL_PRICE
             GoogleReplacementMode.CHARGE_PRORATED_PRICE -> GoogleProrationMode.IMMEDIATE_AND_CHARGE_PRORATED_PRICE
+            GoogleReplacementMode.DEFERRED -> GoogleProrationMode.DEFERRED
         }
 
     override fun describeContents(): Int {
@@ -78,7 +82,7 @@ enum class GoogleReplacementMode(
 
     companion object CREATOR : Parcelable.Creator<GoogleReplacementMode?> {
         fun fromPlayBillingClientMode(
-            @BillingFlowParams.SubscriptionUpdateParams.ReplacementMode playBillingClientMode: Int?
+            @BillingFlowParams.SubscriptionUpdateParams.ReplacementMode playBillingClientMode: Int?,
         ): GoogleReplacementMode? {
             return playBillingClientMode?.let {
                 values().first { playBillingClientMode == it.playBillingClientMode }

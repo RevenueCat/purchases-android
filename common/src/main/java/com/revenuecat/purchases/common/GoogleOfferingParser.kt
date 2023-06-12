@@ -1,14 +1,13 @@
-package com.revenuecat.purchases.google
+package com.revenuecat.purchases.common
 
 import com.revenuecat.purchases.ProductType
-import com.revenuecat.purchases.common.OfferingParser
 import com.revenuecat.purchases.models.StoreProduct
 import org.json.JSONObject
 
 class GoogleOfferingParser : OfferingParser() {
     override fun findMatchingProduct(
         productsById: Map<String, List<StoreProduct>>,
-        packageJson: JSONObject
+        packageJson: JSONObject,
     ): StoreProduct? {
         val productIdentifier = packageJson.getString("platform_product_identifier")
 

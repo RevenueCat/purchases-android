@@ -1,19 +1,16 @@
+### New Features
+* Offline entitlements support (#1030) via Toni Rico (@tonidero)
 ### Bugfixes
-* Remove flavors temporarily to fix deployment (#953) via Toni Rico (@tonidero)
+* Fix billing connection error when querying purchases early in the process lifetime (#1032) via Toni Rico (@tonidero)
+### Performance Improvements
+* Perform product entitlement mapping request after more critical requests (#1017) via Toni Rico (@tonidero)
+### Dependency Updates
+* Bump fastlane from 2.212.2 to 2.213.0 (#1024) via dependabot[bot] (@dependabot[bot])
 ### Other Changes
-* Add diagnostics tracking for BC5 google methods (#876) via Toni Rico (@tonidero)
-### Changes from 6.1.0
-#### New Features
-* Add `OfferPaymentMode` on to `PricingPhase` to describe behavior for offers (#943) via Josh Holtz (@joshdholtz)
-* Add `Purchases.sharedInstance.store` to get currently configured `Store` (#937) via Josh Holtz (@joshdholtz)
-#### Bugfixes
-* Add missing presentedOfferingId to `StoreProduct` and `SubscriptionOption` (#930) via beylmk (@beylmk)
-* Moved `toPurchasesError` back to internal (#944) via Cesar de la Vega (@vegaro)
-#### Other Changes
-* Compute CustomerInfo from a list of purchases (#885) via Cesar de la Vega (@vegaro)
-* Extract all customer info json strings (#945) via Cesar de la Vega (@vegaro)
-* Add verification for entitlement granting to integration tests (#946) via Toni Rico (@tonidero)
-* Add note about observer mode to v6-migration (#929) via beylmk (@beylmk)
-* Report load shedder integration tests results in slack for V6 (#936) via Toni Rico (@tonidero)
-* Increase heap size (#935) via Cesar de la Vega (@vegaro)
-* Re-add new integration tests after V6 changes (#928) via Toni Rico (@tonidero)
+* Get offerings response from disk cache if available (#1029) via Toni Rico (@tonidero)
+* Improve offline entitlements logs to mention limitations of this mode (#1039) via Toni Rico (@tonidero)
+* Improve error message when backend returns internal error code (#1038) via Toni Rico (@tonidero)
+* PurchaseTester: Add new UI to configure internal proxy behavior (#1016) via Toni Rico (@tonidero)
+* Updated readme to include links to migration guides (#1021) via Marcos Castany (@mcastany)
+* Store offerings response in SharedPreferences (#1028) via Toni Rico (@tonidero)
+* Refactor offerings code out of Purchases (#1027) via Toni Rico (@tonidero)

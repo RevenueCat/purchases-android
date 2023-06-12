@@ -26,7 +26,7 @@ import java.util.Date
 class OfflineCustomerInfoCalculator(
     private val purchasedProductsFetcher: PurchasedProductsFetcher,
     private val appConfig: AppConfig,
-    private val dateProvider: DateProvider = DefaultDateProvider()
+    private val dateProvider: DateProvider = DefaultDateProvider(),
 ) {
 
     /**
@@ -39,34 +39,36 @@ class OfflineCustomerInfoCalculator(
     fun computeOfflineCustomerInfo(
         appUserID: String,
         onSuccess: (CustomerInfo) -> Unit,
-        onError: (PurchasesError) -> Unit
+        onError: (PurchasesError) -> Unit,
     ) {
-        purchasedProductsFetcher.queryPurchasedProducts(
+        purchasedProductsFetcher.queryActiveProducts(
             appUserID,
             onSuccess = { purchasedProducts ->
                 val containsAnyActiveInAppPurchase = purchasedProducts.any {
-                    it.storeTransaction.type == ProductType.INAPP && it.isActive
+                    it.storeTransaction.type == ProductType.INAPP
                 }
                 if (containsAnyActiveInAppPurchase) {
                     val error = PurchasesError(
                         PurchasesErrorCode.UnsupportedError,
-                        OfflineEntitlementsStrings.OFFLINE_ENTITLEMENTS_UNSUPPORTED_INAPP_PURCHASES
+                        OfflineEntitlementsStrings.OFFLINE_ENTITLEMENTS_UNSUPPORTED_INAPP_PURCHASES,
                     )
                     errorLog(COMPUTING_OFFLINE_CUSTOMER_INFO_FAILED.format(error))
                     onError(error)
-                    return@queryPurchasedProducts
+                    return@queryActiveProducts
                 }
                 val customerInfo = buildCustomerInfoUsingListOfPurchases(appUserID, purchasedProducts)
                 onSuccess.invoke(customerInfo)
-            }, onError = { error ->
+            },
+            onError = { error ->
                 errorLog(COMPUTING_OFFLINE_CUSTOMER_INFO_FAILED.format(error))
                 onError(error)
-            })
+            },
+        )
     }
 
     private fun buildCustomerInfoUsingListOfPurchases(
         appUserID: String,
-        purchasedProducts: List<PurchasedProduct>
+        purchasedProducts: List<PurchasedProduct>,
     ): CustomerInfo {
         val jsonObject = JSONObject()
         val requestDate = dateProvider.now
@@ -74,21 +76,26 @@ class OfflineCustomerInfoCalculator(
             val formattedDate = Iso8601Utils.format(requestDate)
             put(CustomerInfoResponseJsonKeys.REQUEST_DATE, formattedDate)
             put(CustomerInfoResponseJsonKeys.REQUEST_DATE_MS, requestDate.time)
-            put(CustomerInfoResponseJsonKeys.SUBSCRIBER, JSONObject().apply {
-                put(CustomerInfoResponseJsonKeys.ORIGINAL_APP_USER_ID, appUserID)
-                put(CustomerInfoResponseJsonKeys.ORIGINAL_APPLICATION_VERSION, "1.0")
-                put(CustomerInfoResponseJsonKeys.ENTITLEMENTS, generateEntitlementsResponse(purchasedProducts))
-                put(CustomerInfoResponseJsonKeys.FIRST_SEEN, formattedDate)
-                val originalPurchaseDate = calculateOriginalPurchaseDate(purchasedProducts)
-                put(CustomerInfoResponseJsonKeys.ORIGINAL_PURCHASE_DATE, originalPurchaseDate)
-                put(CustomerInfoResponseJsonKeys.NON_SUBSCRIPTIONS, JSONObject())
-                put(CustomerInfoResponseJsonKeys.SUBSCRIPTIONS, generateSubscriptions(purchasedProducts))
-                put(CustomerInfoResponseJsonKeys.MANAGEMENT_URL, determineManagementURL())
-            })
+            put(
+                CustomerInfoResponseJsonKeys.SUBSCRIBER,
+                JSONObject().apply {
+                    put(CustomerInfoResponseJsonKeys.ORIGINAL_APP_USER_ID, appUserID)
+                    put(CustomerInfoResponseJsonKeys.ORIGINAL_APPLICATION_VERSION, "1.0")
+                    put(CustomerInfoResponseJsonKeys.ENTITLEMENTS, generateEntitlementsResponse(purchasedProducts))
+                    put(CustomerInfoResponseJsonKeys.FIRST_SEEN, formattedDate)
+                    val originalPurchaseDate = calculateOriginalPurchaseDate(purchasedProducts)
+                    put(CustomerInfoResponseJsonKeys.ORIGINAL_PURCHASE_DATE, originalPurchaseDate)
+                    put(CustomerInfoResponseJsonKeys.NON_SUBSCRIPTIONS, JSONObject())
+                    put(CustomerInfoResponseJsonKeys.SUBSCRIPTIONS, generateSubscriptions(purchasedProducts))
+                    put(CustomerInfoResponseJsonKeys.MANAGEMENT_URL, determineManagementURL())
+                },
+            )
         }
 
         return CustomerInfoFactory.buildCustomerInfo(
-            jsonObject, requestDate, VerificationResult.VERIFIED_ON_DEVICE
+            jsonObject,
+            requestDate,
+            VerificationResult.VERIFIED_ON_DEVICE,
         )
     }
 
@@ -106,24 +113,28 @@ class OfflineCustomerInfoCalculator(
         val subscriptions = JSONObject()
 
         purchasedProducts.forEach { product ->
-            subscriptions.put(product.productIdentifier, JSONObject().apply {
-                put(ProductResponseJsonKeys.BILLING_ISSUES_DETECTED_AT, JSONObject.NULL)
-                put(ProductResponseJsonKeys.IS_SANDBOX, false)
-                val purchaseDate = Date(product.storeTransaction.purchaseTime)
-                put(ProductResponseJsonKeys.ORIGINAL_PURCHASE_DATE, Iso8601Utils.format(purchaseDate))
-                put(ProductResponseJsonKeys.PURCHASE_DATE, Iso8601Utils.format(purchaseDate))
-                put(ProductResponseJsonKeys.STORE, appConfig.store.name.lowercase())
-                put(ProductResponseJsonKeys.UNSUBSCRIBE_DETECTED_AT, JSONObject.NULL)
-                // TODO in post receipt we might be able to have the subscription option id
-                put(ProductResponseJsonKeys.PRODUCT_PLAN_IDENTIFIER, product.basePlanId)
-                put(
-                    ProductResponseJsonKeys.EXPIRES_DATE,
-                    product.expiresDate?.let { Iso8601Utils.format(it) } ?: JSONObject.NULL)
-                put(
-                    ProductResponseJsonKeys.PERIOD_TYPE,
-                    PeriodType.NORMAL.name.lowercase()
-                ) // Best guess, we don't know what period type was purchased
-            })
+            subscriptions.put(
+                product.productIdentifier,
+                JSONObject().apply {
+                    put(ProductResponseJsonKeys.BILLING_ISSUES_DETECTED_AT, JSONObject.NULL)
+                    put(ProductResponseJsonKeys.IS_SANDBOX, false)
+                    val purchaseDate = Date(product.storeTransaction.purchaseTime)
+                    put(ProductResponseJsonKeys.ORIGINAL_PURCHASE_DATE, Iso8601Utils.format(purchaseDate))
+                    put(ProductResponseJsonKeys.PURCHASE_DATE, Iso8601Utils.format(purchaseDate))
+                    put(ProductResponseJsonKeys.STORE, appConfig.store.name.lowercase())
+                    put(ProductResponseJsonKeys.UNSUBSCRIBE_DETECTED_AT, JSONObject.NULL)
+                    // TODO in post receipt we might be able to have the subscription option id
+                    put(ProductResponseJsonKeys.PRODUCT_PLAN_IDENTIFIER, product.basePlanId)
+                    put(
+                        ProductResponseJsonKeys.EXPIRES_DATE,
+                        product.expiresDate?.let { Iso8601Utils.format(it) } ?: JSONObject.NULL,
+                    )
+                    put(
+                        ProductResponseJsonKeys.PERIOD_TYPE,
+                        PeriodType.NORMAL.name.lowercase(),
+                    ) // Best guess, we don't know what period type was purchased
+                },
+            )
         }
         return subscriptions
     }

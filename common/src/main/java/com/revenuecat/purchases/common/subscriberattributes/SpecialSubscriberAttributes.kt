@@ -78,7 +78,7 @@ sealed class SubscriberAttributeKey(val backendKey: String) {
     }
 
     sealed class CampaignParameters(
-        backendKey: ReservedSubscriberAttribute
+        backendKey: ReservedSubscriberAttribute,
     ) : SubscriberAttributeKey(backendKey.value) {
         object MediaSource : CampaignParameters(ReservedSubscriberAttribute.MEDIA_SOURCE)
         object Campaign : CampaignParameters(ReservedSubscriberAttribute.CAMPAIGN)

@@ -51,7 +51,7 @@ data class GoogleSubscriptionOption(
      *
      * Null if not using RevenueCat offerings system, or if fetched directly via `Purchases.getProducts`
      */
-    override val presentedOfferingIdentifier: String? = null
+    override val presentedOfferingIdentifier: String? = null,
 ) : SubscriptionOption {
 
     internal constructor(subscriptionOption: GoogleSubscriptionOption, presentedOfferingIdentifier: String?) :
@@ -63,7 +63,7 @@ data class GoogleSubscriptionOption(
             subscriptionOption.tags,
             subscriptionOption.productDetails,
             subscriptionOption.offerToken,
-            presentedOfferingIdentifier
+            presentedOfferingIdentifier,
         )
 
     override val id: String
@@ -74,6 +74,6 @@ data class GoogleSubscriptionOption(
             productId,
             id,
             productDetails,
-            offerToken
+            offerToken,
         )
 }

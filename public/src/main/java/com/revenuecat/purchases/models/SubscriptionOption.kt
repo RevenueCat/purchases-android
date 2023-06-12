@@ -45,6 +45,13 @@ interface SubscriptionOption {
         get() = fullPricePhase?.billingPeriod
 
     /**
+     * True if the subscription is pre-paid.
+     * Not applicable for Amazon subscriptions.
+     */
+    val isPrepaid: Boolean
+        get() = this.fullPricePhase?.recurrenceMode == RecurrenceMode.NON_RECURRING
+
+    /**
      * The full price [PricingPhase] of the subscription.
      * Looks for the last price phase of the SubscriptionOption.
      */

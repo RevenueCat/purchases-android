@@ -11,16 +11,16 @@ import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.amazon.amazonProduct
-import com.revenuecat.purchases.models.googleProduct
-import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.models.StoreProduct
+import com.revenuecat.purchases.models.SubscriptionOption
+import com.revenuecat.purchases.models.googleProduct
 import com.revenuecat.purchases_sample.databinding.PackageCardBinding
 
 class PackageCardAdapter(
     private val packages: List<Package>,
     private val activeSubscriptions: Set<String>,
     private val listener: PackageCardAdapterListener,
-    private val isPlayStore: Boolean
+    private val isPlayStore: Boolean,
 ) :
     RecyclerView.Adapter<PackageCardAdapter.PackageViewHolder>() {
 
@@ -52,7 +52,7 @@ class PackageCardAdapter(
                     binding.root,
                     currentPackage,
                     binding.isUpgradeCheckbox.isChecked,
-                    binding.isPersonalizedCheckbox.isChecked
+                    binding.isPersonalizedCheckbox.isChecked,
                 )
             }
 
@@ -61,7 +61,7 @@ class PackageCardAdapter(
                     binding.root,
                     product,
                     binding.isUpgradeCheckbox.isChecked,
-                    binding.isPersonalizedCheckbox.isChecked
+                    binding.isPersonalizedCheckbox.isChecked,
                 )
             }
 
@@ -75,7 +75,7 @@ class PackageCardAdapter(
                         binding.root,
                         subscriptionOption,
                         binding.isUpgradeCheckbox.isChecked,
-                        binding.isPersonalizedCheckbox.isChecked
+                        binding.isPersonalizedCheckbox.isChecked,
                     )
                 } else {
                     showErrorMessage(errorStartingPurchase)
@@ -124,7 +124,8 @@ class PackageCardAdapter(
 
         private fun validateStartPurchase(product: StoreProduct): String? {
             if (product.type == ProductType.SUBS &&
-                binding.packageSubscriptionOptionGroup.checkedRadioButtonId == nothingCheckedIndex) {
+                binding.packageSubscriptionOptionGroup.checkedRadioButtonId == nothingCheckedIndex
+            ) {
                 return "Please choose subscription option first"
             }
             return null

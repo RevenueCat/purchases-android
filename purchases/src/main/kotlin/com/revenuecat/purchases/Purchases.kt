@@ -23,7 +23,6 @@ import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.Config
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.LogIntent
-import com.revenuecat.purchases.common.OfferingParser
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.ReplaceProductInfo
@@ -34,6 +33,7 @@ import com.revenuecat.purchases.common.diagnostics.DiagnosticsSynchronizer
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.infoLog
 import com.revenuecat.purchases.common.log
+import com.revenuecat.purchases.common.offerings.OfferingsManager
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.subscriberattributes.SubscriberAttributeKey
@@ -47,8 +47,10 @@ import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.interfaces.PurchaseErrorCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback
+import com.revenuecat.purchases.interfaces.SyncPurchasesCallback
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import com.revenuecat.purchases.models.BillingFeature
+import com.revenuecat.purchases.models.GoogleProrationMode
 import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.PurchasingData
@@ -60,12 +62,9 @@ import com.revenuecat.purchases.strings.BillingStrings
 import com.revenuecat.purchases.strings.ConfigureStrings
 import com.revenuecat.purchases.strings.ConfigureStrings.AUTO_SYNC_PURCHASES_DISABLED
 import com.revenuecat.purchases.strings.CustomerInfoStrings
-import com.revenuecat.purchases.strings.OfferingStrings
 import com.revenuecat.purchases.strings.PurchaseStrings
 import com.revenuecat.purchases.strings.RestoreStrings
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
-import org.json.JSONException
-import org.json.JSONObject
 import java.net.URL
 import java.util.Collections.emptyMap
 
@@ -92,13 +91,14 @@ class Purchases internal constructor(
     private val subscriberAttributesManager: SubscriberAttributesManager,
     @set:JvmSynthetic @get:JvmSynthetic internal var appConfig: AppConfig,
     private val customerInfoHelper: CustomerInfoHelper,
-    private val offeringParser: OfferingParser,
     diagnosticsSynchronizer: DiagnosticsSynchronizer?,
-    @Suppress("UnusedPrivateMember")
-    private val offlineEntitlementsManager: OfflineEntitlementsManager,
+    @get:VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    internal val offlineEntitlementsManager: OfflineEntitlementsManager,
     private val postReceiptHelper: PostReceiptHelper,
+    private val syncPurchasesHelper: SyncPurchasesHelper,
+    private val offeringsManager: OfferingsManager,
     // This is nullable due to: https://github.com/RevenueCat/purchases-flutter/issues/408
-    private val mainHandler: Handler? = Handler(Looper.getMainLooper())
+    private val mainHandler: Handler? = Handler(Looper.getMainLooper()),
 ) : LifecycleDelegate {
 
     /** @suppress */
@@ -106,8 +106,11 @@ class Purchases internal constructor(
     @Volatile
     @JvmSynthetic
     internal var state = PurchasesState()
-        @JvmSynthetic @Synchronized get() = field
-        @JvmSynthetic @Synchronized set(value) {
+        @JvmSynthetic @Synchronized
+        get() = field
+
+        @JvmSynthetic @Synchronized
+        set(value) {
             field = value
         }
 
@@ -117,6 +120,7 @@ class Purchases internal constructor(
      */
     var finishTransactions: Boolean
         @Synchronized get() = appConfig.finishTransactions
+
         @Synchronized set(value) {
             appConfig.finishTransactions = value
         }
@@ -133,6 +137,7 @@ class Purchases internal constructor(
      */
     var updatedCustomerInfoListener: UpdatedCustomerInfoListener?
         @Synchronized get() = customerInfoHelper.updatedCustomerInfoListener
+
         @Synchronized set(value) {
             customerInfoHelper.updatedCustomerInfoListener = value
         }
@@ -174,7 +179,6 @@ class Purchases internal constructor(
             log(LogIntent.WARNING, AUTO_SYNC_PURCHASES_DISABLED)
         }
 
-        offlineEntitlementsManager.updateProductEntitlementMappingCacheIfStale()
         diagnosticsSynchronizer?.syncDiagnosticsFileIfNeeded()
     }
 
@@ -200,61 +204,39 @@ class Purchases internal constructor(
             customerInfoHelper.retrieveCustomerInfo(
                 identityManager.currentAppUserID,
                 fetchPolicy = CacheFetchPolicy.FETCH_CURRENT,
-                appInBackground = false
+                appInBackground = false,
             )
         }
-        if (deviceCache.isOfferingsCacheStale(appInBackground = false)) {
-            log(LogIntent.DEBUG, OfferingStrings.OFFERINGS_STALE_UPDATING_IN_FOREGROUND)
-            fetchAndCacheOfferings(identityManager.currentAppUserID, appInBackground = false)
-            log(LogIntent.RC_SUCCESS, OfferingStrings.OFFERINGS_UPDATED_FROM_NETWORK)
-        }
-        offlineEntitlementsManager.updateProductEntitlementMappingCacheIfStale()
+        offeringsManager.onAppForeground(identityManager.currentAppUserID)
         updatePendingPurchaseQueue()
         synchronizeSubscriberAttributesIfNeeded()
+        offlineEntitlementsManager.updateProductEntitlementMappingCacheIfStale()
     }
 
     // region Public Methods
 
     /**
      * This method will send all the purchases to the RevenueCat backend. Call this when using your own implementation
-     * for subscriptions anytime a sync is needed, such as when migrating existing users to RevenueCat
+     * for subscriptions anytime a sync is needed, such as when migrating existing users to RevenueCat. The
+     * [SyncPurchasesCallback.onSuccess] callback will be called if all purchases have been synced successfully or
+     * there are no purchases. Otherwise, the [SyncPurchasesCallback.onError] callback will be called with a
+     * [PurchasesError] indicating the first error found.
      *
+     * @param [listener] Called when all purchases have been synced with the backend, either successfully or with
+     * an error. If no purchases are present, the success function will be called.
      * @warning This function should only be called if you're migrating to RevenueCat or in observer mode.
+     * @warning This function could take a relatively long time to execute, depending on the amount of purchases
+     * the user has. Consider that when waiting for this operation to complete.
      */
-    fun syncPurchases() {
-        log(LogIntent.DEBUG, PurchaseStrings.SYNCING_PURCHASES)
-
-        val appUserID = identityManager.currentAppUserID
-
-        billing.queryAllPurchases(
-            appUserID,
-            onReceivePurchaseHistory = { allPurchases ->
-                if (allPurchases.isNotEmpty()) {
-                    allPurchases.forEach { purchase ->
-                        val productInfo = ReceiptInfo(productIDs = purchase.productIds)
-                        postReceiptHelper.postTokenWithoutConsuming(
-                            purchase.purchaseToken,
-                            purchase.storeUserID,
-                            productInfo,
-                            this.allowSharingPlayStoreAccount,
-                            appUserID,
-                            purchase.marketplace,
-                            {
-                                log(LogIntent.PURCHASE, PurchaseStrings.PURCHASE_SYNCED.format(purchase))
-                            },
-                            { error ->
-                                log(
-                                    LogIntent.RC_ERROR, PurchaseStrings.SYNCING_PURCHASES_ERROR_DETAILS
-                                        .format(purchase, error)
-                                )
-                            }
-                        )
-                    }
-                }
-            },
-            onReceivePurchaseHistoryError = {
-                log(LogIntent.RC_ERROR, PurchaseStrings.SYNCING_PURCHASES_ERROR.format(it))
-            }
+    @JvmOverloads
+    fun syncPurchases(
+        listener: SyncPurchasesCallback? = null,
+    ) {
+        syncPurchasesHelper.syncPurchases(
+            isRestore = this.allowSharingPlayStoreAccount,
+            appInBackground = this.state.appInBackground,
+            onSuccess = { listener?.onSuccess(it) },
+            onError = { listener?.onError(it) },
         )
     }
 
@@ -275,7 +257,7 @@ class Purchases internal constructor(
         receiptID: String,
         amazonUserID: String,
         isoCurrencyCode: String?,
-        price: Double?
+        price: Double?,
     ) {
         log(LogIntent.DEBUG, PurchaseStrings.SYNCING_PURCHASE_STORE_USER_ID.format(receiptID, amazonUserID))
 
@@ -294,7 +276,7 @@ class Purchases internal constructor(
                 val receiptInfo = ReceiptInfo(
                     productIDs = listOf(normalizedProductID),
                     price = price?.takeUnless { it == 0.0 },
-                    currency = isoCurrencyCode?.takeUnless { it.isBlank() }
+                    currency = isoCurrencyCode?.takeUnless { it.isBlank() },
                 )
                 postReceiptHelper.postTokenWithoutConsuming(
                     receiptID,
@@ -311,17 +293,17 @@ class Purchases internal constructor(
                         val logMessage = PurchaseStrings.SYNCING_PURCHASE_ERROR_DETAILS_USER_ID.format(
                             receiptID,
                             amazonUserID,
-                            error
+                            error,
                         )
                         log(LogIntent.RC_ERROR, logMessage)
-                    }
+                    },
                 )
             },
             { error ->
                 val logMessage =
                     PurchaseStrings.SYNCING_PURCHASE_ERROR_DETAILS_USER_ID.format(receiptID, amazonUserID, error)
                 log(LogIntent.RC_ERROR, logMessage)
-            }
+            },
         )
     }
 
@@ -336,31 +318,14 @@ class Purchases internal constructor(
      * @param [listener] Called when offerings are available. Called immediately if offerings are cached.
      */
     fun getOfferings(
-        listener: ReceiveOfferingsCallback
+        listener: ReceiveOfferingsCallback,
     ) {
-        val (appUserID, cachedOfferings) = synchronized(this@Purchases) {
-            identityManager.currentAppUserID to deviceCache.cachedOfferings
-        }
-        if (cachedOfferings == null) {
-            log(LogIntent.DEBUG, OfferingStrings.NO_CACHED_OFFERINGS_FETCHING_NETWORK)
-            fetchAndCacheOfferings(appUserID, state.appInBackground, listener)
-        } else {
-            log(LogIntent.DEBUG, OfferingStrings.VENDING_OFFERINGS_CACHE)
-            dispatch {
-                listener.onReceived(cachedOfferings)
-            }
-            state.appInBackground.let { appInBackground ->
-                if (deviceCache.isOfferingsCacheStale(appInBackground)) {
-                    log(
-                        LogIntent.DEBUG,
-                        if (appInBackground) OfferingStrings.OFFERINGS_STALE_UPDATING_IN_BACKGROUND
-                        else OfferingStrings.OFFERINGS_STALE_UPDATING_IN_FOREGROUND
-                    )
-                    fetchAndCacheOfferings(appUserID, appInBackground)
-                    log(LogIntent.RC_SUCCESS, OfferingStrings.OFFERINGS_UPDATED_FROM_NETWORK)
-                }
-            }
-        }
+        offeringsManager.getOfferings(
+            identityManager.currentAppUserID,
+            state.appInBackground,
+            { listener.onError(it) },
+            { listener.onReceived(it) },
+        )
     }
 
     /**
@@ -370,7 +335,7 @@ class Purchases internal constructor(
      */
     fun getProducts(
         productIds: List<String>,
-        callback: GetStoreProductsCallback
+        callback: GetStoreProductsCallback,
     ) {
         getProducts(productIds, null, callback)
     }
@@ -384,19 +349,23 @@ class Purchases internal constructor(
     fun getProducts(
         productIds: List<String>,
         type: ProductType? = null,
-        callback: GetStoreProductsCallback
+        callback: GetStoreProductsCallback,
     ) {
         val types = type?.let { setOf(type) } ?: setOf(ProductType.SUBS, ProductType.INAPP)
 
-        getProductsOfTypes(productIds.toSet(), types, object : GetStoreProductsCallback {
-            override fun onReceived(storeProducts: List<StoreProduct>) {
-                callback.onReceived(storeProducts)
-            }
+        getProductsOfTypes(
+            productIds.toSet(),
+            types,
+            object : GetStoreProductsCallback {
+                override fun onReceived(storeProducts: List<StoreProduct>) {
+                    callback.onReceived(storeProducts)
+                }
 
-            override fun onError(error: PurchasesError) {
-                callback.onError(error)
-            }
-        })
+                override fun onError(error: PurchasesError) {
+                    callback.onError(error)
+                }
+            },
+        )
     }
 
     /**
@@ -414,7 +383,7 @@ class Purchases internal constructor(
      */
     fun purchase(
         purchaseParams: PurchaseParams,
-        callback: PurchaseCallback
+        callback: PurchaseCallback,
     ) {
         with(purchaseParams) {
             oldProductId?.let { productId ->
@@ -425,7 +394,7 @@ class Purchases internal constructor(
                     productId,
                     googleReplacementMode,
                     isPersonalizedPrice,
-                    callback
+                    callback,
                 )
             } ?: run {
                 startPurchase(
@@ -433,7 +402,7 @@ class Purchases internal constructor(
                     purchasingData,
                     presentedOfferingIdentifier,
                     isPersonalizedPrice,
-                    callback
+                    callback,
                 )
             }
         }
@@ -459,21 +428,24 @@ class Purchases internal constructor(
      */
     @Deprecated(
         "Use purchase() and PurchaseParams.Builder instead",
-        ReplaceWith("purchase()")
+        ReplaceWith("purchase()"),
     )
     fun purchaseProduct(
         activity: Activity,
         storeProduct: StoreProduct,
         upgradeInfo: UpgradeInfo,
-        listener: ProductChangeCallback
+        listener: ProductChangeCallback,
     ) {
+        val googleReplacementMode = GoogleProrationMode.fromPlayBillingClientMode(upgradeInfo.prorationMode)
+            ?.asGoogleReplacementMode
+
         startDeprecatedProductChange(
             activity,
             storeProduct.purchasingData,
             null,
             upgradeInfo.oldSku,
-            GoogleReplacementMode.fromPlayBillingClientMode(upgradeInfo.prorationMode),
-            listener
+            googleReplacementMode,
+            listener,
         )
     }
 
@@ -491,19 +463,19 @@ class Purchases internal constructor(
      */
     @Deprecated(
         "Use purchase() and PurchaseParams.Builder instead",
-        ReplaceWith("purchase()")
+        ReplaceWith("purchase()"),
     )
     fun purchaseProduct(
         activity: Activity,
         storeProduct: StoreProduct,
-        callback: PurchaseCallback
+        callback: PurchaseCallback,
     ) {
         startPurchase(
             activity,
             storeProduct.purchasingData,
             null,
             null,
-            callback
+            callback,
         )
     }
 
@@ -527,13 +499,13 @@ class Purchases internal constructor(
      */
     @Deprecated(
         "Use purchase() and PurchaseParams.Builder instead",
-        ReplaceWith("purchase()")
+        ReplaceWith("purchase()"),
     )
     fun purchasePackage(
         activity: Activity,
         packageToPurchase: Package,
         upgradeInfo: UpgradeInfo,
-        callback: ProductChangeCallback
+        callback: ProductChangeCallback,
     ) {
         startDeprecatedProductChange(
             activity,
@@ -541,7 +513,7 @@ class Purchases internal constructor(
             packageToPurchase.offering,
             upgradeInfo.oldSku,
             GoogleReplacementMode.fromPlayBillingClientMode(upgradeInfo.prorationMode),
-            callback
+            callback,
         )
     }
 
@@ -559,19 +531,19 @@ class Purchases internal constructor(
      */
     @Deprecated(
         "Use purchase() and PurchaseParams.Builder instead",
-        ReplaceWith("purchase()")
+        ReplaceWith("purchase()"),
     )
     fun purchasePackage(
         activity: Activity,
         packageToPurchase: Package,
-        listener: PurchaseCallback
+        listener: PurchaseCallback,
     ) {
         startPurchase(
             activity,
             packageToPurchase.product.purchasingData,
             packageToPurchase.offering,
             null,
-            listener
+            listener,
         )
     }
 
@@ -588,7 +560,7 @@ class Purchases internal constructor(
      * @param [callback] The listener that will be called when purchase restore completes.
      */
     fun restorePurchases(
-        callback: ReceiveCustomerInfoCallback
+        callback: ReceiveCustomerInfoCallback,
     ) {
         log(LogIntent.DEBUG, RestoreStrings.RESTORING_PURCHASE)
         if (!allowSharingPlayStoreAccount) {
@@ -618,13 +590,14 @@ class Purchases internal constructor(
                                 },
                                 onError = { _, error ->
                                     log(
-                                        LogIntent.RC_ERROR, RestoreStrings.RESTORING_PURCHASE_ERROR
-                                            .format(purchase, error)
+                                        LogIntent.RC_ERROR,
+                                        RestoreStrings.RESTORING_PURCHASE_ERROR
+                                            .format(purchase, error),
                                     )
                                     if (sortedByTime.last() == purchase) {
                                         dispatch { callback.onError(error) }
                                     }
-                                }
+                                },
                             )
                         }
                     }
@@ -632,7 +605,7 @@ class Purchases internal constructor(
             },
             onReceivePurchaseHistoryError = { error ->
                 dispatch { callback.onError(error) }
-            }
+            },
         )
     }
 
@@ -645,20 +618,22 @@ class Purchases internal constructor(
     @JvmOverloads
     fun logIn(
         newAppUserID: String,
-        callback: LogInCallback? = null
+        callback: LogInCallback? = null,
     ) {
         identityManager.currentAppUserID.takeUnless { it == newAppUserID }?.let {
-            identityManager.logIn(newAppUserID,
+            identityManager.logIn(
+                newAppUserID,
                 onSuccess = { customerInfo, created ->
                     dispatch {
                         callback?.onReceived(customerInfo, created)
                         customerInfoHelper.sendUpdatedCustomerInfoToDelegateIfChanged(customerInfo)
                     }
-                    fetchAndCacheOfferings(newAppUserID, state.appInBackground)
+                    offeringsManager.fetchAndCacheOfferings(newAppUserID, state.appInBackground)
                 },
                 onError = { error ->
                     dispatch { callback?.onError(error) }
-                })
+                },
+            )
         }
             ?: customerInfoHelper.retrieveCustomerInfo(
                 identityManager.currentAppUserID,
@@ -670,8 +645,8 @@ class Purchases internal constructor(
                     },
                     onError = { error ->
                         dispatch { callback?.onError(error) }
-                    }
-                )
+                    },
+                ),
             )
     }
 
@@ -713,31 +688,31 @@ class Purchases internal constructor(
     }
 
     /**
-     * Get latest available purchaser info.
+     * Get latest available customer info.
      * @param callback A listener called when purchaser info is available and not stale.
      * Called immediately if purchaser info is cached. Purchaser info can be null if an error occurred.
      */
     fun getCustomerInfo(
-        callback: ReceiveCustomerInfoCallback
+        callback: ReceiveCustomerInfoCallback,
     ) {
         getCustomerInfo(CacheFetchPolicy.default(), callback)
     }
 
     /**
-     * Get latest available purchaser info.
+     * Get latest available customer info.
      * @param fetchPolicy Specifies cache behavior for customer info retrieval
      * @param callback A listener called when purchaser info is available and not stale.
      * Purchaser info can be null if an error occurred.
      */
     fun getCustomerInfo(
         fetchPolicy: CacheFetchPolicy,
-        callback: ReceiveCustomerInfoCallback
+        callback: ReceiveCustomerInfoCallback,
     ) {
         customerInfoHelper.retrieveCustomerInfo(
             identityManager.currentAppUserID,
             fetchPolicy,
             state.appInBackground,
-            callback
+            callback,
         )
     }
 
@@ -804,7 +779,7 @@ class Purchases internal constructor(
         subscriberAttributesManager.setAttribute(
             SubscriberAttributeKey.PhoneNumber,
             phoneNumber,
-            appUserID
+            appUserID,
         )
     }
 
@@ -818,7 +793,7 @@ class Purchases internal constructor(
         subscriberAttributesManager.setAttribute(
             SubscriberAttributeKey.DisplayName,
             displayName,
-            appUserID
+            appUserID,
         )
     }
 
@@ -832,7 +807,7 @@ class Purchases internal constructor(
         subscriberAttributesManager.setAttribute(
             SubscriberAttributeKey.FCMTokens,
             fcmToken,
-            appUserID
+            appUserID,
         )
     }
 
@@ -849,7 +824,7 @@ class Purchases internal constructor(
         subscriberAttributesManager.setAttribute(
             SubscriberAttributeKey.IntegrationIds.MixpanelDistinctId,
             mixpanelDistinctID,
-            appUserID
+            appUserID,
         )
     }
 
@@ -864,7 +839,7 @@ class Purchases internal constructor(
         subscriberAttributesManager.setAttribute(
             SubscriberAttributeKey.IntegrationIds.OneSignal,
             onesignalID,
-            appUserID
+            appUserID,
         )
     }
 
@@ -879,7 +854,7 @@ class Purchases internal constructor(
         subscriberAttributesManager.setAttribute(
             SubscriberAttributeKey.IntegrationIds.Airship,
             airshipChannelID,
-            appUserID
+            appUserID,
         )
     }
 
@@ -894,7 +869,7 @@ class Purchases internal constructor(
         subscriberAttributesManager.setAttribute(
             SubscriberAttributeKey.IntegrationIds.FirebaseAppInstanceId,
             firebaseAppInstanceID,
-            appUserID
+            appUserID,
         )
     }
 
@@ -928,7 +903,7 @@ class Purchases internal constructor(
             SubscriberAttributeKey.AttributionIds.Adjust,
             adjustID,
             appUserID,
-            application
+            application,
         )
     }
 
@@ -944,7 +919,7 @@ class Purchases internal constructor(
             SubscriberAttributeKey.AttributionIds.AppsFlyer,
             appsflyerID,
             appUserID,
-            application
+            application,
         )
     }
 
@@ -960,7 +935,7 @@ class Purchases internal constructor(
             SubscriberAttributeKey.AttributionIds.Facebook,
             fbAnonymousID,
             appUserID,
-            application
+            application,
         )
     }
 
@@ -976,7 +951,7 @@ class Purchases internal constructor(
             SubscriberAttributeKey.AttributionIds.Mparticle,
             mparticleID,
             appUserID,
-            application
+            application,
         )
     }
 
@@ -992,7 +967,7 @@ class Purchases internal constructor(
             SubscriberAttributeKey.AttributionIds.CleverTap,
             cleverTapID,
             appUserID,
-            application
+            application,
         )
     }
 
@@ -1009,7 +984,7 @@ class Purchases internal constructor(
         subscriberAttributesManager.setAttribute(
             SubscriberAttributeKey.CampaignParameters.MediaSource,
             mediaSource,
-            appUserID
+            appUserID,
         )
     }
 
@@ -1023,7 +998,7 @@ class Purchases internal constructor(
         subscriberAttributesManager.setAttribute(
             SubscriberAttributeKey.CampaignParameters.Campaign,
             campaign,
-            appUserID
+            appUserID,
         )
     }
 
@@ -1037,7 +1012,7 @@ class Purchases internal constructor(
         subscriberAttributesManager.setAttribute(
             SubscriberAttributeKey.CampaignParameters.AdGroup,
             adGroup,
-            appUserID
+            appUserID,
         )
     }
 
@@ -1051,7 +1026,7 @@ class Purchases internal constructor(
         subscriberAttributesManager.setAttribute(
             SubscriberAttributeKey.CampaignParameters.Ad,
             ad,
-            appUserID
+            appUserID,
         )
     }
 
@@ -1065,7 +1040,7 @@ class Purchases internal constructor(
         subscriberAttributesManager.setAttribute(
             SubscriberAttributeKey.CampaignParameters.Keyword,
             keyword,
-            appUserID
+            appUserID,
         )
     }
 
@@ -1079,7 +1054,7 @@ class Purchases internal constructor(
         subscriberAttributesManager.setAttribute(
             SubscriberAttributeKey.CampaignParameters.Creative,
             creative,
-            appUserID
+            appUserID,
         )
     }
 
@@ -1089,120 +1064,10 @@ class Purchases internal constructor(
 
     // region Private Methods
 
-    private fun fetchAndCacheOfferings(
-        appUserID: String,
-        appInBackground: Boolean,
-        completion: ReceiveOfferingsCallback? = null
-    ) {
-        deviceCache.setOfferingsCacheTimestampToNow()
-        backend.getOfferings(
-            appUserID,
-            appInBackground,
-            { offeringsJSON ->
-                try {
-                    val allRequestedProductIdentifiers = extractProductIdentifiers(offeringsJSON)
-                    if (allRequestedProductIdentifiers.isEmpty()) {
-                        handleErrorFetchingOfferings(
-                            PurchasesError(
-                                PurchasesErrorCode.ConfigurationError,
-                                OfferingStrings.CONFIGURATION_ERROR_NO_PRODUCTS_FOR_OFFERINGS
-                            ),
-                            completion
-                        )
-                    } else {
-                        getStoreProductsById(allRequestedProductIdentifiers, { productsById ->
-                            logMissingProducts(allRequestedProductIdentifiers, productsById)
-
-                            val offerings = offeringParser.createOfferings(offeringsJSON, productsById)
-                            if (offerings.all.isEmpty()) {
-                                handleErrorFetchingOfferings(
-                                    PurchasesError(
-                                        PurchasesErrorCode.ConfigurationError,
-                                        OfferingStrings.CONFIGURATION_ERROR_PRODUCTS_NOT_FOUND
-                                    ),
-                                    completion
-                                )
-                            } else {
-                                synchronized(this@Purchases) {
-                                    deviceCache.cacheOfferings(offerings)
-                                }
-                                dispatch {
-                                    completion?.onReceived(offerings)
-                                }
-                            }
-                        }, { error ->
-                            handleErrorFetchingOfferings(error, completion)
-                        })
-                    }
-                } catch (error: JSONException) {
-                    log(LogIntent.RC_ERROR, OfferingStrings.JSON_EXCEPTION_ERROR.format(error.localizedMessage))
-                    handleErrorFetchingOfferings(
-                        PurchasesError(
-                            PurchasesErrorCode.UnexpectedBackendResponseError,
-                            error.localizedMessage
-                        ),
-                        completion
-                    )
-                }
-            }, { error ->
-                handleErrorFetchingOfferings(error, completion)
-            })
-    }
-
-    private fun extractProductIdentifiers(offeringsJSON: JSONObject): Set<String> {
-        val jsonOfferingsArray = offeringsJSON.getJSONArray("offerings")
-        val productIds = mutableSetOf<String>()
-        for (i in 0 until jsonOfferingsArray.length()) {
-            val jsonPackagesArray =
-                jsonOfferingsArray.getJSONObject(i).getJSONArray("packages")
-            for (j in 0 until jsonPackagesArray.length()) {
-                jsonPackagesArray.getJSONObject(j)
-                    .optString("platform_product_identifier").takeIf { it.isNotBlank() }?.let {
-                        productIds.add(it)
-                    }
-            }
-        }
-        return productIds
-    }
-
-    private fun handleErrorFetchingOfferings(
-        error: PurchasesError,
-        completion: ReceiveOfferingsCallback?
-    ) {
-        val errorCausedByPurchases = setOf(
-            PurchasesErrorCode.ConfigurationError,
-            PurchasesErrorCode.UnexpectedBackendResponseError
-        )
-            .contains(error.code)
-
-        log(
-            if (errorCausedByPurchases) LogIntent.RC_ERROR else LogIntent.GOOGLE_ERROR,
-            OfferingStrings.FETCHING_OFFERINGS_ERROR.format(error)
-        )
-
-        deviceCache.clearOfferingsCacheTimestamp()
-        dispatch {
-            completion?.onError(error)
-        }
-    }
-
-    private fun logMissingProducts(
-        allProductIdsInOfferings: Set<String>,
-        storeProductByID: Map<String, List<StoreProduct>>
-    ) = allProductIdsInOfferings
-        .filterNot { storeProductByID.containsKey(it) }
-        .takeIf { it.isNotEmpty() }
-        ?.let { missingProducts ->
-            log(
-                LogIntent.GOOGLE_WARNING, OfferingStrings.CANNOT_FIND_PRODUCT_CONFIGURATION_ERROR
-                    .format(missingProducts.joinToString(", "))
-            )
-        }
-
     private fun getProductsOfTypes(
         productIds: Set<String>,
         types: Set<ProductType>,
-        callback: GetStoreProductsCallback
+        callback: GetStoreProductsCallback,
     ) {
         val validTypes = types.filter { it != ProductType.UNKNOWN }.toSet()
         getProductsOfTypes(productIds, validTypes, emptyList(), callback)
@@ -1212,7 +1077,7 @@ class Purchases internal constructor(
         productIds: Set<String>,
         types: Set<ProductType>,
         collectedStoreProducts: List<StoreProduct>,
-        callback: GetStoreProductsCallback
+        callback: GetStoreProductsCallback,
     ) {
         val typesRemaining = types.toMutableSet()
         val type = typesRemaining.firstOrNull()?.also { typesRemaining.remove(it) }
@@ -1227,14 +1092,16 @@ class Purchases internal constructor(
                             productIds,
                             typesRemaining,
                             collectedStoreProducts + storeProducts,
-                            callback
+                            callback,
                         )
                     }
-                }, {
+                },
+                {
                     dispatch {
                         callback.onError(it)
                     }
-                })
+                },
+            )
         } ?: run {
             callback.onReceived(collectedStoreProducts)
         }
@@ -1242,16 +1109,16 @@ class Purchases internal constructor(
 
     private fun updateAllCaches(
         appUserID: String,
-        completion: ReceiveCustomerInfoCallback? = null
+        completion: ReceiveCustomerInfoCallback? = null,
     ) {
         state.appInBackground.let { appInBackground ->
             customerInfoHelper.retrieveCustomerInfo(
                 appUserID,
                 CacheFetchPolicy.FETCH_CURRENT,
                 appInBackground,
-                completion
+                completion,
             )
-            fetchAndCacheOfferings(appUserID, appInBackground)
+            offeringsManager.fetchAndCacheOfferings(appUserID, appInBackground)
         }
     }
 
@@ -1260,7 +1127,7 @@ class Purchases internal constructor(
         allowSharingPlayStoreAccount: Boolean,
         appUserID: String,
         onSuccess: (SuccessfulPurchaseCallback)? = null,
-        onError: (ErrorPurchaseCallback)? = null
+        onError: (ErrorPurchaseCallback)? = null,
     ) {
         purchases.forEach { purchase ->
             if (purchase.purchaseState != PurchaseState.PENDING) {
@@ -1287,7 +1154,7 @@ class Purchases internal constructor(
                             isRestore = allowSharingPlayStoreAccount,
                             appUserID = appUserID,
                             onSuccess = onSuccess,
-                            onError = onError
+                            onError = onError,
                         )
                     },
                     onError = {
@@ -1297,51 +1164,17 @@ class Purchases internal constructor(
                             isRestore = allowSharingPlayStoreAccount,
                             appUserID = appUserID,
                             onSuccess = onSuccess,
-                            onError = onError
+                            onError = onError,
                         )
-                    }
+                    },
                 )
             } else {
                 onError?.invoke(
                     purchase,
-                    PurchasesError(PurchasesErrorCode.PaymentPendingError).also { errorLog(it) }
+                    PurchasesError(PurchasesErrorCode.PaymentPendingError).also { errorLog(it) },
                 )
             }
         }
-    }
-
-    private fun getStoreProductsById(
-        productIds: Set<String>,
-        onCompleted: (Map<String, List<StoreProduct>>) -> Unit,
-        onError: (PurchasesError) -> Unit
-    ) {
-        billing.queryProductDetailsAsync(
-            ProductType.SUBS,
-            productIds,
-            { subscriptionProducts ->
-                val productsById = subscriptionProducts
-                    .groupBy { subProduct -> subProduct.purchasingData.productId }
-                    .toMutableMap()
-                val subscriptionIds = productsById.keys
-
-                val inAppProductIds = productIds - subscriptionIds
-                if (inAppProductIds.isNotEmpty()) {
-                    billing.queryProductDetailsAsync(
-                        ProductType.INAPP,
-                        inAppProductIds,
-                        { inAppProducts ->
-                            productsById.putAll(inAppProducts.map { it.purchasingData.productId to listOf(it) })
-                            onCompleted(productsById)
-                        }, {
-                            onError(it)
-                        }
-                    )
-                } else {
-                    onCompleted(productsById)
-                }
-            }, {
-                onError(it)
-            })
     }
 
     private fun dispatch(action: () -> Unit) {
@@ -1356,7 +1189,7 @@ class Purchases internal constructor(
     private fun getPurchaseCallback(productId: String): PurchaseCallback? {
         return state.purchaseCallbacksByProductId[productId].also {
             state = state.copy(
-                purchaseCallbacksByProductId = state.purchaseCallbacksByProductId.filterNot { it.key == productId }
+                purchaseCallbacksByProductId = state.purchaseCallbacksByProductId.filterNot { it.key == productId },
             )
         }
     }
@@ -1385,35 +1218,12 @@ class Purchases internal constructor(
                     }
                 }
 
-                if (purchases.isEmpty()) {
-                    if (isDeprecatedProductChangeInProgress) {
-                        // Can happen if the product change is ProrationMode.DEFERRED
-                        invalidateCustomerInfoCache()
-                        getCustomerInfoWith { customerInfo ->
-                            deprecatedProductChangeListener?.let { callback ->
-                                dispatch {
-                                    callback.onCompleted(null, customerInfo)
-                                }
-                            }
-                        }
-                    } else {
-                        // the non-deprecated purchase(PurchaseParams, PurchaseCallback) flow doesn't allow for
-                        // DEFERRED, so this is an unexpected state. return an error
-                        val nullTransactionError = PurchasesError(
-                            PurchasesErrorCode.StoreProblemError,
-                            PurchaseStrings.NULL_TRANSACTION_ON_PURCHASE_ERROR
-                        )
-                        getAndClearAllPurchaseCallbacks().forEach { it.dispatch(nullTransactionError) }
-                    }
-                    return
-                }
-
                 postPurchases(
                     purchases,
                     allowSharingPlayStoreAccount,
                     appUserID,
                     onSuccess = callbackPair.first,
-                    onError = callbackPair.second
+                    onError = callbackPair.second,
                 )
             }
 
@@ -1451,7 +1261,7 @@ class Purchases internal constructor(
     }
 
     private fun getProductChangeCompletedCallbacks(
-        productChangeListener: ProductChangeCallback?
+        productChangeListener: ProductChangeCallback?,
     ): Pair<SuccessfulPurchaseCallback, ErrorPurchaseCallback> {
         val onSuccess: SuccessfulPurchaseCallback = { storeTransaction, info ->
             productChangeListener?.let { productChangeCallback ->
@@ -1470,7 +1280,7 @@ class Purchases internal constructor(
         dispatch {
             onError(
                 error,
-                error.code == PurchasesErrorCode.PurchaseCancelledError
+                error.code == PurchasesErrorCode.PurchaseCancelledError,
             )
         }
     }
@@ -1480,16 +1290,17 @@ class Purchases internal constructor(
         purchasingData: PurchasingData,
         presentedOfferingIdentifier: String?,
         isPersonalizedPrice: Boolean?,
-        listener: PurchaseCallback
+        listener: PurchaseCallback,
     ) {
         log(
-            LogIntent.PURCHASE, PurchaseStrings.PURCHASE_STARTED.format(
+            LogIntent.PURCHASE,
+            PurchaseStrings.PURCHASE_STARTED.format(
                 " $purchasingData ${
                     presentedOfferingIdentifier?.let {
                         PurchaseStrings.OFFERING + "$presentedOfferingIdentifier"
                     }
-                }"
-            )
+                }",
+            ),
         )
         var userPurchasing: String? = null // Avoids race condition for userid being modified before purchase is made
         synchronized(this@Purchases) {
@@ -1499,7 +1310,7 @@ class Purchases internal constructor(
             if (!state.purchaseCallbacksByProductId.containsKey(purchasingData.productId)) {
                 val mapOfProductIdToListener = mapOf(purchasingData.productId to listener)
                 state = state.copy(
-                    purchaseCallbacksByProductId = state.purchaseCallbacksByProductId + mapOfProductIdToListener
+                    purchaseCallbacksByProductId = state.purchaseCallbacksByProductId + mapOfProductIdToListener,
                 )
                 userPurchasing = identityManager.currentAppUserID
             }
@@ -1512,7 +1323,7 @@ class Purchases internal constructor(
                 purchasingData,
                 null,
                 presentedOfferingIdentifier,
-                isPersonalizedPrice
+                isPersonalizedPrice,
             )
         } ?: listener.dispatch(PurchasesError(PurchasesErrorCode.OperationAlreadyInProgressError).also { errorLog(it) })
     }
@@ -1524,25 +1335,28 @@ class Purchases internal constructor(
         oldProductId: String,
         googleReplacementMode: GoogleReplacementMode,
         isPersonalizedPrice: Boolean?,
-        purchaseCallback: PurchaseCallback
+        purchaseCallback: PurchaseCallback,
     ) {
         if (purchasingData.productType != ProductType.SUBS) {
-            purchaseCallback.dispatch(PurchasesError(
-                PurchasesErrorCode.PurchaseNotAllowedError,
-                PurchaseStrings.UPGRADING_INVALID_TYPE
-            ).also { errorLog(it) })
+            purchaseCallback.dispatch(
+                PurchasesError(
+                    PurchasesErrorCode.PurchaseNotAllowedError,
+                    PurchaseStrings.UPGRADING_INVALID_TYPE,
+                ).also { errorLog(it) },
+            )
             return
         }
 
         log(
-            LogIntent.PURCHASE, PurchaseStrings.PRODUCT_CHANGE_STARTED.format(
+            LogIntent.PURCHASE,
+            PurchaseStrings.PRODUCT_CHANGE_STARTED.format(
                 " $purchasingData ${
                     offeringIdentifier?.let {
                         PurchaseStrings.OFFERING + "$offeringIdentifier"
                     }
-                } oldProductId: $oldProductId googleReplacementMode $googleReplacementMode"
+                } oldProductId: $oldProductId googleReplacementMode $googleReplacementMode",
 
-            )
+            ),
         )
         var userPurchasing: String? = null // Avoids race condition for userid being modified before purchase is made
         synchronized(this@Purchases) {
@@ -1551,9 +1365,19 @@ class Purchases internal constructor(
             }
 
             if (!state.purchaseCallbacksByProductId.containsKey(purchasingData.productId)) {
-                val mapOfProductIdToListener = mapOf(purchasingData.productId to purchaseCallback)
+                // When using DEFERRED proration mode, callback needs to be associated with the *old* product we are
+                // switching from, because the transaction we receive on successful purchase is for the old product.
+                //
+                // TODO: This may need to change because of the new deferred behavior in BC6
+                val productId =
+                    if (googleReplacementMode == GoogleReplacementMode.DEFERRED) {
+                        oldProductId
+                    } else {
+                        purchasingData.productId
+                    }
+                val mapOfProductIdToListener = mapOf(productId to purchaseCallback)
                 state = state.copy(
-                    purchaseCallbacksByProductId = state.purchaseCallbacksByProductId + mapOfProductIdToListener
+                    purchaseCallbacksByProductId = state.purchaseCallbacksByProductId + mapOfProductIdToListener,
                 )
                 userPurchasing = identityManager.currentAppUserID
             }
@@ -1567,7 +1391,7 @@ class Purchases internal constructor(
                 appUserID,
                 offeringIdentifier,
                 isPersonalizedPrice,
-                purchaseCallback
+                purchaseCallback,
             )
         } ?: run {
             val operationInProgressError = PurchasesError(PurchasesErrorCode.OperationAlreadyInProgressError).also {
@@ -1583,25 +1407,28 @@ class Purchases internal constructor(
         offeringIdentifier: String?,
         oldProductId: String,
         googleReplacementMode: GoogleReplacementMode?,
-        listener: ProductChangeCallback
+        listener: ProductChangeCallback,
     ) {
         if (purchasingData.productType != ProductType.SUBS) {
             getAndClearProductChangeCallback()
-            listener.dispatch(PurchasesError(
-                PurchasesErrorCode.PurchaseNotAllowedError,
-                PurchaseStrings.UPGRADING_INVALID_TYPE
-            ).also { errorLog(it) })
+            listener.dispatch(
+                PurchasesError(
+                    PurchasesErrorCode.PurchaseNotAllowedError,
+                    PurchaseStrings.UPGRADING_INVALID_TYPE,
+                ).also { errorLog(it) },
+            )
             return
         }
 
         log(
-            LogIntent.PURCHASE, PurchaseStrings.PRODUCT_CHANGE_STARTED.format(
+            LogIntent.PURCHASE,
+            PurchaseStrings.PRODUCT_CHANGE_STARTED.format(
                 " $purchasingData ${
                     offeringIdentifier?.let {
                         PurchaseStrings.OFFERING + "$offeringIdentifier"
                     }
-                } oldProductId: $oldProductId googleReplacementMode $googleReplacementMode"
-            )
+                } oldProductId: $oldProductId googleReplacementMode $googleReplacementMode",
+            ),
         )
         var userPurchasing: String? = null // Avoids race condition for userid being modified before purchase is made
         synchronized(this@Purchases) {
@@ -1622,7 +1449,7 @@ class Purchases internal constructor(
                 appUserID,
                 offeringIdentifier,
                 null,
-                listener
+                listener,
             )
         } ?: run {
             getAndClearProductChangeCallback()
@@ -1638,12 +1465,12 @@ class Purchases internal constructor(
         appUserID: String,
         presentedOfferingIdentifier: String?,
         isPersonalizedPrice: Boolean?,
-        listener: PurchaseErrorCallback
+        listener: PurchaseErrorCallback,
     ) {
         if (purchasingData.productType != ProductType.SUBS) {
             val invalidProductChangeTypeError = PurchasesError(
                 PurchasesErrorCode.PurchaseNotAllowedError,
-                PurchaseStrings.UPGRADING_INVALID_TYPE
+                PurchaseStrings.UPGRADING_INVALID_TYPE,
             ).also { errorLog(it) }
             getAndClearProductChangeCallback()?.dispatch(invalidProductChangeTypeError)
             getAndClearAllPurchaseCallbacks().forEach { it.dispatch(invalidProductChangeTypeError) }
@@ -1663,7 +1490,7 @@ class Purchases internal constructor(
                     purchasingData,
                     ReplaceProductInfo(purchaseRecord, googleReplacementMode),
                     presentedOfferingIdentifier,
-                    isPersonalizedPrice
+                    isPersonalizedPrice,
                 )
             },
             onError = { error ->
@@ -1671,7 +1498,8 @@ class Purchases internal constructor(
                 getAndClearProductChangeCallback()
                 getAndClearAllPurchaseCallbacks()
                 listener.dispatch(error)
-            })
+            },
+        )
     }
 
     @JvmSynthetic
@@ -1690,19 +1518,20 @@ class Purchases internal constructor(
                             purchasesByHashedToken.forEach { (hash, purchase) ->
                                 log(
                                     LogIntent.DEBUG,
-                                    RestoreStrings.QUERYING_PURCHASE_WITH_HASH.format(purchase.type, hash)
+                                    RestoreStrings.QUERYING_PURCHASE_WITH_HASH.format(purchase.type, hash),
                                 )
                             }
                             deviceCache.cleanPreviouslySentTokens(purchasesByHashedToken.keys)
                             postPurchases(
                                 deviceCache.getActivePurchasesNotInCache(purchasesByHashedToken),
                                 allowSharingPlayStoreAccount,
-                                appUserID
+                                appUserID,
                             )
                         },
                         onError = { error ->
                             log(LogIntent.GOOGLE_ERROR, error.toString())
-                        })
+                        },
+                    )
                 }
             })
         } else {
@@ -1725,11 +1554,12 @@ class Purchases internal constructor(
      */
     @Deprecated(
         "Replaced with configuration in the RevenueCat dashboard",
-        ReplaceWith("configure through the RevenueCat dashboard")
+        ReplaceWith("configure through the RevenueCat dashboard"),
     )
     var allowSharingPlayStoreAccount: Boolean
         @Synchronized get() =
             state.allowSharingPlayStoreAccount ?: identityManager.currentUserIsAnonymous()
+
         @Synchronized set(value) {
             state = state.copy(allowSharingPlayStoreAccount = value)
         }
@@ -1741,11 +1571,11 @@ class Purchases internal constructor(
      */
     @Deprecated(
         "Replaced with getProducts() which returns both subscriptions and non-subscriptions",
-        ReplaceWith("getProducts()")
+        ReplaceWith("getProducts()"),
     )
     fun getSubscriptionSkus(
         productIds: List<String>,
-        callback: GetStoreProductsCallback
+        callback: GetStoreProductsCallback,
     ) {
         getProductsOfTypes(productIds.toSet(), setOf(ProductType.SUBS), callback)
     }
@@ -1757,11 +1587,11 @@ class Purchases internal constructor(
      */
     @Deprecated(
         "Replaced with getProducts() which returns both subscriptions and non-subscriptions",
-        ReplaceWith("getProducts()")
+        ReplaceWith("getProducts()"),
     )
     fun getNonSubscriptionSkus(
         productIds: List<String>,
-        callback: GetStoreProductsCallback
+        callback: GetStoreProductsCallback,
     ) {
         getProductsOfTypes(productIds.toSet(), setOf(ProductType.INAPP), callback)
     }
@@ -1778,7 +1608,7 @@ class Purchases internal constructor(
         @JvmStatic
         var platformInfo: PlatformInfo = PlatformInfo(
             flavor = "native",
-            version = null
+            version = null,
         )
 
         /**
@@ -1809,6 +1639,7 @@ class Purchases internal constructor(
         @JvmStatic
         var logHandler: LogHandler
             @Synchronized get() = currentLogHandler
+
             @Synchronized set(value) {
                 currentLogHandler = value
             }
@@ -1826,6 +1657,7 @@ class Purchases internal constructor(
             get() =
                 backingFieldSharedInstance
                     ?: throw UninitializedPropertyAccessException(ConfigureStrings.NO_SINGLETON_INSTANCE)
+
             @VisibleForTesting(otherwise = VisibleForTesting.NONE)
             internal set(value) {
                 backingFieldSharedInstance?.close()
@@ -1860,7 +1692,7 @@ class Purchases internal constructor(
          */
         @JvmStatic
         fun configure(
-            configuration: PurchasesConfiguration
+            configuration: PurchasesConfiguration,
         ): Purchases {
             if (isConfigured) {
                 infoLog(ConfigureStrings.INSTANCE_ALREADY_EXISTS)
@@ -1868,7 +1700,7 @@ class Purchases internal constructor(
             return PurchasesFactory().createPurchases(
                 configuration,
                 platformInfo,
-                proxyURL
+                proxyURL,
             ).also {
                 @SuppressLint("RestrictedApi")
                 sharedInstance = it
@@ -1892,7 +1724,7 @@ class Purchases internal constructor(
         fun canMakePayments(
             context: Context,
             features: List<BillingFeature> = listOf(),
-            callback: Callback<Boolean>
+            callback: Callback<Boolean>,
         ) {
             val currentStore = sharedInstance.appConfig.store
             if (currentStore != Store.PLAY_STORE) {
@@ -1944,7 +1776,8 @@ class Purchases internal constructor(
                                     }
                                 }
                             }
-                        })
+                        },
+                    )
                 }
         }
     }

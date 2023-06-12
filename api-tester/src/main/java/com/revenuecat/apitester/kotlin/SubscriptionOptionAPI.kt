@@ -10,5 +10,6 @@ private class SubscriptionOptionAPI {
         val tags: List<String> = subscriptionOption.tags
         val isBasePlan: Boolean = subscriptionOption.isBasePlan
         val presentedOfferingId: String? = subscriptionOption.presentedOfferingIdentifier
+        val isPrepaid: Boolean = subscriptionOption.isPrepaid
     }
 }

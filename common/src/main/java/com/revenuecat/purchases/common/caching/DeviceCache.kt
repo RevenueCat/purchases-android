@@ -7,7 +7,6 @@ package com.revenuecat.purchases.common.caching
 
 import android.content.SharedPreferences
 import com.revenuecat.purchases.CustomerInfo
-import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.CustomerInfoFactory
 import com.revenuecat.purchases.common.DateProvider
@@ -23,13 +22,8 @@ import com.revenuecat.purchases.strings.ReceiptStrings
 import org.json.JSONException
 import org.json.JSONObject
 import java.util.Date
-import kotlin.time.Duration
 import kotlin.time.Duration.Companion.hours
-import kotlin.time.Duration.Companion.milliseconds
-import kotlin.time.Duration.Companion.minutes
 
-private val CACHE_REFRESH_PERIOD_IN_FOREGROUND = 5.minutes
-private val CACHE_REFRESH_PERIOD_IN_BACKGROUND = 25.hours
 private val PRODUCT_ENTITLEMENT_MAPPING_CACHE_REFRESH_PERIOD = 25.hours
 private const val SHARED_PREFERENCES_PREFIX = "com.revenuecat.purchases."
 internal const val CUSTOMER_INFO_SCHEMA_VERSION = 3
@@ -37,8 +31,7 @@ internal const val CUSTOMER_INFO_SCHEMA_VERSION = 3
 open class DeviceCache(
     private val preferences: SharedPreferences,
     private val apiKey: String,
-    private val offeringsCachedObject: InMemoryCachedObject<Offerings> = InMemoryCachedObject(),
-    private val dateProvider: DateProvider = DefaultDateProvider()
+    private val dateProvider: DateProvider = DefaultDateProvider(),
 ) {
     companion object {
         private const val CUSTOMER_INFO_SCHEMA_VERSION_KEY = "schema_version"
@@ -47,7 +40,7 @@ open class DeviceCache(
     }
 
     private val apiKeyPrefix: String by lazy { "$SHARED_PREFERENCES_PREFIX$apiKey" }
-    val legacyAppUserIDCacheKey: String by lazy { "$apiKeyPrefix" }
+    val legacyAppUserIDCacheKey: String by lazy { apiKeyPrefix }
     val appUserIDCacheKey: String by lazy { "$apiKeyPrefix.new" }
     internal val attributionCacheKey = "$SHARED_PREFERENCES_PREFIX.attribution"
     val tokensCacheKey: String by lazy { "$apiKeyPrefix.tokens" }
@@ -62,6 +55,8 @@ open class DeviceCache(
     private val customerInfoCachesLastUpdatedCacheBaseKey: String by lazy {
         "$apiKeyPrefix.purchaserInfoLastUpdated"
     }
+
+    private val offeringsResponseCacheKey: String by lazy { "$apiKeyPrefix.offeringsResponse" }
 
     // region app user id
 
@@ -83,7 +78,6 @@ open class DeviceCache(
             .clearAppUserID()
             .clearCustomerInfoCacheTimestamp(appUserID)
             .apply()
-        clearOfferingsCache()
     }
 
     private fun SharedPreferences.Editor.clearCustomerInfo(): SharedPreferences.Editor {
@@ -151,7 +145,7 @@ open class DeviceCache(
         preferences.edit()
             .putString(
                 customerInfoCacheKey(appUserID),
-                jsonObject.toString()
+                jsonObject.toString(),
             ).apply()
 
         setCustomerInfoCacheTimestampToNow(appUserID)
@@ -159,7 +153,7 @@ open class DeviceCache(
 
     @Synchronized
     fun isCustomerInfoCacheStale(appUserID: String, appInBackground: Boolean) =
-        getCustomerInfoCachesLastUpdated(appUserID).isStale(appInBackground)
+        getCustomerInfoCachesLastUpdated(appUserID).isCacheStale(appInBackground, dateProvider)
 
     @Synchronized
     fun clearCustomerInfoCacheTimestamp(appUserID: String) {
@@ -185,7 +179,7 @@ open class DeviceCache(
     }
 
     @Synchronized
-    fun getCustomerInfoCachesLastUpdated(appUserID: String): Date? {
+    private fun getCustomerInfoCachesLastUpdated(appUserID: String): Date {
         return Date(preferences.getLong(customerInfoLastUpdatedCacheKey(appUserID), 0))
     }
 
@@ -240,11 +234,11 @@ open class DeviceCache(
      */
     @Synchronized
     fun cleanPreviouslySentTokens(
-        hashedTokens: Set<String>
+        hashedTokens: Set<String>,
     ) {
         log(LogIntent.DEBUG, ReceiptStrings.CLEANING_PREV_SENT_HASHED_TOKEN)
         setSavedTokenHashes(
-            hashedTokens.intersect(getPreviouslySentHashedTokens())
+            hashedTokens.intersect(getPreviouslySentHashedTokens()),
         )
     }
 
@@ -265,31 +259,25 @@ open class DeviceCache(
 
     // endregion
 
-    // region offerings
-
-    val cachedOfferings: Offerings?
-        get() = offeringsCachedObject.cachedInstance
+    // region offerings response
 
     @Synchronized
-    fun cacheOfferings(offerings: Offerings) {
-        offeringsCachedObject.cacheInstance(offerings)
+    fun getOfferingsResponseCache(): JSONObject? {
+        return getJSONObjectOrNull(offeringsResponseCacheKey)
     }
 
     @Synchronized
-    fun isOfferingsCacheStale(appInBackground: Boolean) = offeringsCachedObject.lastUpdatedAt.isStale(appInBackground)
-
-    @Synchronized
-    fun clearOfferingsCacheTimestamp() {
-        offeringsCachedObject.clearCacheTimestamp()
+    fun cacheOfferingsResponse(offeringsResponse: JSONObject) {
+        preferences.edit()
+            .putString(
+                offeringsResponseCacheKey,
+                offeringsResponse.toString(),
+            ).apply()
     }
 
     @Synchronized
-    fun setOfferingsCacheTimestampToNow() {
-        offeringsCachedObject.updateCacheTimestamp(dateProvider.now)
-    }
-
-    private fun clearOfferingsCache() {
-        offeringsCachedObject.clearCache()
+    fun clearOfferingsResponseCache() {
+        preferences.edit().remove(offeringsResponseCacheKey).apply()
     }
 
     // endregion
@@ -301,7 +289,7 @@ open class DeviceCache(
         preferences.edit()
             .putString(
                 productEntitlementMappingCacheKey,
-                productEntitlementMapping.toJson().toString()
+                productEntitlementMapping.toJson().toString(),
             ).apply()
 
         setProductEntitlementMappingCacheTimestampToNow()
@@ -318,7 +306,10 @@ open class DeviceCache(
 
     @Synchronized
     fun isProductEntitlementMappingCacheStale(): Boolean {
-        return getProductEntitlementMappingLastUpdated().isStale(PRODUCT_ENTITLEMENT_MAPPING_CACHE_REFRESH_PERIOD)
+        return getProductEntitlementMappingLastUpdated().isCacheStale(
+            PRODUCT_ENTITLEMENT_MAPPING_CACHE_REFRESH_PERIOD,
+            dateProvider,
+        )
     }
 
     @Synchronized
@@ -346,24 +337,6 @@ open class DeviceCache(
 
     // region utils
 
-    private fun Date?.isStale(appInBackground: Boolean): Boolean {
-        return this?.let {
-            log(LogIntent.DEBUG, ReceiptStrings.CHECKING_IF_CACHE_STALE.format(appInBackground))
-            val cacheDuration = when {
-                appInBackground -> CACHE_REFRESH_PERIOD_IN_BACKGROUND
-                else -> CACHE_REFRESH_PERIOD_IN_FOREGROUND
-            }
-
-            isStale(cacheDuration)
-        } ?: true
-    }
-
-    private fun Date?.isStale(cacheDuration: Duration): Boolean {
-        return this?.let { cacheLastUpdated ->
-            (dateProvider.now.time - cacheLastUpdated.time).milliseconds >= cacheDuration
-        } ?: true
-    }
-
     open fun getJSONObjectOrNull(key: String): JSONObject? {
         return preferences.getString(key, null)?.let { json ->
             try {
@@ -376,22 +349,22 @@ open class DeviceCache(
 
     open fun putString(
         cacheKey: String,
-        value: String
+        value: String,
     ) {
         preferences.edit().putString(
             cacheKey,
-            value
+            value,
         ).apply()
     }
 
     fun remove(
-        cacheKey: String
+        cacheKey: String,
     ) {
         preferences.edit().remove(cacheKey).apply()
     }
 
     fun findKeysThatStartWith(
-        cacheKey: String
+        cacheKey: String,
     ): Set<String> {
         return try {
             preferences.all
@@ -403,7 +376,7 @@ open class DeviceCache(
     }
 
     fun newKey(
-        key: String
+        key: String,
     ) = "$apiKeyPrefix.$key"
 
     // endregion

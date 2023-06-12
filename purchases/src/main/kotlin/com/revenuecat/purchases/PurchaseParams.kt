@@ -15,8 +15,10 @@ data class PurchaseParams(val builder: Builder) {
 
     @get:JvmSynthetic
     internal val purchasingData: PurchasingData
+
     @get:JvmSynthetic
     internal val activity: Activity
+
     @get:JvmSynthetic
     internal val presentedOfferingIdentifier: String?
 
@@ -42,13 +44,13 @@ data class PurchaseParams(val builder: Builder) {
     open class Builder private constructor(
         @get:JvmSynthetic internal val activity: Activity,
         @get:JvmSynthetic internal val purchasingData: PurchasingData,
-        @get:JvmSynthetic internal val presentedOfferingIdentifier: String? = null
+        @get:JvmSynthetic internal val presentedOfferingIdentifier: String? = null,
     ) {
         constructor(activity: Activity, packageToPurchase: Package) :
             this(
                 activity,
                 packageToPurchase.product.purchasingData,
-                packageToPurchase.offering
+                packageToPurchase.offering,
             )
 
         constructor(activity: Activity, storeProduct: StoreProduct) :
@@ -99,7 +101,7 @@ data class PurchaseParams(val builder: Builder) {
          */
         @Deprecated(
             "Use googleReplacementMode()",
-            ReplaceWith("googleReplacementMode()")
+            ReplaceWith("googleReplacementMode()"),
         )
         fun googleProrationMode(googleProrationMode: GoogleProrationMode) = apply {
             this.googleReplacementMode = googleProrationMode.asGoogleReplacementMode

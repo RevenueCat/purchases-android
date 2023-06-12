@@ -9,7 +9,7 @@ import com.revenuecat.purchases.strings.NetworkStrings
 import java.security.SecureRandom
 
 class SigningManager(
-    val signatureVerificationMode: SignatureVerificationMode
+    val signatureVerificationMode: SignatureVerificationMode,
 ) {
     private companion object {
         const val NONCE_BYTES_SIZE = 12
@@ -34,7 +34,7 @@ class SigningManager(
         nonce: String,
         body: String?,
         requestTime: String?,
-        eTag: String?
+        eTag: String?,
     ): VerificationResult {
         val signatureVerifier = signatureVerificationMode.verifier ?: return VerificationResult.NOT_REQUESTED
 

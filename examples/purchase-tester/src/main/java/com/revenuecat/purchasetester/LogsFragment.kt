@@ -1,11 +1,11 @@
 package com.revenuecat.purchasetester
 
 import android.os.Bundle
-import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.core.content.ContextCompat
+import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.ui.NavigationUI
 import androidx.recyclerview.widget.DiffUtil
@@ -21,7 +21,7 @@ class LogsFragment : Fragment() {
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
-        savedInstanceState: Bundle?
+        savedInstanceState: Bundle?,
     ): View {
         binding = FragmentLogsBinding.inflate(inflater)
 
@@ -36,7 +36,7 @@ class LogsFragment : Fragment() {
     }
 
     private class LogsAdapter(
-        private val logs: List<LogMessage>
+        private val logs: List<LogMessage>,
     ) : ListAdapter<LogMessage, ViewHolder>(DiffCallback()) {
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
             return ViewHolder(LogRowViewBinding.inflate(LayoutInflater.from(parent.context)))
@@ -46,7 +46,7 @@ class LogsFragment : Fragment() {
             val logMessage = logs[position]
             holder.binding.logMessageTextView.text = logMessage.message
             holder.binding.logMessageContainer.setBackgroundColor(
-                ContextCompat.getColor(holder.binding.root.context, logMessage.logLevel.colorResource)
+                ContextCompat.getColor(holder.binding.root.context, logMessage.logLevel.colorResource),
             )
         }
 

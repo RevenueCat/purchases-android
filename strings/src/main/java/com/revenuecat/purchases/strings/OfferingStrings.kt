@@ -30,4 +30,5 @@ object OfferingStrings {
         "with identifier %s. This could be due to Products not being configured correctly in " +
         "the RevenueCat dashboard or Play Store.\nTo configure products, follow the instructions in " +
         "https://rev.cat/how-to-configure-offerings.\nMore information: https://rev.cat/why-are-offerings-empty"
+    const val ERROR_FETCHING_OFFERINGS_USING_DISK_CACHE = "Error fetching offerings. Using disk cache."
 }

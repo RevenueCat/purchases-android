@@ -42,7 +42,7 @@ private class StoreTransactionAPI {
                 purchaseType,
                 marketplace,
                 subscriptionOptionId,
-                replacementMode
+                replacementMode,
             )
         }
     }
@@ -51,7 +51,7 @@ private class StoreTransactionAPI {
         when (type) {
             PurchaseType.GOOGLE_PURCHASE,
             PurchaseType.GOOGLE_RESTORED_PURCHASE,
-            PurchaseType.AMAZON_PURCHASE
+            PurchaseType.AMAZON_PURCHASE,
             -> {}
         }.exhaustive
     }

@@ -34,17 +34,24 @@ const val ONE_OFFERINGS_RESPONSE = "{'offerings': [" +
     "{'identifier': '\$rc_monthly','platform_product_identifier': '$STUB_PRODUCT_IDENTIFIER'," +
     "'platform_product_plan_identifier': 'p1m'}]}]," +
     "'current_offering_id': '$STUB_OFFERING_IDENTIFIER'}"
+const val ONE_OFFERINGS_INAPP_PRODUCT_RESPONSE = "{'offerings': [" +
+    "{'identifier': '$STUB_OFFERING_IDENTIFIER', " +
+    "'description': 'This is the base offering', " +
+    "'packages': [" +
+    "{'identifier': '\$rc_monthly','platform_product_identifier': '$STUB_PRODUCT_IDENTIFIER'}]}]," +
+    "'current_offering_id': '$STUB_OFFERING_IDENTIFIER'}"
 
 @SuppressWarnings("EmptyFunctionBlock")
 fun stubStoreProduct(
     productId: String,
     defaultOption: SubscriptionOption? = stubSubscriptionOption(
-        "monthly_base_plan", productId,
+        "monthly_base_plan",
+        productId,
         Period(1, Period.Unit.MONTH, "P1M"),
     ),
     subscriptionOptions: List<SubscriptionOption>? = defaultOption?.let { listOf(defaultOption) } ?: emptyList(),
     price: Price = subscriptionOptions?.first()?.fullPricePhase!!.price,
-    presentedOfferingId: String? = null
+    presentedOfferingId: String? = null,
 ): StoreProduct = object : StoreProduct {
     override val id: String
         get() = productId
@@ -61,15 +68,17 @@ fun stubStoreProduct(
     override val subscriptionOptions: SubscriptionOptions?
         get() {
             return subscriptionOptions?.let {
-                SubscriptionOptions(it.map { option ->
-                    stubSubscriptionOption(
-                        id = option.id,
-                        productId = productId,
-                        duration = option.billingPeriod!!,
-                        pricingPhases = option.pricingPhases,
-                        presentedOfferingId = presentedOfferingId
-                    )
-                })
+                SubscriptionOptions(
+                    it.map { option ->
+                        stubSubscriptionOption(
+                            id = option.id,
+                            productId = productId,
+                            duration = option.billingPeriod!!,
+                            pricingPhases = option.pricingPhases,
+                            presentedOfferingId = presentedOfferingId,
+                        )
+                    },
+                )
             }
         }
     override val defaultOption: SubscriptionOption?
@@ -80,13 +89,13 @@ fun stubStoreProduct(
                     productId = productId,
                     duration = it.billingPeriod!!,
                     pricingPhases = it.pricingPhases,
-                    presentedOfferingId = presentedOfferingId
+                    presentedOfferingId = presentedOfferingId,
                 )
             }
         }
     override val purchasingData: PurchasingData
         get() = StubPurchasingData(
-            productId = productId
+            productId = productId,
         )
     override val presentedOfferingIdentifier: String?
         get() = presentedOfferingId
@@ -100,7 +109,7 @@ fun stubStoreProduct(
                 productId,
                 period!!,
                 it.pricingPhases,
-                offeringId
+                offeringId,
             )
         }
 
@@ -110,7 +119,7 @@ fun stubStoreProduct(
                 productId,
                 period!!,
                 it.pricingPhases,
-                offeringId
+                offeringId,
             )
         }
         return stubStoreProduct(
@@ -118,7 +127,7 @@ fun stubStoreProduct(
             defaultOptionWithOfferingId,
             subscriptionOptionsWithOfferingIds,
             price,
-            offeringId
+            offeringId,
         )
     }
 }
@@ -126,7 +135,7 @@ fun stubStoreProduct(
 @SuppressWarnings("EmptyFunctionBlock")
 fun stubINAPPStoreProduct(
     productId: String,
-    presentedOfferingId: String? = null
+    presentedOfferingId: String? = null,
 ): StoreProduct = object : StoreProduct {
     override val id: String
         get() = productId
@@ -146,7 +155,7 @@ fun stubINAPPStoreProduct(
         get() = null
     override val purchasingData: PurchasingData
         get() = StubPurchasingData(
-            productId = productId
+            productId = productId,
         )
     override val presentedOfferingIdentifier: String?
         get() = presentedOfferingId
@@ -173,7 +182,7 @@ fun stubINAPPStoreProduct(
                 get() = stubSubscriptionOption(productId, productId)
             override val purchasingData: PurchasingData
                 get() = StubPurchasingData(
-                    productId = productId
+                    productId = productId,
                 )
             override val presentedOfferingIdentifier: String?
                 get() = offeringId
@@ -191,7 +200,7 @@ fun stubSubscriptionOption(
     productId: String,
     duration: Period = Period(1, Period.Unit.MONTH, "P1M"),
     pricingPhases: List<PricingPhase> = listOf(stubPricingPhase(billingPeriod = duration)),
-    presentedOfferingId: String? = null
+    presentedOfferingId: String? = null,
 ): SubscriptionOption = object : SubscriptionOption {
     override val id: String
         get() = id
@@ -203,7 +212,7 @@ fun stubSubscriptionOption(
         get() = presentedOfferingId
     override val purchasingData: PurchasingData
         get() = StubPurchasingData(
-            productId = productId
+            productId = productId,
         )
 }
 
@@ -215,7 +224,7 @@ fun stubFreeTrialPricingPhase(
     priceCurrencyCodeValue = priceCurrencyCodeValue,
     price = 0.0,
     recurrenceMode = ProductDetails.RecurrenceMode.FINITE_RECURRING,
-    billingCycleCount = 1
+    billingCycleCount = 1,
 )
 
 fun stubPricingPhase(
@@ -223,12 +232,16 @@ fun stubPricingPhase(
     priceCurrencyCodeValue: String = "USD",
     price: Double = 4.99,
     recurrenceMode: Int = ProductDetails.RecurrenceMode.INFINITE_RECURRING,
-    billingCycleCount: Int = 0
+    billingCycleCount: Int = 0,
 ): PricingPhase = PricingPhase(
     billingPeriod,
     recurrenceMode.toRecurrenceMode(),
     billingCycleCount,
-    Price(if (price == 0.0) "Free" else "${'$'}$price", price.times(MICROS_MULTIPLIER).toLong(), priceCurrencyCodeValue)
+    Price(
+        if (price == 0.0) "Free" else "${'$'}$price",
+        price.times(MICROS_MULTIPLIER).toLong(),
+        priceCurrencyCodeValue,
+    ),
 )
 
 fun stubOfferings(storeProduct: StoreProduct): Pair<StoreProduct, Offerings> {
@@ -236,16 +249,17 @@ fun stubOfferings(storeProduct: StoreProduct): Pair<StoreProduct, Offerings> {
         "\$rc_monthly",
         PackageType.MONTHLY,
         storeProduct,
-        STUB_OFFERING_IDENTIFIER
+        STUB_OFFERING_IDENTIFIER,
     )
     val offering = Offering(
         STUB_OFFERING_IDENTIFIER,
         "This is the base offering",
-        listOf(packageObject)
+        emptyMap(),
+        listOf(packageObject),
     )
     val offerings = Offerings(
         offering,
-        mapOf(offering.identifier to offering)
+        mapOf(offering.identifier to offering),
     )
     return Pair(storeProduct, offerings)
 }
@@ -255,16 +269,17 @@ fun stubOTPOffering(inAppProduct: StoreProduct): Pair<StoreProduct, Offerings> {
         "${inAppProduct.id} package",
         PackageType.CUSTOM,
         inAppProduct,
-        STUB_OFFERING_IDENTIFIER
+        STUB_OFFERING_IDENTIFIER,
     )
     val offering = Offering(
         STUB_OFFERING_IDENTIFIER,
         "This is the base offering",
-        listOf(packageObject)
+        emptyMap(),
+        listOf(packageObject),
     )
     val offerings = Offerings(
         offering,
-        mapOf(offering.identifier to offering)
+        mapOf(offering.identifier to offering),
     )
     return Pair(inAppProduct, offerings)
 }
@@ -281,12 +296,12 @@ fun getLifetimePackageJSON() =
                     'identifier': '${PackageType.LIFETIME.identifier}',
                     'platform_product_identifier': 'com.myproduct.lifetime'
                 }
-            """.trimIndent()
+        """.trimIndent(),
     )
 
 fun getAmazonPackageJSON(
     packageIdentifier: String = "com.myproduct",
-    productIdentifier: String = "com.myproduct.monthly"
+    productIdentifier: String = "com.myproduct.monthly",
 ) =
     JSONObject(
         """
@@ -294,5 +309,5 @@ fun getAmazonPackageJSON(
                     'identifier': '$packageIdentifier',
                     'platform_product_identifier': '$productIdentifier'
                 }
-            """.trimIndent()
+        """.trimIndent(),
     )

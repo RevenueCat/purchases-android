@@ -1,9 +1,9 @@
-## v5 API changes
+# V5 API Migration Guide
 
 There were various updates to our API in this release, in order to best support the Amazon Appstore and to maintain parity 
-with our iOS SDK, which recently [migrated from ObjC to Swift](https://github.com/RevenueCat/purchases-ios/blob/main/docs/V4_API_Updates.md).
+with our iOS SDK, which recently [migrated from ObjC to Swift](https://revenuecat.github.io/purchases-ios-docs/v4_api_migration_guide.html).
 
-### Type Changes
+## Type Changes
 - `PurchaserInfo` has been deprecated and renamed to `CustomerInfo`. This rename also affects to all functions that had
   `PurchaserInfo` in their name, like `getPurchaserInfo` which has been renamed to `getCustomerInfo`.
 - `ReceiveOfferingsListener` and `PurchasesErrorListener` have been renamed to `ReceiveOfferingsCallback` and `PurchasesErrorCallback`
@@ -17,7 +17,7 @@ with our iOS SDK, which recently [migrated from ObjC to Swift](https://github.co
 | `ReceiveOfferingsListener` | `ReceiveOfferingsCallback` |
 | `PurchasesErrorListener` | `PurchasesErrorCallback` |
 
-### Deprecated + New APIs
+## Deprecated + New APIs
 
 - The `configure` function has been changed to accept a `PurchasesConfiguration.Builder`. The previous function is deprecated. The new function can be used like this:
 
@@ -57,7 +57,7 @@ Purchases.configure(AmazonConfiguration.Builder(this, "public_amazon_sdk_key").b
 | `getSubscriptionSkus(List<String>, GetSkusResponseListener)` | `getSubscriptionSkus(List<String>, GetStoreProductsCallback)` |
 | `getNonSubscriptionSkus(List<String>, GetSkusResponseListener)` | `getNonSubscriptionSkus(List<String>, GetStoreProductsCallback)` |
 
-### Kotlin Helpers Changes
+## Kotlin Helpers Changes
 
 | Old signature | New signature |
 |---------------|---------------|
@@ -67,7 +67,7 @@ Purchases.configure(AmazonConfiguration.Builder(this, "public_amazon_sdk_key").b
 | `purchaseProductWith(Activity, SkuDetails, (PurchasesError) -> Unit, (Purchase, PurchaserInfo) -> Unit)` | `purchaseProductWith(Activity, StoreProduct, (PurchasesError) -> Unit, (StoreTransaction, CustomerInfo) -> Unit)` |
 | `purchaseProductWith(Activity, SkuDetails, UpgradeInfo, (PurchasesError) -> Unit, (Purchase, PurchaserInfo) -> Unit)` | `purchaseProductWith(Activity, StoreProduct, UpgradeInfo, (PurchasesError) -> Unit, (StoreTransaction, CustomerInfo) -> Unit)` |
 
-### Removed APIs
+## Removed APIs
 - Some deprecated functions have been removed: `identify`, `reset`, `createAlias`, `isBillingSupported`, `isFeatureSupported`, `addAttributionData` and the versions of `purchaseProduct`/`purchasePackage` accepting `UpgradeInfo` and `MakePurchaseListener`
 
 | Removed APIs |  
@@ -86,11 +86,11 @@ Purchases.configure(AmazonConfiguration.Builder(this, "public_amazon_sdk_key").b
 | `addAttributionData(Map<String, Any?>, AttributionNetwork, String?)` |
 | `AttributionNetwork` |
 
-### Other changes:
+## Other changes:
 
 - Our library now requires Java 8
 - Amazon support (see [the section in our docs for more information](https://docs.revenuecat.com/docs/amazon-platform-resources))
 
-### Reporting undocumented issues:
+## Reporting undocumented issues:
 
 Feel free to file an issue! [New RevenueCat Issue](https://github.com/RevenueCat/purchases-android/issues/new/).

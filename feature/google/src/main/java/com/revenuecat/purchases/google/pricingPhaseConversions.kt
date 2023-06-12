@@ -11,6 +11,6 @@ fun ProductDetails.PricingPhase.toRevenueCatPricingPhase(): PricingPhase {
         Period.create(billingPeriod),
         recurrenceMode.toRecurrenceMode(),
         billingCycleCount,
-        Price(formattedPrice, priceAmountMicros, priceCurrencyCode)
+        Price(formattedPrice, priceAmountMicros, priceCurrencyCode),
     )
 }

@@ -18,6 +18,7 @@ final class SubscriptionOptionAPI {
         String presentedOfferingId = subscriptionOption.getPresentedOfferingIdentifier();
         PurchasingData purchasingData = subscriptionOption.getPurchasingData();
         String id = subscriptionOption.getId();
+        Boolean isPrepaid = subscriptionOption.isPrepaid();
     }
 
     static void checkGoogleSubscriptionOption(GoogleSubscriptionOption googleSubscriptionOption) {

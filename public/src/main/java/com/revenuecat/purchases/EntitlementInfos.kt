@@ -13,11 +13,11 @@ import kotlinx.parcelize.Parcelize
 @Parcelize
 class EntitlementInfos internal constructor(
     val all: Map<String, EntitlementInfo>,
-    internal val verification: VerificationResult
+    internal val verification: VerificationResult,
 ) : Parcelable {
 
     constructor(
-        all: Map<String, EntitlementInfo>
+        all: Map<String, EntitlementInfo>,
     ) : this(all, VerificationResult.NOT_REQUESTED)
 
     /**

@@ -9,6 +9,7 @@ import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.infoLog
 import com.revenuecat.purchases.common.log
+import com.revenuecat.purchases.common.offerings.OfferingsCache
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
 import com.revenuecat.purchases.strings.IdentityStrings
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
@@ -20,8 +21,9 @@ class IdentityManager(
     private val deviceCache: DeviceCache,
     private val subscriberAttributesCache: SubscriberAttributesCache,
     private val subscriberAttributesManager: SubscriberAttributesManager,
+    private val offeringsCache: OfferingsCache,
     private val backend: Backend,
-    private val offlineEntitlementsManager: OfflineEntitlementsManager
+    private val offlineEntitlementsManager: OfflineEntitlementsManager,
 ) {
 
     val currentAppUserID: String
@@ -50,13 +52,15 @@ class IdentityManager(
     fun logIn(
         newAppUserID: String,
         onSuccess: (CustomerInfo, Boolean) -> Unit,
-        onError: (PurchasesError) -> Unit
+        onError: (PurchasesError) -> Unit,
     ) {
         if (newAppUserID.isBlank()) {
-            onError(PurchasesError(
-                PurchasesErrorCode.InvalidAppUserIdError,
-                IdentityStrings.LOG_IN_ERROR_MISSING_APP_USER_ID
-            ).also { errorLog(it) })
+            onError(
+                PurchasesError(
+                    PurchasesErrorCode.InvalidAppUserIdError,
+                    IdentityStrings.LOG_IN_ERROR_MISSING_APP_USER_ID,
+                ).also { errorLog(it) },
+            )
             return
         }
 
@@ -70,9 +74,10 @@ class IdentityManager(
                     synchronized(this@IdentityManager) {
                         log(
                             LogIntent.USER,
-                            IdentityStrings.LOG_IN_SUCCESSFUL.format(newAppUserID, created)
+                            IdentityStrings.LOG_IN_SUCCESSFUL.format(newAppUserID, created),
                         )
                         deviceCache.clearCachesForAppUserID(oldAppUserID)
+                        offeringsCache.clearCache()
                         subscriberAttributesCache.clearSubscriberAttributesIfSyncedForSubscriber(oldAppUserID)
 
                         deviceCache.cacheAppUserID(newAppUserID)
@@ -82,7 +87,7 @@ class IdentityManager(
                     }
                     onSuccess(customerInfo, created)
                 },
-                onError
+                onError,
             )
         }
     }
@@ -90,6 +95,7 @@ class IdentityManager(
     @Synchronized
     private fun reset() {
         deviceCache.clearCachesForAppUserID(currentAppUserID)
+        offeringsCache.clearCache()
         subscriberAttributesCache.clearSubscriberAttributesIfSyncedForSubscriber(currentAppUserID)
         offlineEntitlementsManager.resetOfflineCustomerInfoCache()
         deviceCache.cacheAppUserID(generateRandomID())

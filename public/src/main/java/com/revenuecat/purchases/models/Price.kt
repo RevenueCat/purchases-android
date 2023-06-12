@@ -26,5 +26,5 @@ data class Price(
      *
      * If currency code cannot be determined, currency symbol is returned.
      */
-    val currencyCode: String
+    val currencyCode: String,
 ) : Parcelable

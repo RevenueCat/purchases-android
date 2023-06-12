@@ -14,6 +14,7 @@ import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesConfiguration
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.Store
+import com.revenuecat.purchases.awaitCustomerInfo
 import com.revenuecat.purchases.getCustomerInfoWith
 import com.revenuecat.purchases.getOfferingsWith
 import com.revenuecat.purchases.getProductsWith
@@ -22,6 +23,7 @@ import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback
+import com.revenuecat.purchases.interfaces.SyncPurchasesCallback
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import com.revenuecat.purchases.logInWith
 import com.revenuecat.purchases.logOutWith
@@ -33,6 +35,7 @@ import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.purchaseWith
 import com.revenuecat.purchases.restorePurchasesWith
+import com.revenuecat.purchases.syncPurchasesWith
 import java.net.URL
 import java.util.concurrent.ExecutorService
 
@@ -40,7 +43,7 @@ import java.util.concurrent.ExecutorService
 private class PurchasesAPI {
     @SuppressWarnings("LongParameterList")
     fun check(
-        purchases: Purchases
+        purchases: Purchases,
     ) {
         val productIds = ArrayList<String>()
         val receiveOfferingsCallback = object : ReceiveOfferingsCallback {
@@ -59,7 +62,13 @@ private class PurchasesAPI {
             override fun onReceived(customerInfo: CustomerInfo, created: Boolean) {}
             override fun onError(error: PurchasesError) {}
         }
+        val syncPurchasesCallback = object : SyncPurchasesCallback {
+            override fun onSuccess(customerInfo: CustomerInfo) {}
+            override fun onError(error: PurchasesError) {}
+        }
+
         purchases.syncPurchases()
+        purchases.syncPurchases(syncPurchasesCallback)
         purchases.getOfferings(receiveOfferingsCallback)
 
         purchases.getProducts(productIds, productsResponseCallback)
@@ -96,7 +105,7 @@ private class PurchasesAPI {
         activity: Activity,
         storeProduct: StoreProduct,
         packageToPurchase: Package,
-        subscriptionOption: SubscriptionOption
+        subscriptionOption: SubscriptionOption,
     ) {
         val purchaseCallback = object : PurchaseCallback {
             override fun onCompleted(storeTransaction: StoreTransaction, customerInfo: CustomerInfo) {}
@@ -136,52 +145,66 @@ private class PurchasesAPI {
     @Suppress("RedundantLambdaArrow", "LongMethod", "LongParameterList")
     fun checkListenerConversions(
         purchases: Purchases,
-        purchaseParams: PurchaseParams
+        purchaseParams: PurchaseParams,
     ) {
         purchases.getOfferingsWith(
             onError = { _: PurchasesError -> },
-            onSuccess = { _: Offerings -> }
+            onSuccess = { _: Offerings -> },
         )
         purchases.getProductsWith(
             listOf(""),
             onError = { _: PurchasesError -> },
-            onGetStoreProducts = { _: List<StoreProduct> -> }
+            onGetStoreProducts = { _: List<StoreProduct> -> },
         )
         purchases.getProductsWith(
             listOf(""),
             ProductType.SUBS,
             onError = { _: PurchasesError -> },
-            onGetStoreProducts = { _: List<StoreProduct> -> }
+            onGetStoreProducts = { _: List<StoreProduct> -> },
         )
         purchases.restorePurchasesWith(
             onError = { _: PurchasesError -> },
-            onSuccess = { _: CustomerInfo -> }
+            onSuccess = { _: CustomerInfo -> },
+        )
+        purchases.syncPurchasesWith(
+            onError = { _: PurchasesError -> },
+            onSuccess = { _: CustomerInfo -> },
+        )
+        purchases.syncPurchasesWith(
+            onSuccess = { _: CustomerInfo -> },
         )
         purchases.logInWith(
             "",
             onError = { _: PurchasesError -> },
-            onSuccess = { _: CustomerInfo, _: Boolean -> }
+            onSuccess = { _: CustomerInfo, _: Boolean -> },
         )
         purchases.logOutWith(
             onError = { _: PurchasesError -> },
-            onSuccess = { _: CustomerInfo -> }
+            onSuccess = { _: CustomerInfo -> },
         )
         purchases.getCustomerInfoWith(
             onError = { _: PurchasesError -> },
-            onSuccess = { _: CustomerInfo -> }
+            onSuccess = { _: CustomerInfo -> },
         )
         purchases.getCustomerInfoWith(
             fetchPolicy = CacheFetchPolicy.CACHED_OR_FETCHED,
             onError = { _: PurchasesError -> },
-            onSuccess = { _: CustomerInfo -> }
+            onSuccess = { _: CustomerInfo -> },
         )
         purchases.purchaseWith(
             purchaseParams,
             onError = { _: PurchasesError, _: Boolean -> },
-            onSuccess = { _: StoreTransaction?, _: CustomerInfo -> }
+            onSuccess = { _: StoreTransaction?, _: CustomerInfo -> },
         )
         purchases.purchaseWith(
-            purchaseParams) { _: StoreTransaction?, _: CustomerInfo -> }
+            purchaseParams,
+        ) { _: StoreTransaction?, _: CustomerInfo -> }
+    }
+
+    suspend fun checkCoroutines(
+        purchases: Purchases,
+    ) {
+        val customerInfo: CustomerInfo = purchases.awaitCustomerInfo()
     }
 
     fun check(purchases: Purchases, attributes: Map<String, String>) {
@@ -256,7 +279,7 @@ private class PurchasesAPI {
             LogLevel.DEBUG,
             LogLevel.INFO,
             LogLevel.WARN,
-            LogLevel.ERROR
+            LogLevel.ERROR,
             -> {}
         }.exhaustive
     }
