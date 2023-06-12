@@ -41,17 +41,17 @@ dependencies {
     implementation project(path: ':purchases')
 
     implementation libs.kotlin.stdlib
-    implementation libs.androidx.appcompat
-    implementation libs.androidx.constraintlayout
     implementation libs.androidx.core
-    implementation libs.androidx.multidex
+    implementation libs.androidx.appcompat
     implementation libs.material
+    implementation libs.androidx.constraintlayout
+    implementation libs.androidx.multidex
 
     androidTestImplementation project(path: ':purchases')
     androidTestImplementation libs.androidx.test.espresso.core
-    androidTestImplementation libs.androidx.test.junit
-    androidTestImplementation libs.androidx.test.rules
     androidTestImplementation libs.androidx.test.runner
+    androidTestImplementation libs.androidx.test.rules
+    androidTestImplementation libs.androidx.test.junit
 }
 
 def obtainTestBuildType() {

@@ -2,7 +2,6 @@ plugins {
     alias libs.plugins.android.library
     alias libs.plugins.kotlin.android
     alias libs.plugins.kotlin.parcelize
-    alias libs.plugins.kover
     alias libs.plugins.mavenPublish
 }
 
@@ -23,19 +22,19 @@ dependencies {
     implementation project(":strings")
     implementation project(":utils")
 
-    implementation libs.amazon.appstore.sdk
-    implementation libs.androidx.annotation
     implementation libs.kotlin.stdlib
+    implementation libs.androidx.annotation
+    implementation libs.amazon.appstore.sdk
 
     testImplementation project(":test-utils")
     testImplementation libs.amazon.appstore.sdk
     testImplementation libs.androidx.test.core
-    testImplementation libs.androidx.test.junit
-    testImplementation libs.androidx.test.rules
     testImplementation libs.androidx.test.runner
-    testImplementation libs.assertJ
-    testImplementation libs.mockk
+    testImplementation libs.androidx.test.rules
+    testImplementation libs.androidx.test.junit
     testImplementation libs.robolectric
+    testImplementation libs.mockk
+    testImplementation libs.assertJ
 }
 
 // Not running with this flag causes verification issues due to the way the Amazon jar is compiled

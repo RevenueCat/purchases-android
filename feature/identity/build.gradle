@@ -1,7 +1,6 @@
 plugins {
     alias libs.plugins.android.library
     alias libs.plugins.kotlin.android
-    alias libs.plugins.kover
     alias libs.plugins.mavenPublish
 }
 
@@ -19,14 +18,14 @@ dependencies {
     implementation project(":strings")
     implementation project(":feature:subscriber-attributes")
 
-    implementation libs.androidx.core
     implementation libs.kotlin.stdlib
+    implementation libs.androidx.core
 
     testImplementation libs.androidx.test.core
-    testImplementation libs.androidx.test.junit
-    testImplementation libs.androidx.test.rules
     testImplementation libs.androidx.test.runner
-    testImplementation libs.assertJ
-    testImplementation libs.mockk
+    testImplementation libs.androidx.test.rules
+    testImplementation libs.androidx.test.junit
     testImplementation libs.robolectric
+    testImplementation libs.mockk
+    testImplementation libs.assertJ
 }

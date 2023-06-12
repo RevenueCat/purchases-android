@@ -52,15 +52,15 @@ android {
 }
 
 dependencies {
-    implementation libs.androidx.appcompat
-    implementation libs.androidx.constraintlayout
+    implementation libs.revenuecat
+    implementation libs.revenuecat.amazon
+    implementation libs.kotlin.stdlib
     implementation libs.androidx.core
+    implementation libs.androidx.appcompat
+    implementation libs.material
+    implementation libs.androidx.constraintlayout
     implementation libs.androidx.lifecycle.livedata
     implementation libs.androidx.lifecycle.viewmodel
     implementation libs.androidx.navigation.fragment
     implementation libs.androidx.navigation.ui
-    implementation libs.kotlin.stdlib
-    implementation libs.material
-    implementation libs.revenuecat
-    implementation libs.revenuecat.amazon
 }

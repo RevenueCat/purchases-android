@@ -1,10 +1,9 @@
 plugins {
     alias libs.plugins.android.library
-    alias libs.plugins.dokka
     alias libs.plugins.kotlin.android
-    alias libs.plugins.kotlin.kapt
-    alias libs.plugins.kover
     alias libs.plugins.mavenPublish
+    alias libs.plugins.kotlin.kapt
+    alias libs.plugins.dokka
 }
 
 apply from: "$rootProject.projectDir/library.gradle"
@@ -54,12 +53,12 @@ dependencies {
     implementation project(":strings")
     api project(":public")
 
+    implementation libs.kotlin.stdlib
     implementation libs.androidx.annotation
+    api libs.billing
+    implementation libs.androidx.lifecycle.runtime
     implementation libs.androidx.lifecycle.common
     implementation libs.androidx.lifecycle.process
-    implementation libs.androidx.lifecycle.runtime
-    api libs.billing
-    implementation libs.kotlin.stdlib
 
     testImplementation project(":test-utils")
     testImplementation libs.androidx.test.core
@@ -70,19 +69,19 @@ dependencies {
     testImplementation libs.mockk
     testImplementation libs.assertJ
     testImplementation libs.billing
-    testImplementation libs.coroutines
+    testImplementation libs.coroutines.test
 
     integrationTestImplementation libs.androidx.appcompat
-    integrationTestImplementation libs.androidx.constraintlayout
     integrationTestImplementation libs.material
+    integrationTestImplementation libs.androidx.constraintlayout
 
     androidTestIntegrationTestImplementation libs.androidx.test.espresso.core
-    androidTestIntegrationTestImplementation libs.androidx.test.junit
-    androidTestIntegrationTestImplementation libs.androidx.test.rules
     androidTestIntegrationTestImplementation libs.androidx.test.runner
+    androidTestIntegrationTestImplementation libs.androidx.test.rules
+    androidTestIntegrationTestImplementation libs.androidx.test.junit
     androidTestIntegrationTestImplementation libs.assertJ
-    androidTestIntegrationTestImplementation libs.mockk.agent
     androidTestIntegrationTestImplementation libs.mockk.android
+    androidTestIntegrationTestImplementation libs.mockk.agent
 }
 
 tasks.dokkaHtmlPartial.configure {

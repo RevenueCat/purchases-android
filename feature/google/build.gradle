@@ -1,7 +1,6 @@
 plugins {
     alias libs.plugins.android.library
     alias libs.plugins.kotlin.android
-    alias libs.plugins.kover
     alias libs.plugins.mavenPublish
 }
 
@@ -18,18 +17,18 @@ dependencies {
     implementation project(":strings")
     implementation project(":utils")
 
-    implementation libs.androidx.core
-    implementation libs.billing
-    implementation libs.kotlin.stdlib
     implementation libs.playServices.ads.identifier
+    implementation libs.androidx.core
+    implementation libs.kotlin.stdlib
+    implementation libs.billing
 
     testImplementation project(":test-utils")
     testImplementation libs.androidx.test.core
-    testImplementation libs.androidx.test.junit
-    testImplementation libs.androidx.test.rules
     testImplementation libs.androidx.test.runner
-    testImplementation libs.assertJ
-    testImplementation libs.mockk
+    testImplementation libs.androidx.test.rules
+    testImplementation libs.androidx.test.junit
     testImplementation libs.robolectric
+    testImplementation libs.mockk
+    testImplementation libs.assertJ
     testImplementation libs.playServices.ads.identifier
 }

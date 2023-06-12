@@ -4,16 +4,20 @@ buildscript {
 }
 
 plugins {
+    alias libs.plugins.mavenPublish apply false
     alias libs.plugins.android.application apply false
     alias libs.plugins.android.library apply false
-    alias libs.plugins.androidx.navigation.safeargs apply false
-    alias libs.plugins.dependencyGraph
-    alias libs.plugins.detekt
-    alias libs.plugins.dokka
     alias libs.plugins.kotlin.android apply false
+    alias libs.plugins.dokka
+    alias libs.plugins.kover apply false
+    alias libs.plugins.detekt
+    alias libs.plugins.dependencyGraph
+    //    TODO: is this needed?
+    alias libs.plugins.androidx.navigation.safeargs apply false
+    //    TODO: is this needed?
     alias libs.plugins.kotlin.kapt apply false
+    //    TODO: is this needed?
     alias libs.plugins.kotlin.parcelize apply false
-    alias libs.plugins.mavenPublish apply false
 }
 
 dependencies {
