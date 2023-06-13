@@ -21,8 +21,15 @@ class GoogleOfferingParser : OfferingParser() {
                 ?.takeIf { it[0].type == ProductType.INAPP }
                 ?.firstOrNull()
         }
-        return storeProducts?.firstOrNull { storeProduct ->
+
+        val subOnBC5 = storeProducts?.firstOrNull { storeProduct ->
             storeProduct.subscriptionOptions?.basePlan?.id == planIdentifier
+        }
+
+        if (subOnBC5 == null) {
+            return null
+        } else {
+            return subOnBC5
         }
     }
 }

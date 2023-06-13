@@ -67,6 +67,7 @@ abstract class OfferingParser {
         offeringIdentifier: String,
     ): Package? {
         val packageIdentifier = packageJson.getString("identifier")
+        // JOSH LOOK HERE
         val product = findMatchingProduct(productsById, packageJson)
 
         val packageType = packageIdentifier.toPackageType()

@@ -797,7 +797,7 @@ class BillingWrapper(
         nonEmptyProductIds: Set<String>,
         listener: (result: BillingResult, products: List<GoogleProductData>) -> Unit,
     ) {
-        val canUseProductDetails = true
+        val canUseProductDetails = false
 
         var hasResponded = false
         val requestStartTime = dateProvider.now
@@ -948,22 +948,22 @@ class BillingWrapper(
         appUserID: String,
         isPersonalizedPrice: Boolean?,
     ): Result<BillingFlowParams, PurchasesError> {
-        val productDetailsParamsList = BillingFlowParams.ProductDetailsParams.newBuilder().apply {
-            val productData = purchaseInfo.productData
-            when (productData) {
-                is GoogleProductData.Product -> {
-                    setProductDetails(productData.data)
-                }
-                is GoogleProductData.Sku -> {
-                    // TODO: JOSH HERE
-                }
-            }
-
-        }.build()
-
+        val productData = purchaseInfo.productData
         return Result.Success(
             BillingFlowParams.newBuilder()
-                .setProductDetailsParamsList(listOf(productDetailsParamsList))
+                .apply {
+                    when (productData) {
+                        is GoogleProductData.Product -> {
+                            val productDetailsParamsList = BillingFlowParams.ProductDetailsParams.newBuilder().apply {
+                                setProductDetails(productData.data)
+                            }.build()
+                            this.setProductDetailsParamsList(listOf(productDetailsParamsList))
+                        }
+                        is GoogleProductData.Sku -> {
+                            this.setSkuDetails(productData.data)
+                        }
+                    }
+                }
                 .setObfuscatedAccountId(appUserID.sha256())
                 .apply {
                     isPersonalizedPrice?.let {
@@ -980,22 +980,24 @@ class BillingWrapper(
         appUserID: String,
         isPersonalizedPrice: Boolean?,
     ): Result<BillingFlowParams, PurchasesError> {
-        val productDetailsParamsList = BillingFlowParams.ProductDetailsParams.newBuilder().apply {
-            setOfferToken(purchaseInfo.token)
-            val productData = purchaseInfo.productData
-            when (productData) {
-                is GoogleProductData.Product -> {
-                    setProductDetails(productData.data)
-                }
-                is GoogleProductData.Sku -> {
-                    // TODO: JOSH HERE
-                }
-            }
-        }.build()
+        val productData = purchaseInfo.productData
 
         return Result.Success(
             BillingFlowParams.newBuilder()
-                .setProductDetailsParamsList(listOf(productDetailsParamsList))
+                .apply {
+                    when (productData) {
+                        is GoogleProductData.Product -> {
+                            val productDetailsParamsList = BillingFlowParams.ProductDetailsParams.newBuilder().apply {
+                                setOfferToken(purchaseInfo.token)
+                                setProductDetails(productData.data)
+                            }.build()
+                            this.setProductDetailsParamsList(listOf(productDetailsParamsList))
+                        }
+                        is GoogleProductData.Sku -> {
+                            this.setSkuDetails(productData.data)
+                        }
+                    }
+                }
                 .apply {
                     // only setObfuscatedAccountId for non-upgrade/downgrades until google issue is fixed:
                     // https://issuetracker.google.com/issues/155005449

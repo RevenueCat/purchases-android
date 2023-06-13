@@ -36,6 +36,7 @@ class OfferingsFactory(
                 getStoreProductsById(allRequestedProductIdentifiers, { productsById ->
                     logMissingProducts(allRequestedProductIdentifiers, productsById)
 
+                    // JOSH LOOK HERE
                     val offerings = offeringParser.createOfferings(offeringsJSON, productsById)
                     if (offerings.all.isEmpty()) {
                         onError(
