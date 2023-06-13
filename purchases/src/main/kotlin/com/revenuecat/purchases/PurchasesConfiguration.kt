@@ -77,24 +77,32 @@ open class PurchasesConfiguration(builder: Builder) {
          */
         fun diagnosticsEnabled(diagnosticsEnabled: Boolean) = apply {
             this.diagnosticsEnabled = diagnosticsEnabled
+            if (!diagnosticsEnabled) {
+                this.verificationMode = EntitlementVerificationMode.DISABLED
+            }
         }
 
         /**
-         * **Feature in beta**. Defines how strict [EntitlementInfo] verification ought to be.
+         * **Feature in beta**. Enables signature verification of requests to the RevenueCat backend
+         * in informational mode and enables diagnostics reports to RevenueCat to help us analyze this feature.
+         * Informational mode means that the behavior will remain the same but we will provide information about
+         * detected attempts of hacking.
          *
-         * When changing from [EntitlementVerificationMode.DISABLED] to [EntitlementVerificationMode.INFORMATIONAL],
-         * the SDK will clear the CustomerInfo cache. This means users will need to connect to the internet to get
-         * back their entitlements.
+         * When changing from disabled to enabled, the SDK will clear the CustomerInfo cache.
+         * This means users will need to connect to the internet to get back their entitlements.
          *
          * The result of the verification can be obtained from [EntitlementInfos.verification] or
          * [EntitlementInfo.verification].
          *
          * This feature is currently in beta and the behavior may change.
          *
-         * Default mode is [EntitlementVerificationMode.DISABLED].
+         * Default mode is disabled.
          */
-        fun entitlementVerificationMode(entitlementVerificationMode: EntitlementVerificationMode) = apply {
-            this.verificationMode = entitlementVerificationMode
+        fun informationalVerificationModeAndDiagnosticsEnabled(enabled: Boolean) = apply {
+            if (enabled) {
+                this.verificationMode = EntitlementVerificationMode.INFORMATIONAL
+                this.diagnosticsEnabled = true
+            }
         }
 
         /**
