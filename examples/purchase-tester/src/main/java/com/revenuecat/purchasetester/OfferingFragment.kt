@@ -189,7 +189,7 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
             is GooglePurchasingData.Subscription -> {
                 ObserverModeBillingClient.purchase(
                     requireActivity(),
-                    purchasingData.productDetails,
+                    purchasingData.productData,
                     purchasingData.token,
                     false,
                 )
@@ -197,7 +197,7 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
             is GooglePurchasingData.InAppProduct -> {
                 ObserverModeBillingClient.purchase(
                     requireActivity(),
-                    purchasingData.productDetails,
+                    purchasingData.productData,
                     null,
                     false,
                 )

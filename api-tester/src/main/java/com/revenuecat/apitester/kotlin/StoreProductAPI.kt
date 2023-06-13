@@ -4,6 +4,7 @@ import com.android.billingclient.api.ProductDetails
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.amazon.AmazonStoreProduct
 import com.revenuecat.purchases.amazon.amazonProduct
+import com.revenuecat.purchases.models.GoogleProductData
 import com.revenuecat.purchases.models.GoogleStoreProduct
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
@@ -53,7 +54,7 @@ private class StoreProductAPI {
             googleStoreProduct.period,
             googleStoreProduct.subscriptionOptions,
             googleStoreProduct.defaultOption,
-            googleStoreProduct.productDetails,
+            googleStoreProduct.googleProductData,
         )
 
         val constructedGoogleStoreProductWithOfferingId = GoogleStoreProduct(
@@ -66,13 +67,13 @@ private class StoreProductAPI {
             googleStoreProduct.period,
             googleStoreProduct.subscriptionOptions,
             googleStoreProduct.defaultOption,
-            googleStoreProduct.productDetails,
+            googleStoreProduct.googleProductData,
             googleStoreProduct.presentedOfferingIdentifier,
         )
 
         val productId: String = constructedGoogleStoreProduct.productId
         val basePlanId: String? = constructedGoogleStoreProduct.basePlanId
-        val productDetails: ProductDetails = googleStoreProduct.productDetails
+        val googleProductData: GoogleProductData = googleStoreProduct.googleProductData
     }
 
     fun checkAmazonStoreProduct(amazonStoreProduct: AmazonStoreProduct) {

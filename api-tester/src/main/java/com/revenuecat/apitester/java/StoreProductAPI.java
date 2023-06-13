@@ -4,6 +4,7 @@ import com.android.billingclient.api.ProductDetails;
 import com.revenuecat.purchases.ProductType;
 import com.revenuecat.purchases.amazon.AmazonStoreProduct;
 import com.revenuecat.purchases.amazon.AmazonStoreProductKt;
+import com.revenuecat.purchases.models.GoogleProductData;
 import com.revenuecat.purchases.models.GoogleSubscriptionOption;
 import com.revenuecat.purchases.models.GoogleStoreProduct;
 import com.revenuecat.purchases.models.GoogleStoreProductKt;
@@ -53,7 +54,7 @@ final class StoreProductAPI {
                 googleStoreProduct.getPeriod(),
                 googleStoreProduct.getSubscriptionOptions(),
                 googleStoreProduct.getDefaultOption(),
-                googleStoreProduct.getProductDetails(),
+                googleStoreProduct.getGoogleProductData(),
                 googleStoreProduct.getPresentedOfferingIdentifier()
         );
 
@@ -67,13 +68,13 @@ final class StoreProductAPI {
                 null,
                 null,
                 null,
-                googleStoreProduct.getProductDetails(),
+                googleStoreProduct.getGoogleProductData(),
                 null
         );
 
         String productId = constructedGoogleStoreProduct.getProductId();
         String basePlanId = constructedGoogleStoreProduct.getBasePlanId();
-        ProductDetails productDetails = googleStoreProduct.getProductDetails();
+        GoogleProductData googleProductData = googleStoreProduct.getGoogleProductData();
     }
 
     static void checkAmazonStoreProduct(AmazonStoreProduct amazonStoreProduct) {

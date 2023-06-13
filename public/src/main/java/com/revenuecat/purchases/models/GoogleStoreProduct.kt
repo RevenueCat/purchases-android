@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.models
 
 import com.android.billingclient.api.ProductDetails
+import com.android.billingclient.api.SkuDetails
 import com.revenuecat.purchases.ProductType
 
 data class GoogleStoreProduct(
@@ -64,7 +65,7 @@ data class GoogleStoreProduct(
     /**
      * The [ProductDetails] object returned from BillingClient that was used to construct this product.
      */
-    val productDetails: ProductDetails,
+    val googleProductData: GoogleProductData,
 
     /**
      * The offering ID this `GoogleStoreProduct` was returned from.
@@ -90,7 +91,7 @@ data class GoogleStoreProduct(
             otherProduct.period,
             subscriptionOptionsWithOfferingId,
             defaultOption,
-            otherProduct.productDetails,
+            otherProduct.googleProductData,
             presentedOfferingIdentifier,
         )
 
@@ -113,7 +114,7 @@ data class GoogleStoreProduct(
         } else {
             GooglePurchasingData.InAppProduct(
                 id,
-                productDetails,
+                googleProductData,
             )
         }
 
@@ -164,3 +165,24 @@ data class GoogleStoreProduct(
  */
 val StoreProduct.googleProduct: GoogleStoreProduct?
     get() = this as? GoogleStoreProduct
+
+
+sealed class GoogleProductData {
+    data class Product(
+        val data: ProductDetails,
+    ) : GoogleProductData()
+
+    data class Sku(
+        val data: SkuDetails,
+    ) : GoogleProductData()
+
+    val productId: String
+        get() = when (this) {
+            is GoogleProductData.Product -> {
+                this.data.productId
+            }
+            is GoogleProductData.Sku -> {
+                this.data.sku
+            }
+        }
+}

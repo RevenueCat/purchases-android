@@ -17,7 +17,7 @@ import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingFlowParams
 import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.ConsumeParams
-import com.android.billingclient.api.ProductDetailsResponseListener
+import com.android.billingclient.api.ProductDetails
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchaseHistoryRecord
 import com.android.billingclient.api.PurchaseHistoryResponseListener
@@ -25,6 +25,8 @@ import com.android.billingclient.api.PurchasesResponseListener
 import com.android.billingclient.api.PurchasesUpdatedListener
 import com.android.billingclient.api.QueryProductDetailsParams
 import com.android.billingclient.api.QueryPurchasesParams
+import com.android.billingclient.api.SkuDetails
+import com.android.billingclient.api.SkuDetailsParams
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCallback
@@ -45,9 +47,11 @@ import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.sha256
 import com.revenuecat.purchases.common.toHumanReadableDescription
 import com.revenuecat.purchases.models.GoogleProrationMode
+import com.revenuecat.purchases.models.GoogleProductData
 import com.revenuecat.purchases.models.GooglePurchasingData
 import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.PurchasingData
+import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.strings.BillingStrings
 import com.revenuecat.purchases.strings.OfferingStrings
@@ -167,12 +171,11 @@ class BillingWrapper(
         executeRequestOnUIThread { connectionError ->
             if (connectionError == null) {
                 val googleType = productType.toGoogleProductType() ?: BillingClient.ProductType.INAPP
-                val params = googleType.buildQueryProductDetailsParams(nonEmptyProductIds)
 
                 withConnectedClient {
                     queryProductDetailsAsyncEnsuringOneResponse(
                         googleType,
-                        params,
+                        nonEmptyProductIds,
                     ) { billingResult, productDetailsList ->
                         if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
                             log(
@@ -189,6 +192,7 @@ class BillingWrapper(
                                 log(LogIntent.PURCHASE, OfferingStrings.LIST_PRODUCTS.format(it.productId, it))
                             }
 
+                            // JOSH HERE
                             val storeProducts = productDetailsList.toStoreProducts()
                             onReceive(storeProducts)
                         } else {
@@ -787,26 +791,58 @@ class BillingWrapper(
         }
     }
 
+    // JOSH HERE
     private fun BillingClient.queryProductDetailsAsyncEnsuringOneResponse(
         @BillingClient.ProductType productType: String,
-        params: QueryProductDetailsParams,
-        listener: ProductDetailsResponseListener,
+        nonEmptyProductIds: Set<String>,
+        listener: (result: BillingResult, products: List<GoogleProductData>) -> Unit,
     ) {
+        val canUseProductDetails = true
+
         var hasResponded = false
         val requestStartTime = dateProvider.now
-        queryProductDetailsAsync(params) { billingResult, productDetailsList ->
-            synchronized(this@BillingWrapper) {
-                if (hasResponded) {
-                    log(
-                        LogIntent.GOOGLE_ERROR,
-                        OfferingStrings.EXTRA_QUERY_PRODUCT_DETAILS_RESPONSE.format(billingResult.responseCode),
-                    )
-                    return@queryProductDetailsAsync
+
+        if (canUseProductDetails) {
+            val params = productType.buildQueryProductDetailsParams(nonEmptyProductIds)
+
+            queryProductDetailsAsync(params) { billingResult, productDetailsList ->
+                synchronized(this@BillingWrapper) {
+                    if (hasResponded) {
+                        log(
+                            LogIntent.GOOGLE_ERROR,
+                            OfferingStrings.EXTRA_QUERY_PRODUCT_DETAILS_RESPONSE.format(billingResult.responseCode),
+                        )
+                        return@queryProductDetailsAsync
+                    }
+                    hasResponded = true
                 }
-                hasResponded = true
+                trackGoogleQueryProductDetailsRequestIfNeeded(productType, billingResult, requestStartTime)
+
+                val list: List<GoogleProductData> =
+                    productDetailsList?.map { GoogleProductData.Product(it) } ?: emptyList()
+                listener(billingResult, list)
             }
-            trackGoogleQueryProductDetailsRequestIfNeeded(productType, billingResult, requestStartTime)
-            listener.onProductDetailsResponse(billingResult, productDetailsList)
+        } else {
+            val skuParams = SkuDetailsParams.newBuilder()
+                .setType(productType)
+                .setSkusList(nonEmptyProductIds.toList()).build()
+
+            querySkuDetailsAsync(skuParams) { billingResult, skuDetailsList ->
+                synchronized(this@BillingWrapper) {
+                    if (hasResponded) {
+                        log(
+                            LogIntent.GOOGLE_ERROR,
+                            OfferingStrings.EXTRA_QUERY_PRODUCT_DETAILS_RESPONSE.format(billingResult.responseCode),
+                        )
+                        return@querySkuDetailsAsync
+                    }
+                    hasResponded = true
+                }
+                trackGoogleQueryProductDetailsRequestIfNeeded(productType, billingResult, requestStartTime)
+
+                val list: List<GoogleProductData> = skuDetailsList?.map { GoogleProductData.Sku(it) } ?: emptyList()
+                listener(billingResult, list)
+            }
         }
     }
 
@@ -913,7 +949,16 @@ class BillingWrapper(
         isPersonalizedPrice: Boolean?,
     ): Result<BillingFlowParams, PurchasesError> {
         val productDetailsParamsList = BillingFlowParams.ProductDetailsParams.newBuilder().apply {
-            setProductDetails(purchaseInfo.productDetails)
+            val productData = purchaseInfo.productData
+            when (productData) {
+                is GoogleProductData.Product -> {
+                    setProductDetails(productData.data)
+                }
+                is GoogleProductData.Sku -> {
+                    // TODO: JOSH HERE
+                }
+            }
+
         }.build()
 
         return Result.Success(
@@ -937,7 +982,15 @@ class BillingWrapper(
     ): Result<BillingFlowParams, PurchasesError> {
         val productDetailsParamsList = BillingFlowParams.ProductDetailsParams.newBuilder().apply {
             setOfferToken(purchaseInfo.token)
-            setProductDetails(purchaseInfo.productDetails)
+            val productData = purchaseInfo.productData
+            when (productData) {
+                is GoogleProductData.Product -> {
+                    setProductDetails(productData.data)
+                }
+                is GoogleProductData.Sku -> {
+                    // TODO: JOSH HERE
+                }
+            }
         }.build()
 
         return Result.Success(

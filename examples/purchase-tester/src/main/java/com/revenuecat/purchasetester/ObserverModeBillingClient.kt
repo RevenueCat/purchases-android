@@ -10,6 +10,7 @@ import com.android.billingclient.api.ProductDetails
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchasesUpdatedListener
 import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.models.GoogleProductData
 
 object ObserverModeBillingClient : PurchasesUpdatedListener, BillingClientStateListener {
     private lateinit var billingClient: BillingClient
@@ -27,26 +28,33 @@ object ObserverModeBillingClient : PurchasesUpdatedListener, BillingClientStateL
 
     fun purchase(
         activity: Activity,
-        productDetails: ProductDetails,
+        productData: GoogleProductData,
         offerToken: String?,
         isOfferPersonalized: Boolean = false,
     ) {
-        val flowParams = BillingFlowParams.newBuilder()
-            .setProductDetailsParamsList(
-                listOf(
-                    BillingFlowParams.ProductDetailsParams.newBuilder()
-                        .setProductDetails(productDetails)
-                        .also { params ->
-                            offerToken?.let {
-                                params.setOfferToken(it)
-                            }
-                        }
-                        .build(),
-                ),
-            )
-            .setIsOfferPersonalized(isOfferPersonalized)
-            .build()
-        billingClient.launchBillingFlow(activity, flowParams)
+        when (productData) {
+            is GoogleProductData.Product -> {
+                val flowParams = BillingFlowParams.newBuilder()
+                    .setProductDetailsParamsList(
+                        listOf(
+                            BillingFlowParams.ProductDetailsParams.newBuilder()
+                                .setProductDetails(productData.data)
+                                .also { params ->
+                                    offerToken?.let {
+                                        params.setOfferToken(it)
+                                    }
+                                }
+                                .build(),
+                        ),
+                    )
+                    .setIsOfferPersonalized(isOfferPersonalized)
+                    .build()
+                billingClient.launchBillingFlow(activity, flowParams)
+            }
+            is GoogleProductData.Sku -> {
+                // TODO: Handle
+            }
+        }
     }
 
     override fun onBillingSetupFinished(billingResult: BillingResult) {

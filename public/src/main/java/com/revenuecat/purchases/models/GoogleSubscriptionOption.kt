@@ -73,7 +73,7 @@ data class GoogleSubscriptionOption(
         get() = GooglePurchasingData.Subscription(
             productId,
             id,
-            productDetails,
+            GoogleProductData.Product(productDetails),
             offerToken,
         )
 }
