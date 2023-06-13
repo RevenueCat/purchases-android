@@ -27,7 +27,7 @@ aliases:
     executor:
       name: android/android-docker
       resource-class: large
-      tag: 2023.02.1
+      tag: 2023.06.1
     environment:
       JVM_OPTS: -Xmx6g
       GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.workers.max=2"
