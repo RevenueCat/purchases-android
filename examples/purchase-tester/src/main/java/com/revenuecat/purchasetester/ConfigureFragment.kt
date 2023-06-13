@@ -115,6 +115,7 @@ class ConfigureFragment : Fragment() {
         val verificationModeIndex = binding.verificationOptionsInput.selectedItemPosition
 
         val entitlementVerificationMode = EntitlementVerificationMode.values()[verificationModeIndex]
+        val enableEntitlementVerification = entitlementVerificationMode == EntitlementVerificationMode.INFORMATIONAL
         val useAmazonStore = binding.storeRadioGroup.checkedRadioButtonId == R.id.amazon_store_radio_id
         val useObserverMode = binding.observerModeCheckbox.isChecked
 
@@ -131,7 +132,7 @@ class ConfigureFragment : Fragment() {
 
         val configuration = configurationBuilder
             .diagnosticsEnabled(true)
-            .entitlementVerificationMode(entitlementVerificationMode)
+            .informationalVerificationModeAndDiagnosticsEnabled(enableEntitlementVerification)
             .observerMode(useObserverMode)
             .build()
         Purchases.configure(configuration)
