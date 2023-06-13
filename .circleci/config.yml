@@ -260,7 +260,7 @@ jobs:
     <<: *android-executor
     steps:
       - checkout
-#      - install-sdkman
+      - install-sdkman
       - android/accept-licenses
       - android/restore-gradle-cache
       - android/restore-build-cache
