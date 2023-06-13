@@ -31,3 +31,26 @@ suspend fun Purchases.awaitCustomerInfo(
         )
     }
 }
+
+/**
+ * Fetch the configured offerings for this users. Offerings allows you to configure your in-app
+ * products vis RevenueCat and greatly simplifies management. See
+ * [the guide](https://docs.revenuecat.com/offerings) for more info.
+ *
+ * Offerings will be fetched and cached on instantiation so that, by the time they are needed,
+ * your prices are loaded for your purchase flow. Time is money.
+ *
+ * Coroutine friendly version of [Purchases.getOfferings].
+ *
+ * @warning This function is experimental and may change in the future.
+ *
+ * @return [Result] type containing either the [Offerings] or the [PurchasesError]
+ */
+suspend fun Purchases.awaitOfferings(): Offerings {
+    return suspendCoroutine { continuation ->
+        getOfferingsWith(
+            onSuccess = continuation::resume,
+            onError = { continuation.resumeWithException(PurchasesException(it)) },
+        )
+    }
+}
