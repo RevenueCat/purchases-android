@@ -54,6 +54,7 @@ data class EntitlementInfo(
     val billingIssueDetectedAt: Date?,
     val ownershipType: OwnershipType,
     private val jsonObject: JSONObject,
+    @ExperimentalPreviewRevenueCatPurchasesAPI
     val verification: VerificationResult = VerificationResult.NOT_REQUESTED,
 ) : Parcelable, RawDataContainer<JSONObject> {
 
@@ -106,6 +107,7 @@ data class EntitlementInfo(
         get() = jsonObject
 
     /** @suppress */
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     override fun toString(): String {
         return "EntitlementInfo(" +
             "identifier='$identifier', " +
@@ -126,6 +128,7 @@ data class EntitlementInfo(
     }
 
     /** @suppress */
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false

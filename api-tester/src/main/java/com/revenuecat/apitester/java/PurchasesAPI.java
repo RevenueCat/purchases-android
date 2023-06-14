@@ -8,7 +8,6 @@ import androidx.annotation.Nullable;
 
 import com.revenuecat.purchases.CacheFetchPolicy;
 import com.revenuecat.purchases.CustomerInfo;
-import com.revenuecat.purchases.EntitlementVerificationMode;
 import com.revenuecat.purchases.LogHandler;
 import com.revenuecat.purchases.LogLevel;
 import com.revenuecat.purchases.Offerings;
@@ -28,9 +27,9 @@ import com.revenuecat.purchases.interfaces.SyncPurchasesCallback;
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener;
 import com.revenuecat.purchases.models.BillingFeature;
 import com.revenuecat.purchases.models.GoogleProrationMode;
-import com.revenuecat.purchases.models.SubscriptionOption;
 import com.revenuecat.purchases.models.StoreProduct;
 import com.revenuecat.purchases.models.StoreTransaction;
+import com.revenuecat.purchases.models.SubscriptionOption;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -196,7 +195,6 @@ final class PurchasesAPI {
                 .observerMode(false)
                 .service(executorService)
                 .diagnosticsEnabled(true)
-                .informationalVerificationModeAndDiagnosticsEnabled(true)
                 .build();
 
         Purchases.configure(build);

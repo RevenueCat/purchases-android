@@ -72,6 +72,7 @@ class PurchasesConfigurationTest {
     }
 
     @Test
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     fun `PurchasesConfiguration sets informational mode and diagnostics correctly`() {
         val purchasesConfiguration = builder.informationalVerificationModeAndDiagnosticsEnabled(true).build()
         assertThat(purchasesConfiguration.diagnosticsEnabled).isTrue

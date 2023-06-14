@@ -1,6 +1,7 @@
 package com.revenuecat.apitester.kotlin
 
 import com.revenuecat.purchases.EntitlementInfo
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.OwnershipType
 import com.revenuecat.purchases.PeriodType
 import com.revenuecat.purchases.Store
@@ -10,6 +11,7 @@ import java.util.Date
 
 @Suppress("unused", "UNUSED_VARIABLE", "DEPRECATION", "LongParameterList")
 private class EntitlementInfoAPI {
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     fun check(entitlementInfo: EntitlementInfo) {
         with(entitlementInfo) {
             val identifier: String = identifier

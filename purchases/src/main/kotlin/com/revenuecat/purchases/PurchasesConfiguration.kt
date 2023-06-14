@@ -91,10 +91,14 @@ open class PurchasesConfiguration(builder: Builder) {
          * The result of the verification can be obtained from [EntitlementInfos.verification] or
          * [EntitlementInfo.verification].
          *
-         * This feature is currently in beta and the behavior may change.
+         * This feature is currently in beta and the behavior may change. Only available in Kotlin.
          *
          * Default mode is disabled.
+         *
+         * @warning This function is marked as [ExperimentalPreviewRevenueCatPurchasesAPI] and may change in the future.
          */
+        @JvmSynthetic
+        @ExperimentalPreviewRevenueCatPurchasesAPI
         fun informationalVerificationModeAndDiagnosticsEnabled(enabled: Boolean) = apply {
             if (enabled) {
                 this.verificationMode = EntitlementVerificationMode.INFORMATIONAL
