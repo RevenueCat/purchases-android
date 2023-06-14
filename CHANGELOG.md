@@ -1,6 +1,22 @@
 ## 6.5.0
-### New Features
+### New experimental features
 * Trusted entitlements (#1048) via Toni Rico (@tonidero)
+
+This new feature prevents MitM attacks between the SDK and the RevenueCat server.
+With verification enabled, the SDK ensures that the response created by the server was not modified by a third-party, and the entitlements received are exactly what was sent.
+This is 100% opt-in. `EntitlementInfos` have a new `VerificationResult` property, which will indicate the validity of the responses when this feature is enabled.
+
+This feature is experimental and requires opt in. It's also only available in Kotlin.
+
+```kotlin
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+fun configureRevenueCat() {
+    val configuration = PurchasesConfiguration.Builder(context, apiKey)
+        .informationalVerificationModeAndDiagnosticsEnabled(true)
+        .build()
+    Purchases.configure(configuration)
+}
+```
 * Add Coroutine support to Purchases#getCustomerInfo (#1012) via Cesar de la Vega (@vegaro)
 ### Bugfixes
 * [EXTERNAL] Fix `README` `CONTRIBUTING` guide broken link (#1035) via @pablo-guardiola (#1036) via Toni Rico (@tonidero)
