@@ -102,6 +102,9 @@ open class PurchasesConfiguration(builder: Builder) {
             if (enabled) {
                 this.verificationMode = EntitlementVerificationMode.INFORMATIONAL
                 this.diagnosticsEnabled = true
+            } else {
+                this.verificationMode = EntitlementVerificationMode.DISABLED
+                this.diagnosticsEnabled = false
             }
         }
 
