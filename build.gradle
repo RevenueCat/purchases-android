@@ -15,8 +15,6 @@ plugins {
     //    TODO: is this needed?
     alias libs.plugins.androidx.navigation.safeargs apply false
     //    TODO: is this needed?
-    alias libs.plugins.kotlin.kapt apply false
-    //    TODO: is this needed?
     alias libs.plugins.kotlin.parcelize apply false
 }
 

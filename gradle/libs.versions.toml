@@ -26,7 +26,6 @@ dependencyGraph = "com.savvasdalkitsis.module-dependency-graph:0.9"
 detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
 dokka = { id ="org.jetbrains.dokka", version.ref = "dokka"}
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
-kotlin-kapt = { id = "org.jetbrains.kotlin.kapt", version.ref = "kotlin" }
 kotlin-parcelize = { id = "org.jetbrains.kotlin.plugin.parcelize", version.ref = "kotlin" }
 kover = "org.jetbrains.kotlinx.kover:0.7.0"
 mavenPublish = "com.vanniktech.maven.publish:0.22.0"
