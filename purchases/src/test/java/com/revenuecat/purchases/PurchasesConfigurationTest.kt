@@ -35,6 +35,7 @@ class PurchasesConfigurationTest {
         assertThat(purchasesConfiguration.service).isNull()
         assertThat(purchasesConfiguration.store).isEqualTo(Store.PLAY_STORE)
         assertThat(purchasesConfiguration.diagnosticsEnabled).isFalse
+        assertThat(purchasesConfiguration.verificationMode).isEqualTo(EntitlementVerificationMode.DISABLED)
         assertThat(purchasesConfiguration.dangerousSettings).isEqualTo(DangerousSettings(autoSyncPurchases = true))
     }
 
@@ -68,6 +69,13 @@ class PurchasesConfigurationTest {
     fun `PurchasesConfiguration sets diagnosticsEnabled correctly`() {
         val purchasesConfiguration = builder.diagnosticsEnabled(true).build()
         assertThat(purchasesConfiguration.diagnosticsEnabled).isTrue
+    }
+
+    @Test
+    fun `PurchasesConfiguration sets informational mode and diagnostics correctly`() {
+        val purchasesConfiguration = builder.informationalVerificationModeAndDiagnosticsEnabled(true).build()
+        assertThat(purchasesConfiguration.diagnosticsEnabled).isTrue
+        assertThat(purchasesConfiguration.verificationMode).isEqualTo(EntitlementVerificationMode.INFORMATIONAL)
     }
 
     @Test
