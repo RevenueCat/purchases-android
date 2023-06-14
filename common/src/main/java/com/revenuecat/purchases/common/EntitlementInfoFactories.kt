@@ -75,7 +75,6 @@ internal fun JSONObject.optOwnershipType(name: String) = when (optString(name)) 
     else -> OwnershipType.UNKNOWN
 }
 
-@Suppress("UnusedPrivateMember")
 internal fun JSONObject.buildEntitlementInfo(
     identifier: String,
     productData: JSONObject,

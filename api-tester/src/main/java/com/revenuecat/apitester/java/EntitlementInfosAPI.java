@@ -17,7 +17,7 @@ final class EntitlementInfosAPI {
 
     static void checkConstructor(
             Map<String, EntitlementInfo> all,
-             VerificationResult verificationResult
+            VerificationResult verificationResult
     ) {
         final EntitlementInfos entitlementInfos = new EntitlementInfos(
                 all,

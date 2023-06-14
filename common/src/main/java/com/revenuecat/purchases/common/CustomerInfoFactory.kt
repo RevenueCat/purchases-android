@@ -65,7 +65,6 @@ object CustomerInfoFactory {
             verificationResult,
         ) ?: EntitlementInfos(
             emptyMap(),
-            // TODO Check if this should be NOT_REQUESTED
             verificationResult,
         )
 
