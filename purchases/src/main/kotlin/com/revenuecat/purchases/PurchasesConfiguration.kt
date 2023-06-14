@@ -94,6 +94,8 @@ open class PurchasesConfiguration(builder: Builder) {
          * This feature is currently in beta and the behavior may change. Only available in Kotlin.
          *
          * Default mode is disabled.
+         *
+         * @warning This function is marked as [ExperimentalPreviewRevenueCatPurchasesAPI] and may change in the future.
          */
         @JvmSynthetic
         @ExperimentalPreviewRevenueCatPurchasesAPI
