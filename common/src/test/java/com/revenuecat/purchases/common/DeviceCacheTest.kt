@@ -7,6 +7,7 @@ package com.revenuecat.purchases.common
 
 import android.content.SharedPreferences
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.caching.CUSTOMER_INFO_SCHEMA_VERSION
@@ -34,6 +35,7 @@ import kotlin.time.Duration.Companion.minutes
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 class DeviceCacheTest {
 
     private val validCachedCustomerInfo by lazy {

@@ -3,6 +3,7 @@ package com.revenuecat.purchases.identity
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.EntitlementInfos
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.VerificationResult
@@ -573,6 +574,7 @@ class IdentityManagerTests {
 
     // region helper functions
 
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     private fun setupCustomerInfoCacheInvalidationTest(
         userId: String,
         verificationResult: VerificationResult,

@@ -95,6 +95,7 @@ open class PurchasesConfiguration(builder: Builder) {
          *
          * Default mode is disabled.
          */
+        @ExperimentalPreviewRevenueCatPurchasesAPI
         fun informationalVerificationModeAndDiagnosticsEnabled(enabled: Boolean) = apply {
             if (enabled) {
                 this.verificationMode = EntitlementVerificationMode.INFORMATIONAL

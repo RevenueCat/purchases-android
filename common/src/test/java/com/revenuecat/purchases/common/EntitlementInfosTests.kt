@@ -2,6 +2,7 @@ package com.revenuecat.purchases.common
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.EntitlementInfos
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.OwnershipType
 import com.revenuecat.purchases.PeriodType
 import com.revenuecat.purchases.Store
@@ -19,6 +20,7 @@ import kotlin.time.Duration.Companion.days
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 class EntitlementInfosTests {
 
     private var response = JSONObject()
