@@ -37,7 +37,6 @@ import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.mockkStatic
-import io.mockk.runs
 import io.mockk.slot
 import org.junit.After
 import org.junit.Before
@@ -56,7 +55,7 @@ open class BasePurchasesTest {
     protected val mockIdentityManager = mockk<IdentityManager>()
     protected val mockSubscriberAttributesManager = mockk<SubscriberAttributesManager>()
     internal val mockCustomerInfoHelper = mockk<CustomerInfoHelper>()
-    internal val mockCustomerInfoUpdater = mockk<CustomerInfoUpdater>()
+    internal val mockCustomerInfoUpdateReceiver = mockk<CustomerInfoUpdateReceiver>()
     protected val mockDiagnosticsSynchronizer = mockk<DiagnosticsSynchronizer>()
     protected val mockOfflineEntitlementsManager = mockk<OfflineEntitlementsManager>()
     internal val mockPostReceiptHelper = mockk<PostReceiptHelper>()
@@ -84,7 +83,7 @@ open class BasePurchasesTest {
         mockBillingWrapper()
         mockStoreProduct(productIds, productIds, ProductType.SUBS)
         mockCustomerInfoHelper()
-        mockCustomerInfoUpdater()
+        mockCustomerInfoUpdateReceiver()
 
         every {
             updatedCustomerInfoListener.onReceived(any())
@@ -110,7 +109,7 @@ open class BasePurchasesTest {
             mockPostReceiptHelper,
             mockSyncPurchasesHelper,
             mockOfferingsManager,
-            mockCustomerInfoUpdater,
+            mockCustomerInfoUpdateReceiver,
         )
     }
 
@@ -228,8 +227,8 @@ open class BasePurchasesTest {
         }
     }
 
-    protected fun mockCustomerInfoUpdater() {
-        with(mockCustomerInfoUpdater) {
+    protected fun mockCustomerInfoUpdateReceiver() {
+        with(mockCustomerInfoUpdateReceiver) {
             every {
                 cacheAndNotifyListeners(any())
             } just Runs
@@ -312,7 +311,7 @@ open class BasePurchasesTest {
                 dangerousSettings = DangerousSettings(autoSyncPurchases = autoSync)
             ),
             customerInfoHelper = mockCustomerInfoHelper,
-            customerInfoUpdater = mockCustomerInfoUpdater,
+            customerInfoUpdateReceiver = mockCustomerInfoUpdateReceiver,
             diagnosticsSynchronizer = mockDiagnosticsSynchronizer,
             offlineEntitlementsManager = mockOfflineEntitlementsManager,
             postReceiptHelper = mockPostReceiptHelper,

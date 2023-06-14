@@ -4,7 +4,7 @@ import android.app.Application
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfoHelper
-import com.revenuecat.purchases.CustomerInfoUpdater
+import com.revenuecat.purchases.CustomerInfoUpdateReceiver
 import com.revenuecat.purchases.PostReceiptHelper
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.Store
@@ -40,7 +40,7 @@ class SubscriberAttributesPurchasesTests {
     private val backendMock = mockk<Backend>(relaxed = true)
     private val billingWrapperMock = mockk<BillingAbstract>(relaxed = true)
     private val customerInfoHelperMock = mockk<CustomerInfoHelper>()
-    private val customerInfoUpdaterMock = mockk<CustomerInfoUpdater>()
+    private val customerInfoUpdateReceiverMock = mockk<CustomerInfoUpdateReceiver>()
     private val offlineEntitlementsManagerMock = mockk<OfflineEntitlementsManager>()
     private val postReceiptHelperMock = mockk<PostReceiptHelper>()
     private val offeringsManagerMock = mockk<OfferingsManager>()
@@ -72,7 +72,7 @@ class SubscriberAttributesPurchasesTests {
                 store = Store.PLAY_STORE
             ),
             customerInfoHelper = customerInfoHelperMock,
-            customerInfoUpdater = customerInfoUpdaterMock,
+            customerInfoUpdateReceiver = customerInfoUpdateReceiverMock,
             diagnosticsSynchronizer = null,
             offlineEntitlementsManager = offlineEntitlementsManagerMock,
             postReceiptHelper = postReceiptHelperMock,
@@ -83,7 +83,7 @@ class SubscriberAttributesPurchasesTests {
 
     @After
     fun tearDown() {
-        clearMocks(customerInfoHelperMock, customerInfoUpdaterMock, offeringsManagerMock)
+        clearMocks(customerInfoHelperMock, customerInfoUpdateReceiverMock, offeringsManagerMock)
     }
 
     @Test
