@@ -86,7 +86,7 @@ open class PurchasesConfiguration(builder: Builder) {
          * detected attempts of hacking.
          *
          * When changing from disabled to enabled, the SDK will clear the CustomerInfo cache.
-         * This means users will need to connect to the internet to get back their entitlements.
+         * This means users will need to connect to the internet to get their entitlements back.
          *
          * The result of the verification can be obtained from [EntitlementInfos.verification] or
          * [EntitlementInfo.verification].
