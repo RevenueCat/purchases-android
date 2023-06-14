@@ -88,3 +88,5 @@ tink = { module = "com.google.crypto.tink:tink-android", version.ref = "tink" }
 
 coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
 
+[bundles]
+test = ["androidx-test-core", "androidx-test-runner", "androidx-test-rules", "androidx-test-junit", "robolectric", "mockk", "assertJ"]

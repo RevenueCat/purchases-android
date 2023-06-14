@@ -28,13 +28,7 @@ dependencies {
 
     testImplementation project(":test-utils")
     testImplementation libs.amazon.appstore.sdk
-    testImplementation libs.androidx.test.core
-    testImplementation libs.androidx.test.runner
-    testImplementation libs.androidx.test.rules
-    testImplementation libs.androidx.test.junit
-    testImplementation libs.robolectric
-    testImplementation libs.mockk
-    testImplementation libs.assertJ
+    testImplementation libs.bundles.test
 }
 
 // Not running with this flag causes verification issues due to the way the Amazon jar is compiled
