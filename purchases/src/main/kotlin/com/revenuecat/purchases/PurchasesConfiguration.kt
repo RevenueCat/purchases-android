@@ -77,9 +77,6 @@ open class PurchasesConfiguration(builder: Builder) {
          */
         fun diagnosticsEnabled(diagnosticsEnabled: Boolean) = apply {
             this.diagnosticsEnabled = diagnosticsEnabled
-            if (!diagnosticsEnabled) {
-                this.verificationMode = EntitlementVerificationMode.DISABLED
-            }
         }
 
         /**
