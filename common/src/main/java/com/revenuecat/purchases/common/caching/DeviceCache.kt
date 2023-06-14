@@ -7,6 +7,7 @@ package com.revenuecat.purchases.common.caching
 
 import android.content.SharedPreferences
 import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.CustomerInfoFactory
 import com.revenuecat.purchases.common.DateProvider
@@ -135,11 +136,11 @@ open class DeviceCache(
     }
 
     @Synchronized
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     fun cacheCustomerInfo(appUserID: String, info: CustomerInfo) {
         val jsonObject = info.rawData.also {
             it.put(CUSTOMER_INFO_SCHEMA_VERSION_KEY, CUSTOMER_INFO_SCHEMA_VERSION)
-            // Trusted entitlements: Commented out until ready to be made public
-            // it.put(CUSTOMER_INFO_VERIFICATION_RESULT_KEY, info.entitlements.verification.name)
+            it.put(CUSTOMER_INFO_VERIFICATION_RESULT_KEY, info.entitlements.verification.name)
             it.put(CUSTOMER_INFO_REQUEST_DATE_KEY, info.requestDate.time)
         }
         preferences.edit()

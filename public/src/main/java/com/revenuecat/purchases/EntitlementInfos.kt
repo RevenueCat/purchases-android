@@ -11,11 +11,16 @@ import kotlinx.parcelize.Parcelize
  * If not, [VerificationResult.NOT_REQUESTED]
  */
 @Parcelize
-class EntitlementInfos internal constructor(
+class EntitlementInfos(
     val all: Map<String, EntitlementInfo>,
-    internal val verification: VerificationResult,
+    @ExperimentalPreviewRevenueCatPurchasesAPI
+    val verification: VerificationResult,
 ) : Parcelable {
 
+    @Deprecated(
+        "Use the constructor with the verification parameter",
+        ReplaceWith("EntitlementInfos(all, verification)"),
+    )
     constructor(
         all: Map<String, EntitlementInfo>,
     ) : this(all, VerificationResult.NOT_REQUESTED)
@@ -32,6 +37,7 @@ class EntitlementInfos internal constructor(
     operator fun get(s: String) = all[s]
 
     /** @suppress */
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false

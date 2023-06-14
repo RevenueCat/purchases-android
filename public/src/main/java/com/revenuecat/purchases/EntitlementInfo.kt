@@ -38,7 +38,7 @@ import java.util.Date
  */
 @Parcelize
 @TypeParceler<JSONObject, JSONObjectParceler>()
-data class EntitlementInfo internal constructor(
+data class EntitlementInfo(
     val identifier: String,
     val isActive: Boolean,
     val willRenew: Boolean,
@@ -54,9 +54,20 @@ data class EntitlementInfo internal constructor(
     val billingIssueDetectedAt: Date?,
     val ownershipType: OwnershipType,
     private val jsonObject: JSONObject,
-    internal val verification: VerificationResult,
+    @ExperimentalPreviewRevenueCatPurchasesAPI
+    val verification: VerificationResult = VerificationResult.NOT_REQUESTED,
 ) : Parcelable, RawDataContainer<JSONObject> {
 
+    @Deprecated(
+        "Use the constructor with the verification parameter",
+        ReplaceWith(
+            "EntitlementInfo(identifier, isActive, willRenew, periodType, latestPurchaseDate, " +
+                "originalPurchaseDate, expirationDate, store, productIdentifier, productPlanIdentifier, isSandbox, " +
+                "unsubscribeDetectedAt, billingIssueDetectedAt, ownershipType, jsonObject, " +
+                "VerificationResult.NOT_REQUESTED)",
+            "com.revenuecat.purchases.VerificationResult",
+        ),
+    )
     constructor(
         identifier: String,
         isActive: Boolean,
@@ -96,6 +107,7 @@ data class EntitlementInfo internal constructor(
         get() = jsonObject
 
     /** @suppress */
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     override fun toString(): String {
         return "EntitlementInfo(" +
             "identifier='$identifier', " +
@@ -116,6 +128,7 @@ data class EntitlementInfo internal constructor(
     }
 
     /** @suppress */
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false

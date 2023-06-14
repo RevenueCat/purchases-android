@@ -65,8 +65,7 @@ object CustomerInfoFactory {
             verificationResult,
         ) ?: EntitlementInfos(
             emptyMap(),
-            // Trusted entitlements: Commented out until ready to be made public
-            // VerificationResult.NOT_REQUESTED
+            verificationResult,
         )
 
         val managementURL = subscriber.optNullableString(CustomerInfoResponseJsonKeys.MANAGEMENT_URL)

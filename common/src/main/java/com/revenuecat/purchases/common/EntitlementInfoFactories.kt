@@ -48,8 +48,7 @@ internal fun JSONObject.buildEntitlementInfos(
     }
     return EntitlementInfos(
         all,
-        // Trusted entitlements: Commented out until ready to be made public
-        // verificationResult
+        verificationResult,
     )
 }
 
@@ -76,8 +75,6 @@ internal fun JSONObject.optOwnershipType(name: String) = when (optString(name)) 
     else -> OwnershipType.UNKNOWN
 }
 
-// Trusted entitlements: Added until ready to use it.
-@Suppress("UnusedPrivateMember")
 internal fun JSONObject.buildEntitlementInfo(
     identifier: String,
     productData: JSONObject,
@@ -111,8 +108,7 @@ internal fun JSONObject.buildEntitlementInfo(
         billingIssueDetectedAt = billingIssueDetectedAt,
         ownershipType = productData.optOwnershipType(ProductResponseJsonKeys.OWNERSHIP_TYPE),
         jsonObject = this,
-        // Trusted entitlements: Commented out until ready to be made public
-        // verificationResult = verificationResult
+        verification = verificationResult,
     )
 }
 

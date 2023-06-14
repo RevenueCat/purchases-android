@@ -235,8 +235,7 @@ private class PurchasesAPI {
             .observerMode(false)
             .service(executorService)
             .diagnosticsEnabled(true)
-            // Trusted entitlements: Commented out until ready to be made public
-            // .entitlementVerificationMode(EntitlementVerificationMode.INFORMATIONAL)
+            .informationalVerificationModeAndDiagnosticsEnabled(true)
             .build()
 
         Purchases.configure(build)

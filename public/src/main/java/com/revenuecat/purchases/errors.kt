@@ -57,6 +57,5 @@ enum class PurchasesErrorCode(val code: Int, val description: String) {
     ),
     EmptySubscriberAttributesError(25, "A request for subscriber attributes returned none."),
     CustomerInfoError(28, "There was a problem related to the customer info."),
-    // Trusted entitlements: Commented out until ready to be made public (verify code is the same in iOS)
-    // SignatureVerificationError(36, "Request failed signature verification.")
+    SignatureVerificationError(36, "Request failed signature verification."),
 }
