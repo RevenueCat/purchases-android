@@ -8,6 +8,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.EntitlementInfo
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesException
@@ -15,6 +16,7 @@ import com.revenuecat.purchases.awaitCustomerInfo
 import com.revenuecat.purchases.restorePurchasesWith
 import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 class OverviewViewModel(private val interactionHandler: OverviewInteractionHandler) : ViewModel() {
 
     val customerInfo: MutableLiveData<CustomerInfo?> by lazy {
