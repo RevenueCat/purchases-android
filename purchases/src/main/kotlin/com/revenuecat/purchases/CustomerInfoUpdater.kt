@@ -38,22 +38,18 @@ internal class CustomerInfoUpdater(
     }
 
     fun notifyListeners(customerInfo: CustomerInfo) {
-        sendUpdatedCustomerInfoToDelegateIfChanged(customerInfo)
-    }
-
-    private fun sendUpdatedCustomerInfoToDelegateIfChanged(info: CustomerInfo) {
         synchronized(this@CustomerInfoUpdater) { updatedCustomerInfoListener to lastSentCustomerInfo }
             .let { (listener, lastSentCustomerInfo) ->
-                if (listener != null && lastSentCustomerInfo != info) {
+                if (listener != null && lastSentCustomerInfo != customerInfo) {
                     if (lastSentCustomerInfo != null) {
                         log(LogIntent.DEBUG, CustomerInfoStrings.CUSTOMERINFO_UPDATED_NOTIFYING_LISTENER)
                     } else {
                         log(LogIntent.DEBUG, CustomerInfoStrings.SENDING_LATEST_CUSTOMERINFO_TO_LISTENER)
                     }
                     synchronized(this@CustomerInfoUpdater) {
-                        this.lastSentCustomerInfo = info
+                        this.lastSentCustomerInfo = customerInfo
                     }
-                    dispatch { listener.onReceived(info) }
+                    dispatch { listener.onReceived(customerInfo) }
                 }
             }
     }
@@ -62,7 +58,7 @@ internal class CustomerInfoUpdater(
         if (listener != null) {
             log(LogIntent.DEBUG, ConfigureStrings.LISTENER_SET)
             getCachedCustomerInfo(identityManager.currentAppUserID)?.let {
-                sendUpdatedCustomerInfoToDelegateIfChanged(it)
+                notifyListeners(it)
             }
         }
     }

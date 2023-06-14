@@ -85,6 +85,29 @@ class CustomerInfoUpdaterTest {
         verify(exactly = 1) { deviceCache.cacheCustomerInfo(appUserId, mockInfo) }
     }
 
+    @Test
+    fun `caching and notifying listeners does not notify listeners if same than previous one`() {
+        val listenerMock = mockk<UpdatedCustomerInfoListener>(relaxed = true)
+        customerInfoUpdater.updatedCustomerInfoListener = listenerMock
+
+        customerInfoUpdater.cacheAndNotifyListeners(mockInfo)
+
+        verify(exactly = 1) { listenerMock.onReceived(mockInfo) } // From setting the listener
+    }
+
+    @Test
+    fun `caching and notifying listeners notifies listeners if different than previous one`() {
+        val listenerMock = mockk<UpdatedCustomerInfoListener>(relaxed = true)
+        customerInfoUpdater.updatedCustomerInfoListener = listenerMock
+
+        val newCustomerInfo = mockk<CustomerInfo>()
+        every { deviceCache.cacheCustomerInfo(appUserId, newCustomerInfo) } just Runs
+        customerInfoUpdater.cacheAndNotifyListeners(newCustomerInfo)
+
+        verify(exactly = 1) { listenerMock.onReceived(mockInfo) } // From setting the listener
+        verify(exactly = 1) { listenerMock.onReceived(newCustomerInfo) }
+    }
+
     // endregion
 
     // region notifyListeners
