@@ -166,7 +166,6 @@ data class GoogleStoreProduct(
 val StoreProduct.googleProduct: GoogleStoreProduct?
     get() = this as? GoogleStoreProduct
 
-
 sealed class GoogleProductData {
     data class Product(
         val data: ProductDetails,

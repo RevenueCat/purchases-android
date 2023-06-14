@@ -109,7 +109,6 @@ fun List<GoogleProductData>.toStoreProducts(): List<StoreProduct> {
     return storeProducts
 }
 
-// JOSH HERE
 fun SkuDetails.toStoreProduct() =
     GoogleStoreProduct(
         productId = sku,

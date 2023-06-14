@@ -1,6 +1,5 @@
 package com.revenuecat.purchases.common
 
-import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.models.StoreProduct
 import org.json.JSONObject
 
@@ -18,18 +17,12 @@ class GoogleOfferingParser : OfferingParser() {
             // Try to find INAPP, otherwise null
             return storeProducts
                 .takeIf { it?.size == 1 }
-                ?.takeIf { it[0].type == ProductType.INAPP }
+//                ?.takeIf { it[0].type == ProductType.INAPP }
                 ?.firstOrNull()
         }
 
-        val subOnBC5 = storeProducts?.firstOrNull { storeProduct ->
+        return storeProducts?.firstOrNull { storeProduct ->
             storeProduct.subscriptionOptions?.basePlan?.id == planIdentifier
-        }
-
-        if (subOnBC5 == null) {
-            return null
-        } else {
-            return subOnBC5
         }
     }
 }

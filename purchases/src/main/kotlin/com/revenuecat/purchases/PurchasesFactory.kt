@@ -21,6 +21,7 @@ import com.revenuecat.purchases.common.diagnostics.DiagnosticsFileHelper
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsSynchronizer
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.networking.ETagManager
+import com.revenuecat.purchases.common.networking.ExtraHeadersManager
 import com.revenuecat.purchases.common.offerings.OfferingsCache
 import com.revenuecat.purchases.common.offerings.OfferingsFactory
 import com.revenuecat.purchases.common.offerings.OfferingsManager
@@ -90,7 +91,9 @@ internal class PurchasesFactory(
             val signatureVerificationMode = SignatureVerificationMode.Disabled
             val signingManager = SigningManager(signatureVerificationMode)
 
-            val httpClient = HTTPClient(appConfig, eTagManager, diagnosticsTracker, signingManager)
+            val extraHeadersManager = ExtraHeadersManager()
+
+            val httpClient = HTTPClient(appConfig, eTagManager, diagnosticsTracker, signingManager, extraHeadersManager)
             val backendHelper = BackendHelper(apiKey, dispatcher, appConfig, httpClient)
             val backend = Backend(
                 appConfig,
@@ -109,6 +112,7 @@ internal class PurchasesFactory(
                 cache,
                 observerMode,
                 diagnosticsTracker,
+                extraHeadersManager,
             )
 
             val subscriberAttributesPoster = SubscriberAttributesPoster(backendHelper)

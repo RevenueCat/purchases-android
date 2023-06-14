@@ -12,6 +12,7 @@ import com.revenuecat.purchases.common.HTTPClient
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.networking.ETagManager
 import com.revenuecat.purchases.common.networking.Endpoint
+import com.revenuecat.purchases.common.networking.ExtraHeadersManager
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import com.revenuecat.purchases.common.verification.SigningManager
 import io.mockk.Runs
@@ -58,6 +59,7 @@ abstract class BaseBackendIntegrationTest {
     lateinit var sharedPreferencesEditor: SharedPreferences.Editor
     lateinit var eTagManager: ETagManager
     lateinit var signingManager: SigningManager
+    lateinit var extraHeadersManager: ExtraHeadersManager
     lateinit var httpClient: HTTPClient
     lateinit var backendHelper: BackendHelper
 
@@ -87,7 +89,7 @@ abstract class BaseBackendIntegrationTest {
         }
         eTagManager = ETagManager(sharedPreferences)
         signingManager = SigningManager(SignatureVerificationMode.Disabled)
-        httpClient = HTTPClient(appConfig, eTagManager, diagnosticsTrackerIfEnabled = null, signingManager)
+        httpClient = HTTPClient(appConfig, eTagManager, diagnosticsTrackerIfEnabled = null, signingManager, extraHeadersManager)
         backendHelper = BackendHelper(apiKey(), dispatcher, appConfig, httpClient)
         backend = Backend(appConfig, dispatcher, diagnosticsDispatcher, httpClient, backendHelper)
     }

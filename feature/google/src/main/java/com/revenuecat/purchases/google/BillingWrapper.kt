@@ -17,15 +17,12 @@ import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingFlowParams
 import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.ConsumeParams
-import com.android.billingclient.api.ProductDetails
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchaseHistoryRecord
 import com.android.billingclient.api.PurchaseHistoryResponseListener
 import com.android.billingclient.api.PurchasesResponseListener
 import com.android.billingclient.api.PurchasesUpdatedListener
-import com.android.billingclient.api.QueryProductDetailsParams
 import com.android.billingclient.api.QueryPurchasesParams
-import com.android.billingclient.api.SkuDetails
 import com.android.billingclient.api.SkuDetailsParams
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
@@ -43,15 +40,15 @@ import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.firstProductId
 import com.revenuecat.purchases.common.log
+import com.revenuecat.purchases.common.networking.ExtraHeadersManager
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.sha256
 import com.revenuecat.purchases.common.toHumanReadableDescription
-import com.revenuecat.purchases.models.GoogleProrationMode
 import com.revenuecat.purchases.models.GoogleProductData
+import com.revenuecat.purchases.models.GoogleProrationMode
 import com.revenuecat.purchases.models.GooglePurchasingData
 import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.PurchasingData
-import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.strings.BillingStrings
 import com.revenuecat.purchases.strings.OfferingStrings
@@ -75,6 +72,7 @@ class BillingWrapper(
     private val deviceCache: DeviceCache,
     @Suppress("unused")
     private val diagnosticsTrackerIfEnabled: DiagnosticsTracker?,
+    private val extraHeadersManager: ExtraHeadersManager,
     private val dateProvider: DateProvider = DefaultDateProvider(),
 ) : BillingAbstract(), PurchasesUpdatedListener, BillingClientStateListener {
 
@@ -104,6 +102,16 @@ class BillingWrapper(
             while (billingClient?.isReady == true && !serviceRequests.isEmpty()) {
                 serviceRequests.remove().let { mainHandler.post { it(null) } }
             }
+        }
+    }
+
+    private fun isProductDetailsUnupported(): Boolean {
+        if (billingClient == null) {
+            return false
+        }
+        synchronized(this@BillingWrapper) {
+            return billingClient?.isFeatureSupported(BillingClient.FeatureType.PRODUCT_DETAILS)?.responseCode !=
+                BillingClient.BillingResponseCode.OK
         }
     }
 
@@ -192,7 +200,6 @@ class BillingWrapper(
                                 log(LogIntent.PURCHASE, OfferingStrings.LIST_PRODUCTS.format(it.productId, it))
                             }
 
-                            // JOSH HERE
                             val storeProducts = productDetailsList.toStoreProducts()
                             onReceive(storeProducts)
                         } else {
@@ -671,6 +678,12 @@ class BillingWrapper(
                     stateListener?.onConnected()
                     executePendingRequests()
                     reconnectMilliseconds = RECONNECT_TIMER_START_MILLISECONDS
+
+                    // Need to set an extra header to only return backwards
+                    // compatible headers if product details isn't supported
+                    extraHeadersManager.setBackwardsCompatibleOverride(
+                        isProductDetailsUnupported(),
+                    )
                 }
                 BillingClient.BillingResponseCode.FEATURE_NOT_SUPPORTED,
                 BillingClient.BillingResponseCode.BILLING_UNAVAILABLE,
@@ -791,13 +804,12 @@ class BillingWrapper(
         }
     }
 
-    // JOSH HERE
     private fun BillingClient.queryProductDetailsAsyncEnsuringOneResponse(
         @BillingClient.ProductType productType: String,
         nonEmptyProductIds: Set<String>,
         listener: (result: BillingResult, products: List<GoogleProductData>) -> Unit,
     ) {
-        val canUseProductDetails = false
+        val canUseProductDetails = isProductDetailsUnupported()
 
         var hasResponded = false
         val requestStartTime = dateProvider.now

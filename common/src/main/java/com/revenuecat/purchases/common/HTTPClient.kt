@@ -12,6 +12,7 @@ import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.networking.ETagManager
 import com.revenuecat.purchases.common.networking.Endpoint
+import com.revenuecat.purchases.common.networking.ExtraHeadersManager
 import com.revenuecat.purchases.common.networking.HTTPRequest
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.MapConverter
@@ -36,11 +37,13 @@ import java.net.URLConnection
 import java.util.Date
 import kotlin.time.Duration
 
+@Suppress("LongParameterList")
 class HTTPClient(
     private val appConfig: AppConfig,
     private val eTagManager: ETagManager,
     private val diagnosticsTrackerIfEnabled: DiagnosticsTracker?,
     val signingManager: SigningManager,
+    private val extraHeadersManager: ExtraHeadersManager,
     private val dateProvider: DateProvider = DefaultDateProvider(),
     private val mapConverter: MapConverter = MapConverter(),
 ) {
@@ -148,6 +151,7 @@ class HTTPClient(
 
             nonce = if (shouldSignResponse) signingManager.createRandomNonce() else null
             val headers = getHeaders(requestHeaders, urlPathWithVersion, refreshETag, nonce)
+                .plus(extraHeadersManager.extraHeaders)
 
             val httpRequest = HTTPRequest(fullURL, headers, jsonBody)
 

@@ -1,6 +1,5 @@
 package com.revenuecat.apitester.kotlin
 
-import com.android.billingclient.api.ProductDetails
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.amazon.AmazonStoreProduct
 import com.revenuecat.purchases.amazon.amazonProduct

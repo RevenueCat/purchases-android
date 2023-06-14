@@ -1,6 +1,5 @@
 package com.revenuecat.purchases.models
 
-import com.android.billingclient.api.ProductDetails
 import com.revenuecat.purchases.ProductType
 
 sealed class GooglePurchasingData : PurchasingData {

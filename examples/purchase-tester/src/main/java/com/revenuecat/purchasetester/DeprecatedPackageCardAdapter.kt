@@ -8,7 +8,6 @@ import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.amazon.amazonProduct
-import com.revenuecat.purchases.models.GoogleProductData
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.googleProduct
 import com.revenuecat.purchases_sample.databinding.PackageCardBinding
@@ -68,7 +67,7 @@ class DeprecatedPackageCardAdapter(
                 currentPackage.packageType.toString()
             }
 
-            binding.packageDetailsJsonObject.detail = (product.googleProduct?.googleProductData as GoogleProductData.Product).data.toString()
+            binding.packageDetailsJsonObject.detail = product.googleProduct?.googleProductData?.toString()
                 ?: product.amazonProduct?.originalProductJSON.toString()
 
             binding.root.setOnClickListener {
