@@ -8,7 +8,6 @@ import androidx.annotation.Nullable;
 
 import com.revenuecat.purchases.CacheFetchPolicy;
 import com.revenuecat.purchases.CustomerInfo;
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI;
 import com.revenuecat.purchases.LogHandler;
 import com.revenuecat.purchases.LogLevel;
 import com.revenuecat.purchases.Offerings;
@@ -40,8 +39,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
-
-import kotlin.OptIn;
 
 @SuppressWarnings({"unused"})
 final class PurchasesAPI {
@@ -186,7 +183,6 @@ final class PurchasesAPI {
         purchases.setCreative("");
     }
 
-    @OptIn(markerClass = ExperimentalPreviewRevenueCatPurchasesAPI.class)
     static void checkConfiguration(final Context context,
                                    final ExecutorService executorService) throws MalformedURLException {
         final List<? extends BillingFeature> features = new ArrayList<>();
@@ -199,7 +195,6 @@ final class PurchasesAPI {
                 .observerMode(false)
                 .service(executorService)
                 .diagnosticsEnabled(true)
-                .informationalVerificationModeAndDiagnosticsEnabled(true)
                 .build();
 
         Purchases.configure(build);
