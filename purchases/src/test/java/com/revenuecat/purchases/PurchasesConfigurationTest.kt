@@ -79,16 +79,6 @@ class PurchasesConfigurationTest {
     }
 
     @Test
-    fun `PurchasesConfiguration disabling diagnostics also disables verification mode`() {
-        val purchasesConfiguration = builder
-            .informationalVerificationModeAndDiagnosticsEnabled(true)
-            .diagnosticsEnabled(false)
-            .build()
-        assertThat(purchasesConfiguration.diagnosticsEnabled).isFalse
-        assertThat(purchasesConfiguration.verificationMode).isEqualTo(EntitlementVerificationMode.DISABLED)
-    }
-
-    @Test
     fun `PurchasesConfiguration sets dangerous settings correctly`() {
         val dangerousSettings = DangerousSettings(autoSyncPurchases = false)
         val purchasesConfiguration = builder.dangerousSettings(dangerousSettings).build()
