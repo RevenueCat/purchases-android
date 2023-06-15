@@ -67,7 +67,8 @@ abstract class BaseHTTPClientTest {
         platformInfo: PlatformInfo = expectedPlatformInfo,
         proxyURL: URL? = baseURL,
         store: Store = Store.PLAY_STORE,
-        forceServerErrors: Boolean = false
+        forceServerErrors: Boolean = false,
+        forceSigningErrors: Boolean = false,
     ): AppConfig {
         return AppConfig(
             context = context,
@@ -75,7 +76,8 @@ abstract class BaseHTTPClientTest {
             platformInfo = platformInfo,
             proxyURL = proxyURL,
             store = store,
-            forceServerErrors = forceServerErrors
+            forceServerErrors = forceServerErrors,
+            forceSigningErrors = forceSigningErrors,
         )
     }
 

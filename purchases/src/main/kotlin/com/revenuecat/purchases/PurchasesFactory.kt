@@ -42,13 +42,14 @@ internal class PurchasesFactory(
     private val apiKeyValidator: APIKeyValidator = APIKeyValidator(),
 ) {
 
-    @Suppress("LongMethod")
+    @Suppress("LongMethod", "LongParameterList")
     fun createPurchases(
         configuration: PurchasesConfiguration,
         platformInfo: PlatformInfo,
         proxyURL: URL?,
         overrideBillingAbstract: BillingAbstract? = null,
         forceServerErrors: Boolean = false,
+        forceSigningError: Boolean = false,
     ): Purchases {
         validateConfiguration(configuration)
 
@@ -62,6 +63,7 @@ internal class PurchasesFactory(
                 store,
                 dangerousSettings,
                 forceServerErrors,
+                forceSigningError,
             )
 
             val prefs = PreferenceManager.getDefaultSharedPreferences(application)
@@ -86,7 +88,7 @@ internal class PurchasesFactory(
             val signatureVerificationMode = SignatureVerificationMode.fromEntitlementVerificationMode(
                 verificationMode,
             )
-            val signingManager = SigningManager(signatureVerificationMode)
+            val signingManager = SigningManager(signatureVerificationMode, appConfig)
 
             val httpClient = HTTPClient(appConfig, eTagManager, diagnosticsTracker, signingManager)
             val backendHelper = BackendHelper(apiKey, dispatcher, appConfig, httpClient)

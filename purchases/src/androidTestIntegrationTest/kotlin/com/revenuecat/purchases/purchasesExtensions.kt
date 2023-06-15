@@ -7,6 +7,7 @@ fun Purchases.Companion.configure(
     configuration: PurchasesConfiguration,
     overrideBillingAbstract: BillingAbstract,
     forceServerErrors: Boolean = false,
+    forceSigningErrors: Boolean = false,
 ): Purchases {
     return PurchasesFactory().createPurchases(
         configuration,
@@ -14,6 +15,7 @@ fun Purchases.Companion.configure(
         proxyURL,
         overrideBillingAbstract,
         forceServerErrors,
+        forceSigningErrors,
     ).also {
         @SuppressLint("RestrictedApi")
         sharedInstance = it
@@ -29,4 +31,10 @@ var Purchases.forceServerErrors: Boolean
     get() = appConfig.forceServerErrors
     set(value) {
         appConfig.forceServerErrors = value
+    }
+
+var Purchases.forceSigningErrors: Boolean
+    get() = appConfig.forceSigningErrors
+    set(value) {
+        appConfig.forceSigningErrors = value
     }
