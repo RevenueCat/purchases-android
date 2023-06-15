@@ -1,8 +1,8 @@
 [versions]
-agp = "8.0.0"
+agp = "8.0.2"
 androidxNavigation = "2.5.3"
 kotlin = "1.6.21"
-purchases = "6.1.1"
+purchases = "6.5.0"
 lifecycle = "2.5.0"
 androidxCore = "1.8.0"
 
