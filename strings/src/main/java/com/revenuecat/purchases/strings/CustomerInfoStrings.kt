@@ -8,6 +8,7 @@ object CustomerInfoStrings {
     const val CUSTOMERINFO_STALE_UPDATING_FOREGROUND = "CustomerInfo cache is stale, updating from " +
         "network in foreground."
     const val CUSTOMERINFO_UPDATED_FROM_NETWORK = "CustomerInfo updated from network."
+    const val CUSTOMERINFO_UPDATED_FROM_SYNCING_PENDING_PURCHASES = "CustomerInfo updated syncing pending purchases."
     const val CUSTOMERINFO_UPDATED_NOTIFYING_LISTENER = "CustomerInfo updated, sending to listener."
     const val SENDING_LATEST_CUSTOMERINFO_TO_LISTENER = "Sending latest CustomerInfo to listener."
     const val VENDING_CACHE = "Vending CustomerInfo from cache."

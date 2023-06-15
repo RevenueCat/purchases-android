@@ -17,6 +17,7 @@ internal class CustomerInfoHelper(
     private val backend: Backend,
     private val offlineEntitlementsManager: OfflineEntitlementsManager,
     private val customerInfoUpdateHandler: CustomerInfoUpdateHandler,
+    private val postPendingTransactionsHelper: PostPendingTransactionsHelper,
     private val handler: Handler = Handler(Looper.getMainLooper()),
 ) {
 
@@ -24,24 +25,28 @@ internal class CustomerInfoHelper(
         appUserID: String,
         fetchPolicy: CacheFetchPolicy,
         appInBackground: Boolean,
+        allowSharingPlayStoreAccount: Boolean,
         callback: ReceiveCustomerInfoCallback? = null,
     ) {
         debugLog(CustomerInfoStrings.RETRIEVING_CUSTOMER_INFO.format(fetchPolicy))
         when (fetchPolicy) {
             CacheFetchPolicy.CACHE_ONLY -> getCustomerInfoCacheOnly(appUserID, callback)
-            CacheFetchPolicy.FETCH_CURRENT -> getCustomerInfoFetchOnly(
+            CacheFetchPolicy.FETCH_CURRENT -> postPendingPurchasesIfNeededAndFetchCustomerInfo(
                 appUserID,
                 appInBackground,
+                allowSharingPlayStoreAccount,
                 callback,
             )
             CacheFetchPolicy.CACHED_OR_FETCHED -> getCustomerInfoCachedOrFetched(
                 appUserID,
                 appInBackground,
+                allowSharingPlayStoreAccount,
                 callback,
             )
             CacheFetchPolicy.NOT_STALE_CACHED_OR_CURRENT -> getCustomerInfoNotStaledCachedOrFetched(
                 appUserID,
                 appInBackground,
+                allowSharingPlayStoreAccount,
                 callback,
             )
         }
@@ -64,6 +69,26 @@ internal class CustomerInfoHelper(
             errorLog(error)
             dispatch { callback.onError(error) }
         }
+    }
+
+    private fun postPendingPurchasesIfNeededAndFetchCustomerInfo(
+        appUserID: String,
+        appInBackground: Boolean,
+        allowSharingPlayStoreAccount: Boolean,
+        callback: ReceiveCustomerInfoCallback? = null,
+    ) {
+        postPendingTransactionsHelper.syncPendingPurchaseQueue(
+            allowSharingPlayStoreAccount,
+            onError = { getCustomerInfoFetchOnly(appUserID, appInBackground, callback) },
+            onSuccess = { customerInfo ->
+                if (customerInfo == null) {
+                    getCustomerInfoFetchOnly(appUserID, appInBackground, callback)
+                } else {
+                    log(LogIntent.RC_SUCCESS, CustomerInfoStrings.CUSTOMERINFO_UPDATED_FROM_SYNCING_PENDING_PURCHASES)
+                    dispatch { callback?.onReceived(customerInfo) }
+                }
+            },
+        )
     }
 
     private fun getCustomerInfoFetchOnly(
@@ -109,28 +134,40 @@ internal class CustomerInfoHelper(
     private fun getCustomerInfoCachedOrFetched(
         appUserID: String,
         appInBackground: Boolean,
+        allowSharingPlayStoreAccount: Boolean,
         callback: ReceiveCustomerInfoCallback? = null,
     ) {
         val cachedCustomerInfo = getCachedCustomerInfo(appUserID)
         if (cachedCustomerInfo != null) {
             log(LogIntent.DEBUG, CustomerInfoStrings.VENDING_CACHE)
             dispatch { callback?.onReceived(cachedCustomerInfo) }
-            updateCachedCustomerInfoIfStale(appUserID, appInBackground)
+            updateCachedCustomerInfoIfStale(appUserID, appInBackground, allowSharingPlayStoreAccount)
         } else {
             log(LogIntent.DEBUG, CustomerInfoStrings.NO_CACHED_CUSTOMERINFO)
-            getCustomerInfoFetchOnly(appUserID, appInBackground, callback)
+            postPendingPurchasesIfNeededAndFetchCustomerInfo(
+                appUserID,
+                appInBackground,
+                allowSharingPlayStoreAccount,
+                callback,
+            )
         }
     }
 
     private fun getCustomerInfoNotStaledCachedOrFetched(
         appUserID: String,
         appInBackground: Boolean,
+        allowSharingPlayStoreAccount: Boolean,
         callback: ReceiveCustomerInfoCallback? = null,
     ) {
         if (deviceCache.isCustomerInfoCacheStale(appUserID, appInBackground)) {
-            getCustomerInfoFetchOnly(appUserID, appInBackground, callback)
+            postPendingPurchasesIfNeededAndFetchCustomerInfo(
+                appUserID,
+                appInBackground,
+                allowSharingPlayStoreAccount,
+                callback,
+            )
         } else {
-            getCustomerInfoCachedOrFetched(appUserID, appInBackground, callback)
+            getCustomerInfoCachedOrFetched(appUserID, appInBackground, allowSharingPlayStoreAccount, callback)
         }
     }
 
@@ -142,6 +179,7 @@ internal class CustomerInfoHelper(
     private fun updateCachedCustomerInfoIfStale(
         appUserID: String,
         appInBackground: Boolean,
+        allowSharingPlayStoreAccount: Boolean,
     ) {
         if (deviceCache.isCustomerInfoCacheStale(appUserID, appInBackground)) {
             log(
@@ -150,7 +188,7 @@ internal class CustomerInfoHelper(
                     CustomerInfoStrings.CUSTOMERINFO_STALE_UPDATING_BACKGROUND
                 } else CustomerInfoStrings.CUSTOMERINFO_STALE_UPDATING_FOREGROUND,
             )
-            getCustomerInfoFetchOnly(appUserID, appInBackground)
+            postPendingPurchasesIfNeededAndFetchCustomerInfo(appUserID, appInBackground, allowSharingPlayStoreAccount)
         }
     }
 

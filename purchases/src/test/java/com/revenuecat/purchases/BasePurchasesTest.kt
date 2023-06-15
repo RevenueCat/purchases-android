@@ -217,9 +217,9 @@ open class BasePurchasesTest {
     protected fun mockCustomerInfoHelper(errorGettingCustomerInfo: PurchasesError? = null) {
         with(mockCustomerInfoHelper) {
             every {
-                retrieveCustomerInfo(any(), any(), false, any())
+                retrieveCustomerInfo(any(), any(), appInBackground = false, allowSharingPlayStoreAccount = false, any())
             } answers {
-                val callback = arg<ReceiveCustomerInfoCallback?>(3)
+                val callback = arg<ReceiveCustomerInfoCallback?>(4)
                 if (errorGettingCustomerInfo == null) {
                     callback?.onReceived(mockInfo)
                 } else {
