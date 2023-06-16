@@ -15,6 +15,7 @@ dependencies {
     implementation "androidx.core:core-ktx:$androidxCoreVersion"
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
     implementation "com.android.billingclient:billing:$billingVersion"
+    implementation project(path: ':test-tabby')
 
     testImplementation project(":test-utils")
     testImplementation "androidx.test:core:$testLibrariesVersion"

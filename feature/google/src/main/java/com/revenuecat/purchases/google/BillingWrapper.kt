@@ -54,6 +54,7 @@ import com.revenuecat.purchases.strings.OfferingStrings
 import com.revenuecat.purchases.strings.PurchaseStrings
 import com.revenuecat.purchases.strings.RestoreStrings
 import com.revenuecat.purchases.utils.Result
+import com.revenuecat.testtabby.TabbyBillingClient
 import java.io.PrintWriter
 import java.io.StringWriter
 import java.util.Date
@@ -90,7 +91,7 @@ class BillingWrapper(
     class ClientFactory(private val context: Context) {
         @UiThread
         fun buildClient(listener: com.android.billingclient.api.PurchasesUpdatedListener): BillingClient {
-            return BillingClient.newBuilder(context).enablePendingPurchases().setListener(listener)
+            return TabbyBillingClient.newBuilder(context).enablePendingPurchases().setListener(listener)
                 .build()
         }
     }
