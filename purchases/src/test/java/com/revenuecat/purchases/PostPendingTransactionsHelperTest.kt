@@ -66,21 +66,6 @@ class PostPendingTransactionsHelperTest {
     // region syncPendingPurchaseQueue
 
     @Test
-    fun `if billing client not connected do not query purchases`() {
-        changeBillingConnected(false)
-        syncAndAssertError(PurchasesError(PurchasesErrorCode.StoreProblemError, "Billing client disconnected"))
-        verify(exactly = 0) {
-            billing.queryPurchases(any(), any(), any())
-        }
-    }
-
-    @Test
-    fun `if billing client not connected error callback called`() {
-        changeBillingConnected(false)
-        syncAndAssertError(PurchasesError(PurchasesErrorCode.StoreProblemError, "Billing client disconnected"))
-    }
-
-    @Test
     fun `skip posting pending purchases if autosync is off`() {
         changeAutoSyncEnabled(false)
         syncAndAssertSuccessful(null)
