@@ -23,7 +23,7 @@ import org.junit.runner.RunWith
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @RunWith(AndroidJUnit4::class)
-class TrustedEntitlementsInformationalSuccessIntegrationTest : BasePurchasesIntegrationTest() {
+class TrustedEntitlementsInformationalModeIntegrationTest : BasePurchasesIntegrationTest() {
 
     @Before
     fun setup() {
@@ -110,5 +110,53 @@ class TrustedEntitlementsInformationalSuccessIntegrationTest : BasePurchasesInte
 
         assertThat(receivedCustomerInfo2).isNotNull
         assertThat(receivedCustomerInfo2?.entitlements?.verification).isEqualTo(VerificationResult.FAILED)
+    }
+
+    @Test
+    fun initialCustomerInfoFailsToVerify() {
+        Purchases.sharedInstance.forceSigningErrors = true
+
+        var receivedCustomerInfo: CustomerInfo? = null
+        ensureBlockFinishes { latch ->
+            Purchases.sharedInstance.getCustomerInfoWith(
+                onError = { fail("should be success. Error: ${it.message}") },
+                onSuccess = {
+                    receivedCustomerInfo = it
+                    latch.countDown()
+                },
+            )
+        }
+
+        assertThat(receivedCustomerInfo).isNotNull
+        assertThat(receivedCustomerInfo?.entitlements?.verification).isEqualTo(VerificationResult.FAILED)
+    }
+
+    @Test
+    fun canPurchaseProductFailingToVerifyStatus() {
+        Purchases.sharedInstance.forceSigningErrors = true
+
+        val storeProduct = StoreProductFactory.createGoogleStoreProduct()
+        val storeTransaction = StoreTransactionFactory.createStoreTransaction()
+        mockBillingAbstract.mockQueryProductDetails(queryProductDetailsSubsReturn = listOf(storeProduct))
+
+        var receivedCustomerInfo: CustomerInfo? = null
+        ensureBlockFinishes { latch ->
+            Purchases.sharedInstance.purchaseWith(
+                purchaseParams = PurchaseParams.Builder(activity, storeProduct).build(),
+                onError = { error, _ -> fail("Purchase should be successful. Error: ${error.message}") },
+                onSuccess = { _, customerInfo ->
+                    receivedCustomerInfo = customerInfo
+                    latch.countDown()
+                },
+            )
+            latestPurchasesUpdatedListener!!.onPurchasesUpdated(listOf(storeTransaction))
+        }
+
+        assertThat(receivedCustomerInfo).isNotNull
+        assertThat(receivedCustomerInfo?.entitlements?.verification).isEqualTo(VerificationResult.FAILED)
+        assertThat(receivedCustomerInfo?.entitlements?.all).isNotEmpty
+        assertThat(
+            receivedCustomerInfo?.entitlements?.all?.values?.first()?.verification,
+        ).isEqualTo(VerificationResult.FAILED)
     }
 }
