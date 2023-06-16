@@ -15,15 +15,15 @@ class AppConfig(
     val store: Store,
     val dangerousSettings: DangerousSettings = DangerousSettings(autoSyncPurchases = true),
     // Should only be used for tests
+    private val runningTests: Boolean = false,
     forceServerErrors: Boolean = false,
     forceSigningErrors: Boolean = false,
 ) {
     // Should only be used for tests
-    private val integrationTestFlavor = "integrationTest"
     var forceServerErrors: Boolean = forceServerErrors
-        get() = BuildConfig.FLAVOR == integrationTestFlavor && field
+        get() = runningTests && field
     var forceSigningErrors: Boolean = forceSigningErrors
-        get() = BuildConfig.FLAVOR == integrationTestFlavor && field
+        get() = runningTests && field
 
     val enableOfflineEntitlements = true
     val languageTag: String = context.getLocale()?.toBCP47() ?: ""

@@ -76,6 +76,7 @@ abstract class BaseHTTPClientTest {
             platformInfo = platformInfo,
             proxyURL = proxyURL,
             store = store,
+            runningTests = true,
             forceServerErrors = forceServerErrors,
             forceSigningErrors = forceSigningErrors,
         )

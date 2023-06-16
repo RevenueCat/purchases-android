@@ -11,6 +11,7 @@ import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BackendHelper
 import com.revenuecat.purchases.common.BillingAbstract
+import com.revenuecat.purchases.common.BuildConfig
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.FileHelper
 import com.revenuecat.purchases.common.HTTPClient
@@ -41,6 +42,7 @@ import java.util.concurrent.ThreadFactory
 internal class PurchasesFactory(
     private val apiKeyValidator: APIKeyValidator = APIKeyValidator(),
 ) {
+    private val integrationTestFlavor = "integrationTest"
 
     @Suppress("LongMethod", "LongParameterList")
     fun createPurchases(
@@ -62,6 +64,7 @@ internal class PurchasesFactory(
                 proxyURL,
                 store,
                 dangerousSettings,
+                BuildConfig.FLAVOR == integrationTestFlavor,
                 forceServerErrors,
                 forceSigningError,
             )
