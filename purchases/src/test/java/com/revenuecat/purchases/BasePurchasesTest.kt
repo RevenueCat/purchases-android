@@ -216,14 +216,20 @@ open class BasePurchasesTest {
     // region Protected methods
     protected fun mockCustomerInfoHelper(errorGettingCustomerInfo: PurchasesError? = null) {
         with(mockCustomerInfoHelper) {
+            val slot = slot<ReceiveCustomerInfoCallback>()
             every {
-                retrieveCustomerInfo(any(), any(), appInBackground = false, allowSharingPlayStoreAccount = false, any())
+                retrieveCustomerInfo(
+                    any(),
+                    any(),
+                    appInBackground = false,
+                    allowSharingPlayStoreAccount = false,
+                    capture(slot),
+                )
             } answers {
-                val callback = arg<ReceiveCustomerInfoCallback?>(4)
                 if (errorGettingCustomerInfo == null) {
-                    callback?.onReceived(mockInfo)
+                    slot.captured.onReceived(mockInfo)
                 } else {
-                    callback?.onError(errorGettingCustomerInfo)
+                    slot.captured.onError(errorGettingCustomerInfo)
                 }
             }
         }
