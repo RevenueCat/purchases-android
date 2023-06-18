@@ -1,0 +1,11 @@
+apply from: "$rootProject.projectDir/library.gradle"
+
+android {
+    namespace 'com.revenuecat.purchases.debugview'
+}
+
+dependencies {
+    implementation project(":purchases")
+    implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
+    implementation "androidx.core:core-ktx:$androidxCoreVersion"
+}
