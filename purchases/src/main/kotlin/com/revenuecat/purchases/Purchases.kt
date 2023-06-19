@@ -93,7 +93,7 @@ class Purchases internal constructor(
     internal val offlineEntitlementsManager: OfflineEntitlementsManager,
     private val postReceiptHelper: PostReceiptHelper,
     private val postTransactionWithProductDetailsHelper: PostTransactionWithProductDetailsHelper,
-    private val syncPendingTransactionsHelper: SyncPendingTransactionsHelper,
+    private val postPendingTransactionsHelper: PostPendingTransactionsHelper,
     private val syncPurchasesHelper: SyncPurchasesHelper,
     private val offeringsManager: OfferingsManager,
     // This is nullable due to: https://github.com/RevenueCat/purchases-flutter/issues/408
@@ -170,7 +170,7 @@ class Purchases internal constructor(
 
         billing.stateListener = object : BillingAbstract.StateListener {
             override fun onConnected() {
-                syncPendingTransactionsHelper.syncPendingPurchaseQueue(allowSharingPlayStoreAccount)
+                postPendingTransactionsHelper.syncPendingPurchaseQueue(allowSharingPlayStoreAccount)
             }
         }
         billing.purchasesUpdatedListener = getPurchasesUpdatedListener()
@@ -207,7 +207,7 @@ class Purchases internal constructor(
             )
         }
         offeringsManager.onAppForeground(identityManager.currentAppUserID)
-        syncPendingTransactionsHelper.syncPendingPurchaseQueue(allowSharingPlayStoreAccount)
+        postPendingTransactionsHelper.syncPendingPurchaseQueue(allowSharingPlayStoreAccount)
         synchronizeSubscriberAttributesIfNeeded()
         offlineEntitlementsManager.updateProductEntitlementMappingCacheIfStale()
     }

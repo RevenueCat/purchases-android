@@ -9,7 +9,7 @@ import com.revenuecat.purchases.PostReceiptHelper
 import com.revenuecat.purchases.PostTransactionWithProductDetailsHelper
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.Store
-import com.revenuecat.purchases.SyncPendingTransactionsHelper
+import com.revenuecat.purchases.PostPendingTransactionsHelper
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BillingAbstract
@@ -67,7 +67,7 @@ class SubscriberAttributesPurchasesTests {
             every { currentAppUserID } returns appUserId
         }
         val postTransactionHelper = PostTransactionWithProductDetailsHelper(billingWrapperMock, postReceiptHelperMock)
-        val syncPendingTransactionsHelper = SyncPendingTransactionsHelper(
+        val postPendingTransactionsHelper = PostPendingTransactionsHelper(
             appConfig,
             cache,
             billingWrapperMock,
@@ -90,7 +90,7 @@ class SubscriberAttributesPurchasesTests {
             offlineEntitlementsManager = offlineEntitlementsManagerMock,
             postReceiptHelper = postReceiptHelperMock,
             postTransactionWithProductDetailsHelper = postTransactionHelper,
-            syncPendingTransactionsHelper = syncPendingTransactionsHelper,
+            postPendingTransactionsHelper = postPendingTransactionsHelper,
             syncPurchasesHelper = mockk(),
             offeringsManager = offeringsManagerMock
         )

@@ -202,7 +202,7 @@ internal class PurchasesFactory(
                 postReceiptHelper,
             )
 
-            val syncPendingTransactionsHelper = SyncPendingTransactionsHelper(
+            val postPendingTransactionsHelper = PostPendingTransactionsHelper(
                 appConfig,
                 cache,
                 billing,
@@ -226,7 +226,7 @@ internal class PurchasesFactory(
                 offlineEntitlementsManager,
                 postReceiptHelper,
                 postTransactionWithProductDetailsHelper,
-                syncPendingTransactionsHelper,
+                postPendingTransactionsHelper,
                 syncPurchasesHelper,
                 offeringsManager,
             )

@@ -12,7 +12,7 @@ import com.revenuecat.purchases.strings.PurchaseStrings
 import com.revenuecat.purchases.strings.RestoreStrings
 import com.revenuecat.purchases.utils.Result
 
-internal class SyncPendingTransactionsHelper(
+internal class PostPendingTransactionsHelper(
     private val appConfig: AppConfig,
     private val deviceCache: DeviceCache,
     private val billing: BillingAbstract,

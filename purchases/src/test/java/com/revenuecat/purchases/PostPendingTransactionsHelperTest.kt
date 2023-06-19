@@ -25,7 +25,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
-class SyncPendingTransactionsHelperTest {
+class PostPendingTransactionsHelperTest {
 
     private val allowSharingPlayStoreAccount = true
     private val appUserId = "test-app-user-id"
@@ -37,7 +37,7 @@ class SyncPendingTransactionsHelperTest {
     private lateinit var identityManager: IdentityManager
     private lateinit var postTransactionWithProductDetailsHelper: PostTransactionWithProductDetailsHelper
 
-    private lateinit var syncPendingTransactionsHelper: SyncPendingTransactionsHelper
+    private lateinit var postPendingTransactionsHelper: PostPendingTransactionsHelper
 
     @Before
     fun setUp() {
@@ -53,7 +53,7 @@ class SyncPendingTransactionsHelperTest {
         changeBillingConnected()
         changeAutoSyncEnabled(true)
 
-        syncPendingTransactionsHelper = SyncPendingTransactionsHelper(
+        postPendingTransactionsHelper = PostPendingTransactionsHelper(
             appConfig,
             deviceCache,
             billing,
@@ -129,7 +129,7 @@ class SyncPendingTransactionsHelperTest {
 
         mockPostTransactionsSuccessful(mockk())
 
-        syncPendingTransactionsHelper.syncPendingPurchaseQueue(allowSharingPlayStoreAccount)
+        postPendingTransactionsHelper.syncPendingPurchaseQueue(allowSharingPlayStoreAccount)
 
         verify(exactly = 1) {
             postTransactionWithProductDetailsHelper.postTransactions(
@@ -383,7 +383,7 @@ class SyncPendingTransactionsHelperTest {
 
     private fun syncAndAssertSuccessful(resultCustomerInfo: CustomerInfo?) {
         var successCallCount = 0
-        syncPendingTransactionsHelper.syncPendingPurchaseQueue(
+        postPendingTransactionsHelper.syncPendingPurchaseQueue(
             allowSharingPlayStoreAccount,
             onError = { fail("Should be success") },
             onSuccess = {
@@ -396,7 +396,7 @@ class SyncPendingTransactionsHelperTest {
 
     private fun syncAndAssertError(purchasesError: PurchasesError) {
         var receivedError: PurchasesError? = null
-        syncPendingTransactionsHelper.syncPendingPurchaseQueue(
+        postPendingTransactionsHelper.syncPendingPurchaseQueue(
             allowSharingPlayStoreAccount,
             onError = { receivedError = it },
             onSuccess = { fail("Should be error") },

@@ -58,7 +58,7 @@ open class BasePurchasesTest {
     protected val mockDiagnosticsSynchronizer = mockk<DiagnosticsSynchronizer>()
     protected val mockOfflineEntitlementsManager = mockk<OfflineEntitlementsManager>()
     internal val mockPostReceiptHelper = mockk<PostReceiptHelper>()
-    internal val mockSyncPendingTransactionsHelper = mockk<SyncPendingTransactionsHelper>()
+    internal val mockPostPendingTransactionsHelper = mockk<PostPendingTransactionsHelper>()
     internal val mockSyncPurchasesHelper = mockk<SyncPurchasesHelper>()
     protected val mockOfferingsManager = mockk<OfferingsManager>()
 
@@ -84,7 +84,7 @@ open class BasePurchasesTest {
         mockStoreProduct(productIds, productIds, ProductType.SUBS)
         mockCustomerInfoHelper()
         mockCustomerInfoUpdateHandler()
-        mockSyncPendingTransactionsHelper()
+        mockPostPendingTransactionsHelper()
 
         every {
             updatedCustomerInfoListener.onReceived(any())
@@ -111,7 +111,7 @@ open class BasePurchasesTest {
             mockSyncPurchasesHelper,
             mockOfferingsManager,
             mockCustomerInfoUpdateHandler,
-            mockSyncPendingTransactionsHelper,
+            mockPostPendingTransactionsHelper,
         )
     }
 
@@ -319,7 +319,7 @@ open class BasePurchasesTest {
             offlineEntitlementsManager = mockOfflineEntitlementsManager,
             postReceiptHelper = mockPostReceiptHelper,
             postTransactionWithProductDetailsHelper = postTransactionsHelper,
-            syncPendingTransactionsHelper = mockSyncPendingTransactionsHelper,
+            postPendingTransactionsHelper = mockPostPendingTransactionsHelper,
             syncPurchasesHelper = mockSyncPurchasesHelper,
             offeringsManager = mockOfferingsManager
         )
@@ -351,9 +351,9 @@ open class BasePurchasesTest {
         } returns customerInfoStale
     }
 
-    protected fun mockSyncPendingTransactionsHelper() {
+    protected fun mockPostPendingTransactionsHelper() {
         every {
-            mockSyncPendingTransactionsHelper.syncPendingPurchaseQueue(any(), any(), any())
+            mockPostPendingTransactionsHelper.syncPendingPurchaseQueue(any(), any(), any())
         } just Runs
     }
 

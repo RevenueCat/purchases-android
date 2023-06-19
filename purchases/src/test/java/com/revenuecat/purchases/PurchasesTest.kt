@@ -2768,7 +2768,7 @@ class PurchasesTest: BasePurchasesTest() {
     fun `on billing wrapper connected, sync pending purchases`() {
         capturedBillingWrapperStateListener.captured.onConnected()
         verify(exactly = 1) {
-            mockSyncPendingTransactionsHelper.syncPendingPurchaseQueue(any())
+            mockPostPendingTransactionsHelper.syncPendingPurchaseQueue(any())
         }
     }
 
@@ -2778,7 +2778,7 @@ class PurchasesTest: BasePurchasesTest() {
         mockOfferingsManagerAppForeground()
         purchases.onAppForegrounded()
         verify(exactly = 1) {
-            mockSyncPendingTransactionsHelper.syncPendingPurchaseQueue(any())
+            mockPostPendingTransactionsHelper.syncPendingPurchaseQueue(any())
         }
     }
 
