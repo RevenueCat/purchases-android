@@ -443,13 +443,17 @@ class BillingWrapper(
         }
     }
 
-    @Suppress("ReturnCount")
+    @Suppress("ReturnCount", "LongMethod")
     override fun queryPurchases(
         appUserID: String,
         onSuccess: (Map<String, StoreTransaction>) -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {
-        executeRequestOnUIThread {
+        executeRequestOnUIThread { connectionError ->
+            if (connectionError != null) {
+                onError(connectionError)
+                return@executeRequestOnUIThread
+            }
             withConnectedClient {
                 log(LogIntent.DEBUG, RestoreStrings.QUERYING_PURCHASE)
 

@@ -111,6 +111,8 @@ class BillingWrapperTest {
 
     private val billingClientOKResult = BillingClient.BillingResponseCode.OK.buildResult()
     private val billingClientErrorResult = BillingClient.BillingResponseCode.ERROR.buildResult()
+    private val billingClientBillingUnavailableResult =
+        BillingClient.BillingResponseCode.BILLING_UNAVAILABLE.buildResult()
     private val appUserId = "jerry"
     private var mockActivity = mockk<Activity>()
 
@@ -1254,6 +1256,26 @@ class BillingWrapperTest {
         }
 
         assertThat(purchasesByHashedToken).isNotNull
+    }
+
+    @Test
+    fun `queryPurchases returns error if error connecting`() {
+        every { mockClient.isReady } returns false
+
+        var receivedError: PurchasesError? = null
+        wrapper.queryPurchases(
+            appUserID = "appUserID",
+            onSuccess = { fail("should be an error") },
+            onError = { receivedError = it}
+        )
+
+        billingClientStateListener!!.onBillingSetupFinished(billingClientBillingUnavailableResult)
+
+        verify(exactly = 0) {
+            mockClient.queryPurchasesAsync(any<QueryPurchasesParams>(), any())
+        }
+
+        assertThat(receivedError).isNotNull
     }
 
     @Test
