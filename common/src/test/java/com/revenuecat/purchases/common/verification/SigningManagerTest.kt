@@ -3,6 +3,7 @@ package com.revenuecat.purchases.common.verification
 import android.util.Base64
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.VerificationResult
+import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
 import io.mockk.every
@@ -17,6 +18,7 @@ import org.robolectric.annotation.Config
 @Config(manifest = Config.NONE)
 class SigningManagerTest {
     private lateinit var verifier: SignatureVerifier
+    private lateinit var appConfig: AppConfig
 
     private lateinit var disabledSigningManager: SigningManager
     private lateinit var informationalSigningManager: SigningManager
@@ -25,10 +27,13 @@ class SigningManagerTest {
     @Before
     fun setUp() {
         verifier = mockk()
+        appConfig = mockk<AppConfig>().apply {
+            every { forceSigningErrors } returns false
+        }
 
-        disabledSigningManager = SigningManager(SignatureVerificationMode.Disabled)
-        informationalSigningManager = SigningManager(SignatureVerificationMode.Informational(verifier))
-        enforcedSigningManager = SigningManager(SignatureVerificationMode.Enforced(verifier))
+        disabledSigningManager = SigningManager(SignatureVerificationMode.Disabled, appConfig)
+        informationalSigningManager = SigningManager(SignatureVerificationMode.Informational(verifier), appConfig)
+        enforcedSigningManager = SigningManager(SignatureVerificationMode.Enforced(verifier), appConfig)
     }
 
     // region shouldVerifyEndpoint
@@ -79,6 +84,13 @@ class SigningManagerTest {
     // endregion
 
     // region verifyResponse
+
+    @Test
+    fun `verifyResponse returns error if forceSigningErros is true`() {
+        every { appConfig.forceSigningErrors } returns true
+        val verificationResult = callVerifyResponse(informationalSigningManager, signature = null)
+        assertThat(verificationResult).isEqualTo(VerificationResult.FAILED)
+    }
 
     @Test
     fun `verifyResponse returns NOT_REQUESTED if verification mode disabled`() {
@@ -148,7 +160,10 @@ class SigningManagerTest {
 
     @Test
     fun `verifyResponse with real data verifies correctly`() {
-        val signingManager = SigningManager(SignatureVerificationMode.Informational(DefaultSignatureVerifier()))
+        val signingManager = SigningManager(
+            SignatureVerificationMode.Informational(DefaultSignatureVerifier()),
+            appConfig
+        )
         val verificationResult = callVerifyResponse(signingManager)
         assertThat(verificationResult).isEqualTo(VerificationResult.VERIFIED)
     }
@@ -156,7 +171,10 @@ class SigningManagerTest {
     @Suppress("MaxLineLength")
     @Test
     fun `verifyResponse with slightly different data does not verify correctly`() {
-        val signingManager = SigningManager(SignatureVerificationMode.Informational(DefaultSignatureVerifier()))
+        val signingManager = SigningManager(
+            SignatureVerificationMode.Informational(DefaultSignatureVerifier()),
+            appConfig,
+        )
         assertThat(
             callVerifyResponse(signingManager, requestTime = "1677005916011") // Wrong request time
         ).isEqualTo(VerificationResult.FAILED)

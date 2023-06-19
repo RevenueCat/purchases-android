@@ -2,14 +2,17 @@ package com.revenuecat.purchases.common.verification
 
 import android.util.Base64
 import com.revenuecat.purchases.VerificationResult
+import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
+import com.revenuecat.purchases.common.warnLog
 import com.revenuecat.purchases.strings.NetworkStrings
 import java.security.SecureRandom
 
 class SigningManager(
     val signatureVerificationMode: SignatureVerificationMode,
+    val appConfig: AppConfig,
 ) {
     private companion object {
         const val NONCE_BYTES_SIZE = 12
@@ -36,6 +39,10 @@ class SigningManager(
         requestTime: String?,
         eTag: String?,
     ): VerificationResult {
+        if (appConfig.forceSigningErrors) {
+            warnLog("Forcing signing error for request with path: $urlPath")
+            return VerificationResult.FAILED
+        }
         val signatureVerifier = signatureVerificationMode.verifier ?: return VerificationResult.NOT_REQUESTED
 
         if (signature == null) {

@@ -39,6 +39,7 @@ open class BasePurchasesIntegrationTest {
 
     protected open val initialActivePurchasesToUse: Map<String, StoreTransaction> = emptyMap()
     protected open val initialForceServerErrors: Boolean = false
+    protected open val initialForceSigningErrors: Boolean = false
 
     protected val testTimeout = 5.seconds
     protected val currentTimestamp = Date().time
@@ -72,10 +73,13 @@ open class BasePurchasesIntegrationTest {
 
     // region helpers
 
+    @Suppress("LongParameterList")
     protected fun setUpTest(
         initialSharedPreferences: Map<String, String> = emptyMap(),
+        entitlementVerificationMode: EntitlementVerificationMode? = null,
         initialActivePurchases: Map<String, StoreTransaction> = initialActivePurchasesToUse,
         forceServerErrors: Boolean = initialForceServerErrors,
+        forceSigningErrors: Boolean = initialForceSigningErrors,
         postSetupTestCallback: (MainActivity) -> Unit = {},
     ) {
         latestPurchasesUpdatedListener = null
@@ -97,7 +101,7 @@ open class BasePurchasesIntegrationTest {
                 Purchases.proxyURL = URL(urlString)
             }
 
-            configureSdk(it, forceServerErrors)
+            configureSdk(it, entitlementVerificationMode, forceServerErrors, forceSigningErrors)
 
             postSetupTestCallback(it)
         }
@@ -107,18 +111,38 @@ open class BasePurchasesIntegrationTest {
         activityScenarioRule.scenario.onActivity(block)
     }
 
-    protected fun simulateSdkRestart(context: Context, forceServerErrors: Boolean = false) {
+    protected fun simulateSdkRestart(
+        context: Context,
+        entitlementVerificationMode: EntitlementVerificationMode? = null,
+        forceServerErrors: Boolean = false,
+    ) {
         Purchases.resetSingleton()
-        configureSdk(context, forceServerErrors)
+        configureSdk(context, entitlementVerificationMode, forceServerErrors)
     }
 
-    protected fun configureSdk(context: Context, forceServerErrors: Boolean = false) {
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    protected fun configureSdk(
+        context: Context,
+        entitlementVerificationMode: EntitlementVerificationMode? = null,
+        forceServerErrors: Boolean = false,
+        forceSigningErrors: Boolean = false,
+    ) {
         Purchases.configure(
             PurchasesConfiguration.Builder(context, Constants.apiKey)
                 .appUserID(testUserId)
+                .apply {
+                    if (entitlementVerificationMode != null) {
+                        if (entitlementVerificationMode == EntitlementVerificationMode.INFORMATIONAL) {
+                            informationalVerificationModeAndDiagnosticsEnabled(true)
+                        } else {
+                            informationalVerificationModeAndDiagnosticsEnabled(false)
+                        }
+                    }
+                }
                 .build(),
             mockBillingAbstract,
             forceServerErrors,
+            forceSigningErrors,
         )
     }
 

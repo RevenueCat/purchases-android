@@ -74,6 +74,7 @@ abstract class BaseBackendIntegrationTest {
             every { packageName } returns "com.revenuecat.purchases.backend_tests"
             every { finishTransactions } returns true
             every { forceServerErrors } returns false
+            every { forceSigningErrors } returns false
         }
         dispatcher = Dispatcher(Executors.newSingleThreadScheduledExecutor())
         diagnosticsDispatcher = Dispatcher(Executors.newSingleThreadScheduledExecutor())
@@ -86,7 +87,7 @@ abstract class BaseBackendIntegrationTest {
             every { edit() } returns sharedPreferencesEditor
         }
         eTagManager = ETagManager(sharedPreferences)
-        signingManager = SigningManager(SignatureVerificationMode.Disabled)
+        signingManager = SigningManager(SignatureVerificationMode.Disabled, appConfig)
         httpClient = HTTPClient(appConfig, eTagManager, diagnosticsTrackerIfEnabled = null, signingManager)
         backendHelper = BackendHelper(apiKey(), dispatcher, appConfig, httpClient)
         backend = Backend(appConfig, dispatcher, diagnosticsDispatcher, httpClient, backendHelper)

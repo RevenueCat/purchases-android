@@ -161,6 +161,30 @@ class AppConfigTest {
     }
 
     @Test
+    fun `default forceServerErrors is correct`() {
+        val appConfig = AppConfig(
+            context = mockk(relaxed = true),
+            observerMode = false,
+            platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
+            proxyURL = null,
+            store = Store.PLAY_STORE
+        )
+        assertThat(appConfig.forceServerErrors).isFalse
+    }
+
+    @Test
+    fun `default forceSigningErrors is correct`() {
+        val appConfig = AppConfig(
+            context = mockk(relaxed = true),
+            observerMode = false,
+            platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
+            proxyURL = null,
+            store = Store.PLAY_STORE
+        )
+        assertThat(appConfig.forceSigningErrors).isFalse
+    }
+
+    @Test
     fun `Given two app configs with same data, both are equal`() {
         val x = AppConfig(
             context = mockk(relaxed = true),
