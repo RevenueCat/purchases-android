@@ -16,7 +16,7 @@ internal class CustomerInfoHelper(
     private val deviceCache: DeviceCache,
     private val backend: Backend,
     private val offlineEntitlementsManager: OfflineEntitlementsManager,
-    private val customerInfoUpdateReceiver: CustomerInfoUpdateReceiver,
+    private val customerInfoUpdateHandler: CustomerInfoUpdateHandler,
     private val handler: Handler = Handler(Looper.getMainLooper()),
 ) {
 
@@ -78,7 +78,7 @@ internal class CustomerInfoHelper(
             { info ->
                 log(LogIntent.RC_SUCCESS, CustomerInfoStrings.CUSTOMERINFO_UPDATED_FROM_NETWORK)
                 offlineEntitlementsManager.resetOfflineCustomerInfoCache()
-                customerInfoUpdateReceiver.cacheAndNotifyListeners(info)
+                customerInfoUpdateHandler.cacheAndNotifyListeners(info)
                 dispatch { callback?.onReceived(info) }
             },
             { backendError, isServerError ->
@@ -92,7 +92,7 @@ internal class CustomerInfoHelper(
                     offlineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(
                         appUserID,
                         onSuccess = { offlineComputedCustomerInfo ->
-                            customerInfoUpdateReceiver.notifyListeners(offlineComputedCustomerInfo)
+                            customerInfoUpdateHandler.notifyListeners(offlineComputedCustomerInfo)
                             dispatch { callback?.onReceived(offlineComputedCustomerInfo) }
                         },
                         onError = {

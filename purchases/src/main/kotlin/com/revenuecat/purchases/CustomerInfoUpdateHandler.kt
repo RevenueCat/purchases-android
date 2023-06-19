@@ -14,7 +14,7 @@ import com.revenuecat.purchases.strings.CustomerInfoStrings
 /**
  * This class is responsible for updating the customer info cache and notifying the listeners.
  */
-internal class CustomerInfoUpdateReceiver(
+internal class CustomerInfoUpdateHandler(
     private val deviceCache: DeviceCache,
     private val identityManager: IdentityManager,
     private val offlineEntitlementsManager: OfflineEntitlementsManager,
@@ -24,7 +24,7 @@ internal class CustomerInfoUpdateReceiver(
     var updatedCustomerInfoListener: UpdatedCustomerInfoListener? = null
         @Synchronized get
         set(value) {
-            synchronized(this@CustomerInfoUpdateReceiver) {
+            synchronized(this@CustomerInfoUpdateHandler) {
                 field = value
             }
             afterSetListener(value)
@@ -38,7 +38,7 @@ internal class CustomerInfoUpdateReceiver(
     }
 
     fun notifyListeners(customerInfo: CustomerInfo) {
-        synchronized(this@CustomerInfoUpdateReceiver) { updatedCustomerInfoListener to lastSentCustomerInfo }
+        synchronized(this@CustomerInfoUpdateHandler) { updatedCustomerInfoListener to lastSentCustomerInfo }
             .let { (listener, lastSentCustomerInfo) ->
                 if (listener != null && lastSentCustomerInfo != customerInfo) {
                     if (lastSentCustomerInfo != null) {
@@ -46,7 +46,7 @@ internal class CustomerInfoUpdateReceiver(
                     } else {
                         log(LogIntent.DEBUG, CustomerInfoStrings.SENDING_LATEST_CUSTOMERINFO_TO_LISTENER)
                     }
-                    synchronized(this@CustomerInfoUpdateReceiver) {
+                    synchronized(this@CustomerInfoUpdateHandler) {
                         this.lastSentCustomerInfo = customerInfo
                     }
                     dispatch { listener.onReceived(customerInfo) }

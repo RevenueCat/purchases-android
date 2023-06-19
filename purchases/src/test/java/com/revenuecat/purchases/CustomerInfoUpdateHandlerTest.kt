@@ -15,13 +15,13 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
-class CustomerInfoUpdateReceiverTest {
+class CustomerInfoUpdateHandlerTest {
 
     private lateinit var deviceCache: DeviceCache
     private lateinit var identityManager: IdentityManager
     private lateinit var offlineEntitlementsManager: OfflineEntitlementsManager
 
-    private lateinit var customerInfoUpdateReceiver: CustomerInfoUpdateReceiver
+    private lateinit var customerInfoUpdateHandler: CustomerInfoUpdateHandler
 
     private val appUserId = "test-app-user-id"
     private val mockInfo = mockk<CustomerInfo>()
@@ -37,7 +37,7 @@ class CustomerInfoUpdateReceiverTest {
         every { deviceCache.cacheCustomerInfo(appUserId, mockInfo) } just Runs
         every { offlineEntitlementsManager.offlineCustomerInfo } returns null
 
-        customerInfoUpdateReceiver = CustomerInfoUpdateReceiver(
+        customerInfoUpdateHandler = CustomerInfoUpdateHandler(
             deviceCache,
             identityManager,
             offlineEntitlementsManager,
@@ -50,7 +50,7 @@ class CustomerInfoUpdateReceiverTest {
     @Test
     fun `setting listener sends cached value if it exists`() {
         val listenerMock = mockk<UpdatedCustomerInfoListener>(relaxed = true)
-        customerInfoUpdateReceiver.updatedCustomerInfoListener = listenerMock
+        customerInfoUpdateHandler.updatedCustomerInfoListener = listenerMock
 
         verify(exactly = 1) { listenerMock.onReceived(mockInfo) }
     }
@@ -60,7 +60,7 @@ class CustomerInfoUpdateReceiverTest {
         val mockCustomerInfo2 = mockk<CustomerInfo>()
         every { offlineEntitlementsManager.offlineCustomerInfo } returns mockCustomerInfo2
         val listenerMock = mockk<UpdatedCustomerInfoListener>(relaxed = true)
-        customerInfoUpdateReceiver.updatedCustomerInfoListener = listenerMock
+        customerInfoUpdateHandler.updatedCustomerInfoListener = listenerMock
 
         verify(exactly = 1) { listenerMock.onReceived(mockCustomerInfo2) }
     }
@@ -69,7 +69,7 @@ class CustomerInfoUpdateReceiverTest {
     fun `setting listener does not send cached value if it does not exists`() {
         val listenerMock = mockk<UpdatedCustomerInfoListener>(relaxed = true)
         every { deviceCache.getCachedCustomerInfo(any()) } returns null
-        customerInfoUpdateReceiver.updatedCustomerInfoListener = listenerMock
+        customerInfoUpdateHandler.updatedCustomerInfoListener = listenerMock
 
         verify(exactly = 0) { listenerMock.onReceived(mockInfo) }
     }
@@ -80,7 +80,7 @@ class CustomerInfoUpdateReceiverTest {
 
     @Test
     fun `caching and notifying listeners caches customer info with correct parameters`() {
-        customerInfoUpdateReceiver.cacheAndNotifyListeners(mockInfo)
+        customerInfoUpdateHandler.cacheAndNotifyListeners(mockInfo)
 
         verify(exactly = 1) { deviceCache.cacheCustomerInfo(appUserId, mockInfo) }
     }
@@ -88,9 +88,9 @@ class CustomerInfoUpdateReceiverTest {
     @Test
     fun `caching and notifying listeners does not notify listeners if same than previous one`() {
         val listenerMock = mockk<UpdatedCustomerInfoListener>(relaxed = true)
-        customerInfoUpdateReceiver.updatedCustomerInfoListener = listenerMock
+        customerInfoUpdateHandler.updatedCustomerInfoListener = listenerMock
 
-        customerInfoUpdateReceiver.cacheAndNotifyListeners(mockInfo)
+        customerInfoUpdateHandler.cacheAndNotifyListeners(mockInfo)
 
         verify(exactly = 1) { listenerMock.onReceived(mockInfo) } // From setting the listener
     }
@@ -98,11 +98,11 @@ class CustomerInfoUpdateReceiverTest {
     @Test
     fun `caching and notifying listeners notifies listeners if different than previous one`() {
         val listenerMock = mockk<UpdatedCustomerInfoListener>(relaxed = true)
-        customerInfoUpdateReceiver.updatedCustomerInfoListener = listenerMock
+        customerInfoUpdateHandler.updatedCustomerInfoListener = listenerMock
 
         val newCustomerInfo = mockk<CustomerInfo>()
         every { deviceCache.cacheCustomerInfo(appUserId, newCustomerInfo) } just Runs
-        customerInfoUpdateReceiver.cacheAndNotifyListeners(newCustomerInfo)
+        customerInfoUpdateHandler.cacheAndNotifyListeners(newCustomerInfo)
 
         verify(exactly = 1) { listenerMock.onReceived(mockInfo) } // From setting the listener
         verify(exactly = 1) { listenerMock.onReceived(newCustomerInfo) }
@@ -115,9 +115,9 @@ class CustomerInfoUpdateReceiverTest {
     @Test
     fun `does not update listener if customer info same as previous one`() {
         val listenerMock = mockk<UpdatedCustomerInfoListener>(relaxed = true)
-        customerInfoUpdateReceiver.updatedCustomerInfoListener = listenerMock
+        customerInfoUpdateHandler.updatedCustomerInfoListener = listenerMock
 
-        customerInfoUpdateReceiver.notifyListeners(mockInfo)
+        customerInfoUpdateHandler.notifyListeners(mockInfo)
 
         verify(exactly = 1) { listenerMock.onReceived(mockInfo) } // From setting the listener
     }
@@ -125,12 +125,12 @@ class CustomerInfoUpdateReceiverTest {
     @Test
     fun `updates listener if customer info different than previous one`() {
         val listenerMock = mockk<UpdatedCustomerInfoListener>(relaxed = true)
-        customerInfoUpdateReceiver.updatedCustomerInfoListener = listenerMock
+        customerInfoUpdateHandler.updatedCustomerInfoListener = listenerMock
 
         val newCustomerInfo = mockk<CustomerInfo>()
         every { deviceCache.cacheCustomerInfo(appUserId, newCustomerInfo) } just Runs
 
-        customerInfoUpdateReceiver.notifyListeners(newCustomerInfo)
+        customerInfoUpdateHandler.notifyListeners(newCustomerInfo)
 
         verify(exactly = 1) { listenerMock.onReceived(mockInfo) } // From setting the listener
         verify(exactly = 1) { listenerMock.onReceived(newCustomerInfo) }
@@ -139,14 +139,14 @@ class CustomerInfoUpdateReceiverTest {
     @Test
     fun `does not update listener if customer info same one in several calls`() {
         val listenerMock = mockk<UpdatedCustomerInfoListener>(relaxed = true)
-        customerInfoUpdateReceiver.updatedCustomerInfoListener = listenerMock
+        customerInfoUpdateHandler.updatedCustomerInfoListener = listenerMock
 
         val newCustomerInfo = mockk<CustomerInfo>()
         every { deviceCache.cacheCustomerInfo(appUserId, newCustomerInfo) } just Runs
 
-        customerInfoUpdateReceiver.notifyListeners(newCustomerInfo)
-        customerInfoUpdateReceiver.notifyListeners(newCustomerInfo)
-        customerInfoUpdateReceiver.notifyListeners(newCustomerInfo)
+        customerInfoUpdateHandler.notifyListeners(newCustomerInfo)
+        customerInfoUpdateHandler.notifyListeners(newCustomerInfo)
+        customerInfoUpdateHandler.notifyListeners(newCustomerInfo)
 
         verify(exactly = 1) { listenerMock.onReceived(mockInfo) } // From setting the listener
         verify(exactly = 1) { listenerMock.onReceived(newCustomerInfo) }

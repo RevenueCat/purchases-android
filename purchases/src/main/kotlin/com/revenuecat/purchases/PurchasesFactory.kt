@@ -149,7 +149,7 @@ internal class PurchasesFactory(
                 offlineEntitlementsManager,
             )
 
-            val customerInfoUpdateReceiver = CustomerInfoUpdateReceiver(
+            val customerInfoUpdateHandler = CustomerInfoUpdateHandler(
                 cache,
                 identityManager,
                 offlineEntitlementsManager,
@@ -159,7 +159,7 @@ internal class PurchasesFactory(
                 cache,
                 backend,
                 offlineEntitlementsManager,
-                customerInfoUpdateReceiver,
+                customerInfoUpdateHandler,
             )
             val offeringParser = OfferingParserFactory.createOfferingParser(store)
 
@@ -178,7 +178,7 @@ internal class PurchasesFactory(
                 appConfig,
                 backend,
                 billing,
-                customerInfoUpdateReceiver,
+                customerInfoUpdateHandler,
                 cache,
                 subscriberAttributesManager,
                 offlineEntitlementsManager,
@@ -208,7 +208,7 @@ internal class PurchasesFactory(
                 subscriberAttributesManager,
                 appConfig,
                 customerInfoHelper,
-                customerInfoUpdateReceiver,
+                customerInfoUpdateHandler,
                 diagnosticsSynchronizer,
                 offlineEntitlementsManager,
                 postReceiptHelper,

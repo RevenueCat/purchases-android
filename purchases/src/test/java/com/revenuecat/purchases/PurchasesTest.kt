@@ -173,7 +173,7 @@ class PurchasesTest: BasePurchasesTest() {
         purchases.updatedCustomerInfoListener = updatedCustomerInfoListener
 
         verify(exactly = 1) {
-            mockCustomerInfoUpdateReceiver.updatedCustomerInfoListener = updatedCustomerInfoListener
+            mockCustomerInfoUpdateHandler.updatedCustomerInfoListener = updatedCustomerInfoListener
         }
     }
 
@@ -190,10 +190,10 @@ class PurchasesTest: BasePurchasesTest() {
         purchases.updatedCustomerInfoListener = updatedCustomerInfoListener
 
         verify(exactly = 1) {
-            mockCustomerInfoUpdateReceiver.updatedCustomerInfoListener = null
+            mockCustomerInfoUpdateHandler.updatedCustomerInfoListener = null
         }
         verify(exactly = 1) {
-            mockCustomerInfoUpdateReceiver.updatedCustomerInfoListener = updatedCustomerInfoListener
+            mockCustomerInfoUpdateHandler.updatedCustomerInfoListener = updatedCustomerInfoListener
         }
     }
 
@@ -2004,7 +2004,7 @@ class PurchasesTest: BasePurchasesTest() {
         purchases.logIn(newAppUserID, mockCompletion)
 
         verify(exactly = 1) {
-            mockCustomerInfoUpdateReceiver.notifyListeners(mockInfo)
+            mockCustomerInfoUpdateHandler.notifyListeners(mockInfo)
         }
     }
 

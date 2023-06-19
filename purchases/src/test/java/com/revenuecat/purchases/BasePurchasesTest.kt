@@ -55,7 +55,7 @@ open class BasePurchasesTest {
     protected val mockIdentityManager = mockk<IdentityManager>()
     protected val mockSubscriberAttributesManager = mockk<SubscriberAttributesManager>()
     internal val mockCustomerInfoHelper = mockk<CustomerInfoHelper>()
-    internal val mockCustomerInfoUpdateReceiver = mockk<CustomerInfoUpdateReceiver>()
+    internal val mockCustomerInfoUpdateHandler = mockk<CustomerInfoUpdateHandler>()
     protected val mockDiagnosticsSynchronizer = mockk<DiagnosticsSynchronizer>()
     protected val mockOfflineEntitlementsManager = mockk<OfflineEntitlementsManager>()
     internal val mockPostReceiptHelper = mockk<PostReceiptHelper>()
@@ -83,7 +83,7 @@ open class BasePurchasesTest {
         mockBillingWrapper()
         mockStoreProduct(productIds, productIds, ProductType.SUBS)
         mockCustomerInfoHelper()
-        mockCustomerInfoUpdateReceiver()
+        mockCustomerInfoUpdateHandler()
 
         every {
             updatedCustomerInfoListener.onReceived(any())
@@ -109,7 +109,7 @@ open class BasePurchasesTest {
             mockPostReceiptHelper,
             mockSyncPurchasesHelper,
             mockOfferingsManager,
-            mockCustomerInfoUpdateReceiver,
+            mockCustomerInfoUpdateHandler,
         )
     }
 
@@ -227,8 +227,8 @@ open class BasePurchasesTest {
         }
     }
 
-    protected fun mockCustomerInfoUpdateReceiver() {
-        with(mockCustomerInfoUpdateReceiver) {
+    protected fun mockCustomerInfoUpdateHandler() {
+        with(mockCustomerInfoUpdateHandler) {
             every {
                 cacheAndNotifyListeners(any())
             } just Runs
@@ -311,7 +311,7 @@ open class BasePurchasesTest {
                 dangerousSettings = DangerousSettings(autoSyncPurchases = autoSync)
             ),
             customerInfoHelper = mockCustomerInfoHelper,
-            customerInfoUpdateReceiver = mockCustomerInfoUpdateReceiver,
+            customerInfoUpdateHandler = mockCustomerInfoUpdateHandler,
             diagnosticsSynchronizer = mockDiagnosticsSynchronizer,
             offlineEntitlementsManager = mockOfflineEntitlementsManager,
             postReceiptHelper = mockPostReceiptHelper,

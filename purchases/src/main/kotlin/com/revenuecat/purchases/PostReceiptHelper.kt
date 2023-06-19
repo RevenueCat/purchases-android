@@ -19,7 +19,7 @@ internal class PostReceiptHelper(
     private val appConfig: AppConfig,
     private val backend: Backend,
     private val billing: BillingAbstract,
-    private val customerInfoUpdateReceiver: CustomerInfoUpdateReceiver,
+    private val customerInfoUpdateHandler: CustomerInfoUpdateHandler,
     private val deviceCache: DeviceCache,
     private val subscriberAttributesManager: SubscriberAttributesManager,
     private val offlineEntitlementsManager: OfflineEntitlementsManager,
@@ -145,7 +145,7 @@ internal class PostReceiptHelper(
                         unsyncedSubscriberAttributesByKey,
                         responseBody.getAttributeErrors(),
                     )
-                    customerInfoUpdateReceiver.cacheAndNotifyListeners(customerInfo)
+                    customerInfoUpdateHandler.cacheAndNotifyListeners(customerInfo)
                     onSuccess(customerInfo)
                 },
                 onError = { error, errorHandlingBehavior, responseBody ->
@@ -191,7 +191,7 @@ internal class PostReceiptHelper(
         offlineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(
             appUserID,
             onSuccess = { customerInfo ->
-                customerInfoUpdateReceiver.notifyListeners(customerInfo)
+                customerInfoUpdateHandler.notifyListeners(customerInfo)
                 onSuccess(customerInfo)
             },
             onError = { error ->
