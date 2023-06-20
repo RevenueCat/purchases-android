@@ -15,12 +15,14 @@ import com.revenuecat.purchases.common.BuildConfig
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.FileHelper
 import com.revenuecat.purchases.common.HTTPClient
+import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsAnonymizer
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsFileHelper
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsSynchronizer
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
+import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.networking.ETagManager
 import com.revenuecat.purchases.common.offerings.OfferingsCache
 import com.revenuecat.purchases.common.offerings.OfferingsFactory
@@ -31,6 +33,7 @@ import com.revenuecat.purchases.common.offlineentitlements.PurchasedProductsFetc
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import com.revenuecat.purchases.common.verification.SigningManager
 import com.revenuecat.purchases.identity.IdentityManager
+import com.revenuecat.purchases.strings.ConfigureStrings
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesPoster
 import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesCache
@@ -210,6 +213,15 @@ internal class PurchasesFactory(
                 offeringsCache,
                 backend,
                 OfferingsFactory(billing, offeringParser),
+            )
+
+            log(LogIntent.DEBUG, ConfigureStrings.DEBUG_ENABLED)
+            log(LogIntent.DEBUG, ConfigureStrings.SDK_VERSION.format(Purchases.frameworkVersion))
+            log(LogIntent.DEBUG, ConfigureStrings.PACKAGE_NAME.format(appConfig.packageName))
+            log(LogIntent.USER, ConfigureStrings.INITIAL_APP_USER_ID.format(appUserID))
+            log(
+                LogIntent.DEBUG,
+                ConfigureStrings.VERIFICATION_MODE_SELECTED.format(configuration.verificationMode.name),
             )
 
             return Purchases(
