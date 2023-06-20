@@ -93,7 +93,7 @@ class PostPendingTransactionsHelperTest {
     }
 
     @Test
-    fun `if autosync is called, success callback with null value is called`() {
+    fun `if autosync is disabled, and sync is called, success callback with null value is called`() {
         changeAutoSyncEnabled(false)
         syncAndAssertSuccessful(null)
     }
