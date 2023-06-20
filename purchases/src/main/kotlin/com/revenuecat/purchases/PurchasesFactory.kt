@@ -155,25 +155,6 @@ internal class PurchasesFactory(
                 offlineEntitlementsManager,
             )
 
-            val customerInfoHelper = CustomerInfoHelper(
-                cache,
-                backend,
-                offlineEntitlementsManager,
-                customerInfoUpdateHandler,
-            )
-            val offeringParser = OfferingParserFactory.createOfferingParser(store)
-
-            var diagnosticsSynchronizer: DiagnosticsSynchronizer? = null
-            if (diagnosticsFileHelper != null && diagnosticsTracker != null) {
-                diagnosticsSynchronizer = DiagnosticsSynchronizer(
-                    diagnosticsFileHelper,
-                    diagnosticsTracker,
-                    backend,
-                    diagnosticsDispatcher,
-                    DiagnosticsSynchronizer.initializeSharedPreferences(context),
-                )
-            }
-
             val postReceiptHelper = PostReceiptHelper(
                 appConfig,
                 backend,
@@ -182,19 +163,6 @@ internal class PurchasesFactory(
                 cache,
                 subscriberAttributesManager,
                 offlineEntitlementsManager,
-            )
-
-            val syncPurchasesHelper = SyncPurchasesHelper(
-                billing,
-                identityManager,
-                customerInfoHelper,
-                postReceiptHelper,
-            )
-
-            val offeringsManager = OfferingsManager(
-                offeringsCache,
-                backend,
-                OfferingsFactory(billing, offeringParser),
             )
 
             val postTransactionWithProductDetailsHelper = PostTransactionWithProductDetailsHelper(
@@ -209,6 +177,39 @@ internal class PurchasesFactory(
                 dispatcher,
                 identityManager,
                 postTransactionWithProductDetailsHelper,
+            )
+
+            val customerInfoHelper = CustomerInfoHelper(
+                cache,
+                backend,
+                offlineEntitlementsManager,
+                customerInfoUpdateHandler,
+                postPendingTransactionsHelper,
+            )
+            val offeringParser = OfferingParserFactory.createOfferingParser(store)
+
+            var diagnosticsSynchronizer: DiagnosticsSynchronizer? = null
+            if (diagnosticsFileHelper != null && diagnosticsTracker != null) {
+                diagnosticsSynchronizer = DiagnosticsSynchronizer(
+                    diagnosticsFileHelper,
+                    diagnosticsTracker,
+                    backend,
+                    diagnosticsDispatcher,
+                    DiagnosticsSynchronizer.initializeSharedPreferences(context),
+                )
+            }
+
+            val syncPurchasesHelper = SyncPurchasesHelper(
+                billing,
+                identityManager,
+                customerInfoHelper,
+                postReceiptHelper,
+            )
+
+            val offeringsManager = OfferingsManager(
+                offeringsCache,
+                backend,
+                OfferingsFactory(billing, offeringParser),
             )
 
             return Purchases(

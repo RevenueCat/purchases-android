@@ -1857,7 +1857,7 @@ class PurchasesTest: BasePurchasesTest() {
 
         verify(exactly = 1) {
             mockCompletion.onReceived(any(), any())
-            mockCustomerInfoHelper.retrieveCustomerInfo(appUserID, any(), false, any())
+            mockCustomerInfoHelper.retrieveCustomerInfo(appUserID, any(), any(), any(), any())
         }
     }
 
@@ -2024,7 +2024,8 @@ class PurchasesTest: BasePurchasesTest() {
             mockCustomerInfoHelper.retrieveCustomerInfo(
                 appUserID,
                 CacheFetchPolicy.FETCH_CURRENT,
-                false,
+                appInBackground = false,
+                allowSharingPlayStoreAccount = false,
                 any()
             )
         }
@@ -2061,6 +2062,7 @@ class PurchasesTest: BasePurchasesTest() {
                 appUserId,
                 CacheFetchPolicy.FETCH_CURRENT,
                 false,
+                allowSharingPlayStoreAccount = false,
                 null
             )
         }

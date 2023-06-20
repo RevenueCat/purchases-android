@@ -26,6 +26,7 @@ class PurchasesCoroutinesTest : BasePurchasesTest() {
                 any(),
                 any(),
                 any(),
+                any(),
             )
         }
         assertThat(result).isNotNull
@@ -40,6 +41,7 @@ class PurchasesCoroutinesTest : BasePurchasesTest() {
         verify(exactly = 1) {
             mockCustomerInfoHelper.retrieveCustomerInfo(
                 appUserId,
+                any(),
                 any(),
                 any(),
                 any(),
@@ -64,6 +66,7 @@ class PurchasesCoroutinesTest : BasePurchasesTest() {
         verify(exactly = 1) {
             mockCustomerInfoHelper.retrieveCustomerInfo(
                 appUserId,
+                any(),
                 any(),
                 any(),
                 any(),

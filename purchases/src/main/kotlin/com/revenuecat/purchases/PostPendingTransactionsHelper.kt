@@ -31,39 +31,34 @@ internal class PostPendingTransactionsHelper(
             onSuccess?.invoke(null)
             return
         }
-        if (billing.isConnected()) {
-            log(LogIntent.DEBUG, PurchaseStrings.UPDATING_PENDING_PURCHASE_QUEUE)
-            val appUserID = identityManager.currentAppUserID
-            dispatcher.enqueue({
-                billing.queryPurchases(
-                    appUserID,
-                    onSuccess = { purchasesByHashedToken ->
-                        purchasesByHashedToken.forEach { (hash, purchase) ->
-                            log(
-                                LogIntent.DEBUG,
-                                RestoreStrings.QUERYING_PURCHASE_WITH_HASH.format(purchase.type, hash),
-                            )
-                        }
-                        deviceCache.cleanPreviouslySentTokens(purchasesByHashedToken.keys)
-                        val transactionsToSync = deviceCache.getActivePurchasesNotInCache(purchasesByHashedToken)
-                        postTransactionsWithCompletion(
-                            transactionsToSync,
-                            allowSharingPlayStoreAccount,
-                            appUserID,
-                            onError,
-                            onSuccess,
+        log(LogIntent.DEBUG, PurchaseStrings.UPDATING_PENDING_PURCHASE_QUEUE)
+        val appUserID = identityManager.currentAppUserID
+        dispatcher.enqueue({
+            billing.queryPurchases(
+                appUserID,
+                onSuccess = { purchasesByHashedToken ->
+                    purchasesByHashedToken.forEach { (hash, purchase) ->
+                        log(
+                            LogIntent.DEBUG,
+                            RestoreStrings.QUERYING_PURCHASE_WITH_HASH.format(purchase.type, hash),
                         )
-                    },
-                    onError = { error ->
-                        log(LogIntent.GOOGLE_ERROR, error.toString())
-                        onError?.invoke(error)
-                    },
-                )
-            })
-        } else {
-            log(LogIntent.DEBUG, PurchaseStrings.BILLING_CLIENT_NOT_CONNECTED)
-            onError?.invoke(PurchasesError(PurchasesErrorCode.StoreProblemError, "Billing client disconnected"))
-        }
+                    }
+                    deviceCache.cleanPreviouslySentTokens(purchasesByHashedToken.keys)
+                    val transactionsToSync = deviceCache.getActivePurchasesNotInCache(purchasesByHashedToken)
+                    postTransactionsWithCompletion(
+                        transactionsToSync,
+                        allowSharingPlayStoreAccount,
+                        appUserID,
+                        onError,
+                        onSuccess,
+                    )
+                },
+                onError = { error ->
+                    log(LogIntent.GOOGLE_ERROR, error.toString())
+                    onError?.invoke(error)
+                },
+            )
+        })
     }
 
     private fun postTransactionsWithCompletion(

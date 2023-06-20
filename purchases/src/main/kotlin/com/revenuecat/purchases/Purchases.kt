@@ -204,6 +204,7 @@ class Purchases internal constructor(
                 identityManager.currentAppUserID,
                 fetchPolicy = CacheFetchPolicy.FETCH_CURRENT,
                 appInBackground = false,
+                allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
             )
         }
         offeringsManager.onAppForeground(identityManager.currentAppUserID)
@@ -635,6 +636,7 @@ class Purchases internal constructor(
                 identityManager.currentAppUserID,
                 CacheFetchPolicy.default(),
                 state.appInBackground,
+                allowSharingPlayStoreAccount,
                 receiveCustomerInfoCallback(
                     onSuccess = { customerInfo ->
                         dispatch { callback?.onReceived(customerInfo, false) }
@@ -708,6 +710,7 @@ class Purchases internal constructor(
             identityManager.currentAppUserID,
             fetchPolicy,
             state.appInBackground,
+            allowSharingPlayStoreAccount,
             callback,
         )
     }
@@ -1112,6 +1115,7 @@ class Purchases internal constructor(
                 appUserID,
                 CacheFetchPolicy.FETCH_CURRENT,
                 appInBackground,
+                allowSharingPlayStoreAccount,
                 completion,
             )
             offeringsManager.fetchAndCacheOfferings(appUserID, appInBackground)
