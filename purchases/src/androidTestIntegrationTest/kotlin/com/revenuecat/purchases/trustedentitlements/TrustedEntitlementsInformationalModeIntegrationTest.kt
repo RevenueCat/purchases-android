@@ -9,10 +9,10 @@ import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.PurchaseParams
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.VerificationResult
+import com.revenuecat.purchases.awaitCustomerInfo
 import com.revenuecat.purchases.factories.StoreProductFactory
 import com.revenuecat.purchases.factories.StoreTransactionFactory
 import com.revenuecat.purchases.forceSigningErrors
-import com.revenuecat.purchases.getCustomerInfoWith
 import com.revenuecat.purchases.helpers.mockQueryProductDetails
 import com.revenuecat.purchases.purchaseWith
 import org.assertj.core.api.Assertions.assertThat
@@ -35,20 +35,10 @@ class TrustedEntitlementsInformationalModeIntegrationTest : BasePurchasesIntegra
     }
 
     @Test
-    fun initialCustomerInfoIsVerified() {
-        var receivedCustomerInfo: CustomerInfo? = null
-        ensureBlockFinishes { latch ->
-            Purchases.sharedInstance.getCustomerInfoWith(
-                onError = { fail("should be success. Error: ${it.message}") },
-                onSuccess = {
-                    receivedCustomerInfo = it
-                    latch.countDown()
-                },
-            )
-        }
+    fun initialCustomerInfoIsVerified() = runTestActivityLifecycleScope {
+        val receivedCustomerInfo = Purchases.sharedInstance.awaitCustomerInfo()
 
-        assertThat(receivedCustomerInfo).isNotNull
-        assertThat(receivedCustomerInfo?.entitlements?.verification).isEqualTo(VerificationResult.VERIFIED)
+        assertThat(receivedCustomerInfo.entitlements.verification).isEqualTo(VerificationResult.VERIFIED)
     }
 
     @Test
@@ -79,56 +69,22 @@ class TrustedEntitlementsInformationalModeIntegrationTest : BasePurchasesIntegra
     }
 
     @Test
-    fun verificationChangesAfterSuccessIsNotified() {
-        var receivedCustomerInfo: CustomerInfo? = null
-        ensureBlockFinishes { latch ->
-            Purchases.sharedInstance.getCustomerInfoWith(
-                onError = { fail("should be success. Error: ${it.message}") },
-                onSuccess = {
-                    receivedCustomerInfo = it
-                    latch.countDown()
-                },
-            )
-        }
-
-        assertThat(receivedCustomerInfo).isNotNull
-        assertThat(receivedCustomerInfo?.entitlements?.verification).isEqualTo(VerificationResult.VERIFIED)
-
+    fun verificationChangesAfterSuccessIsNotified() = runTestActivityLifecycleScope {
+        val receivedCustomerInfo = Purchases.sharedInstance.awaitCustomerInfo()
+        assertThat(receivedCustomerInfo.entitlements.verification).isEqualTo(VerificationResult.VERIFIED)
         Purchases.sharedInstance.forceSigningErrors = true
 
-        var receivedCustomerInfo2: CustomerInfo? = null
-        ensureBlockFinishes { latch ->
-            Purchases.sharedInstance.getCustomerInfoWith(
-                fetchPolicy = CacheFetchPolicy.FETCH_CURRENT,
-                onError = { fail("should be success. Error: ${it.message}") },
-                onSuccess = {
-                    receivedCustomerInfo2 = it
-                    latch.countDown()
-                },
-            )
-        }
+        val receivedCustomerInfo2 = Purchases.sharedInstance.awaitCustomerInfo(CacheFetchPolicy.FETCH_CURRENT)
 
-        assertThat(receivedCustomerInfo2).isNotNull
-        assertThat(receivedCustomerInfo2?.entitlements?.verification).isEqualTo(VerificationResult.FAILED)
+        assertThat(receivedCustomerInfo2.entitlements.verification).isEqualTo(VerificationResult.FAILED)
     }
 
     @Test
-    fun initialCustomerInfoFailsToVerify() {
+    fun initialCustomerInfoFailsToVerify() = runTestActivityLifecycleScope {
         Purchases.sharedInstance.forceSigningErrors = true
+        val receivedCustomerInfo = Purchases.sharedInstance.awaitCustomerInfo()
 
-        var receivedCustomerInfo: CustomerInfo? = null
-        ensureBlockFinishes { latch ->
-            Purchases.sharedInstance.getCustomerInfoWith(
-                onError = { fail("should be success. Error: ${it.message}") },
-                onSuccess = {
-                    receivedCustomerInfo = it
-                    latch.countDown()
-                },
-            )
-        }
-
-        assertThat(receivedCustomerInfo).isNotNull
-        assertThat(receivedCustomerInfo?.entitlements?.verification).isEqualTo(VerificationResult.FAILED)
+        assertThat(receivedCustomerInfo.entitlements.verification).isEqualTo(VerificationResult.FAILED)
     }
 
     @Test
