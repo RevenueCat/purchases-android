@@ -21,7 +21,6 @@ import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.Config
-import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.ReceiptInfo
@@ -51,7 +50,6 @@ import com.revenuecat.purchases.interfaces.SyncPurchasesCallback
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import com.revenuecat.purchases.models.BillingFeature
 import com.revenuecat.purchases.models.GoogleProrationMode
-import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
@@ -85,7 +83,6 @@ class Purchases internal constructor(
     private val backend: Backend,
     private val billing: BillingAbstract,
     private val deviceCache: DeviceCache,
-    private val dispatcher: Dispatcher,
     private val identityManager: IdentityManager,
     private val subscriberAttributesManager: SubscriberAttributesManager,
     @set:JvmSynthetic @get:JvmSynthetic internal var appConfig: AppConfig,
@@ -95,6 +92,8 @@ class Purchases internal constructor(
     @get:VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     internal val offlineEntitlementsManager: OfflineEntitlementsManager,
     private val postReceiptHelper: PostReceiptHelper,
+    private val postTransactionWithProductDetailsHelper: PostTransactionWithProductDetailsHelper,
+    private val postPendingTransactionsHelper: PostPendingTransactionsHelper,
     private val syncPurchasesHelper: SyncPurchasesHelper,
     private val offeringsManager: OfferingsManager,
     // This is nullable due to: https://github.com/RevenueCat/purchases-flutter/issues/408
@@ -171,7 +170,7 @@ class Purchases internal constructor(
 
         billing.stateListener = object : BillingAbstract.StateListener {
             override fun onConnected() {
-                updatePendingPurchaseQueue()
+                postPendingTransactionsHelper.syncPendingPurchaseQueue(allowSharingPlayStoreAccount)
             }
         }
         billing.purchasesUpdatedListener = getPurchasesUpdatedListener()
@@ -208,7 +207,7 @@ class Purchases internal constructor(
             )
         }
         offeringsManager.onAppForeground(identityManager.currentAppUserID)
-        updatePendingPurchaseQueue()
+        postPendingTransactionsHelper.syncPendingPurchaseQueue(allowSharingPlayStoreAccount)
         synchronizeSubscriberAttributesIfNeeded()
         offlineEntitlementsManager.updateProductEntitlementMappingCacheIfStale()
     }
@@ -1119,61 +1118,6 @@ class Purchases internal constructor(
         }
     }
 
-    private fun postPurchases(
-        purchases: List<StoreTransaction>,
-        allowSharingPlayStoreAccount: Boolean,
-        appUserID: String,
-        onSuccess: (SuccessfulPurchaseCallback)? = null,
-        onError: (ErrorPurchaseCallback)? = null,
-    ) {
-        purchases.forEach { purchase ->
-            if (purchase.purchaseState != PurchaseState.PENDING) {
-                billing.queryProductDetailsAsync(
-                    productType = purchase.type,
-                    productIds = purchase.productIds.toSet(),
-                    onReceive = { storeProducts ->
-
-                        val purchasedStoreProduct = if (purchase.type == ProductType.SUBS) {
-                            storeProducts.firstOrNull { product ->
-                                product.subscriptionOptions?.let { subscriptionOptions ->
-                                    subscriptionOptions.any { it.id == purchase.subscriptionOptionId }
-                                } ?: false
-                            }
-                        } else {
-                            storeProducts.firstOrNull { product ->
-                                product.id == purchase.productIds.firstOrNull()
-                            }
-                        }
-
-                        postReceiptHelper.postTransactionAndConsumeIfNeeded(
-                            purchase = purchase,
-                            storeProduct = purchasedStoreProduct,
-                            isRestore = allowSharingPlayStoreAccount,
-                            appUserID = appUserID,
-                            onSuccess = onSuccess,
-                            onError = onError,
-                        )
-                    },
-                    onError = {
-                        postReceiptHelper.postTransactionAndConsumeIfNeeded(
-                            purchase = purchase,
-                            storeProduct = null,
-                            isRestore = allowSharingPlayStoreAccount,
-                            appUserID = appUserID,
-                            onSuccess = onSuccess,
-                            onError = onError,
-                        )
-                    },
-                )
-            } else {
-                onError?.invoke(
-                    purchase,
-                    PurchasesError(PurchasesErrorCode.PaymentPendingError).also { errorLog(it) },
-                )
-            }
-        }
-    }
-
     private fun dispatch(action: () -> Unit) {
         if (Thread.currentThread() != Looper.getMainLooper().thread) {
             val handler = mainHandler ?: Handler(Looper.getMainLooper())
@@ -1215,12 +1159,12 @@ class Purchases internal constructor(
                     }
                 }
 
-                postPurchases(
+                postTransactionWithProductDetailsHelper.postTransactions(
                     purchases,
                     allowSharingPlayStoreAccount,
                     appUserID,
-                    onSuccess = callbackPair.first,
-                    onError = callbackPair.second,
+                    transactionPostSuccess = callbackPair.first,
+                    transactionPostError = callbackPair.second,
                 )
             }
 
@@ -1492,43 +1436,6 @@ class Purchases internal constructor(
                 listener.dispatch(error)
             },
         )
-    }
-
-    @JvmSynthetic
-    internal fun updatePendingPurchaseQueue() {
-        if (!appConfig.dangerousSettings.autoSyncPurchases) {
-            log(LogIntent.DEBUG, PurchaseStrings.SKIPPING_AUTOMATIC_SYNC)
-            return
-        }
-        if (billing.isConnected()) {
-            log(LogIntent.DEBUG, PurchaseStrings.UPDATING_PENDING_PURCHASE_QUEUE)
-            dispatcher.enqueue({
-                appUserID.let { appUserID ->
-                    billing.queryPurchases(
-                        appUserID,
-                        onSuccess = { purchasesByHashedToken ->
-                            purchasesByHashedToken.forEach { (hash, purchase) ->
-                                log(
-                                    LogIntent.DEBUG,
-                                    RestoreStrings.QUERYING_PURCHASE_WITH_HASH.format(purchase.type, hash),
-                                )
-                            }
-                            deviceCache.cleanPreviouslySentTokens(purchasesByHashedToken.keys)
-                            postPurchases(
-                                deviceCache.getActivePurchasesNotInCache(purchasesByHashedToken),
-                                allowSharingPlayStoreAccount,
-                                appUserID,
-                            )
-                        },
-                        onError = { error ->
-                            log(LogIntent.GOOGLE_ERROR, error.toString())
-                        },
-                    )
-                }
-            })
-        } else {
-            log(LogIntent.DEBUG, PurchaseStrings.BILLING_CLIENT_NOT_CONNECTED)
-        }
     }
 
     private fun synchronizeSubscriberAttributesIfNeeded() {

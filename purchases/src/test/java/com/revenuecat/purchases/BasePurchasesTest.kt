@@ -26,7 +26,6 @@ import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.utils.STUB_PRODUCT_IDENTIFIER
-import com.revenuecat.purchases.utils.SyncDispatcher
 import com.revenuecat.purchases.utils.createMockOneTimeProductDetails
 import com.revenuecat.purchases.utils.stubPurchaseHistoryRecord
 import com.revenuecat.purchases.utils.stubStoreProduct
@@ -59,6 +58,7 @@ open class BasePurchasesTest {
     protected val mockDiagnosticsSynchronizer = mockk<DiagnosticsSynchronizer>()
     protected val mockOfflineEntitlementsManager = mockk<OfflineEntitlementsManager>()
     internal val mockPostReceiptHelper = mockk<PostReceiptHelper>()
+    internal val mockPostPendingTransactionsHelper = mockk<PostPendingTransactionsHelper>()
     internal val mockSyncPurchasesHelper = mockk<SyncPurchasesHelper>()
     protected val mockOfferingsManager = mockk<OfferingsManager>()
 
@@ -84,6 +84,7 @@ open class BasePurchasesTest {
         mockStoreProduct(productIds, productIds, ProductType.SUBS)
         mockCustomerInfoHelper()
         mockCustomerInfoUpdateHandler()
+        mockPostPendingTransactionsHelper()
 
         every {
             updatedCustomerInfoListener.onReceived(any())
@@ -110,6 +111,7 @@ open class BasePurchasesTest {
             mockSyncPurchasesHelper,
             mockOfferingsManager,
             mockCustomerInfoUpdateHandler,
+            mockPostPendingTransactionsHelper,
         )
     }
 
@@ -293,28 +295,31 @@ open class BasePurchasesTest {
     }
 
     protected fun buildPurchases(anonymous: Boolean, autoSync: Boolean = true) {
+        val appConfig = AppConfig(
+            context = mockContext,
+            observerMode = false,
+            platformInfo = PlatformInfo("native", "3.2.0"),
+            proxyURL = null,
+            store = Store.PLAY_STORE,
+            dangerousSettings = DangerousSettings(autoSyncPurchases = autoSync)
+        )
+        val postTransactionsHelper = PostTransactionWithProductDetailsHelper(mockBillingAbstract, mockPostReceiptHelper)
         purchases = Purchases(
             mockApplication,
             if (anonymous) null else appUserId,
             mockBackend,
             mockBillingAbstract,
             mockCache,
-            dispatcher = SyncDispatcher(),
             identityManager = mockIdentityManager,
             subscriberAttributesManager = mockSubscriberAttributesManager,
-            appConfig = AppConfig(
-                context = mockContext,
-                observerMode = false,
-                platformInfo = PlatformInfo("native", "3.2.0"),
-                proxyURL = null,
-                store = Store.PLAY_STORE,
-                dangerousSettings = DangerousSettings(autoSyncPurchases = autoSync)
-            ),
+            appConfig = appConfig,
             customerInfoHelper = mockCustomerInfoHelper,
             customerInfoUpdateHandler = mockCustomerInfoUpdateHandler,
             diagnosticsSynchronizer = mockDiagnosticsSynchronizer,
             offlineEntitlementsManager = mockOfflineEntitlementsManager,
             postReceiptHelper = mockPostReceiptHelper,
+            postTransactionWithProductDetailsHelper = postTransactionsHelper,
+            postPendingTransactionsHelper = mockPostPendingTransactionsHelper,
             syncPurchasesHelper = mockSyncPurchasesHelper,
             offeringsManager = mockOfferingsManager
         )
@@ -344,6 +349,12 @@ open class BasePurchasesTest {
         every {
             mockCache.isCustomerInfoCacheStale(appUserId, appInBackground)
         } returns customerInfoStale
+    }
+
+    protected fun mockPostPendingTransactionsHelper() {
+        every {
+            mockPostPendingTransactionsHelper.syncPendingPurchaseQueue(any(), any(), any())
+        } just Runs
     }
 
     // endregion
