@@ -31,7 +31,7 @@ internal class CustomerInfoHelper(
         debugLog(CustomerInfoStrings.RETRIEVING_CUSTOMER_INFO.format(fetchPolicy))
         when (fetchPolicy) {
             CacheFetchPolicy.CACHE_ONLY -> getCustomerInfoCacheOnly(appUserID, callback)
-            CacheFetchPolicy.FETCH_CURRENT -> postPendingPurchasesIfNeededAndFetchCustomerInfo(
+            CacheFetchPolicy.FETCH_CURRENT -> postPendingPurchasesAndFetchCustomerInfo(
                 appUserID,
                 appInBackground,
                 allowSharingPlayStoreAccount,
@@ -71,7 +71,7 @@ internal class CustomerInfoHelper(
         }
     }
 
-    private fun postPendingPurchasesIfNeededAndFetchCustomerInfo(
+    private fun postPendingPurchasesAndFetchCustomerInfo(
         appUserID: String,
         appInBackground: Boolean,
         allowSharingPlayStoreAccount: Boolean,
@@ -144,7 +144,7 @@ internal class CustomerInfoHelper(
             updateCachedCustomerInfoIfStale(appUserID, appInBackground, allowSharingPlayStoreAccount)
         } else {
             log(LogIntent.DEBUG, CustomerInfoStrings.NO_CACHED_CUSTOMERINFO)
-            postPendingPurchasesIfNeededAndFetchCustomerInfo(
+            postPendingPurchasesAndFetchCustomerInfo(
                 appUserID,
                 appInBackground,
                 allowSharingPlayStoreAccount,
@@ -160,7 +160,7 @@ internal class CustomerInfoHelper(
         callback: ReceiveCustomerInfoCallback? = null,
     ) {
         if (deviceCache.isCustomerInfoCacheStale(appUserID, appInBackground)) {
-            postPendingPurchasesIfNeededAndFetchCustomerInfo(
+            postPendingPurchasesAndFetchCustomerInfo(
                 appUserID,
                 appInBackground,
                 allowSharingPlayStoreAccount,
@@ -188,7 +188,7 @@ internal class CustomerInfoHelper(
                     CustomerInfoStrings.CUSTOMERINFO_STALE_UPDATING_BACKGROUND
                 } else CustomerInfoStrings.CUSTOMERINFO_STALE_UPDATING_FOREGROUND,
             )
-            postPendingPurchasesIfNeededAndFetchCustomerInfo(appUserID, appInBackground, allowSharingPlayStoreAccount)
+            postPendingPurchasesAndFetchCustomerInfo(appUserID, appInBackground, allowSharingPlayStoreAccount)
         }
     }
 
