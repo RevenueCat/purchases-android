@@ -6,9 +6,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
-import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
-import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import io.mockk.Runs
 import io.mockk.clearAllMocks
 import io.mockk.every
@@ -17,7 +15,6 @@ import io.mockk.mockk
 import io.mockk.runs
 import io.mockk.verify
 import org.junit.After
-import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -27,8 +24,8 @@ class CustomerInfoHelperTest {
 
     private val mockCache = mockk<DeviceCache>()
     private val mockBackend = mockk<Backend>()
-    private val mockIdentityManager = mockk<IdentityManager>()
     private val mockOfflineEntitlementsManager = mockk<OfflineEntitlementsManager>()
+    private val mockCustomerInfoUpdateHandler = mockk<CustomerInfoUpdateHandler>()
     private val mockHandler = mockk<Handler>()
     private val mockLooper = mockk<Looper>()
     private val mockThread = mockk<Thread>()
@@ -43,16 +40,15 @@ class CustomerInfoHelperTest {
     fun setup() {
         setupCacheMock()
         setupHandlerMock()
-        setupIdentityManagerMock()
+        setupCustomerInfoUpdateHandlerMock()
 
         every { mockOfflineEntitlementsManager.offlineCustomerInfo } returns null
-
 
         customerInfoHelper = CustomerInfoHelper(
             mockCache,
             mockBackend,
-            mockIdentityManager,
             mockOfflineEntitlementsManager,
+            mockCustomerInfoUpdateHandler,
             mockHandler
         )
     }
@@ -61,94 +57,6 @@ class CustomerInfoHelperTest {
     fun tearDown() {
         clearAllMocks()
     }
-
-    // region updatedCustomerInfoListener
-
-    @Test
-    fun `setting listener sends cached value if it exists`() {
-        val listenerMock = mockk<UpdatedCustomerInfoListener>(relaxed = true)
-        customerInfoHelper.updatedCustomerInfoListener = listenerMock
-
-        verify(exactly = 1) { listenerMock.onReceived(mockInfo) }
-    }
-
-    @Test
-    fun `setting listener sends offline customer info cached value if it exists over cached value`() {
-        val mockCustomerInfo2 = mockk<CustomerInfo>()
-        every { mockOfflineEntitlementsManager.offlineCustomerInfo } returns mockCustomerInfo2
-        val listenerMock = mockk<UpdatedCustomerInfoListener>(relaxed = true)
-        customerInfoHelper.updatedCustomerInfoListener = listenerMock
-
-        verify(exactly = 1) { listenerMock.onReceived(mockCustomerInfo2) }
-    }
-
-    @Test
-    fun `setting listener does not send cached value if it does not exists`() {
-        val listenerMock = mockk<UpdatedCustomerInfoListener>(relaxed = true)
-        every { mockCache.getCachedCustomerInfo(any()) } returns null
-        customerInfoHelper.updatedCustomerInfoListener = listenerMock
-
-        verify(exactly = 0) { listenerMock.onReceived(mockInfo) }
-    }
-
-    // endregion
-
-    // region cacheCustomerInfo
-
-    @Test
-    fun `caching customer info calls device cache with correct parameters`() {
-        customerInfoHelper.cacheCustomerInfo(mockInfo)
-
-        verify(exactly = 1) { mockCache.cacheCustomerInfo(appUserId, mockInfo) }
-    }
-
-    // endregion
-
-    // region sendUpdatedCustomerInfoToDelegateIfChanged
-
-    @Test
-    fun `does nothing if listener is null`() {
-        customerInfoHelper.sendUpdatedCustomerInfoToDelegateIfChanged(mockInfo)
-        assertNull(customerInfoHelper.updatedCustomerInfoListener)
-    }
-
-    @Test
-    fun `does not update listener if customer info same as previous one`() {
-        val listenerMock = mockk<UpdatedCustomerInfoListener>(relaxed = true)
-        customerInfoHelper.updatedCustomerInfoListener = listenerMock
-
-        customerInfoHelper.sendUpdatedCustomerInfoToDelegateIfChanged(mockInfo)
-
-        verify(exactly = 1) { listenerMock.onReceived(mockInfo) } // From setting the listener
-    }
-
-    @Test
-    fun `updates listener if customer info different than previous one`() {
-        val listenerMock = mockk<UpdatedCustomerInfoListener>(relaxed = true)
-        customerInfoHelper.updatedCustomerInfoListener = listenerMock
-
-        val newCustomerInfo = mockk<CustomerInfo>()
-        customerInfoHelper.sendUpdatedCustomerInfoToDelegateIfChanged(newCustomerInfo)
-
-        verify(exactly = 1) { listenerMock.onReceived(mockInfo) } // From setting the listener
-        verify(exactly = 1) { listenerMock.onReceived(newCustomerInfo) }
-    }
-
-    @Test
-    fun `does not update listener if customer info same one in several calls`() {
-        val listenerMock = mockk<UpdatedCustomerInfoListener>(relaxed = true)
-        customerInfoHelper.updatedCustomerInfoListener = listenerMock
-
-        val newCustomerInfo = mockk<CustomerInfo>()
-        customerInfoHelper.sendUpdatedCustomerInfoToDelegateIfChanged(newCustomerInfo)
-        customerInfoHelper.sendUpdatedCustomerInfoToDelegateIfChanged(newCustomerInfo)
-        customerInfoHelper.sendUpdatedCustomerInfoToDelegateIfChanged(newCustomerInfo)
-
-        verify(exactly = 1) { listenerMock.onReceived(mockInfo) } // From setting the listener
-        verify(exactly = 1) { listenerMock.onReceived(newCustomerInfo) }
-    }
-
-    // endregion
 
     // region retrieveCustomerInfo tests
 
@@ -181,15 +89,13 @@ class CustomerInfoHelperTest {
 
     @Test
     fun `retrieving customer info from CACHE_ONLY does not update listener`() {
-        val listenerMock = mockk<UpdatedCustomerInfoListener>(relaxed = true)
-        every { mockCache.getCachedCustomerInfo(appUserId) } returns null
-        customerInfoHelper.updatedCustomerInfoListener = listenerMock
         every { mockCache.getCachedCustomerInfo(appUserId) } returns mockInfo
 
         val callbackMock = mockk<ReceiveCustomerInfoCallback>(relaxed = true)
         customerInfoHelper.retrieveCustomerInfo(appUserId, CacheFetchPolicy.CACHE_ONLY, false, callbackMock)
         verify(exactly = 1) { callbackMock.onReceived(mockInfo) }
-        verify(exactly = 0) { listenerMock.onReceived(any()) }
+        verify(exactly = 0) { mockCustomerInfoUpdateHandler.notifyListeners(any()) }
+        verify(exactly = 0) { mockCustomerInfoUpdateHandler.cacheAndNotifyListeners(any()) }
     }
 
     // offline entitlements customer info
@@ -222,34 +128,10 @@ class CustomerInfoHelperTest {
     }
 
     @Test
-    fun `retrieving customer info with FETCH_CURRENT caches customer info if successful`() {
+    fun `retrieving customer info with FETCH_CURRENT caches and notifies listeners if successful`() {
         setupBackendMock()
         customerInfoHelper.retrieveCustomerInfo(appUserId, CacheFetchPolicy.FETCH_CURRENT, false)
-        verify(exactly = 1) { mockCache.cacheCustomerInfo(appUserId, mockInfo) }
-    }
-
-    @Test
-    fun `retrieving customer info with FETCH_CURRENT updates listener if successful and different value`() {
-        val listenerMock = mockk<UpdatedCustomerInfoListener>(relaxed = true)
-        customerInfoHelper.updatedCustomerInfoListener = listenerMock
-
-        val newCustomerInfo = mockk<CustomerInfo>()
-        every { mockCache.cacheCustomerInfo(appUserId, newCustomerInfo) } just runs
-        setupBackendMock(customerInfo = newCustomerInfo)
-        customerInfoHelper.retrieveCustomerInfo(appUserId, CacheFetchPolicy.FETCH_CURRENT, false)
-        verify(exactly = 1) { listenerMock.onReceived(mockInfo) } // Called while setting up the listener.
-        verify(exactly = 1) { listenerMock.onReceived(newCustomerInfo) }
-    }
-
-    @Test
-    fun `retrieving customer info with FETCH_CURRENT does not update listener if successful and same value`() {
-        val listenerMock = mockk<UpdatedCustomerInfoListener>(relaxed = true)
-        customerInfoHelper.updatedCustomerInfoListener = listenerMock
-        every { mockCache.getCachedCustomerInfo(appUserId) } returns mockInfo
-
-        setupBackendMock()
-        customerInfoHelper.retrieveCustomerInfo(appUserId, CacheFetchPolicy.FETCH_CURRENT, false)
-        verify(exactly = 1) { listenerMock.onReceived(mockInfo) } // Called while setting up the listener.
+        verify(exactly = 1) { mockCustomerInfoUpdateHandler.cacheAndNotifyListeners(mockInfo) }
     }
 
     @Test
@@ -272,9 +154,7 @@ class CustomerInfoHelperTest {
     }
 
     @Test
-    fun `retrieving customer info with FETCH_CURRENT does not call listener if error`() {
-        val listenerMock = mockk<UpdatedCustomerInfoListener>(relaxed = true)
-        customerInfoHelper.updatedCustomerInfoListener = listenerMock
+    fun `retrieving customer info with FETCH_CURRENT does not call cache and notify listener if error`() {
         every { mockCache.getCachedCustomerInfo(appUserId) } returns mockInfo
 
         val error = PurchasesError(PurchasesErrorCode.StoreProblemError, "Broken")
@@ -282,7 +162,7 @@ class CustomerInfoHelperTest {
         val callbackMock = mockk<ReceiveCustomerInfoCallback>(relaxed = true)
         customerInfoHelper.retrieveCustomerInfo(appUserId, CacheFetchPolicy.FETCH_CURRENT, false, callbackMock)
         verify(exactly = 1) { callbackMock.onError(error) }
-        verify(exactly = 1) { listenerMock.onReceived(any()) } // Called while setting up the listener.
+        verify(exactly = 0) { mockCustomerInfoUpdateHandler.cacheAndNotifyListeners(any()) }
     }
 
     @Test
@@ -349,17 +229,7 @@ class CustomerInfoHelperTest {
     fun `retrieving customer info from backend calculates offline entitlements`() {
         val error = PurchasesError(PurchasesErrorCode.StoreProblemError, "Broken")
         setupBackendMock(error, isServerError = true)
-        every {
-            mockOfflineEntitlementsManager.shouldCalculateOfflineCustomerInfoInGetCustomerInfoRequest(
-                isServerError = true,
-                appUserId = appUserId
-            )
-        } returns true
-        every {
-            mockOfflineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(appUserId, captureLambda(), any())
-        } answers {
-            lambda<(CustomerInfo) -> Unit>().captured.invoke(mockInfo)
-        }
+        setupOfflineEntitlementsTest()
         customerInfoHelper.retrieveCustomerInfo(appUserId, CacheFetchPolicy.FETCH_CURRENT, false)
         verify(exactly = 1) {
             mockOfflineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(appUserId, any(), any())
@@ -370,20 +240,10 @@ class CustomerInfoHelperTest {
     fun `retrieving customer info from backend updates listener with offline entitlements customer info`() {
         val error = PurchasesError(PurchasesErrorCode.StoreProblemError, "Broken")
         setupBackendMock(error, isServerError = true)
-        every {
-            mockOfflineEntitlementsManager.shouldCalculateOfflineCustomerInfoInGetCustomerInfoRequest(
-                isServerError = true,
-                appUserId = appUserId
-            )
-        } returns true
-        every {
-            mockOfflineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(appUserId, captureLambda(), any())
-        } answers {
-            lambda<(CustomerInfo) -> Unit>().captured.invoke(mockInfo)
-        }
+        setupOfflineEntitlementsTest()
         customerInfoHelper.retrieveCustomerInfo(appUserId, CacheFetchPolicy.FETCH_CURRENT, false)
         verify(exactly = 1) {
-            mockOfflineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(appUserId, any(), any())
+            mockCustomerInfoUpdateHandler.notifyListeners(mockInfo)
         }
     }
 
@@ -391,17 +251,7 @@ class CustomerInfoHelperTest {
     fun `retrieving customer info from backend returns offline customer info`() {
         val error = PurchasesError(PurchasesErrorCode.StoreProblemError, "Broken")
         setupBackendMock(error, isServerError = true)
-        every {
-            mockOfflineEntitlementsManager.shouldCalculateOfflineCustomerInfoInGetCustomerInfoRequest(
-                isServerError = true,
-                appUserId = appUserId
-            )
-        } returns true
-        every {
-            mockOfflineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(appUserId, captureLambda(), any())
-        } answers {
-            lambda<(CustomerInfo) -> Unit>().captured.invoke(mockInfo)
-        }
+        setupOfflineEntitlementsTest()
         val callbackMock = mockk<ReceiveCustomerInfoCallback>()
         every { callbackMock.onReceived(mockInfo) } just Runs
         customerInfoHelper.retrieveCustomerInfo(appUserId, CacheFetchPolicy.FETCH_CURRENT, false, callbackMock)
@@ -459,7 +309,7 @@ class CustomerInfoHelperTest {
         every { mockCache.isCustomerInfoCacheStale(appUserId, false) } returns true
         val newCustomerInfo = mockk<CustomerInfo>()
         setupBackendMock(customerInfo = newCustomerInfo)
-        every { mockCache.cacheCustomerInfo(appUserId, newCustomerInfo) } just runs
+        every { mockCustomerInfoUpdateHandler.cacheAndNotifyListeners(newCustomerInfo) } just runs
         val callbackMock = mockk<ReceiveCustomerInfoCallback>(relaxed = true)
         customerInfoHelper.retrieveCustomerInfo(
             appUserId,
@@ -470,21 +320,18 @@ class CustomerInfoHelperTest {
         verify(exactly = 1) { mockBackend.getCustomerInfo(appUserId, false, any(), any()) }
         verify(exactly = 1) { callbackMock.onReceived(mockInfo) }
         verify(exactly = 1) { mockCache.setCustomerInfoCacheTimestampToNow(appUserId) }
-        verify(exactly = 1) { mockCache.cacheCustomerInfo(appUserId, newCustomerInfo) }
+        verify(exactly = 1) { mockCustomerInfoUpdateHandler.cacheAndNotifyListeners(newCustomerInfo) }
     }
 
     @Test
-    fun `retrieving customer info with CACHED_OR_FETCHED updates listener if fetch successful and different value`() {
+    fun `retrieving customer info with CACHED_OR_FETCHED updates listener if fetch successful`() {
         every { mockCache.isCustomerInfoCacheStale(appUserId, false) } returns true
-        val listenerMock = mockk<UpdatedCustomerInfoListener>(relaxed = true)
-        customerInfoHelper.updatedCustomerInfoListener = listenerMock
 
         val newCustomerInfo = mockk<CustomerInfo>()
         every { mockCache.cacheCustomerInfo(appUserId, newCustomerInfo) } just runs
         setupBackendMock(customerInfo = newCustomerInfo)
         customerInfoHelper.retrieveCustomerInfo(appUserId, CacheFetchPolicy.CACHED_OR_FETCHED, false)
-        verify(exactly = 1) { listenerMock.onReceived(mockInfo) } // Called while setting up the listener.
-        verify(exactly = 1) { listenerMock.onReceived(newCustomerInfo) }
+        verify(exactly = 1) { mockCustomerInfoUpdateHandler.cacheAndNotifyListeners(newCustomerInfo)  }
     }
 
     @Test
@@ -595,17 +442,14 @@ class CustomerInfoHelperTest {
     }
 
     @Test
-    fun `retrieving customer info with NOT_STALE_CACHED_OR_CURRENT updates listener if fetch success and other value`() {
+    fun `retrieving customer info with NOT_STALE_CACHED_OR_CURRENT updates listener if fetch success`() {
         every { mockCache.isCustomerInfoCacheStale(appUserId, false) } returns true
-        val listenerMock = mockk<UpdatedCustomerInfoListener>(relaxed = true)
-        customerInfoHelper.updatedCustomerInfoListener = listenerMock
 
         val newCustomerInfo = mockk<CustomerInfo>()
         every { mockCache.cacheCustomerInfo(appUserId, newCustomerInfo) } just runs
         setupBackendMock(customerInfo = newCustomerInfo)
         customerInfoHelper.retrieveCustomerInfo(appUserId, CacheFetchPolicy.NOT_STALE_CACHED_OR_CURRENT, false)
-        verify(exactly = 1) { listenerMock.onReceived(mockInfo) } // Called while setting up the listener.
-        verify(exactly = 1) { listenerMock.onReceived(newCustomerInfo) }
+        verify(exactly = 1) { mockCustomerInfoUpdateHandler.cacheAndNotifyListeners(newCustomerInfo)  }
     }
 
     // endregion
@@ -643,15 +487,31 @@ class CustomerInfoHelperTest {
         }
     }
 
+    private fun setupOfflineEntitlementsTest() {
+        every {
+            mockOfflineEntitlementsManager.shouldCalculateOfflineCustomerInfoInGetCustomerInfoRequest(
+                isServerError = true,
+                appUserId = appUserId
+            )
+        } returns true
+        every {
+            mockOfflineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(appUserId, captureLambda(), any())
+        } answers {
+            lambda<(CustomerInfo) -> Unit>().captured.invoke(mockInfo)
+        }
+        every {
+            mockCustomerInfoUpdateHandler.notifyListeners(mockInfo)
+        } just Runs
+    }
+
     private fun setupCacheMock() {
         every { mockCache.setCustomerInfoCacheTimestampToNow(appUserId) } just runs
         every { mockCache.clearCustomerInfoCacheTimestamp(appUserId) } just runs
         every { mockCache.getCachedCustomerInfo(appUserId) } returns mockInfo
-        every { mockCache.cacheCustomerInfo(appUserId, mockInfo) } just runs
     }
 
-    private fun setupIdentityManagerMock() {
-        every { mockIdentityManager.currentAppUserID } returns appUserId
+    private fun setupCustomerInfoUpdateHandlerMock() {
+        every { mockCustomerInfoUpdateHandler.cacheAndNotifyListeners(any()) } just runs
     }
 
     private fun setupHandlerMock() {

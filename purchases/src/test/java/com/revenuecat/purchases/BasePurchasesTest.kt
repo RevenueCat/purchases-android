@@ -37,7 +37,6 @@ import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.mockkStatic
-import io.mockk.runs
 import io.mockk.slot
 import org.junit.After
 import org.junit.Before
@@ -56,6 +55,7 @@ open class BasePurchasesTest {
     protected val mockIdentityManager = mockk<IdentityManager>()
     protected val mockSubscriberAttributesManager = mockk<SubscriberAttributesManager>()
     internal val mockCustomerInfoHelper = mockk<CustomerInfoHelper>()
+    internal val mockCustomerInfoUpdateHandler = mockk<CustomerInfoUpdateHandler>()
     protected val mockDiagnosticsSynchronizer = mockk<DiagnosticsSynchronizer>()
     protected val mockOfflineEntitlementsManager = mockk<OfflineEntitlementsManager>()
     internal val mockPostReceiptHelper = mockk<PostReceiptHelper>()
@@ -83,6 +83,7 @@ open class BasePurchasesTest {
         mockBillingWrapper()
         mockStoreProduct(productIds, productIds, ProductType.SUBS)
         mockCustomerInfoHelper()
+        mockCustomerInfoUpdateHandler()
 
         every {
             updatedCustomerInfoListener.onReceived(any())
@@ -103,7 +104,13 @@ open class BasePurchasesTest {
     @After
     fun tearDown() {
         Purchases.backingFieldSharedInstance = null
-        clearMocks(mockCustomerInfoHelper, mockPostReceiptHelper, mockSyncPurchasesHelper, mockOfferingsManager)
+        clearMocks(
+            mockCustomerInfoHelper,
+            mockPostReceiptHelper,
+            mockSyncPurchasesHelper,
+            mockOfferingsManager,
+            mockCustomerInfoUpdateHandler,
+        )
     }
 
     // region Private Methods
@@ -217,15 +224,20 @@ open class BasePurchasesTest {
                     callback?.onError(errorGettingCustomerInfo)
                 }
             }
+        }
+    }
+
+    protected fun mockCustomerInfoUpdateHandler() {
+        with(mockCustomerInfoUpdateHandler) {
             every {
-                cacheCustomerInfo(any())
-            } just runs
+                cacheAndNotifyListeners(any())
+            } just Runs
             every {
-                sendUpdatedCustomerInfoToDelegateIfChanged(any())
-            } just runs
+                notifyListeners(any())
+            } just Runs
             every {
                 updatedCustomerInfoListener = any()
-            } just runs
+            } just Runs
             every {
                 updatedCustomerInfoListener
             } returns null
@@ -299,6 +311,7 @@ open class BasePurchasesTest {
                 dangerousSettings = DangerousSettings(autoSyncPurchases = autoSync)
             ),
             customerInfoHelper = mockCustomerInfoHelper,
+            customerInfoUpdateHandler = mockCustomerInfoUpdateHandler,
             diagnosticsSynchronizer = mockDiagnosticsSynchronizer,
             offlineEntitlementsManager = mockOfflineEntitlementsManager,
             postReceiptHelper = mockPostReceiptHelper,
