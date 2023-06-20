@@ -13,6 +13,7 @@ import io.mockk.just
 import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
+import org.json.JSONException
 import org.json.JSONObject
 import org.junit.Before
 import org.junit.Test
@@ -170,6 +171,13 @@ class DiagnosticsSynchronizerTest {
     @Test
     fun `syncDiagnosticsFileIfNeeded deletes file if IOException happens`() {
         every { diagnosticsFileHelper.readDiagnosticsFile() } throws IOException()
+        diagnosticsSynchronizer.syncDiagnosticsFileIfNeeded()
+        verify(exactly = 1) { diagnosticsFileHelper.deleteDiagnosticsFile()  }
+    }
+
+    @Test
+    fun `syncDiagnosticsFileIfNeeded deletes file if JSONException happens`() {
+        every { diagnosticsFileHelper.readDiagnosticsFile() } throws JSONException("test-exception")
         diagnosticsSynchronizer.syncDiagnosticsFileIfNeeded()
         verify(exactly = 1) { diagnosticsFileHelper.deleteDiagnosticsFile()  }
     }

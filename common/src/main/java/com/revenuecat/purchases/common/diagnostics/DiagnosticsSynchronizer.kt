@@ -79,7 +79,7 @@ class DiagnosticsSynchronizer(
                         }
                     },
                 )
-            } catch (e: IOException) {
+            } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
                 verboseLog("Error syncing diagnostics file: $e")
                 try {
                     resetDiagnosticsStatus()
