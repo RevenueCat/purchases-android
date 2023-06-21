@@ -8,7 +8,6 @@ import com.revenuecat.purchases.models.GooglePurchasingData
 import com.revenuecat.purchases.models.GoogleStoreProduct
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
-import org.assertj.core.api.Assertions.assertWith
 import org.assertj.core.api.Assertions.fail
 import org.junit.Before
 import org.junit.Test
@@ -60,13 +59,13 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
             Purchases.sharedInstance.getCustomerInfoWith(
                 CacheFetchPolicy.FETCH_CURRENT,
                 onError = {
-                    fail("fetching from backend should be success. Error: ${it.message}")
+                    fail("fetching from backend should be success. Error: $it")
                 },
                 onSuccess = { fetchedCustomerInfo ->
                     Purchases.sharedInstance.getCustomerInfoWith(
                         CacheFetchPolicy.CACHE_ONLY,
                         onError = {
-                            fail("fetching from cache should be success. Error: ${it.message}")
+                            fail("fetching from cache should be success. Error: $it")
                         },
                         onSuccess = { cachedCustomerInfo ->
                             assertThat(cachedCustomerInfo)
