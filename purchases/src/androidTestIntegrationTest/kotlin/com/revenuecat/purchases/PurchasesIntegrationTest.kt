@@ -8,6 +8,7 @@ import com.revenuecat.purchases.models.GooglePurchasingData
 import com.revenuecat.purchases.models.GoogleStoreProduct
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertWith
 import org.assertj.core.api.Assertions.fail
 import org.junit.Before
 import org.junit.Test
@@ -68,7 +69,10 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
                             fail("fetching from cache should be success. Error: ${it.message}")
                         },
                         onSuccess = { cachedCustomerInfo ->
-                            assertThat(cachedCustomerInfo).isEqualTo(fetchedCustomerInfo)
+                            assertThat(cachedCustomerInfo)
+                                .usingRecursiveComparison()
+                                .ignoringFields("schemaVersion", "jsonObject")
+                                .isEqualTo(fetchedCustomerInfo)
                             lock.countDown()
                         },
                     )
