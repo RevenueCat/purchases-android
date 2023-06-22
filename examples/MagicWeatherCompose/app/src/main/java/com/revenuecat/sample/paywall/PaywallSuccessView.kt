@@ -23,9 +23,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Package
-import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.sample.utils.buttonText
 import com.revenuecat.sample.utils.findActivity
 
@@ -34,10 +32,7 @@ import com.revenuecat.sample.utils.findActivity
 fun PaywallSuccessView(
     uiState: PaywallState.Success,
     modifier: Modifier = Modifier,
-    onPurchaseStarted: ((Package) -> Unit)? = null,
-    onPurchaseCompleted: ((CustomerInfo) -> Unit)? = null,
-    onPurchaseCancelled: (() -> Unit)? = null,
-    onPurchaseErrored: ((PurchasesError) -> Unit)? = null,
+    purchaseListener: PurchaseListener? = null,
     marketingContent: (@Composable () -> Unit)? = null,
 ) {
     val viewModel: PaywallViewModel = viewModel()
@@ -67,10 +62,7 @@ fun PaywallSuccessView(
                     viewModel.purchasePackage(
                         activity,
                         packageToPurchase,
-                        onPurchaseStarted,
-                        onPurchaseCompleted,
-                        onPurchaseCancelled,
-                        onPurchaseErrored,
+                        purchaseListener,
                     )
                 }
             }
