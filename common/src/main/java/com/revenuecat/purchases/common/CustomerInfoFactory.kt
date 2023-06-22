@@ -4,6 +4,7 @@ import android.net.Uri
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.EntitlementInfos
 import com.revenuecat.purchases.VerificationResult
+import com.revenuecat.purchases.common.caching.CUSTOMER_INFO_SCHEMA_VERSION
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.responses.CustomerInfoResponseJsonKeys
 import com.revenuecat.purchases.common.responses.ProductResponseJsonKeys
@@ -80,7 +81,7 @@ object CustomerInfoFactory {
             allPurchaseDatesByProduct = purchaseDatesByProduct,
             requestDate = requestDate,
             jsonObject = body,
-            schemaVersion = body.optInt("schema_version"),
+            schemaVersion = body.optInt("schema_version", CUSTOMER_INFO_SCHEMA_VERSION),
             firstSeen = firstSeen,
             originalAppUserId = subscriber.optString(CustomerInfoResponseJsonKeys.ORIGINAL_APP_USER_ID),
             managementURL = managementURL?.let { Uri.parse(it) },
