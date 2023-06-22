@@ -42,6 +42,8 @@ abstract class BaseOfflineEntitlementsWithInitialRequestsCompletedIntegrationTes
         postSetupTestCallback: (MainActivity) -> Unit = {},
     ) {
         setUpTest {
+            mockBillingAbstract.mockQueryProductDetails()
+
             waitForInitialRequestsToEnd {
                 postSetupTestCallback(it)
             }
@@ -93,6 +95,11 @@ class OfflineEntitlementsWithInitialRequestsCompletedAndInitialPurchasesIntegrat
             )
         }
     }
+}
+
+@RunWith(AndroidJUnit4::class)
+class OfflineEntitlementsWithInitialRequestsCompletedAndNoInitialPurchasesIntegrationTest :
+    BaseOfflineEntitlementsWithInitialRequestsCompletedIntegrationTest() {
 
     @Test
     fun doesNotEnterOfflineEntitlementsModeIfCachedCustomerInfoAndCustomerInfoRequestReturns500() {
@@ -120,11 +127,6 @@ class OfflineEntitlementsWithInitialRequestsCompletedAndInitialPurchasesIntegrat
             )
         }
     }
-}
-
-@RunWith(AndroidJUnit4::class)
-class OfflineEntitlementsWithInitialRequestsCompletedAndNoInitialPurchasesIntegrationTest :
-    BaseOfflineEntitlementsWithInitialRequestsCompletedIntegrationTest() {
 
     @Test
     fun entersOfflineEntitlementsModeIfPurchaseRequestReturns500() {
@@ -168,7 +170,10 @@ class OfflineEntitlementsWithInitialRequestsCompletedAndNoInitialPurchasesIntegr
             Purchases.sharedInstance.forceServerErrors = true
 
             mockPurchaseResult(activePurchases = mapOf(inAppTransaction.purchaseToken.sha1() to inAppTransaction))
-            mockBillingAbstract.mockQueryProductDetails(queryProductDetailsInAppReturn = listOf(inAppProduct))
+            mockBillingAbstract.mockQueryProductDetails(
+                queryProductDetailsSubsReturn = emptyList(),
+                queryProductDetailsInAppReturn = listOf(inAppProduct),
+            )
             Purchases.sharedInstance.purchaseWith(
                 PurchaseParams.Builder(activity, inAppProduct).build(),
                 onError = { error, _ ->
@@ -288,8 +293,8 @@ class OfflineEntitlementsWithInitialRequestsCompletedAndNoInitialPurchasesIntegr
                 onError = { error, _ ->
                     fail("Expected success but got error: $error")
                 },
-                onSuccess = { _, customerInfo ->
-                    assertCustomerInfoHasExpectedPurchaseData(customerInfo)
+                onSuccess = { _, customerInfo1 ->
+                    assertCustomerInfoHasExpectedPurchaseData(customerInfo1)
                     assertAcknowledgePurchaseDidNotHappen()
 
                     Purchases.sharedInstance.forceServerErrors = false
@@ -299,11 +304,12 @@ class OfflineEntitlementsWithInitialRequestsCompletedAndNoInitialPurchasesIntegr
                         onError = {
                             fail("Expected success but got error: $it")
                         },
-                        onSuccess = {
-                            // This is a known limitation. Ideally we would sync unsynced purchases
-                            // as soon as possible to avoid getting outdated info from the backend.
-                            assertCustomerInfoDoesNotHavePurchaseData(it)
-                            assertAcknowledgePurchaseDidNotHappen()
+                        onSuccess = { customerInfo2 ->
+                            // This is because the token we are using is not a real token to be used in the backend
+                            assertThat(customerInfo2.entitlements.active.keys).containsExactlyInAnyOrderElementsOf(
+                                entitlementsToVerify,
+                            )
+                            assertAcknowledgePurchaseDidHappen()
 
                             latch.countDown()
                         },

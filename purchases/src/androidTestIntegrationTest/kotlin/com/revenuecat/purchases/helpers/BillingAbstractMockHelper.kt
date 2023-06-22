@@ -3,12 +3,13 @@ package com.revenuecat.purchases.helpers
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.StoreProductsCallback
+import com.revenuecat.purchases.factories.StoreProductFactory
 import com.revenuecat.purchases.models.StoreProduct
 import io.mockk.every
 import io.mockk.slot
 
 fun BillingAbstract.mockQueryProductDetails(
-    queryProductDetailsSubsReturn: List<StoreProduct> = emptyList(),
+    queryProductDetailsSubsReturn: List<StoreProduct> = listOf(StoreProductFactory.createGoogleStoreProduct()),
     queryProductDetailsInAppReturn: List<StoreProduct> = emptyList(),
 ): BillingAbstract {
     return apply {

@@ -83,8 +83,7 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
     fun canFetchOfferings() {
         val lock = CountDownLatch(1)
 
-        val storeProduct = StoreProductFactory.createGoogleStoreProduct()
-        mockBillingAbstract.mockQueryProductDetails(queryProductDetailsSubsReturn = listOf(storeProduct))
+        mockBillingAbstract.mockQueryProductDetails()
 
         onActivityReady {
             Purchases.sharedInstance.getOfferingsWith(
@@ -107,8 +106,7 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
 
     @Test
     fun offeringsArePersistedAndUsedOnServerErrors() {
-        val storeProduct = StoreProductFactory.createGoogleStoreProduct()
-        mockBillingAbstract.mockQueryProductDetails(queryProductDetailsSubsReturn = listOf(storeProduct))
+        mockBillingAbstract.mockQueryProductDetails()
 
         ensureBlockFinishes { latch ->
             Purchases.sharedInstance.getOfferingsWith(
