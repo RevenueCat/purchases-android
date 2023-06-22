@@ -39,7 +39,12 @@ class UserViewModel : ViewModel() {
         Purchases.sharedInstance.logInWith(
             appUserID = newUserId,
             onError = { error ->
-                _uiState.update { it.copy(displayErrorMessage = error.message) }
+                _uiState.update {
+                    it.copy(
+                        displayErrorMessage = error.message,
+                        shouldStartLoginProcess = false,
+                    )
+                }
             },
             onSuccess = { customerInfo, _ ->
                 _uiState.update {
