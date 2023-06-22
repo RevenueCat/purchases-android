@@ -1,6 +1,11 @@
+plugins {
+    alias libs.plugins.android.library
+    alias libs.plugins.kotlin.android
+    alias libs.plugins.mavenPublish
+    alias libs.plugins.dokka
+}
+
 apply from: "$rootProject.projectDir/library.gradle"
-apply plugin: 'kotlin-kapt'
-apply plugin: 'org.jetbrains.dokka'
 
 android {
     namespace 'com.revenuecat.purchases.api'
@@ -47,35 +52,29 @@ dependencies {
     implementation project(":strings")
     api project(":public")
 
-    implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
-    implementation "androidx.annotation:annotation:$annotationVersion"
-
-    api "com.android.billingclient:billing:$billingVersion"
-    implementation "androidx.lifecycle:lifecycle-runtime:$lifecycleVersion"
-    implementation "androidx.lifecycle:lifecycle-common:$lifecycleVersion"
-    implementation "androidx.lifecycle:lifecycle-process:$lifecycleVersion"
+    implementation libs.kotlin.stdlib
+    implementation libs.androidx.annotation
+    api libs.billing
+    implementation libs.androidx.lifecycle.runtime
+    implementation libs.androidx.lifecycle.common
+    implementation libs.androidx.lifecycle.process
 
     testImplementation project(":test-utils")
-    testImplementation "androidx.test:core:$testLibrariesVersion"
-    testImplementation "androidx.test:runner:$testLibrariesVersion"
-    testImplementation "androidx.test:rules:$testLibrariesVersion"
-    testImplementation "androidx.test.ext:junit:$testJUnitVersion"
-    testImplementation "org.robolectric:robolectric:$robolectricVersion"
-    testImplementation "io.mockk:mockk:$mockkVersion"
-    testImplementation "org.assertj:assertj-core:$assertJVersion"
-    testImplementation "com.android.billingclient:billing:$billingVersion"
-    testImplementation "org.jetbrains.kotlinx:kotlinx-coroutines-test:$coroutinesVersion"
+    testImplementation libs.bundles.test
+    testImplementation libs.billing
+    testImplementation libs.coroutines.test
 
-    integrationTestImplementation 'androidx.appcompat:appcompat:1.4.1'
-    integrationTestImplementation 'com.google.android.material:material:1.6.0'
-    integrationTestImplementation 'androidx.constraintlayout:constraintlayout:2.1.3'
-    androidTestIntegrationTestImplementation 'androidx.test.espresso:espresso-core:3.4.0'
-    androidTestIntegrationTestImplementation 'androidx.test:runner:1.4.0'
-    androidTestIntegrationTestImplementation 'androidx.test:rules:1.4.0'
-    androidTestIntegrationTestImplementation 'androidx.test.ext:junit-ktx:1.1.3'
-    androidTestIntegrationTestImplementation 'org.assertj:assertj-core:3.22.0'
-    androidTestIntegrationTestImplementation "io.mockk:mockk-android:$mockkVersion"
-    androidTestIntegrationTestImplementation "io.mockk:mockk-agent:$mockkVersion"
+    integrationTestImplementation libs.androidx.appcompat
+    integrationTestImplementation libs.material
+    integrationTestImplementation libs.androidx.constraintlayout
+
+    androidTestIntegrationTestImplementation libs.androidx.test.espresso.core
+    androidTestIntegrationTestImplementation libs.androidx.test.runner
+    androidTestIntegrationTestImplementation libs.androidx.test.rules
+    androidTestIntegrationTestImplementation libs.androidx.test.junit
+    androidTestIntegrationTestImplementation libs.assertJ
+    androidTestIntegrationTestImplementation libs.mockk.android
+    androidTestIntegrationTestImplementation libs.mockk.agent
 }
 
 tasks.dokkaHtmlPartial.configure {

@@ -1,3 +1,11 @@
+pluginManagement {
+    repositories {
+        google()
+        gradlePluginPortal()
+        mavenCentral()
+    }
+}
+
 include ':feature:google'
 include ':feature:amazon'
 include ':integration-tests'

@@ -1,4 +1,11 @@
+plugins {
+    alias libs.plugins.android.library
+    alias libs.plugins.kotlin.android
+    alias libs.plugins.mavenPublish
+}
+
 apply from: "$rootProject.projectDir/library.gradle"
+
 android {
     namespace 'com.revenuecat.purchases.subscriberattributes'
 }
@@ -10,15 +17,9 @@ dependencies {
     implementation project(":utils")
     implementation project(":strings")
 
-    implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
-    implementation "androidx.core:core-ktx:$androidxCoreVersion"
+    implementation libs.kotlin.stdlib
+    implementation libs.androidx.core
 
     testImplementation project(":test-utils")
-    testImplementation "androidx.test:core:$testLibrariesVersion"
-    testImplementation "androidx.test:runner:$testLibrariesVersion"
-    testImplementation "androidx.test:rules:$testLibrariesVersion"
-    testImplementation "androidx.test.ext:junit:$testJUnitVersion"
-    testImplementation "org.robolectric:robolectric:$robolectricVersion"
-    testImplementation "io.mockk:mockk:$mockkVersion"
-    testImplementation "org.assertj:assertj-core:$assertJVersion"
+    testImplementation libs.bundles.test
 }

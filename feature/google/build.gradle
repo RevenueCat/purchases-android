@@ -1,29 +1,28 @@
+plugins {
+    alias libs.plugins.android.library
+    alias libs.plugins.kotlin.android
+    alias libs.plugins.mavenPublish
+}
+
 apply from: "$rootProject.projectDir/library.gradle"
+
 android {
     namespace 'com.revenuecat.purchases.google'
 }
 
 dependencies {
     implementation fileTree(dir: "libs", include: ["*.jar"])
-
     implementation project(":common")
     implementation project(":public")
     implementation project(":strings")
     implementation project(":utils")
 
-    implementation 'com.google.android.gms:play-services-ads-identifier:17.0.1'
-    implementation "androidx.core:core-ktx:$androidxCoreVersion"
-    implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
-    implementation "com.android.billingclient:billing:$billingVersion"
+    implementation libs.playServices.ads.identifier
+    implementation libs.androidx.core
+    implementation libs.kotlin.stdlib
+    implementation libs.billing
 
     testImplementation project(":test-utils")
-    testImplementation "androidx.test:core:$testLibrariesVersion"
-    testImplementation "androidx.test:runner:$testLibrariesVersion"
-    testImplementation "androidx.test:rules:$testLibrariesVersion"
-    testImplementation "androidx.test.ext:junit:$testJUnitVersion"
-    testImplementation "org.robolectric:robolectric:$robolectricVersion"
-    testImplementation "io.mockk:mockk:$mockkVersion"
-    testImplementation "org.assertj:assertj-core:$assertJVersion"
-    testImplementation 'com.google.android.gms:play-services-ads-identifier:17.0.1'
-
+    testImplementation libs.bundles.test
+    testImplementation libs.playServices.ads.identifier
 }

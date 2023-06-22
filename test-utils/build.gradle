@@ -1,4 +1,11 @@
+plugins {
+    alias libs.plugins.android.library
+    alias libs.plugins.kotlin.android
+    alias libs.plugins.mavenPublish
+}
+
 apply from: "$rootProject.projectDir/library.gradle"
+
 android {
     namespace 'com.revenuecat.purchases.test_utils'
 }
@@ -9,9 +16,10 @@ dependencies {
     implementation project(":public")
     implementation project(":feature:google")
     implementation project(":utils")
-    implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
-    implementation "com.android.billingclient:billing:$billingVersion"
-    implementation "org.assertj:assertj-core:$assertJVersion"
-    implementation "io.mockk:mockk:$mockkVersion"
-    implementation "androidx.test.ext:junit:$testJUnitVersion"
+
+    implementation libs.kotlin.stdlib
+    implementation libs.billing
+    implementation libs.assertJ
+    implementation libs.mockk
+    implementation libs.androidx.test.junit
 }
