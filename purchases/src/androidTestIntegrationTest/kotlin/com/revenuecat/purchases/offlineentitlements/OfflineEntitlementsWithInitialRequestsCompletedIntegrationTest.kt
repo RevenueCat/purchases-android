@@ -95,6 +95,24 @@ class OfflineEntitlementsWithInitialRequestsCompletedAndInitialPurchasesIntegrat
             )
         }
     }
+
+    @Test
+    fun entersOfflineEntitlementsModeIfCachedCustomerInfoAndPostingPendingPurchasesReturns500() {
+        ensureBlockFinishes { latch ->
+            Purchases.sharedInstance.forceServerErrors = true
+
+            Purchases.sharedInstance.getCustomerInfoWith(
+                fetchPolicy = CacheFetchPolicy.FETCH_CURRENT,
+                onError = {
+                    fail("Expected success but got error: $it")
+                },
+                onSuccess = { receivedCustomerInfo ->
+                    assertCustomerInfoHasExpectedPurchaseData(receivedCustomerInfo)
+                    latch.countDown()
+                },
+            )
+        }
+    }
 }
 
 @RunWith(AndroidJUnit4::class)
