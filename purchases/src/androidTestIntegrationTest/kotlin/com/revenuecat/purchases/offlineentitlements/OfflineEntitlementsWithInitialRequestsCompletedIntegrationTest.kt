@@ -77,7 +77,7 @@ class OfflineEntitlementsWithInitialRequestsCompletedAndInitialPurchasesIntegrat
     override val initialActivePurchasesToUse: Map<String, StoreTransaction> = initialActivePurchases
 
     @Test
-    fun entersOfflineEntitlementsModeIfNoCachedCustomerInfoAndCustomerInfoRequestReturns500() {
+    fun entersOfflineEntitlementsModeIfNoCachedCustomerInfoAndPostingPendingPurchasesReturns500() {
         ensureBlockFinishes { latch ->
             Purchases.sharedInstance.forceServerErrors = true
 
