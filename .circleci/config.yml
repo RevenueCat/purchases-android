@@ -130,12 +130,13 @@ jobs:
     steps:
       - checkout
       - install-sdkman
+      - revenuecat/install-gem-unix-dependencies:
+          cache-version: v1
       - android/accept-licenses
       - android-dependencies
       - android/restore-build-cache
       - run:
           name: Build sample app
-          working_directory: examples/MagicWeatherCompose
           command: bundle exec fastlane android build_magic_weather_compose
       - android/save-build-cache
 
