@@ -278,6 +278,16 @@ platform :android do
     )
   end
 
+  desc "Builds a Magic Weather Compose APK"
+  lane :build_magic_weather_compose do |options|
+    project_dir = "examples/MagicWeatherCompose"
+    task = "assembleDebug"
+    gradle(
+      project_dir: project_dir,
+      task: task,
+    )
+  end
+
   desc <<-DESC
 Builds a Magic Weather APK and prompts for:
 * Gradle task
