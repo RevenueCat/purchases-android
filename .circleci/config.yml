@@ -124,6 +124,22 @@ commands:
 
 jobs:
 
+  build-magic-weather-compose:
+    <<: *android-executor
+    shell: /bin/bash --login -o pipefail
+    steps:
+      - checkout
+      - install-sdkman
+      - revenuecat/install-gem-unix-dependencies:
+          cache-version: v1
+      - android/accept-licenses
+      - android-dependencies
+      - android/restore-build-cache
+      - run:
+          name: Build sample app
+          command: bundle exec fastlane android build_magic_weather_compose
+      - android/save-build-cache
+
   test:
     <<: *android-executor
     shell: /bin/bash --login -o pipefail
@@ -450,6 +466,7 @@ workflows:
       - test
       - detekt
       - assemble-sample-app
+      - build-magic-weather-compose
       - run-backend-integration-tests
 
   deploy:
