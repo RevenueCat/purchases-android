@@ -12,6 +12,7 @@ import com.revenuecat.purchases.getOfferingsWith
 import com.revenuecat.purchases.purchaseWith
 import com.revenuecat.sample.R
 import com.revenuecat.sample.data.paywallDrawableByName
+import com.revenuecat.sample.utils.getActiveEntitlements
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -71,7 +72,7 @@ class PaywallViewModel : ViewModel() {
             onSuccess = { _, customerInfo ->
                 Toast.makeText(
                     activity,
-                    "Purchase succeeded. Current entitlements: ${customerInfo.entitlements.active.keys}",
+                    "Purchase succeeded. Current entitlements: ${customerInfo.entitlements.getActiveEntitlements()}",
                     Toast.LENGTH_SHORT,
                 ).show()
                 onPurchaseCompleted?.invoke(customerInfo)
