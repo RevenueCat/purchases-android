@@ -3,11 +3,9 @@ package com.revenuecat.sample.paywall
 import android.app.Activity
 import android.widget.Toast
 import androidx.lifecycle.ViewModel
-import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PurchaseParams
 import com.revenuecat.purchases.Purchases
-import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.getOfferingsWith
 import com.revenuecat.purchases.purchaseWith
 import com.revenuecat.sample.R
@@ -52,21 +50,18 @@ class PaywallViewModel : ViewModel() {
     fun purchasePackage(
         activity: Activity,
         packageToPurchase: Package,
-        onPurchaseStarted: ((Package) -> Unit)? = null,
-        onPurchaseCompleted: ((CustomerInfo) -> Unit)? = null,
-        onPurchaseCancelled: (() -> Unit)? = null,
-        onPurchaseErrored: ((PurchasesError) -> Unit)? = null,
+        purchaseListener: PurchaseListener? = null,
     ) {
-        onPurchaseStarted?.invoke(packageToPurchase)
+        purchaseListener?.onPurchaseStarted(packageToPurchase)
         Purchases.sharedInstance.purchaseWith(
             PurchaseParams.Builder(activity, packageToPurchase).build(),
             onError = { error, userCancelled ->
                 if (userCancelled) {
                     Toast.makeText(activity, "User cancelled", Toast.LENGTH_SHORT).show()
-                    onPurchaseCancelled?.invoke()
+                    purchaseListener?.onPurchaseCancelled()
                 } else {
                     _uiState.update { PaywallState.Error(error.message) }
-                    onPurchaseErrored?.invoke(error)
+                    purchaseListener?.onPurchaseErrored(error)
                 }
             },
             onSuccess = { _, customerInfo ->
@@ -75,7 +70,7 @@ class PaywallViewModel : ViewModel() {
                     "Purchase succeeded. Current entitlements: ${customerInfo.entitlements.getActiveEntitlements()}",
                     Toast.LENGTH_SHORT,
                 ).show()
-                onPurchaseCompleted?.invoke(customerInfo)
+                purchaseListener?.onPurchaseCompleted(customerInfo)
             },
         )
     }

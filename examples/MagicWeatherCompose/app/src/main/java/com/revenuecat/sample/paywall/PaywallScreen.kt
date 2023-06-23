@@ -6,18 +6,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.revenuecat.purchases.CustomerInfo
-import com.revenuecat.purchases.Package
-import com.revenuecat.purchases.PurchasesError
 
 @Suppress("LongParameterList")
 @Composable
 fun PaywallScreen(
     modifier: Modifier = Modifier,
-    onPurchaseStarted: ((Package) -> Unit)? = null,
-    onPurchaseCompleted: ((CustomerInfo) -> Unit)? = null,
-    onPurchaseCancelled: (() -> Unit)? = null,
-    onPurchaseErrored: ((PurchasesError) -> Unit)? = null,
+    purchaseListener: PurchaseListener? = null,
     marketingContent: (@Composable () -> Unit)? = null,
 ) {
     val viewModel: PaywallViewModel = viewModel()
@@ -39,10 +33,7 @@ fun PaywallScreen(
                 PaywallSuccessView(
                     uiState = currentState,
                     modifier = modifier.padding(padding),
-                    onPurchaseStarted = onPurchaseStarted,
-                    onPurchaseCompleted = onPurchaseCompleted,
-                    onPurchaseCancelled = onPurchaseCancelled,
-                    onPurchaseErrored = onPurchaseErrored,
+                    purchaseListener = purchaseListener,
                     marketingContent = marketingContent,
                 )
             }
