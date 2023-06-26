@@ -19,7 +19,6 @@ ext {
 dependencies {
     implementation project(":purchases")
     implementation project(":common")
-    implementation project(":strings")
     implementation project(":utils")
 
     implementation libs.kotlin.stdlib

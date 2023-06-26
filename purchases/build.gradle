@@ -49,7 +49,6 @@ dependencies {
     implementation project(":feature:subscriber-attributes")
     implementation project(":feature:google")
     implementation project(":feature:identity")
-    implementation project(":strings")
     api project(":public")
 
     implementation libs.kotlin.stdlib
@@ -106,7 +105,6 @@ project.afterEvaluate {
         kover(project(":feature:identity"))
         kover(project(":feature:subscriber-attributes"))
         kover(project(":public"))
-        kover(project(":strings"))
         kover(project(":test-utils"))
         kover(project(":utils"))
     }
