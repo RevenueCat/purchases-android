@@ -34,7 +34,7 @@ suspend fun Purchases.awaitCustomerInfo(
 
 /**
  * Fetch the configured offerings for this users. Offerings allows you to configure your in-app
- * products vis RevenueCat and greatly simplifies management. See
+ * products via RevenueCat and greatly simplifies management. See
  * [the guide](https://docs.revenuecat.com/offerings) for more info.
  *
  * Offerings will be fetched and cached on instantiation so that, by the time they are needed,
