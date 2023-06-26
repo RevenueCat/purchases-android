@@ -121,6 +121,14 @@ This requires the google cloud cli to be installed and initialized.
 
 Publish purchase tester to test track in Play Console
 
+### android build_magic_weather_compose
+
+```sh
+[bundle exec] fastlane android build_magic_weather_compose
+```
+
+Builds a Magic Weather Compose APK
+
 ### android build_magic_weather
 
 ```sh
