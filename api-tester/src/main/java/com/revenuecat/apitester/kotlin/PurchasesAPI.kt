@@ -196,6 +196,8 @@ private class PurchasesAPI {
         purchases: Purchases,
     ) {
         val customerInfo: CustomerInfo = purchases.awaitCustomerInfo()
+        val customerInfoFetchPolicy: CustomerInfo =
+            purchases.awaitCustomerInfo(fetchPolicy = CacheFetchPolicy.FETCH_CURRENT)
     }
 
     fun check(purchases: Purchases, attributes: Map<String, String>) {
