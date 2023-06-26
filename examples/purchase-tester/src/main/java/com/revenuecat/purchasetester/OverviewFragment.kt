@@ -137,7 +137,7 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
                             object : PurchaseCallback {
                                 override fun onCompleted(
                                     storeTransaction: StoreTransaction,
-                                    customerInfo: CustomerInfo
+                                    customerInfo: CustomerInfo,
                                 ) {
                                     showToast("Successful purchase, order id: ${storeTransaction.orderId}")
                                 }
@@ -145,13 +145,15 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
                                 override fun onError(error: PurchasesError, userCancelled: Boolean) {
                                     showError(error)
                                 }
-                            })
+                            },
+                        )
                     }
 
                     override fun onError(error: PurchasesError) {
                         showError(error)
                     }
-                })
+                },
+            )
         }
         builder.setNegativeButton("Cancel") { dialog, which ->
             dialog.cancel()
