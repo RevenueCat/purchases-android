@@ -157,22 +157,31 @@ class PurchasesCoroutinesTest : BasePurchasesTest() {
         assertThat(exception).isNotNull
     }
 
-//    @Test
-//    fun `retrieve customer info - CustomerInfoError`() = runTest {
-//        mockCustomerInfoHelper(PurchasesError(PurchasesErrorCode.CustomerInfoError, "Customer info error"))
-//
-//        var exception: Throwable? = null
-//
-//        runCatching {
-//            purchases.awaitCustomerInfo()
-//        }.onFailure {
-//            exception = it
-//        }
-//
-//        assertThat(exception).isNotNull
-//        assertThat(exception).isInstanceOf(PurchasesException::class.java)
-//        assertThat((exception as PurchasesException).code).isEqualTo(PurchasesErrorCode.CustomerInfoError)
-//    }
+    @Test
+    fun `retrieve offerings - ConfigurationError`() = runTest {
+        val error = PurchasesError(PurchasesErrorCode.ConfigurationError, "Offerings config error")
+        mockOfferingsManagerGetOfferings(error)
+
+        var result: Offerings? = null
+        var exception: Throwable? = null
+        runCatching {
+            result = purchases.awaitOfferings()
+        }.onFailure {
+            exception = it
+        }
+
+        verify(exactly = 1) {
+            mockOfferingsManager.getOfferings(
+                appUserId,
+                any(),
+                any(),
+                any(),
+            )
+        }
+        assertThat(exception).isNotNull
+        assertThat(exception).isInstanceOf(PurchasesException::class.java)
+        assertThat((exception as PurchasesException).code).isEqualTo(PurchasesErrorCode.ConfigurationError)
+    }
 
     // endregion
 }

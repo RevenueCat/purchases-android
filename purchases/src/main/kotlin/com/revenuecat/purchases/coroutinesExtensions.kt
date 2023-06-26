@@ -42,10 +42,14 @@ suspend fun Purchases.awaitCustomerInfo(
  *
  * Coroutine friendly version of [Purchases.getOfferings].
  *
- * @warning This function is experimental and may change in the future.
+ * @warning This function is marked as [ExperimentalPreviewRevenueCatPurchasesAPI] and may change in the future.
+ * Only available in Kotlin.
  *
+ * @throws [PurchasesException] with a [PurchasesError] if there's an error retrieving the offerings.
  * @return [Result] type containing either the [Offerings] or the [PurchasesError]
  */
+@JvmSynthetic
+@ExperimentalPreviewRevenueCatPurchasesAPI
 suspend fun Purchases.awaitOfferings(): Offerings {
     return suspendCoroutine { continuation ->
         getOfferingsWith(
