@@ -5,5 +5,5 @@ import com.revenuecat.purchases.LogLevel
 object Config {
     var logLevel = LogLevel.debugLogsEnabled(BuildConfig.DEBUG)
 
-    const val frameworkVersion = "6.5.2"
+    const val frameworkVersion = "6.6.0-SNAPSHOT"
 }

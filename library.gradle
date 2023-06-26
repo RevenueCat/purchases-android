@@ -17,7 +17,7 @@ android {
         minSdkVersion minVersion
         targetSdkVersion compileVersion
         versionCode 1
-        versionName "6.5.2"
+        versionName "6.6.0-SNAPSHOT"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles "consumer-rules.pro"
     }
