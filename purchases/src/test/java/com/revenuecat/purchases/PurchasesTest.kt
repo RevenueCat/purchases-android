@@ -1597,13 +1597,7 @@ class PurchasesTest: BasePurchasesTest() {
 
     @Test
     fun `getOfferings success calls success callback`() {
-        val slotList = mutableListOf<((Offerings) -> Unit)?>()
-        val offerings = mockk<Offerings>()
-        every {
-            mockOfferingsManager.getOfferings(appUserId, appInBackground = false, any(), captureNullable(slotList))
-        } answers {
-            slotList.first()?.invoke(offerings)
-        }
+        val offerings = mockOfferingsManagerGetOfferings()
         var receivedOfferings: Offerings? = null
         Purchases.sharedInstance.getOfferingsWith(
             onError = { fail("Expected success") },
@@ -1613,14 +1607,9 @@ class PurchasesTest: BasePurchasesTest() {
     }
 
     @Test
-    fun `getOfferings success calls error callback`() {
-        val slotList = mutableListOf<((PurchasesError) -> Unit)?>()
+    fun `getOfferings error calls error callback`() {
         val error = PurchasesError(PurchasesErrorCode.UnknownError)
-        every {
-            mockOfferingsManager.getOfferings(appUserId, appInBackground = false, captureNullable(slotList), any())
-        } answers {
-            slotList.first()?.invoke(error)
-        }
+        mockOfferingsManagerGetOfferings(error)
         var receivedError: PurchasesError? = null
         Purchases.sharedInstance.getOfferingsWith(
             onError = { receivedError = it },

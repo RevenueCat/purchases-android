@@ -14,6 +14,7 @@ import org.robolectric.annotation.Config
 @Config(manifest = Config.NONE)
 class PurchasesCoroutinesTest : BasePurchasesTest() {
 
+    // region awaitCustomerInfo
     @Test
     fun `retrieve customer info - Success`() = runTest {
         mockCustomerInfoHelper()
@@ -92,6 +93,86 @@ class PurchasesCoroutinesTest : BasePurchasesTest() {
         assertThat(exception).isInstanceOf(PurchasesException::class.java)
         assertThat((exception as PurchasesException).code).isEqualTo(PurchasesErrorCode.CustomerInfoError)
     }
+
+    // endregion
+
+    // region awaitOfferings
+    @Test
+    fun `retrieve offerings - Success`() = runTest {
+        mockOfferingsManagerGetOfferings()
+
+        val result = purchases.awaitOfferings()
+
+        verify(exactly = 1) {
+            mockOfferingsManager.getOfferings(
+                appUserId,
+                any(),
+                any(),
+                any(),
+            )
+        }
+        assertThat(result).isNotNull
+    }
+
+    @Test
+    fun `retrieve offerings - Success - offerings match expectations`() = runTest {
+        val offerings = mockOfferingsManagerGetOfferings()
+
+        val result = purchases.awaitOfferings()
+
+        verify(exactly = 1) {
+            mockOfferingsManager.getOfferings(
+                appUserId,
+                any(),
+                any(),
+                any(),
+            )
+        }
+        assertThat(result).isNotNull
+        assertThat(result).isEqualTo(offerings)
+    }
+
+    @Test
+    fun `retrieve offerings - Error`() = runTest {
+        val error = PurchasesError(PurchasesErrorCode.UnknownError, "Offerings error")
+        mockOfferingsManagerGetOfferings(error)
+
+        var result: Offerings? = null
+        var exception: Throwable? = null
+        runCatching {
+            result = purchases.awaitOfferings()
+        }.onFailure {
+            exception = it
+        }
+
+        verify(exactly = 1) {
+            mockOfferingsManager.getOfferings(
+                appUserId,
+                any(),
+                any(),
+                any(),
+            )
+        }
+        assertThat(result).isNull()
+        assertThat(exception).isNotNull
+    }
+
+//    @Test
+//    fun `retrieve customer info - CustomerInfoError`() = runTest {
+//        mockCustomerInfoHelper(PurchasesError(PurchasesErrorCode.CustomerInfoError, "Customer info error"))
+//
+//        var exception: Throwable? = null
+//
+//        runCatching {
+//            purchases.awaitCustomerInfo()
+//        }.onFailure {
+//            exception = it
+//        }
+//
+//        assertThat(exception).isNotNull
+//        assertThat(exception).isInstanceOf(PurchasesException::class.java)
+//        assertThat((exception as PurchasesException).code).isEqualTo(PurchasesErrorCode.CustomerInfoError)
+//    }
 
     // endregion
 }
