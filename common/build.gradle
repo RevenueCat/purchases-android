@@ -1,6 +1,7 @@
 plugins {
     alias libs.plugins.android.library
     alias libs.plugins.kotlin.android
+    alias libs.plugins.kotlin.parcelize
     alias libs.plugins.mavenPublish
 }
 
@@ -29,7 +30,6 @@ android {
 dependencies {
     implementation fileTree(dir: "libs", include: ["*.jar"])
     implementation project(":public")
-    implementation project(":utils")
 
     implementation libs.kotlin.stdlib
     implementation libs.androidx.core

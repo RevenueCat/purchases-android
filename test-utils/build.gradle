@@ -15,7 +15,6 @@ dependencies {
     implementation project(":common")
     implementation project(":public")
     implementation project(":feature:google")
-    implementation project(":utils")
 
     implementation libs.kotlin.stdlib
     implementation libs.billing
