@@ -178,6 +178,7 @@ class PurchasesCoroutinesTest : BasePurchasesTest() {
                 any(),
             )
         }
+        assertThat(result).isNull()
         assertThat(exception).isNotNull
         assertThat(exception).isInstanceOf(PurchasesException::class.java)
         assertThat((exception as PurchasesException).code).isEqualTo(PurchasesErrorCode.ConfigurationError)
