@@ -1,5 +1,4 @@
 ### Dependency Updates
-* Update billing library to 5.2.1 (#1092) via Toni Rico (@tonidero)
+* Bump fastlane-plugin-revenuecat_internal from `13773d2` to `b2108fb` (#1095) via dependabot[bot] (@dependabot[bot])
 ### Other Changes
-* Fix backend integration tests (#1091) via Toni Rico (@tonidero)
-* Compose sample app: refactor listener (#1083) via Toni Rico (@tonidero)
+* [EXTERNAL] Add missing `fetchPolicy` parameter to `awaitCustomerInfo` API (#1086) (#1090) via Toni Rico (@tonidero)
