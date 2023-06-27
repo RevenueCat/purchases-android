@@ -9,7 +9,6 @@ pluginManagement {
 include ':feature:google'
 include ':feature:amazon'
 include ':integration-tests'
-include ':feature:identity'
 include ':test-utils'
 include ':common'
 include ':public'
