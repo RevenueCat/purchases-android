@@ -574,7 +574,6 @@ class IdentityManagerTests {
 
     // region helper functions
 
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     private fun setupCustomerInfoCacheInvalidationTest(
         userId: String,
         verificationResult: VerificationResult,

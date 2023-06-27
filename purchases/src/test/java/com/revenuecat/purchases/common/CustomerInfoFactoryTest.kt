@@ -34,7 +34,6 @@ class CustomerInfoFactoryTest {
         assertThat(defaultCustomerInfo.requestDate).isEqualTo(Date(1565951442000))
     }
 
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     @Test
     fun `assigns default verification result correctly`() {
         assertThat(defaultCustomerInfo.entitlements.verification).isEqualTo(VerificationResult.NOT_REQUESTED)

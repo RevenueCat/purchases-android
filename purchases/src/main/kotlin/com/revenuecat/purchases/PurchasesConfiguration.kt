@@ -80,10 +80,8 @@ open class PurchasesConfiguration(builder: Builder) {
         }
 
         /**
-         * **Feature in beta**. Enables signature verification of requests to the RevenueCat backend
-         * in informational mode and enables diagnostics reports to RevenueCat to help us analyze this feature.
-         * Informational mode means that the behavior will remain the same but we will provide information about
-         * detected attempts of hacking.
+         * Enables signature verification of requests to the RevenueCat backend
+         * and enables diagnostics reports to RevenueCat to help us analyze this feature.
          *
          * When changing from disabled to enabled, the SDK will clear the CustomerInfo cache.
          * This means users will need to connect to the internet to get their entitlements back.
@@ -91,22 +89,12 @@ open class PurchasesConfiguration(builder: Builder) {
          * The result of the verification can be obtained from [EntitlementInfos.verification] or
          * [EntitlementInfo.verification].
          *
-         * This feature is currently in beta and the behavior may change. Only available in Kotlin.
-         *
          * Default mode is disabled.
-         *
-         * @warning This function is marked as [ExperimentalPreviewRevenueCatPurchasesAPI] and may change in the future.
          */
         @JvmSynthetic
-        @ExperimentalPreviewRevenueCatPurchasesAPI
-        fun informationalVerificationModeAndDiagnosticsEnabled(enabled: Boolean) = apply {
-            if (enabled) {
-                this.verificationMode = EntitlementVerificationMode.INFORMATIONAL
-                this.diagnosticsEnabled = true
-            } else {
-                this.verificationMode = EntitlementVerificationMode.DISABLED
-                this.diagnosticsEnabled = false
-            }
+        fun verificationModeAndDiagnostics(mode: EntitlementVerificationMode) = apply {
+            this.verificationMode = mode
+            this.diagnosticsEnabled = mode.isEnabled
         }
 
         /**

@@ -20,7 +20,6 @@ import kotlin.time.Duration.Companion.days
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 class EntitlementInfosTests {
 
     private var response = JSONObject()

@@ -7,7 +7,6 @@ import com.revenuecat.purchases.VerificationResult
 
 @Suppress("unused", "UNUSED_VARIABLE", "DEPRECATION")
 private class EntitlementInfosAPI {
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     fun check(infos: EntitlementInfos) {
         val active: Map<String, EntitlementInfo> = infos.active
         val all: Map<String, EntitlementInfo> = infos.all

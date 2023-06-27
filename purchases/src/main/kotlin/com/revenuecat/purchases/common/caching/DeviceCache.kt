@@ -136,7 +136,6 @@ internal open class DeviceCache(
     }
 
     @Synchronized
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     fun cacheCustomerInfo(appUserID: String, info: CustomerInfo) {
         val jsonObject = info.rawData.also {
             it.put(CUSTOMER_INFO_SCHEMA_VERSION_KEY, CUSTOMER_INFO_SCHEMA_VERSION)

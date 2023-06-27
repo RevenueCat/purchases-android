@@ -110,7 +110,6 @@ class ConfigureFragment : Fragment() {
         return binding.root
     }
 
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     private suspend fun configureSDK() {
         val apiKey = binding.apiKeyInput.text.toString()
         val proxyUrl = binding.proxyUrlInput.text?.toString() ?: ""

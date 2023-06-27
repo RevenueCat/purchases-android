@@ -33,4 +33,7 @@ enum class EntitlementVerificationMode {
         val default: EntitlementVerificationMode
             get() = DISABLED
     }
+
+    val isEnabled: Boolean
+        get() = this != DISABLED
 }

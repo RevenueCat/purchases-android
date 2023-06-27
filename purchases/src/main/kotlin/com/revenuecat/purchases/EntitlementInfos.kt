@@ -13,7 +13,6 @@ import kotlinx.parcelize.Parcelize
 @Parcelize
 class EntitlementInfos(
     val all: Map<String, EntitlementInfo>,
-    @ExperimentalPreviewRevenueCatPurchasesAPI
     val verification: VerificationResult,
 ) : Parcelable {
 
@@ -37,7 +36,6 @@ class EntitlementInfos(
     operator fun get(s: String) = all[s]
 
     /** @suppress */
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
