@@ -45,7 +45,6 @@ def obtainTestBuildType() {
 dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
     implementation project(":common")
-    implementation project(":feature:google")
     api project(":public")
 
     implementation libs.kotlin.stdlib
@@ -98,7 +97,6 @@ project.afterEvaluate {
     dependencies {
         kover(project(":common"))
         kover(project(":feature:amazon"))
-        kover(project(":feature:google"))
         kover(project(":public"))
         kover(project(":test-utils"))
     }

@@ -6,7 +6,6 @@ pluginManagement {
     }
 }
 
-include ':feature:google'
 include ':feature:amazon'
 include ':integration-tests'
 include ':test-utils'
