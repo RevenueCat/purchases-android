@@ -34,8 +34,10 @@ dependencies {
     implementation libs.androidx.core
     implementation libs.tink
     implementation libs.billing
+    implementation libs.playServices.ads.identifier
 
     testImplementation project(":test-utils")
     testImplementation libs.bundles.test
     testImplementation libs.okhttp.mockwebserver
+    testImplementation libs.playServices.ads.identifier
 }
