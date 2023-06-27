@@ -13,7 +13,6 @@ android {
 dependencies {
     implementation fileTree(dir: "libs", include: ["*.jar"])
     implementation project(":common")
-    implementation project(":utils")
     implementation project(":public")
     implementation project(":feature:subscriber-attributes")
 

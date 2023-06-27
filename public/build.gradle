@@ -14,7 +14,6 @@ android {
 
 dependencies {
     implementation fileTree(dir: "libs", include: ["*.jar"])
-    implementation project(":utils")
 
     implementation libs.androidx.core
     implementation libs.billing

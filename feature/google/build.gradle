@@ -14,7 +14,6 @@ dependencies {
     implementation fileTree(dir: "libs", include: ["*.jar"])
     implementation project(":common")
     implementation project(":public")
-    implementation project(":utils")
 
     implementation libs.playServices.ads.identifier
     implementation libs.androidx.core
