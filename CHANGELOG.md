@@ -16,7 +16,7 @@
 * Compose sample app: move to gradle catalog (#1081) via Toni Rico (@tonidero)
 * Compose sample app: automate builds (#1082) via Toni Rico (@tonidero)
 * Compose sample app (#1056) via Toni Rico (@tonidero)
-* Migrate to Gradle version catalog (#1059) via Cesar de la Vega (@vegaro)
+* Migrate to Gradle version catalog (#1033) via @mikescamell (#1059) via Cesar de la Vega (@vegaro)
 * Trusted entitlements: Add logs with verification mode (#1067) via Toni Rico (@tonidero)
 * Sync pending purchases before getting customer info (#1073) via Toni Rico (@tonidero)
 * Refactor syncing pending transactions logic out of `Purchases` (#1058) via Toni Rico (@tonidero)
