@@ -46,7 +46,6 @@ dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
     implementation project(":common")
     implementation project(":feature:google")
-    implementation project(":feature:identity")
     api project(":public")
 
     implementation libs.kotlin.stdlib
@@ -100,7 +99,6 @@ project.afterEvaluate {
         kover(project(":common"))
         kover(project(":feature:amazon"))
         kover(project(":feature:google"))
-        kover(project(":feature:identity"))
         kover(project(":public"))
         kover(project(":test-utils"))
     }
