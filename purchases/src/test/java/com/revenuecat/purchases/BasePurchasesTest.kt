@@ -268,15 +268,16 @@ open class BasePurchasesTest {
     protected fun mockOfferingsManagerGetOfferings(errorGettingOfferings: PurchasesError? = null): Offerings? {
         val offerings: Offerings = mockk()
         every {
-            mockOfferingsManager.getOfferings(appUserId, appInBackground = false, any(), any())
+            mockOfferingsManager.getOfferings(
+                appUserId,
+                appInBackground = false,
+                onError = errorGettingOfferings?.let { captureLambda() } ?: any(),
+                onSuccess = errorGettingOfferings?.let { any() } ?: captureLambda()
+            )
         } answers {
-            if (errorGettingOfferings == null) {
-                val callback = arg<(Offerings) -> Unit>(3)
-                callback.invoke(offerings)
-            } else {
-                val callback = arg<((PurchasesError) -> Unit)?>(2)
-                callback?.invoke(errorGettingOfferings)
-            }
+            errorGettingOfferings?.let {
+                lambda<(PurchasesError) -> Unit>().captured.invoke(it)
+            } ?: lambda<(Offerings) -> Unit>().captured.invoke(offerings)
         }
         return offerings
     }
