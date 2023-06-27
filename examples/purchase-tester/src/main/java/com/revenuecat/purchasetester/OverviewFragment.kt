@@ -118,7 +118,7 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
 
     private fun showPurchaseProductIdDialog() {
         val builder = MaterialAlertDialogBuilder(requireContext())
-        builder.setTitle("Enter the Product ID of you want to purchase:")
+        builder.setTitle("Enter the Product ID you want to purchase:")
         val input = EditText(context)
         input.inputType = InputType.TYPE_CLASS_TEXT
         builder.setView(input)
