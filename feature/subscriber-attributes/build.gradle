@@ -15,7 +15,6 @@ dependencies {
     implementation project(":common")
     implementation project(":public")
     implementation project(":utils")
-    implementation project(":strings")
 
     implementation libs.kotlin.stdlib
     implementation libs.androidx.core

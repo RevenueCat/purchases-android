@@ -15,7 +15,6 @@ dependencies {
     implementation project(":common")
     implementation project(":utils")
     implementation project(":public")
-    implementation project(":strings")
     implementation project(":feature:subscriber-attributes")
 
     implementation libs.kotlin.stdlib
