@@ -16,7 +16,7 @@ import kotlin.coroutines.suspendCoroutine
  * Defaults to [CacheFetchPolicy.default]: [CACHED_OR_FETCHED].
  *
  * @throws [PurchasesException] with a [PurchasesError] if there's an error retrieving the customer info.
- * @return The [CustomerInfo] or a [PurchasesException] with the [PurchasesError]
+ * @return The [CustomerInfo] associated to the current user.
  */
 @JvmSynthetic
 @ExperimentalPreviewRevenueCatPurchasesAPI
@@ -46,7 +46,7 @@ suspend fun Purchases.awaitCustomerInfo(
  * Only available in Kotlin.
  *
  * @throws [PurchasesException] with a [PurchasesError] if there's an error retrieving the offerings.
- * @return [Result] type containing either the [Offerings] or the [PurchasesError]
+ * @return The [Offerings] available to this user.
  */
 @JvmSynthetic
 @ExperimentalPreviewRevenueCatPurchasesAPI
