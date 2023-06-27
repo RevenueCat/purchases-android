@@ -20,6 +20,7 @@ import kotlin.coroutines.suspendCoroutine
  */
 @JvmSynthetic
 @ExperimentalPreviewRevenueCatPurchasesAPI
+@Throws(PurchasesException::class)
 suspend fun Purchases.awaitCustomerInfo(
     fetchPolicy: CacheFetchPolicy = CacheFetchPolicy.default(),
 ): CustomerInfo {
@@ -50,6 +51,7 @@ suspend fun Purchases.awaitCustomerInfo(
  */
 @JvmSynthetic
 @ExperimentalPreviewRevenueCatPurchasesAPI
+@Throws(PurchasesException::class)
 suspend fun Purchases.awaitOfferings(): Offerings {
     return suspendCoroutine { continuation ->
         getOfferingsWith(
