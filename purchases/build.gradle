@@ -63,6 +63,7 @@ dependencies {
     integrationTestImplementation libs.material
     integrationTestImplementation libs.androidx.constraintlayout
 
+    androidTestIntegrationTestImplementation libs.androidx.lifecycle.runtime.ktx
     androidTestIntegrationTestImplementation libs.androidx.test.espresso.core
     androidTestIntegrationTestImplementation libs.androidx.test.runner
     androidTestIntegrationTestImplementation libs.androidx.test.rules

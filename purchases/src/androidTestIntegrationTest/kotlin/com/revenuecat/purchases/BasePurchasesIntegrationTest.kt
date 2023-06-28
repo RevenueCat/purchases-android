@@ -2,12 +2,15 @@ package com.revenuecat.purchases
 
 import android.content.Context
 import android.preference.PreferenceManager
+import androidx.lifecycle.lifecycleScope
 import androidx.test.ext.junit.rules.activityScenarioRule
 import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.models.StoreTransaction
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 import org.assertj.core.api.Assertions
 import org.junit.After
 import org.junit.BeforeClass
@@ -163,6 +166,14 @@ open class BasePurchasesIntegrationTest {
             )
         } answers {
             callbackSlot.captured.invoke(activePurchases)
+        }
+    }
+
+    protected fun runTestActivityLifecycleScope(
+        testBody: suspend CoroutineScope.() -> Unit,
+    ) {
+        activity.lifecycleScope.launch {
+            testBody()
         }
     }
 
