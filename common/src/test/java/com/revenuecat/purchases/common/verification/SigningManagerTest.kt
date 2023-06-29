@@ -206,6 +206,11 @@ class SigningManagerTest {
     private fun callVerifyResponse(
         signingManager: SigningManager,
         requestPath: String = "test-url-path",
+        // Generated signature using test keys:
+        // Test root private key: YMHMQMpepBKamtSzO8KCN2M8Z3AUW5R1JXIFtxUWFUI
+        // Test root public key: yg2wZGAr8Af+Unt9RImQDbL7qA81txk+ga0I+ylmcyo=
+        // Test intermediate private key: fPBoIjQ7DecE89ATW6PZsqLVQNyEs5fiX3sUyS3U4YI
+        // Test intermediate public key: xoDYyUeHnIlSIAeOOzmvdNPOlbNSKK+xE0fE/ufS1fs=
         signature: String? = "xoDYyUeHnIlSIAeOOzmvdNPOlbNSKK+xE0fE/ufS1fsKCgoKkY+e/hYWiSW5cV6pVpp0i3Ag1p/wH4CcPnDSuG4qzPW8l582Q3gE9j5pIG3XrYxpblHCxBnfcBsxNriK0awxAd8tsYi90CIUqiJXxN+/9Z4xLNME00pcLbsXFO0GqNVPkYgGgSJWEd/xAIiXQBypugaAb17y4u0xpjcyS5JRFXuLJCD4CGMZtmqWewWuuQgC",
         nonce: String = "MTIzNDU2Nzg5MGFi",
         body: String? = "{\"request_date\":\"2023-02-21T18:58:36Z\",\"request_date_ms\":1677005916011,\"subscriber\":{\"entitlements\":{},\"first_seen\":\"2023-02-21T18:58:35Z\",\"last_seen\":\"2023-02-21T18:58:35Z\",\"management_url\":null,\"non_subscriptions\":{},\"original_app_user_id\":\"login\",\"original_application_version\":null,\"original_purchase_date\":null,\"other_purchases\":{},\"subscriptions\":{}}}\n",
