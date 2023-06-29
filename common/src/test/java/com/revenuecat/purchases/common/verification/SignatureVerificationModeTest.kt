@@ -27,20 +27,18 @@ class SignatureVerificationModeTest {
 
     @Test
     fun `shouldVerify has correct values for all the verification modes`() {
-        val signatureVerifier = DefaultSignatureVerifier()
         assertThat(SignatureVerificationMode.Disabled.shouldVerify).isFalse
-        assertThat(SignatureVerificationMode.Informational(signatureVerifier).shouldVerify).isTrue
-        assertThat(SignatureVerificationMode.Enforced(signatureVerifier).shouldVerify).isTrue
+        assertThat(SignatureVerificationMode.Informational().shouldVerify).isTrue
+        assertThat(SignatureVerificationMode.Enforced().shouldVerify).isTrue
     }
 
     @Test
     fun `intermediateSignatureHelper has values in enabled verification modes`() {
-        val signatureVerifier = DefaultSignatureVerifier()
         var verificationMode: SignatureVerificationMode = SignatureVerificationMode.Disabled
         assertThat(verificationMode.intermediateSignatureHelper).isNull()
-        verificationMode = SignatureVerificationMode.Informational(signatureVerifier)
+        verificationMode = SignatureVerificationMode.Informational()
         assertThat(verificationMode.intermediateSignatureHelper).isNotNull
-        verificationMode = SignatureVerificationMode.Enforced(signatureVerifier)
+        verificationMode = SignatureVerificationMode.Enforced()
         assertThat(verificationMode.intermediateSignatureHelper).isNotNull
     }
 }

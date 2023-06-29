@@ -6,12 +6,12 @@ sealed class SignatureVerificationMode {
     companion object {
         fun fromEntitlementVerificationMode(
             verificationMode: EntitlementVerificationMode,
-            signatureVerifier: SignatureVerifier? = null,
+            rootVerifier: SignatureVerifier? = null,
         ): SignatureVerificationMode {
             return when (verificationMode) {
                 EntitlementVerificationMode.DISABLED -> Disabled
                 EntitlementVerificationMode.INFORMATIONAL ->
-                    Informational(signatureVerifier ?: DefaultSignatureVerifier())
+                    Informational(IntermediateSignatureHelper(rootVerifier ?: DefaultSignatureVerifier()))
                 // Hidden ENFORCED mode during feature beta
                 // EntitlementVerificationMode.ENFORCED ->
                 //     Enforced(signatureVerifier ?: DefaultSignatureVerifier())
@@ -20,15 +20,13 @@ sealed class SignatureVerificationMode {
     }
     object Disabled : SignatureVerificationMode()
     data class Informational(
-        val signatureVerifier: SignatureVerifier,
         override val intermediateSignatureHelper: IntermediateSignatureHelper = IntermediateSignatureHelper(
-            signatureVerifier,
+            DefaultSignatureVerifier(),
         ),
     ) : SignatureVerificationMode()
     data class Enforced(
-        val signatureVerifier: SignatureVerifier,
         override val intermediateSignatureHelper: IntermediateSignatureHelper = IntermediateSignatureHelper(
-            signatureVerifier,
+            DefaultSignatureVerifier(),
         ),
     ) : SignatureVerificationMode()
 
