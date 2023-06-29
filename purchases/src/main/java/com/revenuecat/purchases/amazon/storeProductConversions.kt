@@ -12,7 +12,7 @@ import java.util.regex.Pattern
 
 internal fun Product.toStoreProduct(marketplace: String): StoreProduct? {
     if (price == null) {
-        log(LogIntent.AMAZON_ERROR, com.revenuecat.purchases.amazon.AmazonStrings.PRODUCT_PRICE_MISSING.format(sku))
+        log(LogIntent.AMAZON_ERROR, AmazonStrings.PRODUCT_PRICE_MISSING.format(sku))
         return null
     }
     // By default, Amazon automatically converts the base list price of your IAP items into
