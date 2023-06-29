@@ -2,6 +2,8 @@ package com.revenuecat.purchases.common.verification
 
 import android.util.Base64
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.networking.Endpoint
@@ -141,7 +143,16 @@ class SigningManagerTest {
     }
 
     @Test
-    fun `verifyResponse returns success if verifier returns success for not modified `() {
+    fun `verifyResponse returns error if failed to verify intermediate key`() {
+        every {
+            intermediateSignatureHelper.createIntermediateKeyVerifierIfVerified(any())
+        } returns Result.Error(PurchasesError(PurchasesErrorCode.SignatureVerificationError))
+        val verificationResult = callVerifyResponse(informationalSigningManager)
+        assertThat(verificationResult).isEqualTo(VerificationResult.FAILED)
+    }
+
+    @Test
+    fun `verifyResponse returns success if intermediate key verifier returns success for not modified `() {
         every { intermediateKeyVerifier.verify(any(), any()) } returns true
         val verificationResult = callVerifyResponse(
             informationalSigningManager,
@@ -152,14 +163,14 @@ class SigningManagerTest {
     }
 
     @Test
-    fun `verifyResponse returns success if verifier returns success for given parameters`() {
+    fun `verifyResponse returns success if intermediate key verifier returns success for given parameters`() {
         every { intermediateKeyVerifier.verify(any(), any()) } returns true
         val verificationResult = callVerifyResponse(informationalSigningManager)
         assertThat(verificationResult).isEqualTo(VerificationResult.VERIFIED)
     }
 
     @Test
-    fun `verifyResponse returns error if verifier returns success for given parameters`() {
+    fun `verifyResponse returns error if intermediate key verifier returns error for given parameters`() {
         every { intermediateKeyVerifier.verify(any(), any()) } returns false
         val verificationResult = callVerifyResponse(informationalSigningManager)
         assertThat(verificationResult).isEqualTo(VerificationResult.FAILED)
