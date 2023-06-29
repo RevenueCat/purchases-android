@@ -190,7 +190,6 @@ class SigningManagerTest {
 
     @Test
     fun `verifyResponse with both payload and etag verifies correctly`() {
-//        createFakeSignature()
         val rootVerifier = DefaultSignatureVerifier("yg2wZGAr8Af+Unt9RImQDbL7qA81txk+ga0I+ylmcyo=")
         val signingManager = SigningManager(SignatureVerificationMode.Informational(rootVerifier), appConfig)
         val verificationResult = callVerifyResponse(
