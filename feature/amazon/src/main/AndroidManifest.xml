@@ -10,10 +10,6 @@
                 <action android:name="com.amazon.inapp.purchasing.NOTIFY" />
             </intent-filter>
         </receiver>
-        <activity
-                android:name=".purchasing.ProxyAmazonBillingActivity"
-                android:configChanges="keyboard|keyboardHidden|screenLayout|screenSize|orientation"
-                android:theme="@android:style/Theme.Translucent.NoTitleBar"/>
     </application>
 
 </manifest>

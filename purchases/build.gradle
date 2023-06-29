@@ -3,6 +3,7 @@ plugins {
     alias libs.plugins.kotlin.android
     alias libs.plugins.mavenPublish
     alias libs.plugins.dokka
+    alias libs.plugins.kotlin.parcelize
 }
 
 apply from: "$rootProject.projectDir/library.gradle"
@@ -54,10 +55,13 @@ dependencies {
     implementation libs.androidx.lifecycle.common
     implementation libs.androidx.lifecycle.process
 
+    compileOnly libs.amazon.appstore.sdk
+
     testImplementation project(":test-utils")
     testImplementation libs.bundles.test
     testImplementation libs.billing
     testImplementation libs.coroutines.test
+    testImplementation libs.amazon.appstore.sdk
 
     integrationTestImplementation libs.androidx.appcompat
     integrationTestImplementation libs.material
