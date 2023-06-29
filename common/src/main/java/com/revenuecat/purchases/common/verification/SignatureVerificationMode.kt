@@ -19,8 +19,18 @@ sealed class SignatureVerificationMode {
         }
     }
     object Disabled : SignatureVerificationMode()
-    data class Informational(val signatureVerifier: SignatureVerifier) : SignatureVerificationMode()
-    data class Enforced(val signatureVerifier: SignatureVerifier) : SignatureVerificationMode()
+    data class Informational(
+        val signatureVerifier: SignatureVerifier,
+        override val intermediateSignatureHelper: IntermediateSignatureHelper = IntermediateSignatureHelper(
+            signatureVerifier,
+        ),
+    ) : SignatureVerificationMode()
+    data class Enforced(
+        val signatureVerifier: SignatureVerifier,
+        override val intermediateSignatureHelper: IntermediateSignatureHelper = IntermediateSignatureHelper(
+            signatureVerifier,
+        ),
+    ) : SignatureVerificationMode()
 
     val shouldVerify: Boolean
         get() = when (this) {
@@ -32,10 +42,10 @@ sealed class SignatureVerificationMode {
                 true
         }
 
-    val verifier: SignatureVerifier?
+    open val intermediateSignatureHelper: IntermediateSignatureHelper?
         get() = when (this) {
             is Disabled -> null
-            is Informational -> signatureVerifier
-            is Enforced -> signatureVerifier
+            is Informational -> intermediateSignatureHelper
+            is Enforced -> intermediateSignatureHelper
         }
 }

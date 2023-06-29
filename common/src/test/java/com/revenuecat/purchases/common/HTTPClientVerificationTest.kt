@@ -41,7 +41,7 @@ class HTTPClientVerificationTest: BaseHTTPClientTest() {
         )
 
         every {
-            mockSigningManager.verifyResponse(any(), any(), any(), any(), any(), any(), any())
+            mockSigningManager.verifyResponse(any(), any(), any(), any(), any(), any())
         } returns VerificationResult.VERIFIED
 
         client.performRequest(
@@ -81,7 +81,7 @@ class HTTPClientVerificationTest: BaseHTTPClientTest() {
 
         assertThat(result.verificationResult).isEqualTo(VerificationResult.NOT_REQUESTED)
         verify(exactly = 0) {
-            mockSigningManager.verifyResponse(any(), any(), any(), any(), any(), any(), any())
+            mockSigningManager.verifyResponse(any(), any(), any(), any(), any(), any())
         }
     }
 
@@ -112,7 +112,7 @@ class HTTPClientVerificationTest: BaseHTTPClientTest() {
 
         assertThat(result.verificationResult).isEqualTo(VerificationResult.NOT_REQUESTED)
         verify(exactly = 0) {
-            mockSigningManager.verifyResponse(any(), any(), any(), any(), any(), any(), any())
+            mockSigningManager.verifyResponse(any(), any(), any(), any(), any(), any())
         }
     }
 
@@ -143,7 +143,7 @@ class HTTPClientVerificationTest: BaseHTTPClientTest() {
 
         assertThat(result.verificationResult).isEqualTo(VerificationResult.NOT_REQUESTED)
         verify(exactly = 0) {
-            mockSigningManager.verifyResponse(any(), any(), any(), any(), any(), any(), any())
+            mockSigningManager.verifyResponse(any(), any(), any(), any(), any(), any())
         }
     }
 
@@ -157,7 +157,7 @@ class HTTPClientVerificationTest: BaseHTTPClientTest() {
         val responseCode = expectedResult.responseCode
 
         every {
-            mockSigningManager.verifyResponse(any(), any(), any(), any(), any(), any(), any())
+            mockSigningManager.verifyResponse(any(), any(), any(), any(), any(), any())
         } returns VerificationResult.VERIFIED
 
         every {
@@ -176,7 +176,6 @@ class HTTPClientVerificationTest: BaseHTTPClientTest() {
             .setResponseCode(responseCode)
             .setHeader(HTTPResult.SIGNATURE_HEADER_NAME, "test-signature")
             .setHeader(HTTPResult.REQUEST_TIME_HEADER_NAME, 1234567890L)
-            .setHeader(HTTPResult.ETAG_HEADER_NAME, "test-etag")
         server.enqueue(response)
 
         val result = client.performRequest(
@@ -192,12 +191,11 @@ class HTTPClientVerificationTest: BaseHTTPClientTest() {
         verify(exactly = 1) {
             mockSigningManager.verifyResponse(
                 endpoint.getPath(),
-                responseCode,
                 "test-signature",
                 "test-nonce",
                 "{\"test-key\":\"test-value\"}",
                 "1234567890",
-                "test-etag"
+                eTag = null
             )
         }
     }
@@ -222,7 +220,7 @@ class HTTPClientVerificationTest: BaseHTTPClientTest() {
         server.takeRequest()
         assertThat(result.verificationResult).isEqualTo(VerificationResult.NOT_REQUESTED)
         verify(exactly = 0) {
-            mockSigningManager.verifyResponse(any(), any(), any(), any(), any(), any(), any())
+            mockSigningManager.verifyResponse(any(), any(), any(), any(), any(), any())
         }
     }
 
@@ -236,7 +234,7 @@ class HTTPClientVerificationTest: BaseHTTPClientTest() {
         )
 
         every {
-            mockSigningManager.verifyResponse(any(), any(), any(), any(), any(), any(), any())
+            mockSigningManager.verifyResponse(any(), any(), any(), any(), any(), any())
         } returns VerificationResult.FAILED
 
         val result = client.performRequest(
@@ -261,7 +259,7 @@ class HTTPClientVerificationTest: BaseHTTPClientTest() {
         )
 
         every {
-            mockSigningManager.verifyResponse(any(), any(), any(), any(), any(), any(), any())
+            mockSigningManager.verifyResponse(any(), any(), any(), any(), any(), any())
         } returns VerificationResult.FAILED
 
         var thrownCorrectException = false
@@ -292,7 +290,7 @@ class HTTPClientVerificationTest: BaseHTTPClientTest() {
         )
 
         every {
-            mockSigningManager.verifyResponse(any(), any(), any(), any(), any(), any(), any())
+            mockSigningManager.verifyResponse(any(), any(), any(), any(), any(), any())
         } returns VerificationResult.VERIFIED
 
         val result = client.performRequest(
