@@ -13,25 +13,25 @@ class SignatureTest {
 
     @Test
     fun `components have correct ranges`() {
-        assertThat(SignatureComponent.INTERMEDIATE_KEY.startByte).isEqualTo(0)
-        assertThat(SignatureComponent.INTERMEDIATE_KEY.endByte).isEqualTo(32)
-        assertThat(SignatureComponent.INTERMEDIATE_KEY_EXPIRATION.startByte).isEqualTo(32)
-        assertThat(SignatureComponent.INTERMEDIATE_KEY_EXPIRATION.endByte).isEqualTo(36)
-        assertThat(SignatureComponent.INTERMEDIATE_KEY_SIGNATURE.startByte).isEqualTo(36)
-        assertThat(SignatureComponent.INTERMEDIATE_KEY_SIGNATURE.endByte).isEqualTo(100)
-        assertThat(SignatureComponent.SALT.startByte).isEqualTo(100)
-        assertThat(SignatureComponent.SALT.endByte).isEqualTo(116)
-        assertThat(SignatureComponent.PAYLOAD.startByte).isEqualTo(116)
-        assertThat(SignatureComponent.PAYLOAD.endByte).isEqualTo(180)
+        assertThat(Signature.Component.INTERMEDIATE_KEY.startByte).isEqualTo(0)
+        assertThat(Signature.Component.INTERMEDIATE_KEY.endByte).isEqualTo(32)
+        assertThat(Signature.Component.INTERMEDIATE_KEY_EXPIRATION.startByte).isEqualTo(32)
+        assertThat(Signature.Component.INTERMEDIATE_KEY_EXPIRATION.endByte).isEqualTo(36)
+        assertThat(Signature.Component.INTERMEDIATE_KEY_SIGNATURE.startByte).isEqualTo(36)
+        assertThat(Signature.Component.INTERMEDIATE_KEY_SIGNATURE.endByte).isEqualTo(100)
+        assertThat(Signature.Component.SALT.startByte).isEqualTo(100)
+        assertThat(Signature.Component.SALT.endByte).isEqualTo(116)
+        assertThat(Signature.Component.PAYLOAD.startByte).isEqualTo(116)
+        assertThat(Signature.Component.PAYLOAD.endByte).isEqualTo(180)
     }
 
     @Test
     fun `fromString parses correctly`() {
-        assertThat(signature.intermediateKey.size).isEqualTo(SignatureComponent.INTERMEDIATE_KEY.size)
-        assertThat(signature.intermediateKeyExpiration.size).isEqualTo(SignatureComponent.INTERMEDIATE_KEY_EXPIRATION.size)
-        assertThat(signature.intermediateKeySignature.size).isEqualTo(SignatureComponent.INTERMEDIATE_KEY_SIGNATURE.size)
-        assertThat(signature.salt.size).isEqualTo(SignatureComponent.SALT.size)
-        assertThat(signature.payload.size).isEqualTo(SignatureComponent.PAYLOAD.size)
+        assertThat(signature.intermediateKey.size).isEqualTo(Signature.Component.INTERMEDIATE_KEY.size)
+        assertThat(signature.intermediateKeyExpiration.size).isEqualTo(Signature.Component.INTERMEDIATE_KEY_EXPIRATION.size)
+        assertThat(signature.intermediateKeySignature.size).isEqualTo(Signature.Component.INTERMEDIATE_KEY_SIGNATURE.size)
+        assertThat(signature.salt.size).isEqualTo(Signature.Component.SALT.size)
+        assertThat(signature.payload.size).isEqualTo(Signature.Component.PAYLOAD.size)
     }
 
     @Test
