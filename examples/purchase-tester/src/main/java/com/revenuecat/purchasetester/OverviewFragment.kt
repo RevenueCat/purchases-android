@@ -26,6 +26,7 @@ import com.revenuecat.purchases.getOfferingsWith
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.logOutWith
+import com.revenuecat.purchases.models.GoogleStoreProduct
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases_sample.R
@@ -123,17 +124,30 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
         input.inputType = InputType.TYPE_CLASS_TEXT
         builder.setView(input)
         builder.setPositiveButton("Purchase") { dialog, which ->
-            val productId = input.text.toString()
+            var productId = input.text.toString()
+            val segments = productId.split(":")
             Purchases.sharedInstance.getProducts(
-                listOf(productId),
+                listOf(segments.first()),
                 object : GetStoreProductsCallback {
                     override fun onReceived(storeProducts: List<StoreProduct>) {
                         if (storeProducts.isEmpty()) {
-                            showError("A product with ID $productId does not exist")
+                            showToast("A product with ID $productId does not exist")
                             return
                         }
+                        var product = storeProducts.first()
+                        if (segments.count() == 2) {
+                            storeProducts.firstOrNull { (it as? GoogleStoreProduct)?.basePlanId == segments.last() }
+                                .let { storeProduct ->
+                                    if (storeProduct != null) {
+                                        product = storeProduct
+                                    } else {
+                                        showToast("A product with ID $productId does not exist")
+                                        return
+                                    }
+                                }
+                        }
                         Purchases.sharedInstance.purchase(
-                            PurchaseParams.Builder(requireActivity(), storeProducts.first()).build(),
+                            PurchaseParams.Builder(requireActivity(), product).build(),
                             object : PurchaseCallback {
                                 override fun onCompleted(
                                     storeTransaction: StoreTransaction,
