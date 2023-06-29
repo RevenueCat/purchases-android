@@ -176,6 +176,7 @@ class HTTPClientVerificationTest: BaseHTTPClientTest() {
             .setResponseCode(responseCode)
             .setHeader(HTTPResult.SIGNATURE_HEADER_NAME, "test-signature")
             .setHeader(HTTPResult.REQUEST_TIME_HEADER_NAME, 1234567890L)
+            .setHeader(HTTPResult.ETAG_HEADER_NAME, "test-etag")
         server.enqueue(response)
 
         val result = client.performRequest(
@@ -195,7 +196,7 @@ class HTTPClientVerificationTest: BaseHTTPClientTest() {
                 "test-nonce",
                 "{\"test-key\":\"test-value\"}",
                 "1234567890",
-                eTag = null
+                "test-etag"
             )
         }
     }

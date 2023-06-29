@@ -2,6 +2,7 @@ package com.revenuecat.purchases.common.verification
 
 import android.util.Base64
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.google.crypto.tink.subtle.Ed25519Sign
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.VerificationResult
@@ -11,10 +12,13 @@ import com.revenuecat.purchases.utils.Result
 import io.mockk.every
 import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
+import org.bouncycastle.util.test.NumberParsing
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
+import java.nio.ByteBuffer
+import java.security.SecureRandom
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
@@ -181,6 +185,19 @@ class SigningManagerTest {
         val rootVerifier = DefaultSignatureVerifier("yg2wZGAr8Af+Unt9RImQDbL7qA81txk+ga0I+ylmcyo=")
         val signingManager = SigningManager(SignatureVerificationMode.Informational(rootVerifier), appConfig)
         val verificationResult = callVerifyResponse(signingManager)
+        assertThat(verificationResult).isEqualTo(VerificationResult.VERIFIED)
+    }
+
+    @Test
+    fun `verifyResponse with both payload and etag verifies correctly`() {
+//        createFakeSignature()
+        val rootVerifier = DefaultSignatureVerifier("yg2wZGAr8Af+Unt9RImQDbL7qA81txk+ga0I+ylmcyo=")
+        val signingManager = SigningManager(SignatureVerificationMode.Informational(rootVerifier), appConfig)
+        val verificationResult = callVerifyResponse(
+            signingManager,
+            signature = "xoDYyUeHnIlSIAeOOzmvdNPOlbNSKK+xE0fE/ufS1fsKCgoKkY+e/hYWiSW5cV6pVpp0i3Ag1p/wH4CcPnDSuG4qzPW8l582Q3gE9j5pIG3XrYxpblHCxBnfcBsxNriK0awxAVBTK1hPk60bAeilLRVB2Qwj2phUfQKOqgKxxUh1XHQlJJqUOiAUdv35dB3tmtPWH//MHO/V7mD72P+kwqecZgDxEZxgbe68VczwjIkSPo4F",
+            eTag = "test-etag",
+        )
         assertThat(verificationResult).isEqualTo(VerificationResult.VERIFIED)
     }
 
