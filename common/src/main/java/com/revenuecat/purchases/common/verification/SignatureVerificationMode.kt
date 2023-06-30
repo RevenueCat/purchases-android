@@ -46,6 +46,4 @@ sealed class SignatureVerificationMode {
             is Informational -> intermediateSignatureHelper
             is Enforced -> intermediateSignatureHelper
         }
-
-
 }
