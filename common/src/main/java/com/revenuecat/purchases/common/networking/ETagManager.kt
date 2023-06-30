@@ -55,9 +55,11 @@ class ETagManager(
 
     internal fun getETagHeaders(
         path: String,
+        verificationRequested: Boolean,
         refreshETag: Boolean = false,
     ): Map<String, String?> {
-        val eTagData = if (refreshETag) null else getETagData(path)
+        val storedResult = if (refreshETag) null else getStoredResultSavedInSharedPreferences(path)
+        val eTagData = storedResult?.eTagData?.takeIf { shouldUseETag(storedResult, verificationRequested) }
         return mapOf(
             HTTPRequest.ETAG_HEADER_NAME to eTagData?.eTag.orEmpty(),
             HTTPRequest.ETAG_LAST_REFRESH_NAME to eTagData?.lastRefreshTime?.time?.toString(),
@@ -146,15 +148,20 @@ class ETagManager(
         }
     }
 
-    private fun getETagData(path: String): ETagData? {
-        return getStoredResultSavedInSharedPreferences(path)?.eTagData
-    }
-
     private fun shouldStoreBackendResult(resultFromBackend: HTTPResult): Boolean {
         val responseCode = resultFromBackend.responseCode
         return responseCode != RCHTTPStatusCodes.NOT_MODIFIED &&
             responseCode < RCHTTPStatusCodes.ERROR &&
             resultFromBackend.verificationResult != VerificationResult.FAILED
+    }
+
+    private fun shouldUseETag(storedResult: HTTPResultWithETag, verificationRequested: Boolean): Boolean {
+        return when (storedResult.httpResult.verificationResult) {
+            VerificationResult.VERIFIED -> true
+            VerificationResult.NOT_REQUESTED -> !verificationRequested
+            // Should never happen since we don't store these verification results in the cache
+            VerificationResult.FAILED, VerificationResult.VERIFIED_ON_DEVICE -> false
+        }
     }
 
     companion object {
