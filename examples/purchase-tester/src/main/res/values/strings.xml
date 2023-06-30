@@ -19,4 +19,5 @@
     <string name="proxy_entitlement_override">Entitlement override (Will grant entitlements)</string>
     <string name="proxy_server_down">Server down (All requests will return 500)</string>
     <string name="proxy">Proxy</string>
+    <string name="buy_product">Buy Product</string>
 </resources>

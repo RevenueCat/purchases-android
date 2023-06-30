@@ -3,22 +3,32 @@ package com.revenuecat.purchasetester
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.text.InputType
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.EditText
 import android.widget.Toast
 import androidx.core.view.doOnPreDraw
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.FragmentNavigatorExtras
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.transition.MaterialElevationScale
+import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
+import com.revenuecat.purchases.PurchaseParams
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.getOfferingsWith
+import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
+import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.logOutWith
+import com.revenuecat.purchases.models.GoogleStoreProduct
+import com.revenuecat.purchases.models.StoreProduct
+import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases_sample.R
 import com.revenuecat.purchases_sample.databinding.FragmentOverviewBinding
 
@@ -28,7 +38,7 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
     private lateinit var viewModel: OverviewViewModel
     private lateinit var binding: FragmentOverviewBinding
 
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         binding = FragmentOverviewBinding.inflate(inflater)
 
         binding.customerInfoLogoutButton.setOnClickListener {
@@ -48,6 +58,10 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
 
         binding.proxyButton.setOnClickListener {
             navigateToProxyFragment()
+        }
+
+        binding.purchaseProductIdButton.setOnClickListener {
+            showPurchaseProductIdDialog()
         }
 
         viewModel = OverviewViewModel(this)
@@ -101,6 +115,65 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
 //        val directions = OverviewFragmentDirections.
 //        actionOverviewFragmentToDeprecatedOfferingFragment(offering.identifier)
         findNavController().navigate(directions, extras)
+    }
+
+    private fun showPurchaseProductIdDialog() {
+        val builder = MaterialAlertDialogBuilder(requireContext())
+        builder.setTitle("Enter the Product ID you want to purchase:")
+        val input = EditText(context)
+        input.inputType = InputType.TYPE_CLASS_TEXT
+        builder.setView(input)
+        builder.setPositiveButton("Purchase") { dialog, which ->
+            var productId = input.text.toString()
+            val segments = productId.split(":")
+            Purchases.sharedInstance.getProducts(
+                listOf(segments.first()),
+                object : GetStoreProductsCallback {
+                    override fun onReceived(storeProducts: List<StoreProduct>) {
+                        if (storeProducts.isEmpty()) {
+                            showToast("A product with ID $productId does not exist")
+                            return
+                        }
+                        var product = storeProducts.first()
+                        if (segments.count() == 2) {
+                            storeProducts.firstOrNull { (it as? GoogleStoreProduct)?.basePlanId == segments.last() }
+                                .let { storeProduct ->
+                                    if (storeProduct != null) {
+                                        product = storeProduct
+                                    } else {
+                                        showToast("A product with ID $productId does not exist")
+                                        return
+                                    }
+                                }
+                        }
+                        Purchases.sharedInstance.purchase(
+                            PurchaseParams.Builder(requireActivity(), product).build(),
+                            object : PurchaseCallback {
+                                override fun onCompleted(
+                                    storeTransaction: StoreTransaction,
+                                    customerInfo: CustomerInfo,
+                                ) {
+                                    showToast("Successful purchase, order id: ${storeTransaction.orderId}")
+                                }
+
+                                override fun onError(error: PurchasesError, userCancelled: Boolean) {
+                                    showError(error)
+                                }
+                            },
+                        )
+                    }
+
+                    override fun onError(error: PurchasesError) {
+                        showError(error)
+                    }
+                },
+            )
+        }
+        builder.setNegativeButton("Cancel") { dialog, which ->
+            dialog.cancel()
+        }
+        val dialog = builder.create()
+        dialog.show()
     }
 
     override fun displayError(error: PurchasesError) {

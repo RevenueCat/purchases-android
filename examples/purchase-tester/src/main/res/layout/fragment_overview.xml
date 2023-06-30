@@ -241,6 +241,13 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content">
             <com.google.android.material.button.MaterialButton
+                    android:id="@+id/purchase_product_id_button"
+                    android:text="@string/buy_product"
+                    android:layout_gravity="end|bottom"
+                    android:layout_marginEnd="@dimen/padding_small"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"/>
+            <com.google.android.material.button.MaterialButton
                     android:id="@+id/proxy_button"
                     android:text="@string/proxy"
                     android:layout_gravity="end|bottom"
