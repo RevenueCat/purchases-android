@@ -12,7 +12,7 @@ import org.robolectric.annotation.Config
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, ExperimentalCoroutinesApi::class)
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
-class PurchasesCoroutinesTest : BasePurchasesTest() {
+internal class PurchasesCoroutinesTest : BasePurchasesTest() {
 
     @Test
     fun `retrieve customer info - Success`() = runTest {

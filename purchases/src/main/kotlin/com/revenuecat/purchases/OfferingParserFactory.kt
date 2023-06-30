@@ -6,7 +6,7 @@ import com.revenuecat.purchases.common.OfferingParser
 import com.revenuecat.purchases.common.errorLog
 
 @VisibleForTesting(otherwise = VisibleForTesting.PACKAGE_PRIVATE)
-object OfferingParserFactory {
+internal object OfferingParserFactory {
 
     fun createOfferingParser(
         store: Store,

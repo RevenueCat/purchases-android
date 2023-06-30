@@ -8,8 +8,6 @@ pluginManagement {
 
 include ':feature:amazon'
 include ':integration-tests'
-include ':test-utils'
-include ':common'
 include ':public'
 include ':purchases'
 include 'examples:purchase-tester'

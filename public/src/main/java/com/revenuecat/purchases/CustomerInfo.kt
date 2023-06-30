@@ -10,7 +10,7 @@ import android.os.Parcelable
 import com.revenuecat.purchases.models.RawDataContainer
 import com.revenuecat.purchases.models.Transaction
 import com.revenuecat.purchases.utils.DateHelperDupe
-import com.revenuecat.purchases.utils.JSONObjectParceler
+import com.revenuecat.purchases.utils.JSONObjectParcelerDupe
 import kotlinx.parcelize.IgnoredOnParcel
 import kotlinx.parcelize.Parcelize
 import kotlinx.parcelize.TypeParceler
@@ -38,7 +38,7 @@ import java.util.Date
  * Use this for grandfathering users when migrating to subscriptions. This can be null, see -Purchases.restorePurchases
  */
 @Parcelize
-@TypeParceler<JSONObject, JSONObjectParceler>()
+@TypeParceler<JSONObject, JSONObjectParcelerDupe>()
 data class CustomerInfo constructor(
     val entitlements: EntitlementInfos,
     val allExpirationDatesByProduct: Map<String, Date?>,

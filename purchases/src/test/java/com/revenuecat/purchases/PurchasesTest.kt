@@ -75,7 +75,7 @@ import kotlin.random.Random
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
 @Suppress("DEPRECATION")
-class PurchasesTest: BasePurchasesTest() {
+internal class PurchasesTest: BasePurchasesTest() {
     private val mockActivity: Activity = mockk()
     private var receivedProducts: List<StoreProduct>? = null
 

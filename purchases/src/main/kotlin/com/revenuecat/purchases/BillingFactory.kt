@@ -2,7 +2,6 @@ package com.revenuecat.purchases
 
 import android.app.Application
 import android.os.Handler
-import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.amazon.AmazonBilling
 import com.revenuecat.purchases.common.BackendHelper
 import com.revenuecat.purchases.common.caching.DeviceCache
@@ -10,8 +9,7 @@ import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.google.BillingWrapper
 
-@VisibleForTesting(otherwise = VisibleForTesting.PACKAGE_PRIVATE)
-object BillingFactory {
+internal object BillingFactory {
 
     @Suppress("LongParameterList")
     fun createBilling(

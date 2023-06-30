@@ -2,7 +2,7 @@ package com.revenuecat.purchases
 
 import android.os.Parcelable
 import com.revenuecat.purchases.models.RawDataContainer
-import com.revenuecat.purchases.utils.JSONObjectParceler
+import com.revenuecat.purchases.utils.JSONObjectParcelerDupe
 import kotlinx.parcelize.IgnoredOnParcel
 import kotlinx.parcelize.Parcelize
 import kotlinx.parcelize.TypeParceler
@@ -37,7 +37,7 @@ import java.util.Date
  * If not, [VerificationResult.NOT_REQUESTED]
  */
 @Parcelize
-@TypeParceler<JSONObject, JSONObjectParceler>()
+@TypeParceler<JSONObject, JSONObjectParcelerDupe>()
 data class EntitlementInfo(
     val identifier: String,
     val isActive: Boolean,
