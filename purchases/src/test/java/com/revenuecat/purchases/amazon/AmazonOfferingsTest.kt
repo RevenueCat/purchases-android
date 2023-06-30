@@ -7,6 +7,7 @@ package com.revenuecat.purchases.amazon
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.OfferingParserFactory
+import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.amazon.helpers.dummyAmazonProduct
@@ -418,7 +419,7 @@ class AmazonOfferingsTest {
     private fun assertPackage(
         packageType: PackageType,
         expectedPackageType: PackageType,
-        packageToCheck: com.revenuecat.purchases.Package?
+        packageToCheck: Package?
     ) {
         if (packageType == expectedPackageType) {
             Assertions.assertThat(packageToCheck).isNotNull

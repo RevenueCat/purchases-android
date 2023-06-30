@@ -1,9 +1,7 @@
 package com.revenuecat.purchases.backend_integration_tests
 
 import com.revenuecat.purchases.PurchasesError
-import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.offlineentitlements.ProductEntitlementMapping
-import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 

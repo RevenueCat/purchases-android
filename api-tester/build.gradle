@@ -16,7 +16,6 @@ android {
 }
 
 dependencies {
-    implementation project(path: ':public')
     implementation project(path: ':purchases')
     implementation project(path: ':feature:amazon')
 
