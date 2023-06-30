@@ -7,7 +7,7 @@ import com.amazon.device.iap.model.UserDataResponse
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.models.StoreProduct
 
-internal interface ProductDataResponseListener : PurchasingListener {
+interface ProductDataResponseListener : PurchasingListener {
     override fun onUserDataResponse(response: UserDataResponse) {
         /* intentionally ignored. Use UserDataResponseListener instead */
     }

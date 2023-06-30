@@ -6,7 +6,7 @@ import com.amazon.device.iap.PurchasingListener
 import com.amazon.device.iap.model.FulfillmentResult
 import com.amazon.device.iap.model.RequestId
 
-internal interface PurchasingServiceProvider : Parcelable {
+interface PurchasingServiceProvider : Parcelable {
 
     fun registerListener(context: Context, listener: PurchasingListener)
     fun getProductData(skus: Set<String>): RequestId

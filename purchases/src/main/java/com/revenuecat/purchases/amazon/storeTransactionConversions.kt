@@ -7,7 +7,7 @@ import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.PurchaseType
 import com.revenuecat.purchases.models.StoreTransaction
 
-internal fun Receipt.toStoreTransaction(
+fun Receipt.toStoreTransaction(
     productId: String,
     presentedOfferingIdentifier: String?,
     purchaseState: PurchaseState,

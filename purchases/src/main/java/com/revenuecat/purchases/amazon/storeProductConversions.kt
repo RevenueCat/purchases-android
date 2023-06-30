@@ -10,7 +10,7 @@ import com.revenuecat.purchases.models.StoreProduct
 import java.math.BigDecimal
 import java.util.regex.Pattern
 
-internal fun Product.toStoreProduct(marketplace: String): StoreProduct? {
+fun Product.toStoreProduct(marketplace: String): StoreProduct? {
     if (price == null) {
         log(LogIntent.AMAZON_ERROR, AmazonStrings.PRODUCT_PRICE_MISSING.format(sku))
         return null

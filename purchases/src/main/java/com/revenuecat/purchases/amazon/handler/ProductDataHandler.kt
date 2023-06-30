@@ -17,7 +17,7 @@ import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.models.StoreProduct
 
-internal class ProductDataHandler(
+class ProductDataHandler(
     private val purchasingServiceProvider: PurchasingServiceProvider,
     private val mainHandler: Handler,
 ) : ProductDataResponseListener {

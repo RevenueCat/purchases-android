@@ -8,7 +8,7 @@ import com.amazon.device.iap.model.RequestId
 import kotlinx.parcelize.Parcelize
 
 @Parcelize
-internal class DefaultPurchasingServiceProvider : PurchasingServiceProvider {
+class DefaultPurchasingServiceProvider : PurchasingServiceProvider {
 
     override fun registerListener(
         context: Context,

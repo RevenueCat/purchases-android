@@ -6,12 +6,12 @@ import com.revenuecat.purchases.common.networking.Endpoint
 import org.json.JSONObject
 
 /** @suppress */
-internal typealias PostAmazonReceiptCallback = Pair<(response: JSONObject) -> Unit, (PurchasesError) -> Unit>
+typealias PostAmazonReceiptCallback = Pair<(response: JSONObject) -> Unit, (PurchasesError) -> Unit>
 
 /** @suppress */
-internal typealias CallbackCacheKey = List<String>
+typealias CallbackCacheKey = List<String>
 
-internal class AmazonBackend(
+class AmazonBackend(
     private val backendHelper: BackendHelper,
 ) {
 
