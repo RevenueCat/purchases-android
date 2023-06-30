@@ -17,17 +17,17 @@ sealed class SignatureVerificationMode {
                 //     Enforced(signatureVerifier ?: DefaultSignatureVerifier())
             }
         }
+
+        private fun createIntermediateSignatureHelper(): IntermediateSignatureHelper {
+            return IntermediateSignatureHelper(DefaultSignatureVerifier())
+        }
     }
     object Disabled : SignatureVerificationMode()
     data class Informational(
-        override val intermediateSignatureHelper: IntermediateSignatureHelper = IntermediateSignatureHelper(
-            DefaultSignatureVerifier(),
-        ),
+        override val intermediateSignatureHelper: IntermediateSignatureHelper = createIntermediateSignatureHelper(),
     ) : SignatureVerificationMode()
     data class Enforced(
-        override val intermediateSignatureHelper: IntermediateSignatureHelper = IntermediateSignatureHelper(
-            DefaultSignatureVerifier(),
-        ),
+        override val intermediateSignatureHelper: IntermediateSignatureHelper = createIntermediateSignatureHelper(),
     ) : SignatureVerificationMode()
 
     val shouldVerify: Boolean
@@ -46,4 +46,6 @@ sealed class SignatureVerificationMode {
             is Informational -> intermediateSignatureHelper
             is Enforced -> intermediateSignatureHelper
         }
+
+
 }
