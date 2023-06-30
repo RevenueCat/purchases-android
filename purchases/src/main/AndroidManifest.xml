@@ -1,4 +1,12 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <uses-permission android:name="android.permission.INTERNET"/>
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <application>
+        <activity
+                android:name="com.revenuecat.purchases.amazon.purchasing.ProxyAmazonBillingActivity"
+                android:configChanges="keyboard|keyboardHidden|screenLayout|screenSize|orientation"
+                android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+    </application>
+
 </manifest>
 

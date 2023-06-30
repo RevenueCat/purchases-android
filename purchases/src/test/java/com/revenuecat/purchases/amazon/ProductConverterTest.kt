@@ -3,7 +3,6 @@ package com.revenuecat.purchases.amazon
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.amazon.helpers.dummyAmazonProduct
 import com.revenuecat.purchases.models.Period
-import com.revenuecat.purchases.models.SubscriptionOptions
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 import org.junit.runner.RunWith

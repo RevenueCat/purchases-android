@@ -2,17 +2,8 @@ package com.revenuecat.purchases.amazon
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.ProductType
-import com.revenuecat.purchases.amazon.helpers.dummyAmazonProduct
-import com.revenuecat.purchases.amazon.helpers.stubStoreProductForAmazon
-import com.revenuecat.purchases.models.GoogleStoreProduct
-import com.revenuecat.purchases.models.GoogleSubscriptionOption
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
-import com.revenuecat.purchases.models.PricingPhase
-import com.revenuecat.purchases.models.PurchasingData
-import com.revenuecat.purchases.models.RecurrenceMode
-import com.revenuecat.purchases.models.SubscriptionOptions
-import com.revenuecat.purchases.utils.mockProductDetails
 import org.assertj.core.api.AssertionsForInterfaceTypes.assertThat
 import org.json.JSONObject
 import org.junit.Test

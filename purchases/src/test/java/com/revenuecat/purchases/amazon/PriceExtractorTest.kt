@@ -4,7 +4,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 import org.junit.runner.RunWith
-import java.math.BigDecimal
 import kotlin.text.Typography.nbsp
 
 @RunWith(AndroidJUnit4::class)

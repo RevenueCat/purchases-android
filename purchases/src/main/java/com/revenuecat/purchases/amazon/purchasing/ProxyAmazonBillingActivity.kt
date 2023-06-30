@@ -7,7 +7,7 @@ import android.os.Bundle
 import android.os.ResultReceiver
 import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.amazon.PurchasingServiceProvider
-import com.revenuecat.purchases.amazon.R
+import com.revenuecat.purchases.api.R
 
 internal class ProxyAmazonBillingActivity : Activity() {
 

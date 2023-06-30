@@ -1,11 +1,10 @@
 package com.revenuecat.purchases
 
 import android.app.Application
-import android.content.Context
 import android.os.Handler
 import androidx.annotation.VisibleForTesting
+import com.revenuecat.purchases.amazon.AmazonBilling
 import com.revenuecat.purchases.common.BackendHelper
-import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.errorLog
@@ -31,21 +30,14 @@ object BillingFactory {
         )
         Store.AMAZON -> {
             try {
-                Class.forName("com.revenuecat.purchases.amazon.AmazonBilling")
-                    .getConstructor(
-                        Context::class.java,
-                        DeviceCache::class.java,
-                        Boolean::class.java,
-                        Handler::class.java,
-                        BackendHelper::class.java,
-                    ).newInstance(
-                        application.applicationContext,
-                        cache,
-                        observerMode,
-                        Handler(application.mainLooper),
-                        backendHelper,
-                    ) as BillingAbstract
-            } catch (e: ClassNotFoundException) {
+                AmazonBilling(
+                    application.applicationContext,
+                    cache,
+                    observerMode,
+                    Handler(application.mainLooper),
+                    backendHelper,
+                )
+            } catch (e: NoClassDefFoundError) {
                 errorLog("Make sure purchases-amazon is added as dependency", e)
                 throw e
             }

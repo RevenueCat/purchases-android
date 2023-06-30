@@ -1,7 +1,6 @@
 plugins {
     alias libs.plugins.android.library
     alias libs.plugins.kotlin.android
-    alias libs.plugins.kotlin.parcelize
     alias libs.plugins.mavenPublish
 }
 
@@ -11,67 +10,9 @@ android {
     namespace 'com.revenuecat.purchases.amazon'
 }
 
-ext {
-    amazon2Version = "2.0.76"
-    amazon2FileName = "in-app-purchasing-${amazon2Version}.jar"
-}
-
 dependencies {
     implementation project(":purchases")
     implementation project(":common")
 
-    implementation libs.kotlin.stdlib
-    implementation libs.androidx.annotation
     implementation libs.amazon.appstore.sdk
-
-    testImplementation project(":test-utils")
-    testImplementation libs.amazon.appstore.sdk
-    testImplementation libs.bundles.test
-}
-
-// Not running with this flag causes verification issues due to the way the Amazon jar is compiled
-// https://github.com/robolectric/robolectric-gradle-plugin/issues/144#issuecomment-265899560
-tasks.withType(Test) { jvmArgs += "-noverify" }
-
-task getAmazonLibrary {
-    ext {
-        downloadURL = "https://amzndevresources.com/iap/sdk/AmazonInAppPurchasing_Android.zip"
-        destFile = new File(projectDir, "libs/$amazon2FileName")
-    }
-
-    inputs.property('downloadURL', downloadURL)
-    inputs.property('fileToExtract', amazon2FileName)
-    outputs.file(destFile)
-
-    doLast {
-        if (!destFile.exists()) {
-            println 'Downloading Amazon dependency'
-            File destDir = destFile.parentFile
-            destDir.mkdirs()
-
-            File downloadFile = new File(temporaryDir, 'download.zip')
-            new URL(downloadURL).withInputStream { is ->
-                downloadFile.withOutputStream { it << is }
-            }
-
-            project.copy {
-                from {
-                    zipTree(downloadFile).matching { include "**/$amazon2FileName" }.singleFile
-                }
-
-                into(destDir)
-            }
-        }
-    }
-}
-
-task cleanAmazonLibrary(type: Delete) {
-    delete new File(projectDir, "libs/$amazon2FileName")
-}
-
-afterEvaluate {
-    preDefaultsDebugBuild.dependsOn cleanAmazonLibrary
-    preDefaultsReleaseBuild.dependsOn cleanAmazonLibrary
-    preIntegrationTestDebugBuild.dependsOn cleanAmazonLibrary
-    preIntegrationTestReleaseBuild.dependsOn cleanAmazonLibrary
 }
