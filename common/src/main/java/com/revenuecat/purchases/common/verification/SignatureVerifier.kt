@@ -8,12 +8,14 @@ interface SignatureVerifier {
     fun verify(signatureToVerify: ByteArray, messageToVerify: ByteArray): Boolean
 }
 
-class DefaultSignatureVerifier(publicKey: String = DEFAULT_PUBLIC_KEY) : SignatureVerifier {
+class DefaultSignatureVerifier(
+    publicKeyBytes: ByteArray,
+) : SignatureVerifier {
     companion object {
         private const val DEFAULT_PUBLIC_KEY = "UC1upXWg5QVmyOSwozp755xLqquBKjjU+di6U8QhMlM="
     }
 
-    private val publicKeyBytes = Base64.decode(publicKey, Base64.DEFAULT)
+    constructor(publicKey: String = DEFAULT_PUBLIC_KEY) : this(Base64.decode(publicKey, Base64.DEFAULT))
 
     private val verifier = Ed25519Verify(publicKeyBytes)
 
