@@ -7,7 +7,7 @@ import com.revenuecat.purchases.utils.Result
 import java.util.Date
 import kotlin.time.Duration.Companion.days
 
-class IntermediateSignatureHelper(
+internal class IntermediateSignatureHelper(
     private val rootSignatureVerifier: SignatureVerifier,
 ) {
 
