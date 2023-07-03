@@ -41,7 +41,7 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
         )
 
         every {
-            mockSigningManager.verifyResponse(any(), any(), any(), any(), any(), any(), any())
+            mockSigningManager.verifyResponse(any(), any(), any(), any(), any(), any())
         } returns VerificationResult.VERIFIED
 
         client.performRequest(
@@ -81,7 +81,7 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
 
         assertThat(result.verificationResult).isEqualTo(VerificationResult.NOT_REQUESTED)
         verify(exactly = 0) {
-            mockSigningManager.verifyResponse(any(), any(), any(), any(), any(), any(), any())
+            mockSigningManager.verifyResponse(any(), any(), any(), any(), any(), any())
         }
     }
 
@@ -112,7 +112,7 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
 
         assertThat(result.verificationResult).isEqualTo(VerificationResult.NOT_REQUESTED)
         verify(exactly = 0) {
-            mockSigningManager.verifyResponse(any(), any(), any(), any(), any(), any(), any())
+            mockSigningManager.verifyResponse(any(), any(), any(), any(), any(), any())
         }
     }
 
@@ -143,7 +143,7 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
 
         assertThat(result.verificationResult).isEqualTo(VerificationResult.NOT_REQUESTED)
         verify(exactly = 0) {
-            mockSigningManager.verifyResponse(any(), any(), any(), any(), any(), any(), any())
+            mockSigningManager.verifyResponse(any(), any(), any(), any(), any(), any())
         }
     }
 
@@ -157,7 +157,7 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
         val responseCode = expectedResult.responseCode
 
         every {
-            mockSigningManager.verifyResponse(any(), any(), any(), any(), any(), any(), any())
+            mockSigningManager.verifyResponse(any(), any(), any(), any(), any(), any())
         } returns VerificationResult.VERIFIED
 
         every {
@@ -192,7 +192,6 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
         verify(exactly = 1) {
             mockSigningManager.verifyResponse(
                 endpoint.getPath(),
-                responseCode,
                 "test-signature",
                 "test-nonce",
                 "{\"test-key\":\"test-value\"}",
@@ -222,7 +221,7 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
         server.takeRequest()
         assertThat(result.verificationResult).isEqualTo(VerificationResult.NOT_REQUESTED)
         verify(exactly = 0) {
-            mockSigningManager.verifyResponse(any(), any(), any(), any(), any(), any(), any())
+            mockSigningManager.verifyResponse(any(), any(), any(), any(), any(), any())
         }
     }
 
@@ -236,7 +235,7 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
         )
 
         every {
-            mockSigningManager.verifyResponse(any(), any(), any(), any(), any(), any(), any())
+            mockSigningManager.verifyResponse(any(), any(), any(), any(), any(), any())
         } returns VerificationResult.FAILED
 
         val result = client.performRequest(
@@ -261,7 +260,7 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
         )
 
         every {
-            mockSigningManager.verifyResponse(any(), any(), any(), any(), any(), any(), any())
+            mockSigningManager.verifyResponse(any(), any(), any(), any(), any(), any())
         } returns VerificationResult.FAILED
 
         var thrownCorrectException = false
@@ -292,7 +291,7 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
         )
 
         every {
-            mockSigningManager.verifyResponse(any(), any(), any(), any(), any(), any(), any())
+            mockSigningManager.verifyResponse(any(), any(), any(), any(), any(), any())
         } returns VerificationResult.VERIFIED
 
         val result = client.performRequest(

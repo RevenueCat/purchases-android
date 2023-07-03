@@ -175,10 +175,9 @@ internal class HTTPClient(
         }
 
         val verificationResult = if (shouldSignResponse &&
-            nonce != null &&
             RCHTTPStatusCodes.isSuccessful(responseCode)
         ) {
-            verifyResponse(path, responseCode, connection, payload, nonce)
+            verifyResponse(path, connection, payload, nonce)
         } else {
             VerificationResult.NOT_REQUESTED
         }
@@ -278,15 +277,13 @@ internal class HTTPClient(
 
     private fun verifyResponse(
         urlPath: String,
-        responseCode: Int,
         connection: URLConnection,
         payload: String?,
-        nonce: String,
+        nonce: String?,
     ): VerificationResult {
         return signingManager.verifyResponse(
             urlPath = urlPath,
-            responseCode = responseCode,
-            signature = connection.getHeaderField(HTTPResult.SIGNATURE_HEADER_NAME),
+            signatureString = connection.getHeaderField(HTTPResult.SIGNATURE_HEADER_NAME),
             nonce = nonce,
             body = payload,
             requestTime = getRequestTimeHeader(connection),
