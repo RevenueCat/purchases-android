@@ -195,7 +195,7 @@ class HTTPClientTest: BaseHTTPClientTest() {
         val endpoint = Endpoint.LogIn
 
         every {
-            mockETagManager.getETagHeaders(any(), any())
+            mockETagManager.getETagHeaders(any(), any(), any())
         } answers {
             mapOf(
                 HTTPRequest.ETAG_HEADER_NAME to "mock-etag",
@@ -222,7 +222,7 @@ class HTTPClientTest: BaseHTTPClientTest() {
         val endpoint = Endpoint.LogIn
 
         every {
-            mockETagManager.getETagHeaders(any(), any())
+            mockETagManager.getETagHeaders(any(), any(), any())
         } answers {
             mapOf(
                 HTTPRequest.ETAG_HEADER_NAME to "mock-etag",
@@ -365,10 +365,10 @@ class HTTPClientTest: BaseHTTPClientTest() {
         server.takeRequest()
 
         verify(exactly = 1) {
-            mockETagManager.getETagHeaders(any(), false)
+            mockETagManager.getETagHeaders(any(), any(), refreshETag = false)
         }
         verify(exactly = 1) {
-            mockETagManager.getETagHeaders(any(), true)
+            mockETagManager.getETagHeaders(any(), any(), refreshETag = true)
         }
         assertThat(result.payload).isEqualTo(expectedResult.payload)
         assertThat(result.responseCode).isEqualTo(expectedResult.responseCode)
