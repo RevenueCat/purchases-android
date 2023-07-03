@@ -37,6 +37,22 @@ sealed class Endpoint(val pathTemplate: String, val name: String) {
             is GetCustomerInfo,
             LogIn,
             PostReceipt,
+            is GetOfferings,
+            GetProductEntitlementMapping,
+            ->
+                true
+            is GetAmazonReceipt,
+            is PostAttributes,
+            PostDiagnostics,
+            ->
+                false
+        }
+
+    val needsNonceToPerformSigning: Boolean
+        get() = when (this) {
+            is GetCustomerInfo,
+            LogIn,
+            PostReceipt,
             ->
                 true
             is GetAmazonReceipt,
