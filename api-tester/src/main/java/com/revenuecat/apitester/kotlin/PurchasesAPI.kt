@@ -16,6 +16,7 @@ import com.revenuecat.purchases.PurchasesConfiguration
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.awaitCustomerInfo
+import com.revenuecat.purchases.awaitOfferings
 import com.revenuecat.purchases.getCustomerInfoWith
 import com.revenuecat.purchases.getOfferingsWith
 import com.revenuecat.purchases.getProductsWith
@@ -198,6 +199,8 @@ private class PurchasesAPI {
         val customerInfo: CustomerInfo = purchases.awaitCustomerInfo()
         val customerInfoFetchPolicy: CustomerInfo =
             purchases.awaitCustomerInfo(fetchPolicy = CacheFetchPolicy.FETCH_CURRENT)
+
+        val offerings: Offerings = purchases.awaitOfferings()
     }
 
     fun check(purchases: Purchases, attributes: Map<String, String>) {

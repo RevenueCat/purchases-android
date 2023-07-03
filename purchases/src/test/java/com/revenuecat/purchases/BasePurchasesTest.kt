@@ -252,6 +252,7 @@ open class BasePurchasesTest {
         }
     }
 
+    // region mockOfferingsManager
     protected fun mockOfferingsManagerAppForeground() {
         every {
             mockOfferingsManager.onAppForeground(appUserId)
@@ -263,6 +264,24 @@ open class BasePurchasesTest {
             mockOfferingsManager.fetchAndCacheOfferings(userId, any(), any(), any())
         } just Runs
     }
+
+    protected fun mockOfferingsManagerGetOfferings(errorGettingOfferings: PurchasesError? = null): Offerings? {
+        val offerings: Offerings = mockk()
+        every {
+            mockOfferingsManager.getOfferings(
+                appUserId,
+                appInBackground = false,
+                onError = errorGettingOfferings?.let { captureLambda() } ?: any(),
+                onSuccess = errorGettingOfferings?.let { any() } ?: captureLambda()
+            )
+        } answers {
+            errorGettingOfferings?.let {
+                lambda<(PurchasesError) -> Unit>().captured.invoke(it)
+            } ?: lambda<(Offerings) -> Unit>().captured.invoke(offerings)
+        }
+        return offerings
+    }
+    // endregion
 
     protected fun mockStoreProduct(
         productIds: List<String>,
