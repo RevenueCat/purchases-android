@@ -147,7 +147,7 @@ internal class HTTPClient(
             val fullURL = URL(baseURL, urlPathWithVersion)
 
             nonce = if (shouldSignResponse) signingManager.createRandomNonce() else null
-            val headers = getHeaders(requestHeaders, urlPathWithVersion, refreshETag, nonce)
+            val headers = getHeaders(requestHeaders, urlPathWithVersion, refreshETag, nonce, shouldSignResponse)
 
             val httpRequest = HTTPRequest(fullURL, headers, jsonBody)
 
@@ -237,6 +237,7 @@ internal class HTTPClient(
         urlPath: String,
         refreshETag: Boolean,
         nonce: String?,
+        shouldSignResponse: Boolean,
     ): Map<String, String> {
         return mapOf(
             "Content-Type" to "application/json",
@@ -252,7 +253,7 @@ internal class HTTPClient(
             "X-Nonce" to nonce,
         )
             .plus(authenticationHeaders)
-            .plus(eTagManager.getETagHeaders(urlPath, refreshETag))
+            .plus(eTagManager.getETagHeaders(urlPath, shouldSignResponse, refreshETag))
             .filterNotNullValues()
     }
 
