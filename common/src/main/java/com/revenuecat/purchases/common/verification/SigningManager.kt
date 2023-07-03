@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.common.verification
 
+import android.net.Uri
 import android.util.Base64
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.AppConfig
@@ -12,7 +13,8 @@ import java.security.SecureRandom
 
 class SigningManager(
     val signatureVerificationMode: SignatureVerificationMode,
-    val appConfig: AppConfig,
+    private val appConfig: AppConfig,
+    private val apiKey: String,
 ) {
     private companion object {
         const val NONCE_BYTES_SIZE = 12
@@ -77,11 +79,13 @@ class SigningManager(
             }
             is Result.Success -> {
                 val intermediateKeyVerifier = result.value
-                val decodedNonce = nonce?.let { Base64.decode(it, Base64.DEFAULT) } ?: byteArrayOf()
-                val requestTimeBytes = requestTime.toByteArray()
-                val eTagBytes = eTag?.toByteArray() ?: byteArrayOf()
-                val payloadBytes = body?.toByteArray() ?: byteArrayOf()
-                val messageToVerify = signature.salt + decodedNonce + requestTimeBytes + eTagBytes + payloadBytes
+                val messageToVerify = signature.salt +
+                    apiKey.toByteArray() +
+                    (nonce?.let { Base64.decode(it, Base64.DEFAULT) } ?: byteArrayOf()) +
+                    Uri.decode(urlPath).toByteArray() +
+                    requestTime.toByteArray() +
+                    (eTag?.toByteArray() ?: byteArrayOf()) +
+                    (body?.toByteArray() ?: byteArrayOf())
                 val verificationResult = intermediateKeyVerifier.verify(signature.payload, messageToVerify)
 
                 return if (verificationResult) {

@@ -177,7 +177,7 @@ class HTTPClient(
         val verificationResult = if (shouldSignResponse &&
             RCHTTPStatusCodes.isSuccessful(responseCode)
         ) {
-            verifyResponse(path, connection, payload, nonce)
+            verifyResponse(urlPathWithVersion, connection, payload, nonce)
         } else {
             VerificationResult.NOT_REQUESTED
         }
@@ -251,6 +251,7 @@ class HTTPClient(
             "X-Client-Bundle-ID" to appConfig.packageName,
             "X-Observer-Mode-Enabled" to if (appConfig.finishTransactions) "false" else "true",
             "X-Nonce" to nonce,
+            "X-RC-Canary" to "signurls",
         )
             .plus(authenticationHeaders)
             .plus(eTagManager.getETagHeaders(urlPath, shouldSignResponse, refreshETag))

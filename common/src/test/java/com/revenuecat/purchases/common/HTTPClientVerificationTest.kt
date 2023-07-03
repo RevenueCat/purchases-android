@@ -191,7 +191,7 @@ class HTTPClientVerificationTest: BaseHTTPClientTest() {
         assertThat(result.verificationResult).isEqualTo(VerificationResult.VERIFIED)
         verify(exactly = 1) {
             mockSigningManager.verifyResponse(
-                endpoint.getPath(),
+                "/v1${endpoint.getPath()}",
                 "test-signature",
                 "test-nonce",
                 "{\"test-key\":\"test-value\"}",
