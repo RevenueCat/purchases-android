@@ -256,38 +256,5 @@ class SigningManagerTest {
         eTag: String? = null
     ) = signingManager.verifyResponse(requestPath, signature, nonce, body, requestTime, eTag)
 
-//    private fun createFakeSignature(
-//        rootPrivateKeyEncoded: String = "YMHMQMpepBKamtSzO8KCN2M8Z3AUW5R1JXIFtxUWFUI",
-//        rootPublicKeyEncoded: String = "yg2wZGAr8Af+Unt9RImQDbL7qA81txk+ga0I+ylmcyo=",
-//        intermediatePrivateKeyEncoded: String = "fPBoIjQ7DecE89ATW6PZsqLVQNyEs5fiX3sUyS3U4YI",
-//        intermediatePublicKeyEncoded: String = "xoDYyUeHnIlSIAeOOzmvdNPOlbNSKK+xE0fE/ufS1fs=",
-//        intermediateKeyExpirationDaysBytes: ByteArray = ByteBuffer.allocate(Int.SIZE_BYTES).putInt(50_000).order(ByteOrder.LITTLE_ENDIAN).array(),
-//        requestPath: String = "test-url-path",
-//        apiKey: String = this.apiKey,
-//        body: String? = "{\"request_date\":\"2023-02-21T18:58:36Z\",\"request_date_ms\":1677005916011,\"subscriber\":{\"entitlements\":{},\"first_seen\":\"2023-02-21T18:58:35Z\",\"last_seen\":\"2023-02-21T18:58:35Z\",\"management_url\":null,\"non_subscriptions\":{},\"original_app_user_id\":\"login\",\"original_application_version\":null,\"original_purchase_date\":null,\"other_purchases\":{},\"subscriptions\":{}}}\n",
-//        requestTime: String? = "1677005916012",
-//        eTag: String? = "test-etag",
-//        nonce: String? = "MTIzNDU2Nzg5MGFi",
-//        salt: ByteArray = ByteArray(16).apply { SecureRandom().nextBytes(this) }
-//    ): String {
-//        val rootSigner = Ed25519Sign(Base64.decode(rootPrivateKeyEncoded, Base64.DEFAULT))
-//        val intermediatePublicKey = Base64.decode(intermediatePublicKeyEncoded, Base64.DEFAULT)
-//        val intermediatePublicKeySignature = rootSigner.sign(intermediateKeyExpirationDaysBytes + intermediatePublicKey)
-//        val intermediateSigner = Ed25519Sign(Base64.decode(intermediatePrivateKeyEncoded, Base64.DEFAULT))
-//        val payloadToSign = salt +
-//            apiKey.toByteArray() +
-//            (nonce?.let { Base64.decode(it, Base64.DEFAULT) } ?: byteArrayOf()) +
-//            Uri.decode(requestPath).toByteArray() +
-//            (requestTime?.toByteArray() ?: byteArrayOf()) +
-//            (eTag?.toByteArray() ?: byteArrayOf()) +
-//            (body?.toByteArray() ?: byteArrayOf())
-//        val signature =  intermediatePublicKey +
-//            intermediateKeyExpirationDaysBytes +
-//            intermediatePublicKeySignature +
-//            salt +
-//            intermediateSigner.sign(payloadToSign)
-//        return Base64.encodeToString(signature, Base64.DEFAULT)
-//    }
-
     // endregion
 }

@@ -251,7 +251,6 @@ class HTTPClient(
             "X-Client-Bundle-ID" to appConfig.packageName,
             "X-Observer-Mode-Enabled" to if (appConfig.finishTransactions) "false" else "true",
             "X-Nonce" to nonce,
-            "X-RC-Canary" to "signurls",
         )
             .plus(authenticationHeaders)
             .plus(eTagManager.getETagHeaders(urlPath, shouldSignResponse, refreshETag))
