@@ -10,6 +10,7 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import org.assertj.core.api.Assertions
 import org.junit.After
@@ -70,6 +71,7 @@ open class BasePurchasesIntegrationTest {
 
     @After
     fun tearDown() {
+        _activity?.lifecycleScope?.cancel()
         _activity = null
         Purchases.resetSingleton()
     }
