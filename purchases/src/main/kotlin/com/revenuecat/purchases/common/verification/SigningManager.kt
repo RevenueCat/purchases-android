@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.common.verification
 
+import android.net.Uri
 import android.util.Base64
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.AppConfig
@@ -12,10 +13,59 @@ import java.security.SecureRandom
 
 internal class SigningManager(
     val signatureVerificationMode: SignatureVerificationMode,
-    val appConfig: AppConfig,
+    private val appConfig: AppConfig,
+    private val apiKey: String,
 ) {
     private companion object {
         const val NONCE_BYTES_SIZE = 12
+    }
+
+    private data class Parameters(
+        val salt: ByteArray,
+        val apiKey: String,
+        val nonce: String?,
+        val urlPath: String,
+        val requestTime: String,
+        val eTag: String?,
+        val body: String?,
+    ) {
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (javaClass != other?.javaClass) return false
+
+            other as Parameters
+
+            if (!salt.contentEquals(other.salt)) return false
+            if (apiKey != other.apiKey) return false
+            if (nonce != other.nonce) return false
+            if (urlPath != other.urlPath) return false
+            if (requestTime != other.requestTime) return false
+            if (eTag != other.eTag) return false
+            if (body != other.body) return false
+
+            return true
+        }
+
+        override fun hashCode(): Int {
+            var result = salt.contentHashCode()
+            result = 31 * result + apiKey.hashCode()
+            result = 31 * result + (nonce?.hashCode() ?: 0)
+            result = 31 * result + urlPath.hashCode()
+            result = 31 * result + requestTime.hashCode()
+            result = 31 * result + (eTag?.hashCode() ?: 0)
+            result = 31 * result + (body?.hashCode() ?: 0)
+            return result
+        }
+
+        fun toSignatureToVerify(): ByteArray {
+            return salt +
+                apiKey.toByteArray() +
+                (nonce?.let { Base64.decode(it, Base64.DEFAULT) } ?: byteArrayOf()) +
+                Uri.decode(urlPath).toByteArray() +
+                requestTime.toByteArray() +
+                (eTag?.toByteArray() ?: byteArrayOf()) +
+                (body?.toByteArray() ?: byteArrayOf())
+        }
     }
 
     fun shouldVerifyEndpoint(endpoint: Endpoint): Boolean {
@@ -28,7 +78,7 @@ internal class SigningManager(
         return String(Base64.encode(bytes, Base64.DEFAULT))
     }
 
-    @Suppress("LongParameterList", "ReturnCount", "CyclomaticComplexMethod")
+    @Suppress("LongParameterList", "ReturnCount", "CyclomaticComplexMethod", "LongMethod")
     fun verifyResponse(
         urlPath: String,
         signatureString: String?,
@@ -77,12 +127,19 @@ internal class SigningManager(
             }
             is Result.Success -> {
                 val intermediateKeyVerifier = result.value
-                val decodedNonce = nonce?.let { Base64.decode(it, Base64.DEFAULT) } ?: byteArrayOf()
-                val requestTimeBytes = requestTime.toByteArray()
-                val eTagBytes = eTag?.toByteArray() ?: byteArrayOf()
-                val payloadBytes = body?.toByteArray() ?: byteArrayOf()
-                val messageToVerify = signature.salt + decodedNonce + requestTimeBytes + eTagBytes + payloadBytes
-                val verificationResult = intermediateKeyVerifier.verify(signature.payload, messageToVerify)
+                val signatureParameters = Parameters(
+                    signature.salt,
+                    apiKey,
+                    nonce,
+                    urlPath,
+                    requestTime,
+                    eTag,
+                    body,
+                )
+                val verificationResult = intermediateKeyVerifier.verify(
+                    signature.payload,
+                    signatureParameters.toSignatureToVerify(),
+                )
 
                 return if (verificationResult) {
                     VerificationResult.VERIFIED
