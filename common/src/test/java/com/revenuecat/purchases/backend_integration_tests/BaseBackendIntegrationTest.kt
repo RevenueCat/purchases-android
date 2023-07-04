@@ -65,6 +65,14 @@ abstract class BaseBackendIntegrationTest {
 
     @Before
     fun setUp() {
+        setupTest()
+    }
+
+    abstract fun apiKey(): String
+
+    protected fun setupTest(
+        signatureVerificationMode: SignatureVerificationMode = SignatureVerificationMode.Disabled
+    ) {
         appConfig = mockk<AppConfig>().apply {
             every { baseURL } returns URL("https://api.revenuecat.com")
             every { store } returns Store.PLAY_STORE
@@ -87,13 +95,11 @@ abstract class BaseBackendIntegrationTest {
             every { edit() } returns sharedPreferencesEditor
         }
         eTagManager = ETagManager(sharedPreferences)
-        signingManager = SigningManager(SignatureVerificationMode.Disabled, appConfig, apiKey())
+        signingManager = SigningManager(signatureVerificationMode, appConfig, apiKey())
         httpClient = HTTPClient(appConfig, eTagManager, diagnosticsTrackerIfEnabled = null, signingManager)
         backendHelper = BackendHelper(apiKey(), dispatcher, appConfig, httpClient)
         backend = Backend(appConfig, dispatcher, diagnosticsDispatcher, httpClient, backendHelper)
     }
-
-    abstract fun apiKey(): String
 
     protected fun ensureBlockFinishes(block: (CountDownLatch) -> Unit) {
         val latch = CountDownLatch(1)
