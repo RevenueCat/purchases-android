@@ -19,4 +19,5 @@ internal object NetworkStrings {
         " but none provided."
     const val VERIFICATION_INVALID_SIZE = "Verification: Request to '%s' has signature with wrong size. '%s'"
     const val VERIFICATION_ERROR = "Verification: Request to '%s' failed verification."
+    const val VERIFICATION_SUCCESS = "Verification: Request to '%s' verified successfully."
 }
