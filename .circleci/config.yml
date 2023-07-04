@@ -468,7 +468,9 @@ workflows:
       - assemble-sample-app
       - build-magic-weather-compose
       - run-backend-integration-tests
-
+      - run-firebase-tests-purchases-load-shedder-integration-test:
+          context:
+            - slack-secrets
   deploy:
     when:
       not:
