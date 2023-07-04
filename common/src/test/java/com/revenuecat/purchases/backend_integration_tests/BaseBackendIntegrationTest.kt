@@ -18,6 +18,7 @@ import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
+import io.mockk.spyk
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Assert.fail
@@ -95,7 +96,7 @@ abstract class BaseBackendIntegrationTest {
             every { edit() } returns sharedPreferencesEditor
         }
         eTagManager = ETagManager(sharedPreferences)
-        signingManager = SigningManager(signatureVerificationMode, appConfig, apiKey())
+        signingManager = spyk(SigningManager(signatureVerificationMode, appConfig, apiKey()))
         httpClient = HTTPClient(appConfig, eTagManager, diagnosticsTrackerIfEnabled = null, signingManager)
         backendHelper = BackendHelper(apiKey(), dispatcher, appConfig, httpClient)
         backend = Backend(appConfig, dispatcher, diagnosticsDispatcher, httpClient, backendHelper)

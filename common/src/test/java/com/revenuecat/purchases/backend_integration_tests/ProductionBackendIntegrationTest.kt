@@ -40,6 +40,7 @@ class ProductionBackendIntegrationTest: BaseBackendIntegrationTest() {
             sharedPreferencesEditor.putString("/v1${Endpoint.GetProductEntitlementMapping.getPath()}", any())
         }
         verify(exactly = 1) { sharedPreferencesEditor.apply() }
+        verify(exactly = 0) { signingManager.verifyResponse(any(), any(), any(), any(), any(), any())  }
     }
 
     @Test
@@ -63,6 +64,7 @@ class ProductionBackendIntegrationTest: BaseBackendIntegrationTest() {
                 }
             )
         }
+        verify(exactly = 1) { signingManager.verifyResponse(any(), any(), any(), any(), any(), any())  }
     }
 
     @Test
@@ -85,6 +87,7 @@ class ProductionBackendIntegrationTest: BaseBackendIntegrationTest() {
             sharedPreferencesEditor.putString("/v1${Endpoint.GetOfferings("test-user-id").getPath()}", any())
         }
         verify(exactly = 1) { sharedPreferencesEditor.apply() }
+        verify(exactly = 0) { signingManager.verifyResponse(any(), any(), any(), any(), any(), any())  }
     }
 
     @Test
@@ -103,5 +106,6 @@ class ProductionBackendIntegrationTest: BaseBackendIntegrationTest() {
                 }
             )
         }
+        verify(exactly = 1) { signingManager.verifyResponse(any(), any(), any(), any(), any(), any())  }
     }
 }
