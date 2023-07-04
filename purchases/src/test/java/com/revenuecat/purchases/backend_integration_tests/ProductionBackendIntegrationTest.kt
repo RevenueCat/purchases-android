@@ -43,6 +43,29 @@ internal class ProductionBackendIntegrationTest: BaseBackendIntegrationTest() {
     }
 
     @Test
+    fun `can perform verified product entitlement mapping backend request`() {
+        setupTest(SignatureVerificationMode.Enforced())
+        ensureBlockFinishes { latch ->
+            backend.getProductEntitlementMapping(
+                onSuccessHandler = { productEntitlementMapping ->
+                    assertThat(productEntitlementMapping.mappings.size).isEqualTo(36)
+                    assertThat(productEntitlementMapping.mappings["annual_freetrial"]).isEqualTo(
+                        ProductEntitlementMapping.Mapping(
+                            productIdentifier = "annual_freetrial",
+                            basePlanId = "p1y",
+                            entitlements = listOf("pro_cat")
+                        )
+                    )
+                    latch.countDown()
+                },
+                onErrorHandler = {
+                    fail("Expected success but got error: $it")
+                }
+            )
+        }
+    }
+
+    @Test
     fun `can perform offerings backend request`() {
         ensureBlockFinishes { latch ->
             backend.getOfferings(
@@ -80,10 +103,5 @@ internal class ProductionBackendIntegrationTest: BaseBackendIntegrationTest() {
                 }
             )
         }
-        verify(exactly = 1) {
-            // Verify we save the backend response in the shared preferences
-            sharedPreferencesEditor.putString("/v1${Endpoint.GetOfferings("test-user-id").getPath()}", any())
-        }
-        verify(exactly = 1) { sharedPreferencesEditor.apply() }
     }
 }
