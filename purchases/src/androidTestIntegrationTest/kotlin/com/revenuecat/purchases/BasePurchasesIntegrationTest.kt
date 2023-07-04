@@ -10,7 +10,7 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions
 import org.junit.After
 import org.junit.BeforeClass
@@ -172,7 +172,7 @@ open class BasePurchasesIntegrationTest {
     protected fun runTestActivityLifecycleScope(
         testBody: suspend CoroutineScope.() -> Unit,
     ) {
-        activity.lifecycleScope.launch {
+        runBlocking(activity.lifecycleScope.coroutineContext) {
             testBody()
         }
     }
