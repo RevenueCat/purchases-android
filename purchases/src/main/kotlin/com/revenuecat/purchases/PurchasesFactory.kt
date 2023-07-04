@@ -94,7 +94,7 @@ internal class PurchasesFactory(
             val signatureVerificationMode = SignatureVerificationMode.fromEntitlementVerificationMode(
                 verificationMode,
             )
-            val signingManager = SigningManager(signatureVerificationMode, appConfig)
+            val signingManager = SigningManager(signatureVerificationMode, appConfig, apiKey)
 
             val httpClient = HTTPClient(appConfig, eTagManager, diagnosticsTracker, signingManager)
             val backendHelper = BackendHelper(apiKey, dispatcher, appConfig, httpClient)

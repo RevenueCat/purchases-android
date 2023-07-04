@@ -177,7 +177,7 @@ class HTTPClient(
         val verificationResult = if (shouldSignResponse &&
             RCHTTPStatusCodes.isSuccessful(responseCode)
         ) {
-            verifyResponse(path, connection, payload, nonce)
+            verifyResponse(urlPathWithVersion, connection, payload, nonce)
         } else {
             VerificationResult.NOT_REQUESTED
         }
