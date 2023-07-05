@@ -70,8 +70,9 @@ class SubscriptionOptions(
         }.minByOrNull { it.second }?.first
     }
 
-    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
-    internal fun billingPeriodToDays(period: Period): Int {
+    // TODO make internal
+    @VisibleForTesting(otherwise = VisibleForTesting.PACKAGE_PRIVATE)
+    fun billingPeriodToDays(period: Period): Int {
         val days = DAYS_IN_UNIT[period.unit] ?: 0
         return period.value * days
     }

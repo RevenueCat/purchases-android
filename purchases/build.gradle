@@ -11,6 +11,10 @@ apply from: "$rootProject.projectDir/library.gradle"
 android {
     namespace 'com.revenuecat.purchases.api'
 
+    buildFeatures {
+        buildConfig true
+    }
+
     productFlavors {
         integrationTest {
             testApplicationId obtainTestApplicationId()
@@ -18,6 +22,18 @@ android {
             packagingOptions {
                 resources.excludes.add("META-INF/LICENSE.md")
                 resources.excludes.add("META-INF/LICENSE-notice.md")
+            }
+        }
+    }
+
+    testOptions {
+        unitTests {
+            all {
+                if (project.hasProperty('RUN_INTEGRATION_TESTS')) {
+                    include "com/revenuecat/purchases/backend_integration_tests/**"
+                } else {
+                    exclude "com/revenuecat/purchases/backend_integration_tests/**"
+                }
             }
         }
     }
@@ -45,23 +61,26 @@ def obtainTestBuildType() {
 
 dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
-    implementation project(":common")
     api project(":public")
 
     implementation libs.kotlin.stdlib
+    implementation libs.androidx.core
     implementation libs.androidx.annotation
-    api libs.billing
     implementation libs.androidx.lifecycle.runtime
     implementation libs.androidx.lifecycle.common
     implementation libs.androidx.lifecycle.process
+    api libs.billing
+    implementation libs.tink
+    implementation libs.playServices.ads.identifier
 
     compileOnly libs.amazon.appstore.sdk
 
-    testImplementation project(":test-utils")
     testImplementation libs.bundles.test
     testImplementation libs.billing
     testImplementation libs.coroutines.test
     testImplementation libs.amazon.appstore.sdk
+    testImplementation libs.okhttp.mockwebserver
+    testImplementation libs.playServices.ads.identifier
 
     integrationTestImplementation libs.androidx.appcompat
     integrationTestImplementation libs.material
@@ -100,9 +119,7 @@ tasks.dokkaHtmlPartial.configure {
 // after https://github.com/Kotlin/kotlinx-kover/issues/362 is fixed
 project.afterEvaluate {
     dependencies {
-        kover(project(":common"))
         kover(project(":feature:amazon"))
         kover(project(":public"))
-        kover(project(":test-utils"))
     }
 }

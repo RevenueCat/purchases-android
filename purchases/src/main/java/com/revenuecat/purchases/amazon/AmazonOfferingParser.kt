@@ -4,7 +4,7 @@ import com.revenuecat.purchases.common.OfferingParser
 import com.revenuecat.purchases.models.StoreProduct
 import org.json.JSONObject
 
-class AmazonOfferingParser : OfferingParser() {
+internal class AmazonOfferingParser : OfferingParser() {
     override fun findMatchingProduct(
         productsById: Map<String, List<StoreProduct>>,
         packageJson: JSONObject,

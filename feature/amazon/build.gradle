@@ -12,7 +12,6 @@ android {
 
 dependencies {
     implementation project(":purchases")
-    implementation project(":common")
 
     implementation libs.amazon.appstore.sdk
 }

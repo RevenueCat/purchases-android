@@ -16,7 +16,7 @@ import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.utils.DefaultTimestampProvider
 import com.revenuecat.purchases.utils.TimestampProvider
 
-class UserDataHandler(
+internal class UserDataHandler(
     private val purchasingServiceProvider: PurchasingServiceProvider,
     private val mainHandler: Handler,
     private val timestampProvider: TimestampProvider = DefaultTimestampProvider(),

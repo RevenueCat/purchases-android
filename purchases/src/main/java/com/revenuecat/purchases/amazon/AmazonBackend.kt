@@ -11,7 +11,7 @@ typealias PostAmazonReceiptCallback = Pair<(response: JSONObject) -> Unit, (Purc
 /** @suppress */
 typealias CallbackCacheKey = List<String>
 
-class AmazonBackend(
+internal class AmazonBackend(
     private val backendHelper: BackendHelper,
 ) {
 

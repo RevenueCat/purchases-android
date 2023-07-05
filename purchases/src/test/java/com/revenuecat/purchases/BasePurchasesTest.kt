@@ -40,7 +40,7 @@ import io.mockk.slot
 import org.junit.After
 import org.junit.Before
 
-open class BasePurchasesTest {
+internal open class BasePurchasesTest {
     protected val mockBillingAbstract: BillingAbstract = mockk()
     protected val mockBackend: Backend = mockk()
     protected val mockCache: DeviceCache = mockk()

@@ -4,7 +4,7 @@ import android.content.SharedPreferences
 import com.revenuecat.purchases.common.caching.DeviceCache
 import org.json.JSONObject
 
-class MockDeviceCache(
+internal class MockDeviceCache(
     preferences: SharedPreferences,
     apiKey: String
 ) : DeviceCache(preferences, apiKey) {

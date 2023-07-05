@@ -5,7 +5,7 @@ import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.subscriberattributes.DeviceIdentifiersFetcher
 import com.revenuecat.purchases.google.attribution.GoogleDeviceIdentifiersFetcher
 
-object AttributionFetcherFactory {
+internal object AttributionFetcherFactory {
 
     fun createAttributionFetcher(
         store: Store,
