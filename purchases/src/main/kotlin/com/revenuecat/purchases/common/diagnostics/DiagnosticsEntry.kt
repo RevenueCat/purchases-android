@@ -39,7 +39,7 @@ internal sealed class DiagnosticsEntry(val diagnosticType: String) {
         }
     }
 
-    internal data class Counter(
+    data class Counter(
         val name: DiagnosticsCounterName,
         val tags: Map<String, String>,
         val value: Int,
@@ -63,7 +63,7 @@ internal sealed class DiagnosticsEntry(val diagnosticType: String) {
         }
     }
 
-    internal data class Histogram(
+    data class Histogram(
         val name: String,
         val tags: Map<String, String>,
         val values: List<Double>,

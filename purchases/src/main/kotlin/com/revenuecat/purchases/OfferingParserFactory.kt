@@ -1,11 +1,9 @@
 package com.revenuecat.purchases
 
-import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.common.GoogleOfferingParser
 import com.revenuecat.purchases.common.OfferingParser
 import com.revenuecat.purchases.common.errorLog
 
-@VisibleForTesting(otherwise = VisibleForTesting.PACKAGE_PRIVATE)
 internal object OfferingParserFactory {
 
     fun createOfferingParser(

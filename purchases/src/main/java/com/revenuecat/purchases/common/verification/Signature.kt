@@ -7,7 +7,7 @@ private fun ByteArray.copyOf(component: Signature.Component): ByteArray {
     return copyOfRange(component.startByte, component.endByte)
 }
 
-data class Signature(
+internal data class Signature(
     val intermediateKey: ByteArray,
     val intermediateKeyExpiration: ByteArray,
     val intermediateKeySignature: ByteArray,

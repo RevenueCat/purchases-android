@@ -2,6 +2,7 @@ package com.revenuecat.purchases.common.networking
 
 import android.content.Context
 import android.content.SharedPreferences
+import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.DefaultDateProvider
@@ -11,11 +12,13 @@ import com.revenuecat.purchases.strings.NetworkStrings
 import org.json.JSONObject
 import java.util.Date
 
+@VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
 internal data class ETagData(
     val eTag: String,
     val lastRefreshTime: Date?,
 )
 
+@VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
 internal data class HTTPResultWithETag(
     val eTagData: ETagData,
     val httpResult: HTTPResult,
