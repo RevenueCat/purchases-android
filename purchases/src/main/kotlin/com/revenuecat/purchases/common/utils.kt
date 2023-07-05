@@ -72,12 +72,6 @@ internal fun Locale.toBCP47(): String {
     return bcp47Tag.toString()
 }
 
-// Public because it's been used in the hybrids
-data class PlatformInfo(
-    val flavor: String,
-    val version: String?,
-)
-
 internal fun String.sha1() =
     MessageDigest.getInstance("SHA-1")
         .digest(this.toByteArray()).let {
