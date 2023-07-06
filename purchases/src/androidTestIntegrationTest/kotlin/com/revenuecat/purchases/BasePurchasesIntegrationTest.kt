@@ -49,10 +49,10 @@ open class BasePurchasesIntegrationTest {
     protected val testUserId = "android-integration-test-$currentTimestamp"
     protected val proxyUrl = Constants.proxyUrl.takeIf { it != "NO_PROXY_URL" }
 
-    protected lateinit var mockBillingAbstract: BillingAbstract
+    internal lateinit var mockBillingAbstract: BillingAbstract
 
-    protected var latestPurchasesUpdatedListener: BillingAbstract.PurchasesUpdatedListener? = null
-    protected var latestStateListener: BillingAbstract.StateListener? = null
+    internal var latestPurchasesUpdatedListener: BillingAbstract.PurchasesUpdatedListener? = null
+    private var latestStateListener: BillingAbstract.StateListener? = null
 
     // We shouldn't cache the whole activity, but considering that these are simple integration tests
     // and we don't perform any configuration changes, it shouldn't cause any leaks.
