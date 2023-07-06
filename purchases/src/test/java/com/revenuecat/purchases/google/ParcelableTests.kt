@@ -1,22 +1,13 @@
 package com.revenuecat.purchases.google
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.revenuecat.purchases.Offering
-import com.revenuecat.purchases.PackageType
-import com.revenuecat.purchases.ProductType
-import com.revenuecat.purchases.models.GooglePurchasingData
-import com.revenuecat.purchases.models.GoogleSubscriptionOption
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.PricingPhase
-import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.RecurrenceMode
-import com.revenuecat.purchases.models.StoreTransaction
-import com.revenuecat.purchases.utils.mockProductDetails
 import com.revenuecat.purchases.utils.testParcelization
 import org.junit.Test
 import org.junit.runner.RunWith
-import com.revenuecat.purchases.Package as RevenueCatPackage
 
 @RunWith(AndroidJUnit4::class)
 class ParcelableTests {

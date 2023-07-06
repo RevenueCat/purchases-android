@@ -3,16 +3,13 @@
   <ManuallySuppressedIssues/>
   <CurrentIssues>
     <ID>CyclomaticComplexMethod:EntitlementInfo.kt$EntitlementInfo$@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class) override fun equals(other: Any?): Boolean</ID>
-    <ID>CyclomaticComplexMethod:Iso8601UtilsDupe.kt$Iso8601UtilsDupe$fun parse(date: String): Date</ID>
     <ID>DestructuringDeclarationWithTooManyEntries:Period.kt$val (year, month, week, day) = periodResult.destructured</ID>
     <ID>EmptyCatchBlock:Purchases.kt$Purchases.Companion.&lt;no name provided>${ }</ID>
     <ID>Filename:backendHelpers.kt$com.revenuecat.purchases.subscriberattributes.backendHelpers.kt</ID>
     <ID>Filename:billingClientParamBuilders.kt$com.revenuecat.purchases.google.billingClientParamBuilders.kt</ID>
-    <ID>Filename:billingClientStubs.kt$com.revenuecat.purchases.utils.billingClientStubs.kt</ID>
     <ID>Filename:billingResultExtensions.kt$com.revenuecat.purchases.google.billingResultExtensions.kt</ID>
     <ID>Filename:cachingHelpers.kt$com.revenuecat.purchases.subscriberattributes.caching.cachingHelpers.kt</ID>
     <ID>Filename:coroutinesExtensions.kt$com.revenuecat.purchases.coroutinesExtensions.kt</ID>
-    <ID>Filename:dateExtensions.kt$com.revenuecat.purchases.utils.dateExtensions.kt</ID>
     <ID>Filename:durationExtensions.kt$com.revenuecat.purchases.common.durationExtensions.kt</ID>
     <ID>Filename:errors.kt$com.revenuecat.purchases.amazon.errors.kt</ID>
     <ID>Filename:errors.kt$com.revenuecat.purchases.common.errors.kt</ID>
@@ -22,14 +19,12 @@
     <ID>Filename:logUtils.kt$com.revenuecat.purchases.common.logUtils.kt</ID>
     <ID>Filename:logWrapper.kt$com.revenuecat.purchases.common.logWrapper.kt</ID>
     <ID>Filename:pricingPhaseConversions.kt$com.revenuecat.purchases.google.pricingPhaseConversions.kt</ID>
-    <ID>Filename:productStubs.kt$com.revenuecat.purchases.utils.productStubs.kt</ID>
     <ID>Filename:productTypeConversions.kt$com.revenuecat.purchases.amazon.productTypeConversions.kt</ID>
     <ID>Filename:productTypeConversions.kt$com.revenuecat.purchases.google.productTypeConversions.kt</ID>
     <ID>Filename:purchaseExtensions.kt$com.revenuecat.purchases.common.purchaseExtensions.kt</ID>
     <ID>Filename:purchaseHistoryRecordExtensions.kt$com.revenuecat.purchases.common.purchaseHistoryRecordExtensions.kt</ID>
     <ID>Filename:purchaseStateConversions.kt$com.revenuecat.purchases.google.purchaseStateConversions.kt</ID>
     <ID>Filename:purchasesExtensions.kt$com.revenuecat.purchases.purchasesExtensions.kt</ID>
-    <ID>Filename:queryProductDetailsParamsExtensions.kt$com.revenuecat.purchases.google.queryProductDetailsParamsExtensions.kt</ID>
     <ID>Filename:storeProductConversions.kt$com.revenuecat.purchases.amazon.storeProductConversions.kt</ID>
     <ID>Filename:storeProductConversions.kt$com.revenuecat.purchases.google.storeProductConversions.kt</ID>
     <ID>Filename:storeTransactionConversions.kt$com.revenuecat.purchases.amazon.storeTransactionConversions.kt</ID>
@@ -37,14 +32,7 @@
     <ID>Filename:subscriberAttributesFactories.kt$com.revenuecat.purchases.subscriberattributes.subscriberAttributesFactories.kt</ID>
     <ID>Filename:subscriptionOptionConversions.kt$com.revenuecat.purchases.google.subscriptionOptionConversions.kt</ID>
     <ID>Filename:utils.kt$com.revenuecat.purchases.common.utils.kt</ID>
-    <ID>InvalidPackageDeclaration:queryProductDetailsParamsExtensions.kt$package com.revenuecat.purchases.google</ID>
     <ID>LargeClass:Purchases.kt$Purchases : LifecycleDelegate</ID>
-    <ID>LongMethod:Iso8601UtilsDupe.kt$Iso8601UtilsDupe$fun parse(date: String): Date</ID>
-    <ID>MagicNumber:Iso8601UtilsDupe.kt$Iso8601UtilsDupe$10</ID>
-    <ID>MagicNumber:Iso8601UtilsDupe.kt$Iso8601UtilsDupe$10.0</ID>
-    <ID>MagicNumber:Iso8601UtilsDupe.kt$Iso8601UtilsDupe$3</ID>
-    <ID>MagicNumber:Iso8601UtilsDupe.kt$Iso8601UtilsDupe$59</ID>
-    <ID>MagicNumber:Iso8601UtilsDupe.kt$Iso8601UtilsDupe$63</ID>
     <ID>MagicNumber:SampleWeatherData.kt$SampleWeatherData.Companion$120</ID>
     <ID>MagicNumber:SampleWeatherData.kt$SampleWeatherData.Companion$20</ID>
     <ID>MagicNumber:SampleWeatherData.kt$SampleWeatherData.Companion$32</ID>
@@ -55,8 +43,6 @@
     <ID>MagicNumber:SampleWeatherData.kt$SampleWeatherData.Companion$91</ID>
     <ID>MagicNumber:storeProductConversions.kt$3</ID>
     <ID>MaxLineLength:Constants.kt$Constants$/* The entitlement ID from the RevenueCat dashboard that is activated upon successful in-app purchase for the duration of the purchase. Modify this property to reflect your app's entitlement identifier. */</ID>
-    <ID>MaxLineLength:Iso8601UtilsDupe.kt$*</ID>
-    <ID>NestedBlockDepth:Iso8601UtilsDupe.kt$Iso8601UtilsDupe$fun parse(date: String): Date</ID>
     <ID>NoWildcardImports:PaywallFragment.kt$import com.revenuecat.purchases.*</ID>
     <ID>NoWildcardImports:UserFragment.kt$import com.revenuecat.purchases.*</ID>
     <ID>SwallowedException:DeviceCache.kt$DeviceCache$e: ClassCastException</ID>
@@ -64,10 +50,7 @@
     <ID>SwallowedException:DeviceCache.kt$DeviceCache$e: NullPointerException</ID>
     <ID>SwallowedException:Purchases.kt$Purchases.Companion.&lt;no name provided>$e: IllegalArgumentException</ID>
     <ID>ThrowingExceptionsWithoutMessageOrCause:BillingWrapper.kt$BillingWrapper$Throwable()</ID>
-    <ID>ThrowsCount:Iso8601UtilsDupe.kt$Iso8601UtilsDupe$@Throws(NumberFormatException::class) private fun parseInt(value: String, beginIndex: Int, endIndex: Int): Int</ID>
-    <ID>ThrowsCount:Iso8601UtilsDupe.kt$Iso8601UtilsDupe$fun parse(date: String): Date</ID>
     <ID>TooGenericExceptionCaught:DeviceCache.kt$DeviceCache$e: NullPointerException</ID>
-    <ID>TooGenericExceptionCaught:Iso8601UtilsDupe.kt$Iso8601UtilsDupe$e: IndexOutOfBoundsException</ID>
     <ID>TooGenericExceptionThrown:HTTPClient.kt$HTTPClient$throw RuntimeException(e)</ID>
     <ID>TooManyFunctions:AmazonBilling.kt$AmazonBilling : BillingAbstractProductDataResponseListenerPurchaseResponseListenerPurchaseUpdatesResponseListenerUserDataResponseListener</ID>
     <ID>TooManyFunctions:DeviceCache.kt$DeviceCache</ID>
@@ -76,7 +59,6 @@
     <ID>TooManyFunctions:SubscriberAttributesCache.kt$SubscriberAttributesCache</ID>
     <ID>TooManyFunctions:listenerConversions.kt$com.revenuecat.purchases.listenerConversions.kt</ID>
     <ID>UnusedParameter:SampleWeatherData.kt$SampleWeatherData.Companion$environment: Environment</ID>
-    <ID>UnusedPrivateMember:Iso8601UtilsDupe.kt$Iso8601UtilsDupe$private fun padInt(buffer: StringBuilder, value: Int, length: Int)</ID>
     <ID>WildcardImport:PaywallFragment.kt$import com.revenuecat.purchases.*</ID>
     <ID>WildcardImport:UserFragment.kt$import com.revenuecat.purchases.*</ID>
   </CurrentIssues>

@@ -1,6 +1,5 @@
 package com.revenuecat.apitester.java;
 
-import com.revenuecat.purchases.Offering;
 import com.revenuecat.purchases.Package;
 import com.revenuecat.purchases.PackageType;
 import com.revenuecat.purchases.models.StoreProduct;

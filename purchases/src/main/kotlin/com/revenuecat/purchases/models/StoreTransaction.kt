@@ -3,7 +3,7 @@ package com.revenuecat.purchases.models
 import android.os.Parcelable
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.ProrationMode
-import com.revenuecat.purchases.utils.JSONObjectParcelerDupe
+import com.revenuecat.purchases.utils.JSONObjectParceler
 import kotlinx.parcelize.IgnoredOnParcel
 import kotlinx.parcelize.Parcelize
 import kotlinx.parcelize.TypeParceler
@@ -13,7 +13,7 @@ import org.json.JSONObject
  * Represents an in-app billing purchase.
  */
 @Parcelize
-@TypeParceler<JSONObject, JSONObjectParcelerDupe>()
+@TypeParceler<JSONObject, JSONObjectParceler>()
 data class StoreTransaction(
     /**
      * Unique Google order identifier for the purchased transaction.

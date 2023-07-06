@@ -2,6 +2,7 @@ package com.revenuecat.apitester.kotlin
 
 import android.app.Activity
 import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.UpgradeInfo
@@ -24,7 +25,7 @@ private class DeprecatedPurchasesAPI {
         storeProduct: StoreProduct,
         upgradeInfo: UpgradeInfo,
         subscriptionOption: SubscriptionOption,
-        packageToPurchase: com.revenuecat.purchases.Package,
+        packageToPurchase: Package,
     ) {
         val purchaseChangeCallback = object : ProductChangeCallback {
             override fun onCompleted(storeTransaction: StoreTransaction?, customerInfo: CustomerInfo) {}

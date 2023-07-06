@@ -61,7 +61,6 @@ def obtainTestBuildType() {
 
 dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
-    api project(":public")
 
     implementation libs.kotlin.stdlib
     implementation libs.androidx.core
@@ -111,6 +110,11 @@ tasks.dokkaHtmlPartial.configure {
                 remoteUrl.set(uri("https://github.com/revenuecat/purchases-android/blob/main/purchases/src/main/kotlin").toURL())
                 remoteLineSuffix.set("#L")
             }
+            sourceLink {
+                localDirectory.set(file("src/main/java"))
+                remoteUrl.set(uri("https://github.com/revenuecat/purchases-android/blob/main/public/src/main/java").toURL())
+                remoteLineSuffix.set("#L")
+            }
         }
     }
 }
@@ -120,6 +124,5 @@ tasks.dokkaHtmlPartial.configure {
 project.afterEvaluate {
     dependencies {
         kover(project(":feature:amazon"))
-        kover(project(":public"))
     }
 }
