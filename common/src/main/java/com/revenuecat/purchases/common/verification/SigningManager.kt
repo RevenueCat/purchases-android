@@ -70,7 +70,7 @@ class SigningManager(
     }
 
     fun shouldVerifyEndpoint(endpoint: Endpoint): Boolean {
-        return endpoint.supportsSignatureValidation && signatureVerificationMode.shouldVerify
+        return endpoint.supportsSignatureVerification && signatureVerificationMode.shouldVerify
     }
 
     fun createRandomNonce(): String {

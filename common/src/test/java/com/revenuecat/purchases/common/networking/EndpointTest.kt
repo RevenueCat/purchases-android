@@ -78,7 +78,7 @@ class EndpointTest {
     }
 
     @Test
-    fun `supportsSignatureValidation returns true for expected values`() {
+    fun `supportsSignatureVerification returns true for expected values`() {
         val expectedSupportsValidationEndpoints = listOf(
             Endpoint.GetCustomerInfo("test-user-id"),
             Endpoint.LogIn,
@@ -87,27 +87,33 @@ class EndpointTest {
             Endpoint.GetProductEntitlementMapping,
         )
         for (endpoint in expectedSupportsValidationEndpoints) {
-            assertThat(endpoint.supportsSignatureValidation).isTrue
+            assertThat(endpoint.supportsSignatureVerification)
+                .withFailMessage { "Endpoint $endpoint expected to support signature validation" }
+                .isTrue
         }
     }
 
     @Test
-    fun `supportsSignatureValidation returns false for expected values`() {
+    fun `supportsSignatureVerification returns false for expected values`() {
         val expectedNotSupportsValidationEndpoints = listOf(
             Endpoint.GetAmazonReceipt("test-user-id", "test-receipt-id"),
             Endpoint.PostAttributes("test-user-id"),
             Endpoint.PostDiagnostics,
         )
         for (endpoint in expectedNotSupportsValidationEndpoints) {
-            assertThat(endpoint.supportsSignatureValidation).isFalse
+            assertThat(endpoint.supportsSignatureVerification)
+                .withFailMessage { "Endpoint $endpoint expected to not support signature validation" }
+                .isFalse
         }
     }
 
     @Test
-    fun `verify needsNonceToPerformSigning is true only if supportsSignatureValidation is true`() {
+    fun `verify needsNonceToPerformSigning is true only if supportsSignatureVerification is true`() {
         for (endpoint in allEndpoints) {
-            if (!endpoint.supportsSignatureValidation) {
-                assertThat(endpoint.needsNonceToPerformSigning).isFalse
+            if (!endpoint.supportsSignatureVerification) {
+                assertThat(endpoint.needsNonceToPerformSigning)
+                    .withFailMessage { "Endpoint $endpoint requires nonce but does not support signature validation" }
+                    .isFalse
             }
         }
     }
@@ -120,7 +126,9 @@ class EndpointTest {
             Endpoint.PostReceipt,
         )
         for (endpoint in expectedEndpoints) {
-            assertThat(endpoint.needsNonceToPerformSigning).isTrue
+            assertThat(endpoint.needsNonceToPerformSigning)
+                .withFailMessage { "Endpoint $endpoint expected to require nonce for signing" }
+                .isTrue
         }
     }
 
@@ -134,7 +142,9 @@ class EndpointTest {
             Endpoint.PostDiagnostics,
         )
         for (endpoint in expectedEndpoints) {
-            assertThat(endpoint.needsNonceToPerformSigning).isFalse
+            assertThat(endpoint.needsNonceToPerformSigning)
+                .withFailMessage { "Endpoint $endpoint expected to not require nonce for signing" }
+                .isFalse
         }
     }
 }
