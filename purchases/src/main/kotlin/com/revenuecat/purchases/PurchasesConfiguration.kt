@@ -80,6 +80,8 @@ open class PurchasesConfiguration(builder: Builder) {
         }
 
         /**
+         * Deprecated. Use [entitlementVerificationMode] instead.
+         *
          * Enables signature verification of requests to the RevenueCat backend
          * and enables diagnostics reports to RevenueCat to help us analyze this feature.
          *
@@ -90,11 +92,40 @@ open class PurchasesConfiguration(builder: Builder) {
          * [EntitlementInfo.verification].
          *
          * Default mode is disabled.
+         *
+         * @warning This function is marked as [ExperimentalPreviewRevenueCatPurchasesAPI] and may change in the future.
          */
+        @Deprecated(
+            "Use the new entitlementVerificationMode setter instead.",
+            ReplaceWith("entitlementVerificationMode(EntitlementVerificationMode.INFORMATIONAL)"),
+        )
         @JvmSynthetic
-        fun verificationModeAndDiagnostics(mode: EntitlementVerificationMode) = apply {
-            this.verificationMode = mode
-            this.diagnosticsEnabled = mode.isEnabled
+        @ExperimentalPreviewRevenueCatPurchasesAPI
+        fun informationalVerificationModeAndDiagnosticsEnabled(enabled: Boolean) = apply {
+            if (enabled) {
+                this.verificationMode = EntitlementVerificationMode.INFORMATIONAL
+                this.diagnosticsEnabled = true
+            } else {
+                this.verificationMode = EntitlementVerificationMode.DISABLED
+                this.diagnosticsEnabled = false
+            }
+        }
+
+        /**
+         * Sets the [EntitlementVerificationMode] to perform signature verification of requests to the
+         * RevenueCat backend.
+         *
+         * When changing from [EntitlementVerificationMode.DISABLED] to other modes, the SDK will clear the
+         * CustomerInfo cache.
+         * This means users will need to connect to the internet to get their entitlements back.
+         *
+         * The result of the verification can be obtained from [EntitlementInfos.verification] or
+         * [EntitlementInfo.verification].
+         *
+         * Default mode is disabled.
+         */
+        fun entitlementVerificationMode(verificationMode: EntitlementVerificationMode) = apply {
+            this.verificationMode = verificationMode
         }
 
         /**

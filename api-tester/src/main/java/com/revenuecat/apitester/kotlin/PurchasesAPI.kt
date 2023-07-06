@@ -241,7 +241,8 @@ private class PurchasesAPI {
             .observerMode(false)
             .service(executorService)
             .diagnosticsEnabled(true)
-            .verificationModeAndDiagnostics(EntitlementVerificationMode.INFORMATIONAL)
+            .entitlementVerificationMode(EntitlementVerificationMode.INFORMATIONAL)
+            .informationalVerificationModeAndDiagnosticsEnabled(true)
             .build()
 
         Purchases.configure(build)

@@ -72,9 +72,10 @@ class PurchasesConfigurationTest {
     }
 
     @Test
-    fun `PurchasesConfiguration sets informational mode and diagnostics correctly`() {
-        val purchasesConfiguration = builder.verificationModeAndDiagnostics(EntitlementVerificationMode.INFORMATIONAL).build()
-        assertThat(purchasesConfiguration.diagnosticsEnabled).isTrue
+    fun `PurchasesConfiguration sets informational mode correctly`() {
+        val purchasesConfiguration = builder.entitlementVerificationMode(
+            EntitlementVerificationMode.INFORMATIONAL
+        ).build()
         assertThat(purchasesConfiguration.verificationMode).isEqualTo(EntitlementVerificationMode.INFORMATIONAL)
     }
 

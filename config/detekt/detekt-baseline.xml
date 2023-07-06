@@ -2,7 +2,7 @@
 <SmellBaseline>
   <ManuallySuppressedIssues/>
   <CurrentIssues>
-    <ID>CyclomaticComplexMethod:EntitlementInfo.kt$EntitlementInfo$@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class) override fun equals(other: Any?): Boolean</ID>
+    <ID>CyclomaticComplexMethod:EntitlementInfo.kt$EntitlementInfo$override fun equals(other: Any?): Boolean</ID>
     <ID>DestructuringDeclarationWithTooManyEntries:Period.kt$val (year, month, week, day) = periodResult.destructured</ID>
     <ID>EmptyCatchBlock:Purchases.kt$Purchases.Companion.&lt;no name provided>${ }</ID>
     <ID>Filename:backendHelpers.kt$com.revenuecat.purchases.subscriberattributes.backendHelpers.kt</ID>

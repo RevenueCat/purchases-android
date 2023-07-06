@@ -2,7 +2,6 @@ package com.revenuecat.apitester.kotlin
 
 import com.revenuecat.purchases.EntitlementInfo
 import com.revenuecat.purchases.EntitlementInfos
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.VerificationResult
 
 @Suppress("unused", "UNUSED_VARIABLE", "DEPRECATION")
