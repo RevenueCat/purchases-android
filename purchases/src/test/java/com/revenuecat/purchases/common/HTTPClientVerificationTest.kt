@@ -251,7 +251,7 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
     }
 
     @Test
-    fun `performRequest on informational client without nonce does not throw on verification error`() {
+    fun `performRequest on informational client without nonce does not throw verification error`() {
         val endpoint = Endpoint.GetOfferings("test-user-id")
         enqueue(
             endpoint = endpoint,
