@@ -8,7 +8,7 @@ import com.revenuecat.purchases.models.StoreProduct
 import io.mockk.every
 import io.mockk.slot
 
-fun BillingAbstract.mockQueryProductDetails(
+internal fun BillingAbstract.mockQueryProductDetails(
     queryProductDetailsSubsReturn: List<StoreProduct> = listOf(StoreProductFactory.createGoogleStoreProduct()),
     queryProductDetailsInAppReturn: List<StoreProduct> = emptyList(),
 ): BillingAbstract {

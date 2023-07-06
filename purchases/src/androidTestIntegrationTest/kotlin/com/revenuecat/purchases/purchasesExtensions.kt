@@ -3,7 +3,7 @@ package com.revenuecat.purchases
 import android.annotation.SuppressLint
 import com.revenuecat.purchases.common.BillingAbstract
 
-fun Purchases.Companion.configure(
+internal fun Purchases.Companion.configure(
     configuration: PurchasesConfiguration,
     overrideBillingAbstract: BillingAbstract,
     forceServerErrors: Boolean = false,

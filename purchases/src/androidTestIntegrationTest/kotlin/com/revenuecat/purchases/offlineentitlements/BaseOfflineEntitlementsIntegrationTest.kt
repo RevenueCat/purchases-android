@@ -21,7 +21,7 @@ abstract class BaseOfflineEntitlementsIntegrationTest : BasePurchasesIntegration
     )
 
     // Hack until we get a running token for production API tests. After that, we can just use "entitlementsToVerify"
-    private val expectedEntitlements = entitlementsToVerify.ifEmpty { listOf("pro_cat", "another_pro_4") }
+    private val expectedEntitlements = entitlementsToVerify.ifEmpty { listOf("pro_cat") }
 
     // region helpers
 

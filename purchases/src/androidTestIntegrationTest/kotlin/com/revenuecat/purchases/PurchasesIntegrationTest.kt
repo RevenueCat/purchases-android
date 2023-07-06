@@ -91,7 +91,7 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
                 onSuccess = { offerings ->
                     assertThat(offerings.current).isNotNull
                     assertThat(offerings.current?.availablePackages?.size).isEqualTo(1)
-                    assertThat(offerings.current?.monthly?.product?.sku).isEqualTo(Constants.productIdToPurchase)
+                    assertThat(offerings.current?.annual?.product?.sku).isEqualTo(Constants.productIdToPurchase)
 
                     assertThat(offerings.current?.metadata).isNotNull
                     assertThat(offerings.current?.metadata?.get("dontdeletethis")).isEqualTo("useforintegrationtesting")
@@ -114,7 +114,7 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
                 onSuccess = { offerings ->
                     assertThat(offerings.current).isNotNull
                     assertThat(offerings.current?.availablePackages?.size).isEqualTo(1)
-                    assertThat(offerings.current?.monthly?.product?.sku).isEqualTo(Constants.productIdToPurchase)
+                    assertThat(offerings.current?.annual?.product?.sku).isEqualTo(Constants.productIdToPurchase)
                     latch.countDown()
                 },
             )
@@ -128,7 +128,7 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
                 onSuccess = { newOfferings ->
                     assertThat(newOfferings.current).isNotNull
                     assertThat(newOfferings.current?.availablePackages?.size).isEqualTo(1)
-                    assertThat(newOfferings.current?.monthly?.product?.sku).isEqualTo(Constants.productIdToPurchase)
+                    assertThat(newOfferings.current?.annual?.product?.sku).isEqualTo(Constants.productIdToPurchase)
 
                     latch.countDown()
                 },
