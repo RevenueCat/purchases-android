@@ -82,7 +82,7 @@ internal abstract class BaseBackendIntegrationTest {
             every { edit() } returns sharedPreferencesEditor
         }
         eTagManager = ETagManager(sharedPreferences)
-        signingManager = SigningManager(SignatureVerificationMode.Disabled, appConfig)
+        signingManager = SigningManager(SignatureVerificationMode.Disabled, appConfig, apiKey())
         httpClient = HTTPClient(appConfig, eTagManager, diagnosticsTrackerIfEnabled = null, signingManager)
         backendHelper = BackendHelper(apiKey(), dispatcher, appConfig, httpClient)
         backend = Backend(appConfig, dispatcher, diagnosticsDispatcher, httpClient, backendHelper)

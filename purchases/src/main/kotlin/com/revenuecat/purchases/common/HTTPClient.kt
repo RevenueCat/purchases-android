@@ -147,7 +147,7 @@ internal class HTTPClient(
             val fullURL = URL(baseURL, urlPathWithVersion)
 
             nonce = if (shouldSignResponse) signingManager.createRandomNonce() else null
-            val headers = getHeaders(requestHeaders, urlPathWithVersion, refreshETag, nonce)
+            val headers = getHeaders(requestHeaders, urlPathWithVersion, refreshETag, nonce, shouldSignResponse)
 
             val httpRequest = HTTPRequest(fullURL, headers, jsonBody)
 
@@ -175,10 +175,9 @@ internal class HTTPClient(
         }
 
         val verificationResult = if (shouldSignResponse &&
-            nonce != null &&
             RCHTTPStatusCodes.isSuccessful(responseCode)
         ) {
-            verifyResponse(path, responseCode, connection, payload, nonce)
+            verifyResponse(urlPathWithVersion, connection, payload, nonce)
         } else {
             VerificationResult.NOT_REQUESTED
         }
@@ -238,6 +237,7 @@ internal class HTTPClient(
         urlPath: String,
         refreshETag: Boolean,
         nonce: String?,
+        shouldSignResponse: Boolean,
     ): Map<String, String> {
         return mapOf(
             "Content-Type" to "application/json",
@@ -253,7 +253,7 @@ internal class HTTPClient(
             "X-Nonce" to nonce,
         )
             .plus(authenticationHeaders)
-            .plus(eTagManager.getETagHeaders(urlPath, refreshETag))
+            .plus(eTagManager.getETagHeaders(urlPath, shouldSignResponse, refreshETag))
             .filterNotNullValues()
     }
 
@@ -278,15 +278,13 @@ internal class HTTPClient(
 
     private fun verifyResponse(
         urlPath: String,
-        responseCode: Int,
         connection: URLConnection,
         payload: String?,
-        nonce: String,
+        nonce: String?,
     ): VerificationResult {
         return signingManager.verifyResponse(
             urlPath = urlPath,
-            responseCode = responseCode,
-            signature = connection.getHeaderField(HTTPResult.SIGNATURE_HEADER_NAME),
+            signatureString = connection.getHeaderField(HTTPResult.SIGNATURE_HEADER_NAME),
             nonce = nonce,
             body = payload,
             requestTime = getRequestTimeHeader(connection),

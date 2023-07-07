@@ -6,21 +6,29 @@ internal sealed class SignatureVerificationMode {
     companion object {
         fun fromEntitlementVerificationMode(
             verificationMode: EntitlementVerificationMode,
-            signatureVerifier: SignatureVerifier? = null,
+            rootVerifier: SignatureVerifier? = null,
         ): SignatureVerificationMode {
             return when (verificationMode) {
                 EntitlementVerificationMode.DISABLED -> Disabled
                 EntitlementVerificationMode.INFORMATIONAL ->
-                    Informational(signatureVerifier ?: DefaultSignatureVerifier())
-                // Hidden ENFORCED mode during feature beta
+                    Informational(IntermediateSignatureHelper(rootVerifier ?: DefaultSignatureVerifier()))
+                // Hidden ENFORCED mode temporarily. Will be added back in the future.
                 // EntitlementVerificationMode.ENFORCED ->
                 //     Enforced(signatureVerifier ?: DefaultSignatureVerifier())
             }
         }
+
+        private fun createIntermediateSignatureHelper(): IntermediateSignatureHelper {
+            return IntermediateSignatureHelper(DefaultSignatureVerifier())
+        }
     }
     object Disabled : SignatureVerificationMode()
-    data class Informational(val signatureVerifier: SignatureVerifier) : SignatureVerificationMode()
-    data class Enforced(val signatureVerifier: SignatureVerifier) : SignatureVerificationMode()
+    data class Informational(
+        override val intermediateSignatureHelper: IntermediateSignatureHelper = createIntermediateSignatureHelper(),
+    ) : SignatureVerificationMode()
+    data class Enforced(
+        override val intermediateSignatureHelper: IntermediateSignatureHelper = createIntermediateSignatureHelper(),
+    ) : SignatureVerificationMode()
 
     val shouldVerify: Boolean
         get() = when (this) {
@@ -32,10 +40,10 @@ internal sealed class SignatureVerificationMode {
                 true
         }
 
-    val verifier: SignatureVerifier?
+    open val intermediateSignatureHelper: IntermediateSignatureHelper?
         get() = when (this) {
             is Disabled -> null
-            is Informational -> signatureVerifier
-            is Enforced -> signatureVerifier
+            is Informational -> intermediateSignatureHelper
+            is Enforced -> intermediateSignatureHelper
         }
 }

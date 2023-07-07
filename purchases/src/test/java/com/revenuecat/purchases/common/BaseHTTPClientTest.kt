@@ -39,7 +39,7 @@ internal abstract class BaseHTTPClientTest {
 
     protected val mockETagManager = mockk<ETagManager>().also {
         every {
-            it.getETagHeaders(any(), any())
+            it.getETagHeaders(any(), any(), any())
         } answers {
             mapOf(HTTPRequest.ETAG_HEADER_NAME to "")
         }
