@@ -192,6 +192,22 @@ class SigningManagerTest {
     }
 
     @Test
+    fun `verifyResponse with encoded url verifies correctly`() {
+        val rootVerifier = DefaultSignatureVerifier("yg2wZGAr8Af+Unt9RImQDbL7qA81txk+ga0I+ylmcyo=")
+        val signingManager = SigningManager(
+            SignatureVerificationMode.Informational(IntermediateSignatureHelper(rootVerifier)),
+            appConfig,
+            apiKey,
+        )
+        val verificationResult = callVerifyResponse(
+            signingManager,
+            requestPath = "/v1/subscribers/\$RCAnonymousID%3A1af512a3b9c848899fe427f39dd69f2b",
+            signature = "xoDYyUeHnIlSIAeOOzmvdNPOlbNSKK+xE0fE/ufS1fsAAMNQ1HiPDL34Vx0Uy74KPV5mztuk3DHBpucT/rSYVlkxIa3ModYmPfYZ20lnlbSB1UiP6oJHwAA2pXlS6AQ5eLSuAmm2UIYPrDGEEC8Lgj1sAn2fGMRMx2eaPNzDPBGTxxZROfjkI1wtsyJC0w0I7d8TkLeXjUTlWNafmc4GVMleE/tQZZGIoNrnar0HqICUnB8B",
+        )
+        assertThat(verificationResult).isEqualTo(VerificationResult.VERIFIED)
+    }
+
+    @Test
     fun `verifyResponse with both payload and etag verifies correctly`() {
         val rootVerifier = DefaultSignatureVerifier("yg2wZGAr8Af+Unt9RImQDbL7qA81txk+ga0I+ylmcyo=")
         val signingManager = SigningManager(
