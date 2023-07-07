@@ -1,7 +1,6 @@
 package com.revenuecat.purchases.identity
 
 import com.revenuecat.purchases.CustomerInfo
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.VerificationResult
@@ -142,7 +141,6 @@ internal class IdentityManager(
     }
 
     @Suppress("UnusedPrivateMember", "FunctionOnlyReturningConstant")
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     private fun shouldInvalidateCustomerInfoAndETagCache(customerInfo: CustomerInfo?): Boolean {
         return customerInfo != null &&
             customerInfo.entitlements.verification == VerificationResult.NOT_REQUESTED &&

@@ -2,12 +2,10 @@ package com.revenuecat.apitester.kotlin
 
 import com.revenuecat.purchases.EntitlementInfo
 import com.revenuecat.purchases.EntitlementInfos
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.VerificationResult
 
 @Suppress("unused", "UNUSED_VARIABLE", "DEPRECATION")
 private class EntitlementInfosAPI {
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     fun check(infos: EntitlementInfos) {
         val active: Map<String, EntitlementInfo> = infos.active
         val all: Map<String, EntitlementInfo> = infos.all

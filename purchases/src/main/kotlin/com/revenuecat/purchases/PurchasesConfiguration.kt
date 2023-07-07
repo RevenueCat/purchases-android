@@ -80,10 +80,10 @@ open class PurchasesConfiguration(builder: Builder) {
         }
 
         /**
-         * **Feature in beta**. Enables signature verification of requests to the RevenueCat backend
-         * in informational mode and enables diagnostics reports to RevenueCat to help us analyze this feature.
-         * Informational mode means that the behavior will remain the same but we will provide information about
-         * detected attempts of hacking.
+         * Deprecated. Use [entitlementVerificationMode] instead.
+         *
+         * Enables signature verification of requests to the RevenueCat backend
+         * and enables diagnostics reports to RevenueCat to help us analyze this feature.
          *
          * When changing from disabled to enabled, the SDK will clear the CustomerInfo cache.
          * This means users will need to connect to the internet to get their entitlements back.
@@ -91,12 +91,14 @@ open class PurchasesConfiguration(builder: Builder) {
          * The result of the verification can be obtained from [EntitlementInfos.verification] or
          * [EntitlementInfo.verification].
          *
-         * This feature is currently in beta and the behavior may change. Only available in Kotlin.
-         *
          * Default mode is disabled.
          *
          * @warning This function is marked as [ExperimentalPreviewRevenueCatPurchasesAPI] and may change in the future.
          */
+        @Deprecated(
+            "Use the new entitlementVerificationMode setter instead.",
+            ReplaceWith("entitlementVerificationMode(EntitlementVerificationMode.INFORMATIONAL)"),
+        )
         @JvmSynthetic
         @ExperimentalPreviewRevenueCatPurchasesAPI
         fun informationalVerificationModeAndDiagnosticsEnabled(enabled: Boolean) = apply {
@@ -107,6 +109,23 @@ open class PurchasesConfiguration(builder: Builder) {
                 this.verificationMode = EntitlementVerificationMode.DISABLED
                 this.diagnosticsEnabled = false
             }
+        }
+
+        /**
+         * Sets the [EntitlementVerificationMode] to perform signature verification of requests to the
+         * RevenueCat backend.
+         *
+         * When changing from [EntitlementVerificationMode.DISABLED] to other modes, the SDK will clear the
+         * CustomerInfo cache.
+         * This means users will need to connect to the internet to get their entitlements back.
+         *
+         * The result of the verification can be obtained from [EntitlementInfos.verification] or
+         * [EntitlementInfo.verification].
+         *
+         * Default mode is disabled.
+         */
+        fun entitlementVerificationMode(verificationMode: EntitlementVerificationMode) = apply {
+            this.verificationMode = verificationMode
         }
 
         /**

@@ -12,7 +12,6 @@ import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.revenuecat.purchases.EntitlementVerificationMode
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.LogLevel
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesConfiguration
@@ -110,14 +109,12 @@ class ConfigureFragment : Fragment() {
         return binding.root
     }
 
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     private suspend fun configureSDK() {
         val apiKey = binding.apiKeyInput.text.toString()
         val proxyUrl = binding.proxyUrlInput.text?.toString() ?: ""
         val verificationModeIndex = binding.verificationOptionsInput.selectedItemPosition
 
         val entitlementVerificationMode = EntitlementVerificationMode.values()[verificationModeIndex]
-        val enableEntitlementVerification = entitlementVerificationMode == EntitlementVerificationMode.INFORMATIONAL
         val useAmazonStore = binding.storeRadioGroup.checkedRadioButtonId == R.id.amazon_store_radio_id
         val useObserverMode = binding.observerModeCheckbox.isChecked
 
@@ -134,7 +131,7 @@ class ConfigureFragment : Fragment() {
 
         val configuration = configurationBuilder
             .diagnosticsEnabled(true)
-            .informationalVerificationModeAndDiagnosticsEnabled(enableEntitlementVerification)
+            .entitlementVerificationMode(entitlementVerificationMode)
             .observerMode(useObserverMode)
             .build()
         Purchases.configure(configuration)
