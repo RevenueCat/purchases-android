@@ -1,6 +1,5 @@
 package com.revenuecat.purchases.common.verification
 
-import android.net.Uri
 import android.util.Base64
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.AppConfig
@@ -61,7 +60,7 @@ internal class SigningManager(
             return salt +
                 apiKey.toByteArray() +
                 (nonce?.let { Base64.decode(it, Base64.DEFAULT) } ?: byteArrayOf()) +
-                Uri.decode(urlPath).toByteArray() +
+                urlPath.toByteArray() +
                 requestTime.toByteArray() +
                 (eTag?.toByteArray() ?: byteArrayOf()) +
                 (body?.toByteArray() ?: byteArrayOf())
