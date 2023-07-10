@@ -198,6 +198,25 @@ class BillingWrapperTest {
     }
 
     @Test
+    fun `if no listener is set, we fail`() {
+        wrapper.purchasesUpdatedListener = null
+
+        var error: PurchasesError? = null
+        wrapper.queryPurchaseHistoryAsync(
+            ProductType.SUBS.toGoogleProductType()!!,
+            {
+                fail("call should not succeed")
+            },
+            {
+                error = it
+            }
+        )
+        assertThat(error).isNotNull
+        assertThat(error?.code).isEqualTo(PurchasesErrorCode.UnknownError)
+        assertThat(error?.underlyingErrorMessage).isEqualTo("BillingWrapper is not attached to a listener")
+    }
+
+    @Test
     fun defersCallUntilConnected() {
         every { mockClient.isReady } returns false
 
