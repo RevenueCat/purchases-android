@@ -146,6 +146,9 @@ internal class BillingWrapper(
             } else {
                 executePendingRequests()
             }
+        } else {
+            // This shouldn't happen, but if it does, we want to propagate an error instead of hanging.
+            request(PurchasesError(PurchasesErrorCode.UnknownError, "BillingWrapper is not attached to a listener"))
         }
     }
 
