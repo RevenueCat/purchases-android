@@ -49,11 +49,11 @@ internal class ProductionBackendIntegrationTest: BaseBackendIntegrationTest() {
         ensureBlockFinishes { latch ->
             backend.getProductEntitlementMapping(
                 onSuccessHandler = { productEntitlementMapping ->
-                    assertThat(productEntitlementMapping.mappings.size).isEqualTo(36)
-                    assertThat(productEntitlementMapping.mappings["annual_freetrial"]).isEqualTo(
+                    assertThat(productEntitlementMapping.mappings.size).isEqualTo(2)
+                    assertThat(productEntitlementMapping.mappings["cheapest_subs"]).isEqualTo(
                         ProductEntitlementMapping.Mapping(
-                            productIdentifier = "annual_freetrial",
-                            basePlanId = "p1y",
+                            productIdentifier = "cheapest_subs",
+                            basePlanId = "annual",
                             entitlements = listOf("pro_cat")
                         )
                     )
