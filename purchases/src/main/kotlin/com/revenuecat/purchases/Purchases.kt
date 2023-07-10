@@ -160,16 +160,17 @@ class Purchases internal constructor(
     init {
         identityManager.configure(backingFieldAppUserID)
 
-        dispatch {
-            ProcessLifecycleOwner.get().lifecycle.addObserver(lifecycleHandler)
-        }
-
         billing.stateListener = object : BillingAbstract.StateListener {
             override fun onConnected() {
                 postPendingTransactionsHelper.syncPendingPurchaseQueue(allowSharingPlayStoreAccount)
             }
         }
         billing.purchasesUpdatedListener = getPurchasesUpdatedListener()
+
+        dispatch {
+            ProcessLifecycleOwner.get().lifecycle.addObserver(lifecycleHandler)
+        }
+
         if (!appConfig.dangerousSettings.autoSyncPurchases) {
             log(LogIntent.WARNING, AUTO_SYNC_PURCHASES_DISABLED)
         }
