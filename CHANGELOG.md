@@ -1,3 +1,4 @@
+## 6.6.0
 ### New Features
 * `Trusted Entitlements`: made API stable (#1105) via NachoSoto (@NachoSoto)
 
