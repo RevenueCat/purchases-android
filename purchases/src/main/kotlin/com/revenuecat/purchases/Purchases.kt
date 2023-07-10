@@ -168,6 +168,8 @@ class Purchases internal constructor(
         billing.purchasesUpdatedListener = getPurchasesUpdatedListener()
 
         dispatch {
+            // This needs to happen after the billing client listeners have been set. This is because
+            // we perform operations with the billing client in the lifecycle observer methods.
             ProcessLifecycleOwner.get().lifecycle.addObserver(lifecycleHandler)
         }
 
