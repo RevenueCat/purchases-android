@@ -16,7 +16,7 @@
 gradle_file_path = "library.gradle"
 files_with_version_number = {
   gradle_file_path => ['versionName "{x}"'],
-  './common/src/main/java/com/revenuecat/purchases/common/Config.kt' => ['frameworkVersion = "{x}"'],
+  './purchases/src/main/kotlin/com/revenuecat/purchases/common/Config.kt' => ['frameworkVersion = "{x}"'],
   './.circleci/config.yml' => ['aws s3 sync ~/project/docs/{x} s3://purchases-docs/android/{x} --delete'],
   './docs/index.html' => ['url=https://sdk.revenuecat.com/android/{x}/index.html'],
   './gradle.properties' => ['VERSION_NAME={x}'],
