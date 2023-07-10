@@ -1,12 +1,27 @@
 ### New Features
-* `Trusted Entitlements`: stable (#1105) via NachoSoto (@NachoSoto)
+* `Trusted Entitlements`: made API stable (#1105) via NachoSoto (@NachoSoto)
+
+This new feature prevents MitM attacks between the SDK and the RevenueCat server.
+With verification enabled, the SDK ensures that the response created by the server was not modified by a third-party, and the entitlements received are exactly what was sent.
+This is 100% opt-in. `EntitlementInfos` have a new `VerificationResult` property, which will indicate the validity of the responses when this feature is enabled.
+
+```kotlin
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+fun configureRevenueCat() {
+    val configuration = PurchasesConfiguration.Builder(context, apiKey)
+        .entitlementVerificationMode(EntitlementVerificationMode.INFORMATIONAL)
+        .build()
+    Purchases.configure(configuration)
+}
+```
+### Experimental features
 * Add await offerings (#1096) via Cesar de la Vega (@vegaro)
-* [PurchaseTester] Add option to purchase an arbitrary product id (#1099) via Mark Villacampa (@MarkVillacampa)
 ### Bugfixes
 * Fix issue updating customer info on app open (#1128) via Toni Rico (@tonidero)
 ### Dependency Updates
 * Bump fastlane-plugin-revenuecat_internal from `13773d2` to `b2108fb` (#1095) via dependabot[bot] (@dependabot[bot])
 ### Other Changes
+* [PurchaseTester] Add option to purchase an arbitrary product id (#1099) via Mark Villacampa (@MarkVillacampa)
 * Fix release path after module refactor (#1129) via Toni Rico (@tonidero)
 * Fix load shedder integration tests (#1125) via Toni Rico (@tonidero)
 * Trusted entitlements: New trusted entitlements signature format (#1117) via Toni Rico (@tonidero)
