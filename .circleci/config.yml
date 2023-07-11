@@ -468,6 +468,11 @@ workflows:
       - assemble-sample-app
       - build-magic-weather-compose
       - run-backend-integration-tests
+      - integration-tests-build
+      - run-firebase-tests:
+          requires:
+            - integration-tests-build
+
 
   deploy:
     when:
