@@ -122,7 +122,7 @@ open class PurchasesConfiguration(builder: Builder) {
          * The result of the verification can be obtained from [EntitlementInfos.verification] or
          * [EntitlementInfo.verification].
          *
-         * Default mode is disabled.
+         * Default mode is disabled. Please see https://rev.cat/trusted-entitlements for more info.
          */
         fun entitlementVerificationMode(verificationMode: EntitlementVerificationMode) = apply {
             this.verificationMode = verificationMode
