@@ -5,6 +5,7 @@ import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.networking.Endpoint
+import com.revenuecat.purchases.common.verboseLog
 import com.revenuecat.purchases.common.warnLog
 import com.revenuecat.purchases.strings.NetworkStrings
 import com.revenuecat.purchases.utils.Result
@@ -68,7 +69,7 @@ internal class SigningManager(
     }
 
     fun shouldVerifyEndpoint(endpoint: Endpoint): Boolean {
-        return endpoint.supportsSignatureValidation && signatureVerificationMode.shouldVerify
+        return endpoint.supportsSignatureVerification && signatureVerificationMode.shouldVerify
     }
 
     fun createRandomNonce(): String {
@@ -141,6 +142,7 @@ internal class SigningManager(
                 )
 
                 return if (verificationResult) {
+                    verboseLog(NetworkStrings.VERIFICATION_SUCCESS.format(urlPath))
                     VerificationResult.VERIFIED
                 } else {
                     errorLog(NetworkStrings.VERIFICATION_ERROR.format(urlPath))

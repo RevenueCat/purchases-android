@@ -32,7 +32,23 @@ internal sealed class Endpoint(val pathTemplate: String, val name: String) {
         override fun getPath() = pathTemplate
     }
 
-    val supportsSignatureValidation: Boolean
+    val supportsSignatureVerification: Boolean
+        get() = when (this) {
+            is GetCustomerInfo,
+            LogIn,
+            PostReceipt,
+            is GetOfferings,
+            GetProductEntitlementMapping,
+            ->
+                true
+            is GetAmazonReceipt,
+            is PostAttributes,
+            PostDiagnostics,
+            ->
+                false
+        }
+
+    val needsNonceToPerformSigning: Boolean
         get() = when (this) {
             is GetCustomerInfo,
             LogIn,

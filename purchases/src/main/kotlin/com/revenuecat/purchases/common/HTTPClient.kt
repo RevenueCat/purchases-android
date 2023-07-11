@@ -142,11 +142,12 @@ internal class HTTPClient(
         val urlPathWithVersion = "/v1$path"
         val connection: HttpURLConnection
         val shouldSignResponse = signingManager.shouldVerifyEndpoint(endpoint)
+        val shouldAddNonce = shouldSignResponse && endpoint.needsNonceToPerformSigning
         val nonce: String?
         try {
             val fullURL = URL(baseURL, urlPathWithVersion)
 
-            nonce = if (shouldSignResponse) signingManager.createRandomNonce() else null
+            nonce = if (shouldAddNonce) signingManager.createRandomNonce() else null
             val headers = getHeaders(requestHeaders, urlPathWithVersion, refreshETag, nonce, shouldSignResponse)
 
             val httpRequest = HTTPRequest(fullURL, headers, jsonBody)

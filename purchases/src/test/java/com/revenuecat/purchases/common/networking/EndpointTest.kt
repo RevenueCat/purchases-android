@@ -10,6 +10,17 @@ import org.robolectric.annotation.Config
 @Config(manifest = Config.NONE)
 class EndpointTest {
 
+    private val allEndpoints = listOf(
+        Endpoint.GetCustomerInfo("test-user-id"),
+        Endpoint.LogIn,
+        Endpoint.PostReceipt,
+        Endpoint.GetOfferings("test-user-id"),
+        Endpoint.GetProductEntitlementMapping,
+        Endpoint.GetAmazonReceipt("test-user-id", "test-receipt-id"),
+        Endpoint.PostAttributes("test-user-id"),
+        Endpoint.PostDiagnostics,
+    )
+
     @Test
     fun `GetCustomerInfo has correct path`() {
         val endpoint = Endpoint.GetCustomerInfo("test user-id")
@@ -67,28 +78,73 @@ class EndpointTest {
     }
 
     @Test
-    fun `supportsSignatureValidation returns true for expected values`() {
+    fun `supportsSignatureVerification returns true for expected values`() {
         val expectedSupportsValidationEndpoints = listOf(
             Endpoint.GetCustomerInfo("test-user-id"),
             Endpoint.LogIn,
-            Endpoint.PostReceipt
+            Endpoint.PostReceipt,
+            Endpoint.GetOfferings("test-user-id"),
+            Endpoint.GetProductEntitlementMapping,
         )
         for (endpoint in expectedSupportsValidationEndpoints) {
-            assertThat(endpoint.supportsSignatureValidation).isTrue
+            assertThat(endpoint.supportsSignatureVerification)
+                .withFailMessage { "Endpoint $endpoint expected to support signature validation" }
+                .isTrue
         }
     }
 
     @Test
-    fun `supportsSignatureValidation returns false for expected values`() {
+    fun `supportsSignatureVerification returns false for expected values`() {
         val expectedNotSupportsValidationEndpoints = listOf(
             Endpoint.GetAmazonReceipt("test-user-id", "test-receipt-id"),
-            Endpoint.GetOfferings("test-user-id"),
             Endpoint.PostAttributes("test-user-id"),
             Endpoint.PostDiagnostics,
-            Endpoint.GetProductEntitlementMapping
         )
         for (endpoint in expectedNotSupportsValidationEndpoints) {
-            assertThat(endpoint.supportsSignatureValidation).isFalse
+            assertThat(endpoint.supportsSignatureVerification)
+                .withFailMessage { "Endpoint $endpoint expected to not support signature validation" }
+                .isFalse
+        }
+    }
+
+    @Test
+    fun `verify needsNonceToPerformSigning is true only if supportsSignatureVerification is true`() {
+        for (endpoint in allEndpoints) {
+            if (!endpoint.supportsSignatureVerification) {
+                assertThat(endpoint.needsNonceToPerformSigning)
+                    .withFailMessage { "Endpoint $endpoint requires nonce but does not support signature validation" }
+                    .isFalse
+            }
+        }
+    }
+
+    @Test
+    fun `needsNonceToPerformSigning is true for expected values`() {
+        val expectedEndpoints = listOf(
+            Endpoint.GetCustomerInfo("test-user-id"),
+            Endpoint.LogIn,
+            Endpoint.PostReceipt,
+        )
+        for (endpoint in expectedEndpoints) {
+            assertThat(endpoint.needsNonceToPerformSigning)
+                .withFailMessage { "Endpoint $endpoint expected to require nonce for signing" }
+                .isTrue
+        }
+    }
+
+    @Test
+    fun `needsNonceToPerformSigning is false for expected values`() {
+        val expectedEndpoints = listOf(
+            Endpoint.GetOfferings("test-user-id"),
+            Endpoint.GetProductEntitlementMapping,
+            Endpoint.GetAmazonReceipt("test-user-id", "test-receipt-id"),
+            Endpoint.PostAttributes("test-user-id"),
+            Endpoint.PostDiagnostics,
+        )
+        for (endpoint in expectedEndpoints) {
+            assertThat(endpoint.needsNonceToPerformSigning)
+                .withFailMessage { "Endpoint $endpoint expected to not require nonce for signing" }
+                .isFalse
         }
     }
 }

@@ -12,6 +12,7 @@ import io.mockk.mockk
 import io.mockk.verify
 import okhttp3.mockwebserver.MockResponse
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatExceptionOfType
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -250,6 +251,30 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
     }
 
     @Test
+    fun `performRequest on informational client without nonce does not throw verification error`() {
+        val endpoint = Endpoint.GetOfferings("test-user-id")
+        enqueue(
+            endpoint = endpoint,
+            expectedResult = HTTPResult.createResult(verificationResult = VerificationResult.FAILED),
+            verificationResult = VerificationResult.FAILED
+        )
+
+        every {
+            mockSigningManager.verifyResponse(any(), any(), any(), any(), any(), any())
+        } returns VerificationResult.FAILED
+
+        val result = client.performRequest(
+            baseURL,
+            endpoint,
+            body = null,
+            requestHeaders = emptyMap()
+        )
+
+        server.takeRequest()
+        assertThat(result.verificationResult).isEqualTo(VerificationResult.FAILED)
+    }
+
+    @Test
     fun `performRequest on enforced client throws verification error`() {
         every { mockSigningManager.signatureVerificationMode } returns mockk<SignatureVerificationMode.Enforced>()
         val endpoint = Endpoint.GetCustomerInfo("test-user-id")
@@ -276,6 +301,34 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
         }
 
         assertThat(thrownCorrectException).isTrue
+        verify(exactly = 0) {
+            mockETagManager.getHTTPResultFromCacheOrBackend(any(), any(), any(), any(), any(), any(), any())
+        }
+    }
+
+    @Test
+    fun `performRequest on enforced client in request without nonce throws verification error`() {
+        every { mockSigningManager.signatureVerificationMode } returns mockk<SignatureVerificationMode.Enforced>()
+        val endpoint = Endpoint.GetOfferings("test-user-id")
+        enqueue(
+            endpoint = endpoint,
+            expectedResult = HTTPResult.createResult(verificationResult = VerificationResult.FAILED),
+            verificationResult = VerificationResult.FAILED
+        )
+
+        every {
+            mockSigningManager.verifyResponse(any(), any(), any(), any(), any(), any())
+        } returns VerificationResult.FAILED
+
+        assertThatExceptionOfType(SignatureVerificationException::class.java).isThrownBy {
+            client.performRequest(
+                baseURL,
+                endpoint,
+                body = null,
+                requestHeaders = emptyMap()
+            )
+        }
+
         verify(exactly = 0) {
             mockETagManager.getHTTPResultFromCacheOrBackend(any(), any(), any(), any(), any(), any(), any())
         }
