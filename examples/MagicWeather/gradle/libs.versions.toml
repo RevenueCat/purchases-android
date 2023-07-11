@@ -1,18 +1,18 @@
 [versions]
 agp = "8.0.2"
-androidxNavigation = "2.5.3"
-kotlin = "1.6.21"
-purchases = "6.5.0"
-lifecycle = "2.5.0"
-androidxCore = "1.8.0"
+androidxNavigation = "2.6.0"
+kotlin = "1.9.0"
+purchases = "6.5.2"
+lifecycle = "2.6.1"
+androidxCore = "1.10.1"
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 
 [libraries]
-androidx-appcompat = "androidx.appcompat:appcompat:1.2.0"
-androidx-constraintlayout = "androidx.constraintlayout:constraintlayout:2.0.4"
+androidx-appcompat = "androidx.appcompat:appcompat:1.6.1"
+androidx-constraintlayout = "androidx.constraintlayout:constraintlayout:2.1.4"
 androidx-core = { module = "androidx.core:core-ktx", version.ref = "androidxCore" }
 androidx-lifecycle-livedata = { module = "androidx.lifecycle:lifecycle-livedata-ktx", version.ref = "lifecycle" }
 androidx-lifecycle-viewmodel = { module = "androidx.lifecycle:lifecycle-viewmodel-ktx", version.ref = "lifecycle" }
@@ -21,7 +21,7 @@ androidx-navigation-ui = { module = "androidx.navigation:navigation-ui-ktx", ver
 
 kotlin-stdlib = { module = "org.jetbrains.kotlin:kotlin-stdlib", version.ref = "kotlin" }
 
-material = "com.google.android.material:material:1.3.0"
+material = "com.google.android.material:material:1.9.0"
 
 revenuecat = { module = "com.revenuecat.purchases:purchases", version.ref = "purchases" }
 revenuecat-amazon = { module = "com.revenuecat.purchases:purchases-store-amazon", version.ref = "purchases" }
