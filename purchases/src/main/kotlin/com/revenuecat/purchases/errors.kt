@@ -59,7 +59,6 @@ enum class PurchasesErrorCode(val code: Int, val description: String) {
     CustomerInfoError(28, "There was a problem related to the customer info."),
     SignatureVerificationError(
         36,
-        "Request failed signature verification. " +
-            "Please see https://www.revenuecat.com/docs/trusted-entitlements for more info.",
+        "Request failed signature verification. Please see https://rev.cat/trusted-entitlements for more info.",
     ),
 }
