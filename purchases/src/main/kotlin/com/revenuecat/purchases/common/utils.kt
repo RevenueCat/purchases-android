@@ -94,3 +94,10 @@ val Context.playStorePackageInfo: PackageInfo?
     } catch (e: Throwable) {
         null
     }
+
+val Context.playServicesPackageInfo: PackageInfo?
+    get() = try {
+        this.packageManager.getPackageInfo("com.google.android.gms", 0)
+    } catch (e: Throwable) {
+        null
+    }

@@ -42,6 +42,7 @@ import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.firstProductId
 import com.revenuecat.purchases.common.log
+import com.revenuecat.purchases.common.playServicesPackageInfo
 import com.revenuecat.purchases.common.playStorePackageInfo
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.sha256
@@ -910,6 +911,7 @@ internal class BillingWrapper(
         if (billingResult != null && billingResult.responseCode != BillingClient.BillingResponseCode.OK) {
             diagnosticsTrackerIfEnabled?.trackFeatureNotSupported(
                 application.playStorePackageInfo,
+                application.playServicesPackageInfo,
                 billingResult.responseCode,
                 billingResult.debugMessage
             )

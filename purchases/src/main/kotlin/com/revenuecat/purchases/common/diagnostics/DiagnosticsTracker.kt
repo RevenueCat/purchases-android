@@ -141,18 +141,23 @@ internal class DiagnosticsTracker(
 
     fun trackFeatureNotSupported(
         playStorePackageInfo: PackageInfo?,
+        playServicesPackageInfo: PackageInfo?,
         billingResponseCode: Int,
         billingDebugMessage: String,
     ) {
-        val event = DiagnosticsEntry.Event(
-            name = DiagnosticsEventName.FEATURE_NOT_SUPPORTED_ERROR,
-            properties = mapOf(
+        val event = DiagnosticsEntry.Counter(
+            name = DiagnosticsCounterName.FEATURE_NOT_SUPPORTED_ERROR,
+            tags = mapOf(
                 "play_store_version" to (playStorePackageInfo?.versionName ?: ""),
-                "play_store_first_install_time" to (playStorePackageInfo?.firstInstallTime ?: ""),
-                "play_store_last_update_time" to (playStorePackageInfo?.lastUpdateTime ?: ""),
-                "billing_response_code" to billingResponseCode,
+                "play_store_first_install_time" to (playStorePackageInfo?.firstInstallTime ?: "").toString(),
+                "play_store_last_update_time" to (playStorePackageInfo?.lastUpdateTime ?: "").toString(),
+                "play_services_version" to (playServicesPackageInfo?.versionName ?: ""),
+                "play_services_first_install_time" to (playServicesPackageInfo?.firstInstallTime ?: "").toString(),
+                "play_services_last_update_time" to (playServicesPackageInfo?.lastUpdateTime ?: "").toString(),
+                "billing_response_code" to billingResponseCode.toString(),
                 "billing_debug_message" to billingDebugMessage,
             ),
+            value = 1,
         )
         trackEvent(event)
     }
