@@ -81,7 +81,7 @@ internal class SigningManager(
     fun createRandomNonce(): String {
         val bytes = ByteArray(NONCE_BYTES_SIZE)
         SecureRandom().nextBytes(bytes)
-        return String(Base64.encode(bytes, Base64.DEFAULT))
+        return String(Base64.encode(bytes, Base64.DEFAULT)).trim()
     }
 
     fun getPostParamsForSigningHeaderIfNeeded(
