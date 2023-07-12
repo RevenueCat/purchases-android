@@ -6,7 +6,6 @@
 package com.revenuecat.purchases.common
 
 import android.content.Context
-import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import android.os.Build
 import android.util.Base64
