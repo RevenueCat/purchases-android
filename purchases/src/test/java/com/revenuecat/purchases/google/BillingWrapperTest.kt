@@ -2579,6 +2579,21 @@ class BillingWrapperTest {
         }
     }
 
+    @Test
+    fun `trackFeatureNotSupported is called when receiving a FEATURE_NOT_SUPPORTED error from isFeatureSupported after setup`() {
+        val featureSlot = slot<String>()
+        every {
+            mockClient.isFeatureSupported(capture(featureSlot))
+        } returns BillingClient.BillingResponseCode.FEATURE_NOT_SUPPORTED.buildResult()
+        billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackFeatureNotSupported(
+                billingResponseCode = -2,
+                billingDebugMessage = ""
+            )
+        }
+    }
+
     // endregion
 
     private fun mockEmptyProductDetailsResponse() {
@@ -2741,6 +2756,9 @@ class BillingWrapperTest {
         } just Runs
         every {
             mockDiagnosticsTracker.trackGoogleQueryPurchaseHistoryRequest(any(), any(), any(), any())
+        } just Runs
+        every {
+            mockDiagnosticsTracker.trackFeatureNotSupported(any(), any())
         } just Runs
     }
 }
