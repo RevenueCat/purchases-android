@@ -7,9 +7,9 @@ package com.revenuecat.purchases.common
 
 import android.content.Context
 import android.content.pm.PackageInfo
+import android.content.pm.PackageManager
 import android.os.Build
 import android.util.Base64
-import java.lang.Exception
 import java.security.MessageDigest
 import java.util.Locale
 
@@ -92,13 +92,13 @@ internal val Context.versionName: String?
 val Context.playStorePackageInfo: PackageInfo?
     get() = try {
         this.packageManager.getPackageInfo("com.android.vending", 0)
-    } catch (e: Exception) {
+    } catch (e: PackageManager.NameNotFoundException) {
         null
     }
 
 val Context.playServicesPackageInfo: PackageInfo?
     get() = try {
         this.packageManager.getPackageInfo("com.google.android.gms", 0)
-    } catch (e: Exception) {
+    } catch (e: PackageManager.NameNotFoundException) {
         null
     }
