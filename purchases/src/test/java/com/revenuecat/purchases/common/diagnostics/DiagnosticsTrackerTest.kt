@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.common.diagnostics
 
+import android.content.Context
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.VerificationResult
@@ -9,10 +10,13 @@ import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.SyncDispatcher
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
+import com.revenuecat.purchases.common.playServicesVersionName
+import com.revenuecat.purchases.common.playStoreVersionName
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
+import io.mockk.mockkStatic
 import io.mockk.verify
 import org.junit.Before
 import org.junit.Test
@@ -41,16 +45,23 @@ class DiagnosticsTrackerTest {
 
     private lateinit var diagnosticsTracker: DiagnosticsTracker
 
-    private val appConfig = AppConfig(
-        context = mockk(relaxed = true),
-        observerMode = true,
-        platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
-        proxyURL = null,
-        store = Store.PLAY_STORE
-    )
+    private lateinit var context: Context
+    private lateinit var appConfig: AppConfig
 
     @Before
     fun setup() {
+        mockkStatic("com.revenuecat.purchases.common.UtilsKt")
+        context = mockk<Context>(relaxed = true).apply {
+            every { playStoreVersionName } returns "123"
+            every { playServicesVersionName } returns "456"
+        }
+        appConfig = AppConfig(
+            context = context,
+            observerMode = true,
+            platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
+            proxyURL = null,
+            store = Store.PLAY_STORE
+        )
         diagnosticsFileHelper = mockk()
         diagnosticsAnonymizer = mockk()
         dispatcher = SyncDispatcher()
@@ -100,7 +111,14 @@ class DiagnosticsTrackerTest {
             "verification_result" to "NOT_REQUESTED"
         )
         every { diagnosticsFileHelper.appendEntryToDiagnosticsFile(any()) } just Runs
-        diagnosticsTracker.trackHttpRequestPerformed(Endpoint.PostReceipt, 1234L.milliseconds, true, 200, HTTPResult.Origin.CACHE, VerificationResult.NOT_REQUESTED)
+        diagnosticsTracker.trackHttpRequestPerformed(
+            Endpoint.PostReceipt,
+            1234L.milliseconds,
+            true,
+            200,
+            HTTPResult.Origin.CACHE,
+            VerificationResult.NOT_REQUESTED
+        )
         verify(exactly = 1) {
             diagnosticsFileHelper.appendEntryToDiagnosticsFile(match { event ->
                 event is DiagnosticsEntry.Event &&
@@ -121,7 +139,14 @@ class DiagnosticsTrackerTest {
             "verification_result" to "NOT_REQUESTED"
         )
         every { diagnosticsFileHelper.appendEntryToDiagnosticsFile(any()) } just Runs
-        diagnosticsTracker.trackHttpRequestPerformed(Endpoint.GetOfferings("test id"), 1234L.milliseconds, true, 200, HTTPResult.Origin.BACKEND, VerificationResult.NOT_REQUESTED)
+        diagnosticsTracker.trackHttpRequestPerformed(
+            Endpoint.GetOfferings("test id"),
+            1234L.milliseconds,
+            true,
+            200,
+            HTTPResult.Origin.BACKEND,
+            VerificationResult.NOT_REQUESTED
+        )
         verify(exactly = 1) {
             diagnosticsFileHelper.appendEntryToDiagnosticsFile(match { event ->
                 event is DiagnosticsEntry.Event &&
@@ -141,7 +166,14 @@ class DiagnosticsTrackerTest {
             "verification_result" to "NOT_REQUESTED"
         )
         every { diagnosticsFileHelper.appendEntryToDiagnosticsFile(any()) } just Runs
-        diagnosticsTracker.trackHttpRequestPerformed(Endpoint.PostReceipt, 1234L.milliseconds, true, 200, HTTPResult.Origin.CACHE, VerificationResult.NOT_REQUESTED)
+        diagnosticsTracker.trackHttpRequestPerformed(
+            Endpoint.PostReceipt,
+            1234L.milliseconds,
+            true,
+            200,
+            HTTPResult.Origin.CACHE,
+            VerificationResult.NOT_REQUESTED
+        )
         verify(exactly = 1) {
             diagnosticsFileHelper.appendEntryToDiagnosticsFile(match { event ->
                 event is DiagnosticsEntry.Counter &&
@@ -237,6 +269,28 @@ class DiagnosticsTrackerTest {
                 event is DiagnosticsEntry.Event &&
                     event.name == DiagnosticsEventName.GOOGLE_QUERY_PURCHASE_HISTORY_REQUEST &&
                     event.properties == expectedProperties
+            })
+        }
+    }
+
+    @Test
+    fun `trackFeatureNotSupported tracks correct event`() {
+        val expectedProperties = mapOf(
+            "play_store_version" to "123",
+            "play_services_version" to "456",
+            "billing_response_code" to "-2",
+            "billing_debug_message" to "debug message",
+        )
+        every { diagnosticsFileHelper.appendEntryToDiagnosticsFile(any()) } just Runs
+        diagnosticsTracker.trackFeatureNotSupported(
+            billingResponseCode = -2,
+            billingDebugMessage = "debug message"
+        )
+        verify(exactly = 1) {
+            diagnosticsFileHelper.appendEntryToDiagnosticsFile(match { event ->
+                event is DiagnosticsEntry.Counter &&
+                    event.name == DiagnosticsCounterName.FEATURE_NOT_SUPPORTED_ERROR &&
+                    event.tags == expectedProperties
             })
         }
     }
