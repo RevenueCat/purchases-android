@@ -913,7 +913,7 @@ internal class BillingWrapper(
                 application.playStorePackageInfo,
                 application.playServicesPackageInfo,
                 billingResult.responseCode,
-                billingResult.debugMessage
+                billingResult.debugMessage,
             )
         }
     }
