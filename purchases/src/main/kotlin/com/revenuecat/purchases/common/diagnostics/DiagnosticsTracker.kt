@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.common.diagnostics
 
+import android.content.pm.PackageInfo
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.networking.Endpoint
@@ -136,6 +137,24 @@ internal class DiagnosticsTracker(
         } else {
             trackEvent(event)
         }
+    }
+
+    fun trackFeatureNotSupported(
+        playStorePackageInfo: PackageInfo?,
+        billingResponseCode: Int,
+        billingDebugMessage: String,
+    ) {
+        val event = DiagnosticsEntry.Event(
+            name = DiagnosticsEventName.FEATURE_NOT_SUPPORTED_ERROR,
+            properties = mapOf(
+                "play_store_version" to (playStorePackageInfo?.versionName ?: ""),
+                "play_store_first_install_time" to (playStorePackageInfo?.firstInstallTime ?: ""),
+                "play_store_last_update_time" to (playStorePackageInfo?.lastUpdateTime ?: ""),
+                "billing_response_code" to billingResponseCode,
+                "billing_debug_message" to billingDebugMessage,
+            ),
+        )
+        trackEvent(event)
     }
 
     fun trackEvent(diagnosticsEntry: DiagnosticsEntry) {

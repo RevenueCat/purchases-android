@@ -21,6 +21,7 @@ internal object BillingFactory {
         diagnosticsTrackerIfEnabled: DiagnosticsTracker?,
     ) = when (store) {
         Store.PLAY_STORE -> BillingWrapper(
+            application,
             BillingWrapper.ClientFactory(application),
             Handler(application.mainLooper),
             cache,

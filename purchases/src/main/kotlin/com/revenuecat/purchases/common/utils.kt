@@ -6,6 +6,7 @@
 package com.revenuecat.purchases.common
 
 import android.content.Context
+import android.content.pm.PackageInfo
 import android.os.Build
 import android.util.Base64
 import java.security.MessageDigest
@@ -86,3 +87,10 @@ internal fun String.sha256() =
 
 internal val Context.versionName: String?
     get() = this.packageManager.getPackageInfo(this.packageName, 0).versionName
+
+val Context.playStorePackageInfo: PackageInfo?
+    get() = try {
+        this.packageManager.getPackageInfo("com.android.vending", 0)
+    } catch (e: Throwable) {
+        null
+    }
