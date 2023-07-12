@@ -412,6 +412,7 @@ class SubscriberAttributesPosterTests {
                 mockBaseURL,
                 Endpoint.PostAttributes(appUserID),
                 (expectedBody ?: any()),
+                postFieldsToSign = null,
                 mapOf("Authorization" to "Bearer $API_KEY")
             )
         }
@@ -428,13 +429,14 @@ class SubscriberAttributesPosterTests {
     private val actualPostReceiptBodySlot = slot<Map<String, Any?>>()
     private fun mockPostReceiptResponse(
         responseCode: Int = 200,
-        responseBody: String = "{}"
+        responseBody: String = "{}",
     ) {
         every {
             mockClient.performRequest(
                 mockBaseURL,
                 Endpoint.PostReceipt,
                 capture(actualPostReceiptBodySlot),
+                any(),
                 mapOf("Authorization" to "Bearer $API_KEY")
             )
         } answers {

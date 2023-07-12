@@ -9,6 +9,7 @@ import com.revenuecat.purchases.common.verboseLog
 import com.revenuecat.purchases.common.warnLog
 import com.revenuecat.purchases.strings.NetworkStrings
 import com.revenuecat.purchases.utils.Result
+import java.security.MessageDigest
 import java.security.SecureRandom
 
 internal class SigningManager(
@@ -18,6 +19,7 @@ internal class SigningManager(
 ) {
     private companion object {
         const val NONCE_BYTES_SIZE = 12
+        const val POST_PARAMS_ALGORITHM = "sha256"
     }
 
     private data class Parameters(
@@ -76,6 +78,33 @@ internal class SigningManager(
         val bytes = ByteArray(NONCE_BYTES_SIZE)
         SecureRandom().nextBytes(bytes)
         return String(Base64.encode(bytes, Base64.DEFAULT))
+    }
+
+    fun getPostParamsForSigningHeaderIfNeeded(
+        endpoint: Endpoint,
+        postFieldsToSign: List<Pair<String, String>>?,
+    ): String? {
+        return if (!postFieldsToSign.isNullOrEmpty() &&
+            signatureVerificationMode.shouldVerify &&
+            endpoint.supportsSignatureVerification
+        ) {
+            val sha256Digest = MessageDigest.getInstance("SHA-256")
+            postFieldsToSign.mapIndexed { index, pair ->
+                if (index > 0) {
+                    sha256Digest.update(0x00.toByte())
+                }
+                sha256Digest.update(pair.second.toByteArray())
+            }
+            val hashFields = sha256Digest.digest().fold("") { str, byte -> str + "%02x".format(byte) }
+            val header = listOf(
+                postFieldsToSign.joinToString(",") { it.first },
+                POST_PARAMS_ALGORITHM,
+                hashFields,
+            ).joinToString(":")
+            header
+        } else {
+            null
+        }
     }
 
     @Suppress("LongParameterList", "ReturnCount", "CyclomaticComplexMethod", "LongMethod")

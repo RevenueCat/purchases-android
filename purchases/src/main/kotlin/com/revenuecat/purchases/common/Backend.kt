@@ -67,6 +67,11 @@ internal class Backend(
     private val httpClient: HTTPClient,
     private val backendHelper: BackendHelper,
 ) {
+    private companion object {
+        const val APP_USER_ID = "app_user_id"
+        const val FETCH_TOKEN = "fetch_token"
+        const val NEW_APP_USER_ID = "new_app_user_id"
+    }
 
     val verificationMode: SignatureVerificationMode
         get() = httpClient.signingManager.signatureVerificationMode
@@ -118,7 +123,8 @@ internal class Backend(
                 return httpClient.performRequest(
                     appConfig.baseURL,
                     endpoint,
-                    null,
+                    body = null,
+                    postFieldsToSign = null,
                     backendHelper.authenticationHeaders,
                 )
             }
@@ -183,10 +189,10 @@ internal class Backend(
         )
 
         val body = mapOf(
-            "fetch_token" to purchaseToken,
+            FETCH_TOKEN to purchaseToken,
             "product_ids" to receiptInfo.productIDs,
             "platform_product_ids" to receiptInfo.platformProductIds?.map { it.asMap },
-            "app_user_id" to appUserID,
+            APP_USER_ID to appUserID,
             "is_restore" to isRestore,
             "presented_offering_identifier" to receiptInfo.offeringIdentifier,
             "observer_mode" to observerMode,
@@ -198,6 +204,11 @@ internal class Backend(
             "pricing_phases" to receiptInfo.pricingPhases?.map { it.toMap() },
             "proration_mode" to receiptInfo.prorationMode?.name,
         ).filterNotNullValues()
+
+        val postFieldsToSign = listOf(
+            APP_USER_ID to appUserID,
+            FETCH_TOKEN to purchaseToken,
+        )
 
         val extraHeaders = mapOf(
             "price_string" to receiptInfo.storeProduct?.price?.formatted,
@@ -211,6 +222,7 @@ internal class Backend(
                     appConfig.baseURL,
                     Endpoint.PostReceipt,
                     body,
+                    postFieldsToSign,
                     backendHelper.authenticationHeaders + extraHeaders,
                 )
             }
@@ -274,7 +286,8 @@ internal class Backend(
                 return httpClient.performRequest(
                     appConfig.baseURL,
                     endpoint,
-                    null,
+                    body = null,
+                    postFieldsToSign = null,
                     backendHelper.authenticationHeaders,
                 )
             }
@@ -326,13 +339,19 @@ internal class Backend(
         )
         val call = object : Dispatcher.AsyncCall() {
             override fun call(): HTTPResult {
+                val body = mapOf(
+                    APP_USER_ID to appUserID,
+                    NEW_APP_USER_ID to newAppUserID,
+                )
+                val postFieldsToSign = listOf(
+                    APP_USER_ID to appUserID,
+                    NEW_APP_USER_ID to newAppUserID,
+                )
                 return httpClient.performRequest(
                     appConfig.baseURL,
                     Endpoint.LogIn,
-                    mapOf(
-                        "new_app_user_id" to newAppUserID,
-                        "app_user_id" to appUserID,
-                    ),
+                    body,
+                    postFieldsToSign,
                     backendHelper.authenticationHeaders,
                 )
             }
@@ -385,6 +404,7 @@ internal class Backend(
                     appConfig.diagnosticsURL,
                     Endpoint.PostDiagnostics,
                     body,
+                    postFieldsToSign = null,
                     backendHelper.authenticationHeaders,
                 )
             }
@@ -434,7 +454,8 @@ internal class Backend(
                 return httpClient.performRequest(
                     appConfig.baseURL,
                     endpoint,
-                    null,
+                    body = null,
+                    postFieldsToSign = null,
                     backendHelper.authenticationHeaders,
                 )
             }

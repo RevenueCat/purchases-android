@@ -49,6 +49,7 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
             baseURL,
             endpoint,
             body = null,
+            postFieldsToSign = null,
             requestHeaders = emptyMap()
         )
 
@@ -75,6 +76,7 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
             baseURL,
             endpoint,
             body = null,
+            postFieldsToSign = null,
             requestHeaders = emptyMap()
         )
 
@@ -106,6 +108,7 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
             baseURL,
             endpoint,
             body = null,
+            postFieldsToSign = null,
             requestHeaders = emptyMap()
         )
 
@@ -137,6 +140,7 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
             baseURL,
             endpoint,
             body = null,
+            postFieldsToSign = null,
             requestHeaders = emptyMap()
         )
 
@@ -184,6 +188,7 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
             baseURL,
             endpoint,
             body = null,
+            postFieldsToSign = null,
             requestHeaders = emptyMap()
         )
 
@@ -216,6 +221,7 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
             baseURL,
             endpoint,
             body = null,
+            postFieldsToSign = null,
             requestHeaders = emptyMap()
         )
 
@@ -243,6 +249,7 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
             baseURL,
             endpoint,
             body = null,
+            postFieldsToSign = null,
             requestHeaders = emptyMap()
         )
 
@@ -267,6 +274,7 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
             baseURL,
             endpoint,
             body = null,
+            postFieldsToSign = null,
             requestHeaders = emptyMap()
         )
 
@@ -294,6 +302,7 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
                 baseURL,
                 endpoint,
                 body = null,
+                postFieldsToSign = null,
                 requestHeaders = emptyMap()
             )
         } catch (_: SignatureVerificationException) {
@@ -325,6 +334,7 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
                 baseURL,
                 endpoint,
                 body = null,
+                postFieldsToSign = null,
                 requestHeaders = emptyMap()
             )
         }
@@ -351,6 +361,7 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
             baseURL,
             endpoint,
             body = null,
+            postFieldsToSign = null,
             requestHeaders = emptyMap()
         )
 

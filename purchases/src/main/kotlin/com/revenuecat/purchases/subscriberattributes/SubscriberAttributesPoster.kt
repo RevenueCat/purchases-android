@@ -24,6 +24,7 @@ internal class SubscriberAttributesPoster(
         backendHelper.performRequest(
             Endpoint.PostAttributes(appUserID),
             mapOf("attributes" to attributes),
+            postFieldsToSign = null,
             { error ->
                 onErrorHandler(error, false, emptyList())
             },

@@ -313,7 +313,8 @@ class BackendTest {
             mockClient.performRequest(
                 mockBaseURL,
                 Endpoint.GetCustomerInfo(appUserID),
-                null,
+                body = null,
+                postFieldsToSign = null,
                 any()
             )
         }
@@ -365,6 +366,7 @@ class BackendTest {
             mockClient.performRequest(
                 mockBaseURL,
                 Endpoint.PostReceipt,
+                any(),
                 any(),
                 any()
             )
@@ -615,6 +617,7 @@ class BackendTest {
                 mockBaseURL,
                 Endpoint.PostReceipt,
                 any(),
+                any(),
                 any()
             )
         }
@@ -684,6 +687,7 @@ class BackendTest {
                 mockBaseURL,
                 Endpoint.PostReceipt,
                 any(),
+                any(),
                 any()
             )
         }
@@ -691,7 +695,8 @@ class BackendTest {
             mockClient.performRequest(
                 mockBaseURL,
                 Endpoint.GetCustomerInfo(appUserID),
-                null,
+                body = null,
+                postFieldsToSign = null,
                 any()
             )
         }
@@ -782,6 +787,7 @@ class BackendTest {
                 mockBaseURL,
                 Endpoint.PostReceipt,
                 any() as Map<String, Any?>,
+                any(),
                 any()
             )
         }
@@ -841,6 +847,7 @@ class BackendTest {
                 mockBaseURL,
                 Endpoint.PostReceipt,
                 any() as Map<String, Any?>,
+                any(),
                 any()
             )
         }
@@ -885,6 +892,7 @@ class BackendTest {
             mockClient.performRequest(
                 mockBaseURL,
                 Endpoint.PostReceipt,
+                any(),
                 any(),
                 any()
             )
@@ -932,6 +940,7 @@ class BackendTest {
                 mockBaseURL,
                 Endpoint.PostReceipt,
                 any() as Map<String, Any?>,
+                any(),
                 any()
             )
         }
@@ -993,6 +1002,7 @@ class BackendTest {
             mockClient.performRequest(
                 mockBaseURL,
                 Endpoint.PostReceipt,
+                any(),
                 any(),
                 any()
             )
@@ -1220,7 +1230,8 @@ class BackendTest {
             mockClient.performRequest(
                 mockBaseURL,
                 Endpoint.GetOfferings(appUserID),
-                null,
+                body = null,
+                postFieldsToSign = null,
                 any()
             )
         }
@@ -1249,7 +1260,8 @@ class BackendTest {
             mockClient.performRequest(
                 mockBaseURL,
                 Endpoint.GetOfferings(appUserID),
-                null,
+                body = null,
+                postFieldsToSign = null,
                 any()
             )
         }
@@ -1257,7 +1269,8 @@ class BackendTest {
             mockClient.performRequest(
                 mockBaseURL,
                 Endpoint.GetOfferings("anotherUser"),
-                null,
+                body = null,
+                postFieldsToSign = null,
                 any()
             )
         }
@@ -1309,6 +1322,7 @@ class BackendTest {
                 mockBaseURL,
                 Endpoint.LogIn,
                 body,
+                any(),
                 any()
             )
         }
@@ -1470,6 +1484,7 @@ class BackendTest {
                 mockBaseURL,
                 Endpoint.LogIn,
                 requestBody,
+                any(),
                 any()
             )
         }
@@ -1520,6 +1535,7 @@ class BackendTest {
                 mockBaseURL,
                 Endpoint.LogIn,
                 requestBody,
+                any(),
                 any()
             )
         }
@@ -1570,6 +1586,7 @@ class BackendTest {
                 mockBaseURL,
                 Endpoint.LogIn,
                 requestBody,
+                any(),
                 any()
             )
         }
@@ -1586,6 +1603,7 @@ class BackendTest {
                 baseURL = mockDiagnosticsBaseURL,
                 endpoint = diagnosticsEndpoint,
                 body = mapOf("entries" to JSONArray(diagnosticsList)),
+                postFieldsToSign = null,
                 requestHeaders = mapOf("Authorization" to "Bearer TEST_API_KEY")
             )
         }
@@ -1614,6 +1632,7 @@ class BackendTest {
                 baseURL = mockDiagnosticsBaseURL,
                 endpoint = diagnosticsEndpoint,
                 body = mapOf("entries" to JSONArray(diagnosticsList)),
+                postFieldsToSign = null,
                 requestHeaders = mapOf("Authorization" to "Bearer TEST_API_KEY")
             )
         }
@@ -1644,6 +1663,7 @@ class BackendTest {
                 baseURL = mockDiagnosticsBaseURL,
                 endpoint = diagnosticsEndpoint,
                 body = mapOf("entries" to JSONArray(diagnosticsList)),
+                postFieldsToSign = null,
                 requestHeaders = mapOf("Authorization" to "Bearer TEST_API_KEY")
             )
         }
@@ -1803,6 +1823,7 @@ class BackendTest {
                 baseURL = mockBaseURL,
                 endpoint = productEntitlementMappingEndpoint,
                 body = null,
+                postFieldsToSign = null,
                 requestHeaders = defaultAuthHeaders
             )
         }
@@ -1829,6 +1850,7 @@ class BackendTest {
                 baseURL = mockBaseURL,
                 endpoint = productEntitlementMappingEndpoint,
                 body = null,
+                postFieldsToSign = null,
                 requestHeaders = defaultAuthHeaders
             )
         }
@@ -1860,6 +1882,7 @@ class BackendTest {
                 baseURL = mockBaseURL,
                 endpoint = productEntitlementMappingEndpoint,
                 body = null,
+                postFieldsToSign = null,
                 requestHeaders = defaultAuthHeaders
             )
         }
@@ -2010,6 +2033,7 @@ class BackendTest {
                 eq(baseURL),
                 eq(endpoint),
                 (if (body == null) any() else capture(requestBodySlot)),
+                any(),
                 capture(headersSlot)
             )
         }

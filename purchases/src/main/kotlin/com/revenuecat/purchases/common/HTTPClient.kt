@@ -95,11 +95,13 @@ internal class HTTPClient(
      * @throws JSONException Thrown for any JSON errors, not thrown for returned HTTP error codes
      * @throws IOException Thrown for any unexpected errors, not thrown for returned HTTP error codes
      */
+    @Suppress("LongParameterList")
     @Throws(JSONException::class, IOException::class)
     fun performRequest(
         baseURL: URL,
         endpoint: Endpoint,
         body: Map<String, Any?>?,
+        postFieldsToSign: List<Pair<String, String>>?,
         requestHeaders: Map<String, String>,
         refreshETag: Boolean = false,
     ): HTTPResult {
@@ -117,23 +119,24 @@ internal class HTTPClient(
         val requestStartTime = dateProvider.now
         var callResult: HTTPResult? = null
         try {
-            callResult = performCall(baseURL, endpoint, body, requestHeaders, refreshETag)
+            callResult = performCall(baseURL, endpoint, body, postFieldsToSign, requestHeaders, refreshETag)
             callSuccessful = true
         } finally {
             trackHttpRequestPerformedIfNeeded(endpoint, requestStartTime, callSuccessful, callResult)
         }
         if (callResult == null) {
             log(LogIntent.WARNING, NetworkStrings.ETAG_RETRYING_CALL)
-            callResult = performRequest(baseURL, endpoint, body, requestHeaders, refreshETag = true)
+            callResult = performRequest(baseURL, endpoint, body, postFieldsToSign, requestHeaders, refreshETag = true)
         }
         return callResult
     }
 
-    @Suppress("ThrowsCount")
+    @Suppress("ThrowsCount", "LongParameterList", "LongMethod")
     private fun performCall(
         baseURL: URL,
         endpoint: Endpoint,
         body: Map<String, Any?>?,
+        postFieldsToSign: List<Pair<String, String>>?,
         requestHeaders: Map<String, String>,
         refreshETag: Boolean,
     ): HTTPResult? {
@@ -148,7 +151,17 @@ internal class HTTPClient(
             val fullURL = URL(baseURL, urlPathWithVersion)
 
             nonce = if (shouldAddNonce) signingManager.createRandomNonce() else null
-            val headers = getHeaders(requestHeaders, urlPathWithVersion, refreshETag, nonce, shouldSignResponse)
+            val postFieldsToSignHeader = postFieldsToSign?.let {
+                signingManager.getPostParamsForSigningHeaderIfNeeded(endpoint, postFieldsToSign)
+            }
+            val headers = getHeaders(
+                requestHeaders,
+                urlPathWithVersion,
+                refreshETag,
+                nonce,
+                shouldSignResponse,
+                postFieldsToSignHeader,
+            )
 
             val httpRequest = HTTPRequest(fullURL, headers, jsonBody)
 
@@ -233,12 +246,14 @@ internal class HTTPClient(
         eTagManager.clearCaches()
     }
 
+    @Suppress("LongParameterList")
     private fun getHeaders(
         authenticationHeaders: Map<String, String>,
         urlPath: String,
         refreshETag: Boolean,
         nonce: String?,
         shouldSignResponse: Boolean,
+        postFieldsToSignHeader: String?,
     ): Map<String, String> {
         return mapOf(
             "Content-Type" to "application/json",
@@ -252,6 +267,7 @@ internal class HTTPClient(
             "X-Client-Bundle-ID" to appConfig.packageName,
             "X-Observer-Mode-Enabled" to if (appConfig.finishTransactions) "false" else "true",
             "X-Nonce" to nonce,
+            HTTPRequest.POST_PARAMS_HASH to postFieldsToSignHeader,
         )
             .plus(authenticationHeaders)
             .plus(eTagManager.getETagHeaders(urlPath, shouldSignResponse, refreshETag))
