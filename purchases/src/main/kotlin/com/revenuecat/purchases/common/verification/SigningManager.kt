@@ -27,6 +27,7 @@ internal class SigningManager(
         val apiKey: String,
         val nonce: String?,
         val urlPath: String,
+        val postParamsHashHeader: String?,
         val requestTime: String,
         val eTag: String?,
         val body: String?,
@@ -41,6 +42,7 @@ internal class SigningManager(
             if (apiKey != other.apiKey) return false
             if (nonce != other.nonce) return false
             if (urlPath != other.urlPath) return false
+            if (postParamsHashHeader != other.postParamsHashHeader) return false
             if (requestTime != other.requestTime) return false
             if (eTag != other.eTag) return false
             if (body != other.body) return false
@@ -53,6 +55,7 @@ internal class SigningManager(
             result = 31 * result + apiKey.hashCode()
             result = 31 * result + (nonce?.hashCode() ?: 0)
             result = 31 * result + urlPath.hashCode()
+            result = 31 * result + (postParamsHashHeader?.hashCode() ?: 0)
             result = 31 * result + requestTime.hashCode()
             result = 31 * result + (eTag?.hashCode() ?: 0)
             result = 31 * result + (body?.hashCode() ?: 0)
@@ -64,6 +67,7 @@ internal class SigningManager(
                 apiKey.toByteArray() +
                 (nonce?.let { Base64.decode(it, Base64.DEFAULT) } ?: byteArrayOf()) +
                 urlPath.toByteArray() +
+                (postParamsHashHeader?.toByteArray() ?: byteArrayOf()) +
                 requestTime.toByteArray() +
                 (eTag?.toByteArray() ?: byteArrayOf()) +
                 (body?.toByteArray() ?: byteArrayOf())
@@ -115,6 +119,7 @@ internal class SigningManager(
         body: String?,
         requestTime: String?,
         eTag: String?,
+        postFieldsToSignHeader: String?,
     ): VerificationResult {
         if (appConfig.forceSigningErrors) {
             warnLog("Forcing signing error for request with path: $urlPath")
@@ -161,6 +166,7 @@ internal class SigningManager(
                     apiKey,
                     nonce,
                     urlPath,
+                    postFieldsToSignHeader,
                     requestTime,
                     eTag,
                     body,

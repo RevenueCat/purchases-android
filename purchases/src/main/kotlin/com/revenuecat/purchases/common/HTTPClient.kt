@@ -147,11 +147,12 @@ internal class HTTPClient(
         val shouldSignResponse = signingManager.shouldVerifyEndpoint(endpoint)
         val shouldAddNonce = shouldSignResponse && endpoint.needsNonceToPerformSigning
         val nonce: String?
+        val postFieldsToSignHeader: String?
         try {
             val fullURL = URL(baseURL, urlPathWithVersion)
 
             nonce = if (shouldAddNonce) signingManager.createRandomNonce() else null
-            val postFieldsToSignHeader = postFieldsToSign?.let {
+            postFieldsToSignHeader = postFieldsToSign?.let {
                 signingManager.getPostParamsForSigningHeaderIfNeeded(endpoint, postFieldsToSign)
             }
             val headers = getHeaders(
@@ -191,7 +192,7 @@ internal class HTTPClient(
         val verificationResult = if (shouldSignResponse &&
             RCHTTPStatusCodes.isSuccessful(responseCode)
         ) {
-            verifyResponse(urlPathWithVersion, connection, payload, nonce)
+            verifyResponse(urlPathWithVersion, connection, payload, nonce, postFieldsToSignHeader)
         } else {
             VerificationResult.NOT_REQUESTED
         }
@@ -298,6 +299,7 @@ internal class HTTPClient(
         connection: URLConnection,
         payload: String?,
         nonce: String?,
+        postFieldsToSignHeader: String?,
     ): VerificationResult {
         return signingManager.verifyResponse(
             urlPath = urlPath,
@@ -306,6 +308,7 @@ internal class HTTPClient(
             body = payload,
             requestTime = getRequestTimeHeader(connection),
             eTag = getETagHeader(connection),
+            postFieldsToSignHeader = postFieldsToSignHeader,
         )
     }
 

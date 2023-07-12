@@ -269,8 +269,9 @@ class SigningManagerTest {
         nonce: String = "MTIzNDU2Nzg5MGFi",
         body: String? = "{\"request_date\":\"2023-02-21T18:58:36Z\",\"request_date_ms\":1677005916011,\"subscriber\":{\"entitlements\":{},\"first_seen\":\"2023-02-21T18:58:35Z\",\"last_seen\":\"2023-02-21T18:58:35Z\",\"management_url\":null,\"non_subscriptions\":{},\"original_app_user_id\":\"login\",\"original_application_version\":null,\"original_purchase_date\":null,\"other_purchases\":{},\"subscriptions\":{}}}\n",
         requestTime: String? = "1677005916012",
-        eTag: String? = null
-    ) = signingManager.verifyResponse(requestPath, signature, nonce, body, requestTime, eTag)
+        eTag: String? = null,
+        postParamsHeader: String? = null,
+    ) = signingManager.verifyResponse(requestPath, signature, nonce, body, requestTime, eTag, postParamsHeader)
 
     // endregion
 }

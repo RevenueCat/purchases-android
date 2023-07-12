@@ -41,9 +41,7 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
             verificationResult = VerificationResult.VERIFIED
         )
 
-        every {
-            mockSigningManager.verifyResponse(any(), any(), any(), any(), any(), any())
-        } returns VerificationResult.VERIFIED
+        mockSigningResult(VerificationResult.VERIFIED)
 
         client.performRequest(
             baseURL,
@@ -83,9 +81,7 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
         server.takeRequest()
 
         assertThat(result.verificationResult).isEqualTo(VerificationResult.NOT_REQUESTED)
-        verify(exactly = 0) {
-            mockSigningManager.verifyResponse(any(), any(), any(), any(), any(), any())
-        }
+        assertSigningNotPerformed()
     }
 
     @Test
@@ -115,9 +111,7 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
         server.takeRequest()
 
         assertThat(result.verificationResult).isEqualTo(VerificationResult.NOT_REQUESTED)
-        verify(exactly = 0) {
-            mockSigningManager.verifyResponse(any(), any(), any(), any(), any(), any())
-        }
+        assertSigningNotPerformed()
     }
 
     @Test
@@ -147,9 +141,7 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
         server.takeRequest()
 
         assertThat(result.verificationResult).isEqualTo(VerificationResult.NOT_REQUESTED)
-        verify(exactly = 0) {
-            mockSigningManager.verifyResponse(any(), any(), any(), any(), any(), any())
-        }
+        assertSigningNotPerformed()
     }
 
     @Test
@@ -161,9 +153,7 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
         )
         val responseCode = expectedResult.responseCode
 
-        every {
-            mockSigningManager.verifyResponse(any(), any(), any(), any(), any(), any())
-        } returns VerificationResult.VERIFIED
+        mockSigningResult(VerificationResult.VERIFIED)
 
         every {
             mockETagManager.getHTTPResultFromCacheOrBackend(
@@ -202,7 +192,8 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
                 "test-nonce",
                 "{\"test-key\":\"test-value\"}",
                 "1234567890",
-                "test-etag"
+                "test-etag",
+                postFieldsToSignHeader = null
             )
         }
     }
@@ -227,9 +218,7 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
 
         server.takeRequest()
         assertThat(result.verificationResult).isEqualTo(VerificationResult.NOT_REQUESTED)
-        verify(exactly = 0) {
-            mockSigningManager.verifyResponse(any(), any(), any(), any(), any(), any())
-        }
+        assertSigningNotPerformed()
     }
 
     @Test
@@ -241,9 +230,7 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
             verificationResult = VerificationResult.FAILED
         )
 
-        every {
-            mockSigningManager.verifyResponse(any(), any(), any(), any(), any(), any())
-        } returns VerificationResult.FAILED
+        mockSigningResult(VerificationResult.FAILED)
 
         val result = client.performRequest(
             baseURL,
@@ -266,9 +253,7 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
             verificationResult = VerificationResult.FAILED
         )
 
-        every {
-            mockSigningManager.verifyResponse(any(), any(), any(), any(), any(), any())
-        } returns VerificationResult.FAILED
+        mockSigningResult(VerificationResult.FAILED)
 
         val result = client.performRequest(
             baseURL,
@@ -292,9 +277,7 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
             verificationResult = VerificationResult.FAILED
         )
 
-        every {
-            mockSigningManager.verifyResponse(any(), any(), any(), any(), any(), any())
-        } returns VerificationResult.FAILED
+        mockSigningResult(VerificationResult.FAILED)
 
         var thrownCorrectException = false
         try {
@@ -325,9 +308,7 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
             verificationResult = VerificationResult.FAILED
         )
 
-        every {
-            mockSigningManager.verifyResponse(any(), any(), any(), any(), any(), any())
-        } returns VerificationResult.FAILED
+        mockSigningResult(VerificationResult.FAILED)
 
         assertThatExceptionOfType(SignatureVerificationException::class.java).isThrownBy {
             client.performRequest(
@@ -353,9 +334,7 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
             verificationResult = VerificationResult.VERIFIED
         )
 
-        every {
-            mockSigningManager.verifyResponse(any(), any(), any(), any(), any(), any())
-        } returns VerificationResult.VERIFIED
+        mockSigningResult(VerificationResult.VERIFIED)
 
         val result = client.performRequest(
             baseURL,
@@ -367,5 +346,17 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
 
         server.takeRequest()
         assertThat(result.verificationResult).isEqualTo(VerificationResult.VERIFIED)
+    }
+
+    private fun mockSigningResult(result: VerificationResult) {
+        every {
+            mockSigningManager.verifyResponse(any(), any(), any(), any(), any(), any(), any())
+        } returns result
+    }
+
+    private fun assertSigningNotPerformed() {
+        verify(exactly = 0) {
+            mockSigningManager.verifyResponse(any(), any(), any(), any(), any(), any(), any())
+        }
     }
 }

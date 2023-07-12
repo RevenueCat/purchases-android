@@ -17,6 +17,7 @@ import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.spyk
+import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.BeforeClass
@@ -102,5 +103,13 @@ internal abstract class BaseBackendIntegrationTest {
         block(latch)
         latch.await(TIMEOUT.inWholeSeconds, TimeUnit.SECONDS)
         assertThat(latch.count).isEqualTo(0)
+    }
+
+    protected fun assertSigningPerformed() {
+        verify(exactly = 1) { signingManager.verifyResponse(any(), any(), any(), any(), any(), any(), any())  }
+    }
+
+    protected fun assertSigningNotPerformed() {
+        verify(exactly = 0) { signingManager.verifyResponse(any(), any(), any(), any(), any(), any(), any())  }
     }
 }
