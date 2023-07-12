@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.backend_integration_tests
 
 import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.offlineentitlements.ProductEntitlementMapping
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
@@ -155,6 +156,7 @@ internal class LoadShedderBackendIntegrationTest: BaseBackendIntegrationTest() {
                 newAppUserID = "new-test-user-id",
                 onSuccessHandler = { customerInfo, _ ->
                     assertThat(customerInfo.originalAppUserId).isEqualTo("new-test-user-id")
+                    assertThat(customerInfo.entitlements.verification).isEqualTo(VerificationResult.VERIFIED)
                     latch.countDown()
                 },
                 onErrorHandler = {
