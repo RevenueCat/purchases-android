@@ -49,6 +49,7 @@
     <ID>SwallowedException:DeviceCache.kt$DeviceCache$e: JSONException</ID>
     <ID>SwallowedException:DeviceCache.kt$DeviceCache$e: NullPointerException</ID>
     <ID>SwallowedException:Purchases.kt$Purchases.Companion.&lt;no name provided>$e: IllegalArgumentException</ID>
+    <ID>SwallowedException:utils.kt$e: PackageManager.NameNotFoundException</ID>
     <ID>ThrowingExceptionsWithoutMessageOrCause:BillingWrapper.kt$BillingWrapper$Throwable()</ID>
     <ID>TooGenericExceptionCaught:DeviceCache.kt$DeviceCache$e: NullPointerException</ID>
     <ID>TooGenericExceptionThrown:HTTPClient.kt$HTTPClient$throw RuntimeException(e)</ID>
