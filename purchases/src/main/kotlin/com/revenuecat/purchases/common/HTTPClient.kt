@@ -152,7 +152,7 @@ internal class HTTPClient(
             val fullURL = URL(baseURL, urlPathWithVersion)
 
             nonce = if (shouldAddNonce) signingManager.createRandomNonce() else null
-            postFieldsToSignHeader = postFieldsToSign?.let {
+            postFieldsToSignHeader = postFieldsToSign?.takeIf { shouldSignResponse }?.let {
                 signingManager.getPostParamsForSigningHeaderIfNeeded(endpoint, postFieldsToSign)
             }
             val headers = getHeaders(

@@ -3,6 +3,7 @@ package com.revenuecat.purchases.common
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.networking.Endpoint
+import com.revenuecat.purchases.common.networking.HTTPRequest
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
 import com.revenuecat.purchases.common.verification.SignatureVerificationException
@@ -196,6 +197,54 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
                 postFieldsToSignHeader = null
             )
         }
+    }
+
+    @Test
+    fun `performRequest adds post params hash header if verification informational`() {
+        val expectedResult = HTTPResult.createResult()
+        val expectedPostParamsHash = "test-post-params-hash"
+        val endpoint = Endpoint.LogIn
+        every {
+            mockSigningManager.getPostParamsForSigningHeaderIfNeeded(endpoint, any())
+        } returns expectedPostParamsHash
+        mockSigningResult(VerificationResult.VERIFIED)
+        enqueue(
+            endpoint,
+            expectedResult,
+            VerificationResult.VERIFIED,
+        )
+
+        val body = HashMap<String, String>()
+        body["user_id"] = "jerry"
+        body["new_user_id"] = "john"
+        val postFieldsToSign = listOf(("user_id" to "jerry"), ("new_user_id" to "john"))
+
+        client.performRequest(baseURL, endpoint, body, postFieldsToSign = postFieldsToSign, mapOf("" to ""))
+
+        val request = server.takeRequest()
+        assertThat(request.getHeader(HTTPRequest.POST_PARAMS_HASH)).isNotNull
+        assertThat(request.getHeader(HTTPRequest.POST_PARAMS_HASH)).isEqualTo(expectedPostParamsHash)
+    }
+
+    @Test
+    fun `performRequest does not add post params hash header if verification disabled`() {
+        every { mockSigningManager.shouldVerifyEndpoint(any()) } returns false
+        val expectedResult = HTTPResult.createResult()
+        val endpoint = Endpoint.LogIn
+        enqueue(
+            endpoint,
+            expectedResult,
+        )
+
+        val body = HashMap<String, String>()
+        body["user_id"] = "jerry"
+        body["new_user_id"] = "john"
+        val postFieldsToSign = listOf(("user_id" to "jerry"), ("new_user_id" to "john"))
+
+        client.performRequest(baseURL, endpoint, body, postFieldsToSign = postFieldsToSign, mapOf("" to ""))
+
+        val request = server.takeRequest()
+        assertThat(request.getHeader(HTTPRequest.POST_PARAMS_HASH)).isNull()
     }
 
     @Test

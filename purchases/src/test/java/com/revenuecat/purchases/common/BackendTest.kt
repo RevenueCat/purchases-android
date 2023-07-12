@@ -240,6 +240,20 @@ class BackendTest {
     }
 
     @Test
+    fun `getCustomerInfo does not add post fields to sign`() {
+        getCustomerInfo(200, null, null)
+        verify(exactly = 1) {
+            mockClient.performRequest(
+                mockBaseURL,
+                Endpoint.GetCustomerInfo(appUserID),
+                body = null,
+                postFieldsToSign = null,
+                any()
+            )
+        }
+    }
+
+    @Test
     fun doesntDispatchIfClosed() {
         backend.getOfferings(
             appUserID = "id",
@@ -1157,6 +1171,37 @@ class BackendTest {
         assertThat(headersSlot.captured["marketplace"]).isEqualTo("US")
     }
 
+    @Test
+    fun `postReceipt uses correct post fields to sign`() {
+        mockPostReceiptResponseAndPost(
+            backend,
+            responseCode = 200,
+            isRestore = false,
+            clientException = null,
+            resultBody = null,
+            observerMode = true,
+            receiptInfo = ReceiptInfo(
+                productIDs,
+                storeProduct = storeProduct
+            ),
+            storeAppUserID = null
+        )
+
+        val expectedPostFieldsToSign = listOf(
+            "app_user_id" to appUserID,
+            "fetch_token" to fetchToken,
+        )
+        verify(exactly = 1) {
+            mockClient.performRequest(
+                mockBaseURL,
+                Endpoint.PostReceipt,
+                any(),
+                expectedPostFieldsToSign,
+                any()
+            )
+        }
+    }
+
     // endregion
 
     // region getOfferings
@@ -1290,6 +1335,28 @@ class BackendTest {
         val calledDelay = dispatcher.calledDelay
         assertThat(calledDelay).isNotNull
         assertThat(calledDelay).isEqualTo(Delay.DEFAULT)
+    }
+
+    @Test
+    fun `getOfferings does not send post fields to sign`() {
+        mockResponse(Endpoint.GetOfferings(appUserID), null, 200, null, noOfferingsResponse)
+
+        backend.getOfferings(
+            appUserID,
+            appInBackground = false,
+            onSuccess = onReceiveOfferingsResponseSuccessHandler,
+            onError = { _, _ -> fail("Should be success") }
+        )
+
+        verify(exactly = 1) {
+            mockClient.performRequest(
+                mockBaseURL,
+                Endpoint.GetOfferings(appUserID),
+                body = null,
+                postFieldsToSign = null,
+                any()
+            )
+        }
     }
 
     // endregion
@@ -1437,6 +1504,45 @@ class BackendTest {
             fail("Should have called success")
         }
         assertThat(receivedCustomerInfoCreated).isFalse
+    }
+
+    @Test
+    fun `logIn uses correct post fields to sign`() {
+        val newAppUserID = "newId"
+        val requestBody = mapOf(
+            "new_app_user_id" to newAppUserID,
+            "app_user_id" to appUserID
+        )
+        val resultBody = Responses.validFullPurchaserResponse
+        mockResponse(
+            Endpoint.LogIn,
+            requestBody,
+            responseCode = 200,
+            clientException = null,
+            resultBody = resultBody
+        )
+
+        backend.logIn(
+            appUserID,
+            newAppUserID,
+            onLoginSuccessHandler
+        ) {
+            fail("Should have called success")
+        }
+
+        val expectedPostFieldsToSign = listOf(
+            "app_user_id" to appUserID,
+            "new_app_user_id" to newAppUserID,
+        )
+        verify(exactly = 1) {
+            mockClient.performRequest(
+                mockBaseURL,
+                Endpoint.LogIn,
+                requestBody,
+                expectedPostFieldsToSign,
+                any()
+            )
+        }
     }
 
     @Test

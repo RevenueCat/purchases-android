@@ -89,8 +89,7 @@ internal class SigningManager(
         postFieldsToSign: List<Pair<String, String>>?,
     ): String? {
         return if (!postFieldsToSign.isNullOrEmpty() &&
-            signatureVerificationMode.shouldVerify &&
-            endpoint.supportsSignatureVerification
+            shouldVerifyEndpoint(endpoint)
         ) {
             val sha256Digest = MessageDigest.getInstance("SHA-256")
             postFieldsToSign.mapIndexed { index, pair ->

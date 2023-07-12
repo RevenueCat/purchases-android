@@ -14,6 +14,7 @@ import com.revenuecat.purchases.utils.SyncDispatcher
 import io.mockk.clearAllMocks
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import org.assertj.core.api.Assertions
 import org.assertj.core.api.Assertions.assertThat
 import org.json.JSONObject
@@ -162,5 +163,35 @@ class AmazonBackendTest {
 
         assertThat(receivedError!!).isNotNull
         assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.NetworkError)
+    }
+
+    @Test
+    fun `getAmazonReceiptData does not add post fields to sign`() {
+        every {
+            mockClient.performRequest(
+                baseURL = baseURL,
+                endpoint = Endpoint.GetAmazonReceipt("store_user_id", "receipt_id"),
+                body = null,
+                postFieldsToSign = null,
+                requestHeaders = mapOf("Authorization" to "Bearer $API_KEY")
+            )
+        } returns successfulResult
+
+        underTest.getAmazonReceiptData(
+            receiptId = "receipt_id",
+            storeUserID = "store_user_id",
+            onSuccess = expectedOnSuccess,
+            onError = unexpectedOnError
+        )
+
+        verify(exactly = 1) {
+            mockClient.performRequest(
+                baseURL = baseURL,
+                endpoint = Endpoint.GetAmazonReceipt("store_user_id", "receipt_id"),
+                body = null,
+                postFieldsToSign = null,
+                requestHeaders = mapOf("Authorization" to "Bearer $API_KEY")
+            )
+        }
     }
 }

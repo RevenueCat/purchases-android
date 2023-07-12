@@ -23,6 +23,7 @@ import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.slot
 import io.mockk.unmockkObject
+import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
 import org.json.JSONObject
@@ -140,6 +141,28 @@ class SubscriberAttributesPosterTests {
             unexpectedOnError
         )
         assertThat(receivedOnSuccess).isTrue()
+    }
+
+    @Test
+    fun `postSubscriberAttributes does not add post fields to sign`() {
+        mockResponse(200)
+
+        subscriberAttributesPoster.postSubscriberAttributes(
+            mapOf("email" to SubscriberAttribute("email", "un@email.com").toBackendMap()),
+            appUserID,
+            expectedOnSuccess,
+            unexpectedOnError
+        )
+
+        verify(exactly = 1) {
+            mockClient.performRequest(
+                mockBaseURL,
+                Endpoint.PostAttributes(appUserID),
+                any(),
+                postFieldsToSign = null,
+                requestHeaders = mapOf("Authorization" to "Bearer $API_KEY")
+            )
+        }
     }
 
     @Test

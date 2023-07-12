@@ -284,31 +284,6 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
     }
 
     @Test
-    fun `adds post params hash header`() {
-        val expectedResult = HTTPResult.createResult()
-        val expectedPostParamsHash = "test-post-params-hash"
-        val endpoint = Endpoint.LogIn
-        every {
-            mockSigningManager.getPostParamsForSigningHeaderIfNeeded(endpoint, any())
-        } returns expectedPostParamsHash
-        enqueue(
-            endpoint,
-            expectedResult
-        )
-
-        val body = HashMap<String, String>()
-        body["user_id"] = "jerry"
-        body["new_user_id"] = "john"
-        val postFieldsToSign = listOf(("user_id" to "jerry"), ("new_user_id" to "john"))
-
-        client.performRequest(baseURL, endpoint, body, postFieldsToSign = postFieldsToSign, mapOf("" to ""))
-
-        val request = server.takeRequest()
-        assertThat(request.getHeader(HTTPRequest.POST_PARAMS_HASH)).isNotNull
-        assertThat(request.getHeader(HTTPRequest.POST_PARAMS_HASH)).isEqualTo(expectedPostParamsHash)
-    }
-
-    @Test
     fun `given observer mode is enabled, observer mode header is sent`() {
         val appConfig = createAppConfig()
         appConfig.finishTransactions = false
