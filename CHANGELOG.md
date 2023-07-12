@@ -7,7 +7,6 @@ With verification enabled, the SDK ensures that the response created by the serv
 This is 100% opt-in. `EntitlementInfos` have a new `VerificationResult` property, which will indicate the validity of the responses when this feature is enabled.
 
 ```kotlin
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 fun configureRevenueCat() {
     val configuration = PurchasesConfiguration.Builder(context, apiKey)
         .entitlementVerificationMode(EntitlementVerificationMode.INFORMATIONAL)
