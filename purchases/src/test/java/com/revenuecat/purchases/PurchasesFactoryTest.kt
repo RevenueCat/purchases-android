@@ -85,6 +85,6 @@ class PurchasesFactoryTest {
     }
 
     private fun createConfiguration(apiKey: String = "fakeApiKey"): PurchasesConfiguration {
-        return PurchasesConfiguration.Builder(contextMock, apiKey).diagnosticsEnabled(true).build()
+        return PurchasesConfiguration.Builder(contextMock, apiKey).build()
     }
 }
