@@ -13,5 +13,7 @@ private class VerificationResultAPI {
             VerificationResult.FAILED,
             -> {}
         }.exhaustive
+
+        val isVerified: Boolean = verificationResult.isVerified
     }
 }

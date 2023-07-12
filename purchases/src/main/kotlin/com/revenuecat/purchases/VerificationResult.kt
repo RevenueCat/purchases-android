@@ -32,4 +32,17 @@ enum class VerificationResult {
      * Verification was performed on device.
      */
     VERIFIED_ON_DEVICE,
+
+    ;
+
+    /**
+     * Whether the result is [VerificationResult.VERIFIED] or [VerificationResult.VERIFIED_ON_DEVICE].
+     */
+    val isVerified: Boolean
+        get() {
+            return when (this) {
+                VERIFIED, VERIFIED_ON_DEVICE -> true
+                NOT_REQUESTED, FAILED -> false
+            }
+        }
 }
