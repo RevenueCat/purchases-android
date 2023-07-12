@@ -122,4 +122,51 @@ internal class LoadShedderBackendIntegrationTest: BaseBackendIntegrationTest() {
         }
         assertSigningPerformed()
     }
+
+    @Test
+    fun `can perform login backend request`() {
+        ensureBlockFinishes { latch ->
+            backend.logIn(
+                appUserID = "test-user-id",
+                newAppUserID = "new-test-user-id",
+                onSuccessHandler = { customerInfo, _ ->
+                    assertThat(customerInfo.originalAppUserId).isEqualTo("new-test-user-id")
+                    latch.countDown()
+                },
+                onErrorHandler = {
+                    fail("Expected success")
+                }
+            )
+        }
+        verify(exactly = 1) {
+            // Verify we save the backend response in the shared preferences
+            sharedPreferencesEditor.putString("/v1${Endpoint.LogIn.getPath()}", any())
+        }
+        verify(exactly = 1) { sharedPreferencesEditor.apply() }
+        assertSigningNotPerformed()
+    }
+
+    @Test
+    fun `can perform verified login backend request`() {
+        setupTest(SignatureVerificationMode.Enforced())
+        ensureBlockFinishes { latch ->
+            backend.logIn(
+                appUserID = "test-user-id",
+                newAppUserID = "new-test-user-id",
+                onSuccessHandler = { customerInfo, _ ->
+                    assertThat(customerInfo.originalAppUserId).isEqualTo("new-test-user-id")
+                    latch.countDown()
+                },
+                onErrorHandler = {
+                    fail("Expected success")
+                }
+            )
+        }
+        verify(exactly = 1) {
+            // Verify we save the backend response in the shared preferences
+            sharedPreferencesEditor.putString("/v1${Endpoint.LogIn.getPath()}", any())
+        }
+        verify(exactly = 1) { sharedPreferencesEditor.apply() }
+        assertSigningPerformed()
+    }
 }
