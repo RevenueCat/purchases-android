@@ -11,5 +11,6 @@ final class VerificationResultAPI {
             case VERIFIED:
             case FAILED:
         }
+        boolean isVerified = verificationResult.isVerified();
     }
 }
