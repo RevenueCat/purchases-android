@@ -89,7 +89,6 @@ class BillingWrapperTest {
 
     private var onConnectedCalled: Boolean = false
     private var mockClientFactory: BillingWrapper.ClientFactory = mockk()
-    private var mockApplication: Application = mockk()
     private var mockClient: BillingClient = mockk()
     private var purchasesUpdatedListener: PurchasesUpdatedListener? = null
     private var billingClientStateListener: BillingClientStateListener? = null
@@ -171,7 +170,7 @@ class BillingWrapperTest {
 
         mockDetailsList = listOf(mockProductDetails())
 
-        wrapper = BillingWrapper(mockApplication, mockClientFactory, handler, mockDeviceCache, mockDiagnosticsTracker, mockDateProvider)
+        wrapper = BillingWrapper(mockClientFactory, handler, mockDeviceCache, mockDiagnosticsTracker, mockDateProvider)
         wrapper.purchasesUpdatedListener = mockPurchasesListener
         onConnectedCalled = false
         wrapper.stateListener = object : BillingAbstract.StateListener {

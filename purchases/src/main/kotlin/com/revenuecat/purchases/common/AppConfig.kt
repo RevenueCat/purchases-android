@@ -35,6 +35,9 @@ internal class AppConfig(
     } ?: URL("https://api.revenuecat.com/")
     val diagnosticsURL = URL("https://api-diagnostics.revenuecat.com/")
 
+    val playStoreVersionName = context.playStorePackageInfo?.versionName
+    val playServicesVersionName = context.playServicesPackageInfo?.versionName
+
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false

@@ -6,7 +6,6 @@
 package com.revenuecat.purchases.google
 
 import android.app.Activity
-import android.app.Application
 import android.content.Context
 import android.os.Handler
 import androidx.annotation.UiThread
@@ -42,8 +41,6 @@ import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.firstProductId
 import com.revenuecat.purchases.common.log
-import com.revenuecat.purchases.common.playServicesPackageInfo
-import com.revenuecat.purchases.common.playStorePackageInfo
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.sha256
 import com.revenuecat.purchases.common.toHumanReadableDescription
@@ -69,7 +66,6 @@ private const val RECONNECT_TIMER_MAX_TIME_MILLISECONDS = 1000L * 60L * 15L // 1
 
 @Suppress("LargeClass", "TooManyFunctions")
 internal class BillingWrapper(
-    private val application: Application,
     private val clientFactory: ClientFactory,
     private val mainHandler: Handler,
     private val deviceCache: DeviceCache,
@@ -910,8 +906,6 @@ internal class BillingWrapper(
         val billingResult = billingClient?.isFeatureSupported(BillingClient.FeatureType.PRODUCT_DETAILS)
         if (billingResult != null && billingResult.responseCode != BillingClient.BillingResponseCode.OK) {
             diagnosticsTrackerIfEnabled?.trackFeatureNotSupported(
-                application.playStorePackageInfo,
-                application.playServicesPackageInfo,
                 billingResult.responseCode,
                 billingResult.debugMessage,
             )

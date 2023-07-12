@@ -85,6 +85,7 @@ internal class PurchasesFactory(
             if (diagnosticsEnabled) {
                 diagnosticsFileHelper = DiagnosticsFileHelper(FileHelper(context))
                 diagnosticsTracker = DiagnosticsTracker(
+                    appConfig,
                     diagnosticsFileHelper,
                     DiagnosticsAnonymizer(Anonymizer()),
                     diagnosticsDispatcher,

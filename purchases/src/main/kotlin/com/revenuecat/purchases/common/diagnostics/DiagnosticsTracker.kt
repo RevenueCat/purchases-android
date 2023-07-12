@@ -1,7 +1,7 @@
 package com.revenuecat.purchases.common.diagnostics
 
-import android.content.pm.PackageInfo
 import com.revenuecat.purchases.VerificationResult
+import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
@@ -14,6 +14,7 @@ import kotlin.time.Duration
  * sent and their properties. Use this class if you want to send a a diagnostics entry.
  */
 internal class DiagnosticsTracker(
+    private val appConfig: AppConfig,
     private val diagnosticsFileHelper: DiagnosticsFileHelper,
     private val diagnosticsAnonymizer: DiagnosticsAnonymizer,
     private val diagnosticsDispatcher: Dispatcher,
@@ -140,16 +141,14 @@ internal class DiagnosticsTracker(
     }
 
     fun trackFeatureNotSupported(
-        playStorePackageInfo: PackageInfo?,
-        playServicesPackageInfo: PackageInfo?,
         billingResponseCode: Int,
         billingDebugMessage: String,
     ) {
         val event = DiagnosticsEntry.Counter(
             name = DiagnosticsCounterName.FEATURE_NOT_SUPPORTED_ERROR,
             tags = mapOf(
-                "play_store_version" to (playStorePackageInfo?.versionName ?: ""),
-                "play_services_version" to (playServicesPackageInfo?.versionName ?: ""),
+                "play_store_version" to (appConfig.playStoreVersionName ?: ""),
+                "play_services_version" to (appConfig.playServicesVersionName ?: ""),
                 "billing_response_code" to billingResponseCode.toString(),
                 "billing_debug_message" to billingDebugMessage,
             ),

@@ -1,8 +1,11 @@
 package com.revenuecat.purchases.common.diagnostics
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.VerificationResult
+import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Dispatcher
+import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.SyncDispatcher
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
@@ -38,6 +41,14 @@ class DiagnosticsTrackerTest {
 
     private lateinit var diagnosticsTracker: DiagnosticsTracker
 
+    private val appConfig = AppConfig(
+        context = mockk(relaxed = true),
+        observerMode = true,
+        platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
+        proxyURL = null,
+        store = Store.PLAY_STORE
+    )
+
     @Before
     fun setup() {
         diagnosticsFileHelper = mockk()
@@ -45,6 +56,7 @@ class DiagnosticsTrackerTest {
         dispatcher = SyncDispatcher()
 
         diagnosticsTracker = DiagnosticsTracker(
+            appConfig,
             diagnosticsFileHelper,
             diagnosticsAnonymizer,
             dispatcher
