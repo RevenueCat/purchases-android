@@ -17,6 +17,7 @@ internal class BackendHelper(
     fun performRequest(
         endpoint: Endpoint,
         body: Map<String, Any?>?,
+        postFieldsToSign: List<Pair<String, String>>?,
         onError: (PurchasesError) -> Unit,
         onCompleted: (PurchasesError?, Int, JSONObject) -> Unit,
     ) {
@@ -27,6 +28,7 @@ internal class BackendHelper(
                         appConfig.baseURL,
                         endpoint,
                         body,
+                        postFieldsToSign,
                         authenticationHeaders,
                     )
                 }

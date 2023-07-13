@@ -47,7 +47,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
             expectedResult = HTTPResult.createResult()
         )
 
-        client.performRequest(baseURL, Endpoint.LogIn, null, mapOf("" to ""))
+        client.performRequest(baseURL, Endpoint.LogIn, body = null, postFieldsToSign = null, mapOf("" to ""))
 
         val request = server.takeRequest()
         assertThat(request.method).isEqualTo("GET")
@@ -62,7 +62,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
             expectedResult = HTTPResult.createResult(responseCode = 223)
         )
 
-        val result = client.performRequest(baseURL, endpoint, null, mapOf("" to ""))
+        val result = client.performRequest(baseURL, endpoint, body = null, postFieldsToSign = null, mapOf("" to ""))
 
         server.takeRequest()
 
@@ -77,7 +77,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
             expectedResult = HTTPResult.createResult(223, "{'response': 'OK'}")
         )
 
-        val result = client.performRequest(baseURL, endpoint, null, mapOf("" to ""))
+        val result = client.performRequest(baseURL, endpoint, body = null, postFieldsToSign = null, mapOf("" to ""))
 
         server.takeRequest()
 
@@ -95,7 +95,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         )
 
         try {
-            client.performRequest(baseURL, endpoint, null, mapOf("" to ""))
+            client.performRequest(baseURL, endpoint, body = null, postFieldsToSign = null, mapOf("" to ""))
         } finally {
             server.takeRequest()
         }
@@ -109,7 +109,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
 
         client = createClient(appConfig = createAppConfig(forceServerErrors = true))
 
-        val result = client.performRequest(baseURL, endpoint, null, mapOf("" to ""))
+        val result = client.performRequest(baseURL, endpoint, body = null, postFieldsToSign = null, mapOf("" to ""))
 
         assertThat(server.requestCount).isEqualTo(0)
         assertThat(result.responseCode).isEqualTo(RCHTTPStatusCodes.ERROR)
@@ -126,7 +126,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         val appConfig = createAppConfig(forceServerErrors = true)
         client = createClient(appConfig = appConfig)
 
-        client.performRequest(baseURL, endpoint, null, mapOf("" to ""))
+        client.performRequest(baseURL, endpoint, body = null, postFieldsToSign = null, mapOf("" to ""))
 
         assertThat(server.requestCount).isEqualTo(0)
 
@@ -137,7 +137,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
             expectedResult = HTTPResult.createResult(payload = "{}")
         )
 
-        client.performRequest(baseURL, endpoint, null, mapOf("" to ""))
+        client.performRequest(baseURL, endpoint, body = null, postFieldsToSign = null, mapOf("" to ""))
 
         assertThat(server.requestCount).isEqualTo(1)
     }
@@ -157,7 +157,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         val headers = HashMap<String, String>()
         headers["Authentication"] = "Bearer todd"
 
-        client.performRequest(baseURL, endpoint, null, headers)
+        client.performRequest(baseURL, endpoint, body = null, postFieldsToSign = null, headers)
 
         val request = server.takeRequest()
 
@@ -173,7 +173,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
             expectedResult
         )
 
-        client.performRequest(baseURL, endpoint, null, mapOf("" to ""))
+        client.performRequest(baseURL, endpoint, body = null, postFieldsToSign = null, mapOf("" to ""))
 
         val request = server.takeRequest()
 
@@ -208,7 +208,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
             expectedResult
         )
 
-        client.performRequest(baseURL, endpoint, null, mapOf("" to ""))
+        client.performRequest(baseURL, endpoint, body = null, postFieldsToSign = null, mapOf("" to ""))
 
         val request = server.takeRequest()
 
@@ -235,7 +235,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
             expectedResult
         )
 
-        client.performRequest(baseURL, endpoint, null, mapOf("" to ""))
+        client.performRequest(baseURL, endpoint, body = null, postFieldsToSign = null, mapOf("" to ""))
 
         val request = server.takeRequest()
 
@@ -255,7 +255,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         )
 
         client = createClient(appConfig)
-        client.performRequest(baseURL, endpoint, null, mapOf("" to ""))
+        client.performRequest(baseURL, endpoint, body = null, postFieldsToSign = null, mapOf("" to ""))
 
         val request = server.takeRequest()
 
@@ -274,12 +274,13 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         val body = HashMap<String, String>()
         body["user_id"] = "jerry"
 
-        client.performRequest(baseURL, endpoint, body, mapOf("" to ""))
+        client.performRequest(baseURL, endpoint, body, postFieldsToSign = null, mapOf("" to ""))
 
         val request = server.takeRequest()
         assertThat(request.method).`as`("method is POST").isEqualTo("POST")
         assertThat(request.body).`as`("body is not null").isNotNull
         assertThat(request.body.size).isGreaterThan(0)
+        assertThat(request.getHeader(HTTPRequest.POST_PARAMS_HASH)).isNull()
     }
 
     @Test
@@ -296,7 +297,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
             expectedResult
         )
 
-        client.performRequest(baseURL, endpoint, null, mapOf("" to ""))
+        client.performRequest(baseURL, endpoint, body = null, postFieldsToSign = null, mapOf("" to ""))
 
         val request = server.takeRequest()
 
@@ -359,7 +360,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
             )
         } returns expectedResult
 
-        val result = client.performRequest(baseURL, endpoint, null, mapOf("" to ""))
+        val result = client.performRequest(baseURL, endpoint, body = null, postFieldsToSign = null, mapOf("" to ""))
 
         server.takeRequest()
         server.takeRequest()
@@ -386,6 +387,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
             baseURL,
             endpoint,
             body = null,
+            postFieldsToSign = null,
             requestHeaders = emptyMap()
         )
 
@@ -406,6 +408,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
             baseURL,
             endpoint,
             body = null,
+            postFieldsToSign = null,
             requestHeaders = emptyMap()
         )
 
@@ -431,7 +434,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
             expectedResult = HTTPResult.createResult(payload = "{}\n")
         )
 
-        val result = client.performRequest(baseURL, Endpoint.LogIn, null, emptyMap())
+        val result = client.performRequest(baseURL, Endpoint.LogIn, body = null, postFieldsToSign = null, emptyMap())
 
         server.takeRequest()
 
@@ -461,7 +464,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
 
         every { dateProvider.now } returnsMany listOf(Date(requestStartTime), Date(requestEndTime))
 
-        client.performRequest(baseURL, Endpoint.LogIn, null, mapOf("" to ""))
+        client.performRequest(baseURL, Endpoint.LogIn, body = null, postFieldsToSign = null, mapOf("" to ""))
         server.takeRequest()
 
         verify(exactly = 1) {
@@ -490,7 +493,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
 
         every { dateProvider.now } returnsMany listOf(Date(requestStartTime), Date(requestEndTime))
 
-        client.performRequest(baseURL, Endpoint.LogIn, null, mapOf("" to ""))
+        client.performRequest(baseURL, Endpoint.LogIn, body = null, postFieldsToSign = null, mapOf("" to ""))
         server.takeRequest()
 
         verify(exactly = 1) {
@@ -524,7 +527,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         server.enqueue(response)
 
         try {
-            client.performRequest(baseURL, endpoint, null, mapOf("" to ""))
+            client.performRequest(baseURL, endpoint, body = null, postFieldsToSign = null, mapOf("" to ""))
         } catch (e: JSONException) {
             verify(exactly = 1) {
                 diagnosticsTracker.trackHttpRequestPerformed(endpoint, any(), false, HTTPClient.NO_STATUS_CODE, null, VerificationResult.NOT_REQUESTED)

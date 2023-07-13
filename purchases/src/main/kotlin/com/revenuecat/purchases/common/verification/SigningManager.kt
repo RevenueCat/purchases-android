@@ -9,6 +9,7 @@ import com.revenuecat.purchases.common.verboseLog
 import com.revenuecat.purchases.common.warnLog
 import com.revenuecat.purchases.strings.NetworkStrings
 import com.revenuecat.purchases.utils.Result
+import java.security.MessageDigest
 import java.security.SecureRandom
 
 internal class SigningManager(
@@ -18,6 +19,8 @@ internal class SigningManager(
 ) {
     private companion object {
         const val NONCE_BYTES_SIZE = 12
+        const val POST_PARAMS_ALGORITHM = "sha256"
+        const val POST_PARAMS_SEPARATOR = 0x00.toByte()
     }
 
     private data class Parameters(
@@ -25,6 +28,7 @@ internal class SigningManager(
         val apiKey: String,
         val nonce: String?,
         val urlPath: String,
+        val postParamsHashHeader: String?,
         val requestTime: String,
         val eTag: String?,
         val body: String?,
@@ -39,6 +43,7 @@ internal class SigningManager(
             if (apiKey != other.apiKey) return false
             if (nonce != other.nonce) return false
             if (urlPath != other.urlPath) return false
+            if (postParamsHashHeader != other.postParamsHashHeader) return false
             if (requestTime != other.requestTime) return false
             if (eTag != other.eTag) return false
             if (body != other.body) return false
@@ -51,6 +56,7 @@ internal class SigningManager(
             result = 31 * result + apiKey.hashCode()
             result = 31 * result + (nonce?.hashCode() ?: 0)
             result = 31 * result + urlPath.hashCode()
+            result = 31 * result + (postParamsHashHeader?.hashCode() ?: 0)
             result = 31 * result + requestTime.hashCode()
             result = 31 * result + (eTag?.hashCode() ?: 0)
             result = 31 * result + (body?.hashCode() ?: 0)
@@ -62,6 +68,7 @@ internal class SigningManager(
                 apiKey.toByteArray() +
                 (nonce?.let { Base64.decode(it, Base64.DEFAULT) } ?: byteArrayOf()) +
                 urlPath.toByteArray() +
+                (postParamsHashHeader?.toByteArray() ?: byteArrayOf()) +
                 requestTime.toByteArray() +
                 (eTag?.toByteArray() ?: byteArrayOf()) +
                 (body?.toByteArray() ?: byteArrayOf())
@@ -75,7 +82,33 @@ internal class SigningManager(
     fun createRandomNonce(): String {
         val bytes = ByteArray(NONCE_BYTES_SIZE)
         SecureRandom().nextBytes(bytes)
-        return String(Base64.encode(bytes, Base64.DEFAULT))
+        return String(Base64.encode(bytes, Base64.DEFAULT)).trim()
+    }
+
+    fun getPostParamsForSigningHeaderIfNeeded(
+        endpoint: Endpoint,
+        postFieldsToSign: List<Pair<String, String>>?,
+    ): String? {
+        return if (!postFieldsToSign.isNullOrEmpty() &&
+            shouldVerifyEndpoint(endpoint)
+        ) {
+            val sha256Digest = MessageDigest.getInstance("SHA-256")
+            postFieldsToSign.mapIndexed { index, pair ->
+                if (index > 0) {
+                    sha256Digest.update(POST_PARAMS_SEPARATOR)
+                }
+                sha256Digest.update(pair.second.toByteArray())
+            }
+            val hashFields = sha256Digest.digest().fold("") { str, byte -> str + "%02x".format(byte) }
+            val header = listOf(
+                postFieldsToSign.joinToString(",") { it.first },
+                POST_PARAMS_ALGORITHM,
+                hashFields,
+            ).joinToString(":")
+            header
+        } else {
+            null
+        }
     }
 
     @Suppress("LongParameterList", "ReturnCount", "CyclomaticComplexMethod", "LongMethod")
@@ -86,6 +119,7 @@ internal class SigningManager(
         body: String?,
         requestTime: String?,
         eTag: String?,
+        postFieldsToSignHeader: String?,
     ): VerificationResult {
         if (appConfig.forceSigningErrors) {
             warnLog("Forcing signing error for request with path: $urlPath")
@@ -132,6 +166,7 @@ internal class SigningManager(
                     apiKey,
                     nonce,
                     urlPath,
+                    postFieldsToSignHeader,
                     requestTime,
                     eTag,
                     body,

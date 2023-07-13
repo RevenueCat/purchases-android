@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.backend_integration_tests
 
 import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.offlineentitlements.ProductEntitlementMapping
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
@@ -40,7 +41,7 @@ internal class ProductionBackendIntegrationTest: BaseBackendIntegrationTest() {
             sharedPreferencesEditor.putString("/v1${Endpoint.GetProductEntitlementMapping.getPath()}", any())
         }
         verify(exactly = 1) { sharedPreferencesEditor.apply() }
-        verify(exactly = 0) { signingManager.verifyResponse(any(), any(), any(), any(), any(), any())  }
+        assertSigningNotPerformed()
     }
 
     @Test
@@ -64,7 +65,7 @@ internal class ProductionBackendIntegrationTest: BaseBackendIntegrationTest() {
                 }
             )
         }
-        verify(exactly = 1) { signingManager.verifyResponse(any(), any(), any(), any(), any(), any())  }
+        assertSigningPerformed()
     }
 
     @Test
@@ -87,7 +88,7 @@ internal class ProductionBackendIntegrationTest: BaseBackendIntegrationTest() {
             sharedPreferencesEditor.putString("/v1${Endpoint.GetOfferings("test-user-id").getPath()}", any())
         }
         verify(exactly = 1) { sharedPreferencesEditor.apply() }
-        verify(exactly = 0) { signingManager.verifyResponse(any(), any(), any(), any(), any(), any())  }
+        assertSigningNotPerformed()
     }
 
     @Test
@@ -106,6 +107,54 @@ internal class ProductionBackendIntegrationTest: BaseBackendIntegrationTest() {
                 }
             )
         }
-        verify(exactly = 1) { signingManager.verifyResponse(any(), any(), any(), any(), any(), any())  }
+        assertSigningPerformed()
+    }
+
+    @Test
+    fun `can perform login backend request`() {
+        ensureBlockFinishes { latch ->
+            backend.logIn(
+                appUserID = "test-user-id",
+                newAppUserID = "new-test-user-id",
+                onSuccessHandler = { customerInfo, _ ->
+                    assertThat(customerInfo.originalAppUserId).isEqualTo("new-test-user-id")
+                    latch.countDown()
+                },
+                onErrorHandler = {
+                    fail("Expected success")
+                }
+            )
+        }
+        verify(exactly = 1) {
+            // Verify we save the backend response in the shared preferences
+            sharedPreferencesEditor.putString("/v1${Endpoint.LogIn.getPath()}", any())
+        }
+        verify(exactly = 1) { sharedPreferencesEditor.apply() }
+        assertSigningNotPerformed()
+    }
+
+    @Test
+    fun `can perform verified login backend request`() {
+        setupTest(SignatureVerificationMode.Enforced())
+        ensureBlockFinishes { latch ->
+            backend.logIn(
+                appUserID = "test-user-id",
+                newAppUserID = "new-test-user-id",
+                onSuccessHandler = { customerInfo, _ ->
+                    assertThat(customerInfo.originalAppUserId).isEqualTo("new-test-user-id")
+                    assertThat(customerInfo.entitlements.verification).isEqualTo(VerificationResult.VERIFIED)
+                    latch.countDown()
+                },
+                onErrorHandler = {
+                    fail("Expected success")
+                }
+            )
+        }
+        verify(exactly = 1) {
+            // Verify we save the backend response in the shared preferences
+            sharedPreferencesEditor.putString("/v1${Endpoint.LogIn.getPath()}", any())
+        }
+        verify(exactly = 1) { sharedPreferencesEditor.apply() }
+        assertSigningPerformed()
     }
 }

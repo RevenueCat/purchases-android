@@ -32,7 +32,8 @@ internal class AmazonBackend(
         val call = {
             backendHelper.performRequest(
                 Endpoint.GetAmazonReceipt(storeUserID, receiptId),
-                null,
+                body = null,
+                postFieldsToSign = null,
                 { error ->
                     synchronized(this@AmazonBackend) {
                         postAmazonReceiptCallbacks.remove(cacheKey)

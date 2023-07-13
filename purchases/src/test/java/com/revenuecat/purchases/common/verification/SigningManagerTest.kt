@@ -2,6 +2,7 @@ package com.revenuecat.purchases.common.verification
 
 import android.util.Base64
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.google.crypto.tink.subtle.Ed25519Sign
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.VerificationResult
@@ -15,6 +16,9 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
+import java.security.SecureRandom
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
@@ -29,6 +33,11 @@ class SigningManagerTest {
     private lateinit var disabledSigningManager: SigningManager
     private lateinit var informationalSigningManager: SigningManager
     private lateinit var enforcedSigningManager: SigningManager
+
+    private val testFieldsToSign = listOf(
+        "test-field-1" to "test-value-1",
+        "test-field-2" to "test-value-2",
+    )
 
     @Before
     fun setUp() {
@@ -88,6 +97,12 @@ class SigningManagerTest {
     }
 
     @Test
+    fun `createRandomNonce does not end with new line`() {
+        val nonce = disabledSigningManager.createRandomNonce()
+        assertThat(nonce.endsWith('\n')).isFalse
+    }
+
+    @Test
     fun `createRandomNonce returns different nonce on each call`() {
         val nonce1 = disabledSigningManager.createRandomNonce()
         val nonce2 = disabledSigningManager.createRandomNonce()
@@ -95,6 +110,44 @@ class SigningManagerTest {
     }
 
     // endregion
+
+    // region getPostParamsForSigningHeaderIfNeeded
+
+    @Test
+    fun `getPostParamsForSigningHeaderIfNeeded returns null if null fields passed`() {
+        val header = informationalSigningManager.getPostParamsForSigningHeaderIfNeeded(Endpoint.LogIn, null)
+        assertThat(header).isNull()
+    }
+
+    @Test
+    fun `getPostParamsForSigningHeaderIfNeeded returns null if empty fields passed`() {
+        val header = informationalSigningManager.getPostParamsForSigningHeaderIfNeeded(Endpoint.LogIn, emptyList())
+        assertThat(header).isNull()
+    }
+
+    @Test
+    fun `getPostParamsForSigningHeaderIfNeeded returns null if endpoint does not support signing`() {
+        val header = informationalSigningManager.getPostParamsForSigningHeaderIfNeeded(Endpoint.PostDiagnostics, testFieldsToSign)
+        assertThat(header).isNull()
+    }
+
+    @Test
+    fun `getPostParamsForSigningHeaderIfNeeded returns null if signing disabled`() {
+        val header = disabledSigningManager.getPostParamsForSigningHeaderIfNeeded(Endpoint.LogIn, testFieldsToSign)
+        assertThat(header).isNull()
+    }
+
+    @Test
+    fun `getPostParamsForSigningHeaderIfNeeded returns header with correct value in informational`() {
+        val header = informationalSigningManager.getPostParamsForSigningHeaderIfNeeded(Endpoint.LogIn, testFieldsToSign)
+        assertThat(header).isEqualTo("test-field-1,test-field-2:sha256:0a1d806f908079361fc0d18073dfcfcacb730afe4ace3d0478602479892e81d3")
+    }
+
+    @Test
+    fun `getPostParamsForSigningHeaderIfNeeded returns header with correct value in enforced`() {
+        val header = enforcedSigningManager.getPostParamsForSigningHeaderIfNeeded(Endpoint.LogIn, testFieldsToSign)
+        assertThat(header).isEqualTo("test-field-1,test-field-2:sha256:0a1d806f908079361fc0d18073dfcfcacb730afe4ace3d0478602479892e81d3")
+    }
 
     // region verifyResponse
 
@@ -253,6 +306,23 @@ class SigningManagerTest {
         assertThat(verificationResult).isEqualTo(VerificationResult.VERIFIED)
     }
 
+    @Test
+    fun `verifyResponse with post fields to sign verifies correctly`() {
+        val rootVerifier = DefaultSignatureVerifier("yg2wZGAr8Af+Unt9RImQDbL7qA81txk+ga0I+ylmcyo=")
+        val signingManager = SigningManager(
+            SignatureVerificationMode.Informational(IntermediateSignatureHelper(rootVerifier)),
+            appConfig,
+            apiKey,
+        )
+        val postParamsHeader = "test-field-1,test-field-2:sha256:0a1d806f908079361fc0d18073dfcfcacb730afe4ace3d0478602479892e81d3"
+        val verificationResult = callVerifyResponse(
+            signingManager,
+            signature = "xoDYyUeHnIlSIAeOOzmvdNPOlbNSKK+xE0fE/ufS1fsAAMNQ1HiPDL34Vx0Uy74KPV5mztuk3DHBpucT/rSYVlkxIa3ModYmPfYZ20lnlbSB1UiP6oJHwAA2pXlS6AQ5eLSuAr6y+BuXlXXhZybxIJRFiToh3gs+X7IVmtCZwtkNu0rM0CGZ6FbQFAutF+Y5dGM8Q4HUAdy8pb639Zv9Lf7eZZ/Td9XuWqd+TA98M2MfL6ED",
+            postParamsHeader = postParamsHeader,
+        )
+        assertThat(verificationResult).isEqualTo(VerificationResult.VERIFIED)
+    }
+
     // endregion
 
     // region Helpers
@@ -269,8 +339,46 @@ class SigningManagerTest {
         nonce: String = "MTIzNDU2Nzg5MGFi",
         body: String? = "{\"request_date\":\"2023-02-21T18:58:36Z\",\"request_date_ms\":1677005916011,\"subscriber\":{\"entitlements\":{},\"first_seen\":\"2023-02-21T18:58:35Z\",\"last_seen\":\"2023-02-21T18:58:35Z\",\"management_url\":null,\"non_subscriptions\":{},\"original_app_user_id\":\"login\",\"original_application_version\":null,\"original_purchase_date\":null,\"other_purchases\":{},\"subscriptions\":{}}}\n",
         requestTime: String? = "1677005916012",
-        eTag: String? = null
-    ) = signingManager.verifyResponse(requestPath, signature, nonce, body, requestTime, eTag)
+        eTag: String? = null,
+        postParamsHeader: String? = null,
+    ) = signingManager.verifyResponse(requestPath, signature, nonce, body, requestTime, eTag, postParamsHeader)
+
+    // We can use this function to create new signatures if we need to change the test data
+    @Suppress("Unused")
+    private fun createFakeSignature(
+        rootPrivateKeyEncoded: String = "YMHMQMpepBKamtSzO8KCN2M8Z3AUW5R1JXIFtxUWFUI",
+        rootPublicKeyEncoded: String = "yg2wZGAr8Af+Unt9RImQDbL7qA81txk+ga0I+ylmcyo=",
+        intermediatePrivateKeyEncoded: String = "fPBoIjQ7DecE89ATW6PZsqLVQNyEs5fiX3sUyS3U4YI",
+        intermediatePublicKeyEncoded: String = "xoDYyUeHnIlSIAeOOzmvdNPOlbNSKK+xE0fE/ufS1fs=",
+        intermediateKeyExpirationDaysBytes: ByteArray = ByteBuffer.allocate(Int.SIZE_BYTES).putInt(50_000).order(ByteOrder.LITTLE_ENDIAN).array(),
+        requestPath: String = "test-url-path",
+        postParamsHeader: String = "test-field-1,test-field-2:sha256:0a1d806f908079361fc0d18073dfcfcacb730afe4ace3d0478602479892e81d3",
+        apiKey: String = this.apiKey,
+        body: String? = "{\"request_date\":\"2023-02-21T18:58:36Z\",\"request_date_ms\":1677005916011,\"subscriber\":{\"entitlements\":{},\"first_seen\":\"2023-02-21T18:58:35Z\",\"last_seen\":\"2023-02-21T18:58:35Z\",\"management_url\":null,\"non_subscriptions\":{},\"original_app_user_id\":\"login\",\"original_application_version\":null,\"original_purchase_date\":null,\"other_purchases\":{},\"subscriptions\":{}}}\n",
+        requestTime: String? = "1677005916012",
+        eTag: String? = null,
+        nonce: String? = "MTIzNDU2Nzg5MGFi",
+        salt: ByteArray = ByteArray(16).apply { SecureRandom().nextBytes(this) }
+    ): String {
+        val rootSigner = Ed25519Sign(Base64.decode(rootPrivateKeyEncoded, Base64.DEFAULT))
+        val intermediatePublicKey = Base64.decode(intermediatePublicKeyEncoded, Base64.DEFAULT)
+        val intermediatePublicKeySignature = rootSigner.sign(intermediateKeyExpirationDaysBytes + intermediatePublicKey)
+        val intermediateSigner = Ed25519Sign(Base64.decode(intermediatePrivateKeyEncoded, Base64.DEFAULT))
+        val payloadToSign = salt +
+            apiKey.toByteArray() +
+            (nonce?.let { Base64.decode(it, Base64.DEFAULT) } ?: byteArrayOf()) +
+            requestPath.toByteArray() +
+            postParamsHeader.toByteArray() +
+            (requestTime?.toByteArray() ?: byteArrayOf()) +
+            (eTag?.toByteArray() ?: byteArrayOf()) +
+            (body?.toByteArray() ?: byteArrayOf())
+        val signature =  intermediatePublicKey +
+            intermediateKeyExpirationDaysBytes +
+            intermediatePublicKeySignature +
+            salt +
+            intermediateSigner.sign(payloadToSign)
+        return Base64.encodeToString(signature, Base64.DEFAULT)
+    }
 
     // endregion
 }
