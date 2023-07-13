@@ -97,6 +97,12 @@ class SigningManagerTest {
     }
 
     @Test
+    fun `createRandomNonce does not end with new line`() {
+        val nonce = disabledSigningManager.createRandomNonce()
+        assertThat(nonce.endsWith('\n')).isFalse
+    }
+
+    @Test
     fun `createRandomNonce returns different nonce on each call`() {
         val nonce1 = disabledSigningManager.createRandomNonce()
         val nonce2 = disabledSigningManager.createRandomNonce()

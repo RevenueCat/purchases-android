@@ -20,6 +20,7 @@ internal class SigningManager(
     private companion object {
         const val NONCE_BYTES_SIZE = 12
         const val POST_PARAMS_ALGORITHM = "sha256"
+        const val POST_PARAMS_SEPARATOR = 0x00.toByte()
     }
 
     private data class Parameters(
@@ -94,7 +95,7 @@ internal class SigningManager(
             val sha256Digest = MessageDigest.getInstance("SHA-256")
             postFieldsToSign.mapIndexed { index, pair ->
                 if (index > 0) {
-                    sha256Digest.update(0x00.toByte())
+                    sha256Digest.update(POST_PARAMS_SEPARATOR)
                 }
                 sha256Digest.update(pair.second.toByteArray())
             }
