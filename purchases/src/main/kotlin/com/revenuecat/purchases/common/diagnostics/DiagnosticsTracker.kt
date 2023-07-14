@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.common.diagnostics
 
 import com.revenuecat.purchases.VerificationResult
+import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
@@ -13,6 +14,7 @@ import kotlin.time.Duration
  * sent and their properties. Use this class if you want to send a a diagnostics entry.
  */
 internal class DiagnosticsTracker(
+    private val appConfig: AppConfig,
     private val diagnosticsFileHelper: DiagnosticsFileHelper,
     private val diagnosticsAnonymizer: DiagnosticsAnonymizer,
     private val diagnosticsDispatcher: Dispatcher,
@@ -136,6 +138,23 @@ internal class DiagnosticsTracker(
         } else {
             trackEvent(event)
         }
+    }
+
+    fun trackProductDetailsNotSupported(
+        billingResponseCode: Int,
+        billingDebugMessage: String,
+    ) {
+        val event = DiagnosticsEntry.Counter(
+            name = DiagnosticsCounterName.PRODUCT_DETAILS_NOT_SUPPORTED,
+            tags = mapOf(
+                "play_store_version" to (appConfig.playStoreVersionName ?: ""),
+                "play_services_version" to (appConfig.playServicesVersionName ?: ""),
+                "billing_response_code" to billingResponseCode.toString(),
+                "billing_debug_message" to billingDebugMessage,
+            ),
+            value = 1,
+        )
+        trackEvent(event)
     }
 
     fun trackEvent(diagnosticsEntry: DiagnosticsEntry) {

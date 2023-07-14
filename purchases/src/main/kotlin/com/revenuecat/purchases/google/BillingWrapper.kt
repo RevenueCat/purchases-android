@@ -674,6 +674,7 @@ internal class BillingWrapper(
                     stateListener?.onConnected()
                     executePendingRequests()
                     reconnectMilliseconds = RECONNECT_TIMER_START_MILLISECONDS
+                    trackProductDetailsNotSupportedIfNeeded()
                 }
                 BillingClient.BillingResponseCode.FEATURE_NOT_SUPPORTED,
                 BillingClient.BillingResponseCode.BILLING_UNAVAILABLE,
@@ -898,6 +899,20 @@ internal class BillingWrapper(
         )
     }
 
+    private fun trackProductDetailsNotSupportedIfNeeded() {
+        if (diagnosticsTrackerIfEnabled == null) return
+        val billingResult = billingClient?.isFeatureSupported(BillingClient.FeatureType.PRODUCT_DETAILS)
+        if (
+            billingResult != null &&
+            billingResult.responseCode == BillingClient.BillingResponseCode.FEATURE_NOT_SUPPORTED
+        ) {
+            diagnosticsTrackerIfEnabled.trackProductDetailsNotSupported(
+                billingResult.responseCode,
+                billingResult.debugMessage,
+            )
+        }
+    }
+
     private fun buildPurchaseParams(
         purchaseInfo: GooglePurchasingData,
         replaceProductInfo: ReplaceProductInfo?,
@@ -908,6 +923,7 @@ internal class BillingWrapper(
             is GooglePurchasingData.InAppProduct -> {
                 buildOneTimePurchaseParams(purchaseInfo, appUserID, isPersonalizedPrice)
             }
+
             is GooglePurchasingData.Subscription -> {
                 buildSubscriptionPurchaseParams(purchaseInfo, replaceProductInfo, appUserID, isPersonalizedPrice)
             }

@@ -6,6 +6,7 @@
 package com.revenuecat.purchases.common
 
 import android.content.Context
+import android.content.pm.PackageManager
 import android.os.Build
 import android.util.Base64
 import java.security.MessageDigest
@@ -86,3 +87,16 @@ internal fun String.sha256() =
 
 internal val Context.versionName: String?
     get() = this.packageManager.getPackageInfo(this.packageName, 0).versionName
+
+private fun Context.packageVersionName(packageName: String): String? {
+    return try {
+        this.packageManager.getPackageInfo(packageName, 0).versionName
+    } catch (e: PackageManager.NameNotFoundException) {
+        null
+    }
+}
+internal val Context.playStoreVersionName: String?
+    get() = packageVersionName("com.android.vending")
+
+internal val Context.playServicesVersionName: String?
+    get() = packageVersionName("com.google.android.gms")

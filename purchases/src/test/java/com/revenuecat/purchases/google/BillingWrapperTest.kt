@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.google
 
 import android.app.Activity
+import android.app.Application
 import android.content.Context
 import android.content.Intent
 import android.os.Handler
@@ -161,6 +162,11 @@ class BillingWrapperTest {
         every {
             mockClient.isReady
         } returns false andThen true
+
+        val featureSlot = slot<String>()
+        every {
+            mockClient.isFeatureSupported(capture(featureSlot))
+        } returns billingClientOKResult
 
         mockDetailsList = listOf(mockProductDetails())
 
@@ -2573,6 +2579,21 @@ class BillingWrapperTest {
         }
     }
 
+    @Test
+    fun `trackProductDetailsNotSupported is called when receiving a FEATURE_NOT_SUPPORTED error from isFeatureSupported after setup`() {
+        val featureSlot = slot<String>()
+        every {
+            mockClient.isFeatureSupported(capture(featureSlot))
+        } returns BillingClient.BillingResponseCode.FEATURE_NOT_SUPPORTED.buildResult()
+        billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackProductDetailsNotSupported(
+                billingResponseCode = -2,
+                billingDebugMessage = ""
+            )
+        }
+    }
+
     // endregion
 
     private fun mockEmptyProductDetailsResponse() {
@@ -2735,6 +2756,9 @@ class BillingWrapperTest {
         } just Runs
         every {
             mockDiagnosticsTracker.trackGoogleQueryPurchaseHistoryRequest(any(), any(), any(), any())
+        } just Runs
+        every {
+            mockDiagnosticsTracker.trackProductDetailsNotSupported(any(), any())
         } just Runs
     }
 }
