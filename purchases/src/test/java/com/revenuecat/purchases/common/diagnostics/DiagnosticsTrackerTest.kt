@@ -290,14 +290,14 @@ class DiagnosticsTrackerTest {
             "billing_debug_message" to "debug message",
         )
         every { diagnosticsFileHelper.appendEntryToDiagnosticsFile(any()) } just Runs
-        diagnosticsTracker.trackFeatureNotSupported(
+        diagnosticsTracker.trackProductDetailsNotSupported(
             billingResponseCode = -2,
             billingDebugMessage = "debug message"
         )
         verify(exactly = 1) {
             diagnosticsFileHelper.appendEntryToDiagnosticsFile(match { event ->
                 event is DiagnosticsEntry.Counter &&
-                    event.name == DiagnosticsCounterName.FEATURE_NOT_SUPPORTED_ERROR &&
+                    event.name == DiagnosticsCounterName.PRODUCT_DETAILS_NOT_SUPPORTED &&
                     event.tags == expectedProperties
             })
         }
