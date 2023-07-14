@@ -88,16 +88,15 @@ internal fun String.sha256() =
 internal val Context.versionName: String?
     get() = this.packageManager.getPackageInfo(this.packageName, 0).versionName
 
-internal val Context.playStoreVersionName: String?
-    get() = try {
-        this.packageManager.getPackageInfo("com.android.vending", 0).versionName
+private fun Context.packageVersionName(packageName: String): String? {
+    return try {
+        this.packageManager.getPackageInfo(packageName, 0).versionName
     } catch (e: PackageManager.NameNotFoundException) {
         null
     }
+}
+internal val Context.playStoreVersionName: String?
+    get() = packageVersionName("com.android.vending")
 
 internal val Context.playServicesVersionName: String?
-    get() = try {
-        this.packageManager.getPackageInfo("com.google.android.gms", 0).versionName
-    } catch (e: PackageManager.NameNotFoundException) {
-        null
-    }
+    get() = packageVersionName("com.google.android.gms")
