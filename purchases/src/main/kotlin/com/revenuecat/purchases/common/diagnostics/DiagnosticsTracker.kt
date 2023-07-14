@@ -140,12 +140,12 @@ internal class DiagnosticsTracker(
         }
     }
 
-    fun trackFeatureNotSupported(
+    fun trackProductDetailsNotSupported(
         billingResponseCode: Int,
         billingDebugMessage: String,
     ) {
         val event = DiagnosticsEntry.Counter(
-            name = DiagnosticsCounterName.FEATURE_NOT_SUPPORTED_ERROR,
+            name = DiagnosticsCounterName.PRODUCT_DETAILS_NOT_SUPPORTED,
             tags = mapOf(
                 "play_store_version" to (appConfig.playStoreVersionName ?: ""),
                 "play_services_version" to (appConfig.playServicesVersionName ?: ""),

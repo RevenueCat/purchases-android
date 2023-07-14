@@ -13,11 +13,14 @@ import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.playServicesVersionName
 import com.revenuecat.purchases.common.playStoreVersionName
 import io.mockk.Runs
+import io.mockk.clearStaticMockk
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.mockkStatic
+import io.mockk.unmockkStatic
 import io.mockk.verify
+import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -74,6 +77,11 @@ class DiagnosticsTrackerTest {
         )
 
         every { diagnosticsAnonymizer.anonymizeEntryIfNeeded(any()) } answers { firstArg() }
+    }
+
+    @After
+    fun tearDown() {
+        unmockkStatic("com.revenuecat.purchases.common.UtilsKt")
     }
 
     @Test
