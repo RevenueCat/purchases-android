@@ -170,7 +170,7 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
                 toggleLoadingIndicator(false)
                 showUserError(
                     requireActivity(),
-                    PurchasesError(underlyingErrorMessage = exception.underlyingErrorMessage, code = exception.code)
+                    PurchasesError(underlyingErrorMessage = exception.underlyingErrorMessage, code = exception.code),
                 )
             }
         }

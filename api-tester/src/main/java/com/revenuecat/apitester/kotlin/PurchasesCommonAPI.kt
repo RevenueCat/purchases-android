@@ -126,7 +126,7 @@ private class PurchasesCommonAPI {
     suspend fun checkCoroutines(
         purchases: Purchases,
         activity: Activity,
-        packageToPurchase: Package
+        packageToPurchase: Package,
     ) {
         val offerings: Offerings = purchases.awaitOfferings()
 
