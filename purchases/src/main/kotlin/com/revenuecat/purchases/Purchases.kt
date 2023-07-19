@@ -48,8 +48,6 @@ class Purchases internal constructor(
     @get:JvmSynthetic internal val purchasesOrchestrator: PurchasesOrchestrator,
 ) : LifecycleDelegate {
 
-    internal var appConfig = purchasesOrchestrator.appConfig
-
     /**
      * Default to TRUE, set this to FALSE if you are consuming and acknowledging transactions
      * outside of the Purchases SDK.
@@ -864,7 +862,7 @@ class Purchases internal constructor(
             features: List<BillingFeature> = listOf(),
             callback: Callback<Boolean>,
         ) {
-            val currentStore = sharedInstance.appConfig.store
+            val currentStore = sharedInstance.purchasesOrchestrator.appConfig.store
             if (currentStore != Store.PLAY_STORE) {
                 log(LogIntent.RC_ERROR, BillingStrings.CANNOT_CALL_CAN_MAKE_PAYMENTS)
                 callback.onReceived(true)
