@@ -61,6 +61,9 @@ class OfflineEntitlementsManagerTest {
             appConfig.finishTransactions
         } returns true
         every {
+            appConfig.customEntitlementsComputation
+        } returns false
+        every {
             appConfig.enableOfflineEntitlements
         } returns true
 
@@ -142,6 +145,18 @@ class OfflineEntitlementsManagerTest {
         assertThat(result).isFalse
     }
 
+    @Test
+    fun `shouldCalculateOfflineCustomerInfoInGetCustomerInfoRequest returns false if custom entitlement computation`() {
+        every { deviceCache.getCachedCustomerInfo(appUserID) } returns null
+        every { appConfig.customEntitlementsComputation } returns true
+        val isServerError = true
+        val result = offlineEntitlementsManager.shouldCalculateOfflineCustomerInfoInGetCustomerInfoRequest(
+            isServerError,
+            appUserID
+        )
+        assertThat(result).isFalse
+    }
+
     // endregion
 
     // region shouldCalculateOfflineCustomerInfoInPostReceipt
@@ -169,6 +184,13 @@ class OfflineEntitlementsManagerTest {
     @Test
     fun `shouldCalculateOfflineCustomerInfoInPostReceipt returns false if not server error`() {
         val isServerError = false
+        assertThat(offlineEntitlementsManager.shouldCalculateOfflineCustomerInfoInPostReceipt(isServerError)).isFalse
+    }
+
+    @Test
+    fun `shouldCalculateOfflineCustomerInfoInPostReceipt returns false if custom entitlements computation mode`() {
+        every { appConfig.customEntitlementsComputation } returns true
+        val isServerError = true
         assertThat(offlineEntitlementsManager.shouldCalculateOfflineCustomerInfoInPostReceipt(isServerError)).isFalse
     }
 
@@ -402,6 +424,13 @@ class OfflineEntitlementsManagerTest {
         backendSuccessSlot.captured(expectedMappings)
         assertThat(completionCallCount).isEqualTo(1)
         verify(exactly = 1) { deviceCache.cacheProductEntitlementMapping(expectedMappings) }
+    }
+
+    @Test
+    fun `updateProductEntitlementMappingCacheIfStale does nothing in custom entitlement computation mode`() {
+        every { appConfig.customEntitlementsComputation } returns true
+        offlineEntitlementsManager.updateProductEntitlementMappingCacheIfStale()
+        verify(exactly = 0) { backend.getProductEntitlementMapping(any(), any()) }
     }
 
     // endregion

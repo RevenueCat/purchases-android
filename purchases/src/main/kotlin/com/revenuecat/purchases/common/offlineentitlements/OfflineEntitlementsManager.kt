@@ -114,7 +114,9 @@ internal class OfflineEntitlementsManager(
 
     // We disable offline entitlements in observer mode (finishTransactions = true) since it doesn't
     // provide any value and simplifies operations in that mode.
-    private fun isOfflineEntitlementsEnabled() = appConfig.finishTransactions && appConfig.enableOfflineEntitlements
+    private fun isOfflineEntitlementsEnabled() = appConfig.finishTransactions &&
+        appConfig.enableOfflineEntitlements &&
+        !appConfig.customEntitlementsComputation
 }
 
 private typealias OfflineCustomerInfoCallback = Pair<(CustomerInfo) -> Unit, (PurchasesError) -> Unit>
