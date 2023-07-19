@@ -82,8 +82,8 @@ internal abstract class BaseBackendIntegrationTest {
             every { forceServerErrors } returns false
             every { forceSigningErrors } returns false
         }
-        dispatcher = Dispatcher(Executors.newSingleThreadScheduledExecutor())
-        diagnosticsDispatcher = Dispatcher(Executors.newSingleThreadScheduledExecutor())
+        dispatcher = Dispatcher(Executors.newSingleThreadScheduledExecutor(), runningIntegrationTests = true)
+        diagnosticsDispatcher = Dispatcher(Executors.newSingleThreadScheduledExecutor(), runningIntegrationTests = true)
         sharedPreferencesEditor = mockk<SharedPreferences.Editor>().apply {
             every { putString(any(), any()) } returns this
             every { apply() } just Runs

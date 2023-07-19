@@ -2,19 +2,8 @@ android {
     compileSdkVersion compileVersion
     buildToolsVersion buildToolsVersion
 
-    flavorDimensions "extraAPIs"
-    productFlavors {
-        defaults {
-            dimension "extraAPIs"
-        }
-        integrationTest {
-            dimension "extraAPIs"
-            minSdkVersion 21 // Needed because mockk-android requires API 21
-        }
-    }
-
     defaultConfig {
-        minSdkVersion minVersion
+        minSdkVersion obtainMinSdkVersion()
         targetSdkVersion compileVersion
         versionCode 1
         versionName "6.8.0-SNAPSHOT"
@@ -41,4 +30,14 @@ project.afterEvaluate {
     // Remove afterEvaluate
     // after https://github.com/Kotlin/kotlinx-kover/issues/362 is fixed
     project.pluginManager.apply("org.jetbrains.kotlinx.kover")
+}
+
+def obtainMinSdkVersion() {
+    def result = minVersion
+
+    if (project.hasProperty("minSdkVersion")) {
+        result = project.getProperties().get("minSdkVersion").toInteger()
+    }
+
+    result
 }

@@ -151,9 +151,7 @@ jobs:
       - android/restore-build-cache
       - run:
           name: Run Tests
-          # We are running tests in the "defaults" flavor only. If we ever add/remove flavors, we will need to update
-          # this command.
-          command: ./gradlew lint testDefaultsDebugUnitTest testDefaultsReleaseUnitTest
+          command: ./gradlew lint test
       - run:
           name: Consolidate artifacts
           command: |
@@ -161,12 +159,12 @@ jobs:
               find . -type f -regex ".*/build/test-results/.*xml" -exec cp --parents {} build/test-results/ \;
       - run:
           name: Kover HTML
-          command: ./gradlew purchases:koverHtmlReportDefaultsRelease
+          command: ./gradlew purchases:koverHtmlReportRelease
       - run:
           name: Kover XML
-          command: ./gradlew purchases:koverXmlReportDefaultsRelease
+          command: ./gradlew purchases:koverXmlReportRelease
       - codecov/upload:
-          file: purchases/build/reports/kover/reportDefaultsRelease.xml
+          file: purchases/build/reports/kover/reportRelease.xml
       - android/save-build-cache
       - store_artifacts:
           path: build/reports

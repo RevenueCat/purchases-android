@@ -15,14 +15,12 @@ android {
         buildConfig true
     }
 
-    productFlavors {
-        integrationTest {
-            testApplicationId obtainTestApplicationId()
-            testBuildType obtainTestBuildType()
-            packagingOptions {
-                resources.excludes.add("META-INF/LICENSE.md")
-                resources.excludes.add("META-INF/LICENSE-notice.md")
-            }
+    defaultConfig {
+        testApplicationId obtainTestApplicationId()
+        testBuildType obtainTestBuildType()
+        packagingOptions {
+            resources.excludes.add("META-INF/LICENSE.md")
+            resources.excludes.add("META-INF/LICENSE-notice.md")
         }
     }
 
@@ -81,18 +79,15 @@ dependencies {
     testImplementation libs.okhttp.mockwebserver
     testImplementation libs.playServices.ads.identifier
 
-    integrationTestImplementation libs.androidx.appcompat
-    integrationTestImplementation libs.material
-    integrationTestImplementation libs.androidx.constraintlayout
-
-    androidTestIntegrationTestImplementation libs.androidx.lifecycle.runtime.ktx
-    androidTestIntegrationTestImplementation libs.androidx.test.espresso.core
-    androidTestIntegrationTestImplementation libs.androidx.test.runner
-    androidTestIntegrationTestImplementation libs.androidx.test.rules
-    androidTestIntegrationTestImplementation libs.androidx.test.junit
-    androidTestIntegrationTestImplementation libs.assertJ
-    androidTestIntegrationTestImplementation libs.mockk.android
-    androidTestIntegrationTestImplementation libs.mockk.agent
+    androidTestImplementation libs.androidx.appcompat
+    androidTestImplementation libs.androidx.lifecycle.runtime.ktx
+    androidTestImplementation libs.androidx.test.espresso.core
+    androidTestImplementation libs.androidx.test.runner
+    androidTestImplementation libs.androidx.test.rules
+    androidTestImplementation libs.androidx.test.junit
+    androidTestImplementation libs.assertJ
+    androidTestImplementation libs.mockk.android
+    androidTestImplementation libs.mockk.agent
 }
 
 tasks.dokkaHtmlPartial.configure {

@@ -6,7 +6,6 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.preference.PreferenceManager
 import androidx.annotation.VisibleForTesting
-import com.revenuecat.purchases.api.BuildConfig
 import com.revenuecat.purchases.common.Anonymizer
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
@@ -45,7 +44,6 @@ import java.util.concurrent.ThreadFactory
 internal class PurchasesFactory(
     private val apiKeyValidator: APIKeyValidator = APIKeyValidator(),
 ) {
-    private val integrationTestFlavor = "integrationTest"
 
     @Suppress("LongMethod", "LongParameterList")
     fun createPurchases(
@@ -55,6 +53,7 @@ internal class PurchasesFactory(
         overrideBillingAbstract: BillingAbstract? = null,
         forceServerErrors: Boolean = false,
         forceSigningError: Boolean = false,
+        runningIntegrationTests: Boolean = false,
     ): Purchases {
         validateConfiguration(configuration)
 
@@ -67,7 +66,7 @@ internal class PurchasesFactory(
                 proxyURL,
                 store,
                 dangerousSettings,
-                BuildConfig.FLAVOR == integrationTestFlavor,
+                runningIntegrationTests,
                 forceServerErrors,
                 forceSigningError,
             )
@@ -77,8 +76,8 @@ internal class PurchasesFactory(
             val sharedPreferencesForETags = ETagManager.initializeSharedPreferences(context)
             val eTagManager = ETagManager(sharedPreferencesForETags)
 
-            val dispatcher = Dispatcher(service ?: createDefaultExecutor())
-            val diagnosticsDispatcher = Dispatcher(createDiagnosticsExecutor())
+            val dispatcher = Dispatcher(service ?: createDefaultExecutor(), runningIntegrationTests)
+            val diagnosticsDispatcher = Dispatcher(createDiagnosticsExecutor(), runningIntegrationTests)
 
             var diagnosticsFileHelper: DiagnosticsFileHelper? = null
             var diagnosticsTracker: DiagnosticsTracker? = null

@@ -175,12 +175,11 @@ platform :android do
       new_text: ENV['LOAD_SHEDDER_REVENUECAT_API_KEY'],
       paths_of_files_to_update: [constants_path]
     )
-    # Running integration test flavor in order to make backend tests run faster, since the jittering is too
-    # long in the `defaults` flavor.
     gradle(
-      task: ':purchases:testIntegrationTestDebugUnitTest',
+      task: ':purchases:testDebugUnitTest',
       properties: {
-        "RUN_INTEGRATION_TESTS" => true
+        "RUN_INTEGRATION_TESTS" => true,
+        "minSdkVersion" => 21,
       }
     )
   end
@@ -221,7 +220,7 @@ platform :android do
   def build_purchases_integration_tests(app_name:, api_key:, google_purchase_token:, product_id_to_purchase:,
                                         base_plan_id_to_purchase:, active_entitlements_to_verify: '',
                                         proxy_url: nil, build_type: 'release')
-    constants_path = './purchases/src/androidTestIntegrationTest/kotlin/com/revenuecat/purchases/Constants.kt'
+    constants_path = './purchases/src/androidTest/kotlin/com/revenuecat/purchases/Constants.kt'
     replace_text_in_files(
       previous_text: "REVENUECAT_API_KEY",
       new_text: api_key,
@@ -472,11 +471,12 @@ def build_purchases_android_test_apk(package_name, apk_name, build_type)
     task: ':purchases:assembleAndroidTest',
     properties: {
       "testApplicationId" => package_name,
-      "testBuildType" => build_type
+      "testBuildType" => build_type,
+      "minSdkVersion" => 21
     }
   )
-  apk_path = "../purchases/build/outputs/apk/androidTest/integrationTest/#{build_type}/purchases-integrationTest-#{build_type}-androidTest.apk"
-  new_apk_path = "../purchases/build/outputs/apk/androidTest/integrationTest/#{build_type}/#{apk_name}.apk"
+  apk_path = "../purchases/build/outputs/apk/androidTest/#{build_type}/purchases-#{build_type}-androidTest.apk"
+  new_apk_path = "../purchases/build/outputs/apk/androidTest/#{build_type}/#{apk_name}.apk"
   sh "mv #{apk_path} #{new_apk_path}"
   copy_artifacts(
     target_path: 'purchases/test_artifacts',

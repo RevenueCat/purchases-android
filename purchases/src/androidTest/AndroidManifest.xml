@@ -1,0 +1,13 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:tools="http://schemas.android.com/tools">
+    <!-- Ignoring errors in API <21 since mockk-android is only supported starting in API 21 -->
+    <uses-sdk tools:overrideLibrary="io.mockk,io.mockk.proxy.android"/>
+    <application
+            android:allowBackup="true"
+            android:label="RevenueCatIntegrationTests"
+            android:supportsRtl="true"
+            android:debuggable="true"
+            tools:ignore="HardcodedDebugMode">
+        <activity android:name="com.revenuecat.purchases.MainActivity" android:exported="true"/>
+    </application>
+</manifest>
