@@ -10,7 +10,7 @@ class DangerousSettingsTest {
     @Test
     fun `default customEntitlementComputation is false`() {
         val dangerousSettings = DangerousSettings()
-        assertThat(dangerousSettings.customEntitlementsComputation).isFalse
+        assertThat(dangerousSettings.customEntitlementComputation).isFalse
     }
 
     @Test

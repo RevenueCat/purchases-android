@@ -192,18 +192,18 @@ class AppConfigTest {
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
             store = Store.PLAY_STORE,
-            dangerousSettings = DangerousSettings(customEntitlementsComputation = true)
+            dangerousSettings = DangerousSettings(customEntitlementComputation = true)
         )
-        assertThat(appConfig.customEntitlementsComputation).isTrue
+        assertThat(appConfig.customEntitlementComputation).isTrue
         val appConfig2 = AppConfig(
             context = mockk(relaxed = true),
             observerMode = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
             store = Store.PLAY_STORE,
-            dangerousSettings = DangerousSettings(customEntitlementsComputation = false)
+            dangerousSettings = DangerousSettings(customEntitlementComputation = false)
         )
-        assertThat(appConfig2.customEntitlementsComputation).isFalse
+        assertThat(appConfig2.customEntitlementComputation).isFalse
     }
 
     @Test
@@ -309,7 +309,7 @@ class AppConfigTest {
             "AppConfig(" +
                 "platformInfo=PlatformInfo(flavor=native, version=3.2.0), " +
                 "store=PLAY_STORE, " +
-                "dangerousSettings=DangerousSettings(autoSyncPurchases=true, customEntitlementsComputation=false), " +
+                "dangerousSettings=DangerousSettings(autoSyncPurchases=true, customEntitlementComputation=false), " +
                 "languageTag='', " +
                 "versionName='', " +
                 "packageName='', " +

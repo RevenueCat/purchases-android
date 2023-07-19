@@ -116,7 +116,7 @@ internal class OfflineEntitlementsManager(
     // provide any value and simplifies operations in that mode.
     private fun isOfflineEntitlementsEnabled() = appConfig.finishTransactions &&
         appConfig.enableOfflineEntitlements &&
-        !appConfig.customEntitlementsComputation
+        !appConfig.customEntitlementComputation
 }
 
 private typealias OfflineCustomerInfoCallback = Pair<(CustomerInfo) -> Unit, (PurchasesError) -> Unit>

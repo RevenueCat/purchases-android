@@ -207,7 +207,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
 
     @Test
     fun `adds custom entitlement computation header if enabled`() {
-        client = createClient(appConfig = createAppConfig(customEntitlementsComputation = true))
+        client = createClient(appConfig = createAppConfig(customEntitlementComputation = true))
         val expectedResult = HTTPResult.createResult()
         val endpoint = Endpoint.LogIn
         enqueue(

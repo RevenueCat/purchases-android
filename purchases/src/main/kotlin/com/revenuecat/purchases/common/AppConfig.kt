@@ -34,8 +34,8 @@ internal class AppConfig(
         log(LogIntent.INFO, ConfigureStrings.CONFIGURING_PURCHASES_PROXY_URL_SET)
     } ?: URL("https://api.revenuecat.com/")
     val diagnosticsURL = URL("https://api-diagnostics.revenuecat.com/")
-    val customEntitlementsComputation: Boolean
-        get() = dangerousSettings.customEntitlementsComputation
+    val customEntitlementComputation: Boolean
+        get() = dangerousSettings.customEntitlementComputation
 
     val playStoreVersionName = context.playStoreVersionName
     val playServicesVersionName = context.playServicesVersionName

@@ -11,7 +11,7 @@ data class DangerousSettings internal constructor(
      */
     val autoSyncPurchases: Boolean = true,
 
-    internal val customEntitlementsComputation: Boolean = false,
+    internal val customEntitlementComputation: Boolean = false,
 ) {
     constructor(autoSyncPurchases: Boolean = true) : this(autoSyncPurchases, false)
 }
