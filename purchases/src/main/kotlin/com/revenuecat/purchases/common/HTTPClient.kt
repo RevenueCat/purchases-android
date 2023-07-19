@@ -269,7 +269,7 @@ internal class HTTPClient(
             "X-Observer-Mode-Enabled" to if (appConfig.finishTransactions) "false" else "true",
             "X-Nonce" to nonce,
             HTTPRequest.POST_PARAMS_HASH to postFieldsToSignHeader,
-            "X-Custom-Entitlements-Computation" to if (appConfig.customEntitlementsComputation) "true" else null,
+            "X-Custom-Entitlements-Computation" to if (appConfig.customEntitlementComputation) "true" else null,
         )
             .plus(authenticationHeaders)
             .plus(eTagManager.getETagHeaders(urlPath, shouldSignResponse, refreshETag))

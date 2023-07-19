@@ -61,7 +61,7 @@ class OfflineEntitlementsManagerTest {
             appConfig.finishTransactions
         } returns true
         every {
-            appConfig.customEntitlementsComputation
+            appConfig.customEntitlementComputation
         } returns false
         every {
             appConfig.enableOfflineEntitlements
@@ -148,7 +148,7 @@ class OfflineEntitlementsManagerTest {
     @Test
     fun `shouldCalculateOfflineCustomerInfoInGetCustomerInfoRequest returns false if custom entitlement computation`() {
         every { deviceCache.getCachedCustomerInfo(appUserID) } returns null
-        every { appConfig.customEntitlementsComputation } returns true
+        every { appConfig.customEntitlementComputation } returns true
         val isServerError = true
         val result = offlineEntitlementsManager.shouldCalculateOfflineCustomerInfoInGetCustomerInfoRequest(
             isServerError,
@@ -189,7 +189,7 @@ class OfflineEntitlementsManagerTest {
 
     @Test
     fun `shouldCalculateOfflineCustomerInfoInPostReceipt returns false if custom entitlements computation mode`() {
-        every { appConfig.customEntitlementsComputation } returns true
+        every { appConfig.customEntitlementComputation } returns true
         val isServerError = true
         assertThat(offlineEntitlementsManager.shouldCalculateOfflineCustomerInfoInPostReceipt(isServerError)).isFalse
     }
@@ -428,7 +428,7 @@ class OfflineEntitlementsManagerTest {
 
     @Test
     fun `updateProductEntitlementMappingCacheIfStale does nothing in custom entitlement computation mode`() {
-        every { appConfig.customEntitlementsComputation } returns true
+        every { appConfig.customEntitlementComputation } returns true
         offlineEntitlementsManager.updateProductEntitlementMappingCacheIfStale()
         verify(exactly = 0) { backend.getProductEntitlementMapping(any(), any()) }
     }

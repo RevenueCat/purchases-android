@@ -68,7 +68,7 @@ internal abstract class BaseHTTPClientTest {
         platformInfo: PlatformInfo = expectedPlatformInfo,
         proxyURL: URL? = baseURL,
         store: Store = Store.PLAY_STORE,
-        customEntitlementsComputation: Boolean = false,
+        customEntitlementComputation: Boolean = false,
         forceServerErrors: Boolean = false,
         forceSigningErrors: Boolean = false,
     ): AppConfig {
@@ -78,7 +78,7 @@ internal abstract class BaseHTTPClientTest {
             platformInfo = platformInfo,
             proxyURL = proxyURL,
             store = store,
-            dangerousSettings = DangerousSettings(customEntitlementsComputation = customEntitlementsComputation),
+            dangerousSettings = DangerousSettings(customEntitlementComputation = customEntitlementComputation),
             runningTests = true,
             forceServerErrors = forceServerErrors,
             forceSigningErrors = forceSigningErrors,
