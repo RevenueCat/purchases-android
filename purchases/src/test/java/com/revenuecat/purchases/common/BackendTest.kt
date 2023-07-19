@@ -1047,6 +1047,35 @@ class BackendTest {
         assertThat(requestBodySlot.captured.containsKey("attributes")).isFalse()
     }
 
+
+    @Test
+    fun `postReceipt does not send unsynced subscriberAttributes if map is empty`() {
+        mockPostReceiptResponseAndPost(
+            backend,
+            responseCode = 200,
+            isRestore = false,
+            clientException = null,
+            resultBody = null,
+            observerMode = true,
+            receiptInfo = ReceiptInfo(
+                productIDs,
+                storeProduct = storeProduct
+            ),
+            storeAppUserID = null,
+            subscriberAttributes = emptyMap(),
+        )
+        verify(exactly = 1) {
+            mockClient.performRequest(
+                mockBaseURL,
+                Endpoint.PostReceipt,
+                capture(requestBodySlot),
+                any(),
+                any()
+            )
+        }
+        assertThat(requestBodySlot.captured.containsKey("attributes")).isFalse()
+    }
+
     @Test
     fun `given multiple post calls for same subscriber different store user ID, both are triggered`() {
         val lock = CountDownLatch(2)
