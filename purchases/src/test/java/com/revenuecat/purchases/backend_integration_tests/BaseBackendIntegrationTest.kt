@@ -77,6 +77,7 @@ internal abstract class BaseBackendIntegrationTest {
             every { languageTag } returns "en-US"
             every { versionName } returns "test-version-name"
             every { packageName } returns "com.revenuecat.purchases.backend_tests"
+            every { customEntitlementsComputation } returns false
             every { finishTransactions } returns true
             every { forceServerErrors } returns false
             every { forceSigningErrors } returns false
