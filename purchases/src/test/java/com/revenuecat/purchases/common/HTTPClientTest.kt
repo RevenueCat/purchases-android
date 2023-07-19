@@ -190,6 +190,39 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
     }
 
     @Test
+    fun `does not add custom entitlement computation header if disabled`() {
+        val expectedResult = HTTPResult.createResult()
+        val endpoint = Endpoint.LogIn
+        enqueue(
+            endpoint,
+            expectedResult
+        )
+
+        client.performRequest(baseURL, endpoint, body = null, postFieldsToSign = null, mapOf("" to ""))
+
+        val request = server.takeRequest()
+
+        assertThat(request.headers.names()).doesNotContain("X-Custom-Entitlements-Computation")
+    }
+
+    @Test
+    fun `adds custom entitlement computation header if enabled`() {
+        client = createClient(appConfig = createAppConfig(customEntitlementsComputation = true))
+        val expectedResult = HTTPResult.createResult()
+        val endpoint = Endpoint.LogIn
+        enqueue(
+            endpoint,
+            expectedResult
+        )
+
+        client.performRequest(baseURL, endpoint, body = null, postFieldsToSign = null, mapOf("" to ""))
+
+        val request = server.takeRequest()
+
+        assertThat(request.getHeader("X-Custom-Entitlements-Computation")).isEqualTo("true")
+    }
+
+    @Test
     fun addsETagHeadersToRequest() {
         val expectedResult = HTTPResult.createResult()
         val endpoint = Endpoint.LogIn
