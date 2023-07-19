@@ -7,7 +7,6 @@ import android.os.Handler
 import android.os.Looper
 import android.util.Pair
 import androidx.annotation.VisibleForTesting
-import androidx.lifecycle.ProcessLifecycleOwner
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingResult
@@ -78,7 +77,7 @@ internal class PurchasesOrchestrator constructor(
     private val offeringsManager: OfferingsManager,
     // This is nullable due to: https://github.com/RevenueCat/purchases-flutter/issues/408
     private val mainHandler: Handler? = Handler(Looper.getMainLooper()),
-) : LifecycleDelegate {
+) {
 
     /** @suppress */
     @Suppress("RedundantGetter", "RedundantSetter")
@@ -123,10 +122,6 @@ internal class PurchasesOrchestrator constructor(
             state = state.copy(allowSharingPlayStoreAccount = value)
         }
 
-    private val lifecycleHandler: AppLifecycleHandler by lazy {
-        AppLifecycleHandler(this)
-    }
-
     init {
         identityManager.configure(backingFieldAppUserID)
 
@@ -137,12 +132,6 @@ internal class PurchasesOrchestrator constructor(
         }
         billing.purchasesUpdatedListener = getPurchasesUpdatedListener()
 
-        dispatch {
-            // This needs to happen after the billing client listeners have been set. This is because
-            // we perform operations with the billing client in the lifecycle observer methods.
-            ProcessLifecycleOwner.get().lifecycle.addObserver(lifecycleHandler)
-        }
-
         if (!appConfig.dangerousSettings.autoSyncPurchases) {
             log(LogIntent.WARNING, ConfigureStrings.AUTO_SYNC_PURCHASES_DISABLED)
         }
@@ -151,7 +140,7 @@ internal class PurchasesOrchestrator constructor(
     }
 
     /** @suppress */
-    override fun onAppBackgrounded() {
+    internal fun onAppBackgrounded() {
         synchronized(this) {
             state = state.copy(appInBackground = true)
         }
@@ -160,7 +149,7 @@ internal class PurchasesOrchestrator constructor(
     }
 
     /** @suppress */
-    override fun onAppForegrounded() {
+    internal fun onAppForegrounded() {
         val firstTimeInForeground: Boolean
         synchronized(this) {
             firstTimeInForeground = state.firstTimeInForeground
@@ -417,10 +406,6 @@ internal class PurchasesOrchestrator constructor(
 
         billing.close()
         updatedCustomerInfoListener = null // Do not call on state since the setter does more stuff
-
-        dispatch {
-            ProcessLifecycleOwner.get().lifecycle.removeObserver(lifecycleHandler)
-        }
     }
 
     fun getCustomerInfo(
@@ -658,6 +643,15 @@ internal class PurchasesOrchestrator constructor(
     //endregion
     //endregion
 
+    internal fun dispatch(action: () -> Unit) {
+        if (Thread.currentThread() != Looper.getMainLooper().thread) {
+            val handler = mainHandler ?: Handler(Looper.getMainLooper())
+            handler.post(action)
+        } else {
+            action()
+        }
+    }
+
     // region Private Methods
 
     private fun getProductsOfTypes(
@@ -707,15 +701,6 @@ internal class PurchasesOrchestrator constructor(
                 completion,
             )
             offeringsManager.fetchAndCacheOfferings(appUserID, appInBackground)
-        }
-    }
-
-    private fun dispatch(action: () -> Unit) {
-        if (Thread.currentThread() != Looper.getMainLooper().thread) {
-            val handler = mainHandler ?: Handler(Looper.getMainLooper())
-            handler.post(action)
-        } else {
-            action()
         }
     }
 
