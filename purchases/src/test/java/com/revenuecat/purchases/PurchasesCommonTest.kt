@@ -76,7 +76,6 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
     private val inAppPurchaseToken = "token_inapp"
     private val subProductId = "sub"
     private val subPurchaseToken = "token_sub"
-    private val subscriptionOptionId = "mock-base-plan-id:mock-offer-id"
 
     private val mockLifecycle = mockk<Lifecycle>()
     private val mockLifecycleOwner = mockk<LifecycleOwner>()
@@ -1777,31 +1776,6 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
             mockBillingAbstract.purchasesUpdatedListener = capturedPurchasesUpdatedListener.captured
             mockBillingAbstract.purchasesUpdatedListener = null
         }
-    }
-
-    private fun getMockedPurchaseList(
-        productId: String,
-        purchaseToken: String,
-        productType: ProductType,
-        offeringIdentifier: String? = null,
-        purchaseState: Int = Purchase.PurchaseState.PURCHASED,
-        acknowledged: Boolean = false,
-        subscriptionOptionId: String? = this.subscriptionOptionId
-    ): List<StoreTransaction> {
-        val p = stubGooglePurchase(
-            productIds = listOf(productId),
-            purchaseToken = purchaseToken,
-            purchaseState = purchaseState,
-            acknowledged = acknowledged
-        )
-
-        return listOf(
-            p.toStoreTransaction(
-                productType,
-                offeringIdentifier,
-                if (productType == ProductType.SUBS) subscriptionOptionId else null
-            )
-        )
     }
 
     private fun Int.buildResult(): BillingResult {

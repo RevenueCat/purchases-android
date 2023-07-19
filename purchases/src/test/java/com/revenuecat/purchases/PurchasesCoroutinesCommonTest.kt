@@ -2,7 +2,9 @@ package com.revenuecat.purchases
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.utils.STUB_PRODUCT_IDENTIFIER
 import com.revenuecat.purchases.utils.stubStoreProduct
+import io.mockk.every
 import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
@@ -85,8 +87,21 @@ internal class PurchasesCoroutinesCommonTest : BasePurchasesTest() {
 
     @Test
     fun `await purchase - Success`() = runTest {
-        val storeProduct = stubStoreProduct("abc")
+        val storeProduct = stubStoreProduct(STUB_PRODUCT_IDENTIFIER)
         val purchaseOptionParams = getPurchaseParams(storeProduct.subscriptionOptions!!.first())
+        with(mockBillingAbstract) {
+            every {
+                makePurchaseAsync(any(), any(), any(), any(), any(), any())
+            } answers {
+                capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(
+                    getMockedPurchaseList(
+                        storeProduct.id,
+                        "adgsagas",
+                        ProductType.SUBS
+                    )
+                )
+            }
+        }
         val (storeTransaction, customerInfo) = purchases.awaitPurchase(purchaseOptionParams)
 
         verify(exactly = 1) {
@@ -106,18 +121,26 @@ internal class PurchasesCoroutinesCommonTest : BasePurchasesTest() {
 
     @Test
     fun `await purchase - Error`() = runTest {
-        val storeProduct = stubStoreProduct("abc")
-        val purchaseOptionParams = getPurchaseParams(storeProduct.subscriptionOptions!!.first())
         var result: Pair<StoreTransaction, CustomerInfo>? = null
         var exception: PurchasesTransactionException? = null
+
+        val storeProduct = stubStoreProduct(STUB_PRODUCT_IDENTIFIER)
+        val purchaseOptionParams = getPurchaseParams(storeProduct.subscriptionOptions!!.first())
+        with(mockBillingAbstract) {
+            every {
+                makePurchaseAsync(any(), any(), any(), any(), any(), any())
+            } answers {
+                val error = PurchasesError(PurchasesErrorCode.StoreProblemError)
+                capturedPurchasesUpdatedListener.captured.onPurchasesFailedToUpdate(error)
+
+            }
+        }
 
         runCatching {
             result = purchases.awaitPurchase(purchaseOptionParams)
         }.onFailure {
             exception = it as? PurchasesTransactionException
         }
-        val error = PurchasesError(PurchasesErrorCode.StoreProblemError)
-        capturedPurchasesUpdatedListener.captured.onPurchasesFailedToUpdate(error)
 
         verify(exactly = 1) {
             mockBillingAbstract.makePurchaseAsync(

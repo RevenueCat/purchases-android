@@ -9,6 +9,7 @@ import android.app.Activity
 import android.app.Application
 import android.content.Context
 import androidx.lifecycle.ProcessLifecycleOwner
+import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchaseHistoryRecord
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
@@ -30,6 +31,7 @@ import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.utils.STUB_PRODUCT_IDENTIFIER
 import com.revenuecat.purchases.utils.createMockOneTimeProductDetails
+import com.revenuecat.purchases.utils.stubGooglePurchase
 import com.revenuecat.purchases.utils.stubPurchaseHistoryRecord
 import com.revenuecat.purchases.utils.stubStoreProduct
 import com.revenuecat.purchases.utils.stubSubscriptionOption
@@ -75,6 +77,7 @@ internal open class BasePurchasesTest {
     protected lateinit var purchases: Purchases
     protected val mockInfo = mockk<CustomerInfo>()
     protected val mockActivity: Activity = mockk()
+    protected val subscriptionOptionId = "mock-base-plan-id:mock-offer-id"
 
     @Before
     fun setUp() {
@@ -419,6 +422,31 @@ internal open class BasePurchasesTest {
             builder!!.googleProrationMode(googleProrationMode)
         }
         return builder!!.build()
+    }
+
+    protected fun getMockedPurchaseList(
+        productId: String,
+        purchaseToken: String,
+        productType: ProductType,
+        offeringIdentifier: String? = null,
+        purchaseState: Int = Purchase.PurchaseState.PURCHASED,
+        acknowledged: Boolean = false,
+        subscriptionOptionId: String? = this.subscriptionOptionId
+    ): List<StoreTransaction> {
+        val p = stubGooglePurchase(
+            productIds = listOf(productId),
+            purchaseToken = purchaseToken,
+            purchaseState = purchaseState,
+            acknowledged = acknowledged
+        )
+
+        return listOf(
+            p.toStoreTransaction(
+                productType,
+                offeringIdentifier,
+                if (productType == ProductType.SUBS) subscriptionOptionId else null
+            )
+        )
     }
 
     // endregion
