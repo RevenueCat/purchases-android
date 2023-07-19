@@ -24,7 +24,11 @@ internal enum class Delay(val minDelay: Duration, val maxDelay: Duration) {
 
 internal open class Dispatcher(
     private val executorService: ExecutorService,
+    private val runningIntegrationTests: Boolean = false,
 ) {
+    private companion object {
+        const val INTEGRATION_TEST_DELAY_PERCENTAGE: Double = .01
+    }
 
     abstract class AsyncCall : Runnable {
         @Throws(JSONException::class, IOException::class)
@@ -56,7 +60,10 @@ internal open class Dispatcher(
         synchronized(this.executorService) {
             if (!executorService.isShutdown) {
                 val future = if (delay != Delay.NONE && executorService is ScheduledExecutorService) {
-                    val delayToApply = (delay.minDelay.inWholeMilliseconds..delay.maxDelay.inWholeMilliseconds).random()
+                    var delayToApply = (delay.minDelay.inWholeMilliseconds..delay.maxDelay.inWholeMilliseconds).random()
+                    if (runningIntegrationTests) {
+                        delayToApply = (delayToApply * INTEGRATION_TEST_DELAY_PERCENTAGE).toLong()
+                    }
                     executorService.schedule(command, delayToApply, TimeUnit.MILLISECONDS)
                 } else {
                     executorService.submit(command)

@@ -2,17 +2,6 @@ android {
     compileSdkVersion compileVersion
     buildToolsVersion buildToolsVersion
 
-    flavorDimensions "extraAPIs"
-    productFlavors {
-        defaults {
-            dimension "extraAPIs"
-        }
-        integrationTest {
-            dimension "extraAPIs"
-            minSdkVersion 21 // Needed because mockk-android requires API 21
-        }
-    }
-
     defaultConfig {
         minSdkVersion minVersion
         targetSdkVersion compileVersion

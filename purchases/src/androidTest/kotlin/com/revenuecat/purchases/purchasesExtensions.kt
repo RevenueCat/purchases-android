@@ -16,6 +16,7 @@ internal fun Purchases.Companion.configure(
         overrideBillingAbstract,
         forceServerErrors,
         forceSigningErrors,
+        runningIntegrationTests = true,
     ).also {
         @SuppressLint("RestrictedApi")
         sharedInstance = it

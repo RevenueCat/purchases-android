@@ -5,10 +5,6 @@ android {
     defaultConfig {
         minSdkVersion minVersion
         targetSdkVersion compileVersion
-        // Library modules have a new dimension used to add extra APIs for integration tests
-        // Our applications however don't need the extra flavor. This makes sure that we use the
-        // flavor without the extra APIs in our applications.
-        missingDimensionStrategy 'extraAPIs', 'defaults'
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
