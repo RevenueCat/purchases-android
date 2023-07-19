@@ -42,6 +42,7 @@ class SubscriberAttributesPosterTests {
     private val mockBaseURL = URL("http://mock-api-test.revenuecat.com/")
     private val mockAppConfig = mockk<AppConfig>().apply {
         every { baseURL } returns mockBaseURL
+        every { customEntitlementComputation } returns false
     }
     private val appUserID = "jerry"
     private val dispatcher = SyncDispatcher()
@@ -314,6 +315,32 @@ class SubscriberAttributesPosterTests {
         val actualPostReceiptBody = actualPostReceiptBodySlot.captured
         assertThat(actualPostReceiptBody).isNotNull()
         assertThat(actualPostReceiptBody["attributes"]).isNotNull
+    }
+
+    @Test
+    fun `posting receipt with attributes skips them in custom entitlements computation mode`() {
+        every { mockAppConfig.customEntitlementComputation } returns true
+        mockPostReceiptResponse()
+
+        val productInfo = ReceiptInfo(
+            productIDs = listOf(productID)
+        )
+        backend.postReceiptData(
+            purchaseToken = fetchToken,
+            appUserID = appUserID,
+            isRestore = false,
+            observerMode = false,
+            subscriberAttributes = mapOfSubscriberAttributes,
+            receiptInfo = productInfo,
+            storeAppUserID = null,
+            onSuccess = expectedOnSuccessPostReceipt,
+            onError = unexpectedOnErrorPostReceipt
+        )
+
+        assertThat(receivedCustomerInfo).isNotNull
+        val actualPostReceiptBody = actualPostReceiptBodySlot.captured
+        assertThat(actualPostReceiptBody).isNotNull
+        assertThat(actualPostReceiptBody.containsKey("attributes")).isFalse
     }
 
     @Test
