@@ -17,6 +17,11 @@ android {
         versionName purchaseTesterVersionName
         vectorDrawables.useSupportLibrary = true
 
+        // Library modules have a dimension used to separate different apis.
+        // Our applications however don't need the extra flavor. This makes sure that we use the
+        // default flavor.
+        missingDimensionStrategy 'apis', 'defaults'
+
         buildConfigField "String", "SUPPORTED_STORES", "\"${purchaseTesterSupportedStores}\""
     }
     signingConfigs {

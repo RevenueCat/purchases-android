@@ -159,12 +159,12 @@ jobs:
               find . -type f -regex ".*/build/test-results/.*xml" -exec cp --parents {} build/test-results/ \;
       - run:
           name: Kover HTML
-          command: ./gradlew purchases:koverHtmlReportRelease
+          command: ./gradlew purchases:koverHtmlReportDefaultsRelease
       - run:
           name: Kover XML
-          command: ./gradlew purchases:koverXmlReportRelease
+          command: ./gradlew purchases:koverXmlReportDefaultsRelease
       - codecov/upload:
-          file: purchases/build/reports/kover/reportRelease.xml
+          file: purchases/build/reports/kover/reportDefaultsRelease.xml
       - android/save-build-cache
       - store_artifacts:
           path: build/reports

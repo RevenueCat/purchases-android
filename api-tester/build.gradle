@@ -6,6 +6,16 @@ plugins {
 apply from: "$rootProject.projectDir/base-application.gradle"
 
 android {
+    flavorDimensions "apis"
+    productFlavors {
+        defaults {
+            dimension "apis"
+        }
+        customEntitlementsComputation {
+            dimension "apis"
+        }
+    }
+
     testOptions {
         unitTests.includeAndroidResources = true
         unitTests.all {
