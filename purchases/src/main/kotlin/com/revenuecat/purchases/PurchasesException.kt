@@ -1,6 +1,6 @@
 package com.revenuecat.purchases
 
-class PurchasesException(val error: PurchasesError) : Exception() {
+open class PurchasesException(val error: PurchasesError) : Exception() {
 
     val code: PurchasesErrorCode
         get() = error.code
