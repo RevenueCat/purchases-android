@@ -78,26 +78,7 @@ typealias ErrorPurchaseCallback = (StoreTransaction, PurchasesError) -> Unit
  */
 @Suppress("LongParameterList")
 class Purchases internal constructor(
-    private val application: Application,
-    backingFieldAppUserID: String?,
-    private val backend: Backend,
-    private val billing: BillingAbstract,
-    private val deviceCache: DeviceCache,
-    private val identityManager: IdentityManager,
-    private val subscriberAttributesManager: SubscriberAttributesManager,
-    @set:JvmSynthetic @get:JvmSynthetic internal var appConfig: AppConfig,
-    private val customerInfoHelper: CustomerInfoHelper,
-    private val customerInfoUpdateHandler: CustomerInfoUpdateHandler,
-    diagnosticsSynchronizer: DiagnosticsSynchronizer?,
-    @get:VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
-    internal val offlineEntitlementsManager: OfflineEntitlementsManager,
-    private val postReceiptHelper: PostReceiptHelper,
-    private val postTransactionWithProductDetailsHelper: PostTransactionWithProductDetailsHelper,
-    private val postPendingTransactionsHelper: PostPendingTransactionsHelper,
-    private val syncPurchasesHelper: SyncPurchasesHelper,
-    private val offeringsManager: OfferingsManager,
-    // This is nullable due to: https://github.com/RevenueCat/purchases-flutter/issues/408
-    private val mainHandler: Handler? = Handler(Looper.getMainLooper()),
+    private val purchasesOrchestrator: PurchasesOrchestrator
 ) : LifecycleDelegate {
 
     /** @suppress */

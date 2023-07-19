@@ -225,7 +225,7 @@ internal class PurchasesFactory(
                 ConfigureStrings.VERIFICATION_MODE_SELECTED.format(configuration.verificationMode.name),
             )
 
-            return Purchases(
+            val purchasesOrchestrator = PurchasesOrchestrator(
                 application,
                 appUserID,
                 backend,
@@ -244,6 +244,8 @@ internal class PurchasesFactory(
                 syncPurchasesHelper,
                 offeringsManager,
             )
+
+            return Purchases(purchasesOrchestrator)
         }
     }
 
