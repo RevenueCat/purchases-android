@@ -85,6 +85,7 @@ class BackendTest {
     private val mockAppConfig: AppConfig = mockk<AppConfig>().apply {
         every { baseURL } returns mockBaseURL
         every { diagnosticsURL } returns mockDiagnosticsBaseURL
+        every { customEntitlementComputation } returns false
     }
     private val dispatcher = SyncDispatcher()
     private val backendHelper = BackendHelper(API_KEY, dispatcher, mockAppConfig, mockClient)
@@ -1011,6 +1012,39 @@ class BackendTest {
         }
         assertThat(requestBodySlot.captured.containsKey("attributes")).isTrue()
         assertThat(requestBodySlot.captured["attributes"]).isEqualTo(subscriberAttributes)
+    }
+
+    @Test
+    fun `postReceipt does not send unsynced subscriberAttributes in custom entitlements mode`() {
+        every { mockAppConfig.customEntitlementComputation } returns true
+        val subscriberAttributes = mapOf("user" to mapOf(
+            "attribute1" to "value1",
+            "attribute2" to "value2",
+        ))
+        mockPostReceiptResponseAndPost(
+            backend,
+            responseCode = 200,
+            isRestore = false,
+            clientException = null,
+            resultBody = null,
+            observerMode = true,
+            receiptInfo = ReceiptInfo(
+                productIDs,
+                storeProduct = storeProduct
+            ),
+            storeAppUserID = null,
+            subscriberAttributes = subscriberAttributes,
+        )
+        verify(exactly = 1) {
+            mockClient.performRequest(
+                mockBaseURL,
+                Endpoint.PostReceipt,
+                capture(requestBodySlot),
+                any(),
+                any()
+            )
+        }
+        assertThat(requestBodySlot.captured.containsKey("attributes")).isFalse()
     }
 
     @Test
