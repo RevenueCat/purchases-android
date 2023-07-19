@@ -981,6 +981,39 @@ class BackendTest {
     }
 
     @Test
+    fun `postReceipt sends unsynced subscriberAttributes`() {
+        val subscriberAttributes = mapOf("user" to mapOf(
+            "attribute1" to "value1",
+            "attribute2" to "value2",
+        ))
+        mockPostReceiptResponseAndPost(
+            backend,
+            responseCode = 200,
+            isRestore = false,
+            clientException = null,
+            resultBody = null,
+            observerMode = true,
+            receiptInfo = ReceiptInfo(
+                productIDs,
+                storeProduct = storeProduct
+            ),
+            storeAppUserID = null,
+            subscriberAttributes = subscriberAttributes,
+        )
+        verify(exactly = 1) {
+            mockClient.performRequest(
+                mockBaseURL,
+                Endpoint.PostReceipt,
+                capture(requestBodySlot),
+                any(),
+                any()
+            )
+        }
+        assertThat(requestBodySlot.captured.containsKey("attributes")).isTrue()
+        assertThat(requestBodySlot.captured["attributes"]).isEqualTo(subscriberAttributes)
+    }
+
+    @Test
     fun `given multiple post calls for same subscriber different store user ID, both are triggered`() {
         val lock = CountDownLatch(2)
         val receiptInfo = ReceiptInfo(productIDs)
@@ -2168,6 +2201,7 @@ class BackendTest {
         storeAppUserID: String?,
         delayed: Boolean = false,
         marketplace: String? = null,
+        subscriberAttributes: Map<String, Map<String, Any?>> = emptyMap(),
         onSuccess: (CustomerInfo, JSONObject?) -> Unit = onReceivePostReceiptSuccessHandler,
         onError: PostReceiptDataErrorCallback = postReceiptErrorCallback
     ): CustomerInfo {
@@ -2187,7 +2221,7 @@ class BackendTest {
             appUserID = appUserID,
             isRestore = isRestore,
             observerMode = observerMode,
-            subscriberAttributes = emptyMap(),
+            subscriberAttributes = subscriberAttributes,
             receiptInfo = receiptInfo,
             storeAppUserID = storeAppUserID,
             marketplace = marketplace,
