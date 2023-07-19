@@ -2,6 +2,7 @@ package com.revenuecat.purchases
 
 import android.os.Handler
 import android.os.Looper
+import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.log
@@ -19,6 +20,7 @@ internal class CustomerInfoUpdateHandler(
     private val identityManager: IdentityManager,
     private val offlineEntitlementsManager: OfflineEntitlementsManager,
     private val handler: Handler = Handler(Looper.getMainLooper()),
+    private val appConfig: AppConfig,
 ) {
 
     var updatedCustomerInfoListener: UpdatedCustomerInfoListener? = null
@@ -57,8 +59,10 @@ internal class CustomerInfoUpdateHandler(
     private fun afterSetListener(listener: UpdatedCustomerInfoListener?) {
         if (listener != null) {
             log(LogIntent.DEBUG, ConfigureStrings.LISTENER_SET)
-            getCachedCustomerInfo(identityManager.currentAppUserID)?.let {
-                notifyListeners(it)
+            if (!appConfig.customEntitlementComputation) {
+                getCachedCustomerInfo(identityManager.currentAppUserID)?.let {
+                    notifyListeners(it)
+                }
             }
         }
     }
