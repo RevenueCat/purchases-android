@@ -54,8 +54,7 @@ suspend fun Purchases.awaitOfferings(): Offerings {
 @JvmSynthetic
 @ExperimentalPreviewRevenueCatPurchasesAPI
 @Throws(PurchasesTransactionException::class)
-suspend fun Purchases.awaitPurchase(purchaseParams: PurchaseParams):
-    Pair<StoreTransaction, CustomerInfo> {
+suspend fun Purchases.awaitPurchase(purchaseParams: PurchaseParams): Pair<StoreTransaction, CustomerInfo> {
     return suspendCoroutine { continuation ->
         purchase(
             purchaseParams = purchaseParams,
