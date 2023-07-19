@@ -2169,7 +2169,6 @@ class BackendTest {
         storeAppUserID: String?,
         delayed: Boolean = false,
         marketplace: String? = null,
-        subscriberAttributes: Map<String, Map<String, Any?>> = emptyMap(),
         onSuccess: (CustomerInfo, JSONObject?) -> Unit = onReceivePostReceiptSuccessHandler,
         onError: PostReceiptDataErrorCallback = postReceiptErrorCallback
     ): CustomerInfo {
@@ -2189,7 +2188,7 @@ class BackendTest {
             appUserID = appUserID,
             isRestore = isRestore,
             observerMode = observerMode,
-            subscriberAttributes = subscriberAttributes,
+            subscriberAttributes = emptyMap(),
             receiptInfo = receiptInfo,
             storeAppUserID = storeAppUserID,
             marketplace = marketplace,
