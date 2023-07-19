@@ -100,6 +100,17 @@ platform :android do
       properties: gradleProperties
     )
 
+    UI.verbose("Creating special version for custom entitlements computation")
+    gradleProperties["ANDROID_VARIANT_TO_PUBLISH"] = "customEntitlementComputationRelease"
+    gradleProperties["POM_ARTIFACT_ID"] = "purchases-custom-entitlement-computation"
+
+    gradle(
+      tasks: [
+        "purchases:publish --no-daemon --no-parallel"
+      ],
+      properties: gradleProperties
+    )
+
     github_release(version: version) unless is_snapshot_version?(version)
   end
 
