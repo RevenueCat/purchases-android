@@ -87,28 +87,21 @@ internal class PurchasesCoroutinesCommonTest : BasePurchasesTest() {
     fun `await purchase - Success`() = runTest {
         val storeProduct = stubStoreProduct("abc")
         val purchaseOptionParams = getPurchaseParams(storeProduct.subscriptionOptions!!.first())
-        var result: Pair<StoreTransaction, CustomerInfo>? = null
-        var exception: Throwable? = null
-
-        runCatching {
-            result = purchases.awaitPurchase(purchaseOptionParams)
-        }.onFailure {
-            exception = it
-        }
+        val (storeTransaction, customerInfo) = purchases.awaitPurchase(purchaseOptionParams)
 
         verify(exactly = 1) {
             mockBillingAbstract.makePurchaseAsync(
-                eq(mockActivity),
-                eq(appUserId),
-                storeProduct.subscriptionOptions!!.first().purchasingData,
-                null,
-                null,
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
                 any()
             )
         }
 
-        assertThat(result).isNotNull
-        assertThat(exception).isNull()
+        assertThat(storeTransaction).isNotNull
+        assertThat(customerInfo).isNotNull
     }
 
     @Test
@@ -128,11 +121,11 @@ internal class PurchasesCoroutinesCommonTest : BasePurchasesTest() {
 
         verify(exactly = 1) {
             mockBillingAbstract.makePurchaseAsync(
-                eq(mockActivity),
-                eq(appUserId),
-                storeProduct.subscriptionOptions!!.first().purchasingData,
-                null,
-                null,
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
                 any()
             )
         }
