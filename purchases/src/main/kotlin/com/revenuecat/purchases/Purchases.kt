@@ -9,7 +9,6 @@ import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Context
 import androidx.annotation.VisibleForTesting
-import androidx.lifecycle.ProcessLifecycleOwner
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.debugLogsEnabled
@@ -88,24 +87,20 @@ class Purchases internal constructor(
     val store: Store
         get() = purchasesOrchestrator.store
 
-    private val lifecycleHandler: AppLifecycleHandler by lazy {
-        AppLifecycleHandler(this)
-    }
-
-    init {
-        purchasesOrchestrator.dispatch {
-            // This needs to happen after the billing client listeners have been set. This is because
-            // we perform operations with the billing client in the lifecycle observer methods.
-            ProcessLifecycleOwner.get().lifecycle.addObserver(lifecycleHandler)
-        }
-    }
-
-    /** @suppress */
+    @Suppress("EmptyFunctionBlock")
+    @Deprecated(
+        "Will be removed in next major. Logic has been moved to PurchasesOrchestrator",
+        ReplaceWith("purchasesOrchestrator.onAppBackgrounded()"),
+    )
     override fun onAppBackgrounded() {
         purchasesOrchestrator.onAppBackgrounded()
     }
 
-    /** @suppress */
+    @Suppress("EmptyFunctionBlock")
+    @Deprecated(
+        "Will be removed in next major. Logic has been moved to PurchasesOrchestrator",
+        ReplaceWith("purchasesOrchestrator.onAppForegrounded()"),
+    )
     override fun onAppForegrounded() {
         purchasesOrchestrator.onAppForegrounded()
     }
@@ -405,10 +400,6 @@ class Purchases internal constructor(
      */
     fun close() {
         purchasesOrchestrator.close()
-
-        purchasesOrchestrator.dispatch {
-            ProcessLifecycleOwner.get().lifecycle.removeObserver(lifecycleHandler)
-        }
     }
 
     /**
