@@ -7,7 +7,7 @@ android {
         defaults {
             dimension "apis"
         }
-        customEntitlementsComputation {
+        customEntitlementComputation {
             dimension "apis"
         }
     }
