@@ -70,7 +70,6 @@ import java.util.Collections.emptyList
 @Config(manifest = Config.NONE)
 @Suppress("DEPRECATION")
 internal class PurchasesCommonTest: BasePurchasesTest() {
-    private val mockActivity: Activity = mockk()
     private var receivedProducts: List<StoreProduct>? = null
 
     private val inAppProductId = "inapp"
@@ -1745,33 +1744,6 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         every {
             mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(appUserId)
         } just Runs
-    }
-
-    private fun getPurchaseParams(
-        purchaseable: Any,
-        oldProductId: String? = null,
-        isPersonalizedPrice: Boolean? = null,
-        googleProrationMode: GoogleProrationMode? = null
-    ): PurchaseParams {
-        val builder = when (purchaseable) {
-            is SubscriptionOption -> PurchaseParams.Builder(mockActivity, purchaseable)
-            is Package -> PurchaseParams.Builder(mockActivity, purchaseable)
-            is StoreProduct -> PurchaseParams.Builder(mockActivity, purchaseable)
-            else -> null
-        }
-
-        oldProductId?.let {
-            builder!!.oldProductId(it)
-        }
-
-        isPersonalizedPrice?.let {
-            builder!!.isPersonalizedPrice(it)
-        }
-
-        googleProrationMode?.let {
-            builder!!.googleProrationMode(googleProrationMode)
-        }
-        return builder!!.build()
     }
 
     private fun mockCloseActions() {

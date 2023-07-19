@@ -1,6 +1,8 @@
 package com.revenuecat.purchases
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.utils.stubStoreProduct
 import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
@@ -75,6 +77,38 @@ internal class PurchasesCoroutinesCommonTest : BasePurchasesTest() {
         assertThat(exception).isNotNull
         assertThat(exception).isInstanceOf(PurchasesException::class.java)
         assertThat((exception as PurchasesException).code).isEqualTo(PurchasesErrorCode.ConfigurationError)
+    }
+
+    // endregion
+
+    // region awaitPurchase
+
+    @Test
+    fun `await purchase - Success`() = runTest {
+        val storeProduct = stubStoreProduct("abc")
+        val purchaseOptionParams = getPurchaseParams(storeProduct.subscriptionOptions!!.first())
+        var result: Pair<StoreTransaction, CustomerInfo>? = null
+        var exception: Throwable? = null
+
+        runCatching {
+            result = purchases.awaitPurchase(purchaseOptionParams)
+        }.onFailure {
+            exception = it
+        }
+
+        verify(exactly = 1) {
+            mockBillingAbstract.makePurchaseAsync(
+                eq(mockActivity),
+                eq(appUserId),
+                storeProduct.subscriptionOptions!!.first().purchasingData,
+                null,
+                null,
+                any()
+            )
+        }
+
+        assertThat(result).isNotNull
+        assertThat(exception).isNull()
     }
 
     // endregion

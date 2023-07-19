@@ -5,6 +5,7 @@
 
 package com.revenuecat.purchases
 
+import android.app.Activity
 import android.app.Application
 import android.content.Context
 import androidx.lifecycle.ProcessLifecycleOwner
@@ -22,8 +23,10 @@ import com.revenuecat.purchases.google.toStoreTransaction
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
+import com.revenuecat.purchases.models.GoogleProrationMode
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.utils.STUB_PRODUCT_IDENTIFIER
 import com.revenuecat.purchases.utils.createMockOneTimeProductDetails
@@ -71,6 +74,7 @@ internal open class BasePurchasesTest {
     protected val appUserId = "fakeUserID"
     protected lateinit var purchases: Purchases
     protected val mockInfo = mockk<CustomerInfo>()
+    protected val mockActivity: Activity = mockk()
 
     @Before
     fun setUp() {
@@ -388,6 +392,33 @@ internal open class BasePurchasesTest {
         every {
             mockPostPendingTransactionsHelper.syncPendingPurchaseQueue(any(), any(), any())
         } just Runs
+    }
+
+    protected fun getPurchaseParams(
+        purchaseable: Any,
+        oldProductId: String? = null,
+        isPersonalizedPrice: Boolean? = null,
+        googleProrationMode: GoogleProrationMode? = null
+    ): PurchaseParams {
+        val builder = when (purchaseable) {
+            is SubscriptionOption -> PurchaseParams.Builder(mockActivity, purchaseable)
+            is Package -> PurchaseParams.Builder(mockActivity, purchaseable)
+            is StoreProduct -> PurchaseParams.Builder(mockActivity, purchaseable)
+            else -> null
+        }
+
+        oldProductId?.let {
+            builder!!.oldProductId(it)
+        }
+
+        isPersonalizedPrice?.let {
+            builder!!.isPersonalizedPrice(it)
+        }
+
+        googleProrationMode?.let {
+            builder!!.googleProrationMode(googleProrationMode)
+        }
+        return builder!!.build()
     }
 
     // endregion
