@@ -12,6 +12,7 @@ import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.verification.SignatureVerificationException
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.spyk
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
@@ -21,6 +22,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import java.util.concurrent.ExecutorService
+import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.SynchronousQueue
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
@@ -182,6 +184,40 @@ class DispatcherTest {
         dispatcher.enqueue({ })
 
         assertThat(currentThreadExecutorService.executeCalled).isTrue
+    }
+
+    @Test
+    fun `executes with correct delay when not in integration tests`() {
+        val executorService = mockk<ScheduledExecutorService>(relaxed = true)
+        val dispatcher = Dispatcher(executorService, runningIntegrationTests = false)
+        dispatcher.enqueue({ }, delay = Delay.LONG)
+        verify(exactly = 1) {
+            executorService.schedule(
+                any(),
+                withArg { delay ->
+                    assertThat(delay).isGreaterThanOrEqualTo(5000L)
+                    assertThat(delay).isLessThan(10000L)
+                },
+                TimeUnit.MILLISECONDS,
+            )
+        }
+    }
+
+    @Test
+    fun `executes with correct delay when in integration tests`() {
+        val executorService = mockk<ScheduledExecutorService>(relaxed = true)
+        val dispatcher = Dispatcher(executorService, runningIntegrationTests = true)
+        dispatcher.enqueue({ }, delay = Delay.LONG)
+        verify(exactly = 1) {
+            executorService.schedule(
+                any(),
+                withArg { delay ->
+                    assertThat(delay).isGreaterThanOrEqualTo(50L)
+                    assertThat(delay).isLessThan(100L)
+                },
+                TimeUnit.MILLISECONDS,
+            )
+        }
     }
 
     class CurrentThreadExecutorService(
