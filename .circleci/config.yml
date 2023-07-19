@@ -153,7 +153,7 @@ jobs:
           name: Run Tests
           # We are running tests in the "defaults" flavor only. If we ever add/remove flavors, we will need to update
           # this command.
-          command: ./gradlew lint testDefaultsDebugUnitTest testDefaultsReleaseUnitTest
+          command: ./gradlew lint test
       - run:
           name: Consolidate artifacts
           command: |
