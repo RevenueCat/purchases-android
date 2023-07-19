@@ -14,11 +14,14 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.transition.MaterialContainerTransform
 import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PurchaseParams
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.PurchasesTransactionException
+import com.revenuecat.purchases.awaitPurchase
 import com.revenuecat.purchases.getCustomerInfoWith
 import com.revenuecat.purchases.getOfferingsWith
 import com.revenuecat.purchases.models.GoogleProrationMode
@@ -30,11 +33,14 @@ import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.purchaseWith
 import com.revenuecat.purchases_sample.R
 import com.revenuecat.purchases_sample.databinding.FragmentOfferingBinding
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 
 @SuppressWarnings("TooManyFunctions")
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListener {
 
     lateinit var binding: FragmentOfferingBinding
@@ -42,23 +48,10 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
     private val args: OfferingFragmentArgs by navArgs()
     private val offeringId: String by lazy { args.offeringId }
     private var activeSubscriptions: Set<String> = setOf()
+    private val scope = CoroutineScope(Dispatchers.Main)
 
     private lateinit var dataStoreUtils: DataStoreUtils
     private var isPlayStore: Boolean = true
-
-    private val purchaseErrorCallback: (error: PurchasesError, userCancelled: Boolean) -> Unit =
-        { error, userCancelled ->
-            toggleLoadingIndicator(false)
-            if (!userCancelled) {
-                showUserError(requireActivity(), error)
-            }
-        }
-
-    private val successfulPurchaseCallback: (purchase: StoreTransaction?, customerInfo: CustomerInfo) -> Unit =
-        { storeTransaction, _ ->
-            toggleLoadingIndicator(false)
-            handleSuccessfulPurchase(storeTransaction?.orderId)
-        }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -70,10 +63,6 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        Purchases.sharedInstance.getCustomerInfoWith {
-            activeSubscriptions = it.activeSubscriptions
-        }
-
         dataStoreUtils = DataStoreUtils(requireActivity().applicationContext.configurationDataStore)
         binding = FragmentOfferingBinding.inflate(inflater)
 
@@ -164,23 +153,30 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
                         purchaseParamsBuilder.isPersonalizedPrice(isPersonalizedPrice)
                     }
 
-                    Purchases.sharedInstance.purchaseWith(
-                        purchaseParamsBuilder.build(),
-                        purchaseErrorCallback,
-                        successfulPurchaseCallback,
-                    )
+                    purchase(purchaseParamsBuilder.build())
                 }
             }
         } else {
             if (isPersonalizedPrice) {
                 purchaseParamsBuilder.isPersonalizedPrice(isPersonalizedPrice)
             }
+            purchase(purchaseParamsBuilder.build())
+        }
+    }
 
-            Purchases.sharedInstance.purchaseWith(
-                purchaseParamsBuilder.build(),
-                purchaseErrorCallback,
-                successfulPurchaseCallback,
-            )
+    private fun purchase(params: PurchaseParams) {
+        scope.launch {
+            try {
+                val (storeTransaction, _) = Purchases.sharedInstance.awaitPurchase(params)
+                toggleLoadingIndicator(false)
+                handleSuccessfulPurchase(storeTransaction.orderId)
+            } catch (exception: PurchasesTransactionException) {
+                toggleLoadingIndicator(false)
+                showUserError(
+                    requireActivity(),
+                    PurchasesError(underlyingErrorMessage = exception.underlyingErrorMessage, code = exception.code)
+                )
+            }
         }
     }
 
@@ -194,6 +190,7 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
                     false,
                 )
             }
+
             is GooglePurchasingData.InAppProduct -> {
                 ObserverModeBillingClient.purchase(
                     requireActivity(),
