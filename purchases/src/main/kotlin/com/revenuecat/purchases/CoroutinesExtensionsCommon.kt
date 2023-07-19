@@ -57,13 +57,16 @@ suspend fun Purchases.awaitOfferings(): Offerings {
 suspend fun Purchases.awaitPurchase(purchaseParams: PurchaseParams):
     Pair<StoreTransaction, CustomerInfo> {
     return suspendCoroutine { continuation ->
-        purchase(purchaseParams = purchaseParams, callback = purchaseCompletedCallback(
-            onSuccess = { storeTransaction, customerInfo ->
-                continuation.resume(Pair(storeTransaction, customerInfo))
-            },
-            onError = { purchasesError, userCancelled ->
-                continuation.resumeWithException(PurchasesTransactionException(purchasesError, userCancelled))
-            },
-        ))
+        purchase(
+            purchaseParams = purchaseParams,
+            callback = purchaseCompletedCallback(
+                onSuccess = { storeTransaction, customerInfo ->
+                    continuation.resume(Pair(storeTransaction, customerInfo))
+                },
+                onError = { purchasesError, userCancelled ->
+                    continuation.resumeWithException(PurchasesTransactionException(purchasesError, userCancelled))
+                },
+            ),
+        )
     }
 }
