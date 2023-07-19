@@ -80,10 +80,7 @@ dependencies {
     testImplementation libs.playServices.ads.identifier
 
     androidTestImplementation libs.androidx.appcompat
-    androidTestImplementation libs.androidx.core
-    androidTestImplementation libs.androidx.lifecycle.common
     androidTestImplementation libs.androidx.lifecycle.runtime.ktx
-    androidTestImplementation libs.androidx.lifecycle.process
     androidTestImplementation libs.androidx.test.espresso.core
     androidTestImplementation libs.androidx.test.runner
     androidTestImplementation libs.androidx.test.rules
