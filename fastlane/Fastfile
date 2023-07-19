@@ -176,7 +176,7 @@ platform :android do
       paths_of_files_to_update: [constants_path]
     )
     gradle(
-      task: ':purchases:testDebugUnitTest',
+      task: ':purchases:testDefaultsDebugUnitTest',
       properties: {
         "RUN_INTEGRATION_TESTS" => true,
         "minSdkVersion" => 21,
@@ -468,15 +468,15 @@ end
 
 def build_purchases_android_test_apk(package_name, apk_name, build_type)
   gradle(
-    task: ':purchases:assembleAndroidTest',
+    task: ':purchases:assembleDefaultsAndroidTest',
     properties: {
       "testApplicationId" => package_name,
       "testBuildType" => build_type,
       "minSdkVersion" => 21
     }
   )
-  apk_path = "../purchases/build/outputs/apk/androidTest/#{build_type}/purchases-#{build_type}-androidTest.apk"
-  new_apk_path = "../purchases/build/outputs/apk/androidTest/#{build_type}/#{apk_name}.apk"
+  apk_path = "../purchases/build/outputs/apk/androidTest/defaults/#{build_type}/purchases-defaults-#{build_type}-androidTest.apk"
+  new_apk_path = "../purchases/build/outputs/apk/androidTest/defaults/#{build_type}/#{apk_name}.apk"
   sh "mv #{apk_path} #{new_apk_path}"
   copy_artifacts(
     target_path: 'purchases/test_artifacts',
