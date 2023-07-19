@@ -151,8 +151,6 @@ jobs:
       - android/restore-build-cache
       - run:
           name: Run Tests
-          # We are running tests in the "defaults" flavor only. If we ever add/remove flavors, we will need to update
-          # this command.
           command: ./gradlew lint test
       - run:
           name: Consolidate artifacts

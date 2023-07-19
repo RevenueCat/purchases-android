@@ -18,8 +18,6 @@ android {
     defaultConfig {
         testApplicationId obtainTestApplicationId()
         testBuildType obtainTestBuildType()
-        // TODO: Revise this
-        multiDexEnabled true
         packagingOptions {
             resources.excludes.add("META-INF/LICENSE.md")
             resources.excludes.add("META-INF/LICENSE-notice.md")
@@ -81,7 +79,6 @@ dependencies {
     testImplementation libs.okhttp.mockwebserver
     testImplementation libs.playServices.ads.identifier
 
-    androidTestImplementation libs.androidx.multidex
     androidTestImplementation libs.androidx.appcompat
     androidTestImplementation libs.androidx.core
     androidTestImplementation libs.androidx.lifecycle.common

@@ -3,7 +3,6 @@
     <!-- Ignoring errors in API <21 since mockk-android is only supported starting in API 21 -->
     <uses-sdk tools:overrideLibrary="io.mockk,io.mockk.proxy.android"/>
     <application
-            android:name="androidx.multidex.MultiDexApplication"
             android:allowBackup="true"
             android:label="RevenueCatIntegrationTests"
             android:supportsRtl="true"
