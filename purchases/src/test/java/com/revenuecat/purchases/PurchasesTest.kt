@@ -1506,7 +1506,7 @@ internal class PurchasesTest: BasePurchasesTest() {
         mockCacheStale(customerInfoStale = true)
         mockSynchronizeSubscriberAttributesForAllUsers()
         mockOfferingsManagerAppForeground()
-        Purchases.sharedInstance.onAppForegrounded()
+        Purchases.sharedInstance.purchasesOrchestrator.onAppForegrounded()
         verify(exactly = 1) {
             mockCustomerInfoHelper.retrieveCustomerInfo(
                 appUserId,
@@ -1520,7 +1520,7 @@ internal class PurchasesTest: BasePurchasesTest() {
     @Test
     fun `fetch product entitlement mapping on foreground if it's stale`() {
         mockOfferingsManagerAppForeground()
-        Purchases.sharedInstance.onAppForegrounded()
+        Purchases.sharedInstance.purchasesOrchestrator.onAppForegrounded()
         verify(exactly = 1) {
             mockOfflineEntitlementsManager.updateProductEntitlementMappingCacheIfStale()
         }
@@ -1530,9 +1530,9 @@ internal class PurchasesTest: BasePurchasesTest() {
     fun `does not fetch purchaser info on foregrounded if it's not stale`() {
         mockCacheStale()
         mockSynchronizeSubscriberAttributesForAllUsers()
-        purchases.state = purchases.state.copy(firstTimeInForeground = false)
+        purchases.purchasesOrchestrator.state = purchases.purchasesOrchestrator.state.copy(firstTimeInForeground = false)
         mockOfferingsManagerAppForeground()
-        Purchases.sharedInstance.onAppForegrounded()
+        Purchases.sharedInstance.purchasesOrchestrator.onAppForegrounded()
         verify(exactly = 0) {
             mockCustomerInfoHelper.retrieveCustomerInfo(
                 appUserId,
@@ -1591,7 +1591,7 @@ internal class PurchasesTest: BasePurchasesTest() {
     fun `on foreground delegates logic`() {
         mockSynchronizeSubscriberAttributesForAllUsers()
         every { mockOfferingsManager.onAppForeground(any()) } just Runs
-        Purchases.sharedInstance.onAppForegrounded()
+        Purchases.sharedInstance.purchasesOrchestrator.onAppForegrounded()
         verify(exactly = 1) { mockOfferingsManager.onAppForeground(appUserId) }
     }
 
@@ -2306,7 +2306,7 @@ internal class PurchasesTest: BasePurchasesTest() {
         val allowSharingAccount = true
         val appInBackground = true
         purchases.allowSharingPlayStoreAccount = allowSharingAccount
-        purchases.state = purchases.state.copy(appInBackground = appInBackground)
+        purchases.purchasesOrchestrator.state = purchases.purchasesOrchestrator.state.copy(appInBackground = appInBackground)
 
         every { mockSyncPurchasesHelper.syncPurchases(any(), any(), any(), any()) } just Runs
 
@@ -2767,7 +2767,7 @@ internal class PurchasesTest: BasePurchasesTest() {
     fun `on app foregrounded sync pending purchases`() {
         mockSynchronizeSubscriberAttributesForAllUsers()
         mockOfferingsManagerAppForeground()
-        purchases.onAppForegrounded()
+        purchases.purchasesOrchestrator.onAppForegrounded()
         verify(exactly = 1) {
             mockPostPendingTransactionsHelper.syncPendingPurchaseQueue(any())
         }
@@ -2780,24 +2780,24 @@ internal class PurchasesTest: BasePurchasesTest() {
     @Test
     fun `state appInBackground is updated when app foregrounded`() {
         mockOfferingsManagerAppForeground()
-        purchases.state = purchases.state.copy(appInBackground = true)
-        Purchases.sharedInstance.onAppForegrounded()
-        assertThat(purchases.state.appInBackground).isFalse()
+        purchases.purchasesOrchestrator.state = purchases.purchasesOrchestrator.state.copy(appInBackground = true)
+        Purchases.sharedInstance.purchasesOrchestrator.onAppForegrounded()
+        assertThat(purchases.purchasesOrchestrator.state.appInBackground).isFalse()
     }
 
     @Test
     fun `state appInBackground is updated when app backgrounded`() {
-        purchases.state = purchases.state.copy(appInBackground = false)
-        Purchases.sharedInstance.onAppBackgrounded()
-        assertThat(purchases.state.appInBackground).isTrue()
+        purchases.purchasesOrchestrator.state = purchases.purchasesOrchestrator.state.copy(appInBackground = false)
+        Purchases.sharedInstance.purchasesOrchestrator.onAppBackgrounded()
+        assertThat(purchases.purchasesOrchestrator.state.appInBackground).isTrue()
     }
 
     @Test
     fun `force update of caches when app foregrounded for the first time`() {
         mockOfferingsManagerAppForeground()
-        purchases.state = purchases.state.copy(appInBackground = false, firstTimeInForeground = true)
-        Purchases.sharedInstance.onAppForegrounded()
-        assertThat(purchases.state.firstTimeInForeground).isFalse()
+        purchases.purchasesOrchestrator.state = purchases.purchasesOrchestrator.state.copy(appInBackground = false, firstTimeInForeground = true)
+        Purchases.sharedInstance.purchasesOrchestrator.onAppForegrounded()
+        assertThat(purchases.purchasesOrchestrator.state.firstTimeInForeground).isFalse()
         verify(exactly = 1) {
             mockCustomerInfoHelper.retrieveCustomerInfo(
                 appUserId,
@@ -2817,9 +2817,9 @@ internal class PurchasesTest: BasePurchasesTest() {
             mockCache.isCustomerInfoCacheStale(appInBackground = false, appUserID = appUserId)
         } returns false
         mockOfferingsManagerAppForeground()
-        purchases.state = purchases.state.copy(appInBackground = false, firstTimeInForeground = false)
-        Purchases.sharedInstance.onAppForegrounded()
-        assertThat(purchases.state.firstTimeInForeground).isFalse()
+        purchases.purchasesOrchestrator.state = purchases.purchasesOrchestrator.state.copy(appInBackground = false, firstTimeInForeground = false)
+        Purchases.sharedInstance.purchasesOrchestrator.onAppForegrounded()
+        assertThat(purchases.purchasesOrchestrator.state.firstTimeInForeground).isFalse()
         verify(exactly = 0) {
             mockCustomerInfoHelper.retrieveCustomerInfo(
                 appUserId,
@@ -2839,9 +2839,9 @@ internal class PurchasesTest: BasePurchasesTest() {
             mockCache.isCustomerInfoCacheStale(appInBackground = false, appUserID = appUserId)
         } returns true
         mockOfferingsManagerAppForeground()
-        purchases.state = purchases.state.copy(appInBackground = false, firstTimeInForeground = false)
-        Purchases.sharedInstance.onAppForegrounded()
-        assertThat(purchases.state.firstTimeInForeground).isFalse()
+        purchases.purchasesOrchestrator.state = purchases.purchasesOrchestrator.state.copy(appInBackground = false, firstTimeInForeground = false)
+        Purchases.sharedInstance.purchasesOrchestrator.onAppForegrounded()
+        assertThat(purchases.purchasesOrchestrator.state.firstTimeInForeground).isFalse()
         verify(exactly = 1) {
             mockCustomerInfoHelper.retrieveCustomerInfo(
                 appUserId,

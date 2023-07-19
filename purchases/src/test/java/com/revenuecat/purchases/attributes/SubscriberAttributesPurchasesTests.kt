@@ -10,6 +10,7 @@ import com.revenuecat.purchases.PostTransactionWithProductDetailsHelper
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.PostPendingTransactionsHelper
+import com.revenuecat.purchases.PurchasesOrchestrator
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BillingAbstract
@@ -75,7 +76,8 @@ class SubscriberAttributesPurchasesTests {
             identityManager,
             postTransactionHelper
         )
-        underTest = Purchases(
+
+        val purchasesOrchestrator = PurchasesOrchestrator(
             application = mockk<Application>(relaxed = true).also { applicationMock = it },
             backingFieldAppUserID = appUserId,
             backend = backendMock,
@@ -94,6 +96,8 @@ class SubscriberAttributesPurchasesTests {
             syncPurchasesHelper = mockk(),
             offeringsManager = offeringsManagerMock
         )
+
+        underTest = Purchases(purchasesOrchestrator)
     }
 
     @After
@@ -185,7 +189,7 @@ class SubscriberAttributesPurchasesTests {
         every {
             offeringsManagerMock.onAppForeground(appUserId)
         } just Runs
-        underTest.onAppForegrounded()
+        underTest.purchasesOrchestrator.onAppForegrounded()
         verify(exactly = 1) {
             subscriberAttributesManagerMock.synchronizeSubscriberAttributesForAllUsers(appUserId)
         }
@@ -196,7 +200,7 @@ class SubscriberAttributesPurchasesTests {
         every {
             subscriberAttributesManagerMock.synchronizeSubscriberAttributesForAllUsers(appUserId)
         } just Runs
-        underTest.onAppBackgrounded()
+        underTest.purchasesOrchestrator.onAppBackgrounded()
         verify(exactly = 1) {
             subscriberAttributesManagerMock.synchronizeSubscriberAttributesForAllUsers(appUserId)
         }

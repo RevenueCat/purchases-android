@@ -56,6 +56,7 @@ import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import java.net.URL
 import java.util.Collections
 
+@Suppress("LongParameterList")
 internal class PurchasesOrchestrator constructor(
     private val application: Application,
     backingFieldAppUserID: String?,

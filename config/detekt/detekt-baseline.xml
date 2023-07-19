@@ -4,7 +4,7 @@
   <CurrentIssues>
     <ID>CyclomaticComplexMethod:EntitlementInfo.kt$EntitlementInfo$override fun equals(other: Any?): Boolean</ID>
     <ID>DestructuringDeclarationWithTooManyEntries:Period.kt$val (year, month, week, day) = periodResult.destructured</ID>
-    <ID>EmptyCatchBlock:Purchases.kt$Purchases.Companion.&lt;no name provided>${ }</ID>
+    <ID>EmptyCatchBlock:PurchasesOrchestrator.kt$PurchasesOrchestrator.Companion.&lt;no name provided>${ }</ID>
     <ID>Filename:backendHelpers.kt$com.revenuecat.purchases.subscriberattributes.backendHelpers.kt</ID>
     <ID>Filename:billingClientParamBuilders.kt$com.revenuecat.purchases.google.billingClientParamBuilders.kt</ID>
     <ID>Filename:billingResultExtensions.kt$com.revenuecat.purchases.google.billingResultExtensions.kt</ID>
@@ -32,7 +32,7 @@
     <ID>Filename:subscriberAttributesFactories.kt$com.revenuecat.purchases.subscriberattributes.subscriberAttributesFactories.kt</ID>
     <ID>Filename:subscriptionOptionConversions.kt$com.revenuecat.purchases.google.subscriptionOptionConversions.kt</ID>
     <ID>Filename:utils.kt$com.revenuecat.purchases.common.utils.kt</ID>
-    <ID>LargeClass:Purchases.kt$Purchases : LifecycleDelegate</ID>
+    <ID>LargeClass:PurchasesOrchestrator.kt$PurchasesOrchestrator : LifecycleDelegate</ID>
     <ID>MagicNumber:SampleWeatherData.kt$SampleWeatherData.Companion$120</ID>
     <ID>MagicNumber:SampleWeatherData.kt$SampleWeatherData.Companion$20</ID>
     <ID>MagicNumber:SampleWeatherData.kt$SampleWeatherData.Companion$32</ID>
@@ -48,7 +48,7 @@
     <ID>SwallowedException:DeviceCache.kt$DeviceCache$e: ClassCastException</ID>
     <ID>SwallowedException:DeviceCache.kt$DeviceCache$e: JSONException</ID>
     <ID>SwallowedException:DeviceCache.kt$DeviceCache$e: NullPointerException</ID>
-    <ID>SwallowedException:Purchases.kt$Purchases.Companion.&lt;no name provided>$e: IllegalArgumentException</ID>
+    <ID>SwallowedException:PurchasesOrchestrator.kt$PurchasesOrchestrator.Companion.&lt;no name provided>$e: IllegalArgumentException</ID>
     <ID>SwallowedException:utils.kt$e: PackageManager.NameNotFoundException</ID>
     <ID>ThrowingExceptionsWithoutMessageOrCause:BillingWrapper.kt$BillingWrapper$Throwable()</ID>
     <ID>TooGenericExceptionCaught:DeviceCache.kt$DeviceCache$e: NullPointerException</ID>
@@ -56,7 +56,8 @@
     <ID>TooManyFunctions:AmazonBilling.kt$AmazonBilling : BillingAbstractProductDataResponseListenerPurchaseResponseListenerPurchaseUpdatesResponseListenerUserDataResponseListener</ID>
     <ID>TooManyFunctions:DeviceCache.kt$DeviceCache</ID>
     <ID>TooManyFunctions:HTTPClient.kt$HTTPClient</ID>
-    <ID>TooManyFunctions:Purchases.kt$Purchases : LifecycleDelegate</ID>
+    <ID>TooManyFunctions:Purchases.kt$Purchases</ID>
+    <ID>TooManyFunctions:PurchasesOrchestrator.kt$PurchasesOrchestrator : LifecycleDelegate</ID>
     <ID>TooManyFunctions:SubscriberAttributesCache.kt$SubscriberAttributesCache</ID>
     <ID>TooManyFunctions:listenerConversions.kt$com.revenuecat.purchases.listenerConversions.kt</ID>
     <ID>UnusedParameter:SampleWeatherData.kt$SampleWeatherData.Companion$environment: Environment</ID>

@@ -43,10 +43,11 @@ typealias ErrorPurchaseCallback = (StoreTransaction, PurchasesError) -> Unit
  * guide to setup your RevenueCat account.
  * @warning Only one instance of Purchases should be instantiated at a time!
  */
-@Suppress("LongParameterList")
 class Purchases internal constructor(
-    private val purchasesOrchestrator: PurchasesOrchestrator,
+    @get:JvmSynthetic internal val purchasesOrchestrator: PurchasesOrchestrator,
 ) {
+
+    internal var appConfig = purchasesOrchestrator.appConfig
 
     /**
      * Default to TRUE, set this to FALSE if you are consuming and acknowledging transactions
@@ -836,7 +837,7 @@ class Purchases internal constructor(
             features: List<BillingFeature> = listOf(),
             callback: Callback<Boolean>,
         ) {
-            val currentStore = sharedInstance.purchasesOrchestrator.appConfig.store
+            val currentStore = sharedInstance.appConfig.store
             if (currentStore != Store.PLAY_STORE) {
                 log(LogIntent.RC_ERROR, BillingStrings.CANNOT_CALL_CAN_MAKE_PAYMENTS)
                 callback.onReceived(true)

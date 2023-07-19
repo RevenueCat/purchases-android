@@ -329,7 +329,7 @@ internal open class BasePurchasesTest {
             dangerousSettings = DangerousSettings(autoSyncPurchases = autoSync)
         )
         val postTransactionsHelper = PostTransactionWithProductDetailsHelper(mockBillingAbstract, mockPostReceiptHelper)
-        purchases = Purchases(
+        val purchasesOrchestrator = PurchasesOrchestrator(
             mockApplication,
             if (anonymous) null else appUserId,
             mockBackend,
@@ -348,8 +348,9 @@ internal open class BasePurchasesTest {
             syncPurchasesHelper = mockSyncPurchasesHelper,
             offeringsManager = mockOfferingsManager
         )
+        purchases = Purchases(purchasesOrchestrator)
         Purchases.sharedInstance = purchases
-        purchases.state = purchases.state.copy(appInBackground = false)
+        purchasesOrchestrator.state = purchasesOrchestrator.state.copy(appInBackground = false)
     }
 
     protected fun anonymousSetup(anonymous: Boolean) {
