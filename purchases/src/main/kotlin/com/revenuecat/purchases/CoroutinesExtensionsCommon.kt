@@ -63,7 +63,7 @@ suspend fun Purchases.awaitPurchase(purchaseParams: PurchaseParams):
             },
             onError = { purchasesError, userCancelled ->
                 continuation.resumeWithException(PurchasesTransactionException(purchasesError, userCancelled))
-            }
+            },
         ))
     }
 }
