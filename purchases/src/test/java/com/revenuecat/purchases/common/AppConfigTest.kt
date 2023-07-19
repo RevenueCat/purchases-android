@@ -185,6 +185,28 @@ class AppConfigTest {
     }
 
     @Test
+    fun `customEntitlementComputation matches version from dangerous settings`() {
+        val appConfig = AppConfig(
+            context = mockk(relaxed = true),
+            observerMode = false,
+            platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
+            proxyURL = null,
+            store = Store.PLAY_STORE,
+            dangerousSettings = DangerousSettings(customEntitlementsComputation = true)
+        )
+        assertThat(appConfig.customEntitlementsComputation).isTrue
+        val appConfig2 = AppConfig(
+            context = mockk(relaxed = true),
+            observerMode = false,
+            platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
+            proxyURL = null,
+            store = Store.PLAY_STORE,
+            dangerousSettings = DangerousSettings(customEntitlementsComputation = false)
+        )
+        assertThat(appConfig2.customEntitlementsComputation).isFalse
+    }
+
+    @Test
     fun `Given two app configs with same data, both are equal`() {
         val x = AppConfig(
             context = mockk(relaxed = true),
