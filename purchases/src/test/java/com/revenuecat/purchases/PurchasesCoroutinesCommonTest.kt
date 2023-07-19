@@ -111,5 +111,36 @@ internal class PurchasesCoroutinesCommonTest : BasePurchasesTest() {
         assertThat(exception).isNull()
     }
 
+    @Test
+    fun `await purchase - Error`() = runTest {
+        val storeProduct = stubStoreProduct("abc")
+        val purchaseOptionParams = getPurchaseParams(storeProduct.subscriptionOptions!!.first())
+        var result: Pair<StoreTransaction, CustomerInfo>? = null
+        var exception: PurchasesTransactionException? = null
+
+        runCatching {
+            result = purchases.awaitPurchase(purchaseOptionParams)
+        }.onFailure {
+            exception = it as? PurchasesTransactionException
+        }
+        val error = PurchasesError(PurchasesErrorCode.StoreProblemError)
+        capturedPurchasesUpdatedListener.captured.onPurchasesFailedToUpdate(error)
+
+        verify(exactly = 1) {
+            mockBillingAbstract.makePurchaseAsync(
+                eq(mockActivity),
+                eq(appUserId),
+                storeProduct.subscriptionOptions!!.first().purchasingData,
+                null,
+                null,
+                any()
+            )
+        }
+
+        assertThat(result).isNull()
+        assertThat(exception).isNotNull
+        assertThat(exception!!.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
+    }
+
     // endregion
 }
