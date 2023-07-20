@@ -29,6 +29,7 @@ import com.revenuecat.purchases.common.offerings.OfferingsManager
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.subscriberattributes.SubscriberAttributeKey
+import com.revenuecat.purchases.common.warnLog
 import com.revenuecat.purchases.google.isSuccessful
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.interfaces.Callback
@@ -49,6 +50,7 @@ import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.strings.AttributionStrings
 import com.revenuecat.purchases.strings.ConfigureStrings
 import com.revenuecat.purchases.strings.CustomerInfoStrings
+import com.revenuecat.purchases.strings.IdentityStrings
 import com.revenuecat.purchases.strings.PurchaseStrings
 import com.revenuecat.purchases.strings.RestoreStrings
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
@@ -399,7 +401,6 @@ internal class PurchasesOrchestrator constructor(
             if (error != null) {
                 callback?.onError(error)
             } else {
-                backend.clearCaches()
                 synchronized(this@PurchasesOrchestrator) {
                     state = state.copy(purchaseCallbacksByProductId = Collections.emptyMap())
                 }
@@ -655,6 +656,20 @@ internal class PurchasesOrchestrator constructor(
 
     //endregion
     //endregion
+
+    // region Custom entitlements computation
+    fun switchUser(newAppUserID: String) {
+        if (identityManager.currentAppUserID == newAppUserID) {
+            warnLog(IdentityStrings.SWITCHING_USER_SAME_APP_USER_ID.format(newAppUserID))
+            return
+        }
+
+        identityManager.switchUser(newAppUserID)
+
+        offeringsManager.fetchAndCacheOfferings(newAppUserID, state.appInBackground)
+    }
+    //endregion
+
     //endregion
 
     // region Private Methods
