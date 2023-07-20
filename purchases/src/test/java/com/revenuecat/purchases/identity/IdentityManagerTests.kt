@@ -376,6 +376,19 @@ class IdentityManagerTests {
             )
         }
         verify(exactly = 1) { mockOfferingsCache.clearCache() }
+    }
+
+    @Test
+    fun `logOut clears backend caches`() {
+        val identifiedUserID = "Waldo"
+        every { mockDeviceCache.cleanupOldAttributionData() } just Runs
+        mockIdentifiedUser(identifiedUserID)
+        mockSubscriberAttributesManagerSynchronize(identifiedUserID)
+
+        var error: PurchasesError? = null
+        identityManager.logOut { error = it }
+
+        assertThat(error).isNull()
         verify(exactly = 1) { mockBackend.clearCaches() }
     }
 

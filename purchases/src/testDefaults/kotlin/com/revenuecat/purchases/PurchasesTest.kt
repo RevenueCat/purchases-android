@@ -552,28 +552,6 @@ internal class PurchasesTest : BasePurchasesTest() {
         }
     }
 
-    @Test
-    fun `logOut clears backend caches when successful`() {
-        setUp()
-
-        every {
-            mockCache.cleanupOldAttributionData()
-        } just Runs
-
-        every {
-            mockBackend.clearCaches()
-        } just Runs
-
-        val mockCompletion = mockk<ReceiveCustomerInfoCallback>(relaxed = true)
-        mockIdentityManagerLogout()
-        mockOfferingsManagerFetchOfferings()
-
-        purchases.logOut(mockCompletion)
-        verify(exactly = 1) {
-            mockBackend.clearCaches()
-        }
-    }
-
     // endregion
 
     // region syncPurchases
