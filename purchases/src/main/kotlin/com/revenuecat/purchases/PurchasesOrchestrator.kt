@@ -11,7 +11,6 @@ import androidx.lifecycle.ProcessLifecycleOwner
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingResult
-import com.revenuecat.purchases.Purchases.Companion.configure
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BillingAbstract
@@ -161,8 +160,13 @@ internal class PurchasesOrchestrator constructor(
 
     /** @suppress */
     override fun onAppForegrounded() {
+        val firstTimeInForeground: Boolean
+        synchronized(this) {
+            firstTimeInForeground = state.firstTimeInForeground
+            state = state.copy(appInBackground = false, firstTimeInForeground = false)
+        }
         log(LogIntent.DEBUG, ConfigureStrings.APP_FOREGROUNDED)
-        if (shouldRefreshCustomerInfo()) {
+        if (shouldRefreshCustomerInfo(firstTimeInForeground)) {
             log(LogIntent.DEBUG, CustomerInfoStrings.CUSTOMERINFO_STALE_UPDATING_FOREGROUND)
             customerInfoHelper.retrieveCustomerInfo(
                 identityManager.currentAppUserID,
@@ -655,12 +659,7 @@ internal class PurchasesOrchestrator constructor(
 
     // region Private Methods
 
-    private fun shouldRefreshCustomerInfo(): Boolean {
-        val firstTimeInForeground: Boolean
-        synchronized(this) {
-            firstTimeInForeground = state.firstTimeInForeground
-            state = state.copy(appInBackground = false, firstTimeInForeground = false)
-        }
+    private fun shouldRefreshCustomerInfo(firstTimeInForeground: Boolean): Boolean {
         return (firstTimeInForeground || deviceCache.isCustomerInfoCacheStale(appUserID, appInBackground = false)) &&
             !appConfig.customEntitlementComputation
     }
