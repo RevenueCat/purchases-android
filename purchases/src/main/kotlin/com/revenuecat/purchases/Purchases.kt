@@ -87,20 +87,14 @@ class Purchases internal constructor(
     val store: Store
         get() = purchasesOrchestrator.store
 
-    @Suppress("EmptyFunctionBlock")
-    @Deprecated(
-        "Will be removed in next major. Logic has been moved to PurchasesOrchestrator",
-        ReplaceWith("purchasesOrchestrator.onAppBackgrounded()"),
-    )
+    @Suppress("EmptyFunctionBlock", "DeprecatedCallableAddReplaceWith")
+    @Deprecated("Will be removed in next major. Logic has been moved to PurchasesOrchestrator")
     override fun onAppBackgrounded() {
         purchasesOrchestrator.onAppBackgrounded()
     }
 
-    @Suppress("EmptyFunctionBlock")
-    @Deprecated(
-        "Will be removed in next major. Logic has been moved to PurchasesOrchestrator",
-        ReplaceWith("purchasesOrchestrator.onAppForegrounded()"),
-    )
+    @Suppress("EmptyFunctionBlock", "DeprecatedCallableAddReplaceWith")
+    @Deprecated("Will be removed in next major. Logic has been moved to PurchasesOrchestrator")
     override fun onAppForegrounded() {
         purchasesOrchestrator.onAppForegrounded()
     }
