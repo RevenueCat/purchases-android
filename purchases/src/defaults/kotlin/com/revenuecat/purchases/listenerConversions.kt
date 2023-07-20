@@ -4,6 +4,7 @@ import android.app.Activity
 import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.models.SubscriptionOption
 
 internal fun logInSuccessListener(
     onSuccess: (customerInfo: CustomerInfo, created: Boolean) -> Unit?,
@@ -19,8 +20,7 @@ internal fun logInSuccessListener(
 }
 
 /**
- * Purchase product. If purchasing a subscription, it will choose the default
- * [com.revenuecat.purchases.models.SubscriptionOption].
+ * Purchase product. If purchasing a subscription, it will choose the default [SubscriptionOption].
  * @param [activity] Current activity
  * @param [storeProduct] The storeProduct of the product you wish to purchase
  * @param [onSuccess] Will be called after the purchase has completed
@@ -41,7 +41,7 @@ fun Purchases.purchaseProductWith(
 
 /**
  * Make a purchase upgrading from a previous sku. If purchasing a subscription, it will choose the
- * default [com.revenuecat.purchases.models.SubscriptionOption].
+ * default [SubscriptionOption].
  * @param [activity] Current activity
  * @param [storeProduct] The storeProduct of the product you wish to purchase
  * @param [upgradeInfo] The upgradeInfo you wish to upgrade from, containing the oldSku and the optional prorationMode.
@@ -65,7 +65,7 @@ fun Purchases.purchaseProductWith(
 
 /**
  * Make a purchase upgrading from a previous sku. If purchasing a subscription, it will choose the
- * default [com.revenuecat.purchases.models.SubscriptionOption].
+ * default [SubscriptionOption].
  * @param [activity] Current activity
  * @param [packageToPurchase] The Package you wish to purchase
  * @param [upgradeInfo] The upgradeInfo you wish to upgrade from, containing the oldSku and the optional prorationMode.
@@ -88,8 +88,7 @@ fun Purchases.purchasePackageWith(
 }
 
 /**
- * Make a purchase. If purchasing a subscription, it will choose the default
- * [com.revenuecat.purchases.models.SubscriptionOption].
+ * Make a purchase. If purchasing a subscription, it will choose the default [SubscriptionOption].
  * @param [activity] Current activity
  * @param [packageToPurchase] The Package you wish to purchase
  * @param [onSuccess] Will be called after the purchase has completed
