@@ -114,16 +114,6 @@ final class PurchasesCommonAPI {
 
         final boolean configured = Purchases.isConfigured();
 
-        PurchasesConfiguration build = new PurchasesConfiguration.Builder(context, "", "")
-                .observerMode(true)
-                .observerMode(false)
-                .service(executorService)
-                .diagnosticsEnabled(true)
-                .entitlementVerificationMode(EntitlementVerificationMode.INFORMATIONAL)
-                .build();
-
-        Purchases.configure(build);
-
         Purchases.canMakePayments(context, features, (Boolean result) -> {
         });
         Purchases.canMakePayments(context, (Boolean result) -> {
