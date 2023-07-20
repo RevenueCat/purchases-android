@@ -11,11 +11,11 @@ internal fun logInSuccessListener(
     onError: (error: PurchasesError) -> Unit?,
 ) = object : LogInCallback {
     override fun onReceived(customerInfo: CustomerInfo, created: Boolean) {
-        onSuccess.invoke(customerInfo, created)
+        onSuccess?.invoke(customerInfo, created)
     }
 
     override fun onError(error: PurchasesError) {
-        onError.invoke(error)
+        onError?.invoke(error)
     }
 }
 
