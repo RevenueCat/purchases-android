@@ -1,6 +1,7 @@
 package com.revenuecat.purchases
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
 import com.revenuecat.purchases.identity.IdentityManager
@@ -20,6 +21,7 @@ class CustomerInfoUpdateHandlerTest {
     private lateinit var deviceCache: DeviceCache
     private lateinit var identityManager: IdentityManager
     private lateinit var offlineEntitlementsManager: OfflineEntitlementsManager
+    private lateinit var appConfig: AppConfig
 
     private lateinit var customerInfoUpdateHandler: CustomerInfoUpdateHandler
 
@@ -31,16 +33,19 @@ class CustomerInfoUpdateHandlerTest {
         deviceCache = mockk()
         identityManager = mockk()
         offlineEntitlementsManager = mockk()
+        appConfig = mockk()
 
         every { identityManager.currentAppUserID } returns appUserId
         every { deviceCache.getCachedCustomerInfo(appUserId) } returns mockInfo
         every { deviceCache.cacheCustomerInfo(appUserId, mockInfo) } just Runs
         every { offlineEntitlementsManager.offlineCustomerInfo } returns null
+        every { appConfig.customEntitlementComputation } returns false
 
         customerInfoUpdateHandler = CustomerInfoUpdateHandler(
             deviceCache,
             identityManager,
             offlineEntitlementsManager,
+            appConfig = appConfig,
         )
     }
 
@@ -56,6 +61,15 @@ class CustomerInfoUpdateHandlerTest {
     }
 
     @Test
+    fun `setting listener doesn't send cached value if custom entitlements computation enabled`() {
+        every { appConfig.customEntitlementComputation } returns true
+        val listenerMock = mockk<UpdatedCustomerInfoListener>(relaxed = true)
+        customerInfoUpdateHandler.updatedCustomerInfoListener = listenerMock
+
+        verify(exactly = 0) { listenerMock.onReceived(mockInfo) }
+    }
+
+    @Test
     fun `setting listener sends offline customer info cached value if it exists over cached value`() {
         val mockCustomerInfo2 = mockk<CustomerInfo>()
         every { offlineEntitlementsManager.offlineCustomerInfo } returns mockCustomerInfo2
@@ -66,7 +80,7 @@ class CustomerInfoUpdateHandlerTest {
     }
 
     @Test
-    fun `setting listener does not send cached value if it does not exists`() {
+    fun `setting listener does not send cached value if it does not exist`() {
         val listenerMock = mockk<UpdatedCustomerInfoListener>(relaxed = true)
         every { deviceCache.getCachedCustomerInfo(any()) } returns null
         customerInfoUpdateHandler.updatedCustomerInfoListener = listenerMock

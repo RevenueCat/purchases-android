@@ -156,6 +156,7 @@ internal class PurchasesFactory(
                 cache,
                 identityManager,
                 offlineEntitlementsManager,
+                appConfig = appConfig,
             )
 
             val postReceiptHelper = PostReceiptHelper(
