@@ -702,11 +702,6 @@ internal class PurchasesTest : BasePurchasesTest() {
     // endregion
 
     // region Private Methods
-    private fun mockSynchronizeSubscriberAttributesForAllUsers() {
-        every {
-            mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(appUserId)
-        } just Runs
-    }
 
     private fun getMockedPurchaseList(
         productId: String,
