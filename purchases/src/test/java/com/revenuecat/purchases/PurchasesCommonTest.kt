@@ -1337,7 +1337,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         mockCacheStale(customerInfoStale = true)
         mockSynchronizeSubscriberAttributesForAllUsers()
         mockOfferingsManagerAppForeground()
-        Purchases.sharedInstance.onAppForegrounded()
+        Purchases.sharedInstance.purchasesOrchestrator.onAppForegrounded()
         verify(exactly = 0) {
             mockCustomerInfoHelper.retrieveCustomerInfo(any(), any(), any(), any())
         }
