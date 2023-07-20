@@ -59,6 +59,7 @@ class CustomerInfoUpdateHandlerTest {
 
         verify(exactly = 1) { listenerMock.onReceived(mockInfo) }
     }
+
     @Test
     fun `setting listener doesn't send cached value if custom entitlements computation enabled`() {
         every { appConfig.customEntitlementComputation } returns true
