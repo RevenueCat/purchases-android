@@ -660,8 +660,8 @@ internal class PurchasesOrchestrator constructor(
     // region Private Methods
 
     private fun shouldRefreshCustomerInfo(firstTimeInForeground: Boolean): Boolean {
-        return (firstTimeInForeground || deviceCache.isCustomerInfoCacheStale(appUserID, appInBackground = false)) &&
-            !appConfig.customEntitlementComputation
+        return !appConfig.customEntitlementComputation &&
+            (firstTimeInForeground || deviceCache.isCustomerInfoCacheStale(appUserID, appInBackground = false))
     }
 
     private fun getProductsOfTypes(
