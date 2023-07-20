@@ -67,6 +67,7 @@ task detektAllBaseline(type: io.gitlab.arturbosch.detekt.DetektCreateBaselineTas
     include("**/*.kts")
     exclude("**/build/**")
     exclude("**/test/**/*.kt")
+    exclude("**/testDefaults/**/*.kt")
 }
 
 tasks.dokkaHtmlMultiModule.configure {
