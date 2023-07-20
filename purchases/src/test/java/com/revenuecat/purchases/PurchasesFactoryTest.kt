@@ -46,7 +46,7 @@ class PurchasesFactoryTest {
 
     @Test
     fun `creating purchase checks api key is not empty`() {
-        val configuration = createConfiguration(apiKey = "")
+        val configuration = createConfiguration(testApiKey = "")
         every {
             contextMock.checkCallingOrSelfPermission(Manifest.permission.INTERNET)
         } returns PackageManager.PERMISSION_GRANTED
@@ -84,7 +84,12 @@ class PurchasesFactoryTest {
         verify(exactly = 1) { apiKeyValidatorMock.validateAndLog("fakeApiKey", Store.PLAY_STORE) }
     }
 
-    private fun createConfiguration(apiKey: String = "fakeApiKey"): PurchasesConfiguration {
-        return PurchasesConfiguration.Builder(contextMock, apiKey).build()
+    private fun createConfiguration(testApiKey: String = "fakeApiKey"): PurchasesConfiguration {
+        return mockk<PurchasesConfiguration>().apply {
+            every { context } returns contextMock
+            every { apiKey } returns testApiKey
+            every { appUserID } returns "appUserID"
+            every { store } returns Store.PLAY_STORE
+        }
     }
 }

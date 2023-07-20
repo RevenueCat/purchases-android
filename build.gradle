@@ -44,6 +44,7 @@ task detektAll(type: io.gitlab.arturbosch.detekt.Detekt) {
     exclude("**/build/**")
     exclude("**/test/**/*.kt")
     exclude("**/testDefaults/**/*.kt")
+    exclude("**/testCustomEntitlementComputation/**/*.kt")
     config.setFrom(files("$rootDir/config/detekt/detekt.yml"))
     baseline.set(file("$rootDir/config/detekt/detekt-baseline.xml"))
     reports {

@@ -135,14 +135,12 @@ private class PurchasesCommonAPI {
         val features: List<BillingFeature> = ArrayList()
         val configured: Boolean = Purchases.isConfigured
 
-        val build = PurchasesConfiguration.Builder(context, apiKey = "")
-            .appUserID("")
+        val build = PurchasesConfiguration.Builder(context, apiKey = "", appUserID = "")
             .observerMode(true)
             .observerMode(false)
             .service(executorService)
             .diagnosticsEnabled(true)
             .entitlementVerificationMode(EntitlementVerificationMode.INFORMATIONAL)
-            .informationalVerificationModeAndDiagnosticsEnabled(true)
             .build()
 
         Purchases.configure(build)

@@ -114,8 +114,7 @@ final class PurchasesCommonAPI {
 
         final boolean configured = Purchases.isConfigured();
 
-        PurchasesConfiguration build = new PurchasesConfiguration.Builder(context, "")
-                .appUserID("")
+        PurchasesConfiguration build = new PurchasesConfiguration.Builder(context, "", "")
                 .observerMode(true)
                 .observerMode(false)
                 .service(executorService)
