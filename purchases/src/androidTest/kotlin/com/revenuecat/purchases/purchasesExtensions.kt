@@ -29,13 +29,13 @@ fun Purchases.Companion.resetSingleton() {
 }
 
 var Purchases.forceServerErrors: Boolean
-    get() = appConfig.forceServerErrors
+    get() = purchasesOrchestrator.appConfig.forceServerErrors
     set(value) {
-        appConfig.forceServerErrors = value
+        purchasesOrchestrator.appConfig.forceServerErrors = value
     }
 
 var Purchases.forceSigningErrors: Boolean
-    get() = appConfig.forceSigningErrors
+    get() = purchasesOrchestrator.appConfig.forceSigningErrors
     set(value) {
-        appConfig.forceSigningErrors = value
+        purchasesOrchestrator.appConfig.forceSigningErrors = value
     }
