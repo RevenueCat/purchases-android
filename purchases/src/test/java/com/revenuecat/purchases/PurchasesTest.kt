@@ -1518,6 +1518,18 @@ internal class PurchasesTest: BasePurchasesTest() {
     }
 
     @Test
+    fun `does not fetch customer info on foregrounded if custom entitlement computation mode`() {
+        buildPurchases(anonymous = false, customEntitlementComputation = true)
+        mockCacheStale(customerInfoStale = true)
+        mockSynchronizeSubscriberAttributesForAllUsers()
+        mockOfferingsManagerAppForeground()
+        Purchases.sharedInstance.onAppForegrounded()
+        verify(exactly = 0) {
+            mockCustomerInfoHelper.retrieveCustomerInfo(any(), any(), any(), any())
+        }
+    }
+
+    @Test
     fun `fetch product entitlement mapping on foreground if it's stale`() {
         mockOfferingsManagerAppForeground()
         Purchases.sharedInstance.onAppForegrounded()
