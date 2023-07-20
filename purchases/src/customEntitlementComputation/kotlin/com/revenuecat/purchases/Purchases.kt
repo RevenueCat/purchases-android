@@ -237,7 +237,9 @@ class Purchases internal constructor(
          * being used
          */
         @JvmStatic
-        var platformInfo: PlatformInfo = PurchasesOrchestrator.platformInfo
+        var platformInfo: PlatformInfo
+            get() = PurchasesOrchestrator.platformInfo
+            set(value) { PurchasesOrchestrator.platformInfo = value }
 
         /**
          * Configure log level. Useful for debugging issues with the lovely team @RevenueCat
@@ -296,7 +298,9 @@ class Purchases internal constructor(
          * if you've received a proxy key value from your RevenueCat contact.
          */
         @JvmStatic
-        var proxyURL: URL? = PurchasesOrchestrator.proxyURL
+        var proxyURL: URL?
+            get() = PurchasesOrchestrator.proxyURL
+            set(value) { PurchasesOrchestrator.proxyURL = value }
 
         /**
          * True if [configure] has been called and [Purchases.sharedInstance] is set
