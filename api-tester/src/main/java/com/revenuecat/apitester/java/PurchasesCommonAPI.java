@@ -6,7 +6,6 @@ import android.content.Context;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import com.revenuecat.purchases.CacheFetchPolicy;
 import com.revenuecat.purchases.CustomerInfo;
 import com.revenuecat.purchases.EntitlementVerificationMode;
 import com.revenuecat.purchases.LogHandler;
@@ -38,11 +37,10 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ExecutorService;
 
 @SuppressWarnings({"unused"})
-final class PurchasesAPI {
+final class PurchasesCommonAPI {
     static void check(final Purchases purchases) {
         final ArrayList<String> productIds = new ArrayList<>();
 
@@ -72,15 +70,6 @@ final class PurchasesAPI {
 
             @Override
             public void onError(@NonNull PurchasesError error) {
-            }
-        };
-        final LogInCallback logInCallback = new LogInCallback() {
-            @Override
-            public void onReceived(@NotNull CustomerInfo customerInfo, boolean created) {
-            }
-
-            @Override
-            public void onError(@NotNull PurchasesError error) {
             }
         };
         final SyncPurchasesCallback syncPurchasesCallback = new SyncPurchasesCallback() {

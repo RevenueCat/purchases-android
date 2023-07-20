@@ -19,7 +19,6 @@ import com.revenuecat.purchases.awaitOfferings
 import com.revenuecat.purchases.getOfferingsWith
 import com.revenuecat.purchases.getProductsWith
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
-import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback
@@ -38,7 +37,7 @@ import java.util.concurrent.ExecutorService
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Suppress("unused", "UNUSED_VARIABLE", "EmptyFunctionBlock", "RemoveExplicitTypeArguments", "RedundantLambdaArrow")
-private class PurchasesAPI {
+private class PurchasesCommonAPI {
     @SuppressWarnings("LongParameterList")
     fun check(
         purchases: Purchases,
@@ -54,10 +53,6 @@ private class PurchasesAPI {
         }
         val receiveCustomerInfoCallback = object : ReceiveCustomerInfoCallback {
             override fun onReceived(customerInfo: CustomerInfo) {}
-            override fun onError(error: PurchasesError) {}
-        }
-        val logInCallback = object : LogInCallback {
-            override fun onReceived(customerInfo: CustomerInfo, created: Boolean) {}
             override fun onError(error: PurchasesError) {}
         }
         val syncPurchasesCallback = object : SyncPurchasesCallback {
