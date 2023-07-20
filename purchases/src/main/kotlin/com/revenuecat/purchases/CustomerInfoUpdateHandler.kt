@@ -19,8 +19,8 @@ internal class CustomerInfoUpdateHandler(
     private val deviceCache: DeviceCache,
     private val identityManager: IdentityManager,
     private val offlineEntitlementsManager: OfflineEntitlementsManager,
-    private val handler: Handler = Handler(Looper.getMainLooper()),
     private val appConfig: AppConfig,
+    private val handler: Handler = Handler(Looper.getMainLooper()),
 ) {
 
     var updatedCustomerInfoListener: UpdatedCustomerInfoListener? = null
