@@ -319,14 +319,21 @@ internal open class BasePurchasesTest {
         return p.toStoreTransaction(productType)
     }
 
-    protected fun buildPurchases(anonymous: Boolean, autoSync: Boolean = true) {
+    protected fun buildPurchases(
+        anonymous: Boolean,
+        autoSync: Boolean = true,
+        customEntitlementComputation: Boolean = false,
+    ) {
         val appConfig = AppConfig(
             context = mockContext,
             observerMode = false,
             platformInfo = PlatformInfo("native", "3.2.0"),
             proxyURL = null,
             store = Store.PLAY_STORE,
-            dangerousSettings = DangerousSettings(autoSyncPurchases = autoSync)
+            dangerousSettings = DangerousSettings(
+                autoSyncPurchases = autoSync,
+                customEntitlementComputation = customEntitlementComputation,
+            )
         )
         val postTransactionsHelper = PostTransactionWithProductDetailsHelper(mockBillingAbstract, mockPostReceiptHelper)
         val purchasesOrchestrator = PurchasesOrchestrator(
