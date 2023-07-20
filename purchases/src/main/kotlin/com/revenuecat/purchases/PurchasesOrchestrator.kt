@@ -161,13 +161,8 @@ internal class PurchasesOrchestrator constructor(
 
     /** @suppress */
     override fun onAppForegrounded() {
-        val firstTimeInForeground: Boolean
-        synchronized(this) {
-            firstTimeInForeground = state.firstTimeInForeground
-            state = state.copy(appInBackground = false, firstTimeInForeground = false)
-        }
         log(LogIntent.DEBUG, ConfigureStrings.APP_FOREGROUNDED)
-        if (firstTimeInForeground || deviceCache.isCustomerInfoCacheStale(appUserID, appInBackground = false)) {
+        if (shouldRefreshCustomerInfo()) {
             log(LogIntent.DEBUG, CustomerInfoStrings.CUSTOMERINFO_STALE_UPDATING_FOREGROUND)
             customerInfoHelper.retrieveCustomerInfo(
                 identityManager.currentAppUserID,
@@ -659,6 +654,16 @@ internal class PurchasesOrchestrator constructor(
     //endregion
 
     // region Private Methods
+
+    private fun shouldRefreshCustomerInfo(): Boolean {
+        val firstTimeInForeground: Boolean
+        synchronized(this) {
+            firstTimeInForeground = state.firstTimeInForeground
+            state = state.copy(appInBackground = false, firstTimeInForeground = false)
+        }
+        return (firstTimeInForeground || deviceCache.isCustomerInfoCacheStale(appUserID, appInBackground = false)) &&
+            !appConfig.customEntitlementComputation
+    }
 
     private fun getProductsOfTypes(
         productIds: Set<String>,
