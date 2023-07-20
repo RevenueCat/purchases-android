@@ -15,14 +15,13 @@ import java.net.URL
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
-@Suppress("DEPRECATION")
-internal class PurchasesTest : BasePurchasesTest() {
+internal class PurchasesConfigureTest : BasePurchasesTest() {
 
     @Test
     fun `Setting platform info sets it in the AppConfig when configuring the SDK`() {
         val expected = PlatformInfo("flavor", "version")
         Purchases.platformInfo = expected
-        Purchases.configure(PurchasesConfiguration.Builder(mockContext, "api", "appUserId").build())
+        Purchases.configure(PurchasesConfiguration.Builder(mockContext, "api").build())
         assertThat(Purchases.sharedInstance.purchasesOrchestrator.appConfig.platformInfo).isEqualTo(expected)
     }
 
@@ -30,27 +29,27 @@ internal class PurchasesTest : BasePurchasesTest() {
     fun `Setting proxy URL info sets it in the HttpClient when configuring the SDK`() {
         val expected = URL("https://a-proxy.com")
         Purchases.proxyURL = expected
-        Purchases.configure(PurchasesConfiguration.Builder(mockContext, "api", "appUserId").build())
+        Purchases.configure(PurchasesConfiguration.Builder(mockContext, "api").build())
         assertThat(Purchases.sharedInstance.purchasesOrchestrator.appConfig.baseURL).isEqualTo(expected)
     }
 
     @Test
     fun `Setting observer mode on sets finish transactions to false`() {
-        val builder = PurchasesConfiguration.Builder(mockContext, "api", "appUserId").observerMode(true)
+        val builder = PurchasesConfiguration.Builder(mockContext, "api").observerMode(true)
         Purchases.configure(builder.build())
-        assertThat(Purchases.sharedInstance.purchasesOrchestrator.appConfig.finishTransactions).isFalse()
+        assertThat(Purchases.sharedInstance.purchasesOrchestrator.appConfig.finishTransactions).isFalse
     }
 
     @Test
     fun `Setting observer mode off sets finish transactions to true`() {
-        val builder = PurchasesConfiguration.Builder(mockContext, "api", "appUserId").observerMode(false)
+        val builder = PurchasesConfiguration.Builder(mockContext, "api").observerMode(false)
         Purchases.configure(builder.build())
-        assertThat(Purchases.sharedInstance.purchasesOrchestrator.appConfig.finishTransactions).isTrue()
+        assertThat(Purchases.sharedInstance.purchasesOrchestrator.appConfig.finishTransactions).isTrue
     }
 
     @Test
     fun `Setting store in the configuration sets it on the Purchases instance`() {
-        val builder = PurchasesConfiguration.Builder(mockContext, "api", "appUserId").store(Store.PLAY_STORE)
+        val builder = PurchasesConfiguration.Builder(mockContext, "api").store(Store.PLAY_STORE)
         Purchases.configure(builder.build())
         assertThat(Purchases.sharedInstance.store).isEqualTo(Store.PLAY_STORE)
     }
