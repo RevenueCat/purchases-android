@@ -198,7 +198,7 @@ internal class Backend(
             "observer_mode" to observerMode,
             "price" to receiptInfo.price,
             "currency" to receiptInfo.currency,
-            "attributes" to subscriberAttributes.takeUnless { it.isEmpty() },
+            "attributes" to subscriberAttributes.takeUnless { it.isEmpty() || appConfig.customEntitlementComputation },
             "normal_duration" to receiptInfo.duration,
             "store_user_id" to storeAppUserID,
             "pricing_phases" to receiptInfo.pricingPhases?.map { it.toMap() },

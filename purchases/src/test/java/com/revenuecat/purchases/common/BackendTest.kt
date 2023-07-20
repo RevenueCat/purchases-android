@@ -85,6 +85,7 @@ class BackendTest {
     private val mockAppConfig: AppConfig = mockk<AppConfig>().apply {
         every { baseURL } returns mockBaseURL
         every { diagnosticsURL } returns mockDiagnosticsBaseURL
+        every { customEntitlementComputation } returns false
     }
     private val dispatcher = SyncDispatcher()
     private val backendHelper = BackendHelper(API_KEY, dispatcher, mockAppConfig, mockClient)
