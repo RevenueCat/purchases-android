@@ -108,7 +108,6 @@ fun Purchases.purchasePackageWith(
     purchasePackage(activity, packageToPurchase, purchaseCompletedCallback(onSuccess, onError))
 }
 
-
 /**
  * This function will change the current appUserID.
  * Typically this would be used after a log out to identify a new user without calling configure

@@ -56,6 +56,7 @@
     <ID>TooManyFunctions:AmazonBilling.kt$AmazonBilling : BillingAbstractProductDataResponseListenerPurchaseResponseListenerPurchaseUpdatesResponseListenerUserDataResponseListener</ID>
     <ID>TooManyFunctions:DeviceCache.kt$DeviceCache</ID>
     <ID>TooManyFunctions:HTTPClient.kt$HTTPClient</ID>
+    <ID>TooManyFunctions:ListenerConversionsCommon.kt$com.revenuecat.purchases.ListenerConversionsCommon.kt</ID>
     <ID>TooManyFunctions:Purchases.kt$Purchases : LifecycleDelegate</ID>
     <ID>TooManyFunctions:PurchasesOrchestrator.kt$PurchasesOrchestrator : LifecycleDelegate</ID>
     <ID>TooManyFunctions:SubscriberAttributesCache.kt$SubscriberAttributesCache</ID>
