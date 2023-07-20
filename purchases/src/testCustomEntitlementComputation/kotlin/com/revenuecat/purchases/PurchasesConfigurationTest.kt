@@ -37,7 +37,8 @@ class PurchasesConfigurationTest {
         assertThat(purchasesConfiguration.store).isEqualTo(Store.PLAY_STORE)
         assertThat(purchasesConfiguration.diagnosticsEnabled).isFalse
         assertThat(purchasesConfiguration.verificationMode).isEqualTo(EntitlementVerificationMode.DISABLED)
-        assertThat(purchasesConfiguration.dangerousSettings).isEqualTo(DangerousSettings(autoSyncPurchases = true))
+        assertThat(purchasesConfiguration.dangerousSettings)
+            .isEqualTo(DangerousSettings(autoSyncPurchases = true, customEntitlementComputation = true))
     }
 
     @Test
@@ -75,9 +76,9 @@ class PurchasesConfigurationTest {
 
     @Test
     fun `PurchasesConfiguration sets dangerous settings correctly`() {
-        // TODO: Add test for custom entitlement computation mode
         val dangerousSettings = DangerousSettings(autoSyncPurchases = false)
         val purchasesConfiguration = builder.dangerousSettings(dangerousSettings).build()
-        assertThat(purchasesConfiguration.dangerousSettings).isEqualTo(dangerousSettings)
+        assertThat(purchasesConfiguration.dangerousSettings.autoSyncPurchases).isFalse
+        assertThat(purchasesConfiguration.dangerousSettings.customEntitlementComputation).isTrue
     }
 }

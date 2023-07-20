@@ -47,9 +47,8 @@ open class PurchasesConfiguration(builder: Builder) {
         @set:JvmSynthetic @get:JvmSynthetic
         internal var verificationMode: EntitlementVerificationMode = EntitlementVerificationMode.default
 
-        // TODO Default to custom entitlement computation mode
         @set:JvmSynthetic @get:JvmSynthetic
-        internal var dangerousSettings: DangerousSettings = DangerousSettings()
+        internal var dangerousSettings: DangerousSettings = DangerousSettings(customEntitlementComputation = true)
 
         fun observerMode(observerMode: Boolean) = apply {
             this.observerMode = observerMode
@@ -94,8 +93,7 @@ open class PurchasesConfiguration(builder: Builder) {
          * Only use a Dangerous Setting if suggested by RevenueCat support team.
          */
         fun dangerousSettings(dangerousSettings: DangerousSettings) = apply {
-            // TODO Set custom entitlement computation mode when passing in dangerous settings
-            this.dangerousSettings = dangerousSettings
+            this.dangerousSettings = dangerousSettings.copy(customEntitlementComputation = true)
         }
 
         open fun build(): PurchasesConfiguration {
