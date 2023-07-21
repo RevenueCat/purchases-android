@@ -22,4 +22,8 @@ private class PurchasesAPI {
 
         Purchases.configure(build)
     }
+
+    fun check(purchases: Purchases) {
+        purchases.switchUser("newUserID")
+    }
 }

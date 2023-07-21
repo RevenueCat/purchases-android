@@ -20,4 +20,8 @@ final class PurchasesAPI {
 
         Purchases.configure(build);
     }
+
+    static void check(final Purchases purchases) {
+        purchases.switchUser("newUserID");
+    }
 }
