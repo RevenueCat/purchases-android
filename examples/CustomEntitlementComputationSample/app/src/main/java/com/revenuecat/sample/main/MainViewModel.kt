@@ -92,4 +92,13 @@ class MainViewModel : ViewModel() {
     private fun updateCustomerInfoInformation(customerInfo: CustomerInfo) {
         _uiState.update { it.copy(currentCustomerInfo = customerInfo) }
     }
+
+    fun dismissExplanationDialog() {
+        _uiState.update { it.copy(shouldShowExplanationDialog = false) }
+    }
+
+    fun showExplanationDialog() {
+        _uiState.update { it.copy(shouldShowExplanationDialog = true) }
+    }
+
 }

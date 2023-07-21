@@ -1,5 +1,6 @@
 package com.revenuecat.sample.main
 
+import ExplanationScreen
 import android.app.Activity
 import android.widget.Toast
 import androidx.compose.foundation.background
@@ -59,6 +60,12 @@ fun MainScreen() {
         }
     }
 
+    if (uiState.value.shouldShowExplanationDialog) {
+        Dialog(onDismissRequest = { viewModel.dismissExplanationDialog() }) {
+            ExplanationScreen(onDismiss = { viewModel.dismissExplanationDialog() })
+        }
+    }
+
     uiState.value.displayErrorMessage?.let { errorMessage ->
         Toast.makeText(
             LocalContext.current,
@@ -92,7 +99,9 @@ fun MainScreen() {
                 verticalArrangement = Arrangement.Center,
             ) {
                 Button(
-                    onClick = { /*TODO*/ },
+                    onClick = {
+                        viewModel.showExplanationDialog()
+                    },
                     modifier = Modifier.wrapContentSize(),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Color.Transparent,

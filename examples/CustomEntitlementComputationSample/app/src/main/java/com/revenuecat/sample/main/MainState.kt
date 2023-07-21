@@ -7,5 +7,6 @@ data class MainState(
     val currentCustomerInfo: CustomerInfo? = null,
     val displayErrorMessage: String? = null,
     val shouldShowSwitchingUserDialog: Boolean = false,
+    val shouldShowExplanationDialog: Boolean = false,
     val offerings: Offerings? = null,
 )
