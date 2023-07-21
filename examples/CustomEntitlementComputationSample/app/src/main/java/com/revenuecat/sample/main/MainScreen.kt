@@ -193,16 +193,16 @@ fun MainScreen(
                             color = Color.Black,
                             textAlign = TextAlign.Center,
                         )
+
+                        CustomerInfoEventsList(
+                            uiState.value.customerInfoList,
+                            onEventClicked = { customerInfoEvent ->
+                                navController.navigate("customerInfoDetails/${customerInfoEvent.date}")
+                            },
+                        )
                     }
                 }
             }
-
-            CustomerInfoEventsList(
-                uiState.value.customerInfoList,
-                onEventClicked = { customerInfoEvent ->
-                    navController.navigate("customerInfoDetails/${customerInfoEvent.date}")
-                },
-            )
         }
     }
 }
