@@ -1,0 +1,23 @@
+pluginManagement {
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+rootProject.name = "CustomEntitlementComputationSample"
+include ':app'
+
+includeBuild("../../") {
+    dependencySubstitution {
+        substitute module("com.revenuecat.purchases:purchases") using project(":purchases")
+        substitute module("com.revenuecat.purchases:purchases-store-amazon") using project(":feature:amazon")
+    }
+}
