@@ -1,7 +1,6 @@
 package com.revenuecat.sample.main
 
 import CustomerInfoDetailScreen
-import CustomerInfoEvent
 import CustomerInfoEventsList
 import ExplanationScreen
 import android.app.Activity
@@ -17,8 +16,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentSize
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.TopAppBar
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
