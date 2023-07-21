@@ -20,10 +20,12 @@ import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.sample.ui.theme.CustomEntitlementComputationTheme
 import org.json.JSONObject
 import java.util.Date
+import java.util.UUID
 
 data class CustomerInfoEvent(
-    val date: Date,
+    val date: Date = Date(),
     val customerInfo: CustomerInfo,
+    val id: UUID = UUID.randomUUID(),
 )
 
 @Composable

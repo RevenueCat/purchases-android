@@ -62,9 +62,9 @@ fun MainScreenNavigation() {
     val navController = rememberNavController()
     NavHost(navController, startDestination = "main") {
         composable("main") { MainScreen(navController = navController) }
-        composable("customerInfoDetails/{date}") { backStackEntry ->
+        composable("customerInfoDetails/{id}") { backStackEntry ->
             CustomerInfoDetailScreen(event = uiState.value.customerInfoList.find {
-                it.date.toString() == backStackEntry.arguments?.getString("date")
+                it.id.toString() == backStackEntry.arguments?.getString("id")
             }!!)
         }
     }
@@ -194,7 +194,7 @@ fun MainScreen(
                         CustomerInfoEventsList(
                             uiState.value.customerInfoList,
                             onEventClicked = { customerInfoEvent ->
-                                navController.navigate("customerInfoDetails/${customerInfoEvent.date}")
+                                navController.navigate("customerInfoDetails/${customerInfoEvent.id}")
                             },
                         )
                     }

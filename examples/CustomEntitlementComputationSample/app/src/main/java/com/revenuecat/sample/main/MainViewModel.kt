@@ -98,7 +98,6 @@ class MainViewModel : ViewModel() {
                 currentAppUserID = Purchases.sharedInstance.appUserID,
                 customerInfoList = it.customerInfoList + CustomerInfoEvent(
                     customerInfo = customerInfo,
-                    date = Date()
                 )
             )
         }
