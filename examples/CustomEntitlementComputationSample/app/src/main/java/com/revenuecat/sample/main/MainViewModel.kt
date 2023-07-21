@@ -55,11 +55,11 @@ class MainViewModel : ViewModel() {
     }
 
     fun initiateSwitchUserProcess() {
-        _uiState.update { it.copy(shouldStartSwitchingUser = true) }
+        _uiState.update { it.copy(shouldShowSwitchingUserDialog = true) }
     }
 
     fun resetSwitchUserProcess() {
-        _uiState.update { it.copy(shouldStartSwitchingUser = false) }
+        _uiState.update { it.copy(shouldShowSwitchingUserDialog = false) }
     }
 
     fun purchasePackage(activity: Activity, aPackage: Package) {

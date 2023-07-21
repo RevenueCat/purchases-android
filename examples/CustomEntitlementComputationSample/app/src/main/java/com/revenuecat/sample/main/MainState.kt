@@ -6,6 +6,6 @@ import com.revenuecat.purchases.Offerings
 data class MainState(
     val currentCustomerInfo: CustomerInfo? = null,
     val displayErrorMessage: String? = null,
-    val shouldStartSwitchingUser: Boolean = false,
+    val shouldShowSwitchingUserDialog: Boolean = false,
     val offerings: Offerings? = null,
 )

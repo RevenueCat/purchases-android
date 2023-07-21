@@ -46,7 +46,7 @@ fun MainScreen() {
     val viewModel: MainViewModel = viewModel()
     val uiState = viewModel.uiState.collectAsState()
 
-    if (uiState.value.shouldStartSwitchingUser) {
+    if (uiState.value.shouldShowSwitchingUserDialog) {
         Dialog(onDismissRequest = { viewModel.resetSwitchUserProcess() }) {
             SwitchUserDialog(viewModel)
         }
