@@ -184,7 +184,7 @@ fun MainScreen(
                     Column {
 
                         Text(
-                            text = "CustomerInfo delegate values",
+                            text = "CustomerInfo listener values",
                             fontSize = 16.sp,
                             color = Color.Black,
                             textAlign = TextAlign.Center,

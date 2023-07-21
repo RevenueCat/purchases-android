@@ -27,8 +27,6 @@ always be calling configure only when the appUserID is already known.
 Once configured correctly, the app will allow you to log in with different users, and will show a list of all the times CustomerInfoListener fired, as well as 
 the values for each one. 
 
-To use this mode, ensure that you install the  
-
 Happy testing!
 
 ![sample screenshot](./Sample%20screenshot.png)
@@ -37,44 +35,48 @@ Happy testing!
 
 ### Installation: 
 
-Install the SDK through Swift Package Manager. 
+This package is available on Maven and can be included via Gradle.
 
-Select File » Add Packages... and enter the repository URL of the https://github.com/RevenueCat/purchases-ios.git into the search bar (top right). Set the Dependency Rule to Up to next major, and the version number to 4.18.0 < 5.0.0.
-
-**Check `RevenueCat_CustomEntitlementComputation` when a prompt for "Choose Package Products for purchases-ios" appears**. Finally, choose the target where you want to use it.
-
-The library should have been added to the Swift Package Dependencies section and you should be able to import it now.
+To use this mode, ensure that you install the customEntitlementsComputation build flavor by specifying the dependency as:
+```gradle
+revenuecat = { module = "com.revenuecat.purchases:purchases@customEntitlementComputation", version.ref = "purchases" }
+```
+for Gradle version catalogs, or
+```gradle
+implementation 'com.revenuecat.purchases:purchases@customEntitlementsComputation:6.8.0'
+```
+for Gradle version properties.
 
 ### Configuration: 
 
 The SDK should be configured once the user has already logged in. To configure, call:
 
-```swift
-Purchases.configureInCustomEntitlementsComputationMode(apiKey: "your_api_key", appUserID: appUserID)
+```kotlin
+val builder = PurchasesConfiguration.Builder(
+    this,
+    Constants.GOOGLE_API_KEY,
+    Constants.defaultAppUserID
+)
+
+Purchases.configure(builder.build())
 ```
 
 ### Getting Offerings: 
 
 Call getOfferings through either the Async / Await or completion blocks alternatives:
 
-```swift
+```kotlin
 
-let offerings = try await Purchases.shared.offerings()
+val offerings = Purchases.sharedInstance.awaitOfferings()
 
-```
-
-```swift
-Purchases.shared.getOfferings { (offerings, error) in
-    // code to handle here
-}
 ```
 
 ### Switching users: 
 
 To switch to a different user, call:
 
-```swift
-Purchases.shared.switchUser(to: appUserID)
+```kotlin
+Purchases.sharedInstance.switchUser(newUserID)
 ```
 
 This will ensure that all purchases made from this point on are posted for the new appUserID. 
@@ -82,63 +84,19 @@ After calling this method, you might need to call your backend to refresh entitl
 
 ### Making purchases:
 
-Call `purchase(package:)` through either the Async / Await or completion blocks alternatives:
+Call `awaitPurchase()`:
 
-```swift
-do {
-    let (transaction, customerInfo, _) = try await Purchases.shared.purchase(package: package)
-    print(
-        """
-        Purchase finished:
-        Transaction: \(transaction.debugDescription)
-        CustomerInfo: \(customerInfo.debugDescription)
-        """
-    )
-} catch ErrorCode.receiptAlreadyInUseError {
-    print("The receipt is already in use by another subscriber. " +
-          "Log in with the previous account or contact support to get your purchases transferred to " +
-          "regain access")
-} catch ErrorCode.paymentPendingError {
-    print("The purchase is pending and may be completed at a later time." +
-          "This can happen when awaiting parental approval or going through extra authentication flows " +
-          "for credit cards in some countries.")
-} catch ErrorCode.purchaseCancelledError {
-    print("Purchase was cancelled by the user.")
-} catch {
-    print("FAILED TO PURCHASE: \(error.localizedDescription)")
-}
-```
-
-```swift
-Purchases.shared.purchase(package: package) { (transaction, customerInfo, error, userCancelled) in
-    if let error = error as? ErrorCode {
-        switch error {
-        case .receiptAlreadyInUseError:
-            print("The receipt is already in use by another subscriber. " +
-                  "Log in with the previous account or contact support to get your purchases transferred to " +
-                  "regain access")
-        case .paymentPendingError:
-            print("The purchase is pending and may be completed at a later time." +
-                  "This can happen when awaiting parental approval or going through extra authentication flows " +
-                  "for credit cards in some countries.")
-        case .purchaseCancelledError:
-            print("Purchase was cancelled by the user.")
-        default:
-            print("FAILED TO PURCHASE: \(error.localizedDescription)")
-        }
-        return
-    } else if let error = error {
-        print("FAILED TO PURCHASE: \(error.localizedDescription)")
-        return
+```kotlin
+try {
+    val (transaction, customerInfo) =
+        Purchases.sharedInstance.awaitPurchase(purchaseParams)
+    // refresh entitlements with your backend
+} catch (error: PurchasesTransactionException) {
+    if (error.userCancelled) {
+        _uiState.update { it.copy(displayErrorMessage = "User cancelled") }
+    } else {
+        _uiState.update { it.copy(displayErrorMessage = error.message) }
     }
-
-    print(
-        """
-        Purchase finished:
-        Transaction: \(transaction.debugDescription)
-        CustomerInfo: \(customerInfo.debugDescription)
-        """
-    )
 }
 ```
 
@@ -147,8 +105,9 @@ Purchases.shared.purchase(package: package) { (transaction, customerInfo, error,
 To ensure that your app reacts to changes to subscriptions in real time, you can use `customerInfoStream`. This stream will only fire when new `customerInfo` is registered
 in RevenueCat, like when a subscription is renewed. If there are no changes from the last value, it will not fire. This means it's not guaranteed to fire on every app open.
 
-```swift
-for await customerInfo in Purchases.shared.customerInfoStream {
-    // code to handle here
-}
+```kotlin
+Purchases.sharedInstance.updatedCustomerInfoListener =
+    UpdatedCustomerInfoListener { customerInfo ->
+        updateCustomerInfoInformation(customerInfo)
+    }
 ```
