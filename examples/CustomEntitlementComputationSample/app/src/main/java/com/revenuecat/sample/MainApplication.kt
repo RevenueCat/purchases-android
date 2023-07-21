@@ -19,8 +19,12 @@ class MainApplication : Application() {
         /*
         Initialize the RevenueCat Purchases SDK.
 
-        - appUserID is nil, so an anonymous ID will be generated automatically by the Purchases SDK. Read more about Identifying Users here: https://docs.revenuecat.com/docs/user-ids
-        - observerMode is false, so Purchases will automatically handle finishing transactions. Read more about Observer Mode here: https://docs.revenuecat.com/docs/observer-mode
+        - An applicationContext is required opposed to an activity context.
+        Read more about Android Contexts here: https://developer.android.com/reference/android/content/Context
+        - The RevenueCat API key for your Google Play app is also required.
+        This can be found in via Project Settings > API keys > App specific keys in the RevenueCat dashboard.
+        - An appUserID is required when doing a custom entitlement computation implementation.
+        Read more about Identifying Users here: https://docs.revenuecat.com/docs/user-ids
          */
         val builder = PurchasesConfiguration.Builder(
             this,
