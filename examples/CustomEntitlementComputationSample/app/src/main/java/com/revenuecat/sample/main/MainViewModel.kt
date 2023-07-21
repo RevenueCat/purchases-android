@@ -40,17 +40,9 @@ class MainViewModel : ViewModel() {
     private suspend fun getOfferings() {
         try {
             val offerings = Purchases.sharedInstance.awaitOfferings()
-            _uiState.update { currentState ->
-                currentState.copy(
-                    offerings = offerings,
-                )
-            }
+            _uiState.update { it.copy(offerings = offerings) }
         } catch (error: PurchasesException) {
-            _uiState.update { currentState ->
-                currentState.copy(
-                    displayErrorMessage = error.message,
-                )
-            }
+            _uiState.update { it.copy(displayErrorMessage = error.message) }
         }
     }
 
@@ -59,11 +51,7 @@ class MainViewModel : ViewModel() {
     }
 
     fun resetErrorMessage() {
-        _uiState.update { currentState ->
-            currentState.copy(
-                displayErrorMessage = null,
-            )
-        }
+        _uiState.update { it.copy(displayErrorMessage = null) }
     }
 
     fun initiateSwitchUserProcess() {
@@ -80,17 +68,9 @@ class MainViewModel : ViewModel() {
             PurchaseParams.Builder(activity, aPackage).build(),
             onError = { error, userCancelled ->
                 if (userCancelled) {
-                    _uiState.update { currentState ->
-                        currentState.copy(
-                            displayErrorMessage = "User cancelled",
-                        )
-                    }
+                    _uiState.update { it.copy(displayErrorMessage = "User cancelled") }
                 } else {
-                    _uiState.update { currentState ->
-                        currentState.copy(
-                            displayErrorMessage = error.message,
-                        )
-                    }
+                    _uiState.update { it.copy(displayErrorMessage = error.message) }
                 }
             },
             onSuccess = { transaction, customerInfo ->
@@ -106,10 +86,6 @@ class MainViewModel : ViewModel() {
     }
 
     private fun updateCustomerInfoInformation(customerInfo: CustomerInfo) {
-        _uiState.update { currentState ->
-            currentState.copy(
-                currentCustomerInfo = customerInfo,
-            )
-        }
+        _uiState.update { it.copy(currentCustomerInfo = customerInfo) }
     }
 }
