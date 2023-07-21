@@ -7,6 +7,7 @@ import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.caching.DeviceCache
+import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.infoLog
 import com.revenuecat.purchases.common.log
@@ -19,6 +20,7 @@ import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttribute
 import java.util.Locale
 import java.util.UUID
 
+@Suppress("TooManyFunctions")
 internal class IdentityManager(
     private val deviceCache: DeviceCache,
     private val subscriberAttributesCache: SubscriberAttributesCache,
@@ -32,6 +34,8 @@ internal class IdentityManager(
         get() = deviceCache.getCachedAppUserID() ?: ""
 
     private val anonymousIdRegex = "^\\\$RCAnonymousID:([a-f0-9]{32})$".toRegex()
+
+    // region Public functions
 
     @Synchronized
     fun configure(appUserID: String?) {
@@ -94,13 +98,9 @@ internal class IdentityManager(
         }
     }
 
-    @Synchronized
-    private fun reset() {
-        deviceCache.clearCachesForAppUserID(currentAppUserID)
-        offeringsCache.clearCache()
-        subscriberAttributesCache.clearSubscriberAttributesIfSyncedForSubscriber(currentAppUserID)
-        offlineEntitlementsManager.resetOfflineCustomerInfoCache()
-        deviceCache.cacheAppUserID(generateRandomID())
+    fun switchUser(newAppUserID: String) {
+        debugLog(IdentityStrings.SWITCHING_USER.format(newAppUserID))
+        resetAndSaveUserID(newAppUserID)
     }
 
     @Synchronized
@@ -111,7 +111,7 @@ internal class IdentityManager(
             return
         }
         subscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(currentAppUserID) {
-            reset()
+            resetAndSaveUserID(generateRandomID())
             log(LogIntent.USER, IdentityStrings.LOG_OUT_SUCCESSFUL)
             completion(null)
         }
@@ -124,6 +124,10 @@ internal class IdentityManager(
             deviceCache.getCachedAppUserID() == deviceCache.getLegacyCachedAppUserID()
         return currentAppUserIDLooksAnonymous || isLegacyAnonymousAppUserID
     }
+
+    // endregion
+
+    // region Private functions
 
     private fun copySubscriberAttributesToNewUserIfOldIsAnonymous(oldAppUserId: String, newAppUserId: String) {
         if (isUserIDAnonymous(oldAppUserId)) {
@@ -157,4 +161,16 @@ internal class IdentityManager(
                 log(LogIntent.USER, IdentityStrings.SETTING_NEW_ANON_ID)
             }
     }
+
+    @Synchronized
+    private fun resetAndSaveUserID(newUserID: String) {
+        deviceCache.clearCachesForAppUserID(currentAppUserID)
+        offeringsCache.clearCache()
+        subscriberAttributesCache.clearSubscriberAttributesIfSyncedForSubscriber(currentAppUserID)
+        offlineEntitlementsManager.resetOfflineCustomerInfoCache()
+        deviceCache.cacheAppUserID(newUserID)
+        backend.clearCaches()
+    }
+
+    // endregion
 }

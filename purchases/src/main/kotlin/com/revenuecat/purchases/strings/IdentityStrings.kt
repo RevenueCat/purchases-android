@@ -12,4 +12,7 @@ internal object IdentityStrings {
     const val LOG_OUT_SUCCESSFUL = "Logged out successfully"
     const val INVALIDATING_CACHED_CUSTOMER_INFO = "Detected unverified cached CustomerInfo but verification " +
         "is enabled. Invalidating cache."
+    const val SWITCHING_USER = "Switching to user %s."
+    const val SWITCHING_USER_SAME_APP_USER_ID = "switchUser called with the same appUserID as the current user %s. " +
+        "This has no effect."
 }

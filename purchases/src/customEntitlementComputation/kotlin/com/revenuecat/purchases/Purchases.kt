@@ -27,6 +27,7 @@ import java.net.URL
  * guide to setup your RevenueCat account.
  * @warning Only one instance of Purchases should be instantiated at a time!
  */
+@Suppress("TooManyFunctions")
 class Purchases internal constructor(
     @get:JvmSynthetic internal val purchasesOrchestrator: PurchasesOrchestrator,
 ) {
@@ -128,6 +129,16 @@ class Purchases internal constructor(
         purchasesOrchestrator.removeUpdatedCustomerInfoListener()
     }
 
+    /**
+     * Updates the current appUserID to a new one, without associating the two.
+     *
+     * Important: This method is only available in Custom Entitlements Computation mode.
+     * Tokens posted by the SDK to the RevenueCat backend after calling this method will be sent
+     * with the newAppUserID.
+     */
+    fun switchUser(newAppUserID: String) {
+        purchasesOrchestrator.switchUser(newAppUserID)
+    }
     //endregion
 
     // region Static

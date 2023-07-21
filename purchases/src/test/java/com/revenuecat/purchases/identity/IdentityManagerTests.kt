@@ -379,6 +379,20 @@ class IdentityManagerTests {
     }
 
     @Test
+    fun `logOut clears backend caches`() {
+        val identifiedUserID = "Waldo"
+        every { mockDeviceCache.cleanupOldAttributionData() } just Runs
+        mockIdentifiedUser(identifiedUserID)
+        mockSubscriberAttributesManagerSynchronize(identifiedUserID)
+
+        var error: PurchasesError? = null
+        identityManager.logOut { error = it }
+
+        assertThat(error).isNull()
+        verify(exactly = 1) { mockBackend.clearCaches() }
+    }
+
+    @Test
     fun `logOut creates random ID and caches it`() {
         val identifiedUserID = "Waldo"
         mockIdentifiedUser(identifiedUserID)
@@ -572,6 +586,38 @@ class IdentityManagerTests {
         }
     }
 
+    // region switch user
+    @Test
+    fun `switching users clears all caches`() {
+        val oldAppUserID = "cesar"
+        mockIdentifiedUser(oldAppUserID)
+        val newAppUserID = "new"
+        every { mockDeviceCache.cacheCustomerInfo(any(), any()) } just Runs
+        mockSubscriberAttributesManagerSynchronize(newAppUserID)
+        mockSubscriberAttributesManagerCopyAttributes(oldAppUserID, newAppUserID)
+
+        identityManager.switchUser(newAppUserID)
+
+        verify(exactly = 1) { mockDeviceCache.clearCachesForAppUserID(oldAppUserID) }
+        verify(exactly = 1) { mockOfferingsCache.clearCache() }
+        verify(exactly = 1) {
+            mockSubscriberAttributesCache.clearSubscriberAttributesIfSyncedForSubscriber(oldAppUserID)
+        }
+        verify(exactly = 1) { mockOfflineEntitlementsManager.resetOfflineCustomerInfoCache() }
+        verify(exactly = 1) { mockBackend.clearCaches() }
+    }
+    @Test
+    fun `switching users saves the new user`() {
+        val oldAppUserID = "cesar"
+        mockIdentifiedUser(oldAppUserID)
+
+        val newAppUserID = "new"
+        identityManager.switchUser(newAppUserID)
+
+        verify(exactly = 1) { mockDeviceCache.cacheAppUserID(newAppUserID) }
+    }
+    // endregion
+
     // region helper functions
 
     private fun setupCustomerInfoCacheInvalidationTest(
@@ -600,6 +646,7 @@ class IdentityManagerTests {
         every { mockDeviceCache.clearCachesForAppUserID(identifiedUserID) } just Runs
         every { mockSubscriberAttributesCache.clearSubscriberAttributesIfSyncedForSubscriber(identifiedUserID) } just Runs
         every { mockSubscriberAttributesCache.cleanUpSubscriberAttributeCache(identifiedUserID) } just Runs
+        every { mockBackend.clearCaches() } just Runs
     }
 
     @Suppress("SameParameterValue")
@@ -626,6 +673,7 @@ class IdentityManagerTests {
         every { mockDeviceCache.getLegacyCachedAppUserID() } returns null
         every { mockDeviceCache.clearCachesForAppUserID(stubAnonymousID) } just Runs
         every { mockSubscriberAttributesCache.clearSubscriberAttributesIfSyncedForSubscriber(stubAnonymousID) } just Runs
+        every { mockBackend.clearCaches() } just Runs
     }
 
     private fun mockCleanCaches() {
