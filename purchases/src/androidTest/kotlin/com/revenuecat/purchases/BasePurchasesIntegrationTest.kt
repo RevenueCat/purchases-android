@@ -83,6 +83,7 @@ open class BasePurchasesIntegrationTest {
         initialActivePurchases: Map<String, StoreTransaction> = initialActivePurchasesToUse,
         forceServerErrors: Boolean = initialForceServerErrors,
         forceSigningErrors: Boolean = initialForceSigningErrors,
+        appUserID: String? = null,
         postSetupTestCallback: (MainActivity) -> Unit = {},
     ) {
         latestPurchasesUpdatedListener = null
@@ -104,7 +105,14 @@ open class BasePurchasesIntegrationTest {
                 Purchases.proxyURL = URL(urlString)
             }
 
-            configureSdk(it, entitlementVerificationMode, forceServerErrors, forceSigningErrors)
+            Purchases.configureSdk(
+                it,
+                appUserID ?: testUserId,
+                mockBillingAbstract,
+                entitlementVerificationMode,
+                forceServerErrors,
+                forceSigningErrors,
+            )
 
             postSetupTestCallback(it)
         }
@@ -120,33 +128,7 @@ open class BasePurchasesIntegrationTest {
         forceServerErrors: Boolean = false,
     ) {
         Purchases.resetSingleton()
-        configureSdk(context, entitlementVerificationMode, forceServerErrors)
-    }
-
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
-    protected fun configureSdk(
-        context: Context,
-        entitlementVerificationMode: EntitlementVerificationMode? = null,
-        forceServerErrors: Boolean = false,
-        forceSigningErrors: Boolean = false,
-    ) {
-        Purchases.configure(
-            PurchasesConfiguration.Builder(context, Constants.apiKey)
-                .appUserID(testUserId)
-                .apply {
-                    if (entitlementVerificationMode != null) {
-                        if (entitlementVerificationMode == EntitlementVerificationMode.INFORMATIONAL) {
-                            informationalVerificationModeAndDiagnosticsEnabled(true)
-                        } else {
-                            informationalVerificationModeAndDiagnosticsEnabled(false)
-                        }
-                    }
-                }
-                .build(),
-            mockBillingAbstract,
-            forceServerErrors,
-            forceSigningErrors,
-        )
+        Purchases.configureSdk(context, testUserId, mockBillingAbstract, entitlementVerificationMode, forceServerErrors)
     }
 
     protected fun ensureBlockFinishes(block: (CountDownLatch) -> Unit) {
