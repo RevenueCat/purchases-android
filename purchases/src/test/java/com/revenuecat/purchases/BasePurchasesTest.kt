@@ -5,9 +5,11 @@
 
 package com.revenuecat.purchases
 
+import android.app.Activity
 import android.app.Application
 import android.content.Context
 import androidx.lifecycle.ProcessLifecycleOwner
+import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchaseHistoryRecord
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
@@ -22,11 +24,14 @@ import com.revenuecat.purchases.google.toStoreTransaction
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
+import com.revenuecat.purchases.models.GoogleProrationMode
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.utils.STUB_PRODUCT_IDENTIFIER
 import com.revenuecat.purchases.utils.createMockOneTimeProductDetails
+import com.revenuecat.purchases.utils.stubGooglePurchase
 import com.revenuecat.purchases.utils.stubPurchaseHistoryRecord
 import com.revenuecat.purchases.utils.stubStoreProduct
 import com.revenuecat.purchases.utils.stubSubscriptionOption
@@ -71,6 +76,8 @@ internal open class BasePurchasesTest {
     protected val appUserId = "fakeUserID"
     protected lateinit var purchases: Purchases
     protected val mockInfo = mockk<CustomerInfo>()
+    protected val mockActivity: Activity = mockk()
+    protected val subscriptionOptionId = "mock-base-plan-id:mock-offer-id"
 
     @Before
     fun setUp() {
@@ -259,12 +266,6 @@ internal open class BasePurchasesTest {
         } just Runs
     }
 
-    protected fun mockOfferingsManagerFetchOfferings(userId: String = appUserId) {
-        every {
-            mockOfferingsManager.fetchAndCacheOfferings(userId, any(), any(), any())
-        } just Runs
-    }
-
     protected fun mockOfferingsManagerGetOfferings(errorGettingOfferings: PurchasesError? = null): Offerings? {
         val offerings: Offerings = mockk()
         every {
@@ -388,6 +389,58 @@ internal open class BasePurchasesTest {
         every {
             mockPostPendingTransactionsHelper.syncPendingPurchaseQueue(any(), any(), any())
         } just Runs
+    }
+
+    protected fun getPurchaseParams(
+        purchaseable: Any,
+        oldProductId: String? = null,
+        isPersonalizedPrice: Boolean? = null,
+        googleProrationMode: GoogleProrationMode? = null
+    ): PurchaseParams {
+        val builder = when (purchaseable) {
+            is SubscriptionOption -> PurchaseParams.Builder(mockActivity, purchaseable)
+            is Package -> PurchaseParams.Builder(mockActivity, purchaseable)
+            is StoreProduct -> PurchaseParams.Builder(mockActivity, purchaseable)
+            else -> null
+        }
+
+        oldProductId?.let {
+            builder!!.oldProductId(it)
+        }
+
+        isPersonalizedPrice?.let {
+            builder!!.isPersonalizedPrice(it)
+        }
+
+        googleProrationMode?.let {
+            builder!!.googleProrationMode(googleProrationMode)
+        }
+        return builder!!.build()
+    }
+
+    protected fun getMockedPurchaseList(
+        productId: String,
+        purchaseToken: String,
+        productType: ProductType,
+        offeringIdentifier: String? = null,
+        purchaseState: Int = Purchase.PurchaseState.PURCHASED,
+        acknowledged: Boolean = false,
+        subscriptionOptionId: String? = this.subscriptionOptionId
+    ): List<StoreTransaction> {
+        val p = stubGooglePurchase(
+            productIds = listOf(productId),
+            purchaseToken = purchaseToken,
+            purchaseState = purchaseState,
+            acknowledged = acknowledged
+        )
+
+        return listOf(
+            p.toStoreTransaction(
+                productType,
+                offeringIdentifier,
+                if (productType == ProductType.SUBS) subscriptionOptionId else null
+            )
+        )
     }
 
     // endregion

@@ -10,9 +10,11 @@ import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchaseParams
+import com.revenuecat.purchases.PurchaseResult
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.awaitOfferings
+import com.revenuecat.purchases.awaitPurchase
 import com.revenuecat.purchases.getOfferingsWith
 import com.revenuecat.purchases.getProductsWith
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
@@ -123,8 +125,14 @@ private class PurchasesCommonAPI {
 
     suspend fun checkCoroutines(
         purchases: Purchases,
+        activity: Activity,
+        packageToPurchase: Package,
     ) {
         val offerings: Offerings = purchases.awaitOfferings()
+
+        val purchasePackageBuilder: PurchaseParams.Builder = PurchaseParams.Builder(activity, packageToPurchase)
+        val (transaction, newCustomerInfo) = purchases.awaitPurchase(purchasePackageBuilder.build())
+        val purchaseResult: PurchaseResult = purchases.awaitPurchase(purchasePackageBuilder.build())
     }
 
     @Suppress("ForbiddenComment")

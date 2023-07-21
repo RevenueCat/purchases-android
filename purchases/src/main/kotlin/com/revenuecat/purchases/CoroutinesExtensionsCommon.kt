@@ -1,5 +1,6 @@
 package com.revenuecat.purchases
 
+import com.revenuecat.purchases.models.StoreTransaction
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
@@ -28,6 +29,43 @@ suspend fun Purchases.awaitOfferings(): Offerings {
         getOfferingsWith(
             onSuccess = continuation::resume,
             onError = { continuation.resumeWithException(PurchasesException(it)) },
+        )
+    }
+}
+
+/**
+ * Initiate a purchase with the given [PurchaseParams].
+ * Initialized with an [Activity] either a [Package], [StoreProduct], or [SubscriptionOption].
+ *
+ * If a [Package] or [StoreProduct] is used to build the [PurchaseParams], the [defaultOption] will be purchased.
+ * [defaultOption] is selected via the following logic:
+ *   - Filters out offers with "rc-ignore-offer" tag
+ *   - Uses [SubscriptionOption] with the longest free trial or cheapest first phase
+ *   - Falls back to use base plan
+ *
+ * @params [purchaseParams] The parameters configuring the purchase. See [PurchaseParams.Builder] for options.
+ * @throws [PurchasesTransactionException] with a [PurchasesTransactionException] if there's an error when purchasing
+ * and a userCancelled boolean that indicates if the user cancelled the purchase flow.
+ * @return The [StoreTransaction] for this purchase and the updated [CustomerInfo] for this user.
+ *
+ * @warning This function is marked as [ExperimentalPreviewRevenueCatPurchasesAPI] and may change in the future.
+ * Only available in Kotlin.
+ */
+@JvmSynthetic
+@ExperimentalPreviewRevenueCatPurchasesAPI
+@Throws(PurchasesTransactionException::class)
+suspend fun Purchases.awaitPurchase(purchaseParams: PurchaseParams): PurchaseResult {
+    return suspendCoroutine { continuation ->
+        purchase(
+            purchaseParams = purchaseParams,
+            callback = purchaseCompletedCallback(
+                onSuccess = { storeTransaction, customerInfo ->
+                    continuation.resume(PurchaseResult(storeTransaction, customerInfo))
+                },
+                onError = { purchasesError, userCancelled ->
+                    continuation.resumeWithException(PurchasesTransactionException(purchasesError, userCancelled))
+                },
+            ),
         )
     }
 }

@@ -5,7 +5,6 @@
 
 package com.revenuecat.purchases
 
-import android.app.Activity
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.billingclient.api.BillingFlowParams.ProrationMode
 import com.android.billingclient.api.Purchase
@@ -16,7 +15,6 @@ import com.revenuecat.purchases.common.ReplaceProductInfo
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.google.toInAppStoreProduct
 import com.revenuecat.purchases.google.toStoreProduct
-import com.revenuecat.purchases.google.toStoreTransaction
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
 import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
@@ -27,7 +25,6 @@ import com.revenuecat.purchases.utils.Responses
 import com.revenuecat.purchases.utils.STUB_OFFERING_IDENTIFIER
 import com.revenuecat.purchases.utils.createMockOneTimeProductDetails
 import com.revenuecat.purchases.utils.createMockProductDetailsFreeTrial
-import com.revenuecat.purchases.utils.stubGooglePurchase
 import com.revenuecat.purchases.utils.stubOfferings
 import io.mockk.Runs
 import io.mockk.every
@@ -54,10 +51,7 @@ internal class PurchasesTest : BasePurchasesTest() {
     private val inAppPurchaseToken = "token_inapp"
     private val subProductId = "sub"
     private val subPurchaseToken = "token_sub"
-    private val mockActivity: Activity = mockk()
     private var receivedProducts: List<StoreProduct>? = null
-
-    private val subscriptionOptionId = "mock-base-plan-id:mock-offer-id"
 
     @Test
     fun getsSubscriptionSkus() {
@@ -1187,31 +1181,6 @@ internal class PurchasesTest : BasePurchasesTest() {
 
     // region Private Methods
 
-    private fun getMockedPurchaseList(
-        productId: String,
-        purchaseToken: String,
-        productType: ProductType,
-        offeringIdentifier: String? = null,
-        purchaseState: Int = Purchase.PurchaseState.PURCHASED,
-        acknowledged: Boolean = false,
-        subscriptionOptionId: String? = this.subscriptionOptionId,
-    ): List<StoreTransaction> {
-        val p = stubGooglePurchase(
-            productIds = listOf(productId),
-            purchaseToken = purchaseToken,
-            purchaseState = purchaseState,
-            acknowledged = acknowledged,
-        )
-
-        return listOf(
-            p.toStoreTransaction(
-                productType,
-                offeringIdentifier,
-                if (productType == ProductType.SUBS) subscriptionOptionId else null,
-            ),
-        )
-    }
-
     private fun getMockedPurchaseHistoryList(
         productId: String,
         purchaseToken: String,
@@ -1304,6 +1273,12 @@ internal class PurchasesTest : BasePurchasesTest() {
         } answers {
             lambda<(PurchasesError?) -> Unit>().captured.invoke(error)
         }
+    }
+
+    protected fun mockOfferingsManagerFetchOfferings(userId: String = appUserId) {
+        every {
+            mockOfferingsManager.fetchAndCacheOfferings(userId, any(), any(), any())
+        } just Runs
     }
 
     // endregion

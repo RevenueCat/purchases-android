@@ -5,7 +5,6 @@
 
 package com.revenuecat.purchases
 
-import android.app.Activity
 import android.os.Handler
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
@@ -14,31 +13,23 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingResult
-import com.android.billingclient.api.Purchase
 import com.revenuecat.purchases.common.AppConfig
-import com.revenuecat.purchases.common.CustomerInfoFactory
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.ReplaceProductInfo
-import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.google.billingResponseToPurchasesError
 import com.revenuecat.purchases.google.toInAppStoreProduct
 import com.revenuecat.purchases.google.toStoreProduct
-import com.revenuecat.purchases.google.toStoreTransaction
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
-import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.models.BillingFeature
 import com.revenuecat.purchases.models.GoogleProrationMode
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
-import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.strings.PurchaseStrings
-import com.revenuecat.purchases.utils.Responses
 import com.revenuecat.purchases.utils.STUB_OFFERING_IDENTIFIER
 import com.revenuecat.purchases.utils.createMockOneTimeProductDetails
 import com.revenuecat.purchases.utils.createMockProductDetailsFreeTrial
 import com.revenuecat.purchases.utils.stubFreeTrialPricingPhase
-import com.revenuecat.purchases.utils.stubGooglePurchase
 import com.revenuecat.purchases.utils.stubINAPPStoreProduct
 import com.revenuecat.purchases.utils.stubOTPOffering
 import com.revenuecat.purchases.utils.stubOfferings
@@ -58,26 +49,22 @@ import io.mockk.verifyAll
 import io.mockk.verifyOrder
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.AssertionsForClassTypes
-import org.json.JSONObject
 import org.junit.Assert.fail
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
-import java.net.URL
 import java.util.Collections.emptyList
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
 @Suppress("DEPRECATION")
 internal class PurchasesCommonTest: BasePurchasesTest() {
-    private val mockActivity: Activity = mockk()
     private var receivedProducts: List<StoreProduct>? = null
 
     private val inAppProductId = "inapp"
     private val inAppPurchaseToken = "token_inapp"
     private val subProductId = "sub"
     private val subPurchaseToken = "token_sub"
-    private val subscriptionOptionId = "mock-base-plan-id:mock-offer-id"
 
     private val mockLifecycle = mockk<Lifecycle>()
     private val mockLifecycleOwner = mockk<LifecycleOwner>()
@@ -1747,33 +1734,6 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         } just Runs
     }
 
-    private fun getPurchaseParams(
-        purchaseable: Any,
-        oldProductId: String? = null,
-        isPersonalizedPrice: Boolean? = null,
-        googleProrationMode: GoogleProrationMode? = null
-    ): PurchaseParams {
-        val builder = when (purchaseable) {
-            is SubscriptionOption -> PurchaseParams.Builder(mockActivity, purchaseable)
-            is Package -> PurchaseParams.Builder(mockActivity, purchaseable)
-            is StoreProduct -> PurchaseParams.Builder(mockActivity, purchaseable)
-            else -> null
-        }
-
-        oldProductId?.let {
-            builder!!.oldProductId(it)
-        }
-
-        isPersonalizedPrice?.let {
-            builder!!.isPersonalizedPrice(it)
-        }
-
-        googleProrationMode?.let {
-            builder!!.googleProrationMode(googleProrationMode)
-        }
-        return builder!!.build()
-    }
-
     private fun mockCloseActions() {
         every {
             ProcessLifecycleOwner.get()
@@ -1805,31 +1765,6 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
             mockBillingAbstract.purchasesUpdatedListener = capturedPurchasesUpdatedListener.captured
             mockBillingAbstract.purchasesUpdatedListener = null
         }
-    }
-
-    private fun getMockedPurchaseList(
-        productId: String,
-        purchaseToken: String,
-        productType: ProductType,
-        offeringIdentifier: String? = null,
-        purchaseState: Int = Purchase.PurchaseState.PURCHASED,
-        acknowledged: Boolean = false,
-        subscriptionOptionId: String? = this.subscriptionOptionId
-    ): List<StoreTransaction> {
-        val p = stubGooglePurchase(
-            productIds = listOf(productId),
-            purchaseToken = purchaseToken,
-            purchaseState = purchaseState,
-            acknowledged = acknowledged
-        )
-
-        return listOf(
-            p.toStoreTransaction(
-                productType,
-                offeringIdentifier,
-                if (productType == ProductType.SUBS) subscriptionOptionId else null
-            )
-        )
     }
 
     private fun Int.buildResult(): BillingResult {
