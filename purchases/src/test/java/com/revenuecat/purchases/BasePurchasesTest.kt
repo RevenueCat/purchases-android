@@ -266,12 +266,6 @@ internal open class BasePurchasesTest {
         } just Runs
     }
 
-    protected fun mockOfferingsManagerFetchOfferings(userId: String = appUserId) {
-        every {
-            mockOfferingsManager.fetchAndCacheOfferings(userId, any(), any(), any())
-        } just Runs
-    }
-
     protected fun mockOfferingsManagerGetOfferings(errorGettingOfferings: PurchasesError? = null): Offerings? {
         val offerings: Offerings = mockk()
         every {
