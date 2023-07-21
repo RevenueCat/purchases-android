@@ -5,12 +5,12 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfoHelper
 import com.revenuecat.purchases.CustomerInfoUpdateHandler
+import com.revenuecat.purchases.PostPendingTransactionsHelper
 import com.revenuecat.purchases.PostReceiptHelper
 import com.revenuecat.purchases.PostTransactionWithProductDetailsHelper
 import com.revenuecat.purchases.Purchases
-import com.revenuecat.purchases.Store
-import com.revenuecat.purchases.PostPendingTransactionsHelper
 import com.revenuecat.purchases.PurchasesOrchestrator
+import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BillingAbstract
@@ -62,7 +62,7 @@ class SubscriberAttributesPurchasesTests {
             observerMode = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
-            store = Store.PLAY_STORE
+            store = Store.PLAY_STORE,
         )
         val identityManager = mockk<IdentityManager>(relaxed = true).apply {
             every { currentAppUserID } returns appUserId
@@ -74,7 +74,7 @@ class SubscriberAttributesPurchasesTests {
             billingWrapperMock,
             SyncDispatcher(),
             identityManager,
-            postTransactionHelper
+            postTransactionHelper,
         )
 
         val purchasesOrchestrator = PurchasesOrchestrator(
@@ -94,7 +94,7 @@ class SubscriberAttributesPurchasesTests {
             postTransactionWithProductDetailsHelper = postTransactionHelper,
             postPendingTransactionsHelper = postPendingTransactionsHelper,
             syncPurchasesHelper = mockk(),
-            offeringsManager = offeringsManagerMock
+            offeringsManager = offeringsManagerMock,
         )
 
         underTest = Purchases(purchasesOrchestrator)
@@ -118,7 +118,7 @@ class SubscriberAttributesPurchasesTests {
             subscriberAttributesManagerMock.setAttribute(
                 SubscriberAttributeKey.Email,
                 email,
-                appUserId
+                appUserId,
             )
         }
     }
@@ -137,7 +137,7 @@ class SubscriberAttributesPurchasesTests {
             subscriberAttributesManagerMock.setAttribute(
                 SubscriberAttributeKey.PhoneNumber,
                 phoneNumber,
-                appUserId
+                appUserId,
             )
         }
     }
@@ -155,7 +155,7 @@ class SubscriberAttributesPurchasesTests {
             subscriberAttributesManagerMock.setAttribute(
                 SubscriberAttributeKey.DisplayName,
                 displayName,
-                appUserId
+                appUserId,
             )
         }
     }
@@ -173,7 +173,7 @@ class SubscriberAttributesPurchasesTests {
             subscriberAttributesManagerMock.setAttribute(
                 SubscriberAttributeKey.FCMTokens,
                 pushToken,
-                appUserId
+                appUserId,
             )
         }
     }
@@ -184,7 +184,7 @@ class SubscriberAttributesPurchasesTests {
             subscriberAttributesManagerMock.synchronizeSubscriberAttributesForAllUsers(appUserId)
         } just Runs
         every {
-            customerInfoHelperMock.retrieveCustomerInfo(appUserId, CacheFetchPolicy.FETCH_CURRENT,false, any())
+            customerInfoHelperMock.retrieveCustomerInfo(appUserId, CacheFetchPolicy.FETCH_CURRENT, false, any())
         } just Runs
         every {
             offeringsManagerMock.onAppForeground(appUserId)
@@ -338,7 +338,7 @@ class SubscriberAttributesPurchasesTests {
 
     private fun attributionIDTest(
         network: SubscriberAttributeKey.AttributionIds,
-        functionToTest: (String) -> Unit
+        functionToTest: (String) -> Unit,
     ) {
         val id = "12345"
 
@@ -347,7 +347,7 @@ class SubscriberAttributesPurchasesTests {
                 network,
                 id,
                 appUserId,
-                applicationMock
+                applicationMock,
             )
         } just Runs
 
@@ -358,14 +358,14 @@ class SubscriberAttributesPurchasesTests {
                 network,
                 id,
                 appUserId,
-                applicationMock
+                applicationMock,
             )
         }
     }
 
     private fun integrationIDTest(
         parameter: SubscriberAttributeKey.IntegrationIds,
-        functionToTest: (String) -> Unit
+        functionToTest: (String) -> Unit,
     ) {
         val parameterValue = "parametervalue"
 
@@ -379,14 +379,14 @@ class SubscriberAttributesPurchasesTests {
             subscriberAttributesManagerMock.setAttribute(
                 parameter,
                 parameterValue,
-                appUserId
+                appUserId,
             )
         }
     }
 
     private fun campaignParameterTest(
         parameter: SubscriberAttributeKey.CampaignParameters,
-        functionToTest: (String) -> Unit
+        functionToTest: (String) -> Unit,
     ) {
         val parameterValue = "parametervalue"
 
@@ -400,7 +400,7 @@ class SubscriberAttributesPurchasesTests {
             subscriberAttributesManagerMock.setAttribute(
                 parameter,
                 parameterValue,
-                appUserId
+                appUserId,
             )
         }
     }

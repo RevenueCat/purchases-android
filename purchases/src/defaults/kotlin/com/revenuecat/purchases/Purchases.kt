@@ -1,8 +1,3 @@
-//  Purchases
-//
-//  Copyright © 2019 RevenueCat, Inc. All rights reserved.
-//
-
 package com.revenuecat.purchases
 
 import android.annotation.SuppressLint
@@ -11,7 +6,6 @@ import android.content.Context
 import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.PlatformInfo
-import com.revenuecat.purchases.common.debugLogsEnabled
 import com.revenuecat.purchases.common.infoLog
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.interfaces.Callback
@@ -26,14 +20,9 @@ import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import com.revenuecat.purchases.models.BillingFeature
 import com.revenuecat.purchases.models.GoogleProrationMode
 import com.revenuecat.purchases.models.StoreProduct
-import com.revenuecat.purchases.models.StoreTransaction
-import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.strings.BillingStrings
 import com.revenuecat.purchases.strings.ConfigureStrings
 import java.net.URL
-
-typealias SuccessfulPurchaseCallback = (StoreTransaction, CustomerInfo) -> Unit
-typealias ErrorPurchaseCallback = (StoreTransaction, PurchasesError) -> Unit
 
 /**
  * Entry point for Purchases. It should be instantiated as soon as your app has a unique user id
@@ -726,7 +715,9 @@ class Purchases internal constructor(
          * being used
          */
         @JvmStatic
-        var platformInfo: PlatformInfo = PurchasesOrchestrator.platformInfo
+        var platformInfo: PlatformInfo
+            get() = PurchasesOrchestrator.platformInfo
+            set(value) { PurchasesOrchestrator.platformInfo = value }
 
         /**
          * Enable debug logging. Useful for debugging issues with the lovely team @RevenueCat
@@ -796,7 +787,9 @@ class Purchases internal constructor(
          * if you've received a proxy key value from your RevenueCat contact.
          */
         @JvmStatic
-        var proxyURL: URL? = PurchasesOrchestrator.proxyURL
+        var proxyURL: URL?
+            get() = PurchasesOrchestrator.proxyURL
+            set(value) { PurchasesOrchestrator.proxyURL = value }
 
         /**
          * True if [configure] has been called and [Purchases.sharedInstance] is set
