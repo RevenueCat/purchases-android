@@ -121,7 +121,7 @@ internal class PurchasesCoroutinesCommonTest : BasePurchasesTest() {
 
     @Test
     fun `await purchase - Error`() = runTest {
-        var result: Pair<StoreTransaction, CustomerInfo>? = null
+        var result: PurchaseResult? = null
         var exception: PurchasesTransactionException? = null
 
         val storeProduct = stubStoreProduct(STUB_PRODUCT_IDENTIFIER)
