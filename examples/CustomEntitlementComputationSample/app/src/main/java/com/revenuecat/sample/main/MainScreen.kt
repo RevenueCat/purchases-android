@@ -1,5 +1,8 @@
 package com.revenuecat.sample.main
 
+import CustomerInfoDetailScreen
+import CustomerInfoEventsList
+import ExplanationScreen
 import android.app.Activity
 import android.widget.Toast
 import androidx.compose.foundation.background
@@ -12,10 +15,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.material.TopAppBar
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -23,6 +26,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -32,23 +36,62 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 import com.revenuecat.purchases.Package
+import com.revenuecat.sample.ui.theme.CustomEntitlementComputationTheme
 import com.revenuecat.sample.utils.findActivity
 
 @Composable
-fun MainScreen() {
+fun MainScreenNavigation() {
     val viewModel: MainViewModel = viewModel()
     val uiState = viewModel.uiState.collectAsState()
+
+    val navController = rememberNavController()
+    NavHost(navController, startDestination = "main") {
+        composable("main") { MainScreen(navController = navController, viewModel = viewModel) }
+        composable("customerInfoDetails/{id}") { backStackEntry ->
+            val event = uiState.value.customerInfoList.find {
+                it.id.toString() == backStackEntry.arguments?.getString("id")
+            }
+
+            if (event != null) {
+                CustomerInfoDetailScreen(event = event)
+            } else {
+                Text("Could not find event with id ${backStackEntry.arguments?.getString("id")}")
+            }
+        }
+    }
+}
+
+@Composable
+fun MainScreen(
+    navController: NavController,
+    viewModel: MainViewModel = viewModel(),
+    uiState: State<MainState> = viewModel.uiState.collectAsState()
+) {
 
     if (uiState.value.shouldShowSwitchingUserDialog) {
         Dialog(onDismissRequest = { viewModel.resetSwitchUserProcess() }) {
             SwitchUserDialog(viewModel)
+        }
+    }
+
+    if (uiState.value.shouldShowExplanationDialog) {
+        Dialog(onDismissRequest = { viewModel.dismissExplanationDialog() }) {
+            ExplanationScreen(onDismiss = { viewModel.dismissExplanationDialog() })
         }
     }
 
@@ -85,6 +128,41 @@ fun MainScreen() {
                 verticalArrangement = Arrangement.Center,
             ) {
                 Button(
+                    onClick = {
+                        viewModel.showExplanationDialog()
+                    },
+                    modifier = Modifier.wrapContentSize(),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color.Transparent,
+                        contentColor = Color.Black
+                    ),
+                ) {
+                    Column {
+                        Text(
+                            text = "This app uses RevenueCat under CustomEntitlementsComputation mode.",
+                            modifier = Modifier
+                                .padding(16.dp),
+                            textAlign = TextAlign.Center,
+                        )
+
+                        Text(
+                            text = "Tap here for more details about this mode.",
+                            modifier = Modifier
+                                .padding(16.dp),
+                            textAlign = TextAlign.Center,
+                            fontWeight = FontWeight.Bold,
+                        )
+                    }
+                }
+
+                Text(text = buildAnnotatedString {
+                    withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
+                        append("Current App User ID: ")
+                    }
+                    append(uiState.value.currentAppUserID)
+                })
+
+                Button(
                     onClick = { viewModel.initiateSwitchUserProcess() },
                     modifier = Modifier
                         .fillMaxWidth()
@@ -100,23 +178,30 @@ fun MainScreen() {
                         viewModel.purchasePackage(activity, packageToPurchase)
                     }
                 }
-                Column(
-                    modifier = Modifier
-                        .weight(1f, true)
-                        .verticalScroll(rememberScrollState())
-                        .padding(32.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center,
+                Box(
+                    contentAlignment = Alignment.TopStart,
                 ) {
-                    Box(
-                        contentAlignment = Alignment.TopStart,
-                    ) {
+                    Column {
+
                         Text(
-                            text = uiState.value.currentCustomerInfo?.rawData?.toString(4)
-                                ?: "Customer information will be displayed here",
+                            text = "CustomerInfo delegate values",
                             fontSize = 16.sp,
                             color = Color.Black,
-                            textAlign = TextAlign.Start,
+                            textAlign = TextAlign.Center,
+                            fontWeight = FontWeight.Bold,
+                        )
+                        Text(
+                            text = "List fills in below when new values arrive",
+                            fontSize = 14.sp,
+                            color = Color.Black,
+                            textAlign = TextAlign.Center,
+                        )
+
+                        CustomerInfoEventsList(
+                            uiState.value.customerInfoList,
+                            onEventClicked = { customerInfoEvent ->
+                                navController.navigate("customerInfoDetails/${customerInfoEvent.id}")
+                            },
                         )
                     }
                 }
@@ -179,5 +264,18 @@ private fun PackageButton(
             .padding(vertical = 4.dp, horizontal = 32.dp),
     ) {
         Text(text = text, color = Color.White)
+    }
+}
+
+@Preview
+@Composable
+fun MainScreenPreview() {
+    CustomEntitlementComputationTheme {
+        val navController = rememberNavController()
+        NavHost(navController, startDestination = "main") {
+            composable("main") {
+                MainScreen(navController = navController)
+            }
+        }
     }
 }
