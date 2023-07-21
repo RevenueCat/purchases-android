@@ -443,5 +443,11 @@ internal open class BasePurchasesTest {
         )
     }
 
+    protected fun mockOfferingsManagerFetchOfferings(userId: String = appUserId) {
+        every {
+            mockOfferingsManager.fetchAndCacheOfferings(userId, any(), any(), any())
+        } just Runs
+    }
+
     // endregion
 }
