@@ -17,21 +17,15 @@ import com.revenuecat.purchases.PurchaseParams;
 import com.revenuecat.purchases.Purchases;
 import com.revenuecat.purchases.PurchasesConfiguration;
 import com.revenuecat.purchases.PurchasesError;
-import com.revenuecat.purchases.Store;
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback;
-import com.revenuecat.purchases.interfaces.LogInCallback;
 import com.revenuecat.purchases.interfaces.PurchaseCallback;
-import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback;
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback;
-import com.revenuecat.purchases.interfaces.SyncPurchasesCallback;
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener;
 import com.revenuecat.purchases.models.BillingFeature;
 import com.revenuecat.purchases.models.GoogleProrationMode;
 import com.revenuecat.purchases.models.StoreProduct;
 import com.revenuecat.purchases.models.StoreTransaction;
 import com.revenuecat.purchases.models.SubscriptionOption;
-
-import org.jetbrains.annotations.NotNull;
 
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -63,44 +57,17 @@ final class PurchasesCommonAPI {
             }
         };
 
-        final ReceiveCustomerInfoCallback receiveCustomerInfoListener = new ReceiveCustomerInfoCallback() {
-            @Override
-            public void onReceived(@NonNull CustomerInfo customerInfo) {
-            }
-
-            @Override
-            public void onError(@NonNull PurchasesError error) {
-            }
-        };
-        final SyncPurchasesCallback syncPurchasesCallback = new SyncPurchasesCallback() {
-            @Override
-            public void onSuccess(@NonNull CustomerInfo customerInfo) {
-            }
-
-            @Override
-            public void onError(@NonNull PurchasesError error) {
-            }
-        };
-
-        purchases.syncPurchases();
-        purchases.syncPurchases(syncPurchasesCallback);
         purchases.getOfferings(receiveOfferingsListener);
         purchases.getProducts(productIds, productResponseListener);
         purchases.getProducts(productIds, ProductType.SUBS, productResponseListener);
-        purchases.restorePurchases(receiveCustomerInfoListener);
 
         final String appUserID = purchases.getAppUserID();
         purchases.removeUpdatedCustomerInfoListener();
-        purchases.invalidateCustomerInfoCache();
         purchases.close();
 
-        final boolean finishTransactions = purchases.getFinishTransactions();
-        purchases.setFinishTransactions(true);
         final UpdatedCustomerInfoListener updatedCustomerInfoListener = purchases.getUpdatedCustomerInfoListener();
         purchases.setUpdatedCustomerInfoListener((CustomerInfo customerInfo) -> {
         });
-
-        final Store store = purchases.getStore();
     }
 
     static void checkPurchasing(final Purchases purchases,

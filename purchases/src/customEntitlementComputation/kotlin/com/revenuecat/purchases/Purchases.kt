@@ -11,9 +11,7 @@ import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.interfaces.Callback
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
-import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback
-import com.revenuecat.purchases.interfaces.SyncPurchasesCallback
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import com.revenuecat.purchases.models.BillingFeature
 import com.revenuecat.purchases.models.StoreProduct
@@ -34,17 +32,6 @@ class Purchases internal constructor(
 ) {
 
     /**
-     * Default to TRUE, set this to FALSE if you are consuming and acknowledging transactions
-     * outside of the Purchases SDK.
-     */
-    var finishTransactions: Boolean
-        @Synchronized get() = purchasesOrchestrator.finishTransactions
-
-        @Synchronized set(value) {
-            purchasesOrchestrator.finishTransactions = value
-        }
-
-    /**
      * The passed in or generated app user ID
      */
     val appUserID: String
@@ -61,61 +48,7 @@ class Purchases internal constructor(
             purchasesOrchestrator.updatedCustomerInfoListener = value
         }
 
-    /**
-     * The currently configured store
-     */
-    val store: Store
-        get() = purchasesOrchestrator.store
-
     // region Public Methods
-
-    /**
-     * This method will send all the purchases to the RevenueCat backend. Call this when using your own implementation
-     * for subscriptions anytime a sync is needed, such as when migrating existing users to RevenueCat. The
-     * [SyncPurchasesCallback.onSuccess] callback will be called if all purchases have been synced successfully or
-     * there are no purchases. Otherwise, the [SyncPurchasesCallback.onError] callback will be called with a
-     * [PurchasesError] indicating the first error found.
-     *
-     * @param [listener] Called when all purchases have been synced with the backend, either successfully or with
-     * an error. If no purchases are present, the success function will be called.
-     * @warning This function should only be called if you're migrating to RevenueCat or in observer mode.
-     * @warning This function could take a relatively long time to execute, depending on the amount of purchases
-     * the user has. Consider that when waiting for this operation to complete.
-     */
-    @JvmOverloads
-    fun syncPurchases(
-        listener: SyncPurchasesCallback? = null,
-    ) {
-        purchasesOrchestrator.syncPurchases(listener)
-    }
-
-    /**
-     * This method will send a purchase to the RevenueCat backend. This function should only be called if you are
-     * in Amazon observer mode or performing a client side migration of your current users to RevenueCat.
-     *
-     * The receipt IDs are cached if successfully posted so they are not posted more than once.
-     *
-     * @param [productID] Product ID associated to the purchase.
-     * @param [receiptID] ReceiptId that represents the Amazon purchase.
-     * @param [amazonUserID] Amazon's userID. This parameter will be ignored when syncing a Google purchase.
-     * @param [isoCurrencyCode] Product's currency code in ISO 4217 format.
-     * @param [price] Product's price.
-     */
-    fun syncObserverModeAmazonPurchase(
-        productID: String,
-        receiptID: String,
-        amazonUserID: String,
-        isoCurrencyCode: String?,
-        price: Double?,
-    ) {
-        purchasesOrchestrator.syncObserverModeAmazonPurchase(
-            productID,
-            receiptID,
-            amazonUserID,
-            isoCurrencyCode,
-            price,
-        )
-    }
 
     /**
      * Fetch the configured offerings for this users. Offerings allows you to configure your in-app
@@ -180,24 +113,6 @@ class Purchases internal constructor(
     }
 
     /**
-     * Restores purchases made with the current Play Store account for the current user.
-     * This method will post all purchases associated with the current Play Store account to
-     * RevenueCat and become associated with the current `appUserID`. If the receipt token is being
-     * used by an existing user, the current `appUserID` will be aliased together with the
-     * `appUserID` of the existing user. Going forward, either `appUserID` will be able to reference
-     * the same user.
-     *
-     * You shouldn't use this method if you have your own account system. In that case
-     * "restoration" is provided by your app passing the same `appUserId` used to purchase originally.
-     * @param [callback] The listener that will be called when purchase restore completes.
-     */
-    fun restorePurchases(
-        callback: ReceiveCustomerInfoCallback,
-    ) {
-        purchasesOrchestrator.restorePurchases(callback)
-    }
-
-    /**
      * Call close when you are done with this instance of Purchases
      */
     fun close() {
@@ -211,20 +126,6 @@ class Purchases internal constructor(
     @Suppress("MemberVisibilityCanBePrivate")
     fun removeUpdatedCustomerInfoListener() {
         purchasesOrchestrator.removeUpdatedCustomerInfoListener()
-    }
-
-    /**
-     * Invalidates the cache for customer information.
-     *
-     * Most apps will not need to use this method; invalidating the cache can leave your app in an invalid state.
-     * Refer to https://rev.cat/customer-info-cache for more information on
-     * using the cache properly.
-     *
-     * This is useful for cases where purchaser information might have been updated outside of the
-     * app, like if a promotional subscription is granted through the RevenueCat dashboard.
-     */
-    fun invalidateCustomerInfoCache() {
-        purchasesOrchestrator.invalidateCustomerInfoCache()
     }
 
     //endregion

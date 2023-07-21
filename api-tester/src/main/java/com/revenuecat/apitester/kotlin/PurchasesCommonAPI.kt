@@ -14,15 +14,12 @@ import com.revenuecat.purchases.PurchaseParams
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesConfiguration
 import com.revenuecat.purchases.PurchasesError
-import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.awaitOfferings
 import com.revenuecat.purchases.getOfferingsWith
 import com.revenuecat.purchases.getProductsWith
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
-import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback
-import com.revenuecat.purchases.interfaces.SyncPurchasesCallback
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import com.revenuecat.purchases.models.BillingFeature
 import com.revenuecat.purchases.models.GoogleProrationMode
@@ -30,13 +27,11 @@ import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.purchaseWith
-import com.revenuecat.purchases.restorePurchasesWith
-import com.revenuecat.purchases.syncPurchasesWith
 import java.net.URL
 import java.util.concurrent.ExecutorService
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
-@Suppress("unused", "UNUSED_VARIABLE", "EmptyFunctionBlock", "RemoveExplicitTypeArguments", "RedundantLambdaArrow")
+@Suppress("unused", "UNUSED_VARIABLE", "EmptyFunctionBlock", "DEPRECATION")
 private class PurchasesCommonAPI {
     @SuppressWarnings("LongParameterList")
     fun check(
@@ -51,36 +46,19 @@ private class PurchasesCommonAPI {
             override fun onReceived(storeProducts: List<StoreProduct>) {}
             override fun onError(error: PurchasesError) {}
         }
-        val receiveCustomerInfoCallback = object : ReceiveCustomerInfoCallback {
-            override fun onReceived(customerInfo: CustomerInfo) {}
-            override fun onError(error: PurchasesError) {}
-        }
-        val syncPurchasesCallback = object : SyncPurchasesCallback {
-            override fun onSuccess(customerInfo: CustomerInfo) {}
-            override fun onError(error: PurchasesError) {}
-        }
 
-        purchases.syncPurchases()
-        purchases.syncPurchases(syncPurchasesCallback)
         purchases.getOfferings(receiveOfferingsCallback)
 
         purchases.getProducts(productIds, productsResponseCallback)
         purchases.getProducts(productIds, ProductType.SUBS, productsResponseCallback)
 
-        purchases.restorePurchases(receiveCustomerInfoCallback)
-
         val appUserID: String = purchases.appUserID
 
         purchases.removeUpdatedCustomerInfoListener()
-        purchases.invalidateCustomerInfoCache()
         purchases.close()
 
-        val finishTransactions: Boolean = purchases.finishTransactions
-        purchases.finishTransactions = true
         val updatedCustomerInfoListener: UpdatedCustomerInfoListener? = purchases.updatedCustomerInfoListener
         purchases.updatedCustomerInfoListener = UpdatedCustomerInfoListener { _: CustomerInfo? -> }
-
-        val store: Store = purchases.store
     }
 
     @SuppressWarnings("LongParameterList", "EmptyFunctionBlock")
@@ -116,7 +94,7 @@ private class PurchasesCommonAPI {
         purchases.purchase(purchaseOptionsParams, purchaseCallback)
     }
 
-    @Suppress("RedundantLambdaArrow", "LongMethod", "LongParameterList")
+    @Suppress("LongMethod", "LongParameterList")
     fun checkListenerConversions(
         purchases: Purchases,
         purchaseParams: PurchaseParams,
@@ -136,17 +114,6 @@ private class PurchasesCommonAPI {
             onError = { _: PurchasesError -> },
             onGetStoreProducts = { _: List<StoreProduct> -> },
         )
-        purchases.restorePurchasesWith(
-            onError = { _: PurchasesError -> },
-            onSuccess = { _: CustomerInfo -> },
-        )
-        purchases.syncPurchasesWith(
-            onError = { _: PurchasesError -> },
-            onSuccess = { _: CustomerInfo -> },
-        )
-        purchases.syncPurchasesWith(
-            onSuccess = { _: CustomerInfo -> },
-        )
         purchases.purchaseWith(
             purchaseParams,
             onError = { _: PurchasesError, _: Boolean -> },
@@ -163,7 +130,7 @@ private class PurchasesCommonAPI {
         val offerings: Offerings = purchases.awaitOfferings()
     }
 
-    @Suppress("RemoveRedundantQualifierName", "RedundantLambdaArrow", "ForbiddenComment")
+    @Suppress("ForbiddenComment")
     fun checkConfiguration(context: Context, executorService: ExecutorService) {
         val features: List<BillingFeature> = ArrayList()
         val configured: Boolean = Purchases.isConfigured

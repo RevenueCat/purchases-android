@@ -10,8 +10,10 @@ import com.revenuecat.purchases.EntitlementVerificationMode;
 import com.revenuecat.purchases.Purchases;
 import com.revenuecat.purchases.PurchasesConfiguration;
 import com.revenuecat.purchases.PurchasesError;
+import com.revenuecat.purchases.Store;
 import com.revenuecat.purchases.interfaces.LogInCallback;
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback;
+import com.revenuecat.purchases.interfaces.SyncPurchasesCallback;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -39,17 +41,36 @@ final class PurchasesAPI {
             public void onError(@NotNull PurchasesError error) {
             }
         };
+        final SyncPurchasesCallback syncPurchasesCallback = new SyncPurchasesCallback() {
+            @Override
+            public void onSuccess(@NonNull CustomerInfo customerInfo) {
+            }
 
+            @Override
+            public void onError(@NonNull PurchasesError error) {
+            }
+        };
+
+        purchases.syncPurchases();
+        purchases.syncPurchases(syncPurchasesCallback);
         purchases.logIn("", logInCallback);
         purchases.logOut();
         purchases.logOut(receiveCustomerInfoListener);
         purchases.getCustomerInfo(receiveCustomerInfoListener);
         purchases.getCustomerInfo(CacheFetchPolicy.CACHED_OR_FETCHED, receiveCustomerInfoListener);
 
+        purchases.restorePurchases(receiveCustomerInfoListener);
+        purchases.invalidateCustomerInfoCache();
+
         final boolean anonymous = purchases.isAnonymous();
+
+        final boolean finishTransactions = purchases.getFinishTransactions();
+        purchases.setFinishTransactions(true);
 
         purchases.onAppBackgrounded();
         purchases.onAppForegrounded();
+
+        final Store store = purchases.getStore();
     }
 
     static void check(final Purchases purchases, final Map<String, String> attributes) {

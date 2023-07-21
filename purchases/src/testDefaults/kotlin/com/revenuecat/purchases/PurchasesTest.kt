@@ -9,8 +9,10 @@ import android.app.Activity
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.billingclient.api.BillingFlowParams.ProrationMode
 import com.android.billingclient.api.Purchase
+import com.revenuecat.purchases.common.CustomerInfoFactory
 import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.ReplaceProductInfo
+import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.google.toInAppStoreProduct
 import com.revenuecat.purchases.google.toStoreProduct
 import com.revenuecat.purchases.google.toStoreTransaction
@@ -20,6 +22,7 @@ import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.utils.Responses
 import com.revenuecat.purchases.utils.STUB_OFFERING_IDENTIFIER
 import com.revenuecat.purchases.utils.createMockOneTimeProductDetails
 import com.revenuecat.purchases.utils.createMockProductDetailsFreeTrial
@@ -30,7 +33,9 @@ import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.verify
+import io.mockk.verifyAll
 import org.assertj.core.api.Assertions.assertThat
+import org.json.JSONObject
 import org.junit.Assert.fail
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -43,6 +48,10 @@ import kotlin.random.Random
 @Config(manifest = Config.NONE)
 @Suppress("DEPRECATION")
 internal class PurchasesTest : BasePurchasesTest() {
+    private val inAppProductId = "inapp"
+    private val inAppPurchaseToken = "token_inapp"
+    private val subProductId = "sub"
+    private val subPurchaseToken = "token_sub"
     private val mockActivity: Activity = mockk()
     private var receivedProducts: List<StoreProduct>? = null
 
@@ -98,6 +107,13 @@ internal class PurchasesTest : BasePurchasesTest() {
     fun `when setting up, and passing a appUserID, user is identified`() {
         assertThat(purchases.allowSharingPlayStoreAccount).isEqualTo(false)
         assertThat(purchases.appUserID).isEqualTo(appUserId)
+    }
+
+    @Test
+    fun `Setting store in the configuration sets it on the Purchases instance`() {
+        val builder = PurchasesConfiguration.Builder(mockContext, "api").store(Store.PLAY_STORE)
+        Purchases.configure(builder.build())
+        assertThat(Purchases.sharedInstance.store).isEqualTo(Store.PLAY_STORE)
     }
 
     // region purchasing
@@ -274,6 +290,14 @@ internal class PurchasesTest : BasePurchasesTest() {
         })
         lock.await(200, TimeUnit.MILLISECONDS)
         assertThat(lock.count).isZero()
+    }
+
+    @Test
+    fun `invalidate customer info clears cache`() {
+        Purchases.sharedInstance.invalidateCustomerInfoCache()
+        verify(exactly = 1) {
+            mockCache.clearCustomerInfoCache(appUserId)
+        }
     }
 
     // endregion
@@ -560,6 +584,289 @@ internal class PurchasesTest : BasePurchasesTest() {
     // region syncPurchases
 
     @Test
+    fun `syncing transactions calls success callback when process completes successfully`() {
+        every {
+            mockSyncPurchasesHelper.syncPurchases(any(), any(), captureLambda(), any())
+        } answers {
+            lambda<(CustomerInfo) -> Unit>().captured.invoke(mockInfo)
+        }
+
+        var successCallCount = 0
+        var receivedCustomerInfo: CustomerInfo? = null
+        purchases.syncPurchasesWith(
+            { fail("Expected to succeed") },
+            {
+                successCallCount++
+                receivedCustomerInfo = it
+            }
+        )
+
+        assertThat(successCallCount).isEqualTo(1)
+        assertThat(receivedCustomerInfo).isEqualTo(mockInfo)
+    }
+
+    @Test
+    fun `syncing transactions calls error callback when process completes with error`() {
+        every {
+            mockSyncPurchasesHelper.syncPurchases(any(), any(), any(), captureLambda())
+        } answers {
+            lambda<(PurchasesError) -> Unit>().captured.invoke(PurchasesError(PurchasesErrorCode.UnknownError))
+        }
+
+        var errorCallCount = 0
+        purchases.syncPurchasesWith(
+            {
+                assertThat(it.code).isEqualTo(PurchasesErrorCode.UnknownError)
+                errorCallCount++
+            },
+            { fail("Expected to error") }
+        )
+
+        assertThat(errorCallCount).isEqualTo(1)
+    }
+
+    @Test
+    fun `syncing an Amazon transaction posts normalized purchase data to backend`() {
+        purchases.finishTransactions = false
+
+        val skuParent = "sub"
+        val skuTerm = "sub.monthly"
+        val purchaseToken = "crazy_purchase_token"
+        val amazonUserID = "amazon_user_id"
+        val price = 10.40
+        val currencyCode = "USD"
+
+        every {
+            mockBillingAbstract.normalizePurchaseData(
+                productID = skuParent,
+                purchaseToken = purchaseToken,
+                storeUserID = amazonUserID,
+                captureLambda(),
+                any()
+            )
+        } answers {
+            lambda<(String) -> Unit>().captured.also {
+                it.invoke(skuTerm)
+            }
+        }
+
+        every {
+            mockCache.getPreviouslySentHashedTokens()
+        } returns setOf()
+
+        purchases.syncObserverModeAmazonPurchase(
+            productID = skuParent,
+            receiptID = purchaseToken,
+            amazonUserID = amazonUserID,
+            price = price,
+            isoCurrencyCode = currencyCode
+        )
+
+        val productInfo = ReceiptInfo(
+            productIDs = listOf(skuTerm),
+            price = price,
+            currency = currencyCode
+        )
+        verify(exactly = 1) {
+            mockPostReceiptHelper.postTokenWithoutConsuming(
+                purchaseToken = purchaseToken,
+                storeUserID = amazonUserID,
+                receiptInfo = productInfo,
+                isRestore = false,
+                appUserID = appUserId,
+                marketplace = null,
+                onSuccess = any(),
+                onError = any()
+            )
+        }
+    }
+
+    @Test
+    fun `Amazon transaction is not synced again if it was already synced`() {
+        purchases.finishTransactions = false
+
+        val skuParent = "sub"
+        val skuTerm = "sub.monthly"
+        val purchaseToken = "crazy_purchase_token"
+        val amazonUserID = "amazon_user_id"
+        val price = 10.40
+        val currencyCode = "USD"
+
+        every {
+            mockCache.getPreviouslySentHashedTokens()
+        } returns emptySet()
+
+        every {
+            mockBillingAbstract.normalizePurchaseData(
+                productID = skuParent,
+                purchaseToken = purchaseToken,
+                storeUserID = amazonUserID,
+                captureLambda(),
+                any()
+            )
+        } answers {
+            lambda<(String) -> Unit>().captured.also {
+                it.invoke(skuTerm)
+            }
+        }
+
+        purchases.syncObserverModeAmazonPurchase(
+            productID = skuParent,
+            receiptID = purchaseToken,
+            amazonUserID = amazonUserID,
+            price = price,
+            isoCurrencyCode = currencyCode
+        )
+
+        val productInfo = ReceiptInfo(
+            productIDs = listOf(skuTerm),
+            price = price,
+            currency = currencyCode
+        )
+        verify(exactly = 1) {
+            mockPostReceiptHelper.postTokenWithoutConsuming(
+                purchaseToken = purchaseToken,
+                storeUserID = amazonUserID,
+                receiptInfo = productInfo,
+                isRestore = false,
+                appUserID = appUserId,
+                marketplace = null,
+                onSuccess = any(),
+                onError = any()
+            )
+        }
+
+        every {
+            mockCache.getPreviouslySentHashedTokens()
+        } returns setOf(purchaseToken.sha1())
+
+        purchases.syncObserverModeAmazonPurchase(
+            productID = skuParent,
+            receiptID = purchaseToken,
+            amazonUserID = amazonUserID,
+            price = price,
+            isoCurrencyCode = currencyCode
+        )
+
+        verify(exactly = 1) {
+            mockPostReceiptHelper.postTokenWithoutConsuming(
+                purchaseToken = purchaseToken,
+                storeUserID = amazonUserID,
+                receiptInfo = productInfo,
+                isRestore = false,
+                appUserID = appUserId,
+                marketplace = null,
+                onSuccess = any(),
+                onError = any()
+            )
+        }
+    }
+
+    @Test
+    fun `syncing an Amazon transaction without price nor currency code posts purchase data to backend`() {
+        purchases.finishTransactions = false
+
+        val skuParent = "sub"
+        val skuTerm = "sub.monthly"
+        val purchaseToken = "crazy_purchase_token"
+        val amazonUserID = "amazon_user_id"
+
+        every {
+            mockBillingAbstract.normalizePurchaseData(
+                productID = skuParent,
+                purchaseToken = purchaseToken,
+                storeUserID = amazonUserID,
+                captureLambda(),
+                any()
+            )
+        } answers {
+            lambda<(String) -> Unit>().captured.also {
+                it.invoke(skuTerm)
+            }
+        }
+
+        every {
+            mockCache.getPreviouslySentHashedTokens()
+        } returns setOf()
+
+        purchases.syncObserverModeAmazonPurchase(
+            productID = skuParent,
+            receiptID = purchaseToken,
+            amazonUserID = amazonUserID,
+            price = null,
+            isoCurrencyCode = null
+        )
+
+        val productInfo = ReceiptInfo(productIDs = listOf(skuTerm))
+        verify(exactly = 1) {
+            mockPostReceiptHelper.postTokenWithoutConsuming(
+                purchaseToken = purchaseToken,
+                storeUserID = amazonUserID,
+                receiptInfo = productInfo,
+                isRestore = false,
+                appUserID = appUserId,
+                marketplace = null,
+                onSuccess = any(),
+                onError = any()
+            )
+        }
+    }
+
+    @Test
+    fun `syncing an Amazon transaction with zero price posts correct purchase data to backend`() {
+        purchases.finishTransactions = false
+
+        val skuParent = "sub"
+        val skuTerm = "sub.monthly"
+        val purchaseToken = "crazy_purchase_token"
+        val amazonUserID = "amazon_user_id"
+
+        every {
+            mockBillingAbstract.normalizePurchaseData(
+                productID = skuParent,
+                purchaseToken = purchaseToken,
+                storeUserID = amazonUserID,
+                captureLambda(),
+                any()
+            )
+        } answers {
+            lambda<(String) -> Unit>().captured.also {
+                it.invoke(skuTerm)
+            }
+        }
+
+        every {
+            mockCache.getPreviouslySentHashedTokens()
+        } returns setOf()
+
+        purchases.syncObserverModeAmazonPurchase(
+            productID = skuParent,
+            receiptID = purchaseToken,
+            amazonUserID = amazonUserID,
+            price = 0.0,
+            isoCurrencyCode = null
+        )
+
+        val productInfo = ReceiptInfo(
+            productIDs = listOf(skuTerm),
+            currency = null,
+            price = null
+        )
+        verify(exactly = 1) {
+            mockPostReceiptHelper.postTokenWithoutConsuming(
+                purchaseToken = purchaseToken,
+                storeUserID = amazonUserID,
+                receiptInfo = productInfo,
+                isRestore = false,
+                appUserID = appUserId,
+                marketplace = null,
+                onSuccess = any(),
+                onError = any()
+            )
+        }
+    }
+
+    @Test
     fun `syncing transactions calls helper with correct parameters`() {
         val allowSharingAccount = true
         val appInBackground = true
@@ -701,6 +1008,173 @@ internal class PurchasesTest : BasePurchasesTest() {
 
     // endregion
 
+    // region restore purchases
+
+    @Test
+    fun restoringPurchasesGetsHistory() {
+        var capturedLambda: ((List<StoreTransaction>) -> Unit)? = null
+        every {
+            mockBillingAbstract.queryAllPurchases(
+                appUserId,
+                captureLambda(),
+                any()
+            )
+        } answers {
+            capturedLambda = lambda<(List<StoreTransaction>) -> Unit>().captured.also {
+                it.invoke(listOf(mockk(relaxed = true)))
+            }
+        }
+
+        purchases.restorePurchasesWith { }
+
+        assertThat(capturedLambda).isNotNull
+        verify {
+            mockBillingAbstract.queryAllPurchases(
+                appUserId,
+                any(),
+                any()
+            )
+        }
+    }
+
+    @Test
+    fun historicalPurchasesPassedToBackend() {
+        var capturedLambda: ((List<StoreTransaction>) -> Unit)? = null
+        val inAppTransactions = getMockedPurchaseHistoryList(inAppProductId, inAppPurchaseToken, ProductType.INAPP)
+        val subTransactions = getMockedPurchaseHistoryList(subProductId, subPurchaseToken, ProductType.SUBS)
+
+        every {
+            mockBillingAbstract.queryAllPurchases(
+                appUserId,
+                captureLambda(),
+                any()
+            )
+        } answers {
+            capturedLambda = lambda<(List<StoreTransaction>) -> Unit>().captured
+            capturedLambda?.invoke(inAppTransactions + subTransactions)
+        }
+
+        var restoreCalled = false
+        purchases.restorePurchasesWith(onSuccess = {
+            restoreCalled = true
+        }, onError = {
+            fail("Should not be an error")
+        })
+        assertThat(capturedLambda).isNotNull
+        assertThat(restoreCalled).isTrue()
+
+        verifyAll {
+            mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(
+                purchase = inAppTransactions[0],
+                storeProduct = null,
+                isRestore = true,
+                appUserID = appUserId,
+                onSuccess = any(),
+                onError = any()
+            )
+            mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(
+                purchase = subTransactions[0],
+                storeProduct = null,
+                isRestore = true,
+                appUserID = appUserId,
+                onSuccess = any(),
+                onError = any()
+            )
+        }
+    }
+
+    @Test
+    fun failedToRestorePurchases() {
+        val purchasesError = PurchasesError(PurchasesErrorCode.StoreProblemError, "Broken")
+        every {
+            mockBillingAbstract.queryAllPurchases(appUserId, any(), captureLambda())
+        } answers {
+            lambda<(PurchasesError) -> Unit>().captured.invoke(purchasesError)
+        }
+
+        var onErrorCalled = false
+        purchases.restorePurchasesWith(onSuccess = {
+            fail("should be an error")
+        }, onError = { error ->
+            onErrorCalled = true
+            assertThat(error).isEqualTo(purchasesError)
+        })
+
+        assertThat(onErrorCalled).isTrue()
+    }
+
+    @Test
+    fun restoringCallsRestoreCallback() {
+        val productId = "onemonth_freetrial"
+        val purchaseToken = "crazy_purchase_token"
+        val productIdSub = "onemonth_freetrial_sub"
+        val purchaseTokenSub = "crazy_purchase_token_sub"
+
+        var capturedLambda: ((List<StoreTransaction>) -> Unit)? = null
+        every {
+            mockBillingAbstract.queryAllPurchases(
+                appUserId,
+                captureLambda(),
+                any()
+            )
+        } answers {
+            capturedLambda = lambda<(List<StoreTransaction>) -> Unit>().captured.also {
+                it.invoke(
+                    getMockedPurchaseHistoryList(productId, purchaseToken, ProductType.INAPP) +
+                        getMockedPurchaseHistoryList(productIdSub, purchaseTokenSub, ProductType.SUBS)
+                )
+            }
+        }
+
+        val mockInfo = CustomerInfoFactory.buildCustomerInfo(
+            JSONObject(Responses.validFullPurchaserResponse),
+            null,
+            VerificationResult.NOT_REQUESTED
+        )
+        every {
+            mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(any(), any(), any(), any(), captureLambda(), any())
+        } answers {
+            lambda<SuccessfulPurchaseCallback>().captured.invoke(firstArg(), mockInfo)
+        }
+
+        var callbackCalled = false
+        purchases.restorePurchasesWith(onSuccess = { info ->
+            assertThat(mockInfo).isEqualTo(info)
+            callbackCalled = true
+        }, onError = {
+            fail("should be success")
+        })
+
+        assertThat(capturedLambda).isNotNull
+        verify(exactly = 1) {
+            mockBillingAbstract.queryAllPurchases(appUserId, any(), any())
+        }
+
+        assertThat(callbackCalled).isTrue()
+    }
+
+    @Test
+    fun whenNoTokensRestoringPurchasesStillCallListener() {
+        every {
+            mockBillingAbstract.queryAllPurchases(
+                appUserId,
+                captureLambda(),
+                any()
+            )
+        } answers {
+            lambda<(List<Purchase>) -> Unit>().captured.invoke(emptyList())
+        }
+
+        val mockCompletion = mockk<ReceiveCustomerInfoCallback>(relaxed = true)
+        purchases.restorePurchases(mockCompletion)
+
+        verify {
+            mockCompletion.onReceived(any())
+        }
+    }
+
+    // endregion
+
     // region Private Methods
 
     private fun getMockedPurchaseList(
@@ -726,6 +1200,16 @@ internal class PurchasesTest : BasePurchasesTest() {
                 if (productType == ProductType.SUBS) subscriptionOptionId else null,
             ),
         )
+    }
+
+    private fun getMockedPurchaseHistoryList(
+        productId: String,
+        purchaseToken: String,
+        productType: ProductType
+    ): List<StoreTransaction> {
+        val purchaseHistoryRecordWrapper =
+            getMockedStoreTransaction(productId, purchaseToken, productType)
+        return listOf(purchaseHistoryRecordWrapper)
     }
 
     private fun mockQueryingProductDetails(

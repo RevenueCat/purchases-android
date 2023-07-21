@@ -118,48 +118,6 @@ fun Purchases.purchaseWith(
 }
 
 /**
- * Restores purchases made with the current Play Store account for the current user.
- * This method will post all purchases associated with the current Play Store account to
- * RevenueCat and become associated with the current `appUserID`. If the receipt token is being
- * used by an existing user, the current `appUserID` will be aliased together with the
- * `appUserID` of the existing user. Going forward, either `appUserID` will be able to reference
- * the same user.
- *
- * You shouldn't use this method if you have your own account system. In that case
- * "restoration" is provided by your app passing the same `appUserId` used to purchase originally.
- * @param [onSuccess] Will be called after the call has completed.
- * @param [onError] Will be called after the call has completed with an error.
- */
-fun Purchases.restorePurchasesWith(
-    onError: (error: PurchasesError) -> Unit = ON_ERROR_STUB,
-    onSuccess: (customerInfo: CustomerInfo) -> Unit,
-) {
-    restorePurchases(receiveCustomerInfoCallback(onSuccess, onError))
-}
-
-/**
- * This method will send all the purchases to the RevenueCat backend. Call this when using your own implementation
- * for subscriptions anytime a sync is needed, such as when migrating existing users to RevenueCat. The
- * [onSuccess] callback will be called if all purchases have been synced successfully or
- * there are no purchases. Otherwise, the [onError] callback will be called with a
- * [PurchasesError] indicating the first error found.
- *
- * @param [onError] Called when there was an error syncing one or more of the purchases. Will return the first error
- * found syncing the purchases.
- * @param [onSuccess] Called when all purchases have been successfully synced with the backend or if no purchases are
- * present.
- * @warning This function should only be called if you're migrating to RevenueCat or in observer mode.
- * @warning This function could take a relatively long time to execute, depending on the amount of purchases
- * the user has. Consider that when waiting for this operation to complete.
- */
-fun Purchases.syncPurchasesWith(
-    onError: (error: PurchasesError) -> Unit = ON_ERROR_STUB,
-    onSuccess: (CustomerInfo) -> Unit,
-) {
-    syncPurchases(syncPurchasesListener(onSuccess, onError))
-}
-
-/**
  * Gets the StoreProduct(s) for the given list of product ids for all product types.
  * @param [productIds] List of productIds
  * @param [onError] Will be called if there was an error with the purchase
