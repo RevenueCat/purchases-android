@@ -16,27 +16,27 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.sample.ui.theme.CustomEntitlementComputationTheme
 import org.json.JSONObject
 import java.util.Date
 
 data class CustomerInfoEvent(
     val date: Date,
-    val appUserID: String,
-    val jsonObject: JSONObject
+    val customerInfo: CustomerInfo,
 )
 
 @Composable
-fun EventList(events: List<CustomerInfoEvent>, onEventClicked: (CustomerInfoEvent) -> Unit) {
+fun CustomerInfoEventsList(events: List<CustomerInfoEvent>, onEventClicked: (CustomerInfoEvent) -> Unit) {
     LazyColumn {
         items(events) { event ->
-            EventListItem(event = event, onEventClicked = onEventClicked)
+            CustomerInfoEventsListItem(event = event, onEventClicked = onEventClicked)
         }
     }
 }
 
 @Composable
-fun EventListItem(event: CustomerInfoEvent, onEventClicked: (CustomerInfoEvent) -> Unit) {
+fun CustomerInfoEventsListItem(event: CustomerInfoEvent, onEventClicked: (CustomerInfoEvent) -> Unit) {
     Column(
         modifier = Modifier
             .clickable { onEventClicked(event) }
@@ -56,25 +56,8 @@ fun EventListItem(event: CustomerInfoEvent, onEventClicked: (CustomerInfoEvent) 
                 withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
                     append("App User ID: ")
                 }
-                append(event.appUserID)
+                append(event.customerInfo.originalAppUserId)
             }
         )
-    }
-}
-
-@Preview
-@Composable
-fun EventListItemPreview() {
-    CustomEntitlementComputationTheme {
-        Surface(color = Color.White) {
-            EventListItem(
-                event = CustomerInfoEvent(
-                    date = Date(),
-                    appUserID = "appUserID",
-                    jsonObject = JSONObject()
-                ),
-                onEventClicked = {}
-            )
-        }
     }
 }

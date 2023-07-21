@@ -1,5 +1,6 @@
 package com.revenuecat.sample.main
 
+import CustomerInfoEvent
 import android.app.Activity
 import android.util.Log
 import androidx.lifecycle.ViewModel
@@ -21,10 +22,11 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.util.Date
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 class MainViewModel : ViewModel() {
-    private val previewMode = true
+    private val previewMode = false // change this to true to be able to preview in Android Studio
 
     private val _uiState: MutableStateFlow<MainState> = MutableStateFlow(
         MainState(),
@@ -39,7 +41,6 @@ class MainViewModel : ViewModel() {
                 }
             viewModelScope.launch {
                 getOfferings()
-
             }
         }
     }
@@ -94,7 +95,11 @@ class MainViewModel : ViewModel() {
         _uiState.update {
             it.copy(
                 currentCustomerInfo = customerInfo,
-                currentAppUserID = Purchases.sharedInstance.appUserID
+                currentAppUserID = Purchases.sharedInstance.appUserID,
+                customerInfoList = it.customerInfoList + CustomerInfoEvent(
+                    customerInfo = customerInfo,
+                    date = Date()
+                )
             )
         }
     }

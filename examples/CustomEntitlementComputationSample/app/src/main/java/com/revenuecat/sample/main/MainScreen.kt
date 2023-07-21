@@ -1,5 +1,8 @@
 package com.revenuecat.sample.main
 
+import CustomerInfoDetailScreen
+import CustomerInfoEvent
+import CustomerInfoEventsList
 import ExplanationScreen
 import android.app.Activity
 import android.widget.Toast
@@ -26,6 +29,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -45,14 +49,36 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 import com.revenuecat.purchases.Package
 import com.revenuecat.sample.ui.theme.CustomEntitlementComputationTheme
 import com.revenuecat.sample.utils.findActivity
 
 @Composable
-fun MainScreen() {
+fun MainScreenNavigation() {
     val viewModel: MainViewModel = viewModel()
     val uiState = viewModel.uiState.collectAsState()
+
+    val navController = rememberNavController()
+    NavHost(navController, startDestination = "main") {
+        composable("main") { MainScreen(navController = navController) }
+        composable("customerInfoDetails/{date}") { backStackEntry ->
+            CustomerInfoDetailScreen(event = uiState.value.customerInfoList.find {
+                it.date.toString() == backStackEntry.arguments?.getString("date")
+            }!!)
+        }
+    }
+}
+
+@Composable
+fun MainScreen(
+    navController: NavController,
+    viewModel: MainViewModel = viewModel(),
+    uiState: State<MainState> = viewModel.uiState.collectAsState()
+) {
 
     if (uiState.value.shouldShowSwitchingUserDialog) {
         Dialog(onDismissRequest = { viewModel.resetSwitchUserProcess() }) {
@@ -149,28 +175,34 @@ fun MainScreen() {
                         viewModel.purchasePackage(activity, packageToPurchase)
                     }
                 }
-                Column(
-                    modifier = Modifier
-                        .weight(1f, true)
-                        .verticalScroll(rememberScrollState())
-                        .padding(32.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center,
+                Box(
+                    contentAlignment = Alignment.TopStart,
                 ) {
-                    Box(
-                        contentAlignment = Alignment.TopStart,
-                    ) {
+                    Column {
+
                         Text(
-                            text = uiState.value.currentCustomerInfo?.rawData?.toString(4)
-                                ?: "CustomerInfo delegate values",
+                            text = "CustomerInfo delegate values",
                             fontSize = 16.sp,
                             color = Color.Black,
                             textAlign = TextAlign.Center,
                             fontWeight = FontWeight.Bold,
                         )
+                        Text(
+                            text = "List fills in below when new values arrive",
+                            fontSize = 14.sp,
+                            color = Color.Black,
+                            textAlign = TextAlign.Center,
+                        )
                     }
                 }
             }
+
+            CustomerInfoEventsList(
+                uiState.value.customerInfoList,
+                onEventClicked = { customerInfoEvent ->
+                    navController.navigate("customerInfoDetails/${customerInfoEvent.date}")
+                },
+            )
         }
     }
 }
@@ -236,6 +268,11 @@ private fun PackageButton(
 @Composable
 fun MainScreenPreview() {
     CustomEntitlementComputationTheme {
-        MainScreen()
+        val navController = rememberNavController()
+        NavHost(navController, startDestination = "main") {
+            composable("main") {
+                MainScreen(navController = navController)
+            }
+        }
     }
 }
