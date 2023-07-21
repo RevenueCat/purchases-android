@@ -1,11 +1,9 @@
 package com.revenuecat.purchases
 
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
-import com.revenuecat.purchases.interfaces.ProductChangeCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback
-import com.revenuecat.purchases.interfaces.SyncPurchasesCallback
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 
@@ -18,19 +16,6 @@ internal fun purchaseCompletedCallback(
 ) = object : PurchaseCallback {
     override fun onCompleted(storeTransaction: StoreTransaction, customerInfo: CustomerInfo) {
         onSuccess(storeTransaction, customerInfo)
-    }
-
-    override fun onError(error: PurchasesError, userCancelled: Boolean) {
-        onError(error, userCancelled)
-    }
-}
-
-internal fun productChangeCompletedListener(
-    onSuccess: (purchase: StoreTransaction?, customerInfo: CustomerInfo) -> Unit,
-    onError: (error: PurchasesError, userCancelled: Boolean) -> Unit,
-) = object : ProductChangeCallback {
-    override fun onCompleted(purchase: StoreTransaction?, customerInfo: CustomerInfo) {
-        onSuccess(purchase, customerInfo)
     }
 
     override fun onError(error: PurchasesError, userCancelled: Boolean) {
@@ -74,19 +59,6 @@ internal fun receiveCustomerInfoCallback(
 
     override fun onError(error: PurchasesError) {
         onError?.invoke(error)
-    }
-}
-
-internal fun syncPurchasesListener(
-    onSuccess: (CustomerInfo) -> Unit,
-    onError: (error: PurchasesError) -> Unit,
-) = object : SyncPurchasesCallback {
-    override fun onSuccess(customerInfo: CustomerInfo) {
-        onSuccess(customerInfo)
-    }
-
-    override fun onError(error: PurchasesError) {
-        onError(error)
     }
 }
 

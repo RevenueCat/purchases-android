@@ -2,6 +2,9 @@ package com.revenuecat.purchases
 
 import android.app.Activity
 import com.revenuecat.purchases.interfaces.LogInCallback
+import com.revenuecat.purchases.interfaces.ProductChangeCallback
+import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
+import com.revenuecat.purchases.interfaces.SyncPurchasesCallback
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.SubscriptionOption
@@ -16,6 +19,32 @@ internal fun logInSuccessListener(
 
     override fun onError(error: PurchasesError) {
         onError?.invoke(error)
+    }
+}
+
+internal fun productChangeCompletedListener(
+    onSuccess: (purchase: StoreTransaction?, customerInfo: CustomerInfo) -> Unit,
+    onError: (error: PurchasesError, userCancelled: Boolean) -> Unit,
+) = object : ProductChangeCallback {
+    override fun onCompleted(purchase: StoreTransaction?, customerInfo: CustomerInfo) {
+        onSuccess(purchase, customerInfo)
+    }
+
+    override fun onError(error: PurchasesError, userCancelled: Boolean) {
+        onError(error, userCancelled)
+    }
+}
+
+internal fun syncPurchasesListener(
+    onSuccess: (CustomerInfo) -> Unit,
+    onError: (error: PurchasesError) -> Unit,
+) = object : SyncPurchasesCallback {
+    override fun onSuccess(customerInfo: CustomerInfo) {
+        onSuccess(customerInfo)
+    }
+
+    override fun onError(error: PurchasesError) {
+        onError(error)
     }
 }
 
