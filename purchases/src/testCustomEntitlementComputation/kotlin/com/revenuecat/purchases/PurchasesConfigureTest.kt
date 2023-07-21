@@ -32,25 +32,4 @@ internal class PurchasesConfigureTest : BasePurchasesTest() {
         Purchases.configure(PurchasesConfiguration.Builder(mockContext, "api", "appUserId").build())
         assertThat(Purchases.sharedInstance.purchasesOrchestrator.appConfig.baseURL).isEqualTo(expected)
     }
-
-    @Test
-    fun `Setting observer mode on sets finish transactions to false`() {
-        val builder = PurchasesConfiguration.Builder(mockContext, "api", "appUserId").observerMode(true)
-        Purchases.configure(builder.build())
-        assertThat(Purchases.sharedInstance.purchasesOrchestrator.appConfig.finishTransactions).isFalse
-    }
-
-    @Test
-    fun `Setting observer mode off sets finish transactions to true`() {
-        val builder = PurchasesConfiguration.Builder(mockContext, "api", "appUserId").observerMode(false)
-        Purchases.configure(builder.build())
-        assertThat(Purchases.sharedInstance.purchasesOrchestrator.appConfig.finishTransactions).isTrue
-    }
-
-    @Test
-    fun `Setting store in the configuration sets it on the Purchases instance`() {
-        val builder = PurchasesConfiguration.Builder(mockContext, "api", "appUserId").store(Store.PLAY_STORE)
-        Purchases.configure(builder.build())
-        assertThat(Purchases.sharedInstance.store).isEqualTo(Store.PLAY_STORE)
-    }
 }

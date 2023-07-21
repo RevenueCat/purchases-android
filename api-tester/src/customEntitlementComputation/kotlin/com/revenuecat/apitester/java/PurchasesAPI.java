@@ -14,10 +14,7 @@ final class PurchasesAPI {
     static void checkConfiguration(final Context context,
                                    final ExecutorService executorService) {
         PurchasesConfiguration build = new PurchasesConfiguration.Builder(context, "", "")
-                .observerMode(true)
-                .observerMode(false)
                 .service(executorService)
-                .diagnosticsEnabled(true)
                 .entitlementVerificationMode(EntitlementVerificationMode.INFORMATIONAL)
                 .build();
 

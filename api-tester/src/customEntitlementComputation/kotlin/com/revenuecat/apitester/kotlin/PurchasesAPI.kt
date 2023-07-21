@@ -16,10 +16,7 @@ private class PurchasesAPI {
         val configured: Boolean = Purchases.isConfigured
 
         val build = PurchasesConfiguration.Builder(context, apiKey = "", appUserID = "")
-            .observerMode(true)
-            .observerMode(false)
             .service(executorService)
-            .diagnosticsEnabled(true)
             .entitlementVerificationMode(EntitlementVerificationMode.INFORMATIONAL)
             .build()
 

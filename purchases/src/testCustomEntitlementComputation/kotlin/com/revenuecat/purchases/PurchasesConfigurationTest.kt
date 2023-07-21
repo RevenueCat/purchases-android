@@ -42,28 +42,10 @@ class PurchasesConfigurationTest {
     }
 
     @Test
-    fun `PurchasesConfiguration sets observerMode correctly`() {
-        val purchasesConfiguration = builder.observerMode(true).build()
-        assertThat(purchasesConfiguration.observerMode).isTrue
-    }
-
-    @Test
     fun `PurchasesConfiguration sets service correctly`() {
         val serviceMock: ExecutorService = mockk()
         val purchasesConfiguration = builder.service(serviceMock).build()
         assertThat(purchasesConfiguration.service).isEqualTo(serviceMock)
-    }
-
-    @Test
-    fun `PurchasesConfiguration sets store correctly`() {
-        val purchasesConfiguration = builder.store(Store.AMAZON).build()
-        assertThat(purchasesConfiguration.store).isEqualTo(Store.AMAZON)
-    }
-
-    @Test
-    fun `PurchasesConfiguration sets diagnosticsEnabled correctly`() {
-        val purchasesConfiguration = builder.diagnosticsEnabled(true).build()
-        assertThat(purchasesConfiguration.diagnosticsEnabled).isTrue
     }
 
     @Test

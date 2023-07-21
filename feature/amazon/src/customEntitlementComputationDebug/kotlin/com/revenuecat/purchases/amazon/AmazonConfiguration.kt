@@ -2,7 +2,6 @@ package com.revenuecat.purchases.amazon
 
 import android.content.Context
 import com.revenuecat.purchases.PurchasesConfiguration
-import com.revenuecat.purchases.Store
 
 class AmazonConfiguration(builder: Builder) : PurchasesConfiguration(builder) {
 
@@ -13,7 +12,7 @@ class AmazonConfiguration(builder: Builder) : PurchasesConfiguration(builder) {
     ) : PurchasesConfiguration.Builder(context, apiKey, appUserId) {
 
         init {
-            this.store(Store.AMAZON)
+            error("AmazonConfiguration is not currently supported in the custom entitlement computation package.")
         }
     }
 }

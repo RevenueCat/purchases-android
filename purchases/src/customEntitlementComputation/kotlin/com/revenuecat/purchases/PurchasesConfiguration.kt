@@ -10,8 +10,8 @@ open class PurchasesConfiguration(builder: Builder) {
     val appUserID: String
     val observerMode: Boolean
     val service: ExecutorService?
-    val store: Store
-    val diagnosticsEnabled: Boolean
+    internal val store: Store
+    internal val diagnosticsEnabled: Boolean
     val dangerousSettings: DangerousSettings
     val verificationMode: EntitlementVerificationMode
 
@@ -50,26 +50,8 @@ open class PurchasesConfiguration(builder: Builder) {
         @set:JvmSynthetic @get:JvmSynthetic
         internal var dangerousSettings: DangerousSettings = DangerousSettings(customEntitlementComputation = true)
 
-        fun observerMode(observerMode: Boolean) = apply {
-            this.observerMode = observerMode
-        }
-
         fun service(service: ExecutorService) = apply {
             this.service = service
-        }
-
-        fun store(store: Store) = apply {
-            this.store = store
-        }
-
-        /**
-         * Enabling diagnostics will send some performance and debugging information from the SDK to our servers.
-         * Examples of this information include response times, cache hits or error codes.
-         * This information will be anonymized so it can't be traced back to the end-user.
-         * The default value is false.
-         */
-        fun diagnosticsEnabled(diagnosticsEnabled: Boolean) = apply {
-            this.diagnosticsEnabled = diagnosticsEnabled
         }
 
         /**
