@@ -15,6 +15,16 @@ android {
         buildConfig true
     }
 
+    flavorDimensions "apis"
+    productFlavors {
+        defaults {
+            dimension "apis"
+        }
+        customEntitlementComputation {
+            dimension "apis"
+        }
+    }
+
     defaultConfig {
         testApplicationId obtainTestApplicationId()
         testBuildType obtainTestBuildType()
