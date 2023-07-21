@@ -15,8 +15,6 @@ import com.revenuecat.purchases.PurchasesTransactionException
 import com.revenuecat.purchases.awaitOfferings
 import com.revenuecat.purchases.awaitPurchase
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
-import com.revenuecat.purchases.purchaseWith
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow

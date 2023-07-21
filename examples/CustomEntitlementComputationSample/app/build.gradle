@@ -28,18 +28,6 @@ android {
         }
     }
 
-    flavorDimensions "store"
-    productFlavors {
-        google {
-            dimension "store"
-            buildConfigField "String", "STORE", "\"google\""
-        }
-        amazon {
-            dimension "store"
-            buildConfigField "String", "STORE", "\"amazon\""
-        }
-    }
-
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
@@ -76,5 +64,4 @@ dependencies {
     debugImplementation libs.compose.ui.tooling
     debugImplementation libs.compose.ui.test.manifest
     implementation libs.revenuecat
-    implementation libs.revenuecat.amazon
 }
