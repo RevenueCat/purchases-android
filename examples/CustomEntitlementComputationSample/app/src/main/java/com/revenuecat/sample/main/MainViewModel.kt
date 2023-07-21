@@ -24,6 +24,7 @@ import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 class MainViewModel : ViewModel() {
+    private val previewMode = true
 
     private val _uiState: MutableStateFlow<MainState> = MutableStateFlow(
         MainState(),
@@ -31,12 +32,15 @@ class MainViewModel : ViewModel() {
     val uiState: StateFlow<MainState> = _uiState.asStateFlow()
 
     init {
-        Purchases.sharedInstance.updatedCustomerInfoListener =
-            UpdatedCustomerInfoListener { customerInfo ->
-                updateCustomerInfoInformation(customerInfo)
+        if (!previewMode) {
+            Purchases.sharedInstance.updatedCustomerInfoListener =
+                UpdatedCustomerInfoListener { customerInfo ->
+                    updateCustomerInfoInformation(customerInfo)
+                }
+            viewModelScope.launch {
+                getOfferings()
+
             }
-        viewModelScope.launch {
-            getOfferings()
         }
     }
 
@@ -72,7 +76,7 @@ class MainViewModel : ViewModel() {
                 val (transaction, customerInfo) =
                     Purchases.sharedInstance.awaitPurchase(purchaseParams)
                 val logMessage = "Purchase finished:\nTransaction: $transaction\n" +
-                        "CustomerInfo: $customerInfo"
+                    "CustomerInfo: $customerInfo"
                 Log.d("Purchase", logMessage)
             } catch (error: PurchasesTransactionException) {
                 if (error.userCancelled) {

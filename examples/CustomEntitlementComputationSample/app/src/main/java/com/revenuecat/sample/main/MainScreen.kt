@@ -12,10 +12,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.TopAppBar
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -32,13 +34,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.revenuecat.purchases.Package
+import com.revenuecat.sample.ui.theme.CustomEntitlementComputationTheme
 import com.revenuecat.sample.utils.findActivity
 
 @Composable
@@ -85,6 +92,39 @@ fun MainScreen() {
                 verticalArrangement = Arrangement.Center,
             ) {
                 Button(
+                    onClick = { /*TODO*/ },
+                    modifier = Modifier.wrapContentSize(),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color.Transparent,
+                        contentColor = Color.Black
+                    ),
+                ) {
+                    Column {
+                        Text(
+                            text = "This app uses RevenueCat under CustomEntitlementsComputation mode.",
+                            modifier = Modifier
+                                .padding(16.dp),
+                            textAlign = TextAlign.Center,
+                        )
+
+                        Text(
+                            text = "Tap here for more details about this mode.",
+                            modifier = Modifier
+                                .padding(16.dp),
+                            textAlign = TextAlign.Center,
+                            fontWeight = FontWeight.Bold,
+                        )
+                    }
+                }
+
+                Text(text = buildAnnotatedString {
+                    withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
+                        append("Current App User ID: ")
+                    }
+                    append("test app user id")
+                })
+
+                Button(
                     onClick = { viewModel.initiateSwitchUserProcess() },
                     modifier = Modifier
                         .fillMaxWidth()
@@ -113,10 +153,11 @@ fun MainScreen() {
                     ) {
                         Text(
                             text = uiState.value.currentCustomerInfo?.rawData?.toString(4)
-                                ?: "Customer information will be displayed here",
+                                ?: "CustomerInfo delegate values",
                             fontSize = 16.sp,
                             color = Color.Black,
-                            textAlign = TextAlign.Start,
+                            textAlign = TextAlign.Center,
+                            fontWeight = FontWeight.Bold,
                         )
                     }
                 }
@@ -179,5 +220,13 @@ private fun PackageButton(
             .padding(vertical = 4.dp, horizontal = 32.dp),
     ) {
         Text(text = text, color = Color.White)
+    }
+}
+
+@Preview
+@Composable
+fun MainScreenPreview() {
+    CustomEntitlementComputationTheme {
+        MainScreen()
     }
 }
