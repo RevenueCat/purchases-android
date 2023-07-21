@@ -21,6 +21,7 @@ import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesTransactionException
 import com.revenuecat.purchases.awaitPurchase
+import com.revenuecat.purchases.getCustomerInfoWith
 import com.revenuecat.purchases.getOfferingsWith
 import com.revenuecat.purchases.models.GoogleProrationMode
 import com.revenuecat.purchases.models.GooglePurchasingData
@@ -29,8 +30,6 @@ import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases_sample.R
 import com.revenuecat.purchases_sample.databinding.FragmentOfferingBinding
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
@@ -44,7 +43,6 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
     private val args: OfferingFragmentArgs by navArgs()
     private val offeringId: String by lazy { args.offeringId }
     private var activeSubscriptions: Set<String> = setOf()
-    private val scope = CoroutineScope(Dispatchers.Main)
 
     private lateinit var dataStoreUtils: DataStoreUtils
     private var isPlayStore: Boolean = true
@@ -59,6 +57,10 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
+        Purchases.sharedInstance.getCustomerInfoWith {
+            activeSubscriptions = it.activeSubscriptions
+        }
+
         dataStoreUtils = DataStoreUtils(requireActivity().applicationContext.configurationDataStore)
         binding = FragmentOfferingBinding.inflate(inflater)
 
@@ -161,17 +163,22 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
     }
 
     private fun purchase(params: PurchaseParams) {
-        scope.launch {
+        lifecycleScope.launch {
             try {
                 val (storeTransaction, _) = Purchases.sharedInstance.awaitPurchase(params)
                 toggleLoadingIndicator(false)
                 handleSuccessfulPurchase(storeTransaction.orderId)
             } catch (exception: PurchasesTransactionException) {
                 toggleLoadingIndicator(false)
-                showUserError(
-                    requireActivity(),
-                    PurchasesError(underlyingErrorMessage = exception.underlyingErrorMessage, code = exception.code),
-                )
+                if (!exception.userCancelled) {
+                    showUserError(
+                        requireActivity(),
+                        PurchasesError(
+                            underlyingErrorMessage = exception.underlyingErrorMessage,
+                            code = exception.code,
+                        ),
+                    )
+                }
             }
         }
     }

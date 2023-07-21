@@ -6,21 +6,6 @@ import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
 
 /**
- * The result of a successful purchase operation. Used in coroutines.
- */
-data class PurchaseResult(
-    /**
-     * The [StoreTransaction] for this purchase.
-     */
-    val storeTransaction: StoreTransaction,
-
-    /**
-     * The updated [CustomerInfo] for this user after the purchase has been synced with RevenueCat's servers.
-     */
-    val customerInfo: CustomerInfo,
-)
-
-/**
  * Fetch the configured offerings for this users. Offerings allows you to configure your in-app
  * products via RevenueCat and greatly simplifies management. See
  * [the guide](https://docs.revenuecat.com/offerings) for more info.
