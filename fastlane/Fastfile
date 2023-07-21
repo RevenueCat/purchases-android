@@ -100,7 +100,8 @@ platform :android do
       properties: gradleProperties
     )
 
-    UI.verbose("Creating special version for custom entitlements computation")
+    UI.verbose("Deploying Custom Entitlements Computation version")
+
     gradleProperties["ANDROID_VARIANT_TO_PUBLISH"] = "customEntitlementComputationRelease"
     gradleProperties["POM_ARTIFACT_ID"] = "purchases-custom-entitlement-computation"
 
