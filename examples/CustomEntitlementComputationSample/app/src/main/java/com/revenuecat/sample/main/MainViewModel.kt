@@ -10,9 +10,12 @@ import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PurchaseParams
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesException
+import com.revenuecat.purchases.PurchasesTransactionException
 import com.revenuecat.purchases.awaitOfferings
+import com.revenuecat.purchases.awaitPurchase
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import com.revenuecat.purchases.purchaseWith
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -63,26 +66,23 @@ class MainViewModel : ViewModel() {
     }
 
     fun purchasePackage(activity: Activity, aPackage: Package) {
-        // TODO: use coroutine
-        Purchases.sharedInstance.purchaseWith(
-            PurchaseParams.Builder(activity, aPackage).build(),
-            onError = { error, userCancelled ->
-                if (userCancelled) {
+        viewModelScope.launch {
+            val purchaseParams = PurchaseParams.Builder(activity, aPackage).build()
+            try {
+                val (transaction, customerInfo) =
+                    Purchases.sharedInstance.awaitPurchase(purchaseParams)
+                val logMessage = "Purchase finished:\nTransaction: $transaction\n" +
+                        "CustomerInfo: $customerInfo"
+                Log.d("Purchase", logMessage)
+            } catch (error: PurchasesTransactionException) {
+                if (error.userCancelled) {
                     _uiState.update { it.copy(displayErrorMessage = "User cancelled") }
                 } else {
                     _uiState.update { it.copy(displayErrorMessage = error.message) }
                 }
-            },
-            onSuccess = { transaction, customerInfo ->
-                """
-                Purchase finished:
-                Transaction: $transaction
-                CustomerInfo: $customerInfo
-                """.trimIndent().also {
-                    Log.d("Purchase", it)
-                }
-            },
-        )
+            }
+
+        }
     }
 
     private fun updateCustomerInfoInformation(customerInfo: CustomerInfo) {
