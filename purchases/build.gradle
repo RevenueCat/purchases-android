@@ -92,7 +92,30 @@ dependencies {
 
 tasks.dokkaHtmlPartial.configure {
     dokkaSourceSets {
-        configureEach {
+        named("customEntitlementComputation") {
+            suppress.set(true)
+        }
+        named("defaults") {
+            dependsOn("main")
+            reportUndocumented.set(true)
+            includeNonPublic.set(false)
+            skipDeprecated.set(true)
+
+            externalDocumentationLink {
+                url.set(uri("https://developer.android.com/reference/package-list").toURL())
+            }
+            sourceLink {
+                localDirectory.set(file("src/main/kotlin"))
+                remoteUrl.set(uri("https://github.com/revenuecat/purchases-android/blob/main/purchases/src/main/kotlin").toURL())
+                remoteLineSuffix.set("#L")
+            }
+            sourceLink {
+                localDirectory.set(file("src/main/java"))
+                remoteUrl.set(uri("https://github.com/revenuecat/purchases-android/blob/main/public/src/main/java").toURL())
+                remoteLineSuffix.set("#L")
+            }
+        }
+        named("main") {
             reportUndocumented.set(true)
             includeNonPublic.set(false)
             skipDeprecated.set(true)
