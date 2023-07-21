@@ -130,7 +130,7 @@ fun MainScreen() {
                     withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
                         append("Current App User ID: ")
                     }
-                    append("test app user id")
+                    append(uiState.value.currentAppUserID)
                 })
 
                 Button(

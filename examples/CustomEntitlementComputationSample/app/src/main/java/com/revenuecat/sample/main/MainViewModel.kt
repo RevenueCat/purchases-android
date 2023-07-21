@@ -55,6 +55,7 @@ class MainViewModel : ViewModel() {
 
     fun switchUser(newUserID: String) {
         Purchases.sharedInstance.switchUser(newUserID)
+        _uiState.update { it.copy(currentAppUserID = newUserID) }
     }
 
     fun resetErrorMessage() {
@@ -90,7 +91,12 @@ class MainViewModel : ViewModel() {
     }
 
     private fun updateCustomerInfoInformation(customerInfo: CustomerInfo) {
-        _uiState.update { it.copy(currentCustomerInfo = customerInfo) }
+        _uiState.update {
+            it.copy(
+                currentCustomerInfo = customerInfo,
+                currentAppUserID = Purchases.sharedInstance.appUserID
+            )
+        }
     }
 
     fun dismissExplanationDialog() {
