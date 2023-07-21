@@ -10,6 +10,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.billingclient.api.BillingFlowParams.ProrationMode
 import com.android.billingclient.api.Purchase
 import com.revenuecat.purchases.common.CustomerInfoFactory
+import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.ReplaceProductInfo
 import com.revenuecat.purchases.common.sha1
@@ -40,6 +41,7 @@ import org.junit.Assert.fail
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
+import java.net.URL
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import kotlin.random.Random
@@ -107,13 +109,6 @@ internal class PurchasesTest : BasePurchasesTest() {
     fun `when setting up, and passing a appUserID, user is identified`() {
         assertThat(purchases.allowSharingPlayStoreAccount).isEqualTo(false)
         assertThat(purchases.appUserID).isEqualTo(appUserId)
-    }
-
-    @Test
-    fun `Setting store in the configuration sets it on the Purchases instance`() {
-        val builder = PurchasesConfiguration.Builder(mockContext, "api").store(Store.PLAY_STORE)
-        Purchases.configure(builder.build())
-        assertThat(Purchases.sharedInstance.store).isEqualTo(Store.PLAY_STORE)
     }
 
     // region purchasing
@@ -1174,6 +1169,43 @@ internal class PurchasesTest : BasePurchasesTest() {
     }
 
     // endregion
+
+    @Test
+    fun `Setting platform info sets it in the AppConfig when configuring the SDK`() {
+        val expected = PlatformInfo("flavor", "version")
+        Purchases.platformInfo = expected
+        Purchases.configure(PurchasesConfiguration.Builder(mockContext, "api").build())
+        assertThat(Purchases.sharedInstance.purchasesOrchestrator.appConfig.platformInfo).isEqualTo(expected)
+    }
+
+    @Test
+    fun `Setting proxy URL info sets it in the HttpClient when configuring the SDK`() {
+        val expected = URL("https://a-proxy.com")
+        Purchases.proxyURL = expected
+        Purchases.configure(PurchasesConfiguration.Builder(mockContext, "api").build())
+        assertThat(Purchases.sharedInstance.purchasesOrchestrator.appConfig.baseURL).isEqualTo(expected)
+    }
+
+    @Test
+    fun `Setting observer mode on sets finish transactions to false`() {
+        val builder = PurchasesConfiguration.Builder(mockContext, "api").observerMode(true)
+        Purchases.configure(builder.build())
+        assertThat(Purchases.sharedInstance.purchasesOrchestrator.appConfig.finishTransactions).isFalse()
+    }
+
+    @Test
+    fun `Setting observer mode off sets finish transactions to true`() {
+        val builder = PurchasesConfiguration.Builder(mockContext, "api").observerMode(false)
+        Purchases.configure(builder.build())
+        assertThat(Purchases.sharedInstance.purchasesOrchestrator.appConfig.finishTransactions).isTrue()
+    }
+
+    @Test
+    fun `Setting store in the configuration sets it on the Purchases instance`() {
+        val builder = PurchasesConfiguration.Builder(mockContext, "api").store(Store.PLAY_STORE)
+        Purchases.configure(builder.build())
+        assertThat(Purchases.sharedInstance.store).isEqualTo(Store.PLAY_STORE)
+    }
 
     // region Private Methods
 
