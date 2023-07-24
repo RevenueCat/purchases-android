@@ -11,7 +11,7 @@ Apps using this mode rely on webhooks to signal their backends to refresh entitl
 In this mode, RevenueCat will not generate anonymous user IDs, or refresh customerInfo cache automatically. CustomerInfo is only refreshed when a purchase goes through 
 and this mode will disallow all methods other than those for configuration, switching users, getting offerings and making purchases.
 
-When in this mode, the app should use switchUser() to switch to a different App User ID if needed. 
+When in this mode, the app should use `switchUser()` to switch to a different App User ID if needed. 
 The SDK should only be configured once the initial appUserID is known.
 
 ## Using the app
