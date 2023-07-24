@@ -3,7 +3,6 @@ package com.revenuecat.sample
 import android.app.Application
 import com.revenuecat.purchases.LogLevel
 import com.revenuecat.purchases.Purchases
-import com.revenuecat.purchases.PurchasesConfiguration
 import com.revenuecat.sample.data.Constants
 
 class MainApplication : Application() {
@@ -26,12 +25,10 @@ class MainApplication : Application() {
         - An appUserID is required when doing a custom entitlement computation implementation.
         Read more about Identifying Users here: https://docs.revenuecat.com/docs/user-ids
          */
-        val builder = PurchasesConfiguration.Builder(
+        Purchases.configureInCustomEntitlementsMode(
             this,
             Constants.GOOGLE_API_KEY,
             Constants.defaultAppUserID
         )
-
-        Purchases.configure(builder.build())
     }
 }

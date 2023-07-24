@@ -125,6 +125,15 @@ final class PurchasesCommonAPI {
         Purchases.setProxyURL(new URL(""));
         final URL proxyURL = Purchases.getProxyURL();
 
+        PurchasesConfiguration build = new PurchasesConfiguration.Builder(context, "")
+                .appUserID("")
+                .observerMode(true)
+                .observerMode(false)
+                .service(executorService)
+                .diagnosticsEnabled(true)
+                .entitlementVerificationMode(EntitlementVerificationMode.INFORMATIONAL)
+                .build();
+
         final Purchases instance = Purchases.getSharedInstance();
     }
 

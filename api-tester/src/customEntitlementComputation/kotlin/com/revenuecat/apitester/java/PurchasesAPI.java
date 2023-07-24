@@ -13,12 +13,7 @@ final class PurchasesAPI {
 
     static void checkConfiguration(final Context context,
                                    final ExecutorService executorService) {
-        PurchasesConfiguration build = new PurchasesConfiguration.Builder(context, "", "")
-                .service(executorService)
-                .entitlementVerificationMode(EntitlementVerificationMode.INFORMATIONAL)
-                .build();
-
-        Purchases.configure(build);
+        Purchases.configureInCustomEntitlementsMode(context, "", "");
     }
 
     static void check(final Purchases purchases) {
