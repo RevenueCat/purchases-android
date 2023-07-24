@@ -2,7 +2,7 @@
 agp = "8.0.2"
 androidxNavigation = "2.5.3"
 kotlin = "1.7.20"
-purchases = "6.5.0"
+purchases = "6.8.0"
 lifecycle = "2.5.0"
 androidxCore = "1.10.1"
 
@@ -33,5 +33,4 @@ navigation-compose = "androidx.navigation:navigation-compose:2.5.3"
 compose-ui-tooling = { module = "androidx.compose.ui:ui-tooling" }
 compose-ui-test-manifest = { module = "androidx.compose.ui:ui-test-manifest" }
 
-revenuecat = { module = "com.revenuecat.purchases:purchases", version.ref = "purchases" }
-revenuecat-amazon = { module = "com.revenuecat.purchases:purchases-store-amazon", version.ref = "purchases" }
+revenuecat = { module = "com.revenuecat.purchases:purchases-custom-entitlement-computation", version.ref = "purchases" }
