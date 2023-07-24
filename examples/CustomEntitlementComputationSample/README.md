@@ -19,7 +19,7 @@ The SDK should only be configured once the initial appUserID is known.
 To use the app, you should do the following: 
 - Configure your app in the [RevenueCat dashboard](https://app.revenuecat.com/). No special configuration is needed, but you should contact RevenueCat support
 before enabling this mode to ensure that it's the right one for your app. It's highly recommended to set Transfer Behavior to "Keep with original App User ID" in the RevenueCat Dashboard. 
-- Update the API key in Constants.kt. You can update the default `appUserID` there too, although apps in this mode should 
+- Update the API key in `Constants.kt`. You can update the default `appUserID` there too, although apps in this mode should 
 always be calling configure only when the appUserID is already known. 
 - Update the applicationId in defaultConfig of the app-level build.gradle to match your RevenueCat app configuration.
 - Have at least one Offering with at least one Package configured for Android, since this is the one that the purchase button will use. 
