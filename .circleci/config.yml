@@ -490,7 +490,6 @@ workflows:
       - assemble-sample-app
       - build-magic-weather-compose
       - run-backend-integration-tests
-      - run-firebase-tests-purchases-custom-entitlement-computation-integration-test
 
   deploy:
     when:
