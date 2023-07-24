@@ -181,8 +181,7 @@ fun MainScreen(
                 Box(
                     contentAlignment = Alignment.TopStart,
                 ) {
-                    Column {
-
+                    Column(modifier = Modifier.fillMaxWidth().padding(32.dp)) {
                         Text(
                             text = "CustomerInfo listener values",
                             fontSize = 16.sp,
@@ -196,7 +195,6 @@ fun MainScreen(
                             color = Color.Black,
                             textAlign = TextAlign.Center,
                         )
-
                         CustomerInfoEventsList(
                             uiState.value.customerInfoList,
                             onEventClicked = { customerInfoEvent ->

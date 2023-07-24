@@ -29,7 +29,10 @@ data class CustomerInfoEvent(
 )
 
 @Composable
-fun CustomerInfoEventsList(events: List<CustomerInfoEvent>, onEventClicked: (CustomerInfoEvent) -> Unit) {
+fun CustomerInfoEventsList(
+    events: List<CustomerInfoEvent>,
+    onEventClicked: (CustomerInfoEvent) -> Unit
+) {
     LazyColumn {
         items(events) { event ->
             CustomerInfoEventsListItem(event = event, onEventClicked = onEventClicked)
@@ -38,7 +41,10 @@ fun CustomerInfoEventsList(events: List<CustomerInfoEvent>, onEventClicked: (Cus
 }
 
 @Composable
-fun CustomerInfoEventsListItem(event: CustomerInfoEvent, onEventClicked: (CustomerInfoEvent) -> Unit) {
+fun CustomerInfoEventsListItem(
+    event: CustomerInfoEvent,
+    onEventClicked: (CustomerInfoEvent) -> Unit
+) {
     Column(
         modifier = Modifier
             .clickable { onEventClicked(event) }
