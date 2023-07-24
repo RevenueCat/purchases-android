@@ -230,7 +230,7 @@ class Purchases internal constructor(
          * @return An instantiated `[Purchases] object that has been set as a singleton.
          */
         @JvmStatic
-        fun configureInCustomEntitlementsMode(
+        fun configureInCustomEntitlementsComputationMode(
             context: Context,
             apiKey: String,
             appUserID: String,

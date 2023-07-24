@@ -25,7 +25,7 @@ class MainApplication : Application() {
         - An appUserID is required when doing a custom entitlement computation implementation.
         Read more about Identifying Users here: https://docs.revenuecat.com/docs/user-ids
          */
-        Purchases.configureInCustomEntitlementsMode(
+        Purchases.configureInCustomEntitlementsComputationMode(
             this,
             Constants.GOOGLE_API_KEY,
             Constants.defaultAppUserID

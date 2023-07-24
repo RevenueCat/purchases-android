@@ -10,7 +10,7 @@ private class PurchasesAPI {
     fun checkConfiguration(context: Context) {
         val configured: Boolean = Purchases.isConfigured
 
-        Purchases.configureInCustomEntitlementsMode(context, apiKey = "", appUserID = "")
+        Purchases.configureInCustomEntitlementsComputationMode(context, apiKey = "", appUserID = "")
     }
 
     fun check(purchases: Purchases) {
