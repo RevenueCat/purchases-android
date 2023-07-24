@@ -4,7 +4,7 @@ This app is useful for testing RevenueCat under Custom Entitlements Computation 
 
 ## What is Custom Entitlements Computation mode? 
 
-This is a special behavior mode for RevenueCat SDK, is intended for apps that will do their own entitlement computation separate from RevenueCat. 
+This is a special behavior mode for RevenueCat SDK. It's intended for apps that will do their own entitlement computation separate from RevenueCat. 
 
 Apps using this mode rely on webhooks to signal their backends to refresh entitlements with RevenueCat.
 
