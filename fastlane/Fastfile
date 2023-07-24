@@ -504,7 +504,7 @@ end
 def build_purchases_android_test_apk(package_name, apk_name, build_type, flavor)
   task_to_run = flavor == 'defaults' ? 'assembleDefaultsAndroidTest' : 'assembleCustomEntitlementComputationAndroidTest'
   gradle(
-    task: ":purchases:#{task_to_run}"
+    task: ":purchases:#{task_to_run}",
     properties: {
       "testApplicationId" => package_name,
       "testBuildType" => build_type,
