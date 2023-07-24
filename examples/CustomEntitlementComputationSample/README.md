@@ -102,7 +102,8 @@ try {
                         "through extra authentication flows for credit cards " +
                         "in some countries"
             PurchasesErrorCode.ProductAlreadyPurchasedError ->
-                "This product is already active for the user."
+                "Subscription is already purchased. Log in with the account " +
+                        "that originally performed this purchase if you're using a different one."
             PurchasesErrorCode.PurchaseNotAllowedError ->
                 "Purchasing wasn't allowed, which is common if the card is declined " +
                         "or the purchase is not available in the country " +
