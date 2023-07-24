@@ -15,8 +15,9 @@ dependencyResolutionManagement {
 rootProject.name = "CustomEntitlementComputationSample"
 include ':app'
 
-includeBuild("../../") {
-    dependencySubstitution {
-        substitute module("com.revenuecat.purchases:purchases@customEntitlementComputation") using project(":purchases")
-    }
-}
+// Uncomment to use local version of the SDK
+//includeBuild("../../") {
+//    dependencySubstitution {
+//        substitute module("com.revenuecat.purchases:purchases@customEntitlementComputation") using project(":purchases")
+//    }
+//}
