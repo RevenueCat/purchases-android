@@ -2,6 +2,16 @@ android {
     compileSdkVersion compileVersion
     buildToolsVersion buildToolsVersion
 
+    flavorDimensions "apis"
+    productFlavors {
+        defaults {
+            dimension "apis"
+        }
+        customEntitlementComputation {
+            dimension "apis"
+        }
+    }
+
     defaultConfig {
         minSdkVersion obtainMinSdkVersion()
         targetSdkVersion compileVersion

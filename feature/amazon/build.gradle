@@ -9,13 +9,6 @@ apply from: "$rootProject.projectDir/library.gradle"
 android {
     namespace 'com.revenuecat.purchases.amazon'
 
-    flavorDimensions "apis"
-    productFlavors {
-        defaults {
-            dimension "apis"
-        }
-    }
-
     defaultConfig {
         missingDimensionStrategy 'apis', 'defaults'
     }
