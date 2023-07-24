@@ -146,3 +146,11 @@ tasks.dokkaHtmlPartial.configure {
         }
     }
 }
+
+// Remove afterEvaluate
+// after https://github.com/Kotlin/kotlinx-kover/issues/362 is fixed
+project.afterEvaluate {
+    dependencies {
+        kover(project(":feature:amazon"))
+    }
+}

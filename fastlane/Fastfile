@@ -102,11 +102,6 @@ platform :android do
 
     UI.verbose("Deploying Custom Entitlements Computation version")
 
-    # Remove amazon module and dependents from project to publish custom-entitlement-computation library
-    sh("sed -i '' -e '/feature:amazon/d' settings.gradle")
-    sh("sed -i '' -e '/examples:purchase-tester/d' settings.gradle")
-    sh("sed -i '' -e '/api-tester/d' settings.gradle")
-
     gradleProperties["ANDROID_VARIANT_TO_PUBLISH"] = "customEntitlementComputationRelease"
     gradleProperties["POM_ARTIFACT_ID"] = "purchases-custom-entitlement-computation"
 
