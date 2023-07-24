@@ -3,6 +3,7 @@ package com.revenuecat.purchases
 import android.content.Context
 import com.revenuecat.purchases.common.BillingAbstract
 
+@Suppress("LongParameterList")
 internal fun Purchases.Companion.configureSdk(
     context: Context,
     appUserID: String,

@@ -18,7 +18,7 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
 
-    private val userID = "testAppUserID"
+    private val userID = "integrationTestAppUserID"
 
     @Before
     fun setup() {
