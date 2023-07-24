@@ -21,7 +21,7 @@ To use the app, you should do the following:
 before enabling this mode to ensure that it's the right one for your app. It's highly recommended to set Transfer Behavior to "Keep with original App User ID" in the RevenueCat Dashboard. 
 - Update the API key in `Constants.kt`. You can update the default `appUserID` there too, although apps in this mode should 
 always be calling configure only when the appUserID is already known. 
-- Update the applicationId in defaultConfig of the app-level build.gradle to match your RevenueCat app configuration.
+- Update the `applicationId` in `defaultConfig` of the app-level build.gradle to match your RevenueCat app configuration.
 - Have at least one Offering with at least one Package configured for Android, since this is the one that the purchase button will use. 
 
 Once configured correctly, the app will allow you to log in with different users, and will show a list of all the times CustomerInfoListener fired, as well as 
