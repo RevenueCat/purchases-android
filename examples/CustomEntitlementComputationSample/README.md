@@ -24,7 +24,7 @@ always be calling configure only when the appUserID is already known.
 - Update the `applicationId` in `defaultConfig` of the app-level build.gradle to match your RevenueCat app configuration.
 - Have at least one Offering with at least one Package configured for Android, since this is the one that the purchase button will use. 
 
-Once configured correctly, the app will allow you to log in with different users, and will show a list of all the times CustomerInfoListener fired, as well as 
+Once configured correctly, the app will allow you to log in with different users, and will show a list of all the times `CustomerInfoListener` fired, as well as 
 the values for each one. 
 
 Happy testing!
