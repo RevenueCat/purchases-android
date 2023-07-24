@@ -29,7 +29,7 @@ the values for each one.
 
 Happy testing!
 
-![sample screenshot](./Sample%20screenshot.png)
+![sample screenshot](./sample_screenshot.png)
 
 ## Using Custom Entitlements mode
 
