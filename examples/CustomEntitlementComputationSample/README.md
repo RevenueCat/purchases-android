@@ -37,15 +37,11 @@ Happy testing!
 
 This package is available on Maven and can be included via Gradle.
 
-To use this mode, ensure that you install the customEntitlementsComputation build flavor by specifying the dependency as:
+To use this mode, ensure that you install the purchases-custom-entitlement-computation artifact by specifying the dependency as:
+
 ```gradle
-revenuecat = { module = "com.revenuecat.purchases:purchases@customEntitlementComputation", version.ref = "purchases" }
+implementation 'com.revenuecat.purchases:purchases-custom-entitlement-computation:6.8.0'
 ```
-for Gradle version catalogs, or
-```gradle
-implementation 'com.revenuecat.purchases:purchases@customEntitlementsComputation:6.8.0'
-```
-for Gradle version properties.
 
 ### Configuration: 
 
