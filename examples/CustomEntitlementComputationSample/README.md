@@ -81,15 +81,39 @@ After calling this method, you might need to call your backend to refresh entitl
 Call `awaitPurchase()`:
 
 ```kotlin
+            val purchaseParams = PurchaseParams.Builder(activity, aPackage).build()
 try {
     val (transaction, customerInfo) =
         Purchases.sharedInstance.awaitPurchase(purchaseParams)
     // refresh entitlements with your backend
 } catch (error: PurchasesTransactionException) {
     if (error.userCancelled) {
-        _uiState.update { it.copy(displayErrorMessage = "User cancelled") }
+        _uiState.update { it.copy(displayErrorMessage = "Purchase was cancelled by the user") }
     } else {
-        _uiState.update { it.copy(displayErrorMessage = error.message) }
+        val errorMessage = when (error.code) {
+            PurchasesErrorCode.ReceiptAlreadyInUseError ->
+                "The receipt is already in use by another subscriber. " +
+                        "Log in with the previous account or contact support " +
+                        "to get your purchases transferred to regain access"
+            PurchasesErrorCode.PaymentPendingError ->
+                "The purchase is pending and may be completed at a later time. " +
+                        "This can happen when awaiting parental approval or going " +
+                        "through extra authentication flows for credit cards " +
+                        "in some countries"
+            PurchasesErrorCode.ProductAlreadyPurchasedError ->
+                "This product is already active for the user."
+            PurchasesErrorCode.PurchaseNotAllowedError ->
+                "Purchasing wasn't allowed, which is common if the card is declined " +
+                        "or the purchase is not available in the country " +
+                        "you're trying to purchase from."
+            PurchasesErrorCode.StoreProblemError ->
+                "There was a problem with the Google Play Store. This is a generic " +
+                        "Google error, and there's not enough information to " +
+                        "determine the cause."
+            else -> "FAILED TO PURCHASE: ${error.message}"
+        }
+        _uiState.update { it.copy(displayErrorMessage = errorMessage) }
+
     }
 }
 ```
