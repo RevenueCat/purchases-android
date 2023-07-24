@@ -511,8 +511,8 @@ def build_purchases_android_test_apk(package_name, apk_name, build_type, flavor)
       "minSdkVersion" => 21
     }
   )
-  apk_path = "../purchases/build/outputs/apk/androidTest/defaults/#{build_type}/purchases-defaults-#{build_type}-androidTest.apk"
-  new_apk_path = "../purchases/build/outputs/apk/androidTest/defaults/#{build_type}/#{apk_name}.apk"
+  apk_path = "../purchases/build/outputs/apk/androidTest/#{flavor}/#{build_type}/purchases-#{flavor}-#{build_type}-androidTest.apk"
+  new_apk_path = "../purchases/build/outputs/apk/androidTest/#{flavor}/#{build_type}/#{apk_name}.apk"
   sh "mv #{apk_path} #{new_apk_path}"
   copy_artifacts(
     target_path: 'purchases/test_artifacts',
