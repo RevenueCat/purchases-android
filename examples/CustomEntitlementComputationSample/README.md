@@ -48,13 +48,11 @@ implementation 'com.revenuecat.purchases:purchases-custom-entitlement-computatio
 The SDK should be configured once the user has already logged in. To configure, call:
 
 ```kotlin
-val builder = PurchasesConfiguration.Builder(
+Purchases.configureInCustomEntitlementsComputationMode(
     this,
     Constants.GOOGLE_API_KEY,
     Constants.defaultAppUserID
 )
-
-Purchases.configure(builder.build())
 ```
 
 ### Getting Offerings: 
