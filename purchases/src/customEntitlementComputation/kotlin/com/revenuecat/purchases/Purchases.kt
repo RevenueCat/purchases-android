@@ -224,16 +224,24 @@ class Purchases internal constructor(
         /**
          * Configures an instance of the Purchases SDK with a specified API key. The instance will
          * be set as a singleton. You should access the singleton instance using [Purchases.sharedInstance]
-         * @param configuration: the [PurchasesConfiguration] object you wish to use to configure [Purchases].
+         * @param context: the Application context object of your Application.
+         * @param apiKey: the API Key for your app. Obtained from the RevenueCat dashboard.
+         * @param appUserID: a unique id for identifying the user.
          * @return An instantiated `[Purchases] object that has been set as a singleton.
          */
         @JvmStatic
-        fun configure(
-            configuration: PurchasesConfiguration,
+        fun configureInCustomEntitlementsComputationMode(
+            context: Context,
+            apiKey: String,
+            appUserID: String,
         ): Purchases {
             if (isConfigured) {
                 infoLog(ConfigureStrings.INSTANCE_ALREADY_EXISTS)
             }
+            val configuration = PurchasesConfiguration.Builder(context, apiKey)
+                .appUserID(appUserID)
+                .dangerousSettings(DangerousSettings(customEntitlementComputation = true))
+                .build()
             return PurchasesFactory().createPurchases(
                 configuration,
                 platformInfo,

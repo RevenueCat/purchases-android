@@ -96,19 +96,11 @@ final class PurchasesAPI {
     }
 
     static void checkConfiguration(final Context context,
-                                   final ExecutorService executorService) {
+                                   final ExecutorService executorService,
+                                   final PurchasesConfiguration purchasesConfiguration) {
         final boolean configured = Purchases.isConfigured();
 
-        PurchasesConfiguration build = new PurchasesConfiguration.Builder(context, "")
-                .appUserID("")
-                .observerMode(true)
-                .observerMode(false)
-                .service(executorService)
-                .diagnosticsEnabled(true)
-                .entitlementVerificationMode(EntitlementVerificationMode.INFORMATIONAL)
-                .build();
-
-        Purchases.configure(build);
+        Purchases.configure(purchasesConfiguration);
 
         final boolean debugLogs = Purchases.getDebugLogsEnabled();
     }

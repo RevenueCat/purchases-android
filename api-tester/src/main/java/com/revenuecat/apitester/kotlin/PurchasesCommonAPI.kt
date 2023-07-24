@@ -3,6 +3,7 @@ package com.revenuecat.apitester.kotlin
 import android.app.Activity
 import android.content.Context
 import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.EntitlementVerificationMode
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.LogHandler
 import com.revenuecat.purchases.LogLevel
@@ -12,6 +13,7 @@ import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchaseParams
 import com.revenuecat.purchases.PurchaseResult
 import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.PurchasesConfiguration
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.awaitOfferings
 import com.revenuecat.purchases.awaitPurchase
@@ -28,6 +30,7 @@ import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.purchaseWith
 import java.net.URL
+import java.util.concurrent.ExecutorService
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Suppress("unused", "UNUSED_VARIABLE", "EmptyFunctionBlock")
@@ -136,7 +139,7 @@ private class PurchasesCommonAPI {
     }
 
     @Suppress("ForbiddenComment")
-    fun checkConfiguration(context: Context) {
+    fun checkConfiguration(context: Context, executorService: ExecutorService) {
         val features: List<BillingFeature> = ArrayList()
         val configured: Boolean = Purchases.isConfigured
 
@@ -148,6 +151,16 @@ private class PurchasesCommonAPI {
 
         Purchases.proxyURL = URL("")
         val url: URL? = Purchases.proxyURL
+
+        val build: PurchasesConfiguration = PurchasesConfiguration.Builder(context, apiKey = "")
+            .appUserID("")
+            .observerMode(true)
+            .observerMode(false)
+            .service(executorService)
+            .diagnosticsEnabled(true)
+            .entitlementVerificationMode(EntitlementVerificationMode.INFORMATIONAL)
+            .informationalVerificationModeAndDiagnosticsEnabled(true)
+            .build()
 
         val instance: Purchases = Purchases.sharedInstance
     }

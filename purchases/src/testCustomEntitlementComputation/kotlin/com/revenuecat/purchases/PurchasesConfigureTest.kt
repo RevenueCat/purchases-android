@@ -21,7 +21,7 @@ internal class PurchasesConfigureTest : BasePurchasesTest() {
     fun `Setting platform info sets it in the AppConfig when configuring the SDK`() {
         val expected = PlatformInfo("flavor", "version")
         Purchases.platformInfo = expected
-        Purchases.configure(PurchasesConfiguration.Builder(mockContext, "api", "appUserId").build())
+        Purchases.configureInCustomEntitlementsComputationMode(mockContext, "api", "appUserId")
         assertThat(Purchases.sharedInstance.purchasesOrchestrator.appConfig.platformInfo).isEqualTo(expected)
     }
 
@@ -29,7 +29,15 @@ internal class PurchasesConfigureTest : BasePurchasesTest() {
     fun `Setting proxy URL info sets it in the HttpClient when configuring the SDK`() {
         val expected = URL("https://a-proxy.com")
         Purchases.proxyURL = expected
-        Purchases.configure(PurchasesConfiguration.Builder(mockContext, "api", "appUserId").build())
+        Purchases.configureInCustomEntitlementsComputationMode(mockContext, "api", "appUserId")
         assertThat(Purchases.sharedInstance.purchasesOrchestrator.appConfig.baseURL).isEqualTo(expected)
+    }
+
+    @Test
+    fun `Configuring in custom entitlements mode enables dangerous setting`() {
+        Purchases.configureInCustomEntitlementsComputationMode(mockContext, "api", "appUserId")
+        assertThat(
+            Purchases.sharedInstance.purchasesOrchestrator.appConfig.dangerousSettings.customEntitlementComputation
+        ).isTrue
     }
 }
