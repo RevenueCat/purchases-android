@@ -122,8 +122,9 @@ try {
 
 ### Observing changes to purchases:
 
-To ensure that your app reacts to changes to subscriptions in real time, you can use `customerInfoStream`. This stream will only fire when new `customerInfo` is registered
-in RevenueCat, like when a subscription is renewed. If there are no changes from the last value, it will not fire. This means it's not guaranteed to fire on every app open.
+To ensure that your app reacts to changes to subscriptions in real time, you can use `updatedCustomerInfoListener`. This listener will only fire when new `customerInfo` is registered
+in RevenueCat, like with new purchases. If there are no changes from the last value, it will not fire. This means it's not guaranteed to fire on every app open. 
+This listener won't fire for renewals. 
 
 ```kotlin
 Purchases.sharedInstance.updatedCustomerInfoListener =
