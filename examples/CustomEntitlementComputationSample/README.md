@@ -49,7 +49,7 @@ The SDK should be configured once the user has already logged in. To configure, 
 
 ```kotlin
 Purchases.configureInCustomEntitlementsComputationMode(
-    this,
+    applicationContext,
     Constants.GOOGLE_API_KEY,
     Constants.defaultAppUserID
 )
@@ -81,7 +81,8 @@ After calling this method, you might need to call your backend to refresh entitl
 Call `awaitPurchase()`:
 
 ```kotlin
-            val purchaseParams = PurchaseParams.Builder(activity, aPackage).build()
+val purchaseParams = PurchaseParams.Builder(activity, aPackage).build()
+
 try {
     val (transaction, customerInfo) =
         Purchases.sharedInstance.awaitPurchase(purchaseParams)
