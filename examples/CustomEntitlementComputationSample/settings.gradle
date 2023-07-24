@@ -13,7 +13,7 @@ dependencyResolutionManagement {
     }
 }
 rootProject.name = "CustomEntitlementComputationSample"
-include ':app'
+include ':custom-entitlement-computation-app'
 
 includeBuild("../../") {
     dependencySubstitution {
