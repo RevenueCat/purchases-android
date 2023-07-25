@@ -140,6 +140,22 @@ jobs:
           command: bundle exec fastlane android build_magic_weather_compose
       - android/save-build-cache
 
+  build-custom-entitlement-computation:
+    <<: *android-executor
+    shell: /bin/bash --login -o pipefail
+    steps:
+      - checkout
+      - install-sdkman
+      - revenuecat/install-gem-unix-dependencies:
+          cache-version: v1
+      - android/accept-licenses
+      - android-dependencies
+      - android/restore-build-cache
+      - run:
+          name: Build sample app
+          command: bundle exec fastlane android build_custom_entitlement_computation_sample
+      - android/save-build-cache
+
   test:
     <<: *android-executor
     shell: /bin/bash --login -o pipefail
@@ -270,7 +286,7 @@ jobs:
       - android/save-build-cache:
           cache-prefix: v1a
 
-  assemble-sample-app:
+  assemble-purchase-tester:
     <<: *android-executor
     steps:
       - checkout
@@ -487,9 +503,21 @@ workflows:
     jobs:
       - test
       - detekt
-      - assemble-sample-app
-      - build-magic-weather-compose
+      - assemble-purchase-tester
       - run-backend-integration-tests
+
+  snapshot-deploy:
+    when:
+      not:
+        equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
+    jobs:
+      - deploy-snapshot: *only-main-branch
+      - build-magic-weather-compose:
+          requires:
+            - deploy-snapshot
+      - build-custom-entitlement-computation:
+          requires:
+            - deploy-snapshot
 
   deploy:
     when:
@@ -523,7 +551,6 @@ workflows:
             - hold
           <<: *release-branches
       - deploy: *release-tags
-      - deploy-snapshot: *only-main-branch
       - docs-deploy: *release-tags
       - publish-purchase-tester-release:
           requires:

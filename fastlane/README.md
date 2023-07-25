@@ -139,6 +139,14 @@ Publish purchase tester to test track in Play Console
 
 Builds a Magic Weather Compose APK
 
+### android build_custom_entitlement_computation_sample
+
+```sh
+[bundle exec] fastlane android build_custom_entitlement_computation_sample
+```
+
+Builds a Magic Weather Compose APK
+
 ### android build_magic_weather
 
 ```sh
