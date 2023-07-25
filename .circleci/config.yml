@@ -124,7 +124,7 @@ commands:
 
 jobs:
 
-  build-magic-weather-compose:
+  assemble-magic-weather-compose-sample-app:
     <<: *android-executor
     shell: /bin/bash --login -o pipefail
     steps:
@@ -140,7 +140,7 @@ jobs:
           command: bundle exec fastlane android build_magic_weather_compose
       - android/save-build-cache
 
-  build-custom-entitlement-computation:
+  assemble-custom-entitlement-computation-sample-app:
     <<: *android-executor
     shell: /bin/bash --login -o pipefail
     steps:
@@ -512,11 +512,11 @@ workflows:
         equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
     jobs:
       - deploy-snapshot: *only-main-branch
-      - build-magic-weather-compose:
+      - assemble-magic-weather-compose-sample-app:
           <<: *only-main-branch
           requires:
             - deploy-snapshot
-      - build-custom-entitlement-computation:
+      - assemble-custom-entitlement-computation-sample-app:
           <<: *only-main-branch
           requires:
             - deploy-snapshot
