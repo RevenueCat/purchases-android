@@ -1,9 +1,9 @@
 package com.revenuecat.sample.main
 
-import CustomerInfoEvent
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.sample.data.Constants
+import com.revenuecat.sample.data.CustomerInfoEvent
 
 data class MainState(
     val customerInfoList: List<CustomerInfoEvent> = emptyList(),

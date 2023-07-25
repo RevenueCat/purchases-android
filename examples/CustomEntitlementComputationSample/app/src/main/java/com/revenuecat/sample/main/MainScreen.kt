@@ -1,8 +1,5 @@
 package com.revenuecat.sample.main
 
-import CustomerInfoDetailScreen
-import CustomerInfoEventsList
-import ExplanationScreen
 import android.app.Activity
 import android.widget.Toast
 import androidx.compose.foundation.background
@@ -76,13 +73,13 @@ fun MainScreenNavigation() {
     }
 }
 
+@Suppress("LongMethod")
 @Composable
 fun MainScreen(
     navController: NavController,
     viewModel: MainViewModel = viewModel(),
-    uiState: State<MainState> = viewModel.uiState.collectAsState()
+    uiState: State<MainState> = viewModel.uiState.collectAsState(),
 ) {
-
     if (uiState.value.shouldShowSwitchingUserDialog) {
         Dialog(onDismissRequest = { viewModel.resetSwitchUserProcess() }) {
             SwitchUserDialog(viewModel)
@@ -134,7 +131,7 @@ fun MainScreen(
                     modifier = Modifier.wrapContentSize(),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Color.Transparent,
-                        contentColor = Color.Black
+                        contentColor = Color.Black,
                     ),
                 ) {
                     Column {
@@ -155,12 +152,14 @@ fun MainScreen(
                     }
                 }
 
-                Text(text = buildAnnotatedString {
-                    withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
-                        append("Current App User ID: ")
-                    }
-                    append(uiState.value.currentAppUserID)
-                })
+                Text(
+                    text = buildAnnotatedString {
+                        withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
+                            append("Current App User ID: ")
+                        }
+                        append(uiState.value.currentAppUserID)
+                    },
+                )
 
                 Button(
                     onClick = { viewModel.initiateSwitchUserProcess() },

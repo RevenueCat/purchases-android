@@ -28,7 +28,7 @@ class MainApplication : Application() {
         Purchases.configureInCustomEntitlementsComputationMode(
             this,
             Constants.GOOGLE_API_KEY,
-            Constants.defaultAppUserID
+            Constants.defaultAppUserID,
         )
     }
 }

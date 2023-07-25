@@ -1,6 +1,5 @@
 package com.revenuecat.sample.main
 
-import CustomerInfoEvent
 import android.app.Activity
 import android.util.Log
 import androidx.lifecycle.ViewModel
@@ -16,12 +15,12 @@ import com.revenuecat.purchases.PurchasesTransactionException
 import com.revenuecat.purchases.awaitOfferings
 import com.revenuecat.purchases.awaitPurchase
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
+import com.revenuecat.sample.data.CustomerInfoEvent
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.util.Date
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 class MainViewModel : ViewModel() {
@@ -77,7 +76,7 @@ class MainViewModel : ViewModel() {
                 val (transaction, customerInfo) =
                     Purchases.sharedInstance.awaitPurchase(purchaseParams)
                 val logMessage = "Purchase finished:\nTransaction: $transaction\n" +
-                        "CustomerInfo: $customerInfo"
+                    "CustomerInfo: $customerInfo"
                 Log.d("Purchase", logMessage)
             } catch (error: PurchasesTransactionException) {
                 if (error.userCancelled) {
@@ -86,30 +85,28 @@ class MainViewModel : ViewModel() {
                     val errorMessage = when (error.code) {
                         PurchasesErrorCode.ReceiptAlreadyInUseError ->
                             "The receipt is already in use by another subscriber. " +
-                                    "Log in with the previous account or contact support " +
-                                    "to get your purchases transferred to regain access"
+                                "Log in with the previous account or contact support " +
+                                "to get your purchases transferred to regain access"
                         PurchasesErrorCode.PaymentPendingError ->
                             "The purchase is pending and may be completed at a later time. " +
-                                    "This can happen when awaiting parental approval or going " +
-                                    "through extra authentication flows for credit cards " +
-                                    "in some countries"
+                                "This can happen when awaiting parental approval or going " +
+                                "through extra authentication flows for credit cards " +
+                                "in some countries"
                         PurchasesErrorCode.ProductAlreadyPurchasedError ->
                             "This product is already active for the user."
                         PurchasesErrorCode.PurchaseNotAllowedError ->
                             "Purchasing wasn't allowed, which is common if the card is declined " +
-                                    "or the purchase is not available in the country " +
-                                    "you're trying to purchase from."
+                                "or the purchase is not available in the country " +
+                                "you're trying to purchase from."
                         PurchasesErrorCode.StoreProblemError ->
                             "There was a problem with the Google Play Store. This is a generic " +
-                                    "Google error, and there's not enough information to " +
-                                    "determine the cause."
+                                "Google error, and there's not enough information to " +
+                                "determine the cause."
                         else -> "FAILED TO PURCHASE: ${error.message}"
                     }
                     _uiState.update { it.copy(displayErrorMessage = errorMessage) }
-
                 }
             }
-
         }
     }
 
@@ -120,7 +117,7 @@ class MainViewModel : ViewModel() {
                 currentAppUserID = Purchases.sharedInstance.appUserID,
                 customerInfoList = it.customerInfoList + CustomerInfoEvent(
                     customerInfo = customerInfo,
-                )
+                ),
             )
         }
     }
@@ -132,5 +129,4 @@ class MainViewModel : ViewModel() {
     fun showExplanationDialog() {
         _uiState.update { it.copy(shouldShowExplanationDialog = true) }
     }
-
 }
