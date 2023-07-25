@@ -45,7 +45,6 @@ task detektAll(type: io.gitlab.arturbosch.detekt.Detekt) {
     exclude("**/test/**/*.kt")
     exclude("**/testDefaults/**/*.kt")
     exclude("**/testCustomEntitlementComputation/**/*.kt")
-    exclude("**/CustomEntitlementComputationSample/**/*.kt")
     config.setFrom(files("$rootDir/config/detekt/detekt.yml"))
     baseline.set(file("$rootDir/config/detekt/detekt-baseline.xml"))
     reports {
@@ -71,7 +70,6 @@ task detektAllBaseline(type: io.gitlab.arturbosch.detekt.DetektCreateBaselineTas
     exclude("**/test/**/*.kt")
     exclude("**/testDefaults/**/*.kt")
     exclude("**/testCustomEntitlementComputation/**/*.kt")
-    exclude("**/CustomEntitlementComputationSample/**/*.kt")
 }
 
 tasks.dokkaHtmlMultiModule.configure {

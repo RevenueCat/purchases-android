@@ -1,3 +1,5 @@
+package com.revenuecat.sample.main
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -13,6 +15,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.revenuecat.sample.data.CustomerInfoEvent
+
+private const val JSON_INDENT_SPACES = 4
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -35,8 +40,8 @@ fun CustomerInfoDetailScreen(event: CustomerInfoEvent) {
                 verticalArrangement = Arrangement.Center,
             ) {
                 Text(
-                    text = event.customerInfo.rawData.toString(4),
-                    modifier = Modifier.padding(16.dp)
+                    text = event.customerInfo.rawData.toString(JSON_INDENT_SPACES),
+                    modifier = Modifier.padding(16.dp),
                 )
             }
         }

@@ -1,3 +1,5 @@
+package com.revenuecat.sample.main
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -23,18 +25,18 @@ fun ExplanationScreen(onDismiss: () -> Unit) {
                 .fillMaxSize()
                 .padding(16.dp),
             verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text(
                 text = "Custom Entitlements Mode",
                 style = MaterialTheme.typography.headlineSmall,
-                modifier = Modifier.padding(8.dp)
+                modifier = Modifier.padding(8.dp),
             )
 
             Text(
                 text = "This mode is intended for apps that will do their own entitlement " +
                     "computation, separate from RevenueCat.",
-                modifier = Modifier.padding(8.dp)
+                modifier = Modifier.padding(8.dp),
             )
 
             Text(
@@ -43,29 +45,28 @@ fun ExplanationScreen(onDismiss: () -> Unit) {
                     "(only when a purchase goes through), and it will disallow methods " +
                     "other than those for configuration, switching users, " +
                     "getting offerings and purchases.",
-                modifier = Modifier.padding(8.dp)
+                modifier = Modifier.padding(8.dp),
             )
 
             Text(
                 text = "Use switchUser to switch to a different App User ID if needed. " +
                     "The SDK should only be configured once the initial appUserID is known.",
-                modifier = Modifier.padding(8.dp)
+                modifier = Modifier.padding(8.dp),
             )
 
             Text(
                 text = "Apps using this mode rely on webhooks to signal their backends to " +
                     "refresh entitlements with RevenueCat.",
-                modifier = Modifier.padding(8.dp)
+                modifier = Modifier.padding(8.dp),
             )
 
             Spacer(modifier = Modifier.weight(1f, true))
             Button(
                 onClick = onDismiss,
-                content = { Text("Close") }
+                content = { Text("Close") },
             )
         }
     }
-
 }
 
 @Preview
