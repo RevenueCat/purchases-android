@@ -506,16 +506,18 @@ workflows:
       - assemble-purchase-tester
       - run-backend-integration-tests
 
-  snapshot-deploy:
+  snapshot-deploy-sample-app-tests:
     when:
       not:
         equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
     jobs:
       - deploy-snapshot: *only-main-branch
       - build-magic-weather-compose:
+          <<: *only-main-branch
           requires:
             - deploy-snapshot
       - build-custom-entitlement-computation:
+          <<: *only-main-branch
           requires:
             - deploy-snapshot
 
