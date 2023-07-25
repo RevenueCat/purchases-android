@@ -113,6 +113,16 @@ Build and run purchases module load shedder integration tests
 
 This requires the google cloud cli to be installed and initialized.
 
+### android run_custom_entitlement_computation_integration_tests
+
+```sh
+[bundle exec] fastlane android run_custom_entitlement_computation_integration_tests
+```
+
+Build and run purchases module custom entitlement computation integration tests
+
+This requires the google cloud cli to be installed and initialized.
+
 ### android publish_purchase_tester
 
 ```sh

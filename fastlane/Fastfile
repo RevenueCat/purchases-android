@@ -170,6 +170,8 @@ platform :android do
         google_purchase_token: ENV['GOOGLE_PURCHASE_TOKEN'],
         product_id_to_purchase: ENV['PRODUCT_ID_TO_PURCHASE'],
         base_plan_id_to_purchase: ENV['BASE_PLAN_ID_TO_PURCHASE'],
+        # We default to empty active entitlements since we are using an expired token for these integration tests.
+        # So no active entitlements will be returned by our servers.
         active_entitlements_to_verify: ENV['ACTIVE_ENTITLEMENTS_TO_VERIFY'] || '',
     )
   end
@@ -229,6 +231,8 @@ platform :android do
       google_purchase_token: ENV['CUSTOM_ENTITLEMENT_COMPUTATION_GOOGLE_PURCHASE_TOKEN'],
       product_id_to_purchase: ENV['CUSTOM_ENTITLEMENT_COMPUTATION_PRODUCT_ID_TO_PURCHASE'],
       base_plan_id_to_purchase: ENV['CUSTOM_ENTITLEMENT_COMPUTATION_BASE_PLAN_ID_TO_PURCHASE'],
+      # We default to empty active entitlements since we are using an expired token for these integration tests.
+      # So no active entitlements will be returned by our servers.
       active_entitlements_to_verify: ENV['CUSTOM_ENTITLEMENT_COMPUTATION_ACTIVE_ENTITLEMENTS_TO_VERIFY'] || '',
       flavor: 'customEntitlementComputation'
     )
