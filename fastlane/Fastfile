@@ -21,6 +21,9 @@ files_with_version_number = {
   './docs/index.html' => ['url=https://sdk.revenuecat.com/android/{x}/index.html'],
   './gradle.properties' => ['VERSION_NAME={x}'],
   './.version' => ['{x}'],
+  './examples/MagicWeather/gradle/libs.versions.toml' => ['purchases = "{x}"'],
+  './examples/MagicWeatherCompose/gradle/libs.versions.toml' => ['purchases = "{x}"'],
+  './examples/CustomEntitlementComputationSample/gradle/libs.versions.toml' => ['purchases = "{x}"'],
 }
 
 repo_name = 'purchases-android'
