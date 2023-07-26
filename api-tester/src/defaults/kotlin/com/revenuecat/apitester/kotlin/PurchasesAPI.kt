@@ -9,6 +9,8 @@ import com.revenuecat.purchases.PurchasesConfiguration
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.awaitCustomerInfo
+import com.revenuecat.purchases.awaitLogIn
+import com.revenuecat.purchases.data.LoginResult
 import com.revenuecat.purchases.getCustomerInfoWith
 import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
@@ -105,6 +107,8 @@ private class PurchasesAPI {
         val customerInfo: CustomerInfo = purchases.awaitCustomerInfo()
         val customerInfoFetchPolicy: CustomerInfo =
             purchases.awaitCustomerInfo(fetchPolicy = CacheFetchPolicy.FETCH_CURRENT)
+        val logInResult: LoginResult = purchases.awaitLogIn("appUserID")
+        val (customerInfo2, created) = purchases.awaitLogIn("appUserID")
     }
 
     fun check(purchases: Purchases, attributes: Map<String, String>) {

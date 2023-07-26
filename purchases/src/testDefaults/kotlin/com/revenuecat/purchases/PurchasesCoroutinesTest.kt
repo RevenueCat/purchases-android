@@ -1,6 +1,10 @@
 package com.revenuecat.purchases
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.data.LoginResult
+import io.mockk.Runs
+import io.mockk.every
+import io.mockk.just
 import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
@@ -8,6 +12,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
+import kotlin.random.Random
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, ExperimentalCoroutinesApi::class)
 @RunWith(AndroidJUnit4::class)
@@ -69,6 +74,90 @@ internal class PurchasesCoroutinesTest : BasePurchasesTest() {
                 appUserId,
                 any(),
                 any(),
+                any(),
+                any(),
+            )
+        }
+
+        assertThat(result).isNull()
+        assertThat(exception).isNotNull
+        assertThat(exception).isInstanceOf(PurchasesException::class.java)
+        assertThat((exception as PurchasesException).code).isEqualTo(PurchasesErrorCode.CustomerInfoError)
+    }
+
+    // endregion
+
+    // region awaitLogIn
+    @Test
+    fun `logIn - Success`() = runTest {
+        val newAppUserId = "newFakeUserID"
+        val mockCreated = Random.nextBoolean()
+        every {
+            mockIdentityManager.logIn(newAppUserId, onSuccess = captureLambda(), any())
+        } answers {
+            lambda<(CustomerInfo, Boolean) -> Unit>().captured.invoke(mockInfo, mockCreated)
+        }
+        mockOfferingsManagerFetchOfferings(newAppUserId)
+
+        val result = purchases.awaitLogIn(newAppUserId)
+
+        verify(exactly = 1) {
+            mockIdentityManager.logIn(
+                newAppUserId,
+                any(),
+                any(),
+            )
+        }
+        assertThat(result).isNotNull
+    }
+
+    @Test
+    fun `logIn - Success - customer info matches expectations`() = runTest {
+        val newAppUserId = "newFakeUserID"
+        val mockCreated = Random.nextBoolean()
+        every {
+            mockIdentityManager.logIn(newAppUserId, onSuccess = captureLambda(), any())
+        } answers {
+            lambda<(CustomerInfo, Boolean) -> Unit>().captured.invoke(mockInfo, mockCreated)
+        }
+        mockOfferingsManagerFetchOfferings(newAppUserId)
+
+        val result = purchases.awaitLogIn(newAppUserId)
+
+        verify(exactly = 1) {
+            mockIdentityManager.logIn(
+                newAppUserId,
+                any(),
+                any(),
+            )
+        }
+        assertThat(result).isNotNull
+        assertThat(result.customerInfo).isEqualTo(mockInfo)
+        assertThat(result.created).isEqualTo(mockCreated)
+    }
+
+    @Test
+    fun `logIn - CustomerInfoError`() = runTest {
+        val error = PurchasesError(PurchasesErrorCode.CustomerInfoError, "Customer info error")
+        val newAppUserId = "newFakeUserID"
+        every {
+            mockIdentityManager.logIn(newAppUserId, any(), onError = captureLambda())
+        } answers {
+            lambda<(PurchasesError) -> Unit>().captured.invoke(error)
+        }
+        mockOfferingsManagerFetchOfferings(newAppUserId)
+
+        var result: LoginResult? = null
+        var exception: Throwable? = null
+        runCatching {
+            result = purchases.awaitLogIn(newAppUserId)
+        }.onFailure {
+            exception = it
+        }
+
+        verify(exactly = 1) {
+            mockIdentityManager.logIn(
+                newAppUserId,
                 any(),
                 any(),
             )
