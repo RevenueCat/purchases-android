@@ -221,7 +221,10 @@ internal open class BasePurchasesTest {
     // endregion
 
     // region Protected methods
-    protected fun mockCustomerInfoHelper(errorGettingCustomerInfo: PurchasesError? = null) {
+    protected fun mockCustomerInfoHelper(
+        errorGettingCustomerInfo: PurchasesError? = null,
+        mockedCustomerInfo: CustomerInfo = mockInfo
+    ) {
         with(mockCustomerInfoHelper) {
             val slotList = mutableListOf<ReceiveCustomerInfoCallback?>()
             every {
@@ -234,7 +237,7 @@ internal open class BasePurchasesTest {
                 )
             } answers {
                 if (errorGettingCustomerInfo == null) {
-                    slotList.firstOrNull()?.onReceived(mockInfo)
+                    slotList.firstOrNull()?.onReceived(mockedCustomerInfo)
                 } else {
                     slotList.firstOrNull()?.onError(errorGettingCustomerInfo)
                 }

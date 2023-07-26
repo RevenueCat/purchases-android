@@ -5,6 +5,7 @@ import com.revenuecat.purchases.data.LoginResult
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
+import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
@@ -159,6 +160,80 @@ internal class PurchasesCoroutinesTest : BasePurchasesTest() {
             mockIdentityManager.logIn(
                 newAppUserId,
                 any(),
+                any(),
+            )
+        }
+
+        assertThat(result).isNull()
+        assertThat(exception).isNotNull
+        assertThat(exception).isInstanceOf(PurchasesException::class.java)
+        assertThat((exception as PurchasesException).code).isEqualTo(PurchasesErrorCode.CustomerInfoError)
+    }
+
+    // endregion
+
+    // region awaitLogOut
+    @Test
+    fun `logOut - Success`() = runTest {
+        every {
+            mockIdentityManager.logOut(captureLambda())
+        } answers {
+            lambda<(PurchasesError?) -> Unit>().captured.invoke(null)
+        }
+        mockOfferingsManagerFetchOfferings(appUserId)
+
+        val result = purchases.awaitLogOut()
+
+        verify(exactly = 1) {
+            mockIdentityManager.logOut(
+                any(),
+            )
+        }
+        assertThat(result).isNotNull
+    }
+
+    @Test
+    fun `logOut - Success - customer info matches expectations`() = runTest {
+        val afterLogOutCustomerInfo = mockk<CustomerInfo>()
+        every {
+            mockIdentityManager.logOut(captureLambda())
+        } answers {
+            lambda<(PurchasesError?) -> Unit>().captured.invoke(null)
+        }
+        mockOfferingsManagerFetchOfferings(appUserId)
+        mockCustomerInfoHelper(mockedCustomerInfo = afterLogOutCustomerInfo)
+        val result = purchases.awaitLogOut()
+
+        verify(exactly = 1) {
+            mockIdentityManager.logOut(
+                any(),
+            )
+        }
+        assertThat(result).isNotNull
+        assertThat(result).isEqualTo(afterLogOutCustomerInfo)
+    }
+
+    @Test
+    fun `logOut - CustomerInfoError`() = runTest {
+        val error = PurchasesError(PurchasesErrorCode.CustomerInfoError, "Customer info error")
+        val newAppUserId = "newFakeUserID"
+        every {
+            mockIdentityManager.logOut(captureLambda())
+        } answers {
+            lambda<(PurchasesError?) -> Unit>().captured.invoke(error)
+        }
+        mockOfferingsManagerFetchOfferings(newAppUserId)
+
+        var result: CustomerInfo? = null
+        var exception: Throwable? = null
+        runCatching {
+            result = purchases.awaitLogOut()
+        }.onFailure {
+            exception = it
+        }
+
+        verify(exactly = 1) {
+            mockIdentityManager.logOut(
                 any(),
             )
         }
