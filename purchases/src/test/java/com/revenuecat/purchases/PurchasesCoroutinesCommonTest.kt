@@ -1,7 +1,7 @@
 package com.revenuecat.purchases
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.utils.STUB_PRODUCT_IDENTIFIER
 import com.revenuecat.purchases.utils.stubStoreProduct
 import io.mockk.every
@@ -156,6 +156,76 @@ internal class PurchasesCoroutinesCommonTest : BasePurchasesTest() {
         assertThat(result).isNull()
         assertThat(exception).isNotNull
         assertThat(exception!!.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
+    }
+
+    // endregion
+
+    // awaitGetProducts
+    @Test
+    fun `getProducts - Success`() = runTest {
+        val subsIds = listOf("product_1")
+        val inAppIds = listOf("product_2")
+        val productIds = subsIds + inAppIds
+        val subs = mockStoreProduct(subsIds, subsIds, ProductType.SUBS)
+        val inApps = mockStoreProduct(inAppIds, inAppIds, ProductType.INAPP)
+        every {
+            mockBillingAbstract.queryProductDetailsAsync(
+                ProductType.SUBS,
+                productIds.toSet(),
+                captureLambda(),
+                any()
+            )
+        } answers {
+            lambda<(List<StoreProduct>) -> Unit>().captured.invoke(subs)
+        }
+        every {
+            mockBillingAbstract.queryProductDetailsAsync(
+                ProductType.INAPP,
+                productIds.toSet(),
+                captureLambda(),
+                any()
+            )
+        } answers {
+            lambda<(List<StoreProduct>) -> Unit>().captured.invoke(inApps)
+        }
+
+        val result = purchases.awaitGetProducts(productIds)
+
+        assertThat(result).isNotNull
+        assertThat(result.size).isEqualTo(productIds.size)
+        assertThat(result.containsAll(subs)).isTrue()
+        assertThat(result.containsAll(inApps)).isTrue()
+    }
+
+    @Test
+    fun `get products - ConfigurationError`() = runTest {
+        val error = PurchasesError(PurchasesErrorCode.ConfigurationError, "Offerings config error")
+        val subsIds = listOf("product_1")
+        val inAppIds = listOf("product_2")
+        val productIds = subsIds + inAppIds
+        every {
+            mockBillingAbstract.queryProductDetailsAsync(
+                ProductType.SUBS,
+                productIds.toSet(),
+                any(),
+                captureLambda()
+            )
+        } answers {
+            lambda<(PurchasesError) -> Unit>().captured.invoke(error)
+        }
+
+        var result: List<StoreProduct>? = null
+        var exception: Throwable? = null
+        runCatching {
+            result = purchases.awaitGetProducts(productIds)
+        }.onFailure {
+            exception = it
+        }
+
+        assertThat(result).isNull()
+        assertThat(exception).isNotNull
+        assertThat(exception).isInstanceOf(PurchasesException::class.java)
+        assertThat((exception as PurchasesException).code).isEqualTo(PurchasesErrorCode.ConfigurationError)
     }
 
     // endregion
