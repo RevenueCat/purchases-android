@@ -1,6 +1,8 @@
 package com.revenuecat.purchases
 
 import com.revenuecat.purchases.CacheFetchPolicy.CACHED_OR_FETCHED
+import com.revenuecat.purchases.data.LoginResult
+import com.revenuecat.purchases.interfaces.SyncPurchasesCallback
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
@@ -27,6 +29,116 @@ suspend fun Purchases.awaitCustomerInfo(
     return suspendCoroutine { continuation ->
         getCustomerInfoWith(
             fetchPolicy,
+            onSuccess = continuation::resume,
+            onError = { continuation.resumeWithException(PurchasesException(it)) },
+        )
+    }
+}
+
+/**
+ * This function will change the current appUserID.
+ * Typically this would be used after a log out to identify a new user without calling configure
+ *
+ * Coroutine friendly version of [Purchases.logIn].
+ *
+ * @warning This function is marked as [ExperimentalPreviewRevenueCatPurchasesAPI] and may change in the future.
+ * Only available in Kotlin.
+ *
+ * @param appUserID The new appUserID that should be linked to the currently user
+ * @throws [PurchasesException] with a [PurchasesError] if there's an error login the customer info.
+ * @return The [CustomerInfo] associated to the current user.
+ */
+@JvmSynthetic
+@ExperimentalPreviewRevenueCatPurchasesAPI
+@Throws(PurchasesTransactionException::class)
+suspend fun Purchases.awaitLogIn(appUserID: String): LoginResult {
+    return suspendCoroutine { continuation ->
+        logInWith(
+            appUserID,
+            onSuccess = { customerInfo, created ->
+                continuation.resume(LoginResult(customerInfo, created))
+            },
+            onError = { continuation.resumeWithException(PurchasesException(it)) },
+        )
+    }
+}
+
+/**
+ * Logs out the Purchases client clearing the save appUserID. This will generate a random user
+ * id and save it in the cache.
+ *
+ * Coroutine friendly version of [Purchases.logOut].
+ *
+ * @warning This function is marked as [ExperimentalPreviewRevenueCatPurchasesAPI] and may change in the future.
+ * Only available in Kotlin.
+ *
+ * @throws [PurchasesException] with a [PurchasesError] if there's an error login out the user.
+ * @return The [CustomerInfo] associated to the current user.
+ */
+@JvmSynthetic
+@ExperimentalPreviewRevenueCatPurchasesAPI
+@Throws(PurchasesTransactionException::class)
+suspend fun Purchases.awaitLogOut(): CustomerInfo {
+    return suspendCoroutine { continuation ->
+        logOutWith(
+            onSuccess = { continuation.resume(it) },
+            onError = { continuation.resumeWithException(PurchasesException(it)) },
+        )
+    }
+}
+
+/**
+ * Restores purchases made with the current Play Store account for the current user.
+ * This method will post all purchases associated with the current Play Store account to
+ * RevenueCat and become associated with the current `appUserID`. If the receipt token is being
+ * used by an existing user, the current `appUserID` will be aliased together with the
+ * `appUserID` of the existing user. Going forward, either `appUserID` will be able to reference
+ * the same user.
+ *
+ * You shouldn't use this method if you have your own account system. In that case
+ * "restoration" is provided by your app passing the same `appUserId` used to purchase originally.
+ *
+ * Coroutine friendly version of [Purchases.restorePurchases].
+ *
+ * @warning This function is marked as [ExperimentalPreviewRevenueCatPurchasesAPI] and may change in the future.
+ * Only available in Kotlin.
+ *
+ * @throws [PurchasesException] with a [PurchasesError] if there's an error login out the user.
+ * @return The [CustomerInfo] with the restored purchases.
+ */
+@JvmSynthetic
+@ExperimentalPreviewRevenueCatPurchasesAPI
+@Throws(PurchasesTransactionException::class)
+suspend fun Purchases.awaitRestore(): CustomerInfo {
+    return suspendCoroutine { continuation ->
+        restorePurchasesWith(
+            onSuccess = { continuation.resume(it) },
+            onError = { continuation.resumeWithException(PurchasesException(it)) },
+        )
+    }
+}
+
+/**
+ * This method will send all the purchases to the RevenueCat backend. Call this when using your own implementation
+ * for subscriptions anytime a sync is needed, such as when migrating existing users to RevenueCat. The
+ * [SyncPurchasesCallback.onSuccess] callback will be called if all purchases have been synced successfully or
+ * there are no purchases. Otherwise, the [SyncPurchasesCallback.onError] callback will be called with a
+ * [PurchasesError] indicating the first error found.
+ *
+ * Coroutine friendly version of [Purchases.syncPurchases].
+ *
+ * @warning This function is marked as [ExperimentalPreviewRevenueCatPurchasesAPI] and may change in the future.
+ * Only available in Kotlin.
+ *
+ * @throws [PurchasesException] with a [PurchasesError] if there's an error retrieving the customer info.
+ * @return The [CustomerInfo] associated to the current user.
+ */
+@JvmSynthetic
+@ExperimentalPreviewRevenueCatPurchasesAPI
+@Throws(PurchasesException::class)
+suspend fun Purchases.awaitSyncPurchases(): CustomerInfo {
+    return suspendCoroutine { continuation ->
+        syncPurchasesWith(
             onSuccess = continuation::resume,
             onError = { continuation.resumeWithException(PurchasesException(it)) },
         )
