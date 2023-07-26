@@ -321,7 +321,6 @@ internal class PurchasesCoroutinesTest : BasePurchasesTest() {
     @Test
     fun `restore - CustomerInfoError`() = runTest {
         val error = PurchasesError(PurchasesErrorCode.CustomerInfoError, "Customer info error")
-        val newAppUserId = "newFakeUserID"
         every {
             mockBillingAbstract.queryAllPurchases(
                 appUserId,
@@ -354,6 +353,109 @@ internal class PurchasesCoroutinesTest : BasePurchasesTest() {
         assertThat((exception as PurchasesException).code).isEqualTo(PurchasesErrorCode.CustomerInfoError)
     }
 
+    // endregion
+
+    // region awaitSyncPurchases
+
+    @Test
+    fun `sync purchases - Success`() = runTest {
+        val afterSyncingCustomerInfo = mockk<CustomerInfo>(relaxed = true)
+        every {
+            mockSyncPurchasesHelper.syncPurchases(
+                isRestore = false,
+                appInBackground = false,
+                onSuccess = captureLambda(),
+                onError = any()
+            )
+        } answers {
+            lambda<(CustomerInfo) -> Unit>().captured.also {
+                it.invoke(afterSyncingCustomerInfo)
+            }
+        }
+
+        val result: CustomerInfo = purchases.awaitSyncPurchases()
+
+        verify(exactly = 1) {
+            mockSyncPurchasesHelper.syncPurchases(
+                isRestore = false,
+                appInBackground = false,
+                onSuccess = captureLambda(),
+                onError = any()
+            )
+        }
+        assertThat(result).isNotNull
+    }
+
+    @Test
+    fun `sync purchases - Success - customer info matches expectations`() = runTest {
+        val afterSyncingCustomerInfo = mockk<CustomerInfo>(relaxed = true)
+        every {
+            mockSyncPurchasesHelper.syncPurchases(
+                isRestore = false,
+                appInBackground = false,
+                onSuccess = captureLambda(),
+                onError = any()
+            )
+        } answers {
+            lambda<(CustomerInfo) -> Unit>().captured.also {
+                it.invoke(afterSyncingCustomerInfo)
+            }
+        }
+
+        val result: CustomerInfo = purchases.awaitSyncPurchases()
+
+        verify(exactly = 1) {
+            mockSyncPurchasesHelper.syncPurchases(
+                isRestore = false,
+                appInBackground = false,
+                onSuccess = captureLambda(),
+                onError = any()
+            )
+        }
+        assertThat(result).isNotNull
+        assertThat(result).isEqualTo(afterSyncingCustomerInfo)
+    }
+
+    @Test
+    fun `sync purchases - CustomerInfoError`() = runTest {
+        val error = PurchasesError(PurchasesErrorCode.CustomerInfoError, "Customer info error")
+        every {
+            mockSyncPurchasesHelper.syncPurchases(
+                isRestore = false,
+                appInBackground = false,
+                onSuccess = any(),
+                onError = captureLambda()
+            )
+        } answers {
+            lambda<(PurchasesError) -> Unit>().captured.also {
+                it.invoke(error)
+            }
+        }
+
+
+        var result: CustomerInfo? = null
+        var exception: Throwable? = null
+        runCatching {
+            result = purchases.awaitSyncPurchases()
+        }.onFailure {
+            exception = it
+        }
+
+        verify(exactly = 1) {
+            mockSyncPurchasesHelper.syncPurchases(
+                isRestore = false,
+                appInBackground = false,
+                onSuccess = captureLambda(),
+                onError = any()
+            )
+        }
+
+        assertThat(result).isNull()
+        assertThat(exception).isNotNull
+        assertThat(exception).isInstanceOf(PurchasesException::class.java)
+        assertThat((exception as PurchasesException).code).isEqualTo(PurchasesErrorCode.CustomerInfoError)
+    }
 
     // endregion
+
 }
