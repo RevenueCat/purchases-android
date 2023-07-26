@@ -21,6 +21,9 @@ files_with_version_number = {
   './docs/index.html' => ['url=https://sdk.revenuecat.com/android/{x}/index.html'],
   './gradle.properties' => ['VERSION_NAME={x}'],
   './.version' => ['{x}'],
+  './examples/MagicWeather/gradle/libs.versions.toml' => ['purchases = "{x}"'],
+  './examples/MagicWeatherCompose/gradle/libs.versions.toml' => ['purchases = "{x}"'],
+  './examples/CustomEntitlementComputationSample/gradle/libs.versions.toml' => ['purchases = "{x}"'],
 }
 
 repo_name = 'purchases-android'
@@ -319,6 +322,16 @@ platform :android do
   desc "Builds a Magic Weather Compose APK"
   lane :build_magic_weather_compose do |options|
     project_dir = "examples/MagicWeatherCompose"
+    task = "assembleDebug"
+    gradle(
+      project_dir: project_dir,
+      task: task,
+    )
+  end
+
+  desc "Builds a Magic Weather Compose APK"
+  lane :build_custom_entitlement_computation_sample do |options|
+    project_dir = "examples/CustomEntitlementComputationSample"
     task = "assembleDebug"
     gradle(
       project_dir: project_dir,
