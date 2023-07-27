@@ -83,7 +83,8 @@ suspend fun Purchases.awaitPurchase(purchaseParams: PurchaseParams): PurchaseRes
  * Only available in Kotlin.
  *
  * @throws [PurchasesException] with a [PurchasesError] if there's an error retrieving the products.
- * @return The fetched list of [StoreProduct].
+ * @return A list of [StoreProduct] with the products that have been able to be fetched from the store successfully.
+ * Not found products will be ignored.
  */
 @JvmSynthetic
 @ExperimentalPreviewRevenueCatPurchasesAPI

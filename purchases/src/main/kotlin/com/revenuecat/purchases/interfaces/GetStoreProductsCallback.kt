@@ -7,7 +7,8 @@ interface GetStoreProductsCallback {
     /**
      * Will be called after products have been fetched successfully
      *
-     * @param storeProducts List of [StoreProduct] retrieved after a successful call to fetch [StoreProduct]
+     * @param [storeProducts] The list of [StoreProduct] that have been able to be successfully fetched from the store.
+     * Not found products will be ignored.
      */
     @JvmSuppressWildcards
     fun onReceived(storeProducts: List<StoreProduct>)
