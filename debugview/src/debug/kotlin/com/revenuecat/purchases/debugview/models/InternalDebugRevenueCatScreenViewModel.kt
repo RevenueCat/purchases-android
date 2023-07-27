@@ -58,7 +58,8 @@ internal class InternalDebugRevenueCatScreenViewModel : DebugRevenueCatViewModel
         return SettingGroupState.Loaded(
             title = "Customer info",
             settings = listOf(
-                SettingState.TextLoaded("Customer ID", customerInfo.originalAppUserId),
+                SettingState.TextLoaded("Current User ID", Purchases.sharedInstance.appUserID),
+                SettingState.TextLoaded("Original User ID", customerInfo.originalAppUserId),
                 SettingState.TextLoaded(
                     "Active entitlements",
                     customerInfo.entitlements.active
@@ -66,6 +67,8 @@ internal class InternalDebugRevenueCatScreenViewModel : DebugRevenueCatViewModel
                         .joinToString("\n")
                         .takeIf { it.isNotEmpty() } ?: "None",
                 ),
+                SettingState.TextLoaded("Verification result", customerInfo.entitlements.verification.name),
+                SettingState.TextLoaded("Request date", customerInfo.requestDate.toString()),
             ),
         )
     }
