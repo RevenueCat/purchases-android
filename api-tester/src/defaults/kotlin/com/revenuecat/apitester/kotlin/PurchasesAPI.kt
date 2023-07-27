@@ -1,6 +1,5 @@
 package com.revenuecat.apitester.kotlin
 
-import android.content.Context
 import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
@@ -23,7 +22,6 @@ import com.revenuecat.purchases.logOutWith
 import com.revenuecat.purchases.models.BillingFeature
 import com.revenuecat.purchases.restorePurchasesWith
 import com.revenuecat.purchases.syncPurchasesWith
-import java.util.concurrent.ExecutorService
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Suppress("unused", "UNUSED_VARIABLE", "EmptyFunctionBlock", "DEPRECATION")
@@ -145,8 +143,6 @@ private class PurchasesAPI {
 
     @Suppress("ForbiddenComment")
     fun checkConfiguration(
-        context: Context,
-        executorService: ExecutorService,
         purchasesConfiguration: PurchasesConfiguration,
     ) {
         val features: List<BillingFeature> = ArrayList()
@@ -155,5 +151,12 @@ private class PurchasesAPI {
         Purchases.configure(purchasesConfiguration)
 
         Purchases.debugLogsEnabled = true
+    }
+
+    fun checkLogInResult(
+        logInResult: LogInResult,
+    ) {
+        val created: Boolean = logInResult.created
+        val customerInfo: CustomerInfo = logInResult.customerInfo
     }
 }
