@@ -158,5 +158,6 @@ private class PurchasesAPI {
     ) {
         val created: Boolean = logInResult.created
         val customerInfo: CustomerInfo = logInResult.customerInfo
+        LogInResult(customerInfo, created)
     }
 }
