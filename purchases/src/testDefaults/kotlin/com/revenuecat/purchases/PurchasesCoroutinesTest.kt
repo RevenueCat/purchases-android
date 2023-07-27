@@ -1,11 +1,9 @@
 package com.revenuecat.purchases
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.revenuecat.purchases.data.LoginResult
+import com.revenuecat.purchases.data.LogInResult
 import com.revenuecat.purchases.models.StoreTransaction
-import io.mockk.Runs
 import io.mockk.every
-import io.mockk.just
 import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -149,7 +147,7 @@ internal class PurchasesCoroutinesTest : BasePurchasesTest() {
         }
         mockOfferingsManagerFetchOfferings(newAppUserId)
 
-        var result: LoginResult? = null
+        var result: LogInResult? = null
         var exception: Throwable? = null
         runCatching {
             result = purchases.awaitLogIn(newAppUserId)

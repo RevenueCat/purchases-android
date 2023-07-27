@@ -5,7 +5,7 @@ import com.revenuecat.purchases.CustomerInfo
 /**
  * The result of a successful login operation. Used in coroutines.
  */
-data class LoginResult(
+data class LogInResult(
     /**
      * The [CustomerInfo] associated with the logged in user.
      */

@@ -13,7 +13,7 @@ import com.revenuecat.purchases.awaitLogIn
 import com.revenuecat.purchases.awaitLogOut
 import com.revenuecat.purchases.awaitRestore
 import com.revenuecat.purchases.awaitSyncPurchases
-import com.revenuecat.purchases.data.LoginResult
+import com.revenuecat.purchases.data.LogInResult
 import com.revenuecat.purchases.getCustomerInfoWith
 import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
@@ -110,7 +110,7 @@ private class PurchasesAPI {
         val customerInfo: CustomerInfo = purchases.awaitCustomerInfo()
         val customerInfoFetchPolicy: CustomerInfo =
             purchases.awaitCustomerInfo(fetchPolicy = CacheFetchPolicy.FETCH_CURRENT)
-        val logInResult: LoginResult = purchases.awaitLogIn("appUserID")
+        val logInResult: LogInResult = purchases.awaitLogIn("appUserID")
         val (customerInfo2: CustomerInfo, created: Boolean) = purchases.awaitLogIn("appUserID")
         val customerInfo3: CustomerInfo = purchases.awaitLogOut()
         val customerInfo4: CustomerInfo = purchases.awaitRestore()

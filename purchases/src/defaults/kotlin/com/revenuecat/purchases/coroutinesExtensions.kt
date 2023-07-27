@@ -1,7 +1,7 @@
 package com.revenuecat.purchases
 
 import com.revenuecat.purchases.CacheFetchPolicy.CACHED_OR_FETCHED
-import com.revenuecat.purchases.data.LoginResult
+import com.revenuecat.purchases.data.LogInResult
 import com.revenuecat.purchases.interfaces.SyncPurchasesCallback
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
@@ -51,12 +51,12 @@ suspend fun Purchases.awaitCustomerInfo(
 @JvmSynthetic
 @ExperimentalPreviewRevenueCatPurchasesAPI
 @Throws(PurchasesTransactionException::class)
-suspend fun Purchases.awaitLogIn(appUserID: String): LoginResult {
+suspend fun Purchases.awaitLogIn(appUserID: String): LogInResult {
     return suspendCoroutine { continuation ->
         logInWith(
             appUserID,
             onSuccess = { customerInfo, created ->
-                continuation.resume(LoginResult(customerInfo, created))
+                continuation.resume(LogInResult(customerInfo, created))
             },
             onError = { continuation.resumeWithException(PurchasesException(it)) },
         )
