@@ -10,11 +10,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.revenuecat.purchases.debugview.models.InternalDebugRevenueCatScreenViewModel
+import com.revenuecat.purchases.debugview.models.SettingGroupState
+import com.revenuecat.purchases.debugview.models.SettingScreenState
+import com.revenuecat.purchases.debugview.models.SettingState
 import com.revenuecat.purchases.debugview.settings.SettingGroup
+import kotlinx.coroutines.flow.MutableStateFlow
 
 @Composable
 internal fun InternalDebugRevenueCatScreen(
-    screenViewModel: InternalDebugRevenueCatScreenViewModel = viewModel(),
+    screenViewModel: DebugRevenueCatViewModel = viewModel<InternalDebugRevenueCatScreenViewModel>(),
 ) {
     Column(
         modifier = Modifier
@@ -25,8 +29,36 @@ internal fun InternalDebugRevenueCatScreen(
     }
 }
 
-@Preview
+@Preview(showBackground = true)
 @Composable
 private fun InternalDebugRevenueCatScreenPreview() {
-    InternalDebugRevenueCatScreen()
+    InternalDebugRevenueCatScreen(
+        screenViewModel = object : DebugRevenueCatViewModel {
+            override val state = MutableStateFlow<SettingScreenState>(
+                SettingScreenState.Configured(
+                    SettingGroupState(
+                        "Configuration",
+                        listOf(
+                            SettingState.Text("SDK version", "3.0.0"),
+                            SettingState.Text("Observer mode", "true"),
+                        ),
+                    ),
+                    SettingGroupState(
+                        "Customer info",
+                        listOf(
+                            SettingState.Text("Current User ID", "current-user-id"),
+                            SettingState.Text("Active entitlements", "pro, premium"),
+                        ),
+                    ),
+                    SettingGroupState(
+                        "Offerings",
+                        listOf(
+                            SettingState.Text("current", "TODO"),
+                            SettingState.Text("default", "TODO"),
+                        ),
+                    ),
+                ),
+            )
+        },
+    )
 }
