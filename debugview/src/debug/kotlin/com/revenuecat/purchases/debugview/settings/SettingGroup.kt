@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.Card
 import androidx.compose.material.CircularProgressIndicator
+import androidx.compose.material.Divider
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
@@ -40,6 +41,7 @@ internal fun SettingGroup(
                     is SettingGroupState.Loading -> CircularProgressIndicator(modifier = Modifier.padding(16.dp))
                     is SettingGroupState.Loaded -> settingGroupState.settings.forEach { settingState ->
                         SettingText(settingState)
+                        Divider()
                     }
                 }
             }

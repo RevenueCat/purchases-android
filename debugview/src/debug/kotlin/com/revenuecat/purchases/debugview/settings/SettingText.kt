@@ -2,8 +2,8 @@ package com.revenuecat.purchases.debugview.settings
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -22,29 +22,27 @@ import com.revenuecat.purchases.debugview.models.SettingState
 internal fun SettingText(
     settingState: SettingState,
 ) {
-    Column {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                text = settingState.title,
-                style = MaterialTheme.typography.body1,
-            )
-            Box {
-                when (settingState) {
-                    is SettingState.Loading -> CircularProgressIndicator(modifier = Modifier.size(16.dp))
-                    is SettingState.TextLoaded -> Text(
-                        text = settingState.content,
-                        style = MaterialTheme.typography.subtitle2,
-                    )
-                }
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 16.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = settingState.title,
+            style = MaterialTheme.typography.body1,
+        )
+        Spacer(modifier = Modifier.size(16.dp))
+        Box {
+            when (settingState) {
+                is SettingState.Loading -> CircularProgressIndicator(modifier = Modifier.size(16.dp))
+                is SettingState.TextLoaded -> Text(
+                    text = settingState.content,
+                    style = MaterialTheme.typography.subtitle2,
+                )
             }
         }
-        Divider()
     }
 }
 
