@@ -12,3 +12,7 @@ formatting:
     active: true
     autoCorrect: true
     useTrailingCommaOnDeclarationSite: true
+style:
+  UnusedPrivateMember:
+    active: true
+    ignoreAnnotated: [ 'Preview' ]

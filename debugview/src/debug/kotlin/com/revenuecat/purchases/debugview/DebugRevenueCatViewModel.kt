@@ -1,7 +1,8 @@
 package com.revenuecat.purchases.debugview
 
-import com.revenuecat.purchases.debugview.models.SettingGroupState
+import com.revenuecat.purchases.debugview.models.SettingScreenState
+import kotlinx.coroutines.flow.StateFlow
 
 internal interface DebugRevenueCatViewModel {
-    val settingGroups: List<SettingGroupState>
+    val state: StateFlow<SettingScreenState>
 }

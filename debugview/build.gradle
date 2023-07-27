@@ -30,5 +30,8 @@ dependencies {
     implementation libs.compose.ui.graphics
     implementation libs.compose.ui.tooling.preview
     implementation libs.compose.material
+    implementation libs.androidx.lifecycle.runtime.ktx
+    implementation libs.androidx.lifecycle.viewmodel
+    implementation libs.androidx.lifecycle.viewmodel.compose
     debugImplementation libs.compose.ui.tooling
 }
