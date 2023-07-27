@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
@@ -35,8 +34,7 @@ internal fun SettingText(
         Spacer(modifier = Modifier.size(16.dp))
         Box {
             when (settingState) {
-                is SettingState.Loading -> CircularProgressIndicator(modifier = Modifier.size(16.dp))
-                is SettingState.TextLoaded -> Text(
+                is SettingState.Text -> Text(
                     text = settingState.content,
                     style = MaterialTheme.typography.subtitle2,
                 )
@@ -48,5 +46,5 @@ internal fun SettingText(
 @Preview
 @Composable
 private fun SettingTextPreview() {
-    SettingText(SettingState.Loading("Settings title"))
+    SettingText(SettingState.Text("Settings title", "Settings content"))
 }

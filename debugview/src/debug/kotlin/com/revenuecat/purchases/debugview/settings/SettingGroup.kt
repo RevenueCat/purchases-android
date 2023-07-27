@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.Card
-import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.Divider
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
@@ -37,12 +36,9 @@ internal fun SettingGroup(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                when (settingGroupState) {
-                    is SettingGroupState.Loading -> CircularProgressIndicator(modifier = Modifier.padding(16.dp))
-                    is SettingGroupState.Loaded -> settingGroupState.settings.forEach { settingState ->
-                        SettingText(settingState)
-                        Divider()
-                    }
+                settingGroupState.settings.forEach { settingState ->
+                    SettingText(settingState)
+                    Divider()
                 }
             }
         }
@@ -53,12 +49,11 @@ internal fun SettingGroup(
 @Composable
 private fun SettingGroupPreview() {
     SettingGroup(
-        SettingGroupState.Loaded(
+        SettingGroupState(
             "Settings group",
             listOf(
-                SettingState.Loading("Settings text 1"),
-                SettingState.TextLoaded("Settings text 2", "Settings content 2"),
-                SettingState.Loading("Settings text 3"),
+                SettingState.Text("Settings text 1", "Settings content 1"),
+                SettingState.Text("Settings text 2", "Settings content 2"),
             ),
         ),
     )

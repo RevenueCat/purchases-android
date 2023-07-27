@@ -54,41 +54,41 @@ internal class InternalDebugRevenueCatScreenViewModel : ViewModel(), DebugRevenu
         } else {
             "Not configured"
         }
-        return SettingGroupState.Loaded(
+        return SettingGroupState(
             "Configuration",
             listOf(
-                SettingState.TextLoaded("SDK version", Purchases.frameworkVersion),
-                SettingState.TextLoaded("Is configured", "${Purchases.isConfigured}"),
-                SettingState.TextLoaded("Store", storeName),
-                SettingState.TextLoaded("Observer mode", observerMode),
+                SettingState.Text("SDK version", Purchases.frameworkVersion),
+                SettingState.Text("Is configured", "${Purchases.isConfigured}"),
+                SettingState.Text("Store", storeName),
+                SettingState.Text("Observer mode", observerMode),
             ),
         )
     }
 
     private fun customerInfoGroup(customerInfo: CustomerInfo): SettingGroupState {
-        return SettingGroupState.Loaded(
+        return SettingGroupState(
             title = "Customer info",
             settings = listOf(
-                SettingState.TextLoaded("Current User ID", Purchases.sharedInstance.appUserID),
-                SettingState.TextLoaded("Original User ID", customerInfo.originalAppUserId),
-                SettingState.TextLoaded(
+                SettingState.Text("Current User ID", Purchases.sharedInstance.appUserID),
+                SettingState.Text("Original User ID", customerInfo.originalAppUserId),
+                SettingState.Text(
                     "Active entitlements",
                     customerInfo.entitlements.active
                         .map { "${it.key} until ${it.value.expirationDate}" }
                         .joinToString("\n")
                         .takeIf { it.isNotEmpty() } ?: "None",
                 ),
-                SettingState.TextLoaded("Verification result", customerInfo.entitlements.verification.name),
-                SettingState.TextLoaded("Request date", customerInfo.requestDate.toString()),
+                SettingState.Text("Verification result", customerInfo.entitlements.verification.name),
+                SettingState.Text("Request date", customerInfo.requestDate.toString()),
             ),
         )
     }
 
     private fun offeringsGroup(offerings: Offerings): SettingGroupState {
-        return SettingGroupState.Loaded(
+        return SettingGroupState(
             title = "Offerings",
             settings = offerings.all.values.map { offering ->
-                SettingState.TextLoaded(
+                SettingState.Text(
                     title = offering.identifier,
                     content = "TODO",
                 )
