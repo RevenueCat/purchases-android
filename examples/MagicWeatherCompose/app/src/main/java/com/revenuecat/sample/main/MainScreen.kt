@@ -4,11 +4,18 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.BottomNavigation
 import androidx.compose.material.BottomNavigationItem
 import androidx.compose.material.Icon
+import androidx.compose.material.IconButton
 import androidx.compose.material.TopAppBar
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Build
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberStandardBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
@@ -21,15 +28,25 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.revenuecat.purchases.debugview.DebugRevenueCatBottomSheet
+import com.revenuecat.sample.BuildConfig
 import com.revenuecat.sample.Screen
 import com.revenuecat.sample.user.UserScreen
 import com.revenuecat.sample.weather.WeatherScreen
+import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(
     navController: NavHostController = rememberNavController(),
     changeScreenCallback: (Screen) -> Unit,
 ) {
+    val rcDebugMenuSheetState = rememberStandardBottomSheetState(
+        initialValue = SheetValue.Hidden,
+        skipHiddenState = false,
+    )
+    val scope = rememberCoroutineScope()
+
     Scaffold(
         topBar = {
             val currentRoute = currentRoute(navController)
@@ -41,6 +58,16 @@ fun MainScreen(
                         fontWeight = FontWeight.Black,
                     )
                 },
+                actions = {
+                    if (BuildConfig.DEBUG) {
+                        IconButton(onClick = { scope.launch { rcDebugMenuSheetState.show() } }) {
+                            Icon(
+                                imageVector = Icons.Default.Build,
+                                contentDescription = "RC Debug menu",
+                            )
+                        }
+                    }
+                },
                 backgroundColor = Color.Transparent,
                 elevation = 0.dp,
             )
@@ -48,6 +75,7 @@ fun MainScreen(
         bottomBar = { BottomBarNavigation(navController) },
     ) {
         MainNavHost(navController, changeScreenCallback, Modifier.padding(it))
+        DebugRevenueCatBottomSheet(sheetState = rcDebugMenuSheetState)
     }
 }
 

@@ -21,7 +21,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.revenuecat.purchases.debugview.DebugRevenueCatScreen
 
 @Composable
 fun WeatherScreen(
@@ -44,36 +43,32 @@ fun WeatherScreen(
         viewModel.resetErrorMessage()
     }
 
-    if (uiState.value.shouldDisplayDebugView) {
-        DebugRevenueCatScreen()
-    } else {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(colorResource(id = uiState.value.weatherData.weatherColor)),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(colorResource(id = uiState.value.weatherData.weatherColor)),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+    ) {
+        Box(
+            modifier = Modifier.weight(1f, true),
+            contentAlignment = Alignment.Center,
         ) {
-            Box(
-                modifier = Modifier.weight(1f, true),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = uiState.value.weatherData.displayText,
-                    fontSize = 82.sp,
-                    color = Color.White,
-                    textAlign = TextAlign.Center,
-                    lineHeight = 94.sp,
-                )
-            }
-            Button(
-                onClick = viewModel::changeWeather,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(32.dp),
-            ) {
-                Text(text = "Change weather")
-            }
+            Text(
+                text = uiState.value.weatherData.displayText,
+                fontSize = 82.sp,
+                color = Color.White,
+                textAlign = TextAlign.Center,
+                lineHeight = 94.sp,
+            )
+        }
+        Button(
+            onClick = viewModel::changeWeather,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(32.dp),
+        ) {
+            Text(text = "Change weather")
         }
     }
 }
