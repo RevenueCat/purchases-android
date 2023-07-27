@@ -9,6 +9,7 @@ import com.revenuecat.purchases.PurchaseParams
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.sha1
+import com.revenuecat.purchases.configureSdk
 import com.revenuecat.purchases.factories.StoreProductFactory
 import com.revenuecat.purchases.factories.StoreTransactionFactory
 import com.revenuecat.purchases.forceServerErrors
@@ -288,7 +289,7 @@ class OfflineEntitlementsWithInitialRequestsCompletedAndNoInitialPurchasesIntegr
 
                     Purchases.resetSingleton()
                     mockActivePurchases(initialActivePurchases)
-                    configureSdk(activity, forceServerErrors = false)
+                    Purchases.configureSdk(activity, testUserId, mockBillingAbstract, forceServerErrors = false)
 
                     assertAcknowledgePurchaseDidHappen()
 
