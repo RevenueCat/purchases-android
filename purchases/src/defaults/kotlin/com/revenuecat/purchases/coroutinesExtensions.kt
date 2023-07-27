@@ -2,7 +2,6 @@ package com.revenuecat.purchases
 
 import com.revenuecat.purchases.CacheFetchPolicy.CACHED_OR_FETCHED
 import com.revenuecat.purchases.data.LogInResult
-import com.revenuecat.purchases.interfaces.SyncPurchasesCallback
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
@@ -120,18 +119,16 @@ suspend fun Purchases.awaitRestore(): CustomerInfo {
 
 /**
  * This method will send all the purchases to the RevenueCat backend. Call this when using your own implementation
- * for subscriptions anytime a sync is needed, such as when migrating existing users to RevenueCat. The
- * [SyncPurchasesCallback.onSuccess] callback will be called if all purchases have been synced successfully or
- * there are no purchases. Otherwise, the [SyncPurchasesCallback.onError] callback will be called with a
- * [PurchasesError] indicating the first error found.
+ * for subscriptions anytime a sync is needed, such as when migrating existing users to RevenueCat.
  *
  * Coroutine friendly version of [Purchases.syncPurchases].
  *
  * @warning This function is marked as [ExperimentalPreviewRevenueCatPurchasesAPI] and may change in the future.
  * Only available in Kotlin.
  *
- * @throws [PurchasesException] with a [PurchasesError] if there's an error retrieving the customer info.
- * @return The [CustomerInfo] associated to the current user.
+ * @throws [PurchasesException] with the first [PurchasesError] found while syncing the purchases.
+ * @return The [CustomerInfo] associated to the user, after all purchases have been successfully synced. If there are no
+ * purchases to sync, the customer info will be returned without any changes.
  */
 @JvmSynthetic
 @ExperimentalPreviewRevenueCatPurchasesAPI
