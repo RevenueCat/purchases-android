@@ -1,6 +1,5 @@
 package com.revenuecat.apitester.kotlin
 
-import android.content.Context
 import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
@@ -9,6 +8,11 @@ import com.revenuecat.purchases.PurchasesConfiguration
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.awaitCustomerInfo
+import com.revenuecat.purchases.awaitLogIn
+import com.revenuecat.purchases.awaitLogOut
+import com.revenuecat.purchases.awaitRestore
+import com.revenuecat.purchases.awaitSyncPurchases
+import com.revenuecat.purchases.data.LogInResult
 import com.revenuecat.purchases.getCustomerInfoWith
 import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
@@ -18,7 +22,6 @@ import com.revenuecat.purchases.logOutWith
 import com.revenuecat.purchases.models.BillingFeature
 import com.revenuecat.purchases.restorePurchasesWith
 import com.revenuecat.purchases.syncPurchasesWith
-import java.util.concurrent.ExecutorService
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Suppress("unused", "UNUSED_VARIABLE", "EmptyFunctionBlock", "DEPRECATION")
@@ -105,6 +108,11 @@ private class PurchasesAPI {
         val customerInfo: CustomerInfo = purchases.awaitCustomerInfo()
         val customerInfoFetchPolicy: CustomerInfo =
             purchases.awaitCustomerInfo(fetchPolicy = CacheFetchPolicy.FETCH_CURRENT)
+        val logInResult: LogInResult = purchases.awaitLogIn("appUserID")
+        val (customerInfo2: CustomerInfo, created: Boolean) = purchases.awaitLogIn("appUserID")
+        val customerInfo3: CustomerInfo = purchases.awaitLogOut()
+        val customerInfo4: CustomerInfo = purchases.awaitRestore()
+        val customerInfo5: CustomerInfo = purchases.awaitSyncPurchases()
     }
 
     fun check(purchases: Purchases, attributes: Map<String, String>) {
@@ -135,8 +143,6 @@ private class PurchasesAPI {
 
     @Suppress("ForbiddenComment")
     fun checkConfiguration(
-        context: Context,
-        executorService: ExecutorService,
         purchasesConfiguration: PurchasesConfiguration,
     ) {
         val features: List<BillingFeature> = ArrayList()
@@ -145,5 +151,13 @@ private class PurchasesAPI {
         Purchases.configure(purchasesConfiguration)
 
         Purchases.debugLogsEnabled = true
+    }
+
+    fun checkLogInResult(
+        logInResult: LogInResult,
+    ) {
+        val created: Boolean = logInResult.created
+        val customerInfo: CustomerInfo = logInResult.customerInfo
+        LogInResult(customerInfo, created)
     }
 }

@@ -109,7 +109,8 @@ fun Purchases.getProductsWith(
  * @param [productIds] List of productIds
  * @param [type] A product type to filter by
  * @param [onError] Will be called if there was an error with the purchase
- * @param [onGetStoreProducts] Will be called after fetching StoreProducts
+ * @param [onGetStoreProducts] Will be called after fetching StoreProducts with the list of [StoreProduct] that
+ * have been able to be successfully fetched from the store. Not found products will be ignored.
  */
 @Suppress("unused")
 fun Purchases.getProductsWith(

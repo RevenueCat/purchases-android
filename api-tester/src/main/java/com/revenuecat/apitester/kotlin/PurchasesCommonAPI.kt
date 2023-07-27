@@ -15,6 +15,7 @@ import com.revenuecat.purchases.PurchaseResult
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesConfiguration
 import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.awaitGetProducts
 import com.revenuecat.purchases.awaitOfferings
 import com.revenuecat.purchases.awaitPurchase
 import com.revenuecat.purchases.getOfferingsWith
@@ -136,6 +137,7 @@ private class PurchasesCommonAPI {
         val purchasePackageBuilder: PurchaseParams.Builder = PurchaseParams.Builder(activity, packageToPurchase)
         val (transaction, newCustomerInfo) = purchases.awaitPurchase(purchasePackageBuilder.build())
         val purchaseResult: PurchaseResult = purchases.awaitPurchase(purchasePackageBuilder.build())
+        val getProductsResult: List<StoreProduct> = purchases.awaitGetProducts(listOf("product"))
     }
 
     @Suppress("ForbiddenComment")

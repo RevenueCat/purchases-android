@@ -1,5 +1,6 @@
 package com.revenuecat.purchases
 
+import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
@@ -66,6 +67,40 @@ suspend fun Purchases.awaitPurchase(purchaseParams: PurchaseParams): PurchaseRes
                     continuation.resumeWithException(PurchasesTransactionException(purchasesError, userCancelled))
                 },
             ),
+        )
+    }
+}
+
+/**
+ * Gets the StoreProduct(s) for the given list of product ids of type [type], or for all types if no type is specified.
+ *
+ * Coroutine friendly version of [Purchases.getProducts].
+ *
+ * @param [productIds] List of productIds
+ * @param [type] A product type to filter by
+ *
+ * @warning This function is marked as [ExperimentalPreviewRevenueCatPurchasesAPI] and may change in the future.
+ * Only available in Kotlin.
+ *
+ * @throws [PurchasesException] with a [PurchasesError] if there's an error retrieving the products.
+ * @return A list of [StoreProduct] with the products that have been able to be fetched from the store successfully.
+ * Not found products will be ignored.
+ */
+@JvmSynthetic
+@ExperimentalPreviewRevenueCatPurchasesAPI
+@Throws(PurchasesTransactionException::class)
+suspend fun Purchases.awaitGetProducts(
+    productIds: List<String>,
+    type: ProductType? = null,
+): List<StoreProduct> {
+    return suspendCoroutine { continuation ->
+        getProductsWith(
+            productIds,
+            type,
+            onGetStoreProducts = continuation::resume,
+            onError = {
+                continuation.resumeWithException(PurchasesException(it))
+            },
         )
     }
 }
