@@ -27,7 +27,8 @@ internal fun InternalDebugRevenueCatScreen(
     Column(
         modifier = Modifier
             .verticalScroll(rememberScrollState())
-            .fillMaxWidth(),
+            .fillMaxWidth()
+            .padding(bottom = 16.dp),
     ) {
         Text(
             text = "RevenueCat Debug Menu",

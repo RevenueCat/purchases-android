@@ -10,12 +10,13 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Build
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberStandardBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
@@ -41,10 +42,7 @@ fun MainScreen(
     navController: NavHostController = rememberNavController(),
     changeScreenCallback: (Screen) -> Unit,
 ) {
-    val rcDebugMenuSheetState = rememberStandardBottomSheetState(
-        initialValue = SheetValue.Hidden,
-        skipHiddenState = false,
-    )
+    var displayRCDebugMenu by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
     Scaffold(
@@ -60,7 +58,7 @@ fun MainScreen(
                 },
                 actions = {
                     if (BuildConfig.DEBUG) {
-                        IconButton(onClick = { scope.launch { rcDebugMenuSheetState.show() } }) {
+                        IconButton(onClick = { scope.launch { displayRCDebugMenu = true } }) {
                             Icon(
                                 imageVector = Icons.Default.Build,
                                 contentDescription = "RC Debug menu",
@@ -75,7 +73,9 @@ fun MainScreen(
         bottomBar = { BottomBarNavigation(navController) },
     ) {
         MainNavHost(navController, changeScreenCallback, Modifier.padding(it))
-        DebugRevenueCatBottomSheet(sheetState = rcDebugMenuSheetState)
+        DebugRevenueCatBottomSheet(displayRCDebugMenu) {
+            displayRCDebugMenu = false
+        }
     }
 }
 
