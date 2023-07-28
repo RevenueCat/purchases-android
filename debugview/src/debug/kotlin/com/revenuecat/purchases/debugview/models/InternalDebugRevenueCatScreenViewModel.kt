@@ -1,11 +1,13 @@
 package com.revenuecat.purchases.debugview.models
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.awaitCustomerInfo
 import com.revenuecat.purchases.awaitOfferings
 import com.revenuecat.purchases.debugview.DebugRevenueCatViewModel
@@ -31,14 +33,18 @@ internal class InternalDebugRevenueCatScreenViewModel : ViewModel(), DebugRevenu
 
     private fun refreshInfo() {
         viewModelScope.launch {
-            val offerings = Purchases.sharedInstance.awaitOfferings()
-            val customerInfo = Purchases.sharedInstance.awaitCustomerInfo()
-            _state.update {
-                SettingScreenState.Configured(
-                    configurationGroup(),
-                    customerInfoGroup(customerInfo),
-                    offeringsGroup(offerings),
-                )
+            try {
+                val offerings = Purchases.sharedInstance.awaitOfferings()
+                val customerInfo = Purchases.sharedInstance.awaitCustomerInfo()
+                _state.update {
+                    SettingScreenState.Configured(
+                        configurationGroup(),
+                        customerInfoGroup(customerInfo),
+                        offeringsGroup(offerings),
+                    )
+                }
+            } catch (e: PurchasesException) {
+                Log.e("RevenueCatDebugView", "Error getting RevenueCat SDK info for debug view. Exception: $e")
             }
         }
     }
