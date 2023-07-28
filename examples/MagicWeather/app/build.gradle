@@ -5,7 +5,6 @@ plugins {
 
 android {
     compileSdkVersion compileVersion
-    buildToolsVersion "30.0.3"
 
     defaultConfig {
         applicationId "com.revenuecat.purchases_sample"
