@@ -1,5 +1,5 @@
 [versions]
-agp = "8.0.2"
+agp = "8.1.0"
 kotlin = "1.7.21"
 buildTools = "33.0.2"
 billing = "5.2.1"
