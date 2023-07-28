@@ -1024,12 +1024,22 @@ internal class PurchasesOrchestrator constructor(
             return
         }
 
+        var previousProductId = oldProductId
+
+        if (oldProductId.contains(":")) {
+            previousProductId = oldProductId.substringBefore(":")
+            warnLog(
+                "Using incorrect oldProductId: $oldProductId. The productId should not contain the basePlanId. " +
+                    "Using productId: $previousProductId.",
+            )
+        }
+
         billing.findPurchaseInPurchaseHistory(
             appUserID,
             ProductType.SUBS,
-            oldProductId,
+            previousProductId,
             onCompletion = { purchaseRecord ->
-                log(LogIntent.PURCHASE, PurchaseStrings.FOUND_EXISTING_PURCHASE.format(oldProductId))
+                log(LogIntent.PURCHASE, PurchaseStrings.FOUND_EXISTING_PURCHASE.format(previousProductId))
 
                 billing.makePurchaseAsync(
                     activity,
