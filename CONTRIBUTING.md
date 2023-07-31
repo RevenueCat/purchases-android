@@ -19,7 +19,7 @@ We use sdkman to specify the environment that should be used when developing. In
 which should install the specific Java version we expect you to use.
 
 ```bash
-$fastlane setup_dev
+bundle exec fastlane setup_dev
 ```
 
 It links in our pre-commit hook to run detekt. That saves you time so you don't have to wait for our CI to do it ⏱.
