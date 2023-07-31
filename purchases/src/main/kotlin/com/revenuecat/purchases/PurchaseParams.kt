@@ -84,7 +84,9 @@ data class PurchaseParams(val builder: Builder) {
         }
 
         /*
-         * The product ID of the product to change from when initiating a product change.
+         * The product ID of the product to change from when initiating a product change. We expect the subscriptionId
+         * only. If a string including `:` is passed in, we will assume the string is in the form
+         * `productId:basePlanId` and anything after the `:` will be ignored.
          *
          * Product changes are only available in the Play Store. Ignored for Amazon Appstore purchases.
          */

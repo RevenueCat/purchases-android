@@ -19,6 +19,7 @@ import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
 import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
+import com.revenuecat.purchases.models.GoogleProrationMode
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.utils.Responses
@@ -249,6 +250,80 @@ internal class PurchasesTest : BasePurchasesTest() {
             )
         }
     }
+
+    // region purchasing with upgrade/downgrade
+
+    @Test
+    fun `purchasing an upgrade with actual productId starts purchase with expected parameters`() {
+        val (_, offerings) = stubOfferings("onemonth_freetrial")
+        val packageToPurchase = offerings[STUB_OFFERING_IDENTIFIER]!!.monthly!!
+        val purchaseParams = PurchaseParams.Builder(mockActivity, packageToPurchase)
+            .oldProductId("oldProductId")
+            .googleProrationMode(GoogleProrationMode.DEFERRED)
+            .build()
+
+        mockPurchaseFound()
+
+        purchases.purchase(
+            purchaseParams,
+            object : PurchaseCallback {
+                override fun onCompleted(storeTransaction: StoreTransaction, customerInfo: CustomerInfo) {}
+                override fun onError(error: PurchasesError, userCancelled: Boolean) {}
+            },
+        )
+
+        verify(exactly = 1) {
+            mockBillingAbstract.makePurchaseAsync(
+                eq(mockActivity),
+                eq(appUserId),
+                packageToPurchase.product.purchasingData,
+                match { replaceProductInfo ->
+                    replaceProductInfo.oldPurchase.productIds.size == 1 &&
+                        replaceProductInfo.oldPurchase.productIds.first() == "oldProductId" &&
+                        replaceProductInfo.prorationMode == GoogleProrationMode.DEFERRED
+                },
+                STUB_OFFERING_IDENTIFIER,
+                null,
+            )
+        }
+    }
+
+    @Test
+    fun `purchasing an upgrade with productId and basePlanId finds purchase with productId`() {
+        val (_, offerings) = stubOfferings("onemonth_freetrial")
+        val packageToPurchase = offerings[STUB_OFFERING_IDENTIFIER]!!.monthly!!
+        val purchaseParams = PurchaseParams.Builder(mockActivity, packageToPurchase)
+            .oldProductId("oldProductId:oldBasePlanId")
+            .googleProrationMode(GoogleProrationMode.DEFERRED)
+            .build()
+
+        mockPurchaseFound()
+
+        purchases.purchase(
+            purchaseParams,
+            object : PurchaseCallback {
+                override fun onCompleted(storeTransaction: StoreTransaction, customerInfo: CustomerInfo) {}
+                override fun onError(error: PurchasesError, userCancelled: Boolean) {}
+            },
+        )
+
+        verify(exactly = 1) {
+            mockBillingAbstract.makePurchaseAsync(
+                eq(mockActivity),
+                eq(appUserId),
+                packageToPurchase.product.purchasingData,
+                match { replaceProductInfo ->
+                    replaceProductInfo.oldPurchase.productIds.size == 1 &&
+                        replaceProductInfo.oldPurchase.productIds.first() == "oldProductId" &&
+                        replaceProductInfo.prorationMode == GoogleProrationMode.DEFERRED
+                },
+                STUB_OFFERING_IDENTIFIER,
+                null,
+            )
+        }
+    }
+
+    // endregion
 
     // region customer info
 
