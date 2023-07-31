@@ -38,6 +38,19 @@ platform :android do
     gradle(task: "test")
   end
 
+  desc "Setup development environment"
+  lane :setup_dev do |options|
+    pre_commit_link = "../.git/hooks/pre-commit"
+    if File.exist?(pre_commit_link) || File.symlink?(pre_commit_link)
+      UI.message("pre-commit script already linked ✅")
+    else
+      UI.message("Linking pre-commit script 🔗")
+      Dir.chdir("..") do
+        sh("ln -s -f ../../scripts/pre-commit.sh .git/hooks/pre-commit")
+      end
+    end
+  end
+
   desc "Replaces version numbers, updates changelog and creates PR"
   lane :bump do |options|
     bump_version_update_changelog_create_pr(

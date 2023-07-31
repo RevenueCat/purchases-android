@@ -18,6 +18,12 @@ We use sdkman to specify the environment that should be used when developing. In
 [official instructions](https://sdkman.io/install). Navigate to the root of this project and do `sdk env install`,
 which should install the specific Java version we expect you to use.
 
+```bash
+bundle exec fastlane setup_dev
+```
+
+It links in our pre-commit hook to run detekt. That saves you time so you don't have to wait for our CI to do it ⏱.
+
 #### 1. Create an issue to make sure its something that should be done.
 
 Before submitting a Github issue, please make sure to
