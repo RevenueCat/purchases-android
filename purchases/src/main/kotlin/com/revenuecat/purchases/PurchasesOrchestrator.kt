@@ -15,6 +15,7 @@ import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.Config
+import com.revenuecat.purchases.common.Constants
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.ReceiptInfo
@@ -1026,8 +1027,8 @@ internal class PurchasesOrchestrator constructor(
 
         var previousProductId = oldProductId
 
-        if (oldProductId.contains(":")) {
-            previousProductId = oldProductId.substringBefore(":")
+        if (oldProductId.contains(Constants.SUBS_ID_BASE_PLAN_ID_SEPARATOR)) {
+            previousProductId = oldProductId.substringBefore(Constants.SUBS_ID_BASE_PLAN_ID_SEPARATOR)
             warnLog(
                 "Using incorrect oldProductId: $oldProductId. The productId should not contain the basePlanId. " +
                     "Using productId: $previousProductId.",

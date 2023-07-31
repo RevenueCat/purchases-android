@@ -121,7 +121,7 @@ internal object CustomerInfoFactory {
 
             val expirationObject = getJSONObject(productId)
 
-            val key = basePlanId?.let { "$productId:$it" } ?: productId
+            val key = basePlanId?.let { "$productId${Constants.SUBS_ID_BASE_PLAN_ID_SEPARATOR}$it" } ?: productId
             expirationDates[key] = expirationObject.optDate(jsonKey)
         }
 
