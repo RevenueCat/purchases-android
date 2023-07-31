@@ -2,7 +2,6 @@ package com.revenuecat.apitester.kotlin
 
 import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfo
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesConfiguration
 import com.revenuecat.purchases.PurchasesError
@@ -23,7 +22,6 @@ import com.revenuecat.purchases.models.BillingFeature
 import com.revenuecat.purchases.restorePurchasesWith
 import com.revenuecat.purchases.syncPurchasesWith
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Suppress("unused", "UNUSED_VARIABLE", "EmptyFunctionBlock", "DEPRECATION")
 private class PurchasesAPI {
     @SuppressWarnings("LongParameterList")

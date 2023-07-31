@@ -13,7 +13,6 @@ import androidx.navigation.fragment.navArgs
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.transition.MaterialContainerTransform
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PurchaseParams
@@ -35,7 +34,6 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 
 @SuppressWarnings("TooManyFunctions")
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListener {
 
     lateinit var binding: FragmentOfferingBinding
