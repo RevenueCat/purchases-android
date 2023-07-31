@@ -184,8 +184,9 @@ class Purchases internal constructor(
      * Initiate a purchase with the given [PurchaseParams].
      * Initialized with an [Activity] either a [Package], [StoreProduct], or [SubscriptionOption].
      *
-     * If a [Package] or [StoreProduct] is used to build the [PurchaseParams], the [defaultOption] will be purchased.
-     * [defaultOption] is selected via the following logic:
+     * If a [Package] or [StoreProduct] is used to build the [PurchaseParams], the [StoreProduct.defaultOption] will
+     * be purchased.
+     * [StoreProduct.defaultOption] is selected via the following logic:
      *   - Filters out offers with "rc-ignore-offer" tag
      *   - Uses [SubscriptionOption] with the longest free trial or cheapest first phase
      *   - Falls back to use base plan

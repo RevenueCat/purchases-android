@@ -33,7 +33,6 @@ import com.revenuecat.purchases.purchaseWith
 import java.net.URL
 import java.util.concurrent.ExecutorService
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Suppress("unused", "UNUSED_VARIABLE", "EmptyFunctionBlock")
 private class PurchasesCommonAPI {
     @SuppressWarnings("LongParameterList")
@@ -140,6 +139,7 @@ private class PurchasesCommonAPI {
         val getProductsResult: List<StoreProduct> = purchases.awaitGetProducts(listOf("product"))
     }
 
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     @Suppress("ForbiddenComment")
     fun checkConfiguration(context: Context, executorService: ExecutorService) {
         val features: List<BillingFeature> = ArrayList()
