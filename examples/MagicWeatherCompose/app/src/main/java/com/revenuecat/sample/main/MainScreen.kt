@@ -71,7 +71,13 @@ fun MainScreen(
         bottomBar = { BottomBarNavigation(navController) },
     ) {
         MainNavHost(navController, changeScreenCallback, Modifier.padding(it))
-        DebugRevenueCatBottomSheet(displayRCDebugMenu) {
+        DebugRevenueCatBottomSheet(
+            onPurchaseCompleted = { scope.launch { displayRCDebugMenu = false } },
+            onPurchaseErrored = { error ->
+                if (!error.userCancelled) scope.launch { displayRCDebugMenu = false }
+            },
+            displayRCDebugMenu,
+        ) {
             displayRCDebugMenu = false
         }
     }
