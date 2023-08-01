@@ -29,6 +29,7 @@ import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.debugview.DebugRevenueCatViewModel
 import com.revenuecat.purchases.debugview.findActivity
 import com.revenuecat.purchases.debugview.models.InternalDebugRevenueCatScreenViewModel
+import com.revenuecat.purchases.debugview.models.SettingScreenState
 import com.revenuecat.purchases.debugview.models.SettingState
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
@@ -38,10 +39,13 @@ import com.revenuecat.purchases.models.RecurrenceMode
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.models.SubscriptionOptions
+import kotlinx.coroutines.flow.StateFlow
 
 @Composable
 internal fun SettingOffering(
     settingState: SettingState.OfferingSetting,
+    activity: Activity = LocalContext.current.findActivity(),
+    screenViewModel: DebugRevenueCatViewModel = viewModel<InternalDebugRevenueCatScreenViewModel>(),
 ) {
     Column(
         modifier = Modifier
@@ -57,7 +61,7 @@ internal fun SettingOffering(
                     .padding(vertical = 8.dp),
                 border = BorderStroke(2.dp, Color.Gray),
             ) {
-                SettingPackage(rcPackage)
+                SettingPackage(rcPackage, activity, screenViewModel)
             }
         }
     }
@@ -67,10 +71,10 @@ internal fun SettingOffering(
 @Composable
 internal fun SettingPackage(
     rcPackage: Package,
+    activity: Activity = LocalContext.current.findActivity(),
     screenViewModel: DebugRevenueCatViewModel = viewModel<InternalDebugRevenueCatScreenViewModel>(),
 ) {
     val isSubscription = rcPackage.product.type == ProductType.SUBS
-    val activity = LocalContext.current.findActivity()
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -269,5 +273,25 @@ private val offering: Offering
 @Preview(showBackground = true)
 @Composable
 private fun SettingPreview() {
-    SettingOffering(SettingState.OfferingSetting(offering))
+    val viewModel = object : DebugRevenueCatViewModel {
+        override val state: StateFlow<SettingScreenState>
+            get() = error("Not implemented")
+
+        override fun toastDisplayed() {
+            error("Not implemented")
+        }
+
+        override fun purchasePackage(activity: Activity, rcPackage: Package) {
+            error("Not implemented")
+        }
+
+        override fun purchaseProduct(activity: Activity, storeProduct: StoreProduct) {
+            error("Not implemented")
+        }
+
+        override fun purchaseSubscriptionOption(activity: Activity, subscriptionOption: SubscriptionOption) {
+            error("Not implemented")
+        }
+    }
+    SettingOffering(SettingState.OfferingSetting(offering), activity = Activity(), viewModel)
 }
