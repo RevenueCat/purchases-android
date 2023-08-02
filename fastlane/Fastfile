@@ -261,18 +261,18 @@ platform :android do
   lane :run_debugview_ui_tests do |options|
     app_name = 'debugviewIntegrationTest'
 
-    # Build test apk
+    # Build app apk
     build_purchases_android_test_apk(
-      "com.revenuecat.purchases.debugview.integrationtests.test",
+      "com.revenuecat.purchases.debugview.integrationtests",
       "#{app_name}-app",
       'debug',
       'debugview',
       'defaults'
     )
 
-    # Build app apk
+    # Build test apk
     build_purchases_android_test_apk(
-      "com.revenuecat.purchases.debugview.integrationtests",
+      "com.revenuecat.purchases.debugview.integrationtests.test",
       "#{app_name}-test",
       'debug',
       'debugview',
