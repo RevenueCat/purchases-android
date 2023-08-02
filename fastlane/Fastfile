@@ -279,16 +279,16 @@ platform :android do
       'defaults'
     )
 
-    run_firebase_integration_tests(app_name)
+    run_firebase_integration_tests(app_name, gradle_module: 'debugview')
   end
 
-  def run_firebase_integration_tests(app_name)
+  def run_firebase_integration_tests(app_name, gradle_module: 'purchases')
     google_project_id = ENV['GOOGLE_PROJECT_ID'] || UI.user_error!('Google project id not found.')
 
     # We run the test on google firebase test labs
     sh "gcloud firebase test android run --type instrumentation \
-          --app ../purchases/test_artifacts/#{app_name}-app.apk \
-          --test ../purchases/test_artifacts/#{app_name}-test.apk \
+          --app ../#{gradle_module}/test_artifacts/#{app_name}-app.apk \
+          --test ../#{gradle_module}/test_artifacts/#{app_name}-test.apk \
           --timeout 2m \
           --results-bucket cloud-test-#{google_project_id}"
 
