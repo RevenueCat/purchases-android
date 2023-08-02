@@ -256,6 +256,32 @@ platform :android do
     run_firebase_integration_tests(app_name)
   end
 
+  desc "Build and run debugview module integration tests"
+  desc "This requires the google cloud cli to be installed and initialized."
+  lane :run_debugview_ui_tests do |options|
+    app_name = 'debugviewIntegrationTest'
+
+    # Build test apk
+    build_purchases_android_test_apk(
+      "com.revenuecat.purchases.debugview.integrationtests.test",
+      "#{app_name}-app",
+      'debug',
+      'debugview',
+      'defaults'
+    )
+
+    # Build app apk
+    build_purchases_android_test_apk(
+      "com.revenuecat.purchases.debugview.integrationtests",
+      "#{app_name}-test",
+      'debug',
+      'debugview',
+      'defaults'
+    )
+
+    run_firebase_integration_tests(app_name)
+  end
+
   def run_firebase_integration_tests(app_name)
     google_project_id = ENV['GOOGLE_PROJECT_ID'] || UI.user_error!('Google project id not found.')
 
@@ -274,7 +300,7 @@ platform :android do
 
   def build_purchases_integration_tests(app_name:, api_key:, google_purchase_token:, product_id_to_purchase:,
                                         base_plan_id_to_purchase:, active_entitlements_to_verify: '',
-                                        proxy_url: nil, build_type: 'release', flavor: 'defaults')
+                                        proxy_url: nil, build_type: 'release', gradle_module: 'purchases', flavor: 'defaults')
     constants_path = './purchases/src/androidTest/kotlin/com/revenuecat/purchases/Constants.kt'
     replace_text_in_files(
       previous_text: "REVENUECAT_API_KEY",
@@ -314,10 +340,10 @@ platform :android do
     # to have same package name
 
     # Build test apk
-    build_purchases_android_test_apk("com.revenuecat.purchases.integrationtests.test", "#{app_name}-app", build_type, flavor)
+    build_purchases_android_test_apk("com.revenuecat.purchases.integrationtests.test", "#{app_name}-app", build_type, gradle_module, flavor)
 
     # Build app apk
-    build_purchases_android_test_apk("com.revenuecat.purchases.integrationtests", "#{app_name}-test", build_type, flavor)
+    build_purchases_android_test_apk("com.revenuecat.purchases.integrationtests", "#{app_name}-test", build_type, gradle_module, flavor)
   end
 
   desc "Publish purchase tester to test track in Play Console"
@@ -531,22 +557,22 @@ def check_no_git_tag_exists(version_number)
   end
 end
 
-def build_purchases_android_test_apk(package_name, apk_name, build_type, flavor)
+def build_purchases_android_test_apk(package_name, apk_name, build_type, gradle_module, flavor)
   task_to_run = flavor == 'defaults' ? 'assembleDefaultsAndroidTest' : 'assembleCustomEntitlementComputationAndroidTest'
   gradle(
-    task: ":purchases:#{task_to_run}",
+    task: ":#{gradle_module}:#{task_to_run}",
     properties: {
       "testApplicationId" => package_name,
       "testBuildType" => build_type,
       "minSdkVersion" => 21
     }
   )
-  apk_path = "../purchases/build/outputs/apk/androidTest/#{flavor}/#{build_type}/purchases-#{flavor}-#{build_type}-androidTest.apk"
-  new_apk_path = "../purchases/build/outputs/apk/androidTest/#{flavor}/#{build_type}/#{apk_name}.apk"
+  apk_path = "../#{gradle_module}/build/outputs/apk/androidTest/#{flavor}/#{build_type}/#{gradle_module}-#{flavor}-#{build_type}-androidTest.apk"
+  new_apk_path = "../#{gradle_module}/build/outputs/apk/androidTest/#{flavor}/#{build_type}/#{apk_name}.apk"
   sh "mv #{apk_path} #{new_apk_path}"
   copy_artifacts(
-    target_path: 'purchases/test_artifacts',
-    artifacts: ['purchases/build/**/*.apk'],
+    target_path: "#{gradle_module}/test_artifacts",
+    artifacts: ["#{gradle_module}/build/**/*.apk"],
     fail_on_missing: true
   )
 end

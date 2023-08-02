@@ -131,6 +131,16 @@ Build and run purchases module custom entitlement computation integration tests
 
 This requires the google cloud cli to be installed and initialized.
 
+### android run_debugview_ui_tests
+
+```sh
+[bundle exec] fastlane android run_debugview_ui_tests
+```
+
+Build and run debugview module integration tests
+
+This requires the google cloud cli to be installed and initialized.
+
 ### android publish_purchase_tester
 
 ```sh
