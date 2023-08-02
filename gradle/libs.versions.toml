@@ -67,6 +67,8 @@ androidx-test-espresso-core = { module = "androidx.test.espresso:espresso-core",
 androidx-test-junit = { module = "androidx.test.ext:junit-ktx", version.ref = "testJUnit" }
 androidx-test-runner = { module = "androidx.test:runner", version.ref = "testLibraries" }
 androidx-test-rules = { module = "androidx.test:rules", version.ref = "testLibraries" }
+androidx-test-compose = { module = "androidx.compose.ui:ui-test-junit4" }
+androidx-test-compose-manifest = { module = "androidx.compose.ui:ui-test-manifest" }
 
 assertJ = { module = "org.assertj:assertj-core", version.ref = "assertJ"}
 

@@ -16,6 +16,7 @@ internal fun InternalDebugRevenueCatBottomSheet(
     onPurchaseErrored: (PurchasesTransactionException) -> Unit,
     isVisible: Boolean = false,
     onDismissCallback: (() -> Unit)? = null,
+    viewModel: DebugRevenueCatViewModel? = null,
 ) {
     if (isVisible) {
         val rcDebugMenuSheetState = rememberModalBottomSheetState(
@@ -33,7 +34,7 @@ internal fun InternalDebugRevenueCatBottomSheet(
                 }
             },
         ) {
-            InternalDebugRevenueCatScreen(onPurchaseCompleted, onPurchaseErrored)
+            InternalDebugRevenueCatScreen(onPurchaseCompleted, onPurchaseErrored, viewModel)
         }
     }
 }

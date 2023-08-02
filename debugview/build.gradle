@@ -22,6 +22,10 @@ android {
 
     defaultConfig {
         minSdkVersion 21 // Compose requires minSdkVersion 21
+        packagingOptions {
+            resources.excludes.add("META-INF/LICENSE.md")
+            resources.excludes.add("META-INF/LICENSE-notice.md")
+        }
     }
 
     buildFeatures {
@@ -35,6 +39,7 @@ android {
 dependencies {
     implementation project(path: ':purchases')
 
+    implementation(platform(libs.kotlin.bom))
     implementation libs.androidx.core
     implementation platform(libs.compose.bom)
     implementation libs.compose.ui
@@ -46,4 +51,18 @@ dependencies {
     implementation libs.androidx.lifecycle.viewmodel
     implementation libs.androidx.lifecycle.viewmodel.compose
     debugImplementation libs.compose.ui.tooling
+    debugImplementation libs.androidx.test.compose.manifest
+
+    androidTestImplementation platform(libs.compose.bom)
+    androidTestImplementation libs.androidx.appcompat
+    androidTestImplementation libs.androidx.lifecycle.runtime.ktx
+    androidTestImplementation libs.androidx.test.espresso.core
+    androidTestImplementation libs.androidx.test.runner
+    androidTestImplementation libs.androidx.test.rules
+    androidTestImplementation libs.androidx.test.junit
+    androidTestImplementation libs.androidx.test.compose
+
+    androidTestImplementation libs.assertJ
+    androidTestImplementation libs.mockk.android
+    androidTestImplementation libs.mockk.agent
 }

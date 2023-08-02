@@ -13,6 +13,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -33,24 +34,26 @@ import kotlinx.coroutines.flow.MutableStateFlow
 internal fun InternalDebugRevenueCatScreen(
     onPurchaseCompleted: (StoreTransaction) -> Unit,
     onPurchaseErrored: (PurchasesTransactionException) -> Unit,
-    screenViewModel: DebugRevenueCatViewModel = viewModel<InternalDebugRevenueCatScreenViewModel>(
-        factory = InternalDebugRevenueCatScreenViewModelFactory(onPurchaseCompleted, onPurchaseErrored),
-    ),
+    screenViewModel: DebugRevenueCatViewModel? = null,
 ) {
+    val viewModel = screenViewModel ?: viewModel<InternalDebugRevenueCatScreenViewModel>(
+        factory = InternalDebugRevenueCatScreenViewModelFactory(onPurchaseCompleted, onPurchaseErrored),
+    )
     Column(
         modifier = Modifier
+            .testTag("DebugRevenueCatScreen")
             .verticalScroll(rememberScrollState())
             .fillMaxWidth()
             .padding(bottom = 16.dp),
     ) {
-        val state = screenViewModel.state.collectAsState().value
-        DisplayToastMessageIfNeeded(screenViewModel, state = state)
+        val state = viewModel.state.collectAsState().value
+        DisplayToastMessageIfNeeded(viewModel, state = state)
         Text(
             text = "RevenueCat Debug Menu",
             style = MaterialTheme.typography.h5,
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp),
         )
-        state.toSettingGroupStates().forEach { SettingGroup(it) }
+        state.toSettingGroupStates().forEach { SettingGroup(it, viewModel) }
     }
 }
 
@@ -62,8 +65,8 @@ private fun DisplayToastMessageIfNeeded(viewModel: DebugRevenueCatViewModel, sta
             toastMessage,
             Toast.LENGTH_LONG,
         ).show()
+        viewModel.toastDisplayed()
     }
-    viewModel.toastDisplayed()
 }
 
 @Preview(showBackground = true)
