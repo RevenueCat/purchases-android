@@ -529,6 +529,7 @@ workflows:
       - detekt
       - assemble-purchase-tester
       - run-backend-integration-tests
+      - run-firebase-tests-debugview-ui-test
 
   snapshot-deploy-sample-app-tests:
     when:
