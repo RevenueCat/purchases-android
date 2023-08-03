@@ -10,5 +10,5 @@ fun Context.findActivity(): Activity {
         if (context is Activity) return context
         context = context.baseContext
     }
-    error("no activity")
+    error("RevenueCatDebugView: Could not find activity context from current context.")
 }
