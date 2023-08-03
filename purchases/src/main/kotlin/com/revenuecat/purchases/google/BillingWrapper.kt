@@ -97,8 +97,8 @@ internal class BillingWrapper(
 
     private fun executePendingRequests() {
         synchronized(this@BillingWrapper) {
-            while (billingClient?.isReady == true && !serviceRequests.isEmpty()) {
-                serviceRequests.remove().let { mainHandler.post { it(null) } }
+            while (billingClient?.isReady == true) {
+                serviceRequests.poll()?.let { mainHandler.post { it(null) } } ?: break
             }
         }
     }
@@ -685,8 +685,8 @@ internal class BillingWrapper(
                     // The calls will fail with an error that will be surfaced. We want to surface these errors
                     // Can't call executePendingRequests because it will not do anything since it checks for isReady()
                     synchronized(this@BillingWrapper) {
-                        while (!serviceRequests.isEmpty()) {
-                            serviceRequests.remove().let { serviceRequest ->
+                        while (true) {
+                            serviceRequests.poll()?.let { serviceRequest ->
                                 mainHandler.post {
                                     serviceRequest(
                                         billingResult.responseCode
@@ -694,7 +694,7 @@ internal class BillingWrapper(
                                             .also { errorLog(it) },
                                     )
                                 }
-                            }
+                            } ?: break
                         }
                     }
                 }
