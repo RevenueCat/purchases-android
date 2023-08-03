@@ -15,7 +15,10 @@ private class PurchasesDebugViewAPI {
         isVisible: Boolean,
         onDismissCallback: (() -> Unit)? = null,
     ) {
-        DebugRevenueCatScreen(onPurchaseCompleted, onPurchaseErrored)
+        DebugRevenueCatScreen(
+            onPurchaseCompleted = onPurchaseCompleted,
+            onPurchaseErrored = onPurchaseErrored,
+        )
         DebugRevenueCatBottomSheet(
             onPurchaseCompleted = onPurchaseCompleted,
             onPurchaseErrored = onPurchaseErrored,
