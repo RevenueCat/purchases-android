@@ -1,14 +1,29 @@
 package com.revenuecat.apitester.kotlin
 
 import androidx.compose.runtime.Composable
+import com.revenuecat.purchases.PurchasesTransactionException
 import com.revenuecat.purchases.debugview.DebugRevenueCatBottomSheet
 import com.revenuecat.purchases.debugview.DebugRevenueCatScreen
+import com.revenuecat.purchases.models.StoreTransaction
 
 @Suppress("unused")
 private class PurchasesDebugViewAPI {
     @Composable
-    fun CheckDebugView(isVisible: Boolean, onDismissCallback: (() -> Unit)? = null) {
-        DebugRevenueCatScreen()
-        DebugRevenueCatBottomSheet(isVisible = isVisible, onDismissCallback = onDismissCallback)
+    fun CheckDebugView(
+        onPurchaseCompleted: (StoreTransaction) -> Unit,
+        onPurchaseErrored: (PurchasesTransactionException) -> Unit,
+        isVisible: Boolean,
+        onDismissCallback: (() -> Unit)? = null,
+    ) {
+        DebugRevenueCatScreen(
+            onPurchaseCompleted = onPurchaseCompleted,
+            onPurchaseErrored = onPurchaseErrored,
+        )
+        DebugRevenueCatBottomSheet(
+            onPurchaseCompleted = onPurchaseCompleted,
+            onPurchaseErrored = onPurchaseErrored,
+            isVisible = isVisible,
+            onDismissCallback = onDismissCallback,
+        )
     }
 }

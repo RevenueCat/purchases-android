@@ -37,7 +37,10 @@ internal fun SettingGroup(
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 settingGroupState.settings.forEach { settingState ->
-                    SettingText(settingState)
+                    when (settingState) {
+                        is SettingState.Text -> SettingText(settingState)
+                        is SettingState.OfferingSetting -> SettingOffering(settingState)
+                    }
                     Divider()
                 }
             }

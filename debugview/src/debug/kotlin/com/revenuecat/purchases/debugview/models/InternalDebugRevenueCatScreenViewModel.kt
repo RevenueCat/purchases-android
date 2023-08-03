@@ -1,23 +1,32 @@
 package com.revenuecat.purchases.debugview.models
 
+import android.app.Activity
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.revenuecat.purchases.CustomerInfo
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.Offerings
+import com.revenuecat.purchases.Package
+import com.revenuecat.purchases.PurchaseParams
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesException
+import com.revenuecat.purchases.PurchasesTransactionException
 import com.revenuecat.purchases.awaitCustomerInfo
 import com.revenuecat.purchases.awaitOfferings
+import com.revenuecat.purchases.awaitPurchase
 import com.revenuecat.purchases.debugview.DebugRevenueCatViewModel
+import com.revenuecat.purchases.models.StoreProduct
+import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.models.SubscriptionOption
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
-internal class InternalDebugRevenueCatScreenViewModel : ViewModel(), DebugRevenueCatViewModel {
+internal class InternalDebugRevenueCatScreenViewModel(
+    private val onPurchaseCompleted: (StoreTransaction) -> Unit,
+    private val onPurchaseErrored: (PurchasesTransactionException) -> Unit,
+) : ViewModel(), DebugRevenueCatViewModel {
     override val state: StateFlow<SettingScreenState>
         get() = _state
 
@@ -28,6 +37,62 @@ internal class InternalDebugRevenueCatScreenViewModel : ViewModel(), DebugRevenu
     init {
         if (Purchases.isConfigured) {
             refreshInfo()
+        }
+    }
+
+    override fun toastDisplayed() {
+        _state.update { currentState ->
+            when (currentState) {
+                is SettingScreenState.Configured -> { currentState.copy(toastMessage = null) }
+                is SettingScreenState.NotConfigured -> { currentState.copy(toastMessage = null) }
+            }
+        }
+    }
+
+    override fun purchasePackage(activity: Activity, rcPackage: Package) {
+        viewModelScope.launch {
+            purchaseWithParams(PurchaseParams.Builder(activity, rcPackage).build())
+        }
+    }
+
+    override fun purchaseProduct(activity: Activity, storeProduct: StoreProduct) {
+        viewModelScope.launch {
+            purchaseWithParams(PurchaseParams.Builder(activity, storeProduct).build())
+        }
+    }
+
+    override fun purchaseSubscriptionOption(activity: Activity, subscriptionOption: SubscriptionOption) {
+        viewModelScope.launch {
+            purchaseWithParams(PurchaseParams.Builder(activity, subscriptionOption).build())
+        }
+    }
+
+    private suspend fun purchaseWithParams(purchaseParams: PurchaseParams) {
+        try {
+            val purchaseResult = Purchases.sharedInstance.awaitPurchase(purchaseParams)
+            _state.update { currentState ->
+                if (currentState is SettingScreenState.Configured) {
+                    currentState.copy(
+                        toastMessage = "Purchase completed successfully",
+                    )
+                } else {
+                    Log.e("RevenueCatDebugView", "Invalid state. Purchase completed but SDK is not configured.")
+                    currentState
+                }
+            }
+            onPurchaseCompleted(purchaseResult.storeTransaction)
+        } catch (e: PurchasesTransactionException) {
+            _state.update { currentState ->
+                if (currentState is SettingScreenState.Configured) {
+                    currentState.copy(
+                        toastMessage = "Purchase error: ${e.message}",
+                    )
+                } else {
+                    Log.e("RevenueCatDebugView", "Invalid state. Purchase error but SDK is not configured.")
+                    currentState
+                }
+            }
+            onPurchaseErrored(e)
         }
     }
 
@@ -94,10 +159,7 @@ internal class InternalDebugRevenueCatScreenViewModel : ViewModel(), DebugRevenu
         return SettingGroupState(
             title = "Offerings",
             settings = offerings.all.values.map { offering ->
-                SettingState.Text(
-                    title = offering.identifier,
-                    content = "TODO",
-                )
+                SettingState.OfferingSetting(offering)
             },
         )
     }

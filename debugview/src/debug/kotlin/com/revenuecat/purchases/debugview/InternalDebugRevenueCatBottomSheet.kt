@@ -5,11 +5,15 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
+import com.revenuecat.purchases.PurchasesTransactionException
+import com.revenuecat.purchases.models.StoreTransaction
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun InternalDebugRevenueCatBottomSheet(
+    onPurchaseCompleted: (StoreTransaction) -> Unit,
+    onPurchaseErrored: (PurchasesTransactionException) -> Unit,
     isVisible: Boolean = false,
     onDismissCallback: (() -> Unit)? = null,
 ) {
@@ -29,7 +33,7 @@ internal fun InternalDebugRevenueCatBottomSheet(
                 }
             },
         ) {
-            InternalDebugRevenueCatScreen()
+            InternalDebugRevenueCatScreen(onPurchaseCompleted, onPurchaseErrored)
         }
     }
 }

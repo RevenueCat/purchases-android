@@ -18,7 +18,7 @@ import com.revenuecat.purchases.debugview.models.SettingState
 
 @Composable
 internal fun SettingText(
-    settingState: SettingState,
+    settingState: SettingState.Text,
 ) {
     Row(
         modifier = Modifier
@@ -33,18 +33,16 @@ internal fun SettingText(
         )
         Spacer(modifier = Modifier.size(16.dp))
         Box {
-            when (settingState) {
-                is SettingState.Text -> Text(
-                    text = settingState.content,
-                    style = MaterialTheme.typography.subtitle2,
-                )
-            }
+            Text(
+                text = settingState.content,
+                style = MaterialTheme.typography.subtitle2,
+            )
         }
     }
 }
 
 @Preview
 @Composable
-private fun SettingTextPreview() {
+private fun SettingPreview() {
     SettingText(SettingState.Text("Settings title", "Settings content"))
 }
