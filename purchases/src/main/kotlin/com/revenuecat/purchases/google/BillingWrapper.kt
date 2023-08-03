@@ -101,6 +101,8 @@ internal class BillingWrapper(
                 try {
                     serviceRequests.remove().let { mainHandler.post { it(null) } }
                 } catch (e: NoSuchElementException) {
+                    // We got reports of this exception in Android 12. Access to the queue is synchronized
+                    // so we don't really know how it can happen. We are going to catch it and log it
                     errorLog("Got NoSuchElementException while executing pending requests", e)
                 }
             }
