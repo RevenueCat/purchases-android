@@ -98,7 +98,11 @@ internal class BillingWrapper(
     private fun executePendingRequests() {
         synchronized(this@BillingWrapper) {
             while (billingClient?.isReady == true && !serviceRequests.isEmpty()) {
-                serviceRequests.remove().let { mainHandler.post { it(null) } }
+                try {
+                    serviceRequests.remove().let { mainHandler.post { it(null) } }
+                } catch (e: NoSuchElementException) {
+                    errorLog("Got NoSuchElementException while executing pending requests", e)
+                }
             }
         }
     }
