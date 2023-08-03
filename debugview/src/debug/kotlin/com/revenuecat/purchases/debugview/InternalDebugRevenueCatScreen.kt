@@ -35,7 +35,7 @@ internal fun InternalDebugRevenueCatScreen(
             style = MaterialTheme.typography.h5,
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp),
         )
-        screenViewModel.state.collectAsState().value.toGroupStates().forEach { SettingGroup(it) }
+        screenViewModel.state.collectAsState().value.toSettingGroupStates().forEach { SettingGroup(it) }
     }
 }
 

@@ -8,7 +8,7 @@ internal sealed class SettingScreenState(open val configuration: SettingGroupSta
         val offerings: SettingGroupState,
     ) : SettingScreenState(configuration)
 
-    fun toGroupStates(): List<SettingGroupState> {
+    fun toSettingGroupStates(): List<SettingGroupState> {
         return when (this) {
             is NotConfigured -> listOf(configuration)
             is Configured -> listOf(configuration, customerInfo, offerings)
