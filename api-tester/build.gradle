@@ -16,6 +16,27 @@ android {
         }
     }
 
+    defaultConfig {
+        minSdkVersion 21 // Compose requires minSdkVersion 21
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    kotlinOptions {
+        jvmTarget = '1.8'
+    }
+
+    composeOptions {
+        kotlinCompilerExtensionVersion '1.4.0-alpha02'
+    }
+
+    buildFeatures {
+        compose true
+    }
+
     testOptions {
         unitTests.includeAndroidResources = true
         unitTests.all {
@@ -28,6 +49,9 @@ android {
 dependencies {
     implementation project(path: ':purchases')
     implementation project(path: ':feature:amazon')
+    implementation project(path: ':debugview')
 
-    implementation libs.androidx.annotation
+    implementation(platform(libs.kotlin.bom))
+    implementation platform(libs.compose.bom)
+    implementation libs.compose.ui
 }

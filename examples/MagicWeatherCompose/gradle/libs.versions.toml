@@ -1,7 +1,7 @@
 [versions]
 agp = "8.1.0"
 androidxNavigation = "2.5.3"
-kotlin = "1.7.20"
+kotlin = "1.7.21"
 purchases = "6.10.0-SNAPSHOT"
 lifecycle = "2.5.0"
 androidxCore = "1.10.1"
@@ -35,3 +35,4 @@ compose-ui-test-manifest = { module = "androidx.compose.ui:ui-test-manifest" }
 
 revenuecat = { module = "com.revenuecat.purchases:purchases", version.ref = "purchases" }
 revenuecat-amazon = { module = "com.revenuecat.purchases:purchases-store-amazon", version.ref = "purchases" }
+revenuecat-debugview = { module = "com.revenuecat.purchases:debugview", version.ref = "purchases" }
