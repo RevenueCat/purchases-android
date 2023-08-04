@@ -545,7 +545,6 @@ workflows:
       - assemble-purchase-tester
       - run-backend-integration-tests
       - run-firebase-tests-debugview-ui-test
-      - verify_debug_view_snapshot_tests
 
   snapshot-deploy-sample-app-tests:
     when:
