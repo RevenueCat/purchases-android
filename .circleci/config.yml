@@ -453,6 +453,21 @@ jobs:
       - store_test_results:
           path: ~/gsutil/
 
+  verify_debug_view_snapshot_tests:
+    description: "Verify debug view snapshot tests"
+    <<: *android-executor
+    steps:
+      - checkout
+      - install-sdkman
+      - revenuecat/install-gem-unix-dependencies:
+          cache-version: v1
+      - android/restore-build-cache
+      - run:
+          name: Build and run debugview snapshot tests
+          command: |
+            bundle exec fastlane android verify_debug_view_snapshot_tests
+      - android/save-build-cache
+
   run-firebase-tests-debugview-ui-test:
     description: "Run debugview module ui tests in Firebase."
     <<: *android-executor
@@ -551,6 +566,7 @@ workflows:
       not:
         equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
     jobs:
+      - verify_debug_view_snapshot_tests: *release-branches
       - integration-tests-build: *release-branches
       - purchases-integration-tests-build: *release-branches
       - run-firebase-tests-purchases-custom-entitlement-computation-integration-test:
