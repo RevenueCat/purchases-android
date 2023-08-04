@@ -1,6 +1,7 @@
 plugins {
     alias libs.plugins.android.library
     alias libs.plugins.kotlin.android
+    alias libs.plugins.paparazzi
 }
 
 // TODO Uncomment apply plugin once debugview package is ready to be published.
@@ -65,16 +66,18 @@ dependencies {
     debugImplementation libs.compose.ui.tooling
     debugImplementation libs.androidx.test.compose.manifest
 
-    androidTestImplementation platform(libs.compose.bom)
-    androidTestImplementation libs.androidx.appcompat
-    androidTestImplementation libs.androidx.lifecycle.runtime.ktx
-    androidTestImplementation libs.androidx.test.espresso.core
-    androidTestImplementation libs.androidx.test.runner
-    androidTestImplementation libs.androidx.test.rules
-    androidTestImplementation libs.androidx.test.junit
-    androidTestImplementation libs.androidx.test.compose
+    testImplementation platform(libs.compose.bom)
+    testImplementation libs.androidx.appcompat
+    testImplementation libs.androidx.lifecycle.runtime.ktx
+    testImplementation libs.androidx.test.espresso.core
+    testImplementation libs.androidx.test.runner
+    testImplementation libs.androidx.test.rules
+    testImplementation libs.androidx.test.junit
+    testImplementation libs.androidx.test.compose
 
-    androidTestImplementation libs.assertJ
-    androidTestImplementation libs.mockk.android
-    androidTestImplementation libs.mockk.agent
+    testImplementation libs.assertJ
+    testImplementation libs.mockk.android
+    testImplementation libs.mockk.agent
+
+    testImplementation libs.androidx.legacy.core.ui
 }

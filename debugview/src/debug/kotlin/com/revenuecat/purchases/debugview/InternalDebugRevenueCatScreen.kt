@@ -2,6 +2,7 @@ package com.revenuecat.purchases.debugview
 
 import android.app.Activity
 import android.widget.Toast
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -12,6 +13,7 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.tooling.preview.Preview
@@ -35,17 +37,20 @@ internal fun InternalDebugRevenueCatScreen(
     onPurchaseCompleted: (StoreTransaction) -> Unit,
     onPurchaseErrored: (PurchasesTransactionException) -> Unit,
     screenViewModel: DebugRevenueCatViewModel? = null,
+    activity: Activity? = null,
 ) {
     val viewModel = screenViewModel ?: viewModel<InternalDebugRevenueCatScreenViewModel>(
         factory = InternalDebugRevenueCatScreenViewModelFactory(onPurchaseCompleted, onPurchaseErrored),
     )
     Column(
         modifier = Modifier
+            .background(MaterialTheme.colors.background)
             .testTag("DebugRevenueCatScreen")
             .verticalScroll(rememberScrollState())
             .fillMaxWidth()
             .padding(bottom = 16.dp),
     ) {
+        val currentActivity = activity ?: LocalContext.current.findActivity()
         val state = viewModel.state.collectAsState().value
         DisplayToastMessageIfNeeded(viewModel, state = state)
         Text(
@@ -53,7 +58,7 @@ internal fun InternalDebugRevenueCatScreen(
             style = MaterialTheme.typography.h5,
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp),
         )
-        state.toSettingGroupStates().forEach { SettingGroup(it, viewModel) }
+        state.toSettingGroupStates().forEach { SettingGroup(it, viewModel, currentActivity) }
     }
 }
 
