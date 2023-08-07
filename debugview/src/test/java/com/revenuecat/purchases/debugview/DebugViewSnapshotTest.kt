@@ -1,7 +1,13 @@
 package com.revenuecat.purchases.debugview
 
 import android.app.Activity
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import app.cash.paparazzi.Paparazzi
+import com.android.ide.common.rendering.api.SessionParams
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.debugview.models.SettingGroupState
 import com.revenuecat.purchases.debugview.models.SettingScreenState
@@ -19,8 +25,12 @@ import org.junit.Test
 @Suppress("TooManyFunctions")
 class DebugViewSnapshotTest {
 
+    private val maxHeight = 3000.dp
+
     @get:Rule
-    val paparazzi = Paparazzi()
+    val paparazzi = Paparazzi(
+        renderingMode = SessionParams.RenderingMode.V_SCROLL,
+    )
 
     private lateinit var notConfiguredStateFlow: MutableStateFlow<SettingScreenState>
     private lateinit var notConfiguredViewModel: DebugRevenueCatViewModel
@@ -43,7 +53,7 @@ class DebugViewSnapshotTest {
 
     @Test
     fun notConfiguredStateDisplaysCorrectly() {
-        paparazzi.snapshot {
+        snapshotTest {
             InternalDebugRevenueCatScreen(
                 onPurchaseCompleted = {},
                 onPurchaseErrored = {},
@@ -56,13 +66,21 @@ class DebugViewSnapshotTest {
     @Suppress("MagicNumber")
     @Test
     fun configuredStateDisplaysCorrectly() {
-        paparazzi.snapshot {
+        snapshotTest {
             InternalDebugRevenueCatScreen(
                 onPurchaseCompleted = {},
                 onPurchaseErrored = {},
                 screenViewModel = configuredViewModel,
                 activity = mockk(),
             )
+        }
+    }
+
+    private fun snapshotTest(composable: @Composable () -> Unit) {
+        paparazzi.snapshot {
+            Column(modifier = Modifier.heightIn(max = maxHeight)) {
+                composable()
+            }
         }
     }
 
