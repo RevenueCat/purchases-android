@@ -261,32 +261,6 @@ platform :android do
     run_firebase_integration_tests(app_name)
   end
 
-  desc "Build and run debugview module integration tests"
-  desc "This requires the google cloud cli to be installed and initialized."
-  lane :run_debugview_ui_tests do |options|
-    app_name = 'debugviewIntegrationTest'
-
-    # Build app apk
-    build_purchases_android_test_apk(
-      "com.revenuecat.purchases.debugview.integrationtests",
-      "#{app_name}-app",
-      'debug',
-      'debugview',
-      'defaults'
-    )
-
-    # Build test apk
-    build_purchases_android_test_apk(
-      "com.revenuecat.purchases.debugview.integrationtests.test",
-      "#{app_name}-test",
-      'debug',
-      'debugview',
-      'defaults'
-    )
-
-    run_firebase_integration_tests(app_name, gradle_module: 'debugview')
-  end
-
   def run_firebase_integration_tests(app_name, gradle_module: 'purchases')
     google_project_id = ENV['GOOGLE_PROJECT_ID'] || UI.user_error!('Google project id not found.')
 

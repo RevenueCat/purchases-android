@@ -22,13 +22,7 @@ android {
     }
 
     defaultConfig {
-        testApplicationId obtainTestApplicationId()
-
         minSdkVersion 21 // Compose requires minSdkVersion 21
-        packagingOptions {
-            resources.excludes.add("META-INF/LICENSE.md")
-            resources.excludes.add("META-INF/LICENSE-notice.md")
-        }
     }
 
     buildFeatures {
@@ -37,16 +31,6 @@ android {
     composeOptions {
         kotlinCompilerExtensionVersion '1.4.0-alpha02'
     }
-}
-
-def obtainTestApplicationId() {
-    def result = "com.revenuecat.purchases.debugview.integrationTest";
-
-    if (project.hasProperty("testApplicationId")) {
-        result = project.getProperties().get("testApplicationId")
-    }
-
-    result
 }
 
 dependencies {

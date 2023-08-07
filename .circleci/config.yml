@@ -468,30 +468,6 @@ jobs:
             bundle exec fastlane android verify_debug_view_snapshot_tests
       - android/save-build-cache
 
-  run-firebase-tests-debugview-ui-test:
-    description: "Run debugview module ui tests in Firebase."
-    <<: *android-executor
-    steps:
-      - checkout
-      - install-sdkman
-      - revenuecat/install-gem-unix-dependencies:
-          cache-version: v1
-      - gcp-cli/install
-      - gcp-cli/initialize:
-          gcloud-service-key: GCLOUD_SERVICE_KEY
-          google-compute-zone: GOOGLE_COMPUTE_ZONE
-          google-project-id: GOOGLE_PROJECT_ID
-      - android/restore-build-cache
-      - run:
-          name: Build and run debugview ui tests
-          command: |
-            bundle exec fastlane android run_debugview_ui_tests
-      - android/save-build-cache
-      - store_artifacts:
-          path: ~/gsutil/
-      - store_test_results:
-          path: ~/gsutil/
-
   run-firebase-tests:
     description: "Run integration tests for Android in Firebase. Variant latestDependencies"
     executor: gcp-cli/google
@@ -544,7 +520,6 @@ workflows:
       - detekt
       - assemble-purchase-tester
       - run-backend-integration-tests
-      - run-firebase-tests-debugview-ui-test
 
   snapshot-deploy-sample-app-tests:
     when:
@@ -571,8 +546,6 @@ workflows:
       - purchases-integration-tests-build: *release-branches
       - run-firebase-tests-purchases-custom-entitlement-computation-integration-test:
           <<: *release-branches
-      - run-firebase-tests-debugview-ui-test:
-          <<: *release-branches
       - run-firebase-tests-purchases-integration-test:
           requires:
             - purchases-integration-tests-build
@@ -590,7 +563,6 @@ workflows:
             - run-firebase-tests-purchases-integration-test
             - run-firebase-tests-purchases-load-shedder-integration-test
             - run-firebase-tests-purchases-custom-entitlement-computation-integration-test
-            - run-firebase-tests-debugview-ui-test
           <<: *release-branches
       - revenuecat/tag-current-branch:
           requires:
