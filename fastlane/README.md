@@ -39,6 +39,14 @@ Setup development environment
 
 Verify snapshot tests for the debug view library
 
+### android record_debug_view_snapshot_tests
+
+```sh
+[bundle exec] fastlane android record_debug_view_snapshot_tests
+```
+
+Record/Update snapshots for tests in the debug view library
+
 ### android bump
 
 ```sh
