@@ -127,18 +127,33 @@ platform :android do
     )
 
     UI.verbose("Deploying Custom Entitlements Computation version")
+    deploy_specific_package(
+      "customEntitlementComputationRelease",
+      "purchases-custom-entitlement-computation",
+      "purchases"
+    )
 
-    gradleProperties["ANDROID_VARIANT_TO_PUBLISH"] = "customEntitlementComputationRelease"
-    gradleProperties["POM_ARTIFACT_ID"] = "purchases-custom-entitlement-computation"
-
-    gradle(
-      tasks: [
-        "purchases:publish --no-daemon --no-parallel"
-      ],
-      properties: gradleProperties
+    UI.verbose("Deploying Debug view version")
+    deploy_specific_package(
+      "defaultsDebug",
+      "purchases-debug-view",
+      "ui:debugview"
     )
 
     github_release(version: version) unless is_snapshot_version?(version)
+  end
+
+  def deploy_specific_package(variant, artifact_id, module_to_deploy)
+    gradleProperties["ANDROID_VARIANT_TO_PUBLISH"] = "customEntitlementComputationRelease"
+    gradleProperties["POM_ARTIFACT_ID"] = "purchases-custom-entitlement-computation"
+
+    command = module_to_deploy == nil ? "publish" : "#{module_to_deploy}:publish"
+    gradle(
+      tasks: [
+        "#{command} --no-daemon --no-parallel"
+      ],
+      properties: gradleProperties
+    )
   end
 
   desc "Upload a snapshot release"
