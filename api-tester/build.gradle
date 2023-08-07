@@ -49,7 +49,7 @@ android {
 dependencies {
     implementation project(path: ':purchases')
     implementation project(path: ':feature:amazon')
-    implementation project(path: ':debugview')
+    implementation project(path: ':ui:debugview')
 
     implementation(platform(libs.kotlin.bom))
     implementation platform(libs.compose.bom)

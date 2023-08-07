@@ -28,7 +28,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.revenuecat.purchases.debugview.DebugRevenueCatBottomSheet
+import com.revenuecat.purchases.ui.debugview.DebugRevenueCatBottomSheet
 import com.revenuecat.sample.BuildConfig
 import com.revenuecat.sample.Screen
 import com.revenuecat.sample.user.UserScreen

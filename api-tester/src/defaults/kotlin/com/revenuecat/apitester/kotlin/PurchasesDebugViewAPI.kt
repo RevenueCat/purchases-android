@@ -2,9 +2,9 @@ package com.revenuecat.apitester.kotlin
 
 import androidx.compose.runtime.Composable
 import com.revenuecat.purchases.PurchasesTransactionException
-import com.revenuecat.purchases.debugview.DebugRevenueCatBottomSheet
-import com.revenuecat.purchases.debugview.DebugRevenueCatScreen
 import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.ui.debugview.DebugRevenueCatBottomSheet
+import com.revenuecat.purchases.ui.debugview.DebugRevenueCatScreen
 
 @Suppress("unused")
 private class PurchasesDebugViewAPI {
