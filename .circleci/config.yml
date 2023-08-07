@@ -505,10 +505,6 @@ workflows:
       - detekt
       - assemble-purchase-tester
       - run-backend-integration-tests
-      - integration-tests-build
-      - run-firebase-tests:
-          requires:
-            - integration-tests-build
 
   snapshot-deploy-sample-app-tests:
     when:
