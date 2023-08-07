@@ -14,7 +14,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.Package
@@ -35,7 +34,6 @@ internal fun SettingGroup(
 ) {
     Column(
         modifier = Modifier
-            .testTag("SettingGroup")
             .fillMaxWidth()
             .padding(16.dp),
     ) {
