@@ -13,7 +13,6 @@ import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.playServicesVersionName
 import com.revenuecat.purchases.common.playStoreVersionName
 import io.mockk.Runs
-import io.mockk.clearStaticMockk
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
@@ -194,17 +193,13 @@ class DiagnosticsTrackerTest {
 
     @Test
     fun `trackMaxEventsStoredLimitReached tracks correct event`() {
-        val expectedProperties = mapOf(
-            "total_number_events_stored" to 1234,
-            "events_removed" to 234
-        )
         every { diagnosticsFileHelper.appendEntryToDiagnosticsFile(any()) } just Runs
-        diagnosticsTracker.trackMaxEventsStoredLimitReached(totalEventsStored = 1234, eventsRemoved = 234)
+        diagnosticsTracker.trackMaxEventsStoredLimitReached()
         verify(exactly = 1) {
             diagnosticsFileHelper.appendEntryToDiagnosticsFile(match { event ->
                 event is DiagnosticsEntry.Event &&
                     event.name == DiagnosticsEventName.MAX_EVENTS_STORED_LIMIT_REACHED &&
-                    event.properties == expectedProperties
+                    event.properties == emptyMap<String, Any>()
             })
         }
     }

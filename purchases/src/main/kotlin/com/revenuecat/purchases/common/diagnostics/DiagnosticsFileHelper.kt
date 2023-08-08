@@ -2,6 +2,7 @@ package com.revenuecat.purchases.common.diagnostics
 
 import com.revenuecat.purchases.common.FileHelper
 import com.revenuecat.purchases.common.verboseLog
+import com.revenuecat.purchases.utils.DataListener
 import org.json.JSONObject
 
 /**
@@ -12,6 +13,12 @@ internal class DiagnosticsFileHelper(
 ) {
     companion object {
         const val DIAGNOSTICS_FILE_PATH = "RevenueCat/diagnostics/diagnostic_entries.jsonl"
+        const val DIAGNOSTICS_FILE_LIMIT_IN_KB = 500
+    }
+
+    @Synchronized
+    fun isDiagnosticsFileTooBig(): Boolean {
+        return fileHelper.fileSizeInKB(DIAGNOSTICS_FILE_PATH) > DIAGNOSTICS_FILE_LIMIT_IN_KB
     }
 
     @Synchronized
@@ -32,11 +39,22 @@ internal class DiagnosticsFileHelper(
     }
 
     @Synchronized
-    fun readDiagnosticsFile(): List<JSONObject> {
-        return if (fileHelper.fileIsEmpty(DIAGNOSTICS_FILE_PATH)) {
-            emptyList()
+    fun readDiagnosticsFile(listener: DataListener<JSONObject>) {
+        if (fileHelper.fileIsEmpty(DIAGNOSTICS_FILE_PATH)) {
+            listener.onComplete()
         } else {
-            fileHelper.readFilePerLines(DIAGNOSTICS_FILE_PATH).map { JSONObject(it) }
+            fileHelper.readFilePerLines(
+                DIAGNOSTICS_FILE_PATH,
+                object : DataListener<Pair<String, Int>> {
+                    override fun onData(data: Pair<String, Int>) {
+                        listener.onData(JSONObject(data.first))
+                    }
+
+                    override fun onComplete() {
+                        listener.onComplete()
+                    }
+                },
+            )
         }
     }
 }

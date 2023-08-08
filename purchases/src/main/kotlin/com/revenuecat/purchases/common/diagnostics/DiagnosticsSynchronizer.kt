@@ -6,6 +6,7 @@ import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.verboseLog
+import com.revenuecat.purchases.utils.DataListener
 import org.json.JSONObject
 import java.io.IOException
 
@@ -30,9 +31,6 @@ internal class DiagnosticsSynchronizer(
         @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
         const val MAX_NUMBER_POST_RETRIES = 3
 
-        @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
-        const val MAX_NUMBER_EVENTS = 1000
-
         fun initializeSharedPreferences(context: Context): SharedPreferences =
             context.getSharedPreferences(
                 "com_revenuecat_purchases_${context.packageName}_preferences_diagnostics",
@@ -40,45 +38,59 @@ internal class DiagnosticsSynchronizer(
             )
     }
 
+    fun clearDiagnosticsFileIfTooBig() {
+        if (diagnosticsFileHelper.isDiagnosticsFileTooBig()) {
+            verboseLog("Diagnostics file is too big. Deleting it.")
+            diagnosticsTracker.trackMaxEventsStoredLimitReached()
+            resetDiagnosticsStatus()
+        }
+    }
+
     fun syncDiagnosticsFileIfNeeded() {
         enqueue {
             try {
-                val diagnosticsList = getEventsToSync()
-                val diagnosticsCount = diagnosticsList.size
-                if (diagnosticsCount == 0) {
-                    verboseLog("No diagnostics to sync.")
-                    return@enqueue
-                }
-                backend.postDiagnostics(
-                    diagnosticsList = diagnosticsList,
-                    onSuccessHandler = {
-                        verboseLog("Synced diagnostics file successfully.")
-                        clearConsecutiveNumberOfErrors()
-                        diagnosticsFileHelper.deleteOlderDiagnostics(diagnosticsCount)
-                    },
-                    onErrorHandler = { error, shouldRetry ->
-                        if (shouldRetry) {
-                            verboseLog(
-                                "Error syncing diagnostics file: $error. " +
-                                    "Will retry the next time the SDK is initialized",
-                            )
-                            if (increaseConsecutiveNumberOfErrors() >= MAX_NUMBER_POST_RETRIES) {
-                                verboseLog(
-                                    "Error syncing diagnostics file: $error. " +
-                                        "This was the final attempt ($MAX_NUMBER_POST_RETRIES). " +
-                                        "Deleting diagnostics file without posting.",
-                                )
-                                resetDiagnosticsStatus()
-                            }
-                        } else {
-                            verboseLog(
-                                "Error syncing diagnostics file: $error. " +
-                                    "Deleting diagnostics file without retrying.",
-                            )
-                            resetDiagnosticsStatus()
+                getEventsToSync(object : DataListener<List<JSONObject>> {
+                    override fun onData(data: List<JSONObject>) {
+                        if (data.isEmpty()) {
+                            verboseLog("No diagnostics to sync.")
+                            return
                         }
-                    },
-                )
+                        val diagnosticsCount = data.size
+                        backend.postDiagnostics(
+                            diagnosticsList = data,
+                            onSuccessHandler = {
+                                verboseLog("Synced diagnostics file successfully.")
+                                clearConsecutiveNumberOfErrors()
+                                diagnosticsFileHelper.deleteOlderDiagnostics(diagnosticsCount)
+                            },
+                            onErrorHandler = { error, shouldRetry ->
+                                if (shouldRetry) {
+                                    verboseLog(
+                                        "Error syncing diagnostics file: $error. " +
+                                            "Will retry the next time the SDK is initialized",
+                                    )
+                                    if (increaseConsecutiveNumberOfErrors() >= MAX_NUMBER_POST_RETRIES) {
+                                        verboseLog(
+                                            "Error syncing diagnostics file: $error. " +
+                                                "This was the final attempt ($MAX_NUMBER_POST_RETRIES). " +
+                                                "Deleting diagnostics file without posting.",
+                                        )
+                                        resetDiagnosticsStatus()
+                                    }
+                                } else {
+                                    verboseLog(
+                                        "Error syncing diagnostics file: $error. " +
+                                            "Deleting diagnostics file without retrying.",
+                                    )
+                                    resetDiagnosticsStatus()
+                                }
+                            },
+                        )
+                    }
+
+                    @Suppress("EmptyFunctionBlock")
+                    override fun onComplete() {}
+                })
             } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
                 verboseLog("Error syncing diagnostics file: $e")
                 try {
@@ -90,16 +102,22 @@ internal class DiagnosticsSynchronizer(
         }
     }
 
-    private fun getEventsToSync(): List<JSONObject> {
-        val diagnosticsList = diagnosticsFileHelper.readDiagnosticsFile()
-        val diagnosticsInFileCount = diagnosticsList.size
-        if (diagnosticsInFileCount > MAX_NUMBER_EVENTS) {
-            val eventsToRemoveCount = diagnosticsInFileCount - MAX_NUMBER_EVENTS + 1
-            diagnosticsFileHelper.deleteOlderDiagnostics(eventsToRemoveCount)
-            diagnosticsTracker.trackMaxEventsStoredLimitReached(diagnosticsInFileCount, eventsToRemoveCount)
-            return diagnosticsFileHelper.readDiagnosticsFile()
-        }
-        return diagnosticsList
+    private fun getEventsToSync(listener: DataListener<List<JSONObject>>) {
+        val eventsToSync: MutableList<JSONObject> = mutableListOf()
+        var currentEventsToSync = 0
+        diagnosticsFileHelper.readDiagnosticsFile(object : DataListener<JSONObject> {
+            override fun onData(data: JSONObject) {
+                eventsToSync.add(data)
+                currentEventsToSync++
+            }
+
+            override fun onComplete() {
+                if (eventsToSync.isNotEmpty()) {
+                    listener.onData(eventsToSync)
+                }
+                listener.onComplete()
+            }
+        })
     }
 
     private fun enqueue(command: () -> Unit) {

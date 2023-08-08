@@ -149,6 +149,7 @@ internal class PurchasesOrchestrator constructor(
             log(LogIntent.WARNING, ConfigureStrings.AUTO_SYNC_PURCHASES_DISABLED)
         }
 
+        diagnosticsSynchronizer?.clearDiagnosticsFileIfTooBig()
         diagnosticsSynchronizer?.syncDiagnosticsFileIfNeeded()
     }
 
