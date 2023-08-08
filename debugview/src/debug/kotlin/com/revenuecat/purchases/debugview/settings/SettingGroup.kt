@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.debugview.settings
 
+import android.app.Activity
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -12,14 +13,24 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.revenuecat.purchases.Package
+import com.revenuecat.purchases.debugview.DebugRevenueCatViewModel
+import com.revenuecat.purchases.debugview.findActivity
 import com.revenuecat.purchases.debugview.models.SettingGroupState
+import com.revenuecat.purchases.debugview.models.SettingScreenState
 import com.revenuecat.purchases.debugview.models.SettingState
+import com.revenuecat.purchases.models.StoreProduct
+import com.revenuecat.purchases.models.SubscriptionOption
+import kotlinx.coroutines.flow.StateFlow
 
 @Composable
 internal fun SettingGroup(
     settingGroupState: SettingGroupState,
+    viewModel: DebugRevenueCatViewModel,
+    activity: Activity = LocalContext.current.findActivity(),
 ) {
     Column(
         modifier = Modifier
@@ -39,7 +50,11 @@ internal fun SettingGroup(
                 settingGroupState.settings.forEach { settingState ->
                     when (settingState) {
                         is SettingState.Text -> SettingText(settingState)
-                        is SettingState.OfferingSetting -> SettingOffering(settingState)
+                        is SettingState.OfferingSetting -> SettingOffering(
+                            settingState,
+                            activity = activity,
+                            screenViewModel = viewModel,
+                        )
                     }
                     Divider()
                 }
@@ -48,9 +63,29 @@ internal fun SettingGroup(
     }
 }
 
-@Preview
+@Preview(showBackground = true)
 @Composable
 private fun SettingGroupPreview() {
+    val viewModel = object : DebugRevenueCatViewModel {
+        override val state: StateFlow<SettingScreenState>
+            get() = error("Not expected to be called")
+
+        override fun toastDisplayed() {
+            error("Not expected to be called")
+        }
+
+        override fun purchasePackage(activity: Activity, rcPackage: Package) {
+            error("Not expected to be called")
+        }
+
+        override fun purchaseProduct(activity: Activity, storeProduct: StoreProduct) {
+            error("Not expected to be called")
+        }
+
+        override fun purchaseSubscriptionOption(activity: Activity, subscriptionOption: SubscriptionOption) {
+            error("Not expected to be called")
+        }
+    }
     SettingGroup(
         SettingGroupState(
             "Settings group",
@@ -59,5 +94,6 @@ private fun SettingGroupPreview() {
                 SettingState.Text("Settings text 2", "Settings content 2"),
             ),
         ),
+        viewModel,
     )
 }

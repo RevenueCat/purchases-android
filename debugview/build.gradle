@@ -1,6 +1,7 @@
 plugins {
     alias libs.plugins.android.library
     alias libs.plugins.kotlin.android
+    alias libs.plugins.paparazzi
 }
 
 // TODO Uncomment apply plugin once debugview package is ready to be published.
@@ -35,6 +36,7 @@ android {
 dependencies {
     implementation project(path: ':purchases')
 
+    implementation(platform(libs.kotlin.bom))
     implementation libs.androidx.core
     implementation platform(libs.compose.bom)
     implementation libs.compose.ui
@@ -46,4 +48,20 @@ dependencies {
     implementation libs.androidx.lifecycle.viewmodel
     implementation libs.androidx.lifecycle.viewmodel.compose
     debugImplementation libs.compose.ui.tooling
+    debugImplementation libs.androidx.test.compose.manifest
+
+    testImplementation platform(libs.compose.bom)
+    testImplementation libs.androidx.appcompat
+    testImplementation libs.androidx.lifecycle.runtime.ktx
+    testImplementation libs.androidx.test.espresso.core
+    testImplementation libs.androidx.test.runner
+    testImplementation libs.androidx.test.rules
+    testImplementation libs.androidx.test.junit
+    testImplementation libs.androidx.test.compose
+
+    testImplementation libs.assertJ
+    testImplementation libs.mockk.android
+    testImplementation libs.mockk.agent
+
+    testImplementation libs.androidx.legacy.core.ui
 }

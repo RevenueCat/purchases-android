@@ -31,6 +31,22 @@ Runs all the tests
 
 Setup development environment
 
+### android verify_debug_view_snapshot_tests
+
+```sh
+[bundle exec] fastlane android verify_debug_view_snapshot_tests
+```
+
+Verify snapshot tests for the debug view library
+
+### android record_debug_view_snapshot_tests
+
+```sh
+[bundle exec] fastlane android record_debug_view_snapshot_tests
+```
+
+Record/Update snapshots for tests in the debug view library
+
 ### android bump
 
 ```sh

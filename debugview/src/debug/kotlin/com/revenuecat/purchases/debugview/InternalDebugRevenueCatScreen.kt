@@ -2,6 +2,7 @@ package com.revenuecat.purchases.debugview
 
 import android.app.Activity
 import android.widget.Toast
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -33,24 +34,29 @@ import kotlinx.coroutines.flow.MutableStateFlow
 internal fun InternalDebugRevenueCatScreen(
     onPurchaseCompleted: (StoreTransaction) -> Unit,
     onPurchaseErrored: (PurchasesTransactionException) -> Unit,
-    screenViewModel: DebugRevenueCatViewModel = viewModel<InternalDebugRevenueCatScreenViewModel>(
-        factory = InternalDebugRevenueCatScreenViewModelFactory(onPurchaseCompleted, onPurchaseErrored),
-    ),
+    // If screenViewModel is null, a default one will be created.
+    screenViewModel: DebugRevenueCatViewModel? = null,
+    activity: Activity? = null,
 ) {
+    val viewModel = screenViewModel ?: viewModel<InternalDebugRevenueCatScreenViewModel>(
+        factory = InternalDebugRevenueCatScreenViewModelFactory(onPurchaseCompleted, onPurchaseErrored),
+    )
     Column(
         modifier = Modifier
+            .background(MaterialTheme.colors.background)
             .verticalScroll(rememberScrollState())
             .fillMaxWidth()
             .padding(bottom = 16.dp),
     ) {
-        val state = screenViewModel.state.collectAsState().value
-        DisplayToastMessageIfNeeded(screenViewModel, state = state)
+        val currentActivity = activity ?: LocalContext.current.findActivity()
+        val state = viewModel.state.collectAsState().value
+        DisplayToastMessageIfNeeded(viewModel, state = state)
         Text(
             text = "RevenueCat Debug Menu",
             style = MaterialTheme.typography.h5,
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp),
         )
-        state.toSettingGroupStates().forEach { SettingGroup(it) }
+        state.toSettingGroupStates().forEach { SettingGroup(it, viewModel, currentActivity) }
     }
 }
 
@@ -62,8 +68,8 @@ private fun DisplayToastMessageIfNeeded(viewModel: DebugRevenueCatViewModel, sta
             toastMessage,
             Toast.LENGTH_LONG,
         ).show()
+        viewModel.toastDisplayed()
     }
-    viewModel.toastDisplayed()
 }
 
 @Preview(showBackground = true)

@@ -28,6 +28,7 @@ espresso = "3.4.0"
 material = "1.6.0"
 adsIdentifier = "17.0.1"
 viewmodelCompose = "2.4.0"
+paparrazzi = "1.3.1"
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
@@ -40,6 +41,7 @@ kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-parcelize = { id = "org.jetbrains.kotlin.plugin.parcelize", version.ref = "kotlin" }
 kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover"}
 mavenPublish = { id = "com.vanniktech.maven.publish", version.ref = "mavenPublish" }
+paparazzi = { id = "app.cash.paparazzi", version.ref = "paparrazzi" }
 
 [libraries]
 androidx-appcompat = { module = "androidx.appcompat:appcompat", version.ref = "appcompat" }
@@ -54,6 +56,7 @@ androidx-lifecycle-runtime = { module = "androidx.lifecycle:lifecycle-runtime", 
 androidx-lifecycle-runtime-ktx = { module = "androidx.lifecycle:lifecycle-runtime-ktx", version.ref = "lifecycle" }
 androidx-lifecycle-viewmodel = { module = "androidx.lifecycle:lifecycle-viewmodel-ktx", version.ref = "lifecycle" }
 androidx-lifecycle-viewmodel-compose = { module = 'androidx.lifecycle:lifecycle-viewmodel-compose', version.ref= "viewmodelCompose" }
+androidx-legacy-core-ui = { module = 'androidx.legacy:legacy-support-core-ui', version = "1.0.0" }
 
 androidx-multidex = { module = "androidx.multidex:multidex", version.ref = "multidex" }
 androidx-navigation-fragment = { module = "androidx.navigation:navigation-fragment-ktx", version.ref = "androidxNavigation" }
@@ -67,6 +70,8 @@ androidx-test-espresso-core = { module = "androidx.test.espresso:espresso-core",
 androidx-test-junit = { module = "androidx.test.ext:junit-ktx", version.ref = "testJUnit" }
 androidx-test-runner = { module = "androidx.test:runner", version.ref = "testLibraries" }
 androidx-test-rules = { module = "androidx.test:rules", version.ref = "testLibraries" }
+androidx-test-compose = { module = "androidx.compose.ui:ui-test-junit4" }
+androidx-test-compose-manifest = { module = "androidx.compose.ui:ui-test-manifest" }
 
 assertJ = { module = "org.assertj:assertj-core", version.ref = "assertJ"}
 
