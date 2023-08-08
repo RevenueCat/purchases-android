@@ -231,48 +231,6 @@ class DiagnosticsSynchronizerTest {
         diagnosticsSynchronizer.syncDiagnosticsFileIfNeeded()
     }
 
-//    @Test
-//    fun `syncDiagnosticsFileIfNeeded removes old events if exceeding limit`() {
-//        val eventsOverLimit = 10
-//        val eventsToRemove = eventsOverLimit + 1 // Leaves space for tracking event
-//        val eventsInFile = (0 until DiagnosticsSynchronizer.MAX_NUMBER_EVENTS + eventsOverLimit).map {
-//            JSONObject(mapOf("test-key-$it" to "value-$it"))
-//        }
-//        val eventsAfterRemovingOlder = eventsInFile.subList(eventsOverLimit, eventsInFile.size)
-//        every { diagnosticsFileHelper.readDiagnosticsFile() } returnsMany listOf(eventsInFile, eventsAfterRemovingOlder)
-//        every { diagnosticsTracker.trackEventInCurrentThread(any()) } just Runs
-//        every { diagnosticsFileHelper.deleteOlderDiagnostics(eventsToRemove) } just Runs
-//        every { diagnosticsTracker.trackMaxEventsStoredLimitReached(any(), any()) } just Runs
-//        mockBackendResponse(eventsAfterRemovingOlder)
-//        diagnosticsSynchronizer.syncDiagnosticsFileIfNeeded()
-//        verify(exactly = 1) { diagnosticsFileHelper.deleteOlderDiagnostics(eventsToRemove) }
-//    }
-
-//    @Test
-//    fun `syncDiagnosticsFileIfNeeded tracks max elements stored reached if syncing more than limit`() {
-//        val eventsOverLimit = 10
-//        val eventsToRemove = eventsOverLimit + 1 // Leaves space for tracking event
-//        val totalNumberOfEventsInFile = DiagnosticsSynchronizer.MAX_NUMBER_EVENTS + eventsOverLimit
-//        val eventsInFile = (0 until totalNumberOfEventsInFile).map {
-//            JSONObject(mapOf("test-key-$it" to "value-$it"))
-//        }
-//        val eventsAfterRemovingOlder = eventsInFile.subList(eventsOverLimit, eventsInFile.size)
-//        every { diagnosticsFileHelper.readDiagnosticsFile() } returnsMany listOf(eventsInFile, eventsAfterRemovingOlder)
-//        every { diagnosticsFileHelper.deleteOlderDiagnostics(eventsToRemove) } just Runs
-//        every {
-//            diagnosticsTracker.trackMaxEventsStoredLimitReached(totalNumberOfEventsInFile, eventsToRemove)
-//        } just Runs
-//        mockBackendResponse(eventsAfterRemovingOlder)
-//        diagnosticsSynchronizer.syncDiagnosticsFileIfNeeded()
-//        verify(exactly = 1) {
-//            diagnosticsTracker.trackMaxEventsStoredLimitReached(
-//                totalNumberOfEventsInFile,
-//                eventsToRemove,
-//                useCurrentThread = true
-//            )
-//        }
-//    }
-
     // endregion
 
     private fun mockSharedPreferences() {
