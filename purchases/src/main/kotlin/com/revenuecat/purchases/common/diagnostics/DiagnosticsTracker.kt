@@ -125,13 +125,10 @@ internal class DiagnosticsTracker(
         )
     }
 
-    fun trackMaxEventsStoredLimitReached(totalEventsStored: Int, eventsRemoved: Int, useCurrentThread: Boolean = true) {
+    fun trackMaxEventsStoredLimitReached(useCurrentThread: Boolean = true) {
         val event = DiagnosticsEntry.Event(
             name = DiagnosticsEventName.MAX_EVENTS_STORED_LIMIT_REACHED,
-            properties = mapOf(
-                "total_number_events_stored" to totalEventsStored,
-                "events_removed" to eventsRemoved,
-            ),
+            properties = mapOf(),
         )
         if (useCurrentThread) {
             trackEventInCurrentThread(event)

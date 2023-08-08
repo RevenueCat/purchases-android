@@ -2,10 +2,12 @@ package com.revenuecat.purchases.common
 
 import android.content.Context
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.utils.DataListener
 import io.mockk.every
 import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Fail.fail
+import org.assertj.core.data.Offset
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
@@ -42,6 +44,27 @@ class FileHelperTest {
     fun tearDown() {
         val tempTestFolder = File(testFolder)
         tempTestFolder.deleteRecursively()
+    }
+
+    @Test
+    fun `fileSizeInKB returns 0 if file does not exist`() {
+        verifyFileDoesNotExist()
+        val size = fileHelper.fileSizeInKB(testFilePath)
+        assertThat(size).isCloseTo(0.0, Offset.offset(0.00000001))
+    }
+
+    @Test
+    fun `fileSizeInKB returns 0 if file exists but is empty`() {
+        createTestFileWithContents("")
+        val size = fileHelper.fileSizeInKB(testFilePath)
+        assertThat(size).isCloseTo(0.0, Offset.offset(0.00000001))
+    }
+
+    @Test
+    fun `fileSizeInKB returns value if file has contents`() {
+        createTestFileWithContents("test string")
+        val size = fileHelper.fileSizeInKB(testFilePath)
+        assertThat(size).isCloseTo(0.0107421875, Offset.offset(0.00000001))
     }
 
     @Test
@@ -117,8 +140,26 @@ class FileHelperTest {
     @Test
     fun `readFilePerLines returns correct content`() {
         createTestFileWithContents("first line\nsecond line\nthird line\nfourth line")
-        val filePerLines = fileHelper.readFilePerLines(testFilePath)
-        assertThat(filePerLines).isEqualTo(listOf("first line", "second line", "third line", "fourth line"))
+        val receivedValues = mutableListOf<Pair<String, Int>>()
+        var onCompleteCallCount = 0
+        fileHelper.readFilePerLines(testFilePath, object : DataListener<Pair<String, Int>> {
+            override fun onData(data: Pair<String, Int>) {
+                receivedValues.add(data)
+            }
+
+            override fun onComplete() {
+                onCompleteCallCount++
+            }
+        })
+        assertThat(receivedValues).isEqualTo(
+            listOf(
+                Pair("first line", 0),
+                Pair("second line", 1),
+                Pair("third line", 2),
+                Pair("fourth line", 3)
+            )
+        )
+        assertThat(onCompleteCallCount).isEqualTo(1)
     }
 
     private fun verifyFileDoesNotExist() {

@@ -1,6 +1,8 @@
 package com.revenuecat.purchases.common
 
 import android.content.Context
+import com.revenuecat.purchases.utils.DataListener
+import com.revenuecat.purchases.utils.sizeInKB
 import java.io.BufferedReader
 import java.io.File
 import java.io.FileInputStream
@@ -10,6 +12,11 @@ import java.io.InputStreamReader
 internal class FileHelper(
     private val applicationContext: Context,
 ) {
+    fun fileSizeInKB(filePath: String): Double {
+        val file = getFileInFilesDir(filePath)
+        return file.sizeInKB
+    }
+
     fun appendToFile(filePath: String, contentToAppend: String) {
         val file = getFileInFilesDir(filePath)
         file.parentFile?.mkdirs()
@@ -25,29 +32,36 @@ internal class FileHelper(
         return file.delete()
     }
 
-    fun readFilePerLines(filePath: String): List<String> {
-        val readLines = mutableListOf<String>()
-        val file = getFileInFilesDir(filePath)
-        FileInputStream(file).use { fileInputStream ->
-            InputStreamReader(fileInputStream).use { inputStreamReader ->
-                BufferedReader(inputStreamReader).use { bufferedReader ->
-                    readLines.addAll(bufferedReader.readLines())
-                }
+    fun readFilePerLines(filePath: String, dataListener: DataListener<Pair<String, Int>>) {
+        openBufferedReader(filePath) { bufferedReader ->
+            var nextLine: String? = bufferedReader.readLine()
+            var lineNumber = 0
+            while (nextLine != null) {
+                dataListener.onData(Pair(nextLine, lineNumber))
+                nextLine = bufferedReader.readLine()
+                lineNumber++
             }
         }
-        return readLines
+        dataListener.onComplete()
     }
 
     fun removeFirstLinesFromFile(filePath: String, numberOfLinesToRemove: Int) {
-        val readLines = readFilePerLines(filePath)
-        deleteFile(filePath)
-        val textToAppend = if (readLines.isEmpty() || numberOfLinesToRemove >= readLines.size) {
-            errorLog("Trying to remove $numberOfLinesToRemove from file with ${readLines.size} lines.")
-            ""
-        } else {
-            readLines.subList(numberOfLinesToRemove, readLines.size).joinToString(separator = "\n", postfix = "\n")
-        }
-        appendToFile(filePath, textToAppend)
+        val textToAppend = StringBuilder()
+        readFilePerLines(
+            filePath,
+            object : DataListener<Pair<String, Int>> {
+                override fun onData(data: Pair<String, Int>) {
+                    if (data.second >= numberOfLinesToRemove) {
+                        textToAppend.append(data.first).append("\n")
+                    }
+                }
+
+                override fun onComplete() {
+                    deleteFile(filePath)
+                    appendToFile(filePath, textToAppend.toString())
+                }
+            },
+        )
     }
 
     /**
@@ -56,6 +70,17 @@ internal class FileHelper(
     fun fileIsEmpty(filePath: String): Boolean {
         val file = getFileInFilesDir(filePath)
         return !file.exists() || file.length() == 0L
+    }
+
+    private fun openBufferedReader(filePath: String, contentBlock: ((BufferedReader) -> Unit)) {
+        val file = getFileInFilesDir(filePath)
+        FileInputStream(file).use { fileInputStream ->
+            InputStreamReader(fileInputStream).use { inputStreamReader ->
+                BufferedReader(inputStreamReader).use { bufferedReader ->
+                    contentBlock(bufferedReader)
+                }
+            }
+        }
     }
 
     private fun getFileInFilesDir(filePath: String): File {

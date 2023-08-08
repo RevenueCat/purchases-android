@@ -7,6 +7,7 @@ import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.SyncDispatcher
+import com.revenuecat.purchases.utils.DataListener
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
@@ -58,15 +59,49 @@ class DiagnosticsSynchronizerTest {
         )
     }
 
+    // region clearDiagnosticsFileIfTooBig
+
+    @Test
+    fun `clearDiagnosticsFileIfTooBig does nothing if dianostics file not too big`() {
+        every { diagnosticsFileHelper.isDiagnosticsFileTooBig() } returns false
+
+        diagnosticsSynchronizer.clearDiagnosticsFileIfTooBig()
+
+        verify(exactly = 0) { diagnosticsTracker.trackMaxEventsStoredLimitReached() }
+        verify(exactly = 0) { diagnosticsFileHelper.deleteDiagnosticsFile() }
+    }
+
+    @Test
+    fun `clearDiagnosticsFileIfTooBig tracks max events store limit reached if dianostics file too big`() {
+        every { diagnosticsFileHelper.isDiagnosticsFileTooBig() } returns true
+        every { diagnosticsTracker.trackMaxEventsStoredLimitReached() } just Runs
+
+        diagnosticsSynchronizer.clearDiagnosticsFileIfTooBig()
+
+        verify(exactly = 1) { diagnosticsTracker.trackMaxEventsStoredLimitReached() }
+    }
+
+    @Test
+    fun `clearDiagnosticsFileIfTooBig clears diagnostics file if dianostics file too big`() {
+        every { diagnosticsFileHelper.isDiagnosticsFileTooBig() } returns true
+        every { diagnosticsTracker.trackMaxEventsStoredLimitReached() } just Runs
+
+        diagnosticsSynchronizer.clearDiagnosticsFileIfTooBig()
+
+        verify(exactly = 1) { diagnosticsFileHelper.deleteDiagnosticsFile() }
+    }
+
+    // endregion clearDiagnosticsFileIfTooBig
+
     // region syncDiagnosticsFileIfNeeded
 
     @Test
     fun `syncDiagnosticsFileIfNeeded does not do anything if diagnostics file is empty`() {
-        every { diagnosticsFileHelper.readDiagnosticsFile() } returns emptyList()
+        mockReadDiagnosticsFile(emptyList())
 
         diagnosticsSynchronizer.syncDiagnosticsFileIfNeeded()
 
-        verify(exactly = 1) { diagnosticsFileHelper.readDiagnosticsFile() }
+        verify(exactly = 1) { diagnosticsFileHelper.readDiagnosticsFile(any()) }
         verify(exactly = 0) { backend.postDiagnostics(any(), any(), any()) }
     }
 
@@ -76,7 +111,7 @@ class DiagnosticsSynchronizerTest {
 
         diagnosticsSynchronizer.syncDiagnosticsFileIfNeeded()
 
-        verify(exactly = 1) { diagnosticsFileHelper.readDiagnosticsFile() }
+        verify(exactly = 1) { diagnosticsFileHelper.readDiagnosticsFile(any()) }
         verify(exactly = 1) { backend.postDiagnostics(testDiagnosticsEntryJSONs, any(), any()) }
     }
 
@@ -170,73 +205,73 @@ class DiagnosticsSynchronizerTest {
 
     @Test
     fun `syncDiagnosticsFileIfNeeded deletes file if IOException happens`() {
-        every { diagnosticsFileHelper.readDiagnosticsFile() } throws IOException()
+        every { diagnosticsFileHelper.readDiagnosticsFile(any()) } throws IOException()
         diagnosticsSynchronizer.syncDiagnosticsFileIfNeeded()
         verify(exactly = 1) { diagnosticsFileHelper.deleteDiagnosticsFile()  }
     }
 
     @Test
     fun `syncDiagnosticsFileIfNeeded deletes file if JSONException happens`() {
-        every { diagnosticsFileHelper.readDiagnosticsFile() } throws JSONException("test-exception")
+        every { diagnosticsFileHelper.readDiagnosticsFile(any()) } throws JSONException("test-exception")
         diagnosticsSynchronizer.syncDiagnosticsFileIfNeeded()
         verify(exactly = 1) { diagnosticsFileHelper.deleteDiagnosticsFile()  }
     }
 
     @Test
     fun `syncDiagnosticsFileIfNeeded removes consecutive failures count if IOException happens`() {
-        every { diagnosticsFileHelper.readDiagnosticsFile() } throws IOException()
+        every { diagnosticsFileHelper.readDiagnosticsFile(any()) } throws IOException()
         diagnosticsSynchronizer.syncDiagnosticsFileIfNeeded()
         verify(exactly = 1) { sharedPreferencesEditor.remove(DiagnosticsSynchronizer.CONSECUTIVE_FAILURES_COUNT_KEY) }
     }
 
     @Test
     fun `syncDiagnosticsFileIfNeeded does not crash if IOException happens when deleting file`() {
-        every { diagnosticsFileHelper.readDiagnosticsFile() } throws IOException()
+        every { diagnosticsFileHelper.readDiagnosticsFile(any()) } throws IOException()
         every { diagnosticsFileHelper.deleteDiagnosticsFile() } throws IOException()
         diagnosticsSynchronizer.syncDiagnosticsFileIfNeeded()
     }
 
-    @Test
-    fun `syncDiagnosticsFileIfNeeded removes old events if exceeding limit`() {
-        val eventsOverLimit = 10
-        val eventsToRemove = eventsOverLimit + 1 // Leaves space for tracking event
-        val eventsInFile = (0 until DiagnosticsSynchronizer.MAX_NUMBER_EVENTS + eventsOverLimit).map {
-            JSONObject(mapOf("test-key-$it" to "value-$it"))
-        }
-        val eventsAfterRemovingOlder = eventsInFile.subList(eventsOverLimit, eventsInFile.size)
-        every { diagnosticsFileHelper.readDiagnosticsFile() } returnsMany listOf(eventsInFile, eventsAfterRemovingOlder)
-        every { diagnosticsTracker.trackEventInCurrentThread(any()) } just Runs
-        every { diagnosticsFileHelper.deleteOlderDiagnostics(eventsToRemove) } just Runs
-        every { diagnosticsTracker.trackMaxEventsStoredLimitReached(any(), any()) } just Runs
-        mockBackendResponse(eventsAfterRemovingOlder)
-        diagnosticsSynchronizer.syncDiagnosticsFileIfNeeded()
-        verify(exactly = 1) { diagnosticsFileHelper.deleteOlderDiagnostics(eventsToRemove) }
-    }
+//    @Test
+//    fun `syncDiagnosticsFileIfNeeded removes old events if exceeding limit`() {
+//        val eventsOverLimit = 10
+//        val eventsToRemove = eventsOverLimit + 1 // Leaves space for tracking event
+//        val eventsInFile = (0 until DiagnosticsSynchronizer.MAX_NUMBER_EVENTS + eventsOverLimit).map {
+//            JSONObject(mapOf("test-key-$it" to "value-$it"))
+//        }
+//        val eventsAfterRemovingOlder = eventsInFile.subList(eventsOverLimit, eventsInFile.size)
+//        every { diagnosticsFileHelper.readDiagnosticsFile() } returnsMany listOf(eventsInFile, eventsAfterRemovingOlder)
+//        every { diagnosticsTracker.trackEventInCurrentThread(any()) } just Runs
+//        every { diagnosticsFileHelper.deleteOlderDiagnostics(eventsToRemove) } just Runs
+//        every { diagnosticsTracker.trackMaxEventsStoredLimitReached(any(), any()) } just Runs
+//        mockBackendResponse(eventsAfterRemovingOlder)
+//        diagnosticsSynchronizer.syncDiagnosticsFileIfNeeded()
+//        verify(exactly = 1) { diagnosticsFileHelper.deleteOlderDiagnostics(eventsToRemove) }
+//    }
 
-    @Test
-    fun `syncDiagnosticsFileIfNeeded tracks max elements stored reached if syncing more than limit`() {
-        val eventsOverLimit = 10
-        val eventsToRemove = eventsOverLimit + 1 // Leaves space for tracking event
-        val totalNumberOfEventsInFile = DiagnosticsSynchronizer.MAX_NUMBER_EVENTS + eventsOverLimit
-        val eventsInFile = (0 until totalNumberOfEventsInFile).map {
-            JSONObject(mapOf("test-key-$it" to "value-$it"))
-        }
-        val eventsAfterRemovingOlder = eventsInFile.subList(eventsOverLimit, eventsInFile.size)
-        every { diagnosticsFileHelper.readDiagnosticsFile() } returnsMany listOf(eventsInFile, eventsAfterRemovingOlder)
-        every { diagnosticsFileHelper.deleteOlderDiagnostics(eventsToRemove) } just Runs
-        every {
-            diagnosticsTracker.trackMaxEventsStoredLimitReached(totalNumberOfEventsInFile, eventsToRemove)
-        } just Runs
-        mockBackendResponse(eventsAfterRemovingOlder)
-        diagnosticsSynchronizer.syncDiagnosticsFileIfNeeded()
-        verify(exactly = 1) {
-            diagnosticsTracker.trackMaxEventsStoredLimitReached(
-                totalNumberOfEventsInFile,
-                eventsToRemove,
-                useCurrentThread = true
-            )
-        }
-    }
+//    @Test
+//    fun `syncDiagnosticsFileIfNeeded tracks max elements stored reached if syncing more than limit`() {
+//        val eventsOverLimit = 10
+//        val eventsToRemove = eventsOverLimit + 1 // Leaves space for tracking event
+//        val totalNumberOfEventsInFile = DiagnosticsSynchronizer.MAX_NUMBER_EVENTS + eventsOverLimit
+//        val eventsInFile = (0 until totalNumberOfEventsInFile).map {
+//            JSONObject(mapOf("test-key-$it" to "value-$it"))
+//        }
+//        val eventsAfterRemovingOlder = eventsInFile.subList(eventsOverLimit, eventsInFile.size)
+//        every { diagnosticsFileHelper.readDiagnosticsFile() } returnsMany listOf(eventsInFile, eventsAfterRemovingOlder)
+//        every { diagnosticsFileHelper.deleteOlderDiagnostics(eventsToRemove) } just Runs
+//        every {
+//            diagnosticsTracker.trackMaxEventsStoredLimitReached(totalNumberOfEventsInFile, eventsToRemove)
+//        } just Runs
+//        mockBackendResponse(eventsAfterRemovingOlder)
+//        diagnosticsSynchronizer.syncDiagnosticsFileIfNeeded()
+//        verify(exactly = 1) {
+//            diagnosticsTracker.trackMaxEventsStoredLimitReached(
+//                totalNumberOfEventsInFile,
+//                eventsToRemove,
+//                useCurrentThread = true
+//            )
+//        }
+//    }
 
     // endregion
 
@@ -258,7 +293,7 @@ class DiagnosticsSynchronizerTest {
 
     private fun mockDiagnosticsFileHelper() {
         diagnosticsFileHelper = mockk()
-        every { diagnosticsFileHelper.readDiagnosticsFile() } returns testDiagnosticsEntryJSONs
+        mockReadDiagnosticsFile(testDiagnosticsEntryJSONs)
         every { diagnosticsFileHelper.deleteDiagnosticsFile() } just Runs
         every { diagnosticsFileHelper.deleteOlderDiagnostics(testDiagnosticsEntryJSONs.size) } just Runs
     }
@@ -280,6 +315,14 @@ class DiagnosticsSynchronizerTest {
             } else if (errorReturn != null) {
                 errorCallbackSlot.captured(errorReturn.first, errorReturn.second)
             }
+        }
+    }
+
+    private fun mockReadDiagnosticsFile(jsons: List<JSONObject>) {
+        val slot = slot<DataListener<JSONObject>>()
+        every { diagnosticsFileHelper.readDiagnosticsFile(capture(slot)) } answers {
+            jsons.forEach { slot.captured.onData(it) }
+            slot.captured.onComplete()
         }
     }
 }
