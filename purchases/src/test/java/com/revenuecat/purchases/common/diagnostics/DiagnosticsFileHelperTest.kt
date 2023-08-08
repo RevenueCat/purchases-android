@@ -62,7 +62,7 @@ class DiagnosticsFileHelperTest {
     fun `isDiagnosticsFileTooBig is false if file smaller than limit`() {
         every { fileHelper.fileSizeInKB(diagnosticsFilePath) } returns
             DiagnosticsFileHelper.DIAGNOSTICS_FILE_LIMIT_IN_KB - 1.0
-        assertThat(diagnosticsFileHelper.isDiagnosticsFileTooBig()).isTrue
+        assertThat(diagnosticsFileHelper.isDiagnosticsFileTooBig()).isFalse
     }
 
     @Test
