@@ -53,12 +53,12 @@ platform :android do
 
   desc "Verify snapshot tests for the debug view library"
   lane :verify_debug_view_snapshot_tests do
-    gradle(task: "debugview:verifyPaparazziDebug")
+    gradle(task: "ui:debugview:verifyPaparazziDebug")
   end
 
   desc "Record/Update snapshots for tests in the debug view library"
   lane :record_debug_view_snapshot_tests do
-    gradle(task: "debugview:recordPaparazziDebug")
+    gradle(task: "ui:debugview:recordPaparazziDebug")
   end
 
   desc "Replaces version numbers, updates changelog and creates PR"
