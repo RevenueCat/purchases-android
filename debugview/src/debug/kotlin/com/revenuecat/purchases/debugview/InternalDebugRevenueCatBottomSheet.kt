@@ -16,6 +16,7 @@ internal fun InternalDebugRevenueCatBottomSheet(
     onPurchaseErrored: (PurchasesTransactionException) -> Unit,
     isVisible: Boolean = false,
     onDismissCallback: (() -> Unit)? = null,
+    // If viewModel is null, a default one will be created.
     viewModel: DebugRevenueCatViewModel? = null,
 ) {
     if (isVisible) {

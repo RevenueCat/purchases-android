@@ -34,6 +34,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 internal fun InternalDebugRevenueCatScreen(
     onPurchaseCompleted: (StoreTransaction) -> Unit,
     onPurchaseErrored: (PurchasesTransactionException) -> Unit,
+    // If screenViewModel is null, a default one will be created.
     screenViewModel: DebugRevenueCatViewModel? = null,
     activity: Activity? = null,
 ) {
