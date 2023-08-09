@@ -31,6 +31,9 @@ internal class DiagnosticsSynchronizer(
         @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
         const val MAX_NUMBER_POST_RETRIES = 3
 
+        @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+        const val MAX_EVENTS_TO_SYNC_PER_REQUEST = 200
+
         fun initializeSharedPreferences(context: Context): SharedPreferences =
             context.getSharedPreferences(
                 "com_revenuecat_purchases_${context.packageName}_preferences_diagnostics",
@@ -104,20 +107,21 @@ internal class DiagnosticsSynchronizer(
 
     private fun getEventsToSync(listener: DataListener<List<JSONObject>>) {
         val eventsToSync: MutableList<JSONObject> = mutableListOf()
-        var currentEventsToSync = 0
-        diagnosticsFileHelper.readDiagnosticsFile(object : DataListener<JSONObject> {
-            override fun onData(data: JSONObject) {
-                eventsToSync.add(data)
-                currentEventsToSync++
-            }
-
-            override fun onComplete() {
-                if (eventsToSync.isNotEmpty()) {
-                    listener.onData(eventsToSync)
+        diagnosticsFileHelper.readDiagnosticsFile(
+            object : DataListener<JSONObject> {
+                override fun onData(data: JSONObject) {
+                    eventsToSync.add(data)
                 }
-                listener.onComplete()
-            }
-        })
+
+                override fun onComplete() {
+                    if (eventsToSync.isNotEmpty()) {
+                        listener.onData(eventsToSync)
+                    }
+                    listener.onComplete()
+                }
+            },
+            maxEntries = MAX_EVENTS_TO_SYNC_PER_REQUEST,
+        )
     }
 
     private fun enqueue(command: () -> Unit) {

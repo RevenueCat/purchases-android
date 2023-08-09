@@ -112,4 +112,18 @@ class DiagnosticsFileHelperTest {
         assertThat(dataListenerCallParams[1]["test_key"]).isEqualTo("test_value")
         assertThat(dataListenerOnCompleteCallCount).isEqualTo(1)
     }
+
+    @Test
+    fun `readDiagnosticsFile passes maxLines requirement to fileHelper as expected`() {
+        every { fileHelper.fileIsEmpty(diagnosticsFilePath) } returns false
+        val dataListenerSlot = slot<DataListener<Pair<String, Int>>>()
+        val maxLines = 2
+        every { fileHelper.readFilePerLines(diagnosticsFilePath, capture(dataListenerSlot), maxLines) } answers {
+            dataListenerSlot.captured.onData(Pair("{}", 0))
+            dataListenerSlot.captured.onData(Pair("{\"test_key\": \"test_value\"}", 1))
+            dataListenerSlot.captured.onComplete()
+        }
+        diagnosticsFileHelper.readDiagnosticsFile(dataListener, maxLines)
+        verify(exactly = 1) { fileHelper.readFilePerLines(diagnosticsFilePath, any(), maxLines) }
+    }
 }

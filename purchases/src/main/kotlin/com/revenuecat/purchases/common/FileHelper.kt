@@ -32,11 +32,11 @@ internal class FileHelper(
         return file.delete()
     }
 
-    fun readFilePerLines(filePath: String, dataListener: DataListener<Pair<String, Int>>) {
+    fun readFilePerLines(filePath: String, dataListener: DataListener<Pair<String, Int>>, maxLines: Int? = null) {
         openBufferedReader(filePath) { bufferedReader ->
             var nextLine: String? = bufferedReader.readLine()
             var lineNumber = 0
-            while (nextLine != null) {
+            while (nextLine != null && (maxLines == null || lineNumber < maxLines)) {
                 dataListener.onData(Pair(nextLine, lineNumber))
                 nextLine = bufferedReader.readLine()
                 lineNumber++

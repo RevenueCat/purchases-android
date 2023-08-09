@@ -101,7 +101,9 @@ class DiagnosticsSynchronizerTest {
 
         diagnosticsSynchronizer.syncDiagnosticsFileIfNeeded()
 
-        verify(exactly = 1) { diagnosticsFileHelper.readDiagnosticsFile(any()) }
+        verify(exactly = 1) {
+            diagnosticsFileHelper.readDiagnosticsFile(any(), DiagnosticsSynchronizer.MAX_EVENTS_TO_SYNC_PER_REQUEST)
+        }
         verify(exactly = 0) { backend.postDiagnostics(any(), any(), any()) }
     }
 
@@ -111,7 +113,9 @@ class DiagnosticsSynchronizerTest {
 
         diagnosticsSynchronizer.syncDiagnosticsFileIfNeeded()
 
-        verify(exactly = 1) { diagnosticsFileHelper.readDiagnosticsFile(any()) }
+        verify(exactly = 1) {
+            diagnosticsFileHelper.readDiagnosticsFile(any(), DiagnosticsSynchronizer.MAX_EVENTS_TO_SYNC_PER_REQUEST)
+        }
         verify(exactly = 1) { backend.postDiagnostics(testDiagnosticsEntryJSONs, any(), any()) }
     }
 
@@ -278,7 +282,12 @@ class DiagnosticsSynchronizerTest {
 
     private fun mockReadDiagnosticsFile(jsons: List<JSONObject>) {
         val slot = slot<DataListener<JSONObject>>()
-        every { diagnosticsFileHelper.readDiagnosticsFile(capture(slot)) } answers {
+        every {
+            diagnosticsFileHelper.readDiagnosticsFile(
+                capture(slot),
+                DiagnosticsSynchronizer.MAX_EVENTS_TO_SYNC_PER_REQUEST,
+            )
+        } answers {
             jsons.forEach { slot.captured.onData(it) }
             slot.captured.onComplete()
         }

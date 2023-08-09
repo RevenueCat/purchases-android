@@ -39,7 +39,7 @@ internal class DiagnosticsFileHelper(
     }
 
     @Synchronized
-    fun readDiagnosticsFile(listener: DataListener<JSONObject>) {
+    fun readDiagnosticsFile(listener: DataListener<JSONObject>, maxEntries: Int? = null) {
         if (fileHelper.fileIsEmpty(DIAGNOSTICS_FILE_PATH)) {
             listener.onComplete()
         } else {
@@ -54,6 +54,7 @@ internal class DiagnosticsFileHelper(
                         listener.onComplete()
                     }
                 },
+                maxLines = maxEntries,
             )
         }
     }

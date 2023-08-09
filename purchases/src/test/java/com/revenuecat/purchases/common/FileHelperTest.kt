@@ -162,6 +162,33 @@ class FileHelperTest {
         assertThat(onCompleteCallCount).isEqualTo(1)
     }
 
+    @Test
+    fun `readFilePerLines with max lines returns correct content`() {
+        createTestFileWithContents("first line\nsecond line\nthird line\nfourth line")
+        val receivedValues = mutableListOf<Pair<String, Int>>()
+        var onCompleteCallCount = 0
+        fileHelper.readFilePerLines(
+            testFilePath,
+            object : DataListener<Pair<String, Int>> {
+                override fun onData(data: Pair<String, Int>) {
+                    receivedValues.add(data)
+                }
+
+                override fun onComplete() {
+                    onCompleteCallCount++
+                }
+            },
+            maxLines = 2,
+        )
+        assertThat(receivedValues).isEqualTo(
+            listOf(
+                Pair("first line", 0),
+                Pair("second line", 1),
+            )
+        )
+        assertThat(onCompleteCallCount).isEqualTo(1)
+    }
+
     private fun verifyFileDoesNotExist() {
         val file = File(testFolder, testFilePath)
         if (file.exists()) {
