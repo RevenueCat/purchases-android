@@ -7,7 +7,6 @@ import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.SyncDispatcher
-import com.revenuecat.purchases.utils.DataListener
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
@@ -21,6 +20,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import java.io.IOException
+import java.util.stream.Stream
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
@@ -277,10 +277,9 @@ class DiagnosticsSynchronizerTest {
     }
 
     private fun mockReadDiagnosticsFile(jsons: List<JSONObject>) {
-        val slot = slot<DataListener<JSONObject>>()
+        val slot = slot<((Stream<JSONObject>) -> Unit)>()
         every { diagnosticsFileHelper.readDiagnosticsFile(capture(slot)) } answers {
-            jsons.forEach { slot.captured.onData(it) }
-            slot.captured.onComplete()
+            slot.captured(jsons.stream())
         }
     }
 }

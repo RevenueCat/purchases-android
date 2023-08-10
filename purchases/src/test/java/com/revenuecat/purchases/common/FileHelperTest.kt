@@ -2,7 +2,6 @@ package com.revenuecat.purchases.common
 
 import android.content.Context
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.revenuecat.purchases.utils.DataListener
 import io.mockk.every
 import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
@@ -138,28 +137,27 @@ class FileHelperTest {
     }
 
     @Test
-    fun `readFilePerLines returns correct content`() {
+    fun `readFilePerLines returns stream with correct content`() {
         createTestFileWithContents("first line\nsecond line\nthird line\nfourth line")
-        val receivedValues = mutableListOf<Pair<String, Int>>()
-        var onCompleteCallCount = 0
-        fileHelper.readFilePerLines(testFilePath, object : DataListener<Pair<String, Int>> {
-            override fun onData(data: Pair<String, Int>) {
-                receivedValues.add(data)
+        val receivedValues = mutableListOf<String>()
+        fileHelper.readFilePerLines(testFilePath) { stream ->
+            stream.forEach {
+                receivedValues.add(it)
             }
+        }
+        assertThat(receivedValues).isEqualTo(listOf("first line", "second line", "third line", "fourth line"))
+    }
 
-            override fun onComplete() {
-                onCompleteCallCount++
+    @Test
+    fun `readFilePerLines stream can be limited correctly`() {
+        createTestFileWithContents("first line\nsecond line\nthird line\nfourth line")
+        val receivedValues = mutableListOf<String>()
+        fileHelper.readFilePerLines(testFilePath) { stream ->
+            stream.limit(2).forEach {
+                receivedValues.add(it)
             }
-        })
-        assertThat(receivedValues).isEqualTo(
-            listOf(
-                Pair("first line", 0),
-                Pair("second line", 1),
-                Pair("third line", 2),
-                Pair("fourth line", 3)
-            )
-        )
-        assertThat(onCompleteCallCount).isEqualTo(1)
+        }
+        assertThat(receivedValues).isEqualTo(listOf("first line", "second line"))
     }
 
     private fun verifyFileDoesNotExist() {

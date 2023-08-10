@@ -2,7 +2,6 @@ package com.revenuecat.purchases.common.diagnostics
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.common.FileHelper
-import com.revenuecat.purchases.utils.DataListener
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
@@ -15,6 +14,8 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
+import java.util.stream.Stream
+import kotlin.streams.toList
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
@@ -26,27 +27,12 @@ class DiagnosticsFileHelperTest {
     )
     private val diagnosticsFilePath = DiagnosticsFileHelper.DIAGNOSTICS_FILE_PATH
 
-    private val dataListenerCallParams: MutableList<JSONObject> = mutableListOf()
-    private var dataListenerOnCompleteCallCount = 0
-
     private lateinit var fileHelper: FileHelper
-    private lateinit var dataListener: DataListener<JSONObject>
 
     private lateinit var diagnosticsFileHelper: DiagnosticsFileHelper
 
     @Before
     fun setup() {
-        dataListenerCallParams.clear()
-        dataListenerOnCompleteCallCount = 0
-        dataListener = object : DataListener<JSONObject> {
-            override fun onData(data: JSONObject) {
-                dataListenerCallParams.add(data)
-            }
-
-            override fun onComplete() {
-                dataListenerOnCompleteCallCount++
-            }
-        }
         fileHelper = mockk()
         diagnosticsFileHelper = DiagnosticsFileHelper(fileHelper)
     }
@@ -90,26 +76,30 @@ class DiagnosticsFileHelperTest {
     @Test
     fun `readDiagnosticsFile returns empty list if file is empty`() {
         every { fileHelper.fileIsEmpty(diagnosticsFilePath) } returns true
-        diagnosticsFileHelper.readDiagnosticsFile(dataListener)
+        var resultList: List<JSONObject>? = null
+        diagnosticsFileHelper.readDiagnosticsFile() { stream ->
+            resultList = stream.toList()
+        }
         verify(exactly = 1) { fileHelper.fileIsEmpty(diagnosticsFilePath) }
-        assertThat(dataListenerCallParams).isEmpty()
-        assertThat(dataListenerOnCompleteCallCount).isEqualTo(1)
+        assertThat(resultList).isNotNull
+        assertThat(resultList).isEmpty()
         verify(exactly = 0) { fileHelper.readFilePerLines(diagnosticsFilePath, any()) }
     }
 
     @Test
     fun `readDiagnosticsFile reads content as json`() {
         every { fileHelper.fileIsEmpty(diagnosticsFilePath) } returns false
-        val dataListenerSlot = slot<DataListener<Pair<String, Int>>>()
-        every { fileHelper.readFilePerLines(diagnosticsFilePath, capture(dataListenerSlot)) } answers {
-            dataListenerSlot.captured.onData(Pair("{}", 0))
-            dataListenerSlot.captured.onData(Pair("{\"test_key\": \"test_value\"}", 1))
-            dataListenerSlot.captured.onComplete()
+        val streamBlockSlot = slot<((Stream<String>) -> Unit)>()
+        every { fileHelper.readFilePerLines(diagnosticsFilePath, capture(streamBlockSlot)) } answers {
+            streamBlockSlot.captured(Stream.of("{}", "{\"test_key\": \"test_value\"}"))
         }
-        diagnosticsFileHelper.readDiagnosticsFile(dataListener)
-        assertThat(dataListenerCallParams.size).isEqualTo(2)
-        assertThat(dataListenerCallParams[0].length()).isEqualTo(0)
-        assertThat(dataListenerCallParams[1]["test_key"]).isEqualTo("test_value")
-        assertThat(dataListenerOnCompleteCallCount).isEqualTo(1)
+        var resultList: List<JSONObject>? = null
+        diagnosticsFileHelper.readDiagnosticsFile { stream ->
+            resultList = stream.toList()
+        }
+        assertThat(resultList).isNotNull
+        assertThat(resultList?.size).isEqualTo(2)
+        assertThat(resultList?.get(0)?.length()).isEqualTo(0)
+        assertThat(resultList?.get(1)?.get("test_key")).isEqualTo("test_value")
     }
 }

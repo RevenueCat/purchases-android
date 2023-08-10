@@ -1,13 +1,16 @@
 package com.revenuecat.purchases.common.diagnostics
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import com.revenuecat.purchases.common.FileHelper
 import com.revenuecat.purchases.common.verboseLog
-import com.revenuecat.purchases.utils.DataListener
 import org.json.JSONObject
+import java.util.stream.Stream
 
 /**
  * All methods in this file should be executed within the diagnostics thread to ensure there are no threading issues.
  */
+@RequiresApi(Build.VERSION_CODES.N)
 internal class DiagnosticsFileHelper(
     private val fileHelper: FileHelper,
 ) {
@@ -39,22 +42,13 @@ internal class DiagnosticsFileHelper(
     }
 
     @Synchronized
-    fun readDiagnosticsFile(listener: DataListener<JSONObject>) {
+    fun readDiagnosticsFile(streamBlock: ((Stream<JSONObject>) -> Unit)) {
         if (fileHelper.fileIsEmpty(DIAGNOSTICS_FILE_PATH)) {
-            listener.onComplete()
+            streamBlock(Stream.empty())
         } else {
-            fileHelper.readFilePerLines(
-                DIAGNOSTICS_FILE_PATH,
-                object : DataListener<Pair<String, Int>> {
-                    override fun onData(data: Pair<String, Int>) {
-                        listener.onData(JSONObject(data.first))
-                    }
-
-                    override fun onComplete() {
-                        listener.onComplete()
-                    }
-                },
-            )
+            fileHelper.readFilePerLines(DIAGNOSTICS_FILE_PATH) { stream ->
+                streamBlock(stream.map { JSONObject(it) })
+            }
         }
     }
 }
