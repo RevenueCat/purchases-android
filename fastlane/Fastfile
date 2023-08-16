@@ -110,7 +110,7 @@ platform :android do
   desc "Upload and close a release"
   lane :deploy do |options|
     version = current_version_number
-    gradleProperties = {
+    gradle_properties = {
       "signing.keyId" => ENV['GPG_SIGNING_KEY_ID_NEW'],
       "signing.password" => ENV['GPG_SIGNING_KEY_PW_NEW'],
       "signing.secretKeyRingFile" => "/home/circleci/.gnupg/secring.gpg",
@@ -123,36 +123,38 @@ platform :android do
       tasks: [
         "publish --no-daemon --no-parallel"
       ],
-      properties: gradleProperties
+      properties: gradle_properties
     )
 
     UI.verbose("Deploying Custom Entitlements Computation version")
     deploy_specific_package(
       "customEntitlementComputationRelease",
       "purchases-custom-entitlement-computation",
-      "purchases"
+      "purchases",
+      gradle_properties
     )
 
     UI.verbose("Deploying Debug view version")
     deploy_specific_package(
       "defaultsDebug",
       "purchases-debug-view",
-      "ui:debugview"
+      "ui:debugview",
+      gradle_properties
     )
 
     github_release(version: version) unless is_snapshot_version?(version)
   end
 
-  def deploy_specific_package(variant, artifact_id, module_to_deploy)
-    gradleProperties["ANDROID_VARIANT_TO_PUBLISH"] = "customEntitlementComputationRelease"
-    gradleProperties["POM_ARTIFACT_ID"] = "purchases-custom-entitlement-computation"
+  def deploy_specific_package(variant, artifact_id, module_to_deploy, gradle_properties)
+    gradle_properties["ANDROID_VARIANT_TO_PUBLISH"] = variant
+    gradle_properties["POM_ARTIFACT_ID"] = artifact_id
 
     command = module_to_deploy == nil ? "publish" : "#{module_to_deploy}:publish"
     gradle(
       tasks: [
         "#{command} --no-daemon --no-parallel"
       ],
-      properties: gradleProperties
+      properties: gradle_properties
     )
   end
 
