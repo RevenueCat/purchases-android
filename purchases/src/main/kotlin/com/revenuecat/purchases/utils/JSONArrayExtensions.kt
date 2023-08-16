@@ -8,7 +8,7 @@ internal fun <T> JSONArray.toList(): List<T>? {
 
     for (i in 0 until this.length()) {
         val value = when (val rawValue = this.get(i)) {
-            is JSONObject -> rawValue.toMap<T>()
+            is JSONObject -> rawValue.toMap<T>(deep = true)
             is JSONArray -> rawValue.toList<T>()
             else -> rawValue
         }

@@ -16,7 +16,7 @@ internal fun <T> JSONObject.toMap(deep: Boolean = false): Map<String, T>? {
     return this.keys()?.asSequence()?.map { jsonKey ->
         if (deep) {
             val value = when (val rawValue = this[jsonKey]) {
-                is JSONObject -> rawValue.toMap<T>()
+                is JSONObject -> rawValue.toMap<T>(deep = true)
                 is JSONArray -> rawValue.toList<T>()
                 else -> rawValue
             }
