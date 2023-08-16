@@ -1,5 +1,4 @@
 -dontwarn com.amazon.**
 -keep class com.amazon.** {*;}
--keep class com.revenuecat.purchases.amazon.** {*;}
 -keepattributes *Annotation*
 -dontoptimize

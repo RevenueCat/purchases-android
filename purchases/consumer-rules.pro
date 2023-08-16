@@ -1,4 +1,3 @@
--keep class com.revenuecat.purchases.amazon.** {*;}
 -keep class androidx.lifecycle.DefaultLifecycleObserver
 -dontwarn com.google.errorprone.annotations.CanIgnoreReturnValue
 -dontwarn com.google.errorprone.annotations.Immutable
