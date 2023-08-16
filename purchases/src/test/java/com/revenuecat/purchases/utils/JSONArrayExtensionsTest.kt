@@ -17,7 +17,12 @@ class JSONArrayExtensionsTest {
         true,
         "five",
         listOf("six", "seven"),
-        mapOf("string" to "five")
+        mapOf(
+            "string" to "five",
+            "more_dictionary" to mapOf(
+                "map" to "deep"
+            ),
+        )
     )
 
     @Test
@@ -35,7 +40,12 @@ class JSONArrayExtensionsTest {
             listOf("six", "seven")
         )
         assertThat(toList[5]).isEqualTo(
-            mapOf("string" to "five")
+            mapOf(
+                "string" to "five",
+                "more_dictionary" to mapOf(
+                    "map" to "deep"
+                ),
+            )
         )
     }
 }
