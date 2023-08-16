@@ -20,6 +20,6 @@ include ':app'
 // Uncomment to use local version of the SDK
 includeBuild("../../") {
     dependencySubstitution {
-        substitute module("com.revenuecat.purchases:debugview") using project(":debugview")
+        substitute module("com.revenuecat.purchases:debugview") using project(":ui:debugview")
     }
 }
