@@ -240,7 +240,10 @@ class OfferingsTest {
             "string" to "five",
             "array" to listOf("five"),
             "dictionary" to mapOf(
-                "string" to "five"
+                "string" to "five",
+                "more_dictionary" to mapOf(
+                    "map" to "deep"
+                ),
             )
         )
         val offeringJSON = getOfferingJSON(
