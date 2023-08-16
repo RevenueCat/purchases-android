@@ -1,3 +1,10 @@
+## 6.9.2
+### Bugfixes
+* DENG-494: Fix offering metadata not fulling expanding (#1199) via Josh Holtz (@joshdholtz)
+### Other Changes
+* Fix deploying extra packages (#1200) via Toni Rico (@tonidero)
+* Debug view: Support deploying both noop and debug version of `debugview` package (#1192) via Toni Rico (@tonidero)
+
 ## 6.9.1
 ### Bugfixes
 * Fix NoSuchElementException by using poll when accessing serviceRequests (#1190) via Cesar de la Vega (@vegaro)
