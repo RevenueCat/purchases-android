@@ -11,12 +11,17 @@ import org.robolectric.annotation.Config
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
 class JSONObjectExtensionsTest {
-    val fromMap = mapOf(
+    private val fromMap = mapOf(
         "int" to 5,
         "double" to 5.5,
         "boolean" to true,
         "string" to "five",
-        "array" to listOf("five"),
+        "array" to listOf(
+            "five",
+            mapOf(
+                "map" to "deep"
+            ),
+        ),
         "dictionary" to mapOf(
             "string" to "five",
             "more_dictionary" to mapOf(
@@ -52,7 +57,12 @@ class JSONObjectExtensionsTest {
         assertThat(toMap["string"]).isEqualTo("five")
 
         assertThat(toMap["array"]).isEqualTo(
-            listOf("five")
+            listOf(
+                "five",
+                mapOf(
+                    "map" to "deep"
+                ),
+            )
         )
         assertThat(toMap["dictionary"]).isEqualTo(
             mapOf(
