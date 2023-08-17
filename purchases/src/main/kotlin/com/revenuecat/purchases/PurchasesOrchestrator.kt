@@ -55,6 +55,7 @@ import com.revenuecat.purchases.strings.IdentityStrings
 import com.revenuecat.purchases.strings.PurchaseStrings
 import com.revenuecat.purchases.strings.RestoreStrings
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
+import com.revenuecat.purchases.utils.isAndroidNOrNewer
 import java.net.URL
 import java.util.Collections
 
@@ -149,7 +150,10 @@ internal class PurchasesOrchestrator constructor(
             log(LogIntent.WARNING, ConfigureStrings.AUTO_SYNC_PURCHASES_DISABLED)
         }
 
-        diagnosticsSynchronizer?.syncDiagnosticsFileIfNeeded()
+        if (isAndroidNOrNewer()) {
+            diagnosticsSynchronizer?.clearDiagnosticsFileIfTooBig()
+            diagnosticsSynchronizer?.syncDiagnosticsFileIfNeeded()
+        }
     }
 
     /** @suppress */

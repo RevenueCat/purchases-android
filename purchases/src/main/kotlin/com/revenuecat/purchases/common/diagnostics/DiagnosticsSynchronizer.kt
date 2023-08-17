@@ -2,12 +2,15 @@ package com.revenuecat.purchases.common.diagnostics
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.verboseLog
 import org.json.JSONObject
 import java.io.IOException
+import java.util.stream.Collectors
 
 /**
  * This class is in charge of syncing all previously tracked diagnostics. All operations will be executed
@@ -16,6 +19,7 @@ import java.io.IOException
  *
  * If syncing diagnostics fails multiple times, we will delete any stored diagnostics data and start again.
  */
+@RequiresApi(Build.VERSION_CODES.N)
 internal class DiagnosticsSynchronizer(
     private val diagnosticsFileHelper: DiagnosticsFileHelper,
     private val diagnosticsTracker: DiagnosticsTracker,
@@ -31,13 +35,21 @@ internal class DiagnosticsSynchronizer(
         const val MAX_NUMBER_POST_RETRIES = 3
 
         @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
-        const val MAX_NUMBER_EVENTS = 1000
+        const val MAX_EVENTS_TO_SYNC_PER_REQUEST: Long = 200
 
         fun initializeSharedPreferences(context: Context): SharedPreferences =
             context.getSharedPreferences(
                 "com_revenuecat_purchases_${context.packageName}_preferences_diagnostics",
                 Context.MODE_PRIVATE,
             )
+    }
+
+    fun clearDiagnosticsFileIfTooBig() {
+        if (diagnosticsFileHelper.isDiagnosticsFileTooBig()) {
+            verboseLog("Diagnostics file is too big. Deleting it.")
+            diagnosticsTracker.trackMaxEventsStoredLimitReached()
+            resetDiagnosticsStatus()
+        }
     }
 
     fun syncDiagnosticsFileIfNeeded() {
@@ -91,15 +103,11 @@ internal class DiagnosticsSynchronizer(
     }
 
     private fun getEventsToSync(): List<JSONObject> {
-        val diagnosticsList = diagnosticsFileHelper.readDiagnosticsFile()
-        val diagnosticsInFileCount = diagnosticsList.size
-        if (diagnosticsInFileCount > MAX_NUMBER_EVENTS) {
-            val eventsToRemoveCount = diagnosticsInFileCount - MAX_NUMBER_EVENTS + 1
-            diagnosticsFileHelper.deleteOlderDiagnostics(eventsToRemoveCount)
-            diagnosticsTracker.trackMaxEventsStoredLimitReached(diagnosticsInFileCount, eventsToRemoveCount)
-            return diagnosticsFileHelper.readDiagnosticsFile()
+        var eventsToSync: List<JSONObject> = emptyList()
+        diagnosticsFileHelper.readDiagnosticsFile { stream ->
+            eventsToSync = stream.limit(MAX_EVENTS_TO_SYNC_PER_REQUEST).collect(Collectors.toList())
         }
-        return diagnosticsList
+        return eventsToSync
     }
 
     private fun enqueue(command: () -> Unit) {

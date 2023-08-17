@@ -31,11 +31,13 @@ import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsMa
 import com.revenuecat.purchases.common.offlineentitlements.PurchasedProductsFetcher
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import com.revenuecat.purchases.common.verification.SigningManager
+import com.revenuecat.purchases.common.warnLog
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.strings.ConfigureStrings
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesPoster
 import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesCache
+import com.revenuecat.purchases.utils.isAndroidNOrNewer
 import java.net.URL
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -81,7 +83,7 @@ internal class PurchasesFactory(
 
             var diagnosticsFileHelper: DiagnosticsFileHelper? = null
             var diagnosticsTracker: DiagnosticsTracker? = null
-            if (diagnosticsEnabled) {
+            if (diagnosticsEnabled && isAndroidNOrNewer()) {
                 diagnosticsFileHelper = DiagnosticsFileHelper(FileHelper(context))
                 diagnosticsTracker = DiagnosticsTracker(
                     appConfig,
@@ -89,6 +91,8 @@ internal class PurchasesFactory(
                     DiagnosticsAnonymizer(Anonymizer()),
                     diagnosticsDispatcher,
                 )
+            } else if (diagnosticsEnabled) {
+                warnLog("Diagnostics are only supported on Android N or newer.")
             }
 
             val signatureVerificationMode = SignatureVerificationMode.fromEntitlementVerificationMode(
@@ -193,7 +197,7 @@ internal class PurchasesFactory(
             val offeringParser = OfferingParserFactory.createOfferingParser(store)
 
             var diagnosticsSynchronizer: DiagnosticsSynchronizer? = null
-            if (diagnosticsFileHelper != null && diagnosticsTracker != null) {
+            if (diagnosticsFileHelper != null && diagnosticsTracker != null && isAndroidNOrNewer()) {
                 diagnosticsSynchronizer = DiagnosticsSynchronizer(
                     diagnosticsFileHelper,
                     diagnosticsTracker,

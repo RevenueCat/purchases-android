@@ -6,6 +6,7 @@ import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
+import io.mockk.slot
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.json.JSONObject
@@ -13,6 +14,8 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
+import java.util.stream.Stream
+import kotlin.streams.toList
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
@@ -32,6 +35,20 @@ class DiagnosticsFileHelperTest {
     fun setup() {
         fileHelper = mockk()
         diagnosticsFileHelper = DiagnosticsFileHelper(fileHelper)
+    }
+
+    @Test
+    fun `isDiagnosticsFileTooBig is true if file bigger than limit`() {
+        every { fileHelper.fileSizeInKB(diagnosticsFilePath) } returns
+            DiagnosticsFileHelper.DIAGNOSTICS_FILE_LIMIT_IN_KB + 1.0
+        assertThat(diagnosticsFileHelper.isDiagnosticsFileTooBig()).isTrue
+    }
+
+    @Test
+    fun `isDiagnosticsFileTooBig is false if file smaller than limit`() {
+        every { fileHelper.fileSizeInKB(diagnosticsFilePath) } returns
+            DiagnosticsFileHelper.DIAGNOSTICS_FILE_LIMIT_IN_KB - 1.0
+        assertThat(diagnosticsFileHelper.isDiagnosticsFileTooBig()).isFalse
     }
 
     @Test
@@ -59,21 +76,30 @@ class DiagnosticsFileHelperTest {
     @Test
     fun `readDiagnosticsFile returns empty list if file is empty`() {
         every { fileHelper.fileIsEmpty(diagnosticsFilePath) } returns true
-        assertThat(diagnosticsFileHelper.readDiagnosticsFile()).isEqualTo(emptyList<JSONObject>())
+        var resultList: List<JSONObject>? = null
+        diagnosticsFileHelper.readDiagnosticsFile() { stream ->
+            resultList = stream.toList()
+        }
         verify(exactly = 1) { fileHelper.fileIsEmpty(diagnosticsFilePath) }
-        verify(exactly = 0) { fileHelper.readFilePerLines(diagnosticsFilePath) }
+        assertThat(resultList).isNotNull
+        assertThat(resultList).isEmpty()
+        verify(exactly = 0) { fileHelper.readFilePerLines(diagnosticsFilePath, any()) }
     }
 
     @Test
     fun `readDiagnosticsFile reads content as json`() {
         every { fileHelper.fileIsEmpty(diagnosticsFilePath) } returns false
-        every { fileHelper.readFilePerLines(diagnosticsFilePath) } returns listOf(
-            "{}", "{\"test_key\": \"test_value\"}"
-        )
-        val result = diagnosticsFileHelper.readDiagnosticsFile()
-        assertThat(result.size).isEqualTo(2)
-        assertThat(result[0].length()).isEqualTo(0)
-        assertThat(result[1]["test_key"]).isEqualTo("test_value")
-        verify(exactly = 1) { fileHelper.readFilePerLines(diagnosticsFilePath) }
+        val streamBlockSlot = slot<((Stream<String>) -> Unit)>()
+        every { fileHelper.readFilePerLines(diagnosticsFilePath, capture(streamBlockSlot)) } answers {
+            streamBlockSlot.captured(Stream.of("{}", "{\"test_key\": \"test_value\"}"))
+        }
+        var resultList: List<JSONObject>? = null
+        diagnosticsFileHelper.readDiagnosticsFile { stream ->
+            resultList = stream.toList()
+        }
+        assertThat(resultList).isNotNull
+        assertThat(resultList?.size).isEqualTo(2)
+        assertThat(resultList?.get(0)?.length()).isEqualTo(0)
+        assertThat(resultList?.get(1)?.get("test_key")).isEqualTo("test_value")
     }
 }

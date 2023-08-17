@@ -83,6 +83,11 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
     }
 
     @Test
+    fun `diagnostics is cleared if diagnostics file too big on constructor`() {
+        verify(exactly = 1) { mockDiagnosticsSynchronizer.clearDiagnosticsFileIfTooBig() }
+    }
+
+    @Test
     fun `diagnostics is synced if needed on constructor`() {
         verify(exactly = 1) { mockDiagnosticsSynchronizer.syncDiagnosticsFileIfNeeded() }
     }

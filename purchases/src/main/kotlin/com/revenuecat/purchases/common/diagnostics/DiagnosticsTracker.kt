@@ -6,6 +6,7 @@ import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.verboseLog
+import com.revenuecat.purchases.utils.isAndroidNOrNewer
 import java.io.IOException
 import kotlin.time.Duration
 
@@ -125,13 +126,10 @@ internal class DiagnosticsTracker(
         )
     }
 
-    fun trackMaxEventsStoredLimitReached(totalEventsStored: Int, eventsRemoved: Int, useCurrentThread: Boolean = true) {
+    fun trackMaxEventsStoredLimitReached(useCurrentThread: Boolean = true) {
         val event = DiagnosticsEntry.Event(
             name = DiagnosticsEventName.MAX_EVENTS_STORED_LIMIT_REACHED,
-            properties = mapOf(
-                "total_number_events_stored" to totalEventsStored,
-                "events_removed" to eventsRemoved,
-            ),
+            properties = mapOf(),
         )
         if (useCurrentThread) {
             trackEventInCurrentThread(event)
@@ -164,12 +162,14 @@ internal class DiagnosticsTracker(
     }
 
     internal fun trackEventInCurrentThread(diagnosticsEntry: DiagnosticsEntry) {
-        val anonymizedEvent = diagnosticsAnonymizer.anonymizeEntryIfNeeded(diagnosticsEntry)
-        verboseLog("Tracking diagnostics event: $anonymizedEvent")
-        try {
-            diagnosticsFileHelper.appendEntryToDiagnosticsFile(anonymizedEvent)
-        } catch (e: IOException) {
-            verboseLog("Error tracking diagnostics event: $e")
+        if (isAndroidNOrNewer()) {
+            val anonymizedEvent = diagnosticsAnonymizer.anonymizeEntryIfNeeded(diagnosticsEntry)
+            verboseLog("Tracking diagnostics event: $anonymizedEvent")
+            try {
+                diagnosticsFileHelper.appendEntryToDiagnosticsFile(anonymizedEvent)
+            } catch (e: IOException) {
+                verboseLog("Error tracking diagnostics event: $e")
+            }
         }
     }
 }
