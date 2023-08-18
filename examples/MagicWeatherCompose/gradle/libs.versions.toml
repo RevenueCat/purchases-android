@@ -35,4 +35,5 @@ compose-ui-test-manifest = { module = "androidx.compose.ui:ui-test-manifest" }
 
 revenuecat = { module = "com.revenuecat.purchases:purchases", version.ref = "purchases" }
 revenuecat-amazon = { module = "com.revenuecat.purchases:purchases-store-amazon", version.ref = "purchases" }
-revenuecat-debugview = { module = "com.revenuecat.purchases:debugview", version.ref = "purchases" }
+revenuecat-debugview = { module = "com.revenuecat.purchases:purchases-debug-view", version.ref = "purchases" }
+revenuecat-debugview-noop = { module = "com.revenuecat.purchases:purchases-debug-view-noop", version.ref = "purchases" }
