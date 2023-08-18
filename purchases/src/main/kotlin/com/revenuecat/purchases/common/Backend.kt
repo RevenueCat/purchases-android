@@ -60,6 +60,7 @@ internal enum class PostReceiptErrorHandlingBehavior {
     SHOULD_NOT_CONSUME,
 }
 
+@Suppress("TooManyFunctions")
 internal class Backend(
     private val appConfig: AppConfig,
     private val dispatcher: Dispatcher,
@@ -83,7 +84,7 @@ internal class Backend(
     @Volatile var postReceiptCallbacks = mutableMapOf<CallbackCacheKey, MutableList<PostReceiptCallback>>()
 
     @get:Synchronized @set:Synchronized
-    @Volatile var offeringsCallbacks = mutableMapOf<String, MutableList<OfferingsCallback>>()
+    @Volatile var offeringsCallbacks = mutableMapOf<CallbackCacheKey, MutableList<OfferingsCallback>>()
 
     @get:Synchronized @set:Synchronized
     @Volatile var identifyCallbacks = mutableMapOf<CallbackCacheKey, MutableList<IdentifyCallback>>()
@@ -112,7 +113,7 @@ internal class Backend(
             // If it did, future `getCustomerInfo` would receive a cached value
             // instead of an up-to-date `CustomerInfo` after those post receipt operations finish.
             if (postReceiptCallbacks.isEmpty()) {
-                listOf(path)
+                listOf(path, appInBackground.toString())
             } else {
                 listOf(path) + "${callbacks.count()}"
             }
@@ -160,6 +161,7 @@ internal class Backend(
         }
         synchronized(this@Backend) {
             val delay = if (appInBackground) Delay.DEFAULT else Delay.NONE
+            moveBackgroundedCallbacksToForegroundedCallbacksIfNeeded(offeringsCallbacks, path, appInBackground)
             callbacks.addCallback(call, dispatcher, cacheKey, onSuccess to onError, delay)
         }
     }
@@ -281,6 +283,7 @@ internal class Backend(
     ) {
         val endpoint = Endpoint.GetOfferings(appUserID)
         val path = endpoint.getPath()
+        val cacheKey = listOf(path, appInBackground.toString())
         val call = object : Dispatcher.AsyncCall() {
             override fun call(): HTTPResult {
                 return httpClient.performRequest(
@@ -295,7 +298,7 @@ internal class Backend(
             override fun onError(error: PurchasesError) {
                 val isServerError = false
                 synchronized(this@Backend) {
-                    offeringsCallbacks.remove(path)
+                    offeringsCallbacks.remove(cacheKey)
                 }?.forEach { (_, onError) ->
                     onError(error, isServerError)
                 }
@@ -303,7 +306,7 @@ internal class Backend(
 
             override fun onCompletion(result: HTTPResult) {
                 synchronized(this@Backend) {
-                    offeringsCallbacks.remove(path)
+                    offeringsCallbacks.remove(cacheKey)
                 }?.forEach { (onSuccess, onError) ->
                     if (result.isSuccessful()) {
                         try {
@@ -323,7 +326,8 @@ internal class Backend(
         }
         synchronized(this@Backend) {
             val delay = if (appInBackground) Delay.DEFAULT else Delay.NONE
-            offeringsCallbacks.addCallback(call, dispatcher, path, onSuccess to onError, delay)
+            moveBackgroundedCallbacksToForegroundedCallbacksIfNeeded(offeringsCallbacks, path, appInBackground)
+            offeringsCallbacks.addCallback(call, dispatcher, cacheKey, onSuccess to onError, delay)
         }
     }
 
@@ -523,6 +527,28 @@ internal class Backend(
         } else {
             debugLog(String.format(NetworkStrings.SAME_CALL_ALREADY_IN_PROGRESS, cacheKey))
             this[cacheKey]!!.add(functions)
+        }
+    }
+
+    @Synchronized
+    private fun <E> moveBackgroundedCallbacksToForegroundedCallbacksIfNeeded(
+        callbacks: MutableMap<CallbackCacheKey, MutableList<E>>,
+        path: String,
+        appInBackground: Boolean,
+    ) {
+        // In case we have a request with a jittered delay queued, and we perform the same request without
+        // delay, we want to call the callback using the unjittered request
+        val cacheKey = listOf(path, appInBackground.toString())
+        val backgroundedCacheKey = listOf(path, true.toString())
+        if (!appInBackground && callbacks.containsKey(backgroundedCacheKey)) {
+            warnLog(NetworkStrings.SAME_CALL_SCHEDULED_FOR_THE_FUTURE.format(cacheKey))
+            callbacks.remove(backgroundedCacheKey)?.takeIf { it.isNotEmpty() }?.let { backgroundedCallbacks ->
+                if (callbacks.containsKey(cacheKey)) {
+                    callbacks[cacheKey]?.addAll(backgroundedCallbacks)
+                } else {
+                    callbacks[cacheKey] = backgroundedCallbacks
+                }
+            }
         }
     }
 }
