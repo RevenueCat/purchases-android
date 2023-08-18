@@ -61,11 +61,12 @@ internal class OfferingsManager(
         onError: ((PurchasesError) -> Unit)? = null,
         onSuccess: ((Offerings) -> Unit)? = null,
     ) {
-        offeringsCache.setOfferingsCacheTimestampToNow()
         backend.getOfferings(
             appUserID,
             appInBackground,
-            { createAndCacheOfferings(it, onError, onSuccess) },
+            {
+                createAndCacheOfferings(it, onError, onSuccess)
+            },
             { backendError, isServerError ->
                 if (isServerError) {
                     val cachedOfferingsResponse = offeringsCache.cachedOfferingsResponse
@@ -94,6 +95,7 @@ internal class OfferingsManager(
             },
             onSuccess = { offerings ->
                 offeringsCache.cacheOfferings(offerings, offeringsJSON)
+                offeringsCache.setOfferingsCacheTimestampToNow()
                 dispatch {
                     onSuccess?.invoke(offerings)
                 }
