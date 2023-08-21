@@ -523,17 +523,18 @@ internal class Backend(
         val foregroundCacheKey = cacheKey.copy(appInBackground = false)
         val foregroundCallAlreadyInPlace = containsKey(foregroundCacheKey)
         val cacheKeyToUse = if (cacheKey.appInBackground && foregroundCallAlreadyInPlace) {
+            warnLog(NetworkStrings.SAME_CALL_SCHEDULED_WITHOUT_JITTER.format(foregroundCacheKey))
             foregroundCacheKey
         } else {
             cacheKey
         }
         addCallback(call, dispatcher, cacheKeyToUse, functions, delay)
         // In case we have a request with a jittered delay queued, and we perform the same request without
-        // delay, we want to call the callback using the unjittered request
+        // jittered delay, we want to call the callback using the unjittered request
         val backgroundedCacheKey = cacheKey.copy(appInBackground = true)
         val backgroundCallAlreadyInPlace = containsKey(foregroundCacheKey)
         if (!cacheKey.appInBackground && backgroundCallAlreadyInPlace) {
-            warnLog(NetworkStrings.SAME_CALL_SCHEDULED_FOR_THE_FUTURE.format(cacheKey))
+            warnLog(NetworkStrings.SAME_CALL_SCHEDULED_WITH_JITTER.format(foregroundCacheKey))
             remove(backgroundedCacheKey)?.takeIf { it.isNotEmpty() }?.let { backgroundedCallbacks ->
                 if (containsKey(cacheKey)) {
                     this[cacheKey]?.addAll(backgroundedCallbacks)
