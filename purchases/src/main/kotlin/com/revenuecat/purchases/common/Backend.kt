@@ -31,7 +31,6 @@ internal typealias PostReceiptCallback = Pair<PostReceiptDataSuccessCallback, Po
 
 /** @suppress */
 internal typealias CallbackCacheKey = List<String>
-internal typealias BackgroundAwareCallbackCacheKey = Pair<CallbackCacheKey, Boolean>
 
 /** @suppress */
 internal typealias OfferingsCallback = Pair<(JSONObject) -> Unit, (PurchasesError, isServerError: Boolean) -> Unit>
@@ -114,9 +113,9 @@ internal class Backend(
             // If it did, future `getCustomerInfo` would receive a cached value
             // instead of an up-to-date `CustomerInfo` after those post receipt operations finish.
             if (postReceiptCallbacks.isEmpty()) {
-                Pair(listOf(path), appInBackground)
+                BackgroundAwareCallbackCacheKey(listOf(path), appInBackground)
             } else {
-                Pair(listOf(path) + "${callbacks.count()}", appInBackground)
+                BackgroundAwareCallbackCacheKey(listOf(path) + "${callbacks.count()}", appInBackground)
             }
         }
         val call = object : Dispatcher.AsyncCall() {
@@ -283,7 +282,7 @@ internal class Backend(
     ) {
         val endpoint = Endpoint.GetOfferings(appUserID)
         val path = endpoint.getPath()
-        val cacheKey = Pair(listOf(path), appInBackground)
+        val cacheKey = BackgroundAwareCallbackCacheKey(listOf(path), appInBackground)
         val call = object : Dispatcher.AsyncCall() {
             override fun call(): HTTPResult {
                 return httpClient.performRequest(
@@ -513,6 +512,7 @@ internal class Backend(
         PostReceiptErrorHandlingBehavior.SHOULD_BE_CONSUMED
     }
 
+    @Synchronized
     private fun <S, E> MutableMap<BackgroundAwareCallbackCacheKey, MutableList<Pair<S, E>>>.addBackgroundAwareCallback(
         call: Dispatcher.AsyncCall,
         dispatcher: Dispatcher,
@@ -520,14 +520,28 @@ internal class Backend(
         functions: Pair<S, E>,
         delay: Delay = Delay.NONE,
     ) {
-        val foregroundCacheKey = Pair(cacheKey.first, false)
-        val cacheKeyToUse = if (cacheKey.second && callbacks.containsKey(foregroundCacheKey)) {
+        val foregroundCacheKey = cacheKey.copy(appInBackground = false)
+        val foregroundCallAlreadyInPlace = containsKey(foregroundCacheKey)
+        val cacheKeyToUse = if (cacheKey.appInBackground && foregroundCallAlreadyInPlace) {
             foregroundCacheKey
         } else {
             cacheKey
         }
         addCallback(call, dispatcher, cacheKeyToUse, functions, delay)
-        moveBackgroundedCallbacksToForegroundedCallbacksIfNeeded(this, cacheKey.first, cacheKey.second)
+        // In case we have a request with a jittered delay queued, and we perform the same request without
+        // delay, we want to call the callback using the unjittered request
+        val backgroundedCacheKey = cacheKey.copy(appInBackground = true)
+        val backgroundCallAlreadyInPlace = containsKey(foregroundCacheKey)
+        if (!cacheKey.appInBackground && backgroundCallAlreadyInPlace) {
+            warnLog(NetworkStrings.SAME_CALL_SCHEDULED_FOR_THE_FUTURE.format(cacheKey))
+            remove(backgroundedCacheKey)?.takeIf { it.isNotEmpty() }?.let { backgroundedCallbacks ->
+                if (containsKey(cacheKey)) {
+                    this[cacheKey]?.addAll(backgroundedCallbacks)
+                } else {
+                    this[cacheKey] = backgroundedCallbacks
+                }
+            }
+        }
     }
 
     private fun <K, S, E> MutableMap<K, MutableList<Pair<S, E>>>.addCallback(
@@ -545,29 +559,12 @@ internal class Backend(
             this[cacheKey]!!.add(functions)
         }
     }
-
-    @Synchronized
-    private fun <E> moveBackgroundedCallbacksToForegroundedCallbacksIfNeeded(
-        callbacks: MutableMap<BackgroundAwareCallbackCacheKey, MutableList<E>>,
-        originalCacheKey: List<String>,
-        appInBackground: Boolean,
-    ) {
-        // In case we have a request with a jittered delay queued, and we perform the same request without
-        // delay, we want to call the callback using the unjittered request
-        val cacheKey = Pair(originalCacheKey, appInBackground)
-        val backgroundedCacheKey = Pair(originalCacheKey, true)
-        if (!appInBackground && callbacks.containsKey(backgroundedCacheKey)) {
-            warnLog(NetworkStrings.SAME_CALL_SCHEDULED_FOR_THE_FUTURE.format(cacheKey))
-            callbacks.remove(backgroundedCacheKey)?.takeIf { it.isNotEmpty() }?.let { backgroundedCallbacks ->
-                if (callbacks.containsKey(cacheKey)) {
-                    callbacks[cacheKey]?.addAll(backgroundedCallbacks)
-                } else {
-                    callbacks[cacheKey] = backgroundedCallbacks
-                }
-            }
-        }
-    }
 }
+
+internal data class BackgroundAwareCallbackCacheKey(
+    val cacheKey: List<String>,
+    val appInBackground: Boolean,
+)
 
 internal fun PricingPhase.toMap(): Map<String, Any?> {
     return mapOf(
