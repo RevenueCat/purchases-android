@@ -11,7 +11,9 @@ import com.revenuecat.purchases.utils.SyncDispatcher
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
+import io.mockk.unmockkStatic
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import java.io.IOException
@@ -31,6 +33,11 @@ class GoogleDeviceIdentifiersFetcherTests {
         every {
             Log.w(any(), any<String>())
         } returns 0
+    }
+
+    @After
+    fun tearDown() {
+        unmockkStatic(Log::class)
     }
 
     @Test

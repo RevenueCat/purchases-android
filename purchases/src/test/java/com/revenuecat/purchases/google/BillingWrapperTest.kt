@@ -63,6 +63,7 @@ import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.runs
 import io.mockk.slot
+import io.mockk.unmockkStatic
 import io.mockk.verify
 import io.mockk.verifySequence
 import org.assertj.core.api.Assertions.assertThat
@@ -466,6 +467,8 @@ class BillingWrapperTest {
             null,
             isPersonalizedPrice
         )
+        unmockkStatic(BillingFlowParams::class)
+        unmockkStatic(BillingFlowParams.SubscriptionUpdateParams::class)
     }
 
     @Test
@@ -550,6 +553,8 @@ class BillingWrapperTest {
             null,
             isPersonalizedPrice
         )
+        unmockkStatic(BillingFlowParams::class)
+        unmockkStatic(BillingFlowParams.SubscriptionUpdateParams::class)
     }
 
     @Test
@@ -609,6 +614,8 @@ class BillingWrapperTest {
             null,
             isPersonalizedPrice
         )
+        unmockkStatic(BillingFlowParams::class)
+        unmockkStatic(BillingFlowParams.SubscriptionUpdateParams::class)
     }
 
     @Test
@@ -659,6 +666,9 @@ class BillingWrapperTest {
         assertThat(tokenSlot.captured).isEqualTo("mock-subscription-offer-token")
         assertThat(productDetailsSlot.isCaptured).isTrue
         assertThat(productDetailsSlot.captured).isEqualTo(productDetails)
+        unmockkStatic(BillingFlowParams::class)
+        unmockkStatic(BillingFlowParams.ProductDetailsParams::class)
+        unmockkStatic(BillingFlowParams.SubscriptionUpdateParams::class)
     }
 
     @Test
@@ -707,6 +717,8 @@ class BillingWrapperTest {
 
         assertThat(productDetailsSlot.isCaptured).isTrue
         assertThat(productDetailsSlot.captured).isEqualTo(productDetails)
+        unmockkStatic(BillingFlowParams::class)
+        unmockkStatic(BillingFlowParams.ProductDetailsParams::class)
     }
 
     @Test
@@ -1467,6 +1479,7 @@ class BillingWrapperTest {
         verify(exactly = 1) {
             mockBuilder.enablePendingPurchases()
         }
+        unmockkStatic(BillingClient::class)
     }
 
     @Test
