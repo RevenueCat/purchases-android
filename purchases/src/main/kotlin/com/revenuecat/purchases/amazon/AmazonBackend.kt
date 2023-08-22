@@ -2,6 +2,7 @@ package com.revenuecat.purchases.amazon
 
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.common.BackendHelper
+import com.revenuecat.purchases.common.Delay
 import com.revenuecat.purchases.common.networking.Endpoint
 import org.json.JSONObject
 
@@ -34,6 +35,7 @@ internal class AmazonBackend(
                 Endpoint.GetAmazonReceipt(storeUserID, receiptId),
                 body = null,
                 postFieldsToSign = null,
+                delay = Delay.NONE,
                 { error ->
                     synchronized(this@AmazonBackend) {
                         postAmazonReceiptCallbacks.remove(cacheKey)

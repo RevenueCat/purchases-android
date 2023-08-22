@@ -34,6 +34,7 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.slot
+import io.mockk.spyk
 import io.mockk.unmockkObject
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
@@ -87,7 +88,7 @@ class BackendTest {
         every { diagnosticsURL } returns mockDiagnosticsBaseURL
         every { customEntitlementComputation } returns false
     }
-    private val dispatcher = SyncDispatcher()
+    private val dispatcher = spyk(SyncDispatcher())
     private val backendHelper = BackendHelper(API_KEY, dispatcher, mockAppConfig, mockClient)
     private var backend: Backend = Backend(
         mockAppConfig,
@@ -96,7 +97,7 @@ class BackendTest {
         mockClient,
         backendHelper
     )
-    private val asyncDispatcher = Dispatcher(
+    private val asyncDispatcher = spyk(Dispatcher(
         ThreadPoolExecutor(
             1,
             2,
@@ -104,7 +105,7 @@ class BackendTest {
             TimeUnit.MILLISECONDS,
             LinkedBlockingQueue()
         )
-    )
+    ))
     private var asyncBackendHelper: BackendHelper = BackendHelper(API_KEY, asyncDispatcher, mockAppConfig, mockClient)
     private var asyncBackend: Backend = Backend(
         mockAppConfig,
@@ -325,6 +326,60 @@ class BackendTest {
         lock.await(defaultTimeout, TimeUnit.MILLISECONDS)
         assertThat(lock.count).isEqualTo(0)
         verify(exactly = 1) {
+            mockClient.performRequest(
+                mockBaseURL,
+                Endpoint.GetCustomerInfo(appUserID),
+                body = null,
+                postFieldsToSign = null,
+                any()
+            )
+        }
+    }
+
+    @Test
+    fun `given getCustomerInfo call on foreground, then one in background, only one request without delay is triggered`() {
+        mockResponse(
+            Endpoint.GetCustomerInfo(appUserID),
+            null,
+            200,
+            null,
+            null,
+            true
+        )
+        val lock = CountDownLatch(2)
+        asyncBackend.getCustomerInfo(appUserID, appInBackground = false, onSuccess = {
+            lock.countDown()
+        }, onError = onReceiveCustomerInfoErrorHandler)
+        asyncBackend.getCustomerInfo(appUserID, appInBackground = true, onSuccess = {
+            lock.countDown()
+        }, onError = onReceiveCustomerInfoErrorHandler)
+        lock.await(defaultTimeout, TimeUnit.MILLISECONDS)
+        assertThat(lock.count).isEqualTo(0)
+        verify(exactly = 1) {
+            asyncDispatcher.enqueue(any(), Delay.NONE)
+        }
+    }
+
+    @Test
+    fun `given getCustomerInfo call on background, then one in foreground, both are executed`() {
+        mockResponse(
+            Endpoint.GetCustomerInfo(appUserID),
+            null,
+            200,
+            null,
+            null,
+            true
+        )
+        val lock = CountDownLatch(2)
+        asyncBackend.getCustomerInfo(appUserID, appInBackground = true, onSuccess = {
+            lock.countDown()
+        }, onError = onReceiveCustomerInfoErrorHandler)
+        asyncBackend.getCustomerInfo(appUserID, appInBackground = false, onSuccess = {
+            lock.countDown()
+        }, onError = onReceiveCustomerInfoErrorHandler)
+        lock.await(defaultTimeout, TimeUnit.MILLISECONDS)
+        assertThat(lock.count).isEqualTo(0)
+        verify(exactly = 2) {
             mockClient.performRequest(
                 mockBaseURL,
                 Endpoint.GetCustomerInfo(appUserID),
@@ -1315,6 +1370,60 @@ class BackendTest {
             mockClient.performRequest(
                 mockBaseURL,
                 Endpoint.GetOfferings("anotherUser"),
+                body = null,
+                postFieldsToSign = null,
+                any()
+            )
+        }
+    }
+
+    @Test
+    fun `given getOfferings call on foreground, then one in background, only one request without delay is triggered`() {
+        mockResponse(
+            Endpoint.GetOfferings(appUserID),
+            null,
+            200,
+            null,
+            noOfferingsResponse,
+            true
+        )
+        val lock = CountDownLatch(2)
+        asyncBackend.getOfferings(appUserID, appInBackground = false, onSuccess = {
+            lock.countDown()
+        }, onError = onReceiveOfferingsErrorHandler)
+        asyncBackend.getOfferings(appUserID, appInBackground = true, onSuccess = {
+            lock.countDown()
+        }, onError = onReceiveOfferingsErrorHandler)
+        lock.await(defaultTimeout, TimeUnit.MILLISECONDS)
+        assertThat(lock.count).isEqualTo(0)
+        verify(exactly = 1) {
+            asyncDispatcher.enqueue(any(), Delay.NONE)
+        }
+    }
+
+    @Test
+    fun `given getOfferings call on background, then one in foreground, both are executed`() {
+        mockResponse(
+            Endpoint.GetOfferings(appUserID),
+            null,
+            200,
+            null,
+            noOfferingsResponse,
+            true
+        )
+        val lock = CountDownLatch(2)
+        asyncBackend.getOfferings(appUserID, appInBackground = true, onSuccess = {
+            lock.countDown()
+        }, onError = onReceiveOfferingsErrorHandler)
+        asyncBackend.getOfferings(appUserID, appInBackground = false, onSuccess = {
+            lock.countDown()
+        }, onError = onReceiveOfferingsErrorHandler)
+        lock.await(defaultTimeout, TimeUnit.MILLISECONDS)
+        assertThat(lock.count).isEqualTo(0)
+        verify(exactly = 2) {
+            mockClient.performRequest(
+                mockBaseURL,
+                Endpoint.GetOfferings(appUserID),
                 body = null,
                 postFieldsToSign = null,
                 any()

@@ -407,6 +407,62 @@ class OfferingsManagerTest {
         verify(exactly = 1) { cache.clearOfferingsCacheTimestamp() }
     }
 
+    @Test
+    fun `getOfferings marks offerings cache timestamp upon success`() {
+        every {
+            cache.cachedOfferings
+        } returns null
+        every {
+            cache.cacheOfferings(any(), any())
+        } just Runs
+        mockDeviceCache()
+        val (_, offerings) = stubOfferings(productId)
+        mockOfferingsFactory(offerings)
+
+        var offeringsReceived = false
+        offeringsManager.getOfferings(
+            appUserId,
+            appInBackground = false,
+            onError = { Assert.fail("should be a success") },
+            onSuccess = { offeringsReceived = true }
+        )
+
+        verify(exactly = 1) {
+            cache.setOfferingsCacheTimestampToNow()
+        }
+        assertThat(offeringsReceived).isTrue
+    }
+
+    @Test
+    fun `getOfferings does not mark offerings cache timestamp upon error`() {
+        every {
+            cache.cachedOfferings
+        } returns null
+        every {
+            cache.cacheOfferings(any(), any())
+        } just Runs
+        mockDeviceCache()
+        val (_, offerings) = stubOfferings(productId)
+        mockOfferingsFactory(offerings)
+
+        val expectedError = PurchasesError(PurchasesErrorCode.NetworkError)
+        mockBackendResponseError(error = expectedError, isServerError = false)
+        every { cache.clearOfferingsCacheTimestamp() } just Runs
+
+        var errorReceived = false
+        offeringsManager.getOfferings(
+            appUserId,
+            appInBackground = false,
+            onError = { errorReceived = true },
+            onSuccess = { Assert.fail("should be an error") }
+        )
+
+        verify(exactly = 0) {
+            cache.setOfferingsCacheTimestampToNow()
+        }
+        assertThat(errorReceived).isTrue
+    }
+
     // endregion getOfferings
 
     // region helpers

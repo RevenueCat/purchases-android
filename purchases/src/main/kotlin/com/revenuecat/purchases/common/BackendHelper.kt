@@ -14,10 +14,12 @@ internal class BackendHelper(
 ) {
     internal val authenticationHeaders = mapOf("Authorization" to "Bearer ${this.apiKey}")
 
+    @Suppress("LongParameterList")
     fun performRequest(
         endpoint: Endpoint,
         body: Map<String, Any?>?,
         postFieldsToSign: List<Pair<String, String>>?,
+        delay: Delay,
         onError: (PurchasesError) -> Unit,
         onCompleted: (PurchasesError?, Int, JSONObject) -> Unit,
     ) {
@@ -47,6 +49,7 @@ internal class BackendHelper(
                 }
             },
             dispatcher,
+            delay,
         )
     }
 
