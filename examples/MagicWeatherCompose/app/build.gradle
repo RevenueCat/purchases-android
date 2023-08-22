@@ -78,5 +78,6 @@ dependencies {
     debugImplementation libs.compose.ui.test.manifest
     implementation libs.revenuecat
     implementation libs.revenuecat.amazon
-    implementation libs.revenuecat.debugview
+    debugImplementation libs.revenuecat.debugview
+    releaseImplementation libs.revenuecat.debugview.noop
 }
