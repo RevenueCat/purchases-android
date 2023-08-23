@@ -1,5 +1,6 @@
-### Bugfixes
-* Fix offering metadata not fulling expanding (#1199) via Josh Holtz (@joshdholtz)
+### Performance Improvements
+* Optimize SDK initialization when requests executed before any activity starts (#1204) via Toni Rico (@tonidero)
+* Optimize diagnostics file management (#1194) via Toni Rico (@tonidero)
 ### Other Changes
-* Fix deploying extra packages (#1200) via Toni Rico (@tonidero)
-* Debug view: Support deploying both noop and debug version of `debugview` package (#1192) via Toni Rico (@tonidero)
+* Use real debug view dependencies in magic weather compose (#1203) via Toni Rico (@tonidero)
+* Relax consumer rules to allow for better minifying and obfuscation (#1193) via Toni Rico (@tonidero)
