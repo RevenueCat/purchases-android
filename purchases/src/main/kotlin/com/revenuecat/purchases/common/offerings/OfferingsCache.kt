@@ -26,6 +26,7 @@ internal class OfferingsCache(
     fun cacheOfferings(offerings: Offerings, offeringsResponse: JSONObject) {
         offeringsCachedObject.cacheInstance(offerings)
         deviceCache.cacheOfferingsResponse(offeringsResponse)
+        offeringsCachedObject.updateCacheTimestamp(dateProvider.now)
     }
 
     // region Offerings cache
@@ -42,11 +43,6 @@ internal class OfferingsCache(
     @Synchronized
     fun clearOfferingsCacheTimestamp() {
         offeringsCachedObject.clearCacheTimestamp()
-    }
-
-    @Synchronized
-    fun setOfferingsCacheTimestampToNow() {
-        offeringsCachedObject.updateCacheTimestamp(dateProvider.now)
     }
 
     // endregion Offerings cache

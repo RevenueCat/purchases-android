@@ -95,7 +95,6 @@ internal class OfferingsManager(
             },
             onSuccess = { offerings ->
                 offeringsCache.cacheOfferings(offerings, offeringsJSON)
-                offeringsCache.setOfferingsCacheTimestampToNow()
                 dispatch {
                     onSuccess?.invoke(offerings)
                 }
