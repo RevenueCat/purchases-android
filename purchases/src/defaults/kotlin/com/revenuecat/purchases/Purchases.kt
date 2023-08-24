@@ -235,7 +235,7 @@ class Purchases internal constructor(
             storeProduct.purchasingData,
             null,
             upgradeInfo.oldSku,
-            GoogleProrationMode.fromPlayBillingClientMode(upgradeInfo.prorationMode),
+            GoogleProrationMode.fromPlayBillingClientMode(upgradeInfo.prorationMode)?.asGoogleReplacementMode,
             listener,
         )
     }
@@ -303,7 +303,7 @@ class Purchases internal constructor(
             packageToPurchase.product.purchasingData,
             packageToPurchase.offering,
             upgradeInfo.oldSku,
-            GoogleProrationMode.fromPlayBillingClientMode(upgradeInfo.prorationMode),
+            GoogleProrationMode.fromPlayBillingClientMode(upgradeInfo.prorationMode)?.asGoogleReplacementMode,
             callback,
         )
     }

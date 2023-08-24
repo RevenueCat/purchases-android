@@ -3,6 +3,7 @@ package com.revenuecat.purchases.models
 import android.os.Parcelable
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.ProrationMode
+import com.revenuecat.purchases.ReplacementMode
 import com.revenuecat.purchases.utils.JSONObjectParceler
 import kotlinx.parcelize.IgnoredOnParcel
 import kotlinx.parcelize.Parcelize
@@ -96,12 +97,50 @@ data class StoreTransaction(
     val subscriptionOptionId: String?,
 
     /**
-     * The prorationMode used to perform the upgrade/downgrade of this purchase.
+     * The replacementMode used to perform the upgrade/downgrade of this purchase.
      * Null if it was not an upgrade/downgrade or if the purchase was restored.
      * This is not available for Amazon purchases.
      */
-    val prorationMode: ProrationMode?,
+    val replacementMode: ReplacementMode?,
 ) : Parcelable {
+
+    @Deprecated(
+        "Use replacementMode",
+        ReplaceWith("replacementMode()"),
+    )
+    constructor(
+        orderId: String?,
+        productIds: List<String>,
+        type: ProductType,
+        purchaseTime: Long,
+        purchaseToken: String,
+        purchaseState: PurchaseState,
+        isAutoRenewing: Boolean?,
+        signature: String?,
+        originalJson: JSONObject,
+        presentedOfferingIdentifier: String?,
+        storeUserID: String?,
+        purchaseType: PurchaseType,
+        marketplace: String?,
+        subscriptionOptionId: String?,
+        prorationMode: ProrationMode?,
+    ) : this(
+        orderId,
+        productIds,
+        type,
+        purchaseTime,
+        purchaseToken,
+        purchaseState,
+        isAutoRenewing,
+        signature,
+        originalJson,
+        presentedOfferingIdentifier,
+        storeUserID,
+        purchaseType,
+        marketplace,
+        subscriptionOptionId,
+        (prorationMode as? GoogleProrationMode)?.asGoogleReplacementMode,
+    )
 
     /**
      * Skus associated with the transaction

@@ -29,6 +29,6 @@ fun Receipt.toStoreTransaction(
         purchaseType = PurchaseType.AMAZON_PURCHASE,
         marketplace = userData.marketplace,
         subscriptionOptionId = null,
-        prorationMode = null,
+        replacementMode = null,
     )
 }

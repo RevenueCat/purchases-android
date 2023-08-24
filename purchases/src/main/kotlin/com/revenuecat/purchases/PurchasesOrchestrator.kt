@@ -44,8 +44,8 @@ import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback
 import com.revenuecat.purchases.interfaces.SyncPurchasesCallback
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import com.revenuecat.purchases.models.BillingFeature
-import com.revenuecat.purchases.models.GoogleProrationMode
 import com.revenuecat.purchases.models.InAppMessageType
+import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
@@ -310,7 +310,7 @@ internal class PurchasesOrchestrator constructor(
                     purchasingData,
                     presentedOfferingIdentifier,
                     productId,
-                    googleProrationMode,
+                    googleReplacementMode,
                     isPersonalizedPrice,
                     callback,
                 )
@@ -504,6 +504,7 @@ internal class PurchasesOrchestrator constructor(
             appUserID,
         )
     }
+
     fun setDisplayName(displayName: String?) {
         log(LogIntent.DEBUG, AttributionStrings.METHOD_CALLED.format("setDisplayName"))
         subscriberAttributesManager.setAttribute(
@@ -908,7 +909,7 @@ internal class PurchasesOrchestrator constructor(
         purchasingData: PurchasingData,
         offeringIdentifier: String?,
         oldProductId: String,
-        googleProrationMode: GoogleProrationMode,
+        googleReplacementMode: GoogleReplacementMode,
         isPersonalizedPrice: Boolean?,
         purchaseCallback: PurchaseCallback,
     ) {
@@ -929,7 +930,7 @@ internal class PurchasesOrchestrator constructor(
                     offeringIdentifier?.let {
                         PurchaseStrings.OFFERING + "$offeringIdentifier"
                     }
-                } oldProductId: $oldProductId googleProrationMode $googleProrationMode",
+                } oldProductId: $oldProductId googleReplacementMode $googleReplacementMode",
 
             ),
         )
@@ -942,8 +943,11 @@ internal class PurchasesOrchestrator constructor(
             if (!state.purchaseCallbacksByProductId.containsKey(purchasingData.productId)) {
                 // When using DEFERRED proration mode, callback needs to be associated with the *old* product we are
                 // switching from, because the transaction we receive on successful purchase is for the old product.
-                val productId =
-                    if (googleProrationMode == GoogleProrationMode.DEFERRED) oldProductId else purchasingData.productId
+                val productId = if (googleReplacementMode == GoogleReplacementMode.DEFERRED) {
+                    oldProductId
+                } else {
+                    purchasingData.productId
+                }
                 val mapOfProductIdToListener = mapOf(productId to purchaseCallback)
                 state = state.copy(
                     purchaseCallbacksByProductId = state.purchaseCallbacksByProductId + mapOfProductIdToListener,
@@ -955,7 +959,7 @@ internal class PurchasesOrchestrator constructor(
             replaceOldPurchaseWithNewProduct(
                 purchasingData,
                 oldProductId,
-                googleProrationMode,
+                googleReplacementMode,
                 activity,
                 appUserID,
                 offeringIdentifier,
@@ -975,7 +979,7 @@ internal class PurchasesOrchestrator constructor(
         purchasingData: PurchasingData,
         offeringIdentifier: String?,
         oldProductId: String,
-        googleProrationMode: GoogleProrationMode?,
+        googleReplacementMode: GoogleReplacementMode?,
         listener: ProductChangeCallback,
     ) {
         if (purchasingData.productType != ProductType.SUBS) {
@@ -996,7 +1000,7 @@ internal class PurchasesOrchestrator constructor(
                     offeringIdentifier?.let {
                         PurchaseStrings.OFFERING + "$offeringIdentifier"
                     }
-                } oldProductId: $oldProductId googleProrationMode $googleProrationMode",
+                } oldProductId: $oldProductId googleReplacementMode $googleReplacementMode",
 
             ),
         )
@@ -1014,7 +1018,7 @@ internal class PurchasesOrchestrator constructor(
             replaceOldPurchaseWithNewProduct(
                 purchasingData,
                 oldProductId,
-                googleProrationMode,
+                googleReplacementMode,
                 activity,
                 appUserID,
                 offeringIdentifier,
@@ -1030,7 +1034,7 @@ internal class PurchasesOrchestrator constructor(
     private fun replaceOldPurchaseWithNewProduct(
         purchasingData: PurchasingData,
         oldProductId: String,
-        googleProrationMode: GoogleProrationMode?,
+        googleReplacementMode: GoogleReplacementMode?,
         activity: Activity,
         appUserID: String,
         presentedOfferingIdentifier: String?,
@@ -1068,7 +1072,7 @@ internal class PurchasesOrchestrator constructor(
                     activity,
                     appUserID,
                     purchasingData,
-                    ReplaceProductInfo(purchaseRecord, googleProrationMode),
+                    ReplaceProductInfo(purchaseRecord, googleReplacementMode),
                     presentedOfferingIdentifier,
                     isPersonalizedPrice,
                 )

@@ -16,7 +16,7 @@ class BillingResponseCodeTest {
         assertThat(allPossibleBillingResponseCodes)
             .withFailMessage("It looks like there are new BillingResponseCodes, " +
                 "make sure to update the error conversions functions to include the new errors.")
-            .hasSize(12)
+            .hasSize(13)
     }
 
     @Test
@@ -49,7 +49,8 @@ class BillingResponseCodeTest {
             BillingClient.BillingResponseCode.DEVELOPER_ERROR to "DEVELOPER_ERROR",
             BillingClient.BillingResponseCode.ERROR to "ERROR",
             BillingClient.BillingResponseCode.ITEM_ALREADY_OWNED to "ITEM_ALREADY_OWNED",
-            BillingClient.BillingResponseCode.ITEM_NOT_OWNED to "ITEM_NOT_OWNED"
+            BillingClient.BillingResponseCode.ITEM_NOT_OWNED to "ITEM_NOT_OWNED",
+            BillingClient.BillingResponseCode.NETWORK_ERROR to "NETWORK_ERROR"
         )
 
         val allPossibleBillingResponseCodes = BillingClient.BillingResponseCode::class.java.declaredFields
