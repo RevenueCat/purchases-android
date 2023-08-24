@@ -2,7 +2,7 @@
 agp = "8.1.0"
 kotlin = "1.7.21"
 buildTools = "33.0.2"
-billing = "5.2.1"
+billing = "6.0.1"
 lifecycle = "2.5.0"
 testLibraries = "1.4.0"
 testJUnit = "1.1.3"

@@ -17,7 +17,7 @@ import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
 import com.revenuecat.purchases.common.offlineentitlements.ProductEntitlementMapping
 import com.revenuecat.purchases.common.offlineentitlements.createProductEntitlementMapping
-import com.revenuecat.purchases.models.GoogleProrationMode
+import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.GoogleStoreProduct
 import com.revenuecat.purchases.models.GoogleSubscriptionOption
 import com.revenuecat.purchases.models.Period
@@ -454,7 +454,7 @@ class BackendTest {
             productIDs = productIDs,
             storeProduct = storeProduct,
             subscriptionOptionId = subscriptionOption.id,
-            prorationMode = GoogleProrationMode.IMMEDIATE_WITHOUT_PRORATION
+            replacementMode = GoogleReplacementMode.WITHOUT_PRORATION
         )
 
         mockPostReceiptResponseAndPost(

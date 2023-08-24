@@ -110,7 +110,7 @@ class ConfigureFragment : Fragment() {
     }
 
     private suspend fun configureSDK() {
-        val apiKey = binding.apiKeyInput.text.toString()
+        val apiKey = "goog_acfEAcBcOOLOFWMXrDaQjIPyIWy" // binding.apiKeyInput.text.toString()
         val proxyUrl = binding.proxyUrlInput.text?.toString() ?: ""
         val verificationModeIndex = binding.verificationOptionsInput.selectedItemPosition
 

@@ -20,6 +20,7 @@ import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.models.GoogleProrationMode
+import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.utils.Responses
@@ -263,7 +264,7 @@ internal class PurchasesTest : BasePurchasesTest() {
         val packageToPurchase = offerings[STUB_OFFERING_IDENTIFIER]!!.monthly!!
         val purchaseParams = PurchaseParams.Builder(mockActivity, packageToPurchase)
             .oldProductId("oldProductId")
-            .googleProrationMode(GoogleProrationMode.DEFERRED)
+            .googleReplacementMode(GoogleReplacementMode.DEFERRED)
             .build()
 
         mockPurchaseFound()
@@ -284,7 +285,7 @@ internal class PurchasesTest : BasePurchasesTest() {
                 match { replaceProductInfo ->
                     replaceProductInfo.oldPurchase.productIds.size == 1 &&
                         replaceProductInfo.oldPurchase.productIds.first() == "oldProductId" &&
-                        replaceProductInfo.prorationMode == GoogleProrationMode.DEFERRED
+                        replaceProductInfo.replacementMode == GoogleReplacementMode.DEFERRED
                 },
                 STUB_OFFERING_IDENTIFIER,
                 null,
@@ -298,7 +299,7 @@ internal class PurchasesTest : BasePurchasesTest() {
         val packageToPurchase = offerings[STUB_OFFERING_IDENTIFIER]!!.monthly!!
         val purchaseParams = PurchaseParams.Builder(mockActivity, packageToPurchase)
             .oldProductId("oldProductId:oldBasePlanId")
-            .googleProrationMode(GoogleProrationMode.DEFERRED)
+            .googleReplacementMode(GoogleReplacementMode.DEFERRED)
             .build()
 
         mockPurchaseFound()
@@ -319,7 +320,7 @@ internal class PurchasesTest : BasePurchasesTest() {
                 match { replaceProductInfo ->
                     replaceProductInfo.oldPurchase.productIds.size == 1 &&
                         replaceProductInfo.oldPurchase.productIds.first() == "oldProductId" &&
-                        replaceProductInfo.prorationMode == GoogleProrationMode.DEFERRED
+                        replaceProductInfo.replacementMode == GoogleReplacementMode.DEFERRED
                 },
                 STUB_OFFERING_IDENTIFIER,
                 null,

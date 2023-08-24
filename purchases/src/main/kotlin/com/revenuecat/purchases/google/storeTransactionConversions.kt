@@ -3,7 +3,7 @@ package com.revenuecat.purchases.google
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchaseHistoryRecord
 import com.revenuecat.purchases.ProductType
-import com.revenuecat.purchases.models.GoogleProrationMode
+import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.PurchaseType
 import com.revenuecat.purchases.models.StoreTransaction
@@ -13,7 +13,7 @@ internal fun Purchase.toStoreTransaction(
     productType: ProductType,
     presentedOfferingIdentifier: String? = null,
     subscriptionOptionId: String? = null,
-    prorationMode: GoogleProrationMode? = null,
+    replacementMode: GoogleReplacementMode? = null,
 ): StoreTransaction = StoreTransaction(
     orderId = this.orderId,
     productIds = this.products,
@@ -29,7 +29,7 @@ internal fun Purchase.toStoreTransaction(
     purchaseType = PurchaseType.GOOGLE_PURCHASE,
     marketplace = null,
     subscriptionOptionId = subscriptionOptionId,
-    prorationMode = prorationMode,
+    replacementMode = replacementMode,
 )
 
 internal fun Purchase.toStoreTransaction(purchaseContext: PurchaseContext): StoreTransaction =
@@ -37,7 +37,7 @@ internal fun Purchase.toStoreTransaction(purchaseContext: PurchaseContext): Stor
         purchaseContext.productType,
         purchaseContext.presentedOfferingId,
         purchaseContext.selectedSubscriptionOptionId,
-        purchaseContext.prorationMode,
+        purchaseContext.replacementMode,
     )
 
 internal val StoreTransaction.originalGooglePurchase: Purchase?
@@ -64,6 +64,6 @@ internal fun PurchaseHistoryRecord.toStoreTransaction(
         purchaseType = PurchaseType.GOOGLE_RESTORED_PURCHASE,
         marketplace = null,
         subscriptionOptionId = null,
-        prorationMode = null,
+        replacementMode = null,
     )
 }
