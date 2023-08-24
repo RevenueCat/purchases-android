@@ -1,3 +1,10 @@
+## 6.9.3
+### Performance Improvements
+* Optimize SDK initialization when requests executed before any activity starts (#1204) via Toni Rico (@tonidero)
+* Optimize diagnostics file management (#1194) via Toni Rico (@tonidero)
+### Other Changes
+* Use real debug view dependencies in magic weather compose (#1203) via Toni Rico (@tonidero)
+
 ## 6.9.2
 ### Bugfixes
 * Fix offering metadata not fulling expanding (#1199) via Josh Holtz (@joshdholtz)
