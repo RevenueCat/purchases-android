@@ -3,4 +3,3 @@
 * Optimize diagnostics file management (#1194) via Toni Rico (@tonidero)
 ### Other Changes
 * Use real debug view dependencies in magic weather compose (#1203) via Toni Rico (@tonidero)
-* Relax consumer rules to allow for better minifying and obfuscation (#1193) via Toni Rico (@tonidero)
