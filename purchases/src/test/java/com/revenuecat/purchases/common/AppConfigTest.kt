@@ -9,12 +9,18 @@ import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.unmockkStatic
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.After
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.net.URL
 
 @RunWith(AndroidJUnit4::class)
 class AppConfigTest {
+
+    @After
+    fun tearDown() {
+        unmockkStatic("com.revenuecat.purchases.common.UtilsKt")
+    }
 
     @Test
     fun `languageTag is created successfully`() {
@@ -32,7 +38,6 @@ class AppConfigTest {
             store = Store.PLAY_STORE
         )
         assertThat(appConfig.languageTag).isEqualTo(expected)
-        unmockkStatic("com.revenuecat.purchases.common.UtilsKt")
     }
 
     @Test
@@ -51,7 +56,6 @@ class AppConfigTest {
             store = Store.PLAY_STORE
         )
         assertThat(appConfig.languageTag).isEqualTo(expected)
-        unmockkStatic("com.revenuecat.purchases.common.UtilsKt")
     }
 
     @Test
@@ -72,7 +76,6 @@ class AppConfigTest {
             store = Store.PLAY_STORE
         )
         assertThat(appConfig.versionName).isEqualTo(expected)
-        unmockkStatic("com.revenuecat.purchases.common.UtilsKt")
     }
 
     @Test
@@ -92,7 +95,6 @@ class AppConfigTest {
             store = Store.PLAY_STORE
         )
         assertThat(appConfig.versionName).isEqualTo(expected)
-        unmockkStatic("com.revenuecat.purchases.common.UtilsKt")
     }
 
     @Test
@@ -113,7 +115,6 @@ class AppConfigTest {
             store = Store.PLAY_STORE
         )
         assertThat(appConfig.packageName).isEqualTo(expected)
-        unmockkStatic("com.revenuecat.purchases.common.UtilsKt")
     }
 
     @Test

@@ -50,6 +50,7 @@ import io.mockk.verifyAll
 import io.mockk.verifyOrder
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.AssertionsForClassTypes
+import org.junit.After
 import org.junit.Assert.fail
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -70,6 +71,10 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
     private val mockLifecycle = mockk<Lifecycle>()
     private val mockLifecycleOwner = mockk<LifecycleOwner>()
 
+    @After
+    fun removeMocks() {
+        unmockkStatic(BillingClient::class)
+    }
     @Test
     fun canBeCreated() {
         assertThat(purchases).isNotNull
@@ -1428,7 +1433,6 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         listener.captured.onBillingServiceDisconnected()
         assertThat(receivedCanMakePayments).isFalse
         verify(exactly = 1) { mockLocalBillingClient.endConnection() }
-        unmockkStatic(BillingClient::class)
     }
 
     @Test
@@ -1444,7 +1448,6 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         listener.captured.onBillingSetupFinished(BillingClient.BillingResponseCode.OK.buildResult())
 
         assertThat(receivedCanMakePayments).isTrue
-        unmockkStatic(BillingClient::class)
     }
 
     @Test
@@ -1460,7 +1463,6 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         listener.captured.onBillingSetupFinished(BillingClient.BillingResponseCode.FEATURE_NOT_SUPPORTED.buildResult())
         AssertionsForClassTypes.assertThat(receivedCanMakePayments).isFalse
         verify(exactly = 1) { mockLocalBillingClient.endConnection() }
-        unmockkStatic(BillingClient::class)
     }
 
     @Test
@@ -1480,7 +1482,6 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
 
         Purchases.canMakePayments(mockContext, listOf(BillingFeature.SUBSCRIPTIONS)) {}
         verify(exactly = 1) { mockBuilder.enablePendingPurchases() }
-        unmockkStatic(BillingClient::class)
     }
 
     fun `canMakePayments returns true for Amazon configurations`() {
@@ -1516,7 +1517,6 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
 
         AssertionsForClassTypes.assertThat(receivedCanMakePayments).isFalse
         verify(exactly = 1) { mockLocalBillingClient.endConnection() }
-        unmockkStatic(BillingClient::class)
     }
 
     @Test
@@ -1537,7 +1537,6 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
 
         AssertionsForClassTypes.assertThat(receivedCanMakePayments).isFalse
         verify(exactly = 1) { mockLocalBillingClient.endConnection() }
-        unmockkStatic(BillingClient::class)
     }
 
     @Test
@@ -1568,7 +1567,6 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
 
         AssertionsForClassTypes.assertThat(receivedCanMakePayments).isFalse
         verify(exactly = 1) { mockLocalBillingClient.endConnection() }
-        unmockkStatic(BillingClient::class)
     }
 
     @Test
@@ -1590,7 +1588,6 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
 
         AssertionsForClassTypes.assertThat(receivedCanMakePayments).isTrue
         verify(exactly = 1) { mockLocalBillingClient.endConnection() }
-        unmockkStatic(BillingClient::class)
     }
 
     @Test
@@ -1604,7 +1601,6 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
 
         verify(exactly = 0) { mockLocalBillingClient.isFeatureSupported(any()) }
         verify(exactly = 1) { mockLocalBillingClient.endConnection() }
-        unmockkStatic(BillingClient::class)
     }
 
     // endregion
