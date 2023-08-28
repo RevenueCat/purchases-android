@@ -73,7 +73,7 @@ enum class GoogleProrationMode(
     /**
      * For internal use only :)
      */
-    val asGoogleReplacementMode: GoogleReplacementMode
+    internal val asGoogleReplacementMode: GoogleReplacementMode
         get() = when (this) {
             GoogleProrationMode.IMMEDIATE_WITHOUT_PRORATION -> GoogleReplacementMode.WITHOUT_PRORATION
             GoogleProrationMode.IMMEDIATE_WITH_TIME_PRORATION -> GoogleReplacementMode.WITH_TIME_PRORATION

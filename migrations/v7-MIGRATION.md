@@ -30,8 +30,6 @@ more thorough explanation of the new Google subscription model announced with Bi
 | `getSubscriptionSkusWith(List<String>, (PurchasesError) -> Unit, (List<StoreProduct>) -> Unit)`    | `getProductsWith(List<String>, (PurchasesError) -> Unit, (List<StoreProduct>) -> Unit)` |
 | `getNonSubscriptionSkusWith(List<String>, (PurchasesError) -> Unit, (List<StoreProduct>) -> Unit)` | `getProductsWith(List<String>, (PurchasesError) -> Unit, (List<StoreProduct>) -> Unit)` |
 
-
-
 ### Observer Mode
 
 Observer mode is still supported in v7. Other than updating the SDK version, there are no changes required..
