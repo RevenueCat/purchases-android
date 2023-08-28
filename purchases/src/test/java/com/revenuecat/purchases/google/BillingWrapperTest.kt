@@ -68,6 +68,7 @@ import io.mockk.verify
 import io.mockk.verifySequence
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.AssertionsForClassTypes.fail
+import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -123,7 +124,6 @@ class BillingWrapperTest {
 
     @Before
     fun setup() {
-        clearAllMocks()
         storeProducts = null
         purchasesUpdatedListener = null
         billingClientStateListener = null
@@ -183,6 +183,11 @@ class BillingWrapperTest {
         every {
             mockActivity.intent
         } returns Intent()
+    }
+
+    @After
+    fun tearDown() {
+        clearAllMocks()
     }
 
     @Test
@@ -467,8 +472,6 @@ class BillingWrapperTest {
             null,
             isPersonalizedPrice
         )
-        unmockkStatic(BillingFlowParams::class)
-        unmockkStatic(BillingFlowParams.SubscriptionUpdateParams::class)
     }
 
     @Test
@@ -553,8 +556,6 @@ class BillingWrapperTest {
             null,
             isPersonalizedPrice
         )
-        unmockkStatic(BillingFlowParams::class)
-        unmockkStatic(BillingFlowParams.SubscriptionUpdateParams::class)
     }
 
     @Test
@@ -614,8 +615,6 @@ class BillingWrapperTest {
             null,
             isPersonalizedPrice
         )
-        unmockkStatic(BillingFlowParams::class)
-        unmockkStatic(BillingFlowParams.SubscriptionUpdateParams::class)
     }
 
     @Test
@@ -666,9 +665,6 @@ class BillingWrapperTest {
         assertThat(tokenSlot.captured).isEqualTo("mock-subscription-offer-token")
         assertThat(productDetailsSlot.isCaptured).isTrue
         assertThat(productDetailsSlot.captured).isEqualTo(productDetails)
-        unmockkStatic(BillingFlowParams::class)
-        unmockkStatic(BillingFlowParams.ProductDetailsParams::class)
-        unmockkStatic(BillingFlowParams.SubscriptionUpdateParams::class)
     }
 
     @Test
@@ -717,8 +713,6 @@ class BillingWrapperTest {
 
         assertThat(productDetailsSlot.isCaptured).isTrue
         assertThat(productDetailsSlot.captured).isEqualTo(productDetails)
-        unmockkStatic(BillingFlowParams::class)
-        unmockkStatic(BillingFlowParams.ProductDetailsParams::class)
     }
 
     @Test
@@ -1479,7 +1473,6 @@ class BillingWrapperTest {
         verify(exactly = 1) {
             mockBuilder.enablePendingPurchases()
         }
-        unmockkStatic(BillingClient::class)
     }
 
     @Test

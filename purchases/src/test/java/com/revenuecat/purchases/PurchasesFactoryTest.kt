@@ -12,6 +12,7 @@ import io.mockk.mockk
 import io.mockk.runs
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThatExceptionOfType
+import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -26,11 +27,14 @@ class PurchasesFactoryTest {
 
     @Before
     fun setup() {
-        clearAllMocks()
-
         purchasesFactory = PurchasesFactory(apiKeyValidatorMock)
 
         every { apiKeyValidatorMock.validateAndLog("fakeApiKey", Store.PLAY_STORE) } just runs
+    }
+
+    @After
+    fun tearDown() {
+        clearAllMocks()
     }
 
     @Test
