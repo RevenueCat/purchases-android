@@ -22,6 +22,7 @@ import com.revenuecat.purchases.getOfferingsWith
 import com.revenuecat.purchases.getProductsWith
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
+import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import com.revenuecat.purchases.models.BillingFeature
@@ -30,6 +31,7 @@ import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.purchaseWith
+import com.revenuecat.purchases.restorePurchasesWith
 import java.net.URL
 import java.util.concurrent.ExecutorService
 
@@ -40,6 +42,10 @@ private class PurchasesCommonAPI {
         purchases: Purchases,
     ) {
         val productIds = ArrayList<String>()
+        val receiveCustomerInfoCallback = object : ReceiveCustomerInfoCallback {
+            override fun onReceived(customerInfo: CustomerInfo) {}
+            override fun onError(error: PurchasesError) {}
+        }
         val receiveOfferingsCallback = object : ReceiveOfferingsCallback {
             override fun onReceived(offerings: Offerings) {}
             override fun onError(error: PurchasesError) {}
@@ -53,6 +59,8 @@ private class PurchasesCommonAPI {
 
         purchases.getProducts(productIds, productsResponseCallback)
         purchases.getProducts(productIds, ProductType.SUBS, productsResponseCallback)
+
+        purchases.restorePurchases(receiveCustomerInfoCallback)
 
         val appUserID: String = purchases.appUserID
 
@@ -124,6 +132,10 @@ private class PurchasesCommonAPI {
         purchases.purchaseWith(
             purchaseParams,
         ) { _: StoreTransaction?, _: CustomerInfo -> }
+        purchases.restorePurchasesWith(
+            onError = { _: PurchasesError -> },
+            onSuccess = { _: CustomerInfo -> },
+        )
     }
 
     suspend fun checkCoroutines(
