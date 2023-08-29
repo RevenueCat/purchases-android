@@ -11,6 +11,7 @@ import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.interfaces.Callback
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
+import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import com.revenuecat.purchases.models.BillingFeature
@@ -127,6 +128,24 @@ class Purchases internal constructor(
     @Suppress("MemberVisibilityCanBePrivate")
     fun removeUpdatedCustomerInfoListener() {
         purchasesOrchestrator.removeUpdatedCustomerInfoListener()
+    }
+
+    /**
+     * Restores purchases made with the current Play Store account for the current user.
+     * This method will post all purchases associated with the current Play Store account to
+     * RevenueCat and become associated with the current `appUserID`. If the receipt token is being
+     * used by an existing user, the current `appUserID` will be aliased together with the
+     * `appUserID` of the existing user. Going forward, either `appUserID` will be able to reference
+     * the same user.
+     *
+     * You shouldn't use this method if you have your own account system. In that case
+     * "restoration" is provided by your app passing the same `appUserId` used to purchase originally.
+     * @param [callback] The listener that will be called when purchase restore completes.
+     */
+    fun restorePurchases(
+        callback: ReceiveCustomerInfoCallback,
+    ) {
+        purchasesOrchestrator.restorePurchases(callback)
     }
 
     /**

@@ -19,7 +19,6 @@ import com.revenuecat.purchases.interfaces.SyncPurchasesCallback
 import com.revenuecat.purchases.logInWith
 import com.revenuecat.purchases.logOutWith
 import com.revenuecat.purchases.models.BillingFeature
-import com.revenuecat.purchases.restorePurchasesWith
 import com.revenuecat.purchases.syncPurchasesWith
 
 @Suppress("unused", "UNUSED_VARIABLE", "EmptyFunctionBlock", "DEPRECATION")
@@ -48,7 +47,6 @@ private class PurchasesAPI {
         purchases.logOut()
         purchases.logOut(receiveCustomerInfoCallback)
 
-        purchases.restorePurchases(receiveCustomerInfoCallback)
         purchases.invalidateCustomerInfoCache()
 
         purchases.getCustomerInfo(receiveCustomerInfoCallback)
@@ -84,10 +82,6 @@ private class PurchasesAPI {
         )
         purchases.getCustomerInfoWith(
             fetchPolicy = CacheFetchPolicy.CACHED_OR_FETCHED,
-            onError = { _: PurchasesError -> },
-            onSuccess = { _: CustomerInfo -> },
-        )
-        purchases.restorePurchasesWith(
             onError = { _: PurchasesError -> },
             onSuccess = { _: CustomerInfo -> },
         )
