@@ -1,5 +1,6 @@
-### Performance Improvements
-* Optimize SDK initialization when requests executed before any activity starts (#1204) via Toni Rico (@tonidero)
-* Optimize diagnostics file management (#1194) via Toni Rico (@tonidero)
+### Dependency Updates
+* Bump fastlane-plugin-revenuecat_internal from `b2108fb` to `a297205` (#1210) via dependabot[bot] (@dependabot[bot])
 ### Other Changes
-* Use real debug view dependencies in magic weather compose (#1203) via Toni Rico (@tonidero)
+* Send `initiation_source` in post receipt requests (#1212) via Toni Rico (@tonidero)
+* CustomEntitlementComputation: Add `restorePurchases` (#1211) via Toni Rico (@tonidero)
+* Unify caching offerings and updating update timestamp (#1206) via Toni Rico (@tonidero)
