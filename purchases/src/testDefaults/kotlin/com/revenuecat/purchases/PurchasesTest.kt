@@ -721,7 +721,7 @@ internal class PurchasesTest : BasePurchasesTest() {
                 isRestore = false,
                 appUserID = appUserId,
                 marketplace = null,
-                initiationSource = PostReceiptInitiationSource.RESTORE,
+                initiationSource = restoreInitiationSource,
                 onSuccess = any(),
                 onError = any()
             )
@@ -778,7 +778,7 @@ internal class PurchasesTest : BasePurchasesTest() {
                 isRestore = false,
                 appUserID = appUserId,
                 marketplace = null,
-                initiationSource = PostReceiptInitiationSource.RESTORE,
+                initiationSource = restoreInitiationSource,
                 onSuccess = any(),
                 onError = any()
             )
@@ -804,7 +804,7 @@ internal class PurchasesTest : BasePurchasesTest() {
                 isRestore = false,
                 appUserID = appUserId,
                 marketplace = null,
-                initiationSource = PostReceiptInitiationSource.RESTORE,
+                initiationSource = restoreInitiationSource,
                 onSuccess = any(),
                 onError = any()
             )
@@ -855,7 +855,7 @@ internal class PurchasesTest : BasePurchasesTest() {
                 isRestore = false,
                 appUserID = appUserId,
                 marketplace = null,
-                initiationSource = PostReceiptInitiationSource.RESTORE,
+                initiationSource = restoreInitiationSource,
                 onSuccess = any(),
                 onError = any()
             )
@@ -910,7 +910,7 @@ internal class PurchasesTest : BasePurchasesTest() {
                 isRestore = false,
                 appUserID = appUserId,
                 marketplace = null,
-                initiationSource = PostReceiptInitiationSource.RESTORE,
+                initiationSource = restoreInitiationSource,
                 onSuccess = any(),
                 onError = any()
             )
@@ -991,7 +991,7 @@ internal class PurchasesTest : BasePurchasesTest() {
                 isRestore = true,
                 appUserID = appUserId,
                 marketplace = null,
-                initiationSource = PostReceiptInitiationSource.RESTORE,
+                initiationSource = restoreInitiationSource,
                 onSuccess = any(),
                 onError = any(),
             )
@@ -1050,7 +1050,7 @@ internal class PurchasesTest : BasePurchasesTest() {
                 isRestore = true,
                 appUserID = appUserId,
                 marketplace = null,
-                initiationSource = PostReceiptInitiationSource.RESTORE,
+                initiationSource = restoreInitiationSource,
                 onSuccess = any(),
                 onError = any(),
             )
