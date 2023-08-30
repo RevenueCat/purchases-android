@@ -6,6 +6,7 @@
 package com.revenuecat.purchases.common
 
 import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.PostReceiptInitiationSource
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.networking.Endpoint
@@ -176,6 +177,7 @@ internal class Backend(
         storeAppUserID: String?,
         @SuppressWarnings("UnusedPrivateMember")
         marketplace: String? = null,
+        initiationSource: PostReceiptInitiationSource,
         onSuccess: PostReceiptDataSuccessCallback,
         onError: PostReceiptDataErrorCallback,
     ) {
@@ -204,6 +206,7 @@ internal class Backend(
             "store_user_id" to storeAppUserID,
             "pricing_phases" to receiptInfo.pricingPhases?.map { it.toMap() },
             "proration_mode" to receiptInfo.prorationMode?.name,
+            "initiation_source" to initiationSource.postReceiptFieldValue,
         ).filterNotNullValues()
 
         val postFieldsToSign = listOf(

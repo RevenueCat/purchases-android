@@ -38,6 +38,7 @@ internal class PostReceiptHelper(
         isRestore: Boolean,
         appUserID: String,
         marketplace: String?,
+        initiationSource: PostReceiptInitiationSource,
         onSuccess: (CustomerInfo) -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {
@@ -48,6 +49,7 @@ internal class PostReceiptHelper(
             receiptInfo,
             storeUserID,
             marketplace,
+            initiationSource,
             onSuccess = {
                 deviceCache.addSuccessfullyPostedToken(purchaseToken)
                 onSuccess(it)
@@ -79,6 +81,7 @@ internal class PostReceiptHelper(
         storeProduct: StoreProduct?,
         isRestore: Boolean,
         appUserID: String,
+        initiationSource: PostReceiptInitiationSource,
         onSuccess: (SuccessfulPurchaseCallback)? = null,
         onError: (ErrorPurchaseCallback)? = null,
     ) {
@@ -96,6 +99,7 @@ internal class PostReceiptHelper(
             receiptInfo = receiptInfo,
             storeUserID = purchase.storeUserID,
             marketplace = purchase.marketplace,
+            initiationSource = initiationSource,
             onSuccess = { info ->
                 billing.consumeAndSave(finishTransactions, purchase)
                 onSuccess?.let { it(purchase, info) }
@@ -125,6 +129,7 @@ internal class PostReceiptHelper(
         receiptInfo: ReceiptInfo,
         storeUserID: String?,
         marketplace: String?,
+        initiationSource: PostReceiptInitiationSource,
         onSuccess: (CustomerInfo) -> Unit,
         onError: PostReceiptDataErrorCallback,
     ) {
@@ -138,6 +143,7 @@ internal class PostReceiptHelper(
                 receiptInfo = receiptInfo,
                 storeAppUserID = storeUserID,
                 marketplace = marketplace,
+                initiationSource = initiationSource,
                 onSuccess = { customerInfo, responseBody ->
                     offlineEntitlementsManager.resetOfflineCustomerInfoCache()
                     subscriberAttributesManager.markAsSynced(

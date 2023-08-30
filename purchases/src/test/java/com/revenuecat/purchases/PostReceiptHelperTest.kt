@@ -49,6 +49,7 @@ class PostReceiptHelperTest {
     private val subscriptionOptionId = "mock-base-plan-id:mock-offer-id"
     private val postToken = "test-post-token"
     private val storeUserId = "test-store-user-id"
+    private val initiationSource = PostReceiptInitiationSource.PURCHASE
     private val marketplace = "test-marketplace"
     private val mockStoreTransaction = mockGooglePurchase.toStoreTransaction(
         ProductType.SUBS,
@@ -122,6 +123,7 @@ class PostReceiptHelperTest {
             storeProduct = mockStoreProduct,
             isRestore = allowSharingPlayStoreAccount,
             appUserID = appUserID,
+            initiationSource = PostReceiptInitiationSource.PURCHASE,
             onSuccess = { _, _ -> },
             onError = { _, _ -> fail("Should succeed") }
         )
@@ -143,6 +145,7 @@ class PostReceiptHelperTest {
                 receiptInfo = expectedReceiptInfo,
                 storeAppUserID = mockStoreTransaction.storeUserID,
                 marketplace = mockStoreTransaction.marketplace,
+                initiationSource = PostReceiptInitiationSource.PURCHASE,
                 onSuccess = any(),
                 onError = any()
             )
@@ -159,6 +162,7 @@ class PostReceiptHelperTest {
             storeProduct = mockStoreProduct,
             isRestore = true,
             appUserID = appUserID,
+            initiationSource = initiationSource,
             onSuccess = { _, _ -> },
             onError = { _, _ -> fail("Should succeed") }
         )
@@ -173,6 +177,7 @@ class PostReceiptHelperTest {
                 receiptInfo = any(),
                 storeAppUserID = any(),
                 marketplace = any(),
+                initiationSource = any(),
                 onSuccess = any(),
                 onError = any()
             )
@@ -189,6 +194,7 @@ class PostReceiptHelperTest {
             storeProduct = mockStoreProduct,
             isRestore = true,
             appUserID = appUserID,
+            initiationSource = initiationSource,
             onSuccess = { _, _ -> },
             onError = { _, _ -> fail("Should succeed") }
         )
@@ -211,6 +217,7 @@ class PostReceiptHelperTest {
             storeProduct = mockStoreProduct,
             isRestore = true,
             appUserID = appUserID,
+            initiationSource = initiationSource,
             onSuccess = { _, _ -> },
             onError = { _, _ -> fail("Should succeed") }
         )
@@ -232,6 +239,7 @@ class PostReceiptHelperTest {
             storeProduct = mockStoreProduct,
             isRestore = true,
             appUserID = appUserID,
+            initiationSource = initiationSource,
             onSuccess = { _, _ -> },
             onError = { _, _ -> fail("Should succeed") }
         )
@@ -253,6 +261,7 @@ class PostReceiptHelperTest {
             storeProduct = mockStoreProduct,
             isRestore = true,
             appUserID = appUserID,
+            initiationSource = initiationSource,
             onSuccess = { _, _ -> },
             onError = { _, _ -> fail("Should succeed") }
         )
@@ -273,6 +282,7 @@ class PostReceiptHelperTest {
             storeProduct = mockStoreProduct,
             isRestore = true,
             appUserID = appUserID,
+            initiationSource = initiationSource,
             onSuccess = { transaction, customerInfo ->
                 successTransaction = transaction
                 successCustomerInfo = customerInfo
@@ -294,6 +304,7 @@ class PostReceiptHelperTest {
             storeProduct = mockStoreProduct,
             isRestore = true,
             appUserID = appUserID,
+            initiationSource = initiationSource,
             onSuccess = { _, _ -> fail("Expected error") },
             onError = { _, _ -> }
         )
@@ -317,6 +328,7 @@ class PostReceiptHelperTest {
             storeProduct = mockStoreProduct,
             isRestore = true,
             appUserID = appUserID,
+            initiationSource = initiationSource,
             onSuccess = { _, _ -> fail("Expected error") },
             onError = { _, _ -> }
         )
@@ -340,6 +352,7 @@ class PostReceiptHelperTest {
             storeProduct = mockStoreProduct,
             isRestore = true,
             appUserID = appUserID,
+            initiationSource = initiationSource,
             onSuccess = { _, _ -> fail("Expected error") },
             onError = { _, _ -> }
         )
@@ -359,6 +372,7 @@ class PostReceiptHelperTest {
             storeProduct = mockStoreProduct,
             isRestore = true,
             appUserID = appUserID,
+            initiationSource = initiationSource,
             onSuccess = { _, _ -> fail("Expected error") },
             onError = { _, _ -> }
         )
@@ -377,6 +391,7 @@ class PostReceiptHelperTest {
             storeProduct = mockStoreProduct,
             isRestore = true,
             appUserID = appUserID,
+            initiationSource = initiationSource,
             onSuccess = { _, _ -> fail("Expected error") },
             onError = { _, _ -> }
         )
@@ -397,6 +412,7 @@ class PostReceiptHelperTest {
             storeProduct = mockStoreProduct,
             isRestore = true,
             appUserID = appUserID,
+            initiationSource = initiationSource,
             onSuccess = { _, _ -> fail("Expected error") },
             onError = { transaction, error ->
                 errorTransaction = transaction
@@ -419,6 +435,7 @@ class PostReceiptHelperTest {
             storeProduct = mockStoreProduct,
             isRestore = true,
             appUserID = appUserID,
+            initiationSource = initiationSource,
             onSuccess = { _, _ -> },
             onError = { _, _ -> fail("Should succeed") }
         )
@@ -437,6 +454,7 @@ class PostReceiptHelperTest {
             storeProduct = mockStoreProduct,
             isRestore = true,
             appUserID = appUserID,
+            initiationSource = initiationSource,
             onSuccess = { _, _ -> fail("Expected error") },
             onError = { _, _ -> }
         )
@@ -456,6 +474,7 @@ class PostReceiptHelperTest {
             storeProduct = mockStoreProduct,
             isRestore = true,
             appUserID = appUserID,
+            initiationSource = initiationSource,
             onSuccess = { _, _ -> fail("Expected error") },
             onError = { _, _ -> }
         )
@@ -485,6 +504,7 @@ class PostReceiptHelperTest {
             storeProduct = mockStoreProduct,
             isRestore = true,
             appUserID = appUserID,
+            initiationSource = initiationSource,
             onSuccess = { _, customerInfo -> receivedCustomerInfo = customerInfo },
             onError = { _, _ -> fail("Expected success") }
         )
@@ -511,6 +531,7 @@ class PostReceiptHelperTest {
             storeProduct = mockStoreProduct,
             isRestore = true,
             appUserID = appUserID,
+            initiationSource = initiationSource,
             onSuccess = { _, _ ->  },
             onError = { _, _ -> fail("Expected success") }
         )
@@ -537,6 +558,7 @@ class PostReceiptHelperTest {
             storeProduct = mockStoreProduct,
             isRestore = true,
             appUserID = appUserID,
+            initiationSource = initiationSource,
             onSuccess = { _, _ ->  },
             onError = { _, _ -> fail("Expected success") }
         )
@@ -564,6 +586,7 @@ class PostReceiptHelperTest {
             storeProduct = mockStoreProduct,
             isRestore = true,
             appUserID = appUserID,
+            initiationSource = initiationSource,
             onSuccess = { _, _ ->  },
             onError = { _, _ -> fail("Expected success") }
         )
@@ -582,6 +605,7 @@ class PostReceiptHelperTest {
             storeProduct = mockStoreProduct,
             isRestore = true,
             appUserID = appUserID,
+            initiationSource = initiationSource,
             onSuccess = { _, _ -> },
             onError = { _, _ -> fail("Should succeed") }
         )
@@ -598,6 +622,7 @@ class PostReceiptHelperTest {
             storeProduct = mockStoreProduct,
             isRestore = true,
             appUserID = appUserID,
+            initiationSource = initiationSource,
             onSuccess = { _, _ -> },
             onError = { _, _ -> fail("Should succeed") }
         )
@@ -614,6 +639,7 @@ class PostReceiptHelperTest {
             storeProduct = mockStoreProduct,
             isRestore = true,
             appUserID = appUserID,
+            initiationSource = initiationSource,
             onSuccess = { _, _ -> },
             onError = { _, _ -> fail("Should succeed") }
         )
@@ -631,6 +657,7 @@ class PostReceiptHelperTest {
             storeProduct = mockInAppProduct,
             isRestore = true,
             appUserID = appUserID,
+            initiationSource = initiationSource,
             onSuccess = { _, _ -> },
             onError = { _, _ -> fail("Should succeed") }
         )
@@ -647,6 +674,7 @@ class PostReceiptHelperTest {
             storeProduct = mockStoreProduct,
             isRestore = true,
             appUserID = appUserID,
+            initiationSource = initiationSource,
             onSuccess = { _, _ -> },
             onError = { _, _ -> fail("Should succeed") }
         )
@@ -671,6 +699,7 @@ class PostReceiptHelperTest {
             storeProduct = mockStoreProduct,
             isRestore = true,
             appUserID = appUserID,
+            initiationSource = initiationSource,
             onSuccess = { _, _ -> },
             onError = { _, _ -> fail("Should succeed") }
         )
@@ -687,6 +716,7 @@ class PostReceiptHelperTest {
             storeProduct = mockStoreProduct,
             isRestore = true,
             appUserID = appUserID,
+            initiationSource = initiationSource,
             onSuccess = { _, _ -> },
             onError = { _, _ -> fail("Should succeed") }
         )
@@ -703,6 +733,7 @@ class PostReceiptHelperTest {
             storeProduct = mockStoreProduct,
             isRestore = true,
             appUserID = appUserID,
+            initiationSource = initiationSource,
             onSuccess = { _, _ -> },
             onError = { _, _ -> fail("Should succeed") }
         )
@@ -724,6 +755,7 @@ class PostReceiptHelperTest {
             storeProduct = mockStoreProduct,
             isRestore = true,
             appUserID = appUserID,
+            initiationSource = initiationSource,
             onSuccess = { _, _ -> },
             onError = { _, _ -> fail("Should succeed") }
         )
@@ -743,7 +775,10 @@ class PostReceiptHelperTest {
 
     @Test
     fun `postTokenWithoutConsuming posts with expected default parameters`() {
-        mockPostReceiptSuccess(postType = PostType.TOKEN_WITHOUT_CONSUMING)
+        mockPostReceiptSuccess(
+            postType = PostType.TOKEN_WITHOUT_CONSUMING,
+            postReceiptInitiationSource = PostReceiptInitiationSource.RESTORE,
+        )
 
         val allowSharingPlayStoreAccount = true
 
@@ -754,6 +789,7 @@ class PostReceiptHelperTest {
             isRestore = allowSharingPlayStoreAccount,
             appUserID = appUserID,
             marketplace = marketplace,
+            initiationSource = PostReceiptInitiationSource.RESTORE,
             onSuccess = { },
             onError = { fail("Should succeed") }
         )
@@ -768,6 +804,7 @@ class PostReceiptHelperTest {
                 receiptInfo = testReceiptInfo,
                 storeAppUserID = storeUserId,
                 marketplace = marketplace,
+                initiationSource = PostReceiptInitiationSource.RESTORE,
                 onSuccess = any(),
                 onError = any()
             )
@@ -786,6 +823,7 @@ class PostReceiptHelperTest {
             isRestore = true,
             appUserID = appUserID,
             marketplace = marketplace,
+            initiationSource = PostReceiptInitiationSource.PURCHASE,
             onSuccess = { },
             onError = { fail("Should succeed") }
         )
@@ -800,6 +838,7 @@ class PostReceiptHelperTest {
                 receiptInfo = any(),
                 storeAppUserID = any(),
                 marketplace = any(),
+                initiationSource = any(),
                 onSuccess = any(),
                 onError = any()
             )
@@ -818,6 +857,7 @@ class PostReceiptHelperTest {
             isRestore = true,
             appUserID = appUserID,
             marketplace = marketplace,
+            initiationSource = initiationSource,
             onSuccess = { },
             onError = { fail("Should succeed") }
         )
@@ -842,6 +882,7 @@ class PostReceiptHelperTest {
             isRestore = true,
             appUserID = appUserID,
             marketplace = marketplace,
+            initiationSource = initiationSource,
             onSuccess = { },
             onError = { fail("Should succeed") }
         )
@@ -863,6 +904,7 @@ class PostReceiptHelperTest {
             isRestore = true,
             appUserID = appUserID,
             marketplace = marketplace,
+            initiationSource = initiationSource,
             onSuccess = { receivedCustomerInfo = it },
             onError = { fail("Should succeed") }
         )
@@ -884,6 +926,7 @@ class PostReceiptHelperTest {
             isRestore = true,
             appUserID = appUserID,
             marketplace = marketplace,
+            initiationSource = initiationSource,
             onSuccess = { },
             onError = { fail("Should succeed") }
         )
@@ -905,6 +948,7 @@ class PostReceiptHelperTest {
             isRestore = true,
             appUserID = appUserID,
             marketplace = marketplace,
+            initiationSource = initiationSource,
             onSuccess = { successCalledCount++ },
             onError = { fail("Should succeed") }
         )
@@ -927,6 +971,7 @@ class PostReceiptHelperTest {
             isRestore = true,
             appUserID = appUserID,
             marketplace = marketplace,
+            initiationSource = initiationSource,
             onSuccess = { fail("Should fail") },
             onError = { }
         )
@@ -955,6 +1000,7 @@ class PostReceiptHelperTest {
             isRestore = true,
             appUserID = appUserID,
             marketplace = marketplace,
+            initiationSource = initiationSource,
             onSuccess = { fail("Should fail") },
             onError = { }
         )
@@ -982,6 +1028,7 @@ class PostReceiptHelperTest {
             isRestore = true,
             appUserID = appUserID,
             marketplace = marketplace,
+            initiationSource = initiationSource,
             onSuccess = { fail("Should fail") },
             onError = { }
         )
@@ -1005,6 +1052,7 @@ class PostReceiptHelperTest {
             isRestore = true,
             appUserID = appUserID,
             marketplace = marketplace,
+            initiationSource = initiationSource,
             onSuccess = { fail("Should fail") },
             onError = { }
         )
@@ -1029,6 +1077,7 @@ class PostReceiptHelperTest {
             isRestore = true,
             appUserID = appUserID,
             marketplace = marketplace,
+            initiationSource = initiationSource,
             onSuccess = { fail("Should fail") },
             onError = { purchasesError = it }
         )
@@ -1047,6 +1096,7 @@ class PostReceiptHelperTest {
             isRestore = true,
             appUserID = appUserID,
             marketplace = marketplace,
+            initiationSource = initiationSource,
             onSuccess = { },
             onError = { fail("Should succeed") }
         )
@@ -1070,6 +1120,7 @@ class PostReceiptHelperTest {
             isRestore = true,
             appUserID = appUserID,
             marketplace = marketplace,
+            initiationSource = initiationSource,
             onSuccess = { fail("Should fail") },
             onError = { }
         )
@@ -1092,6 +1143,7 @@ class PostReceiptHelperTest {
             isRestore = true,
             appUserID = appUserID,
             marketplace = marketplace,
+            initiationSource = initiationSource,
             onSuccess = { },
             onError = { fail("Should succeed") }
         )
@@ -1115,6 +1167,7 @@ class PostReceiptHelperTest {
             isRestore = true,
             appUserID = appUserID,
             marketplace = marketplace,
+            initiationSource = initiationSource,
             onSuccess = { fail("Expected error") },
             onError = { }
         )
@@ -1139,6 +1192,7 @@ class PostReceiptHelperTest {
             isRestore = true,
             appUserID = appUserID,
             marketplace = marketplace,
+            initiationSource = initiationSource,
             onSuccess = { fail("Expected error") },
             onError = { }
         )
@@ -1173,6 +1227,7 @@ class PostReceiptHelperTest {
             isRestore = true,
             appUserID = appUserID,
             marketplace = marketplace,
+            initiationSource = initiationSource,
             onSuccess = { successCallCount++ },
             onError = { fail("Should succeed") }
         )
@@ -1204,6 +1259,7 @@ class PostReceiptHelperTest {
             isRestore = true,
             appUserID = appUserID,
             marketplace = marketplace,
+            initiationSource = initiationSource,
             onSuccess = { },
             onError = { fail("Should succeed") }
         )
@@ -1235,6 +1291,7 @@ class PostReceiptHelperTest {
             isRestore = true,
             appUserID = appUserID,
             marketplace = marketplace,
+            initiationSource = initiationSource,
             onSuccess = { },
             onError = { fail("Should succeed") }
         )
@@ -1267,6 +1324,7 @@ class PostReceiptHelperTest {
             isRestore = true,
             appUserID = appUserID,
             marketplace = marketplace,
+            initiationSource = initiationSource,
             onSuccess = { },
             onError = { fail("Should succeed") }
         )
@@ -1296,7 +1354,8 @@ class PostReceiptHelperTest {
     private fun mockPostReceiptSuccess(
         customerInfo: CustomerInfo = defaultCustomerInfo,
         jsonBody: JSONObject = JSONObject(Responses.validFullPurchaserResponse),
-        postType: PostType = PostType.TRANSACTION_AND_CONSUME
+        postType: PostType = PostType.TRANSACTION_AND_CONSUME,
+        postReceiptInitiationSource: PostReceiptInitiationSource = initiationSource,
     ) {
         every {
             backend.postReceiptData(
@@ -1308,6 +1367,7 @@ class PostReceiptHelperTest {
                 receiptInfo = capture(postedReceiptInfoSlot),
                 storeAppUserID = any(),
                 marketplace = any(),
+                initiationSource = postReceiptInitiationSource,
                 onSuccess = captureLambda(),
                 onError = any()
             )
@@ -1339,6 +1399,7 @@ class PostReceiptHelperTest {
                 receiptInfo = capture(postedReceiptInfoSlot),
                 storeAppUserID = any(),
                 marketplace = any(),
+                initiationSource = initiationSource,
                 onSuccess = any(),
                 onError = captureLambda()
             )

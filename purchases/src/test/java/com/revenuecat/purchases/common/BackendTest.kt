@@ -7,6 +7,7 @@ package com.revenuecat.purchases.common
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.PostReceiptInitiationSource
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
@@ -130,6 +131,7 @@ class BackendTest {
         offeringIdentifier = "offering_a"
     )
     private val fetchToken = "fetch_token"
+    private val initiationSource = PostReceiptInitiationSource.PURCHASE
     private val defaultTimeout = 2000L
 
     private var receivedCustomerInfo: CustomerInfo? = null
@@ -415,7 +417,8 @@ class BackendTest {
             resultBody = null,
             observerMode = false,
             receiptInfo = basicReceiptInfo,
-            storeAppUserID = null
+            storeAppUserID = null,
+            initiationSource = initiationSource,
         )
 
         assertThat(receivedCustomerInfo).`as`("Received info is not null").isNotNull
@@ -429,7 +432,8 @@ class BackendTest {
             isRestore = false,
             observerMode = false,
             receiptInfo = basicReceiptInfo,
-            storeAppUserID = null
+            storeAppUserID = null,
+            initiationSource = initiationSource,
         )
 
         verify(exactly = 1) {
@@ -458,7 +462,8 @@ class BackendTest {
             isRestore = false,
             observerMode = false,
             receiptInfo = receiptInfo,
-            storeAppUserID = null
+            storeAppUserID = null,
+            initiationSource = initiationSource,
         )
 
         val expectedPricingPhases = receiptInfo.pricingPhases
@@ -534,7 +539,8 @@ class BackendTest {
             isRestore = false,
             observerMode = false,
             receiptInfo = receiptInfo,
-            storeAppUserID = null
+            storeAppUserID = null,
+            initiationSource = initiationSource,
         )
 
         assertThat(requestBodySlot.isCaptured).isTrue
@@ -577,7 +583,8 @@ class BackendTest {
             isRestore = false,
             observerMode = false,
             receiptInfo = receiptInfo,
-            storeAppUserID = null
+            storeAppUserID = null,
+            initiationSource = initiationSource,
         )
 
         assertThat(requestBodySlot.isCaptured).isTrue
@@ -602,6 +609,7 @@ class BackendTest {
             observerMode = true,
             receiptInfo = receiptInfo,
             storeAppUserID = null,
+            initiationSource = initiationSource,
         )
 
         assertThat(requestBodySlot.isCaptured).isTrue
@@ -627,11 +635,31 @@ class BackendTest {
             observerMode = true,
             receiptInfo = receiptInfo,
             storeAppUserID = expectedStoreUserId,
+            initiationSource = initiationSource,
         )
 
         assertThat(requestBodySlot.isCaptured).isTrue
         assertThat(requestBodySlot.captured.keys).contains("store_user_id")
         assertThat(requestBodySlot.captured["store_user_id"]).isEqualTo(expectedStoreUserId)
+    }
+
+    @Test
+    fun `postReceipt posts initiationSource`() {
+        mockPostReceiptResponseAndPost(
+            backend,
+            responseCode = 200,
+            isRestore = false,
+            clientException = null,
+            resultBody = null,
+            observerMode = true,
+            receiptInfo = ReceiptInfo(productIDs = productIDs, storeProduct = storeProduct),
+            storeAppUserID = null,
+            initiationSource = initiationSource,
+        )
+
+        assertThat(requestBodySlot.isCaptured).isTrue
+        assertThat(requestBodySlot.captured.keys).contains("initiation_source")
+        assertThat(requestBodySlot.captured["initiation_source"]).isEqualTo(initiationSource.postReceiptFieldValue)
     }
 
     @Test
@@ -644,7 +672,8 @@ class BackendTest {
             resultBody = null,
             observerMode = false,
             receiptInfo = basicReceiptInfo,
-            storeAppUserID = null
+            storeAppUserID = null,
+            initiationSource = initiationSource,
         )
 
         assertThat(receivedCustomerInfo).`as`("Received info is null").isNull()
@@ -662,6 +691,7 @@ class BackendTest {
             delayed = true,
             receiptInfo = basicReceiptInfo,
             storeAppUserID = null,
+            initiationSource = initiationSource,
             onSuccess = { _, _ ->
                 lock.countDown()
             },
@@ -674,6 +704,7 @@ class BackendTest {
             delayed = true,
             receiptInfo = basicReceiptInfo,
             storeAppUserID = null,
+            initiationSource = initiationSource,
             onSuccess = { _, _ ->
                 lock.countDown()
             },
@@ -728,6 +759,7 @@ class BackendTest {
             observerMode = false,
             receiptInfo = basicReceiptInfo,
             storeAppUserID = null,
+            initiationSource = initiationSource,
             onSuccess = { _, _ ->
                 mockResponse(
                     Endpoint.GetCustomerInfo(appUserID),
@@ -782,7 +814,8 @@ class BackendTest {
             resultBody = null,
             observerMode = true,
             receiptInfo = ReceiptInfo(productIDs),
-            storeAppUserID = null
+            storeAppUserID = null,
+            initiationSource = initiationSource,
         )
 
         assertThat(receivedCustomerInfo).`as`("Received info is not null").isNotNull
@@ -802,7 +835,8 @@ class BackendTest {
                 productIDs,
                 storeProduct = storeProduct
             ),
-            storeAppUserID = null
+            storeAppUserID = null,
+            initiationSource = initiationSource,
         )
 
         assertThat(receivedCustomerInfo).`as`("Received info is not null").isNotNull
@@ -833,6 +867,7 @@ class BackendTest {
             observerMode = false,
             receiptInfo = receiptInfo1,
             storeAppUserID = null,
+            initiationSource = initiationSource,
             onSuccess = { _, _ ->
                 lock.countDown()
             },
@@ -845,6 +880,7 @@ class BackendTest {
             observerMode = false,
             receiptInfo = receiptInfo2,
             storeAppUserID = null,
+            initiationSource = initiationSource,
             onSuccess = { _, _ ->
                 lock.countDown()
             },
@@ -893,6 +929,7 @@ class BackendTest {
             observerMode = false,
             receiptInfo = receiptInfo1,
             storeAppUserID = null,
+            initiationSource = initiationSource,
             onSuccess = { _, _ ->
                 lock.countDown()
             },
@@ -905,6 +942,7 @@ class BackendTest {
             observerMode = false,
             receiptInfo = receiptInfo2,
             storeAppUserID = null,
+            initiationSource = initiationSource,
             onSuccess = { _, _ ->
                 lock.countDown()
             },
@@ -933,6 +971,7 @@ class BackendTest {
             observerMode = false,
             receiptInfo = basicReceiptInfo,
             storeAppUserID = null,
+            initiationSource = initiationSource,
             onSuccess = { _, _ ->
                 lock.countDown()
             },
@@ -951,6 +990,7 @@ class BackendTest {
             observerMode = false,
             receiptInfo = receiptInfo2,
             storeAppUserID = null,
+            initiationSource = initiationSource,
             onSuccess = { _, _ ->
                 lock.countDown()
             },
@@ -985,6 +1025,7 @@ class BackendTest {
             observerMode = false,
             receiptInfo = receiptInfo,
             storeAppUserID = null,
+            initiationSource = initiationSource,
             onSuccess = { _, _ ->
                 lock.countDown()
             },
@@ -998,6 +1039,7 @@ class BackendTest {
             observerMode = false,
             receiptInfo = receiptInfo,
             storeAppUserID = null,
+            initiationSource = initiationSource,
             onSuccess = { _, _ ->
                 lock.countDown()
             },
@@ -1030,6 +1072,7 @@ class BackendTest {
                 storeProduct = storeProduct
             ),
             storeAppUserID = null,
+            initiationSource = initiationSource,
         )
 
         assertThat(receivedCustomerInfo).`as`("Received purchaser info is not null").isNotNull
@@ -1047,6 +1090,7 @@ class BackendTest {
             observerMode = false,
             receiptInfo = receiptInfo,
             storeAppUserID = null,
+            initiationSource = initiationSource,
             delayed = true,
             onSuccess = { _, _ ->
                 lock.countDown()
@@ -1059,6 +1103,7 @@ class BackendTest {
             isRestore = false,
             observerMode = false,
             receiptInfo = receiptInfo,
+            initiationSource = initiationSource,
             delayed = true,
             storeAppUserID = "store_app_user_id",
             onSuccess = { _, _ ->
@@ -1092,7 +1137,8 @@ class BackendTest {
                 }""".trimIndent(),
             observerMode = false,
             receiptInfo = ReceiptInfo(productIDs),
-            storeAppUserID = null
+            storeAppUserID = null,
+            initiationSource = initiationSource,
         )
 
         assertThat(receivedCustomerInfo).`as`("Received info is null").isNull()
@@ -1116,7 +1162,8 @@ class BackendTest {
                 }""".trimIndent(),
             observerMode = false,
             receiptInfo = ReceiptInfo(productIDs),
-            storeAppUserID = null
+            storeAppUserID = null,
+            initiationSource = initiationSource,
         )
 
         assertThat(receivedPostReceiptErrorHandlingBehavior).isEqualTo(PostReceiptErrorHandlingBehavior.SHOULD_BE_CONSUMED)
@@ -1135,7 +1182,8 @@ class BackendTest {
                 }""".trimIndent(),
             observerMode = false,
             receiptInfo = ReceiptInfo(productIDs),
-            storeAppUserID = null
+            storeAppUserID = null,
+            initiationSource = initiationSource,
         )
 
         assertThat(receivedPostReceiptErrorHandlingBehavior).isEqualTo(PostReceiptErrorHandlingBehavior.SHOULD_USE_OFFLINE_ENTITLEMENTS_AND_NOT_CONSUME)
@@ -1154,7 +1202,8 @@ class BackendTest {
                 }""".trimIndent(),
             observerMode = false,
             receiptInfo = ReceiptInfo(productIDs),
-            storeAppUserID = null
+            storeAppUserID = null,
+            initiationSource = initiationSource,
         )
 
         assertThat(receivedPostReceiptErrorHandlingBehavior).isEqualTo(PostReceiptErrorHandlingBehavior.SHOULD_NOT_CONSUME)
@@ -1173,7 +1222,8 @@ class BackendTest {
                 productIDs,
                 storeProduct = storeProduct
             ),
-            storeAppUserID = null
+            storeAppUserID = null,
+            initiationSource = initiationSource,
         )
 
         assertThat(headersSlot.isCaptured).isTrue
@@ -1195,6 +1245,7 @@ class BackendTest {
                 storeProduct = storeProduct
             ),
             storeAppUserID = null,
+            initiationSource = initiationSource,
             marketplace = "DE"
         )
 
@@ -1217,6 +1268,7 @@ class BackendTest {
                 storeProduct = storeProduct
             ),
             storeAppUserID = null,
+            initiationSource = initiationSource,
             marketplace = "US"
         )
 
@@ -1240,7 +1292,8 @@ class BackendTest {
                 productIDs,
                 storeProduct = storeProduct
             ),
-            storeAppUserID = null
+            storeAppUserID = null,
+            initiationSource = initiationSource,
         )
 
         val expectedPostFieldsToSign = listOf(
@@ -2276,6 +2329,7 @@ class BackendTest {
         observerMode: Boolean,
         receiptInfo: ReceiptInfo,
         storeAppUserID: String?,
+        initiationSource: PostReceiptInitiationSource,
         delayed: Boolean = false,
         marketplace: String? = null,
         onSuccess: (CustomerInfo, JSONObject?) -> Unit = onReceivePostReceiptSuccessHandler,
@@ -2301,6 +2355,7 @@ class BackendTest {
             receiptInfo = receiptInfo,
             storeAppUserID = storeAppUserID,
             marketplace = marketplace,
+            initiationSource = initiationSource,
             onSuccess = onSuccess,
             onError = onError
         )

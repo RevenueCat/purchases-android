@@ -29,6 +29,7 @@ class PostPendingTransactionsHelperTest {
 
     private val allowSharingPlayStoreAccount = true
     private val appUserId = "test-app-user-id"
+    private val initiationSource = PostReceiptInitiationSource.QUEUE
 
     private lateinit var appConfig: AppConfig
     private lateinit var deviceCache: DeviceCache
@@ -73,7 +74,7 @@ class PostPendingTransactionsHelperTest {
             billing.queryPurchases(any(), any(), any())
         }
         verify(exactly = 0) {
-            postTransactionWithProductDetailsHelper.postTransactions(any(), any(), any(), any(), any())
+            postTransactionWithProductDetailsHelper.postTransactions(any(), any(), any(), any(), any(), any())
         }
     }
 
@@ -121,6 +122,7 @@ class PostPendingTransactionsHelperTest {
                 listOf(activePurchase),
                 allowSharingPlayStoreAccount,
                 appUserId,
+                initiationSource,
                 any(),
                 any()
             )
@@ -178,7 +180,7 @@ class PostPendingTransactionsHelperTest {
         syncAndAssertSuccessful(null)
 
         verify(exactly = 0) {
-            postTransactionWithProductDetailsHelper.postTransactions(any(), any(), any(), any(), any())
+            postTransactionWithProductDetailsHelper.postTransactions(any(), any(), any(), any(), any(), any())
         }
     }
 
@@ -195,7 +197,7 @@ class PostPendingTransactionsHelperTest {
 
         verify(exactly = 0) { deviceCache.cleanPreviouslySentTokens(any()) }
         verify(exactly = 0) {
-            postTransactionWithProductDetailsHelper.postTransactions(any(), any(), any(), any(), any())
+            postTransactionWithProductDetailsHelper.postTransactions(any(), any(), any(), any(), any(), any())
         }
     }
 
@@ -242,6 +244,7 @@ class PostPendingTransactionsHelperTest {
                 allPurchases,
                 allowSharingPlayStoreAccount,
                 appUserId,
+                initiationSource,
                 captureLambda(),
                 any()
             )
@@ -291,6 +294,7 @@ class PostPendingTransactionsHelperTest {
                 allPurchases,
                 allowSharingPlayStoreAccount,
                 appUserId,
+                initiationSource,
                 capture(successSlot),
                 capture(errorSlot)
             )
@@ -314,6 +318,7 @@ class PostPendingTransactionsHelperTest {
                 transactions ?: any(),
                 allowSharingPlayStoreAccount,
                 appUserId,
+                initiationSource,
                 captureLambda(),
                 any()
             )

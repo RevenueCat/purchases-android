@@ -52,6 +52,8 @@ internal class PurchasesTest : BasePurchasesTest() {
     private val inAppPurchaseToken = "token_inapp"
     private val subProductId = "sub"
     private val subPurchaseToken = "token_sub"
+    private val initiationSource = PostReceiptInitiationSource.PURCHASE
+    private val restoreInitiationSource = PostReceiptInitiationSource.RESTORE
     private var receivedProducts: List<StoreProduct>? = null
 
     @Test
@@ -94,6 +96,7 @@ internal class PurchasesTest : BasePurchasesTest() {
                 storeProduct = any(),
                 isRestore = true,
                 appUserID = appUserId,
+                initiationSource = initiationSource,
                 onSuccess = any(),
                 onError = any(),
             )
@@ -135,6 +138,7 @@ internal class PurchasesTest : BasePurchasesTest() {
                 storeProduct = any(),
                 isRestore = false,
                 appUserID = appUserId,
+                initiationSource = initiationSource,
                 onSuccess = any(),
                 onError = any(),
             )
@@ -717,6 +721,7 @@ internal class PurchasesTest : BasePurchasesTest() {
                 isRestore = false,
                 appUserID = appUserId,
                 marketplace = null,
+                initiationSource = restoreInitiationSource,
                 onSuccess = any(),
                 onError = any()
             )
@@ -773,6 +778,7 @@ internal class PurchasesTest : BasePurchasesTest() {
                 isRestore = false,
                 appUserID = appUserId,
                 marketplace = null,
+                initiationSource = restoreInitiationSource,
                 onSuccess = any(),
                 onError = any()
             )
@@ -798,6 +804,7 @@ internal class PurchasesTest : BasePurchasesTest() {
                 isRestore = false,
                 appUserID = appUserId,
                 marketplace = null,
+                initiationSource = restoreInitiationSource,
                 onSuccess = any(),
                 onError = any()
             )
@@ -848,6 +855,7 @@ internal class PurchasesTest : BasePurchasesTest() {
                 isRestore = false,
                 appUserID = appUserId,
                 marketplace = null,
+                initiationSource = restoreInitiationSource,
                 onSuccess = any(),
                 onError = any()
             )
@@ -902,6 +910,7 @@ internal class PurchasesTest : BasePurchasesTest() {
                 isRestore = false,
                 appUserID = appUserId,
                 marketplace = null,
+                initiationSource = restoreInitiationSource,
                 onSuccess = any(),
                 onError = any()
             )
@@ -982,6 +991,7 @@ internal class PurchasesTest : BasePurchasesTest() {
                 isRestore = true,
                 appUserID = appUserId,
                 marketplace = null,
+                initiationSource = restoreInitiationSource,
                 onSuccess = any(),
                 onError = any(),
             )
@@ -1040,6 +1050,7 @@ internal class PurchasesTest : BasePurchasesTest() {
                 isRestore = true,
                 appUserID = appUserId,
                 marketplace = null,
+                initiationSource = restoreInitiationSource,
                 onSuccess = any(),
                 onError = any(),
             )
@@ -1111,6 +1122,7 @@ internal class PurchasesTest : BasePurchasesTest() {
                 storeProduct = null,
                 isRestore = true,
                 appUserID = appUserId,
+                initiationSource = restoreInitiationSource,
                 onSuccess = any(),
                 onError = any()
             )
@@ -1119,6 +1131,7 @@ internal class PurchasesTest : BasePurchasesTest() {
                 storeProduct = null,
                 isRestore = true,
                 appUserID = appUserId,
+                initiationSource = restoreInitiationSource,
                 onSuccess = any(),
                 onError = any()
             )
@@ -1174,7 +1187,9 @@ internal class PurchasesTest : BasePurchasesTest() {
             VerificationResult.NOT_REQUESTED
         )
         every {
-            mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(any(), any(), any(), any(), captureLambda(), any())
+            mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(
+                any(), any(), any(), any(), any(), captureLambda(), any(),
+            )
         } answers {
             lambda<SuccessfulPurchaseCallback>().captured.invoke(firstArg(), mockInfo)
         }

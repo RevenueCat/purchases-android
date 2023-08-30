@@ -25,6 +25,7 @@ class PostTransactionWithProductDetailsHelperTest {
     private val appUserID = "appUserID"
     private val productID = "productID"
     private val subscriptionOptionId = "monthly_base_plan"
+    private val initiationSource = PostReceiptInitiationSource.PURCHASE
     private val mockStoreProduct = stubStoreProduct(productID)
 
     private val mockSubsTransaction = createTransaction(ProductType.SUBS)
@@ -51,7 +52,8 @@ class PostTransactionWithProductDetailsHelperTest {
         postTransactionWithProductDetailsHelper.postTransactions(
             transactions = emptyList(),
             allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
-            appUserID = "appUserID",
+            appUserID = appUserID,
+            initiationSource = initiationSource,
             transactionPostSuccess = { _, _ -> fail("Should not be called") },
             transactionPostError = { _, _ -> fail("Should not be called") },
         )
@@ -66,7 +68,8 @@ class PostTransactionWithProductDetailsHelperTest {
         postTransactionWithProductDetailsHelper.postTransactions(
             transactions = transactions,
             allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
-            appUserID = "appUserID",
+            appUserID = appUserID,
+            initiationSource = initiationSource,
             transactionPostSuccess = { _, _ -> fail("Should not be called") },
             transactionPostError = { _, error -> receivedError = error },
         )
@@ -86,6 +89,7 @@ class PostTransactionWithProductDetailsHelperTest {
             transactions = transactions,
             allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
             appUserID = appUserID,
+            initiationSource = initiationSource,
             transactionPostSuccess = { _, _ -> fail("Should not be called") },
             transactionPostError = { _, _ -> errorCallCount++ },
         )
@@ -93,7 +97,7 @@ class PostTransactionWithProductDetailsHelperTest {
         assertThat(errorCallCount).isEqualTo(1)
         verify(exactly = 0) {
             postReceiptHelper.postTransactionAndConsumeIfNeeded(
-                any(), any(), any(), any(), any(), any(),
+                any(), any(), any(), any(), any(), any(), any(),
             )
         }
     }
@@ -107,6 +111,7 @@ class PostTransactionWithProductDetailsHelperTest {
             transactions = listOf(mockSubsTransaction),
             allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
             appUserID = appUserID,
+            initiationSource = initiationSource,
             transactionPostSuccess = { _, _ ->  },
             transactionPostError = { _, _ -> fail("Should be success") },
         )
@@ -117,6 +122,7 @@ class PostTransactionWithProductDetailsHelperTest {
                 null,
                 allowSharingPlayStoreAccount,
                 appUserID,
+                initiationSource,
                 any(),
                 any(),
             )
@@ -132,6 +138,7 @@ class PostTransactionWithProductDetailsHelperTest {
             transactions = listOf(mockInAppTransaction),
             allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
             appUserID = appUserID,
+            initiationSource = initiationSource,
             transactionPostSuccess = { _, _ ->  },
             transactionPostError = { _, _ -> fail("Should be success") },
         )
@@ -142,6 +149,7 @@ class PostTransactionWithProductDetailsHelperTest {
                 mockStoreProduct,
                 allowSharingPlayStoreAccount,
                 appUserID,
+                initiationSource,
                 any(),
                 any(),
             )
@@ -157,6 +165,7 @@ class PostTransactionWithProductDetailsHelperTest {
             transactions = listOf(mockSubsTransaction),
             allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
             appUserID = appUserID,
+            initiationSource = initiationSource,
             transactionPostSuccess = { _, _ ->  },
             transactionPostError = { _, _ -> fail("Should be success") },
         )
@@ -167,6 +176,7 @@ class PostTransactionWithProductDetailsHelperTest {
                 mockStoreProduct,
                 allowSharingPlayStoreAccount,
                 appUserID,
+                initiationSource,
                 any(),
                 any(),
             )
@@ -185,6 +195,7 @@ class PostTransactionWithProductDetailsHelperTest {
             transactions = listOf(mockSubsTransaction),
             allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
             appUserID = appUserID,
+            initiationSource = initiationSource,
             transactionPostSuccess = { storeTransaction, customerInfo ->
                 receivedStoreTransaction = storeTransaction
                 receivedCustomerInfo = customerInfo
@@ -252,6 +263,7 @@ class PostTransactionWithProductDetailsHelperTest {
                 storeProduct,
                 allowSharingPlayStoreAccount,
                 appUserID,
+                initiationSource,
                 captureLambda(),
                 any()
             )

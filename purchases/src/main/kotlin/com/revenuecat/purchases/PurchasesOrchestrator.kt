@@ -234,6 +234,7 @@ internal class PurchasesOrchestrator constructor(
                     this.allowSharingPlayStoreAccount,
                     appUserID,
                     marketplace = null,
+                    PostReceiptInitiationSource.RESTORE,
                     {
                         val logMessage = PurchaseStrings.PURCHASE_SYNCED_USER_ID.format(receiptID, amazonUserID)
                         log(LogIntent.PURCHASE, logMessage)
@@ -339,6 +340,7 @@ internal class PurchasesOrchestrator constructor(
                                 storeProduct = null,
                                 isRestore = true,
                                 appUserID = appUserID,
+                                initiationSource = PostReceiptInitiationSource.RESTORE,
                                 onSuccess = { _, info ->
                                     log(LogIntent.DEBUG, RestoreStrings.PURCHASE_RESTORED.format(purchase))
                                     if (sortedByTime.last() == purchase) {
@@ -779,6 +781,7 @@ internal class PurchasesOrchestrator constructor(
                     purchases,
                     allowSharingPlayStoreAccount,
                     appUserID,
+                    PostReceiptInitiationSource.PURCHASE,
                     transactionPostSuccess = callbackPair.first,
                     transactionPostError = callbackPair.second,
                 )
