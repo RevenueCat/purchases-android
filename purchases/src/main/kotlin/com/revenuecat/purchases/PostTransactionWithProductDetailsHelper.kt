@@ -16,10 +16,12 @@ internal class PostTransactionWithProductDetailsHelper(
     /**
      * The callbacks in this method are called for each transaction in the list.
      */
+    @Suppress("LongParameterList")
     fun postTransactions(
         transactions: List<StoreTransaction>,
         allowSharingPlayStoreAccount: Boolean,
         appUserID: String,
+        initiationSource: PostReceiptInitiationSource,
         transactionPostSuccess: (SuccessfulPurchaseCallback)? = null,
         transactionPostError: (ErrorPurchaseCallback)? = null,
     ) {
@@ -46,6 +48,7 @@ internal class PostTransactionWithProductDetailsHelper(
                             storeProduct = purchasedStoreProduct,
                             isRestore = allowSharingPlayStoreAccount,
                             appUserID = appUserID,
+                            initiationSource = initiationSource,
                             onSuccess = transactionPostSuccess,
                             onError = transactionPostError,
                         )
@@ -56,6 +59,7 @@ internal class PostTransactionWithProductDetailsHelper(
                             storeProduct = null,
                             isRestore = allowSharingPlayStoreAccount,
                             appUserID = appUserID,
+                            initiationSource = initiationSource,
                             onSuccess = transactionPostSuccess,
                             onError = transactionPostError,
                         )

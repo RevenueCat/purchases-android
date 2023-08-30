@@ -77,6 +77,7 @@ internal class PostPendingTransactionsHelper(
                 transactionsToSync,
                 allowSharingPlayStoreAccount,
                 appUserID,
+                PostReceiptInitiationSource.QUEUE,
                 transactionPostSuccess = { _, customerInfo ->
                     results.add(Result.Success(customerInfo))
                     callCompletionFromResults(transactionsToSync, results, onError, onSuccess)

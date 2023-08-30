@@ -2,6 +2,7 @@ package com.revenuecat.purchases.subscriberattributes
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.PostReceiptInitiationSource
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.VerificationResult
@@ -291,6 +292,7 @@ class SubscriberAttributesPosterTests {
     ).toBackendMap()
     private val fetchToken = "fetch_token"
     private val productID = "product_id"
+    private val initiationSource = PostReceiptInitiationSource.PURCHASE
 
     @Test
     fun `posting receipt with attributes works`() {
@@ -307,6 +309,7 @@ class SubscriberAttributesPosterTests {
             subscriberAttributes = mapOfSubscriberAttributes,
             receiptInfo = productInfo,
             storeAppUserID = null,
+            initiationSource = initiationSource,
             onSuccess = expectedOnSuccessPostReceipt,
             onError = unexpectedOnErrorPostReceipt
         )
@@ -333,6 +336,7 @@ class SubscriberAttributesPosterTests {
             subscriberAttributes = mapOfSubscriberAttributes,
             receiptInfo = productInfo,
             storeAppUserID = null,
+            initiationSource = initiationSource,
             onSuccess = expectedOnSuccessPostReceipt,
             onError = unexpectedOnErrorPostReceipt
         )
@@ -358,6 +362,7 @@ class SubscriberAttributesPosterTests {
             subscriberAttributes = emptyMap(),
             receiptInfo = productInfo,
             storeAppUserID = null,
+            initiationSource = initiationSource,
             onSuccess = expectedOnSuccessPostReceipt,
             onError = unexpectedOnErrorPostReceipt
         )
@@ -386,6 +391,7 @@ class SubscriberAttributesPosterTests {
             subscriberAttributes = emptyMap(),
             receiptInfo = productInfo,
             storeAppUserID = null,
+            initiationSource = initiationSource,
             onSuccess = expectedOnSuccessPostReceipt,
             onError = unexpectedOnErrorPostReceipt
         )
@@ -413,6 +419,7 @@ class SubscriberAttributesPosterTests {
             subscriberAttributes = emptyMap(),
             receiptInfo = productInfo,
             storeAppUserID = null,
+            initiationSource = initiationSource,
             onSuccess = unexpectedOnSuccessPostReceipt,
             onError = expectedOnErrorPostReceipt
         )
@@ -440,6 +447,7 @@ class SubscriberAttributesPosterTests {
             subscriberAttributes = emptyMap(),
             receiptInfo = productInfo,
             storeAppUserID = null,
+            initiationSource = initiationSource,
             onSuccess = unexpectedOnSuccessPostReceipt,
             onError = expectedOnErrorPostReceipt
         )

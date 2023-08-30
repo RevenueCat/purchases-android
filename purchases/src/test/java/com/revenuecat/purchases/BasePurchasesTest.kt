@@ -169,7 +169,7 @@ internal open class BasePurchasesTest {
     private fun mockPostReceiptHelper() {
         with(mockPostReceiptHelper) {
             every {
-                postTransactionAndConsumeIfNeeded(any(), any(), any(), any(), captureLambda(), any())
+                postTransactionAndConsumeIfNeeded(any(), any(), any(), any(), any(), captureLambda(), any())
             } answers {
                 lambda<SuccessfulPurchaseCallback>().captured.invoke(
                     firstArg(),
@@ -177,7 +177,7 @@ internal open class BasePurchasesTest {
                 )
             }
             every {
-                postTokenWithoutConsuming(any(), any(), any(), any(), any(), any(), captureLambda(), any())
+                postTokenWithoutConsuming(any(), any(), any(), any(), any(), any(), any(), captureLambda(), any())
             } answers {
                 lambda<(CustomerInfo) -> Unit>().captured.invoke(mockInfo)
             }

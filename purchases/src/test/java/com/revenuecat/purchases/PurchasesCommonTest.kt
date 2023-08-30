@@ -66,6 +66,8 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
     private val subProductId = "sub"
     private val subPurchaseToken = "token_sub"
 
+    private val initiationSource = PostReceiptInitiationSource.PURCHASE
+
     private val mockLifecycle = mockk<Lifecycle>()
     private val mockLifecycleOwner = mockk<LifecycleOwner>()
 
@@ -261,7 +263,9 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         val oldPurchase = mockPurchaseFound()
         mockQueryingProductDetails(oldPurchase.productIds.first(), ProductType.SUBS, null)
         every {
-            mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(oldPurchase, any(), false, appUserId, captureLambda(), any())
+            mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(
+                oldPurchase, any(), isRestore = false, appUserId, initiationSource, captureLambda(), any(),
+            )
         } answers {
             lambda<SuccessfulPurchaseCallback>().captured.invoke(oldPurchase, mockk())
         }
@@ -289,6 +293,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
                 storeProduct = any(),
                 isRestore = false,
                 appUserID = appUserId,
+                initiationSource = initiationSource,
                 onSuccess = any(),
                 onError = any()
             )
@@ -571,7 +576,9 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
 
         allPurchases.forEach { transaction ->
             every {
-                mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(transaction, any(), false, appUserId, captureLambda(), any())
+                mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(
+                    transaction, any(), isRestore = false, appUserId, initiationSource, captureLambda(), any(),
+                )
             } answers {
                 lambda<SuccessfulPurchaseCallback>().captured.invoke(transaction, mockk())
             }
@@ -585,6 +592,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
                 storeProduct = match { it.purchasingData.productId == inAppProductId },
                 isRestore = false,
                 appUserID = appUserId,
+                initiationSource = initiationSource,
                 onSuccess = any(),
                 onError = any()
             )
@@ -593,6 +601,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
                 storeProduct = match { it.purchasingData.productId == subProductId },
                 isRestore = false,
                 appUserID = appUserId,
+                initiationSource = initiationSource,
                 onSuccess = any(),
                 onError = any()
             )
@@ -609,6 +618,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
                 storeProduct = any(),
                 isRestore = any(),
                 appUserID = any(),
+                initiationSource = any(),
                 onSuccess = any(),
                 onError = any()
             )
@@ -1114,16 +1124,13 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         )
 
         capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(transactions)
-        val productInfo = ReceiptInfo(
-            productIDs = listOf(productId),
-            offeringIdentifier = "offering_a"
-        )
         verify(exactly = 1) {
             mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(
                 purchase = transactions[0],
                 storeProduct = null,
                 isRestore = false,
                 appUserID = appUserId,
+                initiationSource = initiationSource,
                 onSuccess = any(),
                 onError = any()
             )
@@ -1382,6 +1389,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
                 storeProduct = any(),
                 isRestore = true,
                 appUserID = randomAppUserId,
+                initiationSource = initiationSource,
                 onSuccess = any(),
                 onError = any()
             )
@@ -1404,6 +1412,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
                 storeProduct = any(),
                 isRestore = false,
                 appUserID = appUserId,
+                initiationSource = initiationSource,
                 onSuccess = any(),
                 onError = any()
             )

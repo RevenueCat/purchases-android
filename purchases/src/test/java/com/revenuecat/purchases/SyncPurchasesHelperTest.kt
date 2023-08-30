@@ -20,6 +20,7 @@ import org.junit.runner.RunWith
 class SyncPurchasesHelperTest {
 
     private val appUserID = "test-app-user-id"
+    private val initiationSource = PostReceiptInitiationSource.RESTORE
     private val testError = PurchasesError(PurchasesErrorCode.CustomerInfoError)
     private val customerInfoMock = mockk<CustomerInfo>()
     private val appInBackground = false
@@ -66,7 +67,7 @@ class SyncPurchasesHelperTest {
         assertThat(receivedCustomerInfo).isEqualTo(customerInfoMock)
         verify(exactly = 0) {
             postReceiptHelper.postTokenWithoutConsuming(
-                any(), any(), any(), any(), any(), any(), any(), any()
+                any(), any(), any(), any(), any(), any(), any(), any(), any(),
             )
         }
     }
@@ -102,7 +103,7 @@ class SyncPurchasesHelperTest {
         assertThat(error).isNotNull
         verify(exactly = 0) {
             postReceiptHelper.postTokenWithoutConsuming(
-                any(), any(), any(), any(), any(), any(), any(), any()
+                any(), any(), any(), any(), any(), any(), any(), any(), any(),
             )
         }
     }
@@ -124,7 +125,9 @@ class SyncPurchasesHelperTest {
         mockBillingQueryAllPurchasesSuccess(listOf(purchase1, purchase2))
 
         every {
-            postReceiptHelper.postTokenWithoutConsuming(any(), any(), any(), any(), any(), any(), captureLambda(), any())
+            postReceiptHelper.postTokenWithoutConsuming(
+                any(), any(), any(), any(), any(), any(), any(), captureLambda(), any(),
+            )
         } answers {
             lambda<(CustomerInfo) -> Unit>().captured.invoke(mockk())
         }
@@ -146,6 +149,7 @@ class SyncPurchasesHelperTest {
                 isRestore = isRestore,
                 appUserID = appUserID,
                 marketplace = null,
+                initiationSource = initiationSource,
                 onSuccess = any(),
                 onError = any()
             )
@@ -156,6 +160,7 @@ class SyncPurchasesHelperTest {
                 isRestore = isRestore,
                 appUserID = appUserID,
                 marketplace = "test-marketplace",
+                initiationSource = initiationSource,
                 onSuccess = any(),
                 onError = any()
             )
@@ -179,7 +184,9 @@ class SyncPurchasesHelperTest {
         mockBillingQueryAllPurchasesSuccess(listOf(purchase1, purchase2))
 
         every {
-            postReceiptHelper.postTokenWithoutConsuming(any(), any(), any(), any(), any(), any(), any(), captureLambda())
+            postReceiptHelper.postTokenWithoutConsuming(
+                any(), any(), any(), any(), any(), any(), any(), any(), captureLambda(),
+            )
         } answers {
             lambda<(PurchasesError) -> Unit>().captured.invoke(testError)
         }
@@ -201,6 +208,7 @@ class SyncPurchasesHelperTest {
                 isRestore = isRestore,
                 appUserID = appUserID,
                 marketplace = null,
+                initiationSource = initiationSource,
                 onSuccess = any(),
                 onError = any()
             )
@@ -211,6 +219,7 @@ class SyncPurchasesHelperTest {
                 isRestore = isRestore,
                 appUserID = appUserID,
                 marketplace = "test-marketplace",
+                initiationSource = initiationSource,
                 onSuccess = any(),
                 onError = any()
             )

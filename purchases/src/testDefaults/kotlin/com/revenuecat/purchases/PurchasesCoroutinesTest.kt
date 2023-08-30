@@ -283,6 +283,7 @@ internal class PurchasesCoroutinesTest : BasePurchasesTest() {
                 any(),
                 true,
                 appUserId,
+                PostReceiptInitiationSource.RESTORE,
                 onSuccess = captureLambda(),
                 any()
             )
