@@ -29,7 +29,7 @@ class PostPendingTransactionsHelperTest {
 
     private val allowSharingPlayStoreAccount = true
     private val appUserId = "test-app-user-id"
-    private val initiationSource = PostReceiptInitiationSource.QUEUE
+    private val initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES
 
     private lateinit var appConfig: AppConfig
     private lateinit var deviceCache: DeviceCache

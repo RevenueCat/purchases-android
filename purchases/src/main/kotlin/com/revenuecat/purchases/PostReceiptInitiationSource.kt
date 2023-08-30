@@ -3,13 +3,13 @@ package com.revenuecat.purchases
 internal enum class PostReceiptInitiationSource {
     RESTORE,
     PURCHASE,
-    QUEUE,
+    UNSYNCED_ACTIVE_PURCHASES,
     ;
 
     val postReceiptFieldValue: String
         get() = when (this) {
             RESTORE -> "restore"
             PURCHASE -> "purchase"
-            QUEUE -> "queue"
+            UNSYNCED_ACTIVE_PURCHASES -> "unsynced_active_purchases"
         }
 }

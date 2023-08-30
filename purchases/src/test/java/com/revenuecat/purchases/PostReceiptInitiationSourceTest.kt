@@ -12,6 +12,7 @@ class PostReceiptInitiationSourceTest {
     fun `initiation source have correct postReceiptFieldValue`() {
         assertThat(PostReceiptInitiationSource.PURCHASE.postReceiptFieldValue).isEqualTo("purchase")
         assertThat(PostReceiptInitiationSource.RESTORE.postReceiptFieldValue).isEqualTo("restore")
-        assertThat(PostReceiptInitiationSource.QUEUE.postReceiptFieldValue).isEqualTo("queue")
+        assertThat(PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES.postReceiptFieldValue)
+            .isEqualTo("unsynced_active_purchases")
     }
 }
