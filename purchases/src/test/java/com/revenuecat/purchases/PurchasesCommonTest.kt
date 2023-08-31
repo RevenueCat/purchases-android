@@ -44,11 +44,13 @@ import io.mockk.mockk
 import io.mockk.mockkConstructor
 import io.mockk.mockkStatic
 import io.mockk.slot
+import io.mockk.unmockkStatic
 import io.mockk.verify
 import io.mockk.verifyAll
 import io.mockk.verifyOrder
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.AssertionsForClassTypes
+import org.junit.After
 import org.junit.Assert.fail
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -71,6 +73,10 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
     private val mockLifecycle = mockk<Lifecycle>()
     private val mockLifecycleOwner = mockk<LifecycleOwner>()
 
+    @After
+    fun removeMocks() {
+        unmockkStatic(BillingClient::class)
+    }
     @Test
     fun canBeCreated() {
         assertThat(purchases).isNotNull

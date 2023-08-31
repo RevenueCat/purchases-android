@@ -42,6 +42,7 @@ import io.mockk.just
 import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.slot
+import io.mockk.unmockkStatic
 import org.junit.After
 import org.junit.Before
 
@@ -123,6 +124,7 @@ internal open class BasePurchasesTest {
             mockCustomerInfoUpdateHandler,
             mockPostPendingTransactionsHelper,
         )
+        unmockkStatic(ProcessLifecycleOwner::class)
     }
 
     // region Private Methods

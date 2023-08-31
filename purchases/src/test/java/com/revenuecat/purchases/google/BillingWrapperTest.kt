@@ -63,10 +63,12 @@ import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.runs
 import io.mockk.slot
+import io.mockk.unmockkStatic
 import io.mockk.verify
 import io.mockk.verifySequence
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.AssertionsForClassTypes.fail
+import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -122,7 +124,6 @@ class BillingWrapperTest {
 
     @Before
     fun setup() {
-        clearAllMocks()
         storeProducts = null
         purchasesUpdatedListener = null
         billingClientStateListener = null
@@ -182,6 +183,11 @@ class BillingWrapperTest {
         every {
             mockActivity.intent
         } returns Intent()
+    }
+
+    @After
+    fun tearDown() {
+        clearAllMocks()
     }
 
     @Test

@@ -8,7 +8,9 @@ import com.revenuecat.purchases.common.subscriberattributes.SubscriberAttributeK
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
+import io.mockk.unmockkStatic
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.After
 import org.junit.Before
 import org.junit.Test
 
@@ -30,6 +32,12 @@ class AmazonDeviceIdentifiersFetcherTests {
         every {
             Log.e(any(), any())
         } returns 0
+    }
+
+    @After
+    fun tearDown() {
+        unmockkStatic(Settings.Secure::class)
+        unmockkStatic(Log::class)
     }
 
     @Test
