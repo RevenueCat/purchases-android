@@ -1,0 +1,70 @@
+plugins {
+    alias(libs.plugins.android.application)
+    alias(libs.plugins.kotlin.android)
+}
+
+apply from: "$rootProject.projectDir/base-application.gradle"
+
+android {
+    namespace 'com.revenuecat.paywallstester'
+
+    defaultConfig {
+        applicationId "com.revenuecat.purchases_sample"
+        minSdk 21
+        versionCode 1
+        versionName "1.0"
+
+        // Library modules have a dimension used to separate different apis.
+        // Our applications however don't need the extra flavor. This makes sure that we use the
+        // default flavor.
+        missingDimensionStrategy 'apis', 'defaults'
+
+        vectorDrawables {
+            useSupportLibrary true
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+    kotlinOptions {
+        jvmTarget = '1.8'
+    }
+    buildFeatures {
+        compose true
+    }
+    composeOptions {
+        kotlinCompilerExtensionVersion '1.4.0-alpha02'
+    }
+    packaging {
+        resources {
+            excludes += '/META-INF/{AL2.0,LGPL2.1}'
+        }
+    }
+}
+
+dependencies {
+    implementation project(path: ':purchases')
+    implementation project(path: ':feature:amazon')
+    implementation project(path: ':ui:debugview')
+
+    implementation libs.androidx.core
+    implementation platform(libs.kotlin.bom)
+    implementation libs.androidx.lifecycle.runtime.ktx
+    implementation platform(libs.compose.bom)
+    implementation libs.compose.ui
+    implementation libs.compose.ui.graphics
+    implementation libs.compose.ui.tooling.preview
+    implementation libs.compose.material3
+    implementation libs.compose.material
+    implementation libs.navigation.compose
+    debugImplementation libs.compose.ui.tooling
+    debugImplementation libs.androidx.test.compose.manifest
+}
