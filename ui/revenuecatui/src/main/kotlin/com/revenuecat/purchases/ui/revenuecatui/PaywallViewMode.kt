@@ -1,6 +1,6 @@
 package com.revenuecat.purchases.ui.revenuecatui
 
-enum class PaywallViewMode {
+internal enum class PaywallViewMode {
     FULL_SCREEN,
     FOOTER,
     FOOTER_CONDENSED,
