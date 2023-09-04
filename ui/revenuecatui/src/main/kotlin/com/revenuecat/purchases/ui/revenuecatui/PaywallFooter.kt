@@ -8,6 +8,6 @@ import androidx.compose.runtime.Composable
  */
 @Suppress("unused")
 @Composable
-fun PaywallFooter(options: PaywallFooterOptions) {
+fun PaywallFooter(options: PaywallFooterOptions = PaywallFooterOptions.Builder().build()) {
     // WIP
 }
