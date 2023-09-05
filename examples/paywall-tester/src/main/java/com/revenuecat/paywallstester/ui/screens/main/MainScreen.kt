@@ -4,7 +4,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.BottomNavigation
 import androidx.compose.material.BottomNavigationItem
 import androidx.compose.material.Icon
-import androidx.compose.material.TopAppBar
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -12,48 +11,33 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.revenuecat.paywallstester.ui.screens.appinfo.AppInfoScreen
-import com.revenuecat.paywallstester.ui.screens.offerings.OfferingsScreen
-import com.revenuecat.paywallstester.ui.screens.paywalls.PaywallsScreen
+import com.revenuecat.paywallstester.ui.screens.main.appinfo.AppInfoScreen
+import com.revenuecat.paywallstester.ui.screens.main.offerings.OfferingsScreen
+import com.revenuecat.paywallstester.ui.screens.main.paywalls.PaywallsScreen
+import com.revenuecat.purchases.Offering
 
 @Composable
 fun MainScreen(
+    navigateToPaywallScreen: (Offering?) -> Unit,
     navController: NavHostController = rememberNavController(),
 ) {
     Scaffold(
-        topBar = {
-            val currentRoute = currentRoute(navController)
-            TopAppBar(
-                title = {
-                    Text(
-                        text = currentRoute,
-                        letterSpacing = 1.sp,
-                        fontWeight = FontWeight.Black,
-                    )
-                },
-                backgroundColor = Color.Transparent,
-                elevation = 0.dp,
-            )
-        },
         bottomBar = { BottomBarNavigation(navController) },
     ) {
-        MainNavHost(navController, Modifier.padding(it))
+        MainNavHost(navController, navigateToPaywallScreen, Modifier.padding(it))
     }
 }
 
 @Preview
 @Composable
 fun MainScreenPreview() {
-    MainScreen()
+    MainScreen(navigateToPaywallScreen = {})
 }
 
 private val bottomNavigationItems = listOf(
@@ -65,6 +49,7 @@ private val bottomNavigationItems = listOf(
 @Composable
 private fun MainNavHost(
     navController: NavHostController,
+    navigateToPaywallScreen: (Offering?) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     NavHost(
@@ -79,7 +64,7 @@ private fun MainNavHost(
             PaywallsScreen()
         }
         composable(Tab.Offerings.route) {
-            OfferingsScreen()
+            OfferingsScreen(tappedOnOffering = { offering -> navigateToPaywallScreen(offering) })
         }
     }
 }

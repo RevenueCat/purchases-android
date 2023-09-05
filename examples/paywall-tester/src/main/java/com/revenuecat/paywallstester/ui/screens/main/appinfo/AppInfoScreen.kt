@@ -1,4 +1,4 @@
-package com.revenuecat.paywallstester.ui.screens.appinfo
+package com.revenuecat.paywallstester.ui.screens.main.appinfo
 
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
