@@ -11,6 +11,7 @@ import androidx.navigation.navArgument
 import com.revenuecat.paywallstester.ui.screens.AppScreen
 import com.revenuecat.paywallstester.ui.screens.main.MainScreen
 import com.revenuecat.paywallstester.ui.screens.paywall.PaywallScreen
+import com.revenuecat.paywallstester.ui.screens.paywall.PaywallScreenViewModel
 
 @Composable
 fun PaywallTesterApp(
@@ -35,11 +36,10 @@ private fun AppNavHost(
             })
         }
         composable(
-            route = AppScreen.Paywall.route.plus("/{offering_id}"),
-            arguments = listOf(navArgument("offering_id") { type = NavType.StringType }),
+            route = AppScreen.Paywall.route.plus("/{${PaywallScreenViewModel.OFFERING_ID_KEY}}"),
+            arguments = listOf(navArgument(PaywallScreenViewModel.OFFERING_ID_KEY) { type = NavType.StringType }),
         ) {
-            val offeringId = it.arguments?.getString("offering_id")
-            PaywallScreen(offeringId)
+            PaywallScreen()
         }
     }
 }
