@@ -3,15 +3,18 @@ package com.revenuecat.purchases.ui.revenuecatui
 import android.app.Activity
 import android.util.Log
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PurchaseParams
 import com.revenuecat.purchases.Purchases
-import com.revenuecat.purchases.getOfferingsWith
-import com.revenuecat.purchases.purchaseWith
+import com.revenuecat.purchases.PurchasesException
+import com.revenuecat.purchases.awaitOfferings
+import com.revenuecat.purchases.awaitPurchase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 
 internal interface PaywallViewModel {
     val state: StateFlow<PaywallViewState>
@@ -34,30 +37,31 @@ internal class PaywallViewModelImpl(offering: Offering?) : ViewModel(), PaywallV
     }
 
     override fun purchasePackage(activity: Activity, packageToPurchase: Package) {
-        Purchases.sharedInstance.purchaseWith(
-            purchaseParams = PurchaseParams.Builder(activity, packageToPurchase).build(),
-            onError = { error, _ ->
-                Log.e("PaywallTester", "Error purchasing package: $error")
-            },
-            onSuccess = { purchase, _ ->
-                Log.i("PaywallTester", "Purchased package: $purchase")
-            },
-        )
+        viewModelScope.launch {
+            try {
+                val purchaseResult = Purchases.sharedInstance.awaitPurchase(
+                    PurchaseParams.Builder(activity, packageToPurchase).build(),
+                )
+                Log.i("PaywallTester", "Purchased package: ${purchaseResult.storeTransaction}")
+            } catch (e: PurchasesException) {
+                Log.e("PaywallTester", "Error purchasing package: $e")
+            }
+        }
     }
 
     private fun updateOffering() {
-        Purchases.sharedInstance.getOfferingsWith(
-            onError = { error ->
-                _state.value = PaywallViewState.Error(error.toString())
-            },
-            onSuccess = { offerings ->
+        viewModelScope.launch {
+            try {
+                val offerings = Purchases.sharedInstance.awaitOfferings()
                 val currentOffering = offerings.current
                 if (currentOffering == null) {
                     _state.value = PaywallViewState.Error("No offering or current offering")
                 } else {
                     _state.value = PaywallViewState.Loaded(currentOffering)
                 }
-            },
-        )
+            } catch (e: PurchasesException) {
+                _state.value = PaywallViewState.Error(e.toString())
+            }
+        }
     }
 }

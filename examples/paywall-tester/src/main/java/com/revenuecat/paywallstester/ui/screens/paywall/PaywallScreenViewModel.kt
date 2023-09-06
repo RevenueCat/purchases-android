@@ -3,12 +3,15 @@ package com.revenuecat.paywallstester.ui.screens.paywall
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.SavedStateHandle
+import androidx.lifecycle.viewModelScope
 import com.revenuecat.purchases.Purchases
-import com.revenuecat.purchases.getOfferingsWith
+import com.revenuecat.purchases.PurchasesException
+import com.revenuecat.purchases.awaitOfferings
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 
 interface PaywallScreenViewModel {
     companion object {
@@ -33,11 +36,9 @@ class PaywallScreenViewModelImpl(
     }
 
     private fun updateOffering() {
-        Purchases.sharedInstance.getOfferingsWith(
-            onError = { error ->
-                _state.update { PaywallScreenState.Error(error.toString()) }
-            },
-            onSuccess = { offerings ->
+        viewModelScope.launch {
+            try {
+                val offerings = Purchases.sharedInstance.awaitOfferings()
                 val offeringToLoad = offeringId?.let {
                     offerings.all[it]
                 } ?: offerings.current
@@ -50,7 +51,9 @@ class PaywallScreenViewModelImpl(
                         PaywallScreenState.Loaded(offeringToLoad)
                     }
                 }
-            },
-        )
+            } catch (e: PurchasesException) {
+                _state.update { PaywallScreenState.Error(e.toString()) }
+            }
+        }
     }
 }
