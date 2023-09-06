@@ -1,6 +1,8 @@
 [versions]
 agp = "8.1.0"
 kotlin = "1.7.21"
+# Can't update until we use more recent kotlin. 1.5.0 uses Kotlin 1.8.0
+kotlinxSerializationJSON = "1.4.1"
 buildTools = "33.0.2"
 billing = "6.0.1"
 lifecycle = "2.5.0"
@@ -39,6 +41,7 @@ detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
 dokka = { id ="org.jetbrains.dokka", version.ref = "dokka"}
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-parcelize = { id = "org.jetbrains.kotlin.plugin.parcelize", version.ref = "kotlin" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover"}
 mavenPublish = { id = "com.vanniktech.maven.publish", version.ref = "mavenPublish" }
 paparazzi = { id = "app.cash.paparazzi", version.ref = "paparrazzi" }
@@ -80,6 +83,7 @@ billing = { module = "com.android.billingclient:billing" , version.ref = "billin
 detekt-formatting = { module = "io.gitlab.arturbosch.detekt:detekt-formatting", version.ref = "detekt" }
 
 kotlin-stdlib = { module = "org.jetbrains.kotlin:kotlin-stdlib", version.ref = "kotlin" }
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerializationJSON"}
 
 material = { module = "com.google.android.material:material", version.ref = "material" }
 
