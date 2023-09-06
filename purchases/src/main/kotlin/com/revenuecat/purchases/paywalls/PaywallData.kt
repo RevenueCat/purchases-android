@@ -10,6 +10,7 @@ import java.net.URL
  *
  * @see [Paywalls Documentation](https://rev.cat/paywalls)
  */
+@Serializable
 data class PaywallData(
     /**
      * The type of template used to display this paywall.
@@ -24,7 +25,7 @@ data class PaywallData(
     /**
      * The base remote URL where assets for this paywall are stored.
      */
-    @SerialName("asset_base_url") val assetBaseURL: URL,
+    @SerialName("asset_base_url") @Serializable(with = URLSerializer::class) val assetBaseURL: URL,
     @SerialName("localizedStrings") internal val localization: Map<String, LocalizedConfiguration>,
 ) {
     /**
