@@ -1,4 +1,4 @@
-package com.revenuecat.paywallstester.ui.screens.paywalls
+package com.revenuecat.paywallstester.ui.screens.main.paywalls
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxHeight

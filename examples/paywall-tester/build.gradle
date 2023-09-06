@@ -9,7 +9,7 @@ android {
     namespace 'com.revenuecat.paywallstester'
 
     defaultConfig {
-        applicationId "com.revenuecat.purchases_sample"
+        applicationId "com.revenuecat.paywall_tester"
         minSdk 21
         versionCode 1
         versionName "1.0"
@@ -64,6 +64,7 @@ dependencies {
     implementation libs.compose.ui.tooling.preview
     implementation libs.compose.material3
     implementation libs.compose.material
+    implementation libs.compose.window.size
     implementation libs.navigation.compose
     debugImplementation libs.compose.ui.tooling
     debugImplementation libs.androidx.test.compose.manifest
