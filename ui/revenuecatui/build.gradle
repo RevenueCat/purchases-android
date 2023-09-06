@@ -1,0 +1,52 @@
+plugins {
+    alias libs.plugins.android.library
+    alias libs.plugins.kotlin.android
+}
+
+
+// Commenting out until the library is ready to be published
+//if (!project.getProperties()["ANDROID_VARIANT_TO_PUBLISH"].contains("customEntitlementComputation")) {
+//    apply plugin: "com.vanniktech.maven.publish"
+//}
+
+apply from: "$rootProject.projectDir/library.gradle"
+
+android {
+    namespace 'com.revenuecat.purchases.ui.revenuecatui'
+
+    flavorDimensions = ["apis"]
+    productFlavors {
+        defaults {
+            dimension "apis"
+        }
+    }
+
+    defaultConfig {
+        minSdkVersion 21 // Compose requires minSdkVersion 21
+    }
+
+    buildFeatures {
+        compose true
+    }
+    composeOptions {
+        kotlinCompilerExtensionVersion '1.4.0-alpha02'
+    }
+}
+
+dependencies {
+    implementation project(path: ':purchases')
+
+    implementation(platform(libs.kotlin.bom))
+    implementation libs.androidx.core
+    implementation platform(libs.compose.bom)
+    implementation libs.compose.ui
+    implementation libs.compose.ui.graphics
+    implementation libs.compose.ui.tooling.preview
+    implementation libs.compose.material
+    implementation libs.compose.material3
+    implementation libs.androidx.lifecycle.runtime.ktx
+    implementation libs.androidx.lifecycle.viewmodel
+    implementation libs.androidx.lifecycle.viewmodel.compose
+    debugImplementation libs.compose.ui.tooling
+    debugImplementation libs.androidx.test.compose.manifest
+}
