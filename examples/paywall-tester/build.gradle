@@ -9,7 +9,7 @@ android {
     namespace 'com.revenuecat.paywallstester'
 
     defaultConfig {
-        applicationId "com.revenuecat.purchases_sample"
+        applicationId "com.revenuecat.paywall_tester"
         minSdk 21
         versionCode 1
         versionName "1.0"
