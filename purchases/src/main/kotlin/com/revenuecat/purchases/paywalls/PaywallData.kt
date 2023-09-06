@@ -26,7 +26,9 @@ data class PaywallData(
      * The base remote URL where assets for this paywall are stored.
      */
     @SerialName("asset_base_url") @Serializable(with = URLSerializer::class) val assetBaseURL: URL,
-    @SerialName("localizedStrings") internal val localization: Map<String, LocalizedConfiguration>,
+    // TODO-PAYWALLS: do we need this one?
+    @SerialName("default_locale") val defaultLocale: String,
+    @SerialName("localized_strings") internal val localization: Map<String, LocalizedConfiguration>,
 ) {
     /**
      * Generic configuration for any paywall.
@@ -162,7 +164,7 @@ data class PaywallData(
         /**
          * The subtitle of the paywall screen.
          */
-        val subtitle: String?,
+        val subtitle: String? = null,
 
         /**
          * The content of the main action button for purchasing a subscription.
@@ -173,7 +175,7 @@ data class PaywallData(
          * The content of the main action button for purchasing a subscription when an intro offer is available.
          * If `null`, no information regarding trial eligibility will be displayed.
          */
-        @SerialName("call_to_action_with_intro_offer") val callToActionWithIntroOffer: String?,
+        @SerialName("call_to_action_with_intro_offer") val callToActionWithIntroOffer: String? = null,
 
         /**
          * Description for the offer to be purchased.
@@ -184,17 +186,17 @@ data class PaywallData(
          * Description for the offer to be purchased when an intro offer is available.
          * If `null`, no information regarding trial eligibility will be displayed.
          */
-        @SerialName("offer_details_with_intro_offer") val offerDetailsWithIntroOffer: String?,
+        @SerialName("offer_details_with_intro_offer") val offerDetailsWithIntroOffer: String? = null,
 
         /**
          * The name representing each of the packages, most commonly a variable.
          */
-        @SerialName("offer_name") val offerName: String?,
+        @SerialName("offer_name") val offerName: String? = null,
 
         /**
          * An optional list of features that describe this paywall.
          */
-        val features: List<Feature>,
+        val features: List<Feature> = emptyList(),
     ) {
         /**
          * An item to be showcased in a paywall.

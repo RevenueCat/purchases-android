@@ -15,6 +15,11 @@ import org.json.JSONObject
 
 internal abstract class OfferingParser {
 
+    // TODO-PAYWALLS: uncomment after testing
+    private val json = Json {
+//        ignoreUnknownKeys = true
+    }
+
     protected abstract fun findMatchingProduct(
         productsById: Map<String, List<StoreProduct>>,
         packageJson: JSONObject,
@@ -59,7 +64,7 @@ internal abstract class OfferingParser {
         val paywallDataJson = offeringJson.optJSONObject("paywall")
 
         val paywallData = paywallDataJson?.let {
-            Json.decodeFromString<PaywallData>(it.toString())
+            json.decodeFromString<PaywallData>(it.toString())
         }
 
         return if (availablePackages.isNotEmpty()) {
