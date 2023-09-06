@@ -24,10 +24,20 @@ android {
         }
     }
 
+    signingConfigs {
+        release {
+            storeFile file('keystore')
+            storePassword project.properties['releaseKeystorePassword']
+            keyAlias project.properties['releaseKeyAlias']
+            keyPassword project.properties['releaseKeyPassword']
+        }
+    }
+
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.release
         }
     }
     compileOptions {
@@ -54,6 +64,7 @@ dependencies {
     implementation project(path: ':purchases')
     implementation project(path: ':feature:amazon')
     implementation project(path: ':ui:debugview')
+    implementation project(path: ':ui:revenuecatui')
 
     implementation libs.androidx.core
     implementation platform(libs.kotlin.bom)

@@ -5,16 +5,32 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.revenuecat.purchases.ui.revenuecatui.PaywallView
+import com.revenuecat.purchases.ui.revenuecatui.PaywallViewOptions
 
 @Composable
-fun PaywallScreen(offeringId: String? = null) {
+fun PaywallScreen(
+    viewModel: PaywallScreenViewModel = viewModel<PaywallScreenViewModelImpl>(),
+) {
     Column(
         modifier = Modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
-        Text(text = "Paywall screen offeringId: $offeringId")
+        when (val state = viewModel.state.collectAsState().value) {
+            is PaywallScreenState.Loading -> {
+                Text(text = "Loading...")
+            }
+            is PaywallScreenState.Error -> {
+                Text(text = "Error: ${state.errorMessage}")
+            }
+            is PaywallScreenState.Loaded -> {
+                PaywallView(PaywallViewOptions.Builder().setOffering(state.offering).build())
+            }
+        }
     }
 }

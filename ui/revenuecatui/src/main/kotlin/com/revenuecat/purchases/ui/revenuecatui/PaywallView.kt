@@ -8,6 +8,8 @@ import androidx.compose.runtime.Composable
  */
 @Suppress("unused")
 @Composable
-fun PaywallView(options: PaywallViewOptions = PaywallViewOptions.Builder().build()) {
-    // WIP
+fun PaywallView(
+    options: PaywallViewOptions = PaywallViewOptions.Builder().build(),
+) {
+    InternalPaywallView(offering = options.offering)
 }
