@@ -53,8 +53,17 @@ internal abstract class OfferingParser {
             }
         }
 
+//        val paywallDataJson = offeringJson.optJSONObject("paywall")
+//        val paywallData = PaywallData(paywallDataJson)
+
         return if (availablePackages.isNotEmpty()) {
-            Offering(offeringIdentifier, offeringJson.getString("description"), metadata, availablePackages)
+            Offering(
+                offeringIdentifier,
+                offeringJson.getString("description"),
+                metadata,
+                availablePackages,
+                null,
+            )
         } else {
             null
         }
