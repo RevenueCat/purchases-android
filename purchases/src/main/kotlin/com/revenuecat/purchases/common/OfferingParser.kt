@@ -6,11 +6,19 @@ import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
 import com.revenuecat.purchases.models.StoreProduct
+import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.strings.OfferingStrings
 import com.revenuecat.purchases.utils.toMap
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.json.Json
 import org.json.JSONObject
 
 internal abstract class OfferingParser {
+
+    // TODO-PAYWALLS: uncomment after testing
+    private val json = Json {
+//        ignoreUnknownKeys = true
+    }
 
     protected abstract fun findMatchingProduct(
         productsById: Map<String, List<StoreProduct>>,
@@ -53,8 +61,20 @@ internal abstract class OfferingParser {
             }
         }
 
+        val paywallDataJson = offeringJson.optJSONObject("paywall")
+
+        val paywallData = paywallDataJson?.let {
+            json.decodeFromString<PaywallData>(it.toString())
+        }
+
         return if (availablePackages.isNotEmpty()) {
-            Offering(offeringIdentifier, offeringJson.getString("description"), metadata, availablePackages)
+            Offering(
+                offeringIdentifier,
+                offeringJson.getString("description"),
+                metadata,
+                availablePackages,
+                paywallData,
+            )
         } else {
             null
         }

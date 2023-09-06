@@ -1,5 +1,7 @@
 package com.revenuecat.purchases.paywalls
 
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import java.net.URL
 
 /**
@@ -8,11 +10,12 @@ import java.net.URL
  *
  * @see [Paywalls Documentation](https://rev.cat/paywalls)
  */
+@Serializable
 data class PaywallData(
     /**
      * The type of template used to display this paywall.
      */
-    val templateName: String,
+    @SerialName("template_name") val templateName: String,
 
     /**
      * Generic configuration for any paywall.
@@ -22,12 +25,15 @@ data class PaywallData(
     /**
      * The base remote URL where assets for this paywall are stored.
      */
-    val assetBaseURL: URL,
-    internal val localization: Map<String, LocalizedConfiguration>,
+    @SerialName("asset_base_url") @Serializable(with = URLSerializer::class) val assetBaseURL: URL,
+    // TODO-PAYWALLS: do we need this one?
+    @SerialName("default_locale") val defaultLocale: String,
+    @SerialName("localized_strings") internal val localization: Map<String, LocalizedConfiguration>,
 ) {
     /**
      * Generic configuration for any paywall.
      */
+    @Serializable
     data class Configuration(
         /**
          * The list of package identifiers this paywall will display.
@@ -37,7 +43,7 @@ data class PaywallData(
         /**
          * The package to be selected by default.
          */
-        val defaultPackage: String? = null,
+        @SerialName("default_package") val defaultPackage: String? = null,
 
         /**
          * The images for this template.
@@ -47,28 +53,29 @@ data class PaywallData(
         /**
          * Whether the background image will be blurred (in templates with one).
          */
-        val blurredBackgroundImage: Boolean = false,
+        @SerialName("blurred_background_image") val blurredBackgroundImage: Boolean = false,
 
         /**
          * Whether a restore purchases button should be displayed.
          */
-        val displayRestorePurchases: Boolean = true,
+        @SerialName("display_restore_purchases") val displayRestorePurchases: Boolean = true,
 
         /**
          * If set, the paywall will display a terms of service link.
          */
-        val termsOfServiceURL: URL? = null,
+        @SerialName("tos_url") @Serializable(with = URLSerializer::class) val termsOfServiceURL: URL? = null,
 
         /**
          * If set, the paywall will display a privacy policy link.
          */
-        val privacyURL: URL? = null,
+        @SerialName("privacy_url") @Serializable(with = URLSerializer::class) val privacyURL: URL? = null,
 
         /**
          * The set of colors used.
          */
         val colors: ColorInformation,
     ) {
+        @Serializable
         data class Images(
             /**
              * Image displayed as a header in a template.
@@ -86,6 +93,7 @@ data class PaywallData(
             val icon: String? = null,
         )
 
+        @Serializable
         data class ColorInformation(
             /**
              * Set of colors for light mode.
@@ -98,47 +106,55 @@ data class PaywallData(
             val dark: Colors? = null,
         )
 
+        @Serializable
         data class Colors(
             /**
              * Color for the background of the paywall.
              */
-            val background: PaywallColor,
+            @Serializable(with = PaywallColor.Serializer::class) val background: PaywallColor,
 
             /**
              * Color for the primary text element.
              */
-            val text1: PaywallColor,
+            @SerialName("text_1")
+            @Serializable(with = PaywallColor.Serializer::class) val text1: PaywallColor,
 
             /**
              * Color for secondary text element.
              */
-            val text2: PaywallColor? = null,
+            @SerialName("text_2")
+            @Serializable(with = PaywallColor.Serializer::class) val text2: PaywallColor? = null,
 
             /**
              * Background color of the main call to action button.
              */
-            val callToActionBackground: PaywallColor,
+            @SerialName("call_to_action_background")
+            @Serializable(with = PaywallColor.Serializer::class) val callToActionBackground: PaywallColor,
 
             /**
              * Foreground color of the main call to action button.
              */
-            val callToActionForeground: PaywallColor,
+            @SerialName("call_to_action_foreground")
+            @Serializable(with = PaywallColor.Serializer::class) val callToActionForeground: PaywallColor,
 
             /**
              * Primary accent color.
              */
-            val accent1: PaywallColor? = null,
+            @SerialName("accent_1")
+            @Serializable(with = PaywallColor.Serializer::class) val accent1: PaywallColor? = null,
 
             /**
              * Secondary accent color.
              */
-            val accent2: PaywallColor? = null,
+            @SerialName("accent_2")
+            @Serializable(with = PaywallColor.Serializer::class) val accent2: PaywallColor? = null,
         )
     }
 
     /**
      * Defines the necessary localized information for a paywall.
      */
+    @Serializable
     data class LocalizedConfiguration(
         /**
          * The title of the paywall screen.
@@ -148,43 +164,44 @@ data class PaywallData(
         /**
          * The subtitle of the paywall screen.
          */
-        val subtitle: String?,
+        val subtitle: String? = null,
 
         /**
          * The content of the main action button for purchasing a subscription.
          */
-        val callToAction: String,
+        @SerialName("call_to_action") val callToAction: String,
 
         /**
          * The content of the main action button for purchasing a subscription when an intro offer is available.
          * If `null`, no information regarding trial eligibility will be displayed.
          */
-        val callToActionWithIntroOffer: String?,
+        @SerialName("call_to_action_with_intro_offer") val callToActionWithIntroOffer: String? = null,
 
         /**
          * Description for the offer to be purchased.
          */
-        val offerDetails: String?,
+        @SerialName("offer_details") val offerDetails: String?,
 
         /**
          * Description for the offer to be purchased when an intro offer is available.
          * If `null`, no information regarding trial eligibility will be displayed.
          */
-        val offerDetailsWithIntroOffer: String?,
+        @SerialName("offer_details_with_intro_offer") val offerDetailsWithIntroOffer: String? = null,
 
         /**
          * The name representing each of the packages, most commonly a variable.
          */
-        val offerName: String?,
+        @SerialName("offer_name") val offerName: String? = null,
 
         /**
          * An optional list of features that describe this paywall.
          */
-        val features: List<Feature>,
+        val features: List<Feature> = emptyList(),
     ) {
         /**
          * An item to be showcased in a paywall.
          */
+        @Serializable
         data class Feature(
             /**
              * The title of the feature.
@@ -200,7 +217,7 @@ data class PaywallData(
              * An optional icon for the feature.
              * This must be an icon identifier known by `RevenueCatUI`.
              */
-            val iconID: String? = null,
+            @SerialName("icon_id") val iconID: String? = null,
         )
     }
 }

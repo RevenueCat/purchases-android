@@ -5,6 +5,8 @@
 
 package com.revenuecat.purchases
 
+import com.revenuecat.purchases.paywalls.PaywallData
+
 /**
  * An offering is a collection of [Package] available for the user to purchase.
  * For more info see https://docs.revenuecat.com/docs/entitlements
@@ -18,6 +20,7 @@ data class Offering constructor(
     val serverDescription: String,
     val metadata: Map<String, Any>,
     val availablePackages: List<Package>,
+    val paywall: PaywallData?,
 ) {
 
     /**
