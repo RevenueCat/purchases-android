@@ -4,6 +4,7 @@ plugins {
     alias libs.plugins.mavenPublish
     alias libs.plugins.dokka
     alias libs.plugins.kotlin.parcelize
+    alias libs.plugins.kotlin.serialization
 }
 
 apply from: "$rootProject.projectDir/library.gradle"
@@ -76,6 +77,7 @@ dependencies {
     implementation libs.androidx.lifecycle.runtime
     implementation libs.androidx.lifecycle.common
     implementation libs.androidx.lifecycle.process
+    implementation libs.kotlinx.serialization.json
     api libs.billing
     implementation libs.tink
     implementation libs.playServices.ads.identifier
