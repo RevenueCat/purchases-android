@@ -354,6 +354,11 @@ jobs:
           working_directory: examples/paywall-tester
           command: echo $PAYWALL_TESTER_RELEASE_KEYSTORE | base64 -d > keystore
       - run:
+          name: Replace API_KEY
+          working_directory: examples/paywall-tester/src/main/java/com/revenuecat/paywallstester/
+          command: |
+            sed -i s/GOOGLE_API_KEY/$PAYWALL_TESTER_API_KEY/ Constants.kt
+      - run:
           name: Create app bundle
           command: |
             bundle exec fastlane android build_paywall_tester_bundle
@@ -361,10 +366,10 @@ jobs:
           path: examples/paywall-tester/build/outputs/bundle/release/paywall-tester-release.aab
       - android/save-gradle-cache
       - android/save-build-cache
-#      - run:
-#            name: Publish aab
-#            command: |
-#              bundle exec fastlane android publish_purchase_tester aab_path:'examples/purchase-tester/build/outputs/bundle/release/purchase-tester-release.aab'
+      - run:
+            name: Publish aab
+            command: |
+              bundle exec fastlane android publish_paywall_tester aab_path:'examples/paywall-tester/build/outputs/bundle/release/paywall-tester-release.aab'
 
   integration-tests-build:
     <<: *android-executor

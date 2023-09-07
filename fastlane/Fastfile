@@ -367,16 +367,30 @@ platform :android do
     build_purchases_android_test_apk("com.revenuecat.purchases.integrationtests", "#{app_name}-test", build_type, flavor)
   end
 
-  desc "Publish purchase tester to test track in Play Console"
-  lane :publish_purchase_tester do |options|
-    json_key_data = ENV["PUBLISH_SERVICE_ACCOUNT_JSON_KEY_DATA"] || UI.user_error!("Missing JSON key data to publish purchase tester.")
+  desc "Publish to test track in Play Console"
+  lane :publish_to_test_track do |options|
+    package_name = options[:package_name] || UI.user_error!("Missing package_name parameter.")
+    json_key_data = ENV["PUBLISH_SERVICE_ACCOUNT_JSON_KEY_DATA"] || UI.user_error!("Missing JSON key data to publish #{package_name}.")
     aab_path = options[:aab_path] || UI.user_error!("Missing aab_path parameter.")
+    
     upload_to_play_store(
-      package_name: 'com.revenuecat.purchases_sample',
+      package_name: package_name,
       track: 'alpha',
       json_key_data: json_key_data,
       aab: aab_path
     )
+  end
+  
+  desc "Publish purchase tester to test track in Play Console"
+  lane :publish_purchase_tester do |options|
+    options[:package_name] = 'com.revenuecat.purchases_sample'
+    publish_to_test_track(options)
+  end
+  
+  desc "Publish paywall tester to test track in Play Console"
+  lane :publish_paywall_tester do |options|
+    options[:package_name] = 'com.revenuecat.paywall_tester'
+    publish_to_test_track(options)
   end
 
   desc "Builds a Magic Weather Compose APK"
