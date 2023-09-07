@@ -26,8 +26,11 @@ data class PaywallData(
      * The base remote URL where assets for this paywall are stored.
      */
     @SerialName("asset_base_url") @Serializable(with = URLSerializer::class) val assetBaseURL: URL,
-    // TODO-PAYWALLS: do we need this one?
-    @SerialName("default_locale") val defaultLocale: String,
+
+    /**
+     * The revision identifier for this paywall.
+     */
+    val revision: Int = 0,
     @SerialName("localized_strings") internal val localization: Map<String, LocalizedConfiguration>,
 ) {
     /**
