@@ -15,7 +15,7 @@ internal object OfferingStrings {
     const val NO_CACHED_OFFERINGS_FETCHING_NETWORK = "No cached Offerings, fetching from network"
     const val OFFERINGS_STALE_UPDATING_IN_BACKGROUND = "Offerings cache is stale, updating from network in background"
     const val OFFERINGS_STALE_UPDATING_IN_FOREGROUND = "Offerings cache is stale, updating from network in foreground"
-    const val OFFERINGS_UPDATED_FROM_NETWORK = "Offerings updated from network."
+    const val OFFERINGS_START_UPDATE_FROM_NETWORK = "Start Offerings update from network."
     const val RETRIEVED_PRODUCTS = "Retrieved productDetailsList: %s"
     const val VENDING_OFFERINGS_CACHE = "Vending Offerings from cache"
     const val EMPTY_PRODUCT_ID_LIST = "productId list is empty, skipping queryProductDetailsAsync call"
