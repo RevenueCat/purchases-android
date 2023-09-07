@@ -79,7 +79,8 @@ internal class PurchasesFactory(
             val sharedPreferencesForETags = ETagManager.initializeSharedPreferences(context)
             val eTagManager = ETagManager(sharedPreferencesForETags)
 
-            val dispatcher = Dispatcher(service ?: createDefaultExecutor(), runningIntegrationTests)
+            val dispatcher = Dispatcher(createDefaultExecutor(), runningIntegrationTests)
+            val backendDispatcher = Dispatcher(service ?: createDefaultExecutor(), runningIntegrationTests)
             val diagnosticsDispatcher = Dispatcher(createDiagnosticsExecutor(), runningIntegrationTests)
 
             var diagnosticsFileHelper: DiagnosticsFileHelper? = null
@@ -102,10 +103,10 @@ internal class PurchasesFactory(
             val signingManager = SigningManager(signatureVerificationMode, appConfig, apiKey)
 
             val httpClient = HTTPClient(appConfig, eTagManager, diagnosticsTracker, signingManager)
-            val backendHelper = BackendHelper(apiKey, dispatcher, appConfig, httpClient)
+            val backendHelper = BackendHelper(apiKey, backendDispatcher, appConfig, httpClient)
             val backend = Backend(
                 appConfig,
-                dispatcher,
+                backendDispatcher,
                 diagnosticsDispatcher,
                 httpClient,
                 backendHelper,
@@ -124,7 +125,7 @@ internal class PurchasesFactory(
 
             val subscriberAttributesPoster = SubscriberAttributesPoster(backendHelper)
 
-            val attributionFetcher = AttributionFetcherFactory.createAttributionFetcher(store, dispatcher)
+            val attributionFetcher = AttributionFetcherFactory.createAttributionFetcher(store, backendDispatcher)
 
             val subscriberAttributesCache = SubscriberAttributesCache(cache)
 
@@ -183,7 +184,7 @@ internal class PurchasesFactory(
                 appConfig,
                 cache,
                 billing,
-                dispatcher,
+                backendDispatcher,
                 identityManager,
                 postTransactionWithProductDetailsHelper,
             )
@@ -218,7 +219,7 @@ internal class PurchasesFactory(
             val offeringsManager = OfferingsManager(
                 offeringsCache,
                 backend,
-                OfferingsFactory(billing, offeringParser),
+                OfferingsFactory(billing, offeringParser, dispatcher),
             )
 
             log(LogIntent.DEBUG, ConfigureStrings.DEBUG_ENABLED)
