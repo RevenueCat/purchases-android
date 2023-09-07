@@ -183,15 +183,19 @@ platform :android do
     push_git_tags(tag: version_number)
   end
 
-  desc "Build purchase tester app bundle"
-  lane :build_purchase_tester_bundle do |options|
+  desc "Build app bundle"
+  lane :build_bundle do |options|
+    build_task = options[:build_task]
+    env_prefix = options[:env_prefix]
+
     build_number = ENV['CIRCLE_BUILD_NUM'] || UI.user_error!('Could not find CircleCI build number.')
     version_name = current_version_number
-    release_key_alias = ENV['PURCHASE_TESTER_RELEASE_KEY_ALIAS'] || UI.user_error!('Release key alias not found.')
-    release_key_password = ENV['PURCHASE_TESTER_RELEASE_KEY_PASSWORD'] || UI.user_error!('Release key password not found.')
-    release_keystore_password = ENV['PURCHASE_TESTER_RELEASE_KEYSTORE_PASSWORD'] || UI.user_error!('Release keystore password not found.')
+    release_key_alias = ENV["#{env_prefix}_RELEASE_KEY_ALIAS"] || UI.user_error!("Release key alias not found for #{build_task}")
+    release_key_password = ENV["#{env_prefix}_RELEASE_KEY_PASSWORD"] || UI.user_error!("Release key password not found for #{build_task}")
+    release_keystore_password = ENV["#{env_prefix}_RELEASE_KEYSTORE_PASSWORD"] || UI.user_error!("Release keystore password not found for #{build_task}")
+
     gradle(
-      task: 'examples:purchase-tester:bundle',
+      task: build_task,
       build_type: 'Release',
       print_command: false,
       properties: {
@@ -206,24 +210,18 @@ platform :android do
   end
 
   desc "Build purchase tester app bundle"
-  lane :build_paywall_tester_bundle do |options|
-    build_number = ENV['CIRCLE_BUILD_NUM'] || UI.user_error!('Could not find CircleCI build number.')
-    version_name = current_version_number
-    release_key_alias = ENV['PAYWALL_TESTER_RELEASE_KEY_ALIAS'] || UI.user_error!('Release key alias not found.')
-    release_key_password = ENV['PAYWALL_TESTER_RELEASE_KEY_PASSWORD'] || UI.user_error!('Release key password not found.')
-    release_keystore_password = ENV['PAYWALL_TESTER_RELEASE_KEYSTORE_PASSWORD'] || UI.user_error!('Release keystore password not found.')
-    gradle(
-      task: 'examples:paywall-tester:bundle',
-      build_type: 'Release',
-      print_command: false,
-      properties: {
-        purchaseTesterSupportedStores: 'google',
-        purchaseTesterVersionCode: build_number,
-        purchaseTesterVersionName: version_name,
-        releaseKeyAlias: release_key_alias,
-        releaseKeyPassword: release_key_password,
-        releaseKeystorePassword: release_keystore_password
-      }
+  lane :build_purchase_tester_bundle do
+    build_bundle(
+      build_task: 'examples:purchase-tester:bundle',
+      env_prefix: 'PURCHASE_TESTER'
+    )
+  end
+
+  desc "Build paywall tester app bundle"
+  lane :build_paywall_tester_bundle do
+    build_bundle(
+      build_task: 'examples:paywall-tester:bundle',
+      env_prefix: 'PAYWALL_TESTER'
     )
   end
 
