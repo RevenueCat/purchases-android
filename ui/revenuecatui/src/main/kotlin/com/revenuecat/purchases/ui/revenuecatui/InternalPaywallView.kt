@@ -45,6 +45,7 @@ internal fun InternalPaywallView(
             is PaywallViewState.Loaded -> {
                 val offering = state.offering
                 Text(text = "Paywall for offeringId: ${offering.identifier}")
+                // TODO-PAYWALLS: Use device locale and move logic to view model
                 offering.paywall?.configForLocale(Locale.ENGLISH)?.let { localizedConfiguration ->
                     Text(
                         style = MaterialTheme.typography.h5,
