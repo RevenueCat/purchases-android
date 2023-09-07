@@ -635,9 +635,9 @@ workflows:
       - revenuecat/automatic-bump
 
   nightly-deploy:
-    when:
-      and:
-        - equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
-        - equal: [ "nightly-deploy", << pipeline.schedule.name >> ]
+#    when:
+#      and:
+#        - equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
+#        - equal: [ "nightly-deploy", << pipeline.schedule.name >> ]
     jobs:
-      - publish-purchase-tester-release
+      - publish-paywall-tester-release
