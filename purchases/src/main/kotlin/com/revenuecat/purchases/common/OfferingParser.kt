@@ -17,7 +17,7 @@ internal abstract class OfferingParser {
 
     // TODO-PAYWALLS: uncomment after testing
     private val json = Json {
-//        ignoreUnknownKeys = true
+        ignoreUnknownKeys = true
     }
 
     protected abstract fun findMatchingProduct(
