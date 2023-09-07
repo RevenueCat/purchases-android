@@ -1,6 +1,5 @@
 package com.revenuecat.purchases.paywalls
 
-import android.os.Build
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import java.net.URL
@@ -40,11 +39,10 @@ data class PaywallData(
      */
     fun configForLocale(requiredLocale: Locale): LocalizedConfiguration? {
         return localization[requiredLocale.toString()]
-            ?: localization.takeIf { (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) }?.let { localization ->
-                localization.entries.firstOrNull { (localeKey, _) ->
-                    Locale(localeKey).isO3Language == requiredLocale.isO3Language
-                }?.value
-            }
+            ?: localization.entries.firstOrNull { (localeKey, _) ->
+                @Suppress("UsePropertyAccessSyntax")
+                Locale(localeKey).getISO3Language() == requiredLocale.getISO3Language()
+            }?.value
     }
 
     /**
