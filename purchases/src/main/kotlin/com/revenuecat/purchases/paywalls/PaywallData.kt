@@ -1,8 +1,10 @@
 package com.revenuecat.purchases.paywalls
 
+import android.os.Build
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import java.net.URL
+import java.util.Locale
 
 /**
  * Represents the data required to display a paywall using the `RevenueCatUI` library.
@@ -30,6 +32,21 @@ data class PaywallData(
     @SerialName("default_locale") val defaultLocale: String,
     @SerialName("localized_strings") internal val localization: Map<String, LocalizedConfiguration>,
 ) {
+
+    /**
+     * @note This allows searching by `Locale` with only language code and missing region (like `en`, `es`, etc).
+     *
+     * @return [LocalizedConfiguration] for the given [Locale], if found.
+     */
+    fun configForLocale(requiredLocale: Locale): LocalizedConfiguration? {
+        return localization[requiredLocale.toString()]
+            ?: localization.takeIf { (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) }?.let { localization ->
+                localization.entries.firstOrNull { (localeKey, _) ->
+                    Locale(localeKey).isO3Language == requiredLocale.isO3Language
+                }?.value
+            }
+    }
+
     /**
      * Generic configuration for any paywall.
      */
