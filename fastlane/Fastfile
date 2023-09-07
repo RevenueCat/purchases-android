@@ -189,6 +189,7 @@ platform :android do
     env_prefix = options[:env_prefix]
 
     build_number = ENV['CIRCLE_BUILD_NUM'] || UI.user_error!('Could not find CircleCI build number.')
+    UI.message("Build number #{build_number}")
     version_name = current_version_number
     release_key_alias = ENV["#{env_prefix}_RELEASE_KEY_ALIAS"] || UI.user_error!("Release key alias not found for #{build_task}")
     release_key_password = ENV["#{env_prefix}_RELEASE_KEY_PASSWORD"] || UI.user_error!("Release key password not found for #{build_task}")
