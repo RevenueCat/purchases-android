@@ -205,6 +205,28 @@ platform :android do
     )
   end
 
+  desc "Build purchase tester app bundle"
+  lane :build_paywall_tester_bundle do |options|
+    build_number = ENV['CIRCLE_BUILD_NUM'] || UI.user_error!('Could not find CircleCI build number.')
+    version_name = current_version_number
+    release_key_alias = ENV['PAYWALL_TESTER_RELEASE_KEY_ALIAS'] || UI.user_error!('Release key alias not found.')
+    release_key_password = ENV['PAYWALL_TESTER_RELEASE_KEY_PASSWORD'] || UI.user_error!('Release key password not found.')
+    release_keystore_password = ENV['PAYWALL_TESTER_RELEASE_KEYSTORE_PASSWORD'] || UI.user_error!('Release keystore password not found.')
+    gradle(
+      task: 'examples:paywall-tester:bundle',
+      build_type: 'Release',
+      print_command: false,
+      properties: {
+        purchaseTesterSupportedStores: 'google',
+        purchaseTesterVersionCode: build_number,
+        purchaseTesterVersionName: version_name,
+        releaseKeyAlias: release_key_alias,
+        releaseKeyPassword: release_key_password,
+        releaseKeystorePassword: release_keystore_password
+      }
+    )
+  end
+
   desc "Build purchases module integration tests pointing to production"
   lane :build_default_purchases_integration_tests do |options|
     build_purchases_integration_tests(
