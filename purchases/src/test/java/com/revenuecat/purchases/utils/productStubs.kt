@@ -256,6 +256,7 @@ fun stubOfferings(storeProduct: StoreProduct): Pair<StoreProduct, Offerings> {
         "This is the base offering",
         emptyMap(),
         listOf(packageObject),
+        null,
     )
     val offerings = Offerings(
         offering,
@@ -276,6 +277,7 @@ fun stubOTPOffering(inAppProduct: StoreProduct): Pair<StoreProduct, Offerings> {
         "This is the base offering",
         emptyMap(),
         listOf(packageObject),
+        null,
     )
     val offerings = Offerings(
         offering,
