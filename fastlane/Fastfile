@@ -185,8 +185,10 @@ platform :android do
 
   desc "Build app bundle"
   lane :build_bundle do |options|
-    build_task = options[:build_task]
-    env_prefix = options[:env_prefix]
+    build_task = options[:build_task] || UI.user_error!('Missing build_task')
+    env_prefix = options[:env_prefix] || UI.user_error!('Missing env_prefix')
+    gradle_properties_prefix = options[:gradle_properties_prefix] || UI.user_error!('Missing gradle_properties_prefix')
+    extra_properties = options[:extra_properties] || {}
 
     build_number = ENV['CIRCLE_BUILD_NUM'] || UI.user_error!('Could not find CircleCI build number.')
     UI.message("Build number #{build_number}")
@@ -200,13 +202,12 @@ platform :android do
       build_type: 'Release',
       print_command: false,
       properties: {
-        purchaseTesterSupportedStores: 'google',
-        purchaseTesterVersionCode: build_number,
-        purchaseTesterVersionName: version_name,
+        "#{gradle_properties_prefix}VersionCode": build_number,
+        "#{gradle_properties_prefix}VersionName": version_name,
         releaseKeyAlias: release_key_alias,
         releaseKeyPassword: release_key_password,
         releaseKeystorePassword: release_keystore_password
-      }
+      }.merge(extra_properties)  
     )
   end
 
@@ -214,7 +215,11 @@ platform :android do
   lane :build_purchase_tester_bundle do
     build_bundle(
       build_task: 'examples:purchase-tester:bundle',
-      env_prefix: 'PURCHASE_TESTER'
+      env_prefix: 'PURCHASE_TESTER',
+      extra_properties: {
+        purchaseTesterSupportedStores: 'google'
+      },
+      gradle_properties_prefix: 'purchaseTester'
     )
   end
 
@@ -222,7 +227,8 @@ platform :android do
   lane :build_paywall_tester_bundle do
     build_bundle(
       build_task: 'examples:paywall-tester:bundle',
-      env_prefix: 'PAYWALL_TESTER'
+      env_prefix: 'PAYWALL_TESTER',
+      gradle_properties_prefix: 'paywallTester'
     )
   end
 
