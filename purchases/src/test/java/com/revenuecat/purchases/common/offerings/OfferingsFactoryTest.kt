@@ -6,6 +6,7 @@ import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.BillingAbstract
+import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.GoogleOfferingParser
 import com.revenuecat.purchases.common.OfferingParser
 import com.revenuecat.purchases.models.StoreProduct
@@ -14,6 +15,7 @@ import com.revenuecat.purchases.utils.ONE_OFFERINGS_INAPP_PRODUCT_RESPONSE
 import com.revenuecat.purchases.utils.ONE_OFFERINGS_RESPONSE
 import com.revenuecat.purchases.utils.STUB_OFFERING_IDENTIFIER
 import com.revenuecat.purchases.utils.STUB_PRODUCT_IDENTIFIER
+import com.revenuecat.purchases.utils.SyncDispatcher
 import com.revenuecat.purchases.utils.stubINAPPStoreProduct
 import com.revenuecat.purchases.utils.stubStoreProduct
 import com.revenuecat.purchases.utils.stubSubscriptionOption
@@ -43,17 +45,18 @@ class OfferingsFactoryTest {
 
     private lateinit var billing: BillingAbstract
     private lateinit var offeringParser: OfferingParser
-
+    private lateinit var dispatcher: Dispatcher
     private lateinit var offeringsFactory: OfferingsFactory
 
     @Before
     fun setUp() {
         billing = mockk()
         offeringParser = GoogleOfferingParser()
-
+        dispatcher = SyncDispatcher()
         offeringsFactory = OfferingsFactory(
-            billing = billing,
-            offeringParser = offeringParser
+            billing,
+            offeringParser,
+            dispatcher
         )
     }
 
