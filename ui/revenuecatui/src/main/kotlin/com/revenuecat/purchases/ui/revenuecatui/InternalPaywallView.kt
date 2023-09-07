@@ -58,7 +58,7 @@ internal fun InternalPaywallView(
                     )
                 }
                 val activity = LocalContext.current.getActivity() ?: error("Error finding activity")
-                
+
                 offering.availablePackages.forEach { aPackage ->
                     Button(onClick = { viewModel.purchasePackage(activity, aPackage) }) {
                         Text(text = "Purchase ${aPackage.identifier}. Price: ${aPackage.product.price.formatted}")
