@@ -357,7 +357,7 @@ jobs:
           name: Replace API_KEY
           working_directory: examples/paywall-tester/src/main/java/com/revenuecat/paywallstester/
           command: |
-            sed -i s/API_KEY/$PAYWALL_TESTER_API_KEY/ Constants.kt
+            sed -i s/\"API_KEY\"/\"$PAYWALL_TESTER_API_KEY\"/ Constants.kt
       - run:
           name: Create app bundle
           command: |
