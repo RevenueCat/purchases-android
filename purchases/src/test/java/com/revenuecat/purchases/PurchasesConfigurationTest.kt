@@ -32,7 +32,7 @@ class PurchasesConfigurationTest {
         assertThat(purchasesConfiguration.context).isEqualTo(context)
         assertThat(purchasesConfiguration.appUserID).isNull()
         assertThat(purchasesConfiguration.observerMode).isFalse
-        assertThat(purchasesConfiguration.backendService).isNull()
+        assertThat(purchasesConfiguration.service).isNull()
         assertThat(purchasesConfiguration.store).isEqualTo(Store.PLAY_STORE)
         assertThat(purchasesConfiguration.diagnosticsEnabled).isFalse
         assertThat(purchasesConfiguration.verificationMode).isEqualTo(EntitlementVerificationMode.DISABLED)
@@ -56,7 +56,7 @@ class PurchasesConfigurationTest {
     fun `PurchasesConfiguration sets service correctly`() {
         val serviceMock: ExecutorService = mockk()
         val purchasesConfiguration = builder.service(serviceMock).build()
-        assertThat(purchasesConfiguration.backendService).isEqualTo(serviceMock)
+        assertThat(purchasesConfiguration.service).isEqualTo(serviceMock)
     }
 
     @Test
