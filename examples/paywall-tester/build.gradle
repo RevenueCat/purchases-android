@@ -11,8 +11,8 @@ android {
     defaultConfig {
         applicationId "com.revenuecat.paywall_tester"
         minSdk 21
-        versionCode 1
-        versionName "1.0"
+        versionCode paywallTesterVersionCode as Integer
+        versionName paywallTesterVersionName
 
         // Library modules have a dimension used to separate different apis.
         // Our applications however don't need the extra flavor. This makes sure that we use the

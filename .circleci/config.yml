@@ -339,6 +339,38 @@ jobs:
             command: |
               bundle exec fastlane android publish_purchase_tester aab_path:'examples/purchase-tester/build/outputs/bundle/release/purchase-tester-release.aab'
 
+  publish-paywall-tester-release:
+    <<: *android-executor
+    steps:
+      - checkout
+      - install-sdkman
+      - revenuecat/install-gem-unix-dependencies:
+          cache-version: v1
+      - android/accept-licenses
+      - android/restore-gradle-cache
+      - android/restore-build-cache
+      - run:
+          name: Prepare Keystore
+          working_directory: examples/paywall-tester
+          command: echo $PAYWALL_TESTER_RELEASE_KEYSTORE | base64 -d > keystore
+      - run:
+          name: Replace API_KEY
+          working_directory: examples/paywall-tester/src/main/java/com/revenuecat/paywallstester/
+          command: |
+            sed -i s/\"API_KEY\"/\"$PAYWALL_TESTER_API_KEY\"/ Constants.kt
+      - run:
+          name: Create app bundle
+          command: |
+            bundle exec fastlane android build_paywall_tester_bundle
+      - store_artifacts:
+          path: examples/paywall-tester/build/outputs/bundle/release/paywall-tester-release.aab
+      - android/save-gradle-cache
+      - android/save-build-cache
+      - run:
+            name: Publish aab
+            command: |
+              bundle exec fastlane android publish_paywall_tester aab_path:'examples/paywall-tester/build/outputs/bundle/release/paywall-tester-release.aab'
+
   integration-tests-build:
     <<: *android-executor
     steps:
@@ -606,3 +638,16 @@ workflows:
       equal: [ bump, << pipeline.parameters.action >> ]
     jobs:
       - revenuecat/automatic-bump
+
+  nightly-deploy:
+    when:
+      and:
+        - equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
+        - equal: [ "nightly-deploy", << pipeline.schedule.name >> ]
+    jobs:
+      - publish-paywall-tester-release:
+          filters:
+            tags:
+              ignore: /.*/
+            branches:
+              only: paywalls
