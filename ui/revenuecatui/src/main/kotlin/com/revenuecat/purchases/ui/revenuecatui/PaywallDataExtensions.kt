@@ -18,6 +18,7 @@ internal fun PaywallData.getColors(): PaywallData.Configuration.Colors {
 }
 
 @Composable
+@ReadOnlyComposable
 internal fun PaywallData.localizedConfig(): PaywallData.LocalizedConfiguration? {
     val locale = getLocale()
     val configForLocale = configForLocale(locale)
