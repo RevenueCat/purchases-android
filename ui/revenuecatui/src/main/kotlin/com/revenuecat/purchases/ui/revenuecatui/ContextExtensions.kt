@@ -24,7 +24,7 @@ internal fun Context.getActivity(): Activity? {
     return null
 }
 
-private const val MAX_CACHE_SIZE_PERCENTAGE = 0.01
+private const val MAX_CACHE_SIZE_BYTES = 100 * 1024 * 1024L // 100 MB
 
 @Composable
 @ReadOnlyComposable
@@ -33,7 +33,7 @@ internal fun Context.getRevenueCatUIImageLoader(): ImageLoader {
         .diskCache {
             DiskCache.Builder()
                 .directory(cacheDir.resolve("revenuecatui_cache"))
-                .maxSizePercent(MAX_CACHE_SIZE_PERCENTAGE)
+                .maxSizeBytes(MAX_CACHE_SIZE_BYTES)
                 .build()
         }
         .build()
