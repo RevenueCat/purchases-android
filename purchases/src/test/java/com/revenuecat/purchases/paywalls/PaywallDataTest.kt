@@ -31,23 +31,28 @@ class PaywallDataTest {
         assertThat(paywall.config.termsOfServiceURL).isEqualTo(URL("https://revenuecat.com/tos"))
         assertThat(paywall.config.privacyURL).isEqualTo(URL("https://revenuecat.com/privacy"))
 
-        assertThat(paywall.config.colors.light.background.stringRepresentation).isEqualTo("#FF00AA")
-        assertThat(paywall.config.colors.light.text1.stringRepresentation).isEqualTo("#FF00AA22")
-        assertThat(paywall.config.colors.light.text2?.stringRepresentation).isEqualTo("#FF00AA11")
-        assertThat(paywall.config.colors.light.callToActionBackground.stringRepresentation).isEqualTo("#FF00AACC")
-        assertThat(paywall.config.colors.light.callToActionForeground.stringRepresentation).isEqualTo("#FF00AA")
-        assertThat(paywall.config.colors.light.callToActionSecondaryBackground?.stringRepresentation).isEqualTo("#FF00BB")
-        assertThat(paywall.config.colors.light.accent1?.stringRepresentation).isEqualTo("#FF0000")
-        assertThat(paywall.config.colors.light.accent2?.stringRepresentation).isEqualTo("#00FF00")
+        paywall.config.colors.light.let { lightColors ->
+            assertThat(lightColors.background.stringRepresentation).isEqualTo("#FF00AA")
+            assertThat(lightColors.text1.stringRepresentation).isEqualTo("#FF00AA22")
+            assertThat(lightColors.text2?.stringRepresentation).isEqualTo("#FF00AA11")
+            assertThat(lightColors.callToActionBackground.stringRepresentation).isEqualTo("#FF00AACC")
+            assertThat(lightColors.callToActionForeground.stringRepresentation).isEqualTo("#FF00AA")
+            assertThat(lightColors.callToActionSecondaryBackground?.stringRepresentation).isEqualTo("#FF00BB")
+            assertThat(lightColors.accent1?.stringRepresentation).isEqualTo("#FF0000")
+            assertThat(lightColors.accent2?.stringRepresentation).isEqualTo("#00FF00")
+        }
 
-        assertThat(paywall.config.colors.dark?.background?.stringRepresentation).isEqualTo("#FF0000")
-        assertThat(paywall.config.colors.dark?.text1?.stringRepresentation).isEqualTo("#FF0011")
-        assertThat(paywall.config.colors.dark?.text2).isNull()
-        assertThat(paywall.config.colors.dark?.callToActionBackground?.stringRepresentation).isEqualTo("#112233AA")
-        assertThat(paywall.config.colors.dark?.callToActionForeground?.stringRepresentation).isEqualTo("#AABBCC")
-        assertThat(paywall.config.colors.dark?.accent1?.stringRepresentation).isEqualTo("#00FFFF")
-        assertThat(paywall.config.colors.dark?.accent2?.stringRepresentation).isEqualTo("#FF00FF")
-
+        assertThat(paywall.config.colors.dark).isNotNull
+        paywall.config.colors.dark?.let { darkColors ->
+            assertThat(darkColors.background.stringRepresentation).isEqualTo("#FF0000")
+            assertThat(darkColors.text1.stringRepresentation).isEqualTo("#FF0011")
+            assertThat(darkColors.text2).isNull()
+            assertThat(darkColors.callToActionBackground.stringRepresentation).isEqualTo("#112233AA")
+            assertThat(darkColors.callToActionForeground.stringRepresentation).isEqualTo("#AABBCC")
+            assertThat(darkColors.accent1?.stringRepresentation).isEqualTo("#00FFFF")
+            assertThat(darkColors.accent2?.stringRepresentation).isEqualTo("#FF00FF")
+        }
+        
         assertThat(paywall.configForLocale(Locale("gl_ES"))).isNull()
     }
     
