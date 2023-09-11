@@ -198,7 +198,7 @@ data class PaywallData(
         /**
          * Description for the offer to be purchased.
          */
-        @SerialName("offer_details") val offerDetails: String?,
+        @SerialName("offer_details") val offerDetails: String? = null,
 
         /**
          * Description for the offer to be purchased when an intro offer is available.
