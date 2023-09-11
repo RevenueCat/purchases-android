@@ -5,7 +5,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.revenuecat.purchases.Offering
-import com.revenuecat.purchases.ui.revenuecatui.templates.template2.Template2
+import com.revenuecat.purchases.ui.revenuecatui.templates.Template2
 
 @Composable
 internal fun InternalPaywallView(
