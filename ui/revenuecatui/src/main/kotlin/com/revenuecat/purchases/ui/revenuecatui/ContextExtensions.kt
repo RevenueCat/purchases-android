@@ -3,6 +3,10 @@ package com.revenuecat.purchases.ui.revenuecatui
 import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.ReadOnlyComposable
+import coil.ImageLoader
+import coil.disk.DiskCache
 
 /**
  * Returns the activity from a given context. Most times, the context itself will be
@@ -18,4 +22,19 @@ internal fun Context.getActivity(): Activity? {
         currentContext = currentContext.baseContext
     }
     return null
+}
+
+private const val MAX_CACHE_SIZE_PERCENTAGE = 0.01
+
+@Composable
+@ReadOnlyComposable
+internal fun Context.getRevenueCatUIImageLoader(): ImageLoader {
+    return ImageLoader.Builder(this)
+        .diskCache {
+            DiskCache.Builder()
+                .directory(cacheDir.resolve("revenuecatui_cache"))
+                .maxSizePercent(MAX_CACHE_SIZE_PERCENTAGE)
+                .build()
+        }
+        .build()
 }
