@@ -1,8 +1,6 @@
-package com.revenuecat.purchases.ui.revenuecatui.templates.template2
+package com.revenuecat.purchases.ui.revenuecatui.templates
 
-import android.graphics.Bitmap
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -21,14 +19,13 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.core.graphics.drawable.toBitmap
 import com.revenuecat.purchases.Package
+import com.revenuecat.purchases.ui.revenuecatui.IconImage
 import com.revenuecat.purchases.ui.revenuecatui.PaywallViewModel
 import com.revenuecat.purchases.ui.revenuecatui.PaywallViewState
 import com.revenuecat.purchases.ui.revenuecatui.R
@@ -77,10 +74,7 @@ private fun Template2MainContent(state: PaywallViewState.Template2, viewModel: P
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(UIConstant.defaultButtonVerticalSpacing, Alignment.CenterVertically),
     ) {
-        // TODO-PAYWALLS: Replace with correct image
-        val drawable = LocalContext.current.packageManager.getApplicationIcon(LocalContext.current.packageName)
-        Image(drawable.toBitmap(config = Bitmap.Config.ARGB_8888).asImageBitmap(), contentDescription = "")
-
+        IconImage(paywallData = state.paywallData)
         val localizedConfig = state.paywallData.localizedConfig()
         Text(
             style = MaterialTheme.typography.displaySmall,
