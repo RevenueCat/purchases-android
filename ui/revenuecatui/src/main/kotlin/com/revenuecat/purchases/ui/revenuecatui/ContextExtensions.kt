@@ -24,7 +24,7 @@ internal fun Context.getActivity(): Activity? {
     return null
 }
 
-private const val MAX_CACHE_SIZE_BYTES = 100 * 1024 * 1024L // 100 MB
+private const val MAX_CACHE_SIZE_BYTES = 25 * 1024 * 1024L // 25 MB
 
 @Composable
 @ReadOnlyComposable
