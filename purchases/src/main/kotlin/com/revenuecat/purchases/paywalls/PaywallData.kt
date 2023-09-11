@@ -156,6 +156,13 @@ data class PaywallData(
             @Serializable(with = PaywallColor.Serializer::class) val callToActionForeground: PaywallColor,
 
             /**
+             * If present, the CTA will create a vertical gradient from [callToActionBackground] to this color.
+             */
+            @SerialName("call_to_action_secondary_background")
+            @Serializable(with = PaywallColor.Serializer::class)
+            val callToActionSecondaryBackground: PaywallColor? = null,
+
+            /**
              * Primary accent color.
              */
             @SerialName("accent_1")
