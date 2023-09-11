@@ -24,8 +24,8 @@ class PaywallDataTest {
         assertThat(paywall.config.images.header).isEqualTo("header.jpg")
         assertThat(paywall.config.images.background).isEqualTo("background.jpg")
         assertThat(paywall.config.images.icon).isEqualTo("icon.jpg")
-        assertThat(paywall.config.blurredBackgroundImage).isTrue()
-        assertThat(paywall.config.displayRestorePurchases).isFalse()
+        assertThat(paywall.config.blurredBackgroundImage).isTrue
+        assertThat(paywall.config.displayRestorePurchases).isFalse
         assertThat(paywall.config.termsOfServiceURL).isEqualTo(URL("https://revenuecat.com/tos"))
         assertThat(paywall.config.privacyURL).isEqualTo(URL("https://revenuecat.com/privacy"))
 
@@ -34,6 +34,7 @@ class PaywallDataTest {
         assertThat(paywall.config.colors.light.text2?.stringRepresentation).isEqualTo("#FF00AA11")
         assertThat(paywall.config.colors.light.callToActionBackground.stringRepresentation).isEqualTo("#FF00AACC")
         assertThat(paywall.config.colors.light.callToActionForeground.stringRepresentation).isEqualTo("#FF00AA")
+        assertThat(paywall.config.colors.light.callToActionSecondaryBackground?.stringRepresentation).isEqualTo("#FF00BB")
         assertThat(paywall.config.colors.light.accent1?.stringRepresentation).isEqualTo("#FF0000")
         assertThat(paywall.config.colors.light.accent2?.stringRepresentation).isEqualTo("#00FF00")
 
