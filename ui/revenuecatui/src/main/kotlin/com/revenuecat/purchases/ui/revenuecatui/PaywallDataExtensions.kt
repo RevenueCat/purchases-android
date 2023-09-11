@@ -1,6 +1,5 @@
 package com.revenuecat.purchases.ui.revenuecatui
 
-import android.util.Log
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
@@ -23,7 +22,7 @@ internal fun PaywallData.localizedConfig(): PaywallData.LocalizedConfiguration? 
     val locale = getLocale()
     val configForLocale = configForLocale(locale)
     if (configForLocale == null) {
-        Log.e("RevenueCatUI", "No configuration found for locale $locale")
+        Logger.e("No configuration found for locale $locale")
     }
     return configForLocale
 }
