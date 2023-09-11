@@ -2,7 +2,7 @@ package com.revenuecat.purchases.ui.revenuecatui
 
 import android.util.Log
 
-class Logger {
+internal class Logger {
     companion object {
         private const val TAG = "RevenueCatUI"
 
