@@ -8,11 +8,13 @@ import java.io.File
 import java.net.URL
 import java.util.*
 
+private const val PAYWALLDATA_SAMPLE1 = "paywalldata-sample1.json"
+
 class PaywallDataTest {
 
     @Test
     fun `test PaywallData properties`() {
-        val json = File("src/test/resources/paywalldata-sample1.json").readText()
+        val json = File(javaClass.classLoader!!.getResource(PAYWALLDATA_SAMPLE1).file).readText()
 
         val paywall: PaywallData = Json.decodeFromString(json)
 
