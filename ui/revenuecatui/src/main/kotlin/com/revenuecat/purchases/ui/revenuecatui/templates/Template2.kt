@@ -46,6 +46,11 @@ import com.revenuecat.purchases.ui.revenuecatui.iconUrlString
 import com.revenuecat.purchases.ui.revenuecatui.localizedConfig
 import com.revenuecat.purchases.ui.revenuecatui.text1Color
 
+private object Template2UIConstants {
+    val maxIconWidth = 140.dp
+    val iconCornerRadius = 16.dp
+}
+
 @Composable
 internal fun Template2(state: PaywallViewState.Template2, viewModel: PaywallViewModel) {
     Column(
@@ -128,13 +133,13 @@ private fun PurchaseButton(state: PaywallViewState.Template2, viewModel: Paywall
 
 @Composable
 private fun IconImage(paywallData: PaywallData) {
-    Column(modifier = Modifier.widthIn(max = UIConstant.maxIconWidth)) {
+    Column(modifier = Modifier.widthIn(max = Template2UIConstants.maxIconWidth)) {
         RemoteImage(
             urlString = paywallData.iconUrlString,
             modifier = Modifier
                 .aspectRatio(ratio = 1f)
-                .widthIn(max = UIConstant.maxIconWidth)
-                .clip(RoundedCornerShape(UIConstant.iconCornerRadius)),
+                .widthIn(max = Template2UIConstants.maxIconWidth)
+                .clip(RoundedCornerShape(Template2UIConstants.iconCornerRadius)),
             contentScale = ContentScale.Crop,
         )
     }
