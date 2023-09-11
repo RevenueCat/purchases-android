@@ -26,7 +26,7 @@ data class PaywallColor(
     val underlyingColor: Color?,
 ) {
     /**
-     * The color converted to a ColorInt
+     * The color converted to a @ColorInt representation
      */
     @ColorInt
     val colorInt: Int = Color.parseColor(stringRepresentation)
