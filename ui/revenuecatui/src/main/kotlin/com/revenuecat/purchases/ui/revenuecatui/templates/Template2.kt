@@ -5,9 +5,11 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -19,16 +21,19 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.Package
-import com.revenuecat.purchases.ui.revenuecatui.IconImage
+import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.ui.revenuecatui.PaywallViewModel
 import com.revenuecat.purchases.ui.revenuecatui.PaywallViewState
 import com.revenuecat.purchases.ui.revenuecatui.R
+import com.revenuecat.purchases.ui.revenuecatui.RemoteImage
 import com.revenuecat.purchases.ui.revenuecatui.UIConstant
 import com.revenuecat.purchases.ui.revenuecatui.accent1Color
 import com.revenuecat.purchases.ui.revenuecatui.accent2Color
@@ -37,6 +42,7 @@ import com.revenuecat.purchases.ui.revenuecatui.callToActionBackgroundColor
 import com.revenuecat.purchases.ui.revenuecatui.callToActionForegroundColor
 import com.revenuecat.purchases.ui.revenuecatui.getActivity
 import com.revenuecat.purchases.ui.revenuecatui.getColors
+import com.revenuecat.purchases.ui.revenuecatui.iconUrlString
 import com.revenuecat.purchases.ui.revenuecatui.localizedConfig
 import com.revenuecat.purchases.ui.revenuecatui.text1Color
 
@@ -117,6 +123,20 @@ private fun PurchaseButton(state: PaywallViewState.Template2, viewModel: Paywall
         ) {
             Text(text = state.paywallData.localizedConfig()?.callToAction ?: "")
         }
+    }
+}
+
+@Composable
+private fun IconImage(paywallData: PaywallData) {
+    Column(modifier = Modifier.widthIn(max = UIConstant.maxIconWidth)) {
+        RemoteImage(
+            urlString = paywallData.iconUrlString,
+            modifier = Modifier
+                .aspectRatio(ratio = 1f)
+                .widthIn(max = UIConstant.maxIconWidth)
+                .clip(RoundedCornerShape(UIConstant.iconCornerRadius)),
+            contentScale = ContentScale.Crop,
+        )
     }
 }
 
