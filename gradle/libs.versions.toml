@@ -31,6 +31,7 @@ material = "1.6.0"
 adsIdentifier = "17.0.1"
 viewmodelCompose = "2.4.0"
 paparrazzi = "1.3.1"
+coil = "2.4.0"
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
@@ -110,6 +111,8 @@ compose-material = { module = "androidx.compose.material:material" }
 compose-material3 = { module = "androidx.compose.material3:material3" }
 compose-window-size = { module = "androidx.compose.material3:material3-window-size-class" }
 compose-ui-tooling = { module = "androidx.compose.ui:ui-tooling" }
+
+coil-compose = { module = "io.coil-kt:coil-compose", version.ref = "coil" }
 
 navigation-compose = "androidx.navigation:navigation-compose:2.5.3"
 

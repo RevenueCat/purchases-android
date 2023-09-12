@@ -47,6 +47,7 @@ dependencies {
     implementation libs.androidx.lifecycle.runtime.ktx
     implementation libs.androidx.lifecycle.viewmodel
     implementation libs.androidx.lifecycle.viewmodel.compose
+    implementation libs.coil.compose
     debugImplementation libs.compose.ui.tooling
     debugImplementation libs.androidx.test.compose.manifest
 }
