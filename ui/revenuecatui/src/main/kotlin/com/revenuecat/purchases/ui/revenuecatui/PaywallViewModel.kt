@@ -1,7 +1,6 @@
 package com.revenuecat.purchases.ui.revenuecatui
 
 import android.app.Activity
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.revenuecat.purchases.Offering
@@ -28,15 +27,10 @@ internal interface PaywallViewModel {
 internal class PaywallViewModelImpl(
     offering: Offering?,
 ) : ViewModel(), PaywallViewModel {
-    companion object {
-        const val TAG = "RevenueCatUI"
-    }
 
     override val state: StateFlow<PaywallViewState>
         get() = _state.asStateFlow()
-    private val initialState: PaywallViewState = offering?.let {
-        it.toPaywallViewState()
-    } ?: PaywallViewState.Loading
+    private val initialState: PaywallViewState = offering?.toPaywallViewState() ?: PaywallViewState.Loading
     private val _state = MutableStateFlow(initialState)
 
     init {
@@ -51,7 +45,7 @@ internal class PaywallViewModelImpl(
                 currentState.copy(selectedPackage = packageToSelect)
             }
             else -> {
-                Log.e(TAG, "Unexpected state trying to select package: $currentState")
+                Logger.e("Unexpected state trying to select package: $currentState")
                 currentState
             }
         }
@@ -63,7 +57,7 @@ internal class PaywallViewModelImpl(
                 purchasePackage(activity, currentState.selectedPackage)
             }
             else -> {
-                Log.e(TAG, "Unexpected state trying to purchase package: $currentState")
+                Logger.e("Unexpected state trying to purchase package: $currentState")
             }
         }
     }
@@ -72,9 +66,9 @@ internal class PaywallViewModelImpl(
         viewModelScope.launch {
             try {
                 val customerInfo = Purchases.sharedInstance.awaitRestore()
-                Log.i(TAG, "Restore purchases successful: $customerInfo")
+                Logger.i("Restore purchases successful: $customerInfo")
             } catch (e: PurchasesException) {
-                Log.e(TAG, "Error restoring purchases: $e")
+                Logger.e("Error restoring purchases: $e")
             }
         }
     }
@@ -85,9 +79,9 @@ internal class PaywallViewModelImpl(
                 val purchaseResult = Purchases.sharedInstance.awaitPurchase(
                     PurchaseParams.Builder(activity, packageToPurchase).build(),
                 )
-                Log.i(TAG, "Purchased package: ${purchaseResult.storeTransaction}")
+                Logger.i("Purchased package: ${purchaseResult.storeTransaction}")
             } catch (e: PurchasesException) {
-                Log.e(TAG, "Error purchasing package: $e")
+                Logger.e("Error purchasing package: $e")
             }
         }
     }
