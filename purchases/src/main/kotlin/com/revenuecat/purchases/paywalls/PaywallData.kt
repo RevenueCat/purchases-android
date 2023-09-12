@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.paywalls
 
+import androidx.core.os.LocaleListCompat
 import com.revenuecat.purchases.common.errorLog
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -36,6 +37,30 @@ data class PaywallData(
     val revision: Int = 0,
     @SerialName("localized_strings") internal val localization: Map<String, LocalizedConfiguration>,
 ) {
+
+    /**
+     * Returns the [LocalizedConfiguration] to be used based on the current locale.
+     */
+    val localizedConfiguration: LocalizedConfiguration
+        get() {
+            val preferredLocales = LocaleListCompat.getDefault()
+
+            val localizedConfigurations = mutableListOf<LocalizedConfiguration>()
+            for (i in 0 until preferredLocales.size()) {
+                preferredLocales.get(i)?.let { locale ->
+                    configForLocale(locale)?.let { localizedConfiguration ->
+                        localizedConfigurations.add(localizedConfiguration)
+                    }
+                }
+            }
+
+            return localizedConfigurations.firstOrNull() ?: fallbackLocalizedConfiguration
+        }
+
+    private val fallbackLocalizedConfiguration: LocalizedConfiguration
+        get() {
+            return localization.values.first()
+        }
 
     /**
      * @note This allows searching by `Locale` with only language code and missing region (like `en`, `es`, etc).

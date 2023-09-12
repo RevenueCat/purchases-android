@@ -18,6 +18,7 @@ import java.net.URL
 import java.util.*
 
 private const val PAYWALLDATA_SAMPLE1 = "paywalldata-sample1.json"
+private const val PAYWALLDATA_MISSING_CURRENT_LOCALE = "paywalldata-missing_current_locale.json"
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
@@ -26,6 +27,8 @@ class PaywallDataTest {
     @Before
     fun setUp() {
         mockkConstructor(Locale::class)
+        mockLocale("en_US", "eng")
+        mockLocale("es_ES", "spa")
     }
 
     @After
@@ -74,12 +77,49 @@ class PaywallDataTest {
             assertThat(darkColors.accent2?.stringRepresentation).isEqualTo("#FF00FF")
         }
 
-        mockLocale("en_US", "eng")
-        mockLocale("es_ES", "spa")
         mockLocale("gl_ES", "glg")
 
         val requiredLocale = Locale("gl_ES")
         assertThat(paywall.configForLocale(requiredLocale)).isNull()
+    }
+
+    @Test
+    fun `finds locale if it only has language`() {
+        val json = File(javaClass.classLoader!!.getResource(PAYWALLDATA_SAMPLE1).file).readText()
+
+        val paywall: PaywallData = Json.decodeFromString(json)
+
+        mockLocale("en", "eng")
+        mockLocale("es", "spa")
+
+        val enConfig = paywall.configForLocale(Locale("en"))
+        assertThat(enConfig?.title).isEqualTo("Paywall")
+
+        val esConfig = paywall.configForLocale(Locale("es"))
+        assertThat(esConfig?.title).isEqualTo("Tienda")
+    }
+
+    @Test
+    fun `does not return a locale if no matching language`() {
+        val json = File(javaClass.classLoader!!.getResource(PAYWALLDATA_SAMPLE1).file).readText()
+
+        val paywall: PaywallData = Json.decodeFromString(json)
+
+        mockLocale("fr", "fre")
+
+        val enConfig = paywall.configForLocale(Locale("fr"))
+        assertThat(enConfig).isNull()
+    }
+
+    @Test
+    fun `if current locale is missing it loads available locale`() {
+        val json = File(javaClass.classLoader!!.getResource(PAYWALLDATA_MISSING_CURRENT_LOCALE).file).readText()
+
+        val paywall: PaywallData = Json.decodeFromString(json)
+
+        val localization = paywall.localizedConfiguration
+        assertThat(localization.callToAction).isEqualTo("Comprar")
+        assertThat(localization.title).isEqualTo("Tienda")
     }
 
     private fun mockLocale(language: String, iso3Code: String) {
