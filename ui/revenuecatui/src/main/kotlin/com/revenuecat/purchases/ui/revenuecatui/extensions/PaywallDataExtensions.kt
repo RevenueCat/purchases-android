@@ -1,4 +1,4 @@
-package com.revenuecat.purchases.ui.revenuecatui
+package com.revenuecat.purchases.ui.revenuecatui.extensions
 
 import android.net.Uri
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -9,6 +9,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.core.os.ConfigurationCompat
 import androidx.core.os.LocaleListCompat
 import com.revenuecat.purchases.paywalls.PaywallData
+import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import java.util.Locale
 
 @Composable

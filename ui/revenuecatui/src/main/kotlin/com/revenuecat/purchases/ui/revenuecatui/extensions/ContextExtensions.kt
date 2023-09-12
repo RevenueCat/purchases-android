@@ -1,4 +1,4 @@
-package com.revenuecat.purchases.ui.revenuecatui
+package com.revenuecat.purchases.ui.revenuecatui.extensions
 
 import android.app.Activity
 import android.content.Context

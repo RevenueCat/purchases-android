@@ -30,21 +30,21 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.paywalls.PaywallData
-import com.revenuecat.purchases.ui.revenuecatui.PaywallViewModel
-import com.revenuecat.purchases.ui.revenuecatui.PaywallViewState
+import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModel
+import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewState
 import com.revenuecat.purchases.ui.revenuecatui.R
-import com.revenuecat.purchases.ui.revenuecatui.RemoteImage
+import com.revenuecat.purchases.ui.revenuecatui.composables.RemoteImage
 import com.revenuecat.purchases.ui.revenuecatui.UIConstant
-import com.revenuecat.purchases.ui.revenuecatui.accent1Color
-import com.revenuecat.purchases.ui.revenuecatui.accent2Color
-import com.revenuecat.purchases.ui.revenuecatui.backgroundColor
-import com.revenuecat.purchases.ui.revenuecatui.callToActionBackgroundColor
-import com.revenuecat.purchases.ui.revenuecatui.callToActionForegroundColor
-import com.revenuecat.purchases.ui.revenuecatui.getActivity
-import com.revenuecat.purchases.ui.revenuecatui.getColors
-import com.revenuecat.purchases.ui.revenuecatui.iconUrlString
-import com.revenuecat.purchases.ui.revenuecatui.localizedConfig
-import com.revenuecat.purchases.ui.revenuecatui.text1Color
+import com.revenuecat.purchases.ui.revenuecatui.extensions.accent1Color
+import com.revenuecat.purchases.ui.revenuecatui.extensions.accent2Color
+import com.revenuecat.purchases.ui.revenuecatui.extensions.backgroundColor
+import com.revenuecat.purchases.ui.revenuecatui.extensions.callToActionBackgroundColor
+import com.revenuecat.purchases.ui.revenuecatui.extensions.callToActionForegroundColor
+import com.revenuecat.purchases.ui.revenuecatui.extensions.getActivity
+import com.revenuecat.purchases.ui.revenuecatui.extensions.getColors
+import com.revenuecat.purchases.ui.revenuecatui.extensions.iconUrlString
+import com.revenuecat.purchases.ui.revenuecatui.extensions.localizedConfig
+import com.revenuecat.purchases.ui.revenuecatui.extensions.text1Color
 
 private object Template2UIConstants {
     val maxIconWidth = 140.dp
