@@ -1,4 +1,4 @@
-package com.revenuecat.purchases.ui.revenuecatui
+package com.revenuecat.purchases.ui.revenuecatui.data
 
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.paywalls.PaywallData

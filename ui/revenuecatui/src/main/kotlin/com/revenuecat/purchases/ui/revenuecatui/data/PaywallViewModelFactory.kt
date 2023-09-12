@@ -1,4 +1,4 @@
-package com.revenuecat.purchases.ui.revenuecatui
+package com.revenuecat.purchases.ui.revenuecatui.data
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
