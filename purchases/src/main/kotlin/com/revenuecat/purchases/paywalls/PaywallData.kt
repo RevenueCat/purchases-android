@@ -43,6 +43,7 @@ data class PaywallData(
     fun configForLocale(requiredLocale: Locale): LocalizedConfiguration? {
         return localization[requiredLocale.toString()]
             ?: localization.entries.firstOrNull { (localeKey, _) ->
+                // Locale("en_US").language returns "en_US" instead of "en", that's why we use getISO3Language
                 @Suppress("UsePropertyAccessSyntax")
                 Locale(localeKey).getISO3Language() == requiredLocale.getISO3Language()
             }?.value
