@@ -2,6 +2,7 @@ package com.revenuecat.purchases.paywalls
 
 import android.graphics.Color
 import android.os.Build
+import androidx.annotation.ColorInt
 import androidx.annotation.RequiresApi
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.descriptors.PrimitiveKind
@@ -24,6 +25,12 @@ data class PaywallColor(
     @RequiresApi(Build.VERSION_CODES.O)
     val underlyingColor: Color?,
 ) {
+    /**
+     * The color converted to a @ColorInt representation
+     */
+    @ColorInt
+    val colorInt: Int = Color.parseColor(stringRepresentation)
+
     object Serializer : KSerializer<PaywallColor> {
         override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("PaywallColor", PrimitiveKind.STRING)
 
