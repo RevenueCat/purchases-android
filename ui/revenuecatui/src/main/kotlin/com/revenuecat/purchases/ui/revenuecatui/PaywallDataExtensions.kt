@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.ui.revenuecatui
 
+import android.net.Uri
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
@@ -48,3 +49,10 @@ val PaywallData.Configuration.Colors.accent1Color: Color
     get() = accent1?.let { Color(it.colorInt) } ?: callToActionForegroundColor
 val PaywallData.Configuration.Colors.accent2Color: Color
     get() = accent2?.let { Color(it.colorInt) } ?: accent1Color
+
+val PaywallData.iconUrlString: String
+    get() = getUrlStringFromImage(config.images.icon)
+
+private fun PaywallData.getUrlStringFromImage(image: String?): String {
+    return Uri.parse(assetBaseURL.toString()).buildUpon().path(image ?: "").build().toString()
+}
