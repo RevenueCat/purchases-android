@@ -1,4 +1,4 @@
-package com.revenuecat.purchases.ui.revenuecatui
+package com.revenuecat.purchases.ui.revenuecatui.composables
 
 import android.content.Context
 import androidx.compose.runtime.Composable
@@ -11,7 +11,7 @@ import coil.compose.AsyncImage
 import coil.disk.DiskCache
 
 @Composable
-fun RemoteImage(
+internal fun RemoteImage(
     urlString: String,
     modifier: Modifier = Modifier,
     contentScale: ContentScale = ContentScale.Fit,

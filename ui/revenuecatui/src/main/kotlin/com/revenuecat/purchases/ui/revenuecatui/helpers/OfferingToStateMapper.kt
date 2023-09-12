@@ -1,6 +1,7 @@
-package com.revenuecat.purchases.ui.revenuecatui
+package com.revenuecat.purchases.ui.revenuecatui.helpers
 
 import com.revenuecat.purchases.Offering
+import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewState
 
 @Suppress("ReturnCount")
 internal fun Offering.toPaywallViewState(): PaywallViewState {

@@ -1,8 +1,8 @@
-package com.revenuecat.purchases.ui.revenuecatui
+package com.revenuecat.purchases.ui.revenuecatui.helpers
 
 import android.util.Log
 
-object Logger {
+internal object Logger {
     private const val TAG = "RevenueCatUI"
 
     // TODO-PAYWALLS, allow hooking up a custom log handler
