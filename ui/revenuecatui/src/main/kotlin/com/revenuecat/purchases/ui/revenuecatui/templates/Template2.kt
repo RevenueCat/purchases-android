@@ -1,6 +1,8 @@
 package com.revenuecat.purchases.ui.revenuecatui.templates
 
+import android.net.Uri
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -30,8 +32,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.revenuecat.purchases.Package
-import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.ui.revenuecatui.InternalPaywallView
 import com.revenuecat.purchases.ui.revenuecatui.R
 import com.revenuecat.purchases.ui.revenuecatui.UIConstant
@@ -40,15 +40,7 @@ import com.revenuecat.purchases.ui.revenuecatui.composables.RemoteImage
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModel
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewState
 import com.revenuecat.purchases.ui.revenuecatui.data.TestData
-import com.revenuecat.purchases.ui.revenuecatui.extensions.accent1Color
-import com.revenuecat.purchases.ui.revenuecatui.extensions.accent2Color
-import com.revenuecat.purchases.ui.revenuecatui.extensions.backgroundColor
-import com.revenuecat.purchases.ui.revenuecatui.extensions.callToActionBackgroundColor
-import com.revenuecat.purchases.ui.revenuecatui.extensions.callToActionForegroundColor
-import com.revenuecat.purchases.ui.revenuecatui.extensions.getColors
-import com.revenuecat.purchases.ui.revenuecatui.extensions.iconUrlString
-import com.revenuecat.purchases.ui.revenuecatui.extensions.localizedConfig
-import com.revenuecat.purchases.ui.revenuecatui.extensions.text1Color
+import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 
 private object Template2UIConstants {
     val maxIconWidth = 140.dp
@@ -56,9 +48,9 @@ private object Template2UIConstants {
 }
 
 @Composable
-internal fun Template2(state: PaywallViewState.Template2, viewModel: PaywallViewModel) {
+internal fun Template2(state: PaywallViewState.Loaded, viewModel: PaywallViewModel) {
     Box {
-        PaywallBackground(data = state.paywallData)
+        PaywallBackground(state.templateConfiguration)
 
         Column(
             modifier = Modifier.fillMaxSize(),
@@ -84,7 +76,7 @@ internal fun Template2(state: PaywallViewState.Template2, viewModel: PaywallView
 }
 
 @Composable
-private fun Template2MainContent(state: PaywallViewState.Template2, viewModel: PaywallViewModel) {
+private fun Template2MainContent(state: PaywallViewState.Loaded, viewModel: PaywallViewModel) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -93,30 +85,31 @@ private fun Template2MainContent(state: PaywallViewState.Template2, viewModel: P
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(UIConstant.defaultButtonVerticalSpacing, Alignment.CenterVertically),
     ) {
-        IconImage(paywallData = state.paywallData)
-        val localizedConfig = state.paywallData.localizedConfig()
+        IconImage(state.templateConfiguration.images.iconUri)
+        val localizedConfig = state.templateConfiguration.packageConfiguration.defaultInfo.localization
+        val colors = state.templateConfiguration.getColors(isSystemInDarkTheme())
         Text(
             style = MaterialTheme.typography.displaySmall,
             fontWeight = FontWeight.Black,
             textAlign = TextAlign.Center,
-            text = localizedConfig?.title ?: "",
-            color = state.paywallData.getColors().text1Color,
+            text = localizedConfig.title,
+            color = colors.text1,
         )
         Text(
             style = MaterialTheme.typography.bodyLarge,
             fontWeight = FontWeight.Bold,
             textAlign = TextAlign.Center,
-            text = localizedConfig?.subtitle ?: "",
-            color = state.paywallData.getColors().text1Color,
+            text = localizedConfig.subtitle ?: "",
+            color = colors.text1,
         )
-        state.packages.forEach { aPackage ->
-            SelectPackageButton(state, aPackage, viewModel)
+        state.templateConfiguration.packageConfiguration.allPackagesInfo.forEach { packageInfo ->
+            SelectPackageButton(state, packageInfo, viewModel)
         }
     }
 }
 
 @Composable
-private fun PurchaseButton(state: PaywallViewState.Template2, viewModel: PaywallViewModel) {
+private fun PurchaseButton(state: PaywallViewState.Loaded, viewModel: PaywallViewModel) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -125,26 +118,26 @@ private fun PurchaseButton(state: PaywallViewState.Template2, viewModel: Paywall
         verticalArrangement = Arrangement.Center,
     ) {
         val context = LocalContext.current
-        val colors = state.paywallData.getColors()
+        val colors = state.templateConfiguration.getColors(isSystemInDarkTheme())
         Button(
             modifier = Modifier.fillMaxWidth(),
             onClick = { viewModel.purchaseSelectedPackage(context) },
             colors = ButtonDefaults.buttonColors(
-                containerColor = colors.callToActionBackgroundColor,
-                contentColor = colors.callToActionForegroundColor,
+                containerColor = colors.callToActionBackground,
+                contentColor = colors.callToActionForeground,
             ),
         ) {
-            Text(text = state.paywallData.localizedConfig()?.callToAction ?: "")
+            Text(text = state.selectedPackage.localization.callToAction)
         }
     }
 }
 
 @Composable
-private fun IconImage(paywallData: PaywallData) {
-    paywallData.iconUrlString?.let {
+private fun IconImage(uri: Uri?) {
+    uri?.let {
         Column(modifier = Modifier.widthIn(max = Template2UIConstants.maxIconWidth)) {
             RemoteImage(
-                urlString = it,
+                urlString = uri.toString(),
                 modifier = Modifier
                     .aspectRatio(ratio = 1f)
                     .widthIn(max = Template2UIConstants.maxIconWidth)
@@ -164,27 +157,30 @@ private fun RestorePurchasesButton(viewModel: PaywallViewModel) {
 
 @Composable
 private fun SelectPackageButton(
-    state: PaywallViewState.Template2,
-    aPackage: Package,
+    state: PaywallViewState.Loaded,
+    packageInfo: TemplateConfiguration.PackageInfo,
     viewModel: PaywallViewModel,
 ) {
-    val colors = state.paywallData.getColors()
-    val isSelected = aPackage == state.selectedPackage
+    val colors = state.templateConfiguration.getColors(isSystemInDarkTheme())
+    val isSelected = packageInfo == state.selectedPackage
     val (background, textColor) = if (isSelected) {
-        colors.accent2Color to colors.accent1Color
+        colors.accent2 to colors.accent1
     } else {
         // TODO-PAYWALLS: Find correct background unselected color
-        colors.backgroundColor to colors.text1Color
+        colors.background to colors.text1
     }
-    val border = if (isSelected) null else BorderStroke(2.dp, colors.text1Color)
+    val border = if (isSelected) null else BorderStroke(2.dp, colors.text1)
     Button(
         modifier = Modifier.fillMaxWidth(),
-        onClick = { viewModel.selectPackage(aPackage) },
+        onClick = { viewModel.selectPackage(packageInfo) },
         colors = ButtonDefaults.buttonColors(containerColor = background, contentColor = textColor),
         shape = RoundedCornerShape(15.dp),
         border = border,
     ) {
-        Text(text = "Purchase ${aPackage.identifier}. Price: ${aPackage.product.price.formatted}")
+        Text(
+            text = "Purchase ${packageInfo.rcPackage.identifier}. " +
+                "Price: ${packageInfo.rcPackage.product.price.formatted}",
+        )
     }
 }
 
