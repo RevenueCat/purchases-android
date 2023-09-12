@@ -51,9 +51,14 @@ val PaywallData.Configuration.Colors.accent1Color: Color
 val PaywallData.Configuration.Colors.accent2Color: Color
     get() = accent2?.let { Color(it.colorInt) } ?: accent1Color
 
-val PaywallData.iconUrlString: String
+val PaywallData.iconUrlString: String?
     get() = getUrlStringFromImage(config.images.icon)
 
-private fun PaywallData.getUrlStringFromImage(image: String?): String {
-    return Uri.parse(assetBaseURL.toString()).buildUpon().path(image ?: "").build().toString()
+val PaywallData.backgroundUrlString: String?
+    get() = getUrlStringFromImage(config.images.background)
+
+private fun PaywallData.getUrlStringFromImage(image: String?): String? {
+    return image?.let {
+        Uri.parse(assetBaseURL.toString()).buildUpon().path(it).build().toString()
+    }
 }

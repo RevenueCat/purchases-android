@@ -2,6 +2,7 @@ package com.revenuecat.purchases.ui.revenuecatui.templates
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -32,6 +33,7 @@ import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.ui.revenuecatui.R
 import com.revenuecat.purchases.ui.revenuecatui.UIConstant
+import com.revenuecat.purchases.ui.revenuecatui.composables.PaywallBackground
 import com.revenuecat.purchases.ui.revenuecatui.composables.RemoteImage
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModel
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewState
@@ -53,24 +55,28 @@ private object Template2UIConstants {
 
 @Composable
 internal fun Template2(state: PaywallViewState.Template2, viewModel: PaywallViewModel) {
-    Column(
-        modifier = Modifier.fillMaxSize(),
-    ) {
-        Spacer(modifier = Modifier.weight(1f))
-        Template2MainContent(state, viewModel)
-        Spacer(modifier = Modifier.weight(1f))
-        PurchaseButton(state, viewModel)
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(
-                    start = UIConstant.defaultHorizontalPadding,
-                    end = UIConstant.defaultHorizontalPadding,
-                    bottom = UIConstant.defaultButtonVerticalSpacing,
-                ),
-            horizontalArrangement = Arrangement.Center,
+    Box {
+        PaywallBackground(data = state.paywallData)
+
+        Column(
+            modifier = Modifier.fillMaxSize(),
         ) {
-            RestorePurchasesButton(viewModel)
+            Spacer(modifier = Modifier.weight(1f))
+            Template2MainContent(state, viewModel)
+            Spacer(modifier = Modifier.weight(1f))
+            PurchaseButton(state, viewModel)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(
+                        start = UIConstant.defaultHorizontalPadding,
+                        end = UIConstant.defaultHorizontalPadding,
+                        bottom = UIConstant.defaultButtonVerticalSpacing,
+                    ),
+                horizontalArrangement = Arrangement.Center,
+            ) {
+                RestorePurchasesButton(viewModel)
+            }
         }
     }
 }
@@ -133,15 +139,17 @@ private fun PurchaseButton(state: PaywallViewState.Template2, viewModel: Paywall
 
 @Composable
 private fun IconImage(paywallData: PaywallData) {
-    Column(modifier = Modifier.widthIn(max = Template2UIConstants.maxIconWidth)) {
-        RemoteImage(
-            urlString = paywallData.iconUrlString,
-            modifier = Modifier
-                .aspectRatio(ratio = 1f)
-                .widthIn(max = Template2UIConstants.maxIconWidth)
-                .clip(RoundedCornerShape(Template2UIConstants.iconCornerRadius)),
-            contentScale = ContentScale.Crop,
-        )
+    paywallData.iconUrlString?.let {
+        Column(modifier = Modifier.widthIn(max = Template2UIConstants.maxIconWidth)) {
+            RemoteImage(
+                urlString = it,
+                modifier = Modifier
+                    .aspectRatio(ratio = 1f)
+                    .widthIn(max = Template2UIConstants.maxIconWidth)
+                    .clip(RoundedCornerShape(Template2UIConstants.iconCornerRadius)),
+                contentScale = ContentScale.Crop,
+            )
+        }
     }
 }
 
