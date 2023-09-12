@@ -28,6 +28,7 @@ internal interface PaywallViewModel {
 
 internal class PaywallViewModelImpl(
     offering: Offering?,
+    listener: PaywallViewListener?,
 ) : ViewModel(), PaywallViewModel {
 
     override val state: StateFlow<PaywallViewState>
@@ -81,6 +82,7 @@ internal class PaywallViewModelImpl(
                 val purchaseResult = Purchases.sharedInstance.awaitPurchase(
                     PurchaseParams.Builder(activity, packageToPurchase).build(),
                 )
+
                 Logger.i("Purchased package: ${purchaseResult.storeTransaction}")
             } catch (e: PurchasesException) {
                 Logger.e("Error purchasing package: $e")

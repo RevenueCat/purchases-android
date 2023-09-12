@@ -6,8 +6,9 @@ import com.revenuecat.purchases.Offering
 
 internal class PaywallViewModelFactory(
     private val offering: Offering?,
+    private val listener: PaywallViewListener?,
 ) : ViewModelProvider.NewInstanceFactory() {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        return PaywallViewModelImpl(offering) as T
+        return PaywallViewModelImpl(offering, listener) as T
     }
 }
