@@ -51,6 +51,10 @@ data class PaywallData(
             }?.value
     }
 
+    /**
+     * Added this fallback to provide support for Android Studio Preview, since isO3Language may throw
+     * in AS implementation of Locale.
+     */
     private val Locale.languageWithFallback: String
         get() = try {
             isO3Language

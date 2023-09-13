@@ -25,6 +25,11 @@ internal interface PaywallViewModel {
     val state: StateFlow<PaywallViewState>
 
     fun selectPackage(packageToSelect: Package)
+
+    /**
+     * Purchase the selected package
+     * Note: This method requires the context to be an activity or to allow reaching an activity
+     */
     fun purchaseSelectedPackage(context: Context)
     fun restorePurchases()
 }
