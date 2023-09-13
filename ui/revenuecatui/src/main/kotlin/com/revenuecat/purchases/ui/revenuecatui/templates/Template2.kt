@@ -190,6 +190,6 @@ private fun SelectPackageButton(
 
 @Preview(showBackground = true)
 @Composable
-fun Template2PaywallPreview() {
+internal fun Template2PaywallPreview() {
     InternalPaywallView(offering = TestData.template2Offering)
 }
