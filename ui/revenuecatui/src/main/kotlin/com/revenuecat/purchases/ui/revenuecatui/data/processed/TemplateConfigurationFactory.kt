@@ -40,7 +40,7 @@ internal object TemplateConfigurationFactory {
         return TemplateConfiguration(
             template = paywallTemplate,
             mode = mode,
-            packageConfiguration = packageConfiguration,
+            packages = packageConfiguration,
             configuration = paywallData.config,
             images = images,
         )

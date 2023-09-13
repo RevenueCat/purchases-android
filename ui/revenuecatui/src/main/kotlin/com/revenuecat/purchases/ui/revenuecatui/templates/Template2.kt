@@ -85,7 +85,7 @@ private fun Template2MainContent(state: PaywallViewState.Loaded, viewModel: Payw
         verticalArrangement = Arrangement.spacedBy(UIConstant.defaultButtonVerticalSpacing, Alignment.CenterVertically),
     ) {
         IconImage(state.templateConfiguration.images.iconUri)
-        val localizedConfig = state.templateConfiguration.packageConfiguration.defaultInfo.localization
+        val localizedConfig = state.templateConfiguration.packages.default.localization
         val colors = state.templateConfiguration.getCurrentColors()
         Text(
             style = MaterialTheme.typography.displaySmall,
@@ -101,7 +101,7 @@ private fun Template2MainContent(state: PaywallViewState.Loaded, viewModel: Payw
             text = localizedConfig.subtitle ?: "",
             color = colors.text1,
         )
-        state.templateConfiguration.packageConfiguration.allPackagesInfo.forEach { packageInfo ->
+        state.templateConfiguration.packages.all.forEach { packageInfo ->
             SelectPackageButton(state, packageInfo, viewModel)
         }
     }

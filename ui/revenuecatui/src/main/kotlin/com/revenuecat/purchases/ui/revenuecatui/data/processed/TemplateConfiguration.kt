@@ -12,7 +12,7 @@ import com.revenuecat.purchases.ui.revenuecatui.PaywallViewMode
 internal data class TemplateConfiguration(
     val template: PaywallTemplate,
     val mode: PaywallViewMode,
-    val packageConfiguration: PackageConfiguration,
+    val packages: PackageConfiguration,
     val configuration: PaywallData.Configuration,
     val images: Images,
 ) {
@@ -49,24 +49,12 @@ internal data class TemplateConfiguration(
         val accent2: Color,
     )
 
-    sealed class PackageConfiguration {
-        data class Single(val packageInfo: PackageInfo) : PackageConfiguration()
+    sealed class PackageConfiguration(open val default: PackageInfo, open val all: List<PackageInfo>) {
+        data class Single(val packageInfo: PackageInfo) : PackageConfiguration(packageInfo, listOf(packageInfo))
         data class Multiple(
             val first: PackageInfo,
-            val default: PackageInfo,
-            val all: List<PackageInfo>,
-        ) : PackageConfiguration()
-
-        val defaultInfo: PackageInfo
-            get() = when (this) {
-                is Single -> packageInfo
-                is Multiple -> default
-            }
-
-        val allPackagesInfo: List<PackageInfo>
-            get() = when (this) {
-                is Single -> listOf(packageInfo)
-                is Multiple -> all
-            }
+            override val default: PackageInfo,
+            override val all: List<PackageInfo>,
+        ) : PackageConfiguration(default, all)
     }
 }

@@ -20,7 +20,7 @@ internal fun Offering.toPaywallViewState(): PaywallViewState {
         )
         PaywallViewState.Loaded(
             templateConfiguration = templateConfiguration,
-            selectedPackage = templateConfiguration.packageConfiguration.defaultInfo,
+            selectedPackage = templateConfiguration.packages.default,
         )
     } catch (e: Exception) {
         PaywallViewState.Error("Error creating paywall: ${e.message}")
