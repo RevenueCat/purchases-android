@@ -68,7 +68,7 @@ class PaywallScreenViewModelImpl(
         if (value is PaywallScreenState.Loaded) {
             _state.update {
                 value.copy(
-                    dialogText = "There was an error restoring purchases",
+                    dialogText = "There was an error restoring purchases:\n${error.message}",
                 )
             }
         }
@@ -90,7 +90,7 @@ class PaywallScreenViewModelImpl(
         if (value is PaywallScreenState.Loaded) {
             _state.update {
                 value.copy(
-                    dialogText = "There was an error purchasing",
+                    dialogText = "There was an error purchasing:\n${error.message}",
                 )
             }
         }
