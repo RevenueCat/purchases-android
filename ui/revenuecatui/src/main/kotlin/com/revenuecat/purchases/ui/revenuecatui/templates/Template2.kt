@@ -28,21 +28,23 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.paywalls.PaywallData
+import com.revenuecat.purchases.ui.revenuecatui.InternalPaywallView
 import com.revenuecat.purchases.ui.revenuecatui.R
 import com.revenuecat.purchases.ui.revenuecatui.UIConstant
 import com.revenuecat.purchases.ui.revenuecatui.composables.PaywallBackground
 import com.revenuecat.purchases.ui.revenuecatui.composables.RemoteImage
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModel
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewState
+import com.revenuecat.purchases.ui.revenuecatui.data.TestData
 import com.revenuecat.purchases.ui.revenuecatui.extensions.accent1Color
 import com.revenuecat.purchases.ui.revenuecatui.extensions.accent2Color
 import com.revenuecat.purchases.ui.revenuecatui.extensions.backgroundColor
 import com.revenuecat.purchases.ui.revenuecatui.extensions.callToActionBackgroundColor
 import com.revenuecat.purchases.ui.revenuecatui.extensions.callToActionForegroundColor
-import com.revenuecat.purchases.ui.revenuecatui.extensions.getActivity
 import com.revenuecat.purchases.ui.revenuecatui.extensions.getColors
 import com.revenuecat.purchases.ui.revenuecatui.extensions.iconUrlString
 import com.revenuecat.purchases.ui.revenuecatui.extensions.localizedConfig
@@ -122,11 +124,11 @@ private fun PurchaseButton(state: PaywallViewState.Template2, viewModel: Paywall
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
-        val activity = LocalContext.current.getActivity() ?: error("Error finding activity")
+        val context = LocalContext.current
         val colors = state.paywallData.getColors()
         Button(
             modifier = Modifier.fillMaxWidth(),
-            onClick = { viewModel.purchaseSelectedPackage(activity) },
+            onClick = { viewModel.purchaseSelectedPackage(context) },
             colors = ButtonDefaults.buttonColors(
                 containerColor = colors.callToActionBackgroundColor,
                 contentColor = colors.callToActionForegroundColor,
@@ -184,4 +186,10 @@ private fun SelectPackageButton(
     ) {
         Text(text = "Purchase ${aPackage.identifier}. Price: ${aPackage.product.price.formatted}")
     }
+}
+
+@Preview(showBackground = true)
+@Composable
+internal fun Template2PaywallPreview() {
+    InternalPaywallView(offering = TestData.template2Offering)
 }

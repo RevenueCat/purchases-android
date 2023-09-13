@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.ui.revenuecatui.data
 
 import android.app.Activity
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.revenuecat.purchases.Offering
@@ -12,6 +13,7 @@ import com.revenuecat.purchases.awaitOfferings
 import com.revenuecat.purchases.awaitPurchase
 import com.revenuecat.purchases.awaitRestore
 import com.revenuecat.purchases.ui.revenuecatui.PaywallViewListener
+import com.revenuecat.purchases.ui.revenuecatui.extensions.getActivity
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toPaywallViewState
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -23,7 +25,12 @@ internal interface PaywallViewModel {
     val state: StateFlow<PaywallViewState>
 
     fun selectPackage(packageToSelect: Package)
-    fun purchaseSelectedPackage(activity: Activity)
+
+    /**
+     * Purchase the selected package
+     * Note: This method requires the context to be an activity or to allow reaching an activity
+     */
+    fun purchaseSelectedPackage(context: Context)
     fun restorePurchases()
 }
 
@@ -55,7 +62,8 @@ internal class PaywallViewModelImpl(
         }
     }
 
-    override fun purchaseSelectedPackage(activity: Activity) {
+    override fun purchaseSelectedPackage(context: Context) {
+        val activity = context.getActivity() ?: error("Activity not found")
         when (val currentState = _state.value) {
             is PaywallViewState.Template2 -> {
                 purchasePackage(activity, currentState.selectedPackage)
