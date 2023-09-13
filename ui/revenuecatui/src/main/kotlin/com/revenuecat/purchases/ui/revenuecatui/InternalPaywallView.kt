@@ -14,7 +14,8 @@ import com.revenuecat.purchases.ui.revenuecatui.templates.Template2
 @Composable
 internal fun InternalPaywallView(
     offering: Offering? = null,
-    viewModel: PaywallViewModel = getPaywallViewModel(offering = offering),
+    listener: PaywallViewListener? = null,
+    viewModel: PaywallViewModel = getPaywallViewModel(offering = offering, listener = listener),
 ) {
     when (val state = viewModel.state.collectAsState().value) {
         is PaywallViewState.Loading -> {
@@ -30,8 +31,8 @@ internal fun InternalPaywallView(
 }
 
 @Composable
-private fun getPaywallViewModel(offering: Offering?): PaywallViewModel {
+private fun getPaywallViewModel(offering: Offering?, listener: PaywallViewListener?): PaywallViewModel {
     return viewModel<PaywallViewModelImpl>(
-        factory = PaywallViewModelFactory(offering),
+        factory = PaywallViewModelFactory(offering, listener),
     )
 }

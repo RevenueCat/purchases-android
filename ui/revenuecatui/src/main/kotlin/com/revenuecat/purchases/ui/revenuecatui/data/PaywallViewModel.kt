@@ -11,6 +11,7 @@ import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.awaitOfferings
 import com.revenuecat.purchases.awaitPurchase
 import com.revenuecat.purchases.awaitRestore
+import com.revenuecat.purchases.ui.revenuecatui.PaywallViewListener
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toPaywallViewState
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -28,6 +29,7 @@ internal interface PaywallViewModel {
 
 internal class PaywallViewModelImpl(
     offering: Offering?,
+    private val listener: PaywallViewListener?,
 ) : ViewModel(), PaywallViewModel {
 
     override val state: StateFlow<PaywallViewState>
@@ -78,12 +80,13 @@ internal class PaywallViewModelImpl(
     private fun purchasePackage(activity: Activity, packageToPurchase: Package) {
         viewModelScope.launch {
             try {
+                listener?.onPurchaseStarted(packageToPurchase)
                 val purchaseResult = Purchases.sharedInstance.awaitPurchase(
                     PurchaseParams.Builder(activity, packageToPurchase).build(),
                 )
-                Logger.i("Purchased package: ${purchaseResult.storeTransaction}")
+                listener?.onPurchaseCompleted(purchaseResult.customerInfo, purchaseResult.storeTransaction)
             } catch (e: PurchasesException) {
-                Logger.e("Error purchasing package: $e")
+                listener?.onPurchaseError(e.error)
             }
         }
     }
