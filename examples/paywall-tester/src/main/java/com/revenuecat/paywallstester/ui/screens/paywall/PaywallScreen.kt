@@ -37,10 +37,8 @@ fun PaywallScreen(
                         .setListener(viewModel)
                         .build(),
                 )
-                if (state.displayCompletedPurchaseMessage) {
-                    PurchaseAlertDialog(viewModel, "Purchase was successful")
-                } else if (state.displayErrorPurchasingMessage) {
-                    PurchaseAlertDialog(viewModel, "There was a purchasing error")
+                state?.dialogText?.let {
+                    PurchaseAlertDialog(viewModel, it)
                 }
             }
         }

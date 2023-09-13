@@ -39,13 +39,45 @@ class PaywallScreenViewModelImpl(
         updateOffering()
     }
 
+    override fun onRestoreStarted() {
+        val value = _state.value
+        if (value is PaywallScreenState.Loaded) {
+            _state.update {
+                value.copy(
+                    dialogText = "Restoring purchases...",
+                )
+            }
+        }
+    }
+
+    override fun onRestoreCompleted(customerInfo: CustomerInfo) {
+        val value = _state.value
+        if (value is PaywallScreenState.Loaded) {
+            _state.update {
+                value.copy(
+                    dialogText = "Restore completed",
+                )
+            }
+        }
+    }
+
+    override fun onRestoreError(error: PurchasesError) {
+        val value = _state.value
+        if (value is PaywallScreenState.Loaded) {
+            _state.update {
+                value.copy(
+                    dialogText = "There was an error restoring purchases",
+                )
+            }
+        }
+    }
+
     override fun onPurchaseCompleted(customerInfo: CustomerInfo, storeTransaction: StoreTransaction) {
         val value = _state.value
         if (value is PaywallScreenState.Loaded) {
             _state.update {
                 value.copy(
-                    displayCompletedPurchaseMessage = true,
-                    displayErrorPurchasingMessage = false,
+                    dialogText = "Purchase was successful",
                 )
             }
         }
@@ -56,8 +88,7 @@ class PaywallScreenViewModelImpl(
         if (value is PaywallScreenState.Loaded) {
             _state.update {
                 value.copy(
-                    displayCompletedPurchaseMessage = false,
-                    displayErrorPurchasingMessage = true,
+                    dialogText = "There was an error purchasing",
                 )
             }
         }
@@ -68,8 +99,7 @@ class PaywallScreenViewModelImpl(
         if (value is PaywallScreenState.Loaded) {
             _state.update {
                 value.copy(
-                    displayCompletedPurchaseMessage = false,
-                    displayErrorPurchasingMessage = false,
+                    dialogText = null,
                 )
             }
         }

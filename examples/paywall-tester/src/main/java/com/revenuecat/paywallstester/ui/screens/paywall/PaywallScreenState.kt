@@ -7,7 +7,6 @@ sealed class PaywallScreenState {
     data class Error(val errorMessage: String) : PaywallScreenState()
     data class Loaded(
         val offering: Offering,
-        val displayCompletedPurchaseMessage: Boolean = false,
-        val displayErrorPurchasingMessage: Boolean = false,
+        val dialogText: String? = null,
     ) : PaywallScreenState()
 }
