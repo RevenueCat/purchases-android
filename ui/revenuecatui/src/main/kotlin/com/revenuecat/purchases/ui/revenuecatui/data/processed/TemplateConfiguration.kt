@@ -1,6 +1,9 @@
 package com.revenuecat.purchases.ui.revenuecatui.data.processed
 
 import android.net.Uri
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.ui.graphics.Color
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.paywalls.PaywallData
@@ -16,8 +19,10 @@ internal data class TemplateConfiguration(
     private val darkModeColors = ColorsFactory.create(configuration.colors, true)
     private val lightModeColors = ColorsFactory.create(configuration.colors, false)
 
-    fun getColors(isDarkTheme: Boolean): Colors {
-        return if (isDarkTheme) darkModeColors else lightModeColors
+    @Composable
+    @ReadOnlyComposable
+    fun getCurrentColors(): Colors {
+        return if (isSystemInDarkTheme()) darkModeColors else lightModeColors
     }
 
     data class PackageInfo(

@@ -2,7 +2,6 @@ package com.revenuecat.purchases.ui.revenuecatui.templates
 
 import android.net.Uri
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -87,7 +86,7 @@ private fun Template2MainContent(state: PaywallViewState.Loaded, viewModel: Payw
     ) {
         IconImage(state.templateConfiguration.images.iconUri)
         val localizedConfig = state.templateConfiguration.packageConfiguration.defaultInfo.localization
-        val colors = state.templateConfiguration.getColors(isSystemInDarkTheme())
+        val colors = state.templateConfiguration.getCurrentColors()
         Text(
             style = MaterialTheme.typography.displaySmall,
             fontWeight = FontWeight.Black,
@@ -118,7 +117,7 @@ private fun PurchaseButton(state: PaywallViewState.Loaded, viewModel: PaywallVie
         verticalArrangement = Arrangement.Center,
     ) {
         val context = LocalContext.current
-        val colors = state.templateConfiguration.getColors(isSystemInDarkTheme())
+        val colors = state.templateConfiguration.getCurrentColors()
         Button(
             modifier = Modifier.fillMaxWidth(),
             onClick = { viewModel.purchaseSelectedPackage(context) },
@@ -161,7 +160,7 @@ private fun SelectPackageButton(
     packageInfo: TemplateConfiguration.PackageInfo,
     viewModel: PaywallViewModel,
 ) {
-    val colors = state.templateConfiguration.getColors(isSystemInDarkTheme())
+    val colors = state.templateConfiguration.getCurrentColors()
     val isSelected = packageInfo == state.selectedPackage
     val (background, textColor) = if (isSelected) {
         colors.accent2 to colors.accent1
