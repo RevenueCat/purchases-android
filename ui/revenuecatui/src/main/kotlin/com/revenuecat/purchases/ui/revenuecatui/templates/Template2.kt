@@ -45,7 +45,6 @@ import com.revenuecat.purchases.ui.revenuecatui.extensions.accent2Color
 import com.revenuecat.purchases.ui.revenuecatui.extensions.backgroundColor
 import com.revenuecat.purchases.ui.revenuecatui.extensions.callToActionBackgroundColor
 import com.revenuecat.purchases.ui.revenuecatui.extensions.callToActionForegroundColor
-import com.revenuecat.purchases.ui.revenuecatui.extensions.getActivity
 import com.revenuecat.purchases.ui.revenuecatui.extensions.getColors
 import com.revenuecat.purchases.ui.revenuecatui.extensions.iconUrlString
 import com.revenuecat.purchases.ui.revenuecatui.extensions.localizedConfig
@@ -125,11 +124,11 @@ private fun PurchaseButton(state: PaywallViewState.Template2, viewModel: Paywall
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
-        val activity = LocalContext.current.getActivity() ?: error("Error finding activity")
+        val context = LocalContext.current
         val colors = state.paywallData.getColors()
         Button(
             modifier = Modifier.fillMaxWidth(),
-            onClick = { viewModel.purchaseSelectedPackage(activity) },
+            onClick = { viewModel.purchaseSelectedPackage(context) },
             colors = ButtonDefaults.buttonColors(
                 containerColor = colors.callToActionBackgroundColor,
                 contentColor = colors.callToActionForegroundColor,

@@ -1,9 +1,11 @@
 package com.revenuecat.purchases.paywalls
 
+import com.revenuecat.purchases.common.errorLog
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import java.net.URL
 import java.util.Locale
+import java.util.MissingResourceException
 
 /**
  * Represents the data required to display a paywall using the `RevenueCatUI` library.
@@ -45,9 +47,17 @@ data class PaywallData(
             ?: localization.entries.firstOrNull { (localeKey, _) ->
                 // Locale("en_US").language returns "en_US" instead of "en", that's why we use getISO3Language
                 @Suppress("UsePropertyAccessSyntax")
-                Locale(localeKey).getISO3Language() == requiredLocale.getISO3Language()
+                Locale(localeKey).languageWithFallback == requiredLocale.languageWithFallback
             }?.value
     }
+
+    private val Locale.languageWithFallback: String
+        get() = try {
+            isO3Language
+        } catch (e: MissingResourceException) {
+            errorLog("Locale $this can't obtain ISO3 language code ($e). Falling back to language.")
+            language
+        }
 
     /**
      * Generic configuration for any paywall.
