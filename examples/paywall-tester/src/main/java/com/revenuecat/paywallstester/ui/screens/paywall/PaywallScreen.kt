@@ -52,12 +52,12 @@ private fun PurchaseAlertDialog(
 ) {
     AlertDialog(
         onDismissRequest = {
-            viewModel.onDismissed()
+            viewModel.onDialogDismissed()
         },
         buttons = {
             TextButton(
                 onClick = {
-                    viewModel.onDismissed()
+                    viewModel.onDialogDismissed()
                 },
             ) {
                 Text("Ok")

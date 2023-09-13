@@ -22,6 +22,8 @@ interface PaywallScreenViewModel : PaywallViewListener {
         const val OFFERING_ID_KEY = "offering_id"
     }
     val state: StateFlow<PaywallScreenState>
+
+    fun onDialogDismissed()
 }
 
 class PaywallScreenViewModelImpl(
@@ -94,7 +96,7 @@ class PaywallScreenViewModelImpl(
         }
     }
 
-    override fun onDismissed() {
+    override fun onDialogDismissed() {
         val value = _state.value
         if (value is PaywallScreenState.Loaded) {
             _state.update {
