@@ -16,8 +16,8 @@ internal data class TemplateConfiguration(
     val configuration: PaywallData.Configuration,
     val images: Images,
 ) {
-    private val darkModeColors = ColorsFactory.create(configuration.colors, true)
-    private val lightModeColors = ColorsFactory.create(configuration.colors, false)
+    private val darkModeColors = ColorsFactory.create(configuration.colors.dark ?: configuration.colors.light)
+    private val lightModeColors = ColorsFactory.create(configuration.colors.light)
 
     @Composable
     @ReadOnlyComposable
