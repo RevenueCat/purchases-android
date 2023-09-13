@@ -39,6 +39,7 @@ import com.revenuecat.purchases.ui.revenuecatui.composables.RemoteImage
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModel
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewState
 import com.revenuecat.purchases.ui.revenuecatui.data.TestData
+import com.revenuecat.purchases.ui.revenuecatui.data.processed.ProcessedLocalizedConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 
 private object Template2UIConstants {
@@ -85,7 +86,7 @@ private fun Template2MainContent(state: PaywallViewState.Loaded, viewModel: Payw
         verticalArrangement = Arrangement.spacedBy(UIConstant.defaultButtonVerticalSpacing, Alignment.CenterVertically),
     ) {
         IconImage(state.templateConfiguration.images.iconUri)
-        val localizedConfig = state.templateConfiguration.packages.default.localization
+        val localizedConfig = state.selectedLocalization
         val colors = state.templateConfiguration.getCurrentColors()
         Text(
             style = MaterialTheme.typography.displaySmall,
@@ -126,7 +127,7 @@ private fun PurchaseButton(state: PaywallViewState.Loaded, viewModel: PaywallVie
                 contentColor = colors.callToActionForeground,
             ),
         ) {
-            Text(text = state.selectedPackage.localization.callToAction)
+            Text(text = state.selectedLocalization.callToAction)
         }
     }
 }
@@ -182,6 +183,9 @@ private fun SelectPackageButton(
         )
     }
 }
+
+private val PaywallViewState.Loaded.selectedLocalization: ProcessedLocalizedConfiguration
+    get() = selectedPackage.localization
 
 @Preview(showBackground = true)
 @Composable
