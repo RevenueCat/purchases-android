@@ -16,7 +16,7 @@ import java.net.URL
 
 internal object TestData {
     val template2 = PaywallData(
-        templateName = "2", // TODO: use enum
+        templateName = "2", // TODO-PAYWALLS: use enum
         config = PaywallData.Configuration(
             packages = listOf(
                 PackageType.WEEKLY.identifier!!,
