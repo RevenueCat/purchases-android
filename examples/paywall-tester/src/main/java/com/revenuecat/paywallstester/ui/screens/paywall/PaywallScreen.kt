@@ -3,7 +3,9 @@ package com.revenuecat.paywallstester.ui.screens.paywall
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material.AlertDialog
 import androidx.compose.material.Text
+import androidx.compose.material.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
@@ -29,8 +31,42 @@ fun PaywallScreen(
                 Text(text = "Error: ${state.errorMessage}")
             }
             is PaywallScreenState.Loaded -> {
-                PaywallView(PaywallViewOptions.Builder().setOffering(state.offering).build())
+                PaywallView(
+                    PaywallViewOptions.Builder()
+                        .setOffering(state.offering)
+                        .setListener(viewModel)
+                        .build(),
+                )
+                if (state.displayCompletedPurchaseMessage) {
+                    PurchaseAlertDialog(viewModel, "Purchase was successful")
+                } else if (state.displayErrorPurchasingMessage) {
+                    PurchaseAlertDialog(viewModel, "There was a purchasing error")
+                }
             }
         }
     }
+}
+
+@Composable
+private fun PurchaseAlertDialog(
+    viewModel: PaywallScreenViewModel,
+    text: String,
+) {
+    AlertDialog(
+        onDismissRequest = {
+            viewModel.onDismissed()
+        },
+        buttons = {
+            TextButton(
+                onClick = {
+                    viewModel.onDismissed()
+                },
+            ) {
+                Text("Ok")
+            }
+        },
+        text = {
+            Text(text)
+        },
+    )
 }

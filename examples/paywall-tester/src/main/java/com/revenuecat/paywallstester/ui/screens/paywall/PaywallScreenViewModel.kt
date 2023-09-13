@@ -4,16 +4,20 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
+import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.awaitOfferings
+import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.ui.revenuecatui.PaywallViewListener
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-interface PaywallScreenViewModel {
+interface PaywallScreenViewModel : PaywallViewListener {
     companion object {
         const val OFFERING_ID_KEY = "offering_id"
     }
@@ -33,6 +37,42 @@ class PaywallScreenViewModelImpl(
 
     init {
         updateOffering()
+    }
+
+    override fun onPurchaseCompleted(customerInfo: CustomerInfo, storeTransaction: StoreTransaction) {
+        val value = _state.value
+        if (value is PaywallScreenState.Loaded) {
+            _state.update {
+                value.copy(
+                    displayCompletedPurchaseMessage = true,
+                    displayErrorPurchasingMessage = false,
+                )
+            }
+        }
+    }
+
+    override fun onPurchaseError(error: PurchasesError) {
+        val value = _state.value
+        if (value is PaywallScreenState.Loaded) {
+            _state.update {
+                value.copy(
+                    displayCompletedPurchaseMessage = false,
+                    displayErrorPurchasingMessage = true,
+                )
+            }
+        }
+    }
+
+    override fun onDismissed() {
+        val value = _state.value
+        if (value is PaywallScreenState.Loaded) {
+            _state.update {
+                value.copy(
+                    displayCompletedPurchaseMessage = false,
+                    displayErrorPurchasingMessage = false,
+                )
+            }
+        }
     }
 
     private fun updateOffering() {

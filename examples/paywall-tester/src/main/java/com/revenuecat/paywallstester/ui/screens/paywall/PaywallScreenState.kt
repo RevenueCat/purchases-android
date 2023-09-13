@@ -5,5 +5,9 @@ import com.revenuecat.purchases.Offering
 sealed class PaywallScreenState {
     object Loading : PaywallScreenState()
     data class Error(val errorMessage: String) : PaywallScreenState()
-    data class Loaded(val offering: Offering) : PaywallScreenState()
+    data class Loaded(
+        val offering: Offering,
+        val displayCompletedPurchaseMessage: Boolean = false,
+        val displayErrorPurchasingMessage: Boolean = false,
+    ) : PaywallScreenState()
 }
