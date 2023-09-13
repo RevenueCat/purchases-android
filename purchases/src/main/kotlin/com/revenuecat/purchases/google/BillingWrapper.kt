@@ -56,6 +56,7 @@ import com.revenuecat.purchases.strings.RestoreStrings
 import com.revenuecat.purchases.utils.Result
 import java.io.PrintWriter
 import java.io.StringWriter
+import java.lang.IllegalStateException
 import java.util.Date
 import java.util.concurrent.ConcurrentLinkedQueue
 import kotlin.math.min
@@ -129,11 +130,18 @@ internal class BillingWrapper(
                     log(LogIntent.DEBUG, BillingStrings.BILLING_CLIENT_STARTING.format(it))
                     if (startConnectionAttempts < MAX_RECONNECTION_ATTEMPTS) {
                         startConnectionAttempts++
-                        it.startConnection(this)
+                        try {
+                            it.startConnection(this)
+                        } catch (e: IllegalStateException) {
+                            log(
+                                LogIntent.GOOGLE_ERROR,
+                                BillingStrings.ILLEGAL_STATE_EXCEPTION_WHEN_CONNECTING.format(e),
+                            )
+                        }
                     } else {
                         // There's an IllegalStateException on Samsung devices that try to bind to the service more
                         // than 999 times. This is a workaround to avoid that.
-                        log(LogIntent.DEBUG, BillingStrings.BILLING_CLIENT_TOO_MANY_RETRIES.format(it))
+                        log(LogIntent.DEBUG, BillingStrings.BILLING_CLIENT_TOO_MANY_RETRIES)
                         it.endConnection()
                     }
                 }
