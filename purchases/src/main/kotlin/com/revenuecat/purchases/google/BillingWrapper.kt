@@ -64,6 +64,9 @@ import kotlin.time.Duration
 private const val RECONNECT_TIMER_START_MILLISECONDS = 1L * 1000L
 private const val RECONNECT_TIMER_MAX_TIME_MILLISECONDS = 1000L * 60L * 15L // 15 minutes
 
+// Arbitrary. There's an IllegalStateException on Samsung devices that try to bind to the service more than 999 times
+private const val MAX_RECONNECTION_ATTEMPTS = 20
+
 @Suppress("LargeClass", "TooManyFunctions")
 internal class BillingWrapper(
     private val clientFactory: ClientFactory,
@@ -73,6 +76,11 @@ internal class BillingWrapper(
     private val diagnosticsTrackerIfEnabled: DiagnosticsTracker?,
     private val dateProvider: DateProvider = DefaultDateProvider(),
 ) : BillingAbstract(), PurchasesUpdatedListener, BillingClientStateListener {
+
+    @get:Synchronized
+    @set:Synchronized
+    @Volatile
+    private var startConnectionAttempts: Int = 0
 
     @get:Synchronized
     @set:Synchronized
@@ -119,7 +127,15 @@ internal class BillingWrapper(
             billingClient?.let {
                 if (!it.isReady) {
                     log(LogIntent.DEBUG, BillingStrings.BILLING_CLIENT_STARTING.format(it))
-                    it.startConnection(this)
+                    if (startConnectionAttempts < MAX_RECONNECTION_ATTEMPTS) {
+                        startConnectionAttempts++
+                        it.startConnection(this)
+                    } else {
+                        // There's an IllegalStateException on Samsung devices that try to bind to the service more
+                        // than 999 times. This is a workaround to avoid that.
+                        log(LogIntent.DEBUG, BillingStrings.BILLING_CLIENT_TOO_MANY_RETRIES.format(it))
+                        it.endConnection()
+                    }
                 }
             }
         }
@@ -666,6 +682,7 @@ internal class BillingWrapper(
         mainHandler.post {
             when (billingResult.responseCode) {
                 BillingClient.BillingResponseCode.OK -> {
+                    startConnectionAttempts = 0
                     log(
                         LogIntent.DEBUG,
                         BillingStrings.BILLING_SERVICE_SETUP_FINISHED
