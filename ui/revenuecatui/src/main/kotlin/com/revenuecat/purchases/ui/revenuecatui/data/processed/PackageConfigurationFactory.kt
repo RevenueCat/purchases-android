@@ -2,6 +2,7 @@ package com.revenuecat.purchases.ui.revenuecatui.data.processed
 
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.paywalls.PaywallData
+import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import java.util.Locale
 
 internal object PackageConfigurationFactory {
@@ -16,7 +17,13 @@ internal object PackageConfigurationFactory {
         locale: Locale,
     ): TemplateConfiguration.PackageConfiguration {
         val packagesById = packages.associateBy { it.identifier }
-        val filteredRCPackages = filter.mapNotNull { packagesById[it] }
+        val filteredRCPackages = filter.mapNotNull {
+            val rcPackage = packagesById[it]
+            if (rcPackage == null) {
+                Logger.d("Package with id $it not found. Ignoring.")
+            }
+            rcPackage
+        }
         require(filteredRCPackages.isNotEmpty()) { "No packages found for ids $filter" }
         val packageInfos = filteredRCPackages.map {
             TemplateConfiguration.PackageInfo(

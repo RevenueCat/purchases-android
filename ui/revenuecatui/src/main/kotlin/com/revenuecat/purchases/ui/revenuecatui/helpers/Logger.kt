@@ -17,4 +17,8 @@ internal object Logger {
     fun i(message: String) {
         Log.i(TAG, message)
     }
+
+    fun d(message: String) {
+        Log.d(TAG, message)
+    }
 }
