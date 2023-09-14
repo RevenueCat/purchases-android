@@ -9,6 +9,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModel
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModelFactory
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModelImpl
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewState
+import com.revenuecat.purchases.ui.revenuecatui.data.processed.PaywallTemplate
 import com.revenuecat.purchases.ui.revenuecatui.templates.Template2
 
 @Composable
@@ -24,8 +25,14 @@ internal fun InternalPaywallView(
         is PaywallViewState.Error -> {
             Text(text = "Error: ${state.errorMessage}")
         }
-        is PaywallViewState.Template2 -> {
-            Template2(state = state, viewModel = viewModel)
+        is PaywallViewState.Loaded -> {
+            when (state.templateConfiguration.template) {
+                PaywallTemplate.TEMPLATE_1 -> Text(text = "Error: Template 1 not supported")
+                PaywallTemplate.TEMPLATE_2 -> Template2(state = state, viewModel = viewModel)
+                PaywallTemplate.TEMPLATE_3 -> Text(text = "Error: Template 3 not supported")
+                PaywallTemplate.TEMPLATE_4 -> Text(text = "Error: Template 4 not supported")
+                PaywallTemplate.TEMPLATE_5 -> Text(text = "Error: Template 5 not supported")
+            }
         }
     }
 }

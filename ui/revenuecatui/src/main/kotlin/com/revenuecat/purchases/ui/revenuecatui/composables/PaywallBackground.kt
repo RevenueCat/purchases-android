@@ -8,18 +8,17 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
-import com.revenuecat.purchases.paywalls.PaywallData
-import com.revenuecat.purchases.ui.revenuecatui.extensions.backgroundUrlString
+import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
 
 @Composable
-internal fun PaywallBackground(data: PaywallData) {
-    data.backgroundUrlString?.let {
+internal fun PaywallBackground(templateConfiguration: TemplateConfiguration) {
+    templateConfiguration.images.backgroundUri?.let {
         RemoteImage(
-            urlString = it,
+            urlString = it.toString(),
             modifier = Modifier
                 .fillMaxSize()
-                .conditional(data.config.blurredBackgroundImage) {
+                .conditional(templateConfiguration.configuration.blurredBackgroundImage) {
                     // TODO-PAYWALLS: backwards compatibility for blurring
                     blur(BackgroundUIConstants.blurSize, edgeTreatment = BlurredEdgeTreatment.Unbounded)
                         .alpha(BackgroundUIConstants.blurAlpha)

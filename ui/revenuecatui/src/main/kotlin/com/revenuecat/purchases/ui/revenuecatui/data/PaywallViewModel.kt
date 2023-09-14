@@ -13,6 +13,7 @@ import com.revenuecat.purchases.awaitOfferings
 import com.revenuecat.purchases.awaitPurchase
 import com.revenuecat.purchases.awaitRestore
 import com.revenuecat.purchases.ui.revenuecatui.PaywallViewListener
+import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.extensions.getActivity
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toPaywallViewState
@@ -24,13 +25,14 @@ import kotlinx.coroutines.launch
 internal interface PaywallViewModel {
     val state: StateFlow<PaywallViewState>
 
-    fun selectPackage(packageToSelect: Package)
+    fun selectPackage(packageToSelect: TemplateConfiguration.PackageInfo)
 
     /**
      * Purchase the selected package
      * Note: This method requires the context to be an activity or to allow reaching an activity
      */
     fun purchaseSelectedPackage(context: Context)
+
     fun restorePurchases()
 }
 
@@ -50,9 +52,9 @@ internal class PaywallViewModelImpl(
         }
     }
 
-    override fun selectPackage(packageToSelect: Package) {
+    override fun selectPackage(packageToSelect: TemplateConfiguration.PackageInfo) {
         _state.value = when (val currentState = _state.value) {
-            is PaywallViewState.Template2 -> {
+            is PaywallViewState.Loaded -> {
                 currentState.copy(selectedPackage = packageToSelect)
             }
             else -> {
@@ -65,8 +67,8 @@ internal class PaywallViewModelImpl(
     override fun purchaseSelectedPackage(context: Context) {
         val activity = context.getActivity() ?: error("Activity not found")
         when (val currentState = _state.value) {
-            is PaywallViewState.Template2 -> {
-                purchasePackage(activity, currentState.selectedPackage)
+            is PaywallViewState.Loaded -> {
+                purchasePackage(activity, currentState.selectedPackage.rcPackage)
             }
             else -> {
                 Logger.e("Unexpected state trying to purchase package: $currentState")
