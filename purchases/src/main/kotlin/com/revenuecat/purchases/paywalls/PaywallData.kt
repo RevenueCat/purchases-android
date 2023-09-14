@@ -45,7 +45,6 @@ data class PaywallData(
     fun configForLocale(requiredLocale: Locale): LocalizedConfiguration? {
         return localization[requiredLocale.toString()]
             ?: localization.entries.firstOrNull { (localeKey, _) ->
-                // Locale("en_US").language returns "en_US" instead of "en", that's why we use getISO3Language
                 @Suppress("UsePropertyAccessSyntax")
                 Locale(localeKey).languageWithFallback == requiredLocale.languageWithFallback
             }?.value
@@ -57,6 +56,7 @@ data class PaywallData(
      */
     private val Locale.languageWithFallback: String
         get() = try {
+            // Locale("en_US").language returns "en_US" instead of "en", that's why we use getISO3Language
             isO3Language
         } catch (e: MissingResourceException) {
             errorLog("Locale $this can't obtain ISO3 language code ($e). Falling back to language.")
