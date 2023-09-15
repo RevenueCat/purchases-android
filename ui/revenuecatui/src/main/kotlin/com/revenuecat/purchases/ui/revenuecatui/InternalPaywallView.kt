@@ -25,11 +25,7 @@ internal fun InternalPaywallView(
     listener: PaywallViewListener? = null,
     viewModel: PaywallViewModel = getPaywallViewModel(offering = offering, listener = listener),
 ) {
-    var locale by remember { mutableStateOf(LocaleListCompat.getDefault()) }
-    if (locale != LocaleListCompat.getDefault()) {
-        locale = LocaleListCompat.getDefault()
-        viewModel.refreshState()
-    }
+    updateStateIfLocaleChanged(viewModel)
 
     when (val state = viewModel.state.collectAsState().value) {
         is PaywallViewState.Loading -> {
@@ -47,6 +43,15 @@ internal fun InternalPaywallView(
                 PaywallTemplate.TEMPLATE_5 -> Text(text = "Error: Template 5 not supported")
             }
         }
+    }
+}
+
+@Composable
+private fun updateStateIfLocaleChanged(viewModel: PaywallViewModel) {
+    var locale by remember { mutableStateOf(LocaleListCompat.getDefault()) }
+    if (locale != LocaleListCompat.getDefault()) {
+        locale = LocaleListCompat.getDefault()
+        viewModel.refreshState()
     }
 }
 
