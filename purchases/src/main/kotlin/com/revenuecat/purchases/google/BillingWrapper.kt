@@ -56,6 +56,7 @@ import com.revenuecat.purchases.strings.RestoreStrings
 import com.revenuecat.purchases.utils.Result
 import java.io.PrintWriter
 import java.io.StringWriter
+import java.lang.IllegalStateException
 import java.util.Date
 import java.util.concurrent.ConcurrentLinkedQueue
 import kotlin.math.min
@@ -119,7 +120,16 @@ internal class BillingWrapper(
             billingClient?.let {
                 if (!it.isReady) {
                     log(LogIntent.DEBUG, BillingStrings.BILLING_CLIENT_STARTING.format(it))
-                    it.startConnection(this)
+                    try {
+                        it.startConnection(this)
+                    } catch (e: IllegalStateException) {
+                        log(
+                            LogIntent.GOOGLE_ERROR,
+                            BillingStrings.ILLEGAL_STATE_EXCEPTION_WHEN_CONNECTING.format(e),
+                        )
+                        val error = PurchasesError(PurchasesErrorCode.StoreProblemError, e.message)
+                        sendErrorsToAllPendingRequests(error)
+                    }
                 }
             }
         }
@@ -684,19 +694,10 @@ internal class BillingWrapper(
                     log(LogIntent.GOOGLE_WARNING, message)
                     // The calls will fail with an error that will be surfaced. We want to surface these errors
                     // Can't call executePendingRequests because it will not do anything since it checks for isReady()
-                    synchronized(this@BillingWrapper) {
-                        while (true) {
-                            serviceRequests.poll()?.let { serviceRequest ->
-                                mainHandler.post {
-                                    serviceRequest(
-                                        billingResult.responseCode
-                                            .billingResponseToPurchasesError(message)
-                                            .also { errorLog(it) },
-                                    )
-                                }
-                            } ?: break
-                        }
-                    }
+                    val error = billingResult.responseCode
+                        .billingResponseToPurchasesError(message)
+                        .also { errorLog(it) }
+                    sendErrorsToAllPendingRequests(error)
                 }
                 BillingClient.BillingResponseCode.SERVICE_TIMEOUT,
                 BillingClient.BillingResponseCode.ERROR,
@@ -979,5 +980,16 @@ internal class BillingWrapper(
                 }
                 .build(),
         )
+    }
+
+    @Synchronized
+    private fun sendErrorsToAllPendingRequests(error: PurchasesError) {
+        while (true) {
+            serviceRequests.poll()?.let { serviceRequest ->
+                mainHandler.post {
+                    serviceRequest(error)
+                }
+            } ?: break
+        }
     }
 }
