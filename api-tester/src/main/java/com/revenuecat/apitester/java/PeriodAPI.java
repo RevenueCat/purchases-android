@@ -8,6 +8,7 @@ final class PeriodAPI {
         int val = period.getValue();
         Period.Unit unit = period.getUnit();
         String iso8601 = period.getIso8601();
+        Double valueInMonths = period.getValueInMonths();
 
         switch (unit) {
             case DAY:
