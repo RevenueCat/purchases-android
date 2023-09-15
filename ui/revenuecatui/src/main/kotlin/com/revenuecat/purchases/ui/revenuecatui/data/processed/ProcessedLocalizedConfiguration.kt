@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.data.processed
 
+import android.content.Context
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.paywalls.PaywallData
 import java.util.Locale
@@ -16,36 +17,34 @@ internal data class ProcessedLocalizedConfiguration(
 ) {
     companion object {
         fun create(
+            context: Context,
             localizedConfiguration: PaywallData.LocalizedConfiguration,
             rcPackage: Package,
             locale: Locale,
         ): ProcessedLocalizedConfiguration {
+            fun String.processVariables(): String {
+                return VariableProcessor.processVariables(
+                    context,
+                    this,
+                    rcPackage,
+                    locale,
+                )
+            }
             return ProcessedLocalizedConfiguration(
-                title = localizedConfiguration.title.processVariables(rcPackage, locale),
-                subtitle = localizedConfiguration.subtitle?.processVariables(rcPackage, locale),
-                callToAction = localizedConfiguration.callToAction.processVariables(rcPackage, locale),
-                callToActionWithIntroOffer = localizedConfiguration.callToActionWithIntroOffer?.processVariables(
-                    rcPackage,
-                    locale,
-                ),
-                offerDetails = localizedConfiguration.offerDetails?.processVariables(rcPackage, locale),
-                offerDetailsWithIntroOffer = localizedConfiguration.offerDetailsWithIntroOffer?.processVariables(
-                    rcPackage,
-                    locale,
-                ),
-                offerName = localizedConfiguration.offerName?.processVariables(rcPackage, locale),
+                title = localizedConfiguration.title.processVariables(),
+                subtitle = localizedConfiguration.subtitle?.processVariables(),
+                callToAction = localizedConfiguration.callToAction.processVariables(),
+                callToActionWithIntroOffer = localizedConfiguration.callToActionWithIntroOffer?.processVariables(),
+                offerDetails = localizedConfiguration.offerDetails?.processVariables(),
+                offerDetailsWithIntroOffer = localizedConfiguration.offerDetailsWithIntroOffer?.processVariables(),
+                offerName = localizedConfiguration.offerName?.processVariables(),
                 features = localizedConfiguration.features.map { feature ->
                     feature.copy(
-                        title = feature.title.processVariables(rcPackage, locale),
-                        content = feature.content?.processVariables(rcPackage, locale),
+                        title = feature.title.processVariables(),
+                        content = feature.content?.processVariables(),
                     )
                 },
             )
-        }
-
-        @Suppress("UnusedParameter")
-        private fun String.processVariables(rcPackage: Package, locale: Locale): String {
-            return this // TODO-PAYWALLS: Process variables
         }
     }
 }

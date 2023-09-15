@@ -21,10 +21,12 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import java.lang.ref.WeakReference
 
 internal interface PaywallViewModel {
     val state: StateFlow<PaywallViewState>
 
+    fun refreshState()
     fun selectPackage(packageToSelect: TemplateConfiguration.PackageInfo)
 
     /**
@@ -37,18 +39,27 @@ internal interface PaywallViewModel {
 }
 
 internal class PaywallViewModelImpl(
-    offering: Offering?,
+    private val applicationContext: WeakReference<Context>,
+    private val offering: Offering?,
     private val listener: PaywallViewListener?,
 ) : ViewModel(), PaywallViewModel {
 
     override val state: StateFlow<PaywallViewState>
         get() = _state.asStateFlow()
-    private val initialState: PaywallViewState = offering?.toPaywallViewState() ?: PaywallViewState.Loading
+    private val initialState: PaywallViewState = offering?.calculateState() ?: PaywallViewState.Loading
     private val _state = MutableStateFlow(initialState)
 
     init {
         if (offering == null) {
             updateOffering()
+        }
+    }
+
+    override fun refreshState() {
+        if (offering == null) {
+            updateOffering()
+        } else {
+            _state.value = offering.calculateState()
         }
     }
 
@@ -109,11 +120,17 @@ internal class PaywallViewModelImpl(
                 if (currentOffering == null) {
                     _state.value = PaywallViewState.Error("No offering or current offering")
                 } else {
-                    _state.value = currentOffering.toPaywallViewState()
+                    _state.value = currentOffering.calculateState()
                 }
             } catch (e: PurchasesException) {
                 _state.value = PaywallViewState.Error(e.toString())
             }
         }
+    }
+
+    private fun Offering.calculateState(): PaywallViewState {
+        return applicationContext.get()?.let { toPaywallViewState(it) } ?: PaywallViewState.Error(
+            "Application context not found",
+        )
     }
 }

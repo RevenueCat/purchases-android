@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.data.processed
 
+import android.content.Context
 import android.net.Uri
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.paywalls.PaywallData
@@ -9,6 +10,7 @@ import java.util.Locale
 internal object TemplateConfigurationFactory {
     @Suppress("LongParameterList", "ThrowsCount")
     fun create(
+        context: Context,
         mode: PaywallViewMode,
         paywallData: PaywallData,
         packages: List<Package>,
@@ -29,6 +31,7 @@ internal object TemplateConfigurationFactory {
             headerUri = paywallData.getUriFromImage(paywallData.config.images.header),
         )
         val packageConfiguration = PackageConfigurationFactory.createPackageConfiguration(
+            context = context,
             packages = packages,
             activelySubscribedProductIdentifiers = activelySubscribedProductIdentifiers,
             filter = packageIds,

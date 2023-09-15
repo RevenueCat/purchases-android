@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.data.processed
 
+import android.content.Context
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
@@ -8,6 +9,7 @@ import java.util.Locale
 internal object PackageConfigurationFactory {
     @Suppress("LongParameterList")
     fun createPackageConfiguration(
+        context: Context,
         packages: List<Package>,
         activelySubscribedProductIdentifiers: Set<String>,
         filter: List<String>,
@@ -28,7 +30,7 @@ internal object PackageConfigurationFactory {
         val packageInfos = filteredRCPackages.map {
             TemplateConfiguration.PackageInfo(
                 rcPackage = it,
-                localization = ProcessedLocalizedConfiguration.create(localization, it, locale),
+                localization = ProcessedLocalizedConfiguration.create(context, localization, it, locale),
                 currentlySubscribed = activelySubscribedProductIdentifiers.contains(it.product.id),
                 discountRelativeToMostExpensivePerMonth = null, // TODO-PAYWALLS: Support discount UI
             )
