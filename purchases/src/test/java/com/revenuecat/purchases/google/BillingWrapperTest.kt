@@ -63,7 +63,6 @@ import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.runs
 import io.mockk.slot
-import io.mockk.unmockkStatic
 import io.mockk.verify
 import io.mockk.verifySequence
 import org.assertj.core.api.Assertions.assertThat
@@ -283,6 +282,31 @@ class BillingWrapperTest {
         verify(exactly = 2) {
             mockClient.startConnection(billingClientStateListener!!)
         }
+    }
+
+    @Test
+    fun `If starting connection throws an IllegalStateException, error is forwarded`() {
+        every { mockClient.isReady } returns false
+        every {
+            mockClient.startConnection(any())
+        } throws IllegalStateException("Too many bind requests(999+) for service intent.")
+
+        var error: PurchasesError? = null
+        wrapper.queryPurchases(
+            appUserID = "appUserID",
+            onSuccess = {
+                fail("should be an error")
+            },
+            onError = {
+                error = it
+            }
+        )
+
+        verify {
+            mockClient.startConnection(billingClientStateListener!!)
+        }
+        assertThat(error).isNotNull
+        assertThat(error?.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
     }
 
     @Test
