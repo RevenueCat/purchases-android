@@ -65,9 +65,6 @@ import kotlin.time.Duration
 private const val RECONNECT_TIMER_START_MILLISECONDS = 1L * 1000L
 private const val RECONNECT_TIMER_MAX_TIME_MILLISECONDS = 1000L * 60L * 15L // 15 minutes
 
-// Arbitrary. There's an IllegalStateException on Samsung devices that try to bind to the service more than 999 times
-private const val MAX_RECONNECTION_ATTEMPTS = 20
-
 @Suppress("LargeClass", "TooManyFunctions")
 internal class BillingWrapper(
     private val clientFactory: ClientFactory,
@@ -77,11 +74,6 @@ internal class BillingWrapper(
     private val diagnosticsTrackerIfEnabled: DiagnosticsTracker?,
     private val dateProvider: DateProvider = DefaultDateProvider(),
 ) : BillingAbstract(), PurchasesUpdatedListener, BillingClientStateListener {
-
-    @get:Synchronized
-    @set:Synchronized
-    @Volatile
-    private var startConnectionAttempts: Int = 0
 
     @get:Synchronized
     @set:Synchronized
@@ -128,21 +120,15 @@ internal class BillingWrapper(
             billingClient?.let {
                 if (!it.isReady) {
                     log(LogIntent.DEBUG, BillingStrings.BILLING_CLIENT_STARTING.format(it))
-                    if (startConnectionAttempts < MAX_RECONNECTION_ATTEMPTS) {
-                        startConnectionAttempts++
-                        try {
-                            it.startConnection(this)
-                        } catch (e: IllegalStateException) {
-                            log(
-                                LogIntent.GOOGLE_ERROR,
-                                BillingStrings.ILLEGAL_STATE_EXCEPTION_WHEN_CONNECTING.format(e),
-                            )
-                        }
-                    } else {
-                        // There's an IllegalStateException on Samsung devices that try to bind to the service more
-                        // than 999 times. This is a workaround to avoid that.
-                        log(LogIntent.DEBUG, BillingStrings.BILLING_CLIENT_TOO_MANY_RETRIES)
-                        it.endConnection()
+                    try {
+                        it.startConnection(this)
+                    } catch (e: IllegalStateException) {
+                        log(
+                            LogIntent.GOOGLE_ERROR,
+                            BillingStrings.ILLEGAL_STATE_EXCEPTION_WHEN_CONNECTING.format(e),
+                        )
+                        val error = PurchasesError(PurchasesErrorCode.StoreProblemError, e.message)
+                        sendErrorsToAllPendingRequests(error)
                     }
                 }
             }
@@ -690,7 +676,6 @@ internal class BillingWrapper(
         mainHandler.post {
             when (billingResult.responseCode) {
                 BillingClient.BillingResponseCode.OK -> {
-                    startConnectionAttempts = 0
                     log(
                         LogIntent.DEBUG,
                         BillingStrings.BILLING_SERVICE_SETUP_FINISHED
@@ -709,19 +694,10 @@ internal class BillingWrapper(
                     log(LogIntent.GOOGLE_WARNING, message)
                     // The calls will fail with an error that will be surfaced. We want to surface these errors
                     // Can't call executePendingRequests because it will not do anything since it checks for isReady()
-                    synchronized(this@BillingWrapper) {
-                        while (true) {
-                            serviceRequests.poll()?.let { serviceRequest ->
-                                mainHandler.post {
-                                    serviceRequest(
-                                        billingResult.responseCode
-                                            .billingResponseToPurchasesError(message)
-                                            .also { errorLog(it) },
-                                    )
-                                }
-                            } ?: break
-                        }
-                    }
+                    val error = billingResult.responseCode
+                        .billingResponseToPurchasesError(message)
+                        .also { errorLog(it) }
+                    sendErrorsToAllPendingRequests(error)
                 }
                 BillingClient.BillingResponseCode.SERVICE_TIMEOUT,
                 BillingClient.BillingResponseCode.ERROR,
@@ -1004,5 +980,16 @@ internal class BillingWrapper(
                 }
                 .build(),
         )
+    }
+
+    @Synchronized
+    private fun sendErrorsToAllPendingRequests(error: PurchasesError) {
+        while (true) {
+            serviceRequests.poll()?.let { serviceRequest ->
+                mainHandler.post {
+                    serviceRequest(error)
+                }
+            } ?: break
+        }
     }
 }
