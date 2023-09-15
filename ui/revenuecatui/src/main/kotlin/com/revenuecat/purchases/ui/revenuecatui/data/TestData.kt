@@ -24,6 +24,13 @@ import kotlinx.coroutines.flow.asStateFlow
 import java.net.URL
 
 internal object TestData {
+    const val title = "Call to action for better conversion."
+    const val subtitle = "Lorem ipsum is simply dummy text of the printing and typesetting industry."
+    const val callToAction = "Subscribe for {{ price_per_period }}"
+    const val offerDetails = "{{ total_price_and_per_month }}"
+    const val offerDetailsWithIntroOffer = "{{ total_price_and_per_month }} after {{ sub_offer_duration }} trial"
+    const val offerName = "{{ sub_period }}"
+
     val template2 = PaywallData(
         templateName = "2", // TODO-PAYWALLS: use enum
         config = PaywallData.Configuration(
@@ -50,12 +57,12 @@ internal object TestData {
         ),
         localization = mapOf(
             "en_US" to PaywallData.LocalizedConfiguration(
-                title = "Call to action for better conversion.",
-                subtitle = "Lorem ipsum is simply dummy text of the printing and typesetting industry.",
-                callToAction = "Subscribe for {{ price_per_period }}",
-                offerDetails = "{{ total_price_and_per_month }}",
-                offerDetailsWithIntroOffer = "{{ total_price_and_per_month }} after {{ sub_offer_duration }} trial",
-                offerName = "{{ sub_period }}",
+                title = title,
+                subtitle = subtitle,
+                callToAction = callToAction,
+                offerDetails = offerDetails,
+                offerDetailsWithIntroOffer = offerDetailsWithIntroOffer,
+                offerName = offerName,
             ),
         ),
         assetBaseURL = Constants.assetBaseURL,

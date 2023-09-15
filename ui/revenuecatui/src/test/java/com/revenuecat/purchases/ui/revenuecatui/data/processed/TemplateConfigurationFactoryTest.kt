@@ -3,10 +3,10 @@ package com.revenuecat.purchases.ui.revenuecatui.data.processed
 import android.net.Uri
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.Package
-import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.ui.revenuecatui.PaywallViewMode
 import com.revenuecat.purchases.ui.revenuecatui.data.TestData
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.util.Locale
@@ -16,13 +16,18 @@ internal class TemplateConfigurationFactoryTest {
 
     private val paywallViewMode = PaywallViewMode.FULL_SCREEN
 
-    private val template2Configuration = TemplateConfigurationFactory.create(
-        paywallViewMode,
-        TestData.template2,
-        listOf(TestData.Packages.weekly, TestData.Packages.monthly, TestData.Packages.annual),
-        emptySet(),
-        Locale.US,
-    )
+    private lateinit var template2Configuration: TemplateConfiguration
+
+    @Before
+    fun setUp() {
+        template2Configuration = TemplateConfigurationFactory.create(
+            paywallViewMode,
+            TestData.template2,
+            listOf(TestData.Packages.weekly, TestData.Packages.monthly, TestData.Packages.annual),
+            emptySet(),
+            Locale.US,
+        )
+    }
 
     @Test
     fun `template configuration has correct template`() {
@@ -70,13 +75,13 @@ internal class TemplateConfigurationFactoryTest {
 
     private fun getPackageInfo(rcPackage: Package): TemplateConfiguration.PackageInfo {
         val processedLocalization = ProcessedLocalizedConfiguration(
-            title = "Call to action for better conversion.",
-            subtitle = "Lorem ipsum is simply dummy text of the printing and typesetting industry.",
-            callToAction = "Subscribe for {{ price_per_period }}",
+            title = TestData.title,
+            subtitle = TestData.subtitle,
+            callToAction = TestData.callToAction,
             callToActionWithIntroOffer = null,
-            offerDetails = "{{ total_price_and_per_month }}",
-            offerDetailsWithIntroOffer = "{{ total_price_and_per_month }} after {{ sub_offer_duration }} trial",
-            offerName = "{{ sub_period }}",
+            offerDetails = TestData.offerDetails,
+            offerDetailsWithIntroOffer = TestData.offerDetailsWithIntroOffer,
+            offerName = TestData.offerName,
             features = emptyList(),
         )
         return TemplateConfiguration.PackageInfo(
