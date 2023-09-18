@@ -1,6 +1,5 @@
 package com.revenuecat.purchases.ui.revenuecatui.data.processed
 
-import android.content.Context
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.paywalls.PaywallData
 import java.util.Locale
@@ -17,14 +16,14 @@ internal data class ProcessedLocalizedConfiguration(
 ) {
     companion object {
         fun create(
-            context: Context,
+            variableDataProvider: VariableDataProvider,
             localizedConfiguration: PaywallData.LocalizedConfiguration,
             rcPackage: Package,
             locale: Locale,
         ): ProcessedLocalizedConfiguration {
             fun String.processVariables(): String {
                 return VariableProcessor.processVariables(
-                    context,
+                    variableDataProvider,
                     this,
                     rcPackage,
                     locale,

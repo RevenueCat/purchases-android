@@ -5,10 +5,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.ui.revenuecatui.PaywallViewListener
-import java.lang.ref.WeakReference
 
 internal class PaywallViewModelFactory(
-    private val applicationContext: WeakReference<Context>,
+    private val applicationContext: Context,
     private val offering: Offering?,
     private val listener: PaywallViewListener?,
 ) : ViewModelProvider.NewInstanceFactory() {

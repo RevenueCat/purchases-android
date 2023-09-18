@@ -14,6 +14,7 @@ import com.revenuecat.purchases.awaitPurchase
 import com.revenuecat.purchases.awaitRestore
 import com.revenuecat.purchases.ui.revenuecatui.PaywallViewListener
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
+import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvider
 import com.revenuecat.purchases.ui.revenuecatui.extensions.getActivity
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toPaywallViewState
@@ -21,7 +22,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import java.lang.ref.WeakReference
 
 internal interface PaywallViewModel {
     val state: StateFlow<PaywallViewState>
@@ -39,17 +39,19 @@ internal interface PaywallViewModel {
 }
 
 internal class PaywallViewModelImpl(
-    private val applicationContext: WeakReference<Context>,
+    applicationContext: Context,
     private val offering: Offering?,
     private val listener: PaywallViewListener?,
 ) : ViewModel(), PaywallViewModel {
 
+    private val variableDataProvider = VariableDataProvider(applicationContext)
+
     override val state: StateFlow<PaywallViewState>
         get() = _state.asStateFlow()
-    private val initialState: PaywallViewState = offering?.calculateState() ?: PaywallViewState.Loading
-    private val _state = MutableStateFlow(initialState)
+    private val _state: MutableStateFlow<PaywallViewState>
 
     init {
+        _state = MutableStateFlow(offering?.calculateState() ?: PaywallViewState.Loading)
         if (offering == null) {
             updateOffering()
         }
@@ -129,8 +131,6 @@ internal class PaywallViewModelImpl(
     }
 
     private fun Offering.calculateState(): PaywallViewState {
-        return applicationContext.get()?.let { toPaywallViewState(it) } ?: PaywallViewState.Error(
-            "Application context not found",
-        )
+        return toPaywallViewState(variableDataProvider)
     }
 }

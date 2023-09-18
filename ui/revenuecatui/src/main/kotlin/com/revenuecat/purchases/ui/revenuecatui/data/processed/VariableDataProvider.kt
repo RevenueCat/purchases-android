@@ -7,12 +7,15 @@ import java.util.Currency
 import java.util.Locale
 
 @Suppress("UnusedParameter", "FunctionOnlyReturningConstant")
-internal object VariableDataProvider {
-    private const val MICRO_MULTIPLIER = 1000000.0
-
-    fun applicationName(context: Context): String {
-        return context.applicationInfo.loadLabel(context.packageManager).toString()
+internal class VariableDataProvider(
+    private val applicationContext: Context,
+) {
+    companion object {
+        private const val MICRO_MULTIPLIER = 1000000.0
     }
+
+    val applicationName: String
+        get() = applicationContext.applicationInfo.loadLabel(applicationContext.packageManager).toString()
 
     fun localizedPrice(rcPackage: Package): String {
         return rcPackage.product.price.formatted

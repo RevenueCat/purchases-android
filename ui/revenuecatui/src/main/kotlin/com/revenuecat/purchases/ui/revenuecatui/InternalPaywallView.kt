@@ -17,7 +17,6 @@ import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModelImpl
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewState
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.PaywallTemplate
 import com.revenuecat.purchases.ui.revenuecatui.templates.Template2
-import java.lang.ref.WeakReference
 
 @Composable
 internal fun InternalPaywallView(
@@ -58,6 +57,6 @@ private fun updateStateIfLocaleChanged(viewModel: PaywallViewModel) {
 @Composable
 private fun getPaywallViewModel(offering: Offering?, listener: PaywallViewListener?): PaywallViewModel {
     return viewModel<PaywallViewModelImpl>(
-        factory = PaywallViewModelFactory(WeakReference(LocalContext.current.applicationContext), offering, listener),
+        factory = PaywallViewModelFactory(LocalContext.current.applicationContext, offering, listener),
     )
 }
