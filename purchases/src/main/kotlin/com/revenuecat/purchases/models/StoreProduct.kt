@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.models
 
 import com.revenuecat.purchases.ProductType
+import com.revenuecat.purchases.utils.formattedPricePerMonth
 import java.util.Locale
 
 /**
@@ -98,5 +99,7 @@ interface StoreProduct {
      * For Google subscriptions, this value will use the basePlan to calculate the value.
      * @param locale Locale to use for formatting the price. Default is the system default locale.
      */
-    fun formattedPricePerMonth(locale: Locale = Locale.getDefault()): String?
+    fun formattedPricePerMonth(locale: Locale = Locale.getDefault()): String? {
+        return period?.let { price.formattedPricePerMonth(it, locale) }
+    }
 }

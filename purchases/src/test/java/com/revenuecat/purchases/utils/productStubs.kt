@@ -131,10 +131,6 @@ fun stubStoreProduct(
             offeringId,
         )
     }
-
-    override fun formattedPricePerMonth(locale: Locale): String? {
-        error("not implemented")
-    }
 }
 
 @SuppressWarnings("EmptyFunctionBlock")
@@ -195,15 +191,7 @@ fun stubINAPPStoreProduct(
                 get() = productId
 
             override fun copyWithOfferingId(offeringId: String): StoreProduct = this
-
-            override fun formattedPricePerMonth(locale: Locale): String? {
-                error("not implemented")
-            }
         }
-    }
-
-    override fun formattedPricePerMonth(locale: Locale): String? {
-        error("not implemented")
     }
 }
 

@@ -6,9 +6,7 @@ import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.models.SubscriptionOptions
-import com.revenuecat.purchases.utils.formattedPricePerMonth
 import org.json.JSONObject
-import java.util.Locale
 
 data class AmazonStoreProduct(
 
@@ -113,17 +111,6 @@ data class AmazonStoreProduct(
             this.originalProductJSON,
             offeringId,
         )
-    }
-
-    /**
-     * Null for INAPP products. The price of the [StoreProduct] in the given locale in a monthly recurrence.
-     * This means that, for example, if the period is annual, the price will be divided by 12.
-     * It uses a currency formatter to format the price in the given locale.
-     * Note that this value may be an approximation.
-     * @param locale Locale to use for formatting the price. Default is the system default locale.
-     */
-    override fun formattedPricePerMonth(locale: Locale): String? {
-        return period?.let { price.formattedPricePerMonth(it, locale) }
     }
 
     override fun equals(other: Any?) = other is AmazonStoreProduct &&
