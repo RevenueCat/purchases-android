@@ -1,10 +1,8 @@
 package com.revenuecat.purchases.ui.revenuecatui.data.processed
 
-import android.content.Context
-import android.content.pm.ApplicationInfo
-import android.content.pm.PackageManager
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.ui.revenuecatui.data.TestData
+import com.revenuecat.purchases.ui.revenuecatui.helpers.ApplicationContext
 import io.mockk.every
 import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
@@ -16,7 +14,7 @@ import java.util.Locale
 @RunWith(AndroidJUnit4::class)
 class VariableDataProviderTest {
 
-    private lateinit var applicationContext: Context
+    private lateinit var applicationContext: ApplicationContext
     private lateinit var variableDataProvider: VariableDataProvider
 
     @Before
@@ -28,11 +26,7 @@ class VariableDataProviderTest {
     @Test
     fun `applicationName processes app name correctly`() {
         val testAppName = "test app name"
-        val packageManager = mockk<PackageManager>()
-        every { applicationContext.packageManager } returns packageManager
-        every { applicationContext.applicationInfo } returns mockk<ApplicationInfo>().apply {
-            every { loadLabel(packageManager) } returns testAppName
-        }
+        every { applicationContext.getApplicationName() } returns testAppName
         assertThat(variableDataProvider.applicationName).isEqualTo(testAppName)
     }
 
