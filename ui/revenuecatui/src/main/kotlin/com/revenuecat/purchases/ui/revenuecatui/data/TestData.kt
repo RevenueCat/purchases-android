@@ -64,45 +64,45 @@ internal object TestData {
         paywall = template2,
         serverDescription = "",
     )
-}
 
-private object Packages {
-    val weekly = Package(
-        packageType = PackageType.WEEKLY,
-        identifier = PackageType.WEEKLY.identifier!!,
-        offering = "offering",
-        product = TestStoreProduct(
-            id = "com.revenuecat.weekly_product",
-            title = "Weekly",
-            price = Price(amountMicros = 199, currencyCode = "USA", formatted = "$1.99"),
-            description = "Weekly",
-            period = Period(value = 1, unit = Period.Unit.WEEK, iso8601 = "P1W"),
-        ),
-    )
-    val monthly = Package(
-        packageType = PackageType.MONTHLY,
-        identifier = PackageType.MONTHLY.identifier!!,
-        offering = "offering",
-        product = TestStoreProduct(
-            id = "com.revenuecat.monthly_product",
-            title = "Monthly",
-            price = Price(amountMicros = 799, currencyCode = "USA", formatted = "$7.99"),
-            description = "Monthly",
-            period = Period(value = 1, unit = Period.Unit.MONTH, iso8601 = "P1M"),
-        ),
-    )
-    val annual = Package(
-        packageType = PackageType.ANNUAL,
-        identifier = PackageType.ANNUAL.identifier!!,
-        offering = "offering",
-        product = TestStoreProduct(
-            id = "com.revenuecat.annual_product",
-            title = "Annual",
-            price = Price(amountMicros = 6799, currencyCode = "USA", formatted = "$67.99"),
-            description = "Annual",
-            period = Period(value = 12, unit = Period.Unit.MONTH, iso8601 = "P1Y"),
-        ),
-    )
+    object Packages {
+        val weekly = Package(
+            packageType = PackageType.WEEKLY,
+            identifier = PackageType.WEEKLY.identifier!!,
+            offering = "offering",
+            product = TestStoreProduct(
+                id = "com.revenuecat.weekly_product",
+                title = "Weekly",
+                price = Price(amountMicros = 1_990_000, currencyCode = "USD", formatted = "$1.99"),
+                description = "Weekly",
+                period = Period(value = 1, unit = Period.Unit.WEEK, iso8601 = "P1W"),
+            ),
+        )
+        val monthly = Package(
+            packageType = PackageType.MONTHLY,
+            identifier = PackageType.MONTHLY.identifier!!,
+            offering = "offering",
+            product = TestStoreProduct(
+                id = "com.revenuecat.monthly_product",
+                title = "Monthly",
+                price = Price(amountMicros = 7_990_000, currencyCode = "USD", formatted = "$7.99"),
+                description = "Monthly",
+                period = Period(value = 1, unit = Period.Unit.MONTH, iso8601 = "P1M"),
+            ),
+        )
+        val annual = Package(
+            packageType = PackageType.ANNUAL,
+            identifier = PackageType.ANNUAL.identifier!!,
+            offering = "offering",
+            product = TestStoreProduct(
+                id = "com.revenuecat.annual_product",
+                title = "Annual",
+                price = Price(amountMicros = 67_990_000, currencyCode = "USD", formatted = "$67.99"),
+                description = "Annual",
+                period = Period(value = 12, unit = Period.Unit.MONTH, iso8601 = "P1Y"),
+            ),
+        )
+    }
 }
 
 private object Constants {
