@@ -13,6 +13,7 @@ import com.revenuecat.purchases.utils.mockProductDetails
 import org.assertj.core.api.AssertionsForInterfaceTypes.assertThat
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.util.Locale
 
 @RunWith(AndroidJUnit4::class)
 class StoreProductTest {
@@ -302,5 +303,95 @@ class StoreProductTest {
         copiedStoreProduct.subscriptionOptions!!.forEach {
             assertThat(it.presentedOfferingIdentifier).isEqualTo(expectedOfferingId)
         }
+    }
+
+    @Test
+    fun `formattedPricePerMonth is null for INAPP product`() {
+        val storeProduct = GoogleStoreProduct(
+            productId = "product_id",
+            basePlanId = "base_plan_id",
+            type = ProductType.INAPP,
+            price = Price(formatted = "$1.00", amountMicros = 1_000_000, currencyCode = "USD"),
+            title = "TITLE",
+            description = "DESCRIPTION",
+            period = null,
+            subscriptionOptions = null,
+            defaultOption = null,
+            productDetails = mockProductDetails(),
+            presentedOfferingIdentifier = "originalOfferingId"
+        )
+        assertThat(storeProduct.formattedPricePerMonth(Locale.US)).isNull()
+    }
+
+    @Test
+    fun `formattedPricePerMonth is correct for SUBS monthly product with free trial`() {
+        val product = createSubscriptionStoreProduct(Period.create("P1M"))
+        assertThat(product.formattedPricePerMonth(Locale.US)).isEqualTo("$1.00")
+    }
+
+    @Test
+    fun `formattedPricePerMonth is correct for SUBS annual product with free trial`() {
+        val product = createSubscriptionStoreProduct(Period.create("P1Y"))
+        assertThat(product.formattedPricePerMonth(Locale.US)).isEqualTo("$0.08")
+    }
+
+    private fun createSubscriptionStoreProduct(
+        period: Period,
+    ): GoogleStoreProduct {
+        val productDetails = mockProductDetails()
+
+        val priceAfterTrial = Price(
+            formatted = "$1.00",
+            amountMicros = 1_000_000,
+            currencyCode = "USD"
+        )
+
+        val freeTrialPricingPhase = PricingPhase(
+            billingPeriod = period,
+            recurrenceMode = RecurrenceMode.FINITE_RECURRING,
+            billingCycleCount = 1,
+            price = Price("$0.00", 0L, "USD")
+        )
+
+        val regularPricingPhase = PricingPhase(
+            billingPeriod = period,
+            recurrenceMode = RecurrenceMode.INFINITE_RECURRING,
+            billingCycleCount = 0,
+            price = priceAfterTrial
+        )
+
+        val subscriptionOption1 = GoogleSubscriptionOption(
+            productId = productId,
+            basePlanId = basePlanId,
+            offerId = null,
+            pricingPhases = listOf(freeTrialPricingPhase, regularPricingPhase),
+            tags = emptyList(),
+            productDetails,
+            offerToken
+        )
+
+        val subscriptionOption2 = GoogleSubscriptionOption(
+            productId = productId,
+            basePlanId = basePlanId,
+            offerId = null,
+            pricingPhases = listOf(regularPricingPhase),
+            tags = emptyList(),
+            productDetails,
+            offerToken
+        )
+
+        return GoogleStoreProduct(
+            productId = "product_id",
+            basePlanId = "base_plan_id",
+            type = ProductType.SUBS,
+            price = priceAfterTrial,
+            title = "TITLE",
+            description = "DESCRIPTION",
+            period = period,
+            subscriptionOptions = SubscriptionOptions(listOf(subscriptionOption1, subscriptionOption2)),
+            defaultOption = subscriptionOption1,
+            productDetails = productDetails,
+            presentedOfferingIdentifier = "originalOfferingId"
+        )
     }
 }

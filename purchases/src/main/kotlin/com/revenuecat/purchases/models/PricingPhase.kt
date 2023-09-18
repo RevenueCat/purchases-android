@@ -1,7 +1,9 @@
 package com.revenuecat.purchases.models
 
 import android.os.Parcelable
+import com.revenuecat.purchases.utils.formattedPricePerMonth
 import kotlinx.parcelize.Parcelize
+import java.util.Locale
 
 /**
  * Encapsulates how a user pays for a subscription at a given point in time.
@@ -51,4 +53,14 @@ data class PricingPhase(
                 null
             }
         }
+
+    /**
+     * Gives the price of the [PricingPhase] in the given locale in a monthly recurrence. This means that for example,
+     * if the period is annual, the price will be divided by 12. It uses a currency formatter to format the price in
+     * the given locale. Note that this value may be an approximation.
+     * @param locale Locale to use for formatting the price. Default is the system default locale.
+     */
+    fun formattedPriceInMonths(locale: Locale = Locale.getDefault()): String {
+        return price.formattedPricePerMonth(billingPeriod, locale)
+    }
 }

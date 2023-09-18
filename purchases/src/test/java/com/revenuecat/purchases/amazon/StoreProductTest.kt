@@ -8,13 +8,14 @@ import org.assertj.core.api.AssertionsForInterfaceTypes.assertThat
 import org.json.JSONObject
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.util.Locale
 
 @RunWith(AndroidJUnit4::class)
 class StoreProductTest {
 
     private val price = Price(
         formatted = "$1.00",
-        amountMicros = 100,
+        amountMicros = 1_000_000,
         currencyCode = "USD"
     )
 
@@ -94,5 +95,62 @@ class StoreProductTest {
             .isEqualTo(expectedOfferingId)
         assertThat(copiedProduct.presentedOfferingIdentifier).isEqualTo(expectedOfferingId)
 
+    }
+
+    @Test
+    fun `formattedPricePerMonth is null for INAPP product`() {
+        val product = AmazonStoreProduct(
+            id = "productId",
+            type = ProductType.INAPP,
+            title = "title",
+            description = "description",
+            period = null,
+            price = price,
+            subscriptionOptions = null,
+            defaultOption = null,
+            iconUrl = "iconUrl",
+            freeTrialPeriod = null,
+            originalProductJSON = JSONObject(),
+            presentedOfferingIdentifier = "presentedOfferingIdentifier"
+        )
+        assertThat(product.formattedPricePerMonth(Locale.US)).isNull()
+    }
+
+    @Test
+    fun `formattedPricePerMonth is correct for SUBS monthly product`() {
+        val product = AmazonStoreProduct(
+            id = "productId",
+            type = ProductType.SUBS,
+            title = "title",
+            description = "description",
+            period = period,
+            price = price,
+            subscriptionOptions = null,
+            defaultOption = null,
+            iconUrl = "iconUrl",
+            freeTrialPeriod = period,
+            originalProductJSON = JSONObject(),
+            presentedOfferingIdentifier = "presentedOfferingIdentifier"
+        )
+        assertThat(product.formattedPricePerMonth(Locale.US)).isEqualTo("$1.00")
+    }
+
+    @Test
+    fun `formattedPricePerMonth is correct for SUBS annual product`() {
+        val product = AmazonStoreProduct(
+            id = "productId",
+            type = ProductType.SUBS,
+            title = "title",
+            description = "description",
+            period = Period.create("P1Y"),
+            price = price,
+            subscriptionOptions = null,
+            defaultOption = null,
+            iconUrl = "iconUrl",
+            freeTrialPeriod = period,
+            originalProductJSON = JSONObject(),
+            presentedOfferingIdentifier = "presentedOfferingIdentifier"
+        )
+        assertThat(product.formattedPricePerMonth(Locale.US)).isEqualTo("$0.08")
     }
 }
