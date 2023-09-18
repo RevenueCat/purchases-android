@@ -16,5 +16,5 @@ internal class AndroidApplicationContext(private val applicationContext: Context
 }
 
 internal fun Context.toAndroidContext(): ApplicationContext {
-    return AndroidApplicationContext(this)
+    return AndroidApplicationContext(applicationContext)
 }
