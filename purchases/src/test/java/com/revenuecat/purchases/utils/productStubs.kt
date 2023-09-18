@@ -16,6 +16,7 @@ import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.models.SubscriptionOptions
 import com.revenuecat.purchases.models.toRecurrenceMode
 import org.json.JSONObject
+import java.util.Locale
 
 @SuppressWarnings("MatchingDeclarationName")
 private data class StubPurchasingData(
@@ -130,6 +131,10 @@ fun stubStoreProduct(
             offeringId,
         )
     }
+
+    override fun formattedPricePerMonth(locale: Locale): String? {
+        error("not implemented")
+    }
 }
 
 @SuppressWarnings("EmptyFunctionBlock")
@@ -190,7 +195,15 @@ fun stubINAPPStoreProduct(
                 get() = productId
 
             override fun copyWithOfferingId(offeringId: String): StoreProduct = this
+
+            override fun formattedPricePerMonth(locale: Locale): String? {
+                error("not implemented")
+            }
         }
+    }
+
+    override fun formattedPricePerMonth(locale: Locale): String? {
+        error("not implemented")
     }
 }
 

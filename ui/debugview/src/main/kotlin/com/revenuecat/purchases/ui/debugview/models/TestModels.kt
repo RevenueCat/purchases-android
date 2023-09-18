@@ -12,6 +12,7 @@ import com.revenuecat.purchases.models.RecurrenceMode
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.models.SubscriptionOptions
+import java.util.Locale
 
 @Suppress("MagicNumber")
 internal val testOffering: Offering
@@ -76,6 +77,10 @@ internal val testOffering: Offering
                 get() = id
 
             override fun copyWithOfferingId(offeringId: String): StoreProduct {
+                error("Not implemented")
+            }
+
+            override fun formattedPricePerMonth(locale: Locale): String? {
                 error("Not implemented")
             }
         }

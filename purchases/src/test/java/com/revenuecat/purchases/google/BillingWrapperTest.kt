@@ -75,6 +75,7 @@ import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import java.lang.Thread.sleep
 import java.util.Date
+import java.util.Locale
 import java.util.concurrent.CountDownLatch
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -919,6 +920,10 @@ class BillingWrapperTest {
 
             override fun copyWithOfferingId(offeringId: String): StoreProduct {
                 return this // this is wrong, just doing for test
+            }
+
+            override fun formattedPricePerMonth(locale: Locale): String? {
+                error("not implemented")
             }
         }
 
