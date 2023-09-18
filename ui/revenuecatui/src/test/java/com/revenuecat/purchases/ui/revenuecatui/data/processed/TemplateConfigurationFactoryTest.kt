@@ -74,14 +74,15 @@ internal class TemplateConfigurationFactoryTest {
     }
 
     private fun getPackageInfo(rcPackage: Package): TemplateConfiguration.PackageInfo {
+        val localizedConfiguration = TestData.template2.configForLocale(Locale.US)!!
         val processedLocalization = ProcessedLocalizedConfiguration(
-            title = TestData.title,
-            subtitle = TestData.subtitle,
-            callToAction = TestData.callToAction,
+            title = localizedConfiguration.title,
+            subtitle = localizedConfiguration.subtitle,
+            callToAction = localizedConfiguration.callToAction,
             callToActionWithIntroOffer = null,
-            offerDetails = TestData.offerDetails,
-            offerDetailsWithIntroOffer = TestData.offerDetailsWithIntroOffer,
-            offerName = TestData.offerName,
+            offerDetails = localizedConfiguration.offerDetails,
+            offerDetailsWithIntroOffer = localizedConfiguration.offerDetailsWithIntroOffer,
+            offerName = localizedConfiguration.offerName,
             features = emptyList(),
         )
         return TemplateConfiguration.PackageInfo(
