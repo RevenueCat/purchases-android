@@ -47,6 +47,9 @@ data class Period(
         UNKNOWN,
     }
 
+    /**
+     * The period value in month units. This is an approximated value.
+     */
     val valueInMonths: Double
         get() = when (unit) {
             Unit.DAY -> value / DAYS_PER_MONTH
