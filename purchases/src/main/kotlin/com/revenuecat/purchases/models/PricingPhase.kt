@@ -60,6 +60,7 @@ data class PricingPhase(
      * the given locale. Note that this value may be an approximation.
      * @param locale Locale to use for formatting the price. Default is the system default locale.
      */
+    @JvmOverloads
     fun formattedPriceInMonths(locale: Locale = Locale.getDefault()): String {
         return price.formattedPricePerMonth(billingPeriod, locale)
     }

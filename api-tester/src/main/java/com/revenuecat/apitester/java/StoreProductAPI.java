@@ -6,17 +6,20 @@ import com.revenuecat.purchases.amazon.AmazonStoreProduct;
 import com.revenuecat.purchases.amazon.AmazonStoreProductKt;
 import com.revenuecat.purchases.models.GoogleStoreProduct;
 import com.revenuecat.purchases.models.GoogleStoreProductKt;
-import com.revenuecat.purchases.models.Price;
-import com.revenuecat.purchases.models.SubscriptionOption;
-import com.revenuecat.purchases.models.StoreProduct;
 import com.revenuecat.purchases.models.Period;
+import com.revenuecat.purchases.models.Price;
+import com.revenuecat.purchases.models.StoreProduct;
+import com.revenuecat.purchases.models.SubscriptionOption;
 import com.revenuecat.purchases.models.SubscriptionOptions;
 
 import org.json.JSONObject;
 
+import java.util.Locale;
+
 @SuppressWarnings({"unused"})
 final class StoreProductAPI {
     static void check(final StoreProduct product) {
+        final Locale locale = Locale.getDefault();
         final String productId = product.getId();
         final String sku = product.getSku();
         final ProductType type = product.getType();
@@ -24,6 +27,8 @@ final class StoreProductAPI {
         final String title = product.getTitle();
         final String description = product.getDescription();
         final Period period = product.getPeriod();
+        final String pricePerMonth = product.formattedPricePerMonth(locale);
+
         SubscriptionOptions subscriptionOptions = product.getSubscriptionOptions();
         SubscriptionOption defaultOption = product.getDefaultOption();
         String presentedOfferingIdentifier = product.getPresentedOfferingIdentifier();
