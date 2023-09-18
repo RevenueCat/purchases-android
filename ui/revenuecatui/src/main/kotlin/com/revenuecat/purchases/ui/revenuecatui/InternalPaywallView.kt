@@ -16,6 +16,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModelFactory
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModelImpl
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewState
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.PaywallTemplate
+import com.revenuecat.purchases.ui.revenuecatui.helpers.toAndroidContext
 import com.revenuecat.purchases.ui.revenuecatui.templates.Template2
 
 @Composable
@@ -57,6 +58,10 @@ private fun updateStateIfLocaleChanged(viewModel: PaywallViewModel) {
 @Composable
 private fun getPaywallViewModel(offering: Offering?, listener: PaywallViewListener?): PaywallViewModel {
     return viewModel<PaywallViewModelImpl>(
-        factory = PaywallViewModelFactory(LocalContext.current.applicationContext, offering, listener),
+        factory = PaywallViewModelFactory(
+            LocalContext.current.applicationContext.toAndroidContext(),
+            offering,
+            listener,
+        ),
     )
 }

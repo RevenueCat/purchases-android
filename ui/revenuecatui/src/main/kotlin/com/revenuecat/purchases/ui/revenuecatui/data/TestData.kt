@@ -1,5 +1,7 @@
 package com.revenuecat.purchases.ui.revenuecatui.data
 
+import android.content.Context
+import androidx.lifecycle.ViewModel
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
@@ -12,6 +14,14 @@ import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.models.SubscriptionOptions
 import com.revenuecat.purchases.paywalls.PaywallColor
 import com.revenuecat.purchases.paywalls.PaywallData
+import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
+import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvider
+import com.revenuecat.purchases.ui.revenuecatui.helpers.ApplicationContext
+import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
+import com.revenuecat.purchases.ui.revenuecatui.helpers.toPaywallViewState
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import java.net.URL
 
 internal object TestData {
@@ -101,6 +111,42 @@ internal object TestData {
                 period = Period(value = 12, unit = Period.Unit.MONTH, iso8601 = "P1Y"),
             ),
         )
+    }
+}
+
+internal class MockApplicationContext : ApplicationContext {
+    override fun getApplicationName(): String {
+        return "Mock Paywall"
+    }
+}
+
+internal class MockViewModel(
+    private val offering: Offering,
+) : ViewModel(), PaywallViewModel {
+    override val state: StateFlow<PaywallViewState>
+        get() = _state.asStateFlow()
+    private val _state = MutableStateFlow(offering.toPaywallViewState(VariableDataProvider(MockApplicationContext())))
+
+    override fun refreshState() {}
+
+    override fun selectPackage(packageToSelect: TemplateConfiguration.PackageInfo) {
+        _state.value = when (val currentState = _state.value) {
+            is PaywallViewState.Loaded -> {
+                currentState.copy(selectedPackage = packageToSelect)
+            }
+            else -> {
+                Logger.e("Unexpected state trying to select package: $currentState")
+                currentState
+            }
+        }
+    }
+
+    override fun purchaseSelectedPackage(context: Context) {
+        error("Can't purchase mock view model")
+    }
+
+    override fun restorePurchases() {
+        error("Can't restore purchases")
     }
 }
 
