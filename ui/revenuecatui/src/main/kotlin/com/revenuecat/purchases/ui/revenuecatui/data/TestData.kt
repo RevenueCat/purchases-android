@@ -17,7 +17,6 @@ import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvider
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ApplicationContext
-import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toPaywallViewState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -130,15 +129,7 @@ internal class MockViewModel(
     override fun refreshState() {}
 
     override fun selectPackage(packageToSelect: TemplateConfiguration.PackageInfo) {
-        _state.value = when (val currentState = _state.value) {
-            is PaywallViewState.Loaded -> {
-                currentState.copy(selectedPackage = packageToSelect)
-            }
-            else -> {
-                Logger.e("Unexpected state trying to select package: $currentState")
-                currentState
-            }
-        }
+        error("Not supported")
     }
 
     override fun purchaseSelectedPackage(context: Context) {
