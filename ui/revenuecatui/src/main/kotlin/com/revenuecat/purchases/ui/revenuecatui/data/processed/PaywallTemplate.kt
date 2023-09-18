@@ -11,9 +11,7 @@ internal enum class PaywallTemplate(val id: String, val configurationType: Packa
     companion object {
         @Suppress("UnusedParameter")
         fun fromId(id: String): PaywallTemplate? {
-            // TODO-PAYWALLS: Uncomment this to support other templates
-            // return values().find { it.id == id }
-            return TEMPLATE_2
+            return values().find { it.id == id }
         }
     }
 }

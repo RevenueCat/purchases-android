@@ -25,7 +25,47 @@ import kotlinx.coroutines.flow.asStateFlow
 import java.net.URL
 
 internal object TestData {
-
+    val template1 = PaywallData(
+        templateName = "1", // TODO-PAYWALLS: use enum
+        config = PaywallData.Configuration(
+            packages = listOf(
+                PackageType.MONTHLY.identifier!!,
+            ),
+            defaultPackage = PackageType.MONTHLY.identifier!!,
+            images = Constants.images,
+            blurredBackgroundImage = true,
+            displayRestorePurchases = true,
+            termsOfServiceURL = URL("https://revenuecat.com/tos"),
+            colors = PaywallData.Configuration.ColorInformation(
+                light = PaywallData.Configuration.Colors(
+                    background = PaywallColor(stringRepresentation = "#FFFFFF"),
+                    text1 = PaywallColor(stringRepresentation = "#000000"),
+                    callToActionBackground = PaywallColor(stringRepresentation = "#5CD27A"),
+                    callToActionForeground = PaywallColor(stringRepresentation = "#FFFFFF"),
+                    accent1 = PaywallColor(stringRepresentation = "#BC66FF"),
+                ),
+                dark = PaywallData.Configuration.Colors(
+                    background = PaywallColor(stringRepresentation = "#000000"),
+                    text1 = PaywallColor(stringRepresentation = "#FFFFFF"),
+                    callToActionBackground = PaywallColor(stringRepresentation = "#ACD27A"),
+                    callToActionForeground = PaywallColor(stringRepresentation = "#000000"),
+                    accent1 = PaywallColor(stringRepresentation = "#B022BB"),
+                ),
+            ),
+        ),
+        localization = mapOf(
+            "en_US" to PaywallData.LocalizedConfiguration(
+                title = "Ignite your child's curiosity",
+                subtitle = "Get access to all our educational content trusted by thousands of parents.",
+                callToAction = "Subscribe for {{ sub_price_per_month }}",
+                callToActionWithIntroOffer = "Purchase for {{ sub_price_per_month }} per month",
+                offerDetails = "{{ sub_price_per_month }} per month",
+                offerDetailsWithIntroOffer = "Start your {{ sub_offer_duration }} trial, " +
+                    "then {{ sub_price_per_month }} per month",
+            ),
+        ),
+        assetBaseURL = Constants.assetBaseURL,
+    )
     val template2 = PaywallData(
         templateName = "2", // TODO-PAYWALLS: use enum
         config = PaywallData.Configuration(
@@ -39,6 +79,7 @@ internal object TestData {
             blurredBackgroundImage = true,
             displayRestorePurchases = true,
             termsOfServiceURL = URL("https://revenuecat.com/tos"),
+            privacyURL = URL("https://revenuecat.com/privacy"),
             colors = PaywallData.Configuration.ColorInformation(
                 light = PaywallData.Configuration.Colors(
                     background = PaywallColor(stringRepresentation = "#FFFFFF"),
@@ -61,6 +102,16 @@ internal object TestData {
             ),
         ),
         assetBaseURL = Constants.assetBaseURL,
+    )
+
+    val template1Offering = Offering(
+        identifier = "Template1",
+        availablePackages = listOf(
+            Packages.monthly,
+        ),
+        metadata = mapOf(),
+        paywall = template1,
+        serverDescription = "",
     )
 
     val template2Offering = Offering(
