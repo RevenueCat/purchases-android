@@ -38,12 +38,12 @@ import java.net.URL
 @Composable
 internal fun Footer(
     templateConfiguration: TemplateConfiguration,
-    viewModel: PaywallViewModel
+    viewModel: PaywallViewModel,
 ) {
     Footer(
         configuration = templateConfiguration.configuration,
         colors = templateConfiguration.getCurrentColors(),
-        viewModel = viewModel
+        viewModel = viewModel,
     )
 }
 
@@ -51,7 +51,7 @@ internal fun Footer(
 private fun Footer(
     configuration: PaywallData.Configuration,
     colors: TemplateConfiguration.Colors,
-    viewModel: PaywallViewModel
+    viewModel: PaywallViewModel,
 ) {
     val context = LocalContext.current
 
@@ -73,7 +73,7 @@ private fun Footer(
             Button(
                 text = stringResource(id = R.string.restore_purchases),
                 color = color,
-                action = { viewModel.restorePurchases() }
+                action = { viewModel.restorePurchases() },
             )
 
             if (configuration.termsOfServiceURL != null || configuration.privacyURL != null) {
@@ -85,7 +85,7 @@ private fun Footer(
             Button(
                 text = stringResource(id = R.string.terms_and_conditions),
                 color = color,
-                action = { viewModel.openURL(it, context) }
+                action = { viewModel.openURL(it, context) },
             )
 
             if (configuration.privacyURL != null) {
@@ -97,7 +97,7 @@ private fun Footer(
             Button(
                 text = stringResource(id = R.string.privacy_policy),
                 color = color,
-                action = { viewModel.openURL(it, context) }
+                action = { viewModel.openURL(it, context) },
             )
         }
     }
@@ -109,14 +109,14 @@ private fun RowScope.Separator(color: Color) {
         modifier = Modifier
             .fillMaxWidth()
             .wrapContentSize(Alignment.Center)
-            .weight(0.5f)
+            .weight(1.0f / 2),
     ) {
         Box(
             modifier = Modifier
                 // TODO-Paywalls: scale based on font size
                 .size(8.dp)
                 .clip(CircleShape)
-                .background(color)
+                .background(color),
         )
     }
 }
@@ -125,7 +125,7 @@ private fun RowScope.Separator(color: Color) {
 private fun RowScope.Button(
     text: String,
     color: Color,
-    action: () -> Unit
+    action: () -> Unit,
 ) {
     Column(modifier = Modifier.weight(1f)) {
         TextButton(onClick = {
@@ -134,7 +134,7 @@ private fun RowScope.Button(
             Text(
                 text = text,
                 color = color,
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
             )
         }
     }
@@ -155,6 +155,6 @@ private fun FooterPreview() {
             defaultPackage = null,
         ),
         colors = ColorsFactory.create(paywallDataColors = TestData.template2.config.colors.light),
-        viewModel = MockViewModel(TestData.template2Offering)
+        viewModel = MockViewModel(TestData.template2Offering),
     )
 }
