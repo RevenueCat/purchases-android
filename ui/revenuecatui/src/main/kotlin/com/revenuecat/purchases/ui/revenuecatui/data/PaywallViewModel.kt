@@ -16,6 +16,7 @@ import com.revenuecat.purchases.ui.revenuecatui.PaywallViewListener
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvider
 import com.revenuecat.purchases.ui.revenuecatui.extensions.getActivity
+import com.revenuecat.purchases.ui.revenuecatui.helpers.ApplicationContext
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toPaywallViewState
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -39,7 +40,7 @@ internal interface PaywallViewModel {
 }
 
 internal class PaywallViewModelImpl(
-    applicationContext: Context,
+    applicationContext: ApplicationContext,
     private val offering: Offering?,
     private val listener: PaywallViewListener?,
 ) : ViewModel(), PaywallViewModel {
