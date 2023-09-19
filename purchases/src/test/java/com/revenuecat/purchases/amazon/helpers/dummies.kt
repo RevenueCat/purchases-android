@@ -15,6 +15,7 @@ import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.models.SubscriptionOptions
 import java.util.Date
+import java.util.Locale
 
 @SuppressWarnings("LongParameterList")
 fun dummyAmazonProduct(
@@ -81,6 +82,10 @@ fun stubStoreProductForAmazon(
             period,
             offeringId
         )
+    }
+
+    override fun formattedPricePerMonth(locale: Locale): String? {
+        error("not implemented")
     }
 }
 

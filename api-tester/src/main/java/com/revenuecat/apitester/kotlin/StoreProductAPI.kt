@@ -12,15 +12,19 @@ import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.models.SubscriptionOptions
 import com.revenuecat.purchases.models.googleProduct
 import org.json.JSONObject
+import java.util.Locale
 
 @Suppress("unused", "UNUSED_VARIABLE")
 private class StoreProductAPI {
     fun check(product: StoreProduct) {
+        val locale = Locale.getDefault()
         with(product) {
             val storeProductId: String = id
             val sku: String = sku
             val type: ProductType = type
             val price: Price? = price
+            val pricePerMonth: String? = formattedPricePerMonth(locale)
+            val pricePerMonthNoLocale: String? = formattedPricePerMonth()
             val title: String = title
             val description: String = description
             val period: Period? = period

@@ -2,6 +2,7 @@ package com.revenuecat.purchases.models
 
 import com.android.billingclient.api.ProductDetails
 import com.revenuecat.purchases.ProductType
+import java.util.Locale
 
 data class GoogleStoreProduct(
 
@@ -153,6 +154,18 @@ data class GoogleStoreProduct(
             subscriptionOptionsWithOfferingIds?.let { SubscriptionOptions(it) },
             offeringId,
         )
+    }
+
+    /**
+     * Null for INAPP products. The price of the [StoreProduct] in the given locale in a monthly recurrence.
+     * This means that, for example, if the period is annual, the price will be divided by 12.
+     * It uses a currency formatter to format the price in the given locale.
+     * Note that this value may be an approximation.
+     * This value will use the basePlan to calculate the value.
+     * @param locale Locale to use for formatting the price. Default is the system default locale.
+     */
+    override fun formattedPricePerMonth(locale: Locale): String? {
+        return subscriptionOptions?.basePlan?.pricingPhases?.last()?.formattedPriceInMonths(locale)
     }
 }
 
