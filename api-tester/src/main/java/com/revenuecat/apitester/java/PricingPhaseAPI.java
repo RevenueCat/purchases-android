@@ -16,4 +16,10 @@ final class PricingPhaseAPI {
 
         OfferPaymentMode offerPaymentMode = pricingPhase.getOfferPaymentMode();
     }
+
+    static void checkPrice(Price price) {
+        String formatted = price.getFormatted();
+        Long amount = price.getAmountMicros();
+        String currencyCode = price.getCurrencyCode();
+    }
 }

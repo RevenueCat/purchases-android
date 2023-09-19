@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.models
 
 import android.os.Parcelable
+import com.revenuecat.purchases.common.errorLog
 import kotlinx.parcelize.Parcelize
 
 /**
@@ -27,6 +28,10 @@ data class Period(
 ) : Parcelable {
 
     companion object Factory {
+        private const val DAYS_PER_MONTH = 30.0
+        private const val WEEKS_PER_MONTH = 4.0
+        private const val MONTHS_PER_YEAR = 12.0
+
         fun create(iso8601: String): Period {
             val pair = iso8601.toPeriod()
             return Period(pair.first, pair.second, iso8601)
@@ -41,6 +46,21 @@ data class Period(
         YEAR,
         UNKNOWN,
     }
+
+    /**
+     * The period value in month units. This is an approximated value.
+     */
+    val valueInMonths: Double
+        get() = when (unit) {
+            Unit.DAY -> value / DAYS_PER_MONTH
+            Unit.WEEK -> value / WEEKS_PER_MONTH
+            Unit.MONTH -> value.toDouble()
+            Unit.YEAR -> value * MONTHS_PER_YEAR
+            Unit.UNKNOWN -> {
+                errorLog("Unknown period unit trying to get value in months: $unit")
+                0.0
+            }
+        }
 }
 
 // Would use Duration.parse but only available API 26 and up
