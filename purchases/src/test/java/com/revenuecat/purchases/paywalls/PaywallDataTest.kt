@@ -38,7 +38,7 @@ class PaywallDataTest {
 
     @Test
     fun `test PaywallData properties`() {
-        val json = File(javaClass.classLoader!!.getResource(PAYWALLDATA_SAMPLE1).file).readText()
+        val json = loadJSON(PAYWALLDATA_SAMPLE1)
 
         val paywall: PaywallData = Json.decodeFromString(json)
 
@@ -85,7 +85,7 @@ class PaywallDataTest {
 
     @Test
     fun `finds locale if it only has language`() {
-        val json = File(javaClass.classLoader!!.getResource(PAYWALLDATA_SAMPLE1).file).readText()
+        val json = loadJSON(PAYWALLDATA_SAMPLE1)
 
         val paywall: PaywallData = Json.decodeFromString(json)
 
@@ -101,7 +101,7 @@ class PaywallDataTest {
 
     @Test
     fun `does not return a locale if no matching language`() {
-        val json = File(javaClass.classLoader!!.getResource(PAYWALLDATA_SAMPLE1).file).readText()
+        val json = loadJSON(PAYWALLDATA_SAMPLE1)
 
         val paywall: PaywallData = Json.decodeFromString(json)
 
@@ -113,7 +113,7 @@ class PaywallDataTest {
 
     @Test
     fun `if current locale is missing it loads available locale`() {
-        val json = File(javaClass.classLoader!!.getResource(PAYWALLDATA_MISSING_CURRENT_LOCALE).file).readText()
+        val json = loadJSON(PAYWALLDATA_MISSING_CURRENT_LOCALE)
 
         val paywall: PaywallData = Json.decodeFromString(json)
 
@@ -129,4 +129,7 @@ class PaywallDataTest {
             constructedWith<Locale>(EqMatcher(language)).getISO3Language()
         } returns iso3Code
     }
+
+    private fun loadJSON(jsonFileName: String) = File(javaClass.classLoader!!.getResource(jsonFileName).file).readText()
+
 }
