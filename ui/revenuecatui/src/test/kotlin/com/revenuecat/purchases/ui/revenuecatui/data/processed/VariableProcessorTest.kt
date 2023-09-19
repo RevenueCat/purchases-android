@@ -97,7 +97,9 @@ class VariableProcessorTest {
 
     @Test
     fun `process variables processes product_name`() {
-        expectVariablesResult("{{ product_name }}", "Annual")
+        expectVariablesResult("{{ product_name }}", "Annual", rcPackage = TestData.Packages.annual)
+        expectVariablesResult("{{ product_name }}", "Monthly", rcPackage = TestData.Packages.monthly)
+        expectVariablesResult("{{ product_name }}", "Weekly", rcPackage = TestData.Packages.weekly)
     }
 
     @Test
@@ -132,7 +134,12 @@ class VariableProcessorTest {
 
     // endregion Variables
 
-    private fun expectVariablesResult(originalText: String, expectedText: String, locale: Locale = usLocale) {
+    private fun expectVariablesResult(
+        originalText: String,
+        expectedText: String,
+        locale: Locale = usLocale,
+        rcPackage: Package = this.rcPackage,
+    ) {
         val resultText = VariableProcessor.processVariables(variableDataProvider, originalText, rcPackage, locale)
         assertThat(resultText).isEqualTo(expectedText)
     }
