@@ -158,7 +158,7 @@ internal class MockViewModel(
         error("Can't restore purchases")
     }
 
-    override fun openURL(url: URL) {
+    override fun openURL(url: URL, context: Context) {
         error("Can't open URL")
     }
 }

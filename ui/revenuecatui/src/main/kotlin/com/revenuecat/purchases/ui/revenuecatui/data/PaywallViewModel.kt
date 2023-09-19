@@ -42,7 +42,7 @@ internal interface PaywallViewModel {
 
     fun restorePurchases()
 
-    fun openURL(url: URL)
+    fun openURL(url: URL, context: Context)
 }
 
 internal class PaywallViewModelImpl(
@@ -107,10 +107,9 @@ internal class PaywallViewModelImpl(
         }
     }
 
-    override fun openURL(url: URL) {
-        // TODO: implement
-//        val intent = Intent(Intent.ACTION_VIEW, url.toURI())
-//        startActivity(intent)
+    override fun openURL(url: URL, context: Context) {
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url.toString()))
+        context.startActivity(intent)
     }
 
     private fun purchasePackage(activity: Activity, packageToPurchase: Package) {

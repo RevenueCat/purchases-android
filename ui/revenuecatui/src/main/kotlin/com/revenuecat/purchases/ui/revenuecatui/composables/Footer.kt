@@ -20,6 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -47,11 +48,13 @@ internal fun Footer(
 }
 
 @Composable
-internal fun Footer(
+private fun Footer(
     configuration: PaywallData.Configuration,
     colors: TemplateConfiguration.Colors,
     viewModel: PaywallViewModel
 ) {
+    val context = LocalContext.current
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -82,7 +85,7 @@ internal fun Footer(
             Button(
                 text = stringResource(id = R.string.terms_and_conditions),
                 color = color,
-                action = { viewModel.openURL(it) }
+                action = { viewModel.openURL(it, context) }
             )
 
             if (configuration.privacyURL != null) {
@@ -94,7 +97,7 @@ internal fun Footer(
             Button(
                 text = stringResource(id = R.string.privacy_policy),
                 color = color,
-                action = { viewModel.openURL(it) }
+                action = { viewModel.openURL(it, context) }
             )
         }
     }
@@ -110,7 +113,8 @@ private fun RowScope.Separator(color: Color) {
     ) {
         Box(
             modifier = Modifier
-                .size(10.dp)
+                // TODO-Paywalls: scale based on font size
+                .size(8.dp)
                 .clip(CircleShape)
                 .background(color)
         )
