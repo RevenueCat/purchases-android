@@ -5,6 +5,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.ui.revenuecatui.PaywallViewMode
 import com.revenuecat.purchases.ui.revenuecatui.data.TestData
+import com.revenuecat.purchases.ui.revenuecatui.helpers.ApplicationContext
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Test
@@ -15,12 +16,23 @@ import java.util.Locale
 internal class TemplateConfigurationFactoryTest {
 
     private val paywallViewMode = PaywallViewMode.FULL_SCREEN
+    private val testAppName = "testAppName"
+
+    private lateinit var variableDataProvider: VariableDataProvider
 
     private lateinit var template2Configuration: TemplateConfiguration
 
     @Before
     fun setUp() {
+        variableDataProvider = VariableDataProvider(
+            applicationContext = object : ApplicationContext {
+                override fun getApplicationName(): String {
+                    return testAppName
+                }
+            }
+        )
         template2Configuration = TemplateConfigurationFactory.create(
+            variableDataProvider,
             paywallViewMode,
             TestData.template2,
             listOf(TestData.Packages.weekly, TestData.Packages.monthly, TestData.Packages.annual),
@@ -78,11 +90,11 @@ internal class TemplateConfigurationFactoryTest {
         val processedLocalization = ProcessedLocalizedConfiguration(
             title = localizedConfiguration.title,
             subtitle = localizedConfiguration.subtitle,
-            callToAction = localizedConfiguration.callToAction,
+            callToAction = "Subscribe for PRICE_PER_PERIOD",
             callToActionWithIntroOffer = null,
-            offerDetails = localizedConfiguration.offerDetails,
-            offerDetailsWithIntroOffer = localizedConfiguration.offerDetailsWithIntroOffer,
-            offerName = localizedConfiguration.offerName,
+            offerDetails = "PRICE_AND_PER_MONTH",
+            offerDetailsWithIntroOffer = "PRICE_AND_PER_MONTH after INT_OFFER_DURATION trial",
+            offerName = "PERIOD_NAME",
             features = emptyList(),
         )
         return TemplateConfiguration.PackageInfo(
