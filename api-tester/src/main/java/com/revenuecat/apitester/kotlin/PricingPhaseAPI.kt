@@ -16,4 +16,10 @@ private class PricingPhaseAPI {
 
         val offerPaymentMode: OfferPaymentMode? = pricingPhase.offerPaymentMode
     }
+
+    fun checkingPrice(price: Price) {
+        val formatted: String = price.formatted
+        val amountMicros: Long = price.amountMicros
+        val currencyCode: String = price.currencyCode
+    }
 }

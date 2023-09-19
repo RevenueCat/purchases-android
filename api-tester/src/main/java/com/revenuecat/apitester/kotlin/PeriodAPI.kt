@@ -9,6 +9,7 @@ private class PeriodAPI {
             val value: Int = value
             val unit: Period.Unit = unit
             val iso8601: String = iso8601
+            val valueInMonths: Double = valueInMonths
 
             when (unit) {
                 Period.Unit.DAY,
