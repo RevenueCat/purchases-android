@@ -2,6 +2,8 @@ package com.revenuecat.purchases.ui.revenuecatui.data.processed
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.Package
+import com.revenuecat.purchases.PackageType
+import com.revenuecat.purchases.ui.revenuecatui.data.MockApplicationContext
 import com.revenuecat.purchases.ui.revenuecatui.data.TestData
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ApplicationContext
 import org.assertj.core.api.Assertions.assertThat
@@ -22,11 +24,7 @@ class VariableProcessorTest {
 
     @Before
     fun setUp() {
-        applicationContext = object : ApplicationContext {
-            override fun getApplicationName(): String {
-                return "test app name"
-            }
-        }
+        applicationContext = MockApplicationContext()
         variableDataProvider = VariableDataProvider(applicationContext)
         rcPackage = TestData.Packages.annual
     }
@@ -46,14 +44,14 @@ class VariableProcessorTest {
     @Test
     fun `process variables returns processed text with single variable`() {
         val originalText = "text with {{ app_name }} one variable"
-        val expectedText = "text with test app name one variable"
+        val expectedText = "text with Mock Paywall one variable"
         expectVariablesResult(originalText, expectedText)
     }
 
     @Test
     fun `process variables returns processed text with multiple variable`() {
         val originalText = "text with {{ app_name }} and {{ sub_price_per_month }} multiple variables"
-        val expectedText = "text with test app name and $5.67 multiple variables"
+        val expectedText = "text with Mock Paywall and $5.67 multiple variables"
         expectVariablesResult(originalText, expectedText)
     }
 
@@ -73,7 +71,7 @@ class VariableProcessorTest {
 
     @Test
     fun `process variables processes app_name`() {
-        expectVariablesResult("{{ app_name }}", "test app name")
+        expectVariablesResult("{{ app_name }}", "Mock Paywall")
     }
 
     @Test
@@ -99,8 +97,20 @@ class VariableProcessorTest {
     }
 
     @Test
-    fun `process variables processes sub_period`() {
-        expectVariablesResult("{{ sub_period }}", "PERIOD_NAME")
+    fun `process variables processes sub_period annual`() {
+        expectVariablesResult("{{ sub_period }}", "Annual")
+    }
+
+    @Test
+    fun `process variables processes sub_period monthly`() {
+        rcPackage = TestData.Packages.monthly
+        expectVariablesResult("{{ sub_period }}", "Monthly")
+    }
+
+    @Test
+    fun `process variables processes custom period`() {
+        rcPackage = TestData.Packages.annual.copy(packageType = PackageType.CUSTOM)
+        expectVariablesResult("{{ sub_period }}", "")
     }
 
     @Test
