@@ -97,7 +97,7 @@ class VariableProcessorTest {
 
     @Test
     fun `process variables processes product_name`() {
-        expectVariablesResult("{{ product_name }}", "PRODUCT_NAME")
+        expectVariablesResult("{{ product_name }}", "Annual")
     }
 
     @Test
