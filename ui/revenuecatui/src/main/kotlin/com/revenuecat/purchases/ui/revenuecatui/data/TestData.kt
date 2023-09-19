@@ -13,7 +13,6 @@ import com.revenuecat.purchases.models.SubscriptionOptions
 import com.revenuecat.purchases.paywalls.PaywallColor
 import com.revenuecat.purchases.paywalls.PaywallData
 import java.net.URL
-import java.util.Locale
 
 internal object TestData {
     val template2 = PaywallData(
@@ -142,9 +141,5 @@ private data class TestStoreProduct(
 
     override fun copyWithOfferingId(offeringId: String): StoreProduct {
         return this
-    }
-
-    override fun formattedPricePerMonth(locale: Locale): String {
-        return "test_formatted_price_per_month"
     }
 }

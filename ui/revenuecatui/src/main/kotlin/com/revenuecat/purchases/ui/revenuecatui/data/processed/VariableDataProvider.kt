@@ -2,18 +2,12 @@ package com.revenuecat.purchases.ui.revenuecatui.data.processed
 
 import android.content.Context
 import com.revenuecat.purchases.Package
-import java.text.NumberFormat
-import java.util.Currency
 import java.util.Locale
 
 @Suppress("UnusedParameter", "FunctionOnlyReturningConstant")
 internal class VariableDataProvider(
     private val applicationContext: Context,
 ) {
-    companion object {
-        private const val MICRO_MULTIPLIER = 1000000.0
-    }
-
     val applicationName: String
         get() = applicationContext.applicationInfo.loadLabel(applicationContext.packageManager).toString()
 
@@ -22,12 +16,7 @@ internal class VariableDataProvider(
     }
 
     fun localizedPricePerMonth(rcPackage: Package, locale: Locale): String {
-        val price = rcPackage.product.price.amountMicros / MICRO_MULTIPLIER
-        val periodMonths = rcPackage.product.period?.valueInMonths ?: 1.0
-        val currencyCode = rcPackage.product.price.currencyCode
-        val numberFormat = NumberFormat.getCurrencyInstance(locale)
-        numberFormat.currency = Currency.getInstance(currencyCode)
-        return numberFormat.format(price / periodMonths)
+        return rcPackage.product.formattedPricePerMonth(locale) ?: ""
     }
 
     fun localizedIntroductoryOfferPrice(rcPackage: Package): String? {
