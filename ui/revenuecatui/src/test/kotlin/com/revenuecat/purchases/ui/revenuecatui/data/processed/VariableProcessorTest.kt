@@ -108,7 +108,7 @@ class VariableProcessorTest {
     }
 
     @Test
-    fun `process variables processes custom period`() {
+    fun `process variables processes sub_period custom period`() {
         rcPackage = TestData.Packages.annual.copy(packageType = PackageType.CUSTOM)
         expectVariablesResult("{{ sub_period }}", "")
     }
