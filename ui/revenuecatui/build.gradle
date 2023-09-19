@@ -50,4 +50,7 @@ dependencies {
     implementation libs.coil.compose
     debugImplementation libs.compose.ui.tooling
     debugImplementation libs.androidx.test.compose.manifest
+
+    testImplementation libs.bundles.test
+    testImplementation libs.coroutines.test
 }

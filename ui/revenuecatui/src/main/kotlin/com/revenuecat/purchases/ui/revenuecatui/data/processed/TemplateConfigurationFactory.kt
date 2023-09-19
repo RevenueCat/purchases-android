@@ -9,6 +9,7 @@ import java.util.Locale
 internal object TemplateConfigurationFactory {
     @Suppress("LongParameterList", "ThrowsCount")
     fun create(
+        variableDataProvider: VariableDataProvider,
         mode: PaywallViewMode,
         paywallData: PaywallData,
         packages: List<Package>,
@@ -29,6 +30,7 @@ internal object TemplateConfigurationFactory {
             headerUri = paywallData.getUriFromImage(paywallData.config.images.header),
         )
         val packageConfiguration = PackageConfigurationFactory.createPackageConfiguration(
+            variableDataProvider = variableDataProvider,
             packages = packages,
             activelySubscribedProductIdentifiers = activelySubscribedProductIdentifiers,
             filter = packageIds,

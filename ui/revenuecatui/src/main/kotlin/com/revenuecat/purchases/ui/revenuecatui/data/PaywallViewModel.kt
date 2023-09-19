@@ -14,6 +14,7 @@ import com.revenuecat.purchases.awaitPurchase
 import com.revenuecat.purchases.awaitRestore
 import com.revenuecat.purchases.ui.revenuecatui.PaywallViewListener
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
+import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvider
 import com.revenuecat.purchases.ui.revenuecatui.extensions.getActivity
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toPaywallViewState
@@ -25,6 +26,7 @@ import kotlinx.coroutines.launch
 internal interface PaywallViewModel {
     val state: StateFlow<PaywallViewState>
 
+    fun refreshState()
     fun selectPackage(packageToSelect: TemplateConfiguration.PackageInfo)
 
     /**
@@ -37,18 +39,29 @@ internal interface PaywallViewModel {
 }
 
 internal class PaywallViewModelImpl(
-    offering: Offering?,
+    applicationContext: Context,
+    private val offering: Offering?,
     private val listener: PaywallViewListener?,
 ) : ViewModel(), PaywallViewModel {
 
+    private val variableDataProvider = VariableDataProvider(applicationContext)
+
     override val state: StateFlow<PaywallViewState>
         get() = _state.asStateFlow()
-    private val initialState: PaywallViewState = offering?.toPaywallViewState() ?: PaywallViewState.Loading
-    private val _state = MutableStateFlow(initialState)
+    private val _state: MutableStateFlow<PaywallViewState>
 
     init {
+        _state = MutableStateFlow(offering?.calculateState() ?: PaywallViewState.Loading)
         if (offering == null) {
             updateOffering()
+        }
+    }
+
+    override fun refreshState() {
+        if (offering == null) {
+            updateOffering()
+        } else {
+            _state.value = offering.calculateState()
         }
     }
 
@@ -109,11 +122,15 @@ internal class PaywallViewModelImpl(
                 if (currentOffering == null) {
                     _state.value = PaywallViewState.Error("No offering or current offering")
                 } else {
-                    _state.value = currentOffering.toPaywallViewState()
+                    _state.value = currentOffering.calculateState()
                 }
             } catch (e: PurchasesException) {
                 _state.value = PaywallViewState.Error(e.toString())
             }
         }
+    }
+
+    private fun Offering.calculateState(): PaywallViewState {
+        return toPaywallViewState(variableDataProvider)
     }
 }

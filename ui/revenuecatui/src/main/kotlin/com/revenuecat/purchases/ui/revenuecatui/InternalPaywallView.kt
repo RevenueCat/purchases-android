@@ -3,6 +3,12 @@ package com.revenuecat.purchases.ui.revenuecatui
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.os.LocaleListCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModel
@@ -18,6 +24,8 @@ internal fun InternalPaywallView(
     listener: PaywallViewListener? = null,
     viewModel: PaywallViewModel = getPaywallViewModel(offering = offering, listener = listener),
 ) {
+    updateStateIfLocaleChanged(viewModel)
+
     when (val state = viewModel.state.collectAsState().value) {
         is PaywallViewState.Loading -> {
             Text(text = "Loading...")
@@ -38,8 +46,17 @@ internal fun InternalPaywallView(
 }
 
 @Composable
+private fun updateStateIfLocaleChanged(viewModel: PaywallViewModel) {
+    var locale by remember { mutableStateOf(LocaleListCompat.getDefault()) }
+    if (locale != LocaleListCompat.getDefault()) {
+        locale = LocaleListCompat.getDefault()
+        viewModel.refreshState()
+    }
+}
+
+@Composable
 private fun getPaywallViewModel(offering: Offering?, listener: PaywallViewListener?): PaywallViewModel {
     return viewModel<PaywallViewModelImpl>(
-        factory = PaywallViewModelFactory(offering, listener),
+        factory = PaywallViewModelFactory(LocalContext.current.applicationContext, offering, listener),
     )
 }

@@ -4,14 +4,16 @@ import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.ui.revenuecatui.PaywallViewMode
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewState
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfigurationFactory
+import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvider
 import java.util.Locale
 
 @Suppress("ReturnCount", "TooGenericExceptionCaught")
-internal fun Offering.toPaywallViewState(): PaywallViewState {
+internal fun Offering.toPaywallViewState(variableDataProvider: VariableDataProvider): PaywallViewState {
     val paywallData = this.paywall
         ?: return PaywallViewState.Error("No paywall data for offering: $identifier")
     return try {
         val templateConfiguration = TemplateConfigurationFactory.create(
+            variableDataProvider = variableDataProvider,
             mode = PaywallViewMode.FULL_SCREEN,
             paywallData = paywallData,
             packages = availablePackages,
