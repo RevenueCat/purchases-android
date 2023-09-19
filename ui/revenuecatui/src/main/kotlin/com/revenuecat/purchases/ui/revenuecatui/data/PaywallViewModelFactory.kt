@@ -1,13 +1,13 @@
 package com.revenuecat.purchases.ui.revenuecatui.data
 
-import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.ui.revenuecatui.PaywallViewListener
+import com.revenuecat.purchases.ui.revenuecatui.helpers.ApplicationContext
 
 internal class PaywallViewModelFactory(
-    private val applicationContext: Context,
+    private val applicationContext: ApplicationContext,
     private val offering: Offering?,
     private val listener: PaywallViewListener?,
 ) : ViewModelProvider.NewInstanceFactory() {

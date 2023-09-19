@@ -1,15 +1,15 @@
 package com.revenuecat.purchases.ui.revenuecatui.data.processed
 
-import android.content.Context
 import com.revenuecat.purchases.Package
+import com.revenuecat.purchases.ui.revenuecatui.helpers.ApplicationContext
 import java.util.Locale
 
 @Suppress("UnusedParameter", "FunctionOnlyReturningConstant")
 internal class VariableDataProvider(
-    private val applicationContext: Context,
+    private val applicationContext: ApplicationContext,
 ) {
     val applicationName: String
-        get() = applicationContext.applicationInfo.loadLabel(applicationContext.packageManager).toString()
+        get() = applicationContext.getApplicationName()
 
     fun localizedPrice(rcPackage: Package): String {
         return rcPackage.product.price.formatted
