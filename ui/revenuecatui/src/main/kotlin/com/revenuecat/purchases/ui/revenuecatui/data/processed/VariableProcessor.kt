@@ -15,7 +15,9 @@ internal object VariableProcessor {
     ): String {
         var resultString = originalString
         REGEX.findAll(originalString).toList().reversed().forEach { matchResult ->
-            val newValue = variableValue(variableDataProvider, matchResult, rcPackage, locale)
+            val variableString = matchResult.value
+            val variableWithoutBraces = variableString.substring(2, variableString.length - 2).trim()
+            val newValue = variableValue(variableDataProvider, variableWithoutBraces, rcPackage, locale)
             newValue?.let {
                 resultString = resultString.replaceRange(matchResult.range, it)
             }
@@ -25,12 +27,11 @@ internal object VariableProcessor {
 
     private fun variableValue(
         variableDataProvider: VariableDataProvider,
-        matchResult: MatchResult,
+        variableName: String,
         rcPackage: Package,
         locale: Locale,
     ): String? {
-        val variableString = matchResult.value
-        return when (val variableWithoutBraces = variableString.substring(2, variableString.length - 2).trim()) {
+        return when (variableName) {
             "app_name" -> variableDataProvider.applicationName
             "price" -> variableDataProvider.localizedPrice(rcPackage)
             "price_per_period" -> variableDataProvider.localizedPricePerPeriod(rcPackage)
@@ -42,7 +43,7 @@ internal object VariableProcessor {
             "sub_offer_duration" -> variableDataProvider.introductoryOfferDuration(rcPackage)
             "sub_offer_price" -> variableDataProvider.localizedIntroductoryOfferPrice(rcPackage)
             else -> {
-                Logger.e("Unknown variable: $variableWithoutBraces")
+                Logger.e("Unknown variable: $variableName")
                 null
             }
         }
