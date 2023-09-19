@@ -8,6 +8,7 @@ import java.util.Locale
 internal object PackageConfigurationFactory {
     @Suppress("LongParameterList")
     fun createPackageConfiguration(
+        variableDataProvider: VariableDataProvider,
         packages: List<Package>,
         activelySubscribedProductIdentifiers: Set<String>,
         filter: List<String>,
@@ -28,7 +29,7 @@ internal object PackageConfigurationFactory {
         val packageInfos = filteredRCPackages.map {
             TemplateConfiguration.PackageInfo(
                 rcPackage = it,
-                localization = ProcessedLocalizedConfiguration.create(localization, it, locale),
+                localization = ProcessedLocalizedConfiguration.create(variableDataProvider, localization, it, locale),
                 currentlySubscribed = activelySubscribedProductIdentifiers.contains(it.product.id),
                 discountRelativeToMostExpensivePerMonth = null, // TODO-PAYWALLS: Support discount UI
             )
