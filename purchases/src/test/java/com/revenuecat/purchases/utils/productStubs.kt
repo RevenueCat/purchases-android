@@ -16,6 +16,7 @@ import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.models.SubscriptionOptions
 import com.revenuecat.purchases.models.toRecurrenceMode
 import org.json.JSONObject
+import java.util.Locale
 
 @SuppressWarnings("MatchingDeclarationName")
 private data class StubPurchasingData(
