@@ -24,6 +24,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import java.net.URL
 
 internal object TestData {
+
     val template2 = PaywallData(
         templateName = "2", // TODO-PAYWALLS: use enum
         config = PaywallData.Configuration(
