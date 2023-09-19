@@ -18,6 +18,7 @@ import java.util.Locale
 class VariableProcessorTest {
 
     private val usLocale = Locale.US
+    private val esLocale = Locale("es", "ES")
 
     private lateinit var applicationContext: ApplicationContext
     private lateinit var variableDataProvider: VariableDataProvider
@@ -107,6 +108,11 @@ class VariableProcessorTest {
     @Test
     fun `process variables processes sub_price_per_month`() {
         expectVariablesResult("{{ sub_price_per_month }}", "$5.67")
+    }
+
+    @Test
+    fun `process variables processes sub_price_per_month in other locales`() {
+        expectVariablesResult("{{ sub_price_per_month }}", "5,67 US$", esLocale)
     }
 
     @Test
