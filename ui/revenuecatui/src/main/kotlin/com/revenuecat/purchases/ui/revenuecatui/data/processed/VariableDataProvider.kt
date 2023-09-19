@@ -1,6 +1,8 @@
 package com.revenuecat.purchases.ui.revenuecatui.data.processed
 
 import com.revenuecat.purchases.Package
+import com.revenuecat.purchases.PackageType
+import com.revenuecat.purchases.ui.revenuecatui.R
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ApplicationContext
 import java.util.Locale
 
@@ -28,7 +30,17 @@ internal class VariableDataProvider(
     }
 
     fun periodName(rcPackage: Package): String {
-        return "PERIOD_NAME"
+        val stringId = when (rcPackage.packageType) {
+            PackageType.LIFETIME -> R.string.lifetime
+            PackageType.ANNUAL -> R.string.annual
+            PackageType.SIX_MONTH -> R.string.semester
+            PackageType.THREE_MONTH -> R.string.quarter
+            PackageType.TWO_MONTH -> R.string.bimonthly
+            PackageType.MONTHLY -> R.string.monthly
+            PackageType.WEEKLY -> R.string.weekly
+            PackageType.UNKNOWN, PackageType.CUSTOM -> null
+        }
+        return stringId?.let { applicationContext.getString(it) } ?: ""
     }
 
     fun subscriptionDuration(rcPackage: Package): String? {

@@ -14,6 +14,7 @@ import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.models.SubscriptionOptions
 import com.revenuecat.purchases.paywalls.PaywallColor
 import com.revenuecat.purchases.paywalls.PaywallData
+import com.revenuecat.purchases.ui.revenuecatui.R
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvider
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ApplicationContext
@@ -117,6 +118,22 @@ internal object TestData {
 internal class MockApplicationContext : ApplicationContext {
     override fun getApplicationName(): String {
         return "Mock Paywall"
+    }
+
+    // This is hardcoding the english version of the strings for now. We can't access the actual resources since
+    // we don't have access to a real context in some cases here.
+    override fun getString(resId: Int): String {
+        return when (resId) {
+            R.string.restore_purchases -> "Restore purchases"
+            R.string.annual -> "Annual"
+            R.string.semester -> "6 month"
+            R.string.quarter -> "3 month"
+            R.string.bimonthly -> "2 month"
+            R.string.monthly -> "Monthly"
+            R.string.weekly -> "Weekly"
+            R.string.lifetime -> "Lifetime"
+            else -> error("Unknown string resource $resId")
+        }
     }
 }
 
