@@ -9,7 +9,7 @@ android {
     compileSdkVersion compileVersion
     defaultConfig {
         applicationId "com.revenuecat.purchases.integrationtests"
-        minSdkVersion 16
+        minSdkVersion 19
         targetSdkVersion compileVersion
         versionCode 1
         versionName "1.0"
