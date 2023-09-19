@@ -45,16 +45,15 @@ data class PaywallData(
         get() {
             val preferredLocales = LocaleListCompat.getDefault()
 
-            val localizedConfigurations = mutableListOf<LocalizedConfiguration>()
             for (i in 0 until preferredLocales.size()) {
                 preferredLocales.get(i)?.let { locale ->
                     configForLocale(locale)?.let { localizedConfiguration ->
-                        localizedConfigurations.add(localizedConfiguration)
+                        return localizedConfiguration
                     }
                 }
             }
 
-            return localizedConfigurations.firstOrNull() ?: fallbackLocalizedConfiguration
+            return fallbackLocalizedConfiguration
         }
 
     private val fallbackLocalizedConfiguration: LocalizedConfiguration
