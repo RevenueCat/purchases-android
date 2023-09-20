@@ -1,7 +1,9 @@
+### Bugfixes
+* Catch IllegalStateException and forward StoreProblemError (#1248) via Cesar de la Vega (@vegaro)
 ### Dependency Updates
-* Bump fastlane-plugin-revenuecat_internal from `b2108fb` to `a297205` (#1210) via dependabot[bot] (@dependabot[bot])
+* Bump fastlane from 2.215.1 to 2.216.0 (#1268) via dependabot[bot] (@dependabot[bot])
+* Bump danger from 9.3.1 to 9.3.2 (#1260) via dependabot[bot] (@dependabot[bot])
+* Bump fastlane from 2.214.0 to 2.215.1 (#1256) via dependabot[bot] (@dependabot[bot])
 ### Other Changes
-* Rename `queue` initiation source to `unsynced_active_purchases` (#1214) via Toni Rico (@tonidero)
-* Send `initiation_source` in post receipt requests (#1212) via Toni Rico (@tonidero)
-* CustomEntitlementComputation: Add `restorePurchases` (#1211) via Toni Rico (@tonidero)
-* Unify caching offerings and updating update timestamp (#1206) via Toni Rico (@tonidero)
+* Improve offerings start log (#1225) via Toni Rico (@tonidero)
+* Make sure to unmock mocked static methods after tests finished (#1205) via Mark Villacampa (@MarkVillacampa)
