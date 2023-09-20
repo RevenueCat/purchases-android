@@ -62,7 +62,7 @@ private fun Footer(
             .padding(
                 start = UIConstant.defaultHorizontalPadding,
                 end = UIConstant.defaultHorizontalPadding,
-                bottom = UIConstant.defaultButtonVerticalSpacing,
+                bottom = UIConstant.defaultVerticalSpacing,
             ),
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically,
