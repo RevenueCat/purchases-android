@@ -35,10 +35,15 @@ internal object VariableProcessor {
             VariableName.APP_NAME.identifier -> variableDataProvider.applicationName
             VariableName.PRICE.identifier -> variableDataProvider.localizedPrice(rcPackage)
             VariableName.PRICE_PER_PERIOD.identifier -> variableDataProvider.localizedPricePerPeriod(rcPackage)
-            VariableName.TOTAL_PRICE_AND_PER_MONTH.identifier -> variableDataProvider.localizedPriceAndPerMonth(rcPackage)
+            VariableName.TOTAL_PRICE_AND_PER_MONTH.identifier -> variableDataProvider.localizedPriceAndPerMonth(
+                rcPackage,
+            )
             VariableName.PRODUCT_NAME.identifier -> variableDataProvider.productName(rcPackage)
             VariableName.SUB_PERIOD.identifier -> variableDataProvider.periodName(rcPackage)
-            VariableName.SUB_PRICE_PER_MONTH.identifier -> variableDataProvider.localizedPricePerMonth(rcPackage, locale)
+            VariableName.SUB_PRICE_PER_MONTH.identifier -> variableDataProvider.localizedPricePerMonth(
+                rcPackage,
+                locale,
+            )
             VariableName.SUB_DURATION.identifier -> variableDataProvider.subscriptionDuration(rcPackage)
             VariableName.SUB_OFFER_DURATION.identifier -> variableDataProvider.introductoryOfferDuration(rcPackage)
             VariableName.SUB_OFFER_PRICE.identifier -> variableDataProvider.localizedIntroductoryOfferPrice(rcPackage)
@@ -48,7 +53,6 @@ internal object VariableProcessor {
             }
         }
     }
-
 
     enum class VariableName(val identifier: String) {
         APP_NAME("app_name"),
@@ -60,7 +64,6 @@ internal object VariableProcessor {
         SUB_PRICE_PER_MONTH("sub_price_per_month"),
         SUB_DURATION("sub_duration"),
         SUB_OFFER_DURATION("sub_offer_duration"),
-        SUB_OFFER_PRICE("sub_offer_price");
+        SUB_OFFER_PRICE("sub_offer_price"),
     }
-
 }
