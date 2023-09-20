@@ -47,16 +47,13 @@ import kotlin.math.roundToInt
 
 @Composable
 internal fun Template1(state: PaywallViewState.Loaded, viewModel: PaywallViewModel) {
-    Box {
-        Column(
-            modifier = Modifier
-                .align(Alignment.TopCenter)
-                .fillMaxSize(),
-        ) {
-            Template1MainContent(state)
-            PurchaseButton(state, viewModel)
-            Footer(templateConfiguration = state.templateConfiguration, viewModel = viewModel)
-        }
+    Column(
+        modifier = Modifier.fillMaxSize(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Template1MainContent(state)
+        PurchaseButton(state, viewModel)
+        Footer(templateConfiguration = state.templateConfiguration, viewModel = viewModel)
     }
 }
 
