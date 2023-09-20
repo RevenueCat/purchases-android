@@ -5,7 +5,6 @@ import com.revenuecat.purchases.ui.revenuecatui.PaywallViewMode
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewState
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfigurationFactory
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvider
-import java.util.Locale
 
 @Suppress("ReturnCount", "TooGenericExceptionCaught")
 internal fun Offering.toPaywallViewState(variableDataProvider: VariableDataProvider): PaywallViewState {
@@ -18,7 +17,6 @@ internal fun Offering.toPaywallViewState(variableDataProvider: VariableDataProvi
             paywallData = paywallData,
             packages = availablePackages,
             activelySubscribedProductIdentifiers = emptySet(), // TODO-PAYWALLS: Check for active subscriptions
-            locale = Locale.getDefault(), // TODO-PAYWALLS: Use the correct locale
         )
         PaywallViewState.Loaded(
             templateConfiguration = templateConfiguration,

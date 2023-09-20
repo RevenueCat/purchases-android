@@ -1,5 +1,7 @@
 package com.revenuecat.purchases.paywalls
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.core.os.LocaleListCompat
 import com.revenuecat.purchases.common.errorLog
 import kotlinx.serialization.SerialName
@@ -41,14 +43,20 @@ data class PaywallData(
     /**
      * Returns the [LocalizedConfiguration] to be used based on the current locale.
      */
-    val localizedConfiguration: LocalizedConfiguration
+    val localizedConfiguration: Pair<Locale, LocalizedConfiguration>
+        @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
         get() {
             val preferredLocales = LocaleListCompat.getDefault()
 
             for (i in 0 until preferredLocales.size()) {
                 preferredLocales.get(i)?.let { locale ->
-                    configForLocale(locale)?.let { localizedConfiguration ->
-                        return localizedConfiguration
+                    // This is a hack to make android studio previews work. In previews, the locale language method
+                    // gives a different result than expected (for example, "es-es" instead of "es").
+                    // In order to fix that, we convert the string to a locale and we parse that as a locale so the
+                    // language and country are correctly parsed.
+                    val localeToCheck = Locale.forLanguageTag(locale.toString())
+                    configForLocale(localeToCheck)?.let { localizedConfiguration ->
+                        return (localeToCheck to localizedConfiguration)
                     }
                 }
             }
@@ -56,36 +64,38 @@ data class PaywallData(
             return fallbackLocalizedConfiguration
         }
 
-    private val fallbackLocalizedConfiguration: LocalizedConfiguration
+    private val fallbackLocalizedConfiguration: Pair<Locale, LocalizedConfiguration>
+        @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
         get() {
-            return localization.values.first()
+            localization.entries.first().let { localization ->
+                return (getLocaleForLabel(localization.key) to localization.value)
+            }
         }
+
+    @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
+    private fun getLocaleForLabel(label: String): Locale {
+        // Parsing language requires it to be in the form "en-US", even though Locale.toString() returns "en_US"
+        return Locale.forLanguageTag(label.replace("_", "-"))
+    }
 
     /**
      * @note This allows searching by `Locale` with only language code and missing region (like `en`, `es`, etc).
      *
      * @return [LocalizedConfiguration] for the given [Locale], if found.
      */
+    @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     fun configForLocale(requiredLocale: Locale): LocalizedConfiguration? {
         return localization[requiredLocale.toString()]
             ?: localization.entries.firstOrNull { (localeKey, _) ->
-                @Suppress("UsePropertyAccessSyntax")
-                Locale(localeKey).languageWithFallback == requiredLocale.languageWithFallback
+                val locale = getLocaleForLabel(localeKey)
+                try {
+                    locale.isO3Language == requiredLocale.isO3Language
+                } catch (e: MissingResourceException) {
+                    errorLog("Locale $this can't obtain ISO3 language code ($e). Falling back to language.")
+                    locale.language == requiredLocale.language
+                }
             }?.value
     }
-
-    /**
-     * Added this fallback to provide support for Android Studio Preview, since isO3Language may throw
-     * in AS implementation of Locale.
-     */
-    private val Locale.languageWithFallback: String
-        get() = try {
-            // Locale("en_US").language returns "en_US" instead of "en", that's why we use getISO3Language
-            isO3Language
-        } catch (e: MissingResourceException) {
-            errorLog("Locale $this can't obtain ISO3 language code ($e). Falling back to language.")
-            language
-        }
 
     /**
      * Generic configuration for any paywall.
