@@ -32,20 +32,35 @@ internal object VariableProcessor {
         locale: Locale,
     ): String? {
         return when (variableName) {
-            "app_name" -> variableDataProvider.applicationName
-            "price" -> variableDataProvider.localizedPrice(rcPackage)
-            "price_per_period" -> variableDataProvider.localizedPricePerPeriod(rcPackage, locale)
-            "total_price_and_per_month" -> variableDataProvider.localizedPriceAndPerMonth(rcPackage)
-            "product_name" -> variableDataProvider.productName(rcPackage)
-            "sub_period" -> variableDataProvider.periodName(rcPackage)
-            "sub_price_per_month" -> variableDataProvider.localizedPricePerMonth(rcPackage, locale)
-            "sub_duration" -> variableDataProvider.subscriptionDuration(rcPackage)
-            "sub_offer_duration" -> variableDataProvider.introductoryOfferDuration(rcPackage)
-            "sub_offer_price" -> variableDataProvider.localizedIntroductoryOfferPrice(rcPackage)
+            VariableName.APP_NAME.identifier -> variableDataProvider.applicationName
+            VariableName.PRICE.identifier -> variableDataProvider.localizedPrice(rcPackage)
+            VariableName.PRICE_PER_PERIOD.identifier -> variableDataProvider.localizedPricePerPeriod(rcPackage)
+            VariableName.TOTAL_PRICE_AND_PER_MONTH.identifier -> variableDataProvider.localizedPriceAndPerMonth(rcPackage)
+            VariableName.PRODUCT_NAME.identifier -> variableDataProvider.productName(rcPackage)
+            VariableName.SUB_PERIOD.identifier -> variableDataProvider.periodName(rcPackage)
+            VariableName.SUB_PRICE_PER_MONTH.identifier -> variableDataProvider.localizedPricePerMonth(rcPackage, locale)
+            VariableName.SUB_DURATION.identifier -> variableDataProvider.subscriptionDuration(rcPackage)
+            VariableName.SUB_OFFER_DURATION.identifier -> variableDataProvider.introductoryOfferDuration(rcPackage)
+            VariableName.SUB_OFFER_PRICE.identifier -> variableDataProvider.localizedIntroductoryOfferPrice(rcPackage)
             else -> {
                 Logger.e("Unknown variable: $variableName")
                 null
             }
         }
     }
+
+
+    enum class VariableName(val identifier: String) {
+        APP_NAME("app_name"),
+        PRICE("price"),
+        PRICE_PER_PERIOD("price_per_period"),
+        TOTAL_PRICE_AND_PER_MONTH("total_price_and_per_month"),
+        PRODUCT_NAME("product_name"),
+        SUB_PERIOD("sub_period"),
+        SUB_PRICE_PER_MONTH("sub_price_per_month"),
+        SUB_DURATION("sub_duration"),
+        SUB_OFFER_DURATION("sub_offer_duration"),
+        SUB_OFFER_PRICE("sub_offer_price");
+    }
+
 }
