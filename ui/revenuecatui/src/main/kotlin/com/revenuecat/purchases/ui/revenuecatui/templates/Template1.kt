@@ -87,7 +87,7 @@ private fun ColumnScope.Template1MainContent(state: PaywallViewState.Loaded) {
                 .padding(
                     horizontal = UIConstant.defaultHorizontalPadding,
                     vertical = UIConstant.defaultVerticalSpacing,
-                )
+                ),
         )
 
         Box(
@@ -178,14 +178,14 @@ internal fun CircleMaskPreview() {
         Box(
             modifier = Modifier
                 .background(color = Color.Red)
-                .fillMaxSize()
+                .fillMaxSize(),
         )
         CircleMask {
             Box(
                 modifier = Modifier
                     .background(color = Color.Blue)
                     .fillMaxWidth()
-                    .fillMaxHeight(fraction = 0.5f)
+                    .fillMaxHeight(fraction = 0.5f),
             )
         }
     }

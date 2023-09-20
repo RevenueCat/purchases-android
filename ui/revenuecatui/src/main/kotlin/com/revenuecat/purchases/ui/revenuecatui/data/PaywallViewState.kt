@@ -18,4 +18,5 @@ internal val PaywallViewState.Loaded.selectedLocalization: ProcessedLocalizedCon
     get() = selectedPackage.localization
 
 internal val PaywallViewState.Loaded.currentColors: TemplateConfiguration.Colors
-    @Composable @ReadOnlyComposable get() = templateConfiguration.getCurrentColors()
+    @Composable @ReadOnlyComposable
+    get() = templateConfiguration.getCurrentColors()
