@@ -168,7 +168,7 @@ internal object TestData {
                 title = "Annual",
                 price = Price(amountMicros = 67_990_000, currencyCode = "USD", formatted = "$67.99"),
                 description = "Annual",
-                period = Period(value = 12, unit = Period.Unit.MONTH, iso8601 = "P1Y"),
+                period = Period(value = 1, unit = Period.Unit.YEAR, iso8601 = "P1Y"),
             ),
         )
     }

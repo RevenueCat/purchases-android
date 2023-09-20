@@ -34,7 +34,7 @@ internal object VariableProcessor {
         return when (variableName) {
             "app_name" -> variableDataProvider.applicationName
             "price" -> variableDataProvider.localizedPrice(rcPackage)
-            "price_per_period" -> variableDataProvider.localizedPricePerPeriod(rcPackage)
+            "price_per_period" -> variableDataProvider.localizedPricePerPeriod(rcPackage, locale)
             "total_price_and_per_month" -> variableDataProvider.localizedPriceAndPerMonth(rcPackage)
             "product_name" -> variableDataProvider.productName(rcPackage)
             "sub_period" -> variableDataProvider.periodName(rcPackage)

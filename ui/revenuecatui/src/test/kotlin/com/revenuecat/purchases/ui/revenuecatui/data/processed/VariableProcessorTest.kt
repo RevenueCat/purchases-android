@@ -81,7 +81,12 @@ class VariableProcessorTest {
 
     @Test
     fun `process variables processes price_per_period`() {
-        expectVariablesResult("{{ price_per_period }}", "PRICE_PER_PERIOD")
+        expectVariablesResult("{{ price_per_period }}", "$67.99/yr")
+    }
+
+    @Test
+    fun `process variables processes price_per_period localized in spanish`() {
+        expectVariablesResult("{{ price_per_period }}", "$67.99/a", esLocale)
     }
 
     @Test
