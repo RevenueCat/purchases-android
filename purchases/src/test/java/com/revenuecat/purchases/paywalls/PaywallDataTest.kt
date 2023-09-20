@@ -1,15 +1,9 @@
 package com.revenuecat.purchases.paywalls
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import io.mockk.EqMatcher
-import io.mockk.every
-import io.mockk.mockkConstructor
-import io.mockk.unmockkConstructor
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.After
-import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
@@ -23,18 +17,6 @@ private const val PAYWALLDATA_MISSING_CURRENT_LOCALE = "paywalldata-missing_curr
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
 class PaywallDataTest {
-
-    @Before
-    fun setUp() {
-        mockkConstructor(Locale::class)
-        mockLocale("en_US", "eng")
-        mockLocale("es_ES", "spa")
-    }
-
-    @After
-    fun tearDown() {
-        unmockkConstructor(Locale::class)
-    }
 
     @Test
     fun `test PaywallData properties`() {
@@ -77,8 +59,6 @@ class PaywallDataTest {
             assertThat(darkColors.accent2?.stringRepresentation).isEqualTo("#FF00FF")
         }
 
-        mockLocale("gl_ES", "glg")
-
         val requiredLocale = Locale("gl_ES")
         assertThat(paywall.configForLocale(requiredLocale)).isNull()
     }
@@ -88,9 +68,6 @@ class PaywallDataTest {
         val json = loadJSON(PAYWALLDATA_SAMPLE1)
 
         val paywall: PaywallData = Json.decodeFromString(json)
-
-        mockLocale("en", "eng")
-        mockLocale("es", "spa")
 
         val enConfig = paywall.configForLocale(Locale("en"))
         assertThat(enConfig?.title).isEqualTo("Paywall")
@@ -105,8 +82,6 @@ class PaywallDataTest {
 
         val paywall: PaywallData = Json.decodeFromString(json)
 
-        mockLocale("fr", "fre")
-
         val enConfig = paywall.configForLocale(Locale("fr"))
         assertThat(enConfig).isNull()
     }
@@ -117,17 +92,9 @@ class PaywallDataTest {
 
         val paywall: PaywallData = Json.decodeFromString(json)
 
-        val localization = paywall.localizedConfiguration
+        val localization = paywall.localizedConfiguration.second
         assertThat(localization.callToAction).isEqualTo("Comprar")
         assertThat(localization.title).isEqualTo("Tienda")
-    }
-
-    private fun mockLocale(language: String, iso3Code: String) {
-        // We need to mock getISO3Language because it's not implemented in Robolectric and it crashes
-        every {
-            @Suppress("UsePropertyAccessSyntax")
-            constructedWith<Locale>(EqMatcher(language)).getISO3Language()
-        } returns iso3Code
     }
 
     private fun loadJSON(jsonFileName: String) = File(javaClass.classLoader!!.getResource(jsonFileName).file).readText()
