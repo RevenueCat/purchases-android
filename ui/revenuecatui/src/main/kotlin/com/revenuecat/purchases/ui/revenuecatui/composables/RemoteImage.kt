@@ -9,6 +9,8 @@ import androidx.compose.ui.platform.LocalContext
 import coil.ImageLoader
 import coil.compose.AsyncImage
 import coil.disk.DiskCache
+import coil.request.ImageRequest
+import com.revenuecat.purchases.ui.revenuecatui.UIConstant
 
 @Composable
 internal fun RemoteImage(
@@ -18,7 +20,10 @@ internal fun RemoteImage(
     contentDescription: String? = null,
 ) {
     AsyncImage(
-        model = urlString,
+        model = ImageRequest.Builder(LocalContext.current)
+            .data(urlString)
+            .crossfade(durationMillis = UIConstant.defaultAnimationDurationMillis)
+            .build(),
         contentDescription = contentDescription,
         imageLoader = LocalContext.current.getRevenueCatUIImageLoader(),
         modifier = modifier,
