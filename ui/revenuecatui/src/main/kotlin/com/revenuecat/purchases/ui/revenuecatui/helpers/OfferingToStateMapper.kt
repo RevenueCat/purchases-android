@@ -13,19 +13,15 @@ internal fun Offering.toPaywallViewState(
 ): PaywallViewState {
     val paywallData = this.paywall
         ?: return PaywallViewState.Error("No paywall data for offering: $identifier")
-    return try {
-        val templateConfiguration = TemplateConfigurationFactory.create(
-            variableDataProvider = variableDataProvider,
-            mode = mode,
-            paywallData = paywallData,
-            packages = availablePackages,
-            activelySubscribedProductIdentifiers = emptySet(), // TODO-PAYWALLS: Check for active subscriptions
-        )
-        PaywallViewState.Loaded(
-            templateConfiguration = templateConfiguration,
-            selectedPackage = templateConfiguration.packages.default,
-        )
-    } catch (e: Exception) {
-        PaywallViewState.Error("Error creating paywall: ${e.message}")
-    }
+    val templateConfiguration = TemplateConfigurationFactory.create(
+        variableDataProvider = variableDataProvider,
+        mode = mode,
+        paywallData = paywallData,
+        packages = availablePackages,
+        activelySubscribedProductIdentifiers = emptySet(), // TODO-PAYWALLS: Check for active subscriptions
+    )
+    PaywallViewState.Loaded(
+        templateConfiguration = templateConfiguration,
+        selectedPackage = templateConfiguration.packages.default,
+    )
 }

@@ -19,6 +19,7 @@ import com.revenuecat.purchases.ui.revenuecatui.PaywallViewMode
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvider
 import com.revenuecat.purchases.ui.revenuecatui.extensions.getActivity
+import com.revenuecat.purchases.ui.revenuecatui.extensions.validate
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ApplicationContext
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toPaywallViewState
@@ -143,7 +144,15 @@ internal class PaywallViewModelImpl(
         }
     }
 
+    @Suppress("TooGenericExceptionCaught")
     private fun Offering.calculateState(): PaywallViewState {
-        return toPaywallViewState(variableDataProvider, mode)
+        val paywallData = this.paywall
+            ?: return PaywallViewState.Error("No paywall data for offering: $identifier")
+        return try {
+            paywallData.validate()
+            toPaywallViewState(variableDataProvider)
+        } catch (e: Exception) {
+            PaywallViewState.Error("Error creating paywall: ${e.message}")
+        }
     }
 }

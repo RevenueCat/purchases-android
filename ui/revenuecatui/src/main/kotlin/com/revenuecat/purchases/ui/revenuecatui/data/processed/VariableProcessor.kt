@@ -20,7 +20,7 @@ internal object VariableProcessor {
         variableDataProvider: VariableDataProvider,
         originalString: String,
         rcPackage: Package,
-        locale: Locale
+        locale: Locale,
     ): String {
         val resultString = handleVariablesAndReplace(originalString) { variable ->
             val replacement = variableValue(variableDataProvider, variable, rcPackage, locale)
