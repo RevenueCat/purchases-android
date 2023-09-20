@@ -1,28 +1,29 @@
 package com.revenuecat.purchases.ui.revenuecatui.extensions
 
 import com.revenuecat.purchases.paywalls.PaywallData
+import com.revenuecat.purchases.ui.revenuecatui.data.processed.PaywallTemplate
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableProcessor
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationException
 
 internal fun PaywallData.validate() {
-    validateLocalization(localizedConfiguration)
+    localizedConfiguration.validate()
+    validateTemplate(templateName)
+    // TODO-PAYWALLS: validate icons
 }
 
-internal fun validateLocalization(
-    localization: PaywallData.LocalizedConfiguration,
-) {
+private fun PaywallData.LocalizedConfiguration.validate() {
     fun String.validateVariables(): Set<String> {
         return VariableProcessor.validateVariables(this)
     }
 
-    val unrecognizedVariables = localization.title.validateVariables() +
-        localization.subtitle?.validateVariables() +
-        localization.callToAction.validateVariables() +
-        localization.callToActionWithIntroOffer?.validateVariables() +
-        localization.offerDetails?.validateVariables() +
-        localization.offerDetailsWithIntroOffer?.validateVariables() +
-        localization.offerName?.validateVariables() +
-        localization.features.flatMap { feature ->
+    val unrecognizedVariables = title.validateVariables() +
+        subtitle?.validateVariables() +
+        callToAction.validateVariables() +
+        callToActionWithIntroOffer?.validateVariables() +
+        offerDetails?.validateVariables() +
+        offerDetailsWithIntroOffer?.validateVariables() +
+        offerName?.validateVariables() +
+        features.flatMap { feature ->
             listOf(
                 feature.title.validateVariables(),
                 feature.content?.validateVariables(),
@@ -34,4 +35,9 @@ internal fun validateLocalization(
             "Found unrecognized variables: ${unrecognizedVariables.joinToString(", ")}",
         )
     }
+}
+
+private fun validateTemplate(templateName: String) {
+    PaywallTemplate.fromId(templateName)
+        ?: throw PaywallValidationException("Template not recognized: $templateName")
 }
