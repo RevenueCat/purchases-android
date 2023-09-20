@@ -19,8 +19,7 @@ internal object TemplateConfigurationFactory {
         val paywallTemplate = PaywallTemplate.fromId(paywallData.templateName)
             ?: throw IllegalArgumentException("Unknown template ${paywallData.templateName}")
 
-        val localizedConfiguration = paywallData.configForLocale(locale)
-            ?: error("No configuration found for locale $locale")
+        val localizedConfiguration = paywallData.localizedConfiguration
         val packageIds = paywallData.config.packages
         require(packageIds.isNotEmpty()) { "No packages ids found in paywall data" }
         require(packages.isNotEmpty()) { "No packages found in offering" }

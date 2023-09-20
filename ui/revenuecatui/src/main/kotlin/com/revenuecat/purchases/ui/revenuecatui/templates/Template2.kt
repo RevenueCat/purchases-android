@@ -139,7 +139,8 @@ private fun SelectPackageButton(
     }
 }
 
-@Preview(showBackground = true)
+@Preview(showBackground = true, locale = "en-rUS")
+@Preview(showBackground = true, locale = "es-rES")
 @Composable
 internal fun Template2PaywallPreview() {
     InternalPaywallView(offering = TestData.template2Offering)
