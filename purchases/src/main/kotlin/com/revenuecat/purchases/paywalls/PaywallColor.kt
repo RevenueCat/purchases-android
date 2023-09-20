@@ -10,6 +10,10 @@ import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
+import java.util.Locale
+
+private const val COLOR_HEX_FORMAT = "#%06X"
+private const val COLOR_WHITE_HEX = 0xFFFFFF
 
 /**
  * Represents a color to be used by `RevenueCatUI`.
@@ -50,6 +54,15 @@ data class PaywallColor(
         stringRepresentation,
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             Color.valueOf(Color.parseColor(stringRepresentation))
+        } else {
+            null
+        },
+    )
+
+    constructor(@ColorInt colorInt: Int) : this(
+        stringRepresentation = String.format(Locale.US, COLOR_HEX_FORMAT, COLOR_WHITE_HEX and colorInt),
+        underlyingColor = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            Color.valueOf(colorInt)
         } else {
             null
         },
