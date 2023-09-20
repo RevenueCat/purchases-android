@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.ui.revenuecatui.templates
 
 import android.net.Uri
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -26,6 +27,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
@@ -131,7 +133,7 @@ private fun ColumnScope.Template1MainContent(state: PaywallViewState.Loaded) {
 @Composable
 private fun HeaderImage(uri: Uri?) {
     uri?.let {
-        CircleMaskModifier {
+        CircleMask {
             RemoteImage(
                 urlString = uri.toString(),
                 modifier = Modifier
@@ -143,11 +145,11 @@ private fun HeaderImage(uri: Uri?) {
 }
 
 @Composable
-private fun CircleMaskModifier(content: @Composable () -> Unit) {
+private fun CircleMask(content: @Composable () -> Unit) {
     var size by remember { mutableStateOf(IntSize(0, 0)) }
 
     fun circleOffset(size: IntSize): Int {
-        return ((size.height * Template1UIConstants.circleScale - size.height) / 2.0 * -1).roundToInt()
+        return ((size.width * Template1UIConstants.circleScale - size.width) / 2.0 * -1).roundToInt()
     }
 
     Box(
@@ -174,4 +176,24 @@ private object Template1UIConstants {
 @Composable
 internal fun Template1PaywallPreview() {
     InternalPaywallView(offering = TestData.template1Offering)
+}
+
+@Preview(heightDp = 700, widthDp = 400)
+@Composable
+internal fun CircleMaskPreview() {
+    Box {
+        Box(
+            modifier = Modifier
+                .background(color = Color.Red)
+                .fillMaxSize()
+        )
+        CircleMask {
+            Box(
+                modifier = Modifier
+                    .background(color = Color.Blue)
+                    .fillMaxWidth()
+                    .fillMaxHeight(fraction = 0.5f)
+            )
+        }
+    }
 }
