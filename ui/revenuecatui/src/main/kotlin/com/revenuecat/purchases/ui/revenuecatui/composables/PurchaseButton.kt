@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -26,7 +27,7 @@ internal fun PurchaseButton(state: PaywallViewState.Loaded, viewModel: PaywallVi
     ) {
         val context = LocalContext.current
         val colors = state.templateConfiguration.getCurrentColors()
-        androidx.compose.material3.Button(
+        Button(
             modifier = Modifier.fillMaxWidth(),
             onClick = { viewModel.purchaseSelectedPackage(context) },
             colors = ButtonDefaults.buttonColors(

@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.ui.revenuecatui.data
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.ReadOnlyComposable
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.ProcessedLocalizedConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 
@@ -17,4 +18,4 @@ internal val PaywallViewState.Loaded.selectedLocalization: ProcessedLocalizedCon
     get() = selectedPackage.localization
 
 internal val PaywallViewState.Loaded.currentColors: TemplateConfiguration.Colors
-    @Composable get() = templateConfiguration.getCurrentColors()
+    @Composable @ReadOnlyComposable get() = templateConfiguration.getCurrentColors()

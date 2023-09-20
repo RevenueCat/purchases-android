@@ -11,9 +11,7 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
@@ -53,8 +51,6 @@ internal fun Template1(state: PaywallViewState.Loaded, viewModel: PaywallViewMod
         Column(
             modifier = Modifier
                 .align(Alignment.TopCenter)
-                .statusBarsPadding()
-                .navigationBarsPadding()
                 .fillMaxSize(),
         ) {
             Template1MainContent(state)
@@ -81,21 +77,18 @@ private fun ColumnScope.Template1MainContent(state: PaywallViewState.Loaded) {
 
         Spacer(modifier = Modifier.weight(1f))
 
-        Box(
+        Text(
+            style = MaterialTheme.typography.displaySmall,
+            fontWeight = FontWeight.Black,
+            textAlign = TextAlign.Center,
+            text = localizedConfig.title,
+            color = colors.text1,
             modifier = Modifier
                 .padding(
                     horizontal = UIConstant.defaultHorizontalPadding,
                     vertical = UIConstant.defaultVerticalSpacing,
-                ),
-        ) {
-            Text(
-                style = MaterialTheme.typography.displaySmall,
-                fontWeight = FontWeight.Black,
-                textAlign = TextAlign.Center,
-                text = localizedConfig.title,
-                color = colors.text1,
-            )
-        }
+                )
+        )
 
         Box(
             modifier = Modifier
