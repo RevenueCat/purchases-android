@@ -31,10 +31,11 @@ internal fun IconImage(
     uri: Uri?,
     maxWidth: Dp,
     iconCornerRadius: Dp,
+    childModifier: Modifier = Modifier,
 ) {
     uri?.let {
         Column(modifier = Modifier.widthIn(max = maxWidth)) {
-            val modifier = Modifier
+            val modifier = childModifier
                 .aspectRatio(ratio = 1f)
                 .widthIn(max = maxWidth)
                 .clip(RoundedCornerShape(iconCornerRadius))

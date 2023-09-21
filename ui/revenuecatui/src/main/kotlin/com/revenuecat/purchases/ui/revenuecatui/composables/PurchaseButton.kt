@@ -20,9 +20,10 @@ import com.revenuecat.purchases.ui.revenuecatui.extensions.introEligibility
 internal fun PurchaseButton(
     state: PaywallViewState.Loaded,
     viewModel: PaywallViewModel,
+    childModifier: Modifier = Modifier,
 ) {
     Column(
-        modifier = Modifier
+        modifier = childModifier
             .fillMaxWidth()
             .padding(horizontal = UIConstant.defaultHorizontalPadding),
         horizontalAlignment = Alignment.CenterHorizontally,
