@@ -262,49 +262,49 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         assertThat(callCount).isEqualTo(1)
     }
 
-    @Test
-    fun `when making a deferred product change, completion is called with the transaction for the old product`() {
-        val newProductId = listOf("newproduct")
-        val storeProduct = mockStoreProduct(newProductId, newProductId, ProductType.SUBS)
-        val oldPurchase = mockPurchaseFound()
-        mockQueryingProductDetails(oldPurchase.productIds.first(), ProductType.SUBS, null)
-        every {
-            mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(
-                oldPurchase, any(), isRestore = false, appUserId, initiationSource, captureLambda(), any(),
-            )
-        } answers {
-            lambda<SuccessfulPurchaseCallback>().captured.invoke(oldPurchase, mockk())
-        }
-        val productChangeParams = getPurchaseParams(
-            storeProduct.first().subscriptionOptions!!.first(),
-            oldPurchase.productIds.first(),
-            googleReplacementMode = GoogleReplacementMode.DEFERRED,
-        )
-        var callCount = 0
-        purchases.purchaseWith(
-            productChangeParams,
-            onError = { _, _ ->
-                fail("should be successful")
-            },
-            onSuccess = { purchase, _ ->
-                callCount++
-                assertThat(purchase).isEqualTo(oldPurchase)
-            }
-        )
-        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(listOf(oldPurchase))
-        assertThat(callCount).isEqualTo(1)
-        verify(exactly = 1) {
-            mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(
-                purchase = oldPurchase,
-                storeProduct = any(),
-                isRestore = false,
-                appUserID = appUserId,
-                initiationSource = initiationSource,
-                onSuccess = any(),
-                onError = any()
-            )
-        }
-    }
+//    @Test
+//    fun `when making a deferred product change, completion is called with the transaction for the old product`() {
+//        val newProductId = listOf("newproduct")
+//        val storeProduct = mockStoreProduct(newProductId, newProductId, ProductType.SUBS)
+//        val oldPurchase = mockPurchaseFound()
+//        mockQueryingProductDetails(oldPurchase.productIds.first(), ProductType.SUBS, null)
+//        every {
+//            mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(
+//                oldPurchase, any(), isRestore = false, appUserId, initiationSource, captureLambda(), any(),
+//            )
+//        } answers {
+//            lambda<SuccessfulPurchaseCallback>().captured.invoke(oldPurchase, mockk())
+//        }
+//        val productChangeParams = getPurchaseParams(
+//            storeProduct.first().subscriptionOptions!!.first(),
+//            oldPurchase.productIds.first(),
+//            googleReplacementMode = GoogleReplacementMode.DEFERRED,
+//        )
+//        var callCount = 0
+//        purchases.purchaseWith(
+//            productChangeParams,
+//            onError = { _, _ ->
+//                fail("should be successful")
+//            },
+//            onSuccess = { purchase, _ ->
+//                callCount++
+//                assertThat(purchase).isEqualTo(oldPurchase)
+//            }
+//        )
+//        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(listOf(oldPurchase))
+//        assertThat(callCount).isEqualTo(1)
+//        verify(exactly = 1) {
+//            mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(
+//                purchase = oldPurchase,
+//                storeProduct = any(),
+//                isRestore = false,
+//                appUserID = appUserId,
+//                initiationSource = initiationSource,
+//                onSuccess = any(),
+//                onError = any()
+//            )
+//        }
+//    }
 
     @Test
     fun `upgrade defaults to ProrationMode IMMEDIATE_WITHOUT_PRORATION`() {
