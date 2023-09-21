@@ -23,6 +23,10 @@ more thorough explanation of the new Google subscription model announced with Bi
 | `ProrationMode`       | `ReplacementMode`       |
 | `GoogleProrationMode` | `GoogleReplacementMode` |
 
+| Temporarily removed      |
+|--------------------------|
+| `ProrationMode.DEFERRED` |
+
 ### API deprecations
 
 | Deprecated                                                                                         | New                                                                                     |
