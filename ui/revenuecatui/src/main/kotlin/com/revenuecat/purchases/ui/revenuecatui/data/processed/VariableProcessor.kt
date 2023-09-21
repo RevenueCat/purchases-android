@@ -39,7 +39,7 @@ internal object VariableProcessor {
             "product_name" -> variableDataProvider.productName(rcPackage)
             "sub_period" -> variableDataProvider.periodName(rcPackage)
             "sub_price_per_month" -> variableDataProvider.localizedPricePerMonth(rcPackage, locale)
-            "sub_duration" -> variableDataProvider.subscriptionDuration(rcPackage)
+            "sub_duration" -> variableDataProvider.subscriptionDuration(rcPackage, locale)
             "sub_offer_duration" -> variableDataProvider.introductoryOfferDuration(rcPackage)
             "sub_offer_price" -> variableDataProvider.localizedIntroductoryOfferPrice(rcPackage)
             else -> {
