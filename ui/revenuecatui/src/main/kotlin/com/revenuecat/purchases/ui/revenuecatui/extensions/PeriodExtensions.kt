@@ -6,8 +6,11 @@ import android.icu.util.MeasureUnit
 import com.revenuecat.purchases.models.Period
 import java.util.Locale
 
-internal fun Period.localizedPeriod(locale: Locale): String {
-    return MeasureFormat.getInstance(locale, MeasureFormat.FormatWidth.SHORT).format(
+internal fun Period.localizedPeriod(
+    locale: Locale,
+    formatWidth: MeasureFormat.FormatWidth = MeasureFormat.FormatWidth.SHORT,
+): String {
+    return MeasureFormat.getInstance(locale, formatWidth).format(
         Measure(value, unit.measureUnit),
     )
 }

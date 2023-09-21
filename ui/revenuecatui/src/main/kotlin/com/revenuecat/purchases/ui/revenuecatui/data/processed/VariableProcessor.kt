@@ -34,7 +34,7 @@ internal object VariableProcessor {
         return when (VariableName.valueOfIdentifier(variableName)) {
             VariableName.APP_NAME -> variableDataProvider.applicationName
             VariableName.PRICE -> variableDataProvider.localizedPrice(rcPackage)
-            VariableName.PRICE_PER_PERIOD -> variableDataProvider.localizedPricePerPeriod(rcPackage)
+            VariableName.PRICE_PER_PERIOD -> variableDataProvider.localizedPricePerPeriod(rcPackage, locale)
             VariableName.TOTAL_PRICE_AND_PER_MONTH -> variableDataProvider.localizedPriceAndPerMonth(
                 rcPackage,
             )
@@ -44,7 +44,7 @@ internal object VariableProcessor {
                 rcPackage,
                 locale,
             )
-            VariableName.SUB_DURATION -> variableDataProvider.subscriptionDuration(rcPackage)
+            VariableName.SUB_DURATION -> variableDataProvider.subscriptionDuration(rcPackage, locale)
             VariableName.SUB_OFFER_DURATION -> variableDataProvider.introductoryOfferDuration(rcPackage)
             VariableName.SUB_OFFER_PRICE -> variableDataProvider.localizedIntroductoryOfferPrice(rcPackage)
             else -> {
