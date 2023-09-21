@@ -86,10 +86,16 @@ internal class TemplateConfigurationFactoryTest {
             PackageType.WEEKLY -> "Weekly"
             else -> error("Unknown package type ${rcPackage.packageType}")
         }
+        val callToAction = when(rcPackage.packageType) {
+            PackageType.ANNUAL -> "Subscribe for $67.99/yr"
+            PackageType.MONTHLY -> "Subscribe for $7.99/mth"
+            PackageType.WEEKLY -> "Subscribe for $1.99/wk"
+            else -> error("Unknown package type ${rcPackage.packageType}")
+        }
         val processedLocalization = ProcessedLocalizedConfiguration(
             title = localizedConfiguration.title,
             subtitle = localizedConfiguration.subtitle,
-            callToAction = "Subscribe for PRICE_PER_PERIOD",
+            callToAction = callToAction,
             callToActionWithIntroOffer = null,
             offerDetails = "PRICE_AND_PER_MONTH",
             offerDetailsWithIntroOffer = "PRICE_AND_PER_MONTH after INT_OFFER_DURATION trial",

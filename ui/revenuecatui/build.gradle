@@ -22,7 +22,7 @@ android {
     }
 
     defaultConfig {
-        minSdkVersion 21 // Compose requires minSdkVersion 21
+        minSdkVersion 24 // MeasureFormat requires API 24
     }
 
     buildFeatures {
