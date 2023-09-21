@@ -10,6 +10,7 @@ import androidx.core.os.LocaleListCompat
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.paywalls.PaywallColor
 import com.revenuecat.purchases.paywalls.PaywallData
+import com.revenuecat.purchases.ui.revenuecatui.data.processed.PaywallTemplate
 import java.net.URL
 
 /***
@@ -49,7 +50,7 @@ private fun PaywallData.Companion.createDefaultForIdentifiers(packageIdentifiers
 // region Private defaults
 
 private val PaywallData.Companion.defaultTemplate: String // TODO-PAYWALLS: use enum
-    get() = "2"
+    get() = PaywallTemplate.TEMPLATE_2.id
 
 private val PaywallData.Companion.defaultAppIconPlaceholder: String // TODO-PAYWALLS: use real icon
     get() = "revenuecatui_default_paywall_app_icon"
