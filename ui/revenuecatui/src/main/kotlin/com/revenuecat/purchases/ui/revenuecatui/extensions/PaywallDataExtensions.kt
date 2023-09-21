@@ -45,12 +45,12 @@ private fun PaywallData.Companion.createDefaultForIdentifiers(
     )
 }
 
-// region Internal defaults
+// region Private defaults
 
 internal val PaywallData.Companion.defaultTemplate: PaywallTemplate
     get() = PaywallTemplate.TEMPLATE_2
 
-internal val PaywallData.Companion.defaultAppIconPlaceholder: String // TODO-PAYWALLS: use real icon
+private val PaywallData.Companion.defaultAppIconPlaceholder: String // TODO-PAYWALLS: use real icon
     get() = "revenuecatui_default_paywall_app_icon"
 
 // endregion
