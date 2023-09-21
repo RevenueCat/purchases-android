@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.paywalls
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.utils.toLocale
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import org.assertj.core.api.Assertions.assertThat
@@ -59,7 +60,7 @@ class PaywallDataTest {
             assertThat(darkColors.accent2?.stringRepresentation).isEqualTo("#FF00FF")
         }
 
-        val requiredLocale = Locale("gl_ES")
+        val requiredLocale = "gl_ES".toLocale()
         assertThat(paywall.configForLocale(requiredLocale)).isNull()
     }
 
