@@ -40,20 +40,16 @@ internal fun PaywallData.Companion.createDefault(packageIdentifiers: List<String
     )
 }
 
-// region Internal defaults
+// region Private defaults
 
-internal val PaywallData.Companion.defaultTemplate: String // TODO-PAYWALLS: use enum
+private val PaywallData.Companion.defaultTemplate: String // TODO-PAYWALLS: use enum
     get() = "2"
 
-internal val PaywallData.Companion.defaultAppIconPlaceholder: String // TODO-PAYWALLS: use real icon
+private val PaywallData.Companion.defaultAppIconPlaceholder: String // TODO-PAYWALLS: use real icon
     get() = "revenuecatui_default_paywall_app_icon"
 
-internal val PaywallData.Companion.revisionID: Int
+private val PaywallData.Companion.revisionID: Int
     get() = -1
-
-// endregion
-
-// region Private defaults
 
 private val PaywallData.Companion.defaultBackgroundImage: String
     get() = "background.jpg"
