@@ -12,7 +12,7 @@ import java.util.MissingResourceException
 // language and country are correctly parsed.
 @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
 internal fun Locale.convertToCorrectlyFormattedLocale(): Locale {
-    return Locale.forLanguageTag(this.toString())
+    return toString().toLocale()
 }
 
 @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
