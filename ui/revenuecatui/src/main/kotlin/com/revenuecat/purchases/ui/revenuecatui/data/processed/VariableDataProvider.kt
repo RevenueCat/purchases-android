@@ -19,8 +19,8 @@ internal class VariableDataProvider(
         return rcPackage.product.price.formatted
     }
 
-    fun localizedPricePerMonth(rcPackage: Package, locale: Locale): String {
-        return rcPackage.product.formattedPricePerMonth(locale) ?: ""
+    fun localizedPricePerMonth(rcPackage: Package, locale: Locale): String? {
+        return rcPackage.product.formattedPricePerMonth(locale)
     }
 
     fun localizedIntroductoryOfferPrice(rcPackage: Package): String {
@@ -35,7 +35,7 @@ internal class VariableDataProvider(
         return rcPackage.product.title
     }
 
-    fun periodName(rcPackage: Package): String {
+    fun periodName(rcPackage: Package): String? {
         val stringId = when (rcPackage.packageType) {
             PackageType.LIFETIME -> R.string.lifetime
             PackageType.ANNUAL -> R.string.annual
@@ -46,7 +46,7 @@ internal class VariableDataProvider(
             PackageType.WEEKLY -> R.string.weekly
             PackageType.UNKNOWN, PackageType.CUSTOM -> null
         }
-        return stringId?.let { applicationContext.getString(it) } ?: ""
+        return stringId?.let { applicationContext.getString(it) }
     }
 
     fun subscriptionDuration(rcPackage: Package, locale: Locale): String? {
