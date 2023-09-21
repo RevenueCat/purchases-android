@@ -140,7 +140,7 @@ class VariableProcessorTest {
     }
 
     @Test
-    fun `process variables processes sub_duration in spansih`() {
+    fun `process variables processes sub_duration in spanish`() {
         expectVariablesResult("{{ sub_duration }}", "1 año", esLocale)
         expectVariablesResult("{{ sub_duration }}", "1 mes", esLocale, rcPackage = TestData.Packages.monthly)
         expectVariablesResult("{{ sub_duration }}", "1 semana", esLocale, rcPackage = TestData.Packages.weekly)
