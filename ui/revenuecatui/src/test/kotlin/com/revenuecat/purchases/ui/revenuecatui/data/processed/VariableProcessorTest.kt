@@ -193,12 +193,12 @@ class VariableProcessorTest {
 
     @Test
     fun `process variables does not process sub_offer_price for inapp products`() {
-        expectVariablesResult("{{ sub_offer_price }}", "{{ sub_offer_price }}", rcPackage = TestData.Packages.lifetime)
+        expectVariablesResult("{{ sub_offer_price }}", "", rcPackage = TestData.Packages.lifetime)
     }
 
     @Test
     fun `process variables does not process sub_offer_price if no free trial nor intro price`() {
-        expectVariablesResult("{{ sub_offer_price }}", "{{ sub_offer_price }}", rcPackage = TestData.Packages.monthly)
+        expectVariablesResult("{{ sub_offer_price }}", "", rcPackage = TestData.Packages.monthly)
     }
 
     // endregion Variables

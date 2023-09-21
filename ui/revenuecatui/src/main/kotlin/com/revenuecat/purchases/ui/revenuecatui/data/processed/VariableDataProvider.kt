@@ -23,11 +23,11 @@ internal class VariableDataProvider(
         return rcPackage.product.formattedPricePerMonth(locale) ?: ""
     }
 
-    fun localizedIntroductoryOfferPrice(rcPackage: Package): String? {
+    fun localizedIntroductoryOfferPrice(rcPackage: Package): String {
         // TODO-PAYWALLS: Decide how this will look like for products that have both a free trial
         // and a discounted introductory price.
         val option = rcPackage.product.defaultOption
-        val introductoryPrice = option?.freePhase ?: option?.introPhase ?: return null
+        val introductoryPrice = option?.freePhase ?: option?.introPhase ?: return ""
         return introductoryPrice.price.formatted
     }
 
