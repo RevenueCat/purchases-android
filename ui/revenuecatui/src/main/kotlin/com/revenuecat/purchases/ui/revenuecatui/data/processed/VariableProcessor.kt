@@ -31,20 +31,49 @@ internal object VariableProcessor {
         rcPackage: Package,
         locale: Locale,
     ): String? {
-        return when (variableName) {
-            "app_name" -> variableDataProvider.applicationName
-            "price" -> variableDataProvider.localizedPrice(rcPackage)
-            "price_per_period" -> variableDataProvider.localizedPricePerPeriod(rcPackage, locale)
-            "total_price_and_per_month" -> variableDataProvider.localizedPriceAndPerMonth(rcPackage)
-            "product_name" -> variableDataProvider.productName(rcPackage)
-            "sub_period" -> variableDataProvider.periodName(rcPackage)
-            "sub_price_per_month" -> variableDataProvider.localizedPricePerMonth(rcPackage, locale)
-            "sub_duration" -> variableDataProvider.subscriptionDuration(rcPackage, locale)
-            "sub_offer_duration" -> variableDataProvider.introductoryOfferDuration(rcPackage)
-            "sub_offer_price" -> variableDataProvider.localizedIntroductoryOfferPrice(rcPackage)
+        return when (VariableName.valueOfIdentifier(variableName)) {
+            VariableName.APP_NAME -> variableDataProvider.applicationName
+            VariableName.PRICE -> variableDataProvider.localizedPrice(rcPackage)
+            VariableName.PRICE_PER_PERIOD -> variableDataProvider.localizedPricePerPeriod(rcPackage, locale)
+            VariableName.TOTAL_PRICE_AND_PER_MONTH -> variableDataProvider.localizedPriceAndPerMonth(
+                rcPackage,
+            )
+            VariableName.PRODUCT_NAME -> variableDataProvider.productName(rcPackage)
+            VariableName.SUB_PERIOD -> variableDataProvider.periodName(rcPackage)
+            VariableName.SUB_PRICE_PER_MONTH -> variableDataProvider.localizedPricePerMonth(
+                rcPackage,
+                locale,
+            )
+            VariableName.SUB_DURATION -> variableDataProvider.subscriptionDuration(rcPackage, locale)
+            VariableName.SUB_OFFER_DURATION -> variableDataProvider.introductoryOfferDuration(rcPackage)
+            VariableName.SUB_OFFER_PRICE -> variableDataProvider.localizedIntroductoryOfferPrice(rcPackage)
             else -> {
                 Logger.e("Unknown variable: $variableName")
                 null
+            }
+        }
+    }
+
+    private enum class VariableName(val identifier: String) {
+        APP_NAME("app_name"),
+        PRICE("price"),
+        PRICE_PER_PERIOD("price_per_period"),
+        TOTAL_PRICE_AND_PER_MONTH("total_price_and_per_month"),
+        PRODUCT_NAME("product_name"),
+        SUB_PERIOD("sub_period"),
+        SUB_PRICE_PER_MONTH("sub_price_per_month"),
+        SUB_DURATION("sub_duration"),
+        SUB_OFFER_DURATION("sub_offer_duration"),
+        SUB_OFFER_PRICE("sub_offer_price"),
+        ;
+
+        companion object {
+            private val valueMap by lazy {
+                values().associateBy { it.identifier }
+            }
+
+            fun valueOfIdentifier(identifier: String): VariableName? {
+                return valueMap[identifier]
             }
         }
     }
