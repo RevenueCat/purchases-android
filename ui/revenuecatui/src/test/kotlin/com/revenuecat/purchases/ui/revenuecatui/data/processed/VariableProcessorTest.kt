@@ -90,7 +90,6 @@ class VariableProcessorTest {
         expectVariablesResult("{{ price_per_period }}", "$1,000", rcPackage = TestData.Packages.lifetime)
     }
 
-
     @Test
     fun `process variables processes price_per_period localized in spanish`() {
         expectVariablesResult("{{ price_per_period }}", "$67.99/a", esLocale)
@@ -171,7 +170,6 @@ class VariableProcessorTest {
         // Not using real context so can't access localized version
         expectVariablesResult("{{ sub_duration }}", "Lifetime", esLocale, TestData.Packages.lifetime)
     }
-
 
     @Test
     fun `process variables processes sub_offer_duration`() {
