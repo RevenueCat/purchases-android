@@ -171,6 +171,54 @@ internal object TestData {
                 period = Period(value = 1, unit = Period.Unit.YEAR, iso8601 = "P1Y"),
             ),
         )
+        val lifetime = Package(
+            packageType = PackageType.LIFETIME,
+            identifier = PackageType.LIFETIME.identifier!!,
+            offering = "offering",
+            product = TestStoreProduct(
+                id = "com.revenuecat.lifetime_product",
+                title = "Lifetime",
+                price = Price(amountMicros = 1_000_000_000, currencyCode = "USD", formatted = "$1,000"),
+                description = "Lifetime",
+                period = null,
+            ),
+        )
+        val bimonthly = Package(
+            packageType = PackageType.TWO_MONTH,
+            identifier = PackageType.TWO_MONTH.identifier!!,
+            offering = "offering",
+            product = TestStoreProduct(
+                id = "com.revenuecat.bimonthly_product",
+                title = "2 month",
+                price = Price(amountMicros = 15_990_000, currencyCode = "USD", formatted = "$15.99"),
+                description = "2 month",
+                period = Period(value = 2, unit = Period.Unit.MONTH, iso8601 = "P2M"),
+            ),
+        )
+        val quarterly = Package(
+            packageType = PackageType.THREE_MONTH,
+            identifier = PackageType.THREE_MONTH.identifier!!,
+            offering = "offering",
+            product = TestStoreProduct(
+                id = "com.revenuecat.quarterly_product",
+                title = "3 month",
+                price = Price(amountMicros = 23_990_000, currencyCode = "USD", formatted = "$23.99"),
+                description = "3 month",
+                period = Period(value = 3, unit = Period.Unit.MONTH, iso8601 = "P3M"),
+            ),
+        )
+        val semester = Package(
+            packageType = PackageType.SIX_MONTH,
+            identifier = PackageType.SIX_MONTH.identifier!!,
+            offering = "offering",
+            product = TestStoreProduct(
+                id = "com.revenuecat.semester_product",
+                title = "6 month",
+                price = Price(amountMicros = 39_990_000, currencyCode = "USD", formatted = "$39.99"),
+                description = "6 month",
+                period = Period(value = 6, unit = Period.Unit.MONTH, iso8601 = "P6M"),
+            ),
+        )
     }
 }
 
