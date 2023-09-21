@@ -66,10 +66,14 @@ internal object VariableProcessor {
         SUB_OFFER_DURATION("sub_offer_duration"),
         SUB_OFFER_PRICE("sub_offer_price"),
         ;
-        
+
         companion object {
+            private val valueMap by lazy {
+                values().associateBy { it.identifier }
+            }
+
             fun valueOfIdentifier(identifier: String): VariableName? {
-                return values().find { it.identifier == identifier }
+                return valueMap[identifier]
             }
         }
     }
