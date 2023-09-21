@@ -93,6 +93,7 @@ internal enum class PaywallIconName {
         }
     }
 
+    @Suppress("CyclomaticComplexMethod")
     internal fun drawable(): Int {
         return when (this) {
             WARNING -> R.drawable.warning
