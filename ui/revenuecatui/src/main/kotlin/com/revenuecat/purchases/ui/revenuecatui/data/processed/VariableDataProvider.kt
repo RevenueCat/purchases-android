@@ -3,6 +3,7 @@ package com.revenuecat.purchases.ui.revenuecatui.data.processed
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
 import com.revenuecat.purchases.ui.revenuecatui.R
+import com.revenuecat.purchases.ui.revenuecatui.extensions.localizedPeriod
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ApplicationContext
 import java.util.Locale
 
@@ -51,8 +52,15 @@ internal class VariableDataProvider(
         return "INT_OFFER_DURATION"
     }
 
-    fun localizedPricePerPeriod(rcPackage: Package): String {
-        return "PRICE_PER_PERIOD"
+    fun localizedPricePerPeriod(rcPackage: Package, locale: Locale): String {
+        val localizedPrice = localizedPrice(rcPackage)
+        return rcPackage.product.period?.let { period ->
+            var formattedPeriod = period.localizedPeriod(locale)
+            if (period.value == 1 && formattedPeriod.startsWith("1")) {
+                formattedPeriod = formattedPeriod.substring(startIndex = 1).trim()
+            }
+            "$localizedPrice/$formattedPeriod"
+        } ?: localizedPrice
     }
 
     fun localizedPriceAndPerMonth(rcPackage: Package): String {
