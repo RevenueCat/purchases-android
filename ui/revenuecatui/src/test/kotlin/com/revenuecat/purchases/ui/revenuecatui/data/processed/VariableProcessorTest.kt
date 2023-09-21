@@ -84,13 +84,22 @@ class VariableProcessorTest {
         expectVariablesResult("{{ price_per_period }}", "$67.99/yr")
         expectVariablesResult("{{ price_per_period }}", "$7.99/mth", rcPackage = TestData.Packages.monthly)
         expectVariablesResult("{{ price_per_period }}", "$1.99/wk", rcPackage = TestData.Packages.weekly)
+        expectVariablesResult("{{ price_per_period }}", "$15.99/2 mths", rcPackage = TestData.Packages.bimonthly)
+        expectVariablesResult("{{ price_per_period }}", "$23.99/3 mths", rcPackage = TestData.Packages.quarterly)
+        expectVariablesResult("{{ price_per_period }}", "$39.99/6 mths", rcPackage = TestData.Packages.semester)
+        expectVariablesResult("{{ price_per_period }}", "$1.000", rcPackage = TestData.Packages.lifetime)
     }
+
 
     @Test
     fun `process variables processes price_per_period localized in spanish`() {
         expectVariablesResult("{{ price_per_period }}", "$67.99/a", esLocale)
         expectVariablesResult("{{ price_per_period }}", "$7.99/m.", esLocale, TestData.Packages.monthly)
         expectVariablesResult("{{ price_per_period }}", "$1.99/sem.", esLocale, TestData.Packages.weekly)
+        expectVariablesResult("{{ price_per_period }}", "$15.99/2 m.", esLocale, TestData.Packages.bimonthly)
+        expectVariablesResult("{{ price_per_period }}", "$23.99/3 m.", esLocale, TestData.Packages.quarterly)
+        expectVariablesResult("{{ price_per_period }}", "$39.99/6 m.", esLocale, TestData.Packages.semester)
+        expectVariablesResult("{{ price_per_period }}", "$1.000", esLocale, TestData.Packages.lifetime)
     }
 
     @Test
@@ -103,17 +112,21 @@ class VariableProcessorTest {
         expectVariablesResult("{{ product_name }}", "Annual", rcPackage = TestData.Packages.annual)
         expectVariablesResult("{{ product_name }}", "Monthly", rcPackage = TestData.Packages.monthly)
         expectVariablesResult("{{ product_name }}", "Weekly", rcPackage = TestData.Packages.weekly)
+        expectVariablesResult("{{ product_name }}", "2 month", rcPackage = TestData.Packages.bimonthly)
+        expectVariablesResult("{{ product_name }}", "3 month", rcPackage = TestData.Packages.quarterly)
+        expectVariablesResult("{{ product_name }}", "6 month", rcPackage = TestData.Packages.semester)
+        expectVariablesResult("{{ product_name }}", "Lifetime", rcPackage = TestData.Packages.lifetime)
     }
 
     @Test
-    fun `process variables processes sub_period annual`() {
-        expectVariablesResult("{{ sub_period }}", "Annual")
-    }
-
-    @Test
-    fun `process variables processes sub_period monthly`() {
-        rcPackage = TestData.Packages.monthly
-        expectVariablesResult("{{ sub_period }}", "Monthly")
+    fun `process variables processes sub_period`() {
+        expectVariablesResult("{{ sub_period }}", "Annual", rcPackage = TestData.Packages.annual)
+        expectVariablesResult("{{ sub_period }}", "Monthly", rcPackage = TestData.Packages.monthly)
+        expectVariablesResult("{{ sub_period }}", "Weekly", rcPackage = TestData.Packages.weekly)
+        expectVariablesResult("{{ sub_period }}", "2 month", rcPackage = TestData.Packages.bimonthly)
+        expectVariablesResult("{{ sub_period }}", "3 month", rcPackage = TestData.Packages.quarterly)
+        expectVariablesResult("{{ sub_period }}", "6 month", rcPackage = TestData.Packages.semester)
+        expectVariablesResult("{{ sub_period }}", "Lifetime", rcPackage = TestData.Packages.lifetime)
     }
 
     @Test
@@ -134,16 +147,29 @@ class VariableProcessorTest {
 
     @Test
     fun `process variables processes sub_duration`() {
-        expectVariablesResult("{{ sub_duration }}", "1 year")
+        expectVariablesResult("{{ sub_duration }}", "1 year", rcPackage = TestData.Packages.annual)
         expectVariablesResult("{{ sub_duration }}", "1 month", rcPackage = TestData.Packages.monthly)
         expectVariablesResult("{{ sub_duration }}", "1 week", rcPackage = TestData.Packages.weekly)
+        expectVariablesResult("{{ sub_duration }}", "2 months", rcPackage = TestData.Packages.bimonthly)
+        expectVariablesResult("{{ sub_duration }}", "3 months", rcPackage = TestData.Packages.quarterly)
+        expectVariablesResult("{{ sub_duration }}", "6 months", rcPackage = TestData.Packages.semester)
+    }
+
+    @Test
+    fun `process variables processes sub_duration falls back to period name if no period`() {
+        expectVariablesResult("{{ sub_duration }}", "Lifetime", rcPackage = TestData.Packages.lifetime)
     }
 
     @Test
     fun `process variables processes sub_duration in spanish`() {
-        expectVariablesResult("{{ sub_duration }}", "1 año", esLocale)
-        expectVariablesResult("{{ sub_duration }}", "1 mes", esLocale, rcPackage = TestData.Packages.monthly)
-        expectVariablesResult("{{ sub_duration }}", "1 semana", esLocale, rcPackage = TestData.Packages.weekly)
+        expectVariablesResult("{{ sub_duration }}", "1 año", esLocale, TestData.Packages.annual)
+        expectVariablesResult("{{ sub_duration }}", "1 mes", esLocale, TestData.Packages.monthly)
+        expectVariablesResult("{{ sub_duration }}", "1 semana", esLocale, TestData.Packages.weekly)
+        expectVariablesResult("{{ sub_duration }}", "2 meses", esLocale, TestData.Packages.bimonthly)
+        expectVariablesResult("{{ sub_duration }}", "3 meses", esLocale, TestData.Packages.quarterly)
+        expectVariablesResult("{{ sub_duration }}", "6 meses", esLocale, TestData.Packages.semester)
+        // Not using real context so can't access localized version
+        expectVariablesResult("{{ sub_duration }}", "Lifetime", esLocale, TestData.Packages.lifetime)
     }
 
 
