@@ -5,6 +5,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalContext
 import androidx.core.os.LocaleListCompat
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.paywalls.PaywallColor
@@ -18,12 +19,13 @@ import java.net.URL
 @Composable
 @ReadOnlyComposable
 internal fun PaywallData.Companion.createDefault(packages: List<Package>): PaywallData {
-    return PaywallData.createDefault(packages.map { it.identifier })
+    return PaywallData.createDefaultForIdentifiers(packages.map { it.identifier })
 }
 
 @Composable
 @ReadOnlyComposable
-internal fun PaywallData.Companion.createDefault(packageIdentifiers: List<String>): PaywallData {
+private fun PaywallData.Companion.createDefaultForIdentifiers(packageIdentifiers: List<String>): PaywallData {
+    val context = LocalContext.current
     val locale = LocaleListCompat.getDefault()[0].toString()
 
     return PaywallData(
@@ -39,7 +41,7 @@ internal fun PaywallData.Companion.createDefault(packageIdentifiers: List<String
             displayRestorePurchases = true,
         ),
         localization = mapOf(locale to PaywallData.defaultLocalization), // TODO-PAYWALLS: test this
-        assetBaseURL = PaywallData.defaultTemplateBaseURL, // TODO-PAYWALLS: we need to load a resource not a URL
+        assetBaseURL = PaywallData.defaultTemplateBaseURL(context.packageName),
         revision = PaywallData.revisionID,
     )
 }
@@ -56,10 +58,7 @@ private val PaywallData.Companion.revisionID: Int
     get() = -1
 
 private val PaywallData.Companion.defaultBackgroundImage: String
-    get() = "background.jpg"
-
-private val PaywallData.Companion.defaultTemplateBaseURL: URL // TODO-PAYWALLS: use real URL
-    get() = URL("https://")
+    get() = "R.drawable.background"
 
 private val PaywallData.Companion.defaultColors: PaywallData.Configuration.ColorInformation
     @Composable
@@ -78,6 +77,9 @@ private val PaywallData.Companion.defaultLocalization: PaywallData.LocalizedConf
         offerDetails = "{{ total_price_and_per_month }}",
         offerDetailsWithIntroOffer = "Start your {{ sub_offer_duration }} trial, then {{ total_price_and_per_month }}.",
     )
+
+private fun PaywallData.Companion.defaultTemplateBaseURL(packageName: String): URL =
+    URL("android.resource://$packageName/")
 
 // endregion
 

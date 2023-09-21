@@ -2,6 +2,7 @@ package com.revenuecat.purchases.ui.revenuecatui.templates
 
 import android.net.Uri
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -26,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -136,14 +138,22 @@ private fun PurchaseButton(state: PaywallViewState.Loaded, viewModel: PaywallVie
 private fun IconImage(uri: Uri?) {
     uri?.let {
         Column(modifier = Modifier.widthIn(max = Template2UIConstants.maxIconWidth)) {
-            RemoteImage(
-                urlString = uri.toString(),
-                modifier = Modifier
-                    .aspectRatio(ratio = 1f)
-                    .widthIn(max = Template2UIConstants.maxIconWidth)
-                    .clip(RoundedCornerShape(Template2UIConstants.iconCornerRadius)),
-                contentScale = ContentScale.Crop,
-            )
+            // TODO-PAYWALLS: test this
+            if (uri.toString().startsWith("android.resource://")) {
+                Image(
+                    painter = painterResource(id = uri.toString().substringAfterLast("/").toInt()),
+                    contentDescription = null,
+                )
+            } else {
+                RemoteImage(
+                    urlString = uri.toString(),
+                    modifier = Modifier
+                        .aspectRatio(ratio = 1f)
+                        .widthIn(max = Template2UIConstants.maxIconWidth)
+                        .clip(RoundedCornerShape(Template2UIConstants.iconCornerRadius)),
+                    contentScale = ContentScale.Crop,
+                )
+            }
         }
     }
 }
