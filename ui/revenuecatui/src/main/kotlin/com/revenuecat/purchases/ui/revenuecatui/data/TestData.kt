@@ -100,6 +100,14 @@ internal object TestData {
                 offerDetailsWithIntroOffer = "{{ total_price_and_per_month }} after {{ sub_offer_duration }} trial",
                 offerName = "{{ sub_period }}",
             ),
+            "es_ES" to PaywallData.LocalizedConfiguration(
+                title = "Título en español",
+                subtitle = "Un lorem ipsum en español que es más largo para mostrar un subtítulo multilinea.",
+                callToAction = "Suscribete for {{ price_per_period }}",
+                offerDetails = "{{ total_price_and_per_month }}",
+                offerDetailsWithIntroOffer = "{{ total_price_and_per_month }} con {{ sub_offer_duration }} de prueba",
+                offerName = "{{ sub_period }}",
+            ),
         ),
         assetBaseURL = Constants.assetBaseURL,
     )
