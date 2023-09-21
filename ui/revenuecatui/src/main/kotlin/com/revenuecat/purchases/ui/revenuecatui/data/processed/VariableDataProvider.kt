@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.data.processed
 
+import android.icu.text.MeasureFormat
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
 import com.revenuecat.purchases.ui.revenuecatui.R
@@ -44,8 +45,10 @@ internal class VariableDataProvider(
         return stringId?.let { applicationContext.getString(it) } ?: ""
     }
 
-    fun subscriptionDuration(rcPackage: Package): String? {
-        return "SUBS_DURATION"
+    fun subscriptionDuration(rcPackage: Package, locale: Locale): String? {
+        return rcPackage.product.period?.let { period ->
+            period.localizedPeriod(locale, formatWidth = MeasureFormat.FormatWidth.WIDE)
+        } ?: periodName(rcPackage)
     }
 
     fun introductoryOfferDuration(rcPackage: Package): String? {
