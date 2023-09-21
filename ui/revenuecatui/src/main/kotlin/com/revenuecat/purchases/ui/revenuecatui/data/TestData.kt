@@ -178,7 +178,7 @@ internal object TestData {
             product = TestStoreProduct(
                 id = "com.revenuecat.lifetime_product",
                 title = "Lifetime",
-                price = Price(amountMicros = 1_000_000_000, currencyCode = "USD", formatted = "$1.000"),
+                price = Price(amountMicros = 1_000_000_000, currencyCode = "USD", formatted = "$1,000"),
                 description = "Lifetime",
                 period = null,
             ),

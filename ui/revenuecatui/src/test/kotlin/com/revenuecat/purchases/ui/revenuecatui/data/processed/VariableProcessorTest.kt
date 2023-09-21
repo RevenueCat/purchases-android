@@ -87,7 +87,7 @@ class VariableProcessorTest {
         expectVariablesResult("{{ price_per_period }}", "$15.99/2 mths", rcPackage = TestData.Packages.bimonthly)
         expectVariablesResult("{{ price_per_period }}", "$23.99/3 mths", rcPackage = TestData.Packages.quarterly)
         expectVariablesResult("{{ price_per_period }}", "$39.99/6 mths", rcPackage = TestData.Packages.semester)
-        expectVariablesResult("{{ price_per_period }}", "$1.000", rcPackage = TestData.Packages.lifetime)
+        expectVariablesResult("{{ price_per_period }}", "$1,000", rcPackage = TestData.Packages.lifetime)
     }
 
 
@@ -99,7 +99,7 @@ class VariableProcessorTest {
         expectVariablesResult("{{ price_per_period }}", "$15.99/2 m.", esLocale, TestData.Packages.bimonthly)
         expectVariablesResult("{{ price_per_period }}", "$23.99/3 m.", esLocale, TestData.Packages.quarterly)
         expectVariablesResult("{{ price_per_period }}", "$39.99/6 m.", esLocale, TestData.Packages.semester)
-        expectVariablesResult("{{ price_per_period }}", "$1.000", esLocale, TestData.Packages.lifetime)
+        expectVariablesResult("{{ price_per_period }}", "$1,000", esLocale, TestData.Packages.lifetime)
     }
 
     @Test
