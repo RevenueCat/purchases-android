@@ -11,6 +11,10 @@ import com.revenuecat.purchases.paywalls.PaywallColor
 import com.revenuecat.purchases.paywalls.PaywallData
 import java.net.URL
 
+/***
+ * Default [PaywallData] to display when attempting to present a [PaywallView] with an offering that has no paywall
+ * configuration, or when that configuration is invalid.
+ */
 @Composable
 @ReadOnlyComposable
 internal fun PaywallData.Companion.createDefault(packages: List<Package>): PaywallData {
