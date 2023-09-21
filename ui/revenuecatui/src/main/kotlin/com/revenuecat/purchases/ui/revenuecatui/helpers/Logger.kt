@@ -14,6 +14,10 @@ internal object Logger {
         Log.e(TAG, message, throwable)
     }
 
+    fun w(message: String) {
+        Log.w(TAG, message)
+    }
+
     fun i(message: String) {
         Log.i(TAG, message)
     }

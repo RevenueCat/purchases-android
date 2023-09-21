@@ -8,7 +8,9 @@ import com.revenuecat.purchases.PackageType
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
+import com.revenuecat.purchases.models.PricingPhase
 import com.revenuecat.purchases.models.PurchasingData
+import com.revenuecat.purchases.models.RecurrenceMode
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.models.SubscriptionOptions
@@ -169,6 +171,7 @@ internal object TestData {
                 price = Price(amountMicros = 67_990_000, currencyCode = "USD", formatted = "$67.99"),
                 description = "Annual",
                 period = Period(value = 1, unit = Period.Unit.YEAR, iso8601 = "P1Y"),
+                freeTrialPeriod = Period(value = 1, unit = Period.Unit.MONTH, iso8601 = "P1M"),
             ),
         )
         val lifetime = Package(
@@ -193,6 +196,7 @@ internal object TestData {
                 price = Price(amountMicros = 15_990_000, currencyCode = "USD", formatted = "$15.99"),
                 description = "2 month",
                 period = Period(value = 2, unit = Period.Unit.MONTH, iso8601 = "P2M"),
+                introPrice = Price(amountMicros = 3_990_000, currencyCode = "USD", formatted = "$3.99"),
             ),
         )
         val quarterly = Package(
@@ -205,6 +209,8 @@ internal object TestData {
                 price = Price(amountMicros = 23_990_000, currencyCode = "USD", formatted = "$23.99"),
                 description = "3 month",
                 period = Period(value = 3, unit = Period.Unit.MONTH, iso8601 = "P3M"),
+                freeTrialPeriod = Period(value = 1, unit = Period.Unit.MONTH, iso8601 = "P1M"),
+                introPrice = Price(amountMicros = 3_990_000, currencyCode = "USD", formatted = "$3.99"),
             ),
         )
         val semester = Package(
@@ -286,13 +292,15 @@ private data class TestStoreProduct(
     override val price: Price,
     override val description: String,
     override val period: Period?,
+    private val freeTrialPeriod: Period? = null,
+    private val introPrice: Price? = null,
 ) : StoreProduct {
     override val type: ProductType
         get() = ProductType.SUBS
     override val subscriptionOptions: SubscriptionOptions?
-        get() = null
+        get() = buildSubscriptionOptions()
     override val defaultOption: SubscriptionOption?
-        get() = null
+        get() = subscriptionOptions?.defaultOffer
     override val purchasingData: PurchasingData
         get() = object : PurchasingData {
             override val productId: String
@@ -308,4 +316,60 @@ private data class TestStoreProduct(
     override fun copyWithOfferingId(offeringId: String): StoreProduct {
         return this
     }
+
+    private fun buildSubscriptionOptions(): SubscriptionOptions? {
+        if (period == null) return null
+        val freePhase = freeTrialPeriod?.let { freeTrialPeriod ->
+            PricingPhase(
+                billingPeriod = freeTrialPeriod,
+                recurrenceMode = RecurrenceMode.FINITE_RECURRING,
+                billingCycleCount = 1,
+                price = Price(amountMicros = 0, currencyCode = price.currencyCode, formatted = "Free"),
+            )
+        }
+        val introPhase = introPrice?.let { introPrice ->
+            PricingPhase(
+                billingPeriod = Period(value = 1, unit = Period.Unit.MONTH, iso8601 = "P1M"),
+                recurrenceMode = RecurrenceMode.FINITE_RECURRING,
+                billingCycleCount = 1,
+                price = introPrice,
+            )
+        }
+        val basePricePhase = PricingPhase(
+            billingPeriod = period,
+            recurrenceMode = RecurrenceMode.INFINITE_RECURRING,
+            billingCycleCount = null,
+            price = price,
+        )
+        val subscriptionOptionsList = listOfNotNull(
+            TestSubscriptionOption(
+                id,
+                listOfNotNull(freePhase, introPhase, basePricePhase),
+            ).takeIf { freeTrialPeriod != null || introPhase != null },
+            TestSubscriptionOption(
+                id,
+                listOf(basePricePhase),
+            ),
+        )
+        return SubscriptionOptions(subscriptionOptionsList)
+    }
+}
+
+private class TestSubscriptionOption(
+    val productIdentifier: String,
+    override val pricingPhases: List<PricingPhase>,
+    val basePlanId: String = "testBasePlanId",
+    override val tags: List<String> = emptyList(),
+    override val presentedOfferingIdentifier: String? = "offering",
+) : SubscriptionOption {
+    override val id: String
+        get() = if (pricingPhases.size == 1) basePlanId else "$basePlanId:testOfferId"
+
+    override val purchasingData: PurchasingData
+        get() = object : PurchasingData {
+            override val productId: String
+                get() = productIdentifier
+            override val productType: ProductType
+                get() = ProductType.SUBS
+        }
 }
