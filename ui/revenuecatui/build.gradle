@@ -48,6 +48,7 @@ dependencies {
     implementation libs.androidx.lifecycle.viewmodel
     implementation libs.androidx.lifecycle.viewmodel.compose
     implementation libs.coil.compose
+    implementation libs.coil.svg
     debugImplementation libs.compose.ui.tooling
     debugImplementation libs.androidx.test.compose.manifest
 
