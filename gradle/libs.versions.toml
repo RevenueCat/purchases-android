@@ -113,6 +113,7 @@ compose-window-size = { module = "androidx.compose.material3:material3-window-si
 compose-ui-tooling = { module = "androidx.compose.ui:ui-tooling" }
 
 coil-compose = { module = "io.coil-kt:coil-compose", version.ref = "coil" }
+coil-svg = { module = "io.coil-kt:coil-svg", version.ref = "coil" }
 
 navigation-compose = "androidx.navigation:navigation-compose:2.5.3"
 
