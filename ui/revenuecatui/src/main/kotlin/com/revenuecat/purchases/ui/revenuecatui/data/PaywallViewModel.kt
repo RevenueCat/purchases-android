@@ -15,6 +15,7 @@ import com.revenuecat.purchases.awaitOfferings
 import com.revenuecat.purchases.awaitPurchase
 import com.revenuecat.purchases.awaitRestore
 import com.revenuecat.purchases.ui.revenuecatui.PaywallViewListener
+import com.revenuecat.purchases.ui.revenuecatui.PaywallViewMode
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvider
 import com.revenuecat.purchases.ui.revenuecatui.extensions.getActivity
@@ -46,6 +47,7 @@ internal interface PaywallViewModel {
 
 internal class PaywallViewModelImpl(
     applicationContext: ApplicationContext,
+    private val mode: PaywallViewMode,
     private val offering: Offering?,
     private val listener: PaywallViewListener?,
 ) : ViewModel(), PaywallViewModel {
@@ -142,6 +144,6 @@ internal class PaywallViewModelImpl(
     }
 
     private fun Offering.calculateState(): PaywallViewState {
-        return toPaywallViewState(variableDataProvider)
+        return toPaywallViewState(variableDataProvider, mode)
     }
 }
