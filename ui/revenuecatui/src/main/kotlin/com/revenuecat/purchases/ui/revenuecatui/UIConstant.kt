@@ -3,6 +3,8 @@ package com.revenuecat.purchases.ui.revenuecatui
 import androidx.compose.ui.unit.dp
 
 internal object UIConstant {
-    val defaultHorizontalPadding = 16.dp
-    val defaultButtonVerticalSpacing = 5.dp
+    val defaultHorizontalPadding = 12.dp
+    val defaultVerticalSpacing = 12.dp
+
+    const val defaultAnimationDurationMillis = 200
 }

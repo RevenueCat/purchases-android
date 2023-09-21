@@ -3,9 +3,10 @@ package com.revenuecat.purchases.ui.revenuecatui.data.processed
 import android.net.Uri
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.Package
+import com.revenuecat.purchases.PackageType
 import com.revenuecat.purchases.ui.revenuecatui.PaywallViewMode
+import com.revenuecat.purchases.ui.revenuecatui.data.MockApplicationContext
 import com.revenuecat.purchases.ui.revenuecatui.data.TestData
-import com.revenuecat.purchases.ui.revenuecatui.helpers.ApplicationContext
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Test
@@ -16,7 +17,6 @@ import java.util.Locale
 internal class TemplateConfigurationFactoryTest {
 
     private val paywallViewMode = PaywallViewMode.FULL_SCREEN
-    private val testAppName = "testAppName"
 
     private lateinit var variableDataProvider: VariableDataProvider
 
@@ -24,20 +24,13 @@ internal class TemplateConfigurationFactoryTest {
 
     @Before
     fun setUp() {
-        variableDataProvider = VariableDataProvider(
-            applicationContext = object : ApplicationContext {
-                override fun getApplicationName(): String {
-                    return testAppName
-                }
-            }
-        )
+        variableDataProvider = VariableDataProvider(MockApplicationContext())
         template2Configuration = TemplateConfigurationFactory.create(
             variableDataProvider,
             paywallViewMode,
             TestData.template2,
             listOf(TestData.Packages.weekly, TestData.Packages.monthly, TestData.Packages.annual),
             emptySet(),
-            Locale.US,
         )
     }
 
@@ -87,14 +80,26 @@ internal class TemplateConfigurationFactoryTest {
 
     private fun getPackageInfo(rcPackage: Package): TemplateConfiguration.PackageInfo {
         val localizedConfiguration = TestData.template2.configForLocale(Locale.US)!!
+        val periodName = when(rcPackage.packageType) {
+            PackageType.ANNUAL -> "Annual"
+            PackageType.MONTHLY -> "Monthly"
+            PackageType.WEEKLY -> "Weekly"
+            else -> error("Unknown package type ${rcPackage.packageType}")
+        }
+        val callToAction = when(rcPackage.packageType) {
+            PackageType.ANNUAL -> "Subscribe for $67.99/yr"
+            PackageType.MONTHLY -> "Subscribe for $7.99/mth"
+            PackageType.WEEKLY -> "Subscribe for $1.99/wk"
+            else -> error("Unknown package type ${rcPackage.packageType}")
+        }
         val processedLocalization = ProcessedLocalizedConfiguration(
             title = localizedConfiguration.title,
             subtitle = localizedConfiguration.subtitle,
-            callToAction = "Subscribe for PRICE_PER_PERIOD",
+            callToAction = callToAction,
             callToActionWithIntroOffer = null,
             offerDetails = "PRICE_AND_PER_MONTH",
             offerDetailsWithIntroOffer = "PRICE_AND_PER_MONTH after INT_OFFER_DURATION trial",
-            offerName = "PERIOD_NAME",
+            offerName = periodName,
             features = emptyList(),
         )
         return TemplateConfiguration.PackageInfo(

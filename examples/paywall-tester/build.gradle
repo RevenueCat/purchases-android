@@ -10,7 +10,7 @@ android {
 
     defaultConfig {
         applicationId "com.revenuecat.paywall_tester"
-        minSdk 21
+        minSdk 24
         versionCode paywallTesterVersionCode as Integer
         versionName paywallTesterVersionName
 

@@ -1,12 +1,15 @@
 package com.revenuecat.purchases.paywalls
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.core.os.LocaleListCompat
-import com.revenuecat.purchases.common.errorLog
+import com.revenuecat.purchases.utils.convertToCorrectlyFormattedLocale
+import com.revenuecat.purchases.utils.sharedLanguageCodeWith
+import com.revenuecat.purchases.utils.toLocale
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import java.net.URL
 import java.util.Locale
-import java.util.MissingResourceException
 
 /**
  * Represents the data required to display a paywall using the `RevenueCatUI` library.
@@ -39,16 +42,19 @@ data class PaywallData(
 ) {
 
     /**
-     * Returns the [LocalizedConfiguration] to be used based on the current locale.
+     * Returns the [Locale] and [LocalizedConfiguration] to be used based on the current locale list
+     * and the available locales for this paywall.
      */
-    val localizedConfiguration: LocalizedConfiguration
+    val localizedConfiguration: Pair<Locale, LocalizedConfiguration>
+        @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
         get() {
             val preferredLocales = LocaleListCompat.getDefault()
 
             for (i in 0 until preferredLocales.size()) {
-                preferredLocales.get(i)?.let { locale ->
-                    configForLocale(locale)?.let { localizedConfiguration ->
-                        return localizedConfiguration
+                preferredLocales.get(i)?.let { locale: Locale ->
+                    val localeToCheck = locale.convertToCorrectlyFormattedLocale()
+                    configForLocale(localeToCheck)?.let { localizedConfiguration ->
+                        return (localeToCheck to localizedConfiguration)
                     }
                 }
             }
@@ -56,9 +62,12 @@ data class PaywallData(
             return fallbackLocalizedConfiguration
         }
 
-    private val fallbackLocalizedConfiguration: LocalizedConfiguration
+    private val fallbackLocalizedConfiguration: Pair<Locale, LocalizedConfiguration>
+        @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
         get() {
-            return localization.values.first()
+            localization.entries.first().let { localization ->
+                return (localization.key.toLocale() to localization.value)
+            }
         }
 
     /**
@@ -66,26 +75,13 @@ data class PaywallData(
      *
      * @return [LocalizedConfiguration] for the given [Locale], if found.
      */
+    @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     fun configForLocale(requiredLocale: Locale): LocalizedConfiguration? {
         return localization[requiredLocale.toString()]
             ?: localization.entries.firstOrNull { (localeKey, _) ->
-                @Suppress("UsePropertyAccessSyntax")
-                Locale(localeKey).languageWithFallback == requiredLocale.languageWithFallback
+                requiredLocale.sharedLanguageCodeWith(localeKey.toLocale())
             }?.value
     }
-
-    /**
-     * Added this fallback to provide support for Android Studio Preview, since isO3Language may throw
-     * in AS implementation of Locale.
-     */
-    private val Locale.languageWithFallback: String
-        get() = try {
-            // Locale("en_US").language returns "en_US" instead of "en", that's why we use getISO3Language
-            isO3Language
-        } catch (e: MissingResourceException) {
-            errorLog("Locale $this can't obtain ISO3 language code ($e). Falling back to language.")
-            language
-        }
 
     /**
      * Generic configuration for any paywall.

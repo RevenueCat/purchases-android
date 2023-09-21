@@ -6,7 +6,6 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
@@ -20,29 +19,27 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.ui.revenuecatui.InternalPaywallView
-import com.revenuecat.purchases.ui.revenuecatui.R
 import com.revenuecat.purchases.ui.revenuecatui.UIConstant
+import com.revenuecat.purchases.ui.revenuecatui.composables.Footer
 import com.revenuecat.purchases.ui.revenuecatui.composables.PaywallBackground
+import com.revenuecat.purchases.ui.revenuecatui.composables.PurchaseButton
 import com.revenuecat.purchases.ui.revenuecatui.composables.RemoteImage
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModel
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewState
 import com.revenuecat.purchases.ui.revenuecatui.data.TestData
-import com.revenuecat.purchases.ui.revenuecatui.data.processed.ProcessedLocalizedConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
+import com.revenuecat.purchases.ui.revenuecatui.data.selectedLocalization
 
 private object Template2UIConstants {
     val maxIconWidth = 140.dp
@@ -61,18 +58,7 @@ internal fun Template2(state: PaywallViewState.Loaded, viewModel: PaywallViewMod
             Template2MainContent(state, viewModel)
             Spacer(modifier = Modifier.weight(1f))
             PurchaseButton(state, viewModel)
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(
-                        start = UIConstant.defaultHorizontalPadding,
-                        end = UIConstant.defaultHorizontalPadding,
-                        bottom = UIConstant.defaultButtonVerticalSpacing,
-                    ),
-                horizontalArrangement = Arrangement.Center,
-            ) {
-                RestorePurchasesButton(viewModel)
-            }
+            Footer(templateConfiguration = state.templateConfiguration, viewModel = viewModel)
         }
     }
 }
@@ -85,7 +71,7 @@ private fun Template2MainContent(state: PaywallViewState.Loaded, viewModel: Payw
             .verticalScroll(rememberScrollState())
             .padding(horizontal = UIConstant.defaultHorizontalPadding),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(UIConstant.defaultButtonVerticalSpacing, Alignment.CenterVertically),
+        verticalArrangement = Arrangement.spacedBy(UIConstant.defaultVerticalSpacing, Alignment.CenterVertically),
     ) {
         IconImage(state.templateConfiguration.images.iconUri)
         val localizedConfig = state.selectedLocalization
@@ -111,30 +97,6 @@ private fun Template2MainContent(state: PaywallViewState.Loaded, viewModel: Payw
 }
 
 @Composable
-private fun PurchaseButton(state: PaywallViewState.Loaded, viewModel: PaywallViewModel) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = UIConstant.defaultHorizontalPadding),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-    ) {
-        val context = LocalContext.current
-        val colors = state.templateConfiguration.getCurrentColors()
-        Button(
-            modifier = Modifier.fillMaxWidth(),
-            onClick = { viewModel.purchaseSelectedPackage(context) },
-            colors = ButtonDefaults.buttonColors(
-                containerColor = colors.callToActionBackground,
-                contentColor = colors.callToActionForeground,
-            ),
-        ) {
-            Text(text = state.selectedLocalization.callToAction)
-        }
-    }
-}
-
-@Composable
 private fun IconImage(uri: Uri?) {
     uri?.let {
         Column(modifier = Modifier.widthIn(max = Template2UIConstants.maxIconWidth)) {
@@ -155,13 +117,6 @@ private fun IconImage(uri: Uri?) {
                 )
             }
         }
-    }
-}
-
-@Composable
-private fun RestorePurchasesButton(viewModel: PaywallViewModel) {
-    TextButton(onClick = { viewModel.restorePurchases() }) {
-        Text(text = stringResource(id = R.string.restore_purchases))
     }
 }
 
@@ -194,10 +149,8 @@ private fun SelectPackageButton(
     }
 }
 
-private val PaywallViewState.Loaded.selectedLocalization: ProcessedLocalizedConfiguration
-    get() = selectedPackage.localization
-
-@Preview(showBackground = true)
+@Preview(showBackground = true, locale = "en-rUS")
+@Preview(showBackground = true, locale = "es-rES")
 @Composable
 internal fun Template2PaywallPreview() {
     InternalPaywallView(offering = TestData.template2Offering)

@@ -4,7 +4,6 @@ import android.net.Uri
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.ui.revenuecatui.PaywallViewMode
-import java.util.Locale
 
 internal object TemplateConfigurationFactory {
     @Suppress("LongParameterList", "ThrowsCount")
@@ -14,13 +13,11 @@ internal object TemplateConfigurationFactory {
         paywallData: PaywallData,
         packages: List<Package>,
         activelySubscribedProductIdentifiers: Set<String>,
-        locale: Locale,
     ): TemplateConfiguration {
         val paywallTemplate = PaywallTemplate.fromId(paywallData.templateName)
             ?: throw IllegalArgumentException("Unknown template ${paywallData.templateName}")
 
-        val localizedConfiguration = paywallData.configForLocale(locale)
-            ?: error("No configuration found for locale $locale")
+        val (locale, localizedConfiguration) = paywallData.localizedConfiguration
         val packageIds = paywallData.config.packages
         require(packageIds.isNotEmpty()) { "No packages ids found in paywall data" }
         require(packages.isNotEmpty()) { "No packages found in offering" }

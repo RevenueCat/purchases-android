@@ -2,6 +2,8 @@ package com.revenuecat.purchases.ui.revenuecatui.data
 
 import android.app.Activity
 import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.revenuecat.purchases.Offering
@@ -23,6 +25,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import java.net.URL
 
 internal interface PaywallViewModel {
     val state: StateFlow<PaywallViewState>
@@ -37,6 +40,8 @@ internal interface PaywallViewModel {
     fun purchaseSelectedPackage(context: Context)
 
     fun restorePurchases()
+
+    fun openURL(url: URL, context: Context)
 }
 
 internal class PaywallViewModelImpl(
@@ -99,6 +104,11 @@ internal class PaywallViewModelImpl(
                 Logger.e("Error restoring purchases: $e")
             }
         }
+    }
+
+    override fun openURL(url: URL, context: Context) {
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url.toString()))
+        context.startActivity(intent)
     }
 
     private fun purchasePackage(activity: Activity, packageToPurchase: Package) {

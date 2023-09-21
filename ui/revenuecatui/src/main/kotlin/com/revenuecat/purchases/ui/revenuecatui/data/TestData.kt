@@ -8,12 +8,15 @@ import com.revenuecat.purchases.PackageType
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
+import com.revenuecat.purchases.models.PricingPhase
 import com.revenuecat.purchases.models.PurchasingData
+import com.revenuecat.purchases.models.RecurrenceMode
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.models.SubscriptionOptions
 import com.revenuecat.purchases.paywalls.PaywallColor
 import com.revenuecat.purchases.paywalls.PaywallData
+import com.revenuecat.purchases.ui.revenuecatui.R
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvider
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ApplicationContext
@@ -24,7 +27,47 @@ import kotlinx.coroutines.flow.asStateFlow
 import java.net.URL
 
 internal object TestData {
-
+    val template1 = PaywallData(
+        templateName = "1", // TODO-PAYWALLS: use enum
+        config = PaywallData.Configuration(
+            packages = listOf(
+                PackageType.MONTHLY.identifier!!,
+            ),
+            defaultPackage = PackageType.MONTHLY.identifier!!,
+            images = Constants.images,
+            blurredBackgroundImage = true,
+            displayRestorePurchases = true,
+            termsOfServiceURL = URL("https://revenuecat.com/tos"),
+            colors = PaywallData.Configuration.ColorInformation(
+                light = PaywallData.Configuration.Colors(
+                    background = PaywallColor(stringRepresentation = "#FFFFFF"),
+                    text1 = PaywallColor(stringRepresentation = "#000000"),
+                    callToActionBackground = PaywallColor(stringRepresentation = "#5CD27A"),
+                    callToActionForeground = PaywallColor(stringRepresentation = "#FFFFFF"),
+                    accent1 = PaywallColor(stringRepresentation = "#BC66FF"),
+                ),
+                dark = PaywallData.Configuration.Colors(
+                    background = PaywallColor(stringRepresentation = "#000000"),
+                    text1 = PaywallColor(stringRepresentation = "#FFFFFF"),
+                    callToActionBackground = PaywallColor(stringRepresentation = "#ACD27A"),
+                    callToActionForeground = PaywallColor(stringRepresentation = "#000000"),
+                    accent1 = PaywallColor(stringRepresentation = "#B022BB"),
+                ),
+            ),
+        ),
+        localization = mapOf(
+            "en_US" to PaywallData.LocalizedConfiguration(
+                title = "Ignite your child's curiosity",
+                subtitle = "Get access to all our educational content trusted by thousands of parents.",
+                callToAction = "Subscribe for {{ sub_price_per_month }}",
+                callToActionWithIntroOffer = "Purchase for {{ sub_price_per_month }} per month",
+                offerDetails = "{{ sub_price_per_month }} per month",
+                offerDetailsWithIntroOffer = "Start your {{ sub_offer_duration }} trial, " +
+                    "then {{ sub_price_per_month }} per month",
+            ),
+        ),
+        assetBaseURL = Constants.assetBaseURL,
+    )
     val template2 = PaywallData(
         templateName = "2", // TODO-PAYWALLS: use enum
         config = PaywallData.Configuration(
@@ -38,6 +81,7 @@ internal object TestData {
             blurredBackgroundImage = true,
             displayRestorePurchases = true,
             termsOfServiceURL = URL("https://revenuecat.com/tos"),
+            privacyURL = URL("https://revenuecat.com/privacy"),
             colors = PaywallData.Configuration.ColorInformation(
                 light = PaywallData.Configuration.Colors(
                     background = PaywallColor(stringRepresentation = "#FFFFFF"),
@@ -58,8 +102,26 @@ internal object TestData {
                 offerDetailsWithIntroOffer = "{{ total_price_and_per_month }} after {{ sub_offer_duration }} trial",
                 offerName = "{{ sub_period }}",
             ),
+            "es_ES" to PaywallData.LocalizedConfiguration(
+                title = "Título en español",
+                subtitle = "Un lorem ipsum en español que es más largo para mostrar un subtítulo multilinea.",
+                callToAction = "Suscribete for {{ price_per_period }}",
+                offerDetails = "{{ total_price_and_per_month }}",
+                offerDetailsWithIntroOffer = "{{ total_price_and_per_month }} con {{ sub_offer_duration }} de prueba",
+                offerName = "{{ sub_period }}",
+            ),
         ),
         assetBaseURL = Constants.assetBaseURL,
+    )
+
+    val template1Offering = Offering(
+        identifier = "Template1",
+        availablePackages = listOf(
+            Packages.monthly,
+        ),
+        metadata = mapOf(),
+        paywall = template1,
+        serverDescription = "",
     )
 
     val template2Offering = Offering(
@@ -108,7 +170,59 @@ internal object TestData {
                 title = "Annual",
                 price = Price(amountMicros = 67_990_000, currencyCode = "USD", formatted = "$67.99"),
                 description = "Annual",
-                period = Period(value = 12, unit = Period.Unit.MONTH, iso8601 = "P1Y"),
+                period = Period(value = 1, unit = Period.Unit.YEAR, iso8601 = "P1Y"),
+                freeTrialPeriod = Period(value = 1, unit = Period.Unit.MONTH, iso8601 = "P1M"),
+            ),
+        )
+        val lifetime = Package(
+            packageType = PackageType.LIFETIME,
+            identifier = PackageType.LIFETIME.identifier!!,
+            offering = "offering",
+            product = TestStoreProduct(
+                id = "com.revenuecat.lifetime_product",
+                title = "Lifetime",
+                price = Price(amountMicros = 1_000_000_000, currencyCode = "USD", formatted = "$1,000"),
+                description = "Lifetime",
+                period = null,
+            ),
+        )
+        val bimonthly = Package(
+            packageType = PackageType.TWO_MONTH,
+            identifier = PackageType.TWO_MONTH.identifier!!,
+            offering = "offering",
+            product = TestStoreProduct(
+                id = "com.revenuecat.bimonthly_product",
+                title = "2 month",
+                price = Price(amountMicros = 15_990_000, currencyCode = "USD", formatted = "$15.99"),
+                description = "2 month",
+                period = Period(value = 2, unit = Period.Unit.MONTH, iso8601 = "P2M"),
+                introPrice = Price(amountMicros = 3_990_000, currencyCode = "USD", formatted = "$3.99"),
+            ),
+        )
+        val quarterly = Package(
+            packageType = PackageType.THREE_MONTH,
+            identifier = PackageType.THREE_MONTH.identifier!!,
+            offering = "offering",
+            product = TestStoreProduct(
+                id = "com.revenuecat.quarterly_product",
+                title = "3 month",
+                price = Price(amountMicros = 23_990_000, currencyCode = "USD", formatted = "$23.99"),
+                description = "3 month",
+                period = Period(value = 3, unit = Period.Unit.MONTH, iso8601 = "P3M"),
+                freeTrialPeriod = Period(value = 1, unit = Period.Unit.MONTH, iso8601 = "P1M"),
+                introPrice = Price(amountMicros = 3_990_000, currencyCode = "USD", formatted = "$3.99"),
+            ),
+        )
+        val semester = Package(
+            packageType = PackageType.SIX_MONTH,
+            identifier = PackageType.SIX_MONTH.identifier!!,
+            offering = "offering",
+            product = TestStoreProduct(
+                id = "com.revenuecat.semester_product",
+                title = "6 month",
+                price = Price(amountMicros = 39_990_000, currencyCode = "USD", formatted = "$39.99"),
+                description = "6 month",
+                period = Period(value = 6, unit = Period.Unit.MONTH, iso8601 = "P6M"),
             ),
         )
     }
@@ -117,6 +231,22 @@ internal object TestData {
 internal class MockApplicationContext : ApplicationContext {
     override fun getApplicationName(): String {
         return "Mock Paywall"
+    }
+
+    // This is hardcoding the english version of the strings for now. We can't access the actual resources since
+    // we don't have access to a real context in some cases here.
+    override fun getString(resId: Int): String {
+        return when (resId) {
+            R.string.restore_purchases -> "Restore purchases"
+            R.string.annual -> "Annual"
+            R.string.semester -> "6 month"
+            R.string.quarter -> "3 month"
+            R.string.bimonthly -> "2 month"
+            R.string.monthly -> "Monthly"
+            R.string.weekly -> "Weekly"
+            R.string.lifetime -> "Lifetime"
+            else -> error("Unknown string resource $resId")
+        }
     }
 }
 
@@ -140,6 +270,10 @@ internal class MockViewModel(
     override fun restorePurchases() {
         error("Can't restore purchases")
     }
+
+    override fun openURL(url: URL, context: Context) {
+        error("Can't open URL")
+    }
 }
 
 private object Constants {
@@ -158,13 +292,15 @@ private data class TestStoreProduct(
     override val price: Price,
     override val description: String,
     override val period: Period?,
+    private val freeTrialPeriod: Period? = null,
+    private val introPrice: Price? = null,
 ) : StoreProduct {
     override val type: ProductType
         get() = ProductType.SUBS
     override val subscriptionOptions: SubscriptionOptions?
-        get() = null
+        get() = buildSubscriptionOptions()
     override val defaultOption: SubscriptionOption?
-        get() = null
+        get() = subscriptionOptions?.defaultOffer
     override val purchasingData: PurchasingData
         get() = object : PurchasingData {
             override val productId: String
@@ -180,4 +316,60 @@ private data class TestStoreProduct(
     override fun copyWithOfferingId(offeringId: String): StoreProduct {
         return this
     }
+
+    private fun buildSubscriptionOptions(): SubscriptionOptions? {
+        if (period == null) return null
+        val freePhase = freeTrialPeriod?.let { freeTrialPeriod ->
+            PricingPhase(
+                billingPeriod = freeTrialPeriod,
+                recurrenceMode = RecurrenceMode.FINITE_RECURRING,
+                billingCycleCount = 1,
+                price = Price(amountMicros = 0, currencyCode = price.currencyCode, formatted = "Free"),
+            )
+        }
+        val introPhase = introPrice?.let { introPrice ->
+            PricingPhase(
+                billingPeriod = Period(value = 1, unit = Period.Unit.MONTH, iso8601 = "P1M"),
+                recurrenceMode = RecurrenceMode.FINITE_RECURRING,
+                billingCycleCount = 1,
+                price = introPrice,
+            )
+        }
+        val basePricePhase = PricingPhase(
+            billingPeriod = period,
+            recurrenceMode = RecurrenceMode.INFINITE_RECURRING,
+            billingCycleCount = null,
+            price = price,
+        )
+        val subscriptionOptionsList = listOfNotNull(
+            TestSubscriptionOption(
+                id,
+                listOfNotNull(freePhase, introPhase, basePricePhase),
+            ).takeIf { freeTrialPeriod != null || introPhase != null },
+            TestSubscriptionOption(
+                id,
+                listOf(basePricePhase),
+            ),
+        )
+        return SubscriptionOptions(subscriptionOptionsList)
+    }
+}
+
+private class TestSubscriptionOption(
+    val productIdentifier: String,
+    override val pricingPhases: List<PricingPhase>,
+    val basePlanId: String = "testBasePlanId",
+    override val tags: List<String> = emptyList(),
+    override val presentedOfferingIdentifier: String? = "offering",
+) : SubscriptionOption {
+    override val id: String
+        get() = if (pricingPhases.size == 1) basePlanId else "$basePlanId:testOfferId"
+
+    override val purchasingData: PurchasingData
+        get() = object : PurchasingData {
+            override val productId: String
+                get() = productIdentifier
+            override val productType: ProductType
+                get() = ProductType.SUBS
+        }
 }
