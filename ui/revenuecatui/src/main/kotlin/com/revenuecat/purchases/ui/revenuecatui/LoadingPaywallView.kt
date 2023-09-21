@@ -1,0 +1,147 @@
+package com.revenuecat.purchases.ui.revenuecatui
+
+import android.content.Context
+import androidx.compose.foundation.layout.Box
+import androidx.compose.material3.ColorScheme
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.ViewModel
+import com.revenuecat.purchases.Offering
+import com.revenuecat.purchases.Package
+import com.revenuecat.purchases.PackageType
+import com.revenuecat.purchases.models.Period
+import com.revenuecat.purchases.models.Price
+import com.revenuecat.purchases.paywalls.PaywallData
+import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModel
+import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewState
+import com.revenuecat.purchases.ui.revenuecatui.data.processed.PaywallTemplate
+import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
+import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvider
+import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockApplicationContext
+import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestStoreProduct
+import com.revenuecat.purchases.ui.revenuecatui.extensions.createDefault
+import com.revenuecat.purchases.ui.revenuecatui.helpers.toAndroidContext
+import com.revenuecat.purchases.ui.revenuecatui.helpers.toPaywallViewState
+import com.revenuecat.purchases.ui.revenuecatui.templates.Template2
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import java.net.URL
+
+@Composable
+internal fun LoadingPaywallView(mode: PaywallViewMode) {
+    val paywallData: PaywallData = PaywallData.createDefault(
+        LoadingPaywallConstants.packages,
+        MaterialTheme.colorScheme
+    )
+
+    val offering = Offering(
+        identifier = LoadingPaywallConstants.offeringIdentifier,
+        serverDescription = "Loading paywall",
+        metadata = emptyMap(),
+        availablePackages = LoadingPaywallConstants.packages,
+        paywall = paywallData
+    )
+
+    val viewModel = LoadingViewModel(mode, offering, paywallData)
+
+    val state = offering.toPaywallViewState(
+        VariableDataProvider(LocalContext.current.applicationContext.toAndroidContext()),
+        mode,
+        paywallData,
+        LoadingPaywallConstants.template
+    )
+
+    when (state) {
+        is PaywallViewState.Error,
+        is PaywallViewState.Loading -> Box {}
+        is PaywallViewState.Loaded -> Template2(
+            state = state,
+            viewModel = viewModel
+        )
+    }
+}
+
+private object LoadingPaywallConstants {
+    const val offeringIdentifier = "loading_offering"
+
+    val template = PaywallTemplate.TEMPLATE_2
+
+    val packages = listOf(
+        Package(
+            identifier = "weekly",
+            packageType = PackageType.WEEKLY,
+            offering = this.offeringIdentifier,
+            product = TestStoreProduct(
+                id = "com.revenuecat.weekly",
+                title = "Weekly",
+                price = Price(formatted = "$1.99", currencyCode = "USD", amountMicros = 1_990_000),
+                description = "Weekly",
+                period = Period(value = 1, unit = Period.Unit.WEEK, iso8601 = "P1W"),
+            ),
+        ),
+        Package(
+            identifier = "monthly",
+            packageType = PackageType.MONTHLY,
+            offering = this.offeringIdentifier,
+            product = TestStoreProduct(
+                id = "com.revenuecat.monthly",
+                title = "Monthly",
+                price = Price(formatted = "$5.99", currencyCode = "USD", amountMicros = 5_990_000),
+                description = "Monthly",
+                period = Period(value = 1, unit = Period.Unit.MONTH, iso8601 = "P1M"),
+            ),
+        ),
+        Package(
+            identifier = "annual",
+            packageType = PackageType.ANNUAL,
+            offering = this.offeringIdentifier,
+            product = TestStoreProduct(
+                id = "com.revenuecat.annual",
+                title = "Annual",
+                price = Price(formatted = "$15.99", currencyCode = "USD", amountMicros = 5_990_000),
+                description = "Annual",
+                period = Period(value = 1, unit = Period.Unit.YEAR, iso8601 = "P1Y"),
+            ),
+        )
+    )
+}
+
+private class LoadingViewModel(
+    mode: PaywallViewMode = PaywallViewMode.default,
+    offering: Offering,
+    paywall: PaywallData
+) : ViewModel(), PaywallViewModel {
+    override val state: StateFlow<PaywallViewState>
+        get() = _state.asStateFlow()
+
+    override fun refreshStateIfLocaleChanged() = Unit
+    override fun refreshStateIfColorsChanged(colorScheme: ColorScheme) = Unit
+
+    private val _state =
+        MutableStateFlow(
+            offering.toPaywallViewState(
+                VariableDataProvider(MockApplicationContext()),
+                mode,
+                template = LoadingPaywallConstants.template,
+                validatedPaywallData = paywall
+            )
+        )
+
+    override fun selectPackage(packageToSelect: TemplateConfiguration.PackageInfo) {
+        error("Not supported")
+    }
+
+    override fun purchaseSelectedPackage(context: Context) {
+        error("Can't purchase loading view model")
+    }
+
+    override fun restorePurchases() {
+        error("Can't restore purchases")
+    }
+
+    override fun openURL(url: URL, context: Context) {
+        error("Can't open URL")
+    }
+}
