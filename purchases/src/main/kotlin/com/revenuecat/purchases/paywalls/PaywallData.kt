@@ -3,12 +3,13 @@ package com.revenuecat.purchases.paywalls
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.core.os.LocaleListCompat
-import com.revenuecat.purchases.common.errorLog
+import com.revenuecat.purchases.utils.convertToCorrectlyFormattedLocale
+import com.revenuecat.purchases.utils.sharedLanguageCodeWith
+import com.revenuecat.purchases.utils.toLocale
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import java.net.URL
 import java.util.Locale
-import java.util.MissingResourceException
 
 /**
  * Represents the data required to display a paywall using the `RevenueCatUI` library.
@@ -41,7 +42,8 @@ data class PaywallData(
 ) {
 
     /**
-     * Returns the [LocalizedConfiguration] to be used based on the current locale.
+     * Returns the [Locale] and [LocalizedConfiguration] to be used based on the current locale list
+     * and the available locales for this paywall.
      */
     val localizedConfiguration: Pair<Locale, LocalizedConfiguration>
         @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
@@ -49,12 +51,8 @@ data class PaywallData(
             val preferredLocales = LocaleListCompat.getDefault()
 
             for (i in 0 until preferredLocales.size()) {
-                preferredLocales.get(i)?.let { locale ->
-                    // This is a hack to make android studio previews work. In previews, the locale language method
-                    // gives a different result than expected (for example, "es-es" instead of "es").
-                    // In order to fix that, we convert the string to a locale and we parse that as a locale so the
-                    // language and country are correctly parsed.
-                    val localeToCheck = Locale.forLanguageTag(locale.toString())
+                preferredLocales.get(i)?.let { locale: Locale ->
+                    val localeToCheck = locale.convertToCorrectlyFormattedLocale()
                     configForLocale(localeToCheck)?.let { localizedConfiguration ->
                         return (localeToCheck to localizedConfiguration)
                     }
@@ -68,15 +66,9 @@ data class PaywallData(
         @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
         get() {
             localization.entries.first().let { localization ->
-                return (getLocaleForLabel(localization.key) to localization.value)
+                return (localization.key.toLocale() to localization.value)
             }
         }
-
-    @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
-    private fun getLocaleForLabel(label: String): Locale {
-        // Parsing language requires it to be in the form "en-US", even though Locale.toString() returns "en_US"
-        return Locale.forLanguageTag(label.replace("_", "-"))
-    }
 
     /**
      * @note This allows searching by `Locale` with only language code and missing region (like `en`, `es`, etc).
@@ -87,13 +79,7 @@ data class PaywallData(
     fun configForLocale(requiredLocale: Locale): LocalizedConfiguration? {
         return localization[requiredLocale.toString()]
             ?: localization.entries.firstOrNull { (localeKey, _) ->
-                val locale = getLocaleForLabel(localeKey)
-                try {
-                    locale.isO3Language == requiredLocale.isO3Language
-                } catch (e: MissingResourceException) {
-                    errorLog("Locale $this can't obtain ISO3 language code ($e). Falling back to language.")
-                    locale.language == requiredLocale.language
-                }
+                requiredLocale.sharedLanguageCodeWith(localeKey.toLocale())
             }?.value
     }
 
