@@ -69,8 +69,8 @@ private val PaywallData.Companion.defaultColors: PaywallData.Configuration.Color
     @ReadOnlyComposable
     get() {
         return PaywallData.Configuration.ColorInformation(
-            light = getCurrentColors(background = PaywallColor(colorInt = Color.White.toArgb())),
-            dark = getCurrentColors(background = PaywallColor(colorInt = Color.Black.toArgb())),
+            light = getThemeColors(background = PaywallColor(colorInt = Color.White.toArgb())),
+            dark = getThemeColors(background = PaywallColor(colorInt = Color.Black.toArgb())),
         )
     }
 
@@ -89,7 +89,7 @@ private fun PaywallData.Companion.defaultTemplateBaseURL(packageName: String): U
 
 @Composable
 @ReadOnlyComposable
-private fun getCurrentColors(
+private fun getThemeColors(
     background: PaywallColor,
 ): PaywallData.Configuration.Colors {
     return PaywallData.Configuration.Colors(
