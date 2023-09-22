@@ -209,7 +209,7 @@ internal object TestData {
                 price = Price(amountMicros = 23_990_000, currencyCode = "USD", formatted = "$23.99"),
                 description = "3 month",
                 period = Period(value = 3, unit = Period.Unit.MONTH, iso8601 = "P3M"),
-                freeTrialPeriod = Period(value = 1, unit = Period.Unit.MONTH, iso8601 = "P1M"),
+                freeTrialPeriod = Period(value = 2, unit = Period.Unit.WEEK, iso8601 = "P2W"),
                 introPrice = Price(amountMicros = 3_990_000, currencyCode = "USD", formatted = "$3.99"),
             ),
         )
@@ -296,7 +296,7 @@ private data class TestStoreProduct(
     private val introPrice: Price? = null,
 ) : StoreProduct {
     override val type: ProductType
-        get() = ProductType.SUBS
+        get() = if (period == null) ProductType.INAPP else ProductType.SUBS
     override val subscriptionOptions: SubscriptionOptions?
         get() = buildSubscriptionOptions()
     override val defaultOption: SubscriptionOption?

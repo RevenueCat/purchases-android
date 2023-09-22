@@ -92,13 +92,25 @@ internal class TemplateConfigurationFactoryTest {
             PackageType.WEEKLY -> "Subscribe for $1.99/wk"
             else -> error("Unknown package type ${rcPackage.packageType}")
         }
+        val offerDetails = when(rcPackage.packageType) {
+            PackageType.ANNUAL -> "$67.99/yr ($5.67/mth)"
+            PackageType.MONTHLY -> "$7.99/mth"
+            PackageType.WEEKLY -> "$1.99/wk ($7.96/mth)"
+            else -> error("Unknown package type ${rcPackage.packageType}")
+        }
+        val offerDetailsWithIntroOffer = when(rcPackage.packageType) {
+            PackageType.ANNUAL -> "$67.99/yr ($5.67/mth) after 1 month trial"
+            PackageType.MONTHLY -> "$7.99/mth after  trial"
+            PackageType.WEEKLY -> "$1.99/wk ($7.96/mth) after  trial"
+            else -> error("Unknown package type ${rcPackage.packageType}")
+        }
         val processedLocalization = ProcessedLocalizedConfiguration(
             title = localizedConfiguration.title,
             subtitle = localizedConfiguration.subtitle,
             callToAction = callToAction,
             callToActionWithIntroOffer = null,
-            offerDetails = "PRICE_AND_PER_MONTH",
-            offerDetailsWithIntroOffer = "PRICE_AND_PER_MONTH after INT_OFFER_DURATION trial",
+            offerDetails = offerDetails,
+            offerDetailsWithIntroOffer = offerDetailsWithIntroOffer,
             offerName = periodName,
             features = emptyList(),
         )

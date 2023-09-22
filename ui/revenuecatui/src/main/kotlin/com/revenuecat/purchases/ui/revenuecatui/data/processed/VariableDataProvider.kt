@@ -1,9 +1,13 @@
 package com.revenuecat.purchases.ui.revenuecatui.data.processed
 
-import android.icu.text.MeasureFormat
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
+import com.revenuecat.purchases.models.Period
+import com.revenuecat.purchases.models.PricingPhase
 import com.revenuecat.purchases.ui.revenuecatui.R
+import com.revenuecat.purchases.ui.revenuecatui.extensions.isMonthly
+import com.revenuecat.purchases.ui.revenuecatui.extensions.isSubscription
+import com.revenuecat.purchases.ui.revenuecatui.extensions.localizedAbbreviatedPeriod
 import com.revenuecat.purchases.ui.revenuecatui.extensions.localizedPeriod
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ApplicationContext
 import java.util.Locale
@@ -23,12 +27,8 @@ internal class VariableDataProvider(
         return rcPackage.product.formattedPricePerMonth(locale)
     }
 
-    fun localizedIntroductoryOfferPrice(rcPackage: Package): String {
-        // TODO-PAYWALLS: Decide how this will look like for products that have both a free trial
-        // and a discounted introductory price.
-        val option = rcPackage.product.defaultOption
-        val introductoryPrice = option?.freePhase ?: option?.introPhase ?: return ""
-        return introductoryPrice.price.formatted
+    fun localizedIntroductoryOfferPrice(rcPackage: Package): String? {
+        return getIntroPhaseToApply(rcPackage)?.price?.formatted
     }
 
     fun productName(rcPackage: Package): String {
@@ -50,27 +50,36 @@ internal class VariableDataProvider(
     }
 
     fun subscriptionDuration(rcPackage: Package, locale: Locale): String? {
-        return rcPackage.product.period?.let { period ->
-            period.localizedPeriod(locale, formatWidth = MeasureFormat.FormatWidth.WIDE)
-        } ?: periodName(rcPackage)
+        return rcPackage.product.period?.localizedPeriod(locale)
+            ?: periodName(rcPackage)
     }
 
-    fun introductoryOfferDuration(rcPackage: Package): String? {
-        return "INT_OFFER_DURATION"
+    fun introductoryOfferDuration(rcPackage: Package, locale: Locale): String? {
+        return getIntroPhaseToApply(rcPackage)?.billingPeriod?.localizedPeriod(locale)
     }
 
     fun localizedPricePerPeriod(rcPackage: Package, locale: Locale): String {
         val localizedPrice = localizedPrice(rcPackage)
         return rcPackage.product.period?.let { period ->
-            var formattedPeriod = period.localizedPeriod(locale)
-            if (period.value == 1 && formattedPeriod.startsWith("1")) {
-                formattedPeriod = formattedPeriod.substring(startIndex = 1).trim()
-            }
+            val formattedPeriod = period.localizedAbbreviatedPeriod(locale)
             "$localizedPrice/$formattedPeriod"
         } ?: localizedPrice
     }
 
-    fun localizedPriceAndPerMonth(rcPackage: Package): String {
-        return "PRICE_AND_PER_MONTH"
+    fun localizedPriceAndPerMonth(rcPackage: Package, locale: Locale): String {
+        if (!rcPackage.isSubscription || rcPackage.isMonthly) {
+            return localizedPricePerPeriod(rcPackage, locale)
+        }
+        val unit = Period(1, Period.Unit.MONTH, "P1M").localizedAbbreviatedPeriod(locale)
+        val pricePerPeriod = localizedPricePerPeriod(rcPackage, locale)
+        val pricePerMonth = localizedPricePerMonth(rcPackage, locale)
+        return "$pricePerPeriod ($pricePerMonth/$unit)"
+    }
+
+    private fun getIntroPhaseToApply(rcPackage: Package): PricingPhase? {
+        // TODO-PAYWALLS: Decide how this will look like for products that have both a free trial
+        // and a discounted introductory price.
+        val option = rcPackage.product.defaultOption
+        return option?.freePhase ?: option?.introPhase
     }
 }

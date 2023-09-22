@@ -42,6 +42,7 @@ internal object VariableProcessor {
                 VariableName.PRICE_PER_PERIOD -> variableDataProvider.localizedPricePerPeriod(rcPackage, locale)
                 VariableName.TOTAL_PRICE_AND_PER_MONTH -> variableDataProvider.localizedPriceAndPerMonth(
                     rcPackage,
+                    locale,
                 )
                 VariableName.PRODUCT_NAME -> variableDataProvider.productName(rcPackage)
                 VariableName.SUB_PERIOD -> variableDataProvider.periodName(rcPackage)
@@ -50,7 +51,7 @@ internal object VariableProcessor {
                     locale,
                 )
                 VariableName.SUB_DURATION -> variableDataProvider.subscriptionDuration(rcPackage, locale)
-                VariableName.SUB_OFFER_DURATION -> variableDataProvider.introductoryOfferDuration(rcPackage)
+                VariableName.SUB_OFFER_DURATION -> variableDataProvider.introductoryOfferDuration(rcPackage, locale)
                 VariableName.SUB_OFFER_PRICE -> variableDataProvider.localizedIntroductoryOfferPrice(rcPackage)
             } ?: run {
                 Logger.w(
