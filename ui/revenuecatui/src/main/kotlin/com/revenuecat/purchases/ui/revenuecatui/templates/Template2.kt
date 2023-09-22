@@ -130,7 +130,7 @@ private fun AppIcon(
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
-    val appIconResId = remember(context) {
+    val appIconResId = remember {
         val packageManager = context.packageManager
         context.applicationInfo.loadIcon(packageManager)
     }
