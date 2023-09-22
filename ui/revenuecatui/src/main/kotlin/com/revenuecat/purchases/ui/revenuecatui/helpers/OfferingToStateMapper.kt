@@ -14,6 +14,12 @@ import com.revenuecat.purchases.ui.revenuecatui.extensions.createDefault
 import com.revenuecat.purchases.ui.revenuecatui.extensions.defaultTemplate
 import com.revenuecat.purchases.ui.revenuecatui.utils.Result
 
+internal data class ValidationResult(
+    val displayablePaywall: PaywallData,
+    val template: PaywallTemplate,
+    val error: PaywallValidationError?,
+)
+
 internal sealed class PaywallValidationResult {
     data class Success(val displayablePaywall: PaywallData, val template: PaywallTemplate) : PaywallValidationResult()
     data class Error(
@@ -26,23 +32,24 @@ internal sealed class PaywallValidationResult {
 internal fun Offering.validatedPaywall(
     packageName: String,
     currentColors: Colors,
-): PaywallValidationResult {
+): ValidationResult {
     val paywallData = this.paywall
-        ?: return PaywallValidationResult.Error(
+        ?: return ValidationResult(
             PaywallData.createDefault(packages = availablePackages, packageName, currentColors),
             PaywallData.defaultTemplate,
             PaywallValidationError.MissingPaywall,
         )
 
     return when (val result = paywallData.validate()) {
-        is Result.Error -> PaywallValidationResult.Error(
+        is Result.Error -> ValidationResult(
             PaywallData.createDefault(packages = availablePackages, packageName, currentColors),
             PaywallData.defaultTemplate,
             result.value,
         )
-        is Result.Success -> PaywallValidationResult.Success(
+        is Result.Success -> ValidationResult(
             paywallData,
             result.value,
+            null,
         )
     }
 }
@@ -65,6 +72,7 @@ internal fun Offering.toPaywallViewState(
     mode: PaywallViewMode,
     validatedPaywallData: PaywallData,
     template: PaywallTemplate,
+    error: PaywallValidationError?,
 ): PaywallViewState {
     val templateConfiguration = TemplateConfigurationFactory.create(
         variableDataProvider = variableDataProvider,
@@ -74,10 +82,11 @@ internal fun Offering.toPaywallViewState(
         activelySubscribedProductIdentifiers = emptySet(), // TODO-PAYWALLS: Check for active subscriptions
         template,
     )
-    PaywallViewState.Loaded(
+    return PaywallViewState.Loaded(
         templateConfiguration = templateConfiguration,
         selectedPackage = templateConfiguration.packages.default,
     )
+    // TODO-PAYWALLS: Handle error
 }
 
 private fun PaywallData.LocalizedConfiguration.validate(): PaywallValidationError.InvalidVariables? {

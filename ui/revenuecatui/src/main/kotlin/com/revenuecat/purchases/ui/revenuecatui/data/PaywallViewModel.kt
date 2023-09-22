@@ -23,7 +23,7 @@ import com.revenuecat.purchases.ui.revenuecatui.extensions.getActivity
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ApplicationContext
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toPaywallViewState
-import com.revenuecat.purchases.ui.revenuecatui.helpers.validatePaywall
+import com.revenuecat.purchases.ui.revenuecatui.helpers.validatedPaywall
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -52,6 +52,7 @@ internal class PaywallViewModelImpl(
     private val mode: PaywallViewMode,
     private val offering: Offering?,
     private val listener: PaywallViewListener?,
+    private val packageName: String,
     private val colors: Colors,
 ) : ViewModel(), PaywallViewModel {
 
@@ -81,6 +82,7 @@ internal class PaywallViewModelImpl(
             is PaywallViewState.Loaded -> {
                 currentState.copy(selectedPackage = packageToSelect)
             }
+
             else -> {
                 Logger.e("Unexpected state trying to select package: $currentState")
                 currentState
@@ -94,6 +96,7 @@ internal class PaywallViewModelImpl(
             is PaywallViewState.Loaded -> {
                 purchasePackage(activity, currentState.selectedPackage.rcPackage)
             }
+
             else -> {
                 Logger.e("Unexpected state trying to purchase package: $currentState")
             }
@@ -148,11 +151,7 @@ internal class PaywallViewModelImpl(
 
     @Suppress("TooGenericExceptionCaught")
     private fun Offering.calculateState(): PaywallViewState {
-        return try {
-            val (displayablePaywall, template) = validatePaywall()
-            toPaywallViewState(variableDataProvider, displayablePaywall, template)
-        } catch (e: Exception) {
-            PaywallViewState.Error("Error creating paywall: ${e.message}")
-        }
+        val (displayablePaywall, template, error) = validatedPaywall(packageName, colors)
+        return toPaywallViewState(variableDataProvider, displayablePaywall, template, error)
     }
 }
