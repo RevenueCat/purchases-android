@@ -250,6 +250,8 @@ internal class MockApplicationContext : ApplicationContext {
             else -> error("Unknown string resource $resId")
         }
     }
+
+    override fun getApplicationPackageName() = "com.revenuecat.mockpaywall"
 }
 
 internal class MockViewModel(

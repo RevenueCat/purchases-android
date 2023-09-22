@@ -9,6 +9,7 @@ import androidx.annotation.StringRes
 internal interface ApplicationContext {
     fun getApplicationName(): String
     fun getString(@StringRes resId: Int): String
+    fun getApplicationPackageName(): String
 }
 
 internal class AndroidApplicationContext(private val applicationContext: Context) : ApplicationContext {
@@ -18,6 +19,10 @@ internal class AndroidApplicationContext(private val applicationContext: Context
 
     override fun getString(@StringRes resId: Int): String {
         return applicationContext.resources.getString(resId)
+    }
+
+    override fun getApplicationPackageName(): String {
+        return applicationContext.packageName
     }
 }
 

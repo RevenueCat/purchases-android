@@ -71,7 +71,6 @@ private fun getPaywallViewModel(
             mode,
             offering,
             listener,
-            applicationContext.packageName,
             MaterialTheme.colors,
         ),
     )
