@@ -14,39 +14,25 @@ import com.revenuecat.purchases.ui.revenuecatui.extensions.createDefault
 import com.revenuecat.purchases.ui.revenuecatui.extensions.defaultTemplate
 import com.revenuecat.purchases.ui.revenuecatui.utils.Result
 
-internal data class ValidationResult(
-    val displayablePaywall: PaywallData,
-    val template: PaywallTemplate,
-    val error: PaywallValidationError?,
-)
-
-internal sealed class PaywallValidationResult {
-    data class Success(val displayablePaywall: PaywallData, val template: PaywallTemplate) : PaywallValidationResult()
-    data class Error(
-        val displayablePaywall: PaywallData,
-        val template: PaywallTemplate,
-        val error: PaywallValidationError,
-    ) : PaywallValidationResult()
-}
-
 internal fun Offering.validatedPaywall(
     packageName: String,
     currentColors: Colors,
-): ValidationResult {
+): PaywallValidationResult {
     val paywallData = this.paywall
-        ?: return ValidationResult(
+        ?: return PaywallValidationResult(
             PaywallData.createDefault(packages = availablePackages, packageName, currentColors),
             PaywallData.defaultTemplate,
             PaywallValidationError.MissingPaywall,
         )
 
     return when (val result = paywallData.validate()) {
-        is Result.Error -> ValidationResult(
+        is Result.Error -> PaywallValidationResult(
             PaywallData.createDefault(packages = availablePackages, packageName, currentColors),
             PaywallData.defaultTemplate,
             result.value,
         )
-        is Result.Success -> ValidationResult(
+
+        is Result.Success -> PaywallValidationResult(
             paywallData,
             result.value,
             null,
