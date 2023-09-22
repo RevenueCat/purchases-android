@@ -61,7 +61,7 @@ private val PaywallData.Companion.revisionID: Int
     get() = -1
 
 private val PaywallData.Companion.defaultBackgroundImage: String
-    get() = "R.drawable.background"
+    get() = "R.drawable.default_background"
 
 private val PaywallData.Companion.defaultLocalization: PaywallData.LocalizedConfiguration
     get() = PaywallData.LocalizedConfiguration(
