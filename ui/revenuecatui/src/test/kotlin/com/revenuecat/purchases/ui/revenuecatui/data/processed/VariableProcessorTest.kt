@@ -173,7 +173,21 @@ class VariableProcessorTest {
 
     @Test
     fun `process variables processes sub_offer_duration`() {
-        expectVariablesResult("{{ sub_offer_duration }}", "INT_OFFER_DURATION")
+        expectVariablesResult("{{ sub_offer_duration }}", "1 month")
+        expectVariablesResult("{{ sub_offer_duration }}", "1 month", rcPackage = TestData.Packages.bimonthly)
+        expectVariablesResult("{{ sub_offer_duration }}", "2 weeks", rcPackage = TestData.Packages.quarterly)
+    }
+
+    @Test
+    fun `process variables processes sub_offer_duration for spanish locale`() {
+        expectVariablesResult("{{ sub_offer_duration }}", "1 mes", esLocale)
+        expectVariablesResult("{{ sub_offer_duration }}", "1 mes", esLocale, TestData.Packages.bimonthly)
+        expectVariablesResult("{{ sub_offer_duration }}", "2 semanas", esLocale, TestData.Packages.quarterly)
+    }
+
+    @Test
+    fun `process variables processes sub_offer_duration as empty string if no offers`() {
+        expectVariablesResult("{{ sub_offer_duration }}", "", rcPackage = TestData.Packages.monthly)
     }
 
     @Test
