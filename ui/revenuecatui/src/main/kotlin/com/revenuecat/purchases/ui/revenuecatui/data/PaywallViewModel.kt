@@ -154,7 +154,8 @@ internal class PaywallViewModelImpl(
         if (availablePackages.isEmpty()) {
             return PaywallViewState.Error("No packages available")
         }
-        val (displayablePaywall, template, error) = validatedPaywall(packageName, colors)
-        return toPaywallViewState(variableDataProvider, mode, displayablePaywall, template, error)
+        val (displayablePaywall, template, _) = validatedPaywall(packageName, colors)
+        // TODO-PAYWALLS: display error
+        return toPaywallViewState(variableDataProvider, mode, displayablePaywall, template)
     }
 }

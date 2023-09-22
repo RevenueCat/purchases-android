@@ -264,7 +264,6 @@ internal class MockViewModel(
             mode,
             TestData.template2,
             PaywallTemplate.TEMPLATE_2,
-            null,
         ),
     )
 

@@ -58,8 +58,7 @@ internal fun Offering.toPaywallViewState(
     mode: PaywallViewMode,
     validatedPaywallData: PaywallData,
     template: PaywallTemplate,
-    @Suppress("UNUSED_PARAMETER") error: PaywallValidationError?,
-): PaywallViewState {
+): PaywallViewState.Loaded {
     val templateConfiguration = TemplateConfigurationFactory.create(
         variableDataProvider = variableDataProvider,
         mode = mode,
@@ -72,7 +71,6 @@ internal fun Offering.toPaywallViewState(
         templateConfiguration = templateConfiguration,
         selectedPackage = templateConfiguration.packages.default,
     )
-    // TODO-PAYWALLS: Handle error
 }
 
 private fun PaywallData.LocalizedConfiguration.validateVariables(): PaywallValidationError.InvalidVariables? {
