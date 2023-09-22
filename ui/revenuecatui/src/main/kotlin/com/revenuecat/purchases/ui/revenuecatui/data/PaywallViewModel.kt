@@ -152,6 +152,6 @@ internal class PaywallViewModelImpl(
     @Suppress("TooGenericExceptionCaught")
     private fun Offering.calculateState(): PaywallViewState {
         val (displayablePaywall, template, error) = validatedPaywall(packageName, colors)
-        return toPaywallViewState(variableDataProvider, displayablePaywall, template, error)
+        return toPaywallViewState(variableDataProvider, mode, displayablePaywall, template, error)
     }
 }
