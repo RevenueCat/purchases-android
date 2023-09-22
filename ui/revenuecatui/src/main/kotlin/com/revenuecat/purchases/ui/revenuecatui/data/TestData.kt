@@ -18,6 +18,7 @@ import com.revenuecat.purchases.paywalls.PaywallColor
 import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.ui.revenuecatui.PaywallViewMode
 import com.revenuecat.purchases.ui.revenuecatui.R
+import com.revenuecat.purchases.ui.revenuecatui.data.processed.PaywallTemplate
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvider
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ApplicationContext
@@ -257,8 +258,15 @@ internal class MockViewModel(
 ) : ViewModel(), PaywallViewModel {
     override val state: StateFlow<PaywallViewState>
         get() = _state.asStateFlow()
-    private val _state =
-        MutableStateFlow(offering.toPaywallViewState(VariableDataProvider(MockApplicationContext()), mode))
+    private val _state = MutableStateFlow(
+        offering.toPaywallViewState(
+            VariableDataProvider(MockApplicationContext()),
+            mode,
+            TestData.template2,
+            PaywallTemplate.TEMPLATE_2,
+            null,
+        ),
+    )
 
     override fun refreshState() = Unit
 
