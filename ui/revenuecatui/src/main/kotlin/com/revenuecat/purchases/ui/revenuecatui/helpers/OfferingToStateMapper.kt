@@ -43,7 +43,7 @@ internal fun Offering.validatedPaywall(
 private fun PaywallData.validate(): Result<PaywallTemplate, PaywallValidationError> {
     val (_, localizedConfiguration) = localizedConfiguration
 
-    localizedConfiguration.validate().takeIf { it != null }?.let { Result.Error(it) }
+    localizedConfiguration.validateVariables().takeIf { it != null }?.let { Result.Error(it) }
 
     val template = validateTemplate() ?: return Result.Error(PaywallValidationError.InvalidTemplate(templateName))
 
@@ -75,20 +75,20 @@ internal fun Offering.toPaywallViewState(
     // TODO-PAYWALLS: Handle error
 }
 
-private fun PaywallData.LocalizedConfiguration.validate(): PaywallValidationError.InvalidVariables? {
-    fun String?.validateVariables(): Set<String> {
+private fun PaywallData.LocalizedConfiguration.validateVariables(): PaywallValidationError.InvalidVariables? {
+    fun String?.validateVariablesInProperty(): Set<String> {
         return this?.let { VariableProcessor.validateVariables(this) } ?: emptySet()
     }
 
-    val unrecognizedVariables: Set<String> = title.validateVariables() +
-        subtitle.validateVariables() +
-        callToAction.validateVariables() +
-        callToActionWithIntroOffer.validateVariables() +
-        offerDetails.validateVariables() +
-        offerDetailsWithIntroOffer.validateVariables() +
-        offerName.validateVariables() +
+    val unrecognizedVariables: Set<String> = title.validateVariablesInProperty() +
+        subtitle.validateVariablesInProperty() +
+        callToAction.validateVariablesInProperty() +
+        callToActionWithIntroOffer.validateVariablesInProperty() +
+        offerDetails.validateVariablesInProperty() +
+        offerDetailsWithIntroOffer.validateVariablesInProperty() +
+        offerName.validateVariablesInProperty() +
         features.flatMap { feature ->
-            feature.title.validateVariables() + feature.content.validateVariables()
+            feature.title.validateVariablesInProperty() + feature.content.validateVariablesInProperty()
         }
 
     if (unrecognizedVariables.isNotEmpty()) {
