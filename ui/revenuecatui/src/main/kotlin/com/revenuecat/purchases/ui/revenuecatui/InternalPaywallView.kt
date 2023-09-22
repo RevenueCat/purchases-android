@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.ui.revenuecatui
 
+import androidx.compose.material.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -69,6 +70,7 @@ private fun getPaywallViewModel(
             mode,
             offering,
             listener,
+            MaterialTheme.colors,
         ),
     )
 }

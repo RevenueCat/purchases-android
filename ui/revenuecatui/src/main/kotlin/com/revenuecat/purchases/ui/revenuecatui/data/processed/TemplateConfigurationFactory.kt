@@ -10,37 +10,35 @@ internal object TemplateConfigurationFactory {
     fun create(
         variableDataProvider: VariableDataProvider,
         mode: PaywallViewMode,
-        paywallData: PaywallData,
+        validatedPaywallData: PaywallData,
         packages: List<Package>,
         activelySubscribedProductIdentifiers: Set<String>,
+        template: PaywallTemplate,
     ): TemplateConfiguration {
-        val paywallTemplate = PaywallTemplate.fromId(paywallData.templateName)
-            ?: throw IllegalArgumentException("Unknown template ${paywallData.templateName}")
-
-        val (locale, localizedConfiguration) = paywallData.localizedConfiguration
-        val packageIds = paywallData.config.packages
+        val (locale, localizedConfiguration) = validatedPaywallData.localizedConfiguration
+        val packageIds = validatedPaywallData.config.packages
         require(packageIds.isNotEmpty()) { "No packages ids found in paywall data" }
         require(packages.isNotEmpty()) { "No packages found in offering" }
         val images = TemplateConfiguration.Images(
-            iconUri = paywallData.getUriFromImage(paywallData.config.images.icon),
-            backgroundUri = paywallData.getUriFromImage(paywallData.config.images.background),
-            headerUri = paywallData.getUriFromImage(paywallData.config.images.header),
+            iconUri = validatedPaywallData.getUriFromImage(validatedPaywallData.config.images.icon),
+            backgroundUri = validatedPaywallData.getUriFromImage(validatedPaywallData.config.images.background),
+            headerUri = validatedPaywallData.getUriFromImage(validatedPaywallData.config.images.header),
         )
         val packageConfiguration = PackageConfigurationFactory.createPackageConfiguration(
             variableDataProvider = variableDataProvider,
             packages = packages,
             activelySubscribedProductIdentifiers = activelySubscribedProductIdentifiers,
             filter = packageIds,
-            default = paywallData.config.defaultPackage,
+            default = validatedPaywallData.config.defaultPackage,
             localization = localizedConfiguration,
-            configurationType = paywallTemplate.configurationType,
+            configurationType = template.configurationType,
             locale = locale,
         )
         return TemplateConfiguration(
-            template = paywallTemplate,
+            template = template,
             mode = mode,
             packages = packageConfiguration,
-            configuration = paywallData.config,
+            configuration = validatedPaywallData.config,
             images = images,
         )
     }

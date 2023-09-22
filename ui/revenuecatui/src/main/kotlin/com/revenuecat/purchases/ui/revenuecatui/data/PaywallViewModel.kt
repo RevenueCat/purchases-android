@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import androidx.compose.material.Colors
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.revenuecat.purchases.Offering
@@ -19,10 +20,10 @@ import com.revenuecat.purchases.ui.revenuecatui.PaywallViewMode
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvider
 import com.revenuecat.purchases.ui.revenuecatui.extensions.getActivity
-import com.revenuecat.purchases.ui.revenuecatui.extensions.validate
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ApplicationContext
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toPaywallViewState
+import com.revenuecat.purchases.ui.revenuecatui.helpers.validatePaywall
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -51,6 +52,7 @@ internal class PaywallViewModelImpl(
     private val mode: PaywallViewMode,
     private val offering: Offering?,
     private val listener: PaywallViewListener?,
+    private val colors: Colors,
 ) : ViewModel(), PaywallViewModel {
 
     private val variableDataProvider = VariableDataProvider(applicationContext)
@@ -146,11 +148,9 @@ internal class PaywallViewModelImpl(
 
     @Suppress("TooGenericExceptionCaught")
     private fun Offering.calculateState(): PaywallViewState {
-        val paywallData = this.paywall
-            ?: return PaywallViewState.Error("No paywall data for offering: $identifier")
         return try {
-            paywallData.validate()
-            toPaywallViewState(variableDataProvider)
+            val (displayablePaywall, template) = validatePaywall()
+            toPaywallViewState(variableDataProvider, displayablePaywall, template)
         } catch (e: Exception) {
             PaywallViewState.Error("Error creating paywall: ${e.message}")
         }
