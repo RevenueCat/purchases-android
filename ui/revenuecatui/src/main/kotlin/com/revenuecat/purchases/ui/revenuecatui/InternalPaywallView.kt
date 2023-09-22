@@ -3,12 +3,7 @@ package com.revenuecat.purchases.ui.revenuecatui
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
-import androidx.core.os.LocaleListCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModel
@@ -27,7 +22,7 @@ internal fun InternalPaywallView(
     listener: PaywallViewListener? = null,
     viewModel: PaywallViewModel = getPaywallViewModel(offering = offering, listener = listener, mode = mode),
 ) {
-    updateStateIfLocaleChanged(viewModel)
+    viewModel.refreshStateIfLocaleChanged()
 
     when (val state = viewModel.state.collectAsState().value) {
         is PaywallViewState.Loading -> {
@@ -45,15 +40,6 @@ internal fun InternalPaywallView(
                 PaywallTemplate.TEMPLATE_5 -> Text(text = "Error: Template 5 not supported")
             }
         }
-    }
-}
-
-@Composable
-private fun updateStateIfLocaleChanged(viewModel: PaywallViewModel) {
-    var locale by remember { mutableStateOf(LocaleListCompat.getDefault()) }
-    if (locale != LocaleListCompat.getDefault()) {
-        locale = LocaleListCompat.getDefault()
-        viewModel.refreshState()
     }
 }
 

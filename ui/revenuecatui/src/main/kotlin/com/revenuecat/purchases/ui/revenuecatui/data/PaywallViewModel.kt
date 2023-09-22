@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import androidx.core.os.LocaleListCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.revenuecat.purchases.Offering
@@ -31,7 +32,7 @@ import java.net.URL
 internal interface PaywallViewModel {
     val state: StateFlow<PaywallViewState>
 
-    fun refreshState()
+    fun refreshStateIfLocaleChanged()
     fun selectPackage(packageToSelect: TemplateConfiguration.PackageInfo)
 
     /**
@@ -57,19 +58,24 @@ internal class PaywallViewModelImpl(
     override val state: StateFlow<PaywallViewState>
         get() = _state.asStateFlow()
     private val _state: MutableStateFlow<PaywallViewState>
+    private val _lastLocaleList = MutableStateFlow(LocaleListCompat.getDefault())
 
     init {
+        Logger.e("TEST: INITIALIZING PAYWALL VIEW MODEL")
         _state = MutableStateFlow(offering?.calculateState() ?: PaywallViewState.Loading)
         if (offering == null) {
             updateOffering()
         }
     }
 
-    override fun refreshState() {
-        if (offering == null) {
-            updateOffering()
-        } else {
-            _state.value = offering.calculateState()
+    override fun refreshStateIfLocaleChanged() {
+        if (_lastLocaleList.value != LocaleListCompat.getDefault()) {
+            _lastLocaleList.value = LocaleListCompat.getDefault()
+            if (offering == null) {
+                updateOffering()
+            } else {
+                _state.value = offering.calculateState()
+            }
         }
     }
 
