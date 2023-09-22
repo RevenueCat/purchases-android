@@ -30,7 +30,7 @@ private fun PaywallData.Companion.createDefaultForIdentifiers(packageIdentifiers
     val locale = LocaleListCompat.getDefault()[0].toString()
 
     return PaywallData(
-        templateName = PaywallData.defaultTemplate,
+        templateName = PaywallData.defaultTemplate.id,
         config = PaywallData.Configuration(
             packages = packageIdentifiers,
             images = PaywallData.Configuration.Images(
@@ -49,8 +49,8 @@ private fun PaywallData.Companion.createDefaultForIdentifiers(packageIdentifiers
 
 // region Private defaults
 
-private val PaywallData.Companion.defaultTemplate: String // TODO-PAYWALLS: use enum
-    get() = PaywallTemplate.TEMPLATE_2.id
+private val PaywallData.Companion.defaultTemplate: PaywallTemplate
+    get() = PaywallTemplate.TEMPLATE_2
 
 private val PaywallData.Companion.defaultAppIconPlaceholder: String // TODO-PAYWALLS: use real icon
     get() = "revenuecatui_default_paywall_app_icon"
