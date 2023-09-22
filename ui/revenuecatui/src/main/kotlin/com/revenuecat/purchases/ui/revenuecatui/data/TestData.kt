@@ -296,7 +296,7 @@ private data class TestStoreProduct(
     private val introPrice: Price? = null,
 ) : StoreProduct {
     override val type: ProductType
-        get() = ProductType.SUBS
+        get() = if (period == null) ProductType.INAPP else ProductType.SUBS
     override val subscriptionOptions: SubscriptionOptions?
         get() = buildSubscriptionOptions()
     override val defaultOption: SubscriptionOption?
