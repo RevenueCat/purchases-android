@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.helpers
 
+import androidx.compose.material.Colors
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.ui.revenuecatui.PaywallViewMode
@@ -22,17 +23,20 @@ internal sealed class PaywallValidationResult {
     ) : PaywallValidationResult()
 }
 
-internal fun Offering.validatedPaywall(): PaywallValidationResult {
+internal fun Offering.validatedPaywall(
+    packageName: String,
+    currentColors: Colors,
+): PaywallValidationResult {
     val paywallData = this.paywall
         ?: return PaywallValidationResult.Error(
-            PaywallData.createDefault(packages = availablePackages),
+            PaywallData.createDefault(packages = availablePackages, packageName, currentColors),
             PaywallData.defaultTemplate,
             PaywallValidationError.MissingPaywall,
         )
 
     return when (val result = paywallData.validate()) {
         is Result.Error -> PaywallValidationResult.Error(
-            PaywallData.createDefault(packages = availablePackages),
+            PaywallData.createDefault(packages = availablePackages, packageName, currentColors),
             PaywallData.defaultTemplate,
             result.value,
         )

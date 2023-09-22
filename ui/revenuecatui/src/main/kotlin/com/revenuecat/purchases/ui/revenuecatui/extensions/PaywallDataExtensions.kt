@@ -3,6 +3,7 @@ package com.revenuecat.purchases.ui.revenuecatui.extensions
 import androidx.compose.material.Colors
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.core.os.LocaleListCompat
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.paywalls.PaywallColor
 import com.revenuecat.purchases.paywalls.PaywallData
