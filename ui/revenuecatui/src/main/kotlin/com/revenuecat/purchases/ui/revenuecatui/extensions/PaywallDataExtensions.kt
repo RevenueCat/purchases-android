@@ -39,7 +39,7 @@ private fun PaywallData.Companion.createDefaultForIdentifiers(
             blurredBackgroundImage = true,
             displayRestorePurchases = true,
         ),
-        localization = mapOf(Locale.ENGLISH.toString() to PaywallData.defaultLocalization),
+        localization = mapOf(Locale.US.toString() to PaywallData.defaultLocalization),
         assetBaseURL = PaywallData.defaultTemplateBaseURL(packageName),
         revision = PaywallData.revisionID,
     )
