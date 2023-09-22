@@ -1,7 +1,9 @@
 package com.revenuecat.purchases.ui.revenuecatui.templates
 
+import android.graphics.Bitmap
 import android.net.Uri
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,14 +21,19 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.core.graphics.drawable.toBitmap
+import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.ui.revenuecatui.InternalPaywallView
 import com.revenuecat.purchases.ui.revenuecatui.UIConstant
 import com.revenuecat.purchases.ui.revenuecatui.composables.Footer
@@ -38,6 +45,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewState
 import com.revenuecat.purchases.ui.revenuecatui.data.TestData
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.selectedLocalization
+import com.revenuecat.purchases.ui.revenuecatui.extensions.defaultAppIconPlaceholder
 
 private object Template2UIConstants {
     val maxIconWidth = 140.dp
@@ -98,16 +106,41 @@ private fun Template2MainContent(state: PaywallViewState.Loaded, viewModel: Payw
 private fun IconImage(uri: Uri?) {
     uri?.let {
         Column(modifier = Modifier.widthIn(max = Template2UIConstants.maxIconWidth)) {
-            RemoteImage(
-                urlString = uri.toString(),
-                modifier = Modifier
-                    .aspectRatio(ratio = 1f)
-                    .widthIn(max = Template2UIConstants.maxIconWidth)
-                    .clip(RoundedCornerShape(Template2UIConstants.iconCornerRadius)),
-                contentScale = ContentScale.Crop,
-            )
+            val modifier = Modifier
+                .aspectRatio(ratio = 1f)
+                .widthIn(max = Template2UIConstants.maxIconWidth)
+                .clip(RoundedCornerShape(Template2UIConstants.iconCornerRadius))
+            if (uri.toString().contains(PaywallData.defaultAppIconPlaceholder)) {
+                AppIcon(
+                    modifier = modifier,
+                )
+            } else {
+                RemoteImage(
+                    urlString = uri.toString(),
+                    modifier = modifier,
+                    contentScale = ContentScale.Crop,
+                )
+            }
         }
     }
+}
+
+@Composable
+private fun AppIcon(
+    modifier: Modifier = Modifier,
+) {
+    val context = LocalContext.current
+    val appIconResId = remember {
+        val packageManager = context.packageManager
+        context.applicationInfo.loadIcon(packageManager)
+    }
+
+    Image(
+        bitmap = appIconResId.toBitmap(config = Bitmap.Config.ARGB_8888).asImageBitmap(),
+        contentDescription = null,
+        modifier = modifier,
+        contentScale = ContentScale.Crop,
+    )
 }
 
 @Composable

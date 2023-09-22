@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.paywalls
 
+import android.graphics.Color
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.utils.toLocale
 import kotlinx.serialization.decodeFromString
