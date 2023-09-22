@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.templates
 
+import android.graphics.Bitmap
 import android.net.Uri
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
@@ -24,13 +25,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.core.graphics.drawable.toBitmap
 import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.ui.revenuecatui.InternalPaywallView
 import com.revenuecat.purchases.ui.revenuecatui.UIConstant
@@ -104,7 +106,6 @@ private fun Template2MainContent(state: PaywallViewState.Loaded, viewModel: Payw
 private fun IconImage(uri: Uri?) {
     uri?.let {
         Column(modifier = Modifier.widthIn(max = Template2UIConstants.maxIconWidth)) {
-            // TODO-PAYWALLS: test this
             val modifier = Modifier
                 .aspectRatio(ratio = 1f)
                 .widthIn(max = Template2UIConstants.maxIconWidth)
@@ -129,11 +130,13 @@ private fun AppIcon(
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
-    val appIconResId = remember(context) { context.applicationInfo.icon }
+    val appIconResId = remember(context) {
+        val packageManager = context.packageManager
+        context.applicationInfo.loadIcon(packageManager)
+    }
 
-    val painter = painterResource(id = appIconResId)
     Image(
-        painter = painter,
+        bitmap = appIconResId.toBitmap(config = Bitmap.Config.ARGB_8888).asImageBitmap(),
         contentDescription = null,
         modifier = modifier,
         contentScale = ContentScale.Crop,
