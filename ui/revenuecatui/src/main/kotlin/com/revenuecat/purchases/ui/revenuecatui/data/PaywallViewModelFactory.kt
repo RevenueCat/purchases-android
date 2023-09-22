@@ -13,9 +13,10 @@ internal class PaywallViewModelFactory(
     private val mode: PaywallViewMode,
     private val offering: Offering?,
     private val listener: PaywallViewListener?,
+    private val packageName: String,
     private val colors: Colors,
 ) : ViewModelProvider.NewInstanceFactory() {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        return PaywallViewModelImpl(applicationContext, mode, offering, listener) as T
+        return PaywallViewModelImpl(applicationContext, mode, offering, listener, packageName, colors) as T
     }
 }

@@ -72,7 +72,7 @@ internal fun Offering.toPaywallViewState(
     mode: PaywallViewMode,
     validatedPaywallData: PaywallData,
     template: PaywallTemplate,
-    error: PaywallValidationError?,
+    @Suppress("UNUSED_PARAMETER") error: PaywallValidationError?,
 ): PaywallViewState {
     val templateConfiguration = TemplateConfigurationFactory.create(
         variableDataProvider = variableDataProvider,

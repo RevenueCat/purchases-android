@@ -64,12 +64,14 @@ private fun getPaywallViewModel(
     offering: Offering?,
     listener: PaywallViewListener?,
 ): PaywallViewModel {
+    val applicationContext = LocalContext.current.applicationContext
     return viewModel<PaywallViewModelImpl>(
         factory = PaywallViewModelFactory(
-            LocalContext.current.applicationContext.toAndroidContext(),
+            applicationContext.toAndroidContext(),
             mode,
             offering,
             listener,
+            applicationContext.packageName,
             MaterialTheme.colors,
         ),
     )
