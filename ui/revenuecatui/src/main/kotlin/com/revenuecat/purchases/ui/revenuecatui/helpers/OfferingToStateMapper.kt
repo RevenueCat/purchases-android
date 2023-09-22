@@ -7,13 +7,16 @@ import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfigura
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvider
 
 @Suppress("ReturnCount", "TooGenericExceptionCaught")
-internal fun Offering.toPaywallViewState(variableDataProvider: VariableDataProvider): PaywallViewState {
+internal fun Offering.toPaywallViewState(
+    variableDataProvider: VariableDataProvider,
+    mode: PaywallViewMode,
+): PaywallViewState {
     val paywallData = this.paywall
         ?: return PaywallViewState.Error("No paywall data for offering: $identifier")
     return try {
         val templateConfiguration = TemplateConfigurationFactory.create(
             variableDataProvider = variableDataProvider,
-            mode = PaywallViewMode.FULL_SCREEN,
+            mode = mode,
             paywallData = paywallData,
             packages = availablePackages,
             activelySubscribedProductIdentifiers = emptySet(), // TODO-PAYWALLS: Check for active subscriptions
