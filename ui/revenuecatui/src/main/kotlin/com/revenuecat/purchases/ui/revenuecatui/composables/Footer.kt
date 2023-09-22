@@ -26,6 +26,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.paywalls.PaywallData
+import com.revenuecat.purchases.ui.revenuecatui.PaywallViewMode
 import com.revenuecat.purchases.ui.revenuecatui.R
 import com.revenuecat.purchases.ui.revenuecatui.UIConstant
 import com.revenuecat.purchases.ui.revenuecatui.data.MockViewModel
@@ -155,6 +156,6 @@ private fun FooterPreview() {
             defaultPackage = null,
         ),
         colors = ColorsFactory.create(paywallDataColors = TestData.template2.config.colors.light),
-        viewModel = MockViewModel(TestData.template2Offering),
+        viewModel = MockViewModel(PaywallViewMode.FULL_SCREEN, TestData.template2Offering),
     )
 }

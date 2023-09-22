@@ -22,9 +22,10 @@ import com.revenuecat.purchases.ui.revenuecatui.templates.Template2
 
 @Composable
 internal fun InternalPaywallView(
+    mode: PaywallViewMode = PaywallViewMode.default,
     offering: Offering? = null,
     listener: PaywallViewListener? = null,
-    viewModel: PaywallViewModel = getPaywallViewModel(offering = offering, listener = listener),
+    viewModel: PaywallViewModel = getPaywallViewModel(offering = offering, listener = listener, mode = mode),
 ) {
     updateStateIfLocaleChanged(viewModel)
 
@@ -57,10 +58,15 @@ private fun updateStateIfLocaleChanged(viewModel: PaywallViewModel) {
 }
 
 @Composable
-private fun getPaywallViewModel(offering: Offering?, listener: PaywallViewListener?): PaywallViewModel {
+private fun getPaywallViewModel(
+    mode: PaywallViewMode,
+    offering: Offering?,
+    listener: PaywallViewListener?,
+): PaywallViewModel {
     return viewModel<PaywallViewModelImpl>(
         factory = PaywallViewModelFactory(
             LocalContext.current.applicationContext.toAndroidContext(),
+            mode,
             offering,
             listener,
         ),
