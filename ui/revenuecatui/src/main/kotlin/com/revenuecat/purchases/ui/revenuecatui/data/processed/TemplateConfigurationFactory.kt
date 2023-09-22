@@ -18,7 +18,6 @@ internal object TemplateConfigurationFactory {
         val (locale, localizedConfiguration) = validatedPaywallData.localizedConfiguration
         val packageIds = validatedPaywallData.config.packages
         require(packageIds.isNotEmpty()) { "No packages ids found in paywall data" }
-        require(packages.isNotEmpty()) { "No packages found in offering" }
         val images = TemplateConfiguration.Images(
             iconUri = validatedPaywallData.getUriFromImage(validatedPaywallData.config.images.icon),
             backgroundUri = validatedPaywallData.getUriFromImage(validatedPaywallData.config.images.background),
