@@ -50,7 +50,7 @@ internal object VariableProcessor {
                     locale,
                 )
                 VariableName.SUB_DURATION -> variableDataProvider.subscriptionDuration(rcPackage, locale)
-                VariableName.SUB_OFFER_DURATION -> variableDataProvider.introductoryOfferDuration(rcPackage)
+                VariableName.SUB_OFFER_DURATION -> variableDataProvider.introductoryOfferDuration(rcPackage, locale)
                 VariableName.SUB_OFFER_PRICE -> variableDataProvider.localizedIntroductoryOfferPrice(rcPackage)
             } ?: run {
                 Logger.w(
