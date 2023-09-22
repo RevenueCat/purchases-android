@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.paywalls
 
+import android.graphics.Color
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.utils.toLocale
 import kotlinx.serialization.decodeFromString
@@ -96,6 +97,16 @@ class PaywallDataTest {
         val localization = paywall.localizedConfiguration.second
         assertThat(localization.callToAction).isEqualTo("Comprar")
         assertThat(localization.title).isEqualTo("Tienda")
+    }
+
+    @Test
+    fun `paywall color can be created from a ColorInt`() {
+        val colorInt = Color.parseColor("#FFAABB")
+        val paywallColor = PaywallColor(colorInt)
+
+        assertThat(colorInt).isEqualTo(paywallColor.colorInt)
+        assertThat("#FFAABB").isEqualTo(paywallColor.stringRepresentation)
+        assertThat(Color.valueOf(colorInt)).isEqualTo(paywallColor.underlyingColor)
     }
 
     private fun loadJSON(jsonFileName: String) = File(javaClass.classLoader!!.getResource(jsonFileName).file).readText()
