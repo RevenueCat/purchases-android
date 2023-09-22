@@ -6,12 +6,12 @@ import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
-import androidx.core.os.LocaleListCompat
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.paywalls.PaywallColor
 import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.PaywallTemplate
 import java.net.URL
+import java.util.Locale
 
 /***
  * Default [PaywallData] to display when attempting to present a [PaywallView] with an offering that has no paywall
@@ -27,7 +27,6 @@ internal fun PaywallData.Companion.createDefault(packages: List<Package>): Paywa
 @ReadOnlyComposable
 private fun PaywallData.Companion.createDefaultForIdentifiers(packageIdentifiers: List<String>): PaywallData {
     val context = LocalContext.current
-    val locale = LocaleListCompat.getDefault()[0].toString()
 
     return PaywallData(
         templateName = PaywallData.defaultTemplate.id,
@@ -41,7 +40,7 @@ private fun PaywallData.Companion.createDefaultForIdentifiers(packageIdentifiers
             blurredBackgroundImage = true,
             displayRestorePurchases = true,
         ),
-        localization = mapOf(locale to PaywallData.defaultLocalization), // TODO-PAYWALLS: test this
+        localization = mapOf(Locale.ENGLISH.toString() to PaywallData.defaultLocalization),
         assetBaseURL = PaywallData.defaultTemplateBaseURL(context.packageName),
         revision = PaywallData.revisionID,
     )
