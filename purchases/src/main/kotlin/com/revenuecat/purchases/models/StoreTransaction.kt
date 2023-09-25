@@ -104,10 +104,7 @@ data class StoreTransaction(
     val replacementMode: ReplacementMode?,
 ) : Parcelable {
 
-    @Deprecated(
-        "Use replacementMode",
-        ReplaceWith("replacementMode()"),
-    )
+    @Deprecated("prorationMode is deprecated, use constructor with replacementMode")
     constructor(
         orderId: String?,
         productIds: List<String>,
@@ -147,6 +144,10 @@ data class StoreTransaction(
      * Null if it was not an upgrade/downgrade or if the purchase was restored.
      * This is not available for Amazon purchases.
      */
+    @Deprecated(
+        "Use replacementMode",
+        ReplaceWith("replacementMode()"),
+    )
     val prorationMode: ProrationMode?
         get() = (replacementMode as? GoogleReplacementMode)?.asGoogleProrationMode
 
