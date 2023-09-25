@@ -17,6 +17,9 @@ import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingFlowParams
 import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.ConsumeParams
+import com.android.billingclient.api.InAppMessageParams
+import com.android.billingclient.api.InAppMessageResponseListener
+import com.android.billingclient.api.InAppMessageResult
 import com.android.billingclient.api.ProductDetailsResponseListener
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchaseHistoryRecord
@@ -752,6 +755,25 @@ internal class BillingWrapper(
     }
 
     override fun isConnected(): Boolean = billingClient?.isReady ?: false
+
+    override fun showInAppMessagesIfNeeded(activity: Activity) {
+        val inAppMessageParams = InAppMessageParams.newBuilder()
+        .addInAppMessageCategoryToShow(InAppMessageParams.InAppMessageCategoryId.TRANSACTIONAL)
+        .build()
+
+        billingClient?.showInAppMessages(activity,
+            inAppMessageParams
+        ) { inAppMessageResult ->
+            if (inAppMessageResult.responseCode == InAppMessageResult.InAppMessageResponseCode.NO_ACTION_NEEDED) {
+                // No in-app message was available.
+                // TODO: log
+            } else if (inAppMessageResult.responseCode
+                == InAppMessageResult.InAppMessageResponseCode.SUBSCRIPTION_STATUS_UPDATED
+            ) {
+                // TODO: post receipt
+            }
+        }
+    }
 
     private fun withConnectedClient(receivingFunction: BillingClient.() -> Unit) {
         billingClient?.takeIf { it.isReady }?.let {

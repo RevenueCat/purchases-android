@@ -9,6 +9,7 @@ open class PurchasesConfiguration(builder: Builder) {
     val apiKey: String
     val appUserID: String?
     val observerMode: Boolean
+    val showDeclinedPaymentMessagesAutomatically: Boolean
     val service: ExecutorService?
     val store: Store
     val diagnosticsEnabled: Boolean
@@ -25,6 +26,7 @@ open class PurchasesConfiguration(builder: Builder) {
         this.diagnosticsEnabled = builder.diagnosticsEnabled
         this.verificationMode = builder.verificationMode
         this.dangerousSettings = builder.dangerousSettings
+        this.showDeclinedPaymentMessagesAutomatically = builder.showDeclinedPaymentMessagesAutomatically
     }
 
     open class Builder(
@@ -37,6 +39,9 @@ open class PurchasesConfiguration(builder: Builder) {
 
         @set:JvmSynthetic @get:JvmSynthetic
         internal var observerMode: Boolean = false
+
+        @set:JvmSynthetic @get:JvmSynthetic
+        internal var showDeclinedPaymentMessagesAutomatically: Boolean = false
 
         @set:JvmSynthetic @get:JvmSynthetic
         internal var service: ExecutorService? = null
@@ -55,6 +60,17 @@ open class PurchasesConfiguration(builder: Builder) {
 
         fun appUserID(appUserID: String?) = apply {
             this.appUserID = appUserID
+        }
+
+        /**
+         * Enable this setting to show a toast with recovery options for users who have had a declined payment
+         * automatically. https://developer.android.com/google/play/billing/subscriptions#in-app-messaging
+         *
+         * If this setting is disabled, you can show the toast by calling
+         * [Purchases.showDeclinedPaymentMessageIfNeeded]
+         */
+        fun showDeclinedPaymentMessagesAutomatically(showDeclinedPaymentMessagesAutomatically: Boolean) = apply {
+            this.showDeclinedPaymentMessagesAutomatically = showDeclinedPaymentMessagesAutomatically
         }
 
         fun observerMode(observerMode: Boolean) = apply {

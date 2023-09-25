@@ -136,6 +136,10 @@ internal class PurchasesOrchestrator constructor(
         billing.stateListener = object : BillingAbstract.StateListener {
             override fun onConnected() {
                 postPendingTransactionsHelper.syncPendingPurchaseQueue(allowSharingPlayStoreAccount)
+                if (appConfig.showDeclinedPaymentMessagesAutomatically) {
+                    // todo: pass activity
+                    billing.showInAppMessagesIfNeeded()
+                }
             }
         }
         billing.purchasesUpdatedListener = getPurchasesUpdatedListener()
@@ -452,6 +456,11 @@ internal class PurchasesOrchestrator constructor(
     fun removeUpdatedCustomerInfoListener() {
         // Don't set on state directly since setter does more things
         this.updatedCustomerInfoListener = null
+    }
+
+    fun showDeclinedPaymentMessageIfNeeded() {
+        // TODO: get app activity
+        billing.showInAppMessagesIfNeeded()
     }
 
     fun invalidateCustomerInfoCache() {

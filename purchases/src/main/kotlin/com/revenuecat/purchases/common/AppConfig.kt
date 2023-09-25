@@ -10,6 +10,7 @@ import java.net.URL
 internal class AppConfig(
     context: Context,
     observerMode: Boolean,
+    val showDeclinedPaymentMessagesAutomatically: Boolean,
     val platformInfo: PlatformInfo,
     proxyURL: URL?,
     val store: Store,
