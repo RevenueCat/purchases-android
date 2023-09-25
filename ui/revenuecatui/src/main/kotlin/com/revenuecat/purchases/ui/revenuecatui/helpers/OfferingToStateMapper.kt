@@ -11,6 +11,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvi
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableProcessor
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
 import com.revenuecat.purchases.ui.revenuecatui.extensions.createDefault
+import com.revenuecat.purchases.ui.revenuecatui.extensions.createDefaultForIdentifiers
 import com.revenuecat.purchases.ui.revenuecatui.extensions.defaultTemplate
 import com.revenuecat.purchases.ui.revenuecatui.utils.Result
 
@@ -27,7 +28,7 @@ internal fun Offering.validatedPaywall(
 
     return when (val result = paywallData.validate()) {
         is Result.Error -> PaywallValidationResult(
-            PaywallData.createDefault(packages = availablePackages, packageName, currentColors),
+            PaywallData.createDefaultForIdentifiers(paywallData.config.packages, packageName, currentColors),
             PaywallData.defaultTemplate,
             result.value,
         )

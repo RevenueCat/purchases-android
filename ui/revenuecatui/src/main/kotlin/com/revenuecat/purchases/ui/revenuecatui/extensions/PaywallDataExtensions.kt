@@ -22,7 +22,7 @@ internal fun PaywallData.Companion.createDefault(
     return PaywallData.createDefaultForIdentifiers(packages.map { it.identifier }, packageName, currentColors)
 }
 
-private fun PaywallData.Companion.createDefaultForIdentifiers(
+internal fun PaywallData.Companion.createDefaultForIdentifiers(
     packageIdentifiers: List<String>,
     packageName: String,
     currentColors: Colors,
