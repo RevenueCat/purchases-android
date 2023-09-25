@@ -267,7 +267,6 @@ internal class HTTPClient(
             "X-Client-Version" to appConfig.versionName,
             "X-Client-Bundle-ID" to appConfig.packageName,
             "X-Observer-Mode-Enabled" to if (appConfig.finishTransactions) "false" else "true",
-            "X-RC-Canary" to "diagnostic",
             "X-Nonce" to nonce,
             HTTPRequest.POST_PARAMS_HASH to postFieldsToSignHeader,
             "X-Custom-Entitlements-Computation" to if (appConfig.customEntitlementComputation) "true" else null,
