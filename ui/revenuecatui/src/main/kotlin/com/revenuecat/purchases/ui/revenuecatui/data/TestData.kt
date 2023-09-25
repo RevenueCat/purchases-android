@@ -264,8 +264,8 @@ internal class MockViewModel(
         offering.toPaywallViewState(
             VariableDataProvider(MockApplicationContext()),
             mode,
-            TestData.template2,
-            PaywallTemplate.TEMPLATE_2,
+            offering.paywall!!,
+            PaywallTemplate.fromId(offering.paywall!!.templateName)!!,
         ),
     )
 
