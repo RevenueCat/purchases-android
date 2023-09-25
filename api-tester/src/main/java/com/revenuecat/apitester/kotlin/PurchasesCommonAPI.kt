@@ -96,6 +96,7 @@ private class PurchasesCommonAPI {
             .oldProductId(oldProductId)
             .googleReplacementMode(replacementMode)
             .googleProrationMode(prorationMode)
+            .isPersonalizedPrice(isPersonalizedPrice)
         val purchasePackageParams: PurchaseParams = purchasePackageBuilder.build()
         purchases.purchase(purchasePackageParams, purchaseCallback)
 
@@ -104,6 +105,7 @@ private class PurchasesCommonAPI {
             .oldProductId(oldProductId)
             .googleReplacementMode(replacementMode)
             .googleProrationMode(prorationMode)
+            .isPersonalizedPrice(isPersonalizedPrice)
         val purchaseProductParams: PurchaseParams = purchaseProductBuilder.build()
         purchases.purchase(purchaseProductParams, purchaseCallback)
 
@@ -112,6 +114,7 @@ private class PurchasesCommonAPI {
             .oldProductId(oldProductId)
             .googleReplacementMode(replacementMode)
             .googleProrationMode(prorationMode)
+            .isPersonalizedPrice(isPersonalizedPrice)
         val purchaseOptionsParams: PurchaseParams = purchaseOptionBuilder.build()
         purchases.purchase(purchaseOptionsParams, purchaseCallback)
     }
