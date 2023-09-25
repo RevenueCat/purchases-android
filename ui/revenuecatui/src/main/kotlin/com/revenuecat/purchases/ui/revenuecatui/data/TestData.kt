@@ -269,7 +269,7 @@ internal class MockViewModel(
         ),
     )
 
-    override fun refreshState() = Unit
+    override fun refreshStateIfLocaleChanged() = Unit
 
     override fun selectPackage(packageToSelect: TemplateConfiguration.PackageInfo) {
         error("Not supported")
