@@ -112,7 +112,8 @@ final class PurchasesCommonAPI {
         purchasePackageBuilder
                 .oldProductId(oldProductId)
                 .googleReplacementMode(replacementMode)
-                .googleProrationMode(prorationMode);
+                .googleProrationMode(prorationMode)
+                .isPersonalizedPrice(isPersonalizedPrice);
         PurchaseParams purchasePackageParams = purchasePackageBuilder.build();
         purchases.purchase(purchasePackageParams, purchaseCallback);
 
