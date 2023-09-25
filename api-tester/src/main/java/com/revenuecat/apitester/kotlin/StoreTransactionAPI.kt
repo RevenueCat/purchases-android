@@ -46,6 +46,24 @@ private class StoreTransactionAPI {
                 subscriptionOptionId,
                 replacementMode,
             )
+
+            val deprecatedConstructedStoreTransaction = StoreTransaction(
+                orderId,
+                productIds,
+                type,
+                purchaseTime,
+                purchaseToken,
+                purchaseState,
+                isAutoRenewing,
+                signature,
+                originalJson,
+                presentedOfferingIdentifier,
+                storeUserID,
+                purchaseType,
+                marketplace,
+                subscriptionOptionId,
+                prorationMode,
+            )
         }
     }
 
