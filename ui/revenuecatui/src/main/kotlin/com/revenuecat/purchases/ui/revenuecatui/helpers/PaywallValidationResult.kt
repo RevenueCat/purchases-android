@@ -7,5 +7,5 @@ import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
 internal data class PaywallValidationResult(
     val displayablePaywall: PaywallData,
     val template: PaywallTemplate,
-    val error: PaywallValidationError?,
+    val error: PaywallValidationError? = null,
 )

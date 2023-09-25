@@ -13,8 +13,8 @@ import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
 import com.revenuecat.purchases.ui.revenuecatui.extensions.createDefault
 import com.revenuecat.purchases.ui.revenuecatui.extensions.createDefaultForIdentifiers
 import com.revenuecat.purchases.ui.revenuecatui.extensions.defaultTemplate
-import com.revenuecat.purchases.ui.revenuecatui.utils.Result
 
+@Suppress("ReturnCount")
 internal fun Offering.validatedPaywall(
     packageName: String,
     currentColors: Colors,
@@ -26,31 +26,33 @@ internal fun Offering.validatedPaywall(
             PaywallValidationError.MissingPaywall,
         )
 
-    return when (val result = paywallData.validate()) {
-        is Result.Error -> PaywallValidationResult(
+    val template = paywallData.validate().getOrElse {
+        return PaywallValidationResult(
             PaywallData.createDefaultForIdentifiers(paywallData.config.packages, packageName, currentColors),
             PaywallData.defaultTemplate,
-            result.value,
-        )
-
-        is Result.Success -> PaywallValidationResult(
-            paywallData,
-            result.value,
-            null,
+            it as PaywallValidationError,
         )
     }
+    return PaywallValidationResult(
+        paywallData,
+        template,
+    )
 }
 
-private fun PaywallData.validate(): Result<PaywallTemplate, PaywallValidationError> {
+@Suppress("ReturnCount")
+private fun PaywallData.validate(): Result<PaywallTemplate> {
     val (_, localizedConfiguration) = localizedConfiguration
 
-    localizedConfiguration.validateVariables().takeIf { it != null }?.let { Result.Error(it) }
+    val invalidVariablesError = localizedConfiguration.validateVariables()
+    if (invalidVariablesError != null) {
+        return Result.failure(invalidVariablesError)
+    }
 
-    val template = validateTemplate() ?: return Result.Error(PaywallValidationError.InvalidTemplate(templateName))
+    val template = validateTemplate() ?: return Result.failure(PaywallValidationError.InvalidTemplate(templateName))
 
     // TODO-PAYWALLS: Validate icons
 
-    return Result.Success(template)
+    return Result.success(template)
 }
 
 @Suppress("ReturnCount", "TooGenericExceptionCaught")
