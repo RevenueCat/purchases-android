@@ -18,7 +18,7 @@ private typealias QueryPurchasesSuccessCallback = (List<Receipt>, UserData) -> U
 
 private typealias QueryPurchasesCallbacks = Pair<QueryPurchasesSuccessCallback, PurchasesErrorCallback>
 
-class PurchaseUpdatesHandler(
+internal class PurchaseUpdatesHandler(
     private val purchasingServiceProvider: PurchasingServiceProvider,
 ) : PurchaseUpdatesResponseListener {
 

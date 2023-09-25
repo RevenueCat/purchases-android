@@ -23,7 +23,7 @@ import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.strings.PurchaseStrings
 
-class PurchaseHandler(
+internal class PurchaseHandler(
     private val purchasingServiceProvider: PurchasingServiceProvider,
     private val applicationContext: Context,
 ) : PurchaseResponseListener {
