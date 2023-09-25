@@ -36,6 +36,8 @@ import io.mockk.verify
 import io.mockk.verifyAll
 import org.assertj.core.api.Assertions.assertThat
 import org.json.JSONObject
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -290,6 +292,16 @@ internal class PurchasesTest : BasePurchasesTest() {
                 STUB_OFFERING_IDENTIFIER,
                 null,
             )
+        }
+    }
+
+    @Test
+    fun `Converting between GoogleProrationMode and GoogleReplacementMode works`() {
+        GoogleProrationMode.values().forEach {
+            assertEquals(it.asGoogleReplacementMode.asGoogleProrationMode, it)
+        }
+        GoogleReplacementMode.values().forEach {
+            assertEquals(it.asGoogleProrationMode.asGoogleReplacementMode, it)
         }
     }
 
