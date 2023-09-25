@@ -143,6 +143,14 @@ data class StoreTransaction(
     )
 
     /**
+     * The prorationMode used to perform the upgrade/downgrade of this purchase.
+     * Null if it was not an upgrade/downgrade or if the purchase was restored.
+     * This is not available for Amazon purchases.
+     */
+    val prorationMode: ProrationMode?
+        get() = (replacementMode as? GoogleReplacementMode)?.asGoogleProrationMode
+
+    /**
      * Skus associated with the transaction
      */
     @IgnoredOnParcel
