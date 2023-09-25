@@ -58,10 +58,9 @@ internal class PaywallViewModelImpl(
     override val state: StateFlow<PaywallViewState>
         get() = _state.asStateFlow()
     private val _state: MutableStateFlow<PaywallViewState>
-    private val _lastLocaleList = MutableStateFlow(LocaleListCompat.getDefault())
+    private val _lastLocaleList = MutableStateFlow(getCurrentLocaleList())
 
     init {
-        Logger.e("TEST: INITIALIZING PAYWALL VIEW MODEL")
         _state = MutableStateFlow(offering?.calculateState() ?: PaywallViewState.Loading)
         if (offering == null) {
             updateOffering()
@@ -69,8 +68,8 @@ internal class PaywallViewModelImpl(
     }
 
     override fun refreshStateIfLocaleChanged() {
-        if (_lastLocaleList.value != LocaleListCompat.getDefault()) {
-            _lastLocaleList.value = LocaleListCompat.getDefault()
+        if (_lastLocaleList.value != getCurrentLocaleList()) {
+            _lastLocaleList.value = getCurrentLocaleList()
             if (offering == null) {
                 updateOffering()
             } else {
@@ -151,5 +150,9 @@ internal class PaywallViewModelImpl(
 
     private fun Offering.calculateState(): PaywallViewState {
         return toPaywallViewState(variableDataProvider, mode)
+    }
+
+    private fun getCurrentLocaleList(): LocaleListCompat {
+        return LocaleListCompat.getDefault()
     }
 }
