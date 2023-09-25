@@ -260,7 +260,7 @@ internal class MockViewModel(
     private val _state =
         MutableStateFlow(offering.toPaywallViewState(VariableDataProvider(MockApplicationContext()), mode))
 
-    override fun refreshState() = Unit
+    override fun refreshStateIfLocaleChanged() = Unit
 
     override fun selectPackage(packageToSelect: TemplateConfiguration.PackageInfo) {
         error("Not supported")
