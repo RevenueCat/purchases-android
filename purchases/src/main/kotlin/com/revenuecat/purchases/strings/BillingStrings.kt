@@ -23,8 +23,8 @@ internal object BillingStrings {
     const val ILLEGAL_STATE_EXCEPTION_WHEN_CONNECTING = "There was an IllegalStateException when connecting to " +
         "BillingClient. This has been reported to occur on Samsung devices on unknown circumstances.\nException: %s"
     const val BILLING_CONNECTION_ERROR_INAPP_MESSAGES = "Error connecting to billing client to display " +
-        "inapp messages: %s"
+        "in-app messages: %s"
     const val BILLING_INAPP_MESSAGE_NONE = "No Google Play in-app message was available."
-    const val BILLING_INAPP_MESSAGE_UPDATE = "Subscription status was updated from In-App Message."
+    const val BILLING_INAPP_MESSAGE_UPDATE = "Subscription status was updated from in-app message."
     const val BILLING_INAPP_MESSAGE_UNEXPECTED_CODE = "Unexpected billing code: %s"
 }
