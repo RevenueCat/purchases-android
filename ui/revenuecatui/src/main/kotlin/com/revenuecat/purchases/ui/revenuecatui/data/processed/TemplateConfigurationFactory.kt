@@ -10,26 +10,26 @@ internal object TemplateConfigurationFactory {
     fun create(
         variableDataProvider: VariableDataProvider,
         mode: PaywallViewMode,
-        validatedPaywallData: PaywallData,
+        paywallData: PaywallData,
         packages: List<Package>,
         activelySubscribedProductIdentifiers: Set<String>,
         template: PaywallTemplate,
     ): TemplateConfiguration {
-        val (locale, localizedConfiguration) = validatedPaywallData.localizedConfiguration
-        val packageIds = validatedPaywallData.config.packages.takeUnless {
+        val (locale, localizedConfiguration) = paywallData.localizedConfiguration
+        val packageIds = paywallData.config.packages.takeUnless {
             it.isEmpty()
         } ?: packages.map { it.identifier }
         val images = TemplateConfiguration.Images(
-            iconUri = validatedPaywallData.getUriFromImage(validatedPaywallData.config.images.icon),
-            backgroundUri = validatedPaywallData.getUriFromImage(validatedPaywallData.config.images.background),
-            headerUri = validatedPaywallData.getUriFromImage(validatedPaywallData.config.images.header),
+            iconUri = paywallData.getUriFromImage(paywallData.config.images.icon),
+            backgroundUri = paywallData.getUriFromImage(paywallData.config.images.background),
+            headerUri = paywallData.getUriFromImage(paywallData.config.images.header),
         )
         val packageConfiguration = PackageConfigurationFactory.createPackageConfiguration(
             variableDataProvider = variableDataProvider,
             packages = packages,
             activelySubscribedProductIdentifiers = activelySubscribedProductIdentifiers,
             filter = packageIds,
-            default = validatedPaywallData.config.defaultPackage,
+            default = paywallData.config.defaultPackage,
             localization = localizedConfiguration,
             configurationType = template.configurationType,
             locale = locale,
@@ -38,7 +38,7 @@ internal object TemplateConfigurationFactory {
             template = template,
             mode = mode,
             packages = packageConfiguration,
-            configuration = validatedPaywallData.config,
+            configuration = paywallData.config,
             images = images,
         )
     }

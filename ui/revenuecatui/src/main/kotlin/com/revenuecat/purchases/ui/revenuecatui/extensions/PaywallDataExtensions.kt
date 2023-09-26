@@ -11,7 +11,7 @@ import java.net.URL
 import java.util.Locale
 
 /***
- * Default [PaywallData] to display when attempting to present a [PaywallView] with an offering that has no paywall
+ * Default [PaywallData] to display when attempting to present a PaywallView with an offering that has no paywall
  * configuration, or when that configuration is invalid.
  */
 internal fun PaywallData.Companion.createDefault(
