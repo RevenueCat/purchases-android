@@ -1,7 +1,15 @@
 # V7 API Migration Guide
 
-This latest release updates the SDK to use BillingClient 6. This version of BillingClient brings an entire new
-subscription model which has resulted in large changes across the entire SDK.
+This latest release updates the SDK to use BillingClient 6. This version of BillingClient brings little change compared 
+with BillingClient 5 which brought an entire new subscription model which resulted in large changes across the entire SDK.
+
+The only modification at the API level involves replacing "ProrationMode" with "ReplacementMode". The specific replacement 
+modes remain unchanged. 
+
+However, there is a behavior change in the "DEFERRED" replacement mode. Previously, a purchase would only occur after the
+product change. In BC6, the new purchase occurs place immediately, while the product change becomes effective when the old
+item expires. Until we can properly support this new behaviour, we have disabled the "DEFERRED" replacement mode and it 
+will be added back in a future release of the SDK. 
 
 ## Updated Code References
 
@@ -26,13 +34,6 @@ more thorough explanation of the new Google subscription model announced with Bi
 | Temporarily removed      |
 |--------------------------|
 | `ProrationMode.DEFERRED` |
-
-### API deprecations
-
-| Deprecated                                                                                         | New                                                                                     |
-|----------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------|
-| `getSubscriptionSkusWith(List<String>, (PurchasesError) -> Unit, (List<StoreProduct>) -> Unit)`    | `getProductsWith(List<String>, (PurchasesError) -> Unit, (List<StoreProduct>) -> Unit)` |
-| `getNonSubscriptionSkusWith(List<String>, (PurchasesError) -> Unit, (List<StoreProduct>) -> Unit)` | `getProductsWith(List<String>, (PurchasesError) -> Unit, (List<StoreProduct>) -> Unit)` |
 
 ### Observer Mode
 
