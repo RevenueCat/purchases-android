@@ -1,6 +1,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.extensions
 
-import androidx.compose.material.Colors
+import androidx.compose.material3.ColorScheme
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import com.revenuecat.purchases.Package
@@ -11,21 +11,19 @@ import java.net.URL
 import java.util.Locale
 
 /***
- * Default [PaywallData] to display when attempting to present a [PaywallView] with an offering that has no paywall
+ * Default [PaywallData] to display when attempting to present a PaywallView with an offering that has no paywall
  * configuration, or when that configuration is invalid.
  */
 internal fun PaywallData.Companion.createDefault(
     packages: List<Package>,
-    packageName: String,
-    currentColors: Colors,
+    currentColorScheme: ColorScheme,
 ): PaywallData {
-    return PaywallData.createDefaultForIdentifiers(packages.map { it.identifier }, packageName, currentColors)
+    return PaywallData.createDefaultForIdentifiers(packages.map { it.identifier }, currentColorScheme)
 }
 
-private fun PaywallData.Companion.createDefaultForIdentifiers(
+internal fun PaywallData.Companion.createDefaultForIdentifiers(
     packageIdentifiers: List<String>,
-    packageName: String,
-    currentColors: Colors,
+    currentColors: ColorScheme,
 ): PaywallData {
     return PaywallData(
         templateName = PaywallData.defaultTemplate.id,
@@ -40,7 +38,7 @@ private fun PaywallData.Companion.createDefaultForIdentifiers(
             displayRestorePurchases = true,
         ),
         localization = mapOf(Locale.US.toString() to PaywallData.defaultLocalization),
-        assetBaseURL = PaywallData.defaultTemplateBaseURL(packageName),
+        assetBaseURL = PaywallData.defaultTemplateBaseURL,
         revision = PaywallData.revisionID,
     )
 }
@@ -71,13 +69,15 @@ private val PaywallData.Companion.defaultLocalization: PaywallData.LocalizedConf
         offerDetailsWithIntroOffer = "Start your {{ sub_offer_duration }} trial, then {{ total_price_and_per_month }}.",
     )
 
-private fun PaywallData.Companion.defaultTemplateBaseURL(packageName: String): URL =
-    URL("android.resource://$packageName/")
+private val PaywallData.Companion.defaultTemplateBaseURL: URL
+    get() = URL("https://")
 
-private fun PaywallData.Companion.defaultColors(currentColors: Colors): PaywallData.Configuration.ColorInformation {
+private fun PaywallData.Companion.defaultColors(
+    currentColorScheme: ColorScheme,
+): PaywallData.Configuration.ColorInformation {
     return PaywallData.Configuration.ColorInformation(
-        light = getThemeColors(background = PaywallColor(colorInt = Color.White.toArgb()), currentColors),
-        dark = getThemeColors(background = PaywallColor(colorInt = Color.Black.toArgb()), currentColors),
+        light = getThemeColors(background = PaywallColor(colorInt = Color.White.toArgb()), currentColorScheme),
+        dark = getThemeColors(background = PaywallColor(colorInt = Color.Black.toArgb()), currentColorScheme),
     )
 }
 
@@ -85,15 +85,15 @@ private fun PaywallData.Companion.defaultColors(currentColors: Colors): PaywallD
 
 private fun getThemeColors(
     background: PaywallColor,
-    currentColors: Colors,
+    currentColorScheme: ColorScheme,
 ): PaywallData.Configuration.Colors {
     return PaywallData.Configuration.Colors(
         background = background,
-        text1 = currentColors.primary.asPaywallColor(),
-        callToActionBackground = currentColors.secondary.asPaywallColor(),
+        text1 = currentColorScheme.primary.asPaywallColor(),
+        callToActionBackground = currentColorScheme.secondary.asPaywallColor(),
         callToActionForeground = background,
-        accent1 = currentColors.secondary.asPaywallColor(),
-        accent2 = currentColors.primary.asPaywallColor(),
+        accent1 = currentColorScheme.secondary.asPaywallColor(),
+        accent2 = currentColorScheme.primary.asPaywallColor(),
     )
 }
 

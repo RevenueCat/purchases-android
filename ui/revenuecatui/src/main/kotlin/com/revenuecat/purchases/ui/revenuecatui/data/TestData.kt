@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.ui.revenuecatui.data
 
 import android.content.Context
+import androidx.compose.material3.ColorScheme
 import androidx.lifecycle.ViewModel
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
@@ -18,6 +19,7 @@ import com.revenuecat.purchases.paywalls.PaywallColor
 import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.ui.revenuecatui.PaywallViewMode
 import com.revenuecat.purchases.ui.revenuecatui.R
+import com.revenuecat.purchases.ui.revenuecatui.data.processed.PaywallTemplate
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvider
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ApplicationContext
@@ -253,14 +255,21 @@ internal class MockApplicationContext : ApplicationContext {
 
 internal class MockViewModel(
     private val mode: PaywallViewMode = PaywallViewMode.default,
-    private val offering: Offering,
+    offering: Offering,
 ) : ViewModel(), PaywallViewModel {
     override val state: StateFlow<PaywallViewState>
         get() = _state.asStateFlow()
-    private val _state =
-        MutableStateFlow(offering.toPaywallViewState(VariableDataProvider(MockApplicationContext()), mode))
+    private val _state = MutableStateFlow(
+        offering.toPaywallViewState(
+            VariableDataProvider(MockApplicationContext()),
+            mode,
+            offering.paywall!!,
+            PaywallTemplate.fromId(offering.paywall!!.templateName)!!,
+        ),
+    )
 
     override fun refreshStateIfLocaleChanged() = Unit
+    override fun refreshStateIfColorsChanged(colorScheme: ColorScheme) = Unit
 
     override fun selectPackage(packageToSelect: TemplateConfiguration.PackageInfo) {
         error("Not supported")

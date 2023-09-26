@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.data
 
+import androidx.compose.material3.ColorScheme
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.revenuecat.purchases.Offering
@@ -12,8 +13,9 @@ internal class PaywallViewModelFactory(
     private val mode: PaywallViewMode,
     private val offering: Offering?,
     private val listener: PaywallViewListener?,
+    private val colorScheme: ColorScheme,
 ) : ViewModelProvider.NewInstanceFactory() {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        return PaywallViewModelImpl(applicationContext, mode, offering, listener) as T
+        return PaywallViewModelImpl(applicationContext, mode, offering, listener, colorScheme) as T
     }
 }
