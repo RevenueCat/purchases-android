@@ -170,11 +170,14 @@ private class PurchasesCommonAPI {
             .appUserID("")
             .observerMode(true)
             .observerMode(false)
+            .showDeclinedPaymentMessagesAutomatically(true)
             .service(executorService)
             .diagnosticsEnabled(true)
             .entitlementVerificationMode(EntitlementVerificationMode.INFORMATIONAL)
             .informationalVerificationModeAndDiagnosticsEnabled(true)
             .build()
+
+        val showDeclinedPaymentMessagesAutomatically: Boolean = build.showDeclinedPaymentMessagesAutomatically
 
         val instance: Purchases = Purchases.sharedInstance
     }

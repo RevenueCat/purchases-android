@@ -420,6 +420,19 @@ class Purchases internal constructor(
     }
 
     /**
+     * Google Play only, no-op for Amazon.
+     * If the user has had a payment declined, this will show a toast notification notifying them and
+     * providing instructions for recovery of the subscription.
+     * If [PurchasesConfiguration.showDeclinedPaymentMessagesAutomatically] is enabled, this will be done
+     * automatically on each Activity's onStart.
+     *
+     * For more info: https://rev.cat/googleplayinappmessaging
+     */
+    fun showDeclinedPaymentMessageIfNeeded(activity: Activity) {
+        purchasesOrchestrator.showDeclinedPaymentMessageIfNeeded(activity)
+    }
+
+    /**
      * Invalidates the cache for customer information.
      *
      * Most apps will not need to use this method; invalidating the cache can leave your app in an invalid state.

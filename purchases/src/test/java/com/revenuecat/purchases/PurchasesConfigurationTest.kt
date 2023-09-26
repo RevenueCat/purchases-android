@@ -37,6 +37,7 @@ class PurchasesConfigurationTest {
         assertThat(purchasesConfiguration.diagnosticsEnabled).isFalse
         assertThat(purchasesConfiguration.verificationMode).isEqualTo(EntitlementVerificationMode.DISABLED)
         assertThat(purchasesConfiguration.dangerousSettings).isEqualTo(DangerousSettings(autoSyncPurchases = true))
+        assertThat(purchasesConfiguration.showDeclinedPaymentMessagesAutomatically).isTrue
     }
 
     @Test
@@ -50,6 +51,12 @@ class PurchasesConfigurationTest {
     fun `PurchasesConfiguration sets observerMode correctly`() {
         val purchasesConfiguration = builder.observerMode(true).build()
         assertThat(purchasesConfiguration.observerMode).isTrue
+    }
+
+    @Test
+    fun `PurchasesConfiguration sets showDeclinedPaymentMessagesAutomatically correctly`() {
+        val purchasesConfiguration = builder.showDeclinedPaymentMessagesAutomatically(false).build()
+        assertThat(purchasesConfiguration.showDeclinedPaymentMessagesAutomatically).isFalse
     }
 
     @Test

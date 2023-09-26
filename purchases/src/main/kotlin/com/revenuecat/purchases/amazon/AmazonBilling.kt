@@ -289,6 +289,10 @@ internal class AmazonBilling constructor(
         )
     }
 
+    override fun showInAppMessagesIfNeeded(activity: Activity, subscriptionStatusChange: () -> Unit) {
+        // No-op: Amazon doesn't have in-app messages
+    }
+
     private fun List<Receipt>.toMapOfReceiptHashesToRestoredPurchases(
         tokensToSkusMap: Map<String, String>,
         userData: UserData,

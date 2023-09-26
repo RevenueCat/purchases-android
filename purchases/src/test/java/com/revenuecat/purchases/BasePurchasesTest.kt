@@ -332,10 +332,12 @@ internal open class BasePurchasesTest {
         anonymous: Boolean,
         autoSync: Boolean = true,
         customEntitlementComputation: Boolean = false,
+        showDeclinedPaymentMessagesAutomatically: Boolean = false,
     ) {
         val appConfig = AppConfig(
             context = mockContext,
             observerMode = false,
+            showDeclinedPaymentMessagesAutomatically = showDeclinedPaymentMessagesAutomatically,
             platformInfo = PlatformInfo("native", "3.2.0"),
             proxyURL = null,
             store = Store.PLAY_STORE,

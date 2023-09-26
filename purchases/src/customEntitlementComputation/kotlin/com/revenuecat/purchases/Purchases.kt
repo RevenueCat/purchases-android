@@ -131,6 +131,19 @@ class Purchases internal constructor(
     }
 
     /**
+     * Google Play only, no-op for Amazon.
+     * If the user has had a payment declined, this will show a toast notification notifying them and
+     * providing instructions for recovery of the subscription.
+     * If [PurchasesConfiguration.showDeclinedPaymentMessagesAutomatically] is enabled, this will be done
+     * automatically on each Activity's onStart.
+     *
+     * For more info: https://rev.cat/googleplayinappmessaging
+     */
+    fun showDeclinedPaymentMessageIfNeeded(activity: Activity) {
+        purchasesOrchestrator.showDeclinedPaymentMessageIfNeeded(activity)
+    }
+
+    /**
      * Restores purchases made with the current Play Store account for the current user.
      * This method will post all purchases associated with the current Play Store account to
      * RevenueCat and become associated with the current `appUserID`. If the receipt token is being
