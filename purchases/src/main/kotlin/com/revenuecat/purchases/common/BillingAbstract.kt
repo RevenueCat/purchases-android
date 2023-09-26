@@ -106,7 +106,7 @@ internal abstract class BillingAbstract {
         onSuccess(productID)
     }
 
-    abstract fun showInAppMessagesIfNeeded(activity: Activity)
+    abstract fun showInAppMessagesIfNeeded(activity: Activity, subscriptionStatusChange: () -> Unit)
 
     interface PurchasesUpdatedListener {
         fun onPurchasesUpdated(purchases: List<StoreTransaction>)

@@ -2639,7 +2639,7 @@ class BillingWrapperTest {
     fun `showing inapp messages triggers connection if not connected`() {
         every { mockClient.isReady } returns false
 
-        wrapper.showInAppMessagesIfNeeded(mockk())
+        wrapper.showInAppMessagesIfNeeded(mockk()) { error("Unexpected subscription status change") }
 
         // One for the initial, another for this test since isReady is false
         verify(exactly = 2) { mockClient.startConnection(any()) }
@@ -2650,7 +2650,7 @@ class BillingWrapperTest {
         val activity = mockk<Activity>()
         every { mockClient.showInAppMessages(activity, any(), any()) } returns billingClientOKResult
 
-        wrapper.showInAppMessagesIfNeeded(activity)
+        wrapper.showInAppMessagesIfNeeded(activity) { error("Unexpected subscription status change") }
 
         verify(exactly = 1) { mockClient.showInAppMessages(activity, any(), any()) }
     }
@@ -2661,7 +2661,7 @@ class BillingWrapperTest {
         val listenerSlot = slot<InAppMessageResponseListener>()
         every { mockClient.showInAppMessages(activity, any(), capture(listenerSlot)) } returns billingClientOKResult
 
-        wrapper.showInAppMessagesIfNeeded(activity)
+        wrapper.showInAppMessagesIfNeeded(activity) { error("Unexpected subscription status change") }
 
         assertThat(listenerSlot.captured).isNotNull
         val purchaseToken = null
@@ -2678,7 +2678,10 @@ class BillingWrapperTest {
         val listenerSlot = slot<InAppMessageResponseListener>()
         every { mockClient.showInAppMessages(activity, any(), capture(listenerSlot)) } returns billingClientOKResult
 
-        wrapper.showInAppMessagesIfNeeded(activity)
+        var subscriptionStatusChanged = false
+        wrapper.showInAppMessagesIfNeeded(activity) {
+            subscriptionStatusChanged = true
+        }
 
         assertThat(listenerSlot.captured).isNotNull
         val purchaseToken = null
@@ -2687,6 +2690,7 @@ class BillingWrapperTest {
                 InAppMessageResult(InAppMessageResponseCode.SUBSCRIPTION_STATUS_UPDATED, purchaseToken)
             )
         }
+        assertThat(subscriptionStatusChanged).isTrue
     }
 
     // endregion inapp messages

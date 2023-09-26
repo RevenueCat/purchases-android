@@ -192,7 +192,7 @@ internal class PurchasesOrchestrator constructor(
 
     override fun onActivityStarted(activity: Activity) {
         if (appConfig.showDeclinedPaymentMessagesAutomatically) {
-            billing.showInAppMessagesIfNeeded(activity)
+            showDeclinedPaymentMessageIfNeeded(activity)
         }
     }
 
@@ -463,7 +463,9 @@ internal class PurchasesOrchestrator constructor(
     }
 
     fun showDeclinedPaymentMessageIfNeeded(activity: Activity) {
-        billing.showInAppMessagesIfNeeded(activity)
+        billing.showInAppMessagesIfNeeded(activity) {
+            syncPurchases()
+        }
     }
 
     fun invalidateCustomerInfoCache() {

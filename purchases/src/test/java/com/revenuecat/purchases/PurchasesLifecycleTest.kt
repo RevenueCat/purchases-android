@@ -8,6 +8,7 @@ import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
+import io.mockk.slot
 import io.mockk.verify
 import org.assertj.core.api.Assertions
 import org.junit.Test
@@ -106,16 +107,30 @@ internal class PurchasesLifecycleTest: BasePurchasesTest() {
     fun `activity on start does not show inapp messages if option disabled`() {
         resetShowDeclinedPaymentMessagesAutomatically(false)
         purchases.purchasesOrchestrator.onActivityStarted(mockk())
-        verify(exactly = 0) { mockBillingAbstract.showInAppMessagesIfNeeded(any()) }
+        verify(exactly = 0) { mockBillingAbstract.showInAppMessagesIfNeeded(any(), any()) }
     }
 
     @Test
     fun `activity on start shows inapp messages if option enabled`() {
         resetShowDeclinedPaymentMessagesAutomatically(true)
         val activity = mockk<Activity>()
-        every { mockBillingAbstract.showInAppMessagesIfNeeded(activity) } just Runs
+        every { mockBillingAbstract.showInAppMessagesIfNeeded(activity, any()) } just Runs
         purchases.purchasesOrchestrator.onActivityStarted(activity)
-        verify(exactly = 1) { mockBillingAbstract.showInAppMessagesIfNeeded(activity) }
+        verify(exactly = 1) { mockBillingAbstract.showInAppMessagesIfNeeded(activity, any()) }
+    }
+
+    @Test
+    fun `activity on start syncs purchases if subscription status changed after showing inapp messages`() {
+        resetShowDeclinedPaymentMessagesAutomatically(true)
+        val activity = mockk<Activity>()
+        val subscriptionStatusChangeSlot = slot<() -> Unit>()
+        every {
+            mockBillingAbstract.showInAppMessagesIfNeeded(activity, capture(subscriptionStatusChangeSlot))
+        } just Runs
+        purchases.purchasesOrchestrator.onActivityStarted(activity)
+        every { mockSyncPurchasesHelper.syncPurchases(any(), any(), any(), any()) } just Runs
+        subscriptionStatusChangeSlot.captured.invoke()
+        verify(exactly = 1) { mockSyncPurchasesHelper.syncPurchases(any(), any(), any(), any()) }
     }
 
     // endregion activity lifecycle

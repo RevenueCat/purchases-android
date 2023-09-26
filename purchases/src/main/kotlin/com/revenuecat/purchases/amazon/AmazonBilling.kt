@@ -289,7 +289,7 @@ internal class AmazonBilling constructor(
         )
     }
 
-    override fun showInAppMessagesIfNeeded(activity: Activity) {
+    override fun showInAppMessagesIfNeeded(activity: Activity, subscriptionStatusChange: () -> Unit) {
         // No-op: Amazon doesn't have in-app messages
     }
 

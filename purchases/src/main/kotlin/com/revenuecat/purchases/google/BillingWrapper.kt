@@ -757,7 +757,7 @@ internal class BillingWrapper(
 
     override fun isConnected(): Boolean = billingClient?.isReady ?: false
 
-    override fun showInAppMessagesIfNeeded(activity: Activity) {
+    override fun showInAppMessagesIfNeeded(activity: Activity, subscriptionStatusChange: () -> Unit) {
         val inAppMessageParams = InAppMessageParams.newBuilder()
             .addInAppMessageCategoryToShow(InAppMessageParams.InAppMessageCategoryId.TRANSACTIONAL)
             .build()
@@ -780,6 +780,7 @@ internal class BillingWrapper(
                         }
                         InAppMessageResult.InAppMessageResponseCode.SUBSCRIPTION_STATUS_UPDATED -> {
                             debugLog(BillingStrings.BILLING_INAPP_MESSAGE_UPDATE)
+                            subscriptionStatusChange()
                         }
                         else -> errorLog(BillingStrings.BILLING_INAPP_MESSAGE_UNEXPECTED_CODE.format(responseCode))
                     }
