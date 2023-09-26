@@ -31,6 +31,7 @@ internal class TemplateConfigurationFactoryTest {
             TestData.template2,
             listOf(TestData.Packages.weekly, TestData.Packages.monthly, TestData.Packages.annual),
             emptySet(),
+            PaywallTemplate.TEMPLATE_2,
         )
     }
 
