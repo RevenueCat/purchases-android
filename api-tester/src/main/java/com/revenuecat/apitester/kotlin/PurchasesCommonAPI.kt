@@ -177,6 +177,8 @@ private class PurchasesCommonAPI {
             .informationalVerificationModeAndDiagnosticsEnabled(true)
             .build()
 
+        val showDeclinedPaymentMessagesAutomatically: Boolean = build.showDeclinedPaymentMessagesAutomatically
+
         val instance: Purchases = Purchases.sharedInstance
     }
 

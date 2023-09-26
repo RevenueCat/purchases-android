@@ -55,11 +55,12 @@ import com.revenuecat.purchases.strings.IdentityStrings
 import com.revenuecat.purchases.strings.PurchaseStrings
 import com.revenuecat.purchases.strings.RestoreStrings
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
+import com.revenuecat.purchases.utils.CustomActivityLifecycleHandler
 import com.revenuecat.purchases.utils.isAndroidNOrNewer
 import java.net.URL
 import java.util.Collections
 
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "LargeClass", "TooManyFunctions")
 internal class PurchasesOrchestrator constructor(
     private val application: Application,
     backingFieldAppUserID: String?,
@@ -81,7 +82,7 @@ internal class PurchasesOrchestrator constructor(
     private val offeringsManager: OfferingsManager,
     // This is nullable due to: https://github.com/RevenueCat/purchases-flutter/issues/408
     private val mainHandler: Handler? = Handler(Looper.getMainLooper()),
-) : LifecycleDelegate {
+) : LifecycleDelegate, CustomActivityLifecycleHandler {
 
     /** @suppress */
     @Suppress("RedundantGetter", "RedundantSetter")
@@ -136,10 +137,6 @@ internal class PurchasesOrchestrator constructor(
         billing.stateListener = object : BillingAbstract.StateListener {
             override fun onConnected() {
                 postPendingTransactionsHelper.syncPendingPurchaseQueue(allowSharingPlayStoreAccount)
-                if (appConfig.showDeclinedPaymentMessagesAutomatically) {
-                    // todo: pass activity
-                    billing.showInAppMessagesIfNeeded()
-                }
             }
         }
         billing.purchasesUpdatedListener = getPurchasesUpdatedListener()
@@ -148,6 +145,7 @@ internal class PurchasesOrchestrator constructor(
             // This needs to happen after the billing client listeners have been set. This is because
             // we perform operations with the billing client in the lifecycle observer methods.
             ProcessLifecycleOwner.get().lifecycle.addObserver(lifecycleHandler)
+            application.registerActivityLifecycleCallbacks(this)
         }
 
         if (!appConfig.dangerousSettings.autoSyncPurchases) {
@@ -190,6 +188,12 @@ internal class PurchasesOrchestrator constructor(
         postPendingTransactionsHelper.syncPendingPurchaseQueue(allowSharingPlayStoreAccount)
         synchronizeSubscriberAttributesIfNeeded()
         offlineEntitlementsManager.updateProductEntitlementMappingCacheIfStale()
+    }
+
+    override fun onActivityStarted(activity: Activity) {
+        if (appConfig.showDeclinedPaymentMessagesAutomatically) {
+            billing.showInAppMessagesIfNeeded(activity)
+        }
     }
 
     // region Public Methods
@@ -458,9 +462,8 @@ internal class PurchasesOrchestrator constructor(
         this.updatedCustomerInfoListener = null
     }
 
-    fun showDeclinedPaymentMessageIfNeeded() {
-        // TODO: get app activity
-        billing.showInAppMessagesIfNeeded()
+    fun showDeclinedPaymentMessageIfNeeded(activity: Activity) {
+        billing.showInAppMessagesIfNeeded(activity)
     }
 
     fun invalidateCustomerInfoCache() {

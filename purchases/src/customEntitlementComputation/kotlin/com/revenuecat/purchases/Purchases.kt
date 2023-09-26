@@ -137,8 +137,8 @@ class Purchases internal constructor(
      *
      * https://developer.android.com/google/play/billing/subscriptions#in-app-messaging
      */
-    fun showDeclinedPaymentMessageIfNeeded() {
-        purchasesOrchestrator.showDeclinedPaymentMessageIfNeeded()
+    fun showDeclinedPaymentMessageIfNeeded(activity: Activity) {
+        purchasesOrchestrator.showDeclinedPaymentMessageIfNeeded(activity)
     }
 
     /**

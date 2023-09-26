@@ -18,7 +18,6 @@ import com.android.billingclient.api.BillingFlowParams
 import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.ConsumeParams
 import com.android.billingclient.api.InAppMessageParams
-import com.android.billingclient.api.InAppMessageResponseListener
 import com.android.billingclient.api.InAppMessageResult
 import com.android.billingclient.api.ProductDetailsResponseListener
 import com.android.billingclient.api.Purchase
@@ -40,6 +39,7 @@ import com.revenuecat.purchases.common.ReplaceProductInfo
 import com.revenuecat.purchases.common.StoreProductsCallback
 import com.revenuecat.purchases.common.between
 import com.revenuecat.purchases.common.caching.DeviceCache
+import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.firstProductId
@@ -47,6 +47,7 @@ import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.sha256
 import com.revenuecat.purchases.common.toHumanReadableDescription
+import com.revenuecat.purchases.common.verboseLog
 import com.revenuecat.purchases.models.GoogleProrationMode
 import com.revenuecat.purchases.models.GooglePurchasingData
 import com.revenuecat.purchases.models.PurchaseState
@@ -59,7 +60,7 @@ import com.revenuecat.purchases.strings.RestoreStrings
 import com.revenuecat.purchases.utils.Result
 import java.io.PrintWriter
 import java.io.StringWriter
-import java.lang.IllegalStateException
+import java.lang.ref.WeakReference
 import java.util.Date
 import java.util.concurrent.ConcurrentLinkedQueue
 import kotlin.math.min
@@ -758,19 +759,23 @@ internal class BillingWrapper(
 
     override fun showInAppMessagesIfNeeded(activity: Activity) {
         val inAppMessageParams = InAppMessageParams.newBuilder()
-        .addInAppMessageCategoryToShow(InAppMessageParams.InAppMessageCategoryId.TRANSACTIONAL)
-        .build()
+            .addInAppMessageCategoryToShow(InAppMessageParams.InAppMessageCategoryId.TRANSACTIONAL)
+            .build()
+        val weakActivity = WeakReference(activity)
 
-        billingClient?.showInAppMessages(activity,
-            inAppMessageParams
-        ) { inAppMessageResult ->
-            if (inAppMessageResult.responseCode == InAppMessageResult.InAppMessageResponseCode.NO_ACTION_NEEDED) {
-                // No in-app message was available.
-                // TODO: log
-            } else if (inAppMessageResult.responseCode
-                == InAppMessageResult.InAppMessageResponseCode.SUBSCRIPTION_STATUS_UPDATED
-            ) {
-                // TODO: post receipt
+        withConnectedClient {
+            val activity = weakActivity.get() ?: run {
+                debugLog("Activity is null, not showing Google Play in-app message.")
+                return@withConnectedClient
+            }
+            showInAppMessages(activity, inAppMessageParams) { inAppMessageResult ->
+                if (inAppMessageResult.responseCode == InAppMessageResult.InAppMessageResponseCode.NO_ACTION_NEEDED) {
+                    verboseLog("No Google Play in-app message was available.")
+                } else if (inAppMessageResult.responseCode
+                    == InAppMessageResult.InAppMessageResponseCode.SUBSCRIPTION_STATUS_UPDATED
+                ) {
+                    debugLog("Subscription status was updated from In-App Message.")
+                }
             }
         }
     }

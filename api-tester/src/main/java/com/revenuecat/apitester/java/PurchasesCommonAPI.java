@@ -132,7 +132,10 @@ final class PurchasesCommonAPI {
                 .service(executorService)
                 .diagnosticsEnabled(true)
                 .entitlementVerificationMode(EntitlementVerificationMode.INFORMATIONAL)
+                .showDeclinedPaymentMessagesAutomatically(true)
                 .build();
+
+        final Boolean showDeclinedPaymentMessagesAutomatically = build.getShowDeclinedPaymentMessagesAutomatically();
 
         final Purchases instance = Purchases.getSharedInstance();
     }
