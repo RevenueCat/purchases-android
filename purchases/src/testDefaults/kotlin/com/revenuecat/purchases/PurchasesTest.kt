@@ -114,40 +114,6 @@ internal class PurchasesTest : BasePurchasesTest() {
 
     // region purchasing
 
-//    @Test
-//    fun `when making a deferred product change using the deprecated method, completion is called with the old product`() {
-//        val newProductId = listOf("newproduct")
-//        val receiptInfo = mockQueryingProductDetails(newProductId.first(), ProductType.SUBS, null)
-//        val oldPurchase = mockPurchaseFound()
-//        mockQueryingProductDetails(oldPurchase.productIds.first(), ProductType.SUBS, null)
-//        var callCount = 0
-//        purchases.purchaseProductWith(
-//            mockActivity,
-//            receiptInfo.storeProduct!!,
-//            UpgradeInfo(oldPurchase.productIds[0], ProrationMode.DEFERRED),
-//            onError = { _, _ ->
-//                fail("should be successful")
-//            },
-//            onSuccess = { purchase, _ ->
-//                callCount++
-//                assertThat(purchase).isEqualTo(oldPurchase)
-//            },
-//        )
-//        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(listOf(oldPurchase))
-//        assertThat(callCount).isEqualTo(1)
-//        verify(exactly = 1) {
-//            mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(
-//                purchase = oldPurchase,
-//                storeProduct = any(),
-//                isRestore = false,
-//                appUserID = appUserId,
-//                initiationSource = initiationSource,
-//                onSuccess = any(),
-//                onError = any(),
-//            )
-//        }
-//    }
-
     @Test
     fun `deprecated upgrade defaults ProrationMode to null if not passed`() {
         val productId = "gold"

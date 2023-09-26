@@ -8,7 +8,6 @@ private class GoogleReplacementModeAPI {
         when (mode) {
             GoogleReplacementMode.WITHOUT_PRORATION,
             GoogleReplacementMode.WITH_TIME_PRORATION,
-            // GoogleReplacementMode.DEFERRED,
             GoogleReplacementMode.CHARGE_FULL_PRICE,
             GoogleReplacementMode.CHARGE_PRORATED_PRICE,
             -> {}
