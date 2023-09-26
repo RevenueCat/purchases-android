@@ -70,7 +70,7 @@ private val PaywallData.Companion.defaultLocalization: PaywallData.LocalizedConf
     )
 
 private val PaywallData.Companion.defaultTemplateBaseURL: URL
-    get() = URL("")
+    get() = URL("https://")
 
 private fun PaywallData.Companion.defaultColors(
     currentColorScheme: ColorScheme,
