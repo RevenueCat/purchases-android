@@ -4,7 +4,7 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import androidx.compose.material.Colors
+import androidx.compose.material3.ColorScheme
 import androidx.core.os.LocaleListCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -35,6 +35,7 @@ internal interface PaywallViewModel {
     val state: StateFlow<PaywallViewState>
 
     fun refreshStateIfLocaleChanged()
+    fun refreshStateIfColorsChanged(colorScheme: ColorScheme)
     fun selectPackage(packageToSelect: TemplateConfiguration.PackageInfo)
 
     /**
@@ -48,12 +49,13 @@ internal interface PaywallViewModel {
     fun openURL(url: URL, context: Context)
 }
 
+@Suppress("TooManyFunctions")
 internal class PaywallViewModelImpl(
     applicationContext: ApplicationContext,
     private val mode: PaywallViewMode,
     private val offering: Offering?,
     private val listener: PaywallViewListener?,
-    private val colors: Colors,
+    colorScheme: ColorScheme,
 ) : ViewModel(), PaywallViewModel {
 
     private val variableDataProvider = VariableDataProvider(applicationContext)
@@ -62,6 +64,7 @@ internal class PaywallViewModelImpl(
         get() = _state.asStateFlow()
     private val _state: MutableStateFlow<PaywallViewState>
     private val _lastLocaleList = MutableStateFlow(getCurrentLocaleList())
+    private val _colorScheme = MutableStateFlow(colorScheme)
 
     init {
         _state = MutableStateFlow(offering?.calculateState() ?: PaywallViewState.Loading)
@@ -73,11 +76,14 @@ internal class PaywallViewModelImpl(
     override fun refreshStateIfLocaleChanged() {
         if (_lastLocaleList.value != getCurrentLocaleList()) {
             _lastLocaleList.value = getCurrentLocaleList()
-            if (offering == null) {
-                updateOffering()
-            } else {
-                _state.value = offering.calculateState()
-            }
+            refreshState()
+        }
+    }
+
+    override fun refreshStateIfColorsChanged(colorScheme: ColorScheme) {
+        if (_colorScheme.value != colorScheme) {
+            _colorScheme.value = colorScheme
+            refreshState()
         }
     }
 
@@ -123,6 +129,14 @@ internal class PaywallViewModelImpl(
         context.startActivity(intent)
     }
 
+    private fun refreshState() {
+        if (offering == null) {
+            updateOffering()
+        } else {
+            _state.value = offering.calculateState()
+        }
+    }
+
     private fun purchasePackage(activity: Activity, packageToPurchase: Package) {
         viewModelScope.launch {
             try {
@@ -158,7 +172,7 @@ internal class PaywallViewModelImpl(
         if (availablePackages.isEmpty()) {
             return PaywallViewState.Error("No packages available")
         }
-        val (displayablePaywall, template, _) = validatedPaywall(_colors.value)
+        val (displayablePaywall, template, _) = validatedPaywall(_colorScheme.value)
         // TODO-PAYWALLS: display error
         return toPaywallViewState(variableDataProvider, mode, displayablePaywall, template)
     }

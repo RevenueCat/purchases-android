@@ -1,6 +1,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.helpers
 
-import androidx.compose.material.Colors
+import androidx.compose.material3.ColorScheme
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.ui.revenuecatui.PaywallViewMode
@@ -16,18 +16,18 @@ import com.revenuecat.purchases.ui.revenuecatui.extensions.defaultTemplate
 
 @Suppress("ReturnCount")
 internal fun Offering.validatedPaywall(
-    currentColors: Colors,
+    currentColorScheme: ColorScheme,
 ): PaywallValidationResult {
     val paywallData = this.paywall
         ?: return PaywallValidationResult(
-            PaywallData.createDefault(packages = availablePackages, currentColors),
+            PaywallData.createDefault(packages = availablePackages, currentColorScheme),
             PaywallData.defaultTemplate,
             PaywallValidationError.MissingPaywall,
         )
 
     val template = paywallData.validate().getOrElse {
         return PaywallValidationResult(
-            PaywallData.createDefaultForIdentifiers(paywallData.config.packages, currentColors),
+            PaywallData.createDefaultForIdentifiers(paywallData.config.packages, currentColorScheme),
             PaywallData.defaultTemplate,
             it as PaywallValidationError,
         )

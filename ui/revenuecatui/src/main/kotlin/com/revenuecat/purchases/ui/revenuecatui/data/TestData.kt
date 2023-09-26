@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.ui.revenuecatui.data
 
 import android.content.Context
+import androidx.compose.material3.ColorScheme
 import androidx.lifecycle.ViewModel
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
@@ -268,6 +269,7 @@ internal class MockViewModel(
     )
 
     override fun refreshStateIfLocaleChanged() = Unit
+    override fun refreshStateIfColorsChanged(colorScheme: ColorScheme) = Unit
 
     override fun selectPackage(packageToSelect: TemplateConfiguration.PackageInfo) {
         error("Not supported")
