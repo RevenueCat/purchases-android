@@ -68,7 +68,7 @@ internal fun Offering.toPaywallViewState(
     val templateConfiguration = TemplateConfigurationFactory.create(
         variableDataProvider = variableDataProvider,
         mode = mode,
-        validatedPaywallData = validatedPaywallData,
+        paywallData = validatedPaywallData,
         packages = availablePackages,
         activelySubscribedProductIdentifiers = emptySet(), // TODO-PAYWALLS: Check for active subscriptions
         template,
