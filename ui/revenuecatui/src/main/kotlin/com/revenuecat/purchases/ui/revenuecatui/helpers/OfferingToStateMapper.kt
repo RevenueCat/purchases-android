@@ -4,6 +4,7 @@ import androidx.compose.material3.ColorScheme
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.ui.revenuecatui.PaywallViewMode
+import com.revenuecat.purchases.ui.revenuecatui.composables.PaywallIconName
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewState
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.PaywallTemplate
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfigurationFactory
@@ -49,7 +50,10 @@ private fun PaywallData.validate(): Result<PaywallTemplate> {
 
     val template = validateTemplate() ?: return Result.failure(PaywallValidationError.InvalidTemplate(templateName))
 
-    // TODO-PAYWALLS: Validate icons
+    val invalidIconsError = localizedConfiguration.validateIcons()
+    if (invalidIconsError != null) {
+        return Result.failure(invalidIconsError)
+    }
 
     return Result.success(template)
 }
@@ -75,7 +79,13 @@ internal fun Offering.toPaywallViewState(
     )
 }
 
+/**
+ * Returns an error if any of the variables are invalid, or null if they're all valid
+ */
 private fun PaywallData.LocalizedConfiguration.validateVariables(): PaywallValidationError.InvalidVariables? {
+    /**
+     * Returns the unrecognized variables in the String
+     */
     fun String?.validateVariablesInProperty(): Set<String> {
         return this?.let { VariableProcessor.validateVariables(this) } ?: emptySet()
     }
@@ -93,6 +103,28 @@ private fun PaywallData.LocalizedConfiguration.validateVariables(): PaywallValid
 
     if (unrecognizedVariables.isNotEmpty()) {
         return PaywallValidationError.InvalidVariables(unrecognizedVariables)
+    }
+
+    return null
+}
+
+/**
+ * Returns an error if any of the icons are invalid, or null if they're all valid
+ */
+private fun PaywallData.LocalizedConfiguration.validateIcons(): PaywallValidationError.InvalidIcons? {
+    /**
+     * Returns the iconID if it's not a valid [PaywallIconName]`
+     */
+    fun PaywallData.LocalizedConfiguration.Feature.validateIcon(): String? {
+        return this.iconID?.takeIf { PaywallIconName.fromValue(it) == null }
+    }
+
+    val invalidIcons = features.mapNotNull { feature ->
+        feature.validateIcon()
+    }.toSet()
+
+    if (invalidIcons.isNotEmpty()) {
+        return PaywallValidationError.InvalidIcons(invalidIcons)
     }
 
     return null
