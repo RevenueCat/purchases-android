@@ -41,7 +41,7 @@ open class PurchasesConfiguration(builder: Builder) {
         internal var observerMode: Boolean = false
 
         @set:JvmSynthetic @get:JvmSynthetic
-        internal var showDeclinedPaymentMessagesAutomatically: Boolean = false
+        internal var showDeclinedPaymentMessagesAutomatically: Boolean = true
 
         @set:JvmSynthetic @get:JvmSynthetic
         internal var service: ExecutorService? = null
@@ -64,10 +64,10 @@ open class PurchasesConfiguration(builder: Builder) {
 
         /**
          * Enable this setting to show a toast with recovery options for users who have had a declined payment
-         * automatically. Default is disabled.
+         * automatically. Default is enabled.
          * For more info: https://rev.cat/googleplayinappmessaging
          *
-         * If this setting is disabled, you can show the toast by calling
+         * If this setting is disabled, you can show the snackbar by calling
          * [Purchases.showDeclinedPaymentMessageIfNeeded]
          */
         fun showDeclinedPaymentMessagesAutomatically(showDeclinedPaymentMessagesAutomatically: Boolean) = apply {
