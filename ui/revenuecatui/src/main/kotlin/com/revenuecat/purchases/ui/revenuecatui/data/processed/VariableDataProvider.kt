@@ -15,9 +15,14 @@ import java.util.Locale
 @Suppress("UnusedParameter", "FunctionOnlyReturningConstant")
 internal class VariableDataProvider(
     private val applicationContext: ApplicationContext,
+    private val preview: Boolean = false,
 ) {
     val applicationName: String
-        get() = applicationContext.getApplicationName()
+        get() = if (!preview) {
+            applicationContext.getApplicationName()
+        } else {
+            "Application Name"
+        }
 
     fun localizedPrice(rcPackage: Package): String {
         return rcPackage.product.price.formatted

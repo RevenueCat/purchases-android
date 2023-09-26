@@ -5,6 +5,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModel
@@ -60,6 +61,10 @@ private fun getPaywallViewModel(
             offering,
             listener,
             MaterialTheme.colorScheme,
+            preview = isInPreviewMode(),
         ),
     )
 }
+
+@Composable
+private fun isInPreviewMode() = LocalInspectionMode.current
