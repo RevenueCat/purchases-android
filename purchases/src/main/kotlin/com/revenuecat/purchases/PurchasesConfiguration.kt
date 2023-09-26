@@ -65,7 +65,7 @@ open class PurchasesConfiguration(builder: Builder) {
         /**
          * Enable this setting to show a toast with recovery options for users who have had a declined payment
          * automatically. Default is disabled.
-         * For more info: https://developer.android.com/google/play/billing/subscriptions#in-app-messaging
+         * For more info: https://rev.cat/googleplayinappmessaging
          *
          * If this setting is disabled, you can show the toast by calling
          * [Purchases.showDeclinedPaymentMessageIfNeeded]

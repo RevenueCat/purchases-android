@@ -426,7 +426,7 @@ class Purchases internal constructor(
      * If [PurchasesConfiguration.showDeclinedPaymentMessagesAutomatically] is enabled, this will be done
      * automatically on each Activity's onStart.
      *
-     * For more info: https://developer.android.com/google/play/billing/subscriptions#in-app-messaging
+     * For more info: https://rev.cat/googleplayinappmessaging
      */
     fun showDeclinedPaymentMessageIfNeeded(activity: Activity) {
         purchasesOrchestrator.showDeclinedPaymentMessageIfNeeded(activity)
