@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import androidx.compose.material3.ColorScheme
 import androidx.core.os.LocaleListCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -23,6 +24,7 @@ import com.revenuecat.purchases.ui.revenuecatui.extensions.getActivity
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ApplicationContext
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toPaywallViewState
+import com.revenuecat.purchases.ui.revenuecatui.helpers.validatedPaywall
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -33,6 +35,7 @@ internal interface PaywallViewModel {
     val state: StateFlow<PaywallViewState>
 
     fun refreshStateIfLocaleChanged()
+    fun refreshStateIfColorsChanged(colorScheme: ColorScheme)
     fun selectPackage(packageToSelect: TemplateConfiguration.PackageInfo)
 
     /**
@@ -46,11 +49,13 @@ internal interface PaywallViewModel {
     fun openURL(url: URL, context: Context)
 }
 
+@Suppress("TooManyFunctions")
 internal class PaywallViewModelImpl(
     applicationContext: ApplicationContext,
     private val mode: PaywallViewMode,
     private val offering: Offering?,
     private val listener: PaywallViewListener?,
+    colorScheme: ColorScheme,
 ) : ViewModel(), PaywallViewModel {
 
     private val variableDataProvider = VariableDataProvider(applicationContext)
@@ -59,6 +64,7 @@ internal class PaywallViewModelImpl(
         get() = _state.asStateFlow()
     private val _state: MutableStateFlow<PaywallViewState>
     private val _lastLocaleList = MutableStateFlow(getCurrentLocaleList())
+    private val _colorScheme = MutableStateFlow(colorScheme)
 
     init {
         _state = MutableStateFlow(offering?.calculateState() ?: PaywallViewState.Loading)
@@ -70,11 +76,14 @@ internal class PaywallViewModelImpl(
     override fun refreshStateIfLocaleChanged() {
         if (_lastLocaleList.value != getCurrentLocaleList()) {
             _lastLocaleList.value = getCurrentLocaleList()
-            if (offering == null) {
-                updateOffering()
-            } else {
-                _state.value = offering.calculateState()
-            }
+            refreshState()
+        }
+    }
+
+    override fun refreshStateIfColorsChanged(colorScheme: ColorScheme) {
+        if (_colorScheme.value != colorScheme) {
+            _colorScheme.value = colorScheme
+            refreshState()
         }
     }
 
@@ -83,6 +92,7 @@ internal class PaywallViewModelImpl(
             is PaywallViewState.Loaded -> {
                 currentState.copy(selectedPackage = packageToSelect)
             }
+
             else -> {
                 Logger.e("Unexpected state trying to select package: $currentState")
                 currentState
@@ -96,6 +106,7 @@ internal class PaywallViewModelImpl(
             is PaywallViewState.Loaded -> {
                 purchasePackage(activity, currentState.selectedPackage.rcPackage)
             }
+
             else -> {
                 Logger.e("Unexpected state trying to purchase package: $currentState")
             }
@@ -116,6 +127,14 @@ internal class PaywallViewModelImpl(
     override fun openURL(url: URL, context: Context) {
         val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url.toString()))
         context.startActivity(intent)
+    }
+
+    private fun refreshState() {
+        if (offering == null) {
+            updateOffering()
+        } else {
+            _state.value = offering.calculateState()
+        }
     }
 
     private fun purchasePackage(activity: Activity, packageToPurchase: Package) {
@@ -148,8 +167,14 @@ internal class PaywallViewModelImpl(
         }
     }
 
+    @Suppress("TooGenericExceptionCaught")
     private fun Offering.calculateState(): PaywallViewState {
-        return toPaywallViewState(variableDataProvider, mode)
+        if (availablePackages.isEmpty()) {
+            return PaywallViewState.Error("No packages available")
+        }
+        val (displayablePaywall, template, _) = validatedPaywall(_colorScheme.value)
+        // TODO-PAYWALLS: display error
+        return toPaywallViewState(variableDataProvider, mode, displayablePaywall, template)
     }
 
     private fun getCurrentLocaleList(): LocaleListCompat {

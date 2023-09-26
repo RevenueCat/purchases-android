@@ -13,14 +13,12 @@ internal object TemplateConfigurationFactory {
         paywallData: PaywallData,
         packages: List<Package>,
         activelySubscribedProductIdentifiers: Set<String>,
+        template: PaywallTemplate,
     ): TemplateConfiguration {
-        val paywallTemplate = PaywallTemplate.fromId(paywallData.templateName)
-            ?: throw IllegalArgumentException("Unknown template ${paywallData.templateName}")
-
         val (locale, localizedConfiguration) = paywallData.localizedConfiguration
-        val packageIds = paywallData.config.packages
-        require(packageIds.isNotEmpty()) { "No packages ids found in paywall data" }
-        require(packages.isNotEmpty()) { "No packages found in offering" }
+        val packageIds = paywallData.config.packages.takeUnless {
+            it.isEmpty()
+        } ?: packages.map { it.identifier }
         val images = TemplateConfiguration.Images(
             iconUri = paywallData.getUriFromImage(paywallData.config.images.icon),
             backgroundUri = paywallData.getUriFromImage(paywallData.config.images.background),
@@ -33,11 +31,11 @@ internal object TemplateConfigurationFactory {
             filter = packageIds,
             default = paywallData.config.defaultPackage,
             localization = localizedConfiguration,
-            configurationType = paywallTemplate.configurationType,
+            configurationType = template.configurationType,
             locale = locale,
         )
         return TemplateConfiguration(
-            template = paywallTemplate,
+            template = template,
             mode = mode,
             packages = packageConfiguration,
             configuration = paywallData.config,

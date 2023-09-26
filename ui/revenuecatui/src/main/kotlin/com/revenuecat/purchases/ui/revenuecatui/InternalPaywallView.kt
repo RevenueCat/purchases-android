@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.ui.revenuecatui
 
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -23,6 +24,8 @@ internal fun InternalPaywallView(
     viewModel: PaywallViewModel = getPaywallViewModel(offering = offering, listener = listener, mode = mode),
 ) {
     viewModel.refreshStateIfLocaleChanged()
+    val colors = MaterialTheme.colorScheme
+    viewModel.refreshStateIfColorsChanged(colors)
 
     when (val state = viewModel.state.collectAsState().value) {
         is PaywallViewState.Loading -> {
@@ -49,12 +52,14 @@ private fun getPaywallViewModel(
     offering: Offering?,
     listener: PaywallViewListener?,
 ): PaywallViewModel {
+    val applicationContext = LocalContext.current.applicationContext
     return viewModel<PaywallViewModelImpl>(
         factory = PaywallViewModelFactory(
-            LocalContext.current.applicationContext.toAndroidContext(),
+            applicationContext.toAndroidContext(),
             mode,
             offering,
             listener,
+            MaterialTheme.colorScheme,
         ),
     )
 }

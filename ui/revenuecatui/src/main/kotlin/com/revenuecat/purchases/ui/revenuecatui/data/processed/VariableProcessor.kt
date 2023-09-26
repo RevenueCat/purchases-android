@@ -7,18 +7,40 @@ import java.util.Locale
 internal object VariableProcessor {
     private val REGEX = Regex("\\{\\{\\s[a-zA-Z0-9_]+\\s\\}\\}")
 
+    /**
+     * Returns a set of invalid variables in the String
+     */
+    fun validateVariables(originalString: String): Set<String> {
+        val errors = mutableListOf<String>()
+        handleVariablesAndReplace(originalString) { variable ->
+            VariableName.valueOfIdentifier(variable) ?: errors.add(variable)
+            null
+        }
+        return errors.toSet()
+    }
+
     fun processVariables(
         variableDataProvider: VariableDataProvider,
         originalString: String,
         rcPackage: Package,
         locale: Locale,
     ): String {
-        var resultString = originalString
-        REGEX.findAll(originalString).toList().reversed().forEach { matchResult ->
+        val resultString = handleVariablesAndReplace(originalString) { variable ->
+            variableValue(variableDataProvider, variable, rcPackage, locale)
+        }
+        return resultString
+    }
+
+    private fun handleVariablesAndReplace(
+        string: String,
+        executeAndReplaceWith: (String) -> String?,
+    ): String {
+        var resultString = string
+        REGEX.findAll(string).toList().reversed().forEach { matchResult ->
             val variableString = matchResult.value
             val variableWithoutBraces = variableString.substring(2, variableString.length - 2).trim()
-            val newValue = variableValue(variableDataProvider, variableWithoutBraces, rcPackage, locale)
-            newValue?.let {
+            val replacement = executeAndReplaceWith(variableWithoutBraces)
+            replacement?.let {
                 resultString = resultString.replaceRange(matchResult.range, it)
             }
         }
