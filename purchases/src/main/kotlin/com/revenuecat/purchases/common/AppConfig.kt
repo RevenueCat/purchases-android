@@ -57,6 +57,7 @@ internal class AppConfig(
         if (forceServerErrors != other.forceServerErrors) return false
         if (forceSigningErrors != other.forceSigningErrors) return false
         if (baseURL != other.baseURL) return false
+        if (showDeclinedPaymentMessagesAutomatically != other.showDeclinedPaymentMessagesAutomatically) return false
 
         return true
     }
@@ -72,6 +73,7 @@ internal class AppConfig(
         result = 31 * result + forceServerErrors.hashCode()
         result = 31 * result + forceSigningErrors.hashCode()
         result = 31 * result + baseURL.hashCode()
+        result = 31 * result + showDeclinedPaymentMessagesAutomatically.hashCode()
         return result
     }
 
@@ -84,6 +86,7 @@ internal class AppConfig(
             "versionName='$versionName', " +
             "packageName='$packageName', " +
             "finishTransactions=$finishTransactions, " +
+            "showDeclinedPaymentMessagesAutomatically=$showDeclinedPaymentMessagesAutomatically, " +
             "baseURL=$baseURL)"
     }
 }

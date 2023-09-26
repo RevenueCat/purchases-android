@@ -33,6 +33,7 @@ class AppConfigTest {
         val appConfig = AppConfig(
             context = mockContext,
             observerMode = false,
+            showDeclinedPaymentMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
             store = Store.PLAY_STORE
@@ -51,6 +52,7 @@ class AppConfigTest {
         val appConfig = AppConfig(
             context = mockContext,
             observerMode = false,
+            showDeclinedPaymentMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
             store = Store.PLAY_STORE
@@ -71,6 +73,7 @@ class AppConfigTest {
         val appConfig = AppConfig(
             context = mockContext,
             observerMode = false,
+            showDeclinedPaymentMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
             store = Store.PLAY_STORE
@@ -90,6 +93,7 @@ class AppConfigTest {
         val appConfig = AppConfig(
             context = mockContext,
             observerMode = false,
+            showDeclinedPaymentMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
             store = Store.PLAY_STORE
@@ -110,6 +114,7 @@ class AppConfigTest {
         val appConfig = AppConfig(
             context = mockContext,
             observerMode = false,
+            showDeclinedPaymentMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
             store = Store.PLAY_STORE
@@ -118,10 +123,33 @@ class AppConfigTest {
     }
 
     @Test
+    fun `showDeclinedPaymentMessagesAutomatically is set correctly`() {
+        val appConfig = AppConfig(
+            context = mockk(relaxed = true),
+            observerMode = false,
+            showDeclinedPaymentMessagesAutomatically = false,
+            platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
+            proxyURL = null,
+            store = Store.PLAY_STORE
+        )
+        assertThat(appConfig.showDeclinedPaymentMessagesAutomatically).isFalse
+        val appConfig2 = AppConfig(
+            context = mockk(relaxed = true),
+            observerMode = false,
+            showDeclinedPaymentMessagesAutomatically = true,
+            platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
+            proxyURL = null,
+            store = Store.PLAY_STORE
+        )
+        assertThat(appConfig2.showDeclinedPaymentMessagesAutomatically).isTrue
+    }
+
+    @Test
     fun `finishTransactions is set correctly when observer mode is false`() {
         val appConfig = AppConfig(
             context = mockk(relaxed = true),
             observerMode = false,
+            showDeclinedPaymentMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
             store = Store.PLAY_STORE
@@ -134,6 +162,7 @@ class AppConfigTest {
         val appConfig = AppConfig(
             context = mockk(relaxed = true),
             observerMode = true,
+            showDeclinedPaymentMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
             store = Store.PLAY_STORE
@@ -147,6 +176,7 @@ class AppConfigTest {
         val appConfig = AppConfig(
             context = mockk(relaxed = true),
             observerMode = false,
+            showDeclinedPaymentMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = expected,
             store = Store.PLAY_STORE
@@ -160,6 +190,7 @@ class AppConfigTest {
         val appConfig = AppConfig(
             context = mockk(relaxed = true),
             observerMode = false,
+            showDeclinedPaymentMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
             store = Store.PLAY_STORE
@@ -172,6 +203,7 @@ class AppConfigTest {
         val appConfig = AppConfig(
             context = mockk(relaxed = true),
             observerMode = false,
+            showDeclinedPaymentMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
             store = Store.PLAY_STORE
@@ -184,6 +216,7 @@ class AppConfigTest {
         val appConfig = AppConfig(
             context = mockk(relaxed = true),
             observerMode = false,
+            showDeclinedPaymentMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
             store = Store.PLAY_STORE
@@ -196,6 +229,7 @@ class AppConfigTest {
         val appConfig = AppConfig(
             context = mockk(relaxed = true),
             observerMode = false,
+            showDeclinedPaymentMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
             store = Store.PLAY_STORE,
@@ -205,6 +239,7 @@ class AppConfigTest {
         val appConfig2 = AppConfig(
             context = mockk(relaxed = true),
             observerMode = false,
+            showDeclinedPaymentMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
             store = Store.PLAY_STORE,
@@ -218,6 +253,7 @@ class AppConfigTest {
         val x = AppConfig(
             context = mockk(relaxed = true),
             observerMode = false,
+            showDeclinedPaymentMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
             store = Store.PLAY_STORE
@@ -225,6 +261,7 @@ class AppConfigTest {
         val y = AppConfig(
             context = mockk(relaxed = true),
             observerMode = false,
+            showDeclinedPaymentMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
             store = Store.PLAY_STORE
@@ -238,6 +275,7 @@ class AppConfigTest {
         val x = AppConfig(
             context = mockk(relaxed = true),
             observerMode = false,
+            showDeclinedPaymentMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
             store = Store.PLAY_STORE
@@ -245,6 +283,7 @@ class AppConfigTest {
         var y = AppConfig(
             context = mockk(relaxed = true),
             observerMode = true,
+            showDeclinedPaymentMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
             store = Store.PLAY_STORE
@@ -255,6 +294,7 @@ class AppConfigTest {
         y = AppConfig(
             context = mockk(relaxed = true),
             observerMode = false,
+            showDeclinedPaymentMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.1.0"),
             proxyURL = null,
             store = Store.PLAY_STORE
@@ -265,6 +305,7 @@ class AppConfigTest {
         y = AppConfig(
             context = mockk(relaxed = true),
             observerMode = false,
+            showDeclinedPaymentMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = URL("https://a.com"),
             store = Store.PLAY_STORE
@@ -275,6 +316,7 @@ class AppConfigTest {
         y = AppConfig(
             context = mockk(relaxed = true),
             observerMode = false,
+            showDeclinedPaymentMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
             store = Store.PLAY_STORE,
@@ -289,6 +331,7 @@ class AppConfigTest {
         val x = AppConfig(
             context = mockk(relaxed = true),
             observerMode = false,
+            showDeclinedPaymentMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
             store = Store.PLAY_STORE
@@ -296,6 +339,7 @@ class AppConfigTest {
         val y = AppConfig(
             context = mockk(relaxed = true),
             observerMode = false,
+            showDeclinedPaymentMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
             store = Store.PLAY_STORE
@@ -308,6 +352,7 @@ class AppConfigTest {
         val x = AppConfig(
             context = mockk(relaxed = true),
             observerMode = false,
+            showDeclinedPaymentMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
             store = Store.PLAY_STORE
@@ -321,6 +366,7 @@ class AppConfigTest {
                 "versionName='', " +
                 "packageName='', " +
                 "finishTransactions=true, " +
+                "showDeclinedPaymentMessagesAutomatically=false, " +
                 "baseURL=https://api.revenuecat.com/)")
     }
 }

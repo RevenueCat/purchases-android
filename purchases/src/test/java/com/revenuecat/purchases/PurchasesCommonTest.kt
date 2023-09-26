@@ -1497,6 +1497,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         purchases.purchasesOrchestrator.appConfig = AppConfig(
             mockContext,
             false,
+            false,
             PlatformInfo("", null),
             null,
             Store.AMAZON
@@ -1660,88 +1661,6 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         purchases.purchasesOrchestrator.onAppForegrounded()
         verify(exactly = 1) {
             mockPostPendingTransactionsHelper.syncPendingPurchaseQueue(any())
-        }
-    }
-
-    // endregion
-
-    // region app lifecycle
-
-    @Test
-    fun `state appInBackground is updated when app foregrounded`() {
-        mockOfferingsManagerAppForeground()
-        purchases.purchasesOrchestrator.state = purchases.purchasesOrchestrator.state.copy(appInBackground = true)
-        Purchases.sharedInstance.purchasesOrchestrator.onAppForegrounded()
-        assertThat(purchases.purchasesOrchestrator.state.appInBackground).isFalse()
-    }
-
-    @Test
-    fun `state appInBackground is updated when app backgrounded`() {
-        purchases.purchasesOrchestrator.state = purchases.purchasesOrchestrator.state.copy(appInBackground = false)
-        Purchases.sharedInstance.purchasesOrchestrator.onAppBackgrounded()
-        assertThat(purchases.purchasesOrchestrator.state.appInBackground).isTrue()
-    }
-
-    @Test
-    fun `force update of caches when app foregrounded for the first time`() {
-        mockOfferingsManagerAppForeground()
-        purchases.purchasesOrchestrator.state = purchases.purchasesOrchestrator.state.copy(appInBackground = false, firstTimeInForeground = true)
-        Purchases.sharedInstance.purchasesOrchestrator.onAppForegrounded()
-        assertThat(purchases.purchasesOrchestrator.state.firstTimeInForeground).isFalse()
-        verify(exactly = 1) {
-            mockCustomerInfoHelper.retrieveCustomerInfo(
-                appUserId,
-                CacheFetchPolicy.FETCH_CURRENT,
-                false,
-                any()
-            )
-        }
-        verify(exactly = 0) {
-            mockCache.isCustomerInfoCacheStale(appInBackground = false, appUserID = appUserId)
-        }
-    }
-
-    @Test
-    fun `don't force update of caches when app foregrounded not for the first time`() {
-        every {
-            mockCache.isCustomerInfoCacheStale(appInBackground = false, appUserID = appUserId)
-        } returns false
-        mockOfferingsManagerAppForeground()
-        purchases.purchasesOrchestrator.state = purchases.purchasesOrchestrator.state.copy(appInBackground = false, firstTimeInForeground = false)
-        Purchases.sharedInstance.purchasesOrchestrator.onAppForegrounded()
-        assertThat(purchases.purchasesOrchestrator.state.firstTimeInForeground).isFalse()
-        verify(exactly = 0) {
-            mockCustomerInfoHelper.retrieveCustomerInfo(
-                appUserId,
-                CacheFetchPolicy.FETCH_CURRENT,
-                false,
-                any()
-            )
-        }
-        verify(exactly = 1) {
-            mockCache.isCustomerInfoCacheStale(appInBackground = false, appUserID = appUserId)
-        }
-    }
-
-    @Test
-    fun `update of caches when app foregrounded not for the first time and caches stale`() {
-        every {
-            mockCache.isCustomerInfoCacheStale(appInBackground = false, appUserID = appUserId)
-        } returns true
-        mockOfferingsManagerAppForeground()
-        purchases.purchasesOrchestrator.state = purchases.purchasesOrchestrator.state.copy(appInBackground = false, firstTimeInForeground = false)
-        Purchases.sharedInstance.purchasesOrchestrator.onAppForegrounded()
-        assertThat(purchases.purchasesOrchestrator.state.firstTimeInForeground).isFalse()
-        verify(exactly = 1) {
-            mockCustomerInfoHelper.retrieveCustomerInfo(
-                appUserId,
-                CacheFetchPolicy.FETCH_CURRENT,
-                false,
-                any()
-            )
-        }
-        verify(exactly = 1) {
-            mockCache.isCustomerInfoCacheStale(appInBackground = false, appUserID = appUserId)
         }
     }
 

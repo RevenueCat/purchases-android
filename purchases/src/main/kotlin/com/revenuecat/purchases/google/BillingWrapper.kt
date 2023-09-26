@@ -763,18 +763,26 @@ internal class BillingWrapper(
             .build()
         val weakActivity = WeakReference(activity)
 
-        withConnectedClient {
-            val activity = weakActivity.get() ?: run {
-                debugLog("Activity is null, not showing Google Play in-app message.")
-                return@withConnectedClient
+        executeRequestOnUIThread { error ->
+            if (error != null) {
+                errorLog(BillingStrings.BILLING_CONNECTION_ERROR_INAPP_MESSAGES.format(error))
+                return@executeRequestOnUIThread
             }
-            showInAppMessages(activity, inAppMessageParams) { inAppMessageResult ->
-                if (inAppMessageResult.responseCode == InAppMessageResult.InAppMessageResponseCode.NO_ACTION_NEEDED) {
-                    verboseLog("No Google Play in-app message was available.")
-                } else if (inAppMessageResult.responseCode
-                    == InAppMessageResult.InAppMessageResponseCode.SUBSCRIPTION_STATUS_UPDATED
-                ) {
-                    debugLog("Subscription status was updated from In-App Message.")
+            withConnectedClient {
+                val activity = weakActivity.get() ?: run {
+                    debugLog("Activity is null, not showing Google Play in-app message.")
+                    return@withConnectedClient
+                }
+                showInAppMessages(activity, inAppMessageParams) { inAppMessageResult ->
+                    when (val responseCode = inAppMessageResult.responseCode) {
+                        InAppMessageResult.InAppMessageResponseCode.NO_ACTION_NEEDED -> {
+                            verboseLog(BillingStrings.BILLING_INAPP_MESSAGE_NONE)
+                        }
+                        InAppMessageResult.InAppMessageResponseCode.SUBSCRIPTION_STATUS_UPDATED -> {
+                            debugLog(BillingStrings.BILLING_INAPP_MESSAGE_UPDATE)
+                        }
+                        else -> errorLog(BillingStrings.BILLING_INAPP_MESSAGE_UNEXPECTED_CODE.format(responseCode))
+                    }
                 }
             }
         }

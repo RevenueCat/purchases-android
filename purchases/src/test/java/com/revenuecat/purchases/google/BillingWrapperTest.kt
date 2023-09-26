@@ -1,7 +1,6 @@
 package com.revenuecat.purchases.google
 
 import android.app.Activity
-import android.app.Application
 import android.content.Context
 import android.content.Intent
 import android.os.Handler
@@ -15,6 +14,9 @@ import com.android.billingclient.api.BillingFlowParams.ProductDetailsParams
 import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.ConsumeParams
 import com.android.billingclient.api.ConsumeResponseListener
+import com.android.billingclient.api.InAppMessageResponseListener
+import com.android.billingclient.api.InAppMessageResult
+import com.android.billingclient.api.InAppMessageResult.InAppMessageResponseCode
 import com.android.billingclient.api.ProductDetails
 import com.android.billingclient.api.ProductDetailsResponseListener
 import com.android.billingclient.api.Purchase
@@ -25,9 +27,13 @@ import com.android.billingclient.api.PurchasesUpdatedListener
 import com.android.billingclient.api.QueryProductDetailsParams
 import com.android.billingclient.api.QueryPurchaseHistoryParams
 import com.android.billingclient.api.QueryPurchasesParams
+import com.revenuecat.purchases.LogMessage
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.assertDebugLog
+import com.revenuecat.purchases.assertLog
+import com.revenuecat.purchases.assertVerboseLog
 import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.ReplaceProductInfo
@@ -46,6 +52,7 @@ import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.models.SubscriptionOptions
+import com.revenuecat.purchases.strings.BillingStrings
 import com.revenuecat.purchases.utils.createMockProductDetailsNoOffers
 import com.revenuecat.purchases.utils.mockOneTimePurchaseOfferDetails
 import com.revenuecat.purchases.utils.mockProductDetails
@@ -2624,7 +2631,65 @@ class BillingWrapperTest {
         }
     }
 
-    // endregion
+    // endregion diagnostics tracking
+
+    // region inapp messages
+
+    @Test
+    fun `showing inapp messages triggers connection if not connected`() {
+        every { mockClient.isReady } returns false
+
+        wrapper.showInAppMessagesIfNeeded(mockk())
+
+        // One for the initial, another for this test since isReady is false
+        verify(exactly = 2) { mockClient.startConnection(any()) }
+    }
+
+    @Test
+    fun `showing inapp messages calls show inapp messages correctly`() {
+        val activity = mockk<Activity>()
+        every { mockClient.showInAppMessages(activity, any(), any()) } returns billingClientOKResult
+
+        wrapper.showInAppMessagesIfNeeded(activity)
+
+        verify(exactly = 1) { mockClient.showInAppMessages(activity, any(), any()) }
+    }
+
+    @Test
+    fun `showing inapp messages handles inapp messages listener response correctly when no messages`() {
+        val activity = mockk<Activity>()
+        val listenerSlot = slot<InAppMessageResponseListener>()
+        every { mockClient.showInAppMessages(activity, any(), capture(listenerSlot)) } returns billingClientOKResult
+
+        wrapper.showInAppMessagesIfNeeded(activity)
+
+        assertThat(listenerSlot.captured).isNotNull
+        val purchaseToken = null
+        assertVerboseLog(BillingStrings.BILLING_INAPP_MESSAGE_NONE) {
+            listenerSlot.captured.onInAppMessageResponse(
+                InAppMessageResult(InAppMessageResponseCode.NO_ACTION_NEEDED, purchaseToken)
+            )
+        }
+    }
+
+    @Test
+    fun `showing inapp messages handles inapp messages listener response correctly when subscription updated`() {
+        val activity = mockk<Activity>()
+        val listenerSlot = slot<InAppMessageResponseListener>()
+        every { mockClient.showInAppMessages(activity, any(), capture(listenerSlot)) } returns billingClientOKResult
+
+        wrapper.showInAppMessagesIfNeeded(activity)
+
+        assertThat(listenerSlot.captured).isNotNull
+        val purchaseToken = null
+        assertDebugLog(BillingStrings.BILLING_INAPP_MESSAGE_UPDATE) {
+            listenerSlot.captured.onInAppMessageResponse(
+                InAppMessageResult(InAppMessageResponseCode.SUBSCRIPTION_STATUS_UPDATED, purchaseToken)
+            )
+        }
+    }
+
+    // endregion inapp messages
 
     private fun mockEmptyProductDetailsResponse() {
         val slot = slot<ProductDetailsResponseListener>()
