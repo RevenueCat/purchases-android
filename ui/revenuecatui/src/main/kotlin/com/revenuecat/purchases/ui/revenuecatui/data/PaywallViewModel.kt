@@ -57,7 +57,6 @@ internal class PaywallViewModelImpl(
 ) : ViewModel(), PaywallViewModel {
 
     private val variableDataProvider = VariableDataProvider(applicationContext)
-    private val applicationPackageName = applicationContext.getApplicationPackageName()
 
     override val state: StateFlow<PaywallViewState>
         get() = _state.asStateFlow()
@@ -159,7 +158,7 @@ internal class PaywallViewModelImpl(
         if (availablePackages.isEmpty()) {
             return PaywallViewState.Error("No packages available")
         }
-        val (displayablePaywall, template, _) = validatedPaywall(applicationPackageName, colors)
+        val (displayablePaywall, template, _) = validatedPaywall(_colors.value)
         // TODO-PAYWALLS: display error
         return toPaywallViewState(variableDataProvider, mode, displayablePaywall, template)
     }

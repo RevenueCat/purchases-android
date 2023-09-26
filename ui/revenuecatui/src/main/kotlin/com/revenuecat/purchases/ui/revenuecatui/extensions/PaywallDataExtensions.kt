@@ -16,15 +16,13 @@ import java.util.Locale
  */
 internal fun PaywallData.Companion.createDefault(
     packages: List<Package>,
-    packageName: String,
     currentColors: Colors,
 ): PaywallData {
-    return PaywallData.createDefaultForIdentifiers(packages.map { it.identifier }, packageName, currentColors)
+    return PaywallData.createDefaultForIdentifiers(packages.map { it.identifier }, currentColors)
 }
 
 internal fun PaywallData.Companion.createDefaultForIdentifiers(
     packageIdentifiers: List<String>,
-    packageName: String,
     currentColors: Colors,
 ): PaywallData {
     return PaywallData(
@@ -40,7 +38,7 @@ internal fun PaywallData.Companion.createDefaultForIdentifiers(
             displayRestorePurchases = true,
         ),
         localization = mapOf(Locale.US.toString() to PaywallData.defaultLocalization),
-        assetBaseURL = PaywallData.defaultTemplateBaseURL(packageName),
+        assetBaseURL = PaywallData.defaultTemplateBaseURL,
         revision = PaywallData.revisionID,
     )
 }
@@ -71,8 +69,8 @@ private val PaywallData.Companion.defaultLocalization: PaywallData.LocalizedConf
         offerDetailsWithIntroOffer = "Start your {{ sub_offer_duration }} trial, then {{ total_price_and_per_month }}.",
     )
 
-private fun PaywallData.Companion.defaultTemplateBaseURL(packageName: String): URL =
-    URL("android.resource://$packageName/")
+private val PaywallData.Companion.defaultTemplateBaseURL: URL
+    get() = URL("")
 
 private fun PaywallData.Companion.defaultColors(currentColors: Colors): PaywallData.Configuration.ColorInformation {
     return PaywallData.Configuration.ColorInformation(
