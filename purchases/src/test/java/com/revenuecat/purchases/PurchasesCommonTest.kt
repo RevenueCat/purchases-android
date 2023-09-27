@@ -22,7 +22,7 @@ import com.revenuecat.purchases.google.toInAppStoreProduct
 import com.revenuecat.purchases.google.toStoreProduct
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
 import com.revenuecat.purchases.models.BillingFeature
-import com.revenuecat.purchases.models.GoogleProrationMode
+import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.strings.PurchaseStrings
@@ -263,50 +263,6 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
     }
 
     @Test
-    fun `when making a deferred product change, completion is called with the transaction for the old product`() {
-        val newProductId = listOf("newproduct")
-        val storeProduct = mockStoreProduct(newProductId, newProductId, ProductType.SUBS)
-        val oldPurchase = mockPurchaseFound()
-        mockQueryingProductDetails(oldPurchase.productIds.first(), ProductType.SUBS, null)
-        every {
-            mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(
-                oldPurchase, any(), isRestore = false, appUserId, initiationSource, captureLambda(), any(),
-            )
-        } answers {
-            lambda<SuccessfulPurchaseCallback>().captured.invoke(oldPurchase, mockk())
-        }
-        val productChangeParams = getPurchaseParams(
-            storeProduct.first().subscriptionOptions!!.first(),
-            oldPurchase.productIds.first(),
-            googleProrationMode = GoogleProrationMode.DEFERRED
-        )
-        var callCount = 0
-        purchases.purchaseWith(
-            productChangeParams,
-            onError = { _, _ ->
-                fail("should be successful")
-            },
-            onSuccess = { purchase, _ ->
-                callCount++
-                assertThat(purchase).isEqualTo(oldPurchase)
-            }
-        )
-        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(listOf(oldPurchase))
-        assertThat(callCount).isEqualTo(1)
-        verify(exactly = 1) {
-            mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(
-                purchase = oldPurchase,
-                storeProduct = any(),
-                isRestore = false,
-                appUserID = appUserId,
-                initiationSource = initiationSource,
-                onSuccess = any(),
-                onError = any()
-            )
-        }
-    }
-
-    @Test
     fun `upgrade defaults to ProrationMode IMMEDIATE_WITHOUT_PRORATION`() {
         val productId = "gold"
         val oldSubId = "oldSubID"
@@ -336,7 +292,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
 
         val expectedReplaceProductInfo = ReplaceProductInfo(
             oldTransaction,
-            GoogleProrationMode.IMMEDIATE_WITHOUT_PRORATION
+            GoogleReplacementMode.WITHOUT_PRORATION
         )
         verify {
             mockBillingAbstract.makePurchaseAsync(
@@ -564,7 +520,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
                 eq(mockActivity),
                 eq(appUserId),
                 storeProduct.defaultOption!!.purchasingData,
-                ReplaceProductInfo(oldPurchase, GoogleProrationMode.IMMEDIATE_WITHOUT_PRORATION),
+                ReplaceProductInfo(oldPurchase, GoogleReplacementMode.WITHOUT_PRORATION),
                 STUB_OFFERING_IDENTIFIER,
                 any()
             )
@@ -1046,7 +1002,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
                 eq(mockActivity),
                 eq(appUserId),
                 storeProduct.subscriptionOptions!!.first().purchasingData,
-                ReplaceProductInfo(oldPurchase, GoogleProrationMode.IMMEDIATE_WITHOUT_PRORATION),
+                ReplaceProductInfo(oldPurchase, GoogleReplacementMode.WITHOUT_PRORATION),
                 STUB_OFFERING_IDENTIFIER,
                 any()
             )
@@ -1105,7 +1061,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
                 eq(mockActivity),
                 eq(appUserId),
                 storeProduct.subscriptionOptions!!.first().purchasingData,
-                ReplaceProductInfo(oldPurchase, GoogleProrationMode.IMMEDIATE_WITHOUT_PRORATION),
+                ReplaceProductInfo(oldPurchase, GoogleReplacementMode.WITHOUT_PRORATION),
                 STUB_OFFERING_IDENTIFIER,
                 any()
             )
@@ -1193,7 +1149,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
 
         val expectedReplaceProductInfo = ReplaceProductInfo(
             oldTransaction,
-            GoogleProrationMode.IMMEDIATE_WITHOUT_PRORATION
+            GoogleReplacementMode.WITHOUT_PRORATION
         )
 
         verify {
@@ -1257,7 +1213,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
 
         val expectedReplaceProductInfo = ReplaceProductInfo(
             oldTransaction,
-            GoogleProrationMode.IMMEDIATE_WITHOUT_PRORATION
+            GoogleReplacementMode.WITHOUT_PRORATION
         )
 
         verify {

@@ -31,7 +31,7 @@ internal fun infoLog(message: String) {
 }
 
 // Public because it's been used in the hybrids
-fun warnLog(message: String) {
+internal fun warnLog(message: String) {
     logIfEnabled(LogLevel.WARN, currentLogHandler::w, message)
 }
 

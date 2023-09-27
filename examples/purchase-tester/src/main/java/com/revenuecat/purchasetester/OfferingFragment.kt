@@ -22,8 +22,8 @@ import com.revenuecat.purchases.PurchasesTransactionException
 import com.revenuecat.purchases.awaitPurchase
 import com.revenuecat.purchases.getCustomerInfoWith
 import com.revenuecat.purchases.getOfferingsWith
-import com.revenuecat.purchases.models.GoogleProrationMode
 import com.revenuecat.purchases.models.GooglePurchasingData
+import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.SubscriptionOption
@@ -137,12 +137,12 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
     ) {
         toggleLoadingIndicator(true)
         if (isUpgrade) {
-            promptForProductChangeInfo { oldProductId, prorationMode ->
+            promptForProductChangeInfo { oldProductId, replacementMode ->
                 oldProductId?.let {
                     purchaseParamsBuilder.oldProductId(it)
 
-                    prorationMode?.let {
-                        purchaseParamsBuilder.googleProrationMode(prorationMode)
+                    replacementMode?.let {
+                        purchaseParamsBuilder.googleReplacementMode(replacementMode)
                     }
 
                     if (isPersonalizedPrice) {
@@ -203,12 +203,12 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
         }
     }
 
-    private fun promptForProductChangeInfo(callback: (String?, GoogleProrationMode?) -> Unit) {
+    private fun promptForProductChangeInfo(callback: (String?, GoogleReplacementMode?) -> Unit) {
         showOldSubIdPicker { subId ->
             subId?.let {
-                showProrationModePicker { prorationMode, error ->
+                showReplacementModePicker { replacementMode, error ->
                     if (error == null) {
-                        prorationMode?.let {
+                        replacementMode?.let {
                             callback(subId, it)
                         } ?: callback(subId, null)
                     } else {
@@ -270,19 +270,19 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
             .show()
     }
 
-    private fun showProrationModePicker(callback: (GoogleProrationMode?, Error?) -> Unit) {
-        val prorationModeOptions = GoogleProrationMode.values()
-        var selectedProrationMode: GoogleProrationMode? = null
+    private fun showReplacementModePicker(callback: (GoogleReplacementMode?, Error?) -> Unit) {
+        val replacementModeOptions = GoogleReplacementMode.values()
+        var selectedReplacementMode: GoogleReplacementMode? = null
 
-        val prorationModeNames = prorationModeOptions.map { it.name }.toTypedArray()
+        val replacementModeNames = replacementModeOptions.map { it.name }.toTypedArray()
         MaterialAlertDialogBuilder(requireContext())
-            .setTitle("Choose ProrationMode")
-            .setSingleChoiceItems(prorationModeNames, -1) { _, selectedIndex ->
-                selectedProrationMode = prorationModeOptions.elementAt(selectedIndex)
+            .setTitle("Choose ReplacementMode")
+            .setSingleChoiceItems(replacementModeNames, -1) { _, selectedIndex ->
+                selectedReplacementMode = replacementModeOptions.elementAt(selectedIndex)
             }
             .setPositiveButton("Start purchase") { dialog, _ ->
                 dialog.dismiss()
-                callback(selectedProrationMode, null)
+                callback(selectedReplacementMode, null)
             }
             .setNegativeButton("Cancel purchase") { dialog, _ ->
                 dialog.dismiss()

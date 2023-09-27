@@ -2,6 +2,7 @@ package com.revenuecat.purchases
 
 import android.app.Activity
 import com.revenuecat.purchases.models.GoogleProrationMode
+import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.SubscriptionOption
@@ -10,7 +11,7 @@ data class PurchaseParams(val builder: Builder) {
 
     val isPersonalizedPrice: Boolean?
     val oldProductId: String?
-    val googleProrationMode: GoogleProrationMode
+    val googleReplacementMode: GoogleReplacementMode
 
     @get:JvmSynthetic
     internal val purchasingData: PurchasingData
@@ -24,7 +25,7 @@ data class PurchaseParams(val builder: Builder) {
     init {
         this.isPersonalizedPrice = builder.isPersonalizedPrice
         this.oldProductId = builder.oldProductId
-        this.googleProrationMode = builder.googleProrationMode
+        this.googleReplacementMode = builder.googleReplacementMode
         this.purchasingData = builder.purchasingData
         this.activity = builder.activity
         this.presentedOfferingIdentifier = builder.presentedOfferingIdentifier
@@ -68,7 +69,7 @@ data class PurchaseParams(val builder: Builder) {
 
         @set:JvmSynthetic
         @get:JvmSynthetic
-        internal var googleProrationMode: GoogleProrationMode = GoogleProrationMode.IMMEDIATE_WITHOUT_PRORATION
+        internal var googleReplacementMode: GoogleReplacementMode = GoogleReplacementMode.WITHOUT_PRORATION
 
         /*
          * Indicates personalized pricing on products available for purchase in the EU.
@@ -100,8 +101,22 @@ data class PurchaseParams(val builder: Builder) {
          *
          * Only applied for Play Store product changes. Ignored for Amazon Appstore purchases.
          */
+        @Deprecated(
+            "Use googleReplacementMode()",
+            ReplaceWith("googleReplacementMode()"),
+        )
         fun googleProrationMode(googleProrationMode: GoogleProrationMode) = apply {
-            this.googleProrationMode = googleProrationMode
+            this.googleReplacementMode = googleProrationMode.asGoogleReplacementMode
+        }
+
+        /*
+         * The [GoogleReplacementMode] to use when replacing the given oldProductId. Defaults to
+         * [GoogleReplacementMode.WITHOUT_PRORATION].
+         *
+         * Only applied for Play Store product changes. Ignored for Amazon Appstore purchases.
+         */
+        fun googleReplacementMode(googleReplacementMode: GoogleReplacementMode) = apply {
+            this.googleReplacementMode = googleReplacementMode
         }
 
         open fun build(): PurchaseParams {

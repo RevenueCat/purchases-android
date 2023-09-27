@@ -6,7 +6,7 @@ import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.utils.toMap
 import org.json.JSONObject
 
-const val RECEIPTS_TO_SKUS_KEY = "receiptsToSkus"
+private const val RECEIPTS_TO_SKUS_KEY = "receiptsToSkus"
 
 internal class AmazonCache(
     private val deviceCache: DeviceCache,
