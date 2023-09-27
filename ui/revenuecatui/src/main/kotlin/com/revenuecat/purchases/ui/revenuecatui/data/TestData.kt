@@ -166,7 +166,30 @@ internal object TestData {
                     ),
                     PaywallData.LocalizedConfiguration.Feature(
                         title = "Day 14",
-                        content = "You'll automatically get subscribed. Cancel anytime before if you didn't love our app.",
+                        content = "You'll automatically get subscribed. " +
+                            "Cancel anytime before if you didn't love our app.",
+                        iconID = "attachment",
+                    ),
+                    PaywallData.LocalizedConfiguration.Feature(
+                        title = "Today",
+                        content = "Full access to 1000+ workouts plus free meal plan worth {{ price }}.",
+                        iconID = "tick",
+                    ),
+                    PaywallData.LocalizedConfiguration.Feature(
+                        title = "Day 7",
+                        content = "Get a reminder about when your trial is about to end.",
+                        iconID = "notification",
+                    ),
+                    PaywallData.LocalizedConfiguration.Feature(
+                        title = "Day 14",
+                        content = "You'll automatically get subscribed. " +
+                            "Cancel anytime before if you didn't love our app.",
+                        iconID = "attachment",
+                    ),
+                    PaywallData.LocalizedConfiguration.Feature(
+                        title = "Day 14",
+                        content = "You'll automatically get subscribed. " +
+                            "Cancel anytime before if you didn't love our app.",
                         iconID = "attachment",
                     ),
                 ),
@@ -196,7 +219,8 @@ internal object TestData {
                     ),
                 ),
                 offerDetails = "{{ total_price_and_per_month }}",
-                offerDetailsWithIntroOffer = "{{ total_price_and_per_month }} después de {{ sub_offer_duration }} de prueba",
+                offerDetailsWithIntroOffer = "{{ total_price_and_per_month }} después de" +
+                    " {{ sub_offer_duration }} de prueba",
             ),
         ),
         assetBaseURL = Constants.assetBaseURL,
