@@ -3,6 +3,7 @@ package com.revenuecat.purchases.ui.revenuecatui
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalInspectionMode
@@ -67,4 +68,5 @@ private fun getPaywallViewModel(
 }
 
 @Composable
+@ReadOnlyComposable
 private fun isInPreviewMode() = LocalInspectionMode.current
