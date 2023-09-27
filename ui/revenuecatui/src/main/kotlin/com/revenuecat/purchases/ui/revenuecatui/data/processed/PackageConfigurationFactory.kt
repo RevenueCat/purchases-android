@@ -29,7 +29,6 @@ internal object PackageConfigurationFactory {
         if (filteredRCPackages.isEmpty()) {
             return Result.failure(PackageConfigurationError("No packages found for ids $filter"))
         }
-        require(filteredRCPackages.isNotEmpty()) { "No packages found for ids $filter" }
         val packageInfos = filteredRCPackages.map {
             TemplateConfiguration.PackageInfo(
                 rcPackage = it,
