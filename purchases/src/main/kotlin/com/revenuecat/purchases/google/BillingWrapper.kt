@@ -49,8 +49,8 @@ import com.revenuecat.purchases.common.sha256
 import com.revenuecat.purchases.common.toHumanReadableDescription
 import com.revenuecat.purchases.common.verboseLog
 import com.revenuecat.purchases.models.GooglePurchasingData
-import com.revenuecat.purchases.models.InAppMessageType
 import com.revenuecat.purchases.models.GoogleReplacementMode
+import com.revenuecat.purchases.models.InAppMessageType
 import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreTransaction
