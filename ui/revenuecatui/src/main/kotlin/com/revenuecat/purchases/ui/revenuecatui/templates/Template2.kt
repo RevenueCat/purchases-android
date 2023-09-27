@@ -30,7 +30,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -49,6 +48,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.TestData
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.selectedLocalization
 import com.revenuecat.purchases.ui.revenuecatui.extensions.defaultAppIconPlaceholder
+import com.revenuecat.purchases.ui.revenuecatui.helpers.isInPreviewMode
 
 private object Template2UIConstants {
     val maxIconWidth = 140.dp
@@ -134,7 +134,7 @@ private fun AppIcon(
 ) {
     val context = LocalContext.current
 
-    if (LocalInspectionMode.current) {
+    if (isInPreviewMode()) {
         Box(
             modifier = Modifier
                 .background(color = MaterialTheme.colorScheme.primary)
