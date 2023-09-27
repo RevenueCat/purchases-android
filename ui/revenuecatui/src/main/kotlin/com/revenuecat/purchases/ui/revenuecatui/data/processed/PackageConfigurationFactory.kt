@@ -2,6 +2,7 @@ package com.revenuecat.purchases.ui.revenuecatui.data.processed
 
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.paywalls.PaywallData
+import com.revenuecat.purchases.ui.revenuecatui.errors.PackageConfigurationError
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import java.util.Locale
 
@@ -16,7 +17,7 @@ internal object PackageConfigurationFactory {
         localization: PaywallData.LocalizedConfiguration,
         configurationType: PackageConfigurationType,
         locale: Locale,
-    ): TemplateConfiguration.PackageConfiguration {
+    ): Result<TemplateConfiguration.PackageConfiguration> {
         val packagesById = packages.associateBy { it.identifier }
         val filteredRCPackages = filter.mapNotNull {
             val rcPackage = packagesById[it]
@@ -24,6 +25,9 @@ internal object PackageConfigurationFactory {
                 Logger.d("Package with id $it not found. Ignoring.")
             }
             rcPackage
+        }
+        if (filteredRCPackages.isEmpty()) {
+            return Result.failure(PackageConfigurationError("No packages found for ids $filter"))
         }
         require(filteredRCPackages.isNotEmpty()) { "No packages found for ids $filter" }
         val packageInfos = filteredRCPackages.map {
@@ -38,19 +42,21 @@ internal object PackageConfigurationFactory {
         val firstPackage = packageInfos.first()
         val defaultPackage = packageInfos.firstOrNull { it.rcPackage.identifier == default } ?: firstPackage
 
-        return when (configurationType) {
-            PackageConfigurationType.SINGLE -> {
-                TemplateConfiguration.PackageConfiguration.Single(
-                    packageInfo = firstPackage,
-                )
-            }
-            PackageConfigurationType.MULTIPLE -> {
-                TemplateConfiguration.PackageConfiguration.Multiple(
-                    first = firstPackage,
-                    default = defaultPackage,
-                    all = packageInfos,
-                )
-            }
-        }
+        return Result.success(
+            when (configurationType) {
+                PackageConfigurationType.SINGLE -> {
+                    TemplateConfiguration.PackageConfiguration.Single(
+                        packageInfo = firstPackage,
+                    )
+                }
+                PackageConfigurationType.MULTIPLE -> {
+                    TemplateConfiguration.PackageConfiguration.Multiple(
+                        first = firstPackage,
+                        default = defaultPackage,
+                        all = packageInfos,
+                    )
+                }
+            },
+        )
     }
 }

@@ -64,8 +64,8 @@ internal fun Offering.toPaywallViewState(
     mode: PaywallViewMode,
     validatedPaywallData: PaywallData,
     template: PaywallTemplate,
-): PaywallViewState.Loaded {
-    val templateConfiguration = TemplateConfigurationFactory.create(
+): PaywallViewState {
+    val createTemplateConfigurationResult = TemplateConfigurationFactory.create(
         variableDataProvider = variableDataProvider,
         mode = mode,
         paywallData = validatedPaywallData,
@@ -73,6 +73,9 @@ internal fun Offering.toPaywallViewState(
         activelySubscribedProductIdentifiers = emptySet(), // TODO-PAYWALLS: Check for active subscriptions
         template,
     )
+    val templateConfiguration = createTemplateConfigurationResult.getOrElse {
+        return PaywallViewState.Error(it.message ?: "Unknown error")
+    }
     return PaywallViewState.Loaded(
         templateConfiguration = templateConfiguration,
         selectedPackage = templateConfiguration.packages.default,
