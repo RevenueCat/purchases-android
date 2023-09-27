@@ -65,7 +65,7 @@ internal abstract class BaseHTTPClientTest {
     protected fun createAppConfig(
         context: Context = createContext(),
         observerMode: Boolean = false,
-        showDeclinedPaymentMessagesAutomatically: Boolean = false,
+        showInAppMessagesAutomatically: Boolean = false,
         platformInfo: PlatformInfo = expectedPlatformInfo,
         proxyURL: URL? = baseURL,
         store: Store = Store.PLAY_STORE,
@@ -76,7 +76,7 @@ internal abstract class BaseHTTPClientTest {
         return AppConfig(
             context = context,
             observerMode = observerMode,
-            showDeclinedPaymentMessagesAutomatically = showDeclinedPaymentMessagesAutomatically,
+            showInAppMessagesAutomatically = showInAppMessagesAutomatically,
             platformInfo = platformInfo,
             proxyURL = proxyURL,
             store = store,

@@ -64,7 +64,7 @@ internal class PurchasesFactory(
             val appConfig = AppConfig(
                 context,
                 observerMode,
-                showDeclinedPaymentMessagesAutomatically,
+                showInAppMessagesAutomatically,
                 platformInfo,
                 proxyURL,
                 store,

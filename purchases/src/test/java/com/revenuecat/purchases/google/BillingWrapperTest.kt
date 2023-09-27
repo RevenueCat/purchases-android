@@ -32,6 +32,7 @@ import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.assertDebugLog
+import com.revenuecat.purchases.assertErrorLog
 import com.revenuecat.purchases.assertLog
 import com.revenuecat.purchases.assertVerboseLog
 import com.revenuecat.purchases.common.BillingAbstract
@@ -43,6 +44,7 @@ import com.revenuecat.purchases.common.firstSku
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.sha256
 import com.revenuecat.purchases.models.GoogleProrationMode
+import com.revenuecat.purchases.models.InAppMessageType
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.PricingPhase
@@ -2636,10 +2638,27 @@ class BillingWrapperTest {
     // region inapp messages
 
     @Test
+    fun `showing inapp messages does nothing and logs if no types passed`() {
+        assertErrorLog(BillingStrings.BILLING_UNSPECIFIED_INAPP_MESSAGE_TYPES) {
+            wrapper.showInAppMessagesIfNeeded(mockk(), emptyList()) {
+                error("Unexpected subscription status change")
+            }
+        }
+        wrapper.showInAppMessagesIfNeeded(mockk(), emptyList()) {
+            error("Unexpected subscription status change")
+        }
+
+        // This is the initial start connection
+        verify(exactly = 1) { mockClient.startConnection(any()) }
+    }
+
+    @Test
     fun `showing inapp messages triggers connection if not connected`() {
         every { mockClient.isReady } returns false
 
-        wrapper.showInAppMessagesIfNeeded(mockk()) { error("Unexpected subscription status change") }
+        wrapper.showInAppMessagesIfNeeded(mockk(), InAppMessageType.values().toList()) {
+            error("Unexpected subscription status change")
+        }
 
         // One for the initial, another for this test since isReady is false
         verify(exactly = 2) { mockClient.startConnection(any()) }
@@ -2650,7 +2669,9 @@ class BillingWrapperTest {
         val activity = mockk<Activity>()
         every { mockClient.showInAppMessages(activity, any(), any()) } returns billingClientOKResult
 
-        wrapper.showInAppMessagesIfNeeded(activity) { error("Unexpected subscription status change") }
+        wrapper.showInAppMessagesIfNeeded(activity, InAppMessageType.values().toList()) {
+            error("Unexpected subscription status change")
+        }
 
         verify(exactly = 1) { mockClient.showInAppMessages(activity, any(), any()) }
     }
@@ -2661,7 +2682,9 @@ class BillingWrapperTest {
         val listenerSlot = slot<InAppMessageResponseListener>()
         every { mockClient.showInAppMessages(activity, any(), capture(listenerSlot)) } returns billingClientOKResult
 
-        wrapper.showInAppMessagesIfNeeded(activity) { error("Unexpected subscription status change") }
+        wrapper.showInAppMessagesIfNeeded(activity, InAppMessageType.values().toList()) {
+            error("Unexpected subscription status change")
+        }
 
         assertThat(listenerSlot.captured).isNotNull
         val purchaseToken = null
@@ -2679,7 +2702,7 @@ class BillingWrapperTest {
         every { mockClient.showInAppMessages(activity, any(), capture(listenerSlot)) } returns billingClientOKResult
 
         var subscriptionStatusChanged = false
-        wrapper.showInAppMessagesIfNeeded(activity) {
+        wrapper.showInAppMessagesIfNeeded(activity, InAppMessageType.values().toList()) {
             subscriptionStatusChanged = true
         }
 

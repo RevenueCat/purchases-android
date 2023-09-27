@@ -23,6 +23,7 @@ import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback;
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener;
 import com.revenuecat.purchases.models.BillingFeature;
 import com.revenuecat.purchases.models.GoogleProrationMode;
+import com.revenuecat.purchases.models.InAppMessageType;
 import com.revenuecat.purchases.models.StoreProduct;
 import com.revenuecat.purchases.models.StoreTransaction;
 import com.revenuecat.purchases.models.SubscriptionOption;
@@ -35,7 +36,7 @@ import java.util.concurrent.ExecutorService;
 
 @SuppressWarnings({"unused"})
 final class PurchasesCommonAPI {
-    static void check(final Purchases purchases) {
+    static void check(final Purchases purchases, final Activity activity) {
         final ArrayList<String> productIds = new ArrayList<>();
 
         final ReceiveOfferingsCallback receiveOfferingsListener = new ReceiveOfferingsCallback() {
@@ -68,6 +69,10 @@ final class PurchasesCommonAPI {
         final UpdatedCustomerInfoListener updatedCustomerInfoListener = purchases.getUpdatedCustomerInfoListener();
         purchases.setUpdatedCustomerInfoListener((CustomerInfo customerInfo) -> {
         });
+
+        final List<InAppMessageType> inAppMessageTypeList = new ArrayList<>();
+        purchases.showInAppMessagesIfNeeded(activity);
+        purchases.showInAppMessagesIfNeeded(activity, inAppMessageTypeList);
     }
 
     static void checkPurchasing(final Purchases purchases,
@@ -132,10 +137,10 @@ final class PurchasesCommonAPI {
                 .service(executorService)
                 .diagnosticsEnabled(true)
                 .entitlementVerificationMode(EntitlementVerificationMode.INFORMATIONAL)
-                .showDeclinedPaymentMessagesAutomatically(true)
+                .showInAppMessagesAutomatically(true)
                 .build();
 
-        final Boolean showDeclinedPaymentMessagesAutomatically = build.getShowDeclinedPaymentMessagesAutomatically();
+        final Boolean showInAppMessagesAutomatically = build.getShowInAppMessagesAutomatically();
 
         final Purchases instance = Purchases.getSharedInstance();
     }

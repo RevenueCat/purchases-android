@@ -27,6 +27,7 @@ import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import com.revenuecat.purchases.models.BillingFeature
 import com.revenuecat.purchases.models.GoogleProrationMode
+import com.revenuecat.purchases.models.InAppMessageType
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.SubscriptionOption
@@ -40,6 +41,7 @@ private class PurchasesCommonAPI {
     @SuppressWarnings("LongParameterList")
     fun check(
         purchases: Purchases,
+        activity: Activity,
     ) {
         val productIds = ArrayList<String>()
         val receiveCustomerInfoCallback = object : ReceiveCustomerInfoCallback {
@@ -69,6 +71,10 @@ private class PurchasesCommonAPI {
 
         val updatedCustomerInfoListener: UpdatedCustomerInfoListener? = purchases.updatedCustomerInfoListener
         purchases.updatedCustomerInfoListener = UpdatedCustomerInfoListener { _: CustomerInfo? -> }
+
+        val inAppMessageTypeList = listOf<InAppMessageType>()
+        purchases.showInAppMessagesIfNeeded(activity)
+        purchases.showInAppMessagesIfNeeded(activity, inAppMessageTypeList)
     }
 
     @SuppressWarnings("LongParameterList", "EmptyFunctionBlock")
@@ -170,14 +176,14 @@ private class PurchasesCommonAPI {
             .appUserID("")
             .observerMode(true)
             .observerMode(false)
-            .showDeclinedPaymentMessagesAutomatically(true)
+            .showInAppMessagesAutomatically(true)
             .service(executorService)
             .diagnosticsEnabled(true)
             .entitlementVerificationMode(EntitlementVerificationMode.INFORMATIONAL)
             .informationalVerificationModeAndDiagnosticsEnabled(true)
             .build()
 
-        val showDeclinedPaymentMessagesAutomatically: Boolean = build.showDeclinedPaymentMessagesAutomatically
+        val showInAppMessagesAutomatically: Boolean = build.showInAppMessagesAutomatically
 
         val instance: Purchases = Purchases.sharedInstance
     }
