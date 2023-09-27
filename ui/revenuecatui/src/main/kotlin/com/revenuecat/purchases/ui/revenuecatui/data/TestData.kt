@@ -151,18 +151,23 @@ internal object TestData {
         ),
         localization = mapOf(
             "en_US" to PaywallData.LocalizedConfiguration(
-                title = "RevenueCat Paywalls automatically check for Introductory Offer eligibility",
+                title = "How your free trial works",
                 callToAction = "Continue",
                 features = listOf(
                     PaywallData.LocalizedConfiguration.Feature(
-                        content = "Content for Feature 1 in English",
-                        iconID = "attach_money",
-                        title = "Title for Feature 1 in English",
+                        title = "Today",
+                        content = "Full access to 1000+ workouts plus free meal plan worth {{ price }}.",
+                        iconID = "tick",
                     ),
                     PaywallData.LocalizedConfiguration.Feature(
-                        content = "Content for Feature 2 in English",
-                        iconID = "search",
-                        title = "Title for Feature 2 in English",
+                        title = "Day 7",
+                        content = "Get a reminder about when your trial is about to end.",
+                        iconID = "notification",
+                    ),
+                    PaywallData.LocalizedConfiguration.Feature(
+                        title = "Day 14",
+                        content = "You'll automatically get subscribed. Cancel anytime before if you didn't love our app.",
+                        iconID = "attachment",
                     ),
                 ),
                 offerDetails = "{{ total_price_and_per_month }}",
