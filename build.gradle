@@ -1,6 +1,6 @@
 buildscript {
     ext.compileVersion = 33
-    ext.minVersion = 14
+    ext.minVersion = 19
 }
 
 plugins {
