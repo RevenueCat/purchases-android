@@ -60,7 +60,7 @@ class DiagnosticsTrackerTest {
         appConfig = AppConfig(
             context = context,
             observerMode = true,
-            showDeclinedPaymentMessagesAutomatically = false,
+            showInAppMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
             store = Store.PLAY_STORE

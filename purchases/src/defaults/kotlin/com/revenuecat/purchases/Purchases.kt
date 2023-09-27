@@ -19,6 +19,7 @@ import com.revenuecat.purchases.interfaces.SyncPurchasesCallback
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import com.revenuecat.purchases.models.BillingFeature
 import com.revenuecat.purchases.models.GoogleProrationMode
+import com.revenuecat.purchases.models.InAppMessageType
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.strings.BillingStrings
 import com.revenuecat.purchases.strings.ConfigureStrings
@@ -421,15 +422,18 @@ class Purchases internal constructor(
 
     /**
      * Google Play only, no-op for Amazon.
-     * If the user has had a payment declined, this will show a toast notification notifying them and
-     * providing instructions for recovery of the subscription.
-     * If [PurchasesConfiguration.showDeclinedPaymentMessagesAutomatically] is enabled, this will be done
+     * Displays the specified in-app message types to the user as a snackbar if there are any available to be shown.
+     * If [PurchasesConfiguration.showInAppMessagesAutomatically] is enabled, this will be done
      * automatically on each Activity's onStart.
      *
      * For more info: https://rev.cat/googleplayinappmessaging
      */
-    fun showDeclinedPaymentMessageIfNeeded(activity: Activity) {
-        purchasesOrchestrator.showDeclinedPaymentMessageIfNeeded(activity)
+    @JvmOverloads
+    fun showInAppMessagesIfNeeded(
+        activity: Activity,
+        inAppMessageTypes: List<InAppMessageType> = listOf(InAppMessageType.BILLING_ISSUES),
+    ) {
+        purchasesOrchestrator.showInAppMessagesIfNeeded(activity, inAppMessageTypes)
     }
 
     /**

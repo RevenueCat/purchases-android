@@ -60,7 +60,7 @@ class SubscriberAttributesPurchasesTests {
         val appConfig = AppConfig(
             context = mockk(relaxed = true),
             observerMode = false,
-            showDeclinedPaymentMessagesAutomatically = false,
+            showInAppMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
             store = Store.PLAY_STORE,

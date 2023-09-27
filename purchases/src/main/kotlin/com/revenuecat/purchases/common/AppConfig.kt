@@ -10,7 +10,7 @@ import java.net.URL
 internal class AppConfig(
     context: Context,
     observerMode: Boolean,
-    val showDeclinedPaymentMessagesAutomatically: Boolean,
+    val showInAppMessagesAutomatically: Boolean,
     val platformInfo: PlatformInfo,
     proxyURL: URL?,
     val store: Store,
@@ -57,7 +57,7 @@ internal class AppConfig(
         if (forceServerErrors != other.forceServerErrors) return false
         if (forceSigningErrors != other.forceSigningErrors) return false
         if (baseURL != other.baseURL) return false
-        if (showDeclinedPaymentMessagesAutomatically != other.showDeclinedPaymentMessagesAutomatically) return false
+        if (showInAppMessagesAutomatically != other.showInAppMessagesAutomatically) return false
 
         return true
     }
@@ -73,7 +73,7 @@ internal class AppConfig(
         result = 31 * result + forceServerErrors.hashCode()
         result = 31 * result + forceSigningErrors.hashCode()
         result = 31 * result + baseURL.hashCode()
-        result = 31 * result + showDeclinedPaymentMessagesAutomatically.hashCode()
+        result = 31 * result + showInAppMessagesAutomatically.hashCode()
         return result
     }
 
@@ -86,7 +86,7 @@ internal class AppConfig(
             "versionName='$versionName', " +
             "packageName='$packageName', " +
             "finishTransactions=$finishTransactions, " +
-            "showDeclinedPaymentMessagesAutomatically=$showDeclinedPaymentMessagesAutomatically, " +
+            "showInAppMessagesAutomatically=$showInAppMessagesAutomatically, " +
             "baseURL=$baseURL)"
     }
 }

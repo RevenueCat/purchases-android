@@ -50,6 +50,7 @@ import com.revenuecat.purchases.common.toHumanReadableDescription
 import com.revenuecat.purchases.common.verboseLog
 import com.revenuecat.purchases.models.GoogleProrationMode
 import com.revenuecat.purchases.models.GooglePurchasingData
+import com.revenuecat.purchases.models.InAppMessageType
 import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreTransaction
@@ -757,10 +758,21 @@ internal class BillingWrapper(
 
     override fun isConnected(): Boolean = billingClient?.isReady ?: false
 
-    override fun showInAppMessagesIfNeeded(activity: Activity, subscriptionStatusChange: () -> Unit) {
-        val inAppMessageParams = InAppMessageParams.newBuilder()
-            .addInAppMessageCategoryToShow(InAppMessageParams.InAppMessageCategoryId.TRANSACTIONAL)
-            .build()
+    override fun showInAppMessagesIfNeeded(
+        activity: Activity,
+        inAppMessageTypes: List<InAppMessageType>,
+        subscriptionStatusChange: () -> Unit,
+    ) {
+        if (inAppMessageTypes.isEmpty()) {
+            errorLog(BillingStrings.BILLING_UNSPECIFIED_INAPP_MESSAGE_TYPES)
+            return
+        }
+
+        val inAppMessageParamsBuilder = InAppMessageParams.newBuilder()
+        for (inAppMessageType in inAppMessageTypes) {
+            inAppMessageParamsBuilder.addInAppMessageCategoryToShow(inAppMessageType.inAppMessageCategoryId)
+        }
+        val inAppMessageParams = inAppMessageParamsBuilder.build()
         val weakActivity = WeakReference(activity)
 
         executeRequestOnUIThread { error ->

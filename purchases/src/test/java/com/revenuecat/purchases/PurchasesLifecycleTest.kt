@@ -4,13 +4,14 @@ import android.app.Activity
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.PlatformInfo
+import com.revenuecat.purchases.models.InAppMessageType
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
-import org.assertj.core.api.Assertions
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
@@ -26,14 +27,14 @@ internal class PurchasesLifecycleTest: BasePurchasesTest() {
         mockOfferingsManagerAppForeground()
         purchases.purchasesOrchestrator.state = purchases.purchasesOrchestrator.state.copy(appInBackground = true)
         Purchases.sharedInstance.purchasesOrchestrator.onAppForegrounded()
-        Assertions.assertThat(purchases.purchasesOrchestrator.state.appInBackground).isFalse
+        assertThat(purchases.purchasesOrchestrator.state.appInBackground).isFalse
     }
 
     @Test
     fun `state appInBackground is updated when app backgrounded`() {
         purchases.purchasesOrchestrator.state = purchases.purchasesOrchestrator.state.copy(appInBackground = false)
         Purchases.sharedInstance.purchasesOrchestrator.onAppBackgrounded()
-        Assertions.assertThat(purchases.purchasesOrchestrator.state.appInBackground).isTrue
+        assertThat(purchases.purchasesOrchestrator.state.appInBackground).isTrue
     }
 
     @Test
@@ -41,7 +42,7 @@ internal class PurchasesLifecycleTest: BasePurchasesTest() {
         mockOfferingsManagerAppForeground()
         purchases.purchasesOrchestrator.state = purchases.purchasesOrchestrator.state.copy(appInBackground = false, firstTimeInForeground = true)
         Purchases.sharedInstance.purchasesOrchestrator.onAppForegrounded()
-        Assertions.assertThat(purchases.purchasesOrchestrator.state.firstTimeInForeground).isFalse
+        assertThat(purchases.purchasesOrchestrator.state.firstTimeInForeground).isFalse
         verify(exactly = 1) {
             mockCustomerInfoHelper.retrieveCustomerInfo(
                 appUserId,
@@ -63,7 +64,7 @@ internal class PurchasesLifecycleTest: BasePurchasesTest() {
         mockOfferingsManagerAppForeground()
         purchases.purchasesOrchestrator.state = purchases.purchasesOrchestrator.state.copy(appInBackground = false, firstTimeInForeground = false)
         Purchases.sharedInstance.purchasesOrchestrator.onAppForegrounded()
-        Assertions.assertThat(purchases.purchasesOrchestrator.state.firstTimeInForeground).isFalse
+        assertThat(purchases.purchasesOrchestrator.state.firstTimeInForeground).isFalse
         verify(exactly = 0) {
             mockCustomerInfoHelper.retrieveCustomerInfo(
                 appUserId,
@@ -85,7 +86,7 @@ internal class PurchasesLifecycleTest: BasePurchasesTest() {
         mockOfferingsManagerAppForeground()
         purchases.purchasesOrchestrator.state = purchases.purchasesOrchestrator.state.copy(appInBackground = false, firstTimeInForeground = false)
         Purchases.sharedInstance.purchasesOrchestrator.onAppForegrounded()
-        Assertions.assertThat(purchases.purchasesOrchestrator.state.firstTimeInForeground).isFalse
+        assertThat(purchases.purchasesOrchestrator.state.firstTimeInForeground).isFalse
         verify(exactly = 1) {
             mockCustomerInfoHelper.retrieveCustomerInfo(
                 appUserId,
@@ -105,27 +106,38 @@ internal class PurchasesLifecycleTest: BasePurchasesTest() {
 
     @Test
     fun `activity on start does not show inapp messages if option disabled`() {
-        resetShowDeclinedPaymentMessagesAutomatically(false)
+        resetShowInAppMessagesAutomatically(false)
         purchases.purchasesOrchestrator.onActivityStarted(mockk())
-        verify(exactly = 0) { mockBillingAbstract.showInAppMessagesIfNeeded(any(), any()) }
+        verify(exactly = 0) { mockBillingAbstract.showInAppMessagesIfNeeded(any(), any(), any()) }
     }
 
     @Test
     fun `activity on start shows inapp messages if option enabled`() {
-        resetShowDeclinedPaymentMessagesAutomatically(true)
+        resetShowInAppMessagesAutomatically(true)
         val activity = mockk<Activity>()
-        every { mockBillingAbstract.showInAppMessagesIfNeeded(activity, any()) } just Runs
+        every { mockBillingAbstract.showInAppMessagesIfNeeded(activity, any(), any()) } just Runs
         purchases.purchasesOrchestrator.onActivityStarted(activity)
-        verify(exactly = 1) { mockBillingAbstract.showInAppMessagesIfNeeded(activity, any()) }
+        verify(exactly = 1) { mockBillingAbstract.showInAppMessagesIfNeeded(activity, any(), any()) }
+    }
+
+    @Test
+    fun `activity on start shows all inapp message types if option enabled`() {
+        resetShowInAppMessagesAutomatically(true)
+        val activity = mockk<Activity>()
+        val types = InAppMessageType.values().toList()
+        val typesSlot = slot<List<InAppMessageType>>()
+        every { mockBillingAbstract.showInAppMessagesIfNeeded(activity, capture(typesSlot), any()) } just Runs
+        purchases.purchasesOrchestrator.onActivityStarted(activity)
+        assertThat(typesSlot.captured).containsExactlyInAnyOrderElementsOf(types)
     }
 
     @Test
     fun `activity on start syncs purchases if subscription status changed after showing inapp messages`() {
-        resetShowDeclinedPaymentMessagesAutomatically(true)
+        resetShowInAppMessagesAutomatically(true)
         val activity = mockk<Activity>()
         val subscriptionStatusChangeSlot = slot<() -> Unit>()
         every {
-            mockBillingAbstract.showInAppMessagesIfNeeded(activity, capture(subscriptionStatusChangeSlot))
+            mockBillingAbstract.showInAppMessagesIfNeeded(activity, any(), capture(subscriptionStatusChangeSlot))
         } just Runs
         purchases.purchasesOrchestrator.onActivityStarted(activity)
         every { mockSyncPurchasesHelper.syncPurchases(any(), any(), any(), any()) } just Runs
@@ -137,11 +149,11 @@ internal class PurchasesLifecycleTest: BasePurchasesTest() {
 
     // region Private
 
-    private fun resetShowDeclinedPaymentMessagesAutomatically(showDeclinedPaymentMessagesAutomatically: Boolean) {
+    private fun resetShowInAppMessagesAutomatically(showInAppMessagesAutomatically: Boolean) {
         purchases.purchasesOrchestrator.appConfig = AppConfig(
             mockContext,
             observerMode = false,
-            showDeclinedPaymentMessagesAutomatically = showDeclinedPaymentMessagesAutomatically,
+            showInAppMessagesAutomatically = showInAppMessagesAutomatically,
             PlatformInfo("", null),
             proxyURL = null,
             Store.AMAZON

@@ -45,6 +45,7 @@ import com.revenuecat.purchases.interfaces.SyncPurchasesCallback
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import com.revenuecat.purchases.models.BillingFeature
 import com.revenuecat.purchases.models.GoogleProrationMode
+import com.revenuecat.purchases.models.InAppMessageType
 import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
@@ -191,8 +192,8 @@ internal class PurchasesOrchestrator constructor(
     }
 
     override fun onActivityStarted(activity: Activity) {
-        if (appConfig.showDeclinedPaymentMessagesAutomatically) {
-            showDeclinedPaymentMessageIfNeeded(activity)
+        if (appConfig.showInAppMessagesAutomatically) {
+            showInAppMessagesIfNeeded(activity, InAppMessageType.values().toList())
         }
     }
 
@@ -462,8 +463,8 @@ internal class PurchasesOrchestrator constructor(
         this.updatedCustomerInfoListener = null
     }
 
-    fun showDeclinedPaymentMessageIfNeeded(activity: Activity) {
-        billing.showInAppMessagesIfNeeded(activity) {
+    fun showInAppMessagesIfNeeded(activity: Activity, inAppMessageTypes: List<InAppMessageType>) {
+        billing.showInAppMessagesIfNeeded(activity, inAppMessageTypes) {
             syncPurchases()
         }
     }
