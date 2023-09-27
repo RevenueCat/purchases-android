@@ -4,6 +4,7 @@ import android.graphics.Bitmap
 import android.net.Uri
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,6 +13,7 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -46,6 +48,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.TestData
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.selectedLocalization
 import com.revenuecat.purchases.ui.revenuecatui.extensions.defaultAppIconPlaceholder
+import com.revenuecat.purchases.ui.revenuecatui.helpers.isInPreviewMode
 
 private object Template2UIConstants {
     val maxIconWidth = 140.dp
@@ -130,17 +133,25 @@ private fun AppIcon(
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
-    val appIconResId = remember {
-        val packageManager = context.packageManager
-        context.applicationInfo.loadIcon(packageManager)
-    }
 
-    Image(
-        bitmap = appIconResId.toBitmap(config = Bitmap.Config.ARGB_8888).asImageBitmap(),
-        contentDescription = null,
-        modifier = modifier,
-        contentScale = ContentScale.Crop,
-    )
+    if (isInPreviewMode()) {
+        Box(
+            modifier = Modifier
+                .background(color = MaterialTheme.colorScheme.primary)
+                .size(100.dp),
+        )
+    } else {
+        val appIconResId = remember {
+            val packageManager = context.packageManager
+            context.applicationInfo.loadIcon(packageManager)
+        }
+        Image(
+            bitmap = appIconResId.toBitmap(config = Bitmap.Config.ARGB_8888).asImageBitmap(),
+            contentDescription = null,
+            modifier = modifier,
+            contentScale = ContentScale.Crop,
+        )
+    }
 }
 
 @Composable
