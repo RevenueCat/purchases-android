@@ -25,7 +25,7 @@ internal class TemplateConfigurationFactoryTest {
     @Before
     fun setUp() {
         variableDataProvider = VariableDataProvider(MockApplicationContext())
-        template2Configuration = TemplateConfigurationFactory.create(
+        val result = TemplateConfigurationFactory.create(
             variableDataProvider,
             paywallViewMode,
             TestData.template2,
@@ -33,6 +33,7 @@ internal class TemplateConfigurationFactoryTest {
             emptySet(),
             PaywallTemplate.TEMPLATE_2,
         )
+        template2Configuration = result.getOrNull()!!
     }
 
     @Test
