@@ -6,10 +6,12 @@ with BillingClient 5 which brought an entire new subscription model which result
 The only modification at the API level involves replacing "ProrationMode" with "ReplacementMode". The specific replacement 
 modes remain unchanged. 
 
-However, there is a behavior change in the "DEFERRED" replacement mode. Previously, a purchase would only occur after the
-product change. In BC6, the new purchase occurs place immediately, while the product change becomes effective when the old
-item expires. Until we can properly support this new behaviour, we have disabled the "DEFERRED" replacement mode and it 
-will be added back in a future release of the SDK. 
+If your app doesn't currently use DEFERRED replacement modes, then you should be safe to upgrade to this version without 
+changes in behavior.
+
+If your app supports product changes using [DEFERRED replacement mode](https://www.revenuecat.com/docs/managing-subscriptions#google-play),
+then you can either stick with the previous major version until support for DEFERRED is re-introduced in this major version, 
+or you can remove DEFERRED replacement options from your app.
 
 ## Updated Code References
 
