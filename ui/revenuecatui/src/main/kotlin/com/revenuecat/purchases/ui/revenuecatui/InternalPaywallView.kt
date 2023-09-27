@@ -12,6 +12,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModelFactory
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModelImpl
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewState
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.PaywallTemplate
+import com.revenuecat.purchases.ui.revenuecatui.helpers.isInPreviewMode
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toAndroidContext
 import com.revenuecat.purchases.ui.revenuecatui.templates.Template1
 import com.revenuecat.purchases.ui.revenuecatui.templates.Template2
@@ -60,6 +61,7 @@ private fun getPaywallViewModel(
             offering,
             listener,
             MaterialTheme.colorScheme,
+            preview = isInPreviewMode(),
         ),
     )
 }

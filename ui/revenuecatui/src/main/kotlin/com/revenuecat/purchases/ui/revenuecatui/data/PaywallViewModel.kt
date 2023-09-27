@@ -56,9 +56,10 @@ internal class PaywallViewModelImpl(
     private val offering: Offering?,
     private val listener: PaywallViewListener?,
     colorScheme: ColorScheme,
+    preview: Boolean = false,
 ) : ViewModel(), PaywallViewModel {
 
-    private val variableDataProvider = VariableDataProvider(applicationContext)
+    private val variableDataProvider = VariableDataProvider(applicationContext, preview)
 
     override val state: StateFlow<PaywallViewState>
         get() = _state.asStateFlow()
