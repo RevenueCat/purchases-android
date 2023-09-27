@@ -71,7 +71,6 @@ private fun Template3MainContent(state: PaywallViewState.Loaded, viewModel: Payw
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .verticalScroll(rememberScrollState())
             .padding(
                 horizontal = UIConstant.defaultHorizontalPadding,
                 vertical = UIConstant.defaultVerticalSpacing,
@@ -105,6 +104,7 @@ private fun Features(
     if (features.isEmpty()) return
 
     Column(
+        modifier = Modifier.verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(UIConstant.defaultVerticalSpacing, Alignment.Top),
     ) {
         features.forEach { feature ->
@@ -159,7 +159,7 @@ private fun Feature(
                     fontWeight = FontWeight.Normal,
                     textAlign = TextAlign.Start,
                     text = content,
-                    color = colors.text1,
+                    color = colors.text2,
                 )
             }
         }
@@ -175,7 +175,7 @@ private fun IconImage(iconUri: Uri?) {
             Box(
                 modifier = modifier
                     .background(color = MaterialTheme.colorScheme.primary)
-                    .size(100.dp),
+                    .size(Template3UIConstants.maxIconWidth),
             )
         } else {
             RemoteImage(
@@ -189,7 +189,8 @@ private fun IconImage(iconUri: Uri?) {
     }
 }
 
-@Preview
+@Preview(locale = "en-rUS")
+@Preview(locale = "es-rES")
 @Composable
 private fun Template3Preview() {
     InternalPaywallView(offering = TestData.template3Offering)

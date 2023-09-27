@@ -152,7 +152,7 @@ internal object TestData {
         localization = mapOf(
             "en_US" to PaywallData.LocalizedConfiguration(
                 title = "How your free trial works",
-                callToAction = "Continue",
+                callToAction = "Start",
                 features = listOf(
                     PaywallData.LocalizedConfiguration.Feature(
                         title = "Today",
@@ -174,18 +174,25 @@ internal object TestData {
                 offerDetailsWithIntroOffer = "{{ total_price_and_per_month }} after {{ sub_offer_duration }} trial",
             ),
             "es_ES" to PaywallData.LocalizedConfiguration(
-                title = "Los Paywalls de RevenueCat verifican automáticamente la elegibilidad de la Oferta Introductoria",
-                callToAction = "Continuar",
+                title = "Cómo funciona tu prueba gratuita",
+                callToAction = "Comenzar",
                 features = listOf(
                     PaywallData.LocalizedConfiguration.Feature(
-                        content = "Contenido para la Función 1 en español",
-                        iconID = "attach_money",
-                        title = "Título para la Función 1 en español",
+                        title = "Hoy",
+                        content = "Acceso completo a más de 1000 entrenamientos más un plan de comidas gratuito " +
+                            "valorado en {{ price }}.",
+                        iconID = "tick",
                     ),
                     PaywallData.LocalizedConfiguration.Feature(
-                        content = "Contenido para la Función 2 en español",
-                        iconID = "search",
-                        title = "Título para la Función 2 en español",
+                        title = "Día 7",
+                        content = "Recibirás un recordatorio cuando tu prueba esté a punto de finalizar.",
+                        iconID = "notification",
+                    ),
+                    PaywallData.LocalizedConfiguration.Feature(
+                        title = "Día 14",
+                        content = "Serás suscrito automáticamente. Cancela en cualquier momento antes si no te " +
+                            "encanta nuestra aplicación.",
+                        iconID = "attachment",
                     ),
                 ),
                 offerDetails = "{{ total_price_and_per_month }}",
