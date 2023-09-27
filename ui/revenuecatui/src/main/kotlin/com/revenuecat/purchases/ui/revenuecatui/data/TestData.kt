@@ -116,6 +116,51 @@ internal object TestData {
         ),
         assetBaseURL = Constants.assetBaseURL,
     )
+    val template3 = PaywallData(
+        templateName = "3", // TODO-PAYWALLS: use enum
+        config = PaywallData.Configuration(
+            packages = listOf(
+                PackageType.WEEKLY.identifier!!,
+                PackageType.MONTHLY.identifier!!,
+                PackageType.ANNUAL.identifier!!,
+            ),
+            defaultPackage = PackageType.MONTHLY.identifier!!,
+            images = Constants.images,
+            blurredBackgroundImage = true,
+            displayRestorePurchases = true,
+            termsOfServiceURL = URL("https://revenuecat.com/tos"),
+            privacyURL = URL("https://revenuecat.com/privacy"),
+            colors = PaywallData.Configuration.ColorInformation(
+                light = PaywallData.Configuration.Colors(
+                    background = PaywallColor(stringRepresentation = "#FFFFFF"),
+                    text1 = PaywallColor(stringRepresentation = "#000000"),
+                    callToActionBackground = PaywallColor(stringRepresentation = "#EC807C"),
+                    callToActionForeground = PaywallColor(stringRepresentation = "#FFFFFF"),
+                    accent1 = PaywallColor(stringRepresentation = "#BC66FF"),
+                    accent2 = PaywallColor(stringRepresentation = "#222222"),
+                ),
+            ),
+        ),
+        localization = mapOf(
+            "en_US" to PaywallData.LocalizedConfiguration(
+                title = "Call to action for better conversion.",
+                subtitle = "Lorem ipsum is simply dummy text of the printing and typesetting industry.",
+                callToAction = "Subscribe for {{ price_per_period }}",
+                offerDetails = "{{ total_price_and_per_month }}",
+                offerDetailsWithIntroOffer = "{{ total_price_and_per_month }} after {{ sub_offer_duration }} trial",
+                offerName = "{{ sub_period }}",
+            ),
+            "es_ES" to PaywallData.LocalizedConfiguration(
+                title = "Título en español",
+                subtitle = "Un lorem ipsum en español que es más largo para mostrar un subtítulo multilinea.",
+                callToAction = "Suscribete for {{ price_per_period }}",
+                offerDetails = "{{ total_price_and_per_month }}",
+                offerDetailsWithIntroOffer = "{{ total_price_and_per_month }} con {{ sub_offer_duration }} de prueba",
+                offerName = "{{ sub_period }}",
+            ),
+        ),
+        assetBaseURL = Constants.assetBaseURL,
+    )
 
     val template1Offering = Offering(
         identifier = "Template1",
@@ -136,6 +181,18 @@ internal object TestData {
         ),
         metadata = mapOf(),
         paywall = template2,
+        serverDescription = "",
+    )
+
+    val template3Offering = Offering(
+        identifier = "Template3",
+        availablePackages = listOf(
+            Packages.weekly,
+            Packages.monthly,
+            Packages.annual,
+        ),
+        metadata = mapOf(),
+        paywall = template3,
         serverDescription = "",
     )
 
