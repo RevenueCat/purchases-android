@@ -14,7 +14,7 @@ internal object TemplateConfigurationFactory {
         packages: List<Package>,
         activelySubscribedProductIdentifiers: Set<String>,
         template: PaywallTemplate,
-    ): TemplateConfiguration {
+    ): Result<TemplateConfiguration> {
         val (locale, localizedConfiguration) = paywallData.localizedConfiguration
         val packageIds = paywallData.config.packages.takeUnless {
             it.isEmpty()
@@ -24,22 +24,29 @@ internal object TemplateConfigurationFactory {
             backgroundUri = paywallData.getUriFromImage(paywallData.config.images.background),
             headerUri = paywallData.getUriFromImage(paywallData.config.images.header),
         )
-        val packageConfiguration = PackageConfigurationFactory.createPackageConfiguration(
-            variableDataProvider = variableDataProvider,
-            packages = packages,
-            activelySubscribedProductIdentifiers = activelySubscribedProductIdentifiers,
-            filter = packageIds,
-            default = paywallData.config.defaultPackage,
-            localization = localizedConfiguration,
-            configurationType = template.configurationType,
-            locale = locale,
-        )
-        return TemplateConfiguration(
-            template = template,
-            mode = mode,
-            packages = packageConfiguration,
-            configuration = paywallData.config,
-            images = images,
+
+        val createPackageResult =
+            PackageConfigurationFactory.createPackageConfiguration(
+                variableDataProvider = variableDataProvider,
+                packages = packages,
+                activelySubscribedProductIdentifiers = activelySubscribedProductIdentifiers,
+                filter = packageIds,
+                default = paywallData.config.defaultPackage,
+                localization = localizedConfiguration,
+                configurationType = template.configurationType,
+                locale = locale,
+            )
+        val packageConfiguration = createPackageResult.getOrElse {
+            return Result.failure(it)
+        }
+        return Result.success(
+            TemplateConfiguration(
+                template = template,
+                mode = mode,
+                packages = packageConfiguration,
+                configuration = paywallData.config,
+                images = images,
+            ),
         )
     }
 
