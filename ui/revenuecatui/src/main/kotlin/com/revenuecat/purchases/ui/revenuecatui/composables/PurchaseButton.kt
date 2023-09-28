@@ -17,7 +17,10 @@ import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewState
 import com.revenuecat.purchases.ui.revenuecatui.data.selectedLocalization
 
 @Composable
-internal fun PurchaseButton(state: PaywallViewState.Loaded, viewModel: PaywallViewModel) {
+internal fun PurchaseButton(
+    state: PaywallViewState.Loaded,
+    viewModel: PaywallViewModel,
+) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
