@@ -1,13 +1,44 @@
 ## 7.0.0
-### Breaking Changes
-* Support for Billing Client 6 (#1209) via Mark Villacampa (@MarkVillacampa)
-* Bump minimum sdk version to Android 4.4 (API level 19) (#1265) via Mark Villacampa (@MarkVillacampa)
-* in app messages support (#1290) via Andy Boedo (@aboedo)
+**RevenueCat Android SDK v7** is here!! 😻
+
+This latest release updates the SDK to use BillingClient 6. This version of BillingClient brings little change compared
+with BillingClient 5 which brought an entire new subscription model which resulted in large changes across the entire SDK.
+
+The only modification at the API level involves replacing "ProrationMode" with "ReplacementMode". The specific replacement
+modes remain unchanged.
+
+If your app doesn't currently use DEFERRED replacement modes, then you should be safe to upgrade to this version without
+changes in behavior.
+
+If your app supports product changes using [DEFERRED replacement mode](https://www.revenuecat.com/docs/managing-subscriptions#google-play),
+then you can either stick with the previous major version until support for DEFERRED is re-introduced in this major version,
+or you can remove DEFERRED replacement options from your app.
+
+See the [Android Native - 6.x to 7.x Migration](https://github.com/RevenueCat/purchases-android/blob/main/migrations/v7-MIGRATION.md) for more details.
+
+If you come from an older version of the RevenueCat SDK, see [Android Native - 5.x to 6.x Migration](https://www.revenuecat.com/docs/android-native-5x-to-6x-migration)
+for a more thorough explanation of the new Google subscription model announced with BillingClient 5 and how to take advantage of it.
+
+### Bumped minimum Android SDK version
+
+RevenueCat SDK v7 bumps minimum Android SDK version from Android 4.0 (API level 14) to Android 4.4 (API level 19).
+
+### Support for Google Play InApp Messages
+
+We've added support for [Google Play InApp Messages](https://rev.cat/googleplayinappmessaging) which will show users a snackbar message during grace period and account hold once per day and provide them an opportunity to fix their payment without leaving the app.
+
+InApp Messages are shown by default. If you want to disable this behaviour during configuration of the RevenueCat SDK:
+
+```kotlin
+Purchases.configure(
+    PurchasesConfiguration.Builder(applicationContext, apiKey)
+        .showInAppMessagesAutomatically(false)
+        .build()
+)
+```
+
 ### Bugfixes
 * Add `awaitRestore` to customEntitlementComputation library (#1275) via Toni Rico (@tonidero)
-### Other Changes
-* Future-proof in-app message APIs in case new types are added (#1293) via Toni Rico (@tonidero)
-* `Code style`: enabled `ALLOW_TRAILING_COMMA` (#1280) via NachoSoto (@NachoSoto)
 ## 6.9.5
 ### Bugfixes
 * Catch IllegalStateException and forward StoreProblemError (#1248) via Cesar de la Vega (@vegaro)
@@ -71,7 +102,7 @@
 ## 6.8.0
 ### New Features
 
-Introduced Custom Entitlements Computation mode. 
+Introduced Custom Entitlements Computation mode.
 
 This is new library intended for apps that will do their own entitlement computation separate from RevenueCat. It's distributed as a separate artifact in Maven.
 
@@ -387,7 +418,7 @@ For more control, create your `PurchaseParams.Builder` with the desired `Subscri
 
 ## 5.8.2
 
-⚠️ ⚠️ ⚠️ ⚠️ 
+⚠️ ⚠️ ⚠️ ⚠️
 
 Our Android SDK versions 5.8.0 and 5.8.1 introduced a bug that prevented new purchase tokens from being sent to RevenueCat for validation between the above dates.
 
@@ -559,7 +590,7 @@ Users with pre-existing purchases are not affected.
   * https://github.com/RevenueCat/purchases-android/pull/552
 * Added a log when `autoSyncPurchases` is disabled
   * https://github.com/RevenueCat/purchases-android/pull/555
-* Attempt to reconnect to BillingClient when Billing response is error 
+* Attempt to reconnect to BillingClient when Billing response is error
   * https://github.com/RevenueCat/purchases-android/pull/558
 
 
@@ -632,7 +663,7 @@ dependencies {
 ```
 
 **⚠️ ⚠️  Important ⚠️ ⚠️** Observer mode for Amazon is not supported yet.
- 
+
 ### Changelog
 
 **Note:** This release is based off of 5.0.0-rc3. These are the changes compared to 5.0.0-rc3:
@@ -665,7 +696,7 @@ dependencies {
 - Multiple updates on purchase-tester
   https://github.com/RevenueCat/purchases-android/pull/481
   https://github.com/RevenueCat/purchases-android/pull/493
-  
+
 ## 5.0.0-rc2
 
 - Disabled Amazon observer mode since it's not supported yet
@@ -699,7 +730,7 @@ dependencies {
 
 - Added `exported` attribute to ResponseReceiver, for builds targeting SDK 31
   https://github.com/RevenueCat/purchases-android/pull/404
-  
+
 ## 4.6.0
 
 - Added `EntitlementInfo.ownershipType`, which can be used to determine whether an entitlement was granted by a direct purchase or shared through a family member.
@@ -727,13 +758,13 @@ dependencies {
 
 ## 4.3.2
 
-- Makes improvements to prevent multiple HTTP requests with the same parameters to `/identify` and `/alias`. 
+- Makes improvements to prevent multiple HTTP requests with the same parameters to `/identify` and `/alias`.
     https://github.com/RevenueCat/purchases-android/pull/358
     https://github.com/RevenueCat/purchases-android/pull/359
 
 ## 4.3.1
 
-- Moves the code of `onBillingSetupFinished` to the main thread. Changes the callback of `canMakePayments` to the main thread. 
+- Moves the code of `onBillingSetupFinished` to the main thread. Changes the callback of `canMakePayments` to the main thread.
     https://github.com/RevenueCat/purchases-android/pull/349/
     https://github.com/RevenueCat/purchases-android/issues/348
 
@@ -741,13 +772,13 @@ dependencies {
 
 ### Identity V3:
 
-In this version, we’ve redesigned the way that user identification works. 
+In this version, we’ve redesigned the way that user identification works.
 Detailed docs about the new system are available [here](https://docs.revenuecat.com/v3.2/docs/user-ids).
 
 #### New methods
-- Introduces `logIn`, a new way of identifying users, which also returns whether a new user has been registered in the system. 
-`logIn` uses a new backend endpoint. 
-- Introduces `logOut`, a replacement for `reset`. 
+- Introduces `logIn`, a new way of identifying users, which also returns whether a new user has been registered in the system.
+`logIn` uses a new backend endpoint.
+- Introduces `logOut`, a replacement for `reset`.
 
 #### Deprecations / removals
 - deprecates `createAlias` in favor of `logIn`
@@ -760,7 +791,7 @@ Detailed docs about the new system are available [here](https://docs.revenuecat.
     https://github.com/RevenueCat/purchases-android/pull/252
 
 
-### Other changes: 
+### Other changes:
 - Fixed CI issues with creating pull requests
     https://github.com/RevenueCat/purchases-android/pull/324
 - Re-enable eTags support to minimize unnecessary network traffic
@@ -854,7 +885,7 @@ Detailed docs about the new system are available [here](https://docs.revenuecat.
     https://github.com/RevenueCat/purchases-android/pull/220
 - Fixes incompatibilities with Mockito 1.x.x
     https://github.com/RevenueCat/purchases-android/pull/228
-   
+
 ## 4.0.0
 
 - Removes Billing permission from AndroidManifest since it's added by the BillingClient.
@@ -862,40 +893,40 @@ Detailed docs about the new system are available [here](https://docs.revenuecat.
 - Fixes Deferred downgrades. The Purchase object in the completion block of `purchaseProduct` and `purchasePackage` is now nullable when changing products.
     https://github.com/RevenueCat/purchases-android/pull/200
 - Deprecated makePurchase and getEntitlements have been removed. Use purchaseProduct/purchasePackage and getOfferings instead.
-   
+
 ## 3.5.3
 
-- More aggressive caches and jittering for apps in background 
+- More aggressive caches and jittering for apps in background
     https://github.com/RevenueCat/purchases-android/pull/201
-   
+
 ## 3.5.2
 
-- Catch IOException when getAdvertisingIdInfo 
+- Catch IOException when getAdvertisingIdInfo
     https://github.com/RevenueCat/purchases-android/pull/197
 - Updates BillingClient to 3.0.1
     https://github.com/RevenueCat/purchases-android/pull/199
-- Changes the way we deserialize the JSON "management_url" to prevent weird behavior 
+- Changes the way we deserialize the JSON "management_url" to prevent weird behavior
     https://github.com/RevenueCat/purchases-android/pull/203
-- Moved strings to their own module 
+- Moved strings to their own module
     https://github.com/RevenueCat/purchases-android/pull/202
 - Fixes dokka
     https://github.com/RevenueCat/purchases-android/pull/205
-   
+
 ## 3.5.1
 
-- Fixes an issue where after calling invalidatePurchaserInfoCache and then purchaserInfoWithCompletion, the invalidated 
+- Fixes an issue where after calling invalidatePurchaserInfoCache and then purchaserInfoWithCompletion, the invalidated
   cached version of purchaserInfo would be returned first, and only the delegate would get the updated version.
     https://github.com/RevenueCat/purchases-android/pull/189
 - Catch TimeoutException when calling getAdvertisingIdInfo
     https://github.com/RevenueCat/purchases-android/pull/194
-   
+
 ## 3.5.0
 - Attribution V2:
     - Deprecated `addAttribution` in favor of `setAdjustId`, `setAppsflyerId`, `setFbAnonymousId`, `setMparticleId`.
     - Added support for OneSignal via `setOnesignalId`
     - Added `setMediaSource`, `setCampaign`, `setAdGroup`, `setAd`, `setKeyword`, `setCreative`, and `collectDeviceIdentifiers`
          https://github.com/RevenueCat/purchases-android/pull/184
-- Fixed a RejectedExecutionException due to un-synchronized accesses to the ExecutorService 
+- Fixed a RejectedExecutionException due to un-synchronized accesses to the ExecutorService
     https://github.com/RevenueCat/purchases-android/pull/179
 - Fixed downgrades/upgrades https://github.com/RevenueCat/purchases-flutter/issues/93
     https://github.com/RevenueCat/purchases-android/pull/179
@@ -912,7 +943,7 @@ https://github.com/RevenueCat/purchases-android/pull/172
 
 ## 3.3.0
 
-- Added mParticle as one of the attribution options  
+- Added mParticle as one of the attribution options
 https://github.com/RevenueCat/purchases-android/pull/163
 - Added original_purchase_date to JSON response
 https://github.com/RevenueCat/purchases-android/pull/164
@@ -923,17 +954,17 @@ https://github.com/RevenueCat/purchases-android/pull/167
 
 ## 3.2.0
 
-- Added `proxyKey`, useful for kids category apps, so that they can set up a proxy to send requests through. **Do not use this** unless you've talked to RevenueCat support about it. 
+- Added `proxyKey`, useful for kids category apps, so that they can set up a proxy to send requests through. **Do not use this** unless you've talked to RevenueCat support about it.
 https://github.com/RevenueCat/purchases-android/pull/152
 https://github.com/RevenueCat/purchases-android/pull/157
-- Added `managementURL` to purchaserInfo. This provides an easy way for apps to create Manage Subscription buttons that will correctly redirect users to the corresponding subscription management page on all platforms. 
+- Added `managementURL` to purchaserInfo. This provides an easy way for apps to create Manage Subscription buttons that will correctly redirect users to the corresponding subscription management page on all platforms.
 https://github.com/RevenueCat/purchases-android/pull/151
-- Extra fields sent to the post receipt endpoint: `normal_duration`, `intro_duration` and `trial_duration`. These will feed into the LTV model for more accurate LTV values. 
+- Extra fields sent to the post receipt endpoint: `normal_duration`, `intro_duration` and `trial_duration`. These will feed into the LTV model for more accurate LTV values.
 https://github.com/RevenueCat/purchases-android/pull/148
 https://github.com/RevenueCat/purchases-android/pull/156
-- Fixed a bug where if the `context` passed to the SDK on setup is not an `Application` context, there is be a memory leak and potential issues getting the Advertising Info. 
+- Fixed a bug where if the `context` passed to the SDK on setup is not an `Application` context, there is be a memory leak and potential issues getting the Advertising Info.
 https://github.com/RevenueCat/purchases-android/pull/147
-- Migrated more classes to use Parcelize 
+- Migrated more classes to use Parcelize
 https://github.com/RevenueCat/purchases-android/pull/150
 
 ## 3.1.1
@@ -949,7 +980,7 @@ https://github.com/RevenueCat/purchases-android/pull/150
 ## 3.1.0
 
 - Another fix for NoSuchElementException when retrieving Advertising ID #124
-- Added Subscriber Attributes, which allow developers to store additional, structured information 
+- Added Subscriber Attributes, which allow developers to store additional, structured information
 for a user in RevenueCat. More info: https://docs.revenuecat.com/docs/user-attributes
 
 ## 3.0.7
@@ -966,7 +997,7 @@ for a user in RevenueCat. More info: https://docs.revenuecat.com/docs/user-attri
 - Adds Fastlane to improve releases https://github.com/RevenueCat/purchases-android/pull/99
 - Posts price and currency code for managed products https://github.com/RevenueCat/purchases-android/pull/96
 - Adds platform flavor static variable https://github.com/RevenueCat/purchases-android/pull/91
-- Fixes https://github.com/RevenueCat/purchases-android/issues/98   
+- Fixes https://github.com/RevenueCat/purchases-android/issues/98
 
 ## 3.0.4
 
@@ -1007,7 +1038,7 @@ for a user in RevenueCat. More info: https://docs.revenuecat.com/docs/user-attri
 ## 2.4.0
 
 - Fixes crash in `updatePendingPurchaseQueue` ([#81] (https://github.com/RevenueCat/purchases-android/pull/81))
-- Deprecates activeEntitlements in RCPurchaserInfo and adds entitlements object to RCPurchaserInfo. For more info check out https://docs.revenuecat.com/docs/purchaserinfo 
+- Deprecates activeEntitlements in RCPurchaserInfo and adds entitlements object to RCPurchaserInfo. For more info check out https://docs.revenuecat.com/docs/purchaserinfo
 
 ## 2.3.1
 
