@@ -1,13 +1,11 @@
 package com.revenuecat.purchases.ui.revenuecatui.templates
 
-import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -16,7 +14,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -24,7 +21,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -33,16 +29,15 @@ import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.ui.revenuecatui.InternalPaywallView
 import com.revenuecat.purchases.ui.revenuecatui.UIConstant
 import com.revenuecat.purchases.ui.revenuecatui.composables.Footer
+import com.revenuecat.purchases.ui.revenuecatui.composables.IconImage
 import com.revenuecat.purchases.ui.revenuecatui.composables.PaywallIcon
 import com.revenuecat.purchases.ui.revenuecatui.composables.PaywallIconName
 import com.revenuecat.purchases.ui.revenuecatui.composables.PurchaseButton
-import com.revenuecat.purchases.ui.revenuecatui.composables.RemoteImage
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModel
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewState
 import com.revenuecat.purchases.ui.revenuecatui.data.TestData
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.selectedLocalization
-import com.revenuecat.purchases.ui.revenuecatui.helpers.isInPreviewMode
 
 private object Template3UIConstants {
     val iconCornerRadius = 8.dp
@@ -79,7 +74,11 @@ internal fun Template3(
 
 @Composable
 private fun Template3MainContent(state: PaywallViewState.Loaded) {
-    IconImage(state.templateConfiguration.images.iconUri)
+    IconImage(
+        uri = state.templateConfiguration.images.iconUri,
+        maxWidth = Template3UIConstants.iconSize,
+        iconCornerRadius = Template3UIConstants.iconCornerRadius,
+    )
     val localizedConfig = state.selectedLocalization
     val colors = state.templateConfiguration.getCurrentColors()
     Text(
@@ -161,30 +160,6 @@ private fun Feature(
                     textAlign = TextAlign.Start,
                     text = content,
                     color = colors.text2,
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun IconImage(iconUri: Uri?) {
-    iconUri?.let { uri ->
-        val modifier = Modifier
-            .clip(RoundedCornerShape(Template3UIConstants.iconCornerRadius))
-        if (isInPreviewMode()) {
-            Box(
-                modifier = modifier
-                    .background(color = MaterialTheme.colorScheme.primary)
-                    .size(Template3UIConstants.iconSize),
-            )
-        } else {
-            Box(modifier = modifier.size(Template3UIConstants.iconSize)) {
-                RemoteImage(
-                    urlString = uri.toString(),
-                    modifier = modifier
-                        .aspectRatio(ratio = 1f),
-                    contentScale = ContentScale.Crop,
                 )
             }
         }
