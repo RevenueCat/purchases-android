@@ -70,7 +70,7 @@ internal fun Template3(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(UIConstant.defaultVerticalSpacing, Alignment.CenterVertically),
         ) {
-            Template3MainContent(state, viewModel)
+            Template3MainContent(state)
         }
         PurchaseButton(state, viewModel)
         Footer(templateConfiguration = state.templateConfiguration, viewModel = viewModel)
