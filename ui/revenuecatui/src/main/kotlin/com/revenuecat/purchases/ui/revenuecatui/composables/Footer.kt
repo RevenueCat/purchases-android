@@ -29,11 +29,11 @@ import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.ui.revenuecatui.PaywallViewMode
 import com.revenuecat.purchases.ui.revenuecatui.R
 import com.revenuecat.purchases.ui.revenuecatui.UIConstant
-import com.revenuecat.purchases.ui.revenuecatui.data.MockViewModel
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModel
-import com.revenuecat.purchases.ui.revenuecatui.data.TestData
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.ColorsFactory
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
+import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockViewModel
+import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import java.net.URL
 
 @Composable

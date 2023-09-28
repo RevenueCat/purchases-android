@@ -40,9 +40,9 @@ import com.revenuecat.purchases.ui.revenuecatui.composables.PurchaseButton
 import com.revenuecat.purchases.ui.revenuecatui.composables.RemoteImage
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModel
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewState
-import com.revenuecat.purchases.ui.revenuecatui.data.TestData
 import com.revenuecat.purchases.ui.revenuecatui.data.currentColors
 import com.revenuecat.purchases.ui.revenuecatui.data.selectedLocalization
+import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import kotlin.math.roundToInt
 
 @Composable

@@ -30,9 +30,9 @@ import com.revenuecat.purchases.ui.revenuecatui.composables.PaywallBackground
 import com.revenuecat.purchases.ui.revenuecatui.composables.PurchaseButton
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModel
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewState
-import com.revenuecat.purchases.ui.revenuecatui.data.TestData
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.selectedLocalization
+import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 
 private object Template2UIConstants {
     val maxIconWidth = 140.dp

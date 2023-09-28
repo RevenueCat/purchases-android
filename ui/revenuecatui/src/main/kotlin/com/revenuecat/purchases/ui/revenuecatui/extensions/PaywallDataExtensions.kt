@@ -11,8 +11,8 @@ import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.paywalls.PaywallColor
 import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.ui.revenuecatui.InternalPaywallView
-import com.revenuecat.purchases.ui.revenuecatui.data.TestData
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.PaywallTemplate
+import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import java.net.URL
 import java.util.Locale
 
