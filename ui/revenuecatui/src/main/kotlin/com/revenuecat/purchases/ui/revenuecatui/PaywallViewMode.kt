@@ -9,11 +9,4 @@ internal enum class PaywallViewMode {
     companion object {
         val default = FULL_SCREEN
     }
-
-    fun shouldDisplayIcon(): Boolean {
-        return when (this) {
-            FULL_SCREEN -> true
-            FOOTER, FOOTER_CONDENSED -> false
-        }
-    }
 }
