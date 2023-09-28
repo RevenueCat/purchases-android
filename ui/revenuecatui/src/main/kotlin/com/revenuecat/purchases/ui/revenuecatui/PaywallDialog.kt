@@ -1,0 +1,80 @@
+package com.revenuecat.purchases.ui.revenuecatui
+
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Scaffold
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.ReadOnlyComposable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+import androidx.window.core.layout.WindowWidthSizeClass
+import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.PurchasesException
+import com.revenuecat.purchases.awaitCustomerInfo
+import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
+import com.revenuecat.purchases.ui.revenuecatui.helpers.computeWindowWidthSizeClass
+import kotlinx.coroutines.launch
+
+@Composable
+fun PaywallDialog(
+    paywallDialogOptions: PaywallDialogOptions,
+) {
+    val shouldDisplayBlock = paywallDialogOptions.shouldDisplayBlock
+    var shouldDisplayDialog by remember { mutableStateOf(shouldDisplayBlock == null) }
+    if (shouldDisplayBlock != null) {
+        LaunchedEffect(paywallDialogOptions) {
+            launch {
+                shouldDisplayDialog = try {
+                    // TODO-PAYWALLS: This won't receive updates in case the customer info changes and starts/stops
+                    // being eligible to display the paywall dialog. We would need to support multiple customer info
+                    // listeners to refresh this.
+                    val customerInfo = Purchases.sharedInstance.awaitCustomerInfo()
+                    shouldDisplayBlock.invoke(customerInfo)
+                } catch (e: PurchasesException) {
+                    Logger.e("Error fetching customer info to display paywall dialog", e)
+                    false
+                }
+                if (shouldDisplayDialog) {
+                    Logger.d("Displaying paywall dialog according to display logic")
+                } else Logger.d("Not displaying paywall dialog according to display logic")
+            }
+        }
+    }
+    if (shouldDisplayDialog) {
+        Dialog(
+            onDismissRequest = paywallDialogOptions.dismissRequest,
+            properties = DialogProperties(usePlatformDefaultWidth = shouldUsePlatformDefaultWidth()),
+        ) {
+            DialogScaffold(paywallDialogOptions)
+        }
+    }
+}
+
+@Composable
+fun DialogScaffold(paywallDialogOptions: PaywallDialogOptions) {
+    Scaffold(modifier = Modifier.fillMaxSize()) { paddingValues ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues),
+        ) {
+            PaywallView(paywallDialogOptions.toPaywallViewOptions())
+        }
+    }
+}
+
+@Composable
+@ReadOnlyComposable
+private fun shouldUsePlatformDefaultWidth(): Boolean {
+    return when (computeWindowWidthSizeClass()) {
+        WindowWidthSizeClass.MEDIUM, WindowWidthSizeClass.EXPANDED -> true
+        else -> false
+    }
+}
