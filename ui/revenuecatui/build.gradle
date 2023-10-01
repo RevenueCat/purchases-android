@@ -27,6 +27,7 @@ android {
 
     buildFeatures {
         compose true
+        viewBinding true
     }
     composeOptions {
         kotlinCompilerExtensionVersion '1.4.0-alpha02'
@@ -49,6 +50,7 @@ dependencies {
     implementation libs.androidx.lifecycle.runtime.ktx
     implementation libs.androidx.lifecycle.viewmodel
     implementation libs.androidx.lifecycle.viewmodel.compose
+    implementation libs.androidx.fragment.ktx
     implementation libs.coil.compose
     implementation libs.coil.svg
     debugImplementation libs.compose.ui.tooling

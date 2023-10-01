@@ -1,5 +1,6 @@
 package com.revenuecat.paywallstester.ui.screens.main.offerings
 
+import android.widget.FrameLayout
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -21,8 +22,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.view.ViewCompat
+import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Offering
@@ -31,6 +36,7 @@ import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.ui.revenuecatui.PaywallDialog
 import com.revenuecat.purchases.ui.revenuecatui.PaywallDialogOptions
 import com.revenuecat.purchases.ui.revenuecatui.PaywallViewListener
+import com.revenuecat.purchases.ui.revenuecatui.fragments.PaywallFragment
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -77,6 +83,7 @@ private fun OfferingsListScreen(
 ) {
     var dropdownExpandedOffering by remember { mutableStateOf<Offering?>(null) }
     var displayPaywallDialogOffering by remember { mutableStateOf<Offering?>(null) }
+    var displayPaywallFragmentOffering by remember { mutableStateOf<Offering?>(null) }
 
     LazyColumn {
         items(offeringsState.offerings.all.values.toList()) { offering ->
@@ -86,6 +93,7 @@ private fun OfferingsListScreen(
                         offering = offering,
                         tappedOnNavigateToOffering = tappedOnNavigateToOffering,
                         tappedOnDisplayOfferingAsDialog = { displayPaywallDialogOffering = it },
+                        tappedOnDisplayOfferingAsFragment = { displayPaywallFragmentOffering = it },
                         dismissed = { dropdownExpandedOffering = null },
                     )
                 }
@@ -120,6 +128,40 @@ private fun OfferingsListScreen(
                 .build(),
         )
     }
+
+    displayPaywallFragmentOffering?.let {
+        PaywallFragmentComponent(it)
+    }
+}
+
+@Composable
+fun PaywallFragmentComponent(
+    offering: Offering,
+    modifier: Modifier = Modifier,
+) {
+    val fragmentManager = (LocalContext.current as FragmentActivity).supportFragmentManager
+    AndroidView(
+        modifier = modifier,
+        factory = { context ->
+            FrameLayout(context).apply {
+                id = ViewCompat.generateViewId()
+            }
+        },
+        update = {
+            val tag = PaywallFragment.TAG
+            val fragmentAlreadyAdded = fragmentManager.findFragmentByTag(tag) != null
+
+            if (fragmentAlreadyAdded) {
+                fragmentManager.beginTransaction()
+                    .replace(it.id, PaywallFragment.newInstance(offering.identifier), tag)
+                    .commit()
+            } else {
+                fragmentManager.beginTransaction()
+                    .add(it.id, PaywallFragment.newInstance(offering.identifier), tag)
+                    .commit()
+            }
+        },
+    )
 }
 
 @Composable
@@ -127,6 +169,7 @@ private fun DisplayOfferingMenu(
     offering: Offering,
     tappedOnNavigateToOffering: (Offering) -> Unit,
     tappedOnDisplayOfferingAsDialog: (Offering) -> Unit,
+    tappedOnDisplayOfferingAsFragment: (Offering) -> Unit,
     dismissed: () -> Unit,
 ) {
     DropdownMenu(expanded = true, onDismissRequest = { dismissed() }) {
@@ -137,6 +180,10 @@ private fun DisplayOfferingMenu(
         DropdownMenuItem(
             text = { Text(text = "Display paywall as dialog") },
             onClick = { tappedOnDisplayOfferingAsDialog(offering) },
+        )
+        DropdownMenuItem(
+            text = { Text(text = "Display paywall as fragment") },
+            onClick = { tappedOnDisplayOfferingAsFragment(offering) },
         )
     }
 }

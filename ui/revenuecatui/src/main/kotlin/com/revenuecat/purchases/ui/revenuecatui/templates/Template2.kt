@@ -22,6 +22,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.ui.revenuecatui.InternalPaywallView
+import com.revenuecat.purchases.ui.revenuecatui.PaywallViewOptions
 import com.revenuecat.purchases.ui.revenuecatui.UIConstant
 import com.revenuecat.purchases.ui.revenuecatui.composables.Footer
 import com.revenuecat.purchases.ui.revenuecatui.composables.IconImage
@@ -131,5 +132,5 @@ private fun SelectPackageButton(
 @Preview(showBackground = true, locale = "es-rES")
 @Composable
 internal fun Template2PaywallPreview() {
-    InternalPaywallView(offering = TestData.template2Offering)
+    InternalPaywallView(options = PaywallViewOptions.Builder().setOffering(TestData.template2Offering).build())
 }

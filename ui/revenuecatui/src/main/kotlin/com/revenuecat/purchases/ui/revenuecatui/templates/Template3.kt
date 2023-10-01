@@ -27,6 +27,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.ui.revenuecatui.InternalPaywallView
+import com.revenuecat.purchases.ui.revenuecatui.PaywallViewOptions
 import com.revenuecat.purchases.ui.revenuecatui.UIConstant
 import com.revenuecat.purchases.ui.revenuecatui.composables.Footer
 import com.revenuecat.purchases.ui.revenuecatui.composables.IconImage
@@ -170,5 +171,5 @@ private fun Feature(
 @Preview(locale = "es-rES")
 @Composable
 private fun Template3Preview() {
-    InternalPaywallView(offering = TestData.template3Offering)
+    InternalPaywallView(options = PaywallViewOptions.Builder().setOffering(TestData.template3Offering).build())
 }

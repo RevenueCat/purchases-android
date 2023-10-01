@@ -16,8 +16,8 @@ import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.awaitOfferings
 import com.revenuecat.purchases.awaitPurchase
 import com.revenuecat.purchases.awaitRestore
-import com.revenuecat.purchases.ui.revenuecatui.PaywallViewListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallViewMode
+import com.revenuecat.purchases.ui.revenuecatui.PaywallViewOptions
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvider
 import com.revenuecat.purchases.ui.revenuecatui.extensions.getActivity
@@ -53,8 +53,7 @@ internal interface PaywallViewModel {
 internal class PaywallViewModelImpl(
     applicationContext: ApplicationContext,
     private val mode: PaywallViewMode,
-    private val offering: Offering?,
-    private val listener: PaywallViewListener?,
+    private val options: PaywallViewOptions,
     colorScheme: ColorScheme,
     preview: Boolean = false,
 ) : ViewModel(), PaywallViewModel {
@@ -68,8 +67,8 @@ internal class PaywallViewModelImpl(
     private val _colorScheme = MutableStateFlow(colorScheme)
 
     init {
-        _state = MutableStateFlow(offering?.calculateState() ?: PaywallViewState.Loading)
-        if (offering == null) {
+        _state = MutableStateFlow(options.offering?.calculateState() ?: PaywallViewState.Loading)
+        if (options.offering == null) {
             updateOffering()
         }
     }
@@ -131,6 +130,7 @@ internal class PaywallViewModelImpl(
     }
 
     private fun refreshState() {
+        val offering = options.offering
         if (offering == null) {
             updateOffering()
         } else {
@@ -141,26 +141,26 @@ internal class PaywallViewModelImpl(
     private fun purchasePackage(activity: Activity, packageToPurchase: Package) {
         viewModelScope.launch {
             try {
-                listener?.onPurchaseStarted(packageToPurchase)
+                options.listener?.onPurchaseStarted(packageToPurchase)
                 val purchaseResult = Purchases.sharedInstance.awaitPurchase(
                     PurchaseParams.Builder(activity, packageToPurchase).build(),
                 )
-                listener?.onPurchaseCompleted(purchaseResult.customerInfo, purchaseResult.storeTransaction)
+                options.listener?.onPurchaseCompleted(purchaseResult.customerInfo, purchaseResult.storeTransaction)
             } catch (e: PurchasesException) {
-                listener?.onPurchaseError(e.error)
+                options.listener?.onPurchaseError(e.error)
             }
         }
     }
 
-    private fun updateOffering() {
+    private fun updateOffering(offeringId: String? = options.offeringId) {
         viewModelScope.launch {
             try {
                 val offerings = Purchases.sharedInstance.awaitOfferings()
-                val currentOffering = offerings.current
-                if (currentOffering == null) {
+                val offeringToDisplay = offeringId?.let { offerings.all[it] } ?: offerings.current
+                if (offeringToDisplay == null) {
                     _state.value = PaywallViewState.Error("No offering or current offering")
                 } else {
-                    _state.value = currentOffering.calculateState()
+                    _state.value = offeringToDisplay.calculateState()
                 }
             } catch (e: PurchasesException) {
                 _state.value = PaywallViewState.Error(e.toString())

@@ -6,7 +6,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModel
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModelFactory
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModelImpl
@@ -20,10 +19,9 @@ import com.revenuecat.purchases.ui.revenuecatui.templates.Template3
 
 @Composable
 internal fun InternalPaywallView(
+    options: PaywallViewOptions,
     mode: PaywallViewMode = PaywallViewMode.default,
-    offering: Offering? = null,
-    listener: PaywallViewListener? = null,
-    viewModel: PaywallViewModel = getPaywallViewModel(offering = offering, listener = listener, mode = mode),
+    viewModel: PaywallViewModel = getPaywallViewModel(options = options, mode = mode),
 ) {
     viewModel.refreshStateIfLocaleChanged()
     val colors = MaterialTheme.colorScheme
@@ -51,19 +49,17 @@ internal fun InternalPaywallView(
 @Composable
 private fun getPaywallViewModel(
     mode: PaywallViewMode,
-    offering: Offering?,
-    listener: PaywallViewListener?,
+    options: PaywallViewOptions,
 ): PaywallViewModel {
     val applicationContext = LocalContext.current.applicationContext
     return viewModel<PaywallViewModelImpl>(
         // We need to pass the key in order to create different view models for different offerings when
         // trying to load different paywalls for the same view model store owner.
-        key = offering?.identifier,
+        key = options.offering?.identifier ?: options.offeringId,
         factory = PaywallViewModelFactory(
             applicationContext.toAndroidContext(),
             mode,
-            offering,
-            listener,
+            options,
             MaterialTheme.colorScheme,
             preview = isInPreviewMode(),
         ),
