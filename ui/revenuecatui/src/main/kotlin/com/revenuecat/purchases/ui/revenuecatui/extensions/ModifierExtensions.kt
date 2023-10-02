@@ -10,7 +10,3 @@ internal fun Modifier.conditional(condition: Boolean, modifier: Modifier.() -> M
         this
     }
 }
-
-internal fun Modifier.hidden(condition: Boolean): Modifier {
-    return this.then(Modifier.alpha(if (condition) 0f else 1f))
-}
