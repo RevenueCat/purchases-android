@@ -1,9 +1,7 @@
 package com.revenuecat.purchases.ui.revenuecatui.composables
 
-import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 
@@ -35,27 +33,32 @@ internal fun IntroEligibilityStateView(
 
 @Preview(showBackground = true)
 @Composable
-private fun IntroEligibilityPreview() {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        IntroEligibilityStateView(
-            textWithNoIntroOffer = "$3.99/mo",
-            textWithIntroOffer = null,
-            eligibility = IntroOfferEligibility.ELIGIBLE,
-            color = Color.Black,
-        )
+private fun IntroEligibilityPreviewNoOffer() {
+    IntroEligibilityStateView(
+        textWithNoIntroOffer = "$3.99/mo",
+        textWithIntroOffer = null,
+        eligibility = IntroOfferEligibility.ELIGIBLE,
+        color = Color.Black,
+    )
+}
+@Preview(showBackground = true)
+@Composable
+private fun IntroEligibilityPreviewBothTextsIneligible() {
+    IntroEligibilityStateView(
+        textWithNoIntroOffer = "$3.99/mo",
+        textWithIntroOffer = "7 day trial, then $3.99/mo",
+        eligibility = IntroOfferEligibility.INELIGIBLE,
+        color = Color.Black,
+    )
+}
 
-        IntroEligibilityStateView(
-            textWithNoIntroOffer = "$3.99/mo",
-            textWithIntroOffer = "7 day trial, then $3.99/mo",
-            eligibility = IntroOfferEligibility.INELIGIBLE,
-            color = Color.Black,
-        )
-
-        IntroEligibilityStateView(
-            textWithNoIntroOffer = "$3.99/mo",
-            textWithIntroOffer = "7 day trial, then $3.99/mo",
-            eligibility = IntroOfferEligibility.ELIGIBLE,
-            color = Color.Black,
-        )
-    }
+@Preview(showBackground = true)
+@Composable
+private fun IntroEligibilityPreviewBothTextsEligible() {
+    IntroEligibilityStateView(
+        textWithNoIntroOffer = "$3.99/mo",
+        textWithIntroOffer = "7 day trial, then $3.99/mo",
+        eligibility = IntroOfferEligibility.ELIGIBLE,
+        color = Color.Black,
+    )
 }
