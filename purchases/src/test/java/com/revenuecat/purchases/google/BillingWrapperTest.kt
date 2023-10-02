@@ -1,7 +1,6 @@
 package com.revenuecat.purchases.google
 
 import android.app.Activity
-import android.app.Application
 import android.content.Context
 import android.content.Intent
 import android.os.Handler
@@ -15,6 +14,9 @@ import com.android.billingclient.api.BillingFlowParams.ProductDetailsParams
 import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.ConsumeParams
 import com.android.billingclient.api.ConsumeResponseListener
+import com.android.billingclient.api.InAppMessageResponseListener
+import com.android.billingclient.api.InAppMessageResult
+import com.android.billingclient.api.InAppMessageResult.InAppMessageResponseCode
 import com.android.billingclient.api.ProductDetails
 import com.android.billingclient.api.ProductDetailsResponseListener
 import com.android.billingclient.api.Purchase
@@ -25,9 +27,14 @@ import com.android.billingclient.api.PurchasesUpdatedListener
 import com.android.billingclient.api.QueryProductDetailsParams
 import com.android.billingclient.api.QueryPurchaseHistoryParams
 import com.android.billingclient.api.QueryPurchasesParams
+import com.revenuecat.purchases.LogMessage
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.assertDebugLog
+import com.revenuecat.purchases.assertErrorLog
+import com.revenuecat.purchases.assertLog
+import com.revenuecat.purchases.assertVerboseLog
 import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.ReplaceProductInfo
@@ -36,7 +43,8 @@ import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.firstSku
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.sha256
-import com.revenuecat.purchases.models.GoogleProrationMode
+import com.revenuecat.purchases.models.InAppMessageType
+import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.PricingPhase
@@ -46,6 +54,7 @@ import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.models.SubscriptionOptions
+import com.revenuecat.purchases.strings.BillingStrings
 import com.revenuecat.purchases.utils.createMockProductDetailsNoOffers
 import com.revenuecat.purchases.utils.mockOneTimePurchaseOfferDetails
 import com.revenuecat.purchases.utils.mockProductDetails
@@ -63,7 +72,6 @@ import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.runs
 import io.mockk.slot
-import io.mockk.unmockkStatic
 import io.mockk.verify
 import io.mockk.verifySequence
 import org.assertj.core.api.Assertions.assertThat
@@ -287,6 +295,31 @@ class BillingWrapperTest {
     }
 
     @Test
+    fun `If starting connection throws an IllegalStateException, error is forwarded`() {
+        every { mockClient.isReady } returns false
+        every {
+            mockClient.startConnection(any())
+        } throws IllegalStateException("Too many bind requests(999+) for service intent.")
+
+        var error: PurchasesError? = null
+        wrapper.queryPurchases(
+            appUserID = "appUserID",
+            onSuccess = {
+                fail("should be an error")
+            },
+            onError = {
+                error = it
+            }
+        )
+
+        verify {
+            mockClient.startConnection(billingClientStateListener!!)
+        }
+        assertThat(error).isNotNull
+        assertThat(error?.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
+    }
+
+    @Test
     fun `queryPurchaseHistoryAsync fails if sent invalid type`() {
         billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
 
@@ -428,9 +461,9 @@ class BillingWrapperTest {
             mockSubscriptionUpdateParamsBuilder.setOldPurchaseToken(capture(oldPurchaseTokenSlot))
         } returns mockSubscriptionUpdateParamsBuilder
 
-        val prorationModeSlot = slot<Int>()
+        val replacementModeSlot = slot<Int>()
         every {
-            mockSubscriptionUpdateParamsBuilder.setReplaceProrationMode(capture(prorationModeSlot))
+            mockSubscriptionUpdateParamsBuilder.setSubscriptionReplacementMode(capture(replacementModeSlot))
         } returns mockSubscriptionUpdateParamsBuilder
 
         val isPersonalizedPriceSlot = slot<Boolean>()
@@ -458,7 +491,7 @@ class BillingWrapperTest {
             assertThat(subsGoogleProductType).isEqualTo(capturedProductDetailsParams[0].zza().productType)
 
             assertThat(upgradeInfo.oldPurchase.purchaseToken).isEqualTo(oldPurchaseTokenSlot.captured)
-            assertThat((upgradeInfo.prorationMode as GoogleProrationMode?)?.playBillingClientMode).isEqualTo(prorationModeSlot.captured)
+            assertThat((upgradeInfo.replacementMode as GoogleReplacementMode?)?.playBillingClientMode).isEqualTo(replacementModeSlot.captured)
 
             assertThat(isPersonalizedPrice).isEqualTo(isPersonalizedPriceSlot.captured)
             billingClientOKResult
@@ -476,7 +509,7 @@ class BillingWrapperTest {
     }
 
     @Test
-    fun `skips setting on BillingFlowPrams when prorationmode or personalized price null for subscription purchase`() {
+    fun `skips setting on BillingFlowPrams when replacementmode or personalized price null for subscription purchase`() {
         mockkStatic(BillingFlowParams::class)
         mockkStatic(BillingFlowParams.SubscriptionUpdateParams::class)
 
@@ -505,9 +538,9 @@ class BillingWrapperTest {
             mockSubscriptionUpdateParamsBuilder.setOldPurchaseToken(capture(oldPurchaseTokenSlot))
         } returns mockSubscriptionUpdateParamsBuilder
 
-        val prorationModeSlot = slot<Int>()
+        val replacementModeSlot = slot<Int>()
         every {
-            mockSubscriptionUpdateParamsBuilder.setReplaceProrationMode(capture(prorationModeSlot))
+            mockSubscriptionUpdateParamsBuilder.setSubscriptionReplacementMode(capture(replacementModeSlot))
         } returns mockSubscriptionUpdateParamsBuilder
 
         val isPersonalizedPriceSlot = slot<Boolean>()
@@ -542,8 +575,8 @@ class BillingWrapperTest {
             }
 
             verify(exactly = 0) {
-                mockSubscriptionUpdateParamsBuilder.setReplaceProrationMode(any())
-                !prorationModeSlot.isCaptured
+                mockSubscriptionUpdateParamsBuilder.setSubscriptionReplacementMode(any())
+                !replacementModeSlot.isCaptured
             }
             billingClientOKResult
         }
@@ -2605,7 +2638,90 @@ class BillingWrapperTest {
         }
     }
 
-    // endregion
+    // endregion diagnostics tracking
+
+    // region inapp messages
+
+    @Test
+    fun `showing inapp messages does nothing and logs if no types passed`() {
+        assertErrorLog(BillingStrings.BILLING_UNSPECIFIED_INAPP_MESSAGE_TYPES) {
+            wrapper.showInAppMessagesIfNeeded(mockk(), emptyList()) {
+                error("Unexpected subscription status change")
+            }
+        }
+        wrapper.showInAppMessagesIfNeeded(mockk(), emptyList()) {
+            error("Unexpected subscription status change")
+        }
+
+        // This is the initial start connection
+        verify(exactly = 1) { mockClient.startConnection(any()) }
+    }
+
+    @Test
+    fun `showing inapp messages triggers connection if not connected`() {
+        every { mockClient.isReady } returns false
+
+        wrapper.showInAppMessagesIfNeeded(mockk(), InAppMessageType.values().toList()) {
+            error("Unexpected subscription status change")
+        }
+
+        // One for the initial, another for this test since isReady is false
+        verify(exactly = 2) { mockClient.startConnection(any()) }
+    }
+
+    @Test
+    fun `showing inapp messages calls show inapp messages correctly`() {
+        val activity = mockk<Activity>()
+        every { mockClient.showInAppMessages(activity, any(), any()) } returns billingClientOKResult
+
+        wrapper.showInAppMessagesIfNeeded(activity, InAppMessageType.values().toList()) {
+            error("Unexpected subscription status change")
+        }
+
+        verify(exactly = 1) { mockClient.showInAppMessages(activity, any(), any()) }
+    }
+
+    @Test
+    fun `showing inapp messages handles inapp messages listener response correctly when no messages`() {
+        val activity = mockk<Activity>()
+        val listenerSlot = slot<InAppMessageResponseListener>()
+        every { mockClient.showInAppMessages(activity, any(), capture(listenerSlot)) } returns billingClientOKResult
+
+        wrapper.showInAppMessagesIfNeeded(activity, InAppMessageType.values().toList()) {
+            error("Unexpected subscription status change")
+        }
+
+        assertThat(listenerSlot.captured).isNotNull
+        val purchaseToken = null
+        assertVerboseLog(BillingStrings.BILLING_INAPP_MESSAGE_NONE) {
+            listenerSlot.captured.onInAppMessageResponse(
+                InAppMessageResult(InAppMessageResponseCode.NO_ACTION_NEEDED, purchaseToken)
+            )
+        }
+    }
+
+    @Test
+    fun `showing inapp messages handles inapp messages listener response correctly when subscription updated`() {
+        val activity = mockk<Activity>()
+        val listenerSlot = slot<InAppMessageResponseListener>()
+        every { mockClient.showInAppMessages(activity, any(), capture(listenerSlot)) } returns billingClientOKResult
+
+        var subscriptionStatusChanged = false
+        wrapper.showInAppMessagesIfNeeded(activity, InAppMessageType.values().toList()) {
+            subscriptionStatusChanged = true
+        }
+
+        assertThat(listenerSlot.captured).isNotNull
+        val purchaseToken = null
+        assertDebugLog(BillingStrings.BILLING_INAPP_MESSAGE_UPDATE) {
+            listenerSlot.captured.onInAppMessageResponse(
+                InAppMessageResult(InAppMessageResponseCode.SUBSCRIPTION_STATUS_UPDATED, purchaseToken)
+            )
+        }
+        assertThat(subscriptionStatusChanged).isTrue
+    }
+
+    // endregion inapp messages
 
     private fun mockEmptyProductDetailsResponse() {
         val slot = slot<ProductDetailsResponseListener>()
@@ -2630,7 +2746,7 @@ class BillingWrapperTest {
 
     private fun mockReplaceSkuInfo(): ReplaceProductInfo {
         val oldPurchase = mockPurchaseHistoryRecordWrapper()
-        return ReplaceProductInfo(oldPurchase, GoogleProrationMode.DEFERRED)
+        return ReplaceProductInfo(oldPurchase, GoogleReplacementMode.CHARGE_FULL_PRICE)
     }
 
     private fun mockQueryPurchasesAsyncResponse(

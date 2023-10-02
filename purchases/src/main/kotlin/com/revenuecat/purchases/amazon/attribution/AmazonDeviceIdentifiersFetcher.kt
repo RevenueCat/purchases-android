@@ -9,7 +9,7 @@ import com.revenuecat.purchases.common.subscriberattributes.SubscriberAttributeK
 import com.revenuecat.purchases.strings.AttributionStrings
 import com.revenuecat.purchases.utils.filterNotNullValues
 
-class AmazonDeviceIdentifiersFetcher : DeviceIdentifiersFetcher {
+internal class AmazonDeviceIdentifiersFetcher : DeviceIdentifiersFetcher {
 
     override fun getDeviceIdentifiers(
         applicationContext: Application,

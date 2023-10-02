@@ -3,28 +3,24 @@ package com.revenuecat.purchases.models
 import android.os.Parcel
 import android.os.Parcelable
 import com.android.billingclient.api.BillingFlowParams
-import com.revenuecat.purchases.ProrationMode
+import com.revenuecat.purchases.ReplacementMode
 
 /**
- * Enum of possible proration modes to be passed to a Google Play purchase.
+ * Enum of possible replacement modes to be passed to a Google Play purchase.
  * Ignored for Amazon purchases.
  *
  * See https://developer.android.com/google/play/billing/subscriptions#proration for examples
  */
-@Deprecated(
-    "Replaced with GoogleReplacementMode",
-    ReplaceWith("GoogleReplacementMode"),
-)
-enum class GoogleProrationMode(
-    @BillingFlowParams.ProrationMode val playBillingClientMode: Int,
-) : ProrationMode {
+enum class GoogleReplacementMode(
+    @BillingFlowParams.SubscriptionUpdateParams.ReplacementMode val playBillingClientMode: Int,
+) : ReplacementMode {
     /**
      * Old subscription is cancelled, and new subscription takes effect immediately.
      * User is charged for the full price of the new subscription on the old subscription's expiration date.
      *
      * This is the default behavior.
      */
-    IMMEDIATE_WITHOUT_PRORATION(BillingFlowParams.ProrationMode.IMMEDIATE_WITHOUT_PRORATION),
+    WITHOUT_PRORATION(BillingFlowParams.SubscriptionUpdateParams.ReplacementMode.WITHOUT_PRORATION),
 
     /**
      * Old subscription is cancelled, and new subscription takes effect immediately.
@@ -34,7 +30,7 @@ enum class GoogleProrationMode(
      * The purchase will fail if this mode is used when switching between [SubscriptionOption]s
      * of the same [StoreProduct].
      */
-    IMMEDIATE_WITH_TIME_PRORATION(BillingFlowParams.ProrationMode.IMMEDIATE_WITH_TIME_PRORATION),
+    WITH_TIME_PRORATION(BillingFlowParams.SubscriptionUpdateParams.ReplacementMode.WITH_TIME_PRORATION),
 
     /**
      * Replacement takes effect immediately, and the user is charged full price of new plan and is
@@ -46,7 +42,7 @@ enum class GoogleProrationMode(
      * added on to his subscription period (~10 days). Therefore, Samwise's next charge would be 1 year and 10 days
      * from today for $36. After that, he is charged $36 each year following.
      */
-    IMMEDIATE_AND_CHARGE_FULL_PRICE(BillingFlowParams.ProrationMode.IMMEDIATE_AND_CHARGE_FULL_PRICE),
+    CHARGE_FULL_PRICE(BillingFlowParams.SubscriptionUpdateParams.ReplacementMode.CHARGE_FULL_PRICE),
 
     /**
      * Replacement takes effect immediately, and the billing cycle remains the same.
@@ -59,18 +55,18 @@ enum class GoogleProrationMode(
      * so he is charged the difference of $0.50 for his new subscription.
      * On May 1st, Samwise is charged $36 for his new subscription tier and another $36 on May 1 of each year following.
      */
-    IMMEDIATE_AND_CHARGE_PRORATED_PRICE(BillingFlowParams.ProrationMode.IMMEDIATE_AND_CHARGE_PRORATED_PRICE),
+    CHARGE_PRORATED_PRICE(BillingFlowParams.SubscriptionUpdateParams.ReplacementMode.CHARGE_PRORATED_PRICE),
     ;
 
     /**
      * For internal use only :)
      */
-    internal val asGoogleReplacementMode: GoogleReplacementMode
+    internal val asGoogleProrationMode: GoogleProrationMode
         get() = when (this) {
-            GoogleProrationMode.IMMEDIATE_WITHOUT_PRORATION -> GoogleReplacementMode.WITHOUT_PRORATION
-            GoogleProrationMode.IMMEDIATE_WITH_TIME_PRORATION -> GoogleReplacementMode.WITH_TIME_PRORATION
-            GoogleProrationMode.IMMEDIATE_AND_CHARGE_FULL_PRICE -> GoogleReplacementMode.CHARGE_FULL_PRICE
-            GoogleProrationMode.IMMEDIATE_AND_CHARGE_PRORATED_PRICE -> GoogleReplacementMode.CHARGE_PRORATED_PRICE
+            GoogleReplacementMode.WITHOUT_PRORATION -> GoogleProrationMode.IMMEDIATE_WITHOUT_PRORATION
+            GoogleReplacementMode.WITH_TIME_PRORATION -> GoogleProrationMode.IMMEDIATE_WITH_TIME_PRORATION
+            GoogleReplacementMode.CHARGE_FULL_PRICE -> GoogleProrationMode.IMMEDIATE_AND_CHARGE_FULL_PRICE
+            GoogleReplacementMode.CHARGE_PRORATED_PRICE -> GoogleProrationMode.IMMEDIATE_AND_CHARGE_PRORATED_PRICE
         }
 
     override fun describeContents(): Int {
@@ -81,20 +77,20 @@ enum class GoogleProrationMode(
         out.writeString(this.name)
     }
 
-    companion object CREATOR : Parcelable.Creator<GoogleProrationMode?> {
+    companion object CREATOR : Parcelable.Creator<GoogleReplacementMode?> {
         fun fromPlayBillingClientMode(
-            @BillingFlowParams.ProrationMode playBillingClientMode: Int?,
-        ): GoogleProrationMode? {
+            @BillingFlowParams.SubscriptionUpdateParams.ReplacementMode playBillingClientMode: Int?,
+        ): GoogleReplacementMode? {
             return playBillingClientMode?.let {
                 values().first { playBillingClientMode == it.playBillingClientMode }
             }
         }
 
-        override fun createFromParcel(`in`: Parcel): GoogleProrationMode? {
-            return `in`.readString()?.let { GoogleProrationMode.valueOf(it) }
+        override fun createFromParcel(`in`: Parcel): GoogleReplacementMode? {
+            return `in`.readString()?.let { GoogleReplacementMode.valueOf(it) }
         }
 
-        override fun newArray(size: Int): Array<GoogleProrationMode?> {
+        override fun newArray(size: Int): Array<GoogleReplacementMode?> {
             return arrayOfNulls(size)
         }
     }

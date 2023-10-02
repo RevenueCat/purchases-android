@@ -7,7 +7,7 @@ import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.PurchaseType
 import com.revenuecat.purchases.models.StoreTransaction
 
-fun Receipt.toStoreTransaction(
+internal fun Receipt.toStoreTransaction(
     productId: String,
     presentedOfferingIdentifier: String?,
     purchaseState: PurchaseState,
@@ -29,6 +29,6 @@ fun Receipt.toStoreTransaction(
         purchaseType = PurchaseType.AMAZON_PURCHASE,
         marketplace = userData.marketplace,
         subscriptionOptionId = null,
-        prorationMode = null,
+        replacementMode = null,
     )
 }

@@ -20,4 +20,13 @@ internal object BillingStrings {
     const val NULL_ACTIVITY_INTENT = "Activity passed into launchBillingFlow has a null intent, which may cause " +
         "a crash. See https://github.com/RevenueCat/purchases-android/issues/381 for more information."
     const val BILLING_CLIENT_RETRY = "Retrying BillingClient connection after backoff of %s milliseconds."
+    const val ILLEGAL_STATE_EXCEPTION_WHEN_CONNECTING = "There was an IllegalStateException when connecting to " +
+        "BillingClient. This has been reported to occur on Samsung devices on unknown circumstances.\nException: %s"
+    const val BILLING_CONNECTION_ERROR_INAPP_MESSAGES = "Error connecting to billing client to display " +
+        "in-app messages: %s"
+    const val BILLING_INAPP_MESSAGE_NONE = "No Google Play in-app message was available."
+    const val BILLING_INAPP_MESSAGE_UPDATE = "Subscription status was updated from in-app message."
+    const val BILLING_INAPP_MESSAGE_UNEXPECTED_CODE = "Unexpected billing code: %s"
+    const val BILLING_UNSPECIFIED_INAPP_MESSAGE_TYPES = "Tried to show in-app messages without specifying any types. " +
+        "Please add what types of in-app message you want to display."
 }

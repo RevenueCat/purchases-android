@@ -2,6 +2,7 @@ package com.revenuecat.apitester.java;
 
 import com.revenuecat.purchases.ProductType;
 import com.revenuecat.purchases.ProrationMode;
+import com.revenuecat.purchases.ReplacementMode;
 import com.revenuecat.purchases.models.PurchaseState;
 import com.revenuecat.purchases.models.PurchaseType;
 import com.revenuecat.purchases.models.StoreTransaction;
@@ -28,6 +29,7 @@ final class StoreTransactionAPI {
         final PurchaseType purchaseType = transaction.getPurchaseType();
         final String marketplace = transaction.getMarketplace();
         final String subscriptionOptionId = transaction.getSubscriptionOptionId();
+        final ReplacementMode replacementMode = transaction.getReplacementMode();
         final ProrationMode prorationMode = transaction.getProrationMode();
 
         StoreTransaction constructedStoreTransaction = new StoreTransaction(
@@ -45,7 +47,7 @@ final class StoreTransactionAPI {
                 transaction.getPurchaseType(),
                 transaction.getMarketplace(),
                 transaction.getSubscriptionOptionId(),
-                transaction.getProrationMode()
+                transaction.getReplacementMode()
         );
     }
 

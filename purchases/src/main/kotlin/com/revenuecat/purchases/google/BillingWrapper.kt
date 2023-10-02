@@ -17,6 +17,8 @@ import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingFlowParams
 import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.ConsumeParams
+import com.android.billingclient.api.InAppMessageParams
+import com.android.billingclient.api.InAppMessageResult
 import com.android.billingclient.api.ProductDetailsResponseListener
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchaseHistoryRecord
@@ -37,6 +39,7 @@ import com.revenuecat.purchases.common.ReplaceProductInfo
 import com.revenuecat.purchases.common.StoreProductsCallback
 import com.revenuecat.purchases.common.between
 import com.revenuecat.purchases.common.caching.DeviceCache
+import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.firstProductId
@@ -44,8 +47,10 @@ import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.sha256
 import com.revenuecat.purchases.common.toHumanReadableDescription
-import com.revenuecat.purchases.models.GoogleProrationMode
+import com.revenuecat.purchases.common.verboseLog
 import com.revenuecat.purchases.models.GooglePurchasingData
+import com.revenuecat.purchases.models.GoogleReplacementMode
+import com.revenuecat.purchases.models.InAppMessageType
 import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreTransaction
@@ -56,6 +61,7 @@ import com.revenuecat.purchases.strings.RestoreStrings
 import com.revenuecat.purchases.utils.Result
 import java.io.PrintWriter
 import java.io.StringWriter
+import java.lang.ref.WeakReference
 import java.util.Date
 import java.util.concurrent.ConcurrentLinkedQueue
 import kotlin.math.min
@@ -119,7 +125,16 @@ internal class BillingWrapper(
             billingClient?.let {
                 if (!it.isReady) {
                     log(LogIntent.DEBUG, BillingStrings.BILLING_CLIENT_STARTING.format(it))
-                    it.startConnection(this)
+                    try {
+                        it.startConnection(this)
+                    } catch (e: IllegalStateException) {
+                        log(
+                            LogIntent.GOOGLE_ERROR,
+                            BillingStrings.ILLEGAL_STATE_EXCEPTION_WHEN_CONNECTING.format(e),
+                        )
+                        val error = PurchasesError(PurchasesErrorCode.StoreProblemError, e.message)
+                        sendErrorsToAllPendingRequests(error)
+                    }
                 }
             }
         }
@@ -257,17 +272,12 @@ internal class BillingWrapper(
         }
 
         synchronized(this@BillingWrapper) {
-            // When using DEFERRED proration mode, callback needs to be associated with the *old* product we are
-            // switching from, because the transaction we receive on successful purchase is for the old product.
-            val productId =
-                if (replaceProductInfo?.prorationMode == GoogleProrationMode.DEFERRED) {
-                    replaceProductInfo.oldPurchase.productIds.first()
-                } else googlePurchasingData.productId
+            val productId = googlePurchasingData.productId
             purchaseContext[productId] = PurchaseContext(
                 googlePurchasingData.productType,
                 presentedOfferingIdentifier,
                 subscriptionOptionId,
-                replaceProductInfo?.prorationMode as? GoogleProrationMode?,
+                replaceProductInfo?.replacementMode as? GoogleReplacementMode?,
             )
         }
         executeRequestOnUIThread {
@@ -684,19 +694,10 @@ internal class BillingWrapper(
                     log(LogIntent.GOOGLE_WARNING, message)
                     // The calls will fail with an error that will be surfaced. We want to surface these errors
                     // Can't call executePendingRequests because it will not do anything since it checks for isReady()
-                    synchronized(this@BillingWrapper) {
-                        while (true) {
-                            serviceRequests.poll()?.let { serviceRequest ->
-                                mainHandler.post {
-                                    serviceRequest(
-                                        billingResult.responseCode
-                                            .billingResponseToPurchasesError(message)
-                                            .also { errorLog(it) },
-                                    )
-                                }
-                            } ?: break
-                        }
-                    }
+                    val error = billingResult.responseCode
+                        .billingResponseToPurchasesError(message)
+                        .also { errorLog(it) }
+                    sendErrorsToAllPendingRequests(error)
                 }
                 BillingClient.BillingResponseCode.SERVICE_TIMEOUT,
                 BillingClient.BillingResponseCode.ERROR,
@@ -751,6 +752,49 @@ internal class BillingWrapper(
     }
 
     override fun isConnected(): Boolean = billingClient?.isReady ?: false
+
+    override fun showInAppMessagesIfNeeded(
+        activity: Activity,
+        inAppMessageTypes: List<InAppMessageType>,
+        subscriptionStatusChange: () -> Unit,
+    ) {
+        if (inAppMessageTypes.isEmpty()) {
+            errorLog(BillingStrings.BILLING_UNSPECIFIED_INAPP_MESSAGE_TYPES)
+            return
+        }
+
+        val inAppMessageParamsBuilder = InAppMessageParams.newBuilder()
+        for (inAppMessageType in inAppMessageTypes) {
+            inAppMessageParamsBuilder.addInAppMessageCategoryToShow(inAppMessageType.inAppMessageCategoryId)
+        }
+        val inAppMessageParams = inAppMessageParamsBuilder.build()
+        val weakActivity = WeakReference(activity)
+
+        executeRequestOnUIThread { error ->
+            if (error != null) {
+                errorLog(BillingStrings.BILLING_CONNECTION_ERROR_INAPP_MESSAGES.format(error))
+                return@executeRequestOnUIThread
+            }
+            withConnectedClient {
+                val activity = weakActivity.get() ?: run {
+                    debugLog("Activity is null, not showing Google Play in-app message.")
+                    return@withConnectedClient
+                }
+                showInAppMessages(activity, inAppMessageParams) { inAppMessageResult ->
+                    when (val responseCode = inAppMessageResult.responseCode) {
+                        InAppMessageResult.InAppMessageResponseCode.NO_ACTION_NEEDED -> {
+                            verboseLog(BillingStrings.BILLING_INAPP_MESSAGE_NONE)
+                        }
+                        InAppMessageResult.InAppMessageResponseCode.SUBSCRIPTION_STATUS_UPDATED -> {
+                            debugLog(BillingStrings.BILLING_INAPP_MESSAGE_UPDATE)
+                            subscriptionStatusChange()
+                        }
+                        else -> errorLog(BillingStrings.BILLING_INAPP_MESSAGE_UNEXPECTED_CODE.format(responseCode))
+                    }
+                }
+            }
+        }
+    }
 
     private fun withConnectedClient(receivingFunction: BillingClient.() -> Unit) {
         billingClient?.takeIf { it.isReady }?.let {
@@ -979,5 +1023,16 @@ internal class BillingWrapper(
                 }
                 .build(),
         )
+    }
+
+    @Synchronized
+    private fun sendErrorsToAllPendingRequests(error: PurchasesError) {
+        while (true) {
+            serviceRequests.poll()?.let { serviceRequest ->
+                mainHandler.post {
+                    serviceRequest(error)
+                }
+            } ?: break
+        }
     }
 }

@@ -93,3 +93,30 @@ suspend fun Purchases.awaitGetProducts(
         )
     }
 }
+
+/**
+ * Restores purchases made with the current Play Store account for the current user.
+ * This method will post all purchases associated with the current Play Store account to
+ * RevenueCat and become associated with the current `appUserID`. If the receipt token is being
+ * used by an existing user, the current `appUserID` will be aliased together with the
+ * `appUserID` of the existing user. Going forward, either `appUserID` will be able to reference
+ * the same user.
+ *
+ * You shouldn't use this method if you have your own account system. In that case
+ * "restoration" is provided by your app passing the same `appUserId` used to purchase originally.
+ *
+ * Coroutine friendly version of [Purchases.restorePurchases].
+ *
+ * @throws [PurchasesException] with a [PurchasesError] if there's an error login out the user.
+ * @return The [CustomerInfo] with the restored purchases.
+ */
+@JvmSynthetic
+@Throws(PurchasesTransactionException::class)
+suspend fun Purchases.awaitRestore(): CustomerInfo {
+    return suspendCoroutine { continuation ->
+        restorePurchasesWith(
+            onSuccess = { continuation.resume(it) },
+            onError = { continuation.resumeWithException(PurchasesException(it)) },
+        )
+    }
+}

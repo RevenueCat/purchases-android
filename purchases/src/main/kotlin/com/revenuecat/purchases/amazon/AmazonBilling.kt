@@ -34,6 +34,7 @@ import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.sha1
+import com.revenuecat.purchases.models.InAppMessageType
 import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreProduct
@@ -287,6 +288,14 @@ internal class AmazonBilling constructor(
             onSuccess,
             onError,
         )
+    }
+
+    override fun showInAppMessagesIfNeeded(
+        activity: Activity,
+        inAppMessageTypes: List<InAppMessageType>,
+        subscriptionStatusChange: () -> Unit,
+    ) {
+        // No-op: Amazon doesn't have in-app messages
     }
 
     private fun List<Receipt>.toMapOfReceiptHashesToRestoredPurchases(

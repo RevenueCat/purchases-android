@@ -44,7 +44,8 @@ import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback
 import com.revenuecat.purchases.interfaces.SyncPurchasesCallback
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import com.revenuecat.purchases.models.BillingFeature
-import com.revenuecat.purchases.models.GoogleProrationMode
+import com.revenuecat.purchases.models.GoogleReplacementMode
+import com.revenuecat.purchases.models.InAppMessageType
 import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
@@ -55,11 +56,12 @@ import com.revenuecat.purchases.strings.IdentityStrings
 import com.revenuecat.purchases.strings.PurchaseStrings
 import com.revenuecat.purchases.strings.RestoreStrings
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
+import com.revenuecat.purchases.utils.CustomActivityLifecycleHandler
 import com.revenuecat.purchases.utils.isAndroidNOrNewer
 import java.net.URL
 import java.util.Collections
 
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "LargeClass", "TooManyFunctions")
 internal class PurchasesOrchestrator constructor(
     private val application: Application,
     backingFieldAppUserID: String?,
@@ -81,7 +83,7 @@ internal class PurchasesOrchestrator constructor(
     private val offeringsManager: OfferingsManager,
     // This is nullable due to: https://github.com/RevenueCat/purchases-flutter/issues/408
     private val mainHandler: Handler? = Handler(Looper.getMainLooper()),
-) : LifecycleDelegate {
+) : LifecycleDelegate, CustomActivityLifecycleHandler {
 
     /** @suppress */
     @Suppress("RedundantGetter", "RedundantSetter")
@@ -144,6 +146,7 @@ internal class PurchasesOrchestrator constructor(
             // This needs to happen after the billing client listeners have been set. This is because
             // we perform operations with the billing client in the lifecycle observer methods.
             ProcessLifecycleOwner.get().lifecycle.addObserver(lifecycleHandler)
+            application.registerActivityLifecycleCallbacks(this)
         }
 
         if (!appConfig.dangerousSettings.autoSyncPurchases) {
@@ -186,6 +189,12 @@ internal class PurchasesOrchestrator constructor(
         postPendingTransactionsHelper.syncPendingPurchaseQueue(allowSharingPlayStoreAccount)
         synchronizeSubscriberAttributesIfNeeded()
         offlineEntitlementsManager.updateProductEntitlementMappingCacheIfStale()
+    }
+
+    override fun onActivityStarted(activity: Activity) {
+        if (appConfig.showInAppMessagesAutomatically) {
+            showInAppMessagesIfNeeded(activity, InAppMessageType.values().toList())
+        }
     }
 
     // region Public Methods
@@ -301,7 +310,7 @@ internal class PurchasesOrchestrator constructor(
                     purchasingData,
                     presentedOfferingIdentifier,
                     productId,
-                    googleProrationMode,
+                    googleReplacementMode,
                     isPersonalizedPrice,
                     callback,
                 )
@@ -454,6 +463,12 @@ internal class PurchasesOrchestrator constructor(
         this.updatedCustomerInfoListener = null
     }
 
+    fun showInAppMessagesIfNeeded(activity: Activity, inAppMessageTypes: List<InAppMessageType>) {
+        billing.showInAppMessagesIfNeeded(activity, inAppMessageTypes) {
+            syncPurchases()
+        }
+    }
+
     fun invalidateCustomerInfoCache() {
         log(LogIntent.DEBUG, CustomerInfoStrings.INVALIDATING_CUSTOMERINFO_CACHE)
         deviceCache.clearCustomerInfoCache(appUserID)
@@ -489,6 +504,7 @@ internal class PurchasesOrchestrator constructor(
             appUserID,
         )
     }
+
     fun setDisplayName(displayName: String?) {
         log(LogIntent.DEBUG, AttributionStrings.METHOD_CALLED.format("setDisplayName"))
         subscriberAttributesManager.setAttribute(
@@ -893,7 +909,7 @@ internal class PurchasesOrchestrator constructor(
         purchasingData: PurchasingData,
         offeringIdentifier: String?,
         oldProductId: String,
-        googleProrationMode: GoogleProrationMode,
+        googleReplacementMode: GoogleReplacementMode,
         isPersonalizedPrice: Boolean?,
         purchaseCallback: PurchaseCallback,
     ) {
@@ -914,7 +930,7 @@ internal class PurchasesOrchestrator constructor(
                     offeringIdentifier?.let {
                         PurchaseStrings.OFFERING + "$offeringIdentifier"
                     }
-                } oldProductId: $oldProductId googleProrationMode $googleProrationMode",
+                } oldProductId: $oldProductId googleReplacementMode $googleReplacementMode",
 
             ),
         )
@@ -925,10 +941,7 @@ internal class PurchasesOrchestrator constructor(
             }
 
             if (!state.purchaseCallbacksByProductId.containsKey(purchasingData.productId)) {
-                // When using DEFERRED proration mode, callback needs to be associated with the *old* product we are
-                // switching from, because the transaction we receive on successful purchase is for the old product.
-                val productId =
-                    if (googleProrationMode == GoogleProrationMode.DEFERRED) oldProductId else purchasingData.productId
+                val productId = purchasingData.productId
                 val mapOfProductIdToListener = mapOf(productId to purchaseCallback)
                 state = state.copy(
                     purchaseCallbacksByProductId = state.purchaseCallbacksByProductId + mapOfProductIdToListener,
@@ -940,7 +953,7 @@ internal class PurchasesOrchestrator constructor(
             replaceOldPurchaseWithNewProduct(
                 purchasingData,
                 oldProductId,
-                googleProrationMode,
+                googleReplacementMode,
                 activity,
                 appUserID,
                 offeringIdentifier,
@@ -960,7 +973,7 @@ internal class PurchasesOrchestrator constructor(
         purchasingData: PurchasingData,
         offeringIdentifier: String?,
         oldProductId: String,
-        googleProrationMode: GoogleProrationMode?,
+        googleReplacementMode: GoogleReplacementMode?,
         listener: ProductChangeCallback,
     ) {
         if (purchasingData.productType != ProductType.SUBS) {
@@ -981,7 +994,7 @@ internal class PurchasesOrchestrator constructor(
                     offeringIdentifier?.let {
                         PurchaseStrings.OFFERING + "$offeringIdentifier"
                     }
-                } oldProductId: $oldProductId googleProrationMode $googleProrationMode",
+                } oldProductId: $oldProductId googleReplacementMode $googleReplacementMode",
 
             ),
         )
@@ -999,7 +1012,7 @@ internal class PurchasesOrchestrator constructor(
             replaceOldPurchaseWithNewProduct(
                 purchasingData,
                 oldProductId,
-                googleProrationMode,
+                googleReplacementMode,
                 activity,
                 appUserID,
                 offeringIdentifier,
@@ -1015,7 +1028,7 @@ internal class PurchasesOrchestrator constructor(
     private fun replaceOldPurchaseWithNewProduct(
         purchasingData: PurchasingData,
         oldProductId: String,
-        googleProrationMode: GoogleProrationMode?,
+        googleReplacementMode: GoogleReplacementMode?,
         activity: Activity,
         appUserID: String,
         presentedOfferingIdentifier: String?,
@@ -1053,7 +1066,7 @@ internal class PurchasesOrchestrator constructor(
                     activity,
                     appUserID,
                     purchasingData,
-                    ReplaceProductInfo(purchaseRecord, googleProrationMode),
+                    ReplaceProductInfo(purchaseRecord, googleReplacementMode),
                     presentedOfferingIdentifier,
                     isPersonalizedPrice,
                 )

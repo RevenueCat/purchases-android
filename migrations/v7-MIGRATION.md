@@ -1,4 +1,4 @@
-**RevenueCat Android SDK v7** is here!! 😻
+# V7 API Migration Guide
 
 This latest release updates the SDK to use BillingClient 6. This version of BillingClient brings little change compared
 with BillingClient 5 which brought an entire new subscription model which resulted in large changes across the entire SDK.
@@ -13,10 +13,29 @@ If your app supports product changes using [DEFERRED replacement mode](https://w
 then you can either stick with the previous major version until support for DEFERRED is re-introduced in this major version,
 or you can remove DEFERRED replacement options from your app.
 
-See the [Android Native - 6.x to 7.x Migration](https://github.com/RevenueCat/purchases-android/blob/main/migrations/v7-MIGRATION.md) for more details.
+## Updated Code References
 
-If you come from an older version of the RevenueCat SDK, see [Android Native - 5.x to 6.x Migration](https://www.revenuecat.com/docs/android-native-5x-to-6x-migration)
-for a more thorough explanation of the new Google subscription model announced with BillingClient 5 and how to take advantage of it.
+This migration guide has detailed class, property, and method changes.
+
+See [Android Native - 5.x to 6.x Migration](https://www.revenuecat.com/docs/android-native-5x-to-6x-migration) for a
+more thorough explanation of the new Google subscription model announced with BillingClient 5 and how to take advantage of it.
+
+### Class/interface changes
+
+| New                     |
+|-------------------------|
+| `ReplacementMode`       |
+| `GoogleReplacementMode` |
+
+
+| Deprecated            | Replace with            |
+|-----------------------|-------------------------|
+| `ProrationMode`       | `ReplacementMode`       |
+| `GoogleProrationMode` | `GoogleReplacementMode` |
+
+| Temporarily removed      |
+|--------------------------|
+| `ProrationMode.DEFERRED` |
 
 ### Bumped minimum Android SDK version
 
@@ -36,5 +55,10 @@ Purchases.configure(
 )
 ```
 
-### Bugfixes
-* Add `awaitRestore` to customEntitlementComputation library (#1275) via Toni Rico (@tonidero)
+### Observer Mode
+
+Observer mode is still supported in v7. Other than updating the SDK version, there are no changes required..
+
+### Reporting undocumented issues:
+
+Feel free to file an issue! [New RevenueCat Issue](https://github.com/RevenueCat/purchases-android/issues/new/).
