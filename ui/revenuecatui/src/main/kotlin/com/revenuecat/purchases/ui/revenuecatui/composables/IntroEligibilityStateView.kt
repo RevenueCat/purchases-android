@@ -5,11 +5,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 
-internal enum class IntroOfferEligibility {
-    INELIGIBLE,
-    ELIGIBLE,
-}
-
 /**
  * A composable that can display different data based on intro eligibility status.
  */
@@ -31,6 +26,11 @@ internal fun IntroEligibilityStateView(
     Text(text, color = color)
 }
 
+internal enum class IntroOfferEligibility {
+    INELIGIBLE,
+    ELIGIBLE,
+}
+
 @Preview(showBackground = true)
 @Composable
 private fun IntroEligibilityPreviewNoOffer() {
@@ -41,6 +41,7 @@ private fun IntroEligibilityPreviewNoOffer() {
         color = Color.Black,
     )
 }
+
 @Preview(showBackground = true)
 @Composable
 private fun IntroEligibilityPreviewBothTextsIneligible() {
