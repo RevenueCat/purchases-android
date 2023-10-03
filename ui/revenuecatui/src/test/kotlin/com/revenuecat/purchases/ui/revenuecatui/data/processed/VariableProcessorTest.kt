@@ -3,8 +3,8 @@ package com.revenuecat.purchases.ui.revenuecatui.data.processed
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
-import com.revenuecat.purchases.ui.revenuecatui.data.MockApplicationContext
-import com.revenuecat.purchases.ui.revenuecatui.data.TestData
+import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockApplicationContext
+import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ApplicationContext
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
