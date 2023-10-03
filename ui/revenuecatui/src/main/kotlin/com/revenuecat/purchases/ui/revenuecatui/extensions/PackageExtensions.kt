@@ -4,6 +4,7 @@ import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.ui.revenuecatui.composables.IntroOfferEligibility
+import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 
 val Package.isSubscription: Boolean
     get() = product.type == ProductType.SUBS
@@ -17,3 +18,6 @@ internal val Package.introEligibility: IntroOfferEligibility
     } else {
         IntroOfferEligibility.ELIGIBLE
     }
+
+internal val TemplateConfiguration.PackageInfo.introEligibility: IntroOfferEligibility
+    get() = this.rcPackage.introEligibility

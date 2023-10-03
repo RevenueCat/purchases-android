@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -15,6 +14,7 @@ import com.revenuecat.purchases.ui.revenuecatui.UIConstant
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModel
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewState
 import com.revenuecat.purchases.ui.revenuecatui.data.selectedLocalization
+import com.revenuecat.purchases.ui.revenuecatui.extensions.introEligibility
 
 @Composable
 internal fun PurchaseButton(
@@ -38,8 +38,11 @@ internal fun PurchaseButton(
                 contentColor = colors.callToActionForeground,
             ),
         ) {
-            // TODO-Paywalls: call to action with intro offer
-            Text(text = state.selectedLocalization.callToAction)
+            IntroEligibilityStateView(
+                textWithNoIntroOffer = state.selectedLocalization.callToAction,
+                textWithIntroOffer = state.selectedLocalization.callToActionWithIntroOffer,
+                eligibility = state.selectedPackage.introEligibility,
+            )
         }
     }
 }
