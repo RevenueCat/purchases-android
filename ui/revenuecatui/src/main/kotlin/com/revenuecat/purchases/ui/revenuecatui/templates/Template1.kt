@@ -51,7 +51,9 @@ internal fun Template1(state: PaywallViewState.Loaded, viewModel: PaywallViewMod
         modifier = Modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Template1MainContent(state)
+        Column(modifier = Modifier.weight(1f)) {
+            Template1MainContent(state)
+        }
         PurchaseButton(state, viewModel)
         Footer(templateConfiguration = state.templateConfiguration, viewModel = viewModel)
     }

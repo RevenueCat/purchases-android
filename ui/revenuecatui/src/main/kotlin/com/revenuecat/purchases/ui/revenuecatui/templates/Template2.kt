@@ -4,7 +4,6 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -47,9 +46,15 @@ internal fun Template2(state: PaywallViewState.Loaded, viewModel: PaywallViewMod
         Column(
             modifier = Modifier.fillMaxSize(),
         ) {
-            Spacer(modifier = Modifier.weight(1f))
-            Template2MainContent(state, viewModel)
-            Spacer(modifier = Modifier.weight(1f))
+            Box(
+                modifier = Modifier.weight(1f).padding(
+                    horizontal = UIConstant.defaultHorizontalPadding,
+                    vertical = UIConstant.defaultVerticalSpacing,
+                ),
+                contentAlignment = Alignment.Center,
+            ) {
+                Template2MainContent(state, viewModel)
+            }
             PurchaseButton(state, viewModel)
             Footer(templateConfiguration = state.templateConfiguration, viewModel = viewModel)
         }

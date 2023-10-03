@@ -27,7 +27,7 @@ class PaywallViewOptions(builder: Builder) {
             this.shouldDisplayDismissButton = shouldDisplayDismissButton
         }
 
-        fun setListener(listener: PaywallViewListener) = apply {
+        fun setListener(listener: PaywallViewListener?) = apply {
             this.listener = listener
         }
 
