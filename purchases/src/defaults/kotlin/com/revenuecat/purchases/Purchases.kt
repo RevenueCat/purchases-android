@@ -514,15 +514,24 @@ class Purchases internal constructor(
     fun setMixpanelDistinctID(mixpanelDistinctID: String?) {
         purchasesOrchestrator.setMixpanelDistinctID(mixpanelDistinctID)
     }
-
     /**
-     * Subscriber attribute associated with the OneSignal Player Id for the user
-     * Required for the RevenueCat OneSignal integration
+     * Subscriber attribute associated with the OneSignal Player Id for the user.
+     * Required for the RevenueCat OneSignal integration. Deprecated for OneSignal versions above v9.0.
      *
      * @param onesignalID null or an empty string will delete the subscriber attribute
      */
     fun setOnesignalID(onesignalID: String?) {
         purchasesOrchestrator.setOnesignalID(onesignalID)
+    }
+
+    /**
+     * Subscriber attribute associated with the OneSignal User ID for the user
+     * Required for the RevenueCat OneSignal integration with versions v11.0 and above.
+     *
+     * @param onesignalUserID null or an empty string will delete the subscriber attribute
+     */
+    fun setOnesignalUserID(onesignalUserID: String?) {
+        purchasesOrchestrator.setOnesignalUserID(onesignalUserID)
     }
 
     /**

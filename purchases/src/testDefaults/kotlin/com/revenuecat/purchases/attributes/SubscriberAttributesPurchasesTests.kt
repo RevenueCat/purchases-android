@@ -276,6 +276,13 @@ class SubscriberAttributesPurchasesTests {
     }
 
     @Test
+    fun `setOnesignalUserID`() {
+        integrationIDTest(SubscriberAttributeKey.IntegrationIds.OneSignalUserId) { id ->
+            underTest.setOnesignalUserID(id)
+        }
+    }
+
+    @Test
     fun `setAirshipChannelID`() {
         integrationIDTest(SubscriberAttributeKey.IntegrationIds.Airship) { id ->
             underTest.setAirshipChannelID(id)
