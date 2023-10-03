@@ -27,6 +27,8 @@ import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import com.revenuecat.purchases.models.BillingFeature
 import com.revenuecat.purchases.models.GoogleProrationMode
+import com.revenuecat.purchases.models.GoogleReplacementMode
+import com.revenuecat.purchases.models.InAppMessageType
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.SubscriptionOption
@@ -40,6 +42,7 @@ private class PurchasesCommonAPI {
     @SuppressWarnings("LongParameterList")
     fun check(
         purchases: Purchases,
+        activity: Activity,
     ) {
         val productIds = ArrayList<String>()
         val receiveCustomerInfoCallback = object : ReceiveCustomerInfoCallback {
@@ -69,6 +72,10 @@ private class PurchasesCommonAPI {
 
         val updatedCustomerInfoListener: UpdatedCustomerInfoListener? = purchases.updatedCustomerInfoListener
         purchases.updatedCustomerInfoListener = UpdatedCustomerInfoListener { _: CustomerInfo? -> }
+
+        val inAppMessageTypeList = listOf<InAppMessageType>()
+        purchases.showInAppMessagesIfNeeded(activity)
+        purchases.showInAppMessagesIfNeeded(activity, inAppMessageTypeList)
     }
 
     @SuppressWarnings("LongParameterList", "EmptyFunctionBlock")
@@ -85,21 +92,35 @@ private class PurchasesCommonAPI {
         }
 
         val oldProductId = "old"
+        val replacementMode = GoogleReplacementMode.WITH_TIME_PRORATION
         val prorationMode = GoogleProrationMode.IMMEDIATE_WITH_TIME_PRORATION
         val isPersonalizedPrice = true
 
         val purchasePackageBuilder: PurchaseParams.Builder = PurchaseParams.Builder(activity, packageToPurchase)
         purchasePackageBuilder.oldProductId(oldProductId).googleProrationMode(prorationMode)
+        purchasePackageBuilder
+            .oldProductId(oldProductId)
+            .googleReplacementMode(replacementMode)
+            .googleProrationMode(prorationMode)
+            .isPersonalizedPrice(isPersonalizedPrice)
         val purchasePackageParams: PurchaseParams = purchasePackageBuilder.build()
         purchases.purchase(purchasePackageParams, purchaseCallback)
 
         val purchaseProductBuilder: PurchaseParams.Builder = PurchaseParams.Builder(activity, storeProduct)
-        purchaseProductBuilder.oldProductId(oldProductId).googleProrationMode(prorationMode)
+        purchaseProductBuilder
+            .oldProductId(oldProductId)
+            .googleReplacementMode(replacementMode)
+            .googleProrationMode(prorationMode)
+            .isPersonalizedPrice(isPersonalizedPrice)
         val purchaseProductParams: PurchaseParams = purchaseProductBuilder.build()
         purchases.purchase(purchaseProductParams, purchaseCallback)
 
         val purchaseOptionBuilder: PurchaseParams.Builder = PurchaseParams.Builder(activity, subscriptionOption)
-        purchaseOptionBuilder.oldProductId(oldProductId).googleProrationMode(prorationMode)
+        purchaseOptionBuilder
+            .oldProductId(oldProductId)
+            .googleReplacementMode(replacementMode)
+            .googleProrationMode(prorationMode)
+            .isPersonalizedPrice(isPersonalizedPrice)
         val purchaseOptionsParams: PurchaseParams = purchaseOptionBuilder.build()
         purchases.purchase(purchaseOptionsParams, purchaseCallback)
     }
@@ -170,11 +191,14 @@ private class PurchasesCommonAPI {
             .appUserID("")
             .observerMode(true)
             .observerMode(false)
+            .showInAppMessagesAutomatically(true)
             .service(executorService)
             .diagnosticsEnabled(true)
             .entitlementVerificationMode(EntitlementVerificationMode.INFORMATIONAL)
             .informationalVerificationModeAndDiagnosticsEnabled(true)
             .build()
+
+        val showInAppMessagesAutomatically: Boolean = build.showInAppMessagesAutomatically
 
         val instance: Purchases = Purchases.sharedInstance
     }

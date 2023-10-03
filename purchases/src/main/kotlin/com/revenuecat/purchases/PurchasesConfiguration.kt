@@ -9,6 +9,7 @@ open class PurchasesConfiguration(builder: Builder) {
     val apiKey: String
     val appUserID: String?
     val observerMode: Boolean
+    val showInAppMessagesAutomatically: Boolean
     val service: ExecutorService?
     val store: Store
     val diagnosticsEnabled: Boolean
@@ -25,6 +26,7 @@ open class PurchasesConfiguration(builder: Builder) {
         this.diagnosticsEnabled = builder.diagnosticsEnabled
         this.verificationMode = builder.verificationMode
         this.dangerousSettings = builder.dangerousSettings
+        this.showInAppMessagesAutomatically = builder.showInAppMessagesAutomatically
     }
 
     open class Builder(
@@ -37,6 +39,9 @@ open class PurchasesConfiguration(builder: Builder) {
 
         @set:JvmSynthetic @get:JvmSynthetic
         internal var observerMode: Boolean = false
+
+        @set:JvmSynthetic @get:JvmSynthetic
+        internal var showInAppMessagesAutomatically: Boolean = true
 
         @set:JvmSynthetic @get:JvmSynthetic
         internal var service: ExecutorService? = null
@@ -55,6 +60,17 @@ open class PurchasesConfiguration(builder: Builder) {
 
         fun appUserID(appUserID: String?) = apply {
             this.appUserID = appUserID
+        }
+
+        /**
+         * Enable this setting to show in-app messages from Google Play automatically. Default is enabled.
+         * For more info: https://rev.cat/googleplayinappmessaging
+         *
+         * If this setting is disabled, you can show the snackbar by calling
+         * [Purchases.showInAppMessagesIfNeeded]
+         */
+        fun showInAppMessagesAutomatically(showInAppMessagesAutomatically: Boolean) = apply {
+            this.showInAppMessagesAutomatically = showInAppMessagesAutomatically
         }
 
         fun observerMode(observerMode: Boolean) = apply {

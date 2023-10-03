@@ -2,9 +2,11 @@ package com.revenuecat.purchases
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.models.StoreProduct
+import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.utils.STUB_PRODUCT_IDENTIFIER
 import com.revenuecat.purchases.utils.stubStoreProduct
 import io.mockk.every
+import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
@@ -226,6 +228,115 @@ internal class PurchasesCoroutinesCommonTest : BasePurchasesTest() {
         assertThat(exception).isNotNull
         assertThat(exception).isInstanceOf(PurchasesException::class.java)
         assertThat((exception as PurchasesException).code).isEqualTo(PurchasesErrorCode.ConfigurationError)
+    }
+
+    // endregion
+
+    // region awaitRestore
+
+    @Test
+    fun `restore - Success`() = runTest {
+        every {
+            mockBillingAbstract.queryAllPurchases(
+                appUserId,
+                captureLambda(),
+                any()
+            )
+        } answers {
+            lambda<(List<StoreTransaction>) -> Unit>().captured.also {
+                it.invoke(listOf(mockk(relaxed = true)))
+            }
+        }
+
+        val result: CustomerInfo = purchases.awaitRestore()
+
+        verify(exactly = 1) {
+            mockBillingAbstract.queryAllPurchases(
+                appUserId,
+                any(),
+                any(),
+            )
+        }
+        assertThat(result).isNotNull
+    }
+
+    @Test
+    fun `restore - Success - customer info matches expectations`() = runTest {
+        val afterRestoreCustomerInfo = mockk<CustomerInfo>()
+        val storeTransaction = mockk<StoreTransaction>(relaxed = true)
+        every {
+            mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(
+                storeTransaction,
+                any(),
+                true,
+                appUserId,
+                PostReceiptInitiationSource.RESTORE,
+                onSuccess = captureLambda(),
+                any()
+            )
+        } answers {
+            lambda<(StoreTransaction, CustomerInfo) -> Unit>().captured.also {
+                it.invoke(storeTransaction, afterRestoreCustomerInfo)
+            }
+        }
+        every {
+            mockBillingAbstract.queryAllPurchases(
+                appUserId,
+                captureLambda(),
+                any()
+            )
+        } answers {
+            lambda<(List<StoreTransaction>) -> Unit>().captured.also {
+                it.invoke(listOf(storeTransaction))
+            }
+        }
+
+        val result: CustomerInfo = purchases.awaitRestore()
+
+        verify(exactly = 1) {
+            mockBillingAbstract.queryAllPurchases(
+                appUserId,
+                any(),
+                any(),
+            )
+        }
+        assertThat(result).isNotNull
+        assertThat(result).isEqualTo(afterRestoreCustomerInfo)
+    }
+
+    @Test
+    fun `restore - CustomerInfoError`() = runTest {
+        val error = PurchasesError(PurchasesErrorCode.CustomerInfoError, "Customer info error")
+        every {
+            mockBillingAbstract.queryAllPurchases(
+                appUserId,
+                any(),
+                onReceivePurchaseHistoryError = captureLambda(),
+            )
+        } answers {
+            lambda<(PurchasesError?) -> Unit>().captured.invoke(error)
+        }
+
+        var result: CustomerInfo? = null
+        var exception: Throwable? = null
+        runCatching {
+            result = purchases.awaitRestore()
+        }.onFailure {
+            exception = it
+        }
+
+        verify(exactly = 1) {
+            mockBillingAbstract.queryAllPurchases(
+                appUserId,
+                any(),
+                any(),
+            )
+        }
+
+        assertThat(result).isNull()
+        assertThat(exception).isNotNull
+        assertThat(exception).isInstanceOf(PurchasesException::class.java)
+        assertThat((exception as PurchasesException).code).isEqualTo(PurchasesErrorCode.CustomerInfoError)
     }
 
     // endregion

@@ -61,8 +61,18 @@ class PaywallDataTest {
             assertThat(darkColors.accent2?.stringRepresentation).isEqualTo("#FF00FF")
         }
 
-        val requiredLocale = "gl_ES".toLocale()
-        assertThat(paywall.configForLocale(requiredLocale)).isNull()
+        val unknownLocale = "gl_ES".toLocale()
+        assertThat(paywall.configForLocale(unknownLocale)).isNull()
+
+        val validLocale = "en_US".toLocale()
+        val localizedConfiguration = paywall.configForLocale(validLocale)
+        assertThat(localizedConfiguration).isNotNull
+        assertThat(localizedConfiguration?.callToActionWithMultipleIntroOffers).isEqualTo(
+            "Purchase now with multiple offers"
+        )
+        assertThat(localizedConfiguration?.offerDetailsWithMultipleIntroOffers).isEqualTo(
+            "Start your {{ sub_offer_duration }} trial, then {{ sub_offer_duration_2 }} discount, then {{ sub_price_per_month }} per month"
+        )
     }
 
     @Test

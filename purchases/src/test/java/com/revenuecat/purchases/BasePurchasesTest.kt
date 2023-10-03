@@ -24,7 +24,7 @@ import com.revenuecat.purchases.google.toStoreTransaction
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
-import com.revenuecat.purchases.models.GoogleProrationMode
+import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.SubscriptionOption
@@ -332,10 +332,12 @@ internal open class BasePurchasesTest {
         anonymous: Boolean,
         autoSync: Boolean = true,
         customEntitlementComputation: Boolean = false,
+        showInAppMessagesAutomatically: Boolean = false,
     ) {
         val appConfig = AppConfig(
             context = mockContext,
             observerMode = false,
+            showInAppMessagesAutomatically = showInAppMessagesAutomatically,
             platformInfo = PlatformInfo("native", "3.2.0"),
             proxyURL = null,
             store = Store.PLAY_STORE,
@@ -403,7 +405,7 @@ internal open class BasePurchasesTest {
         purchaseable: Any,
         oldProductId: String? = null,
         isPersonalizedPrice: Boolean? = null,
-        googleProrationMode: GoogleProrationMode? = null
+        googleReplacementMode: GoogleReplacementMode? = null
     ): PurchaseParams {
         val builder = when (purchaseable) {
             is SubscriptionOption -> PurchaseParams.Builder(mockActivity, purchaseable)
@@ -420,8 +422,8 @@ internal open class BasePurchasesTest {
             builder!!.isPersonalizedPrice(it)
         }
 
-        googleProrationMode?.let {
-            builder!!.googleProrationMode(googleProrationMode)
+        googleReplacementMode?.let {
+            builder!!.googleReplacementMode(googleReplacementMode)
         }
         return builder!!.build()
     }

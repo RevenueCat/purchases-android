@@ -4,7 +4,7 @@ import java.io.File
 
 private const val BYTE_UNIT_CONVERSION: Double = 1024.0
 
-val File.sizeInBytes: Long
+internal val File.sizeInBytes: Long
     get() = length()
-val File.sizeInKB: Double
+internal val File.sizeInKB: Double
     get() = sizeInBytes / BYTE_UNIT_CONVERSION

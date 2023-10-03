@@ -42,7 +42,6 @@ internal class OfferingsManager(
                     } else OfferingStrings.OFFERINGS_STALE_UPDATING_IN_FOREGROUND,
                 )
                 fetchAndCacheOfferings(appUserID, appInBackground)
-                log(LogIntent.RC_SUCCESS, OfferingStrings.OFFERINGS_UPDATED_FROM_NETWORK)
             }
         }
     }
@@ -51,7 +50,6 @@ internal class OfferingsManager(
         if (offeringsCache.isOfferingsCacheStale(appInBackground = false)) {
             log(LogIntent.DEBUG, OfferingStrings.OFFERINGS_STALE_UPDATING_IN_FOREGROUND)
             fetchAndCacheOfferings(appUserID, appInBackground = false)
-            log(LogIntent.RC_SUCCESS, OfferingStrings.OFFERINGS_UPDATED_FROM_NETWORK)
         }
     }
 
@@ -61,6 +59,7 @@ internal class OfferingsManager(
         onError: ((PurchasesError) -> Unit)? = null,
         onSuccess: ((Offerings) -> Unit)? = null,
     ) {
+        log(LogIntent.RC_SUCCESS, OfferingStrings.OFFERINGS_START_UPDATE_FROM_NETWORK)
         backend.getOfferings(
             appUserID,
             appInBackground,

@@ -19,6 +19,7 @@ import com.revenuecat.purchases.interfaces.SyncPurchasesCallback
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import com.revenuecat.purchases.models.BillingFeature
 import com.revenuecat.purchases.models.GoogleProrationMode
+import com.revenuecat.purchases.models.InAppMessageType
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.strings.BillingStrings
 import com.revenuecat.purchases.strings.ConfigureStrings
@@ -234,7 +235,7 @@ class Purchases internal constructor(
             storeProduct.purchasingData,
             null,
             upgradeInfo.oldSku,
-            GoogleProrationMode.fromPlayBillingClientMode(upgradeInfo.prorationMode),
+            GoogleProrationMode.fromPlayBillingClientMode(upgradeInfo.prorationMode)?.asGoogleReplacementMode,
             listener,
         )
     }
@@ -302,7 +303,7 @@ class Purchases internal constructor(
             packageToPurchase.product.purchasingData,
             packageToPurchase.offering,
             upgradeInfo.oldSku,
-            GoogleProrationMode.fromPlayBillingClientMode(upgradeInfo.prorationMode),
+            GoogleProrationMode.fromPlayBillingClientMode(upgradeInfo.prorationMode)?.asGoogleReplacementMode,
             callback,
         )
     }
@@ -417,6 +418,22 @@ class Purchases internal constructor(
     @Suppress("MemberVisibilityCanBePrivate")
     fun removeUpdatedCustomerInfoListener() {
         purchasesOrchestrator.removeUpdatedCustomerInfoListener()
+    }
+
+    /**
+     * Google Play only, no-op for Amazon.
+     * Displays the specified in-app message types to the user as a snackbar if there are any available to be shown.
+     * If [PurchasesConfiguration.showInAppMessagesAutomatically] is enabled, this will be done
+     * automatically on each Activity's onStart.
+     *
+     * For more info: https://rev.cat/googleplayinappmessaging
+     */
+    @JvmOverloads
+    fun showInAppMessagesIfNeeded(
+        activity: Activity,
+        inAppMessageTypes: List<InAppMessageType> = listOf(InAppMessageType.BILLING_ISSUES),
+    ) {
+        purchasesOrchestrator.showInAppMessagesIfNeeded(activity, inAppMessageTypes)
     }
 
     /**

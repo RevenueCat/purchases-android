@@ -112,8 +112,10 @@ internal class TemplateConfigurationFactoryTest {
             subtitle = localizedConfiguration.subtitle,
             callToAction = callToAction,
             callToActionWithIntroOffer = null,
+            callToActionWithMultipleIntroOffers = null,
             offerDetails = offerDetails,
             offerDetailsWithIntroOffer = offerDetailsWithIntroOffer,
+            offerDetailsWithMultipleIntroOffers = null,
             offerName = periodName,
             features = emptyList(),
         )

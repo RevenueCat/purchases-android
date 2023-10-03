@@ -6,8 +6,10 @@
       "subtitle": "Description",
       "call_to_action": "Purchase now",
       "call_to_action_with_intro_offer": "Purchase now",
+      "call_to_action_with_multiple_intro_offers": "Purchase now with multiple offers",
       "offer_details": "{{ sub_price_per_month }} per month",
       "offer_details_with_intro_offer": "Start your {{ sub_offer_duration }} trial, then {{ sub_price_per_month }} per month",
+      "offer_details_with_multiple_intro_offers": "Start your {{ sub_offer_duration }} trial, then {{ sub_offer_duration_2 }} discount, then {{ sub_price_per_month }} per month",
       "offer_name": "{{ period }}",
       "features": [
         {

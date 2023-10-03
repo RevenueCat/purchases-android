@@ -20,6 +20,7 @@ import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.models.GoogleProrationMode
+import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.utils.Responses
@@ -35,6 +36,8 @@ import io.mockk.verify
 import io.mockk.verifyAll
 import org.assertj.core.api.Assertions.assertThat
 import org.json.JSONObject
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -110,40 +113,6 @@ internal class PurchasesTest : BasePurchasesTest() {
     }
 
     // region purchasing
-
-    @Test
-    fun `when making a deferred product change using the deprecated method, completion is called with the old product`() {
-        val newProductId = listOf("newproduct")
-        val receiptInfo = mockQueryingProductDetails(newProductId.first(), ProductType.SUBS, null)
-        val oldPurchase = mockPurchaseFound()
-        mockQueryingProductDetails(oldPurchase.productIds.first(), ProductType.SUBS, null)
-        var callCount = 0
-        purchases.purchaseProductWith(
-            mockActivity,
-            receiptInfo.storeProduct!!,
-            UpgradeInfo(oldPurchase.productIds[0], ProrationMode.DEFERRED),
-            onError = { _, _ ->
-                fail("should be successful")
-            },
-            onSuccess = { purchase, _ ->
-                callCount++
-                assertThat(purchase).isEqualTo(oldPurchase)
-            },
-        )
-        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(listOf(oldPurchase))
-        assertThat(callCount).isEqualTo(1)
-        verify(exactly = 1) {
-            mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(
-                purchase = oldPurchase,
-                storeProduct = any(),
-                isRestore = false,
-                appUserID = appUserId,
-                initiationSource = initiationSource,
-                onSuccess = any(),
-                onError = any(),
-            )
-        }
-    }
 
     @Test
     fun `deprecated upgrade defaults ProrationMode to null if not passed`() {
@@ -263,7 +232,7 @@ internal class PurchasesTest : BasePurchasesTest() {
         val packageToPurchase = offerings[STUB_OFFERING_IDENTIFIER]!!.monthly!!
         val purchaseParams = PurchaseParams.Builder(mockActivity, packageToPurchase)
             .oldProductId("oldProductId")
-            .googleProrationMode(GoogleProrationMode.DEFERRED)
+            .googleReplacementMode(GoogleReplacementMode.CHARGE_PRORATED_PRICE)
             .build()
 
         mockPurchaseFound()
@@ -284,11 +253,21 @@ internal class PurchasesTest : BasePurchasesTest() {
                 match { replaceProductInfo ->
                     replaceProductInfo.oldPurchase.productIds.size == 1 &&
                         replaceProductInfo.oldPurchase.productIds.first() == "oldProductId" &&
-                        replaceProductInfo.prorationMode == GoogleProrationMode.DEFERRED
+                        replaceProductInfo.replacementMode == GoogleReplacementMode.CHARGE_PRORATED_PRICE
                 },
                 STUB_OFFERING_IDENTIFIER,
                 null,
             )
+        }
+    }
+
+    @Test
+    fun `Converting between GoogleProrationMode and GoogleReplacementMode works`() {
+        GoogleProrationMode.values().forEach {
+            assertEquals(it.asGoogleReplacementMode.asGoogleProrationMode, it)
+        }
+        GoogleReplacementMode.values().forEach {
+            assertEquals(it.asGoogleProrationMode.asGoogleReplacementMode, it)
         }
     }
 
@@ -298,7 +277,7 @@ internal class PurchasesTest : BasePurchasesTest() {
         val packageToPurchase = offerings[STUB_OFFERING_IDENTIFIER]!!.monthly!!
         val purchaseParams = PurchaseParams.Builder(mockActivity, packageToPurchase)
             .oldProductId("oldProductId:oldBasePlanId")
-            .googleProrationMode(GoogleProrationMode.DEFERRED)
+            .googleReplacementMode(GoogleReplacementMode.CHARGE_PRORATED_PRICE)
             .build()
 
         mockPurchaseFound()
@@ -319,7 +298,7 @@ internal class PurchasesTest : BasePurchasesTest() {
                 match { replaceProductInfo ->
                     replaceProductInfo.oldPurchase.productIds.size == 1 &&
                         replaceProductInfo.oldPurchase.productIds.first() == "oldProductId" &&
-                        replaceProductInfo.prorationMode == GoogleProrationMode.DEFERRED
+                        replaceProductInfo.replacementMode == GoogleReplacementMode.CHARGE_PRORATED_PRICE
                 },
                 STUB_OFFERING_IDENTIFIER,
                 null,

@@ -23,6 +23,8 @@ import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback;
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener;
 import com.revenuecat.purchases.models.BillingFeature;
 import com.revenuecat.purchases.models.GoogleProrationMode;
+import com.revenuecat.purchases.models.InAppMessageType;
+import com.revenuecat.purchases.models.GoogleReplacementMode;
 import com.revenuecat.purchases.models.StoreProduct;
 import com.revenuecat.purchases.models.StoreTransaction;
 import com.revenuecat.purchases.models.SubscriptionOption;
@@ -35,7 +37,7 @@ import java.util.concurrent.ExecutorService;
 
 @SuppressWarnings({"unused"})
 final class PurchasesCommonAPI {
-    static void check(final Purchases purchases) {
+    static void check(final Purchases purchases, final Activity activity) {
         final ArrayList<String> productIds = new ArrayList<>();
 
         final ReceiveOfferingsCallback receiveOfferingsListener = new ReceiveOfferingsCallback() {
@@ -68,6 +70,10 @@ final class PurchasesCommonAPI {
         final UpdatedCustomerInfoListener updatedCustomerInfoListener = purchases.getUpdatedCustomerInfoListener();
         purchases.setUpdatedCustomerInfoListener((CustomerInfo customerInfo) -> {
         });
+
+        final List<InAppMessageType> inAppMessageTypeList = new ArrayList<>();
+        purchases.showInAppMessagesIfNeeded(activity);
+        purchases.showInAppMessagesIfNeeded(activity, inAppMessageTypeList);
     }
 
     static void checkPurchasing(final Purchases purchases,
@@ -85,23 +91,33 @@ final class PurchasesCommonAPI {
             }
         };
         String oldProductId = "old";
+        GoogleReplacementMode replacementMode = GoogleReplacementMode.WITH_TIME_PRORATION;
         GoogleProrationMode prorationMode = GoogleProrationMode.IMMEDIATE_WITH_TIME_PRORATION;
         Boolean isPersonalizedPrice = true;
 
         PurchaseParams.Builder purchaseProductBuilder = new PurchaseParams.Builder(activity, storeProduct);
-        purchaseProductBuilder.oldProductId(oldProductId).googleProrationMode(prorationMode)
+        purchaseProductBuilder
+                .oldProductId(oldProductId)
+                .googleReplacementMode(replacementMode)
+                .googleProrationMode(prorationMode)
                 .isPersonalizedPrice(isPersonalizedPrice);
         PurchaseParams purchaseProductParams = purchaseProductBuilder.build();
         purchases.purchase(purchaseProductParams, purchaseCallback);
 
         PurchaseParams.Builder purchaseOptionBuilder = new PurchaseParams.Builder(activity, subscriptionOption);
-        purchaseOptionBuilder.oldProductId(oldProductId).googleProrationMode(prorationMode)
+        purchaseOptionBuilder
+                .oldProductId(oldProductId)
+                .googleReplacementMode(replacementMode)
+                .googleProrationMode(prorationMode)
                 .isPersonalizedPrice(isPersonalizedPrice);
         PurchaseParams purchaseOptionParams = purchaseOptionBuilder.build();
         purchases.purchase(purchaseOptionParams, purchaseCallback);
 
         PurchaseParams.Builder purchasePackageBuilder = new PurchaseParams.Builder(activity, packageToPurchase);
-        purchasePackageBuilder.oldProductId(oldProductId).googleProrationMode(prorationMode)
+        purchasePackageBuilder
+                .oldProductId(oldProductId)
+                .googleReplacementMode(replacementMode)
+                .googleProrationMode(prorationMode)
                 .isPersonalizedPrice(isPersonalizedPrice);
         PurchaseParams purchasePackageParams = purchasePackageBuilder.build();
         purchases.purchase(purchasePackageParams, purchaseCallback);
@@ -132,7 +148,10 @@ final class PurchasesCommonAPI {
                 .service(executorService)
                 .diagnosticsEnabled(true)
                 .entitlementVerificationMode(EntitlementVerificationMode.INFORMATIONAL)
+                .showInAppMessagesAutomatically(true)
                 .build();
+
+        final Boolean showInAppMessagesAutomatically = build.getShowInAppMessagesAutomatically();
 
         final Purchases instance = Purchases.getSharedInstance();
     }
