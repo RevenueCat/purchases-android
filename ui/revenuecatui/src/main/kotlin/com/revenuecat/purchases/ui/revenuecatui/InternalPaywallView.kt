@@ -56,6 +56,9 @@ private fun getPaywallViewModel(
 ): PaywallViewModel {
     val applicationContext = LocalContext.current.applicationContext
     return viewModel<PaywallViewModelImpl>(
+        // We need to pass the key in order to create different view models for different offerings when
+        // trying to load different paywalls for the same view model store owner.
+        key = offering?.identifier,
         factory = PaywallViewModelFactory(
             applicationContext.toAndroidContext(),
             mode,

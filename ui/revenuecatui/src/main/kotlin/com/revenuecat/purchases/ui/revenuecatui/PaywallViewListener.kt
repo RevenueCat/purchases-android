@@ -12,5 +12,5 @@ interface PaywallViewListener {
     fun onRestoreStarted() {}
     fun onRestoreCompleted(customerInfo: CustomerInfo) {}
     fun onRestoreError(error: PurchasesError) {}
-    fun onDismissed() {}
+    fun onCloseButtonPressed() {}
 }
