@@ -33,7 +33,7 @@ import java.net.URL
 internal fun LoadingPaywallView(mode: PaywallViewMode) {
     val paywallData: PaywallData = PaywallData.createDefault(
         LoadingPaywallConstants.packages,
-        MaterialTheme.colorScheme
+        MaterialTheme.colorScheme,
     )
 
     val offering = Offering(
@@ -41,7 +41,7 @@ internal fun LoadingPaywallView(mode: PaywallViewMode) {
         serverDescription = "Loading paywall",
         metadata = emptyMap(),
         availablePackages = LoadingPaywallConstants.packages,
-        paywall = paywallData
+        paywall = paywallData,
     )
 
     val viewModel = LoadingViewModel(mode, offering, paywallData)
@@ -50,15 +50,16 @@ internal fun LoadingPaywallView(mode: PaywallViewMode) {
         VariableDataProvider(LocalContext.current.applicationContext.toAndroidContext()),
         mode,
         paywallData,
-        LoadingPaywallConstants.template
+        LoadingPaywallConstants.template,
     )
 
     when (state) {
         is PaywallViewState.Error,
-        is PaywallViewState.Loading -> Box {}
+        is PaywallViewState.Loading,
+        -> Box {}
         is PaywallViewState.Loaded -> Template2(
             state = state,
-            viewModel = viewModel
+            viewModel = viewModel,
         )
     }
 }
@@ -104,14 +105,14 @@ private object LoadingPaywallConstants {
                 description = "Annual",
                 period = Period(value = 1, unit = Period.Unit.YEAR, iso8601 = "P1Y"),
             ),
-        )
+        ),
     )
 }
 
 private class LoadingViewModel(
     mode: PaywallViewMode = PaywallViewMode.default,
     offering: Offering,
-    paywall: PaywallData
+    paywall: PaywallData,
 ) : ViewModel(), PaywallViewModel {
     override val state: StateFlow<PaywallViewState>
         get() = _state.asStateFlow()
@@ -125,8 +126,8 @@ private class LoadingViewModel(
                 VariableDataProvider(MockApplicationContext()),
                 mode,
                 template = LoadingPaywallConstants.template,
-                validatedPaywallData = paywall
-            )
+                validatedPaywallData = paywall,
+            ),
         )
 
     override fun selectPackage(packageToSelect: TemplateConfiguration.PackageInfo) {
