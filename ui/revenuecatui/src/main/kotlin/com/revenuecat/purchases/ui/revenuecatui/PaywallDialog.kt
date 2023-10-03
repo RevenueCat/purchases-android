@@ -22,6 +22,11 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.computeWindowWidthSizeClass
 import kotlinx.coroutines.launch
 
+/**
+ * Composable offering a dialog screen Paywall UI configured from the RevenueCat dashboard.
+ * This dialog will be shown as a full screen dialog in compact devices and a normal dialog othewise.
+ * @param paywallDialogOptions The options to configure the PaywallDialog and what to do on dismissal.
+ */
 @Composable
 fun PaywallDialog(
     paywallDialogOptions: PaywallDialogOptions,
@@ -43,7 +48,9 @@ fun PaywallDialog(
                 }
                 if (shouldDisplayDialog) {
                     Logger.d("Displaying paywall dialog according to display logic")
-                } else Logger.d("Not displaying paywall dialog according to display logic")
+                } else {
+                    Logger.d("Not displaying paywall dialog according to display logic")
+                }
             }
         }
     }
