@@ -30,6 +30,7 @@ import com.revenuecat.purchases.ui.revenuecatui.InternalPaywallView
 import com.revenuecat.purchases.ui.revenuecatui.UIConstant
 import com.revenuecat.purchases.ui.revenuecatui.composables.Footer
 import com.revenuecat.purchases.ui.revenuecatui.composables.IconImage
+import com.revenuecat.purchases.ui.revenuecatui.composables.IntroEligibilityStateView
 import com.revenuecat.purchases.ui.revenuecatui.composables.PaywallBackground
 import com.revenuecat.purchases.ui.revenuecatui.composables.PaywallIcon
 import com.revenuecat.purchases.ui.revenuecatui.composables.PaywallIconName
@@ -40,6 +41,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.TestData
 import com.revenuecat.purchases.ui.revenuecatui.data.currentColors
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.selectedLocalization
+import com.revenuecat.purchases.ui.revenuecatui.extensions.introEligibility
 
 private object Template2UIConstants {
     val maxIconWidth = 140.dp
@@ -57,10 +59,12 @@ internal fun Template2(state: PaywallViewState.Loaded, viewModel: PaywallViewMod
             modifier = Modifier.fillMaxSize(),
         ) {
             Box(
-                modifier = Modifier.weight(1f).padding(
-                    horizontal = UIConstant.defaultHorizontalPadding,
-                    vertical = UIConstant.defaultVerticalSpacing,
-                ),
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(
+                        horizontal = UIConstant.defaultHorizontalPadding,
+                        vertical = UIConstant.defaultVerticalSpacing,
+                    ),
                 contentAlignment = Alignment.Center,
             ) {
                 Template2MainContent(state, viewModel)
@@ -131,7 +135,9 @@ private fun SelectPackageButton(
         border = border,
     ) {
         Column(
-            modifier = Modifier.fillMaxSize().padding(4.dp),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(4.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -140,14 +146,11 @@ private fun SelectPackageButton(
                     text = packageInfo.localization.offerName ?: packageInfo.rcPackage.product.title,
                 )
             }
-            // TODO-PAYWALLS: Substitute with intro eligibility composable
-            val pricingPhases = packageInfo.rcPackage.product.defaultOption?.pricingPhases
-            val offerText = if (pricingPhases != null && pricingPhases.size > 1) {
-                packageInfo.localization.offerDetailsWithIntroOffer
-            } else {
-                packageInfo.localization.offerDetails
-            }
-            Text(text = offerText ?: "")
+            IntroEligibilityStateView(
+                textWithNoIntroOffer = packageInfo.localization.offerDetails,
+                textWithIntroOffer = packageInfo.localization.offerDetailsWithIntroOffer,
+                eligibility = packageInfo.rcPackage.introEligibility,
+            )
         }
     }
 }

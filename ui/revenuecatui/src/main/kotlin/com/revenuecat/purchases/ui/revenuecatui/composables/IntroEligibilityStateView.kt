@@ -13,7 +13,7 @@ internal fun IntroEligibilityStateView(
     textWithNoIntroOffer: String?,
     textWithIntroOffer: String?,
     eligibility: IntroOfferEligibility,
-    color: Color,
+    color: Color = Color.Unspecified,
 ) {
     val text: String = if (textWithIntroOffer != null && eligibility == IntroOfferEligibility.ELIGIBLE) {
         textWithIntroOffer
