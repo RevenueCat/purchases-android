@@ -9,8 +9,10 @@ internal data class ProcessedLocalizedConfiguration(
     val subtitle: String?,
     val callToAction: String,
     val callToActionWithIntroOffer: String?,
+    val callToActionWithMultipleIntroOffers: String?,
     val offerDetails: String?,
     val offerDetailsWithIntroOffer: String?,
+    val offerDetailsWithMultipleIntroOffers: String?,
     val offerName: String?,
     val features: List<PaywallData.LocalizedConfiguration.Feature> = emptyList(),
 ) {
@@ -29,21 +31,25 @@ internal data class ProcessedLocalizedConfiguration(
                     locale,
                 )
             }
-            return ProcessedLocalizedConfiguration(
-                title = localizedConfiguration.title.processVariables(),
-                subtitle = localizedConfiguration.subtitle?.processVariables(),
-                callToAction = localizedConfiguration.callToAction.processVariables(),
-                callToActionWithIntroOffer = localizedConfiguration.callToActionWithIntroOffer?.processVariables(),
-                offerDetails = localizedConfiguration.offerDetails?.processVariables(),
-                offerDetailsWithIntroOffer = localizedConfiguration.offerDetailsWithIntroOffer?.processVariables(),
-                offerName = localizedConfiguration.offerName?.processVariables(),
-                features = localizedConfiguration.features.map { feature ->
-                    feature.copy(
-                        title = feature.title.processVariables(),
-                        content = feature.content?.processVariables(),
-                    )
-                },
-            )
+            with(localizedConfiguration) {
+                return ProcessedLocalizedConfiguration(
+                    title = title.processVariables(),
+                    subtitle = subtitle?.processVariables(),
+                    callToAction = callToAction.processVariables(),
+                    callToActionWithIntroOffer = callToActionWithIntroOffer?.processVariables(),
+                    callToActionWithMultipleIntroOffers = callToActionWithMultipleIntroOffers?.processVariables(),
+                    offerDetails = offerDetails?.processVariables(),
+                    offerDetailsWithIntroOffer = offerDetailsWithIntroOffer?.processVariables(),
+                    offerDetailsWithMultipleIntroOffers = offerDetailsWithMultipleIntroOffers?.processVariables(),
+                    offerName = offerName?.processVariables(),
+                    features = features.map { feature ->
+                        feature.copy(
+                            title = feature.title.processVariables(),
+                            content = feature.content?.processVariables(),
+                        )
+                    },
+                )
+            }
         }
     }
 }

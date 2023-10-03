@@ -238,6 +238,14 @@ data class PaywallData(
         @SerialName("call_to_action_with_intro_offer") val callToActionWithIntroOffer: String? = null,
 
         /**
+         * The content of the main action button for purchasing a subscription when multiple intro offer are available.
+         * This may happen in Google Play, if you have an offer with both a free trial and a discounted price.
+         * If `null`, no information regarding trial eligibility will be displayed.
+         */
+        @SerialName("call_to_action_with_multiple_intro_offers")
+        val callToActionWithMultipleIntroOffers: String? = null,
+
+        /**
          * Description for the offer to be purchased.
          */
         @SerialName("offer_details") val offerDetails: String? = null,
@@ -247,6 +255,13 @@ data class PaywallData(
          * If `null`, no information regarding trial eligibility will be displayed.
          */
         @SerialName("offer_details_with_intro_offer") val offerDetailsWithIntroOffer: String? = null,
+
+        /**
+         * Description for the offer to be purchased when multiple intro offers are available.
+         * This may happen in Google Play, if you have an offer with both a free trial and a discounted price.
+         * If `null`, no information regarding trial eligibility will be displayed.
+         */
+        @SerialName("offer_details_with_multiple_intro_offers") val offerDetailsWithMultipleIntroOffers: String? = null,
 
         /**
          * The name representing each of the packages, most commonly a variable.
