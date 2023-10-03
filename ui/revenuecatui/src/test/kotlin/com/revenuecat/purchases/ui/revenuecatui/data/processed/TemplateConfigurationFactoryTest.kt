@@ -5,8 +5,9 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
 import com.revenuecat.purchases.ui.revenuecatui.PaywallViewMode
-import com.revenuecat.purchases.ui.revenuecatui.data.MockApplicationContext
-import com.revenuecat.purchases.ui.revenuecatui.data.TestData
+import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockApplicationContext
+import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
+import com.revenuecat.purchases.ui.revenuecatui.data.testdata.templates.template2
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Test

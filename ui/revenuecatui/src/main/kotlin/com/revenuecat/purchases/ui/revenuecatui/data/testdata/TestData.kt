@@ -1,4 +1,4 @@
-package com.revenuecat.purchases.ui.revenuecatui.data
+package com.revenuecat.purchases.ui.revenuecatui.data.testdata
 
 import android.content.Context
 import androidx.compose.material3.ColorScheme
@@ -15,13 +15,17 @@ import com.revenuecat.purchases.models.RecurrenceMode
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.models.SubscriptionOptions
-import com.revenuecat.purchases.paywalls.PaywallColor
 import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.ui.revenuecatui.PaywallViewMode
 import com.revenuecat.purchases.ui.revenuecatui.R
+import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModel
+import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewState
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.PaywallTemplate
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvider
+import com.revenuecat.purchases.ui.revenuecatui.data.testdata.templates.template1
+import com.revenuecat.purchases.ui.revenuecatui.data.testdata.templates.template2
+import com.revenuecat.purchases.ui.revenuecatui.data.testdata.templates.template3
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ApplicationContext
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toPaywallViewState
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -30,201 +34,15 @@ import kotlinx.coroutines.flow.asStateFlow
 import java.net.URL
 
 internal object TestData {
-    val template1 = PaywallData(
-        templateName = "1", // TODO-PAYWALLS: use enum
-        config = PaywallData.Configuration(
-            packages = listOf(
-                PackageType.MONTHLY.identifier!!,
-            ),
-            defaultPackage = PackageType.MONTHLY.identifier!!,
-            images = Constants.images,
-            blurredBackgroundImage = true,
-            displayRestorePurchases = true,
-            termsOfServiceURL = URL("https://revenuecat.com/tos"),
-            colors = PaywallData.Configuration.ColorInformation(
-                light = PaywallData.Configuration.Colors(
-                    background = PaywallColor(stringRepresentation = "#FFFFFF"),
-                    text1 = PaywallColor(stringRepresentation = "#000000"),
-                    callToActionBackground = PaywallColor(stringRepresentation = "#5CD27A"),
-                    callToActionForeground = PaywallColor(stringRepresentation = "#FFFFFF"),
-                    accent1 = PaywallColor(stringRepresentation = "#BC66FF"),
-                ),
-                dark = PaywallData.Configuration.Colors(
-                    background = PaywallColor(stringRepresentation = "#000000"),
-                    text1 = PaywallColor(stringRepresentation = "#FFFFFF"),
-                    callToActionBackground = PaywallColor(stringRepresentation = "#ACD27A"),
-                    callToActionForeground = PaywallColor(stringRepresentation = "#000000"),
-                    accent1 = PaywallColor(stringRepresentation = "#B022BB"),
-                ),
-            ),
-        ),
-        localization = mapOf(
-            "en_US" to PaywallData.LocalizedConfiguration(
-                title = "Ignite your child's curiosity",
-                subtitle = "Get access to all our educational content trusted by thousands of parents.",
-                callToAction = "Subscribe for {{ sub_price_per_month }}",
-                callToActionWithIntroOffer = "Purchase for {{ sub_price_per_month }} per month",
-                offerDetails = "{{ sub_price_per_month }} per month",
-                offerDetailsWithIntroOffer = "Start your {{ sub_offer_duration }} trial, " +
-                    "then {{ sub_price_per_month }} per month",
-            ),
-        ),
-        assetBaseURL = Constants.assetBaseURL,
-    )
-    val template2 = PaywallData(
-        templateName = "2", // TODO-PAYWALLS: use enum
-        config = PaywallData.Configuration(
-            packages = listOf(
-                PackageType.WEEKLY.identifier!!,
-                PackageType.MONTHLY.identifier!!,
-                PackageType.ANNUAL.identifier!!,
-            ),
-            defaultPackage = PackageType.MONTHLY.identifier!!,
-            images = Constants.images,
-            blurredBackgroundImage = true,
-            displayRestorePurchases = true,
-            termsOfServiceURL = URL("https://revenuecat.com/tos"),
-            privacyURL = URL("https://revenuecat.com/privacy"),
-            colors = PaywallData.Configuration.ColorInformation(
-                light = PaywallData.Configuration.Colors(
-                    background = PaywallColor(stringRepresentation = "#FFFFFF"),
-                    text1 = PaywallColor(stringRepresentation = "#000000"),
-                    callToActionBackground = PaywallColor(stringRepresentation = "#EC807C"),
-                    callToActionForeground = PaywallColor(stringRepresentation = "#FFFFFF"),
-                    accent1 = PaywallColor(stringRepresentation = "#BC66FF"),
-                    accent2 = PaywallColor(stringRepresentation = "#222222"),
-                ),
-            ),
-        ),
-        localization = mapOf(
-            "en_US" to PaywallData.LocalizedConfiguration(
-                title = "Call to action for better conversion.",
-                subtitle = "Lorem ipsum is simply dummy text of the printing and typesetting industry.",
-                callToAction = "Subscribe for {{ price_per_period }}",
-                offerDetails = "{{ total_price_and_per_month }}",
-                offerDetailsWithIntroOffer = "{{ total_price_and_per_month }} after {{ sub_offer_duration }} trial",
-                offerName = "{{ sub_period }}",
-            ),
-            "es_ES" to PaywallData.LocalizedConfiguration(
-                title = "Título en español",
-                subtitle = "Un lorem ipsum en español que es más largo para mostrar un subtítulo multilinea.",
-                callToAction = "Suscribete for {{ price_per_period }}",
-                offerDetails = "{{ total_price_and_per_month }}",
-                offerDetailsWithIntroOffer = "{{ total_price_and_per_month }} con {{ sub_offer_duration }} de prueba",
-                offerName = "{{ sub_period }}",
-            ),
-        ),
-        assetBaseURL = Constants.assetBaseURL,
-    )
-    val template3 = PaywallData(
-        templateName = "3", // TODO-PAYWALLS: use enum
-        config = PaywallData.Configuration(
-            packages = listOf(
-                PackageType.MONTHLY.identifier!!,
-            ),
-            images = PaywallData.Configuration.Images(
-                icon = "954459_1695680948.jpg",
-            ),
-            displayRestorePurchases = true,
-            termsOfServiceURL = URL("https://revenuecat.com/tos"),
-            privacyURL = URL("https://revenuecat.com/privacy"),
-            colors = PaywallData.Configuration.ColorInformation(
-                light = PaywallData.Configuration.Colors(
-                    background = PaywallColor(stringRepresentation = "#FFFFFF"),
-                    text1 = PaywallColor(stringRepresentation = "#000000"),
-                    text2 = PaywallColor(stringRepresentation = "#B7B7B7"),
-                    callToActionBackground = PaywallColor(stringRepresentation = "#EC807C"),
-                    callToActionForeground = PaywallColor(stringRepresentation = "#FFFFFF"),
-                    accent1 = PaywallColor(stringRepresentation = "#BC66FF"),
-                    accent2 = PaywallColor(stringRepresentation = "#222222"),
-                ),
-                dark = PaywallData.Configuration.Colors(
-                    background = PaywallColor(stringRepresentation = "#1c1c1c"),
-                    text1 = PaywallColor(stringRepresentation = "#ffffff"),
-                    text2 = PaywallColor(stringRepresentation = "#B7B7B7"),
-                    callToActionBackground = PaywallColor(stringRepresentation = "#45c186"),
-                    callToActionForeground = PaywallColor(stringRepresentation = "#FFFFFF"),
-                    accent1 = PaywallColor(stringRepresentation = "#F4E971"),
-                    accent2 = PaywallColor(stringRepresentation = "#4a4a4a"),
-                ),
-            ),
-        ),
-        localization = mapOf(
-            "en_US" to PaywallData.LocalizedConfiguration(
-                title = "How your free trial works",
-                callToAction = "Start",
-                features = listOf(
-                    PaywallData.LocalizedConfiguration.Feature(
-                        title = "Today",
-                        content = "Full access to 1000+ workouts plus free meal plan worth {{ price }}.",
-                        iconID = "tick",
-                    ),
-                    PaywallData.LocalizedConfiguration.Feature(
-                        title = "Day 7",
-                        content = "Get a reminder about when your trial is about to end.",
-                        iconID = "notification",
-                    ),
-                    PaywallData.LocalizedConfiguration.Feature(
-                        title = "Day 14",
-                        content = "You'll automatically get subscribed. " +
-                            "Cancel anytime before if you didn't love our app.",
-                        iconID = "attachment",
-                    ),
-                    PaywallData.LocalizedConfiguration.Feature(
-                        title = "Today",
-                        content = "Full access to 1000+ workouts plus free meal plan worth {{ price }}.",
-                        iconID = "tick",
-                    ),
-                    PaywallData.LocalizedConfiguration.Feature(
-                        title = "Day 7",
-                        content = "Get a reminder about when your trial is about to end.",
-                        iconID = "notification",
-                    ),
-                    PaywallData.LocalizedConfiguration.Feature(
-                        title = "Day 14",
-                        content = "You'll automatically get subscribed. " +
-                            "Cancel anytime before if you didn't love our app.",
-                        iconID = "attachment",
-                    ),
-                    PaywallData.LocalizedConfiguration.Feature(
-                        title = "Day 14",
-                        content = "You'll automatically get subscribed. " +
-                            "Cancel anytime before if you didn't love our app.",
-                        iconID = "attachment",
-                    ),
-                ),
-                offerDetails = "{{ total_price_and_per_month }}",
-                offerDetailsWithIntroOffer = "{{ total_price_and_per_month }} after {{ sub_offer_duration }} trial",
-            ),
-            "es_ES" to PaywallData.LocalizedConfiguration(
-                title = "Cómo funciona tu prueba gratuita",
-                callToAction = "Comenzar",
-                features = listOf(
-                    PaywallData.LocalizedConfiguration.Feature(
-                        title = "Hoy",
-                        content = "Acceso completo a más de 1000 entrenamientos más un plan de comidas gratuito " +
-                            "valorado en {{ price }}.",
-                        iconID = "tick",
-                    ),
-                    PaywallData.LocalizedConfiguration.Feature(
-                        title = "Día 7",
-                        content = "Recibirás un recordatorio cuando tu prueba esté a punto de finalizar.",
-                        iconID = "notification",
-                    ),
-                    PaywallData.LocalizedConfiguration.Feature(
-                        title = "Día 14",
-                        content = "Serás suscrito automáticamente. Cancela en cualquier momento antes si no te " +
-                            "encanta nuestra aplicación.",
-                        iconID = "attachment",
-                    ),
-                ),
-                offerDetails = "{{ total_price_and_per_month }}",
-                offerDetailsWithIntroOffer = "{{ total_price_and_per_month }} después de" +
-                    " {{ sub_offer_duration }} de prueba",
-            ),
-        ),
-        assetBaseURL = Constants.assetBaseURL,
-    )
+    object Constants {
+        val images = PaywallData.Configuration.Images(
+            header = "9a17e0a7_1689854430..jpeg",
+            background = "9a17e0a7_1689854342..jpg",
+            icon = "9a17e0a7_1689854430..jpeg",
+        )
+
+        val assetBaseURL = URL("https://assets.pawwalls.com")
+    }
 
     val template1Offering = Offering(
         identifier = "Template1",
@@ -405,16 +223,6 @@ internal class MockViewModel(
     override fun openURL(url: URL, context: Context) {
         error("Can't open URL")
     }
-}
-
-private object Constants {
-    val images = PaywallData.Configuration.Images(
-        header = "9a17e0a7_1689854430..jpeg",
-        background = "9a17e0a7_1689854342..jpg",
-        icon = "9a17e0a7_1689854430..jpeg",
-    )
-
-    val assetBaseURL = URL("https://assets.pawwalls.com")
 }
 
 private data class TestStoreProduct(
