@@ -34,6 +34,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.processed.ColorsFactory
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockViewModel
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
+import com.revenuecat.purchases.ui.revenuecatui.data.testdata.templates.template2
 import java.net.URL
 
 @Composable
