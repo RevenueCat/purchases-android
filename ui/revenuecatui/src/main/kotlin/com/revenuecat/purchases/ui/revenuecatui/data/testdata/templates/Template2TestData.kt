@@ -3,12 +3,13 @@ package com.revenuecat.purchases.ui.revenuecatui.data.testdata.templates
 import com.revenuecat.purchases.PackageType
 import com.revenuecat.purchases.paywalls.PaywallColor
 import com.revenuecat.purchases.paywalls.PaywallData
+import com.revenuecat.purchases.ui.revenuecatui.data.processed.PaywallTemplate
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import java.net.URL
 
 internal val TestData.template2: PaywallData
     get() = PaywallData(
-        templateName = "2", // TODO-PAYWALLS: use enum
+        templateName = PaywallTemplate.TEMPLATE_2.name,
         config = PaywallData.Configuration(
             packages = listOf(
                 PackageType.WEEKLY.identifier!!,
