@@ -11,7 +11,7 @@ internal val TestData.template3: PaywallData
     get() = PaywallData(
         templateName = PaywallTemplate.TEMPLATE_3.id,
         config = PaywallData.Configuration(
-            packages = listOf(
+            packageIds = listOf(
                 PackageType.MONTHLY.identifier!!,
             ),
             images = PaywallData.Configuration.Images(

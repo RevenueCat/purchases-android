@@ -34,7 +34,7 @@ internal fun PaywallData.Companion.createDefaultForIdentifiers(
     return PaywallData(
         templateName = PaywallData.defaultTemplate.id,
         config = PaywallData.Configuration(
-            packages = packageIdentifiers,
+            packageIds = packageIdentifiers,
             images = PaywallData.Configuration.Images(
                 background = PaywallData.defaultBackgroundImage,
                 icon = PaywallData.defaultAppIconPlaceholder,

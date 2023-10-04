@@ -147,7 +147,7 @@ private fun RowScope.Button(
 private fun FooterPreview() {
     Footer(
         configuration = PaywallData.Configuration(
-            packages = listOf(),
+            packageIds = listOf(),
             termsOfServiceURL = URL("https://revenuecat.com/tos"),
             privacyURL = URL("https://revenuecat.com/privacy"),
             displayRestorePurchases = true,
