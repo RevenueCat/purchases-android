@@ -9,7 +9,7 @@ import java.net.URL
 
 internal val TestData.template2: PaywallData
     get() = PaywallData(
-        templateName = PaywallTemplate.TEMPLATE_2.name,
+        templateName = PaywallTemplate.TEMPLATE_2.id,
         config = PaywallData.Configuration(
             packages = listOf(
                 PackageType.WEEKLY.identifier!!,
