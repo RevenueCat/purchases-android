@@ -56,8 +56,6 @@ internal fun LoadingPaywallView(mode: PaywallViewMode) {
         LoadingPaywallConstants.template,
     )
 
-    val viewModel = LoadingViewModel(state)
-
     when (state) {
         // The loading PaywallData is known at compile time
         // and snapshots ensure that these 2 states are impossible.
@@ -65,7 +63,7 @@ internal fun LoadingPaywallView(mode: PaywallViewMode) {
         is PaywallViewState.Loading,
         -> Box {}
 
-        is PaywallViewState.Loaded -> LoadingPaywallView(state, viewModel)
+        is PaywallViewState.Loaded -> LoadingPaywallView(state, LoadingViewModel(state))
     }
 }
 
