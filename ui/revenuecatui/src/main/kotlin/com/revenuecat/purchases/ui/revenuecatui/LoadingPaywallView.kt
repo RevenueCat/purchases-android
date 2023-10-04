@@ -9,7 +9,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.lifecycle.ViewModel
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
@@ -141,7 +140,7 @@ private object LoadingPaywallConstants {
 
 private class LoadingViewModel(
     state: PaywallViewState,
-) : ViewModel(), PaywallViewModel {
+) : PaywallViewModel {
     override val state: StateFlow<PaywallViewState>
         get() = _state.asStateFlow()
 
