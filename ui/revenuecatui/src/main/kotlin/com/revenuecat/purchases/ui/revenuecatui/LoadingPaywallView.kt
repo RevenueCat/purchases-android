@@ -6,6 +6,7 @@ import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
@@ -15,6 +16,9 @@ import com.revenuecat.purchases.PackageType
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.paywalls.PaywallData
+import com.revenuecat.purchases.ui.revenuecatui.composables.Fade
+import com.revenuecat.purchases.ui.revenuecatui.composables.PlaceholderDefaults
+import com.revenuecat.purchases.ui.revenuecatui.composables.placeholder
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModel
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewState
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.PaywallTemplate
@@ -74,6 +78,15 @@ private fun LoadingPaywallView(state: PaywallViewState.Loaded, viewModel: Paywal
         Template2(
             state = state,
             viewModel = viewModel,
+            childModifier = Modifier
+                .placeholder(
+                    visible = true,
+                    highlight = Fade(
+                        highlightColor = LoadingPaywallConstants.placeholderColor.copy(alpha = 0.5f),
+                        animationSpec = PlaceholderDefaults.fadeAnimationSpec,
+                    ),
+                    color = LoadingPaywallConstants.placeholderColor,
+                ),
         )
 
         // Overlay to capture touches
@@ -93,6 +106,8 @@ private fun LoadingPaywallView(state: PaywallViewState.Loaded, viewModel: Paywal
 
 private object LoadingPaywallConstants {
     const val offeringIdentifier = "loading_offering"
+
+    val placeholderColor = Color.Gray
 
     val template = PaywallTemplate.TEMPLATE_2
 

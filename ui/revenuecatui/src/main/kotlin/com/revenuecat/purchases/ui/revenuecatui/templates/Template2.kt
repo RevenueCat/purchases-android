@@ -50,8 +50,15 @@ private object Template2UIConstants {
     const val checkmarkUnselectedAlpha = 0.3f
 }
 
+/**
+ * @param childModifier this allows using [Modifier.placeholder].
+ */
 @Composable
-internal fun Template2(state: PaywallViewState.Loaded, viewModel: PaywallViewModel) {
+internal fun Template2(
+    state: PaywallViewState.Loaded,
+    viewModel: PaywallViewModel,
+    childModifier: Modifier = Modifier,
+) {
     Box {
         PaywallBackground(state.templateConfiguration)
 
@@ -67,16 +74,24 @@ internal fun Template2(state: PaywallViewState.Loaded, viewModel: PaywallViewMod
                     ),
                 contentAlignment = Alignment.Center,
             ) {
-                Template2MainContent(state, viewModel)
+                Template2MainContent(state, viewModel, childModifier)
             }
-            PurchaseButton(state, viewModel)
-            Footer(templateConfiguration = state.templateConfiguration, viewModel = viewModel)
+            PurchaseButton(state, viewModel, childModifier)
+            Footer(
+                templateConfiguration = state.templateConfiguration,
+                viewModel = viewModel,
+                childModifier = childModifier,
+            )
         }
     }
 }
 
 @Composable
-private fun Template2MainContent(state: PaywallViewState.Loaded, viewModel: PaywallViewModel) {
+private fun Template2MainContent(
+    state: PaywallViewState.Loaded,
+    viewModel: PaywallViewModel,
+    childModifier: Modifier,
+) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -89,6 +104,7 @@ private fun Template2MainContent(state: PaywallViewState.Loaded, viewModel: Payw
             uri = state.templateConfiguration.images.iconUri,
             maxWidth = Template2UIConstants.maxIconWidth,
             iconCornerRadius = Template2UIConstants.iconCornerRadius,
+            childModifier = childModifier,
         )
         val localizedConfig = state.selectedLocalization
         val colors = state.templateConfiguration.getCurrentColors()
@@ -98,6 +114,7 @@ private fun Template2MainContent(state: PaywallViewState.Loaded, viewModel: Payw
             textAlign = TextAlign.Center,
             text = localizedConfig.title,
             color = colors.text1,
+            modifier = childModifier,
         )
         Text(
             style = MaterialTheme.typography.titleMedium,
@@ -105,9 +122,10 @@ private fun Template2MainContent(state: PaywallViewState.Loaded, viewModel: Payw
             textAlign = TextAlign.Center,
             text = localizedConfig.subtitle ?: "",
             color = colors.text1,
+            modifier = childModifier,
         )
         state.templateConfiguration.packages.all.forEach { packageInfo ->
-            SelectPackageButton(state, packageInfo, viewModel)
+            SelectPackageButton(state, packageInfo, viewModel, childModifier)
         }
     }
 }
@@ -117,6 +135,7 @@ private fun SelectPackageButton(
     state: PaywallViewState.Loaded,
     packageInfo: TemplateConfiguration.PackageInfo,
     viewModel: PaywallViewModel,
+    childModifier: Modifier,
 ) {
     val colors = state.templateConfiguration.getCurrentColors()
     val isSelected = packageInfo == state.selectedPackage
@@ -128,7 +147,7 @@ private fun SelectPackageButton(
     }
     val border = if (isSelected) null else BorderStroke(2.dp, colors.text1)
     Button(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = childModifier.fillMaxWidth(),
         onClick = { viewModel.selectPackage(packageInfo) },
         colors = ButtonDefaults.buttonColors(containerColor = background, contentColor = textColor),
         shape = RoundedCornerShape(15.dp),
