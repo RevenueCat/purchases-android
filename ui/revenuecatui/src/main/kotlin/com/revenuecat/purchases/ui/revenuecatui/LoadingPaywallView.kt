@@ -6,6 +6,7 @@ import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.ViewModel
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
@@ -18,9 +19,9 @@ import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewState
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.PaywallTemplate
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvider
-import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockApplicationContext
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestStoreProduct
 import com.revenuecat.purchases.ui.revenuecatui.extensions.createDefault
+import com.revenuecat.purchases.ui.revenuecatui.helpers.isInPreviewMode
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toAndroidContext
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toPaywallViewState
 import com.revenuecat.purchases.ui.revenuecatui.templates.Template2
@@ -44,14 +45,17 @@ internal fun LoadingPaywallView(mode: PaywallViewMode) {
         paywall = paywallData,
     )
 
-    val viewModel = LoadingViewModel(mode, offering, paywallData)
-
     val state = offering.toPaywallViewState(
-        VariableDataProvider(LocalContext.current.applicationContext.toAndroidContext()),
+        VariableDataProvider(
+            LocalContext.current.applicationContext.toAndroidContext(),
+            isInPreviewMode()
+        ),
         mode,
         paywallData,
         LoadingPaywallConstants.template,
     )
+
+    val viewModel = LoadingViewModel(state)
 
     when (state) {
         is PaywallViewState.Error,
@@ -110,9 +114,7 @@ private object LoadingPaywallConstants {
 }
 
 private class LoadingViewModel(
-    mode: PaywallViewMode = PaywallViewMode.default,
-    offering: Offering,
-    paywall: PaywallData,
+    state: PaywallViewState,
 ) : ViewModel(), PaywallViewModel {
     override val state: StateFlow<PaywallViewState>
         get() = _state.asStateFlow()
@@ -120,15 +122,7 @@ private class LoadingViewModel(
     override fun refreshStateIfLocaleChanged() = Unit
     override fun refreshStateIfColorsChanged(colorScheme: ColorScheme) = Unit
 
-    private val _state =
-        MutableStateFlow(
-            offering.toPaywallViewState(
-                VariableDataProvider(MockApplicationContext()),
-                mode,
-                template = LoadingPaywallConstants.template,
-                validatedPaywallData = paywall,
-            ),
-        )
+    private val _state = MutableStateFlow(state)
 
     override fun selectPackage(packageToSelect: TemplateConfiguration.PackageInfo) {
         error("Not supported")
@@ -145,4 +139,10 @@ private class LoadingViewModel(
     override fun openURL(url: URL, context: Context) {
         error("Can't open URL")
     }
+}
+
+@Preview(showBackground = true)
+@Composable
+internal fun LoadingPaywallViewPreview() {
+    LoadingPaywallView(mode = PaywallViewMode.FULL_SCREEN)
 }
