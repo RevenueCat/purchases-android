@@ -28,7 +28,7 @@ internal object PackageConfigurationFactory {
         }.takeUnless { it.isEmpty() } ?: availablePackages
 
         if (filteredRCPackages.isEmpty()) {
-            // This wont' happen because availablePackages won't be empty. Offerings can't have empty available packages
+            // This won't happen because availablePackages won't be empty. Offerings can't have empty available packages
             return Result.failure(PackageConfigurationError("No packages found for ids $packageIdsInConfig"))
         }
         val packageInfos = filteredRCPackages.map {
