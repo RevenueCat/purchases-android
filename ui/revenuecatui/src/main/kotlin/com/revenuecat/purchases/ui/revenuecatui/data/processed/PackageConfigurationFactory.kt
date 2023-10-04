@@ -10,24 +10,26 @@ internal object PackageConfigurationFactory {
     @Suppress("LongParameterList")
     fun createPackageConfiguration(
         variableDataProvider: VariableDataProvider,
-        packages: List<Package>,
+        availablePackages: List<Package>,
         activelySubscribedProductIdentifiers: Set<String>,
-        filter: List<String>,
+        packageIdsInConfig: List<String>,
         default: String?,
         localization: PaywallData.LocalizedConfiguration,
         configurationType: PackageConfigurationType,
         locale: Locale,
     ): Result<TemplateConfiguration.PackageConfiguration> {
-        val packagesById = packages.associateBy { it.identifier }
-        val filteredRCPackages = filter.mapNotNull {
-            val rcPackage = packagesById[it]
+        val availablePackagesById = availablePackages.associateBy { it.identifier }
+        val filteredRCPackages = packageIdsInConfig.mapNotNull {
+            val rcPackage = availablePackagesById[it]
             if (rcPackage == null) {
                 Logger.d("Package with id $it not found. Ignoring.")
             }
             rcPackage
-        }
+        }.takeUnless { it.isEmpty() } ?: availablePackages
+
         if (filteredRCPackages.isEmpty()) {
-            return Result.failure(PackageConfigurationError("No packages found for ids $filter"))
+            // This won't happen because availablePackages won't be empty. Offerings can't have empty available packages
+            return Result.failure(PackageConfigurationError("No packages found for ids $packageIdsInConfig"))
         }
         val packageInfos = filteredRCPackages.map {
             TemplateConfiguration.PackageInfo(
