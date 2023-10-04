@@ -31,7 +31,7 @@ internal fun InternalPaywallView(
 
     when (val state = viewModel.state.collectAsState().value) {
         is PaywallViewState.Loading -> {
-            Text(text = "Loading...")
+            LoadingPaywallView(mode = mode)
         }
         is PaywallViewState.Error -> {
             Text(text = "Error: ${state.errorMessage}")

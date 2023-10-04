@@ -191,7 +191,7 @@ internal class MockApplicationContext : ApplicationContext {
 }
 
 internal class MockViewModel(
-    private val mode: PaywallViewMode = PaywallViewMode.default,
+    mode: PaywallViewMode = PaywallViewMode.default,
     offering: Offering,
 ) : ViewModel(), PaywallViewModel {
     override val state: StateFlow<PaywallViewState>
@@ -225,7 +225,7 @@ internal class MockViewModel(
     }
 }
 
-private data class TestStoreProduct(
+internal data class TestStoreProduct(
     override val id: String,
     override val title: String,
     override val price: Price,
