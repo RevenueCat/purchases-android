@@ -41,11 +41,13 @@ import java.net.URL
 internal fun Footer(
     templateConfiguration: TemplateConfiguration,
     viewModel: PaywallViewModel,
+    childModifier: Modifier = Modifier,
 ) {
     Footer(
         configuration = templateConfiguration.configuration,
         colors = templateConfiguration.getCurrentColors(),
         viewModel = viewModel,
+        childModifier = childModifier,
     )
 }
 
@@ -54,11 +56,12 @@ private fun Footer(
     configuration: PaywallData.Configuration,
     colors: TemplateConfiguration.Colors,
     viewModel: PaywallViewModel,
+    childModifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
 
     Row(
-        modifier = Modifier
+        modifier = childModifier
             .fillMaxWidth()
             .height(intrinsicSize = IntrinsicSize.Max)
             .padding(
