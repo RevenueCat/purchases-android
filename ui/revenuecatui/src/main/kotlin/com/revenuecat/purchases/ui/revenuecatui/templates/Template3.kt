@@ -30,6 +30,7 @@ import com.revenuecat.purchases.ui.revenuecatui.InternalPaywallView
 import com.revenuecat.purchases.ui.revenuecatui.UIConstant
 import com.revenuecat.purchases.ui.revenuecatui.composables.Footer
 import com.revenuecat.purchases.ui.revenuecatui.composables.IconImage
+import com.revenuecat.purchases.ui.revenuecatui.composables.IntroEligibilityStateView
 import com.revenuecat.purchases.ui.revenuecatui.composables.PaywallIcon
 import com.revenuecat.purchases.ui.revenuecatui.composables.PaywallIconName
 import com.revenuecat.purchases.ui.revenuecatui.composables.PurchaseButton
@@ -38,6 +39,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewState
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.selectedLocalization
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
+import com.revenuecat.purchases.ui.revenuecatui.extensions.introEligibility
 
 private object Template3UIConstants {
     val iconCornerRadius = 8.dp
@@ -66,6 +68,17 @@ internal fun Template3(
             verticalArrangement = Arrangement.spacedBy(UIConstant.defaultVerticalSpacing, Alignment.CenterVertically),
         ) {
             Template3MainContent(state)
+        }
+        Column(
+            modifier = Modifier.align(Alignment.CenterHorizontally),
+        ) {
+            IntroEligibilityStateView(
+                textWithNoIntroOffer = state.selectedLocalization.offerDetails,
+                textWithIntroOffer = state.selectedLocalization.offerDetailsWithIntroOffer,
+                eligibility = state.selectedPackage.introEligibility,
+                color = state.templateConfiguration.getCurrentColors().text1,
+                textAlign = TextAlign.Center,
+            )
         }
         PurchaseButton(state, viewModel)
         Footer(templateConfiguration = state.templateConfiguration, viewModel = viewModel)
@@ -166,8 +179,8 @@ private fun Feature(
     }
 }
 
-@Preview(locale = "en-rUS")
-@Preview(locale = "es-rES")
+@Preview(locale = "en-rUS", showBackground = true)
+@Preview(locale = "es-rES", showBackground = true)
 @Composable
 private fun Template3Preview() {
     InternalPaywallView(offering = TestData.template3Offering)
