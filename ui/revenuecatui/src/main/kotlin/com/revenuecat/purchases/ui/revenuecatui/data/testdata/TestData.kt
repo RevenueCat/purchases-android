@@ -2,6 +2,7 @@ package com.revenuecat.purchases.ui.revenuecatui.data.testdata
 
 import android.content.Context
 import androidx.compose.material3.ColorScheme
+import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
@@ -52,6 +53,38 @@ internal object TestData {
             offerDetailsWithIntroOffer = "{{ total_price_and_per_month }} after {{ sub_offer_duration }} trial",
             offerName = "{{ sub_period }}",
             features = emptyList(),
+        )
+
+        val currentColorScheme = ColorScheme(
+            primary = Color.White,
+            onPrimary = Color.White,
+            primaryContainer = Color.White,
+            onPrimaryContainer = Color.White,
+            inversePrimary = Color.Green,
+            secondary = Color.Black,
+            onSecondary = Color.Black,
+            secondaryContainer = Color.Black,
+            onSecondaryContainer = Color.Black,
+            tertiary = Color.Cyan,
+            onTertiary = Color.Black,
+            tertiaryContainer = Color.Gray,
+            onTertiaryContainer = Color.White,
+            background = Color.White,
+            onBackground = Color.Black,
+            surface = Color.Gray,
+            onSurface = Color.Black,
+            surfaceVariant = Color.DarkGray,
+            onSurfaceVariant = Color.White,
+            surfaceTint = Color.LightGray,
+            inverseSurface = Color.Black,
+            inverseOnSurface = Color.White,
+            error = Color.Red,
+            onError = Color.White,
+            errorContainer = Color.Red,
+            onErrorContainer = Color.White,
+            outline = Color.Transparent,
+            outlineVariant = Color.LightGray,
+            scrim = Color.Gray,
         )
     }
 
