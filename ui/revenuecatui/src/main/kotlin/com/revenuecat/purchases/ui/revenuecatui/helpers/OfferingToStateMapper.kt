@@ -69,7 +69,7 @@ internal fun Offering.toPaywallViewState(
         variableDataProvider = variableDataProvider,
         mode = mode,
         paywallData = validatedPaywallData,
-        packages = availablePackages,
+        availablePackages = availablePackages,
         activelySubscribedProductIdentifiers = emptySet(), // TODO-PAYWALLS: Check for active subscriptions
         template,
     )
