@@ -147,7 +147,7 @@ private fun SelectPackageButton(
     }
     val border = if (isSelected) null else BorderStroke(2.dp, colors.text1)
     Button(
-        modifier = Modifier.fillMaxWidth().then(childModifier),
+        modifier = childModifier.fillMaxWidth(),
         onClick = { viewModel.selectPackage(packageInfo) },
         colors = ButtonDefaults.buttonColors(containerColor = background, contentColor = textColor),
         shape = RoundedCornerShape(15.dp),
