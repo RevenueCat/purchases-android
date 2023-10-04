@@ -1,0 +1,52 @@
+{
+  "asset_base_url" : "https:",
+  "config" : {
+    "blurred_background_image" : true,
+    "colors" : {
+      "light" : {
+        "accent_1" : "#000000",
+        "accent_2" : "#FFFFFF",
+        "background" : "#FFFFFF",
+        "call_to_action_background" : "#000000",
+        "call_to_action_foreground" : "#FFFFFF",
+        "text_1" : "#FFFFFF"
+      },
+      "dark" : {
+        "accent_1" : "#000000",
+        "accent_2" : "#FFFFFF",
+        "background" : "#000000",
+        "call_to_action_background" : "#000000",
+        "call_to_action_foreground" : "#000000",
+        "text_1" : "#FFFFFF"
+      }
+    },
+    "display_restore_purchases" : true,
+    "images" : {
+      "background" : "default_background",
+      "header" : null,
+      "icon" : "revenuecatui_default_paywall_app_icon"
+    },
+    "packages" : [
+      "$rc_annual",
+      "$rc_monthly"
+    ],
+    "privacy_url" : null,
+    "tos_url" : null
+  },
+  "localized_strings" : {
+    "en_US" : {
+      "call_to_action" : "Continue",
+      "call_to_action_with_intro_offer" : null,
+      "features" : [
+
+      ],
+      "offer_details" : "{{ total_price_and_per_month }}",
+      "offer_details_with_intro_offer" : "Start your {{ sub_offer_duration }} trial, then {{ total_price_and_per_month }}.",
+      "offer_name" : null,
+      "subtitle" : null,
+      "title" : "{{ app_name }}"
+    }
+  },
+  "revision" : -1,
+  "template_name" : "2"
+}

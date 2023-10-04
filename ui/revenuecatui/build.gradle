@@ -1,6 +1,7 @@
 plugins {
     alias libs.plugins.android.library
     alias libs.plugins.kotlin.android
+    alias libs.plugins.kotlin.serialization
 }
 
 
@@ -53,6 +54,7 @@ dependencies {
     implementation libs.coil.svg
     debugImplementation libs.compose.ui.tooling
     debugImplementation libs.androidx.test.compose.manifest
+    implementation libs.kotlinx.serialization.json
 
     testImplementation libs.bundles.test
     testImplementation libs.coroutines.test

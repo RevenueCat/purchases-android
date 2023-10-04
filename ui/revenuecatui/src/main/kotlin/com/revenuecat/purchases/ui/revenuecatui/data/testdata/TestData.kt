@@ -15,6 +15,7 @@ import com.revenuecat.purchases.models.RecurrenceMode
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.models.SubscriptionOptions
+import com.revenuecat.purchases.paywalls.PaywallColor
 import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.ui.revenuecatui.PaywallViewMode
 import com.revenuecat.purchases.ui.revenuecatui.R
@@ -42,7 +43,27 @@ internal object TestData {
         )
 
         val assetBaseURL = URL("https://assets.pawwalls.com")
+
+        val localization = PaywallData.LocalizedConfiguration(
+            title = "Call to action for _better_ conversion.",
+            subtitle = "Lorem ipsum is simply dummy text of the ~printing and~ typesetting industry.",
+            callToAction = "Subscribe for {{ sub_price_per_month }}/mo",
+            offerDetails = "{{ total_price_and_per_month }}",
+            offerDetailsWithIntroOffer = "{{ total_price_and_per_month }} after {{ sub_offer_duration }} trial",
+            offerName = "{{ sub_period }}",
+            features = emptyList(),
+        )
     }
+
+    val offeringWithNoPaywall = Offering(
+        identifier = "Template1",
+        availablePackages = listOf(
+            Packages.monthly,
+        ),
+        metadata = mapOf(),
+        paywall = null,
+        serverDescription = "",
+    )
 
     val template1Offering = Offering(
         identifier = "Template1",
@@ -74,6 +95,46 @@ internal object TestData {
         metadata = mapOf(),
         paywall = template3,
         serverDescription = "",
+    )
+
+    val offeringWithMultiPackagePaywall = Offering(
+        identifier = "offeringWithMultiPackagePaywall",
+        serverDescription = "Offering",
+        metadata = mapOf(),
+        paywall = PaywallData(
+            templateName = PaywallTemplate.TEMPLATE_2.id,
+            config = PaywallData.Configuration(
+                packages = listOf(PackageType.ANNUAL.identifier!!, PackageType.MONTHLY.identifier!!),
+                images = Constants.images,
+                colors = PaywallData.Configuration.ColorInformation(
+                    light = PaywallData.Configuration.Colors(
+                        background = PaywallColor("#FFFFFF"),
+                        text1 = PaywallColor("#111111"),
+                        callToActionBackground = PaywallColor("#EC807C"),
+                        callToActionForeground = PaywallColor("#FFFFFF"),
+                        accent1 = PaywallColor("#BC66FF"),
+                        accent2 = PaywallColor("#111100"),
+                    ),
+                    dark = PaywallData.Configuration.Colors(
+                        background = PaywallColor("#000000"),
+                        text1 = PaywallColor("#EEEEEE"),
+                        callToActionBackground = PaywallColor("#ACD27A"),
+                        callToActionForeground = PaywallColor("#000000"),
+                        accent1 = PaywallColor("#B022BB"),
+                        accent2 = PaywallColor("#EEDDEE"),
+                    ),
+                ),
+                blurredBackgroundImage = true,
+                privacyURL = URL("https://revenuecat.com/tos"),
+            ),
+            localization = mapOf("en_US" to Constants.localization),
+            assetBaseURL = Constants.assetBaseURL,
+        ),
+        availablePackages = listOf(
+            Packages.weekly,
+            Packages.monthly,
+            Packages.annual,
+        ),
     )
 
     object Packages {
