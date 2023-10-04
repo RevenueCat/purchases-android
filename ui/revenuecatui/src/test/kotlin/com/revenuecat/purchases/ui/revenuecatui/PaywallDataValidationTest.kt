@@ -3,6 +3,7 @@ package com.revenuecat.purchases.ui.revenuecatui
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
+import com.revenuecat.purchases.ui.revenuecatui.data.testdata.offerings.offeringWithMultiPackagePaywall
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
 import com.revenuecat.purchases.ui.revenuecatui.helpers.validatedPaywall
 import io.mockk.mockk
@@ -52,9 +53,36 @@ class PaywallDataValidationTest {
         verifyPackages(paywallValidationResult.displayablePaywall, originalOffering.paywall!!)
         compareWithJson(
             paywallValidationResult.displayablePaywall,
-            "testUnrecognizedTemplateNameGeneratesDefaultPaywall.1.json"
+            "default_template.json"
         )
         assertThat(paywallValidationResult.error).isEqualTo(PaywallValidationError.InvalidTemplate(templateName))
+    }
+
+    @Test
+    fun `Unrecognized variable generates default paywall`() {
+        val originalOffering = TestData.offeringWithMultiPackagePaywall
+
+        val paywall = originalOffering.paywall!!.let { originalPaywall ->
+            val (locale, originalLocalizedConfiguration) = originalPaywall.localizedConfiguration
+            val localizedConfiguration = originalLocalizedConfiguration.copy(
+                title = "Title with {{ unrecognized_variable }}",
+                callToAction = "{{ future_variable }}",
+            )
+            originalPaywall.copy(localization = mapOf(locale.toString() to localizedConfiguration))
+        }
+
+        val offering = originalOffering.copy(paywall = paywall)
+        val paywallValidationResult = offering.validatedPaywall(
+            currentColorScheme = TestData.Constants.currentColorScheme,
+        )
+        verifyPackages(paywallValidationResult.displayablePaywall, originalOffering.paywall!!)
+        compareWithJson(
+            paywallValidationResult.displayablePaywall,
+            "default_template.json"
+        )
+        assertThat(paywallValidationResult.error).isEqualTo(
+            PaywallValidationError.InvalidVariables(setOf("unrecognized_variable", "future_variable"))
+        )
     }
 
     private fun verifyPackages(actual: PaywallData, expectation: PaywallData) {
@@ -68,5 +96,4 @@ class PaywallDataValidationTest {
     }
 
     private fun loadJSON(jsonFileName: String) = File(javaClass.classLoader!!.getResource(jsonFileName).file).readText()
-
 }
