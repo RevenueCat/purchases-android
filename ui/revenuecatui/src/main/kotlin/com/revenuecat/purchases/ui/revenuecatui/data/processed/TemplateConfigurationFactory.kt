@@ -11,14 +11,11 @@ internal object TemplateConfigurationFactory {
         variableDataProvider: VariableDataProvider,
         mode: PaywallViewMode,
         paywallData: PaywallData,
-        packages: List<Package>,
+        availablePackages: List<Package>,
         activelySubscribedProductIdentifiers: Set<String>,
         template: PaywallTemplate,
     ): Result<TemplateConfiguration> {
         val (locale, localizedConfiguration) = paywallData.localizedConfiguration
-        val packageIds = paywallData.config.packages.takeUnless {
-            it.isEmpty()
-        } ?: packages.map { it.identifier }
         val images = TemplateConfiguration.Images(
             iconUri = paywallData.getUriFromImage(paywallData.config.images.icon),
             backgroundUri = paywallData.getUriFromImage(paywallData.config.images.background),
@@ -28,9 +25,9 @@ internal object TemplateConfigurationFactory {
         val createPackageResult =
             PackageConfigurationFactory.createPackageConfiguration(
                 variableDataProvider = variableDataProvider,
-                packages = packages,
+                availablePackages = availablePackages,
                 activelySubscribedProductIdentifiers = activelySubscribedProductIdentifiers,
-                filter = packageIds,
+                packageIdsInConfig = paywallData.config.packages,
                 default = paywallData.config.defaultPackage,
                 localization = localizedConfiguration,
                 configurationType = template.configurationType,
