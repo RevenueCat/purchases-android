@@ -5,6 +5,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.ViewModel
@@ -48,7 +50,7 @@ internal fun LoadingPaywallView(mode: PaywallViewMode) {
     val state = offering.toPaywallViewState(
         VariableDataProvider(
             LocalContext.current.applicationContext.toAndroidContext(),
-            isInPreviewMode()
+            isInPreviewMode(),
         ),
         mode,
         paywallData,
@@ -58,12 +60,36 @@ internal fun LoadingPaywallView(mode: PaywallViewMode) {
     val viewModel = LoadingViewModel(state)
 
     when (state) {
+        // The loading PaywallData is known at compile time
+        // and snapshots ensure that these 2 states are impossible.
         is PaywallViewState.Error,
         is PaywallViewState.Loading,
         -> Box {}
-        is PaywallViewState.Loaded -> Template2(
+
+        is PaywallViewState.Loaded -> LoadingPaywallView(state, viewModel)
+    }
+}
+
+@Composable
+private fun LoadingPaywallView(state: PaywallViewState.Loaded, viewModel: PaywallViewModel) {
+    Box {
+        // Template
+        Template2(
             state = state,
             viewModel = viewModel,
+        )
+
+        // Overlay to capture touches
+        Box(
+            Modifier
+                .matchParentSize()
+                .pointerInput(Unit) {
+                    awaitPointerEventScope {
+                        while (true) {
+                            awaitPointerEvent()
+                        }
+                    }
+                },
         )
     }
 }
