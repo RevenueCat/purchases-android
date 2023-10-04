@@ -95,6 +95,32 @@ class PaywallDataValidationTest {
         )
     }
 
+    @Test
+    fun `Unrecognized icons generate default paywall`() {
+        val originalOffering = TestData.offeringWithMultiPackagePaywall
+
+        val paywall = originalOffering.paywall!!.let { originalPaywall ->
+            val (locale, originalLocalizedConfiguration) = originalPaywall.localizedConfiguration
+            val localizedConfiguration = originalLocalizedConfiguration.copy(
+                features = listOf(
+                    PaywallData.LocalizedConfiguration.Feature(
+                        title = "Feature Title",
+                        iconID = "an_unrecognized_icon",
+                    ),
+                )
+            )
+            originalPaywall.copy(localization = mapOf(locale.toString() to localizedConfiguration))
+        }
+
+        val offering = originalOffering.copy(paywall = paywall)
+        val paywallValidationResult = getPaywallValidationResult(offering)
+        verifyPackages(paywallValidationResult.displayablePaywall, originalOffering.paywall!!)
+        compareWithDefaultTemplate(paywallValidationResult.displayablePaywall)
+        assertThat(paywallValidationResult.error).isEqualTo(
+            PaywallValidationError.InvalidIcons(setOf("an_unrecognized_icon"))
+        )
+    }
+
     private fun getPaywallValidationResult(offering: Offering) = offering.validatedPaywall(
         currentColorScheme = TestData.Constants.currentColorScheme,
     )
