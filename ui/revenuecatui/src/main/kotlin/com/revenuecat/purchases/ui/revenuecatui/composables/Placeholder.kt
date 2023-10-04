@@ -20,7 +20,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.geometry.toRect
 import androidx.compose.ui.graphics.Brush
@@ -36,8 +35,6 @@ import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.node.Ref
 import androidx.compose.ui.platform.debugInspectorInfo
 import androidx.compose.ui.unit.LayoutDirection
-import androidx.compose.ui.util.lerp
-import java.lang.Float.max
 
 internal object PlaceholderDefaults {
     /**
@@ -47,16 +44,6 @@ internal object PlaceholderDefaults {
         infiniteRepeatable(
             animation = tween(delayMillis = 200, durationMillis = 600),
             repeatMode = RepeatMode.Reverse,
-        )
-    }
-
-    /**
-     * The default [InfiniteRepeatableSpec] to use for [shimmer].
-     */
-    val shimmerAnimationSpec: InfiniteRepeatableSpec<Float> by lazy {
-        infiniteRepeatable(
-            animation = tween(durationMillis = 1700, delayMillis = 200),
-            repeatMode = RepeatMode.Restart,
         )
     }
 }
@@ -74,7 +61,7 @@ internal object PlaceholderDefaults {
  * @param contentFadeTransitionSpec The transition spec to use when fading the content
  * on/off screen. The boolean parameter defined for the transition is [visible].
  */
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "MagicNumber", "LongMethod")
 internal fun Modifier.placeholder(
     visible: Boolean,
     color: Color,
@@ -267,16 +254,6 @@ internal interface PlaceholderHighlight {
     companion object
 }
 
-private fun PlaceholderHighlight.Companion.shimmer(
-    highlightColor: Color,
-    animationSpec: InfiniteRepeatableSpec<Float> = PlaceholderDefaults.shimmerAnimationSpec,
-    @FloatRange(from = 0.0, to = 1.0) progressForMaxAlpha: Float = 0.6f,
-): PlaceholderHighlight = Shimmer(
-    highlightColor = highlightColor,
-    animationSpec = animationSpec,
-    progressForMaxAlpha = progressForMaxAlpha,
-)
-
 internal data class Fade(
     private val highlightColor: Color,
     override val animationSpec: InfiniteRepeatableSpec<Float>,
@@ -285,42 +262,4 @@ internal data class Fade(
 
     override fun brush(progress: Float, size: Size): Brush = brush
     override fun alpha(progress: Float): Float = progress
-}
-
-private data class Shimmer(
-    private val highlightColor: Color,
-    override val animationSpec: InfiniteRepeatableSpec<Float>,
-    private val progressForMaxAlpha: Float = 0.6f,
-) : PlaceholderHighlight {
-    override fun brush(
-        progress: Float,
-        size: Size,
-    ): Brush = Brush.radialGradient(
-        colors = listOf(
-            highlightColor.copy(alpha = 0f),
-            highlightColor,
-            highlightColor.copy(alpha = 0f),
-        ),
-        center = Offset(x = 0f, y = 0f),
-        radius = (max(size.width, size.height) * progress * 2).coerceAtLeast(0.01f),
-    )
-
-    override fun alpha(progress: Float): Float = when {
-        // From 0f...ProgressForOpaqueAlpha we animate from 0..1
-        progress <= progressForMaxAlpha -> {
-            lerp(
-                start = 0f,
-                stop = 1f,
-                fraction = progress / progressForMaxAlpha,
-            )
-        }
-        // From ProgressForOpaqueAlpha..1f we animate from 1..0
-        else -> {
-            lerp(
-                start = 1f,
-                stop = 0f,
-                fraction = (progress - progressForMaxAlpha) / (1f - progressForMaxAlpha),
-            )
-        }
-    }
 }
