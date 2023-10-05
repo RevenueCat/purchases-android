@@ -9,10 +9,4 @@ internal enum class PaywallViewMode {
     companion object {
         val default = FULL_SCREEN
     }
-
-    val isFullScreen: Boolean
-        get() = when (this) {
-            FULL_SCREEN -> true
-            FOOTER, FOOTER_CONDENSED -> false
-        }
 }
