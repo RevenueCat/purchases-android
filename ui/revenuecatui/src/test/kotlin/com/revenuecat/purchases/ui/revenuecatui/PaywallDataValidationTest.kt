@@ -2,10 +2,8 @@ package com.revenuecat.purchases.ui.revenuecatui
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.Offering
-import com.revenuecat.purchases.paywalls.PaywallColor
 import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
-import com.revenuecat.purchases.ui.revenuecatui.data.testdata.offerings.offeringWithMultiPackagePaywall
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
 import com.revenuecat.purchases.ui.revenuecatui.helpers.validatedPaywall
 import kotlinx.serialization.decodeFromString
@@ -14,7 +12,6 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
-import java.net.URL
 
 @RunWith(AndroidJUnit4::class)
 class PaywallDataValidationTest {
