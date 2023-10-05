@@ -59,7 +59,8 @@ fun PaywallFooter(
                     .background(Color.Blue),
             )
         } else {
-            PaywallView(options.changeMode(mode))
+            options.mode = mode
+            PaywallView(options)
         }
     }
 }

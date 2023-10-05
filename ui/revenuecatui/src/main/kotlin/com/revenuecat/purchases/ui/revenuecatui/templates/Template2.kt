@@ -199,10 +199,9 @@ private fun Template2PaywallPreview() {
 @Preview(showBackground = true, locale = "es-rES")
 @Composable
 private fun Template2PaywallFooterPreview() {
-    InternalPaywallView(
-        options = PaywallViewOptions.Builder()
-            .setMode(PaywallViewMode.FOOTER)
-            .setOffering(TestData.template2Offering)
-            .build(),
-    )
+    val options = PaywallViewOptions.Builder()
+        .setOffering(TestData.template2Offering)
+        .build()
+    options.mode = PaywallViewMode.FOOTER
+    InternalPaywallView(options)
 }
