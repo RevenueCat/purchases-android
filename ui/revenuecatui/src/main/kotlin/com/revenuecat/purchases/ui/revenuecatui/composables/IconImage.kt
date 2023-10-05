@@ -7,7 +7,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -43,7 +43,7 @@ internal fun IconImage(
                 Box(
                     modifier = modifier
                         .background(color = MaterialTheme.colorScheme.primary)
-                        .fillMaxSize(),
+                        .size(maxWidth),
                 )
             } else if (uri.toString().contains(PaywallData.defaultAppIconPlaceholder)) {
                 AppIcon(modifier = modifier)

@@ -1,6 +1,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.composables
 
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.BlurredEdgeTreatment
@@ -12,12 +12,12 @@ import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfigura
 import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
 
 @Composable
-internal fun PaywallBackground(templateConfiguration: TemplateConfiguration) {
+internal fun BoxScope.PaywallBackground(templateConfiguration: TemplateConfiguration) {
     templateConfiguration.images.backgroundUri?.let {
         RemoteImage(
             urlString = it.toString(),
             modifier = Modifier
-                .fillMaxSize()
+                .matchParentSize()
                 .conditional(templateConfiguration.configuration.blurredBackgroundImage) {
                     // TODO-PAYWALLS: backwards compatibility for blurring
                     blur(BackgroundUIConstants.blurSize, edgeTreatment = BlurredEdgeTreatment.Unbounded)
