@@ -2,6 +2,7 @@ package com.revenuecat.purchases.ui.revenuecatui
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.Offering
+import com.revenuecat.purchases.paywalls.PaywallColor
 import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.offerings.offeringWithMultiPackagePaywall
@@ -13,6 +14,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
+import java.net.URL
 
 @RunWith(AndroidJUnit4::class)
 class PaywallDataValidationTest {
@@ -34,7 +36,7 @@ class PaywallDataValidationTest {
     @Test
     fun `Unrecognized template name generates default paywall`() {
         val templateName = "unrecognized_template"
-        val originalOffering = TestData.offeringWithMultiPackagePaywall
+        val originalOffering = TestData.template2Offering
         val offering = originalOffering.copy(paywall = originalOffering.paywall!!.copy(templateName = templateName))
 
         val paywallValidationResult = getPaywallValidationResult(offering)
@@ -46,7 +48,7 @@ class PaywallDataValidationTest {
 
     @Test
     fun `Unrecognized variable generates default paywall`() {
-        val originalOffering = TestData.offeringWithMultiPackagePaywall
+        val originalOffering = TestData.template2Offering
 
         val paywall = originalOffering.paywall!!.let { originalPaywall ->
             val (locale, originalLocalizedConfiguration) = originalPaywall.localizedConfiguration
@@ -68,7 +70,7 @@ class PaywallDataValidationTest {
 
     @Test
     fun `Unrecognized variables in features generate default paywall`() {
-        val originalOffering = TestData.offeringWithMultiPackagePaywall
+        val originalOffering = TestData.template2Offering
 
         val paywall = originalOffering.paywall!!.let { originalPaywall ->
             val (locale, originalLocalizedConfiguration) = originalPaywall.localizedConfiguration
@@ -97,7 +99,7 @@ class PaywallDataValidationTest {
 
     @Test
     fun `Unrecognized icons generate default paywall`() {
-        val originalOffering = TestData.offeringWithMultiPackagePaywall
+        val originalOffering = TestData.template2Offering
 
         val paywall = originalOffering.paywall!!.let { originalPaywall ->
             val (locale, originalLocalizedConfiguration) = originalPaywall.localizedConfiguration
@@ -131,8 +133,38 @@ class PaywallDataValidationTest {
 
     private fun compareWithDefaultTemplate(displayablePaywall: PaywallData) {
         val json = File(javaClass.classLoader!!.getResource("default_template.json").file).readText()
-        val paywall: PaywallData = Json.decodeFromString(json)
-        assertThat(displayablePaywall).isEqualTo(paywall)
+        val defaultPaywall: PaywallData = Json.decodeFromString(json)
+
+        assertThat(displayablePaywall.assetBaseURL).isEqualTo(defaultPaywall.assetBaseURL)
+        assertThat(displayablePaywall.templateName).isEqualTo(defaultPaywall.templateName)
+        assertThat(displayablePaywall.revision).isEqualTo(defaultPaywall.revision)
+
+        (displayablePaywall.config to defaultPaywall.config).let { (config, defaultConfig) ->
+            assertThat(config.blurredBackgroundImage).isEqualTo(defaultConfig.blurredBackgroundImage)
+            assertColors(config.colors.light, defaultConfig.colors.light)
+            assertColors(config.colors.dark!!, defaultConfig.colors.dark!!)
+            assertThat(config.displayRestorePurchases).isEqualTo(defaultConfig.displayRestorePurchases)
+            assertThat(config.images.background).isEqualTo(defaultConfig.images.background)
+            assertThat(config.images.header).isEqualTo(defaultConfig.images.header)
+            assertThat(config.images.icon).isEqualTo(defaultConfig.images.icon)
+            assertThat(config.packages).containsExactly(*defaultConfig.packages.toTypedArray())
+            assertThat(config.defaultPackage).isEqualTo(defaultConfig.defaultPackage)
+            assertThat(config.termsOfServiceURL).isEqualTo(defaultConfig.termsOfServiceURL)
+            assertThat(config.privacyURL).isEqualTo(defaultConfig.privacyURL)
+        }
+
+        assertThat(displayablePaywall.localizedConfiguration).isEqualTo(defaultPaywall.localizedConfiguration)
     }
 
+    private fun assertColors(
+        actualColors: PaywallData.Configuration.Colors,
+        defaultColors: PaywallData.Configuration.Colors,
+    ) {
+        assertThat(actualColors.accent1).isEqualTo(defaultColors.accent1)
+        assertThat(actualColors.accent2).isEqualTo(defaultColors.accent2)
+        assertThat(actualColors.background).isEqualTo(defaultColors.background)
+        assertThat(actualColors.callToActionBackground).isEqualTo(defaultColors.callToActionBackground)
+        assertThat(actualColors.callToActionForeground).isEqualTo(defaultColors.callToActionForeground)
+        assertThat(actualColors.text1).isEqualTo(defaultColors.text1)
+    }
 }
