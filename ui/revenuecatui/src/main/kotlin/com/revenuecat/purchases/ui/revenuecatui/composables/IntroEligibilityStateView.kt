@@ -11,6 +11,7 @@ import androidx.compose.ui.tooling.preview.Preview
 /**
  * A composable that can display different data based on intro eligibility status.
  */
+@SuppressWarnings("LongParameterList")
 @Composable
 internal fun IntroEligibilityStateView(
     textWithNoIntroOffer: String?,
