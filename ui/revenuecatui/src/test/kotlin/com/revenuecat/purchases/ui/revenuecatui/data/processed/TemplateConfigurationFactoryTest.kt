@@ -60,15 +60,17 @@ internal class TemplateConfigurationFactoryTest {
         val packageConfiguration = template2Configuration.packages as TemplateConfiguration.PackageConfiguration.Multiple
 
         val expectedConfiguration = TemplateConfiguration.PackageConfiguration.Multiple(
-            first = getPackageInfo(TestData.Packages.weekly),
+            first = getPackageInfo(TestData.Packages.annual),
             default = getPackageInfo(TestData.Packages.monthly),
             all = listOf(
-                getPackageInfo(TestData.Packages.weekly),
+                getPackageInfo(TestData.Packages.annual),
                 getPackageInfo(TestData.Packages.monthly),
-                getPackageInfo(TestData.Packages.annual)
             ),
         )
-        assertThat(packageConfiguration).isEqualTo(expectedConfiguration)
+
+        assertThat(packageConfiguration.first).isEqualTo(expectedConfiguration.first)
+        assertThat(packageConfiguration.default).isEqualTo(expectedConfiguration.default)
+        assertThat(packageConfiguration.all).containsExactly(*expectedConfiguration.all.toTypedArray())
     }
 
     @Test
