@@ -33,7 +33,7 @@ internal class VariableDataProvider(
     }
 
     fun localizedIntroductoryOfferPrice(rcPackage: Package): String? {
-        return getIntroPhaseToApply(rcPackage)?.price?.formatted
+        return getFreeOrIntroPhaseToApply(rcPackage)?.price?.formatted
     }
 
     fun productName(rcPackage: Package): String {
@@ -60,7 +60,7 @@ internal class VariableDataProvider(
     }
 
     fun introductoryOfferDuration(rcPackage: Package, locale: Locale): String? {
-        return getIntroPhaseToApply(rcPackage)?.billingPeriod?.localizedPeriod(locale)
+        return getFreeOrIntroPhaseToApply(rcPackage)?.billingPeriod?.localizedPeriod(locale)
     }
 
     fun localizedPricePerPeriod(rcPackage: Package, locale: Locale): String {
@@ -81,10 +81,13 @@ internal class VariableDataProvider(
         return "$pricePerPeriod ($pricePerMonth/$unit)"
     }
 
-    private fun getIntroPhaseToApply(rcPackage: Package): PricingPhase? {
-        // TODO-PAYWALLS: Decide how this will look like for products that have both a free trial
-        // and a discounted introductory price.
+    private fun getFreeOrIntroPhaseToApply(rcPackage: Package): PricingPhase? {
         val option = rcPackage.product.defaultOption
         return option?.freePhase ?: option?.introPhase
+    }
+
+    private fun getIntroPhaseToApply(rcPackage: Package): PricingPhase? {
+        val option = rcPackage.product.defaultOption
+        return option?.introPhase
     }
 }

@@ -74,7 +74,9 @@ internal object VariableProcessor {
                 )
                 VariableName.SUB_DURATION -> variableDataProvider.subscriptionDuration(rcPackage, locale)
                 VariableName.SUB_OFFER_DURATION -> variableDataProvider.introductoryOfferDuration(rcPackage, locale)
+                VariableName.SUB_OFFER_DURATION_2 -> variableDataProvider.introductoryOfferDuration(rcPackage, locale)
                 VariableName.SUB_OFFER_PRICE -> variableDataProvider.localizedIntroductoryOfferPrice(rcPackage)
+                VariableName.SUB_OFFER_PRICE_2 -> variableDataProvider.localizedIntroductoryOfferPrice(rcPackage)
             } ?: run {
                 Logger.w(
                     "Could not process value for variable '$variableNameString' for " +
@@ -96,7 +98,9 @@ internal object VariableProcessor {
         SUB_PRICE_PER_MONTH("sub_price_per_month"),
         SUB_DURATION("sub_duration"),
         SUB_OFFER_DURATION("sub_offer_duration"),
+        SUB_OFFER_DURATION_2("sub_offer_duration_2"),
         SUB_OFFER_PRICE("sub_offer_price"),
+        SUB_OFFER_PRICE_2("sub_offer_price_2"),
         ;
 
         companion object {
