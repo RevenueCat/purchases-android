@@ -54,8 +54,8 @@ dependencies {
     implementation libs.coil.svg
     debugImplementation libs.compose.ui.tooling
     debugImplementation libs.androidx.test.compose.manifest
-    implementation libs.kotlinx.serialization.json
 
     testImplementation libs.bundles.test
     testImplementation libs.coroutines.test
+    testImplementation libs.kotlinx.serialization.json
 }
