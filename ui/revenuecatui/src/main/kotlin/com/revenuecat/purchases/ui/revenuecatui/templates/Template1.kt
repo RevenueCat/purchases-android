@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.IntSize
 import com.revenuecat.purchases.ui.revenuecatui.InternalPaywallView
 import com.revenuecat.purchases.ui.revenuecatui.UIConstant
 import com.revenuecat.purchases.ui.revenuecatui.composables.Footer
+import com.revenuecat.purchases.ui.revenuecatui.composables.IntroEligibilityStateView
 import com.revenuecat.purchases.ui.revenuecatui.composables.PurchaseButton
 import com.revenuecat.purchases.ui.revenuecatui.composables.RemoteImage
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModel
@@ -43,6 +44,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewState
 import com.revenuecat.purchases.ui.revenuecatui.data.currentColors
 import com.revenuecat.purchases.ui.revenuecatui.data.selectedLocalization
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
+import com.revenuecat.purchases.ui.revenuecatui.extensions.introEligibility
 import kotlin.math.roundToInt
 
 @Composable
@@ -111,13 +113,14 @@ private fun ColumnScope.Template1MainContent(state: PaywallViewState.Loaded) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Bottom,
     ) {
-        Text(
+        IntroEligibilityStateView(
+            textWithNoIntroOffer = localizedConfig.offerDetails,
+            textWithIntroOffer = localizedConfig.offerDetailsWithIntroOffer,
+            eligibility = state.selectedPackage.introEligibility,
+            color = colors.text1,
             style = MaterialTheme.typography.bodyLarge,
             fontWeight = FontWeight.Normal,
             textAlign = TextAlign.Center,
-            // TODO-Paywalls: intro offer details
-            text = localizedConfig.offerDetails ?: "",
-            color = colors.text1,
         )
     }
 }
