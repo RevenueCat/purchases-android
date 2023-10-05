@@ -16,7 +16,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -32,6 +31,7 @@ import com.revenuecat.purchases.ui.revenuecatui.UIConstant
 import com.revenuecat.purchases.ui.revenuecatui.composables.Footer
 import com.revenuecat.purchases.ui.revenuecatui.composables.IconImage
 import com.revenuecat.purchases.ui.revenuecatui.composables.IntroEligibilityStateView
+import com.revenuecat.purchases.ui.revenuecatui.composables.Markdown
 import com.revenuecat.purchases.ui.revenuecatui.composables.PaywallIcon
 import com.revenuecat.purchases.ui.revenuecatui.composables.PaywallIconName
 import com.revenuecat.purchases.ui.revenuecatui.composables.PurchaseButton
@@ -95,7 +95,7 @@ private fun Template3MainContent(state: PaywallViewState.Loaded) {
     )
     val localizedConfig = state.selectedLocalization
     val colors = state.templateConfiguration.getCurrentColors()
-    Text(
+    Markdown(
         style = MaterialTheme.typography.headlineSmall,
         fontWeight = FontWeight.Black,
         textAlign = TextAlign.Center,
@@ -139,7 +139,8 @@ private fun Feature(
         verticalAlignment = Alignment.Top,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = UIConstant.defaultHorizontalPadding),
+            .padding(horizontal = UIConstant.defaultHorizontalPadding)
+            .padding(top = Template3UIConstants.iconPadding * 2),
     ) {
         feature.iconID?.let { PaywallIconName.fromValue(it) }?.let { icon ->
             Box(
@@ -159,7 +160,7 @@ private fun Feature(
             modifier = Modifier
                 .padding(start = UIConstant.defaultHorizontalPadding),
         ) {
-            Text(
+            Markdown(
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Start,
@@ -167,8 +168,7 @@ private fun Feature(
                 color = colors.text1,
             )
             feature.content?.let { content ->
-                Text(
-                    modifier = Modifier.padding(top = Template3UIConstants.iconPadding * 2),
+                Markdown(
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Normal,
                     textAlign = TextAlign.Start,

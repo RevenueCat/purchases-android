@@ -43,6 +43,7 @@ internal fun PurchaseButton(
                 textWithNoIntroOffer = state.selectedLocalization.callToAction,
                 textWithIntroOffer = state.selectedLocalization.callToActionWithIntroOffer,
                 eligibility = state.selectedPackage.introEligibility,
+                color = colors.callToActionForeground,
             )
         }
     }

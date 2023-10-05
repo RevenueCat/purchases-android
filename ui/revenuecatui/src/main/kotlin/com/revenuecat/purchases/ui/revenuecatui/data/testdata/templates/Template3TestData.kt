@@ -48,7 +48,7 @@ internal val TestData.template3: PaywallData
                 features = listOf(
                     PaywallData.LocalizedConfiguration.Feature(
                         title = "Today",
-                        content = "Full access to 1000+ workouts plus free meal plan worth {{ price }}.",
+                        content = "**Full** access to ~~100~~ 1000+ workouts plus free meal plan worth _{{ price }}_.",
                         iconID = "tick",
                     ),
                     PaywallData.LocalizedConfiguration.Feature(

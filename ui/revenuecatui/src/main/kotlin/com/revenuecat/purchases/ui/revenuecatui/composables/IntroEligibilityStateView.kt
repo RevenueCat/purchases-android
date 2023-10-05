@@ -1,6 +1,5 @@
 package com.revenuecat.purchases.ui.revenuecatui.composables
 
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
@@ -30,7 +29,7 @@ internal fun IntroEligibilityStateView(
         textWithNoIntroOffer ?: textWithIntroOffer ?: ""
     }
 
-    Text(
+    Markdown(
         text,
         color = color,
         style = style,
