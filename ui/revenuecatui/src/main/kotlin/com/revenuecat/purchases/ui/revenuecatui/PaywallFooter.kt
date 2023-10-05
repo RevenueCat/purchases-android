@@ -21,9 +21,19 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.isInPreviewMode
 
 internal val footerRoundedBorderHeight = 12.dp
 
+/**
+ * Composable offering a minified screen Paywall UI configured from the RevenueCat dashboard.
+ * You can pass in your own Composables to be displayed in the main content area.
+ *
+ * @param options The options to configure the PaywallView if needed.
+ * @param condensed Whether to condense the composable even more.
+ * @param mainContent The content to display in the main area of the PaywallView. We give a [PaddingValues] so you can
+ * add that padding to your own content. This padding corresponds to the height of the rounded corner area of
+ * the paywall.
+ */
 @Composable
 fun PaywallFooter(
-    paywallViewOptions: PaywallViewOptions = PaywallViewOptions.Builder().build(),
+    options: PaywallViewOptions = PaywallViewOptions.Builder().build(),
     condensed: Boolean = false,
     mainContent: @Composable (PaddingValues) -> Unit,
 ) {
@@ -49,7 +59,7 @@ fun PaywallFooter(
                     .background(Color.Blue),
             )
         } else {
-            PaywallView(paywallViewOptions.changeMode(mode))
+            PaywallView(options.changeMode(mode))
         }
     }
 }
