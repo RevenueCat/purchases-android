@@ -32,12 +32,12 @@ internal class VariableDataProvider(
         return rcPackage.product.formattedPricePerMonth(locale)
     }
 
-    fun localizedFreeOrIntroductoryOfferPrice(rcPackage: Package): String? {
-        return getFreeOrIntroPhaseToApply(rcPackage)?.price?.formatted
+    fun localizedFirstIntroductoryOfferPrice(rcPackage: Package): String? {
+        return getFirstIntroOfferToApply(rcPackage)?.price?.formatted
     }
 
-    fun localizedIntroductoryOfferPrice(rcPackage: Package): String? {
-        return getIntroPhaseToApply(rcPackage)?.price?.formatted
+    fun localizedSecondIntroductoryOfferPrice(rcPackage: Package): String? {
+        return getSecondIntroOfferToApply(rcPackage)?.price?.formatted
     }
 
     fun productName(rcPackage: Package): String {
@@ -63,8 +63,12 @@ internal class VariableDataProvider(
             ?: periodName(rcPackage)
     }
 
-    fun introductoryOfferDuration(rcPackage: Package, locale: Locale): String? {
-        return getFreeOrIntroPhaseToApply(rcPackage)?.billingPeriod?.localizedPeriod(locale)
+    fun firstIntroductoryOfferDuration(rcPackage: Package, locale: Locale): String? {
+        return getFirstIntroOfferToApply(rcPackage)?.billingPeriod?.localizedPeriod(locale)
+    }
+
+    fun secondIntroductoryOfferDuration(rcPackage: Package, locale: Locale): String? {
+        return getSecondIntroOfferToApply(rcPackage)?.billingPeriod?.localizedPeriod(locale)
     }
 
     fun localizedPricePerPeriod(rcPackage: Package, locale: Locale): String {
@@ -85,13 +89,16 @@ internal class VariableDataProvider(
         return "$pricePerPeriod ($pricePerMonth/$unit)"
     }
 
-    private fun getFreeOrIntroPhaseToApply(rcPackage: Package): PricingPhase? {
+    private fun getFirstIntroOfferToApply(rcPackage: Package): PricingPhase? {
         val option = rcPackage.product.defaultOption
         return option?.freePhase ?: option?.introPhase
     }
 
-    private fun getIntroPhaseToApply(rcPackage: Package): PricingPhase? {
+    private fun getSecondIntroOfferToApply(rcPackage: Package): PricingPhase? {
         val option = rcPackage.product.defaultOption
-        return option?.introPhase
+        if (option?.freePhase != null) {
+            return option.introPhase
+        }
+        return null
     }
 }

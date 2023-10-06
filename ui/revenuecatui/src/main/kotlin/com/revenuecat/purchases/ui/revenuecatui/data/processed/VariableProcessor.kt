@@ -91,10 +91,10 @@ internal object VariableProcessor {
         )
 
         VariableName.SUB_DURATION -> variableDataProvider.subscriptionDuration(rcPackage, locale)
-        VariableName.SUB_OFFER_DURATION -> variableDataProvider.introductoryOfferDuration(rcPackage, locale)
-        VariableName.SUB_OFFER_DURATION_2 -> variableDataProvider.introductoryOfferDuration(rcPackage, locale)
-        VariableName.SUB_OFFER_PRICE -> variableDataProvider.localizedFreeOrIntroductoryOfferPrice(rcPackage)
-        VariableName.SUB_OFFER_PRICE_2 -> variableDataProvider.localizedIntroductoryOfferPrice(rcPackage)
+        VariableName.SUB_OFFER_DURATION -> variableDataProvider.firstIntroductoryOfferDuration(rcPackage, locale)
+        VariableName.SUB_OFFER_DURATION_2 -> variableDataProvider.secondIntroductoryOfferDuration(rcPackage, locale)
+        VariableName.SUB_OFFER_PRICE -> variableDataProvider.localizedFirstIntroductoryOfferPrice(rcPackage)
+        VariableName.SUB_OFFER_PRICE_2 -> variableDataProvider.localizedSecondIntroductoryOfferPrice(rcPackage)
     }
 
     private enum class VariableName(val identifier: String) {
