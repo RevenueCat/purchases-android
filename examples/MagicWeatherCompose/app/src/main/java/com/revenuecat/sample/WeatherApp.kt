@@ -9,8 +9,11 @@ import androidx.navigation.compose.rememberNavController
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.ui.revenuecatui.PaywallView
+import com.revenuecat.purchases.ui.revenuecatui.PaywallViewListener
+import com.revenuecat.purchases.ui.revenuecatui.PaywallViewOptions
 import com.revenuecat.sample.main.MainScreen
-import com.revenuecat.sample.paywall.PaywallScreen
 import com.revenuecat.sample.paywall.PurchaseListener
 import com.revenuecat.sample.ui.theme.MagicWeatherComposeTheme
 
@@ -43,17 +46,7 @@ private fun NavGraph(navController: NavHostController) {
             )
         }
         composable(route = Screen.Paywall.route) {
-            PaywallScreen(
-
-                purchaseListener = @Suppress("EmptyFunctionBlock") object : PurchaseListener {
-                    override fun onPurchaseStarted(packageToPurchase: Package) {}
-                    override fun onPurchaseCancelled() {}
-                    override fun onPurchaseErrored(error: PurchasesError) {}
-                    override fun onPurchaseCompleted(customerInfo: CustomerInfo) {
-                        navController.popBackStack()
-                    }
-                },
-            )
+          
         }
     }
 }
