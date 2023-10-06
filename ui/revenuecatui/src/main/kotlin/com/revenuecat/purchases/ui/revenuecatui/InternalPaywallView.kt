@@ -42,33 +42,43 @@ internal fun InternalPaywallView(
             Text(text = "Error: ${state.errorMessage}")
         }
         is PaywallViewState.Loaded -> {
-            val backgroundColor = state.templateConfiguration.getCurrentColors().background
-            Box(
-                modifier = Modifier
-                    .conditional(state.isInFullScreenMode) {
-                        Modifier.background(backgroundColor)
-                    }
-                    .conditional(!state.isInFullScreenMode) {
-                        Modifier
-                            .clip(
-                                RoundedCornerShape(
-                                    topStart = footerRoundedBorderHeight,
-                                    topEnd = footerRoundedBorderHeight,
-                                ),
-                            )
-                            .background(backgroundColor)
-                            .padding(top = footerRoundedBorderHeight)
-                    },
-            ) {
-                when (state.templateConfiguration.template) {
-                    PaywallTemplate.TEMPLATE_1 -> Template1(state = state, viewModel = viewModel)
-                    PaywallTemplate.TEMPLATE_2 -> Template2(state = state, viewModel = viewModel)
-                    PaywallTemplate.TEMPLATE_3 -> Template3(state = state, viewModel = viewModel)
-                    PaywallTemplate.TEMPLATE_4 -> Text(text = "Error: Template 4 not supported")
-                    PaywallTemplate.TEMPLATE_5 -> Text(text = "Error: Template 5 not supported")
-                }
-            }
+            LoadedPaywallView(state = state, viewModel = viewModel)
         }
+    }
+}
+
+@Composable
+private fun LoadedPaywallView(state: PaywallViewState.Loaded, viewModel: PaywallViewModel) {
+    val backgroundColor = state.templateConfiguration.getCurrentColors().background
+    Box(
+        modifier = Modifier
+            .conditional(state.isInFullScreenMode) {
+                Modifier.background(backgroundColor)
+            }
+            .conditional(!state.isInFullScreenMode) {
+                Modifier
+                    .clip(
+                        RoundedCornerShape(
+                            topStart = UIConstant.footerRoundedBorderHeight,
+                            topEnd = UIConstant.footerRoundedBorderHeight,
+                        ),
+                    )
+                    .background(backgroundColor)
+                    .padding(top = UIConstant.footerRoundedBorderHeight)
+            },
+    ) {
+        TemplatePaywallView(state = state, viewModel = viewModel)
+    }
+}
+
+@Composable
+private fun TemplatePaywallView(state: PaywallViewState.Loaded, viewModel: PaywallViewModel) {
+    when (state.templateConfiguration.template) {
+        PaywallTemplate.TEMPLATE_1 -> Template1(state = state, viewModel = viewModel)
+        PaywallTemplate.TEMPLATE_2 -> Template2(state = state, viewModel = viewModel)
+        PaywallTemplate.TEMPLATE_3 -> Template3(state = state, viewModel = viewModel)
+        PaywallTemplate.TEMPLATE_4 -> Text(text = "Error: Template 4 not supported")
+        PaywallTemplate.TEMPLATE_5 -> Text(text = "Error: Template 5 not supported")
     }
 }
 
