@@ -2,6 +2,7 @@ plugins {
     alias libs.plugins.android.library
     alias libs.plugins.kotlin.android
     alias libs.plugins.kotlin.serialization
+    alias libs.plugins.kotlin.parcelize
 }
 
 
@@ -24,6 +25,9 @@ android {
 
     defaultConfig {
         minSdkVersion 24 // MeasureFormat requires API 24
+        vectorDrawables {
+            useSupportLibrary true
+        }
     }
 
     buildFeatures {
@@ -31,6 +35,11 @@ android {
     }
     composeOptions {
         kotlinCompilerExtensionVersion '1.4.0-alpha02'
+    }
+    packaging {
+        resources {
+            excludes += '/META-INF/{AL2.0,LGPL2.1}'
+        }
     }
 }
 
@@ -55,6 +64,8 @@ dependencies {
     implementation libs.coil.svg
     implementation libs.commonmark
     implementation libs.commonmark.strikethrough
+    implementation libs.activity.compose
+    implementation libs.androidx.fragment.ktx
     debugImplementation libs.compose.ui.tooling
     debugImplementation libs.androidx.test.compose.manifest
 

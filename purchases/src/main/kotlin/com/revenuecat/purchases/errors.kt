@@ -1,5 +1,9 @@
 package com.revenuecat.purchases
 
+import android.os.Parcelable
+import kotlinx.parcelize.IgnoredOnParcel
+import kotlinx.parcelize.Parcelize
+
 typealias PurchasesErrorCallback = (PurchasesError) -> Unit
 
 /**
@@ -8,11 +12,13 @@ typealias PurchasesErrorCallback = (PurchasesError) -> Unit
  * @param underlyingErrorMessage Optional error message with a more detailed explanation of the
  * error that originated this.
  */
+@Parcelize
 class PurchasesError(
     val code: PurchasesErrorCode,
     val underlyingErrorMessage: String? = null,
-) {
+): Parcelable {
     // Message explaining the error
+    @IgnoredOnParcel
     val message: String = code.description
 
     override fun toString(): String {

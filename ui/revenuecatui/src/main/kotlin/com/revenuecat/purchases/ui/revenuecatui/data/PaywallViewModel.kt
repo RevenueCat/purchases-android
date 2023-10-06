@@ -165,7 +165,7 @@ internal class PaywallViewModelImpl(
         viewModelScope.launch {
             try {
                 val offerings = Purchases.sharedInstance.awaitOfferings()
-                val currentOffering = offerings.current
+                val currentOffering = options.offeringId?.let { offerings[it] } ?: offerings.current
                 if (currentOffering == null) {
                     _state.value = PaywallViewState.Error("No offering or current offering")
                 } else {
