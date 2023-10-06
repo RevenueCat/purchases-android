@@ -13,15 +13,15 @@ val Package.isMonthly: Boolean
     get() = product.period?.let { it.unit == Period.Unit.MONTH && it.value == 1 } ?: false
 
 internal val Package.introEligibility: IntroOfferEligibility
-    get() = with(product.defaultOption) {
-        if (this?.isBasePlan == true) {
+    get() = product.defaultOption?.let { defaultOption ->
+        if (defaultOption.isBasePlan) {
             IntroOfferEligibility.INELIGIBLE
-        } else if (this?.pricingPhases?.size == 2) {
+        } else if (defaultOption.pricingPhases.size == 2) { // Base plan + one offer
             IntroOfferEligibility.SINGLE_OFFER_ELIGIBLE
         } else {
             IntroOfferEligibility.MULTIPLE_OFFER_ELIGIBLE
         }
-    }
+    } ?: IntroOfferEligibility.INELIGIBLE
 
 internal val TemplateConfiguration.PackageInfo.introEligibility: IntroOfferEligibility
     get() = this.rcPackage.introEligibility
