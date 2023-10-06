@@ -52,6 +52,7 @@ android {
 
 dependencies {
     implementation libs.revenuecat
+    implementation libs.revenuecat.ui
     implementation libs.revenuecat.amazon
     implementation libs.kotlin.stdlib
     implementation libs.androidx.core

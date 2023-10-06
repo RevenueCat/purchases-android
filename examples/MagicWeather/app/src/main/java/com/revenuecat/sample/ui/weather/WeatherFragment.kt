@@ -15,7 +15,6 @@ import com.revenuecat.sample.R
 import com.revenuecat.sample.data.Constants
 import com.revenuecat.sample.data.SampleWeatherData
 import com.revenuecat.sample.extensions.buildError
-import com.revenuecat.sample.ui.paywall.PaywallActivity
 
 class WeatherFragment : Fragment() {
 
@@ -80,8 +79,6 @@ class WeatherFragment : Fragment() {
                 weatherViewModel.currentData.value =
                     SampleWeatherData.generateSampleData(SampleWeatherData.Environment.EARTH, null)
             } else {
-                val intent = Intent(context, PaywallActivity::class.java)
-                startActivity(intent)
             }
         })
     }

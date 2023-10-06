@@ -24,4 +24,5 @@ kotlin-stdlib = { module = "org.jetbrains.kotlin:kotlin-stdlib", version.ref = "
 material = "com.google.android.material:material:1.9.0"
 
 revenuecat = { module = "com.revenuecat.purchases:purchases", version.ref = "purchases" }
+revenuecat-ui = { module = "com.revenuecat.purchases:revenuecatui", version.ref = "purchases" }
 revenuecat-amazon = { module = "com.revenuecat.purchases:purchases-store-amazon", version.ref = "purchases" }

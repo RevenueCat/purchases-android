@@ -1,6 +1,7 @@
 package com.revenuecat.sample
 
 import android.app.Application
+import com.revenuecat.purchases.LogLevel
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesConfiguration
 import com.revenuecat.purchases.amazon.AmazonConfiguration
@@ -16,7 +17,7 @@ class MainApplication : Application() {
         /*
         Enable debug logs before calling `configure`.
          */
-        Purchases.debugLogsEnabled = true
+        Purchases.logLevel = LogLevel.DEBUG
 
         /*
         Initialize the RevenueCat Purchases SDK.
