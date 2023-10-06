@@ -297,7 +297,7 @@ class VariableProcessorTest {
     }
 
     @Test
-    fun `process variables processes sub_offer_price_2 for intro prices`() {
+    fun `process variables processes sub_offer_price_2 for intro prices when free trial is available`() {
         expectVariablesResult("{{ sub_offer_price_2 }}", "$3.99", rcPackage = TestData.Packages.bimonthly)
     }
 
