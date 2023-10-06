@@ -14,10 +14,10 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.Text
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -33,6 +33,7 @@ import com.revenuecat.purchases.ui.revenuecatui.UIConstant
 import com.revenuecat.purchases.ui.revenuecatui.composables.Footer
 import com.revenuecat.purchases.ui.revenuecatui.composables.IconImage
 import com.revenuecat.purchases.ui.revenuecatui.composables.IntroEligibilityStateView
+import com.revenuecat.purchases.ui.revenuecatui.composables.Markdown
 import com.revenuecat.purchases.ui.revenuecatui.composables.PaywallBackground
 import com.revenuecat.purchases.ui.revenuecatui.composables.PaywallIcon
 import com.revenuecat.purchases.ui.revenuecatui.composables.PaywallIconName
@@ -103,7 +104,7 @@ private fun ColumnScope.Template2MainContent(
             )
             val localizedConfig = state.selectedLocalization
             val colors = state.templateConfiguration.getCurrentColors()
-            Text(
+            Markdown(
                 style = MaterialTheme.typography.displaySmall,
                 fontWeight = FontWeight.Black,
                 textAlign = TextAlign.Center,
@@ -111,7 +112,7 @@ private fun ColumnScope.Template2MainContent(
                 color = colors.text1,
                 modifier = childModifier,
             )
-            Text(
+            Markdown(
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Medium,
                 textAlign = TextAlign.Center,
@@ -159,12 +160,14 @@ private fun SelectPackageButton(
                 CheckmarkBox(isSelected = isSelected, colors = state.currentColors)
                 Text(
                     text = packageInfo.localization.offerName ?: packageInfo.rcPackage.product.title,
+                    color = textColor,
                 )
             }
             IntroEligibilityStateView(
                 textWithNoIntroOffer = packageInfo.localization.offerDetails,
                 textWithIntroOffer = packageInfo.localization.offerDetailsWithIntroOffer,
                 eligibility = packageInfo.introEligibility,
+                color = textColor,
             )
         }
     }

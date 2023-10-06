@@ -16,7 +16,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -38,6 +37,7 @@ import com.revenuecat.purchases.ui.revenuecatui.PaywallViewOptions
 import com.revenuecat.purchases.ui.revenuecatui.UIConstant
 import com.revenuecat.purchases.ui.revenuecatui.composables.Footer
 import com.revenuecat.purchases.ui.revenuecatui.composables.IntroEligibilityStateView
+import com.revenuecat.purchases.ui.revenuecatui.composables.Markdown
 import com.revenuecat.purchases.ui.revenuecatui.composables.PurchaseButton
 import com.revenuecat.purchases.ui.revenuecatui.composables.RemoteImage
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModel
@@ -62,6 +62,7 @@ internal fun Template1(state: PaywallViewState.Loaded, viewModel: PaywallViewMod
     }
 }
 
+@SuppressWarnings("LongMethod")
 @Composable
 private fun ColumnScope.Template1MainContent(state: PaywallViewState.Loaded) {
     val localizedConfig = state.selectedLocalization
@@ -79,11 +80,11 @@ private fun ColumnScope.Template1MainContent(state: PaywallViewState.Loaded) {
 
         Spacer(modifier = Modifier.weight(1f))
 
-        Text(
+        Markdown(
+            text = localizedConfig.title,
             style = MaterialTheme.typography.displaySmall,
             fontWeight = FontWeight.Black,
             textAlign = TextAlign.Center,
-            text = localizedConfig.title,
             color = colors.text1,
             modifier = Modifier
                 .padding(
@@ -96,11 +97,16 @@ private fun ColumnScope.Template1MainContent(state: PaywallViewState.Loaded) {
             modifier = Modifier
                 .padding(horizontal = UIConstant.defaultHorizontalPadding),
         ) {
-            Text(
+            Markdown(
+                text = localizedConfig.subtitle ?: "",
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.Normal,
                 textAlign = TextAlign.Center,
-                text = localizedConfig.subtitle ?: "",
+                modifier = Modifier
+                    .padding(
+                        horizontal = UIConstant.defaultHorizontalPadding,
+                        vertical = UIConstant.defaultVerticalSpacing,
+                    ),
                 color = colors.text1,
             )
         }
