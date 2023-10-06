@@ -38,11 +38,11 @@ internal val TestData.template1: PaywallData
         ),
         localization = mapOf(
             "en_US" to PaywallData.LocalizedConfiguration(
-                title = "Ignite your child's curiosity",
-                subtitle = "Get access to all our educational content trusted by thousands of parents.",
-                callToAction = "Subscribe for {{ sub_price_per_month }}",
-                callToActionWithIntroOffer = "Purchase for {{ sub_price_per_month }} per month",
-                offerDetails = "{{ sub_price_per_month }} per month",
+                title = "Ignite your _child_'s curiosity",
+                subtitle = "Get access to **all our educational content** trusted by thousands of parents.",
+                callToAction = "Subscribe for _only_ {{ sub_price_per_month }}",
+                callToActionWithIntroOffer = "Purchase for _only_ {{ sub_price_per_month }} per month",
+                offerDetails = "*Just* {{ sub_price_per_month }} per month",
                 offerDetailsWithIntroOffer = "Start your {{ sub_offer_duration }} trial, " +
                     "then {{ sub_price_per_month }} per month",
             ),
