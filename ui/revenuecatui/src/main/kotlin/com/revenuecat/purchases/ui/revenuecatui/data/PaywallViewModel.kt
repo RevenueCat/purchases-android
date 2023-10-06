@@ -18,6 +18,7 @@ import com.revenuecat.purchases.awaitPurchase
 import com.revenuecat.purchases.awaitRestore
 import com.revenuecat.purchases.ui.revenuecatui.PaywallViewListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallViewMode
+import com.revenuecat.purchases.ui.revenuecatui.PaywallViewOptions
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvider
 import com.revenuecat.purchases.ui.revenuecatui.extensions.getActivity
@@ -52,9 +53,7 @@ internal interface PaywallViewModel {
 @Suppress("TooManyFunctions")
 internal class PaywallViewModelImpl(
     applicationContext: ApplicationContext,
-    private val mode: PaywallViewMode,
-    private val offering: Offering?,
-    private val listener: PaywallViewListener?,
+    private val options: PaywallViewOptions,
     colorScheme: ColorScheme,
     preview: Boolean = false,
 ) : ViewModel(), PaywallViewModel {
@@ -66,6 +65,15 @@ internal class PaywallViewModelImpl(
     private val _state: MutableStateFlow<PaywallViewState>
     private val _lastLocaleList = MutableStateFlow(getCurrentLocaleList())
     private val _colorScheme = MutableStateFlow(colorScheme)
+
+    private val offering: Offering?
+        get() = options.offering
+
+    private val listener: PaywallViewListener?
+        get() = options.listener
+
+    private val mode: PaywallViewMode
+        get() = options.mode
 
     init {
         _state = MutableStateFlow(offering?.calculateState() ?: PaywallViewState.Loading)
@@ -131,10 +139,11 @@ internal class PaywallViewModelImpl(
     }
 
     private fun refreshState() {
-        if (offering == null) {
+        val currentOffering = offering
+        if (currentOffering == null) {
             updateOffering()
         } else {
-            _state.value = offering.calculateState()
+            _state.value = currentOffering.calculateState()
         }
     }
 

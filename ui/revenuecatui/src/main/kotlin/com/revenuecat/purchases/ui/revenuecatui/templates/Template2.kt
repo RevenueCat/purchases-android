@@ -5,8 +5,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -27,6 +27,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.ui.revenuecatui.InternalPaywallView
+import com.revenuecat.purchases.ui.revenuecatui.PaywallViewMode
+import com.revenuecat.purchases.ui.revenuecatui.PaywallViewOptions
 import com.revenuecat.purchases.ui.revenuecatui.UIConstant
 import com.revenuecat.purchases.ui.revenuecatui.composables.Footer
 import com.revenuecat.purchases.ui.revenuecatui.composables.IconImage
@@ -38,9 +40,11 @@ import com.revenuecat.purchases.ui.revenuecatui.composables.PurchaseButton
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModel
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewState
 import com.revenuecat.purchases.ui.revenuecatui.data.currentColors
+import com.revenuecat.purchases.ui.revenuecatui.data.isInFullScreenMode
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.selectedLocalization
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
+import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
 import com.revenuecat.purchases.ui.revenuecatui.extensions.introEligibility
 
 private object Template2UIConstants {
@@ -62,20 +66,8 @@ internal fun Template2(
     Box {
         PaywallBackground(state.templateConfiguration)
 
-        Column(
-            modifier = Modifier.fillMaxSize(),
-        ) {
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(
-                        horizontal = UIConstant.defaultHorizontalPadding,
-                        vertical = UIConstant.defaultVerticalSpacing,
-                    ),
-                contentAlignment = Alignment.Center,
-            ) {
-                Template2MainContent(state, viewModel, childModifier)
-            }
+        Column {
+            Template2MainContent(state, viewModel, childModifier)
             PurchaseButton(state, viewModel, childModifier)
             Footer(
                 templateConfiguration = state.templateConfiguration,
@@ -87,43 +79,47 @@ internal fun Template2(
 }
 
 @Composable
-private fun Template2MainContent(
+private fun ColumnScope.Template2MainContent(
     state: PaywallViewState.Loaded,
     viewModel: PaywallViewModel,
     childModifier: Modifier,
 ) {
     Column(
         modifier = Modifier
-            .fillMaxWidth()
             .verticalScroll(rememberScrollState())
-            .padding(horizontal = UIConstant.defaultHorizontalPadding),
+            .conditional(state.isInFullScreenMode) {
+                Modifier.weight(1f)
+            }
+            .padding(horizontal = UIConstant.defaultHorizontalPadding, vertical = UIConstant.defaultVerticalSpacing),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(UIConstant.defaultVerticalSpacing, Alignment.CenterVertically),
     ) {
-        IconImage(
-            uri = state.templateConfiguration.images.iconUri,
-            maxWidth = Template2UIConstants.maxIconWidth,
-            iconCornerRadius = Template2UIConstants.iconCornerRadius,
-            childModifier = childModifier,
-        )
-        val localizedConfig = state.selectedLocalization
-        val colors = state.templateConfiguration.getCurrentColors()
-        Text(
-            style = MaterialTheme.typography.displaySmall,
-            fontWeight = FontWeight.Black,
-            textAlign = TextAlign.Center,
-            text = localizedConfig.title,
-            color = colors.text1,
-            modifier = childModifier,
-        )
-        Text(
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Medium,
-            textAlign = TextAlign.Center,
-            text = localizedConfig.subtitle ?: "",
-            color = colors.text1,
-            modifier = childModifier,
-        )
+        if (state.isInFullScreenMode) {
+            IconImage(
+                uri = state.templateConfiguration.images.iconUri,
+                maxWidth = Template2UIConstants.maxIconWidth,
+                iconCornerRadius = Template2UIConstants.iconCornerRadius,
+                childModifier = childModifier,
+            )
+            val localizedConfig = state.selectedLocalization
+            val colors = state.templateConfiguration.getCurrentColors()
+            Text(
+                style = MaterialTheme.typography.displaySmall,
+                fontWeight = FontWeight.Black,
+                textAlign = TextAlign.Center,
+                text = localizedConfig.title,
+                color = colors.text1,
+                modifier = childModifier,
+            )
+            Text(
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Medium,
+                textAlign = TextAlign.Center,
+                text = localizedConfig.subtitle ?: "",
+                color = colors.text1,
+                modifier = childModifier,
+            )
+        }
         state.templateConfiguration.packages.all.forEach { packageInfo ->
             SelectPackageButton(state, packageInfo, viewModel, childModifier)
         }
@@ -155,7 +151,7 @@ private fun SelectPackageButton(
     ) {
         Column(
             modifier = Modifier
-                .fillMaxSize()
+                .fillMaxWidth()
                 .padding(4.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
@@ -191,6 +187,21 @@ private fun CheckmarkBox(isSelected: Boolean, colors: TemplateConfiguration.Colo
 @Preview(showBackground = true, locale = "en-rUS")
 @Preview(showBackground = true, locale = "es-rES")
 @Composable
-internal fun Template2PaywallPreview() {
-    InternalPaywallView(offering = TestData.template2Offering)
+private fun Template2PaywallPreview() {
+    InternalPaywallView(
+        options = PaywallViewOptions.Builder()
+            .setOffering(TestData.template2Offering)
+            .build(),
+    )
+}
+
+@Preview(showBackground = true, locale = "en-rUS")
+@Preview(showBackground = true, locale = "es-rES")
+@Composable
+private fun Template2PaywallFooterPreview() {
+    val options = PaywallViewOptions.Builder()
+        .setOffering(TestData.template2Offering)
+        .build()
+    options.mode = PaywallViewMode.FOOTER
+    InternalPaywallView(options)
 }
