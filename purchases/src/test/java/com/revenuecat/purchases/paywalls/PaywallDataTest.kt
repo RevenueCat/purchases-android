@@ -71,7 +71,8 @@ class PaywallDataTest {
             "Purchase now with multiple offers"
         )
         assertThat(localizedConfiguration?.offerDetailsWithMultipleIntroOffers).isEqualTo(
-            "Start your {{ sub_offer_duration }} trial, then {{ sub_offer_duration_2 }} discount, then {{ sub_price_per_month }} per month"
+            "Try {{ sub_offer_duration }} for free, then {{ sub_offer_price_2 }} for your first " +
+                "{{ sub_offer_duration_2 }}, and just {{ sub_price_per_month }} thereafter."
         )
     }
 

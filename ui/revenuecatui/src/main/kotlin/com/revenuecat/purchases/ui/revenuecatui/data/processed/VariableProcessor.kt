@@ -58,26 +58,7 @@ internal object VariableProcessor {
             Logger.e("Unknown variable: $variableNameString")
             null
         } else {
-            return when (variableName) {
-                VariableName.APP_NAME -> variableDataProvider.applicationName
-                VariableName.PRICE -> variableDataProvider.localizedPrice(rcPackage)
-                VariableName.PRICE_PER_PERIOD -> variableDataProvider.localizedPricePerPeriod(rcPackage, locale)
-                VariableName.TOTAL_PRICE_AND_PER_MONTH -> variableDataProvider.localizedPriceAndPerMonth(
-                    rcPackage,
-                    locale,
-                )
-                VariableName.PRODUCT_NAME -> variableDataProvider.productName(rcPackage)
-                VariableName.SUB_PERIOD -> variableDataProvider.periodName(rcPackage)
-                VariableName.SUB_PRICE_PER_MONTH -> variableDataProvider.localizedPricePerMonth(
-                    rcPackage,
-                    locale,
-                )
-                VariableName.SUB_DURATION -> variableDataProvider.subscriptionDuration(rcPackage, locale)
-                VariableName.SUB_OFFER_DURATION -> variableDataProvider.introductoryOfferDuration(rcPackage, locale)
-                VariableName.SUB_OFFER_DURATION_2 -> variableDataProvider.introductoryOfferDuration(rcPackage, locale)
-                VariableName.SUB_OFFER_PRICE -> variableDataProvider.localizedIntroductoryOfferPrice(rcPackage)
-                VariableName.SUB_OFFER_PRICE_2 -> variableDataProvider.localizedIntroductoryOfferPrice(rcPackage)
-            } ?: run {
+            return processVariable(variableName, variableDataProvider, rcPackage, locale) ?: run {
                 Logger.w(
                     "Could not process value for variable '$variableNameString' for " +
                         "package '${rcPackage.identifier}'. Please check that the product for that package matches " +
@@ -86,6 +67,34 @@ internal object VariableProcessor {
                 ""
             }
         }
+    }
+
+    private fun processVariable(
+        variableName: VariableName,
+        variableDataProvider: VariableDataProvider,
+        rcPackage: Package,
+        locale: Locale,
+    ) = when (variableName) {
+        VariableName.APP_NAME -> variableDataProvider.applicationName
+        VariableName.PRICE -> variableDataProvider.localizedPrice(rcPackage)
+        VariableName.PRICE_PER_PERIOD -> variableDataProvider.localizedPricePerPeriod(rcPackage, locale)
+        VariableName.TOTAL_PRICE_AND_PER_MONTH -> variableDataProvider.localizedPriceAndPerMonth(
+            rcPackage,
+            locale,
+        )
+
+        VariableName.PRODUCT_NAME -> variableDataProvider.productName(rcPackage)
+        VariableName.SUB_PERIOD -> variableDataProvider.periodName(rcPackage)
+        VariableName.SUB_PRICE_PER_MONTH -> variableDataProvider.localizedPricePerMonth(
+            rcPackage,
+            locale,
+        )
+
+        VariableName.SUB_DURATION -> variableDataProvider.subscriptionDuration(rcPackage, locale)
+        VariableName.SUB_OFFER_DURATION -> variableDataProvider.introductoryOfferDuration(rcPackage, locale)
+        VariableName.SUB_OFFER_DURATION_2 -> variableDataProvider.introductoryOfferDuration(rcPackage, locale)
+        VariableName.SUB_OFFER_PRICE -> variableDataProvider.localizedFreeOrIntroductoryOfferPrice(rcPackage)
+        VariableName.SUB_OFFER_PRICE_2 -> variableDataProvider.localizedIntroductoryOfferPrice(rcPackage)
     }
 
     private enum class VariableName(val identifier: String) {

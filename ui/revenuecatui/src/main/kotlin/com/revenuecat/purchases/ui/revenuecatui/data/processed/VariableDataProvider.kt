@@ -12,7 +12,7 @@ import com.revenuecat.purchases.ui.revenuecatui.extensions.localizedPeriod
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ApplicationContext
 import java.util.Locale
 
-@Suppress("UnusedParameter", "FunctionOnlyReturningConstant")
+@Suppress("UnusedParameter", "FunctionOnlyReturningConstant", "TooManyFunctions")
 internal class VariableDataProvider(
     private val applicationContext: ApplicationContext,
     private val preview: Boolean = false,
@@ -32,8 +32,12 @@ internal class VariableDataProvider(
         return rcPackage.product.formattedPricePerMonth(locale)
     }
 
-    fun localizedIntroductoryOfferPrice(rcPackage: Package): String? {
+    fun localizedFreeOrIntroductoryOfferPrice(rcPackage: Package): String? {
         return getFreeOrIntroPhaseToApply(rcPackage)?.price?.formatted
+    }
+
+    fun localizedIntroductoryOfferPrice(rcPackage: Package): String? {
+        return getIntroPhaseToApply(rcPackage)?.price?.formatted
     }
 
     fun productName(rcPackage: Package): String {
