@@ -31,7 +31,7 @@ class PackageExtensionsTest {
     }
 
     @Test
-    fun `introEligibility calculation is false if defaultOption is base plan`() {
+    fun `introEligibility calculation is INELIGIBLE if defaultOption is base plan`() {
         val rcPackage = createPackage(numberOfOffers = 0)
 
         assertThat(rcPackage.introEligibility).isEqualTo(IntroOfferEligibility.INELIGIBLE)
