@@ -12,6 +12,7 @@ import com.revenuecat.paywallstester.ui.screens.AppScreen
 import com.revenuecat.paywallstester.ui.screens.main.MainScreen
 import com.revenuecat.paywallstester.ui.screens.paywall.PaywallScreen
 import com.revenuecat.paywallstester.ui.screens.paywall.PaywallScreenViewModel
+import com.revenuecat.paywallstester.ui.screens.paywallfooter.PaywallFooterScreen
 
 @Composable
 fun PaywallTesterApp(
@@ -31,15 +32,26 @@ private fun AppNavHost(
         modifier = modifier,
     ) {
         composable(AppScreen.Main.route) {
-            MainScreen(navigateToPaywallScreen = { offering ->
-                navController.navigate(AppScreen.Paywall.route.plus("/${offering?.identifier}"))
-            })
+            MainScreen(
+                navigateToPaywallScreen = { offering ->
+                    navController.navigate(AppScreen.Paywall.route.plus("/${offering?.identifier}"))
+                },
+                navigateToPaywallFooterScreen = { offering ->
+                    navController.navigate(AppScreen.PaywallFooter.route.plus("/${offering?.identifier}"))
+                },
+            )
         }
         composable(
             route = AppScreen.Paywall.route.plus("/{${PaywallScreenViewModel.OFFERING_ID_KEY}}"),
             arguments = listOf(navArgument(PaywallScreenViewModel.OFFERING_ID_KEY) { type = NavType.StringType }),
         ) {
             PaywallScreen()
+        }
+        composable(
+            route = AppScreen.PaywallFooter.route.plus("/{${PaywallScreenViewModel.OFFERING_ID_KEY}}"),
+            arguments = listOf(navArgument(PaywallScreenViewModel.OFFERING_ID_KEY) { type = NavType.StringType }),
+        ) {
+            PaywallFooterScreen()
         }
     }
 }
