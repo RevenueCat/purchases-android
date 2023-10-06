@@ -2,6 +2,7 @@ package com.revenuecat.purchases.ui.revenuecatui.data
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
+import com.revenuecat.purchases.ui.revenuecatui.PaywallViewMode
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.ProcessedLocalizedConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 
@@ -20,3 +21,6 @@ internal val PaywallViewState.Loaded.selectedLocalization: ProcessedLocalizedCon
 internal val PaywallViewState.Loaded.currentColors: TemplateConfiguration.Colors
     @Composable @ReadOnlyComposable
     get() = templateConfiguration.getCurrentColors()
+
+internal val PaywallViewState.Loaded.isInFullScreenMode: Boolean
+    get() = templateConfiguration.mode == PaywallViewMode.FULL_SCREEN
