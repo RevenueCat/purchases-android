@@ -8,7 +8,7 @@ import androidx.activity.result.contract.ActivityResultContract
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 
-internal class PaywallContract: ActivityResultContract<PaywallActivityArgs, PaywallResult>() {
+internal class PaywallContract : ActivityResultContract<PaywallActivityArgs, PaywallResult>() {
     override fun createIntent(context: Context, args: PaywallActivityArgs): Intent {
         return Intent(context, PaywallActivity::class.java).apply {
             putExtra(PaywallActivity.ARGS_EXTRA, args)
@@ -24,6 +24,8 @@ internal class PaywallContract: ActivityResultContract<PaywallActivityArgs, Payw
         } else {
             intent.getParcelableExtra(PaywallActivity.RESULT_EXTRA) as? PaywallResult
         }
-        return result ?: PaywallResult.Error(PurchasesError(PurchasesErrorCode.UnknownError, "PaywallActivity returned null result"))
+        return result ?: PaywallResult.Error(
+            PurchasesError(PurchasesErrorCode.UnknownError, "PaywallActivity returned null result"),
+        )
     }
 }

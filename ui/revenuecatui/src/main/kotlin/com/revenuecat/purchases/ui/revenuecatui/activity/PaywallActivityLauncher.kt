@@ -9,7 +9,7 @@ import com.revenuecat.purchases.Offering
 /**
  * Implement this interface to receive the result of the paywall activity.
  */
-interface PaywallResultHandler: ActivityResultCallback<PaywallResult>
+interface PaywallResultHandler : ActivityResultCallback<PaywallResult>
 
 /**
  * Launches the paywall activity. You need to create this object during the activity's onCreate.

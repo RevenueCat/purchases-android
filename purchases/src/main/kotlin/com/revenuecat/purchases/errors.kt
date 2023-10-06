@@ -16,7 +16,7 @@ typealias PurchasesErrorCallback = (PurchasesError) -> Unit
 class PurchasesError(
     val code: PurchasesErrorCode,
     val underlyingErrorMessage: String? = null,
-): Parcelable {
+) : Parcelable {
     // Message explaining the error
     @IgnoredOnParcel
     val message: String = code.description
