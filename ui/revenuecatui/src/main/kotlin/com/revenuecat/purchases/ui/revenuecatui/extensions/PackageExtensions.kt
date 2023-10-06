@@ -14,12 +14,12 @@ val Package.isMonthly: Boolean
 
 internal val Package.introEligibility: IntroOfferEligibility
     get() = product.defaultOption?.let { defaultOption ->
-        if (defaultOption.isBasePlan) {
-            IntroOfferEligibility.INELIGIBLE
-        } else if (defaultOption.pricingPhases.size == 2) { // Base plan + one offer
-            IntroOfferEligibility.SINGLE_OFFER_ELIGIBLE
-        } else {
-            IntroOfferEligibility.MULTIPLE_OFFER_ELIGIBLE
+        when {
+            defaultOption.isBasePlan -> IntroOfferEligibility.INELIGIBLE
+            (defaultOption.freePhase != null && defaultOption.introPhase == null) ||
+                (defaultOption.freePhase == null && defaultOption.introPhase != null) ->
+                IntroOfferEligibility.SINGLE_OFFER_ELIGIBLE
+            else -> IntroOfferEligibility.MULTIPLE_OFFER_ELIGIBLE
         }
     } ?: IntroOfferEligibility.INELIGIBLE
 
