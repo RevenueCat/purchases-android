@@ -24,7 +24,7 @@ import kotlinx.coroutines.launch
 
 /**
  * Composable offering a dialog screen Paywall UI configured from the RevenueCat dashboard.
- * This dialog will be shown as a full screen dialog in compact devices and a normal dialog othewise.
+ * This dialog will be shown as a full screen dialog in compact devices and a normal dialog otherwise.
  * @param paywallDialogOptions The options to configure the PaywallDialog and what to do on dismissal.
  */
 @Composable
@@ -37,11 +37,7 @@ fun PaywallDialog(
         LaunchedEffect(paywallDialogOptions) {
             launch {
                 shouldDisplayDialog = try {
-                    // TODO-PAYWALLS: This won't receive updates in case the customer info changes and starts/stops
-                    // being eligible to display the paywall dialog. We would need to support multiple customer info
-                    // listeners to refresh this.
-                    val customerInfo = Purchases.sharedInstance.awaitCustomerInfo()
-                    shouldDisplayBlock.invoke(customerInfo)
+                    shouldDisplayBlock.invoke(Purchases.sharedInstance.awaitCustomerInfo())
                 } catch (e: PurchasesException) {
                     Logger.e("Error fetching customer info to display paywall dialog", e)
                     false

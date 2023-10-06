@@ -48,7 +48,7 @@ class PaywallDialogOptions(builder: Builder) {
         fun setRequiredEntitlementIdentifier(requiredEntitlementIdentifier: String?) = apply {
             requiredEntitlementIdentifier?.let { requiredEntitlementIdentifier ->
                 this.shouldDisplayBlock = { customerInfo ->
-                    customerInfo.entitlements[requiredEntitlementIdentifier]?.isActive == true
+                    customerInfo.entitlements[requiredEntitlementIdentifier]?.isActive != true
                 }
             }
         }
