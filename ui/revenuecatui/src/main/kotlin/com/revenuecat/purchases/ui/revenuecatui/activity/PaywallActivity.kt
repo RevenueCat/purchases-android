@@ -19,6 +19,10 @@ import com.revenuecat.purchases.ui.revenuecatui.PaywallView
 import com.revenuecat.purchases.ui.revenuecatui.PaywallViewListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallViewOptions
 
+/**
+ * Wrapper activity around [PaywallView] that allows using it when you are not using Jetpack Compose directly.
+ * It receives the [PaywallActivityArgs] as an extra and returns the [PaywallResult] as a result.
+ */
 internal class PaywallActivity : ComponentActivity(), PaywallViewListener {
     companion object {
         const val ARGS_EXTRA = "paywall_args"

@@ -8,6 +8,10 @@ import androidx.activity.result.contract.ActivityResultContract
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 
+/**
+ * Contract that specifies how to launch the paywall activity and how to parse its result, abstracting
+ * that logic from the caller.
+ */
 internal class PaywallContract : ActivityResultContract<PaywallActivityArgs, PaywallResult>() {
     override fun createIntent(context: Context, args: PaywallActivityArgs): Intent {
         return Intent(context, PaywallActivity::class.java).apply {
