@@ -16,19 +16,21 @@ import androidx.compose.ui.tooling.preview.Preview
 internal fun IntroEligibilityStateView(
     textWithNoIntroOffer: String?,
     textWithIntroOffer: String?,
+    textWithMultipleIntroOffers: String?,
     eligibility: IntroOfferEligibility,
     color: Color = Color.Unspecified,
     style: TextStyle = TextStyle.Default,
     fontWeight: FontWeight? = null,
     textAlign: TextAlign? = null,
 ) {
-    val text: String = if (textWithIntroOffer != null && eligibility == IntroOfferEligibility.ELIGIBLE) {
-        textWithIntroOffer
-    } else {
-        // Display text with intro offer as a backup to ensure layout does not change
-        // when switching states.
-        textWithNoIntroOffer ?: textWithIntroOffer ?: ""
-    }
+    val text: String = when (eligibility) {
+        IntroOfferEligibility.SINGLE_OFFER_ELIGIBLE -> textWithIntroOffer
+        IntroOfferEligibility.MULTIPLE_OFFER_ELIGIBLE -> textWithMultipleIntroOffers
+        else -> textWithNoIntroOffer
+    } // Display text with intro offer as a backup to ensure layout does not change when switching states.
+        ?: textWithNoIntroOffer
+        ?: textWithIntroOffer
+        ?: ""
 
     Text(
         text,
@@ -41,7 +43,8 @@ internal fun IntroEligibilityStateView(
 
 internal enum class IntroOfferEligibility {
     INELIGIBLE,
-    ELIGIBLE,
+    SINGLE_OFFER_ELIGIBLE,
+    MULTIPLE_OFFER_ELIGIBLE,
 }
 
 @Preview(showBackground = true)
@@ -50,7 +53,8 @@ private fun IntroEligibilityPreviewNoOffer() {
     IntroEligibilityStateView(
         textWithNoIntroOffer = "$3.99/mo",
         textWithIntroOffer = null,
-        eligibility = IntroOfferEligibility.ELIGIBLE,
+        textWithMultipleIntroOffers = null,
+        eligibility = IntroOfferEligibility.SINGLE_OFFER_ELIGIBLE,
         color = Color.Black,
     )
 }
@@ -61,6 +65,7 @@ private fun IntroEligibilityPreviewBothTextsIneligible() {
     IntroEligibilityStateView(
         textWithNoIntroOffer = "$3.99/mo",
         textWithIntroOffer = "7 day trial, then $3.99/mo",
+        textWithMultipleIntroOffers = "7 days for free, then $1.99 for your first month, and just $4.99/mo thereafter.",
         eligibility = IntroOfferEligibility.INELIGIBLE,
         color = Color.Black,
     )
@@ -68,11 +73,24 @@ private fun IntroEligibilityPreviewBothTextsIneligible() {
 
 @Preview(showBackground = true)
 @Composable
-private fun IntroEligibilityPreviewBothTextsEligible() {
+private fun IntroEligibilityPreviewBothTextsEligibleSingleOffer() {
     IntroEligibilityStateView(
         textWithNoIntroOffer = "$3.99/mo",
         textWithIntroOffer = "7 day trial, then $3.99/mo",
-        eligibility = IntroOfferEligibility.ELIGIBLE,
+        textWithMultipleIntroOffers = "7 days for free, then $1.99 for your first month, and just $3.99/mo thereafter.",
+        eligibility = IntroOfferEligibility.SINGLE_OFFER_ELIGIBLE,
+        color = Color.Black,
+    )
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun IntroEligibilityPreviewBothTextsEligibleMultipleOffers() {
+    IntroEligibilityStateView(
+        textWithNoIntroOffer = "$3.99/mo",
+        textWithIntroOffer = "7 day trial, then $3.99/mo",
+        textWithMultipleIntroOffers = "7 days for free, then $1.99 for your first month, and just $4.99/mo thereafter.",
+        eligibility = IntroOfferEligibility.MULTIPLE_OFFER_ELIGIBLE,
         color = Color.Black,
     )
 }

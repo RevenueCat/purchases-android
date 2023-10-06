@@ -164,6 +164,7 @@ private fun SelectPackageButton(
             IntroEligibilityStateView(
                 textWithNoIntroOffer = packageInfo.localization.offerDetails,
                 textWithIntroOffer = packageInfo.localization.offerDetailsWithIntroOffer,
+                textWithMultipleIntroOffers = packageInfo.localization.offerDetailsWithMultipleIntroOffers,
                 eligibility = packageInfo.introEligibility,
             )
         }
