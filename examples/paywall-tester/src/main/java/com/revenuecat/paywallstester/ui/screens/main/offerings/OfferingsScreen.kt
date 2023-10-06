@@ -100,7 +100,15 @@ private fun OfferingsListScreen(
                             .clickable { dropdownExpandedOffering = offering }
                             .padding(16.dp),
                     ) {
-                        Text(text = offering.identifier)
+                        Column {
+                            Text(text = offering.identifier)
+
+                            offering.paywall?.let {
+                                Text("Template ${it.templateName}")
+                            } ?: run {
+                                Text("No paywall")
+                            }
+                        }
                     }
                     Divider()
                 }
