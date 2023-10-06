@@ -9,7 +9,7 @@ android {
 
     defaultConfig {
         applicationId "com.revenuecat.purchases_sample"
-        minSdk 21
+        minSdk 24
         targetSdk 33
         versionCode 1
         versionName "1.0"
@@ -77,6 +77,7 @@ dependencies {
     debugImplementation libs.compose.ui.tooling
     debugImplementation libs.compose.ui.test.manifest
     implementation libs.revenuecat
+    implementation libs.revenuecat.ui
     implementation libs.revenuecat.amazon
     debugImplementation libs.revenuecat.debugview
     releaseImplementation libs.revenuecat.debugview.noop
