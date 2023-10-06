@@ -240,21 +240,27 @@ class VariableProcessorTest {
     // region sub_offer_duration_2
 
     @Test
-    fun `process variables processes sub_offer_duration_2`() {
-        expectVariablesResult("{{ sub_offer_duration_2 }}", "1 month", rcPackage = TestData.Packages.annual)
-        expectVariablesResult("{{ sub_offer_duration_2 }}", "1 month", rcPackage = TestData.Packages.bimonthly)
-        expectVariablesResult("{{ sub_offer_duration_2 }}", "2 weeks", rcPackage = TestData.Packages.quarterly)
+    fun `process variables processes sub_offer_duration_2 for products with both free trial and intro price`() {
+        expectVariablesResult("{{ sub_offer_duration_2 }}", "1 month", rcPackage = TestData.Packages.quarterly)
     }
 
     @Test
-    fun `process variables processes sub_offer_duration_2 for spanish locale`() {
-        expectVariablesResult("{{ sub_offer_duration_2 }}", "1 mes", esLocale, TestData.Packages.annual)
-        expectVariablesResult("{{ sub_offer_duration_2 }}", "1 mes", esLocale, TestData.Packages.bimonthly)
-        expectVariablesResult("{{ sub_offer_duration_2 }}", "2 semanas", esLocale, TestData.Packages.quarterly)
+    fun `process variables processes sub_offer_duration_2 for products with free trial and intro price for spanish`() {
+        expectVariablesResult("{{ sub_offer_duration_2 }}", "1 mes", esLocale, rcPackage = TestData.Packages.quarterly)
     }
 
     @Test
-    fun `process variables processes sub_offer_duration_2 as empty string if no offers`() {
+    fun `process variables does not process sub_offer_duration_2 when only free trial is available`() {
+        expectVariablesResult("{{ sub_offer_duration_2 }}", "", rcPackage = TestData.Packages.annual)
+    }
+
+    @Test
+    fun `process variables does not process sub_offer_duration_2 for inapp products`() {
+        expectVariablesResult("{{ sub_offer_duration_2 }}", "", rcPackage = TestData.Packages.lifetime)
+    }
+
+    @Test
+    fun `process variables does not process sub_offer_duration_2 if no free trial nor intro price`() {
         expectVariablesResult("{{ sub_offer_duration_2 }}", "", rcPackage = TestData.Packages.monthly)
     }
 
@@ -292,18 +298,13 @@ class VariableProcessorTest {
     // region sub_offer_price_2
 
     @Test
-    fun `process variables processes sub_offer_price_2 for products with no intro price`() {
-        expectVariablesResult("{{ sub_offer_price_2 }}", "", rcPackage = TestData.Packages.annual)
-    }
-
-    @Test
-    fun `process variables processes sub_offer_price_2 for intro prices when free trial is available`() {
-        expectVariablesResult("{{ sub_offer_price_2 }}", "$3.99", rcPackage = TestData.Packages.bimonthly)
-    }
-
-    @Test
-    fun `process variables processes sub_offer_price_2 for both free trial and intro price`() {
+    fun `process variables processes sub_offer_price_2 for products with both free trial and intro price`() {
         expectVariablesResult("{{ sub_offer_price_2 }}", "$3.99", rcPackage = TestData.Packages.quarterly)
+    }
+
+    @Test
+    fun `process variables does not process sub_offer_price_2 when only free trial is available`() {
+        expectVariablesResult("{{ sub_offer_price_2 }}", "", rcPackage = TestData.Packages.annual)
     }
 
     @Test
