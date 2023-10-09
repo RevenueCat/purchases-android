@@ -26,7 +26,7 @@ internal fun Offering.validatedPaywall(
             PaywallData.defaultTemplate,
             PaywallValidationError.MissingPaywall,
         ).also {
-            Logger.d(PaywallValidationErrorStrings.MISSING_PAYWALL.format(this.identifier))
+            Logger.w(PaywallValidationErrorStrings.MISSING_PAYWALL.format(this.identifier))
         }
 
     val template = paywallData.validate().getOrElse {
@@ -35,7 +35,7 @@ internal fun Offering.validatedPaywall(
             PaywallData.defaultTemplate,
             it as PaywallValidationError,
         ).also {
-            Logger.d(PaywallValidationErrorStrings.DISPLAYING_DEFAULT)
+            Logger.w(PaywallValidationErrorStrings.DISPLAYING_DEFAULT)
         }
     }
     return PaywallValidationResult(
@@ -52,20 +52,20 @@ private fun PaywallData.validate(): Result<PaywallTemplate> {
     if (invalidVariablesError != null) {
         return Result.failure<PaywallTemplate>(invalidVariablesError).also {
             val joinedUnrecognizedVariables = invalidVariablesError.unrecognizedVariables.joinToString()
-            Logger.d(PaywallValidationErrorStrings.INVALID_VARIABLES.format(joinedUnrecognizedVariables))
+            Logger.w(PaywallValidationErrorStrings.INVALID_VARIABLES.format(joinedUnrecognizedVariables))
         }
     }
 
     val template = validateTemplate()
         ?: return Result.failure<PaywallTemplate>(PaywallValidationError.InvalidTemplate(templateName)).also {
-            Logger.d(PaywallValidationErrorStrings.INVALID_TEMPLATE_NAME.format(templateName))
+            Logger.w(PaywallValidationErrorStrings.INVALID_TEMPLATE_NAME.format(templateName))
         }
 
     val invalidIconsError = localizedConfiguration.validateIcons()
     if (invalidIconsError != null) {
         return Result.failure<PaywallTemplate>(invalidIconsError).also {
             val joinedInvalidIcons = invalidIconsError.invalidIcons.joinToString()
-            Logger.d(PaywallValidationErrorStrings.INVALID_ICONS.format(joinedInvalidIcons))
+            Logger.w(PaywallValidationErrorStrings.INVALID_ICONS.format(joinedInvalidIcons))
         }
     }
 
