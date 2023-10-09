@@ -125,7 +125,7 @@ class PaywallDataValidationTest {
     )
 
     private fun verifyPackages(actual: PaywallData, expectation: PaywallData) {
-        assertThat(actual.config.packages).isEqualTo(expectation.config.packages)
+        assertThat(actual.config.packageIds).isEqualTo(expectation.config.packageIds)
     }
 
     private fun compareWithDefaultTemplate(displayablePaywall: PaywallData) {
@@ -144,7 +144,7 @@ class PaywallDataValidationTest {
             assertThat(config.images.background).isEqualTo(defaultConfig.images.background)
             assertThat(config.images.header).isEqualTo(defaultConfig.images.header)
             assertThat(config.images.icon).isEqualTo(defaultConfig.images.icon)
-            assertThat(config.packages).containsExactly(*defaultConfig.packages.toTypedArray())
+            assertThat(config.packageIds).containsExactly(*defaultConfig.packageIds.toTypedArray())
             assertThat(config.defaultPackage).isEqualTo(defaultConfig.defaultPackage)
             assertThat(config.termsOfServiceURL).isEqualTo(defaultConfig.termsOfServiceURL)
             assertThat(config.privacyURL).isEqualTo(defaultConfig.privacyURL)

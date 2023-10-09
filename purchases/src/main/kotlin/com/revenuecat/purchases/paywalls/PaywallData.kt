@@ -91,7 +91,7 @@ data class PaywallData(
         /**
          * The list of package identifiers this paywall will display.
          */
-        val packages: List<String>,
+        @SerialName("packages") val packageIds: List<String>,
 
         /**
          * The package to be selected by default.

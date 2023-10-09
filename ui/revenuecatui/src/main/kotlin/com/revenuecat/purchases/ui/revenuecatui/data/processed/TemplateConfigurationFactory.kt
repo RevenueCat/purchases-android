@@ -27,7 +27,7 @@ internal object TemplateConfigurationFactory {
                 variableDataProvider = variableDataProvider,
                 availablePackages = availablePackages,
                 activelySubscribedProductIdentifiers = activelySubscribedProductIdentifiers,
-                packageIdsInConfig = paywallData.config.packages,
+                packageIdsInConfig = paywallData.config.packageIds,
                 default = paywallData.config.defaultPackage,
                 localization = localizedConfiguration,
                 configurationType = template.configurationType,
