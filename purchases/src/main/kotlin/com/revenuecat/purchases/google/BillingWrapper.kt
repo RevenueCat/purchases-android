@@ -734,7 +734,7 @@ internal class BillingWrapper(
     }
 
     override fun onBillingServiceDisconnected() {
-        log(LogIntent.DEBUG, BillingStrings.BILLING_SERVICE_DISCONNECTED.format(billingClient?.toString()))
+        log(LogIntent.WARNING, BillingStrings.BILLING_SERVICE_DISCONNECTED.format(billingClient?.toString()))
         retryBillingServiceConnectionWithExponentialBackoff()
     }
 
@@ -746,9 +746,9 @@ internal class BillingWrapper(
      */
     private fun retryBillingServiceConnectionWithExponentialBackoff() {
         if (reconnectionAlreadyScheduled) {
-            log(LogIntent.DEBUG, BillingStrings.BILLING_CLIENT_RETRY_ALREADY_SCHEDULED)
+            log(LogIntent.WARNING, BillingStrings.BILLING_CLIENT_RETRY_ALREADY_SCHEDULED)
         } else {
-            log(LogIntent.DEBUG, BillingStrings.BILLING_CLIENT_RETRY.format(reconnectMilliseconds))
+            log(LogIntent.WARNING, BillingStrings.BILLING_CLIENT_RETRY.format(reconnectMilliseconds))
             reconnectionAlreadyScheduled = true
             startConnectionOnMainThread(reconnectMilliseconds)
             reconnectMilliseconds = min(
