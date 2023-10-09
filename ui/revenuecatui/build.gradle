@@ -2,8 +2,14 @@ plugins {
     alias libs.plugins.android.library
     alias libs.plugins.kotlin.android
     alias libs.plugins.kotlin.serialization
+    alias libs.plugins.emergetools
+    alias libs.plugins.ksp
 }
 
+//emerge {
+//    // Emerge uses the EMERGE_API_TOKEN env variable by default, so no need to set this explicitly, this is just for example purposes
+//    apiToken.set("EMERGE_API_TOKEN")
+//}
 
 // Commenting out until the library is ready to be published
 //if (!project.getProperties()["ANDROID_VARIANT_TO_PUBLISH"].contains("customEntitlementComputation")) {
@@ -57,6 +63,10 @@ dependencies {
     implementation libs.commonmark.strikethrough
     debugImplementation libs.compose.ui.tooling
     debugImplementation libs.androidx.test.compose.manifest
+
+    androidTestImplementation "com.emergetools.snapshots:snapshots:0.8.1"
+    // For Compose @Preview snapshot generation from the main source set:
+    ksp "com.emergetools.snapshots:snapshots-processor:0.8.1"
 
     testImplementation libs.bundles.test
     testImplementation libs.coroutines.test
