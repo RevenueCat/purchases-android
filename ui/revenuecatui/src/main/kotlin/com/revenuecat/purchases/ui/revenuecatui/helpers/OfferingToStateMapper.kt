@@ -28,7 +28,7 @@ internal fun Offering.validatedPaywall(
 
     val template = paywallData.validate().getOrElse {
         return PaywallValidationResult(
-            PaywallData.createDefaultForIdentifiers(paywallData.config.packages, currentColorScheme),
+            PaywallData.createDefaultForIdentifiers(paywallData.config.packageIds, currentColorScheme),
             PaywallData.defaultTemplate,
             it as PaywallValidationError,
         )

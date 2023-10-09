@@ -29,7 +29,7 @@ class PaywallDataTest {
         assertThat(paywall.templateName).isEqualTo("1")
         assertThat(paywall.assetBaseURL).isEqualTo(URL("https://rc-paywalls.s3.amazonaws.com"))
         assertThat(paywall.revision).isEqualTo(7)
-        assertThat(paywall.config.packages).containsExactly("\$rc_monthly", "\$rc_annual", "custom_package")
+        assertThat(paywall.config.packageIds).containsExactly("\$rc_monthly", "\$rc_annual", "custom_package")
         assertThat(paywall.config.defaultPackage).isEqualTo("\$rc_annual")
         assertThat(paywall.config.images.header).isEqualTo("header.jpg")
         assertThat(paywall.config.images.background).isEqualTo("background.jpg")
