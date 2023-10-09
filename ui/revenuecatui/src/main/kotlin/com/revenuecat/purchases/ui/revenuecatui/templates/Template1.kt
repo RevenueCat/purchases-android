@@ -123,6 +123,7 @@ private fun ColumnScope.Template1MainContent(state: PaywallViewState.Loaded) {
         IntroEligibilityStateView(
             textWithNoIntroOffer = localizedConfig.offerDetails,
             textWithIntroOffer = localizedConfig.offerDetailsWithIntroOffer,
+            textWithMultipleIntroOffers = localizedConfig.offerDetailsWithMultipleIntroOffers,
             eligibility = state.selectedPackage.introEligibility,
             color = colors.text1,
             style = MaterialTheme.typography.bodyLarge,

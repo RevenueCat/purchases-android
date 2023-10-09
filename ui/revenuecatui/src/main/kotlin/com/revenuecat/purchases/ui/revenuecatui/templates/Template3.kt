@@ -76,6 +76,7 @@ internal fun Template3(
             IntroEligibilityStateView(
                 textWithNoIntroOffer = state.selectedLocalization.offerDetails,
                 textWithIntroOffer = state.selectedLocalization.offerDetailsWithIntroOffer,
+                textWithMultipleIntroOffers = state.selectedLocalization.offerDetailsWithMultipleIntroOffers,
                 eligibility = state.selectedPackage.introEligibility,
                 color = state.templateConfiguration.getCurrentColors().text1,
                 textAlign = TextAlign.Center,
