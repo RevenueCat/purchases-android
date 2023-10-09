@@ -14,7 +14,6 @@ import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
 import com.revenuecat.purchases.ui.revenuecatui.extensions.createDefault
 import com.revenuecat.purchases.ui.revenuecatui.extensions.createDefaultForIdentifiers
 import com.revenuecat.purchases.ui.revenuecatui.extensions.defaultTemplate
-import com.revenuecat.purchases.ui.revenuecatui.strings.PaywallValidationErrorStrings
 
 @Suppress("ReturnCount")
 internal fun Offering.validatedPaywall(
@@ -25,18 +24,14 @@ internal fun Offering.validatedPaywall(
             PaywallData.createDefault(packages = availablePackages, currentColorScheme),
             PaywallData.defaultTemplate,
             PaywallValidationError.MissingPaywall,
-        ).also {
-            Logger.w(PaywallValidationErrorStrings.MISSING_PAYWALL.format(this.identifier))
-        }
+        )
 
     val template = paywallData.validate().getOrElse {
         return PaywallValidationResult(
             PaywallData.createDefaultForIdentifiers(paywallData.config.packages, currentColorScheme),
             PaywallData.defaultTemplate,
             it as PaywallValidationError,
-        ).also {
-            Logger.w(PaywallValidationErrorStrings.DISPLAYING_DEFAULT)
-        }
+        )
     }
     return PaywallValidationResult(
         paywallData,
@@ -50,23 +45,14 @@ private fun PaywallData.validate(): Result<PaywallTemplate> {
 
     val invalidVariablesError = localizedConfiguration.validateVariables()
     if (invalidVariablesError != null) {
-        return Result.failure<PaywallTemplate>(invalidVariablesError).also {
-            val joinedUnrecognizedVariables = invalidVariablesError.unrecognizedVariables.joinToString()
-            Logger.w(PaywallValidationErrorStrings.INVALID_VARIABLES.format(joinedUnrecognizedVariables))
-        }
+        return Result.failure(invalidVariablesError)
     }
 
-    val template = validateTemplate()
-        ?: return Result.failure<PaywallTemplate>(PaywallValidationError.InvalidTemplate(templateName)).also {
-            Logger.w(PaywallValidationErrorStrings.INVALID_TEMPLATE_NAME.format(templateName))
-        }
+    val template = validateTemplate() ?: return Result.failure(PaywallValidationError.InvalidTemplate(templateName))
 
     val invalidIconsError = localizedConfiguration.validateIcons()
     if (invalidIconsError != null) {
-        return Result.failure<PaywallTemplate>(invalidIconsError).also {
-            val joinedInvalidIcons = invalidIconsError.invalidIcons.joinToString()
-            Logger.w(PaywallValidationErrorStrings.INVALID_ICONS.format(joinedInvalidIcons))
-        }
+        return Result.failure(invalidIconsError)
     }
 
     return Result.success(template)

@@ -26,6 +26,7 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.ApplicationContext
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toPaywallViewState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.validatedPaywall
+import com.revenuecat.purchases.ui.revenuecatui.strings.PaywallValidationErrorStrings
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -182,8 +183,12 @@ internal class PaywallViewModelImpl(
         if (availablePackages.isEmpty()) {
             return PaywallViewState.Error("No packages available")
         }
-        val (displayablePaywall, template, _) = validatedPaywall(_colorScheme.value)
-        // TODO-PAYWALLS: display error
+        val (displayablePaywall, template, error) = validatedPaywall(_colorScheme.value)
+
+        error?.let { validationError ->
+            Logger.w(validationError.associatedErrorString(this))
+            Logger.w(PaywallValidationErrorStrings.DISPLAYING_DEFAULT)
+        }
         return toPaywallViewState(variableDataProvider, mode, displayablePaywall, template)
     }
 
