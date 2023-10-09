@@ -93,6 +93,8 @@ internal class BillingWrapper(
     // how long before the data source tries to reconnect to Google play
     private var reconnectMilliseconds = RECONNECT_TIMER_START_MILLISECONDS
 
+    private var reconnectionAlreadyScheduled = false
+
     class ClientFactory(private val context: Context) {
         @UiThread
         fun buildClient(listener: com.android.billingclient.api.PurchasesUpdatedListener): BillingClient {
@@ -121,6 +123,8 @@ internal class BillingWrapper(
             if (billingClient == null) {
                 billingClient = clientFactory.buildClient(this)
             }
+
+            reconnectionAlreadyScheduled = false
 
             billingClient?.let {
                 if (!it.isReady) {
@@ -730,9 +734,7 @@ internal class BillingWrapper(
     }
 
     override fun onBillingServiceDisconnected() {
-        mainHandler.post {
-            log(LogIntent.DEBUG, BillingStrings.BILLING_SERVICE_DISCONNECTED.format(billingClient.toString()))
-        }
+        log(LogIntent.WARNING, BillingStrings.BILLING_SERVICE_DISCONNECTED.format(billingClient?.toString()))
         retryBillingServiceConnectionWithExponentialBackoff()
     }
 
@@ -743,12 +745,17 @@ internal class BillingWrapper(
      * This prevents ANRs, see https://github.com/android/play-billing-samples/issues/310
      */
     private fun retryBillingServiceConnectionWithExponentialBackoff() {
-        log(LogIntent.DEBUG, BillingStrings.BILLING_CLIENT_RETRY.format(reconnectMilliseconds))
-        startConnectionOnMainThread(reconnectMilliseconds)
-        reconnectMilliseconds = min(
-            reconnectMilliseconds * 2,
-            RECONNECT_TIMER_MAX_TIME_MILLISECONDS,
-        )
+        if (reconnectionAlreadyScheduled) {
+            log(LogIntent.WARNING, BillingStrings.BILLING_CLIENT_RETRY_ALREADY_SCHEDULED)
+        } else {
+            log(LogIntent.WARNING, BillingStrings.BILLING_CLIENT_RETRY.format(reconnectMilliseconds))
+            reconnectionAlreadyScheduled = true
+            startConnectionOnMainThread(reconnectMilliseconds)
+            reconnectMilliseconds = min(
+                reconnectMilliseconds * 2,
+                RECONNECT_TIMER_MAX_TIME_MILLISECONDS,
+            )
+        }
     }
 
     override fun isConnected(): Boolean = billingClient?.isReady ?: false

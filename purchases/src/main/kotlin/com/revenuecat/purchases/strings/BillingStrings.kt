@@ -29,4 +29,5 @@ internal object BillingStrings {
     const val BILLING_INAPP_MESSAGE_UNEXPECTED_CODE = "Unexpected billing code: %s"
     const val BILLING_UNSPECIFIED_INAPP_MESSAGE_TYPES = "Tried to show in-app messages without specifying any types. " +
         "Please add what types of in-app message you want to display."
+    const val BILLING_CLIENT_RETRY_ALREADY_SCHEDULED = "BillingClient connection retry already scheduled. Ignoring"
 }
