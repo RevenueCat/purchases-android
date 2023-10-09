@@ -42,7 +42,7 @@ internal fun PurchaseButton(
             IntroEligibilityStateView(
                 textWithNoIntroOffer = state.selectedLocalization.callToAction,
                 textWithIntroOffer = state.selectedLocalization.callToActionWithIntroOffer,
-                textWithMultipleIntroOffers = state.selectedLocalization.offerDetailsWithMultipleIntroOffers,
+                textWithMultipleIntroOffers = state.selectedLocalization.callToActionWithMultipleIntroOffers,
                 eligibility = state.selectedPackage.introEligibility,
             )
         }
