@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.composables
 
+import BlurTransformation
 import android.content.Context
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
@@ -11,6 +12,7 @@ import coil.compose.AsyncImage
 import coil.compose.AsyncImagePainter
 import coil.disk.DiskCache
 import coil.request.ImageRequest
+import coil.transform.Transformation
 import com.revenuecat.purchases.ui.revenuecatui.UIConstant
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 
@@ -20,16 +22,25 @@ internal fun RemoteImage(
     modifier: Modifier = Modifier,
     contentScale: ContentScale = ContentScale.Fit,
     contentDescription: String? = null,
+    transformation: Transformation? = null,
+    alpha: Float = 1f
 ) {
-    AsyncImage(
-        model = ImageRequest.Builder(LocalContext.current)
-            .data(urlString)
-            .crossfade(durationMillis = UIConstant.defaultAnimationDurationMillis)
-            .build(),
+
+    val requestBuilder = ImageRequest.Builder(LocalContext.current)
+        .data(urlString)
+        .crossfade(durationMillis = UIConstant.defaultAnimationDurationMillis)
+
+    transformation?.let {
+        requestBuilder.transformations(listOf(it))
+    }
+
+    return AsyncImage(
+        model = requestBuilder.build(),
         contentDescription = contentDescription,
         imageLoader = LocalContext.current.getRevenueCatUIImageLoader(),
         modifier = modifier,
         contentScale = contentScale,
+        alpha = alpha,
         onState = {
             when (it) {
                 is AsyncImagePainter.State.Error -> {
@@ -40,6 +51,7 @@ internal fun RemoteImage(
         },
     )
 }
+
 
 private const val MAX_CACHE_SIZE_BYTES = 25 * 1024 * 1024L // 25 MB
 
