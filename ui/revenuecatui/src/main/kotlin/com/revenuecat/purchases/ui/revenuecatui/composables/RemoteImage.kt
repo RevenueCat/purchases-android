@@ -8,9 +8,11 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import coil.ImageLoader
 import coil.compose.AsyncImage
+import coil.compose.AsyncImagePainter
 import coil.disk.DiskCache
 import coil.request.ImageRequest
 import com.revenuecat.purchases.ui.revenuecatui.UIConstant
+import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 
 @Composable
 internal fun RemoteImage(
@@ -28,6 +30,14 @@ internal fun RemoteImage(
         imageLoader = LocalContext.current.getRevenueCatUIImageLoader(),
         modifier = modifier,
         contentScale = contentScale,
+        onState = {
+            when (it) {
+                is AsyncImagePainter.State.Error -> {
+                    Logger.e("Error loading image from '$urlString': ${it.result}")
+                }
+                else -> {}
+            }
+        },
     )
 }
 
