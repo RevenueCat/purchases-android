@@ -37,6 +37,7 @@ class PaywallActivityLauncher {
      * Launch the paywall activity.
      * @param offering The offering to be shown in the paywall. If null, the current offering will be shown.
      */
+    @JvmOverloads
     fun launch(offering: Offering? = null) {
         activityResultLauncher.launch(PaywallActivityArgs(offeringId = offering?.identifier))
     }
