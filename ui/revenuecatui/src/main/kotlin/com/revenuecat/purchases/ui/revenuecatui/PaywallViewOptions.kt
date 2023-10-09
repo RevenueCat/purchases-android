@@ -7,6 +7,7 @@ class PaywallViewOptions(builder: Builder) {
     val offering: Offering?
     val shouldDisplayDismissButton: Boolean
     val listener: PaywallViewListener?
+    internal var mode: PaywallViewMode = PaywallViewMode.default
 
     init {
         this.offering = builder.offering

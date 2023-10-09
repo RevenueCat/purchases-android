@@ -16,7 +16,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -34,8 +33,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.IntSize
 import com.revenuecat.purchases.ui.revenuecatui.InternalPaywallView
+import com.revenuecat.purchases.ui.revenuecatui.PaywallViewOptions
 import com.revenuecat.purchases.ui.revenuecatui.UIConstant
 import com.revenuecat.purchases.ui.revenuecatui.composables.Footer
+import com.revenuecat.purchases.ui.revenuecatui.composables.IntroEligibilityStateView
+import com.revenuecat.purchases.ui.revenuecatui.composables.Markdown
 import com.revenuecat.purchases.ui.revenuecatui.composables.PurchaseButton
 import com.revenuecat.purchases.ui.revenuecatui.composables.RemoteImage
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModel
@@ -43,6 +45,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewState
 import com.revenuecat.purchases.ui.revenuecatui.data.currentColors
 import com.revenuecat.purchases.ui.revenuecatui.data.selectedLocalization
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
+import com.revenuecat.purchases.ui.revenuecatui.extensions.introEligibility
 import kotlin.math.roundToInt
 
 @Composable
@@ -59,6 +62,7 @@ internal fun Template1(state: PaywallViewState.Loaded, viewModel: PaywallViewMod
     }
 }
 
+@SuppressWarnings("LongMethod")
 @Composable
 private fun ColumnScope.Template1MainContent(state: PaywallViewState.Loaded) {
     val localizedConfig = state.selectedLocalization
@@ -76,11 +80,11 @@ private fun ColumnScope.Template1MainContent(state: PaywallViewState.Loaded) {
 
         Spacer(modifier = Modifier.weight(1f))
 
-        Text(
+        Markdown(
+            text = localizedConfig.title,
             style = MaterialTheme.typography.displaySmall,
             fontWeight = FontWeight.Black,
             textAlign = TextAlign.Center,
-            text = localizedConfig.title,
             color = colors.text1,
             modifier = Modifier
                 .padding(
@@ -93,11 +97,16 @@ private fun ColumnScope.Template1MainContent(state: PaywallViewState.Loaded) {
             modifier = Modifier
                 .padding(horizontal = UIConstant.defaultHorizontalPadding),
         ) {
-            Text(
+            Markdown(
+                text = localizedConfig.subtitle ?: "",
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.Normal,
                 textAlign = TextAlign.Center,
-                text = localizedConfig.subtitle ?: "",
+                modifier = Modifier
+                    .padding(
+                        horizontal = UIConstant.defaultHorizontalPadding,
+                        vertical = UIConstant.defaultVerticalSpacing,
+                    ),
                 color = colors.text1,
             )
         }
@@ -111,13 +120,14 @@ private fun ColumnScope.Template1MainContent(state: PaywallViewState.Loaded) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Bottom,
     ) {
-        Text(
+        IntroEligibilityStateView(
+            textWithNoIntroOffer = localizedConfig.offerDetails,
+            textWithIntroOffer = localizedConfig.offerDetailsWithIntroOffer,
+            eligibility = state.selectedPackage.introEligibility,
+            color = colors.text1,
             style = MaterialTheme.typography.bodyLarge,
             fontWeight = FontWeight.Normal,
             textAlign = TextAlign.Center,
-            // TODO-Paywalls: intro offer details
-            text = localizedConfig.offerDetails ?: "",
-            color = colors.text1,
         )
     }
 }
@@ -167,7 +177,7 @@ private object Template1UIConstants {
 @Preview(showBackground = true)
 @Composable
 internal fun Template1PaywallPreview() {
-    InternalPaywallView(offering = TestData.template1Offering)
+    InternalPaywallView(options = PaywallViewOptions.Builder().setOffering(TestData.template1Offering).build())
 }
 
 @Preview(heightDp = 700, widthDp = 400)

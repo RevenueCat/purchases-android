@@ -1,6 +1,7 @@
 plugins {
     alias libs.plugins.android.library
     alias libs.plugins.kotlin.android
+    alias libs.plugins.kotlin.serialization
 }
 
 
@@ -40,6 +41,7 @@ dependencies {
     implementation libs.androidx.core
     implementation platform(libs.compose.bom)
     implementation libs.compose.ui
+    implementation libs.compose.ui.util
     implementation libs.compose.ui.graphics
     implementation libs.compose.ui.tooling.preview
     implementation libs.compose.material
@@ -51,9 +53,12 @@ dependencies {
     implementation libs.androidx.lifecycle.viewmodel.compose
     implementation libs.coil.compose
     implementation libs.coil.svg
+    implementation libs.commonmark
+    implementation libs.commonmark.strikethrough
     debugImplementation libs.compose.ui.tooling
     debugImplementation libs.androidx.test.compose.manifest
 
     testImplementation libs.bundles.test
     testImplementation libs.coroutines.test
+    testImplementation libs.kotlinx.serialization.json
 }

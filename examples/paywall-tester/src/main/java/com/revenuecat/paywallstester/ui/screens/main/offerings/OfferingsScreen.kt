@@ -38,6 +38,7 @@ import kotlinx.coroutines.flow.asStateFlow
 @Composable
 fun OfferingsScreen(
     tappedOnOffering: (Offering) -> Unit,
+    tappedOnOfferingFooter: (Offering) -> Unit,
     viewModel: OfferingsViewModel = viewModel<OfferingsViewModelImpl>(),
 ) {
     when (val state = viewModel.offeringsState.collectAsState().value) {
@@ -45,6 +46,7 @@ fun OfferingsScreen(
         is OfferingsState.Loaded -> OfferingsListScreen(
             offeringsState = state,
             tappedOnNavigateToOffering = tappedOnOffering,
+            tappedOnNavigateToOfferingFooter = tappedOnOfferingFooter,
         )
         OfferingsState.Loading -> LoadingOfferingsScreen()
     }
@@ -74,6 +76,7 @@ private fun LoadingOfferingsScreen() {
 private fun OfferingsListScreen(
     offeringsState: OfferingsState.Loaded,
     tappedOnNavigateToOffering: (Offering) -> Unit,
+    tappedOnNavigateToOfferingFooter: (Offering) -> Unit,
 ) {
     var dropdownExpandedOffering by remember { mutableStateOf<Offering?>(null) }
     var displayPaywallDialogOffering by remember { mutableStateOf<Offering?>(null) }
@@ -86,6 +89,7 @@ private fun OfferingsListScreen(
                         offering = offering,
                         tappedOnNavigateToOffering = tappedOnNavigateToOffering,
                         tappedOnDisplayOfferingAsDialog = { displayPaywallDialogOffering = it },
+                        tappedOnDisplayOfferingAsFooter = tappedOnNavigateToOfferingFooter,
                         dismissed = { dropdownExpandedOffering = null },
                     )
                 }
@@ -96,7 +100,15 @@ private fun OfferingsListScreen(
                             .clickable { dropdownExpandedOffering = offering }
                             .padding(16.dp),
                     ) {
-                        Text(text = offering.identifier)
+                        Column {
+                            Text(text = offering.identifier)
+
+                            offering.paywall?.let {
+                                Text("Template ${it.templateName}")
+                            } ?: run {
+                                Text("No paywall")
+                            }
+                        }
                     }
                     Divider()
                 }
@@ -127,6 +139,7 @@ private fun DisplayOfferingMenu(
     offering: Offering,
     tappedOnNavigateToOffering: (Offering) -> Unit,
     tappedOnDisplayOfferingAsDialog: (Offering) -> Unit,
+    tappedOnDisplayOfferingAsFooter: (Offering) -> Unit,
     dismissed: () -> Unit,
 ) {
     DropdownMenu(expanded = true, onDismissRequest = { dismissed() }) {
@@ -138,6 +151,10 @@ private fun DisplayOfferingMenu(
             text = { Text(text = "Display paywall as dialog") },
             onClick = { tappedOnDisplayOfferingAsDialog(offering) },
         )
+        DropdownMenuItem(
+            text = { Text(text = "Display paywall as footer") },
+            onClick = { tappedOnDisplayOfferingAsFooter(offering) },
+        )
     }
 }
 
@@ -146,6 +163,7 @@ private fun DisplayOfferingMenu(
 fun OfferingsScreenPreview() {
     OfferingsScreen(
         tappedOnOffering = {},
+        tappedOnOfferingFooter = {},
         viewModel = object : OfferingsViewModel() {
             private val _offeringsState = MutableStateFlow<OfferingsState>(
                 OfferingsState.Loaded(

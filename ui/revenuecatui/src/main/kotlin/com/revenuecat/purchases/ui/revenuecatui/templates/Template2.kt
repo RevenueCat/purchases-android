@@ -5,8 +5,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -14,10 +14,10 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.Text
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -27,10 +27,13 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.ui.revenuecatui.InternalPaywallView
+import com.revenuecat.purchases.ui.revenuecatui.PaywallViewMode
+import com.revenuecat.purchases.ui.revenuecatui.PaywallViewOptions
 import com.revenuecat.purchases.ui.revenuecatui.UIConstant
 import com.revenuecat.purchases.ui.revenuecatui.composables.Footer
 import com.revenuecat.purchases.ui.revenuecatui.composables.IconImage
 import com.revenuecat.purchases.ui.revenuecatui.composables.IntroEligibilityStateView
+import com.revenuecat.purchases.ui.revenuecatui.composables.Markdown
 import com.revenuecat.purchases.ui.revenuecatui.composables.PaywallBackground
 import com.revenuecat.purchases.ui.revenuecatui.composables.PaywallIcon
 import com.revenuecat.purchases.ui.revenuecatui.composables.PaywallIconName
@@ -38,9 +41,11 @@ import com.revenuecat.purchases.ui.revenuecatui.composables.PurchaseButton
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModel
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewState
 import com.revenuecat.purchases.ui.revenuecatui.data.currentColors
+import com.revenuecat.purchases.ui.revenuecatui.data.isInFullScreenMode
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.selectedLocalization
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
+import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
 import com.revenuecat.purchases.ui.revenuecatui.extensions.introEligibility
 
 private object Template2UIConstants {
@@ -50,64 +55,74 @@ private object Template2UIConstants {
     const val checkmarkUnselectedAlpha = 0.3f
 }
 
+/**
+ * @param childModifier this allows using [Modifier.placeholder].
+ */
 @Composable
-internal fun Template2(state: PaywallViewState.Loaded, viewModel: PaywallViewModel) {
+internal fun Template2(
+    state: PaywallViewState.Loaded,
+    viewModel: PaywallViewModel,
+    childModifier: Modifier = Modifier,
+) {
     Box {
         PaywallBackground(state.templateConfiguration)
 
-        Column(
-            modifier = Modifier.fillMaxSize(),
-        ) {
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(
-                        horizontal = UIConstant.defaultHorizontalPadding,
-                        vertical = UIConstant.defaultVerticalSpacing,
-                    ),
-                contentAlignment = Alignment.Center,
-            ) {
-                Template2MainContent(state, viewModel)
-            }
-            PurchaseButton(state, viewModel)
-            Footer(templateConfiguration = state.templateConfiguration, viewModel = viewModel)
+        Column {
+            Template2MainContent(state, viewModel, childModifier)
+            PurchaseButton(state, viewModel, childModifier)
+            Footer(
+                templateConfiguration = state.templateConfiguration,
+                viewModel = viewModel,
+                childModifier = childModifier,
+            )
         }
     }
 }
 
 @Composable
-private fun Template2MainContent(state: PaywallViewState.Loaded, viewModel: PaywallViewModel) {
+private fun ColumnScope.Template2MainContent(
+    state: PaywallViewState.Loaded,
+    viewModel: PaywallViewModel,
+    childModifier: Modifier,
+) {
     Column(
         modifier = Modifier
-            .fillMaxWidth()
             .verticalScroll(rememberScrollState())
-            .padding(horizontal = UIConstant.defaultHorizontalPadding),
+            .conditional(state.isInFullScreenMode) {
+                Modifier.weight(1f)
+            }
+            .padding(horizontal = UIConstant.defaultHorizontalPadding, vertical = UIConstant.defaultVerticalSpacing),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(UIConstant.defaultVerticalSpacing, Alignment.CenterVertically),
     ) {
-        IconImage(
-            uri = state.templateConfiguration.images.iconUri,
-            maxWidth = Template2UIConstants.maxIconWidth,
-            iconCornerRadius = Template2UIConstants.iconCornerRadius,
-        )
-        val localizedConfig = state.selectedLocalization
-        val colors = state.templateConfiguration.getCurrentColors()
-        Text(
-            style = MaterialTheme.typography.displaySmall,
-            fontWeight = FontWeight.Black,
-            textAlign = TextAlign.Center,
-            text = localizedConfig.title,
-            color = colors.text1,
-        )
-        Text(
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Medium,
-            textAlign = TextAlign.Center,
-            text = localizedConfig.subtitle ?: "",
-            color = colors.text1,
-        )
+        if (state.isInFullScreenMode) {
+            IconImage(
+                uri = state.templateConfiguration.images.iconUri,
+                maxWidth = Template2UIConstants.maxIconWidth,
+                iconCornerRadius = Template2UIConstants.iconCornerRadius,
+                childModifier = childModifier,
+            )
+            val localizedConfig = state.selectedLocalization
+            val colors = state.templateConfiguration.getCurrentColors()
+            Markdown(
+                style = MaterialTheme.typography.displaySmall,
+                fontWeight = FontWeight.Black,
+                textAlign = TextAlign.Center,
+                text = localizedConfig.title,
+                color = colors.text1,
+                modifier = childModifier,
+            )
+            Markdown(
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Medium,
+                textAlign = TextAlign.Center,
+                text = localizedConfig.subtitle ?: "",
+                color = colors.text1,
+                modifier = childModifier,
+            )
+        }
         state.templateConfiguration.packages.all.forEach { packageInfo ->
-            SelectPackageButton(state, packageInfo, viewModel)
+            SelectPackageButton(state, packageInfo, viewModel, childModifier)
         }
     }
 }
@@ -117,6 +132,7 @@ private fun SelectPackageButton(
     state: PaywallViewState.Loaded,
     packageInfo: TemplateConfiguration.PackageInfo,
     viewModel: PaywallViewModel,
+    childModifier: Modifier,
 ) {
     val colors = state.templateConfiguration.getCurrentColors()
     val isSelected = packageInfo == state.selectedPackage
@@ -128,7 +144,7 @@ private fun SelectPackageButton(
     }
     val border = if (isSelected) null else BorderStroke(2.dp, colors.text1)
     Button(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = childModifier.fillMaxWidth(),
         onClick = { viewModel.selectPackage(packageInfo) },
         colors = ButtonDefaults.buttonColors(containerColor = background, contentColor = textColor),
         shape = RoundedCornerShape(15.dp),
@@ -136,7 +152,7 @@ private fun SelectPackageButton(
     ) {
         Column(
             modifier = Modifier
-                .fillMaxSize()
+                .fillMaxWidth()
                 .padding(4.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
@@ -144,12 +160,14 @@ private fun SelectPackageButton(
                 CheckmarkBox(isSelected = isSelected, colors = state.currentColors)
                 Text(
                     text = packageInfo.localization.offerName ?: packageInfo.rcPackage.product.title,
+                    color = textColor,
                 )
             }
             IntroEligibilityStateView(
                 textWithNoIntroOffer = packageInfo.localization.offerDetails,
                 textWithIntroOffer = packageInfo.localization.offerDetailsWithIntroOffer,
                 eligibility = packageInfo.introEligibility,
+                color = textColor,
             )
         }
     }
@@ -172,6 +190,21 @@ private fun CheckmarkBox(isSelected: Boolean, colors: TemplateConfiguration.Colo
 @Preview(showBackground = true, locale = "en-rUS")
 @Preview(showBackground = true, locale = "es-rES")
 @Composable
-internal fun Template2PaywallPreview() {
-    InternalPaywallView(offering = TestData.template2Offering)
+private fun Template2PaywallPreview() {
+    InternalPaywallView(
+        options = PaywallViewOptions.Builder()
+            .setOffering(TestData.template2Offering)
+            .build(),
+    )
+}
+
+@Preview(showBackground = true, locale = "en-rUS")
+@Preview(showBackground = true, locale = "es-rES")
+@Composable
+private fun Template2PaywallFooterPreview() {
+    val options = PaywallViewOptions.Builder()
+        .setOffering(TestData.template2Offering)
+        .build()
+    options.mode = PaywallViewMode.FOOTER
+    InternalPaywallView(options)
 }

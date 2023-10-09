@@ -12,7 +12,7 @@ import com.revenuecat.purchases.ui.revenuecatui.extensions.localizedPeriod
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ApplicationContext
 import java.util.Locale
 
-@Suppress("UnusedParameter", "FunctionOnlyReturningConstant")
+@Suppress("UnusedParameter", "FunctionOnlyReturningConstant", "TooManyFunctions")
 internal class VariableDataProvider(
     private val applicationContext: ApplicationContext,
     private val preview: Boolean = false,
@@ -32,8 +32,12 @@ internal class VariableDataProvider(
         return rcPackage.product.formattedPricePerMonth(locale)
     }
 
-    fun localizedIntroductoryOfferPrice(rcPackage: Package): String? {
-        return getIntroPhaseToApply(rcPackage)?.price?.formatted
+    fun localizedFirstIntroductoryOfferPrice(rcPackage: Package): String? {
+        return getFirstIntroOfferToApply(rcPackage)?.price?.formatted
+    }
+
+    fun localizedSecondIntroductoryOfferPrice(rcPackage: Package): String? {
+        return getSecondIntroOfferToApply(rcPackage)?.price?.formatted
     }
 
     fun productName(rcPackage: Package): String {
@@ -59,8 +63,12 @@ internal class VariableDataProvider(
             ?: periodName(rcPackage)
     }
 
-    fun introductoryOfferDuration(rcPackage: Package, locale: Locale): String? {
-        return getIntroPhaseToApply(rcPackage)?.billingPeriod?.localizedPeriod(locale)
+    fun firstIntroductoryOfferDuration(rcPackage: Package, locale: Locale): String? {
+        return getFirstIntroOfferToApply(rcPackage)?.billingPeriod?.localizedPeriod(locale)
+    }
+
+    fun secondIntroductoryOfferDuration(rcPackage: Package, locale: Locale): String? {
+        return getSecondIntroOfferToApply(rcPackage)?.billingPeriod?.localizedPeriod(locale)
     }
 
     fun localizedPricePerPeriod(rcPackage: Package, locale: Locale): String {
@@ -81,10 +89,16 @@ internal class VariableDataProvider(
         return "$pricePerPeriod ($pricePerMonth/$unit)"
     }
 
-    private fun getIntroPhaseToApply(rcPackage: Package): PricingPhase? {
-        // TODO-PAYWALLS: Decide how this will look like for products that have both a free trial
-        // and a discounted introductory price.
+    private fun getFirstIntroOfferToApply(rcPackage: Package): PricingPhase? {
         val option = rcPackage.product.defaultOption
         return option?.freePhase ?: option?.introPhase
+    }
+
+    private fun getSecondIntroOfferToApply(rcPackage: Package): PricingPhase? {
+        val option = rcPackage.product.defaultOption
+        if (option?.freePhase != null) {
+            return option.introPhase
+        }
+        return null
     }
 }

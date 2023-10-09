@@ -60,15 +60,17 @@ internal class TemplateConfigurationFactoryTest {
         val packageConfiguration = template2Configuration.packages as TemplateConfiguration.PackageConfiguration.Multiple
 
         val expectedConfiguration = TemplateConfiguration.PackageConfiguration.Multiple(
-            first = getPackageInfo(TestData.Packages.weekly),
+            first = getPackageInfo(TestData.Packages.annual),
             default = getPackageInfo(TestData.Packages.monthly),
             all = listOf(
-                getPackageInfo(TestData.Packages.weekly),
+                getPackageInfo(TestData.Packages.annual),
                 getPackageInfo(TestData.Packages.monthly),
-                getPackageInfo(TestData.Packages.annual)
             ),
         )
-        assertThat(packageConfiguration).isEqualTo(expectedConfiguration)
+
+        assertThat(packageConfiguration.first).isEqualTo(expectedConfiguration.first)
+        assertThat(packageConfiguration.default).isEqualTo(expectedConfiguration.default)
+        assertThat(packageConfiguration.all).containsExactly(*expectedConfiguration.all.toTypedArray())
     }
 
     @Test
@@ -96,9 +98,9 @@ internal class TemplateConfigurationFactoryTest {
             else -> error("Unknown package type ${rcPackage.packageType}")
         }
         val offerDetails = when(rcPackage.packageType) {
-            PackageType.ANNUAL -> "$67.99/yr ($5.67/mth)"
-            PackageType.MONTHLY -> "$7.99/mth"
-            PackageType.WEEKLY -> "$1.99/wk ($7.96/mth)"
+            PackageType.ANNUAL -> "_Just_ $67.99/yr ($5.67/mth)"
+            PackageType.MONTHLY -> "_Just_ $7.99/mth"
+            PackageType.WEEKLY -> "_Just_ $1.99/wk ($7.96/mth)"
             else -> error("Unknown package type ${rcPackage.packageType}")
         }
         val offerDetailsWithIntroOffer = when(rcPackage.packageType) {

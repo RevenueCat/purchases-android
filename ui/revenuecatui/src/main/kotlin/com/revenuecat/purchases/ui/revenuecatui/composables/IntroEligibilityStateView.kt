@@ -1,19 +1,25 @@
 package com.revenuecat.purchases.ui.revenuecatui.composables
 
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 
 /**
  * A composable that can display different data based on intro eligibility status.
  */
+@SuppressWarnings("LongParameterList")
 @Composable
 internal fun IntroEligibilityStateView(
     textWithNoIntroOffer: String?,
     textWithIntroOffer: String?,
     eligibility: IntroOfferEligibility,
     color: Color = Color.Unspecified,
+    style: TextStyle = TextStyle.Default,
+    fontWeight: FontWeight? = null,
+    textAlign: TextAlign? = null,
 ) {
     val text: String = if (textWithIntroOffer != null && eligibility == IntroOfferEligibility.ELIGIBLE) {
         textWithIntroOffer
@@ -23,7 +29,13 @@ internal fun IntroEligibilityStateView(
         textWithNoIntroOffer ?: textWithIntroOffer ?: ""
     }
 
-    Text(text, color = color)
+    Markdown(
+        text,
+        color = color,
+        style = style,
+        fontWeight = fontWeight,
+        textAlign = textAlign,
+    )
 }
 
 internal enum class IntroOfferEligibility {

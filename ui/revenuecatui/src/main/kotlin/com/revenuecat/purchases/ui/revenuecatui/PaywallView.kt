@@ -11,8 +11,5 @@ import androidx.compose.runtime.Composable
 fun PaywallView(
     options: PaywallViewOptions = PaywallViewOptions.Builder().build(),
 ) {
-    InternalPaywallView(
-        offering = options.offering,
-        listener = options.listener,
-    )
+    InternalPaywallView(options)
 }

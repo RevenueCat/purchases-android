@@ -69,15 +69,25 @@ class VariableProcessorTest {
 
     // region Variables
 
+    // region app_name
+
     @Test
     fun `process variables processes app_name`() {
         expectVariablesResult("{{ app_name }}", "Mock Paywall")
     }
 
+    // endregion
+
+    // region price
+
     @Test
     fun `process variables processes price`() {
         expectVariablesResult("{{ price }}", "$67.99")
     }
+
+    // endregion
+
+    // region price_per_period
 
     @Test
     fun `process variables processes price_per_period`() {
@@ -101,6 +111,10 @@ class VariableProcessorTest {
         expectVariablesResult("{{ price_per_period }}", "$1,000", esLocale, TestData.Packages.lifetime)
     }
 
+    // endregion
+
+    // region total_price_and_per_month
+
     @Test
     fun `process variables processes total_price_and_per_month`() {
         expectVariablesResult("{{ total_price_and_per_month }}", "$67.99/yr ($5.67/mth)", rcPackage = TestData.Packages.annual)
@@ -117,6 +131,10 @@ class VariableProcessorTest {
         expectVariablesResult("{{ total_price_and_per_month }}", "$1,000", esLocale, TestData.Packages.lifetime)
     }
 
+    // endregion
+
+    // region product_name
+
     @Test
     fun `process variables processes product_name`() {
         expectVariablesResult("{{ product_name }}", "Annual", rcPackage = TestData.Packages.annual)
@@ -127,6 +145,10 @@ class VariableProcessorTest {
         expectVariablesResult("{{ product_name }}", "6 month", rcPackage = TestData.Packages.semester)
         expectVariablesResult("{{ product_name }}", "Lifetime", rcPackage = TestData.Packages.lifetime)
     }
+
+    // endregion
+
+    // region sub_period
 
     @Test
     fun `process variables processes sub_period`() {
@@ -145,6 +167,10 @@ class VariableProcessorTest {
         expectVariablesResult("{{ sub_period }}", "")
     }
 
+    // endregion
+
+    // region sub_price_per_month
+
     @Test
     fun `process variables processes sub_price_per_month`() {
         expectVariablesResult("{{ sub_price_per_month }}", "$5.67")
@@ -154,6 +180,10 @@ class VariableProcessorTest {
     fun `process variables processes sub_price_per_month in other locales`() {
         expectVariablesResult("{{ sub_price_per_month }}", "5,67 US$", esLocale)
     }
+
+    // endregion
+
+    // region sub_duration
 
     @Test
     fun `process variables processes sub_duration`() {
@@ -182,6 +212,10 @@ class VariableProcessorTest {
         expectVariablesResult("{{ sub_duration }}", "Lifetime", esLocale, TestData.Packages.lifetime)
     }
 
+    // endregion
+
+    // region sub_offer_duration
+
     @Test
     fun `process variables processes sub_offer_duration`() {
         expectVariablesResult("{{ sub_offer_duration }}", "1 month", rcPackage = TestData.Packages.annual)
@@ -200,6 +234,39 @@ class VariableProcessorTest {
     fun `process variables processes sub_offer_duration as empty string if no offers`() {
         expectVariablesResult("{{ sub_offer_duration }}", "", rcPackage = TestData.Packages.monthly)
     }
+
+    // endregion
+
+    // region sub_offer_duration_2
+
+    @Test
+    fun `process variables processes sub_offer_duration_2 for products with both free trial and intro price`() {
+        expectVariablesResult("{{ sub_offer_duration_2 }}", "1 month", rcPackage = TestData.Packages.quarterly)
+    }
+
+    @Test
+    fun `process variables processes sub_offer_duration_2 for products with free trial and intro price for spanish`() {
+        expectVariablesResult("{{ sub_offer_duration_2 }}", "1 mes", esLocale, rcPackage = TestData.Packages.quarterly)
+    }
+
+    @Test
+    fun `process variables does not process sub_offer_duration_2 when only free trial is available`() {
+        expectVariablesResult("{{ sub_offer_duration_2 }}", "", rcPackage = TestData.Packages.annual)
+    }
+
+    @Test
+    fun `process variables does not process sub_offer_duration_2 for inapp products`() {
+        expectVariablesResult("{{ sub_offer_duration_2 }}", "", rcPackage = TestData.Packages.lifetime)
+    }
+
+    @Test
+    fun `process variables does not process sub_offer_duration_2 if no free trial nor intro price`() {
+        expectVariablesResult("{{ sub_offer_duration_2 }}", "", rcPackage = TestData.Packages.monthly)
+    }
+
+    // endregion
+
+    // region sub_offer_price
 
     @Test
     fun `process variables processes sub_offer_price for free trials`() {
@@ -225,6 +292,32 @@ class VariableProcessorTest {
     fun `process variables does not process sub_offer_price if no free trial nor intro price`() {
         expectVariablesResult("{{ sub_offer_price }}", "", rcPackage = TestData.Packages.monthly)
     }
+
+    // endregion
+
+    // region sub_offer_price_2
+
+    @Test
+    fun `process variables processes sub_offer_price_2 for products with both free trial and intro price`() {
+        expectVariablesResult("{{ sub_offer_price_2 }}", "$3.99", rcPackage = TestData.Packages.quarterly)
+    }
+
+    @Test
+    fun `process variables does not process sub_offer_price_2 when only free trial is available`() {
+        expectVariablesResult("{{ sub_offer_price_2 }}", "", rcPackage = TestData.Packages.annual)
+    }
+
+    @Test
+    fun `process variables does not process sub_offer_price_2 for inapp products`() {
+        expectVariablesResult("{{ sub_offer_price_2 }}", "", rcPackage = TestData.Packages.lifetime)
+    }
+
+    @Test
+    fun `process variables does not process sub_offer_price_2 if no free trial nor intro price`() {
+        expectVariablesResult("{{ sub_offer_price_2 }}", "", rcPackage = TestData.Packages.monthly)
+    }
+
+    // endregion
 
     // endregion Variables
 

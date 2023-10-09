@@ -8,5 +8,9 @@ internal enum class PaywallViewMode {
 
     companion object {
         val default = FULL_SCREEN
+
+        fun footerMode(condensed: Boolean): PaywallViewMode {
+            return if (condensed) FOOTER_CONDENSED else FOOTER
+        }
     }
 }
