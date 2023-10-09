@@ -12,11 +12,17 @@ import com.revenuecat.purchases.ui.revenuecatui.R
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
 import com.revenuecat.purchases.ui.revenuecatui.extensions.defaultBackgroundPlaceholder
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
+
+import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
+import kotlin.math.roundToInt
 
 @Composable
 internal fun BoxScope.PaywallBackground(templateConfiguration: TemplateConfiguration) {
     val transformation = if (templateConfiguration.configuration.blurredBackgroundImage)
-        BlurTransformation(radius = BackgroundUIConstants.blurSize, scale = BackgroundUIConstants.blurScale)
+        BlurTransformation(radius = BackgroundUIConstants.blurSize.toIntPx(), scale = BackgroundUIConstants.blurScale)
     else null
 
     val modifier = Modifier
@@ -48,8 +54,14 @@ internal fun BoxScope.PaywallBackground(templateConfiguration: TemplateConfigura
 }
 
 private object BackgroundUIConstants {
-    // todo: make this adapt to different pixel densities
-    const val blurSize = 40
+    val blurSize = 40.dp
     const val blurAlpha = 0.7f
     val contentScale = ContentScale.Crop
+    const val blurScale = 0.5f
+}
+
+@Composable
+private fun Dp.toIntPx(): Int {
+    val density = LocalDensity.current.density
+    return (this.value * density).roundToInt()
 }
