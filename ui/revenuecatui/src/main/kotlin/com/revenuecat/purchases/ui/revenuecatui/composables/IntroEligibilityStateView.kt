@@ -25,7 +25,7 @@ internal fun IntroEligibilityStateView(
 ) {
     val text: String = when (eligibility) {
         IntroOfferEligibility.SINGLE_OFFER_ELIGIBLE -> textWithIntroOffer
-        IntroOfferEligibility.MULTIPLE_OFFER_ELIGIBLE -> textWithMultipleIntroOffers
+        IntroOfferEligibility.MULTIPLE_OFFERS_ELIGIBLE -> textWithMultipleIntroOffers
         else -> textWithNoIntroOffer
     } // Display text with intro offer as a backup to ensure layout does not change when switching states.
         ?: textWithNoIntroOffer
@@ -44,7 +44,7 @@ internal fun IntroEligibilityStateView(
 internal enum class IntroOfferEligibility {
     INELIGIBLE,
     SINGLE_OFFER_ELIGIBLE,
-    MULTIPLE_OFFER_ELIGIBLE,
+    MULTIPLE_OFFERS_ELIGIBLE,
 }
 
 @Preview(showBackground = true)
@@ -90,7 +90,7 @@ private fun IntroEligibilityPreviewBothTextsEligibleMultipleOffers() {
         textWithNoIntroOffer = "$3.99/mo",
         textWithIntroOffer = "7 day trial, then $3.99/mo",
         textWithMultipleIntroOffers = "7 days for free, then $1.99 for your first month, and just $4.99/mo thereafter.",
-        eligibility = IntroOfferEligibility.MULTIPLE_OFFER_ELIGIBLE,
+        eligibility = IntroOfferEligibility.MULTIPLE_OFFERS_ELIGIBLE,
         color = Color.Black,
     )
 }

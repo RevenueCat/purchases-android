@@ -24,10 +24,10 @@ class PackageExtensionsTest {
     }
 
     @Test
-    fun `introEligibility calculation is MULTIPLE_OFFER_ELIGIBLE if defaultOption has trial and discounted price`() {
+    fun `introEligibility calculation is MULTIPLE_OFFERS_ELIGIBLE if defaultOption has trial and discounted price`() {
         val rcPackage = createPackage(numberOfOffers = 2)
 
-        assertThat(rcPackage.introEligibility).isEqualTo(IntroOfferEligibility.MULTIPLE_OFFER_ELIGIBLE)
+        assertThat(rcPackage.introEligibility).isEqualTo(IntroOfferEligibility.MULTIPLE_OFFERS_ELIGIBLE)
     }
 
     @Test

@@ -19,7 +19,7 @@ internal val Package.introEligibility: IntroOfferEligibility
             (defaultOption.freePhase != null && defaultOption.introPhase == null) ||
                 (defaultOption.freePhase == null && defaultOption.introPhase != null) ->
                 IntroOfferEligibility.SINGLE_OFFER_ELIGIBLE
-            else -> IntroOfferEligibility.MULTIPLE_OFFER_ELIGIBLE
+            else -> IntroOfferEligibility.MULTIPLE_OFFERS_ELIGIBLE
         }
     } ?: IntroOfferEligibility.INELIGIBLE
 
