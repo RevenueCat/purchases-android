@@ -5,8 +5,8 @@ package com.revenuecat.purchases.ui.revenuecatui.composables
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Text
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -47,7 +47,7 @@ import org.commonmark.parser.Parser
 // Inspired by https://github.com/ErikHellman/MarkdownComposer/blob/master/app/src/main/java/se/hellsoft/markdowncomposer/MarkdownComposer.kt
 
 private const val TAG_URL = "url"
-private val PARSER = Parser.builder()
+private val parser = Parser.builder()
     .extensions(listOf(StrikethroughExtension.create()))
     .build()
 
@@ -55,13 +55,13 @@ private val PARSER = Parser.builder()
 @Composable
 internal fun Markdown(
     text: String,
+    modifier: Modifier = Modifier,
     color: Color = Color.Unspecified,
     style: TextStyle = TextStyle.Default,
     fontWeight: FontWeight? = null,
     textAlign: TextAlign? = null,
-    modifier: Modifier = Modifier,
 ) {
-    val root = PARSER.parse(text) as Document
+    val root = parser.parse(text) as Document
 
     Column {
         MDDocument(root, color, style, fontWeight, textAlign, modifier)
@@ -92,12 +92,12 @@ private fun MDHeading(
     modifier: Modifier = Modifier,
 ) {
     val overriddenStyle = when (heading.level) {
-        1 -> MaterialTheme.typography.h1
-        2 -> MaterialTheme.typography.h2
-        3 -> MaterialTheme.typography.h3
-        4 -> MaterialTheme.typography.h4
-        5 -> MaterialTheme.typography.h5
-        6 -> MaterialTheme.typography.h6
+        1 -> MaterialTheme.typography.headlineLarge
+        2 -> MaterialTheme.typography.headlineMedium
+        3 -> MaterialTheme.typography.headlineSmall
+        4 -> MaterialTheme.typography.titleLarge
+        5 -> MaterialTheme.typography.titleMedium
+        6 -> MaterialTheme.typography.titleSmall
         else -> {
             // Invalid header...
             MDBlockChildren(heading, color, style, fontWeight, textAlign, modifier)
@@ -158,7 +158,7 @@ private fun MDBulletList(
         modifier = modifier,
     ) {
         val text = buildAnnotatedString {
-            pushStyle(MaterialTheme.typography.body1.toSpanStyle())
+            pushStyle(MaterialTheme.typography.bodyLarge.toSpanStyle())
             append("$marker ")
             appendMarkdownChildren(it, color)
             pop()
@@ -243,7 +243,7 @@ private fun MDBlockQuote(blockQuote: BlockQuote, color: Color, modifier: Modifie
     ) {
         val text = buildAnnotatedString {
             pushStyle(
-                MaterialTheme.typography.body1.toSpanStyle()
+                MaterialTheme.typography.bodyLarge.toSpanStyle()
                     .plus(SpanStyle(fontStyle = FontStyle.Italic)),
             )
             appendMarkdownChildren(blockQuote, color)
