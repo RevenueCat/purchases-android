@@ -67,7 +67,7 @@ internal class PaywallViewModelImpl(
     private val _colorScheme = MutableStateFlow(colorScheme)
 
     private val offering: Offering?
-        get() = options.offering
+        get() = options.offeringSelection.offering
 
     private val listener: PaywallViewListener?
         get() = options.listener
@@ -165,7 +165,8 @@ internal class PaywallViewModelImpl(
         viewModelScope.launch {
             try {
                 val offerings = Purchases.sharedInstance.awaitOfferings()
-                val currentOffering = offerings.current
+                val currentOffering = options.offeringSelection.offeringIdentifier?.let { offerings[it] }
+                    ?: offerings.current
                 if (currentOffering == null) {
                     _state.value = PaywallViewState.Error("No offering or current offering")
                 } else {

@@ -21,9 +21,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.revenuecat.paywallstester.MainActivity
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
@@ -142,6 +144,7 @@ private fun DisplayOfferingMenu(
     tappedOnDisplayOfferingAsFooter: (Offering) -> Unit,
     dismissed: () -> Unit,
 ) {
+    val activity = LocalContext.current as MainActivity
     DropdownMenu(expanded = true, onDismissRequest = { dismissed() }) {
         DropdownMenuItem(
             text = { Text(text = "Navigate to paywall") },
@@ -154,6 +157,10 @@ private fun DisplayOfferingMenu(
         DropdownMenuItem(
             text = { Text(text = "Display paywall as footer") },
             onClick = { tappedOnDisplayOfferingAsFooter(offering) },
+        )
+        DropdownMenuItem(
+            text = { Text(text = "Display paywall as activity") },
+            onClick = { activity.launchPaywall(offering) },
         )
     }
 }
