@@ -5,31 +5,23 @@ import com.revenuecat.purchases.ui.revenuecatui.strings.PaywallValidationErrorSt
 
 sealed class PaywallValidationError : Throwable() {
 
-    abstract fun associatedErrorString(offering: Offering): String
-
-    object MissingPaywall : PaywallValidationError() {
-        override fun associatedErrorString(offering: Offering): String {
-            return PaywallValidationErrorStrings.MISSING_PAYWALL.format(offering.identifier)
+    fun associatedErrorString(offering: Offering): String {
+        return when (this) {
+            is InvalidIcons -> {
+                val joinedInvalidIcons = this.invalidIcons.joinToString()
+                PaywallValidationErrorStrings.INVALID_ICONS.format(joinedInvalidIcons)
+            }
+            is InvalidTemplate -> PaywallValidationErrorStrings.INVALID_TEMPLATE_NAME.format(templateName)
+            is InvalidVariables -> {
+                val joinedUnrecognizedVariables = this.unrecognizedVariables.joinToString()
+                PaywallValidationErrorStrings.INVALID_VARIABLES.format(joinedUnrecognizedVariables)
+            }
+            MissingPaywall -> PaywallValidationErrorStrings.MISSING_PAYWALL.format(offering.identifier)
         }
     }
 
-    data class InvalidTemplate(val templateName: String) : PaywallValidationError() {
-        override fun associatedErrorString(offering: Offering): String {
-            return PaywallValidationErrorStrings.INVALID_TEMPLATE_NAME.format(templateName)
-        }
-    }
-
-    data class InvalidVariables(val unrecognizedVariables: Set<String>) : PaywallValidationError() {
-        override fun associatedErrorString(offering: Offering): String {
-            val joinedUnrecognizedVariables = this.unrecognizedVariables.joinToString()
-            return PaywallValidationErrorStrings.INVALID_VARIABLES.format(joinedUnrecognizedVariables)
-        }
-    }
-
-    data class InvalidIcons(val invalidIcons: Set<String>) : PaywallValidationError() {
-        override fun associatedErrorString(offering: Offering): String {
-            val joinedInvalidIcons = this.invalidIcons.joinToString()
-            return PaywallValidationErrorStrings.INVALID_ICONS.format(joinedInvalidIcons)
-        }
-    }
+    object MissingPaywall : PaywallValidationError()
+    data class InvalidTemplate(val templateName: String) : PaywallValidationError()
+    data class InvalidVariables(val unrecognizedVariables: Set<String>) : PaywallValidationError()
+    data class InvalidIcons(val invalidIcons: Set<String>) : PaywallValidationError()
 }
