@@ -13,6 +13,8 @@ import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivityLauncher
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResultHandler
+import com.revenuecat.purchases.ui.revenuecatui.fonts.FontResourceProvider
+import com.revenuecat.purchases.ui.revenuecatui.fonts.TypographyType
 
 class MainActivity : ComponentActivity(), PaywallResultHandler {
     private lateinit var paywallActivityLauncher: PaywallActivityLauncher
@@ -35,6 +37,13 @@ class MainActivity : ComponentActivity(), PaywallResultHandler {
     }
 
     fun launchPaywall(offering: Offering? = null) {
-        paywallActivityLauncher.launch(offering)
+        paywallActivityLauncher.launch(
+            offering,
+            object : FontResourceProvider {
+                override fun getFontResourceId(type: TypographyType): Int? {
+                    return R.font.super_mario
+                }
+            },
+        )
     }
 }
