@@ -6,6 +6,7 @@ import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.SubscriptionOption
+import com.revenuecat.purchases.models.TestStoreProduct
 
 data class PurchaseParams(val builder: Builder) {
 
@@ -51,10 +52,25 @@ data class PurchaseParams(val builder: Builder) {
                 activity,
                 packageToPurchase.product.purchasingData,
                 packageToPurchase.offering,
-            )
+            ) {
+            ensureNoTestProduct(packageToPurchase.product)
+        }
 
         constructor(activity: Activity, storeProduct: StoreProduct) :
-            this(activity, storeProduct.purchasingData, storeProduct.presentedOfferingIdentifier)
+            this(activity, storeProduct.purchasingData, storeProduct.presentedOfferingIdentifier) {
+            ensureNoTestProduct(storeProduct)
+        }
+
+        private fun ensureNoTestProduct(storeProduct: StoreProduct) {
+            if (storeProduct is TestStoreProduct) {
+                throw PurchasesException(
+                    PurchasesError(
+                        PurchasesErrorCode.ProductNotAvailableForPurchaseError,
+                        "Cannot purchase $storeProduct",
+                    ),
+                )
+            }
+        }
 
         constructor(activity: Activity, subscriptionOption: SubscriptionOption) :
             this(activity, subscriptionOption.purchasingData, subscriptionOption.presentedOfferingIdentifier)
