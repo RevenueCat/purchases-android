@@ -113,6 +113,7 @@ internal object TestData {
             Packages.weekly,
             Packages.monthly,
             Packages.annual,
+            Packages.lifetime,
         ),
         metadata = mapOf(),
         paywall = template2,
