@@ -63,7 +63,9 @@ private fun MainNavHost(
             AppInfoScreen()
         }
         composable(Tab.Paywalls.route) {
-            PaywallsScreen()
+            PaywallsScreen(
+                tappedOnTemplate = { offering -> navigateToPaywallScreen(offering) },
+            )
         }
         composable(Tab.Offerings.route) {
             OfferingsScreen(
