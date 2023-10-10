@@ -10,9 +10,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontFamily
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.revenuecat.paywallstester.ui.theme.superMarioFontFamily
 import com.revenuecat.purchases.ui.revenuecatui.Paywall
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
+import com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider
+import com.revenuecat.purchases.ui.revenuecatui.fonts.TypographyType
 
 @Composable
 fun PaywallScreen(
@@ -34,6 +38,11 @@ fun PaywallScreen(
                 Paywall(
                     PaywallOptions.Builder()
                         .setOffering(state.offering)
+                        .setFontProvider(object : FontProvider {
+                            override fun getFont(type: TypographyType): FontFamily? {
+                                return superMarioFontFamily
+                            }
+                        })
                         .setListener(viewModel)
                         .build(),
                 )
