@@ -44,7 +44,9 @@ class PaywallActivityLauncher {
      */
     @JvmOverloads
     fun launch(offering: Offering? = null, fontResourceProvider: FontResourceProvider? = null) {
-        val fontMap = TypographyType.values().associateBy({ it }, { fontResourceProvider?.getFontResourceId(it) })
+        val fontMap = fontResourceProvider?.let { provider ->
+            TypographyType.values().associateBy({ it }, { provider.getFontResourceId(it) })
+        }
         activityResultLauncher.launch(
             PaywallActivityArgs(
                 offeringId = offering?.identifier,
