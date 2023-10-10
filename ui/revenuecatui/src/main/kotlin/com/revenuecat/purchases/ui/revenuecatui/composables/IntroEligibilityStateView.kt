@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.ui.revenuecatui.composables
 
 import androidx.compose.animation.Crossfade
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -21,7 +22,7 @@ internal fun IntroEligibilityStateView(
     textWithMultipleIntroOffers: String?,
     eligibility: IntroOfferEligibility,
     color: Color = Color.Unspecified,
-    style: TextStyle = TextStyle.Default,
+    style: TextStyle = LocalTextStyle.current,
     fontWeight: FontWeight? = null,
     textAlign: TextAlign? = null,
     modifier: Modifier = Modifier,
