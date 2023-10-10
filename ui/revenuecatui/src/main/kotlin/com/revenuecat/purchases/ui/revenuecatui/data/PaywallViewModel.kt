@@ -112,7 +112,10 @@ internal class PaywallViewModelImpl(
         val activity = context.getActivity() ?: error("Activity not found")
         when (val currentState = _state.value) {
             is PaywallViewState.Loaded -> {
-                purchasePackage(activity, currentState.selectedPackage.value.rcPackage)
+                val selectedPackage = currentState.selectedPackage.value
+                if (!selectedPackage.currentlySubscribed) {
+                    purchasePackage(activity, selectedPackage.rcPackage)
+                }
             }
 
             else -> {
