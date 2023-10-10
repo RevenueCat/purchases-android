@@ -1,9 +1,10 @@
 package com.revenuecat.purchases.ui.revenuecatui.fonts
 
 import androidx.compose.ui.text.font.FontFamily
+import com.revenuecat.purchases.ui.revenuecatui.PaywallView
 
 /**
- * Implement this interface to provide custom fonts to the PaywallView. If you don't, the current material3 theme
+ * Implement this interface to provide custom fonts to the [PaywallView]. If you don't, the current material3 theme
  * typography will be used.
  */
 interface FontProvider {

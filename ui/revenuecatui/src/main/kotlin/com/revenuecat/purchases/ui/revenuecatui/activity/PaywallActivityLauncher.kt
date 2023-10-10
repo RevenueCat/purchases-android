@@ -6,6 +6,8 @@ import androidx.activity.result.ActivityResultLauncher
 import androidx.fragment.app.Fragment
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Offering
+import com.revenuecat.purchases.ui.revenuecatui.fonts.FontResourceProvider
+import com.revenuecat.purchases.ui.revenuecatui.fonts.TypographyType
 import com.revenuecat.purchases.ui.revenuecatui.helpers.shouldDisplayBlockForEntitlementIdentifier
 import com.revenuecat.purchases.ui.revenuecatui.helpers.shouldDisplayPaywall
 
@@ -41,8 +43,14 @@ class PaywallActivityLauncher {
      * @param offering The offering to be shown in the paywall. If null, the current offering will be shown.
      */
     @JvmOverloads
-    fun launch(offering: Offering? = null) {
-        activityResultLauncher.launch(PaywallActivityArgs(offeringId = offering?.identifier))
+    fun launch(offering: Offering? = null, fontResourceProvider: FontResourceProvider? = null) {
+        val fontMap = TypographyType.values().associateBy({ it }, { fontResourceProvider?.getFontResourceId(it) })
+        activityResultLauncher.launch(
+            PaywallActivityArgs(
+                offeringId = offering?.identifier,
+                mapFonts = fontMap,
+            ),
+        )
     }
 
     /**
