@@ -15,11 +15,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.window.core.layout.WindowWidthSizeClass
-import com.revenuecat.purchases.Purchases
-import com.revenuecat.purchases.PurchasesException
-import com.revenuecat.purchases.awaitCustomerInfo
-import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.computeWindowWidthSizeClass
+import com.revenuecat.purchases.ui.revenuecatui.helpers.shouldDisplayPaywall
 import kotlinx.coroutines.launch
 
 /**
@@ -36,17 +33,7 @@ fun PaywallDialog(
     if (shouldDisplayBlock != null) {
         LaunchedEffect(paywallDialogOptions) {
             launch {
-                shouldDisplayDialog = try {
-                    shouldDisplayBlock.invoke(Purchases.sharedInstance.awaitCustomerInfo())
-                } catch (e: PurchasesException) {
-                    Logger.e("Error fetching customer info to display paywall dialog", e)
-                    false
-                }
-                if (shouldDisplayDialog) {
-                    Logger.d("Displaying paywall dialog according to display logic")
-                } else {
-                    Logger.d("Not displaying paywall dialog according to display logic")
-                }
+                shouldDisplayDialog = shouldDisplayPaywall(shouldDisplayBlock)
             }
         }
     }
