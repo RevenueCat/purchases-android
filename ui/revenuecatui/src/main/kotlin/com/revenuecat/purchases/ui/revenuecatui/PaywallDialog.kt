@@ -61,7 +61,7 @@ fun PaywallDialog(
 }
 
 @Composable
-fun DialogScaffold(paywallDialogOptions: PaywallDialogOptions) {
+private fun DialogScaffold(paywallDialogOptions: PaywallDialogOptions) {
     Scaffold(modifier = Modifier.fillMaxSize()) { paddingValues ->
         Box(
             modifier = Modifier
