@@ -2,6 +2,7 @@ package com.revenuecat.purchases.ui.revenuecatui
 
 import android.content.Context
 import androidx.compose.foundation.layout.Box
+import androidx.compose.material.Text
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -59,6 +60,8 @@ internal fun LoadingPaywallView(mode: PaywallViewMode) {
         paywallData,
         LoadingPaywallConstants.template,
     )
+
+    Text(text = "")
 
     when (state) {
         // The loading PaywallData is known at compile time

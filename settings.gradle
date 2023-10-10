@@ -6,6 +6,12 @@ pluginManagement {
     }
 }
 
+sourceControl {
+    gitRepository("https://github.com/rocca23/material3-import-lint.git") {
+        producesModule("com.rocca23:material3-import-lint")
+    }
+}
+
 include ':feature:amazon'
 include ':integration-tests'
 include ':purchases'

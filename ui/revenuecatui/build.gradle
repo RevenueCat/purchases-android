@@ -72,4 +72,6 @@ dependencies {
     testImplementation libs.bundles.test
     testImplementation libs.coroutines.test
     testImplementation libs.kotlinx.serialization.json
+
+    lintChecks("com.rocca23:material3-import-lint:1.0")
 }
