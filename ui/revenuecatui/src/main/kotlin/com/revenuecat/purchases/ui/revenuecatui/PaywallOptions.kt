@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.ui.revenuecatui
 
 import com.revenuecat.purchases.Offering
+import com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider
 
 internal sealed class OfferingSelection {
     data class OfferingType(val offeringType: Offering) : OfferingSelection()
@@ -26,18 +27,21 @@ class PaywallOptions(builder: Builder) {
 
     internal val offeringSelection: OfferingSelection
     val shouldDisplayDismissButton: Boolean
+    val fontProvider: FontProvider?
     val listener: PaywallListener?
     internal var mode: PaywallMode = PaywallMode.default
 
     init {
         this.offeringSelection = builder.offeringSelection
         this.shouldDisplayDismissButton = builder.shouldDisplayDismissButton
+        this.fontProvider = builder.fontProvider
         this.listener = builder.listener
     }
 
     class Builder {
         internal var offeringSelection: OfferingSelection = OfferingSelection.None
         internal var shouldDisplayDismissButton: Boolean = false
+        internal var fontProvider: FontProvider? = null
         internal var listener: PaywallListener? = null
 
         fun setOffering(offering: Offering?) = apply {
@@ -52,6 +56,10 @@ class PaywallOptions(builder: Builder) {
 
         fun setShouldDisplayDismissButton(shouldDisplayDismissButton: Boolean) = apply {
             this.shouldDisplayDismissButton = shouldDisplayDismissButton
+        }
+
+        fun setFontProvider(fontProvider: FontProvider?) = apply {
+            this.fontProvider = fontProvider
         }
 
         fun setListener(listener: PaywallListener?) = apply {
