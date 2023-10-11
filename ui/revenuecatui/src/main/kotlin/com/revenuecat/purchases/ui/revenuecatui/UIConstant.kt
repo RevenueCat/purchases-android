@@ -8,5 +8,8 @@ internal object UIConstant {
 
     val footerRoundedBorderHeight = 12.dp
 
+    val defaultPackageCornerRadius = 16.dp
+    val defaultPackageBorderWidth = 1.5.dp
+
     const val defaultAnimationDurationMillis = 200
 }
