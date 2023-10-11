@@ -29,6 +29,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.ui.revenuecatui.InternalPaywallView
+import com.revenuecat.purchases.ui.revenuecatui.PaywallViewMode
 import com.revenuecat.purchases.ui.revenuecatui.PaywallViewOptions
 import com.revenuecat.purchases.ui.revenuecatui.UIConstant
 import com.revenuecat.purchases.ui.revenuecatui.composables.Footer

@@ -12,9 +12,8 @@ internal val TestData.template2: PaywallData
         templateName = PaywallTemplate.TEMPLATE_2.id,
         config = PaywallData.Configuration(
             packageIds = listOf(
-                PackageType.MONTHLY.identifier!!,
                 PackageType.ANNUAL.identifier!!,
-                PackageType.LIFETIME.identifier!!,
+                PackageType.MONTHLY.identifier!!,
             ),
             defaultPackage = PackageType.MONTHLY.identifier!!,
             images = TestData.Constants.images,
