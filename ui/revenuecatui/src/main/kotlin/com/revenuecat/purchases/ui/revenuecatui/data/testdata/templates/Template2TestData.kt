@@ -37,7 +37,7 @@ internal val TestData.template2: PaywallData
                 title = "Call to **action** for _better_ conversion.",
                 subtitle = "**Lorem ipsum** is simply ~dummy~ text of the _printing_ and *typesetting* industry.",
                 callToAction = "Subscribe for {{ price_per_period }}",
-                offerDetails = "_Just_ {{ total_price_and_per_month }}",
+                offerDetails = "{{ total_price_and_per_month }}",
                 offerDetailsWithIntroOffer = "{{ total_price_and_per_month }} after {{ sub_offer_duration }} trial",
                 offerName = "{{ sub_period }}",
             ),

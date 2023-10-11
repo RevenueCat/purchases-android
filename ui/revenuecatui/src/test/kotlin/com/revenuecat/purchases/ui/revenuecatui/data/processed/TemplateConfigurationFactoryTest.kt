@@ -98,9 +98,9 @@ internal class TemplateConfigurationFactoryTest {
             else -> error("Unknown package type ${rcPackage.packageType}")
         }
         val offerDetails = when(rcPackage.packageType) {
-            PackageType.ANNUAL -> "_Just_ $67.99/yr ($5.67/mth)"
-            PackageType.MONTHLY -> "_Just_ $7.99/mth"
-            PackageType.WEEKLY -> "_Just_ $1.99/wk ($7.96/mth)"
+            PackageType.ANNUAL -> "$67.99/yr ($5.67/mth)"
+            PackageType.MONTHLY -> "$7.99/mth"
+            PackageType.WEEKLY -> "$1.99/wk ($7.96/mth)"
             else -> error("Unknown package type ${rcPackage.packageType}")
         }
         val offerDetailsWithIntroOffer = when(rcPackage.packageType) {

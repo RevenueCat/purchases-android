@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.ui.revenuecatui.composables
 
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -21,6 +22,7 @@ internal fun IntroEligibilityStateView(
     style: TextStyle = TextStyle.Default,
     fontWeight: FontWeight? = null,
     textAlign: TextAlign? = null,
+    modifier: Modifier = Modifier,
 ) {
     val text: String = when (eligibility) {
         IntroOfferEligibility.SINGLE_OFFER_ELIGIBLE -> textWithIntroOffer
@@ -37,6 +39,7 @@ internal fun IntroEligibilityStateView(
         style = style,
         fontWeight = fontWeight,
         textAlign = textAlign,
+        modifier = modifier,
     )
 }
 

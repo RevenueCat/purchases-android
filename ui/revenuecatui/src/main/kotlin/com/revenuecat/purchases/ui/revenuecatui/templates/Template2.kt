@@ -6,7 +6,9 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -52,7 +54,7 @@ private object Template2UIConstants {
     val maxIconWidth = 140.dp
     val iconCornerRadius = 16.dp
     val checkmarkSize = 18.dp
-    const val checkmarkUnselectedAlpha = 0.3f
+    const val fadedColorOpacity = 0.3f
 }
 
 /**
@@ -96,6 +98,8 @@ private fun ColumnScope.Template2MainContent(
         verticalArrangement = Arrangement.spacedBy(UIConstant.defaultVerticalSpacing, Alignment.CenterVertically),
     ) {
         if (state.isInFullScreenMode) {
+            Spacer(Modifier.weight(1f))
+
             IconImage(
                 uri = state.templateConfiguration.images.iconUri,
                 maxWidth = Template2UIConstants.maxIconWidth,
@@ -113,22 +117,29 @@ private fun ColumnScope.Template2MainContent(
                 modifier = childModifier,
             )
             Markdown(
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Medium,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Normal,
                 textAlign = TextAlign.Center,
                 text = localizedConfig.subtitle ?: "",
                 color = colors.text1,
                 modifier = childModifier,
             )
+
+            Spacer(Modifier.weight(1f))
         }
+
         state.templateConfiguration.packages.all.forEach { packageInfo ->
             SelectPackageButton(state, packageInfo, viewModel, childModifier)
+        }
+
+        if (state.isInFullScreenMode) {
+            Spacer(Modifier.weight(1f))
         }
     }
 }
 
 @Composable
-private fun SelectPackageButton(
+private fun ColumnScope.SelectPackageButton(
     state: PaywallViewState.Loaded,
     packageInfo: TemplateConfiguration.PackageInfo,
     viewModel: PaywallViewModel,
@@ -142,25 +153,40 @@ private fun SelectPackageButton(
         // TODO-PAYWALLS: Find correct background unselected color
         colors.background to colors.text1
     }
-    val border = if (isSelected) null else BorderStroke(2.dp, colors.text1)
+    val border = if (isSelected) {
+        null
+    } else {
+        BorderStroke(
+            UIConstant.defaultPackageBorderWidth,
+            colors.text1.copy(alpha = Template2UIConstants.fadedColorOpacity),
+        )
+    }
     Button(
-        modifier = childModifier.fillMaxWidth(),
+        modifier = childModifier
+            .fillMaxWidth()
+            .align(Alignment.Start),
         onClick = { viewModel.selectPackage(packageInfo) },
         colors = ButtonDefaults.buttonColors(containerColor = background, contentColor = textColor),
-        shape = RoundedCornerShape(15.dp),
+        shape = RoundedCornerShape(UIConstant.defaultPackageCornerRadius),
+        contentPadding = PaddingValues(
+            vertical = UIConstant.defaultVerticalSpacing,
+            horizontal = UIConstant.defaultHorizontalPadding,
+        ),
         border = border,
     ) {
         Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(4.dp),
+                .fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(4.dp),
+            horizontalAlignment = Alignment.Start,
         ) {
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
                 CheckmarkBox(isSelected = isSelected, colors = state.currentColors)
                 Text(
                     text = packageInfo.localization.offerName ?: packageInfo.rcPackage.product.title,
                     color = textColor,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.SemiBold,
                 )
             }
             IntroEligibilityStateView(
@@ -169,6 +195,7 @@ private fun SelectPackageButton(
                 textWithMultipleIntroOffers = packageInfo.localization.offerDetailsWithMultipleIntroOffers,
                 eligibility = packageInfo.introEligibility,
                 color = textColor,
+                style = MaterialTheme.typography.bodyMedium,
             )
         }
     }
@@ -180,7 +207,7 @@ private fun CheckmarkBox(isSelected: Boolean, colors: TemplateConfiguration.Colo
         modifier = Modifier
             .size(Template2UIConstants.checkmarkSize)
             .clip(CircleShape)
-            .background(colors.accent2.copy(alpha = Template2UIConstants.checkmarkUnselectedAlpha)),
+            .background(colors.accent2.copy(alpha = Template2UIConstants.fadedColorOpacity)),
     ) {
         if (isSelected) {
             PaywallIcon(icon = PaywallIconName.CHECK_CIRCLE, tintColor = colors.accent1)
