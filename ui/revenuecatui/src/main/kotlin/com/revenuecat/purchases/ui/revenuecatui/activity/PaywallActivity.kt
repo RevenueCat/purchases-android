@@ -48,24 +48,22 @@ internal class PaywallActivity : ComponentActivity(), PaywallListener {
 
     private fun getFontProvider(): FontProvider? {
         val googleFontProviders = mutableMapOf<GoogleFontProvider, GoogleFont.Provider>()
-        val fontsMap = getArgs()?.fonts?.mapValues { fontFamilyMap ->
-            fontFamilyMap.value?.let { fontFamily ->
-                val fonts = fontFamily.fonts.map { font ->
-                    when (font) {
-                        is PaywallFont.ResourceFont -> Font(font.resourceId, font.fontWeight, font.fontStyle)
-                        is PaywallFont.GoogleFont -> {
-                            val googleFontProvider = font.fontProvider
-                            val provider = googleFontProviders.getOrElse(googleFontProvider) {
-                                val googleProvider = googleFontProvider.toGoogleProvider()
-                                googleFontProviders[googleFontProvider] = googleProvider
-                                googleProvider
-                            }
-                            Font(GoogleFont(font.fontName), provider, font.fontWeight, font.fontStyle)
+        val fontsMap = getArgs()?.fonts?.mapValues { (_, fontFamily) ->
+            val fonts = fontFamily?.fonts?.map { font ->
+                when (font) {
+                    is PaywallFont.ResourceFont -> Font(font.resourceId, font.fontWeight, font.fontStyle)
+                    is PaywallFont.GoogleFont -> {
+                        val googleFontProvider = font.fontProvider
+                        val provider = googleFontProviders.getOrElse(googleFontProvider) {
+                            val googleProvider = googleFontProvider.toGoogleProvider()
+                            googleFontProviders[googleFontProvider] = googleProvider
+                            googleProvider
                         }
+                        Font(GoogleFont(font.fontName), provider, font.fontWeight, font.fontStyle)
                     }
                 }
-                FontFamily(fonts)
             }
+            fonts?.let { FontFamily(it) }
         } ?: return null
         return object : FontProvider {
             override fun getFont(type: TypographyType): FontFamily? {
