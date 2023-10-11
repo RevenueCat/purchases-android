@@ -31,7 +31,9 @@ internal class TemplateConfigurationFactoryTest {
             paywallViewMode,
             TestData.template2,
             listOf(TestData.Packages.weekly, TestData.Packages.monthly, TestData.Packages.annual),
-            emptySet(),
+            setOf(
+                TestData.Packages.monthly.product.id
+            ),
             PaywallTemplate.TEMPLATE_2,
         )
         template2Configuration = result.getOrNull()!!
@@ -59,12 +61,15 @@ internal class TemplateConfigurationFactoryTest {
         )
         val packageConfiguration = template2Configuration.packages as TemplateConfiguration.PackageConfiguration.Multiple
 
+        val annualPackage = getPackageInfo(TestData.Packages.annual, currentlySubscribed = false)
+        val monthlyPackage = getPackageInfo(TestData.Packages.monthly, currentlySubscribed = true)
+
         val expectedConfiguration = TemplateConfiguration.PackageConfiguration.Multiple(
-            first = getPackageInfo(TestData.Packages.annual),
-            default = getPackageInfo(TestData.Packages.monthly),
+            first = annualPackage,
+            default = monthlyPackage,
             all = listOf(
-                getPackageInfo(TestData.Packages.annual),
-                getPackageInfo(TestData.Packages.monthly),
+                annualPackage,
+                monthlyPackage,
             ),
         )
 
@@ -83,7 +88,10 @@ internal class TemplateConfigurationFactoryTest {
             .isEqualTo(Uri.parse("https://assets.pawwalls.com/9a17e0a7_1689854430..jpeg"))
     }
 
-    private fun getPackageInfo(rcPackage: Package): TemplateConfiguration.PackageInfo {
+    private fun getPackageInfo(
+        rcPackage: Package,
+        currentlySubscribed: Boolean = false,
+    ): TemplateConfiguration.PackageInfo {
         val localizedConfiguration = TestData.template2.configForLocale(Locale.US)!!
         val periodName = when(rcPackage.packageType) {
             PackageType.ANNUAL -> "Annual"
@@ -124,7 +132,7 @@ internal class TemplateConfigurationFactoryTest {
         return TemplateConfiguration.PackageInfo(
             rcPackage = rcPackage,
             localization = processedLocalization,
-            currentlySubscribed = false,
+            currentlySubscribed = currentlySubscribed,
             discountRelativeToMostExpensivePerMonth = null,
         )
     }

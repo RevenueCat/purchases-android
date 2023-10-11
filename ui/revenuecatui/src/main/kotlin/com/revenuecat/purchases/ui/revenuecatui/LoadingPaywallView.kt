@@ -55,6 +55,7 @@ internal fun LoadingPaywallView(mode: PaywallViewMode) {
             LocalContext.current.applicationContext.toAndroidContext(),
             isInPreviewMode(),
         ),
+        setOf(),
         mode,
         paywallData,
         LoadingPaywallConstants.template,
