@@ -68,10 +68,3 @@ data class PaywallColor(
         },
     )
 }
-
-/**
- * Represents a color scheme.
- */
-enum class ColorScheme {
-    LIGHT, DARK
-}

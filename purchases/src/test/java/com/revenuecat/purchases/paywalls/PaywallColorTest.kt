@@ -11,15 +11,34 @@ import java.util.*
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
 class PaywallColorTest {
-
     @Test
-    fun `paywall color can be created from a ColorInt`() {
-        val colorInt = Color.parseColor("#FFAABB")
+    fun `paywall color can be created from an RGB ColorInt`() {
+        val stringRepresentation = "#FFAABB"
+        val colorInt = Color.parseColor(stringRepresentation)
         val paywallColor = PaywallColor(colorInt)
 
         assertThat(colorInt).isEqualTo(paywallColor.colorInt)
-        assertThat("#FFAABB").isEqualTo(paywallColor.stringRepresentation)
+        assertThat(stringRepresentation).isEqualTo(paywallColor.stringRepresentation)
         assertThat(Color.valueOf(colorInt)).isEqualTo(paywallColor.underlyingColor)
     }
 
+    @Test
+    fun `paywall color can be created from RGB string`() {
+        val stringRepresentation = "#FFAABB"
+        val paywallColor = PaywallColor(stringRepresentation)
+        val color = Color.valueOf(Color.parseColor(stringRepresentation))
+
+        assertThat(stringRepresentation).isEqualTo(paywallColor.stringRepresentation)
+        assertThat(color).isEqualTo(paywallColor.underlyingColor)
+    }
+
+    @Test
+    fun `paywall color can be created from RGBA string`() {
+        val stringRepresentation = "#FFAABB11"
+        val paywallColor = PaywallColor(stringRepresentation)
+        val color = Color.valueOf(Color.parseColor(stringRepresentation))
+
+        assertThat(stringRepresentation).isEqualTo(paywallColor.stringRepresentation)
+        assertThat(color).isEqualTo(paywallColor.underlyingColor)
+    }
 }
