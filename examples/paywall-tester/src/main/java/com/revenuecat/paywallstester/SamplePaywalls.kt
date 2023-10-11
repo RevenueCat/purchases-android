@@ -21,7 +21,7 @@ class SamplePaywallsLoader {
         )
     }
 
-    fun paywallForTemplate(template: SamplePaywalls.SampleTemplate): PaywallData {
+    private fun paywallForTemplate(template: SamplePaywalls.SampleTemplate): PaywallData {
         return when (template) {
             SamplePaywalls.SampleTemplate.TEMPLATE_1 -> SamplePaywalls.template1()
             SamplePaywalls.SampleTemplate.TEMPLATE_2 -> SamplePaywalls.template2()
@@ -48,7 +48,7 @@ object SamplePaywalls {
         background = "9a17e0a7_1689854342..jpg",
         icon = "9a17e0a7_1689854430..jpeg",
     )
-    val paywallAssetBaseURL = URL("https://assets.pawwalls.com")
+    private val paywallAssetBaseURL = URL("https://assets.pawwalls.com")
 
     private val weeklyProduct = TestStoreProduct(
         id = "com.revenuecat.product_1",
