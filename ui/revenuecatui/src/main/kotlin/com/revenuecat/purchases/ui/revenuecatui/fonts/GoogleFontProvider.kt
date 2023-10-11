@@ -5,36 +5,24 @@ import androidx.annotation.ArrayRes
 import androidx.compose.ui.text.googlefonts.GoogleFont
 import kotlinx.parcelize.Parcelize
 
-sealed class GoogleFontProvider(
-    open val providerAuthority: String,
-    open val providerPackage: String = "com.google.android.gms",
+/**
+ * Represents a Google font provider.
+ */
+@Parcelize
+data class GoogleFontProvider(
+    /**
+     * The resource ID of the font provider's certificate(s).
+     */
+    @ArrayRes val certificates: Int,
+    val providerAuthority: String = "com.google.android.gms.fonts",
+    val providerPackage: String = "com.google.android.gms",
 ) : Parcelable {
-    @Parcelize
-    data class ResourceProvider(
-        override val providerAuthority: String = "com.google.android.gms.fonts",
-        override val providerPackage: String = "com.google.android.gms",
-        @ArrayRes val certificates: Int,
-    ) : GoogleFontProvider(providerAuthority, providerPackage)
-
-    @Parcelize
-    data class ByteArrayProvider(
-        override val providerAuthority: String = "com.google.android.gms.fonts",
-        override val providerPackage: String = "com.google.android.gms",
-        val certificates: List<List<ByteArray>>,
-    ) : GoogleFontProvider(providerAuthority, providerPackage)
 
     fun toGoogleProvider(): GoogleFont.Provider {
-        return when (this) {
-            is ResourceProvider -> GoogleFont.Provider(
-                providerAuthority,
-                providerPackage,
-                certificates,
-            )
-            is ByteArrayProvider -> GoogleFont.Provider(
-                providerAuthority,
-                providerPackage,
-                certificates,
-            )
-        }
+        return GoogleFont.Provider(
+            providerAuthority,
+            providerPackage,
+            certificates,
+        )
     }
 }

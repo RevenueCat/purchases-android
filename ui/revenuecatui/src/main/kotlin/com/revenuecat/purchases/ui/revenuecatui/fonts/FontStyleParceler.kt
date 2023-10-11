@@ -4,7 +4,7 @@ import android.os.Parcel
 import androidx.compose.ui.text.font.FontStyle
 import kotlinx.parcelize.Parceler
 
-object FontStyleParceler : Parceler<FontStyle> {
+internal object FontStyleParceler : Parceler<FontStyle> {
     override fun create(parcel: Parcel) = FontStyle(parcel.readInt())
 
     override fun FontStyle.write(parcel: Parcel, flags: Int) {
