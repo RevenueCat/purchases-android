@@ -15,6 +15,7 @@ import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
+import com.revenuecat.purchases.models.TestStoreProduct
 import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.ui.revenuecatui.composables.Fade
 import com.revenuecat.purchases.ui.revenuecatui.composables.PlaceholderDefaults
@@ -24,7 +25,6 @@ import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewState
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.PaywallTemplate
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvider
-import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestStoreProduct
 import com.revenuecat.purchases.ui.revenuecatui.extensions.createDefault
 import com.revenuecat.purchases.ui.revenuecatui.helpers.isInPreviewMode
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toAndroidContext
