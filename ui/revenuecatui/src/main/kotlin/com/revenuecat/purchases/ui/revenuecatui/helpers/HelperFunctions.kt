@@ -6,7 +6,9 @@ import androidx.compose.ui.platform.LocalInspectionMode
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesException
-import com.revenuecat.purchases.awaitCustomerInfo
+import com.revenuecat.purchases.getCustomerInfoWith
+import kotlin.coroutines.resume
+import kotlin.coroutines.suspendCoroutine
 
 @Composable
 @ReadOnlyComposable
@@ -16,19 +18,32 @@ internal fun isInPreviewMode() = LocalInspectionMode.current
  * Evaluates [shouldDisplayBlock] with the current CustomerInfo to determine if a paywall should be displayed.
  */
 internal suspend fun shouldDisplayPaywall(shouldDisplayBlock: (CustomerInfo) -> Boolean): Boolean {
-    val shouldDisplayDialog = try {
-        shouldDisplayBlock.invoke(Purchases.sharedInstance.awaitCustomerInfo())
-    } catch (e: PurchasesException) {
-        Logger.e("Error fetching customer info to display paywall", e)
-        false
-    }
-    if (shouldDisplayDialog) {
-        Logger.d("Displaying paywall according to display logic")
-    } else {
-        Logger.d("Not displaying paywall according to display logic")
-    }
+    return suspendCoroutine { continuation -> shouldDisplayPaywall(shouldDisplayBlock, continuation::resume) }
+}
 
-    return shouldDisplayDialog
+/**
+ * Evaluates [shouldDisplayBlock] with the current CustomerInfo to determine if a paywall should be displayed.
+ */
+internal fun shouldDisplayPaywall(
+    shouldDisplayBlock: (CustomerInfo) -> Boolean,
+    result: (shouldDisplay: Boolean) -> Unit
+) {
+    Purchases.sharedInstance.getCustomerInfoWith(
+        onSuccess = {
+            val shouldDisplay = shouldDisplayBlock(it)
+            if (shouldDisplay) {
+                Logger.d("Displaying paywall according to display logic")
+            } else {
+                Logger.d("Not displaying paywall according to display logic")
+            }
+
+            result(shouldDisplay)
+        },
+        onError = {
+            Logger.e("Error fetching customer info to display paywall", PurchasesException(it))
+            result(false)
+        }
+    )
 }
 
 /**

@@ -50,7 +50,7 @@ class PaywallActivityLauncher {
      * @param offering The offering to be shown in the paywall. If null, the current offering will be shown.
      */
     @JvmOverloads
-    suspend fun launchIfNeeded(
+    fun launchIfNeeded(
         offering: Offering? = null,
         requiredEntitlementIdentifier: String,
     ) {
@@ -65,12 +65,14 @@ class PaywallActivityLauncher {
      * @param offering The offering to be shown in the paywall. If null, the current offering will be shown.
      */
     @JvmOverloads
-    suspend fun launchIfNeeded(
+    fun launchIfNeeded(
         offering: Offering? = null,
         shouldDisplayBlock: (CustomerInfo) -> Boolean,
     ) {
-        if (shouldDisplayPaywall(shouldDisplayBlock)) {
-            activityResultLauncher.launch(PaywallActivityArgs(offeringId = offering?.identifier))
+        shouldDisplayPaywall(shouldDisplayBlock) { shouldDisplay ->
+            if (shouldDisplay) {
+                activityResultLauncher.launch(PaywallActivityArgs(offeringId = offering?.identifier))
+            }
         }
     }
 }
