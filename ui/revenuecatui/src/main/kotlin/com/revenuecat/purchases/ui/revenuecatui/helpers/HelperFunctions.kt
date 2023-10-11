@@ -26,7 +26,7 @@ internal suspend fun shouldDisplayPaywall(shouldDisplayBlock: (CustomerInfo) -> 
  */
 internal fun shouldDisplayPaywall(
     shouldDisplayBlock: (CustomerInfo) -> Boolean,
-    result: (shouldDisplay: Boolean) -> Unit
+    result: (shouldDisplay: Boolean) -> Unit,
 ) {
     Purchases.sharedInstance.getCustomerInfoWith(
         onSuccess = {
@@ -42,7 +42,7 @@ internal fun shouldDisplayPaywall(
         onError = {
             Logger.e("Error fetching customer info to display paywall", PurchasesException(it))
             result(false)
-        }
+        },
     )
 }
 
