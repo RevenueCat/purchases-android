@@ -166,7 +166,8 @@ object SamplePaywalls {
                     callToAction = "Purchase for {{ price }}",
                     callToActionWithIntroOffer = "Purchase for {{ sub_price_per_month }} per month",
                     offerDetails = "{{ sub_price_per_month }} per month",
-                    offerDetailsWithIntroOffer = "Start your {{ sub_offer_duration }} trial, then {{ sub_price_per_month }} per month",
+                    offerDetailsWithIntroOffer = "Start your {{ sub_offer_duration }} trial, " +
+                        "then {{ sub_price_per_month }} per month",
                 ),
             ),
         )
