@@ -7,7 +7,6 @@ import androidx.fragment.app.Fragment
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.ui.revenuecatui.fonts.FontResourceProvider
-import com.revenuecat.purchases.ui.revenuecatui.fonts.TypographyType
 import com.revenuecat.purchases.ui.revenuecatui.helpers.shouldDisplayBlockForEntitlementIdentifier
 import com.revenuecat.purchases.ui.revenuecatui.helpers.shouldDisplayPaywall
 
@@ -44,13 +43,10 @@ class PaywallActivityLauncher {
      */
     @JvmOverloads
     fun launch(offering: Offering? = null, fontResourceProvider: FontResourceProvider? = null) {
-        val fontMap = fontResourceProvider?.let { provider ->
-            TypographyType.values().associateBy({ it }, { provider.getFontResourceId(it) })
-        }
         activityResultLauncher.launch(
             PaywallActivityArgs(
                 offeringId = offering?.identifier,
-                mapFonts = fontMap,
+                provider = fontResourceProvider,
             ),
         )
     }

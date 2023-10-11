@@ -42,21 +42,26 @@ internal class PaywallActivity : ComponentActivity(), PaywallListener {
         }
     }
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        val args = getArgs()
-        val fontProvider = args?.mapFonts?.let { mapFonts ->
+    private fun getFontProvider(): FontProvider? {
+        return getArgs()?.fonts?.let { fonts ->
+            val fontsMap = fonts.mapValues { entry ->
+                entry.value?.let { fontRes ->
+                    ResourcesCompat.getFont(this, fontRes)?.let { FontFamily(it) }
+                }
+            }
             object : FontProvider {
                 override fun getFont(type: TypographyType): FontFamily? {
-                    return mapFonts[type]?.let { fontRes ->
-                        return ResourcesCompat.getFont(this@PaywallActivity, fontRes)?.let { FontFamily(it) }
-                    }
+                    return fontsMap[type]
                 }
             }
         }
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
         val paywallOptions = PaywallOptions.Builder()
             .setOfferingId(getArgs()?.offeringId)
-            .setFontProvider(fontProvider)
+            .setFontProvider(getFontProvider())
             .setListener(this)
             .build()
         setContent {
