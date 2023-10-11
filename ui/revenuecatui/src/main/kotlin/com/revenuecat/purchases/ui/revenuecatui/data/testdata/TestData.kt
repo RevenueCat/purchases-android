@@ -1,7 +1,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.data.testdata
 
 import android.content.Context
-import androidx.annotation.VisibleForTesting
 import androidx.compose.material3.ColorScheme
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
