@@ -8,12 +8,16 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontStyle
 import com.revenuecat.paywallstester.ui.theme.PaywallTesterAndroidTheme
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivityLauncher
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResultHandler
-import com.revenuecat.purchases.ui.revenuecatui.fonts.FontResourceProvider
+import com.revenuecat.purchases.ui.revenuecatui.fonts.GoogleFontProvider
+import com.revenuecat.purchases.ui.revenuecatui.fonts.ParcelizableFontProvider
+import com.revenuecat.purchases.ui.revenuecatui.fonts.PaywallFont
+import com.revenuecat.purchases.ui.revenuecatui.fonts.PaywallFontFamily
 import com.revenuecat.purchases.ui.revenuecatui.fonts.TypographyType
 
 class MainActivity : ComponentActivity(), PaywallResultHandler {
@@ -39,9 +43,20 @@ class MainActivity : ComponentActivity(), PaywallResultHandler {
     fun launchPaywall(offering: Offering? = null) {
         paywallActivityLauncher.launch(
             offering,
-            object : FontResourceProvider {
-                override fun getFontResourceId(type: TypographyType): Int? {
-                    return R.font.super_mario
+            object : ParcelizableFontProvider {
+                override fun getFont(type: TypographyType): PaywallFontFamily? {
+                    return PaywallFontFamily(
+                        fonts = listOf(
+                            PaywallFont.GoogleFont(
+                                fontName = "Lobster Two",
+                                fontProvider = GoogleFontProvider(R.array.com_google_android_gms_fonts_certs),
+                            ),
+                            PaywallFont.ResourceFont(
+                                resourceId = R.font.super_mario,
+                                fontStyle = FontStyle.Italic,
+                            ),
+                        ),
+                    )
                 }
             },
         )
