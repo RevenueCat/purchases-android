@@ -124,7 +124,7 @@ private fun ColumnScope.Template1MainContent(state: PaywallViewState.Loaded) {
             textWithNoIntroOffer = localizedConfig.offerDetails,
             textWithIntroOffer = localizedConfig.offerDetailsWithIntroOffer,
             textWithMultipleIntroOffers = localizedConfig.offerDetailsWithMultipleIntroOffers,
-            eligibility = state.selectedPackage.introEligibility,
+            eligibility = state.selectedPackage.value.introEligibility,
             color = colors.text1,
             style = MaterialTheme.typography.bodyLarge,
             fontWeight = FontWeight.Normal,

@@ -1,5 +1,7 @@
 package com.revenuecat.purchases.ui.revenuecatui
 
+import androidx.compose.animation.core.LinearOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.ui.unit.dp
 
 internal object UIConstant {
@@ -12,4 +14,9 @@ internal object UIConstant {
     val defaultPackageBorderWidth = 1.5.dp
 
     const val defaultAnimationDurationMillis = 200
+
+    fun <T> defaultAnimation() = tween<T>(
+        durationMillis = 200,
+        easing = LinearOutSlowInEasing,
+    )
 }
