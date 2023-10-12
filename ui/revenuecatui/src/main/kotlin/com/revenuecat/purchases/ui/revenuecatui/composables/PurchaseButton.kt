@@ -16,7 +16,6 @@ import androidx.compose.ui.text.style.TextAlign
 import com.revenuecat.purchases.ui.revenuecatui.UIConstant
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModel
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewState
-import com.revenuecat.purchases.ui.revenuecatui.data.selectedLocalization
 import com.revenuecat.purchases.ui.revenuecatui.extensions.introEligibility
 
 @Composable
@@ -42,17 +41,23 @@ internal fun PurchaseButton(
                 contentColor = colors.callToActionForeground,
             ),
         ) {
-            IntroEligibilityStateView(
-                textWithNoIntroOffer = state.selectedLocalization.callToAction,
-                textWithIntroOffer = state.selectedLocalization.callToActionWithIntroOffer,
-                textWithMultipleIntroOffers = state.selectedLocalization.callToActionWithMultipleIntroOffers,
-                eligibility = state.selectedPackage.introEligibility,
-                color = colors.callToActionForeground,
-                textAlign = TextAlign.Center,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.padding(vertical = UIConstant.defaultVerticalSpacing / 3),
-            )
+            ConsistentPackageContentView(
+                packages = state.templateConfiguration.packages.all,
+                selected = state.selectedPackage.value,
+            ) {
+                val localization = it.localization
+                IntroEligibilityStateView(
+                    textWithNoIntroOffer = localization.callToAction,
+                    textWithIntroOffer = localization.callToActionWithIntroOffer,
+                    textWithMultipleIntroOffers = localization.callToActionWithMultipleIntroOffers,
+                    eligibility = it.introEligibility,
+                    color = colors.callToActionForeground,
+                    textAlign = TextAlign.Center,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.padding(vertical = UIConstant.defaultVerticalSpacing / 3),
+                )
+            }
         }
     }
 }

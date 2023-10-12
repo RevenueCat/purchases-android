@@ -98,14 +98,12 @@ internal class PaywallViewModelImpl(
     }
 
     override fun selectPackage(packageToSelect: TemplateConfiguration.PackageInfo) {
-        _state.value = when (val currentState = _state.value) {
+        when (val currentState = _state.value) {
             is PaywallViewState.Loaded -> {
-                currentState.copy(selectedPackage = packageToSelect)
+                currentState.selectPackage(packageToSelect)
             }
-
             else -> {
                 Logger.e("Unexpected state trying to select package: $currentState")
-                currentState
             }
         }
     }
@@ -114,7 +112,7 @@ internal class PaywallViewModelImpl(
         val activity = context.getActivity() ?: error("Activity not found")
         when (val currentState = _state.value) {
             is PaywallViewState.Loaded -> {
-                purchasePackage(activity, currentState.selectedPackage.rcPackage)
+                purchasePackage(activity, currentState.selectedPackage.value.rcPackage)
             }
 
             else -> {
