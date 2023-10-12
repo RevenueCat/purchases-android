@@ -37,7 +37,7 @@ fun PaywallScreen(
                         .setListener(viewModel)
                         .build(),
                 )
-                state?.dialogText?.let {
+                state.dialogText?.let {
                     PurchaseAlertDialog(viewModel, it)
                 }
             }
