@@ -27,17 +27,19 @@ class SamplePaywallsLoader {
             SamplePaywalls.SampleTemplate.TEMPLATE_2 -> SamplePaywalls.template2()
             SamplePaywalls.SampleTemplate.TEMPLATE_3 -> SamplePaywalls.template3()
             SamplePaywalls.SampleTemplate.TEMPLATE_4 -> SamplePaywalls.template4()
+            SamplePaywalls.SampleTemplate.UNRECOGNIZED_TEMPLATE -> SamplePaywalls.unrecognizedTemplate()
         }
     }
 }
 
 object SamplePaywalls {
 
-    enum class SampleTemplate(val id: String, val displayableName: String) {
-        TEMPLATE_1("1", "#1: Minimalist"),
-        TEMPLATE_2("2", "#2: Bold packages"),
-        TEMPLATE_3("3", "#3: Feature list"),
-        TEMPLATE_4("4", "#4: Horizontal packages"),
+    enum class SampleTemplate(val displayableName: String) {
+        TEMPLATE_1("#1: Minimalist"),
+        TEMPLATE_2("#2: Bold packages"),
+        TEMPLATE_3("#3: Feature list"),
+        TEMPLATE_4("#4: Horizontal packages"),
+        UNRECOGNIZED_TEMPLATE("Default template")
     }
 
     const val offeringIdentifier = "offering"
@@ -315,6 +317,17 @@ object SamplePaywalls {
                     offerDetailsWithIntroOffer = "Includes {{ sub_offer_duration }} **free** trial",
                     offerName = "{{ sub_duration_in_months }}",
                 ),
+            ),
+        )
+    }
+
+    fun unrecognizedTemplate(): PaywallData {
+        return PaywallData(
+            templateName = "unrecognized",
+            config = template4().config,
+            assetBaseURL = paywallAssetBaseURL,
+            localization = mapOf(
+                "en_US" to template4().localizedConfiguration.second,
             ),
         )
     }
