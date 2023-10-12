@@ -40,6 +40,7 @@ import org.commonmark.node.ListBlock
 import org.commonmark.node.Node
 import org.commonmark.node.OrderedList
 import org.commonmark.node.Paragraph
+import org.commonmark.node.SoftLineBreak
 import org.commonmark.node.StrongEmphasis
 import org.commonmark.node.Text
 import org.commonmark.parser.Parser
@@ -313,8 +314,8 @@ private fun AnnotatedString.Builder.appendMarkdownChildren(
                 append(child.literal)
                 pop()
             }
-            is HardLineBreak -> {
-                append("\n")
+            is HardLineBreak, is SoftLineBreak -> {
+                appendLine()
             }
             is Link -> {
                 val underline = SpanStyle(color, textDecoration = TextDecoration.Underline)
