@@ -39,7 +39,7 @@ object SamplePaywalls {
         TEMPLATE_2("#2: Bold packages"),
         TEMPLATE_3("#3: Feature list"),
         TEMPLATE_4("#4: Horizontal packages"),
-        UNRECOGNIZED_TEMPLATE("Default template")
+        UNRECOGNIZED_TEMPLATE("Default template"),
     }
 
     const val offeringIdentifier = "offering"
