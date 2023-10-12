@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.templates
 
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -21,6 +22,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -138,6 +140,7 @@ private fun ColumnScope.Template2MainContent(
     }
 }
 
+@SuppressWarnings("LongMethod")
 @Composable
 private fun ColumnScope.SelectPackageButton(
     state: PaywallViewState.Loaded,
@@ -146,13 +149,19 @@ private fun ColumnScope.SelectPackageButton(
     childModifier: Modifier,
 ) {
     val colors = state.templateConfiguration.getCurrentColors()
-    val isSelected = packageInfo == state.selectedPackage
-    val (background, textColor) = if (isSelected) {
-        colors.accent2 to colors.accent1
-    } else {
-        // TODO-PAYWALLS: Find correct background unselected color
-        colors.background to colors.text1
-    }
+    val isSelected = packageInfo == state.selectedPackage.value
+
+    val background by animateColorAsState(
+        targetValue = if (isSelected) colors.accent2 else colors.background,
+        animationSpec = UIConstant.defaultAnimation(),
+        label = "Template 2 - ${packageInfo.rcPackage.identifier} background",
+    )
+    val textColor by animateColorAsState(
+        targetValue = if (isSelected) colors.accent1 else colors.text1,
+        animationSpec = UIConstant.defaultAnimation(),
+        label = "Template 2 - ${packageInfo.rcPackage.identifier}: text color",
+    )
+
     val border = if (isSelected) {
         null
     } else {

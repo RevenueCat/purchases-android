@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.composables
 
+import androidx.compose.animation.Crossfade
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -7,6 +8,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import com.revenuecat.purchases.ui.revenuecatui.UIConstant
 
 /**
  * A composable that can display different data based on intro eligibility status.
@@ -33,14 +35,20 @@ internal fun IntroEligibilityStateView(
         ?: textWithIntroOffer
         ?: ""
 
-    Markdown(
-        text,
-        color = color,
-        style = style,
-        fontWeight = fontWeight,
-        textAlign = textAlign,
-        modifier = modifier,
-    )
+    Crossfade(
+        targetState = text,
+        animationSpec = UIConstant.defaultAnimation(),
+        label = "IntroEligibilityStateView",
+    ) {
+        Markdown(
+            it,
+            color = color,
+            style = style,
+            fontWeight = fontWeight,
+            textAlign = textAlign,
+            modifier = modifier,
+        )
+    }
 }
 
 internal enum class IntroOfferEligibility {

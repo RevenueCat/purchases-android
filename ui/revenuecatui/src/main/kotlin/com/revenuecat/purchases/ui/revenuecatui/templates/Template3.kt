@@ -77,7 +77,7 @@ internal fun Template3(
                 textWithNoIntroOffer = state.selectedLocalization.offerDetails,
                 textWithIntroOffer = state.selectedLocalization.offerDetailsWithIntroOffer,
                 textWithMultipleIntroOffers = state.selectedLocalization.offerDetailsWithMultipleIntroOffers,
-                eligibility = state.selectedPackage.introEligibility,
+                eligibility = state.selectedPackage.value.introEligibility,
                 color = state.templateConfiguration.getCurrentColors().text1,
                 textAlign = TextAlign.Center,
             )
