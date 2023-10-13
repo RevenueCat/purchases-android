@@ -4,25 +4,25 @@
     "blurred_background_image" : true,
     "colors" : {
       "light" : {
-        "accent_1" : "#000000",
-        "accent_2" : "#FFFFFF",
+        "accent_1" : "#FFFFFF",
+        "accent_2" : "#00FF00",
         "background" : "#FFFFFF",
         "call_to_action_background" : "#000000",
         "call_to_action_foreground" : "#FFFFFF",
-        "text_1" : "#FFFFFF"
+        "text_1" : "#000000"
       },
       "dark" : {
-        "accent_1" : "#000000",
-        "accent_2" : "#FFFFFF",
-        "background" : "#000000",
+        "accent_1" : "#FFFFFF",
+        "accent_2" : "#00FF00",
+        "background" : "#FFFFFF",
         "call_to_action_background" : "#000000",
-        "call_to_action_foreground" : "#000000",
-        "text_1" : "#FFFFFF"
+        "call_to_action_foreground" : "#FFFFFF",
+        "text_1" : "#000000"
       }
     },
     "display_restore_purchases" : true,
     "images" : {
-      "background" : "default_background",
+      "background" : "revenuecatui_default_paywall_background",
       "header" : null,
       "icon" : "revenuecatui_default_paywall_app_icon"
     },
