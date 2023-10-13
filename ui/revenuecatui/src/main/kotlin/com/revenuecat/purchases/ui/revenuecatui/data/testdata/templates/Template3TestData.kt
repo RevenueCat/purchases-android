@@ -19,16 +19,15 @@ internal val TestData.template3: PaywallData
             ),
             displayRestorePurchases = true,
             termsOfServiceURL = URL("https://revenuecat.com/tos"),
-            privacyURL = URL("https://revenuecat.com/privacy"),
             colors = PaywallData.Configuration.ColorInformation(
                 light = PaywallData.Configuration.Colors(
-                    background = PaywallColor(stringRepresentation = "#FFFFFF"),
+                    background = PaywallColor(stringRepresentation = "#FAFAFA"),
                     text1 = PaywallColor(stringRepresentation = "#000000"),
-                    text2 = PaywallColor(stringRepresentation = "#B7B7B7"),
-                    callToActionBackground = PaywallColor(stringRepresentation = "#EC807C"),
+                    text2 = PaywallColor(stringRepresentation = "#2A2A2A"),
+                    callToActionBackground = PaywallColor(stringRepresentation = "#222222"),
                     callToActionForeground = PaywallColor(stringRepresentation = "#FFFFFF"),
-                    accent1 = PaywallColor(stringRepresentation = "#BC66FF"),
-                    accent2 = PaywallColor(stringRepresentation = "#222222"),
+                    accent1 = PaywallColor(stringRepresentation = "#F4E971"),
+                    accent2 = PaywallColor(stringRepresentation = "#121212"),
                 ),
                 dark = PaywallData.Configuration.Colors(
                     background = PaywallColor(stringRepresentation = "#1c1c1c"),
@@ -45,6 +44,7 @@ internal val TestData.template3: PaywallData
             "en_US" to PaywallData.LocalizedConfiguration(
                 title = "How your free trial works",
                 callToAction = "Start",
+                callToActionWithIntroOffer = "Start your {{ sub_offer_duration }} free",
                 features = listOf(
                     PaywallData.LocalizedConfiguration.Feature(
                         title = "Today",
@@ -62,31 +62,10 @@ internal val TestData.template3: PaywallData
                             "Cancel anytime before if you didn't love our app.",
                         iconID = "attachment",
                     ),
-                    PaywallData.LocalizedConfiguration.Feature(
-                        title = "Today",
-                        content = "Full access to 1000+ workouts plus free meal plan worth {{ price }}.",
-                        iconID = "tick",
-                    ),
-                    PaywallData.LocalizedConfiguration.Feature(
-                        title = "Day 7",
-                        content = "Get a reminder about when your trial is about to end.",
-                        iconID = "notification",
-                    ),
-                    PaywallData.LocalizedConfiguration.Feature(
-                        title = "Day 14",
-                        content = "You'll automatically get subscribed. " +
-                            "Cancel anytime before if you didn't love our app.",
-                        iconID = "attachment",
-                    ),
-                    PaywallData.LocalizedConfiguration.Feature(
-                        title = "Day 14",
-                        content = "You'll automatically get subscribed. " +
-                            "Cancel anytime before if you didn't love our app.",
-                        iconID = "attachment",
-                    ),
                 ),
-                offerDetails = "{{ total_price_and_per_month }}",
-                offerDetailsWithIntroOffer = "{{ total_price_and_per_month }} after {{ sub_offer_duration }} trial",
+                offerDetails = "Only {{ price_per_period }}",
+                offerDetailsWithIntroOffer = "First {{ sub_offer_duration }} free, then\n" +
+                    "{{ price }} per year ({{ sub_price_per_month }} per month)",
             ),
             "es_ES" to PaywallData.LocalizedConfiguration(
                 title = "Cómo funciona tu prueba gratuita",
