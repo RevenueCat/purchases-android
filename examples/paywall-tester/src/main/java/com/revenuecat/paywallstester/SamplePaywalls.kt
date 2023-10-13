@@ -13,7 +13,7 @@ import java.net.URL
 class SamplePaywallsLoader {
     fun offeringForTemplate(template: SamplePaywalls.SampleTemplate): Offering {
         return Offering(
-            SamplePaywalls.offeringIdentifier,
+            "$SamplePaywalls.offeringIdentifier_${template.id}",
             SamplePaywalls.offeringIdentifier,
             emptyMap(),
             SamplePaywalls.packages,
