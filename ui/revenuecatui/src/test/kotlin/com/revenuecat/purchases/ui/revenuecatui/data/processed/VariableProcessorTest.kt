@@ -214,6 +214,37 @@ class VariableProcessorTest {
 
     // endregion
 
+    // region sub_duration_in_months
+
+    @Test
+    fun `process variables processes sub_duration_in_months`() {
+        expectVariablesResult("{{ sub_duration_in_months }}", "12 months", rcPackage = TestData.Packages.annual)
+        expectVariablesResult("{{ sub_duration_in_months }}", "1 month", rcPackage = TestData.Packages.monthly)
+        expectVariablesResult("{{ sub_duration_in_months }}", "1 week", rcPackage = TestData.Packages.weekly)
+        expectVariablesResult("{{ sub_duration_in_months }}", "2 months", rcPackage = TestData.Packages.bimonthly)
+        expectVariablesResult("{{ sub_duration_in_months }}", "3 months", rcPackage = TestData.Packages.quarterly)
+        expectVariablesResult("{{ sub_duration_in_months }}", "6 months", rcPackage = TestData.Packages.semester)
+    }
+
+    @Test
+    fun `process variables processes sub_duration_in_months falls back to period name if no period`() {
+        expectVariablesResult("{{ sub_duration_in_months }}", "Lifetime", rcPackage = TestData.Packages.lifetime)
+    }
+
+    @Test
+    fun `process variables processes sub_duration_in_months in spanish`() {
+        expectVariablesResult("{{ sub_duration_in_months }}", "12 meses", esLocale, TestData.Packages.annual)
+        expectVariablesResult("{{ sub_duration_in_months }}", "1 mes", esLocale, TestData.Packages.monthly)
+        expectVariablesResult("{{ sub_duration_in_months }}", "1 semana", esLocale, TestData.Packages.weekly)
+        expectVariablesResult("{{ sub_duration_in_months }}", "2 meses", esLocale, TestData.Packages.bimonthly)
+        expectVariablesResult("{{ sub_duration_in_months }}", "3 meses", esLocale, TestData.Packages.quarterly)
+        expectVariablesResult("{{ sub_duration_in_months }}", "6 meses", esLocale, TestData.Packages.semester)
+        // Not using real context so can't access localized version
+        expectVariablesResult("{{ sub_duration_in_months }}", "Lifetime", esLocale, TestData.Packages.lifetime)
+    }
+
+    // endregion
+
     // region sub_offer_duration
 
     @Test

@@ -91,6 +91,7 @@ internal object VariableProcessor {
         )
 
         VariableName.SUB_DURATION -> variableDataProvider.subscriptionDuration(rcPackage, locale)
+        VariableName.SUB_DURATION_IN_MONTHS -> variableDataProvider.subscriptionDurationInMonths(rcPackage, locale)
         VariableName.SUB_OFFER_DURATION -> variableDataProvider.firstIntroductoryOfferDuration(rcPackage, locale)
         VariableName.SUB_OFFER_DURATION_2 -> variableDataProvider.secondIntroductoryOfferDuration(rcPackage, locale)
         VariableName.SUB_OFFER_PRICE -> variableDataProvider.localizedFirstIntroductoryOfferPrice(rcPackage)
@@ -106,6 +107,7 @@ internal object VariableProcessor {
         SUB_PERIOD("sub_period"),
         SUB_PRICE_PER_MONTH("sub_price_per_month"),
         SUB_DURATION("sub_duration"),
+        SUB_DURATION_IN_MONTHS("sub_duration_in_months"),
         SUB_OFFER_DURATION("sub_offer_duration"),
         SUB_OFFER_DURATION_2("sub_offer_duration_2"),
         SUB_OFFER_PRICE("sub_offer_price"),
