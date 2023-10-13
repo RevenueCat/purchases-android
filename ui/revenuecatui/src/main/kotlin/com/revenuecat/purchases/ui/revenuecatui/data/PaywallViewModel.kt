@@ -5,6 +5,9 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.material3.ColorScheme
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.State
+import androidx.compose.runtime.mutableStateOf
 import androidx.core.os.LocaleListCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -37,6 +40,7 @@ import java.net.URL
 
 internal interface PaywallViewModel {
     val state: StateFlow<PaywallViewState>
+    val actionInProgress: State<Boolean>
 
     fun refreshStateIfLocaleChanged()
     fun refreshStateIfColorsChanged(colorScheme: ColorScheme)
@@ -65,16 +69,19 @@ internal class PaywallViewModelImpl(
 
     override val state: StateFlow<PaywallViewState>
         get() = _state.asStateFlow()
-
-    private val mode: PaywallViewMode
-        get() = options.mode
+    override val actionInProgress: State<Boolean>
+        get() = _actionInProgress
 
     private val _state: MutableStateFlow<PaywallViewState> = MutableStateFlow(PaywallViewState.Loading)
+    private val _actionInProgress: MutableState<Boolean> = mutableStateOf(false)
     private val _lastLocaleList = MutableStateFlow(getCurrentLocaleList())
     private val _colorScheme = MutableStateFlow(colorScheme)
 
     private val listener: PaywallViewListener?
         get() = options.listener
+
+    private val mode: PaywallViewMode
+        get() = options.mode
 
     init {
         updateState()
@@ -125,6 +132,8 @@ internal class PaywallViewModelImpl(
     }
 
     override fun restorePurchases() {
+        if (verifyNoActionInProgressOrStartAction()) { return }
+
         viewModelScope.launch {
             try {
                 listener?.onRestoreStarted()
@@ -135,6 +144,8 @@ internal class PaywallViewModelImpl(
                 Logger.e("Error restoring purchases: $e")
                 listener?.onRestoreError(e.error)
             }
+
+            finishAction()
         }
     }
 
@@ -144,6 +155,8 @@ internal class PaywallViewModelImpl(
     }
 
     private fun purchasePackage(activity: Activity, packageToPurchase: Package) {
+        if (verifyNoActionInProgressOrStartAction()) { return }
+
         viewModelScope.launch {
             try {
                 listener?.onPurchaseStarted(packageToPurchase)
@@ -154,6 +167,8 @@ internal class PaywallViewModelImpl(
             } catch (e: PurchasesException) {
                 listener?.onPurchaseError(e.error)
             }
+
+            finishAction()
         }
     }
 
@@ -207,5 +222,22 @@ internal class PaywallViewModelImpl(
             displayablePaywall,
             template,
         )
+    }
+
+    /**
+     * @return true if there already was an action in progress
+     */
+    private fun verifyNoActionInProgressOrStartAction(): Boolean {
+        if (_actionInProgress.value) {
+            Logger.d("Ignoring purchase or restore because there already is an action in progress")
+            return true
+        }
+
+        _actionInProgress.value = true
+        return false
+    }
+
+    private fun finishAction() {
+        _actionInProgress.value = false
     }
 }
