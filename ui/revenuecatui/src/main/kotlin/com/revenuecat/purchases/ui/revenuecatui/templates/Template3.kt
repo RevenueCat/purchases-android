@@ -4,12 +4,12 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -44,9 +44,10 @@ import com.revenuecat.purchases.ui.revenuecatui.extensions.introEligibility
 
 private object Template3UIConstants {
     val iconCornerRadius = 8.dp
-    val iconSize = 65.dp
+    val iconSize = 70.dp
     val featureIconSize = 35.dp
     val iconPadding = 5.dp
+    val featureSpacing = 40.dp
 }
 
 @Composable
@@ -66,12 +67,14 @@ internal fun Template3(
                     vertical = UIConstant.defaultVerticalSpacing,
                 ),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(UIConstant.defaultVerticalSpacing, Alignment.CenterVertically),
+            verticalArrangement = Arrangement.spacedBy(UIConstant.defaultVerticalSpacing, Alignment.Top),
         ) {
             Template3MainContent(state)
         }
         Column(
-            modifier = Modifier.align(Alignment.CenterHorizontally),
+            modifier = Modifier
+                .align(Alignment.CenterHorizontally)
+                .padding(bottom = UIConstant.defaultVerticalSpacing),
         ) {
             IntroEligibilityStateView(
                 textWithNoIntroOffer = state.selectedLocalization.offerDetails,
@@ -80,6 +83,7 @@ internal fun Template3(
                 eligibility = state.selectedPackage.value.introEligibility,
                 color = state.templateConfiguration.getCurrentColors().text1,
                 textAlign = TextAlign.Center,
+                style = MaterialTheme.typography.bodyMedium,
             )
         }
         PurchaseButton(state, viewModel)
@@ -88,26 +92,28 @@ internal fun Template3(
 }
 
 @Composable
-private fun Template3MainContent(state: PaywallViewState.Loaded) {
+private fun ColumnScope.Template3MainContent(state: PaywallViewState.Loaded) {
     IconImage(
         uri = state.templateConfiguration.images.iconUri,
         maxWidth = Template3UIConstants.iconSize,
         iconCornerRadius = Template3UIConstants.iconCornerRadius,
+        childModifier = Modifier.padding(top = UIConstant.defaultVerticalSpacing),
     )
     val localizedConfig = state.selectedLocalization
     val colors = state.templateConfiguration.getCurrentColors()
     Markdown(
-        style = MaterialTheme.typography.headlineSmall,
-        fontWeight = FontWeight.Black,
+        style = MaterialTheme.typography.headlineMedium,
+        fontWeight = FontWeight.SemiBold,
         textAlign = TextAlign.Center,
         text = localizedConfig.title,
         color = colors.text1,
     )
-    Spacer(modifier = Modifier.height(UIConstant.defaultVerticalSpacing * 2))
+    Spacer(modifier = Modifier.weight(1f))
     Features(
         features = localizedConfig.features,
         colors = colors,
     )
+    Spacer(modifier = Modifier.weight(1f))
 }
 
 @Composable
@@ -120,7 +126,7 @@ private fun Features(
     Column(
         modifier = Modifier.verticalScroll(rememberScrollState())
             .fillMaxHeight(),
-        verticalArrangement = Arrangement.spacedBy(UIConstant.defaultVerticalSpacing, Alignment.Top),
+        verticalArrangement = Arrangement.spacedBy(Template3UIConstants.featureSpacing, Alignment.Top),
     ) {
         features.forEach { feature ->
             Feature(
