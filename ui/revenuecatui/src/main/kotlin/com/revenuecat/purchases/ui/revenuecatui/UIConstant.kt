@@ -10,6 +10,7 @@ internal object UIConstant {
 
     val footerRoundedBorderHeight = 20.dp
 
+    val defaultCornerRadius = 20.dp
     val defaultPackageCornerRadius = 16.dp
     val defaultPackageBorderWidth = 1.5.dp
 

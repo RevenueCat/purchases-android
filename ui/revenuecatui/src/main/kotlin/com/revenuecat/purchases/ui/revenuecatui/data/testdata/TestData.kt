@@ -25,6 +25,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvi
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.templates.template1
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.templates.template2
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.templates.template3
+import com.revenuecat.purchases.ui.revenuecatui.data.testdata.templates.template4
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ApplicationContext
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toPaywallState
 import kotlinx.coroutines.delay
@@ -128,6 +129,18 @@ internal object TestData {
         ),
         metadata = mapOf(),
         paywall = template3,
+        serverDescription = "",
+    )
+
+    val template4Offering = Offering(
+        identifier = "Template4",
+        availablePackages = listOf(
+            Packages.monthly,
+            Packages.semester,
+            Packages.annual,
+        ),
+        metadata = mapOf(),
+        paywall = template4,
         serverDescription = "",
     )
 
