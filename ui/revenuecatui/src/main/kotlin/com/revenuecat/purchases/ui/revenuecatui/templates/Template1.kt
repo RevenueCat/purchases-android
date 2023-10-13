@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.templates
 
+import android.graphics.Matrix
 import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -13,25 +14,26 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.Outline
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.asAndroidPath
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.LayoutDirection
 import com.revenuecat.purchases.ui.revenuecatui.InternalPaywallView
 import com.revenuecat.purchases.ui.revenuecatui.PaywallViewOptions
 import com.revenuecat.purchases.ui.revenuecatui.UIConstant
@@ -46,7 +48,6 @@ import com.revenuecat.purchases.ui.revenuecatui.data.currentColors
 import com.revenuecat.purchases.ui.revenuecatui.data.selectedLocalization
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.extensions.introEligibility
-import kotlin.math.roundToInt
 
 @Composable
 internal fun Template1(state: PaywallViewState.Loaded, viewModel: PaywallViewModel) {
@@ -116,6 +117,7 @@ private fun ColumnScope.Template1MainContent(state: PaywallViewState.Loaded) {
 
     Column(
         modifier = Modifier
+            .padding(bottom = UIConstant.defaultVerticalSpacing)
             .fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Bottom,
@@ -126,7 +128,7 @@ private fun ColumnScope.Template1MainContent(state: PaywallViewState.Loaded) {
             textWithMultipleIntroOffers = localizedConfig.offerDetailsWithMultipleIntroOffers,
             eligibility = state.selectedPackage.value.introEligibility,
             color = colors.text1,
-            style = MaterialTheme.typography.bodyLarge,
+            style = MaterialTheme.typography.bodyMedium,
             fontWeight = FontWeight.Normal,
             textAlign = TextAlign.Center,
         )
@@ -149,25 +151,34 @@ private fun HeaderImage(uri: Uri?) {
 
 @Composable
 private fun CircleMask(content: @Composable () -> Unit) {
-    var size by remember { mutableStateOf(IntSize(0, 0)) }
-
-    fun circleOffset(size: IntSize): Int {
-        return ((size.width * Template1UIConstants.circleScale - size.width) / 2.0 * -1).roundToInt()
+    fun circleOffsetX(size: Size): Float {
+        return ((size.width * Template1UIConstants.circleScale) - size.width) / 2f * -1f
+    }
+    fun circleOffsetY(size: Size): Float {
+        return ((size.height * Template1UIConstants.circleScale) - size.height) * -1f
     }
 
-    Box(
-        modifier = Modifier
-            .onSizeChanged { size = it }
-            .graphicsLayer(
-                translationY = circleOffset(size).toFloat(),
-                scaleX = Template1UIConstants.circleScale,
-                scaleY = Template1UIConstants.circleScale,
+    val clipShape = object : Shape {
+        override fun createOutline(
+            size: Size,
+            layoutDirection: LayoutDirection,
+            density: Density,
+        ): Outline {
+            val matrix = Matrix()
+            matrix.preScale(Template1UIConstants.circleScale, Template1UIConstants.circleScale)
+            matrix.postTranslate(circleOffsetX(size), circleOffsetY(size))
+
+            return Outline.Generic(
+                Path().apply {
+                    addOval(Rect(offset = Offset.Zero, size))
+                    asAndroidPath().transform(matrix)
+                },
             )
-            .clip(shape = CircleShape),
-    ) {
-        Column {
-            content()
         }
+    }
+
+    Box(modifier = Modifier.clip(shape = clipShape)) {
+        content()
     }
 }
 
