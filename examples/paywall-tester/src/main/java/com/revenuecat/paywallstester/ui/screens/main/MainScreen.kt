@@ -56,7 +56,7 @@ private fun MainNavHost(
 ) {
     NavHost(
         navController,
-        startDestination = Tab.AppInfo.route,
+        startDestination = Tab.Paywalls.route,
         modifier = modifier,
     ) {
         composable(Tab.AppInfo.route) {
