@@ -37,7 +37,7 @@ internal fun PaywallData.Companion.createDefaultForIdentifiers(
         config = PaywallData.Configuration(
             packageIds = packageIdentifiers,
             images = PaywallData.Configuration.Images(
-                background = PaywallData.defaultBackgroundImage,
+                background = PaywallData.defaultBackgroundPlaceholder,
                 icon = PaywallData.defaultAppIconPlaceholder,
             ),
             colors = PaywallData.defaultColors(currentColors),
@@ -55,8 +55,11 @@ internal fun PaywallData.Companion.createDefaultForIdentifiers(
 internal val PaywallData.Companion.defaultTemplate: PaywallTemplate
     get() = PaywallTemplate.TEMPLATE_2
 
-internal val PaywallData.Companion.defaultAppIconPlaceholder: String // TODO-PAYWALLS: use real icon
+internal val PaywallData.Companion.defaultAppIconPlaceholder: String
     get() = "revenuecatui_default_paywall_app_icon"
+
+internal val PaywallData.Companion.defaultBackgroundPlaceholder: String
+    get() = "revenuecatui_default_paywall_background"
 
 // endregion
 
@@ -64,9 +67,6 @@ internal val PaywallData.Companion.defaultAppIconPlaceholder: String // TODO-PAY
 
 private val PaywallData.Companion.revisionID: Int
     get() = -1
-
-private val PaywallData.Companion.defaultBackgroundImage: String
-    get() = "default_background" // TODO-PAYWALLS: make sure this works
 
 private val PaywallData.Companion.defaultLocalization: PaywallData.LocalizedConfiguration
     get() = PaywallData.LocalizedConfiguration(
@@ -82,25 +82,23 @@ private val PaywallData.Companion.defaultTemplateBaseURL: URL
 private fun PaywallData.Companion.defaultColors(
     currentColorScheme: ColorScheme,
 ): PaywallData.Configuration.ColorInformation {
+    val colors = getThemeColors(currentColorScheme)
     return PaywallData.Configuration.ColorInformation(
-        light = getThemeColors(background = PaywallColor(colorInt = Color.White.toArgb()), currentColorScheme),
-        dark = getThemeColors(background = PaywallColor(colorInt = Color.Black.toArgb()), currentColorScheme),
+        light = colors,
+        dark = colors,
     )
 }
 
 // endregion
 
-private fun getThemeColors(
-    background: PaywallColor,
-    currentColorScheme: ColorScheme,
-): PaywallData.Configuration.Colors {
+private fun getThemeColors(currentColorScheme: ColorScheme): PaywallData.Configuration.Colors {
     return PaywallData.Configuration.Colors(
-        background = background,
-        text1 = currentColorScheme.primary.asPaywallColor(),
+        background = currentColorScheme.background.asPaywallColor(),
+        text1 = currentColorScheme.inverseSurface.asPaywallColor(),
         callToActionBackground = currentColorScheme.secondary.asPaywallColor(),
-        callToActionForeground = background,
-        accent1 = currentColorScheme.secondary.asPaywallColor(),
-        accent2 = currentColorScheme.primary.asPaywallColor(),
+        callToActionForeground = currentColorScheme.background.asPaywallColor(),
+        accent1 = currentColorScheme.primary.asPaywallColor(),
+        accent2 = currentColorScheme.inversePrimary.asPaywallColor(),
     )
 }
 
