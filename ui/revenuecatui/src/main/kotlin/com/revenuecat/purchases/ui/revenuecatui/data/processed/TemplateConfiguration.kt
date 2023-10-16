@@ -7,11 +7,11 @@ import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.ui.graphics.Color
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.paywalls.PaywallData
-import com.revenuecat.purchases.ui.revenuecatui.PaywallViewMode
+import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 
 internal data class TemplateConfiguration(
     val template: PaywallTemplate,
-    val mode: PaywallViewMode,
+    val mode: PaywallMode,
     val packages: PackageConfiguration,
     val configuration: PaywallData.Configuration,
     val images: Images,

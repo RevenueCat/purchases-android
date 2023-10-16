@@ -22,15 +22,15 @@ import com.revenuecat.purchases.ui.revenuecatui.composables.DisableTouchesCompos
 import com.revenuecat.purchases.ui.revenuecatui.composables.Fade
 import com.revenuecat.purchases.ui.revenuecatui.composables.PlaceholderDefaults
 import com.revenuecat.purchases.ui.revenuecatui.composables.placeholder
+import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModel
-import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewState
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.PaywallTemplate
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvider
 import com.revenuecat.purchases.ui.revenuecatui.extensions.createDefault
 import com.revenuecat.purchases.ui.revenuecatui.helpers.isInPreviewMode
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toAndroidContext
-import com.revenuecat.purchases.ui.revenuecatui.helpers.toPaywallViewState
+import com.revenuecat.purchases.ui.revenuecatui.helpers.toPaywallState
 import com.revenuecat.purchases.ui.revenuecatui.templates.Template2
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -38,7 +38,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import java.net.URL
 
 @Composable
-internal fun LoadingPaywallView(mode: PaywallViewMode) {
+internal fun LoadingPaywall(mode: PaywallMode) {
     val paywallData: PaywallData = PaywallData.createDefault(
         LoadingPaywallConstants.packages,
         MaterialTheme.colorScheme,
@@ -52,7 +52,7 @@ internal fun LoadingPaywallView(mode: PaywallViewMode) {
         paywall = paywallData,
     )
 
-    val state = offering.toPaywallViewState(
+    val state = offering.toPaywallState(
         VariableDataProvider(
             LocalContext.current.applicationContext.toAndroidContext(),
             isInPreviewMode(),
@@ -66,16 +66,16 @@ internal fun LoadingPaywallView(mode: PaywallViewMode) {
     when (state) {
         // The loading PaywallData is known at compile time
         // and snapshots ensure that these 2 states are impossible.
-        is PaywallViewState.Error,
-        is PaywallViewState.Loading,
+        is PaywallState.Error,
+        is PaywallState.Loading,
         -> Box {}
 
-        is PaywallViewState.Loaded -> LoadingPaywallView(state, LoadingViewModel(state))
+        is PaywallState.Loaded -> LoadingPaywall(state, LoadingViewModel(state))
     }
 }
 
 @Composable
-private fun LoadingPaywallView(state: PaywallViewState.Loaded, viewModel: PaywallViewModel) {
+private fun LoadingPaywall(state: PaywallState.Loaded, viewModel: PaywallViewModel) {
     DisableTouchesComposable {
         // Template
         Template2(
@@ -142,9 +142,9 @@ private object LoadingPaywallConstants {
 }
 
 private class LoadingViewModel(
-    state: PaywallViewState,
+    state: PaywallState,
 ) : PaywallViewModel {
-    override val state: StateFlow<PaywallViewState>
+    override val state: StateFlow<PaywallState>
         get() = _state.asStateFlow()
 
     override val actionInProgress: State<Boolean> = mutableStateOf(false)
@@ -173,6 +173,6 @@ private class LoadingViewModel(
 
 @Preview(showBackground = true)
 @Composable
-internal fun LoadingPaywallViewPreview() {
-    LoadingPaywallView(mode = PaywallViewMode.FULL_SCREEN)
+internal fun LoadingPaywallPreview() {
+    LoadingPaywall(mode = PaywallMode.FULL_SCREEN)
 }

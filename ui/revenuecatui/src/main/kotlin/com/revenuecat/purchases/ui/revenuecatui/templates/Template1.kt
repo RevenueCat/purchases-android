@@ -34,23 +34,23 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
-import com.revenuecat.purchases.ui.revenuecatui.InternalPaywallView
-import com.revenuecat.purchases.ui.revenuecatui.PaywallViewOptions
+import com.revenuecat.purchases.ui.revenuecatui.InternalPaywall
+import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.UIConstant
 import com.revenuecat.purchases.ui.revenuecatui.composables.Footer
 import com.revenuecat.purchases.ui.revenuecatui.composables.IntroEligibilityStateView
 import com.revenuecat.purchases.ui.revenuecatui.composables.Markdown
 import com.revenuecat.purchases.ui.revenuecatui.composables.PurchaseButton
 import com.revenuecat.purchases.ui.revenuecatui.composables.RemoteImage
+import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModel
-import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewState
 import com.revenuecat.purchases.ui.revenuecatui.data.currentColors
 import com.revenuecat.purchases.ui.revenuecatui.data.selectedLocalization
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.extensions.introEligibility
 
 @Composable
-internal fun Template1(state: PaywallViewState.Loaded, viewModel: PaywallViewModel) {
+internal fun Template1(state: PaywallState.Loaded, viewModel: PaywallViewModel) {
     Column(
         modifier = Modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -65,7 +65,7 @@ internal fun Template1(state: PaywallViewState.Loaded, viewModel: PaywallViewMod
 
 @SuppressWarnings("LongMethod")
 @Composable
-private fun ColumnScope.Template1MainContent(state: PaywallViewState.Loaded) {
+private fun ColumnScope.Template1MainContent(state: PaywallState.Loaded) {
     val localizedConfig = state.selectedLocalization
     val colors = state.currentColors
 
@@ -189,7 +189,7 @@ private object Template1UIConstants {
 @Preview(showBackground = true)
 @Composable
 internal fun Template1PaywallPreview() {
-    InternalPaywallView(options = PaywallViewOptions.Builder().setOffering(TestData.template1Offering).build())
+    InternalPaywall(options = PaywallOptions.Builder().setOffering(TestData.template1Offering).build())
 }
 
 @Preview(heightDp = 700, widthDp = 400)

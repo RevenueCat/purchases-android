@@ -25,8 +25,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.paywalls.PaywallData
-import com.revenuecat.purchases.ui.revenuecatui.InternalPaywallView
-import com.revenuecat.purchases.ui.revenuecatui.PaywallViewOptions
+import com.revenuecat.purchases.ui.revenuecatui.InternalPaywall
+import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.UIConstant
 import com.revenuecat.purchases.ui.revenuecatui.composables.Footer
 import com.revenuecat.purchases.ui.revenuecatui.composables.IconImage
@@ -35,8 +35,8 @@ import com.revenuecat.purchases.ui.revenuecatui.composables.Markdown
 import com.revenuecat.purchases.ui.revenuecatui.composables.PaywallIcon
 import com.revenuecat.purchases.ui.revenuecatui.composables.PaywallIconName
 import com.revenuecat.purchases.ui.revenuecatui.composables.PurchaseButton
+import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModel
-import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewState
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.selectedLocalization
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
@@ -52,7 +52,7 @@ private object Template3UIConstants {
 
 @Composable
 internal fun Template3(
-    state: PaywallViewState.Loaded,
+    state: PaywallState.Loaded,
     viewModel: PaywallViewModel,
 ) {
     Column(
@@ -92,7 +92,7 @@ internal fun Template3(
 }
 
 @Composable
-private fun ColumnScope.Template3MainContent(state: PaywallViewState.Loaded) {
+private fun ColumnScope.Template3MainContent(state: PaywallState.Loaded) {
     IconImage(
         uri = state.templateConfiguration.images.iconUri,
         maxWidth = Template3UIConstants.iconSize,
@@ -191,5 +191,5 @@ private fun Feature(
 @Preview(locale = "es-rES", showBackground = true)
 @Composable
 private fun Template3Preview() {
-    InternalPaywallView(options = PaywallViewOptions.Builder().setOffering(TestData.template3Offering).build())
+    InternalPaywall(options = PaywallOptions.Builder().setOffering(TestData.template3Offering).build())
 }

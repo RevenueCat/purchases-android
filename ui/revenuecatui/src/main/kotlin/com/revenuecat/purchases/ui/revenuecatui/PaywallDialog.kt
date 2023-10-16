@@ -55,7 +55,7 @@ private fun DialogScaffold(paywallDialogOptions: PaywallDialogOptions) {
                 .fillMaxSize()
                 .padding(paddingValues),
         ) {
-            PaywallView(paywallDialogOptions.toPaywallViewOptions())
+            Paywall(paywallDialogOptions.toPaywallOptions())
         }
     }
 }

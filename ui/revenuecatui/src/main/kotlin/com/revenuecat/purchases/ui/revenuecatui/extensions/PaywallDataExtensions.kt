@@ -10,15 +10,15 @@ import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.paywalls.PaywallColor
 import com.revenuecat.purchases.paywalls.PaywallData
-import com.revenuecat.purchases.ui.revenuecatui.InternalPaywallView
-import com.revenuecat.purchases.ui.revenuecatui.PaywallViewOptions
+import com.revenuecat.purchases.ui.revenuecatui.InternalPaywall
+import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.PaywallTemplate
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import java.net.URL
 import java.util.Locale
 
 /***
- * Default [PaywallData] to display when attempting to present a PaywallView with an offering that has no paywall
+ * Default [PaywallData] to display when attempting to present a Paywall with an offering that has no paywall
  * configuration, or when that configuration is invalid.
  */
 internal fun PaywallData.Companion.createDefault(
@@ -124,5 +124,5 @@ internal fun Template2PaywallPreview() {
         paywall = paywallData,
         serverDescription = "",
     )
-    InternalPaywallView(options = PaywallViewOptions.Builder().setOffering(template2Offering).build())
+    InternalPaywall(options = PaywallOptions.Builder().setOffering(template2Offering).build())
 }

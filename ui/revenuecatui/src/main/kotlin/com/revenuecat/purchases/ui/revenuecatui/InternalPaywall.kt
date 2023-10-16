@@ -12,10 +12,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModel
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModelFactory
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModelImpl
-import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewState
 import com.revenuecat.purchases.ui.revenuecatui.data.isInFullScreenMode
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.PaywallTemplate
 import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
@@ -26,8 +26,8 @@ import com.revenuecat.purchases.ui.revenuecatui.templates.Template2
 import com.revenuecat.purchases.ui.revenuecatui.templates.Template3
 
 @Composable
-internal fun InternalPaywallView(
-    options: PaywallViewOptions,
+internal fun InternalPaywall(
+    options: PaywallOptions,
     viewModel: PaywallViewModel = getPaywallViewModel(options),
 ) {
     viewModel.refreshStateIfLocaleChanged()
@@ -35,20 +35,20 @@ internal fun InternalPaywallView(
     viewModel.refreshStateIfColorsChanged(colors)
 
     when (val state = viewModel.state.collectAsState().value) {
-        is PaywallViewState.Loading -> {
-            LoadingPaywallView(mode = options.mode)
+        is PaywallState.Loading -> {
+            LoadingPaywall(mode = options.mode)
         }
-        is PaywallViewState.Error -> {
+        is PaywallState.Error -> {
             Text(text = "Error: ${state.errorMessage}")
         }
-        is PaywallViewState.Loaded -> {
-            LoadedPaywallView(state = state, viewModel = viewModel)
+        is PaywallState.Loaded -> {
+            LoadedPaywall(state = state, viewModel = viewModel)
         }
     }
 }
 
 @Composable
-private fun LoadedPaywallView(state: PaywallViewState.Loaded, viewModel: PaywallViewModel) {
+private fun LoadedPaywall(state: PaywallState.Loaded, viewModel: PaywallViewModel) {
     val backgroundColor = state.templateConfiguration.getCurrentColors().background
     Box(
         modifier = Modifier
@@ -67,12 +67,12 @@ private fun LoadedPaywallView(state: PaywallViewState.Loaded, viewModel: Paywall
                     .padding(top = UIConstant.footerRoundedBorderHeight)
             },
     ) {
-        TemplatePaywallView(state = state, viewModel = viewModel)
+        TemplatePaywall(state = state, viewModel = viewModel)
     }
 }
 
 @Composable
-private fun TemplatePaywallView(state: PaywallViewState.Loaded, viewModel: PaywallViewModel) {
+private fun TemplatePaywall(state: PaywallState.Loaded, viewModel: PaywallViewModel) {
     when (state.templateConfiguration.template) {
         PaywallTemplate.TEMPLATE_1 -> Template1(state = state, viewModel = viewModel)
         PaywallTemplate.TEMPLATE_2 -> Template2(state = state, viewModel = viewModel)
@@ -84,7 +84,7 @@ private fun TemplatePaywallView(state: PaywallViewState.Loaded, viewModel: Paywa
 
 @Composable
 private fun getPaywallViewModel(
-    options: PaywallViewOptions,
+    options: PaywallOptions,
 ): PaywallViewModel {
     val applicationContext = LocalContext.current.applicationContext
     return viewModel<PaywallViewModelImpl>(

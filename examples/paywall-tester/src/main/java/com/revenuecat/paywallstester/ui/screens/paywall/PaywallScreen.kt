@@ -11,8 +11,8 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.revenuecat.purchases.ui.revenuecatui.PaywallView
-import com.revenuecat.purchases.ui.revenuecatui.PaywallViewOptions
+import com.revenuecat.purchases.ui.revenuecatui.Paywall
+import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 
 @Composable
 fun PaywallScreen(
@@ -31,8 +31,8 @@ fun PaywallScreen(
                 Text(text = "Error: ${state.errorMessage}")
             }
             is PaywallScreenState.Loaded -> {
-                PaywallView(
-                    PaywallViewOptions.Builder()
+                Paywall(
+                    PaywallOptions.Builder()
                         .setOffering(state.offering)
                         .setListener(viewModel)
                         .build(),

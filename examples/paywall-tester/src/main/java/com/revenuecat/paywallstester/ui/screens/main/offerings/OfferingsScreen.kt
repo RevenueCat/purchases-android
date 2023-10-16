@@ -32,7 +32,7 @@ import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.ui.revenuecatui.PaywallDialog
 import com.revenuecat.purchases.ui.revenuecatui.PaywallDialogOptions
-import com.revenuecat.purchases.ui.revenuecatui.PaywallViewListener
+import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -126,7 +126,7 @@ private fun OfferingsListScreen(
                 },
             )
                 .setOffering(displayPaywallDialogOffering)
-                .setListener(object : PaywallViewListener {
+                .setListener(object : PaywallListener {
                     override fun onPurchaseCompleted(customerInfo: CustomerInfo, storeTransaction: StoreTransaction) {
                         displayPaywallDialogOffering = null
                     }

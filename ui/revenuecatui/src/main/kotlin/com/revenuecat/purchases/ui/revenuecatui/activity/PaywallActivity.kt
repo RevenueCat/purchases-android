@@ -15,15 +15,15 @@ import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.models.StoreTransaction
-import com.revenuecat.purchases.ui.revenuecatui.PaywallView
-import com.revenuecat.purchases.ui.revenuecatui.PaywallViewListener
-import com.revenuecat.purchases.ui.revenuecatui.PaywallViewOptions
+import com.revenuecat.purchases.ui.revenuecatui.Paywall
+import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
+import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 
 /**
- * Wrapper activity around [PaywallView] that allows using it when you are not using Jetpack Compose directly.
+ * Wrapper activity around [Paywall] that allows using it when you are not using Jetpack Compose directly.
  * It receives the [PaywallActivityArgs] as an extra and returns the [PaywallResult] as a result.
  */
-internal class PaywallActivity : ComponentActivity(), PaywallViewListener {
+internal class PaywallActivity : ComponentActivity(), PaywallListener {
     companion object {
         const val ARGS_EXTRA = "paywall_args"
 
@@ -40,7 +40,7 @@ internal class PaywallActivity : ComponentActivity(), PaywallViewListener {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val paywallOptions = PaywallViewOptions.Builder()
+        val paywallOptions = PaywallOptions.Builder()
             .setOfferingId(getArgs()?.offeringId)
             .setListener(this)
             .build()
@@ -48,7 +48,7 @@ internal class PaywallActivity : ComponentActivity(), PaywallViewListener {
             MaterialTheme {
                 Scaffold { paddingValues ->
                     Box(Modifier.fillMaxSize().padding(paddingValues)) {
-                        PaywallView(paywallOptions)
+                        Paywall(paywallOptions)
                     }
                 }
             }
