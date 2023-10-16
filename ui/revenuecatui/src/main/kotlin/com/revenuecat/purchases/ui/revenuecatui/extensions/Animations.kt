@@ -6,8 +6,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.graphics.Color
 import com.revenuecat.purchases.ui.revenuecatui.UIConstant
+import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModel
-import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewState
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 
 @Composable
@@ -22,7 +22,7 @@ internal fun PaywallViewModel.packageButtonActionInProgressOpacityAnimation(): F
 }
 
 @Composable
-internal fun PaywallViewState.Loaded.packageButtonColorAnimation(
+internal fun PaywallState.Loaded.packageButtonColorAnimation(
     packageInfo: TemplateConfiguration.PackageInfo,
     selectedColor: Color,
     unselectedColor: Color,

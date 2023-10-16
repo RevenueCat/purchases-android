@@ -4,7 +4,7 @@ import android.net.Uri
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
-import com.revenuecat.purchases.ui.revenuecatui.PaywallViewMode
+import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockApplicationContext
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.templates.template2
@@ -17,7 +17,7 @@ import java.util.Locale
 @RunWith(AndroidJUnit4::class)
 internal class TemplateConfigurationFactoryTest {
 
-    private val paywallViewMode = PaywallViewMode.FULL_SCREEN
+    private val paywallMode = PaywallMode.FULL_SCREEN
 
     private lateinit var variableDataProvider: VariableDataProvider
 
@@ -28,7 +28,7 @@ internal class TemplateConfigurationFactoryTest {
         variableDataProvider = VariableDataProvider(MockApplicationContext())
         val result = TemplateConfigurationFactory.create(
             variableDataProvider,
-            paywallViewMode,
+            paywallMode,
             TestData.template2,
             listOf(TestData.Packages.weekly, TestData.Packages.monthly, TestData.Packages.annual),
             setOf(
@@ -46,7 +46,7 @@ internal class TemplateConfigurationFactoryTest {
 
     @Test
     fun `template configuration has correct view mode`() {
-        assertThat(template2Configuration.mode).isEqualTo(paywallViewMode)
+        assertThat(template2Configuration.mode).isEqualTo(paywallMode)
     }
 
     @Test

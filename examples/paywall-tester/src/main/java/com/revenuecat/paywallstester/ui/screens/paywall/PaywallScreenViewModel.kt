@@ -11,14 +11,14 @@ import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.awaitOfferings
 import com.revenuecat.purchases.models.StoreTransaction
-import com.revenuecat.purchases.ui.revenuecatui.PaywallViewListener
+import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-interface PaywallScreenViewModel : PaywallViewListener {
+interface PaywallScreenViewModel : PaywallListener {
     companion object {
         const val OFFERING_ID_KEY = "offering_id"
     }

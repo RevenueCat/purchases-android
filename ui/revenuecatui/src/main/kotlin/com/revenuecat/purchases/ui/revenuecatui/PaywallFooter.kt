@@ -18,15 +18,15 @@ import androidx.compose.ui.tooling.preview.Preview
  * Composable offering a minified screen Paywall UI configured from the RevenueCat dashboard.
  * You can pass in your own Composables to be displayed in the main content area.
  *
- * @param options The options to configure the PaywallView if needed.
+ * @param options The options to configure the [Paywall] if needed.
  * @param condensed Whether to condense the composable even more.
- * @param mainContent The content to display in the main area of the PaywallView. We give a [PaddingValues] so you can
+ * @param mainContent The content to display in the main area of the [Paywall]. We give a [PaddingValues] so you can
  * add that padding to your own content. This padding corresponds to the height of the rounded corner area of
  * the paywall.
  */
 @Composable
 fun PaywallFooter(
-    options: PaywallViewOptions = PaywallViewOptions.Builder().build(),
+    options: PaywallOptions = PaywallOptions.Builder().build(),
     condensed: Boolean = false,
     mainContent: @Composable (PaddingValues) -> Unit,
 ) {
@@ -43,8 +43,8 @@ fun PaywallFooter(
         ) {
             mainContent(PaddingValues(bottom = UIConstant.footerRoundedBorderHeight))
         }
-        options.mode = PaywallViewMode.footerMode(condensed)
-        PaywallView(options)
+        options.mode = PaywallMode.footerMode(condensed)
+        Paywall(options)
     }
 }
 

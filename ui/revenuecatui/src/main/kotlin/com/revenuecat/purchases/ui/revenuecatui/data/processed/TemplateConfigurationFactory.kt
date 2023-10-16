@@ -3,13 +3,13 @@ package com.revenuecat.purchases.ui.revenuecatui.data.processed
 import android.net.Uri
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.paywalls.PaywallData
-import com.revenuecat.purchases.ui.revenuecatui.PaywallViewMode
+import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 
 internal object TemplateConfigurationFactory {
     @Suppress("LongParameterList", "ThrowsCount")
     fun create(
         variableDataProvider: VariableDataProvider,
-        mode: PaywallViewMode,
+        mode: PaywallMode,
         paywallData: PaywallData,
         availablePackages: List<Package>,
         activelySubscribedProductIdentifiers: Set<String>,

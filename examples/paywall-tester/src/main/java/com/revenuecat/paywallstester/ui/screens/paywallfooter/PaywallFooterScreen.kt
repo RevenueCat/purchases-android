@@ -20,7 +20,7 @@ import com.revenuecat.paywallstester.ui.screens.paywall.PaywallScreenState
 import com.revenuecat.paywallstester.ui.screens.paywall.PaywallScreenViewModel
 import com.revenuecat.paywallstester.ui.screens.paywall.PaywallScreenViewModelImpl
 import com.revenuecat.purchases.ui.revenuecatui.PaywallFooter
-import com.revenuecat.purchases.ui.revenuecatui.PaywallViewOptions
+import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 
 @Composable
 fun PaywallFooterScreen(
@@ -40,7 +40,7 @@ fun PaywallFooterScreen(
             }
             is PaywallScreenState.Loaded -> {
                 PaywallFooter(
-                    options = PaywallViewOptions.Builder()
+                    options = PaywallOptions.Builder()
                         .setOffering(state.offering)
                         .setListener(viewModel)
                         .build(),

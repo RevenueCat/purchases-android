@@ -27,7 +27,7 @@ import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.ui.revenuecatui.PaywallDialog
 import com.revenuecat.purchases.ui.revenuecatui.PaywallDialogOptions
-import com.revenuecat.purchases.ui.revenuecatui.PaywallViewListener
+import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 
 @Composable
 fun PaywallsScreen(
@@ -80,7 +80,7 @@ fun PaywallsScreen(
                 },
             )
                 .setOffering(displayPaywallDialogOffering)
-                .setListener(object : PaywallViewListener {
+                .setListener(object : PaywallListener {
                     override fun onPurchaseCompleted(customerInfo: CustomerInfo, storeTransaction: StoreTransaction) {
                         displayPaywallDialogOffering = null
                     }
