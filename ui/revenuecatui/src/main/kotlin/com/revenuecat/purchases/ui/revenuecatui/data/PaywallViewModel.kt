@@ -61,15 +61,15 @@ internal class PaywallViewModelImpl(
     preview: Boolean = false,
 ) : ViewModel(), PaywallViewModel {
 
-    val variableDataProvider = VariableDataProvider(applicationContext, preview)
+    private val variableDataProvider = VariableDataProvider(applicationContext, preview)
 
     override val state: StateFlow<PaywallViewState>
         get() = _state.asStateFlow()
 
-    val mode: PaywallViewMode
+    private val mode: PaywallViewMode
         get() = options.mode
 
-    private val _state: MutableStateFlow<PaywallViewState>
+    private val _state: MutableStateFlow<PaywallViewState> = MutableStateFlow(PaywallViewState.Loading)
     private val _lastLocaleList = MutableStateFlow(getCurrentLocaleList())
     private val _colorScheme = MutableStateFlow(colorScheme)
 
@@ -77,12 +77,7 @@ internal class PaywallViewModelImpl(
         get() = options.listener
 
     init {
-        val selectedOffering = options.offeringSelection.offering
-        _state = MutableStateFlow(PaywallViewState.Loading)
-
-        if (selectedOffering == null) {
-            updateState()
-        }
+        updateState()
     }
 
     override fun refreshStateIfLocaleChanged() {
@@ -104,6 +99,7 @@ internal class PaywallViewModelImpl(
             is PaywallViewState.Loaded -> {
                 currentState.selectPackage(packageToSelect)
             }
+
             else -> {
                 Logger.e("Unexpected state trying to select package: $currentState")
             }
@@ -164,7 +160,7 @@ internal class PaywallViewModelImpl(
                 var currentOffering = options.offeringSelection.offering
                 if (currentOffering == null) {
                     val offerings = Purchases.sharedInstance.awaitOfferings()
-                    options.offeringSelection.offeringIdentifier?.let { offerings[it] }
+                    currentOffering = options.offeringSelection.offeringIdentifier?.let { offerings[it] }
                         ?: offerings.current
                 }
 
@@ -186,28 +182,27 @@ internal class PaywallViewModelImpl(
     private fun getCurrentLocaleList(): LocaleListCompat {
         return LocaleListCompat.getDefault()
     }
-}
 
-@Suppress("TooGenericExceptionCaught")
-private fun PaywallViewModelImpl.calculateState(
-    offering: Offering,
-    customerInfo: CustomerInfo,
-    colorScheme: ColorScheme,
-): PaywallViewState {
-    if (offering.availablePackages.isEmpty()) {
-        return PaywallViewState.Error("No packages available")
-    }
-    val (displayablePaywall, template, error) = offering.validatedPaywall(colorScheme)
+    private fun calculateState(
+        offering: Offering,
+        customerInfo: CustomerInfo,
+        colorScheme: ColorScheme,
+    ): PaywallViewState {
+        if (offering.availablePackages.isEmpty()) {
+            return PaywallViewState.Error("No packages available")
+        }
+        val (displayablePaywall, template, error) = offering.validatedPaywall(colorScheme)
 
-    error?.let { validationError ->
-        Logger.w(validationError.associatedErrorString(offering))
-        Logger.w(PaywallValidationErrorStrings.DISPLAYING_DEFAULT)
+        error?.let { validationError ->
+            Logger.w(validationError.associatedErrorString(offering))
+            Logger.w(PaywallValidationErrorStrings.DISPLAYING_DEFAULT)
+        }
+        return offering.toPaywallViewState(
+            variableDataProvider,
+            customerInfo.activeSubscriptions,
+            mode,
+            displayablePaywall,
+            template,
+        )
     }
-    return offering.toPaywallViewState(
-        variableDataProvider,
-        customerInfo.activeSubscriptions,
-        mode,
-        displayablePaywall,
-        template,
-    )
 }
