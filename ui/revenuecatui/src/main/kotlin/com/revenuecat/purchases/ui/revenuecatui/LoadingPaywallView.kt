@@ -5,6 +5,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
@@ -157,6 +159,8 @@ private class LoadingViewModel(
 ) : PaywallViewModel {
     override val state: StateFlow<PaywallViewState>
         get() = _state.asStateFlow()
+
+    override val actionInProgress: State<Boolean> = mutableStateOf(false)
 
     override fun refreshStateIfLocaleChanged() = Unit
     override fun refreshStateIfColorsChanged(colorScheme: ColorScheme) = Unit

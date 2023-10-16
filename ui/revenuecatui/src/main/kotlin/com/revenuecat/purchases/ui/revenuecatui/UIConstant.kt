@@ -13,6 +13,8 @@ internal object UIConstant {
     val defaultPackageCornerRadius = 16.dp
     val defaultPackageBorderWidth = 1.5.dp
 
+    const val purchaseInProgressButtonOpacity = 0.4f
+
     const val defaultAnimationDurationMillis = 200
 
     fun <T> defaultAnimation() = tween<T>(

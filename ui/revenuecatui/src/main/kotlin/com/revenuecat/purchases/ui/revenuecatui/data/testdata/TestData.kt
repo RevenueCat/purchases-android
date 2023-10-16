@@ -2,8 +2,12 @@ package com.revenuecat.purchases.ui.revenuecatui.data.testdata
 
 import android.content.Context
 import androidx.compose.material3.ColorScheme
+import androidx.compose.runtime.State
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
@@ -23,9 +27,11 @@ import com.revenuecat.purchases.ui.revenuecatui.data.testdata.templates.template
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.templates.template3
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ApplicationContext
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toPaywallViewState
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import java.net.URL
 
 internal object TestData {
@@ -240,9 +246,21 @@ internal class MockApplicationContext : ApplicationContext {
 internal class MockViewModel(
     mode: PaywallViewMode = PaywallViewMode.default,
     offering: Offering,
+    private val allowsPurchases: Boolean = false,
 ) : ViewModel(), PaywallViewModel {
     override val state: StateFlow<PaywallViewState>
         get() = _state.asStateFlow()
+    override val actionInProgress: State<Boolean>
+        get() = derivedStateOf { _actionInProgress.value }
+
+    fun loadedState(): PaywallViewState.Loaded? {
+        return when (val state = state.value) {
+            is PaywallViewState.Error -> null
+            is PaywallViewState.Loaded -> state
+            is PaywallViewState.Loading -> null
+        }
+    }
+
     private val _state = MutableStateFlow(
         offering.toPaywallViewState(
             VariableDataProvider(MockApplicationContext()),
@@ -253,6 +271,8 @@ internal class MockViewModel(
         ),
     )
 
+    private val _actionInProgress = mutableStateOf(false)
+
     override fun refreshStateIfLocaleChanged() = Unit
     override fun refreshStateIfColorsChanged(colorScheme: ColorScheme) = Unit
 
@@ -261,14 +281,34 @@ internal class MockViewModel(
     }
 
     override fun purchaseSelectedPackage(context: Context) {
-        error("Can't purchase mock view model")
+        if (allowsPurchases) {
+            simulateActionInProgress()
+        } else {
+            error("Can't purchase mock view model")
+        }
     }
 
     override fun restorePurchases() {
-        error("Can't restore purchases")
+        if (allowsPurchases) {
+            simulateActionInProgress()
+        } else {
+            error("Can't restore purchases")
+        }
     }
 
     override fun openURL(url: URL, context: Context) {
         error("Can't open URL")
+    }
+
+    private fun simulateActionInProgress() {
+        viewModelScope.launch {
+            _actionInProgress.value = true
+            delay(fakePurchaseDelayMillis)
+            _actionInProgress.value = false
+        }
+    }
+
+    private companion object {
+        const val fakePurchaseDelayMillis: Long = 2000
     }
 }
