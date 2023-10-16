@@ -1,8 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="restore_purchases">Restore purchases</string>
+    <string name="restore">Restore</string>
     <string name="terms_and_conditions">Terms and conditions</string>
+    <string name="terms">Terms</string>
     <string name="privacy_policy">Privacy policy</string>
+    <string name="privacy">Privacy</string>
     <string name="annual">Annual</string>
     <string name="semester">6 month</string>
     <string name="quarter">3 month</string>
