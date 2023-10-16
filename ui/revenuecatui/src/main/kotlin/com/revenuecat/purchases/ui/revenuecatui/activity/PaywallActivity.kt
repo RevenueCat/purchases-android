@@ -43,16 +43,14 @@ internal class PaywallActivity : ComponentActivity(), PaywallListener {
     }
 
     private fun getFontProvider(): FontProvider? {
-        return getArgs()?.fonts?.let { fonts ->
-            val fontsMap = fonts.mapValues { entry ->
-                entry.value?.let { fontRes ->
-                    ResourcesCompat.getFont(this, fontRes)?.let { FontFamily(it) }
-                }
+        val fontsMap = getArgs()?.fonts?.mapValues { entry ->
+            entry.value?.let { fontRes ->
+                ResourcesCompat.getFont(this, fontRes)?.let { FontFamily(it) }
             }
-            object : FontProvider {
-                override fun getFont(type: TypographyType): FontFamily? {
-                    return fontsMap[type]
-                }
+        } ?: return null
+        return object : FontProvider {
+            override fun getFont(type: TypographyType): FontFamily? {
+                return fontsMap[type]
             }
         }
     }
