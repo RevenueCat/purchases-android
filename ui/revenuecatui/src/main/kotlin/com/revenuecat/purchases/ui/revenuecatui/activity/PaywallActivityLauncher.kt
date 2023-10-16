@@ -48,6 +48,8 @@ class PaywallActivityLauncher {
     /**
      * Launch the paywall activity if the current user does not have [requiredEntitlementIdentifier] active.
      * @param offering The offering to be shown in the paywall. If null, the current offering will be shown.
+     * @param requiredEntitlementIdentifier the paywall will be displayed only if the current user does not
+     * have this entitlement active.
      */
     @JvmOverloads
     fun launchIfNeeded(
@@ -63,6 +65,7 @@ class PaywallActivityLauncher {
     /**
      * Launch the paywall activity based on whether the result of [shouldDisplayBlock] is true.
      * @param offering The offering to be shown in the paywall. If null, the current offering will be shown.
+     * @param shouldDisplayBlock the paywall will be displayed only if this returns true.
      */
     @JvmOverloads
     fun launchIfNeeded(
