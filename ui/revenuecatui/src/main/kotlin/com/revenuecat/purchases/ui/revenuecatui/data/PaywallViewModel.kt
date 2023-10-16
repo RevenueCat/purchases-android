@@ -124,10 +124,13 @@ internal class PaywallViewModelImpl(
     override fun restorePurchases() {
         viewModelScope.launch {
             try {
+                listener?.onRestoreStarted()
                 val customerInfo = Purchases.sharedInstance.awaitRestore()
                 Logger.i("Restore purchases successful: $customerInfo")
+                listener?.onRestoreCompleted(customerInfo)
             } catch (e: PurchasesException) {
                 Logger.e("Error restoring purchases: $e")
+                listener?.onRestoreError(e.error)
             }
         }
     }
