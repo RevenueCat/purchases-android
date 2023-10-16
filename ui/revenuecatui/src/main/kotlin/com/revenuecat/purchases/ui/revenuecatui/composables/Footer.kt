@@ -1,16 +1,17 @@
 package com.revenuecat.purchases.ui.revenuecatui.composables
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.requiredWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.CircleShape
@@ -20,6 +21,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Alignment.Companion.CenterHorizontally
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -68,7 +70,6 @@ private fun Footer(
         modifier = childModifier
             .fillMaxWidth()
             .height(intrinsicSize = IntrinsicSize.Min)
-            .requiredWidth(intrinsicSize = IntrinsicSize.Min)
             .padding(
                 horizontal = UIConstant.defaultHorizontalPadding,
                 vertical = UIConstant.defaultVerticalSpacing,
@@ -80,10 +81,10 @@ private fun Footer(
 
         if (configuration.displayRestorePurchases) {
             Button(
-                text = stringResource(id = R.string.restore_purchases),
                 color = color,
-                action = { viewModel.restorePurchases() },
-            )
+                R.string.restore_purchases,
+                R.string.restore,
+            ) { viewModel.restorePurchases() }
 
             if (configuration.termsOfServiceURL != null || configuration.privacyURL != null) {
                 Separator(color = color)
@@ -92,10 +93,10 @@ private fun Footer(
 
         configuration.termsOfServiceURL?.let {
             Button(
-                text = stringResource(id = R.string.terms_and_conditions),
                 color = color,
-                action = { viewModel.openURL(it, context) },
-            )
+                R.string.terms_and_conditions,
+                R.string.terms,
+            ) { viewModel.openURL(it, context) }
 
             if (configuration.privacyURL != null) {
                 Separator(color = color)
@@ -104,10 +105,10 @@ private fun Footer(
 
         configuration.privacyURL?.let {
             Button(
-                text = stringResource(id = R.string.privacy_policy),
                 color = color,
-                action = { viewModel.openURL(it, context) },
-            )
+                R.string.privacy_policy,
+                R.string.privacy,
+            ) { viewModel.openURL(it, context) }
         }
     }
 }
@@ -132,20 +133,52 @@ private fun RowScope.Separator(color: Color) {
 
 @Composable
 private fun RowScope.Button(
-    text: String,
     color: Color,
+    @StringRes vararg texts: Int,
     action: () -> Unit,
 ) {
-    Column(modifier = Modifier.weight(1f)) {
-        TextButton(onClick = {
-            action.invoke()
-        }) {
-            Text(
-                text = text,
-                color = color,
-                textAlign = TextAlign.Center,
-                style = FooterConstants.style(),
-                softWrap = true,
+    fun <T> merge(first: List<T>, second: List<T>): List<T> {
+        return first + second
+    }
+
+    Column(
+        modifier = Modifier
+            .weight(1f)
+            .align(Alignment.CenterVertically),
+    ) {
+        TextButton(
+            onClick = action::invoke,
+            contentPadding = PaddingValues(4.dp),
+            modifier = Modifier.align(CenterHorizontally),
+        ) {
+            // Find the first view that fits, starting from the longest text and fitting in one line,
+            // ending with the shortest in multiple lines.
+            AdaptiveComposable(
+                merge(
+                    texts.map {
+                        {
+                            Text(
+                                text = stringResource(it),
+                                color = color,
+                                textAlign = TextAlign.Center,
+                                style = FooterConstants.style(),
+                                softWrap = false,
+                                maxLines = 1,
+                            )
+                        }
+                    },
+                    texts.map {
+                        {
+                            Text(
+                                text = stringResource(it),
+                                color = color,
+                                textAlign = TextAlign.Center,
+                                style = FooterConstants.style(),
+                                softWrap = true,
+                            )
+                        }
+                    },
+                ),
             )
         }
     }
