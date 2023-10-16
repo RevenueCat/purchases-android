@@ -70,10 +70,8 @@ private fun Footer(
         modifier = childModifier
             .fillMaxWidth()
             .height(intrinsicSize = IntrinsicSize.Min)
-            .padding(
-                horizontal = UIConstant.defaultHorizontalPadding,
-                vertical = UIConstant.defaultVerticalSpacing,
-            ),
+            .padding(horizontal = UIConstant.defaultHorizontalPadding)
+            .padding(bottom = UIConstant.defaultVerticalSpacing),
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically,
     ) {
