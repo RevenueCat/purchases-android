@@ -6,10 +6,9 @@ plugins {
 }
 
 
-// Commenting out until the library is ready to be published
-//if (!project.getProperties()["ANDROID_VARIANT_TO_PUBLISH"].contains("customEntitlementComputation")) {
-//    apply plugin: "com.vanniktech.maven.publish"
-//}
+if (!project.getProperties()["ANDROID_VARIANT_TO_PUBLISH"].contains("customEntitlementComputation")) {
+    apply plugin: "com.vanniktech.maven.publish"
+}
 
 apply from: "$rootProject.projectDir/library.gradle"
 
