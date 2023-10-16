@@ -1,6 +1,6 @@
 package com.revenuecat.purchases.ui.revenuecatui
 
-internal enum class PaywallViewMode {
+internal enum class PaywallMode {
     FULL_SCREEN,
     FOOTER,
     FOOTER_CONDENSED,
@@ -9,7 +9,7 @@ internal enum class PaywallViewMode {
     companion object {
         val default = FULL_SCREEN
 
-        fun footerMode(condensed: Boolean): PaywallViewMode {
+        fun footerMode(condensed: Boolean): PaywallMode {
             return if (condensed) FOOTER_CONDENSED else FOOTER
         }
     }

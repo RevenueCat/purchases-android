@@ -22,12 +22,12 @@ internal sealed class OfferingSelection {
         }
 }
 
-class PaywallViewOptions(builder: Builder) {
+class PaywallOptions(builder: Builder) {
 
     internal val offeringSelection: OfferingSelection
     val shouldDisplayDismissButton: Boolean
-    val listener: PaywallViewListener?
-    internal var mode: PaywallViewMode = PaywallViewMode.default
+    val listener: PaywallListener?
+    internal var mode: PaywallMode = PaywallMode.default
 
     init {
         this.offeringSelection = builder.offeringSelection
@@ -38,7 +38,7 @@ class PaywallViewOptions(builder: Builder) {
     class Builder {
         internal var offeringSelection: OfferingSelection = OfferingSelection.None
         internal var shouldDisplayDismissButton: Boolean = false
-        internal var listener: PaywallViewListener? = null
+        internal var listener: PaywallListener? = null
 
         fun setOffering(offering: Offering?) = apply {
             this.offeringSelection = offering?.let { OfferingSelection.OfferingType(it) }
@@ -54,12 +54,12 @@ class PaywallViewOptions(builder: Builder) {
             this.shouldDisplayDismissButton = shouldDisplayDismissButton
         }
 
-        fun setListener(listener: PaywallViewListener?) = apply {
+        fun setListener(listener: PaywallListener?) = apply {
             this.listener = listener
         }
 
-        fun build(): PaywallViewOptions {
-            return PaywallViewOptions(this)
+        fun build(): PaywallOptions {
+            return PaywallOptions(this)
         }
     }
 }

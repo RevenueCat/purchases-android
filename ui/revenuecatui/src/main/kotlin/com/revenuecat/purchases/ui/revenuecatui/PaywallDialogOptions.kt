@@ -10,7 +10,7 @@ class PaywallDialogOptions(builder: Builder) {
     val shouldDisplayBlock: ((CustomerInfo) -> Boolean)?
     val offering: Offering?
     val shouldDisplayDismissButton: Boolean
-    val listener: PaywallViewListener?
+    val listener: PaywallListener?
 
     init {
         this.shouldDisplayBlock = builder.shouldDisplayBlock
@@ -20,8 +20,8 @@ class PaywallDialogOptions(builder: Builder) {
         this.listener = builder.listener
     }
 
-    fun toPaywallViewOptions(): PaywallViewOptions {
-        return PaywallViewOptions.Builder()
+    fun toPaywallOptions(): PaywallOptions {
+        return PaywallOptions.Builder()
             .setOffering(offering)
             .setShouldDisplayDismissButton(shouldDisplayDismissButton)
             .setListener(listener)
@@ -34,7 +34,7 @@ class PaywallDialogOptions(builder: Builder) {
         internal var shouldDisplayBlock: ((CustomerInfo) -> Boolean)? = null
         internal var offering: Offering? = null
         internal var shouldDisplayDismissButton: Boolean = true
-        internal var listener: PaywallViewListener? = null
+        internal var listener: PaywallListener? = null
 
         /**
          * Allows to configure whether to display the paywall dialog depending on operations on the CustomerInfo
@@ -60,7 +60,7 @@ class PaywallDialogOptions(builder: Builder) {
             this.shouldDisplayDismissButton = shouldDisplayDismissButton
         }
 
-        fun setListener(listener: PaywallViewListener?) = apply {
+        fun setListener(listener: PaywallListener?) = apply {
             this.listener = listener
         }
 

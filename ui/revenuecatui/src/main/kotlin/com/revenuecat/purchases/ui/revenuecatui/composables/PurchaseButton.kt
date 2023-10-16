@@ -21,8 +21,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import com.revenuecat.purchases.ui.revenuecatui.UIConstant
+import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModel
-import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewState
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockViewModel
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
@@ -30,7 +30,7 @@ import com.revenuecat.purchases.ui.revenuecatui.extensions.introEligibility
 
 @Composable
 internal fun PurchaseButton(
-    state: PaywallViewState.Loaded,
+    state: PaywallState.Loaded,
     viewModel: PaywallViewModel,
     childModifier: Modifier = Modifier,
 ) {

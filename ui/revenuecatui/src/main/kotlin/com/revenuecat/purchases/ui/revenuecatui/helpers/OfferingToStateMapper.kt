@@ -3,9 +3,9 @@ package com.revenuecat.purchases.ui.revenuecatui.helpers
 import androidx.compose.material3.ColorScheme
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.paywalls.PaywallData
-import com.revenuecat.purchases.ui.revenuecatui.PaywallViewMode
+import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import com.revenuecat.purchases.ui.revenuecatui.composables.PaywallIconName
-import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewState
+import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.PaywallTemplate
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfigurationFactory
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvider
@@ -59,13 +59,13 @@ private fun PaywallData.validate(): Result<PaywallTemplate> {
 }
 
 @Suppress("ReturnCount", "TooGenericExceptionCaught")
-internal fun Offering.toPaywallViewState(
+internal fun Offering.toPaywallState(
     variableDataProvider: VariableDataProvider,
     activelySubscribedProductIdentifiers: Set<String>,
-    mode: PaywallViewMode,
+    mode: PaywallMode,
     validatedPaywallData: PaywallData,
     template: PaywallTemplate,
-): PaywallViewState {
+): PaywallState {
     val createTemplateConfigurationResult = TemplateConfigurationFactory.create(
         variableDataProvider = variableDataProvider,
         mode = mode,
@@ -75,9 +75,9 @@ internal fun Offering.toPaywallViewState(
         template,
     )
     val templateConfiguration = createTemplateConfigurationResult.getOrElse {
-        return PaywallViewState.Error(it.message ?: "Unknown error")
+        return PaywallState.Error(it.message ?: "Unknown error")
     }
-    return PaywallViewState.Loaded(
+    return PaywallState.Loaded(
         templateConfiguration = templateConfiguration,
         selectedPackage = templateConfiguration.packages.default,
     )

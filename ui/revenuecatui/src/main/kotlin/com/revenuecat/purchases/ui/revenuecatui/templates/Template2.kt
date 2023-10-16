@@ -29,9 +29,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.revenuecat.purchases.ui.revenuecatui.InternalPaywallView
-import com.revenuecat.purchases.ui.revenuecatui.PaywallViewMode
-import com.revenuecat.purchases.ui.revenuecatui.PaywallViewOptions
+import com.revenuecat.purchases.ui.revenuecatui.InternalPaywall
+import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
+import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.UIConstant
 import com.revenuecat.purchases.ui.revenuecatui.composables.Footer
 import com.revenuecat.purchases.ui.revenuecatui.composables.IconImage
@@ -41,8 +41,8 @@ import com.revenuecat.purchases.ui.revenuecatui.composables.PaywallBackground
 import com.revenuecat.purchases.ui.revenuecatui.composables.PaywallIcon
 import com.revenuecat.purchases.ui.revenuecatui.composables.PaywallIconName
 import com.revenuecat.purchases.ui.revenuecatui.composables.PurchaseButton
+import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModel
-import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewState
 import com.revenuecat.purchases.ui.revenuecatui.data.currentColors
 import com.revenuecat.purchases.ui.revenuecatui.data.isInFullScreenMode
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
@@ -65,7 +65,7 @@ private object Template2UIConstants {
  */
 @Composable
 internal fun Template2(
-    state: PaywallViewState.Loaded,
+    state: PaywallState.Loaded,
     viewModel: PaywallViewModel,
     childModifier: Modifier = Modifier,
 ) {
@@ -86,7 +86,7 @@ internal fun Template2(
 
 @Composable
 private fun ColumnScope.Template2MainContent(
-    state: PaywallViewState.Loaded,
+    state: PaywallState.Loaded,
     viewModel: PaywallViewModel,
     childModifier: Modifier,
 ) {
@@ -144,7 +144,7 @@ private fun ColumnScope.Template2MainContent(
 @SuppressWarnings("LongMethod")
 @Composable
 private fun ColumnScope.SelectPackageButton(
-    state: PaywallViewState.Loaded,
+    state: PaywallState.Loaded,
     packageInfo: TemplateConfiguration.PackageInfo,
     viewModel: PaywallViewModel,
     childModifier: Modifier,
@@ -231,8 +231,8 @@ private fun CheckmarkBox(isSelected: Boolean, colors: TemplateConfiguration.Colo
 @Preview(showBackground = true, locale = "es-rES")
 @Composable
 private fun Template2PaywallPreview() {
-    InternalPaywallView(
-        options = PaywallViewOptions.Builder()
+    InternalPaywall(
+        options = PaywallOptions.Builder()
             .setOffering(TestData.template2Offering)
             .build(),
     )
@@ -242,9 +242,9 @@ private fun Template2PaywallPreview() {
 @Preview(showBackground = true, locale = "es-rES")
 @Composable
 private fun Template2PaywallFooterPreview() {
-    val options = PaywallViewOptions.Builder()
+    val options = PaywallOptions.Builder()
         .setOffering(TestData.template2Offering)
         .build()
-    options.mode = PaywallViewMode.FOOTER
-    InternalPaywallView(options)
+    options.mode = PaywallMode.FOOTER
+    InternalPaywall(options)
 }
