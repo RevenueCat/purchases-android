@@ -10,8 +10,8 @@ internal data class PaywallActivityArgs(
     val offeringId: String? = null,
     val fonts: Map<TypographyType, Int?>? = null,
 ) : Parcelable {
-    constructor(offeringId: String? = null, provider: FontResourceProvider?) : this(
+    constructor(offeringId: String? = null, fontProvider: FontResourceProvider?) : this(
         offeringId,
-        provider?.let { TypographyType.values().associateBy({ it }, { provider.getFontResourceId(it) }) },
+        fontProvider?.let { TypographyType.values().associateBy({ it }, { fontProvider.getFontResourceId(it) }) },
     )
 }

@@ -46,7 +46,7 @@ class PaywallActivityLauncher {
         activityResultLauncher.launch(
             PaywallActivityArgs(
                 offeringId = offering?.identifier,
-                provider = fontResourceProvider,
+                fontProvider = fontResourceProvider,
             ),
         )
     }
