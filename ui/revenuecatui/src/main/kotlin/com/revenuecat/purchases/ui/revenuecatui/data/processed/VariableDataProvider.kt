@@ -63,6 +63,11 @@ internal class VariableDataProvider(
             ?: periodName(rcPackage)
     }
 
+    fun subscriptionDurationInMonths(rcPackage: Package, locale: Locale): String? {
+        return rcPackage.product.period?.normalizedMonths()?.localizedPeriod(locale)
+            ?: periodName(rcPackage)
+    }
+
     fun firstIntroductoryOfferDuration(rcPackage: Package, locale: Locale): String? {
         return getFirstIntroOfferToApply(rcPackage)?.billingPeriod?.localizedPeriod(locale)
     }
@@ -100,5 +105,18 @@ internal class VariableDataProvider(
             return option.introPhase
         }
         return null
+    }
+}
+
+/**
+ * @return an equivalent [Period] using [Period.Unit.MONTH] whenever possible.
+ */
+@SuppressWarnings("MagicNumber")
+private fun Period.normalizedMonths(): Period {
+    return if (unit == Period.Unit.YEAR) {
+        val months = value * 12
+        return Period(months, Period.Unit.MONTH, "P${months}M")
+    } else {
+        this
     }
 }
