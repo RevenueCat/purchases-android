@@ -5,6 +5,7 @@ import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivityLauncher
 /**
  * Implement this interface to provide custom fonts to the [PaywallActivityLauncher].
  * If you don't, the default material3 theme fonts will be used.
+ * If you only want to use a single [PaywallFontFamily] for all text styles use [CustomParcelizableFontProvider].
  * Use [FontProvider] instead if you are using Compose with [PaywallView] or [PaywallDialog].
  */
 interface ParcelizableFontProvider {
