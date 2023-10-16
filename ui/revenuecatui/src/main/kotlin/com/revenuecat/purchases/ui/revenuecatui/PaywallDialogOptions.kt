@@ -2,6 +2,7 @@ package com.revenuecat.purchases.ui.revenuecatui
 
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Offering
+import com.revenuecat.purchases.ui.revenuecatui.helpers.shouldDisplayBlockForEntitlementIdentifier
 
 class PaywallDialogOptions(builder: Builder) {
 
@@ -47,9 +48,7 @@ class PaywallDialogOptions(builder: Builder) {
          */
         fun setRequiredEntitlementIdentifier(requiredEntitlementIdentifier: String?) = apply {
             requiredEntitlementIdentifier?.let { requiredEntitlementIdentifier ->
-                this.shouldDisplayBlock = { customerInfo ->
-                    customerInfo.entitlements[requiredEntitlementIdentifier]?.isActive != true
-                }
+                this.shouldDisplayBlock = shouldDisplayBlockForEntitlementIdentifier(requiredEntitlementIdentifier)
             }
         }
 
