@@ -9,7 +9,6 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import com.revenuecat.purchases.Offering
@@ -19,6 +18,7 @@ import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.TestStoreProduct
 import com.revenuecat.purchases.paywalls.PaywallData
+import com.revenuecat.purchases.ui.revenuecatui.composables.DisableTouchesComposable
 import com.revenuecat.purchases.ui.revenuecatui.composables.Fade
 import com.revenuecat.purchases.ui.revenuecatui.composables.PlaceholderDefaults
 import com.revenuecat.purchases.ui.revenuecatui.composables.placeholder
@@ -76,7 +76,7 @@ internal fun LoadingPaywallView(mode: PaywallViewMode) {
 
 @Composable
 private fun LoadingPaywallView(state: PaywallViewState.Loaded, viewModel: PaywallViewModel) {
-    Box {
+    DisableTouchesComposable {
         // Template
         Template2(
             state = state,
@@ -90,19 +90,6 @@ private fun LoadingPaywallView(state: PaywallViewState.Loaded, viewModel: Paywal
                     ),
                     color = LoadingPaywallConstants.placeholderColor,
                 ),
-        )
-
-        // Overlay to capture touches
-        Box(
-            Modifier
-                .matchParentSize()
-                .pointerInput(Unit) {
-                    awaitPointerEventScope {
-                        while (true) {
-                            awaitPointerEvent()
-                        }
-                    }
-                },
         )
     }
 }

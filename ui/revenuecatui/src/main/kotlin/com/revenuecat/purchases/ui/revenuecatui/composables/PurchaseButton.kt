@@ -34,13 +34,15 @@ internal fun PurchaseButton(
     viewModel: PaywallViewModel,
     childModifier: Modifier = Modifier,
 ) {
-    PurchaseButton(
-        colors = state.templateConfiguration.getCurrentColors(),
-        packages = state.templateConfiguration.packages,
-        selectedPackage = state.selectedPackage,
-        viewModel = viewModel,
-        childModifier = childModifier,
-    )
+    DisableTouchesComposable(shouldDisable = viewModel.actionInProgress.value) {
+        PurchaseButton(
+            colors = state.templateConfiguration.getCurrentColors(),
+            packages = state.templateConfiguration.packages,
+            selectedPackage = state.selectedPackage,
+            viewModel = viewModel,
+            childModifier = childModifier,
+        )
+    }
 }
 
 @Composable
