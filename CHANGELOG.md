@@ -1,3 +1,7 @@
+## 7.0.1
+### Bugfixes
+* Optimize billing client connection retries (#1300) via Toni Rico (@tonidero)
+
 ## 7.0.0
 **RevenueCat Android SDK v7** is here!! 😻
 
