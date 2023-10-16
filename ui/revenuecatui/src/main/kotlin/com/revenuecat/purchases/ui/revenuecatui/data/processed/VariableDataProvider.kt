@@ -108,6 +108,9 @@ internal class VariableDataProvider(
     }
 }
 
+/**
+ * @return an equivalent [Period] using [Period.Unit.MONTH] whenever possible.
+ */
 @SuppressWarnings("MagicNumber")
 private fun Period.normalizedMonths(): Period {
     return if (unit == Period.Unit.YEAR) {
