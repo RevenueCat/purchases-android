@@ -1,6 +1,5 @@
 package com.revenuecat.purchases.ui.revenuecatui.templates
 
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -22,9 +21,9 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -51,6 +50,8 @@ import com.revenuecat.purchases.ui.revenuecatui.data.selectedLocalization
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
 import com.revenuecat.purchases.ui.revenuecatui.extensions.introEligibility
+import com.revenuecat.purchases.ui.revenuecatui.extensions.packageButtonActionInProgressOpacityAnimation
+import com.revenuecat.purchases.ui.revenuecatui.extensions.packageButtonColorAnimation
 
 private object Template2UIConstants {
     val maxIconWidth = 140.dp
@@ -151,15 +152,16 @@ private fun ColumnScope.SelectPackageButton(
     val colors = state.templateConfiguration.getCurrentColors()
     val isSelected = packageInfo == state.selectedPackage.value
 
-    val background by animateColorAsState(
-        targetValue = if (isSelected) colors.accent2 else colors.background,
-        animationSpec = UIConstant.defaultAnimation(),
-        label = "Template 2 - ${packageInfo.rcPackage.identifier} background",
+    val buttonAlpha = viewModel.packageButtonActionInProgressOpacityAnimation()
+    val background = state.packageButtonColorAnimation(
+        packageInfo = packageInfo,
+        selectedColor = colors.accent2,
+        unselectedColor = colors.background,
     )
-    val textColor by animateColorAsState(
-        targetValue = if (isSelected) colors.accent1 else colors.text1,
-        animationSpec = UIConstant.defaultAnimation(),
-        label = "Template 2 - ${packageInfo.rcPackage.identifier}: text color",
+    val textColor = state.packageButtonColorAnimation(
+        packageInfo = packageInfo,
+        selectedColor = colors.accent1,
+        unselectedColor = colors.text1,
     )
 
     val border = if (isSelected) {
@@ -173,6 +175,7 @@ private fun ColumnScope.SelectPackageButton(
     Button(
         modifier = childModifier
             .fillMaxWidth()
+            .alpha(buttonAlpha)
             .align(Alignment.Start),
         onClick = { viewModel.selectPackage(packageInfo) },
         colors = ButtonDefaults.buttonColors(containerColor = background, contentColor = textColor),
