@@ -246,6 +246,7 @@ internal class MockViewModel(
     private val _state = MutableStateFlow(
         offering.toPaywallViewState(
             VariableDataProvider(MockApplicationContext()),
+            setOf(),
             mode,
             offering.paywall!!,
             PaywallTemplate.fromId(offering.paywall!!.templateName)!!,
