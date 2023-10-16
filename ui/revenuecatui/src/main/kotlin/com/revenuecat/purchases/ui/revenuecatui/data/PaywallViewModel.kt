@@ -8,11 +8,13 @@ import androidx.compose.material3.ColorScheme
 import androidx.core.os.LocaleListCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PurchaseParams
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesException
+import com.revenuecat.purchases.awaitCustomerInfo
 import com.revenuecat.purchases.awaitOfferings
 import com.revenuecat.purchases.awaitPurchase
 import com.revenuecat.purchases.awaitRestore
@@ -63,37 +65,32 @@ internal class PaywallViewModelImpl(
 
     override val state: StateFlow<PaywallViewState>
         get() = _state.asStateFlow()
-    private val _state: MutableStateFlow<PaywallViewState>
-    private val _lastLocaleList = MutableStateFlow(getCurrentLocaleList())
-    private val _colorScheme = MutableStateFlow(colorScheme)
-
-    private val offering: Offering?
-        get() = options.offeringSelection.offering
-
-    private val listener: PaywallViewListener?
-        get() = options.listener
 
     private val mode: PaywallViewMode
         get() = options.mode
 
+    private val _state: MutableStateFlow<PaywallViewState> = MutableStateFlow(PaywallViewState.Loading)
+    private val _lastLocaleList = MutableStateFlow(getCurrentLocaleList())
+    private val _colorScheme = MutableStateFlow(colorScheme)
+
+    private val listener: PaywallViewListener?
+        get() = options.listener
+
     init {
-        _state = MutableStateFlow(offering?.calculateState() ?: PaywallViewState.Loading)
-        if (offering == null) {
-            updateOffering()
-        }
+        updateState()
     }
 
     override fun refreshStateIfLocaleChanged() {
         if (_lastLocaleList.value != getCurrentLocaleList()) {
             _lastLocaleList.value = getCurrentLocaleList()
-            refreshState()
+            updateState()
         }
     }
 
     override fun refreshStateIfColorsChanged(colorScheme: ColorScheme) {
         if (_colorScheme.value != colorScheme) {
             _colorScheme.value = colorScheme
-            refreshState()
+            updateState()
         }
     }
 
@@ -102,6 +99,7 @@ internal class PaywallViewModelImpl(
             is PaywallViewState.Loaded -> {
                 currentState.selectPackage(packageToSelect)
             }
+
             else -> {
                 Logger.e("Unexpected state trying to select package: $currentState")
             }
@@ -112,7 +110,12 @@ internal class PaywallViewModelImpl(
         val activity = context.getActivity() ?: error("Activity not found")
         when (val currentState = _state.value) {
             is PaywallViewState.Loaded -> {
-                purchasePackage(activity, currentState.selectedPackage.value.rcPackage)
+                val selectedPackage = currentState.selectedPackage.value
+                if (!selectedPackage.currentlySubscribed) {
+                    purchasePackage(activity, selectedPackage.rcPackage)
+                } else {
+                    Logger.d("Ignoring purchase request for already subscribed package")
+                }
             }
 
             else -> {
@@ -140,15 +143,6 @@ internal class PaywallViewModelImpl(
         context.startActivity(intent)
     }
 
-    private fun refreshState() {
-        val currentOffering = offering
-        if (currentOffering == null) {
-            updateOffering()
-        } else {
-            _state.value = currentOffering.calculateState()
-        }
-    }
-
     private fun purchasePackage(activity: Activity, packageToPurchase: Package) {
         viewModelScope.launch {
             try {
@@ -163,16 +157,24 @@ internal class PaywallViewModelImpl(
         }
     }
 
-    private fun updateOffering() {
+    private fun updateState() {
         viewModelScope.launch {
             try {
-                val offerings = Purchases.sharedInstance.awaitOfferings()
-                val currentOffering = options.offeringSelection.offeringIdentifier?.let { offerings[it] }
-                    ?: offerings.current
+                var currentOffering = options.offeringSelection.offering
+                if (currentOffering == null) {
+                    val offerings = Purchases.sharedInstance.awaitOfferings()
+                    currentOffering = options.offeringSelection.offeringIdentifier?.let { offerings[it] }
+                        ?: offerings.current
+                }
+
                 if (currentOffering == null) {
                     _state.value = PaywallViewState.Error("No offering or current offering")
                 } else {
-                    _state.value = currentOffering.calculateState()
+                    _state.value = calculateState(
+                        currentOffering,
+                        Purchases.sharedInstance.awaitCustomerInfo(),
+                        _colorScheme.value,
+                    )
                 }
             } catch (e: PurchasesException) {
                 _state.value = PaywallViewState.Error(e.toString())
@@ -180,21 +182,30 @@ internal class PaywallViewModelImpl(
         }
     }
 
-    @Suppress("TooGenericExceptionCaught")
-    private fun Offering.calculateState(): PaywallViewState {
-        if (availablePackages.isEmpty()) {
-            return PaywallViewState.Error("No packages available")
-        }
-        val (displayablePaywall, template, error) = validatedPaywall(_colorScheme.value)
-
-        error?.let { validationError ->
-            Logger.w(validationError.associatedErrorString(this))
-            Logger.w(PaywallValidationErrorStrings.DISPLAYING_DEFAULT)
-        }
-        return toPaywallViewState(variableDataProvider, mode, displayablePaywall, template)
-    }
-
     private fun getCurrentLocaleList(): LocaleListCompat {
         return LocaleListCompat.getDefault()
+    }
+
+    private fun calculateState(
+        offering: Offering,
+        customerInfo: CustomerInfo,
+        colorScheme: ColorScheme,
+    ): PaywallViewState {
+        if (offering.availablePackages.isEmpty()) {
+            return PaywallViewState.Error("No packages available")
+        }
+        val (displayablePaywall, template, error) = offering.validatedPaywall(colorScheme)
+
+        error?.let { validationError ->
+            Logger.w(validationError.associatedErrorString(offering))
+            Logger.w(PaywallValidationErrorStrings.DISPLAYING_DEFAULT)
+        }
+        return offering.toPaywallViewState(
+            variableDataProvider,
+            customerInfo.activeSubscriptions,
+            mode,
+            displayablePaywall,
+            template,
+        )
     }
 }
