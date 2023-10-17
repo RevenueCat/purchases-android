@@ -2,6 +2,7 @@ package com.revenuecat.purchases.ui.revenuecatui
 
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Offering
+import com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider
 import com.revenuecat.purchases.ui.revenuecatui.helpers.shouldDisplayBlockForEntitlementIdentifier
 
 class PaywallDialogOptions(builder: Builder) {
@@ -10,6 +11,7 @@ class PaywallDialogOptions(builder: Builder) {
     val shouldDisplayBlock: ((CustomerInfo) -> Boolean)?
     val offering: Offering?
     val shouldDisplayDismissButton: Boolean
+    val fontProvider: FontProvider?
     val listener: PaywallListener?
 
     init {
@@ -17,13 +19,15 @@ class PaywallDialogOptions(builder: Builder) {
         this.dismissRequest = builder.dismissRequest
         this.offering = builder.offering
         this.shouldDisplayDismissButton = builder.shouldDisplayDismissButton
+        this.fontProvider = builder.fontProvider
         this.listener = builder.listener
     }
 
-    fun toPaywallOptions(): PaywallOptions {
+    internal fun toPaywallOptions(): PaywallOptions {
         return PaywallOptions.Builder()
             .setOffering(offering)
             .setShouldDisplayDismissButton(shouldDisplayDismissButton)
+            .setFontProvider(fontProvider)
             .setListener(listener)
             .build()
     }
@@ -34,6 +38,7 @@ class PaywallDialogOptions(builder: Builder) {
         internal var shouldDisplayBlock: ((CustomerInfo) -> Boolean)? = null
         internal var offering: Offering? = null
         internal var shouldDisplayDismissButton: Boolean = true
+        internal var fontProvider: FontProvider? = null
         internal var listener: PaywallListener? = null
 
         /**
@@ -58,6 +63,10 @@ class PaywallDialogOptions(builder: Builder) {
 
         fun setShouldDisplayDismissButton(shouldDisplayDismissButton: Boolean) = apply {
             this.shouldDisplayDismissButton = shouldDisplayDismissButton
+        }
+
+        fun setFontProvider(fontProvider: FontProvider?) = apply {
+            this.fontProvider = fontProvider
         }
 
         fun setListener(listener: PaywallListener?) = apply {

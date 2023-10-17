@@ -11,6 +11,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontFamily
+import androidx.core.content.res.ResourcesCompat
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
@@ -18,6 +20,8 @@ import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.ui.revenuecatui.Paywall
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
+import com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider
+import com.revenuecat.purchases.ui.revenuecatui.fonts.TypographyType
 
 /**
  * Wrapper activity around [Paywall] that allows using it when you are not using Jetpack Compose directly.
@@ -38,10 +42,24 @@ internal class PaywallActivity : ComponentActivity(), PaywallListener {
         }
     }
 
+    private fun getFontProvider(): FontProvider? {
+        val fontsMap = getArgs()?.fonts?.mapValues { entry ->
+            entry.value?.let { fontRes ->
+                ResourcesCompat.getFont(this, fontRes)?.let { FontFamily(it) }
+            }
+        } ?: return null
+        return object : FontProvider {
+            override fun getFont(type: TypographyType): FontFamily? {
+                return fontsMap[type]
+            }
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val paywallOptions = PaywallOptions.Builder()
             .setOfferingId(getArgs()?.offeringId)
+            .setFontProvider(getFontProvider())
             .setListener(this)
             .build()
         setContent {

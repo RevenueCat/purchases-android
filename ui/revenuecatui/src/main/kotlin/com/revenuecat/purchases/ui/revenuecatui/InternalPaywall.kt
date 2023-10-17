@@ -19,6 +19,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModelImpl
 import com.revenuecat.purchases.ui.revenuecatui.data.isInFullScreenMode
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.PaywallTemplate
 import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
+import com.revenuecat.purchases.ui.revenuecatui.fonts.PaywallTheme
 import com.revenuecat.purchases.ui.revenuecatui.helpers.isInPreviewMode
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toAndroidContext
 import com.revenuecat.purchases.ui.revenuecatui.templates.Template1
@@ -30,19 +31,23 @@ internal fun InternalPaywall(
     options: PaywallOptions,
     viewModel: PaywallViewModel = getPaywallViewModel(options),
 ) {
-    viewModel.refreshStateIfLocaleChanged()
-    val colors = MaterialTheme.colorScheme
-    viewModel.refreshStateIfColorsChanged(colors)
+    PaywallTheme(fontProvider = options.fontProvider) {
+        viewModel.refreshStateIfLocaleChanged()
+        val colors = MaterialTheme.colorScheme
+        viewModel.refreshStateIfColorsChanged(colors)
 
-    when (val state = viewModel.state.collectAsState().value) {
-        is PaywallState.Loading -> {
-            LoadingPaywall(mode = options.mode)
-        }
-        is PaywallState.Error -> {
-            Text(text = "Error: ${state.errorMessage}")
-        }
-        is PaywallState.Loaded -> {
-            LoadedPaywall(state = state, viewModel = viewModel)
+        when (val state = viewModel.state.collectAsState().value) {
+            is PaywallState.Loading -> {
+                LoadingPaywall(mode = options.mode)
+            }
+
+            is PaywallState.Error -> {
+                Text(text = "Error: ${state.errorMessage}")
+            }
+
+            is PaywallState.Loaded -> {
+                LoadedPaywall(state = state, viewModel = viewModel)
+            }
         }
     }
 }
