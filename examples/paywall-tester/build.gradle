@@ -1,6 +1,13 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.ksp)
+    alias(libs.plugins.emergetools)
+}
+
+emerge {
+    // Emerge uses the EMERGE_API_TOKEN env variable by default, so no need to set this explicitly, this is just for example purposes
+    apiToken.set(System.getenv("EMERGE_API_TOKEN"))
 }
 
 apply from: "$rootProject.projectDir/base-application.gradle"
@@ -41,23 +48,27 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
     }
     kotlinOptions {
-        jvmTarget = '1.8'
+        jvmTarget = JavaVersion.VERSION_17.toString()
     }
     buildFeatures {
         compose true
     }
     composeOptions {
-        kotlinCompilerExtensionVersion '1.4.0-alpha02'
+        kotlinCompilerExtensionVersion '1.4.0'
     }
     packaging {
         resources {
             excludes += '/META-INF/{AL2.0,LGPL2.1}'
         }
     }
+}
+
+kotlin {
+    jvmToolchain(17)
 }
 
 dependencies {
@@ -81,4 +92,9 @@ dependencies {
     implementation libs.compose.ui.google.fonts
     debugImplementation libs.compose.ui.tooling
     debugImplementation libs.androidx.test.compose.manifest
+
+    implementation "com.emergetools.snapshots:snapshots-annotations:0.8.1"
+
+    androidTestImplementation "com.emergetools.snapshots:snapshots:0.8.1"
+    ksp "com.emergetools.snapshots:snapshots-processor:0.8.1"
 }

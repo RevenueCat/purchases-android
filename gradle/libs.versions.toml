@@ -36,6 +36,8 @@ window = "1.1.0"
 commonmark = "0.21.0"
 activity-compose = "1.7.2"
 fragment = "1.6.1"
+emergetools = "2.1.3"
+ksp = "1.8.0-1.0.9" # We are still using kotlin 1.8.0
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
@@ -50,6 +52,8 @@ kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", versi
 kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover"}
 mavenPublish = { id = "com.vanniktech.maven.publish", version.ref = "mavenPublish" }
 paparazzi = { id = "app.cash.paparazzi", version.ref = "paparrazzi" }
+ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+emergetools = { id = "com.emergetools.android" , version.ref = "emergetools" }
 
 [libraries]
 androidx-appcompat = { module = "androidx.appcompat:appcompat", version.ref = "appcompat" }

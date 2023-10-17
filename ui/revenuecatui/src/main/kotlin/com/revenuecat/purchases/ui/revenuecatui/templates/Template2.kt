@@ -312,7 +312,7 @@ private fun CheckmarkBox(isSelected: Boolean, colors: TemplateConfiguration.Colo
 @Preview(showBackground = true, locale = "en-rUS")
 @Preview(showBackground = true, locale = "es-rES")
 @Composable
-private fun Template2PaywallPreview() {
+fun Template2PaywallPreview() {
     InternalPaywall(
         options = PaywallOptions.Builder(dismissRequest = {}).build(),
         viewModel = MockViewModel(offering = TestData.template2Offering),
@@ -323,7 +323,7 @@ private fun Template2PaywallPreview() {
 @Preview(showBackground = true, locale = "en-rUS")
 @Preview(showBackground = true, locale = "es-rES")
 @Composable
-private fun Template2PaywallFooterPreview() {
+fun Template2PaywallFooterPreview() {
     InternalPaywall(
         options = PaywallOptions.Builder(dismissRequest = {}).build(),
         viewModel = MockViewModel(mode = PaywallMode.FOOTER, offering = TestData.template2Offering),

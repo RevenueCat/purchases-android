@@ -3,8 +3,8 @@ plugins {
     alias libs.plugins.kotlin.android
     alias libs.plugins.kotlin.serialization
     alias libs.plugins.kotlin.parcelize
+    alias libs.plugins.ksp
 }
-
 
 if (!project.getProperties()["ANDROID_VARIANT_TO_PUBLISH"].contains("customEntitlementComputation")) {
     apply plugin: "com.vanniktech.maven.publish"
@@ -33,13 +33,17 @@ android {
         compose true
     }
     composeOptions {
-        kotlinCompilerExtensionVersion '1.4.0-alpha02'
+        kotlinCompilerExtensionVersion '1.4.0'
     }
     packaging {
         resources {
             excludes += '/META-INF/{AL2.0,LGPL2.1}'
         }
     }
+}
+
+kotlin {
+    jvmToolchain(17)
 }
 
 dependencies {
@@ -68,6 +72,11 @@ dependencies {
     implementation libs.compose.ui.google.fonts
     debugImplementation libs.compose.ui.tooling
     debugImplementation libs.androidx.test.compose.manifest
+
+    androidTestImplementation "com.emergetools.snapshots:snapshots:0.8.1"
+    // For Compose @Preview snapshot generation from the main source set:
+    ksp "com.emergetools.snapshots:snapshots-processor:0.8.1"
+    kspAndroidTest "com.emergetools.snapshots:snapshots-processor:0.8.1"
 
     testImplementation libs.bundles.test
     testImplementation libs.coroutines.test
