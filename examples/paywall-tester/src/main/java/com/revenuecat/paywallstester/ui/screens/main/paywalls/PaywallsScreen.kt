@@ -22,18 +22,21 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.revenuecat.paywallstester.SamplePaywalls
 import com.revenuecat.paywallstester.SamplePaywallsLoader
+import com.revenuecat.paywallstester.ui.theme.googleFont
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.ui.revenuecatui.PaywallDialog
 import com.revenuecat.purchases.ui.revenuecatui.PaywallDialogOptions
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
+import com.revenuecat.purchases.ui.revenuecatui.fonts.CustomFontProvider
+import com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider
 
 @Composable
 fun PaywallsScreen(
     samplePaywallsLoader: SamplePaywallsLoader = SamplePaywallsLoader(),
 ) {
-    var displayPaywallDialogOffering by remember { mutableStateOf<Offering?>(null) }
+    var displayPaywallState by remember { mutableStateOf<DisplayPaywallState>(DisplayPaywallState.None) }
 
     LazyColumn {
         items(SamplePaywalls.SampleTemplate.values()) { template ->
@@ -46,7 +49,7 @@ fun PaywallsScreen(
                 ButtonWithEmoji(
                     onClick = {
                         val offering = samplePaywallsLoader.offeringForTemplate(template)
-                        displayPaywallDialogOffering = offering
+                        displayPaywallState = DisplayPaywallState.FullScreen(offering)
                     },
                     emoji = "\uD83D\uDCF1",
                     label = "Full screen",
@@ -64,34 +67,44 @@ fun PaywallsScreen(
                     enabled = false,
                 )
                 ButtonWithEmoji(
-                    onClick = { },
+                    onClick = {
+                        val offering = samplePaywallsLoader.offeringForTemplate(template)
+                        displayPaywallState = DisplayPaywallState.FullScreen(offering, CustomFontProvider(googleFont))
+                    },
                     emoji = "\uD83C\uDD70️",
-                    label = "Custom font (coming soon)",
-                    enabled = false,
+                    label = "Custom font",
                 )
             }
         }
     }
-    if (displayPaywallDialogOffering != null) {
+    val currentState = displayPaywallState
+    if (currentState is DisplayPaywallState.FullScreen) {
         PaywallDialog(
-            PaywallDialogOptions.Builder(
-                dismissRequest = {
-                    displayPaywallDialogOffering = null
-                },
-            )
-                .setOffering(displayPaywallDialogOffering)
+            PaywallDialogOptions.Builder(dismissRequest = {
+                displayPaywallState = DisplayPaywallState.None
+            })
+                .setOffering(currentState.offering)
                 .setListener(object : PaywallListener {
                     override fun onPurchaseCompleted(customerInfo: CustomerInfo, storeTransaction: StoreTransaction) {
-                        displayPaywallDialogOffering = null
+                        displayPaywallState = DisplayPaywallState.None
                     }
                 })
+                .setFontProvider(currentState.fontProvider)
                 .build(),
         )
     }
 }
 
+private sealed class DisplayPaywallState {
+    object None : DisplayPaywallState()
+    data class FullScreen(
+        val offering: Offering? = null,
+        val fontProvider: FontProvider? = null,
+    ) : DisplayPaywallState()
+}
+
 @Composable
-fun ButtonWithEmoji(
+private fun ButtonWithEmoji(
     emoji: String,
     label: String,
     onClick: () -> Unit,

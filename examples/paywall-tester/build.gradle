@@ -78,6 +78,7 @@ dependencies {
     implementation libs.compose.material
     implementation libs.compose.window.size
     implementation libs.navigation.compose
+    implementation libs.compose.ui.google.fonts
     debugImplementation libs.compose.ui.tooling
     debugImplementation libs.androidx.test.compose.manifest
 }
