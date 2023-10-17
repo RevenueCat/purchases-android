@@ -1,17 +1,18 @@
 package com.revenuecat.purchases.ui.revenuecatui.activity
 
 import android.os.Parcelable
-import com.revenuecat.purchases.ui.revenuecatui.fonts.FontResourceProvider
+import com.revenuecat.purchases.ui.revenuecatui.fonts.ParcelizableFontProvider
+import com.revenuecat.purchases.ui.revenuecatui.fonts.PaywallFontFamily
 import com.revenuecat.purchases.ui.revenuecatui.fonts.TypographyType
 import kotlinx.parcelize.Parcelize
 
 @Parcelize
 internal data class PaywallActivityArgs(
     val offeringId: String? = null,
-    val fonts: Map<TypographyType, Int?>? = null,
+    val fonts: Map<TypographyType, PaywallFontFamily?>? = null,
 ) : Parcelable {
-    constructor(offeringId: String? = null, fontProvider: FontResourceProvider?) : this(
+    constructor(offeringId: String? = null, fontProvider: ParcelizableFontProvider?) : this(
         offeringId,
-        fontProvider?.let { TypographyType.values().associateBy({ it }, { fontProvider.getFontResourceId(it) }) },
+        fontProvider?.let { TypographyType.values().associateBy({ it }, { fontProvider.getFont(it) }) },
     )
 }

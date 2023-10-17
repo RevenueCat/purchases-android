@@ -11,8 +11,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
-import androidx.core.content.res.ResourcesCompat
+import androidx.compose.ui.text.googlefonts.Font
+import androidx.compose.ui.text.googlefonts.GoogleFont
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
@@ -21,6 +23,8 @@ import com.revenuecat.purchases.ui.revenuecatui.Paywall
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider
+import com.revenuecat.purchases.ui.revenuecatui.fonts.GoogleFontProvider
+import com.revenuecat.purchases.ui.revenuecatui.fonts.PaywallFont
 import com.revenuecat.purchases.ui.revenuecatui.fonts.TypographyType
 
 /**
@@ -43,10 +47,23 @@ internal class PaywallActivity : ComponentActivity(), PaywallListener {
     }
 
     private fun getFontProvider(): FontProvider? {
-        val fontsMap = getArgs()?.fonts?.mapValues { entry ->
-            entry.value?.let { fontRes ->
-                ResourcesCompat.getFont(this, fontRes)?.let { FontFamily(it) }
+        val googleFontProviders = mutableMapOf<GoogleFontProvider, GoogleFont.Provider>()
+        val fontsMap = getArgs()?.fonts?.mapValues { (_, fontFamily) ->
+            val fonts = fontFamily?.fonts?.map { font ->
+                when (font) {
+                    is PaywallFont.ResourceFont -> Font(font.resourceId, font.fontWeight, font.fontStyle)
+                    is PaywallFont.GoogleFont -> {
+                        val googleFontProvider = font.fontProvider
+                        val provider = googleFontProviders.getOrElse(googleFontProvider) {
+                            val googleProvider = googleFontProvider.toGoogleProvider()
+                            googleFontProviders[googleFontProvider] = googleProvider
+                            googleProvider
+                        }
+                        Font(GoogleFont(font.fontName), provider, font.fontWeight, font.fontStyle)
+                    }
+                }
             }
+            fonts?.let { FontFamily(it) }
         } ?: return null
         return object : FontProvider {
             override fun getFont(type: TypographyType): FontFamily? {
