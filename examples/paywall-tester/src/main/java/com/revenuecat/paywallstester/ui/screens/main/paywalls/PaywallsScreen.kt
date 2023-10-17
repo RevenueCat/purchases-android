@@ -22,18 +22,27 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.revenuecat.paywallstester.SamplePaywalls
 import com.revenuecat.paywallstester.SamplePaywallsLoader
+import com.revenuecat.paywallstester.ui.theme.googleFont
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.ui.revenuecatui.PaywallDialog
 import com.revenuecat.purchases.ui.revenuecatui.PaywallDialogOptions
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
+import com.revenuecat.purchases.ui.revenuecatui.fonts.CustomFontProvider
+import com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider
 
 @Composable
 fun PaywallsScreen(
     samplePaywallsLoader: SamplePaywallsLoader = SamplePaywallsLoader(),
 ) {
     var displayPaywallDialogOffering by remember { mutableStateOf<Offering?>(null) }
+    var fontProvider by remember { mutableStateOf<FontProvider?>(null) }
+
+    fun dismissDialog() {
+        fontProvider = null
+        displayPaywallDialogOffering = null
+    }
 
     LazyColumn {
         items(SamplePaywalls.SampleTemplate.values()) { template ->
@@ -64,34 +73,34 @@ fun PaywallsScreen(
                     enabled = false,
                 )
                 ButtonWithEmoji(
-                    onClick = { },
+                    onClick = {
+                        val offering = samplePaywallsLoader.offeringForTemplate(template)
+                        fontProvider = CustomFontProvider(googleFont)
+                        displayPaywallDialogOffering = offering
+                    },
                     emoji = "\uD83C\uDD70️",
-                    label = "Custom font (coming soon)",
-                    enabled = false,
+                    label = "Custom font",
                 )
             }
         }
     }
     if (displayPaywallDialogOffering != null) {
         PaywallDialog(
-            PaywallDialogOptions.Builder(
-                dismissRequest = {
-                    displayPaywallDialogOffering = null
-                },
-            )
+            PaywallDialogOptions.Builder(dismissRequest = ::dismissDialog)
                 .setOffering(displayPaywallDialogOffering)
                 .setListener(object : PaywallListener {
                     override fun onPurchaseCompleted(customerInfo: CustomerInfo, storeTransaction: StoreTransaction) {
-                        displayPaywallDialogOffering = null
+                        dismissDialog()
                     }
                 })
+                .setFontProvider(fontProvider)
                 .build(),
         )
     }
 }
 
 @Composable
-fun ButtonWithEmoji(
+private fun ButtonWithEmoji(
     emoji: String,
     label: String,
     onClick: () -> Unit,
