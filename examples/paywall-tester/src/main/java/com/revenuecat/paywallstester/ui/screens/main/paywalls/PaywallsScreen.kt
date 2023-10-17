@@ -36,13 +36,7 @@ import com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider
 fun PaywallsScreen(
     samplePaywallsLoader: SamplePaywallsLoader = SamplePaywallsLoader(),
 ) {
-    var displayPaywallDialogOffering by remember { mutableStateOf<Offering?>(null) }
-    var fontProvider by remember { mutableStateOf<FontProvider?>(null) }
-
-    fun dismissDialog() {
-        fontProvider = null
-        displayPaywallDialogOffering = null
-    }
+    var displayPaywallState by remember { mutableStateOf<DisplayPaywallState>(DisplayPaywallState.None) }
 
     LazyColumn {
         items(SamplePaywalls.SampleTemplate.values()) { template ->
@@ -55,7 +49,7 @@ fun PaywallsScreen(
                 ButtonWithEmoji(
                     onClick = {
                         val offering = samplePaywallsLoader.offeringForTemplate(template)
-                        displayPaywallDialogOffering = offering
+                        displayPaywallState = DisplayPaywallState.FullScreen(offering)
                     },
                     emoji = "\uD83D\uDCF1",
                     label = "Full screen",
@@ -75,8 +69,7 @@ fun PaywallsScreen(
                 ButtonWithEmoji(
                     onClick = {
                         val offering = samplePaywallsLoader.offeringForTemplate(template)
-                        fontProvider = CustomFontProvider(googleFont)
-                        displayPaywallDialogOffering = offering
+                        displayPaywallState = DisplayPaywallState.FullScreen(offering, CustomFontProvider(googleFont))
                     },
                     emoji = "\uD83C\uDD70️",
                     label = "Custom font",
@@ -84,19 +77,30 @@ fun PaywallsScreen(
             }
         }
     }
-    if (displayPaywallDialogOffering != null) {
+    val currentState = displayPaywallState
+    if (currentState is DisplayPaywallState.FullScreen) {
         PaywallDialog(
-            PaywallDialogOptions.Builder(dismissRequest = ::dismissDialog)
-                .setOffering(displayPaywallDialogOffering)
+            PaywallDialogOptions.Builder(dismissRequest = {
+                displayPaywallState = DisplayPaywallState.None
+            })
+                .setOffering(currentState.offering)
                 .setListener(object : PaywallListener {
                     override fun onPurchaseCompleted(customerInfo: CustomerInfo, storeTransaction: StoreTransaction) {
-                        dismissDialog()
+                        displayPaywallState = DisplayPaywallState.None
                     }
                 })
-                .setFontProvider(fontProvider)
+                .setFontProvider(currentState.fontProvider)
                 .build(),
         )
     }
+}
+
+private sealed class DisplayPaywallState {
+    object None : DisplayPaywallState()
+    data class FullScreen(
+        val offering: Offering? = null,
+        val fontProvider: FontProvider? = null,
+    ) : DisplayPaywallState()
 }
 
 @Composable
