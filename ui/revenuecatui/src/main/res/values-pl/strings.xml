@@ -13,7 +13,7 @@
     <string name="monthly">Miesięczny</string>
     <string name="weekly">Co tydzień</string>
     <string name="lifetime">Dożywotni</string>
-    <string name="package_discount">%1$d% zniżki</string>
+    <string name="package_discount">%1$d%% zniżki</string>
     <string name="continue_cta">Kontynuować</string>
     <string name="default_offer_details_with_intro_offer">Rozpocznij okres próbny {{ sub_offer_duration }}, a następnie {{ total_price_and_per_month }}.</string>
 </resources>

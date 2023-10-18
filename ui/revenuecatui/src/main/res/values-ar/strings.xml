@@ -13,7 +13,7 @@
     <string name="monthly">شهريا</string>
     <string name="weekly">أسبوعي</string>
     <string name="lifetime">حياة</string>
-    <string name="package_discount">خصم %1$d%</string>
+    <string name="package_discount">خصم %1$d%%</string>
     <string name="continue_cta">يكمل</string>
     <string name="default_offer_details_with_intro_offer">ابدأ الفترة التجريبية التي تبلغ {{ sub_offer_duration }}، ثم {{ Total_price_and_per_month }}.</string>
 </resources>

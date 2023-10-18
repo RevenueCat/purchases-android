@@ -13,7 +13,7 @@
     <string name="monthly">Mjesečno</string>
     <string name="weekly">Tjedni</string>
     <string name="lifetime">Doživotno</string>
-    <string name="package_discount">%1$d% popusta</string>
+    <string name="package_discount">%1$d%% popusta</string>
     <string name="continue_cta">Nastaviti</string>
     <string name="default_offer_details_with_intro_offer">Započnite probno razdoblje od {{ sub_offer_duration }}, a zatim {{ total_price_and_per_month }}.</string>
 </resources>

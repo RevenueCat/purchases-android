@@ -13,7 +13,7 @@
     <string name="monthly">Mensile</string>
     <string name="weekly">settimanalmente</string>
     <string name="lifetime">Tutta la vita</string>
-    <string name="package_discount">Sconto del %1$d%</string>
+    <string name="package_discount">Sconto del %1$d%%</string>
     <string name="continue_cta">Continua</string>
     <string name="default_offer_details_with_intro_offer">Inizia la tua prova di {{ sub_offer_duration }}, poi {{ total_price_and_per_month }}.</string>
 </resources>

@@ -13,7 +13,7 @@
     <string name="monthly">Месечно</string>
     <string name="weekly">Ежеседмично</string>
     <string name="lifetime">Живот</string>
-    <string name="package_discount">%1$d% намаление</string>
+    <string name="package_discount">%1$d%% намаление</string>
     <string name="continue_cta">продължи</string>
     <string name="default_offer_details_with_intro_offer">Започнете своя пробен период от {{ sub_offer_duration }}, след което {{ total_price_and_per_month }}.</string>
 </resources>

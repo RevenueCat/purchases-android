@@ -13,7 +13,7 @@
     <string name="monthly">יַרחוֹן</string>
     <string name="weekly">שְׁבוּעִי</string>
     <string name="lifetime">לכל החיים</string>
-    <string name="package_discount">%1$d% הנחה</string>
+    <string name="package_discount">%1$d%% הנחה</string>
     <string name="continue_cta">לְהַמשִׁיך</string>
     <string name="default_offer_details_with_intro_offer">התחל את תקופת הניסיון של {{ sub_offer_duration }} ולאחר מכן {{ total_price_and_per_month }}.</string>
 </resources>

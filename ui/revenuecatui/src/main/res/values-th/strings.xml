@@ -13,7 +13,7 @@
     <string name="monthly">รายเดือน</string>
     <string name="weekly">รายสัปดาห์</string>
     <string name="lifetime">อายุการใช้งาน</string>
-    <string name="package_discount">ลด %1$d%</string>
+    <string name="package_discount">ลด %1$d%%</string>
     <string name="continue_cta">ดำเนินการต่อ</string>
     <string name="default_offer_details_with_intro_offer">เริ่มทดลองใช้ {{ sub_offer_duration }} จากนั้นจ่ายเป็น {{ Total_price_and_per_month }}</string>
 </resources>

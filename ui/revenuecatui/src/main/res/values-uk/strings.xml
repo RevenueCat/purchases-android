@@ -13,7 +13,7 @@
     <string name="monthly">Щомісяця</string>
     <string name="weekly">Щотижня</string>
     <string name="lifetime">Час життя</string>
-    <string name="package_discount">Знижка %1$d%</string>
+    <string name="package_discount">Знижка %1$d%%</string>
     <string name="continue_cta">Продовжити</string>
     <string name="default_offer_details_with_intro_offer">Розпочніть {{ sub_offer_duration }} пробний період, а потім {{ total_price_and_per_month }}.</string>
 </resources>

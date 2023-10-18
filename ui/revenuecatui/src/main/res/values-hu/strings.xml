@@ -13,7 +13,7 @@
     <string name="monthly">Havi</string>
     <string name="weekly">Heti</string>
     <string name="lifetime">Élettartam</string>
-    <string name="package_discount">%1$d% kedvezménnyel</string>
+    <string name="package_discount">%1$d%% kedvezménnyel</string>
     <string name="continue_cta">Folytatni</string>
     <string name="default_offer_details_with_intro_offer">Indítsa el a {{ sub_offer_duration }} próbaidőszakot, majd {{ total_price_and_per_month }}.</string>
 </resources>

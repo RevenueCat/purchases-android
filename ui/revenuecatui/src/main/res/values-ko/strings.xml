@@ -13,7 +13,7 @@
     <string name="monthly">월간 간행물</string>
     <string name="weekly">주간</string>
     <string name="lifetime">일생</string>
-    <string name="package_discount">%1$d% 할인</string>
+    <string name="package_discount">%1$d%% 할인</string>
     <string name="continue_cta">계속하다</string>
     <string name="default_offer_details_with_intro_offer">{{ sub_offer_duration }} 무료 체험을 시작한 후 {{ total_price_and_per_month }}를 시작하세요.</string>
 </resources>

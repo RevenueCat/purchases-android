@@ -13,7 +13,7 @@
     <string name="monthly">毎月</string>
     <string name="weekly">毎週</string>
     <string name="lifetime">一生</string>
-    <string name="package_discount">%1$d%オフ</string>
+    <string name="package_discount">%1$d%%オフ</string>
     <string name="continue_cta">続く</string>
     <string name="default_offer_details_with_intro_offer">{{ sub_offer_duration }} トライアルを開始してから、{{ total_price_and_per_month }} を開始してください。</string>
 </resources>

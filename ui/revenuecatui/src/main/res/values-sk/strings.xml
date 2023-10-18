@@ -13,7 +13,7 @@
     <string name="monthly">Mesačne</string>
     <string name="weekly">Týždenne</string>
     <string name="lifetime">Život</string>
-    <string name="package_discount">%1$d% zľava</string>
+    <string name="package_discount">%1$d%% zľava</string>
     <string name="continue_cta">ďalej</string>
     <string name="default_offer_details_with_intro_offer">Začnite skúšobnú verziu {{ sub_offer_duration }}, potom {{ total_price_and_per_month }}.</string>
 </resources>

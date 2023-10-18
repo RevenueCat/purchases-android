@@ -13,7 +13,7 @@
     <string name="monthly">Μηνιαίο</string>
     <string name="weekly">Εβδομαδιαίος</string>
     <string name="lifetime">Διάρκεια Ζωής</string>
-    <string name="package_discount">Έκπτωση %1$d%</string>
+    <string name="package_discount">Έκπτωση %1$d%%</string>
     <string name="continue_cta">Να συνεχίσει</string>
     <string name="default_offer_details_with_intro_offer">Ξεκινήστε τη δοκιμή {{ sub_offer_duration }} και μετά {{ total_price_and_per_month }}.</string>
 </resources>

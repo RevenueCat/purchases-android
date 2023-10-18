@@ -13,7 +13,7 @@
     <string name="monthly">hàng tháng</string>
     <string name="weekly">hàng tuần</string>
     <string name="lifetime">Cả đời</string>
-    <string name="package_discount">giảm giá %1$d%</string>
+    <string name="package_discount">giảm giá %1$d%%</string>
     <string name="continue_cta">Tiếp tục</string>
     <string name="default_offer_details_with_intro_offer">Bắt đầu dùng thử {{ sub_offer_duration }}, sau đó là {{ Total_price_and_per_month }}.</string>
 </resources>

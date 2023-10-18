@@ -13,7 +13,7 @@
     <string name="monthly">Bulanan</string>
     <string name="weekly">Setiap minggu</string>
     <string name="lifetime">Seumur hidup</string>
-    <string name="package_discount">%1$d% diskaun</string>
+    <string name="package_discount">%1$d%% diskaun</string>
     <string name="continue_cta">teruskan</string>
     <string name="default_offer_details_with_intro_offer">Mulakan percubaan {{ sub_offer_duration }} anda, kemudian {{ total_price_and_per_month }}.</string>
 </resources>
