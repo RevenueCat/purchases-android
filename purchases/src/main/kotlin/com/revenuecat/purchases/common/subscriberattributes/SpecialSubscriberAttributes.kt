@@ -27,6 +27,7 @@ internal enum class ReservedSubscriberAttribute(val value: String) {
     FB_ANON_ID("\$fbAnonId"),
     MPARTICLE_ID("\$mparticleId"),
     ONESIGNAL_ID("\$onesignalId"),
+    ONESIGNAL_USER_ID("\$onesignalUserId"),
     AIRSHIP_CHANNEL_ID("\$airshipChannelId"),
     CLEVER_TAP_ID("\$clevertapId"),
 
@@ -73,6 +74,7 @@ internal sealed class SubscriberAttributeKey(val backendKey: String) {
     sealed class IntegrationIds(backendKey: ReservedSubscriberAttribute) : SubscriberAttributeKey(backendKey.value) {
         object MixpanelDistinctId : IntegrationIds(ReservedSubscriberAttribute.MIXPANEL_DISTINCT_ID)
         object OneSignal : IntegrationIds(ReservedSubscriberAttribute.ONESIGNAL_ID)
+        object OneSignalUserId : IntegrationIds(ReservedSubscriberAttribute.ONESIGNAL_USER_ID)
         object Airship : IntegrationIds(ReservedSubscriberAttribute.AIRSHIP_CHANNEL_ID)
         object FirebaseAppInstanceId : IntegrationIds(ReservedSubscriberAttribute.FIREBASE_APP_INSTANCE_ID)
     }
