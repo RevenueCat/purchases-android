@@ -67,7 +67,7 @@ private fun Footer(
     val context = LocalContext.current
 
     Row(
-        modifier = childModifier
+        modifier = Modifier
             .fillMaxWidth()
             .height(intrinsicSize = IntrinsicSize.Min)
             .padding(horizontal = UIConstant.defaultHorizontalPadding)
@@ -80,6 +80,7 @@ private fun Footer(
         if (configuration.displayRestorePurchases) {
             Button(
                 color = color,
+                childModifier = childModifier,
                 R.string.restore_purchases,
                 R.string.restore,
             ) { viewModel.restorePurchases() }
@@ -92,6 +93,7 @@ private fun Footer(
         configuration.termsOfServiceURL?.let {
             Button(
                 color = color,
+                childModifier = childModifier,
                 R.string.terms_and_conditions,
                 R.string.terms,
             ) { viewModel.openURL(it, context) }
@@ -104,6 +106,7 @@ private fun Footer(
         configuration.privacyURL?.let {
             Button(
                 color = color,
+                childModifier = childModifier,
                 R.string.privacy_policy,
                 R.string.privacy,
             ) { viewModel.openURL(it, context) }
@@ -132,6 +135,7 @@ private fun RowScope.Separator(color: Color) {
 @Composable
 private fun RowScope.Button(
     color: Color,
+    childModifier: Modifier,
     @StringRes vararg texts: Int,
     action: () -> Unit,
 ) {
@@ -162,6 +166,7 @@ private fun RowScope.Button(
                                 style = FooterConstants.style(),
                                 softWrap = false,
                                 maxLines = 1,
+                                modifier = childModifier
                             )
                         }
                     },
@@ -173,6 +178,7 @@ private fun RowScope.Button(
                                 textAlign = TextAlign.Center,
                                 style = FooterConstants.style(),
                                 softWrap = true,
+                                modifier = childModifier
                             )
                         }
                     },

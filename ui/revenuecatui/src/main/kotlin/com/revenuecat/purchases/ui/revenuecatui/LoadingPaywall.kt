@@ -2,6 +2,7 @@ package com.revenuecat.purchases.ui.revenuecatui
 
 import android.content.Context
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -84,8 +85,9 @@ private fun LoadingPaywall(state: PaywallState.Loaded, viewModel: PaywallViewMod
             childModifier = Modifier
                 .placeholder(
                     visible = true,
+                    shape = RoundedCornerShape(UIConstant.defaultPackageCornerRadius),
                     highlight = Fade(
-                        highlightColor = LoadingPaywallConstants.placeholderColor.copy(alpha = 0.5f),
+                        highlightColor = LoadingPaywallConstants.placeholderColor,
                         animationSpec = PlaceholderDefaults.fadeAnimationSpec,
                     ),
                     color = LoadingPaywallConstants.placeholderColor,
@@ -97,7 +99,8 @@ private fun LoadingPaywall(state: PaywallState.Loaded, viewModel: PaywallViewMod
 private object LoadingPaywallConstants {
     const val offeringIdentifier = "loading_offering"
 
-    val placeholderColor = Color.Gray
+    const val placeholderAlpha = 0.5f
+    val placeholderColor = Color.Gray.copy(alpha = placeholderAlpha)
 
     val template = PaywallTemplate.TEMPLATE_2
 
