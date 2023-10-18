@@ -1,17 +1,12 @@
 import android.content.Context
 import android.graphics.Bitmap
-import android.os.Build
 import android.renderscript.Allocation
 import android.renderscript.Element
 import android.renderscript.RenderScript
 import android.renderscript.ScriptIntrinsicBlur
 import coil.size.Size
 import coil.transform.Transformation
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import kotlin.math.abs
 import kotlin.math.min
-import kotlin.math.roundToInt
 
 /**
  * BlurTransformation class applies a blur on a given Bitmap image.
@@ -25,7 +20,7 @@ import kotlin.math.roundToInt
  */
 internal class BlurTransformation(
     private val context: Context,
-    private val radius: Float = 25f,
+    private val radius: Float,
     private val scale: Float = 0.5f,
 ) : Transformation {
 
@@ -46,12 +41,14 @@ internal class BlurTransformation(
     override fun hashCode(): Int = radius.hashCode()
 }
 
+// max radius supported by RenderScript
+private const val MAX_SUPPORTED_RADIUS = 25
+
 internal fun Bitmap.blur(context: Context, radius: Float = 25f): Bitmap {
     if (radius < 1f) {
         return this@blur
     }
-    // max radius supported by RenderScript is 25
-    val updatedRadius = min(radius.toDouble(), 25.toDouble())
+    val updatedRadius = min(radius.toDouble(), MAX_SUPPORTED_RADIUS.toDouble())
 
     val rs = RenderScript.create(context)
     val input = Allocation.createFromBitmap(rs, this)

@@ -20,24 +20,26 @@ import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfigura
 import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
 import com.revenuecat.purchases.ui.revenuecatui.extensions.defaultBackgroundPlaceholder
 
+// Current implementation uses a transformation on API level < 31, modifier on > 31.
 @Composable
 internal fun BoxScope.PaywallBackground(templateConfiguration: TemplateConfiguration) {
-    // current implementation uses a transformation on API level 30-, modifier on 31+.
-    val transformation = if (templateConfiguration.configuration.blurredBackgroundImage && Build.VERSION.SDK_INT < 31)
+    val supportsNativeBlurring = Build.VERSION.SDK_INT >= BackgroundUIConstants.minSDKVersionSupportingBlur
+    val shouldBlur = templateConfiguration.configuration.blurredBackgroundImage
+    val imageAlpha = if (shouldBlur) { BackgroundUIConstants.blurAlpha } else 1.0f
+
+    val backwardsCompatibleTransformation = if (shouldBlur && !supportsNativeBlurring) {
         BlurTransformation(
-            context = LocalContext.current, radius = BackgroundUIConstants.blurSize.toFloatPx(),
-            scale = BackgroundUIConstants.blurScale
+            context = LocalContext.current,
+            radius = BackgroundUIConstants.blurSize.toFloatPx(),
+            scale = BackgroundUIConstants.blurScale,
         )
-    else null
+    } else {
+        null
+    }
 
     val modifier = Modifier
         .matchParentSize()
-        // TODO: try to unify both methods into either a transformation or a modifier
-        // one notable difference is that the transformation works at the image level so it'd run only once
-        .conditional(
-            templateConfiguration.configuration.blurredBackgroundImage
-                && Build.VERSION.SDK_INT >= 31
-        ) {
+        .conditional(shouldBlur && supportsNativeBlurring) {
             blur(BackgroundUIConstants.blurSize, edgeTreatment = BlurredEdgeTreatment.Unbounded)
         }
 
@@ -47,6 +49,7 @@ internal fun BoxScope.PaywallBackground(templateConfiguration: TemplateConfigura
             painter = painterResource(id = R.drawable.default_background),
             contentDescription = null,
             contentScale = BackgroundUIConstants.contentScale,
+            alpha = imageAlpha
         )
     } else {
         templateConfiguration.images.backgroundUri?.let {
@@ -54,8 +57,8 @@ internal fun BoxScope.PaywallBackground(templateConfiguration: TemplateConfigura
                 urlString = it.toString(),
                 modifier = modifier,
                 contentScale = BackgroundUIConstants.contentScale,
-                transformation = transformation,
-                alpha = BackgroundUIConstants.blurAlpha
+                transformation = backwardsCompatibleTransformation,
+                alpha = imageAlpha
             )
         }
     }
@@ -63,9 +66,10 @@ internal fun BoxScope.PaywallBackground(templateConfiguration: TemplateConfigura
 
 private object BackgroundUIConstants {
     val blurSize = 40.dp
-    const val blurAlpha = 0.7f
     val contentScale = ContentScale.Crop
+    const val blurAlpha = 0.7f
     const val blurScale = 0.5f
+    const val minSDKVersionSupportingBlur = 31
 }
 
 @Composable

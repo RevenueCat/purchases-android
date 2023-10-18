@@ -1,6 +1,5 @@
 package com.revenuecat.purchases.ui.revenuecatui.composables
 
-import BlurTransformation
 import android.content.Context
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
@@ -16,6 +15,7 @@ import coil.transform.Transformation
 import com.revenuecat.purchases.ui.revenuecatui.UIConstant
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 
+@SuppressWarnings("LongParameterList")
 @Composable
 internal fun RemoteImage(
     urlString: String,
@@ -23,19 +23,14 @@ internal fun RemoteImage(
     contentScale: ContentScale = ContentScale.Fit,
     contentDescription: String? = null,
     transformation: Transformation? = null,
-    alpha: Float = 1f
+    alpha: Float = 1f,
 ) {
-
-    val requestBuilder = ImageRequest.Builder(LocalContext.current)
-        .data(urlString)
-        .crossfade(durationMillis = UIConstant.defaultAnimationDurationMillis)
-
-    transformation?.let {
-        requestBuilder.transformations(listOf(it))
-    }
-
     return AsyncImage(
-        model = requestBuilder.build(),
+        model = ImageRequest.Builder(LocalContext.current)
+            .data(urlString)
+            .crossfade(durationMillis = UIConstant.defaultAnimationDurationMillis)
+            .transformations(listOfNotNull(transformation))
+            .build(),
         contentDescription = contentDescription,
         imageLoader = LocalContext.current.getRevenueCatUIImageLoader(),
         modifier = modifier,
@@ -51,7 +46,6 @@ internal fun RemoteImage(
         },
     )
 }
-
 
 private const val MAX_CACHE_SIZE_BYTES = 25 * 1024 * 1024L // 25 MB
 
