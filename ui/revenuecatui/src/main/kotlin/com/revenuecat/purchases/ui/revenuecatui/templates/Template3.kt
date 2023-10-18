@@ -39,6 +39,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModel
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.selectedLocalization
+import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockViewModel
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.extensions.introEligibility
 
@@ -191,5 +192,8 @@ private fun Feature(
 @Preview(locale = "es-rES", showBackground = true)
 @Composable
 private fun Template3Preview() {
-    InternalPaywall(options = PaywallOptions.Builder().setOffering(TestData.template3Offering).build())
+    InternalPaywall(
+        options = PaywallOptions.Builder().build(),
+        viewModel = MockViewModel(offering = TestData.template3Offering),
+    )
 }
