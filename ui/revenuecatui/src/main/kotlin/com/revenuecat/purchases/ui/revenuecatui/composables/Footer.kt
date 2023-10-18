@@ -166,7 +166,7 @@ private fun RowScope.Button(
                                 style = FooterConstants.style(),
                                 softWrap = false,
                                 maxLines = 1,
-                                modifier = childModifier
+                                modifier = childModifier,
                             )
                         }
                     },
@@ -178,7 +178,7 @@ private fun RowScope.Button(
                                 textAlign = TextAlign.Center,
                                 style = FooterConstants.style(),
                                 softWrap = true,
-                                modifier = childModifier
+                                modifier = childModifier,
                             )
                         }
                     },
