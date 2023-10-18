@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="privacy">خصوصية</string>
+    <string name="privacy_policy">سياسة الخصوصية</string>
+    <string name="restore">يعيد</string>
+    <string name="restore_purchases">استعادة المشتريات</string>
+    <string name="terms">شروط</string>
+    <string name="terms_and_conditions">الأحكام والشروط</string>
+    <string name="annual">سنوي</string>
+    <string name="semester">6 شهور</string>
+    <string name="quarter">3 أشهر</string>
+    <string name="bimonthly">2 شهر</string>
+    <string name="monthly">شهريا</string>
+    <string name="weekly">أسبوعي</string>
+    <string name="lifetime">حياة</string>
+    <string name="package_discount">خصم %1$d%</string>
+    <string name="continue_cta">يكمل</string>
+    <string name="default_offer_details_with_intro_offer">ابدأ الفترة التجريبية التي تبلغ {{ sub_offer_duration }}، ثم {{ Total_price_and_per_month }}.</string>
+</resources>

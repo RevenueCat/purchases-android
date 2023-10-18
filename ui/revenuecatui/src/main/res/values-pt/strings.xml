@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="privacy">Privacidade</string>
+    <string name="privacy_policy">Política de Privacidade</string>
+    <string name="restore">Restaurar</string>
+    <string name="restore_purchases">Restaurar compras</string>
+    <string name="terms">Termos</string>
+    <string name="terms_and_conditions">Termos e Condições</string>
+    <string name="annual">Anual</string>
+    <string name="semester">6 meses</string>
+    <string name="quarter">3 meses</string>
+    <string name="bimonthly">2 meses</string>
+    <string name="monthly">Por mês</string>
+    <string name="weekly">Semanalmente</string>
+    <string name="lifetime">Vida</string>
+    <string name="package_discount">%1$d% de desconto</string>
+    <string name="continue_cta">Continuar</string>
+    <string name="default_offer_details_with_intro_offer">Comece sua avaliação de {{ sub_offer_duration }} e depois {{ total_price_and_per_month }}.</string>
+</resources>

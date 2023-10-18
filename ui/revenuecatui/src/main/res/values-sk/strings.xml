@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="privacy">Ochrana osobných údajov</string>
+    <string name="privacy_policy">Zásady ochrany osobných údajov</string>
+    <string name="restore">Obnoviť</string>
+    <string name="restore_purchases">Obnoviť nákupy</string>
+    <string name="terms">Podmienky</string>
+    <string name="terms_and_conditions">Podmienky</string>
+    <string name="annual">Výročný</string>
+    <string name="semester">6 mesiacov</string>
+    <string name="quarter">3 mesiac</string>
+    <string name="bimonthly">2 mesiace</string>
+    <string name="monthly">Mesačne</string>
+    <string name="weekly">Týždenne</string>
+    <string name="lifetime">Život</string>
+    <string name="package_discount">%1$d% zľava</string>
+    <string name="continue_cta">ďalej</string>
+    <string name="default_offer_details_with_intro_offer">Začnite skúšobnú verziu {{ sub_offer_duration }}, potom {{ total_price_and_per_month }}.</string>
+</resources>

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="privacy">פְּרָטִיוּת</string>
+    <string name="privacy_policy">מדיניות הפרטיות</string>
+    <string name="restore">לשחזר</string>
+    <string name="restore_purchases">לשחזר רכישות</string>
+    <string name="terms">תנאים</string>
+    <string name="terms_and_conditions">תנאים</string>
+    <string name="annual">שנתי</string>
+    <string name="semester">6 חודשים</string>
+    <string name="quarter">3 חודשים</string>
+    <string name="bimonthly">חודש 2</string>
+    <string name="monthly">יַרחוֹן</string>
+    <string name="weekly">שְׁבוּעִי</string>
+    <string name="lifetime">לכל החיים</string>
+    <string name="package_discount">%1$d% הנחה</string>
+    <string name="continue_cta">לְהַמשִׁיך</string>
+    <string name="default_offer_details_with_intro_offer">התחל את תקופת הניסיון של {{ sub_offer_duration }} ולאחר מכן {{ total_price_and_per_month }}.</string>
+</resources>

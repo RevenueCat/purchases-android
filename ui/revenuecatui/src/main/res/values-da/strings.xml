@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="privacy">Privatliv</string>
+    <string name="privacy_policy">Fortrolighedspolitik</string>
+    <string name="restore">Gendan</string>
+    <string name="restore_purchases">Genoprette indkøb</string>
+    <string name="terms">Betingelser</string>
+    <string name="terms_and_conditions">Vilkår og betingelser</string>
+    <string name="annual">Årligt</string>
+    <string name="semester">6 måneder</string>
+    <string name="quarter">3 måneder</string>
+    <string name="bimonthly">2 måneder</string>
+    <string name="monthly">Månedlige</string>
+    <string name="weekly">Ugentlig</string>
+    <string name="lifetime">Livstid</string>
+    <string name="package_discount">%1$d% rabat</string>
+    <string name="continue_cta">Blive ved</string>
+    <string name="default_offer_details_with_intro_offer">Start din prøveperiode på {{ sub_offer_duration }} og derefter {{ total_price_and_per_month }}.</string>
+</resources>

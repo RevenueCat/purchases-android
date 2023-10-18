@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="privacy">поверителност</string>
+    <string name="privacy_policy">Политика за поверителност</string>
+    <string name="restore">Възстанови</string>
+    <string name="restore_purchases">Възстановяване на покупките</string>
+    <string name="terms">Условия</string>
+    <string name="terms_and_conditions">Правила и условия</string>
+    <string name="annual">Годишен</string>
+    <string name="semester">6 месеца</string>
+    <string name="quarter">3 месеца</string>
+    <string name="bimonthly">2 месеца</string>
+    <string name="monthly">Месечно</string>
+    <string name="weekly">Ежеседмично</string>
+    <string name="lifetime">Живот</string>
+    <string name="package_discount">%1$d% намаление</string>
+    <string name="continue_cta">продължи</string>
+    <string name="default_offer_details_with_intro_offer">Започнете своя пробен период от {{ sub_offer_duration }}, след което {{ total_price_and_per_month }}.</string>
+</resources>

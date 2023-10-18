@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="privacy">Mahremiyet</string>
+    <string name="privacy_policy">Gizlilik Politikası</string>
+    <string name="restore">Eski haline getirmek</string>
+    <string name="restore_purchases">Satın alınanları geri yükle</string>
+    <string name="terms">şartlar</string>
+    <string name="terms_and_conditions">Şartlar ve koşullar</string>
+    <string name="annual">Yıllık</string>
+    <string name="semester">6 ay</string>
+    <string name="quarter">3 ay</string>
+    <string name="bimonthly">2 ay</string>
+    <string name="monthly">Aylık</string>
+    <string name="weekly">Haftalık</string>
+    <string name="lifetime">Ömür</string>
+    <string name="package_discount">%%1$d% indirim</string>
+    <string name="continue_cta">Devam etmek</string>
+    <string name="default_offer_details_with_intro_offer">{{ sub_offer_duration }} denemenizi başlatın, ardından {{ total_price_and_per_month }}.</string>
+</resources>

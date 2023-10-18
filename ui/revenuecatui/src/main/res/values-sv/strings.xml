@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="privacy">Integritet</string>
+    <string name="privacy_policy">Integritetspolicy</string>
+    <string name="restore">Återställ</string>
+    <string name="restore_purchases">Återställa köp</string>
+    <string name="terms">Villkor</string>
+    <string name="terms_and_conditions">Villkor</string>
+    <string name="annual">Årlig</string>
+    <string name="semester">6 månader</string>
+    <string name="quarter">3 månader</string>
+    <string name="bimonthly">2 månader</string>
+    <string name="monthly">En gång i månaden</string>
+    <string name="weekly">Varje vecka</string>
+    <string name="lifetime">Livstid</string>
+    <string name="package_discount">%1$d% rabatt</string>
+    <string name="continue_cta">Fortsätta</string>
+    <string name="default_offer_details_with_intro_offer">Starta din provperiod på {{ sub_offer_duration }} och sedan {{ total_price_and_per_month }}.</string>
+</resources>

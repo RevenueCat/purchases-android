@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="privacy">गोपनीयता</string>
+    <string name="privacy_policy">गोपनीयता नीति</string>
+    <string name="restore">पुनर्स्थापित करना</string>
+    <string name="restore_purchases">खरीदारी वापस लौटाएं</string>
+    <string name="terms">शर्तें</string>
+    <string name="terms_and_conditions">नियम और शर्तें</string>
+    <string name="annual">वार्षिक</string>
+    <string name="semester">6 माह</string>
+    <string name="quarter">तीन माह</string>
+    <string name="bimonthly">2 माह</string>
+    <string name="monthly">महीने के</string>
+    <string name="weekly">साप्ताहिक</string>
+    <string name="lifetime">जीवनभर</string>
+    <string name="package_discount">%1$d% छूट</string>
+    <string name="continue_cta">जारी रखना</string>
+    <string name="default_offer_details_with_intro_offer">अपना {{sub_offer_duration }} परीक्षण शुरू करें, फिर {{ total_price_and_per_month }}।</string>
+</resources>

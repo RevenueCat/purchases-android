@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="privacy">Sự riêng tư</string>
+    <string name="privacy_policy">Chính sách bảo mật</string>
+    <string name="restore">Khôi phục</string>
+    <string name="restore_purchases">khôi phục mua hàng</string>
+    <string name="terms">Điều kiện</string>
+    <string name="terms_and_conditions">Các điều khoản và điều kiện</string>
+    <string name="annual">Hàng năm</string>
+    <string name="semester">6 tháng</string>
+    <string name="quarter">3 tháng</string>
+    <string name="bimonthly">2 tháng</string>
+    <string name="monthly">hàng tháng</string>
+    <string name="weekly">hàng tuần</string>
+    <string name="lifetime">Cả đời</string>
+    <string name="package_discount">giảm giá %1$d%</string>
+    <string name="continue_cta">Tiếp tục</string>
+    <string name="default_offer_details_with_intro_offer">Bắt đầu dùng thử {{ sub_offer_duration }}, sau đó là {{ Total_price_and_per_month }}.</string>
+</resources>

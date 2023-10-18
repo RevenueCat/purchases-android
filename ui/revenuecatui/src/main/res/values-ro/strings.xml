@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="privacy">Confidențialitate</string>
+    <string name="privacy_policy">Politica de confidențialitate</string>
+    <string name="restore">Restabili</string>
+    <string name="restore_purchases">Restabiliți achizițiile</string>
+    <string name="terms">Termeni</string>
+    <string name="terms_and_conditions">Termeni și condiții</string>
+    <string name="annual">Anual</string>
+    <string name="semester">6 luni</string>
+    <string name="quarter">3 luni</string>
+    <string name="bimonthly">2 luni</string>
+    <string name="monthly">Lunar</string>
+    <string name="weekly">Săptămânal</string>
+    <string name="lifetime">Durata de viață</string>
+    <string name="package_discount">%1$d% reducere</string>
+    <string name="continue_cta">Continua</string>
+    <string name="default_offer_details_with_intro_offer">Începeți perioada de încercare de {{ sub_offer_duration }}, apoi {{ total_price_and_per_month }}.</string>
+</resources>

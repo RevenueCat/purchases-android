@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="privacy">Конфіденційність</string>
+    <string name="privacy_policy">Політика конфіденційності</string>
+    <string name="restore">Відновлення</string>
+    <string name="restore_purchases">Відновити покупки</string>
+    <string name="terms">Терміни</string>
+    <string name="terms_and_conditions">Правила та умови</string>
+    <string name="annual">Річний</string>
+    <string name="semester">6 місяців</string>
+    <string name="quarter">3 місяці</string>
+    <string name="bimonthly">2 місяці</string>
+    <string name="monthly">Щомісяця</string>
+    <string name="weekly">Щотижня</string>
+    <string name="lifetime">Час життя</string>
+    <string name="package_discount">Знижка %1$d%</string>
+    <string name="continue_cta">Продовжити</string>
+    <string name="default_offer_details_with_intro_offer">Розпочніть {{ sub_offer_duration }} пробний період, а потім {{ total_price_and_per_month }}.</string>
+</resources>

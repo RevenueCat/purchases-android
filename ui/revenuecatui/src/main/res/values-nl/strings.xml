@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="privacy">Privacy</string>
+    <string name="privacy_policy">Privacybeleid</string>
+    <string name="restore">Herstellen</string>
+    <string name="restore_purchases">Herstel aankopen</string>
+    <string name="terms">Voorwaarden</string>
+    <string name="terms_and_conditions">Voorwaarden</string>
+    <string name="annual">Jaarlijks</string>
+    <string name="semester">6 maanden</string>
+    <string name="quarter">3 maanden</string>
+    <string name="bimonthly">2 maand</string>
+    <string name="monthly">Maandelijks</string>
+    <string name="weekly">Wekelijks</string>
+    <string name="lifetime">Levenslang</string>
+    <string name="package_discount">%1$d% korting</string>
+    <string name="continue_cta">Doorgaan</string>
+    <string name="default_offer_details_with_intro_offer">Start uw proefperiode van {{ sub_offer_duration }} en daarna {{ total_price_and_per_month }}.</string>
+</resources>

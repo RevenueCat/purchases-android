@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="privacy">Μυστικότητα</string>
+    <string name="privacy_policy">Πολιτική απορρήτου</string>
+    <string name="restore">Επαναφέρω</string>
+    <string name="restore_purchases">Επαναφορά αγορών</string>
+    <string name="terms">Οροι</string>
+    <string name="terms_and_conditions">Οροι και Προϋποθέσεις</string>
+    <string name="annual">Ετήσιο</string>
+    <string name="semester">6 μήνες</string>
+    <string name="quarter">3 μήνες</string>
+    <string name="bimonthly">2 μηνών</string>
+    <string name="monthly">Μηνιαίο</string>
+    <string name="weekly">Εβδομαδιαίος</string>
+    <string name="lifetime">Διάρκεια Ζωής</string>
+    <string name="package_discount">Έκπτωση %1$d%</string>
+    <string name="continue_cta">Να συνεχίσει</string>
+    <string name="default_offer_details_with_intro_offer">Ξεκινήστε τη δοκιμή {{ sub_offer_duration }} και μετά {{ total_price_and_per_month }}.</string>
+</resources>

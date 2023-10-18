@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="privacy">Pribadi</string>
+    <string name="privacy_policy">Kebijakan pribadi</string>
+    <string name="restore">Memulihkan</string>
+    <string name="restore_purchases">Mengembalikan pembelian</string>
+    <string name="terms">Ketentuan</string>
+    <string name="terms_and_conditions">Syarat dan Ketentuan</string>
+    <string name="annual">Tahunan</string>
+    <string name="semester">6 bulan</string>
+    <string name="quarter">3 bulan</string>
+    <string name="bimonthly">2 Bulan</string>
+    <string name="monthly">Bulanan</string>
+    <string name="weekly">Mingguan</string>
+    <string name="lifetime">Seumur hidup</string>
+    <string name="package_discount">Diskon %1$d%</string>
+    <string name="continue_cta">Melanjutkan</string>
+    <string name="default_offer_details_with_intro_offer">Mulai uji coba {{ sub_offer_duration }} Anda, lalu {{ total_price_and_per_month }}.</string>
+</resources>
