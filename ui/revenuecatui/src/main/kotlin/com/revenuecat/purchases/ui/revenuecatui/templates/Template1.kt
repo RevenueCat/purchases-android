@@ -46,6 +46,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModel
 import com.revenuecat.purchases.ui.revenuecatui.data.currentColors
 import com.revenuecat.purchases.ui.revenuecatui.data.selectedLocalization
+import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockViewModel
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.extensions.introEligibility
 
@@ -189,7 +190,10 @@ private object Template1UIConstants {
 @Preview(showBackground = true)
 @Composable
 internal fun Template1PaywallPreview() {
-    InternalPaywall(options = PaywallOptions.Builder().setOffering(TestData.template1Offering).build())
+    InternalPaywall(
+        options = PaywallOptions.Builder().build(),
+        viewModel = MockViewModel(offering = TestData.template1Offering),
+    )
 }
 
 @Preview(heightDp = 700, widthDp = 400)

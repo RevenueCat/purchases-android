@@ -47,6 +47,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.currentColors
 import com.revenuecat.purchases.ui.revenuecatui.data.isInFullScreenMode
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.selectedLocalization
+import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockViewModel
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
 import com.revenuecat.purchases.ui.revenuecatui.extensions.introEligibility
@@ -232,9 +233,8 @@ private fun CheckmarkBox(isSelected: Boolean, colors: TemplateConfiguration.Colo
 @Composable
 private fun Template2PaywallPreview() {
     InternalPaywall(
-        options = PaywallOptions.Builder()
-            .setOffering(TestData.template2Offering)
-            .build(),
+        options = PaywallOptions.Builder().build(),
+        viewModel = MockViewModel(offering = TestData.template2Offering),
     )
 }
 
@@ -242,9 +242,8 @@ private fun Template2PaywallPreview() {
 @Preview(showBackground = true, locale = "es-rES")
 @Composable
 private fun Template2PaywallFooterPreview() {
-    val options = PaywallOptions.Builder()
-        .setOffering(TestData.template2Offering)
-        .build()
-    options.mode = PaywallMode.FOOTER
-    InternalPaywall(options)
+    InternalPaywall(
+        options = PaywallOptions.Builder().build(),
+        viewModel = MockViewModel(mode = PaywallMode.FOOTER, offering = TestData.template2Offering),
+    )
 }
