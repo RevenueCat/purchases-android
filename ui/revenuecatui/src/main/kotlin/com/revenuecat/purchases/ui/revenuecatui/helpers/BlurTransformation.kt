@@ -15,13 +15,10 @@ import kotlin.math.min
  *
  * @property radius - The radius of the square used for blurring. Higher values
  *                    produce a more pronounced blur effect.
- * @property scale  - The scale factor for resizing the image before blurring.
- *                    Lower values produce a faster but lower quality blur.
  */
 internal class BlurTransformation(
     private val context: Context,
     private val radius: Float,
-    private val scale: Float = 0.5f,
 ) : Transformation {
 
     override val cacheKey: String = "${javaClass.name}-$radius"
@@ -30,7 +27,7 @@ internal class BlurTransformation(
         input: Bitmap,
         size: Size,
     ): Bitmap {
-        return input.blur(context, radius) ?: input
+        return input.blur(context, radius)
     }
 
     override fun equals(other: Any?): Boolean {

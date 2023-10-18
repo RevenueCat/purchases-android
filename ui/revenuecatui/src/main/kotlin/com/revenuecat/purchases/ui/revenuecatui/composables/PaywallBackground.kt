@@ -31,7 +31,6 @@ internal fun BoxScope.PaywallBackground(templateConfiguration: TemplateConfigura
         BlurTransformation(
             context = LocalContext.current,
             radius = BackgroundUIConstants.blurSize.toFloatPx(),
-            scale = BackgroundUIConstants.blurScale,
         )
     } else {
         null
@@ -49,7 +48,7 @@ internal fun BoxScope.PaywallBackground(templateConfiguration: TemplateConfigura
             painter = painterResource(id = R.drawable.default_background),
             contentDescription = null,
             contentScale = BackgroundUIConstants.contentScale,
-            alpha = imageAlpha
+            alpha = imageAlpha,
         )
     } else {
         templateConfiguration.images.backgroundUri?.let {
@@ -58,7 +57,7 @@ internal fun BoxScope.PaywallBackground(templateConfiguration: TemplateConfigura
                 modifier = modifier,
                 contentScale = BackgroundUIConstants.contentScale,
                 transformation = backwardsCompatibleTransformation,
-                alpha = imageAlpha
+                alpha = imageAlpha,
             )
         }
     }
@@ -68,7 +67,6 @@ private object BackgroundUIConstants {
     val blurSize = 40.dp
     val contentScale = ContentScale.Crop
     const val blurAlpha = 0.7f
-    const val blurScale = 0.5f
     const val minSDKVersionSupportingBlur = 31
 }
 
