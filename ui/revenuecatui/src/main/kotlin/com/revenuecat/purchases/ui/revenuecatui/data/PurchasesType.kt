@@ -42,7 +42,3 @@ internal class PurchasesImpl(private val purchases: Purchases = Purchases.shared
         return awaitCustomerInfo(fetchPolicy)
     }
 }
-
-internal fun CustomerInfo.getActiveSubscriptions(): Set<String> {
-    return activeSubscriptions
-}

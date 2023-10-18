@@ -212,7 +212,7 @@ internal class PaywallViewModelImpl(
         }
         return offering.toPaywallState(
             variableDataProvider,
-            customerInfo.getActiveSubscriptions(),
+            customerInfo.activeSubscriptions,
             mode,
             displayablePaywall,
             template,

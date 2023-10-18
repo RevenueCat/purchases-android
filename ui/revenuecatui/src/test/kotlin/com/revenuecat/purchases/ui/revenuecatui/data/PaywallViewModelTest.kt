@@ -18,6 +18,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfigura
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockApplicationContext
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.extensions.getActivity
+import io.mockk.clearAllMocks
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -29,6 +30,7 @@ import io.mockk.verifyOrder
 import junit.framework.TestCase.fail
 import kotlinx.coroutines.delay
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -80,6 +82,11 @@ class PaywallViewModelTest {
         every { listener.onRestoreStarted() } just runs
         every { listener.onRestoreCompleted(any()) } just runs
         every { listener.onRestoreError(any()) } just runs
+    }
+
+    @After
+    internal fun tearDown() {
+        clearAllMocks()
     }
 
     @Test
@@ -235,7 +242,7 @@ class PaywallViewModelTest {
     }
 
     private fun mockActiveSubscriptions(vararg subscriptions: String) {
-        every { customerInfo.getActiveSubscriptions() } returns setOf(*subscriptions)
+        every { customerInfo.activeSubscriptions } returns setOf(*subscriptions)
     }
 
     /**
