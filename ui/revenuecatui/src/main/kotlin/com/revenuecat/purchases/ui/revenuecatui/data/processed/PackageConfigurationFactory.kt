@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.ui.revenuecatui.data.processed
 
 import com.revenuecat.purchases.Package
+import com.revenuecat.purchases.PackageType
 import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.ui.revenuecatui.errors.PackageConfigurationError
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
@@ -12,6 +13,7 @@ internal object PackageConfigurationFactory {
         variableDataProvider: VariableDataProvider,
         availablePackages: List<Package>,
         activelySubscribedProductIdentifiers: Set<String>,
+        nonSubscriptionProductIdentifiers: Set<String>,
         packageIdsInConfig: List<String>,
         default: String?,
         localization: PaywallData.LocalizedConfiguration,
@@ -32,10 +34,22 @@ internal object PackageConfigurationFactory {
             return Result.failure(PackageConfigurationError("No packages found for ids $packageIdsInConfig"))
         }
         val packageInfos = filteredRCPackages.map {
+            val currentlySubscribed = when (it.packageType) {
+                PackageType.ANNUAL,
+                PackageType.SIX_MONTH,
+                PackageType.THREE_MONTH,
+                PackageType.TWO_MONTH,
+                PackageType.MONTHLY,
+                PackageType.WEEKLY,
+                -> activelySubscribedProductIdentifiers.contains(it.product.id)
+                PackageType.LIFETIME -> nonSubscriptionProductIdentifiers.contains(it.product.id)
+                PackageType.UNKNOWN, PackageType.CUSTOM -> false
+            }
+
             TemplateConfiguration.PackageInfo(
                 rcPackage = it,
                 localization = ProcessedLocalizedConfiguration.create(variableDataProvider, localization, it, locale),
-                currentlySubscribed = activelySubscribedProductIdentifiers.contains(it.product.id),
+                currentlySubscribed = currentlySubscribed,
                 discountRelativeToMostExpensivePerMonth = null, // TODO-PAYWALLS: Support discount UI
             )
         }

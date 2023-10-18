@@ -57,14 +57,15 @@ internal fun LoadingPaywall(mode: PaywallMode) {
     )
 
     val state = offering.toPaywallState(
-        VariableDataProvider(
+        variableDataProvider = VariableDataProvider(
             applicationContext,
             isInPreviewMode(),
         ),
-        setOf(),
-        mode,
-        paywallData,
-        LoadingPaywallConstants.template,
+        activelySubscribedProductIdentifiers = setOf(),
+        nonSubscriptionProductIdentifiers = setOf(),
+        mode = mode,
+        validatedPaywallData = paywallData,
+        template = LoadingPaywallConstants.template,
     )
 
     when (state) {

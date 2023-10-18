@@ -14,6 +14,7 @@ internal val TestData.template2: PaywallData
             packageIds = listOf(
                 PackageType.ANNUAL.identifier!!,
                 PackageType.MONTHLY.identifier!!,
+                PackageType.LIFETIME.identifier!!,
             ),
             defaultPackage = PackageType.MONTHLY.identifier!!,
             images = TestData.Constants.images,

@@ -67,10 +67,11 @@ private fun PaywallData.validate(): Result<PaywallTemplate> {
     return Result.success(template)
 }
 
-@Suppress("ReturnCount", "TooGenericExceptionCaught")
+@Suppress("ReturnCount", "TooGenericExceptionCaught", "LongParameterList")
 internal fun Offering.toPaywallState(
     variableDataProvider: VariableDataProvider,
     activelySubscribedProductIdentifiers: Set<String>,
+    nonSubscriptionProductIdentifiers: Set<String>,
     mode: PaywallMode,
     validatedPaywallData: PaywallData,
     template: PaywallTemplate,
@@ -81,6 +82,7 @@ internal fun Offering.toPaywallState(
         paywallData = validatedPaywallData,
         availablePackages = availablePackages,
         activelySubscribedProductIdentifiers = activelySubscribedProductIdentifiers,
+        nonSubscriptionProductIdentifiers = nonSubscriptionProductIdentifiers,
         template,
     )
     val templateConfiguration = createTemplateConfigurationResult.getOrElse {
