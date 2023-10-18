@@ -1,38 +1,44 @@
 package com.revenuecat.purchases.ui.revenuecatui.composables
 
+import BlurTransformation
+import android.os.Build
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.BlurredEdgeTreatment
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.ui.revenuecatui.R
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
 import com.revenuecat.purchases.ui.revenuecatui.extensions.defaultBackgroundPlaceholder
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
-
-import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
-import kotlin.math.roundToInt
 
 @Composable
 internal fun BoxScope.PaywallBackground(templateConfiguration: TemplateConfiguration) {
-    val transformation = if (templateConfiguration.configuration.blurredBackgroundImage)
-        BlurTransformation(context = LocalContext.current, radius = BackgroundUIConstants.blurSize.toFloatPx(),
-            scale = BackgroundUIConstants.blurScale)
+    // current implementation uses a transformation on API level 30-, modifier on 31+. 
+    val transformation = if (templateConfiguration.configuration.blurredBackgroundImage && Build.VERSION.SDK_INT < 31)
+        BlurTransformation(
+            context = LocalContext.current, radius = BackgroundUIConstants.blurSize.toFloatPx(),
+            scale = BackgroundUIConstants.blurScale
+        )
     else null
 
     val modifier = Modifier
         .matchParentSize()
-        .conditional(templateConfiguration.configuration.blurredBackgroundImage) {
-            // TODO-PAYWALLS: backwards compatibility for blurring
+        // TODO: try to unify both methods into either a transformation or a modifier
+        // one notable difference is that the transformation works at the image level so it'd run only once
+        .conditional(
+            templateConfiguration.configuration.blurredBackgroundImage
+                && Build.VERSION.SDK_INT >= 31
+        ) {
             blur(BackgroundUIConstants.blurSize, edgeTreatment = BlurredEdgeTreatment.Unbounded)
-                .alpha(BackgroundUIConstants.blurAlpha)
         }
 
     if (templateConfiguration.configuration.images.background == PaywallData.defaultBackgroundPlaceholder) {
