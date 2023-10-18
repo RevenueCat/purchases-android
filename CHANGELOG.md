@@ -1,3 +1,7 @@
+## 7.1.0
+### New Features
+* Add purchases.setOnesignalUserID (#1304) via Raquel Diez (@Raquel10-RevenueCat)
+
 ## 7.0.1
 ### Bugfixes
 * Optimize billing client connection retries (#1300) via Toni Rico (@tonidero)

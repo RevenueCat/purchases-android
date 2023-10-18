@@ -1,2 +1,2 @@
-### Bugfixes
-* Optimize billing client connection retries (#1300) via Toni Rico (@tonidero)
+### New Features
+* Add purchases.setOnesignalUserID (#1304) via Raquel Diez (@Raquel10-RevenueCat)
