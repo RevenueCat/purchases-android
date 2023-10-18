@@ -87,6 +87,7 @@ private fun PaywallData.Companion.defaultLocalization(
         callToAction = applicationContext.getString(R.string.continue_cta),
         offerDetails = "{{ total_price_and_per_month }}",
         offerDetailsWithIntroOffer = applicationContext.getString(R.string.default_offer_details_with_intro_offer),
+        offerName = "{{ sub_period }}",
     )
 }
 
