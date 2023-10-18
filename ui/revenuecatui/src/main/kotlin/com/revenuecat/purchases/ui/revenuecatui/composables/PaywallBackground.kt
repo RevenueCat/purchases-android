@@ -22,7 +22,7 @@ import com.revenuecat.purchases.ui.revenuecatui.extensions.defaultBackgroundPlac
 
 @Composable
 internal fun BoxScope.PaywallBackground(templateConfiguration: TemplateConfiguration) {
-    // current implementation uses a transformation on API level 30-, modifier on 31+. 
+    // current implementation uses a transformation on API level 30-, modifier on 31+.
     val transformation = if (templateConfiguration.configuration.blurredBackgroundImage && Build.VERSION.SDK_INT < 31)
         BlurTransformation(
             context = LocalContext.current, radius = BackgroundUIConstants.blurSize.toFloatPx(),

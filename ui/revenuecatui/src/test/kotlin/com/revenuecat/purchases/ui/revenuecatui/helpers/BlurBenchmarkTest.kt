@@ -26,20 +26,6 @@ class BlurBenchmarkTest {
             }
         }
 
-        @Test
-        fun `Blur images using averages blur`() = runBlocking {
-            benchmarkBlur("Averages Blur") { image, context, radius ->
-                image.blurByAveraging(scale = 1f, radius = radius.toInt())
-            }
-        }
-
-        @Test
-        fun `Benchmark RenderScript blur`() = runBlocking {
-            benchmarkBlur("RenderScript Blur") { image, context, radius ->
-                image.blurUsingRenderScript(context, radius)
-            }
-        }
-
         private suspend fun benchmarkBlur(functionName: String, blurFunction: suspend (Bitmap, Context, Float) -> Unit) {
             val context = InstrumentationRegistry.getInstrumentation().targetContext
             val image = openImage()
