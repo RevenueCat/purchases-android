@@ -95,7 +95,7 @@ private fun getPaywallViewModel(
     return viewModel<PaywallViewModelImpl>(
         // We need to pass the key in order to create different view models for different offerings when
         // trying to load different paywalls for the same view model store owner.
-        key = options.offeringSelection.offeringIdentifier,
+        key = options.offeringSelection.offeringIdentifier + options.mode,
         factory = PaywallViewModelFactory(
             applicationContext.toAndroidContext(),
             options,
