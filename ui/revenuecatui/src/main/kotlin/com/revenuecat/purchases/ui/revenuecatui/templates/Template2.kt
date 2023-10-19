@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.ui.revenuecatui.templates
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -171,8 +172,8 @@ private fun AnimatedPackages(
     Box(contentAlignment = packagesContentAlignment) {
         AnimatedVisibility(
             visible = !packageSelectionVisible,
-            enter = fadeIn(),
-            exit = fadeOut(),
+            enter = fadeIn(animationSpec = tween(delayMillis = 200)),
+            exit = fadeOut(animationSpec = tween(delayMillis = 200)),
             label = "OfferDetailsVisibility",
         ) {
             OfferDetails(state)
