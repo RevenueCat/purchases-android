@@ -54,7 +54,7 @@ internal interface PaywallViewModel {
 
 @Suppress("TooManyFunctions")
 internal class PaywallViewModelImpl(
-    applicationContext: ApplicationContext,
+    private val applicationContext: ApplicationContext,
     private val purchases: PurchasesType = PurchasesImpl(),
     private val options: PaywallOptions,
     colorScheme: ColorScheme,
@@ -204,7 +204,10 @@ internal class PaywallViewModelImpl(
         if (offering.availablePackages.isEmpty()) {
             return PaywallState.Error("No packages available")
         }
-        val (displayablePaywall, template, error) = offering.validatedPaywall(colorScheme)
+        val (displayablePaywall, template, error) = offering.validatedPaywall(
+            colorScheme,
+            applicationContext,
+        )
 
         error?.let { validationError ->
             Logger.w(validationError.associatedErrorString(offering))

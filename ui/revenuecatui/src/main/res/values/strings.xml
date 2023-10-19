@@ -6,6 +6,10 @@
     <string name="terms">Terms</string>
     <string name="privacy_policy">Privacy policy</string>
     <string name="privacy">Privacy</string>
+    <string name="continue_cta">Continue</string>
+    <string name="default_offer_details_with_intro_offer">Start your {{ sub_offer_duration }} trial, then {{ total_price_and_per_month }}.</string>
+    <string name="package_discount">%1$d%% off</string>
+    <string name="all_plans">All plans</string>
     <string name="annual">Annual</string>
     <string name="semester">6 month</string>
     <string name="quarter">3 month</string>

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="all_plans">Všechna předplatná</string>
+    <string name="privacy">Soukromí</string>
+    <string name="privacy_policy">Zásady ochrany osobních údajů</string>
+    <string name="restore">Obnovit</string>
+    <string name="restore_purchases">Obnovit nákupy</string>
+    <string name="terms">Podmínky</string>
+    <string name="terms_and_conditions">Pravidla a podmínky</string>
+    <string name="annual">Roční</string>
+    <string name="semester">6 měsíců</string>
+    <string name="quarter">3 měsíce</string>
+    <string name="bimonthly">2 měsíce</string>
+    <string name="monthly">Měsíční</string>
+    <string name="weekly">Týdně</string>
+    <string name="lifetime">Život</string>
+    <string name="package_discount">%1$d%% sleva</string>
+    <string name="continue_cta">Pokračovat</string>
+    <string name="default_offer_details_with_intro_offer">Začněte {{ sub_offer_duration }} zkušební období, poté {{ total_price_and_per_month }}.</string>
+</resources>

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="all_plans">Sve pretplate</string>
+    <string name="privacy">Privatnost</string>
+    <string name="privacy_policy">Politika privatnosti</string>
+    <string name="restore">Vratiti</string>
+    <string name="restore_purchases">Vratite kupnje</string>
+    <string name="terms">Pojmovi</string>
+    <string name="terms_and_conditions">Odredbe i uvjeti</string>
+    <string name="annual">Godišnji</string>
+    <string name="semester">6 mjeseci</string>
+    <string name="quarter">3 mjeseca</string>
+    <string name="bimonthly">2 mjeseca</string>
+    <string name="monthly">Mjesečno</string>
+    <string name="weekly">Tjedni</string>
+    <string name="lifetime">Doživotno</string>
+    <string name="package_discount">%1$d%% popusta</string>
+    <string name="continue_cta">Nastaviti</string>
+    <string name="default_offer_details_with_intro_offer">Započnite probno razdoblje od {{ sub_offer_duration }}, a zatim {{ total_price_and_per_month }}.</string>
+</resources>

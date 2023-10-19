@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="all_plans">การสมัครทั้งหมด</string>
+    <string name="privacy">ความเป็นส่วนตัว</string>
+    <string name="privacy_policy">นโยบายความเป็นส่วนตัว</string>
+    <string name="restore">คืนค่า</string>
+    <string name="restore_purchases">เรียกคืนการซื้อสินค้า</string>
+    <string name="terms">ข้อกำหนด</string>
+    <string name="terms_and_conditions">ข้อกำหนดและเงื่อนไข</string>
+    <string name="annual">ประจำปี</string>
+    <string name="semester">6 เดือน</string>
+    <string name="quarter">3 เดือน</string>
+    <string name="bimonthly">2 เดือน</string>
+    <string name="monthly">รายเดือน</string>
+    <string name="weekly">รายสัปดาห์</string>
+    <string name="lifetime">อายุการใช้งาน</string>
+    <string name="package_discount">ลด %1$d%%</string>
+    <string name="continue_cta">ดำเนินการต่อ</string>
+    <string name="default_offer_details_with_intro_offer">เริ่มทดลองใช้ {{ sub_offer_duration }} จากนั้นจ่ายเป็น {{ Total_price_and_per_month }}</string>
+</resources>

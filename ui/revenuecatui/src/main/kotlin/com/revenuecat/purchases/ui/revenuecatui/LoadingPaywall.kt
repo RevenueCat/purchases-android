@@ -40,9 +40,12 @@ import java.net.URL
 
 @Composable
 internal fun LoadingPaywall(mode: PaywallMode) {
+    val applicationContext = LocalContext.current.applicationContext.toAndroidContext()
+
     val paywallData: PaywallData = PaywallData.createDefault(
         LoadingPaywallConstants.packages,
         MaterialTheme.colorScheme,
+        applicationContext,
     )
 
     val offering = Offering(
@@ -55,7 +58,7 @@ internal fun LoadingPaywall(mode: PaywallMode) {
 
     val state = offering.toPaywallState(
         VariableDataProvider(
-            LocalContext.current.applicationContext.toAndroidContext(),
+            applicationContext,
             isInPreviewMode(),
         ),
         setOf(),

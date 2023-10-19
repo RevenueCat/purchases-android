@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="all_plans">Барлық жазылымдар</string>
+    <string name="privacy">Құпиялық</string>
+    <string name="privacy_policy">Құпиялылық саясаты</string>
+    <string name="restore">Қалпына келтіру</string>
+    <string name="restore_purchases">Сатып алуларды қалпына келтіріңіз</string>
+    <string name="terms">Шарттар</string>
+    <string name="terms_and_conditions">Ережелер мен шарттар</string>
+    <string name="annual">Жылдық</string>
+    <string name="semester">6 ай</string>
+    <string name="quarter">3 ай</string>
+    <string name="bimonthly">2 ай</string>
+    <string name="monthly">Ай сайын</string>
+    <string name="weekly">Апта сайын</string>
+    <string name="lifetime">Өмір кезеңі</string>
+    <string name="package_discount">%1$d%% жеңілдік</string>
+    <string name="continue_cta">Жалғастыру</string>
+    <string name="default_offer_details_with_intro_offer">{{ sub_offer_duration }} сынақ нұсқасын бастаңыз, содан кейін {{ total_price_and_per_month }}.</string>
+</resources>

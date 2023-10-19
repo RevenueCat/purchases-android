@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="all_plans">すべてのサブスクリプション</string>
+    <string name="privacy">プライバシー</string>
+    <string name="privacy_policy">プライバシーポリシー</string>
+    <string name="restore">復元する</string>
+    <string name="restore_purchases">購入を復元</string>
+    <string name="terms">条項</string>
+    <string name="terms_and_conditions">利用規約</string>
+    <string name="annual">年間</string>
+    <string name="semester">6ヶ月</string>
+    <string name="quarter">3ヶ月</string>
+    <string name="bimonthly">2ヶ月</string>
+    <string name="monthly">毎月</string>
+    <string name="weekly">毎週</string>
+    <string name="lifetime">一生</string>
+    <string name="package_discount">%1$d%%オフ</string>
+    <string name="continue_cta">続く</string>
+    <string name="default_offer_details_with_intro_offer">{{ sub_offer_duration }} トライアルを開始してから、{{ total_price_and_per_month }} を開始してください。</string>
+</resources>

@@ -12,10 +12,13 @@ import com.revenuecat.purchases.paywalls.PaywallColor
 import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.ui.revenuecatui.InternalPaywall
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
+import com.revenuecat.purchases.ui.revenuecatui.R
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.PaywallTemplate
+import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockApplicationContext
+import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockViewModel
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
+import com.revenuecat.purchases.ui.revenuecatui.helpers.ApplicationContext
 import java.net.URL
-import java.util.Locale
 
 /***
  * Default [PaywallData] to display when attempting to present a Paywall with an offering that has no paywall
@@ -24,13 +27,19 @@ import java.util.Locale
 internal fun PaywallData.Companion.createDefault(
     packages: List<Package>,
     currentColorScheme: ColorScheme,
+    applicationContext: ApplicationContext,
 ): PaywallData {
-    return PaywallData.createDefaultForIdentifiers(packages.map { it.identifier }, currentColorScheme)
+    return PaywallData.createDefaultForIdentifiers(
+        packages.map { it.identifier },
+        currentColorScheme,
+        applicationContext,
+    )
 }
 
 internal fun PaywallData.Companion.createDefaultForIdentifiers(
     packageIdentifiers: List<String>,
     currentColors: ColorScheme,
+    applicationContext: ApplicationContext,
 ): PaywallData {
     return PaywallData(
         templateName = PaywallData.defaultTemplate.id,
@@ -44,7 +53,9 @@ internal fun PaywallData.Companion.createDefaultForIdentifiers(
             blurredBackgroundImage = true,
             displayRestorePurchases = true,
         ),
-        localization = mapOf(Locale.US.toString() to PaywallData.defaultLocalization),
+        localization = mapOf(
+            applicationContext.getLocale().toString() to PaywallData.defaultLocalization(applicationContext),
+        ),
         assetBaseURL = PaywallData.defaultTemplateBaseURL,
         revision = PaywallData.revisionID,
     )
@@ -68,13 +79,17 @@ internal val PaywallData.Companion.defaultBackgroundPlaceholder: String
 private val PaywallData.Companion.revisionID: Int
     get() = -1
 
-private val PaywallData.Companion.defaultLocalization: PaywallData.LocalizedConfiguration
-    get() = PaywallData.LocalizedConfiguration(
+private fun PaywallData.Companion.defaultLocalization(
+    applicationContext: ApplicationContext,
+): PaywallData.LocalizedConfiguration {
+    return PaywallData.LocalizedConfiguration(
         title = "{{ app_name }}",
-        callToAction = "Continue",
+        callToAction = applicationContext.getString(R.string.continue_cta),
         offerDetails = "{{ total_price_and_per_month }}",
-        offerDetailsWithIntroOffer = "Start your {{ sub_offer_duration }} trial, then {{ total_price_and_per_month }}.",
+        offerDetailsWithIntroOffer = applicationContext.getString(R.string.default_offer_details_with_intro_offer),
+        offerName = "{{ sub_period }}",
     )
+}
 
 private val PaywallData.Companion.defaultTemplateBaseURL: URL
     get() = URL("https://")
@@ -107,7 +122,7 @@ private fun Color.asPaywallColor(): PaywallColor = PaywallColor(colorInt = this.
 @Preview(showBackground = true, locale = "en-rUS")
 @Preview(showBackground = true, locale = "es-rES")
 @Composable
-internal fun Template2PaywallPreview() {
+internal fun DefaultPaywallPreview() {
     val availablePackages = listOf(
         TestData.Packages.weekly,
         TestData.Packages.monthly,
@@ -116,6 +131,7 @@ internal fun Template2PaywallPreview() {
     val paywallData = PaywallData.createDefault(
         availablePackages,
         MaterialTheme.colorScheme,
+        MockApplicationContext(),
     )
     val template2Offering = Offering(
         identifier = "Template2",
@@ -124,5 +140,8 @@ internal fun Template2PaywallPreview() {
         paywall = paywallData,
         serverDescription = "",
     )
-    InternalPaywall(options = PaywallOptions.Builder().setOffering(template2Offering).build())
+    InternalPaywall(
+        options = PaywallOptions.Builder().build(),
+        viewModel = MockViewModel(offering = template2Offering),
+    )
 }
