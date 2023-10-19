@@ -54,8 +54,8 @@ internal interface PaywallViewModel {
 
 @Suppress("TooManyFunctions")
 internal class PaywallViewModelImpl(
-    private val purchases: PurchasesType = PurchasesImpl(),
     private val applicationContext: ApplicationContext,
+    private val purchases: PurchasesType = PurchasesImpl(),
     private val options: PaywallOptions,
     colorScheme: ColorScheme,
     preview: Boolean = false,
