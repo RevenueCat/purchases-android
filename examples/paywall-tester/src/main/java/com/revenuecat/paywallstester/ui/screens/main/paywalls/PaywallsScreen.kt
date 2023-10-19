@@ -63,7 +63,7 @@ fun PaywallsScreen(
                 )
                 ButtonWithEmoji(
                     onClick = {
-                        displayPaywallState = DisplayPaywallState.Footer(offering)
+                        displayPaywallState = DisplayPaywallState.Footer(offering, condensed = false)
                     },
                     emoji = "\uD83D\uDD3D",
                     label = "Footer",
@@ -102,11 +102,7 @@ private fun FullScreenDialog(currentState: DisplayPaywallState.FullScreen, onDis
     PaywallDialog(
         PaywallDialogOptions.Builder(dismissRequest = onDismiss)
             .setOffering(currentState.offering)
-            .setListener(object : PaywallListener {
-                override fun onPurchaseCompleted(customerInfo: CustomerInfo, storeTransaction: StoreTransaction) {
-                    onDismiss()
-                }
-            })
+            .setListener(PaywallListenerImpl(onDismiss))
             .setFontProvider(currentState.fontProvider)
             .build(),
     )
@@ -123,14 +119,7 @@ private fun FooterDialog(currentState: DisplayPaywallState.Footer, onDismiss: ()
                 PaywallFooter(
                     options = PaywallOptions.Builder()
                         .setOffering(currentState.offering)
-                        .setListener(object : PaywallListener {
-                            override fun onPurchaseCompleted(
-                                customerInfo: CustomerInfo,
-                                storeTransaction: StoreTransaction,
-                            ) {
-                                onDismiss()
-                            }
-                        })
+                        .setListener(PaywallListenerImpl(onDismiss))
                         .build(),
                     condensed = currentState.condensed,
                 ) { footerPadding ->
@@ -151,6 +140,12 @@ private sealed class DisplayPaywallState {
         val offering: Offering? = null,
         val condensed: Boolean = false,
     ) : DisplayPaywallState()
+}
+
+private class PaywallListenerImpl(private val onDismiss: () -> Unit) : PaywallListener {
+    override fun onPurchaseCompleted(customerInfo: CustomerInfo, storeTransaction: StoreTransaction) {
+        onDismiss()
+    }
 }
 
 @Composable
