@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -26,6 +25,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.ui.revenuecatui.InternalPaywall
+import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.UIConstant
 import com.revenuecat.purchases.ui.revenuecatui.composables.Footer
@@ -37,6 +37,7 @@ import com.revenuecat.purchases.ui.revenuecatui.composables.PaywallIconName
 import com.revenuecat.purchases.ui.revenuecatui.composables.PurchaseButton
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModel
+import com.revenuecat.purchases.ui.revenuecatui.data.isInFullScreenMode
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.selectedLocalization
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockViewModel
@@ -56,20 +57,22 @@ internal fun Template3(
     viewModel: PaywallViewModel,
 ) {
     Column(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxWidth(),
     ) {
-        Column(
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth()
-                .padding(
-                    horizontal = UIConstant.defaultHorizontalPadding,
-                    vertical = UIConstant.defaultVerticalSpacing,
-                ),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(UIConstant.defaultVerticalSpacing, Alignment.Top),
-        ) {
-            Template3MainContent(state)
+        if (state.isInFullScreenMode) {
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .padding(
+                        horizontal = UIConstant.defaultHorizontalPadding,
+                        vertical = UIConstant.defaultVerticalSpacing,
+                    ),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(UIConstant.defaultVerticalSpacing, Alignment.Top),
+            ) {
+                Template3MainContent(state)
+            }
         }
         OfferDetails(state)
         PurchaseButton(state, viewModel)
@@ -181,5 +184,23 @@ private fun Template3Preview() {
     InternalPaywall(
         options = PaywallOptions.Builder().build(),
         viewModel = MockViewModel(offering = TestData.template3Offering),
+    )
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun Template3FooterPreview() {
+    InternalPaywall(
+        options = PaywallOptions.Builder().build(),
+        viewModel = MockViewModel(mode = PaywallMode.FOOTER, offering = TestData.template3Offering),
+    )
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun Template3CondensedFooterPreview() {
+    InternalPaywall(
+        options = PaywallOptions.Builder().build(),
+        viewModel = MockViewModel(mode = PaywallMode.FOOTER_CONDENSED, offering = TestData.template3Offering),
     )
 }
