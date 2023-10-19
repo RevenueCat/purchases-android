@@ -21,6 +21,7 @@ import kotlinx.coroutines.launch
 interface PaywallScreenViewModel : PaywallListener {
     companion object {
         const val OFFERING_ID_KEY = "offering_id"
+        const val FOOTER_CONDENSED_KEY = "footer_condensed"
     }
     val state: StateFlow<PaywallScreenState>
 
@@ -37,6 +38,7 @@ class PaywallScreenViewModelImpl(
     private val _state: MutableStateFlow<PaywallScreenState> = MutableStateFlow(PaywallScreenState.Loading)
 
     private val offeringId = savedStateHandle.get<String?>(PaywallScreenViewModel.OFFERING_ID_KEY)
+    private val footerCondensed = savedStateHandle.get<Boolean?>(PaywallScreenViewModel.FOOTER_CONDENSED_KEY)
 
     init {
         updateOffering()
@@ -123,7 +125,7 @@ class PaywallScreenViewModelImpl(
                     }
                 } else {
                     _state.update {
-                        PaywallScreenState.Loaded(offeringToLoad)
+                        PaywallScreenState.Loaded(offeringToLoad, footerCondensed = footerCondensed ?: false)
                     }
                 }
             } catch (e: PurchasesException) {

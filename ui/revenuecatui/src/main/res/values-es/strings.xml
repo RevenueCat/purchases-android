@@ -17,4 +17,5 @@
     <string name="monthly">Mensual</string>
     <string name="weekly">Semanalmente</string>
     <string name="lifetime">Toda la vida</string>
+    <string name="all_plans">Todas las subscripciones</string>
 </resources>
