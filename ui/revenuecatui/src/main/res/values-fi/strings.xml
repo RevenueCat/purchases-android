@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="all_plans">Kaikki tilaukset</string>
+    <string name="privacy">Yksityisyys</string>
+    <string name="privacy_policy">Tietosuojakäytäntö</string>
+    <string name="restore">Palauttaa</string>
+    <string name="restore_purchases">Palauttaa ostot</string>
+    <string name="terms">Ehdot</string>
+    <string name="terms_and_conditions">Käyttöehdot</string>
+    <string name="annual">Vuosittainen</string>
+    <string name="semester">6 kuukautta</string>
+    <string name="quarter">3 kuukautta</string>
+    <string name="bimonthly">2 kuukautta</string>
+    <string name="monthly">Kuukausittain</string>
+    <string name="weekly">Viikoittain</string>
+    <string name="lifetime">Elinikä</string>
+    <string name="package_discount">%1$d%% alennus</string>
+    <string name="continue_cta">Jatkaa</string>
+    <string name="default_offer_details_with_intro_offer">Aloita {{ sub_offer_duration }} -kokeilu ja sitten {{ total_price_and_per_month }}.</string>
+</resources>

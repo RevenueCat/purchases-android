@@ -3,6 +3,7 @@ package com.revenuecat.purchases.ui.revenuecatui
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.paywalls.PaywallData
+import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockApplicationContext
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
 import com.revenuecat.purchases.ui.revenuecatui.helpers.validatedPaywall
@@ -122,6 +123,7 @@ class PaywallDataValidationTest {
 
     private fun getPaywallValidationResult(offering: Offering) = offering.validatedPaywall(
         currentColorScheme = TestData.Constants.currentColorScheme,
+        applicationContext = MockApplicationContext()
     )
 
     private fun verifyPackages(actual: PaywallData, expectation: PaywallData) {

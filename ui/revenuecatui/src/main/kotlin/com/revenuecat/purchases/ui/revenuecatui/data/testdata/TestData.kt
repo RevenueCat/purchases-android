@@ -33,6 +33,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.net.URL
+import java.util.Locale
 
 internal object TestData {
     object Constants {
@@ -238,8 +239,16 @@ internal class MockApplicationContext : ApplicationContext {
             R.string.monthly -> "Monthly"
             R.string.weekly -> "Weekly"
             R.string.lifetime -> "Lifetime"
+            R.string.continue_cta -> "Continue"
+            R.string.default_offer_details_with_intro_offer ->
+                "Start your {{ sub_offer_duration }} trial, " +
+                    "then {{ total_price_and_per_month }}."
             else -> error("Unknown string resource $resId")
         }
+    }
+
+    override fun getLocale(): Locale {
+        return Locale.getDefault()
     }
 }
 

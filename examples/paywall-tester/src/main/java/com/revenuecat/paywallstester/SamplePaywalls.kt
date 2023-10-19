@@ -219,6 +219,15 @@ object SamplePaywalls {
                     offerDetailsWithIntroOffer = "{{ total_price_and_per_month }} after {{ sub_offer_duration }} trial",
                     offerName = "{{ sub_period }}",
                 ),
+                "es_ES" to PaywallData.LocalizedConfiguration(
+                    title = "Despierta la curiosidad de tu hijo",
+                    subtitle = "Accede a todo nuestro contenido educativo, confiado por miles de padres.",
+                    callToAction = "Comprar",
+                    offerDetails = "{{ total_price_and_per_month }}",
+                    offerDetailsWithIntroOffer = "Comienza tu prueba de {{ sub_offer_duration }}, " +
+                        "después {{ sub_price_per_month }} cada mes",
+                    offerName = "{{ sub_period }}",
+                ),
             ),
         )
     }
