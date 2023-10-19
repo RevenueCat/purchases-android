@@ -8,18 +8,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import com.revenuecat.purchases.ui.revenuecatui.UIConstant
-import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewState
+import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 
 @Composable
 internal fun ConsistentPackageContentView(
-    state: PaywallViewState.Loaded,
+    state: PaywallState.Loaded,
     creator: @Composable (TemplateConfiguration.PackageInfo) -> Unit,
 ) {
     ConsistentPackageContentView(
         packages = state.templateConfiguration.packages.all,
         selected = state.selectedPackage.value,
-        creator = creator
+        creator = creator,
     )
 }
 

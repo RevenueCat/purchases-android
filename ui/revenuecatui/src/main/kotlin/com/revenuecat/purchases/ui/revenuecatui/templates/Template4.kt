@@ -30,8 +30,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.revenuecat.purchases.ui.revenuecatui.InternalPaywallView
-import com.revenuecat.purchases.ui.revenuecatui.PaywallViewOptions
+import com.revenuecat.purchases.ui.revenuecatui.InternalPaywall
+import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.UIConstant
 import com.revenuecat.purchases.ui.revenuecatui.composables.ConsistentPackageContentView
 import com.revenuecat.purchases.ui.revenuecatui.composables.Footer
@@ -41,8 +41,8 @@ import com.revenuecat.purchases.ui.revenuecatui.composables.PaywallBackground
 import com.revenuecat.purchases.ui.revenuecatui.composables.PaywallIcon
 import com.revenuecat.purchases.ui.revenuecatui.composables.PaywallIconName
 import com.revenuecat.purchases.ui.revenuecatui.composables.PurchaseButton
+import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModel
-import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewState
 import com.revenuecat.purchases.ui.revenuecatui.data.currentColors
 import com.revenuecat.purchases.ui.revenuecatui.data.isInFullScreenMode
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
@@ -60,13 +60,13 @@ private object Template4UIConstants {
 
 @Composable
 internal fun Template4(
-    state: PaywallViewState.Loaded,
+    state: PaywallState.Loaded,
     viewModel: PaywallViewModel,
 ) {
     if (state.isInFullScreenMode) {
         Box(
             modifier = Modifier
-                .fillMaxSize()
+                .fillMaxSize(),
         ) {
             PaywallBackground(state.templateConfiguration)
 
@@ -78,8 +78,8 @@ internal fun Template4(
                             topStart = UIConstant.defaultCornerRadius,
                             topEnd = UIConstant.defaultCornerRadius,
                             bottomStart = 0.dp,
-                            bottomEnd = 0.dp
-                        )
+                            bottomEnd = 0.dp,
+                        ),
                     )
                     .background(state.currentColors.background),
             ) {
@@ -93,7 +93,7 @@ internal fun Template4(
 
 @Composable
 private fun Template4MainContent(
-    state: PaywallViewState.Loaded,
+    state: PaywallState.Loaded,
     viewModel: PaywallViewModel,
 ) {
     val colors = state.templateConfiguration.getCurrentColors()
@@ -101,7 +101,7 @@ private fun Template4MainContent(
     Column(
         modifier = Modifier
             .padding(top = UIConstant.defaultVerticalSpacing),
-        verticalArrangement = Arrangement.spacedBy(UIConstant.defaultVerticalSpacing)
+        verticalArrangement = Arrangement.spacedBy(UIConstant.defaultVerticalSpacing),
     ) {
         if (state.isInFullScreenMode) {
             val localizedConfig = state.selectedLocalization
@@ -111,7 +111,7 @@ private fun Template4MainContent(
                 textAlign = TextAlign.Center,
                 text = localizedConfig.title,
                 color = colors.text1,
-                modifier = Modifier.padding(horizontal = UIConstant.defaultHorizontalPadding)
+                modifier = Modifier.padding(horizontal = UIConstant.defaultHorizontalPadding),
             )
         }
 
@@ -126,7 +126,7 @@ private fun Template4MainContent(
                 color = colors.text1,
                 style = MaterialTheme.typography.bodyMedium,
                 textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
             )
         }
 
@@ -141,7 +141,7 @@ private fun Template4MainContent(
 
 @Composable
 private fun ColumnScope.Packages(
-    state: PaywallViewState.Loaded,
+    state: PaywallState.Loaded,
     viewModel: PaywallViewModel,
 ) {
     Row(
@@ -151,7 +151,7 @@ private fun ColumnScope.Packages(
 //                Modifier.weight(1f)
 //            }
             .padding(horizontal = UIConstant.defaultHorizontalPadding, vertical = UIConstant.defaultVerticalSpacing),
-        horizontalArrangement = Arrangement.spacedBy(space = Template4UIConstants.packageHorizontalSpacing)
+        horizontalArrangement = Arrangement.spacedBy(space = Template4UIConstants.packageHorizontalSpacing),
     ) {
         state.templateConfiguration.packages.all.forEach { packageInfo ->
             SelectPackageButton(state, packageInfo, viewModel)
@@ -162,7 +162,7 @@ private fun ColumnScope.Packages(
 @SuppressWarnings("LongMethod")
 @Composable
 private fun RowScope.SelectPackageButton(
-    state: PaywallViewState.Loaded,
+    state: PaywallState.Loaded,
     packageInfo: TemplateConfiguration.PackageInfo,
     viewModel: PaywallViewModel,
 ) {
@@ -207,19 +207,19 @@ private fun RowScope.SelectPackageButton(
         ) {
 //            Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
 //                CheckmarkBox(isSelected = isSelected, colors = state.currentColors)
-                Text(
-                    text = packageInfo.localization.offerName ?: packageInfo.rcPackage.product.title,
-                    color = textColor,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.SemiBold,
-                )
+            Text(
+                text = packageInfo.localization.offerName ?: packageInfo.rcPackage.product.title,
+                color = textColor,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.SemiBold,
+            )
 
-                Text(
-                    text = packageInfo.rcPackage.product.price.formatted,
-                    color = textColor,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.SemiBold,
-                )
+            Text(
+                text = packageInfo.rcPackage.product.price.formatted,
+                color = textColor,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.SemiBold,
+            )
 //            }
         }
     }
@@ -242,8 +242,8 @@ private fun CheckmarkBox(isSelected: Boolean, colors: TemplateConfiguration.Colo
 @Preview(showBackground = true)
 @Composable
 private fun Template4PaywallPreview() {
-    InternalPaywallView(
-        options = PaywallViewOptions.Builder()
+    InternalPaywall(
+        options = PaywallOptions.Builder()
             .setOffering(TestData.template4Offering)
             .build(),
     )

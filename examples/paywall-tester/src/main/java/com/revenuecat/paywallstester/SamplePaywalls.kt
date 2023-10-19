@@ -297,7 +297,7 @@ object SamplePaywalls {
             templateName = "4",
             config = PaywallData.Configuration(
                 images = PaywallData.Configuration.Images(
-                    background = "300883_1690710097.jpg"
+                    background = "300883_1690710097.jpg",
                 ),
                 colors = PaywallData.Configuration.ColorInformation(
                     light = PaywallData.Configuration.Colors(

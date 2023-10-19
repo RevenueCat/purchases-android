@@ -18,7 +18,7 @@ internal val TestData.template4: PaywallData
             ),
             defaultPackage = PackageType.SIX_MONTH.identifier!!,
             images = PaywallData.Configuration.Images(
-                background = "300883_1690710097.jpg"
+                background = "300883_1690710097.jpg",
             ),
             displayRestorePurchases = true,
             termsOfServiceURL = URL("https://revenuecat.com/tos"),
