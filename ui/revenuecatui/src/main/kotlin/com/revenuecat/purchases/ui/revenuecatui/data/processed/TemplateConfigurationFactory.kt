@@ -13,6 +13,7 @@ internal object TemplateConfigurationFactory {
         paywallData: PaywallData,
         availablePackages: List<Package>,
         activelySubscribedProductIdentifiers: Set<String>,
+        nonSubscriptionProductIdentifiers: Set<String>,
         template: PaywallTemplate,
     ): Result<TemplateConfiguration> {
         val (locale, localizedConfiguration) = paywallData.localizedConfiguration
@@ -27,6 +28,7 @@ internal object TemplateConfigurationFactory {
                 variableDataProvider = variableDataProvider,
                 availablePackages = availablePackages,
                 activelySubscribedProductIdentifiers = activelySubscribedProductIdentifiers,
+                nonSubscriptionProductIdentifiers = nonSubscriptionProductIdentifiers,
                 packageIdsInConfig = paywallData.config.packageIds,
                 default = paywallData.config.defaultPackage,
                 localization = localizedConfiguration,

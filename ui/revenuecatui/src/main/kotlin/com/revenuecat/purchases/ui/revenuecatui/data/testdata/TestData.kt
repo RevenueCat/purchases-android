@@ -114,6 +114,7 @@ internal object TestData {
             Packages.weekly,
             Packages.monthly,
             Packages.annual,
+            Packages.lifetime,
         ),
         metadata = mapOf(),
         paywall = template2,
@@ -272,11 +273,12 @@ internal class MockViewModel(
 
     private val _state = MutableStateFlow(
         offering.toPaywallState(
-            VariableDataProvider(MockApplicationContext()),
-            setOf(),
-            mode,
-            offering.paywall!!,
-            PaywallTemplate.fromId(offering.paywall!!.templateName)!!,
+            variableDataProvider = VariableDataProvider(MockApplicationContext()),
+            activelySubscribedProductIdentifiers = setOf(),
+            nonSubscriptionProductIdentifiers = setOf(),
+            mode = mode,
+            validatedPaywallData = offering.paywall!!,
+            template = PaywallTemplate.fromId(offering.paywall!!.templateName)!!,
         ),
     )
 

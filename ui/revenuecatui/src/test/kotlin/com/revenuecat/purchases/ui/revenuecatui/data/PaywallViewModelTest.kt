@@ -10,6 +10,7 @@ import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PurchaseResult
 import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.models.Transaction
 import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
@@ -35,6 +36,8 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.util.Date
+import java.util.UUID
 
 @RunWith(AndroidJUnit4::class)
 class PaywallViewModelTest {
@@ -111,7 +114,10 @@ class PaywallViewModelTest {
 
     @Test
     fun `Should load default offering`() {
-        val model = create(activeSubscriptions = arrayOf(TestData.Packages.monthly.product.id))
+        val model = create(
+            activeSubscriptions = setOf(TestData.Packages.monthly.product.id),
+            nonSubscriptionTransactionProductIdentifiers = setOf(TestData.Packages.lifetime.product.id),
+        )
 
         coVerify { purchases.awaitOfferings() }
 
@@ -128,6 +134,8 @@ class PaywallViewModelTest {
             .isTrue
         assertThat(state.templateConfiguration.packages.packageIsCurrentlySubscribed(TestData.Packages.annual))
             .isFalse
+        assertThat(state.templateConfiguration.packages.packageIsCurrentlySubscribed(TestData.Packages.lifetime))
+            .isTrue
     }
 
     @Test
@@ -226,9 +234,11 @@ class PaywallViewModelTest {
 
     private fun create(
         offering: Offering? = null,
-        vararg activeSubscriptions: String,
+        activeSubscriptions: Set<String> = setOf(),
+        nonSubscriptionTransactionProductIdentifiers: Set<String> = setOf(),
     ): PaywallViewModelImpl {
-        mockActiveSubscriptions(*activeSubscriptions)
+        mockActiveSubscriptions(activeSubscriptions)
+        mockNonSubscriptionTransactions(nonSubscriptionTransactionProductIdentifiers)
 
         return PaywallViewModelImpl(
             MockApplicationContext(),
@@ -241,8 +251,21 @@ class PaywallViewModelTest {
         )
     }
 
-    private fun mockActiveSubscriptions(vararg subscriptions: String) {
-        every { customerInfo.activeSubscriptions } returns setOf(*subscriptions)
+    private fun mockActiveSubscriptions(subscriptions: Set<String>) {
+        every { customerInfo.activeSubscriptions } returns subscriptions
+    }
+
+    private fun mockNonSubscriptionTransactions(productIdentifiers: Set<String>) {
+        every { customerInfo.nonSubscriptionTransactions } returns productIdentifiers
+            .map {
+                Transaction(
+                    UUID.randomUUID().toString(),
+                    UUID.randomUUID().toString(),
+                    it,
+                    it,
+                    Date()
+                )
+            }
     }
 
     /**

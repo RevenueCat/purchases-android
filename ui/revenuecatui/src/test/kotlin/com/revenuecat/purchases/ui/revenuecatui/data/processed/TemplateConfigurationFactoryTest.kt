@@ -27,14 +27,22 @@ internal class TemplateConfigurationFactoryTest {
     fun setUp() {
         variableDataProvider = VariableDataProvider(MockApplicationContext())
         val result = TemplateConfigurationFactory.create(
-            variableDataProvider,
-            paywallMode,
-            TestData.template2,
-            listOf(TestData.Packages.weekly, TestData.Packages.monthly, TestData.Packages.annual),
-            setOf(
-                TestData.Packages.monthly.product.id
+            variableDataProvider = variableDataProvider,
+            mode = paywallMode,
+            paywallData = TestData.template2,
+            availablePackages = listOf(
+                TestData.Packages.weekly,
+                TestData.Packages.monthly,
+                TestData.Packages.annual,
+                TestData.Packages.lifetime,
             ),
-            PaywallTemplate.TEMPLATE_2,
+            activelySubscribedProductIdentifiers = setOf(
+                TestData.Packages.monthly.product.id,
+            ),
+            nonSubscriptionProductIdentifiers = setOf(
+                TestData.Packages.lifetime.product.id
+            ),
+            template = PaywallTemplate.TEMPLATE_2,
         )
         template2Configuration = result.getOrNull()!!
     }
@@ -63,6 +71,7 @@ internal class TemplateConfigurationFactoryTest {
 
         val annualPackage = getPackageInfo(TestData.Packages.annual, currentlySubscribed = false)
         val monthlyPackage = getPackageInfo(TestData.Packages.monthly, currentlySubscribed = true)
+        val lifetime = getPackageInfo(TestData.Packages.lifetime, currentlySubscribed = true)
 
         val expectedConfiguration = TemplateConfiguration.PackageConfiguration.Multiple(
             first = annualPackage,
@@ -70,6 +79,7 @@ internal class TemplateConfigurationFactoryTest {
             all = listOf(
                 annualPackage,
                 monthlyPackage,
+                lifetime
             ),
         )
 
@@ -97,24 +107,28 @@ internal class TemplateConfigurationFactoryTest {
             PackageType.ANNUAL -> "Annual"
             PackageType.MONTHLY -> "Monthly"
             PackageType.WEEKLY -> "Weekly"
+            PackageType.LIFETIME -> "Lifetime"
             else -> error("Unknown package type ${rcPackage.packageType}")
         }
         val callToAction = when(rcPackage.packageType) {
             PackageType.ANNUAL -> "Subscribe for $67.99/yr"
             PackageType.MONTHLY -> "Subscribe for $7.99/mth"
             PackageType.WEEKLY -> "Subscribe for $1.99/wk"
+            PackageType.LIFETIME -> "Subscribe for $1,000"
             else -> error("Unknown package type ${rcPackage.packageType}")
         }
         val offerDetails = when(rcPackage.packageType) {
             PackageType.ANNUAL -> "$67.99/yr ($5.67/mth)"
             PackageType.MONTHLY -> "$7.99/mth"
             PackageType.WEEKLY -> "$1.99/wk ($7.96/mth)"
+            PackageType.LIFETIME -> "$1,000"
             else -> error("Unknown package type ${rcPackage.packageType}")
         }
         val offerDetailsWithIntroOffer = when(rcPackage.packageType) {
             PackageType.ANNUAL -> "$67.99/yr ($5.67/mth) after 1 month trial"
             PackageType.MONTHLY -> "$7.99/mth after  trial"
             PackageType.WEEKLY -> "$1.99/wk ($7.96/mth) after  trial"
+            PackageType.LIFETIME -> "$1,000 after  trial"
             else -> error("Unknown package type ${rcPackage.packageType}")
         }
         val processedLocalization = ProcessedLocalizedConfiguration(

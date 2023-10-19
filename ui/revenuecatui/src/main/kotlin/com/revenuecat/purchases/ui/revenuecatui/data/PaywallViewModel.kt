@@ -214,11 +214,14 @@ internal class PaywallViewModelImpl(
             Logger.w(PaywallValidationErrorStrings.DISPLAYING_DEFAULT)
         }
         return offering.toPaywallState(
-            variableDataProvider,
-            customerInfo.activeSubscriptions,
-            mode,
-            displayablePaywall,
-            template,
+            variableDataProvider = variableDataProvider,
+            activelySubscribedProductIdentifiers = customerInfo.activeSubscriptions,
+            nonSubscriptionProductIdentifiers = customerInfo.nonSubscriptionTransactions
+                .map { it.productIdentifier }
+                .toSet(),
+            mode = mode,
+            validatedPaywallData = displayablePaywall,
+            template = template,
         )
     }
 
