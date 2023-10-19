@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="all_plans">Semua langganan</string>
     <string name="privacy">Pribadi</string>
     <string name="privacy_policy">Kebijakan pribadi</string>
     <string name="restore">Memulihkan</string>

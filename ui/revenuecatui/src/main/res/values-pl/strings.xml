@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="all_plans">Wszystkie subskrypcje</string>
     <string name="privacy">Prywatność</string>
     <string name="privacy_policy">Polityka prywatności</string>
     <string name="restore">Przywrócić</string>

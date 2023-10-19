@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="all_plans">Всички абонаменти</string>
     <string name="privacy">поверителност</string>
     <string name="privacy_policy">Политика за поверителност</string>
     <string name="restore">Възстанови</string>

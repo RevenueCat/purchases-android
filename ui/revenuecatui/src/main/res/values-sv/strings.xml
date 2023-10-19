@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="all_plans">Alla prenumerationer</string>
     <string name="privacy">Integritet</string>
     <string name="privacy_policy">Integritetspolicy</string>
     <string name="restore">Återställ</string>

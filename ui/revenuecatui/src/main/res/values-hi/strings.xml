@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="all_plans">सभी सदस्यताएँ</string>
     <string name="privacy">गोपनीयता</string>
     <string name="privacy_policy">गोपनीयता नीति</string>
     <string name="restore">पुनर्स्थापित करना</string>

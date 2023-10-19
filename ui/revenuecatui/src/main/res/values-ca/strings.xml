@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="all_plans">Totes les subscripcions</string>
     <string name="privacy">Privadesa</string>
     <string name="privacy_policy">Política de privacitat</string>
     <string name="restore">Restaurar</string>

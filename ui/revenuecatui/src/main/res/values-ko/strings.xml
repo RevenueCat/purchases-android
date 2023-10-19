@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="all_plans">모든 구독</string>
     <string name="privacy">은둔</string>
     <string name="privacy_policy">개인 정보 정책</string>
     <string name="restore">복원하다</string>

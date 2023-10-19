@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="all_plans">すべてのサブスクリプション</string>
     <string name="privacy">プライバシー</string>
     <string name="privacy_policy">プライバシーポリシー</string>
     <string name="restore">復元する</string>

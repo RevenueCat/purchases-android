@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="all_plans">Toate abonamentele</string>
     <string name="privacy">Confidențialitate</string>
     <string name="privacy_policy">Politica de confidențialitate</string>
     <string name="restore">Restabili</string>

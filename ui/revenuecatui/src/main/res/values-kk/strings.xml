@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="all_plans">Барлық жазылымдар</string>
     <string name="privacy">Құпиялық</string>
     <string name="privacy_policy">Құпиялылық саясаты</string>
     <string name="restore">Қалпына келтіру</string>

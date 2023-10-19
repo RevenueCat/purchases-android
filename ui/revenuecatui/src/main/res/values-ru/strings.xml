@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="all_plans">Все подписки</string>
     <string name="privacy">Конфиденциальность</string>
     <string name="privacy_policy">Политика конфиденциальности</string>
     <string name="restore">Восстановить</string>
