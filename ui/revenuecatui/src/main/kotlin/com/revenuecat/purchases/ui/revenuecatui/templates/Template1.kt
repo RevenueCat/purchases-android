@@ -35,6 +35,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
 import com.revenuecat.purchases.ui.revenuecatui.InternalPaywall
+import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.UIConstant
 import com.revenuecat.purchases.ui.revenuecatui.composables.Footer
@@ -45,6 +46,7 @@ import com.revenuecat.purchases.ui.revenuecatui.composables.RemoteImage
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModel
 import com.revenuecat.purchases.ui.revenuecatui.data.currentColors
+import com.revenuecat.purchases.ui.revenuecatui.data.isInFullScreenMode
 import com.revenuecat.purchases.ui.revenuecatui.data.selectedLocalization
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockViewModel
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
@@ -53,12 +55,10 @@ import com.revenuecat.purchases.ui.revenuecatui.extensions.introEligibility
 @Composable
 internal fun Template1(state: PaywallState.Loaded, viewModel: PaywallViewModel) {
     Column(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Template1MainContent(state)
-        }
+        Template1MainContent(state)
         PurchaseButton(state, viewModel)
         Footer(templateConfiguration = state.templateConfiguration, viewModel = viewModel)
     }
@@ -70,51 +70,54 @@ private fun ColumnScope.Template1MainContent(state: PaywallState.Loaded) {
     val localizedConfig = state.selectedLocalization
     val colors = state.currentColors
 
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .verticalScroll(rememberScrollState())
-            .fillMaxHeight(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(UIConstant.defaultVerticalSpacing, Alignment.CenterVertically),
-    ) {
-        HeaderImage(state.templateConfiguration.images.headerUri)
-
-        Spacer(modifier = Modifier.weight(1f))
-
-        Markdown(
-            text = localizedConfig.title,
-            style = MaterialTheme.typography.displaySmall,
-            fontWeight = FontWeight.Black,
-            textAlign = TextAlign.Center,
-            color = colors.text1,
+    if (state.isInFullScreenMode) {
+        Column(
             modifier = Modifier
-                .padding(
-                    horizontal = UIConstant.defaultHorizontalPadding,
-                    vertical = UIConstant.defaultVerticalSpacing,
-                ),
-        )
-
-        Box(
-            modifier = Modifier
-                .padding(horizontal = UIConstant.defaultHorizontalPadding),
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .fillMaxHeight()
+                .weight(1f),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
         ) {
+            HeaderImage(state.templateConfiguration.images.headerUri)
+
+            Spacer(modifier = Modifier.weight(1f))
+
             Markdown(
-                text = localizedConfig.subtitle ?: "",
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Normal,
+                text = localizedConfig.title,
+                style = MaterialTheme.typography.displaySmall,
+                fontWeight = FontWeight.Black,
                 textAlign = TextAlign.Center,
+                color = colors.text1,
                 modifier = Modifier
                     .padding(
                         horizontal = UIConstant.defaultHorizontalPadding,
                         vertical = UIConstant.defaultVerticalSpacing,
                     ),
-                color = colors.text1,
             )
+
+            Box(
+                modifier = Modifier
+                    .padding(horizontal = UIConstant.defaultHorizontalPadding),
+            ) {
+                Markdown(
+                    text = localizedConfig.subtitle ?: "",
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Normal,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .padding(
+                            horizontal = UIConstant.defaultHorizontalPadding,
+                            vertical = UIConstant.defaultVerticalSpacing,
+                        ),
+                    color = colors.text1,
+                )
+            }
+
+            Spacer(modifier = Modifier.weight(2f))
         }
     }
-
-    Spacer(modifier = Modifier.weight(1f))
 
     Column(
         modifier = Modifier
@@ -193,6 +196,24 @@ internal fun Template1PaywallPreview() {
     InternalPaywall(
         options = PaywallOptions.Builder().build(),
         viewModel = MockViewModel(offering = TestData.template1Offering),
+    )
+}
+
+@Preview(showBackground = true)
+@Composable
+internal fun Template1FooterPaywallPreview() {
+    InternalPaywall(
+        options = PaywallOptions.Builder().build(),
+        viewModel = MockViewModel(mode = PaywallMode.FOOTER, offering = TestData.template1Offering),
+    )
+}
+
+@Preview(showBackground = true)
+@Composable
+internal fun Template1CondensedFooterPaywallPreview() {
+    InternalPaywall(
+        options = PaywallOptions.Builder().build(),
+        viewModel = MockViewModel(mode = PaywallMode.FOOTER_CONDENSED, offering = TestData.template1Offering),
     )
 }
 

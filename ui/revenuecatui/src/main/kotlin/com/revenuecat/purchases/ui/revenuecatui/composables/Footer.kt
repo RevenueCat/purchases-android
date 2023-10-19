@@ -48,7 +48,7 @@ internal fun Footer(
     templateConfiguration: TemplateConfiguration,
     viewModel: PaywallViewModel,
     childModifier: Modifier = Modifier,
-    allPlansTapped: () -> Unit = {},
+    allPlansTapped: (() -> Unit)? = null,
 ) {
     Footer(
         mode = templateConfiguration.mode,
@@ -68,7 +68,7 @@ private fun Footer(
     colors: TemplateConfiguration.Colors,
     viewModel: PaywallViewModel,
     childModifier: Modifier = Modifier,
-    allPlansTapped: () -> Unit = {},
+    allPlansTapped: (() -> Unit)? = null,
 ) {
     val context = LocalContext.current
 
@@ -83,7 +83,7 @@ private fun Footer(
     ) {
         val color = colors.text1
 
-        if (mode == PaywallMode.FOOTER_CONDENSED) {
+        if (mode == PaywallMode.FOOTER_CONDENSED && allPlansTapped != null) {
             Button(
                 color = color,
                 childModifier = childModifier,
