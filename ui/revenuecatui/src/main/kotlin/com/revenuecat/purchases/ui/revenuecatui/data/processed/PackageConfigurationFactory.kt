@@ -42,8 +42,11 @@ internal object PackageConfigurationFactory {
                 PackageType.MONTHLY,
                 PackageType.WEEKLY,
                 -> activelySubscribedProductIdentifiers.contains(it.product.id)
-                PackageType.LIFETIME -> nonSubscriptionProductIdentifiers.contains(it.product.id)
-                PackageType.UNKNOWN, PackageType.CUSTOM -> false
+
+                PackageType.LIFETIME, PackageType.CUSTOM,
+                -> nonSubscriptionProductIdentifiers.contains(it.product.id)
+
+                PackageType.UNKNOWN -> false
             }
 
             TemplateConfiguration.PackageInfo(
