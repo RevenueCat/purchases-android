@@ -28,7 +28,8 @@
     },
     "packages" : [
       "$rc_annual",
-      "$rc_monthly"
+      "$rc_monthly",
+      "$rc_lifetime"
     ],
     "privacy_url" : null,
     "tos_url" : null
