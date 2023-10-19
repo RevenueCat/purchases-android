@@ -19,7 +19,7 @@ internal fun OfferDetails(
 ) {
     Box(
         modifier = Modifier
-            .padding(vertical = UIConstant.defaultVerticalSpacing, horizontal = UIConstant.defaultHorizontalPadding),
+            .padding(bottom = UIConstant.defaultVerticalSpacing),
     ) {
         IntroEligibilityStateView(
             textWithNoIntroOffer = state.selectedLocalization.offerDetails,
