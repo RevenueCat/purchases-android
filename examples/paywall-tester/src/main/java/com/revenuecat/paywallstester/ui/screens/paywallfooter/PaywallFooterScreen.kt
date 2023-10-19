@@ -58,7 +58,7 @@ fun PaywallFooterScreen(
 
 @Suppress("MagicNumber")
 @Composable
-private fun SamplePaywall(paddingValues: PaddingValues) {
+internal fun SamplePaywall(paddingValues: PaddingValues) {
     Column(
         modifier = Modifier
             .fillMaxWidth()

@@ -1,6 +1,7 @@
 package com.revenuecat.paywallstester.ui.screens.main.paywalls
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -10,6 +11,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -20,15 +22,20 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import com.revenuecat.paywallstester.SamplePaywalls
 import com.revenuecat.paywallstester.SamplePaywallsLoader
+import com.revenuecat.paywallstester.ui.screens.paywallfooter.SamplePaywall
 import com.revenuecat.paywallstester.ui.theme.googleFont
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.ui.revenuecatui.PaywallDialog
 import com.revenuecat.purchases.ui.revenuecatui.PaywallDialogOptions
+import com.revenuecat.purchases.ui.revenuecatui.PaywallFooter
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
+import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.fonts.CustomFontProvider
 import com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider
 
@@ -40,6 +47,7 @@ fun PaywallsScreen(
 
     LazyColumn {
         items(SamplePaywalls.SampleTemplate.values()) { template ->
+            val offering = samplePaywallsLoader.offeringForTemplate(template)
             Column(modifier = Modifier.fillMaxWidth()) {
                 Text(
                     text = template.displayableName,
@@ -48,27 +56,27 @@ fun PaywallsScreen(
                 )
                 ButtonWithEmoji(
                     onClick = {
-                        val offering = samplePaywallsLoader.offeringForTemplate(template)
                         displayPaywallState = DisplayPaywallState.FullScreen(offering)
                     },
                     emoji = "\uD83D\uDCF1",
                     label = "Full screen",
                 )
                 ButtonWithEmoji(
-                    onClick = { },
+                    onClick = {
+                        displayPaywallState = DisplayPaywallState.Footer(offering, condensed = false)
+                    },
                     emoji = "\uD83D\uDD3D",
-                    label = "Footer (coming soon)",
-                    enabled = false,
-                )
-                ButtonWithEmoji(
-                    onClick = { },
-                    emoji = "\uD83D\uDDDC️",
-                    label = "Condenser footer (coming soon)",
-                    enabled = false,
+                    label = "Footer",
                 )
                 ButtonWithEmoji(
                     onClick = {
-                        val offering = samplePaywallsLoader.offeringForTemplate(template)
+                        displayPaywallState = DisplayPaywallState.Footer(offering, condensed = true)
+                    },
+                    emoji = "\uD83D\uDDDC️",
+                    label = "Condenser footer",
+                )
+                ButtonWithEmoji(
+                    onClick = {
                         displayPaywallState = DisplayPaywallState.FullScreen(offering, CustomFontProvider(googleFont))
                     },
                     emoji = "\uD83C\uDD70️",
@@ -79,19 +87,46 @@ fun PaywallsScreen(
     }
     val currentState = displayPaywallState
     if (currentState is DisplayPaywallState.FullScreen) {
-        PaywallDialog(
-            PaywallDialogOptions.Builder(dismissRequest = {
-                displayPaywallState = DisplayPaywallState.None
-            })
-                .setOffering(currentState.offering)
-                .setListener(object : PaywallListener {
-                    override fun onPurchaseCompleted(customerInfo: CustomerInfo, storeTransaction: StoreTransaction) {
-                        displayPaywallState = DisplayPaywallState.None
-                    }
-                })
-                .setFontProvider(currentState.fontProvider)
-                .build(),
-        )
+        FullScreenDialog(currentState) {
+            displayPaywallState = DisplayPaywallState.None
+        }
+    } else if (currentState is DisplayPaywallState.Footer) {
+        FooterDialog(currentState) {
+            displayPaywallState = DisplayPaywallState.None
+        }
+    }
+}
+
+@Composable
+private fun FullScreenDialog(currentState: DisplayPaywallState.FullScreen, onDismiss: () -> Unit) {
+    PaywallDialog(
+        PaywallDialogOptions.Builder(dismissRequest = onDismiss)
+            .setOffering(currentState.offering)
+            .setListener(PaywallListenerImpl(onDismiss))
+            .setFontProvider(currentState.fontProvider)
+            .build(),
+    )
+}
+
+@Composable
+private fun FooterDialog(currentState: DisplayPaywallState.Footer, onDismiss: () -> Unit) {
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false),
+    ) {
+        Scaffold { scaffoldPadding ->
+            Box(modifier = Modifier.padding(scaffoldPadding)) {
+                PaywallFooter(
+                    options = PaywallOptions.Builder()
+                        .setOffering(currentState.offering)
+                        .setListener(PaywallListenerImpl(onDismiss))
+                        .build(),
+                    condensed = currentState.condensed,
+                ) { footerPadding ->
+                    SamplePaywall(paddingValues = footerPadding)
+                }
+            }
+        }
     }
 }
 
@@ -101,6 +136,16 @@ private sealed class DisplayPaywallState {
         val offering: Offering? = null,
         val fontProvider: FontProvider? = null,
     ) : DisplayPaywallState()
+    data class Footer(
+        val offering: Offering? = null,
+        val condensed: Boolean = false,
+    ) : DisplayPaywallState()
+}
+
+private class PaywallListenerImpl(private val onDismiss: () -> Unit) : PaywallListener {
+    override fun onPurchaseCompleted(customerInfo: CustomerInfo, storeTransaction: StoreTransaction) {
+        onDismiss()
+    }
 }
 
 @Composable
