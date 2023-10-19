@@ -39,6 +39,13 @@ private fun AppNavHost(
                 navigateToPaywallFooterScreen = { offering ->
                     navController.navigate(AppScreen.PaywallFooter.route.plus("/${offering?.identifier}"))
                 },
+                navigateToPaywallCondensedFooterScreen = { offering ->
+                    navController.navigate(
+                        AppScreen.PaywallFooter.route
+                            .plus("/${offering?.identifier}")
+                            .plus("?${PaywallScreenViewModel.FOOTER_CONDENSED_KEY}=true"),
+                    )
+                },
             )
         }
         composable(
@@ -48,8 +55,18 @@ private fun AppNavHost(
             PaywallScreen()
         }
         composable(
-            route = AppScreen.PaywallFooter.route.plus("/{${PaywallScreenViewModel.OFFERING_ID_KEY}}"),
-            arguments = listOf(navArgument(PaywallScreenViewModel.OFFERING_ID_KEY) { type = NavType.StringType }),
+            route = AppScreen.PaywallFooter.route
+                .plus("/{${PaywallScreenViewModel.OFFERING_ID_KEY}}")
+                .plus(
+                    "?${PaywallScreenViewModel.FOOTER_CONDENSED_KEY}={${PaywallScreenViewModel.FOOTER_CONDENSED_KEY}}",
+                ),
+            arguments = listOf(
+                navArgument(PaywallScreenViewModel.OFFERING_ID_KEY) { type = NavType.StringType },
+                navArgument(PaywallScreenViewModel.FOOTER_CONDENSED_KEY) {
+                    type = NavType.BoolType
+                    defaultValue = false
+                },
+            ),
         ) {
             PaywallFooterScreen()
         }

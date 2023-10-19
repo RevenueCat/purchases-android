@@ -44,6 +44,7 @@ fun PaywallFooterScreen(
                         .setOffering(state.offering)
                         .setListener(viewModel)
                         .build(),
+                    condensed = state.footerCondensed,
                 ) {
                     SamplePaywall(paddingValues = it)
                 }

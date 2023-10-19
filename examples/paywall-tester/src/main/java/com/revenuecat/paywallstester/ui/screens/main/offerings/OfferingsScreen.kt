@@ -41,6 +41,7 @@ import kotlinx.coroutines.flow.asStateFlow
 fun OfferingsScreen(
     tappedOnOffering: (Offering) -> Unit,
     tappedOnOfferingFooter: (Offering) -> Unit,
+    tappedOnOfferingCondensedFooter: (Offering) -> Unit,
     viewModel: OfferingsViewModel = viewModel<OfferingsViewModelImpl>(),
 ) {
     when (val state = viewModel.offeringsState.collectAsState().value) {
@@ -49,6 +50,7 @@ fun OfferingsScreen(
             offeringsState = state,
             tappedOnNavigateToOffering = tappedOnOffering,
             tappedOnNavigateToOfferingFooter = tappedOnOfferingFooter,
+            tappedOnNavigateToOfferingCondensedFooter = tappedOnOfferingCondensedFooter,
         )
         OfferingsState.Loading -> LoadingOfferingsScreen()
     }
@@ -79,6 +81,7 @@ private fun OfferingsListScreen(
     offeringsState: OfferingsState.Loaded,
     tappedOnNavigateToOffering: (Offering) -> Unit,
     tappedOnNavigateToOfferingFooter: (Offering) -> Unit,
+    tappedOnNavigateToOfferingCondensedFooter: (Offering) -> Unit,
 ) {
     var dropdownExpandedOffering by remember { mutableStateOf<Offering?>(null) }
     var displayPaywallDialogOffering by remember { mutableStateOf<Offering?>(null) }
@@ -92,6 +95,7 @@ private fun OfferingsListScreen(
                         tappedOnNavigateToOffering = tappedOnNavigateToOffering,
                         tappedOnDisplayOfferingAsDialog = { displayPaywallDialogOffering = it },
                         tappedOnDisplayOfferingAsFooter = tappedOnNavigateToOfferingFooter,
+                        tappedOnDisplayOfferingAsCondensedFooter = tappedOnNavigateToOfferingCondensedFooter,
                         dismissed = { dropdownExpandedOffering = null },
                     )
                 }
@@ -136,12 +140,14 @@ private fun OfferingsListScreen(
     }
 }
 
+@Suppress("LongParameterList")
 @Composable
 private fun DisplayOfferingMenu(
     offering: Offering,
     tappedOnNavigateToOffering: (Offering) -> Unit,
     tappedOnDisplayOfferingAsDialog: (Offering) -> Unit,
     tappedOnDisplayOfferingAsFooter: (Offering) -> Unit,
+    tappedOnDisplayOfferingAsCondensedFooter: (Offering) -> Unit,
     dismissed: () -> Unit,
 ) {
     val activity = LocalContext.current as MainActivity
@@ -159,6 +165,10 @@ private fun DisplayOfferingMenu(
             onClick = { tappedOnDisplayOfferingAsFooter(offering) },
         )
         DropdownMenuItem(
+            text = { Text(text = "Display paywall as condensed footer") },
+            onClick = { tappedOnDisplayOfferingAsCondensedFooter(offering) },
+        )
+        DropdownMenuItem(
             text = { Text(text = "Display paywall as activity") },
             onClick = { activity.launchPaywall(offering) },
         )
@@ -171,6 +181,7 @@ fun OfferingsScreenPreview() {
     OfferingsScreen(
         tappedOnOffering = {},
         tappedOnOfferingFooter = {},
+        tappedOnOfferingCondensedFooter = {},
         viewModel = object : OfferingsViewModel() {
             private val _offeringsState = MutableStateFlow<OfferingsState>(
                 OfferingsState.Loaded(

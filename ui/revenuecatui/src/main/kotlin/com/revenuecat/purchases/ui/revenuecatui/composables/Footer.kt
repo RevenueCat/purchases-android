@@ -48,21 +48,27 @@ internal fun Footer(
     templateConfiguration: TemplateConfiguration,
     viewModel: PaywallViewModel,
     childModifier: Modifier = Modifier,
+    allPlansTapped: () -> Unit = {},
 ) {
     Footer(
+        mode = templateConfiguration.mode,
         configuration = templateConfiguration.configuration,
         colors = templateConfiguration.getCurrentColors(),
         viewModel = viewModel,
         childModifier = childModifier,
+        allPlansTapped = allPlansTapped,
     )
 }
 
+@Suppress("LongParameterList")
 @Composable
 private fun Footer(
+    mode: PaywallMode,
     configuration: PaywallData.Configuration,
     colors: TemplateConfiguration.Colors,
     viewModel: PaywallViewModel,
     childModifier: Modifier = Modifier,
+    allPlansTapped: () -> Unit = {},
 ) {
     val context = LocalContext.current
 
@@ -76,6 +82,22 @@ private fun Footer(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         val color = colors.text1
+
+        if (mode == PaywallMode.FOOTER_CONDENSED) {
+            Button(
+                color = color,
+                childModifier = childModifier,
+                R.string.all_plans,
+                action = allPlansTapped,
+            )
+
+            if (configuration.displayRestorePurchases ||
+                configuration.termsOfServiceURL != null ||
+                configuration.privacyURL != null
+            ) {
+                Separator(color = color)
+            }
+        }
 
         if (configuration.displayRestorePurchases) {
             Button(
@@ -197,6 +219,7 @@ private object FooterConstants {
 @Composable
 private fun FooterPreview() {
     Footer(
+        mode = PaywallMode.FULL_SCREEN,
         configuration = PaywallData.Configuration(
             packageIds = listOf(),
             termsOfServiceURL = URL("https://revenuecat.com/tos"),
