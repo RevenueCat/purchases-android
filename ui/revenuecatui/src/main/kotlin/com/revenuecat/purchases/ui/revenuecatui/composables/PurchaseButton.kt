@@ -82,7 +82,7 @@ private fun PurchaseButton(
                 .fillMaxWidth()
                 .background(
                     brush = buttonBrush(colors),
-                    shape = ButtonDefaults.shape
+                    shape = ButtonDefaults.shape,
                 ),
             onClick = { viewModel.purchaseSelectedPackage(context) },
             colors = ButtonDefaults.buttonColors(
@@ -130,7 +130,7 @@ private fun buttonBrush(colors: TemplateConfiguration.Colors): Brush {
             listOf(
                 colors.callToActionBackground,
                 secondaryColor,
-            )
+            ),
         )
     } ?: SolidColor(colors.callToActionBackground)
 }
