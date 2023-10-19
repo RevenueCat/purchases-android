@@ -12,7 +12,13 @@ internal class PaywallViewModelFactory(
     private val colorScheme: ColorScheme,
     private val preview: Boolean = false,
 ) : ViewModelProvider.NewInstanceFactory() {
+    @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        return PaywallViewModelImpl(applicationContext, options, colorScheme, preview) as T
+        return PaywallViewModelImpl(
+            applicationContext = applicationContext,
+            options = options,
+            colorScheme = colorScheme,
+            preview = preview,
+        ) as T
     }
 }

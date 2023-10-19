@@ -15,12 +15,7 @@ import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PurchaseParams
-import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesException
-import com.revenuecat.purchases.awaitCustomerInfo
-import com.revenuecat.purchases.awaitOfferings
-import com.revenuecat.purchases.awaitPurchase
-import com.revenuecat.purchases.awaitRestore
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
@@ -60,11 +55,11 @@ internal interface PaywallViewModel {
 @Suppress("TooManyFunctions")
 internal class PaywallViewModelImpl(
     applicationContext: ApplicationContext,
+    private val purchases: PurchasesType = PurchasesImpl(),
     private val options: PaywallOptions,
     colorScheme: ColorScheme,
     preview: Boolean = false,
 ) : ViewModel(), PaywallViewModel {
-
     private val variableDataProvider = VariableDataProvider(applicationContext, preview)
 
     override val state: StateFlow<PaywallState>
@@ -137,7 +132,7 @@ internal class PaywallViewModelImpl(
         viewModelScope.launch {
             try {
                 listener?.onRestoreStarted()
-                val customerInfo = Purchases.sharedInstance.awaitRestore()
+                val customerInfo = purchases.awaitRestore()
                 Logger.i("Restore purchases successful: $customerInfo")
                 listener?.onRestoreCompleted(customerInfo)
             } catch (e: PurchasesException) {
@@ -160,8 +155,8 @@ internal class PaywallViewModelImpl(
         viewModelScope.launch {
             try {
                 listener?.onPurchaseStarted(packageToPurchase)
-                val purchaseResult = Purchases.sharedInstance.awaitPurchase(
-                    PurchaseParams.Builder(activity, packageToPurchase).build(),
+                val purchaseResult = purchases.awaitPurchase(
+                    PurchaseParams.Builder(activity, packageToPurchase),
                 )
                 listener?.onPurchaseCompleted(purchaseResult.customerInfo, purchaseResult.storeTransaction)
             } catch (e: PurchasesException) {
@@ -177,7 +172,7 @@ internal class PaywallViewModelImpl(
             try {
                 var currentOffering = options.offeringSelection.offering
                 if (currentOffering == null) {
-                    val offerings = Purchases.sharedInstance.awaitOfferings()
+                    val offerings = purchases.awaitOfferings()
                     currentOffering = options.offeringSelection.offeringIdentifier?.let { offerings[it] }
                         ?: offerings.current
                 }
@@ -187,7 +182,7 @@ internal class PaywallViewModelImpl(
                 } else {
                     _state.value = calculateState(
                         currentOffering,
-                        Purchases.sharedInstance.awaitCustomerInfo(),
+                        purchases.awaitCustomerInfo(),
                         _colorScheme.value,
                     )
                 }

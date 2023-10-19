@@ -46,20 +46,18 @@ data class PurchaseParams(val builder: Builder) {
         @get:JvmSynthetic internal val activity: Activity,
         @get:JvmSynthetic internal val purchasingData: PurchasingData,
         @get:JvmSynthetic internal val presentedOfferingIdentifier: String? = null,
+        @get:JvmSynthetic internal val product: StoreProduct?,
     ) {
         constructor(activity: Activity, packageToPurchase: Package) :
             this(
                 activity,
                 packageToPurchase.product.purchasingData,
                 packageToPurchase.offering,
-            ) {
-            ensureNoTestProduct(packageToPurchase.product)
-        }
+                packageToPurchase.product,
+            )
 
         constructor(activity: Activity, storeProduct: StoreProduct) :
-            this(activity, storeProduct.purchasingData, storeProduct.presentedOfferingIdentifier) {
-            ensureNoTestProduct(storeProduct)
-        }
+            this(activity, storeProduct.purchasingData, storeProduct.presentedOfferingIdentifier, storeProduct)
 
         private fun ensureNoTestProduct(storeProduct: StoreProduct) {
             if (storeProduct is TestStoreProduct) {
@@ -73,7 +71,12 @@ data class PurchaseParams(val builder: Builder) {
         }
 
         constructor(activity: Activity, subscriptionOption: SubscriptionOption) :
-            this(activity, subscriptionOption.purchasingData, subscriptionOption.presentedOfferingIdentifier)
+            this(
+                activity,
+                subscriptionOption.purchasingData,
+                subscriptionOption.presentedOfferingIdentifier,
+                product = null,
+            )
 
         @set:JvmSynthetic
         @get:JvmSynthetic
@@ -136,6 +139,10 @@ data class PurchaseParams(val builder: Builder) {
         }
 
         open fun build(): PurchaseParams {
+            product?.let {
+                ensureNoTestProduct(it)
+            }
+
             return PurchaseParams(this)
         }
     }

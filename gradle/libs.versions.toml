@@ -75,6 +75,7 @@ androidx-fragment-ktx = { module = "androidx.fragment:fragment-ktx", version.ref
 amazon-appstore-sdk = { module = "com.amazon.device:amazon-appstore-sdk", version.ref = "amazon" }
 
 androidx-test-core = { module = "androidx.test:core-ktx", version.ref = "testLibraries" }
+androidx-core-testing = { module = "androidx.arch.core:core-testing", version = "2.0.0" }
 androidx-test-espresso-core = { module = "androidx.test.espresso:espresso-core", version.ref = "espresso" }
 androidx-test-junit = { module = "androidx.test.ext:junit-ktx", version.ref = "testJUnit" }
 androidx-test-runner = { module = "androidx.test:runner", version.ref = "testLibraries" }
@@ -132,4 +133,4 @@ navigation-compose = "androidx.navigation:navigation-compose:2.5.3"
 activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activity-compose" }
 
 [bundles]
-test = ["androidx-test-core", "androidx-test-runner", "androidx-test-rules", "androidx-test-junit", "robolectric", "mockk", "assertJ"]
+test = ["androidx-test-core", "androidx-core-testing", "androidx-test-runner", "androidx-test-rules", "androidx-test-junit", "robolectric", "mockk", "assertJ"]
