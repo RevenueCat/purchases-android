@@ -30,8 +30,8 @@ import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.UIConstant
 import com.revenuecat.purchases.ui.revenuecatui.composables.Footer
 import com.revenuecat.purchases.ui.revenuecatui.composables.IconImage
-import com.revenuecat.purchases.ui.revenuecatui.composables.IntroEligibilityStateView
 import com.revenuecat.purchases.ui.revenuecatui.composables.Markdown
+import com.revenuecat.purchases.ui.revenuecatui.composables.OfferDetails
 import com.revenuecat.purchases.ui.revenuecatui.composables.PaywallIcon
 import com.revenuecat.purchases.ui.revenuecatui.composables.PaywallIconName
 import com.revenuecat.purchases.ui.revenuecatui.composables.PurchaseButton
@@ -41,7 +41,6 @@ import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfigura
 import com.revenuecat.purchases.ui.revenuecatui.data.selectedLocalization
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockViewModel
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
-import com.revenuecat.purchases.ui.revenuecatui.extensions.introEligibility
 
 private object Template3UIConstants {
     val iconCornerRadius = 8.dp
@@ -72,21 +71,7 @@ internal fun Template3(
         ) {
             Template3MainContent(state)
         }
-        Column(
-            modifier = Modifier
-                .align(Alignment.CenterHorizontally)
-                .padding(bottom = UIConstant.defaultVerticalSpacing),
-        ) {
-            IntroEligibilityStateView(
-                textWithNoIntroOffer = state.selectedLocalization.offerDetails,
-                textWithIntroOffer = state.selectedLocalization.offerDetailsWithIntroOffer,
-                textWithMultipleIntroOffers = state.selectedLocalization.offerDetailsWithMultipleIntroOffers,
-                eligibility = state.selectedPackage.value.introEligibility,
-                color = state.templateConfiguration.getCurrentColors().text1,
-                textAlign = TextAlign.Center,
-                style = MaterialTheme.typography.bodyMedium,
-            )
-        }
+        OfferDetails(state)
         PurchaseButton(state, viewModel)
         Footer(templateConfiguration = state.templateConfiguration, viewModel = viewModel)
     }
@@ -125,7 +110,8 @@ private fun Features(
     if (features.isEmpty()) return
 
     Column(
-        modifier = Modifier.verticalScroll(rememberScrollState())
+        modifier = Modifier
+            .verticalScroll(rememberScrollState())
             .fillMaxHeight(),
         verticalArrangement = Arrangement.spacedBy(Template3UIConstants.featureSpacing, Alignment.Top),
     ) {
