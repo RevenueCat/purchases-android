@@ -8,7 +8,7 @@ internal object UIConstant {
     val defaultHorizontalPadding = 12.dp
     val defaultVerticalSpacing = 12.dp
 
-    val footerRoundedBorderHeight = 12.dp
+    val footerRoundedBorderHeight = 20.dp
 
     val defaultPackageCornerRadius = 16.dp
     val defaultPackageBorderWidth = 1.5.dp
@@ -18,7 +18,7 @@ internal object UIConstant {
     const val defaultAnimationDurationMillis = 200
 
     fun <T> defaultAnimation() = tween<T>(
-        durationMillis = 200,
+        durationMillis = defaultAnimationDurationMillis,
         easing = LinearOutSlowInEasing,
     )
 }
