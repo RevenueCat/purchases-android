@@ -172,8 +172,8 @@ private fun AnimatedPackages(
     Box(contentAlignment = packagesContentAlignment) {
         AnimatedVisibility(
             visible = !packageSelectionVisible,
-            enter = fadeIn(animationSpec = tween(delayMillis = 200)),
-            exit = fadeOut(animationSpec = tween(delayMillis = 200)),
+            enter = fadeIn(animationSpec = tween(delayMillis = UIConstant.defaultAnimationDurationMillis)),
+            exit = fadeOut(animationSpec = tween(delayMillis = UIConstant.defaultAnimationDurationMillis)),
             label = "OfferDetailsVisibility",
         ) {
             OfferDetails(state)

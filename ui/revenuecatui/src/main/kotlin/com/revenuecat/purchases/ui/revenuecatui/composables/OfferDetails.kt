@@ -13,6 +13,10 @@ import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.data.selectedLocalization
 import com.revenuecat.purchases.ui.revenuecatui.extensions.introEligibility
 
+/**
+ * This displays the offer details of the selected package. For templates that allow to select
+ * multiple packages, each package needs its own offer details so we won't use this composable.
+ */
 @Composable
 internal fun OfferDetails(
     state: PaywallState.Loaded,
