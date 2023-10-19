@@ -10,12 +10,14 @@ import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.warnLog
 import com.revenuecat.purchases.strings.OfferingStrings
+import com.revenuecat.purchases.utils.OfferingImagePreDownloader
 import org.json.JSONObject
 
 internal class OfferingsManager(
     private val offeringsCache: OfferingsCache,
     private val backend: Backend,
     private val offeringsFactory: OfferingsFactory,
+    private val offeringImagePreDownloader: OfferingImagePreDownloader,
     // This is nullable due to: https://github.com/RevenueCat/purchases-flutter/issues/408
     private val mainHandler: Handler? = Handler(Looper.getMainLooper()),
 ) {
@@ -93,6 +95,9 @@ internal class OfferingsManager(
                 handleErrorFetchingOfferings(error, onError)
             },
             onSuccess = { offerings ->
+                offerings.current?.let {
+                    offeringImagePreDownloader.preDownloadOfferingImages(it)
+                }
                 offeringsCache.cacheOfferings(offerings, offeringsJSON)
                 dispatch {
                     onSuccess?.invoke(offerings)

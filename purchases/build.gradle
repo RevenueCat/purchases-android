@@ -83,6 +83,7 @@ dependencies {
     implementation libs.playServices.ads.identifier
 
     compileOnly libs.amazon.appstore.sdk
+    compileOnly libs.coil.compose
 
     testImplementation libs.bundles.test
     testImplementation libs.billing

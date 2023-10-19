@@ -37,6 +37,7 @@ import com.revenuecat.purchases.strings.ConfigureStrings
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesPoster
 import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesCache
+import com.revenuecat.purchases.utils.OfferingImagePreDownloader
 import com.revenuecat.purchases.utils.isAndroidNOrNewer
 import java.net.URL
 import java.util.concurrent.ExecutorService
@@ -220,6 +221,7 @@ internal class PurchasesFactory(
                 offeringsCache,
                 backend,
                 OfferingsFactory(billing, offeringParser, dispatcher),
+                OfferingImagePreDownloader(application),
             )
 
             log(LogIntent.DEBUG, ConfigureStrings.DEBUG_ENABLED)

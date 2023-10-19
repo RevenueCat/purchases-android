@@ -6,6 +6,7 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.utils.ONE_OFFERINGS_RESPONSE
+import com.revenuecat.purchases.utils.OfferingImagePreDownloader
 import com.revenuecat.purchases.utils.STUB_OFFERING_IDENTIFIER
 import com.revenuecat.purchases.utils.STUB_PRODUCT_IDENTIFIER
 import com.revenuecat.purchases.utils.stubOfferings
@@ -34,6 +35,7 @@ class OfferingsManagerTest {
     private lateinit var cache: OfferingsCache
     private lateinit var backend: Backend
     private lateinit var offeringsFactory: OfferingsFactory
+    private lateinit var offeringImagePreDownloader: OfferingImagePreDownloader
 
     private lateinit var offeringsManager: OfferingsManager
 
@@ -42,13 +44,17 @@ class OfferingsManagerTest {
         cache = mockk()
         backend = mockk()
         offeringsFactory = mockk()
+        offeringImagePreDownloader = mockk<OfferingImagePreDownloader>().apply {
+            every { preDownloadOfferingImages(any()) } just Runs
+        }
 
         mockBackendResponseSuccess()
 
         offeringsManager = OfferingsManager(
             cache,
             backend,
-            offeringsFactory
+            offeringsFactory,
+            offeringImagePreDownloader,
         )
     }
 

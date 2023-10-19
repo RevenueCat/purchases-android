@@ -49,6 +49,10 @@ internal fun RemoteImage(
 
 private const val MAX_CACHE_SIZE_BYTES = 25 * 1024 * 1024L // 25 MB
 
+/**
+ * This downloads paywall images in a specific cache for RevenueCat.
+ * If you update this, make sure the version in the [OfferingImagePreDownloader] class is also updated.
+ */
 @Composable
 @ReadOnlyComposable
 private fun Context.getRevenueCatUIImageLoader(): ImageLoader {
