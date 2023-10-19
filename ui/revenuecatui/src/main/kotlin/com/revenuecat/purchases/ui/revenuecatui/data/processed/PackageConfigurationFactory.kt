@@ -86,15 +86,8 @@ internal object PackageConfigurationFactory {
 
     private fun mostExpensivePricePerMonth(packages: List<Package>): Price? {
         return packages
-            .asSequence()
-            .map { it.product }
-            .mapNotNull { product ->
-                product.pricePerMonth()?.let {
-                    Pair(product, it)
-                }
-            }
-            .maxByOrNull { it.second.amountMicros }
-            ?.second
+            .mapNotNull { it.product.pricePerMonth() }
+            .maxByOrNull { it.amountMicros }
     }
 
     private fun productDiscount(pricePerMonth: Price?, mostExpensive: Price?): Double? {
