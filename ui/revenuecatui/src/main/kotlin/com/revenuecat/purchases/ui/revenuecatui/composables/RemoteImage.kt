@@ -11,25 +11,31 @@ import coil.compose.AsyncImage
 import coil.compose.AsyncImagePainter
 import coil.disk.DiskCache
 import coil.request.ImageRequest
+import coil.transform.Transformation
 import com.revenuecat.purchases.ui.revenuecatui.UIConstant
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 
+@SuppressWarnings("LongParameterList")
 @Composable
 internal fun RemoteImage(
     urlString: String,
     modifier: Modifier = Modifier,
     contentScale: ContentScale = ContentScale.Fit,
     contentDescription: String? = null,
+    transformation: Transformation? = null,
+    alpha: Float = 1f,
 ) {
     AsyncImage(
         model = ImageRequest.Builder(LocalContext.current)
             .data(urlString)
             .crossfade(durationMillis = UIConstant.defaultAnimationDurationMillis)
+            .transformations(listOfNotNull(transformation))
             .build(),
         contentDescription = contentDescription,
         imageLoader = LocalContext.current.getRevenueCatUIImageLoader(),
         modifier = modifier,
         contentScale = contentScale,
+        alpha = alpha,
         onState = {
             when (it) {
                 is AsyncImagePainter.State.Error -> {
