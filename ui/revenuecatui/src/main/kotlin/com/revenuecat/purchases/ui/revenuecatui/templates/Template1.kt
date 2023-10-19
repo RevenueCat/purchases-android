@@ -39,8 +39,8 @@ import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.UIConstant
 import com.revenuecat.purchases.ui.revenuecatui.composables.Footer
-import com.revenuecat.purchases.ui.revenuecatui.composables.IntroEligibilityStateView
 import com.revenuecat.purchases.ui.revenuecatui.composables.Markdown
+import com.revenuecat.purchases.ui.revenuecatui.composables.OfferDetails
 import com.revenuecat.purchases.ui.revenuecatui.composables.PurchaseButton
 import com.revenuecat.purchases.ui.revenuecatui.composables.RemoteImage
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
@@ -50,7 +50,6 @@ import com.revenuecat.purchases.ui.revenuecatui.data.isInFullScreenMode
 import com.revenuecat.purchases.ui.revenuecatui.data.selectedLocalization
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockViewModel
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
-import com.revenuecat.purchases.ui.revenuecatui.extensions.introEligibility
 
 @Composable
 internal fun Template1(state: PaywallState.Loaded, viewModel: PaywallViewModel) {
@@ -119,24 +118,9 @@ private fun ColumnScope.Template1MainContent(state: PaywallState.Loaded) {
         }
     }
 
-    Column(
-        modifier = Modifier
-            .padding(bottom = UIConstant.defaultVerticalSpacing)
-            .fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Bottom,
-    ) {
-        IntroEligibilityStateView(
-            textWithNoIntroOffer = localizedConfig.offerDetails,
-            textWithIntroOffer = localizedConfig.offerDetailsWithIntroOffer,
-            textWithMultipleIntroOffers = localizedConfig.offerDetailsWithMultipleIntroOffers,
-            eligibility = state.selectedPackage.value.introEligibility,
-            color = colors.text1,
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.Normal,
-            textAlign = TextAlign.Center,
-        )
-    }
+    Spacer(modifier = Modifier.weight(1f))
+
+    OfferDetails(state)
 }
 
 @Composable

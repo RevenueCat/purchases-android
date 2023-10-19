@@ -2,6 +2,8 @@ package com.revenuecat.purchases.ui.revenuecatui.templates
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -44,6 +46,7 @@ import com.revenuecat.purchases.ui.revenuecatui.composables.Footer
 import com.revenuecat.purchases.ui.revenuecatui.composables.IconImage
 import com.revenuecat.purchases.ui.revenuecatui.composables.IntroEligibilityStateView
 import com.revenuecat.purchases.ui.revenuecatui.composables.Markdown
+import com.revenuecat.purchases.ui.revenuecatui.composables.OfferDetails
 import com.revenuecat.purchases.ui.revenuecatui.composables.PaywallBackground
 import com.revenuecat.purchases.ui.revenuecatui.composables.PaywallIcon
 import com.revenuecat.purchases.ui.revenuecatui.composables.PaywallIconName
@@ -145,11 +148,41 @@ private fun ColumnScope.Template2MainContent(
             Spacer(Modifier.weight(1f))
         }
 
+        AnimatedPackages(state, packageSelectionVisible, viewModel, childModifier)
+
+        if (state.isInFullScreenMode) {
+            Spacer(Modifier.weight(1f))
+        }
+    }
+}
+
+@Composable
+private fun AnimatedPackages(
+    state: PaywallState.Loaded,
+    packageSelectionVisible: Boolean,
+    viewModel: PaywallViewModel,
+    childModifier: Modifier,
+) {
+    val packagesContentAlignment = if (state.isInFullScreenMode) {
+        Alignment.TopStart
+    } else {
+        Alignment.BottomCenter
+    }
+    Box(contentAlignment = packagesContentAlignment) {
+        AnimatedVisibility(
+            visible = !packageSelectionVisible,
+            enter = fadeIn(),
+            exit = fadeOut(),
+            label = "OfferDetailsVisibility",
+        ) {
+            OfferDetails(state)
+        }
+
         AnimatedVisibility(
             visible = packageSelectionVisible,
             enter = expandVertically(expandFrom = Alignment.Bottom),
             exit = shrinkVertically(shrinkTowards = Alignment.Bottom),
-            label = "AllPlansVisibility",
+            label = "SelectPackagesVisibility",
         ) {
             Column(
                 verticalArrangement = Arrangement.spacedBy(
@@ -159,10 +192,6 @@ private fun ColumnScope.Template2MainContent(
             ) {
                 state.templateConfiguration.packages.all.forEach { packageInfo ->
                     SelectPackageButton(state, packageInfo, viewModel, childModifier)
-                }
-
-                if (state.isInFullScreenMode) {
-                    Spacer(Modifier.weight(1f))
                 }
             }
         }
