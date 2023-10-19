@@ -6,6 +6,7 @@ import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.PurchaseParams
 import com.revenuecat.purchases.PurchaseResult
 import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.awaitCustomerInfo
 import com.revenuecat.purchases.awaitOfferings
 import com.revenuecat.purchases.awaitPurchase
 import com.revenuecat.purchases.awaitRestore
@@ -39,6 +40,6 @@ internal class PurchasesImpl(private val purchases: Purchases = Purchases.shared
     }
 
     override suspend fun awaitCustomerInfo(fetchPolicy: CacheFetchPolicy): CustomerInfo {
-        return awaitCustomerInfo(fetchPolicy)
+        return purchases.awaitCustomerInfo(fetchPolicy)
     }
 }
