@@ -2,6 +2,7 @@ package com.revenuecat.purchases.ui.revenuecatui.data.processed
 
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
+import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.ui.revenuecatui.errors.PackageConfigurationError
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
@@ -33,6 +34,8 @@ internal object PackageConfigurationFactory {
             // This won't happen because availablePackages won't be empty. Offerings can't have empty available packages
             return Result.failure(PackageConfigurationError("No packages found for ids $packageIdsInConfig"))
         }
+        val mostExpensivePricePerMonth = mostExpensivePricePerMonth(filteredRCPackages)
+
         val packageInfos = filteredRCPackages.map {
             val currentlySubscribed = when (it.packageType) {
                 PackageType.ANNUAL,
@@ -53,7 +56,10 @@ internal object PackageConfigurationFactory {
                 rcPackage = it,
                 localization = ProcessedLocalizedConfiguration.create(variableDataProvider, localization, it, locale),
                 currentlySubscribed = currentlySubscribed,
-                discountRelativeToMostExpensivePerMonth = null, // TODO-PAYWALLS: Support discount UI
+                discountRelativeToMostExpensivePerMonth = productDiscount(
+                    it.product.pricePerMonth(),
+                    mostExpensivePricePerMonth,
+                ),
             )
         }
 
@@ -76,5 +82,23 @@ internal object PackageConfigurationFactory {
                 }
             },
         )
+    }
+
+    private fun mostExpensivePricePerMonth(packages: List<Package>): Price? {
+        return packages
+            .mapNotNull { it.product.pricePerMonth() }
+            .maxByOrNull { it.amountMicros }
+    }
+
+    private fun productDiscount(pricePerMonth: Price?, mostExpensive: Price?): Double? {
+        return pricePerMonth?.amountMicros?.let { price ->
+            mostExpensive?.amountMicros?.let { expensive ->
+                return if (price >= expensive) {
+                    null
+                } else {
+                    (expensive - price).toDouble() / expensive.toDouble()
+                }
+            }
+        }
     }
 }

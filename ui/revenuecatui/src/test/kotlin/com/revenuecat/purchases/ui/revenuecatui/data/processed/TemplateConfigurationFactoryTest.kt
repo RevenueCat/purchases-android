@@ -131,6 +131,13 @@ internal class TemplateConfigurationFactoryTest {
             PackageType.LIFETIME -> "$1,000 after  trial"
             else -> error("Unknown package type ${rcPackage.packageType}")
         }
+        val discountRelativeToMostExpensivePerMonth = when(rcPackage.packageType) {
+            PackageType.ANNUAL -> 0.29088448060075095
+            PackageType.MONTHLY -> null
+            PackageType.WEEKLY -> null
+            PackageType.LIFETIME -> null
+            else -> error("Unknown package type ${rcPackage.packageType}")
+        }
         val processedLocalization = ProcessedLocalizedConfiguration(
             title = localizedConfiguration.title,
             subtitle = localizedConfiguration.subtitle,
@@ -147,7 +154,7 @@ internal class TemplateConfigurationFactoryTest {
             rcPackage = rcPackage,
             localization = processedLocalization,
             currentlySubscribed = currentlySubscribed,
-            discountRelativeToMostExpensivePerMonth = null,
+            discountRelativeToMostExpensivePerMonth = discountRelativeToMostExpensivePerMonth,
         )
     }
 }
