@@ -86,6 +86,7 @@ private fun Footer(
         if (mode == PaywallMode.FOOTER_CONDENSED) {
             Button(
                 color = color,
+                childModifier = childModifier,
                 R.string.all_plans,
                 action = allPlansTapped,
             )
