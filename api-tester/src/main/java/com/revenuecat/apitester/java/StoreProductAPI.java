@@ -27,7 +27,8 @@ final class StoreProductAPI {
         final String title = product.getTitle();
         final String description = product.getDescription();
         final Period period = product.getPeriod();
-        final String pricePerMonth = product.formattedPricePerMonth(locale);
+        final String formattedPricePerMonth = product.formattedPricePerMonth(locale);
+        final Price pricePerMonth = product.pricePerMonth(locale);
 
         SubscriptionOptions subscriptionOptions = product.getSubscriptionOptions();
         SubscriptionOption defaultOption = product.getDefaultOption();

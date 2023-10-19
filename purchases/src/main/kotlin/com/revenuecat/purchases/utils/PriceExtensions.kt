@@ -8,11 +8,13 @@ import java.util.Locale
 
 private const val MICRO_MULTIPLIER = 1_000_000.0
 
-internal fun Price.formattedPricePerMonth(billingPeriod: Period, locale: Locale): String {
+internal fun Price.pricePerMonth(billingPeriod: Period, locale: Locale): Price {
     val periodMonths = billingPeriod.valueInMonths
-    val currencyCode = currencyCode
-    val priceDecimal = amountMicros / MICRO_MULTIPLIER
     val numberFormat = NumberFormat.getCurrencyInstance(locale)
     numberFormat.currency = Currency.getInstance(currencyCode)
-    return numberFormat.format(priceDecimal / periodMonths)
+
+    val value = amountMicros / periodMonths
+    val formatted = numberFormat.format(value / MICRO_MULTIPLIER)
+
+    return Price(formatted, (value).toLong(), currencyCode)
 }

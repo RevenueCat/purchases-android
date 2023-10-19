@@ -320,18 +320,29 @@ class StoreProductTest {
             productDetails = mockProductDetails(),
             presentedOfferingIdentifier = "originalOfferingId"
         )
+        assertThat(storeProduct.pricePerMonth(Locale.US)).isNull()
         assertThat(storeProduct.formattedPricePerMonth(Locale.US)).isNull()
     }
 
     @Test
     fun `formattedPricePerMonth is correct for SUBS monthly product with free trial`() {
         val product = createSubscriptionStoreProduct(Period.create("P1M"))
+        assertThat(product.pricePerMonth(Locale.US)).isEqualTo(Price(
+            "$1.00",
+            1_000_000,
+            product.price.currencyCode,
+        ))
         assertThat(product.formattedPricePerMonth(Locale.US)).isEqualTo("$1.00")
     }
 
     @Test
     fun `formattedPricePerMonth is correct for SUBS annual product with free trial`() {
         val product = createSubscriptionStoreProduct(Period.create("P1Y"))
+        assertThat(product.pricePerMonth(Locale.US)).isEqualTo(Price(
+            "$0.08",
+            83_333,
+            product.price.currencyCode,
+        ))
         assertThat(product.formattedPricePerMonth(Locale.US)).isEqualTo("$0.08")
     }
 
