@@ -118,8 +118,6 @@ private fun ColumnScope.Template1MainContent(state: PaywallState.Loaded) {
         }
     }
 
-    Spacer(modifier = Modifier.weight(1f))
-
     OfferDetails(state)
 }
 
