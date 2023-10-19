@@ -4,6 +4,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -16,10 +17,14 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -73,10 +78,15 @@ private fun PurchaseButton(
         )
 
         Button(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    brush = buttonBrush(colors),
+                    shape = ButtonDefaults.shape
+                ),
             onClick = { viewModel.purchaseSelectedPackage(context) },
             colors = ButtonDefaults.buttonColors(
-                containerColor = colors.callToActionBackground,
+                containerColor = Color.Transparent, // color set on background
                 contentColor = colors.callToActionForeground,
             ),
         ) {
@@ -110,6 +120,19 @@ private fun PurchaseButton(
             }
         }
     }
+}
+
+@ReadOnlyComposable
+@Composable
+private fun buttonBrush(colors: TemplateConfiguration.Colors): Brush {
+    return colors.callToActionSecondaryBackground?.let { secondaryColor ->
+        Brush.verticalGradient(
+            listOf(
+                colors.callToActionBackground,
+                secondaryColor,
+            )
+        )
+    } ?: SolidColor(colors.callToActionBackground)
 }
 
 @Composable

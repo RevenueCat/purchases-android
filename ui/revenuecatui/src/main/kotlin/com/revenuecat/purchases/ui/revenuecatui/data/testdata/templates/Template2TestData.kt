@@ -27,6 +27,7 @@ internal val TestData.template2: PaywallData
                     background = PaywallColor(stringRepresentation = "#FFFFFF"),
                     text1 = PaywallColor(stringRepresentation = "#000000"),
                     callToActionBackground = PaywallColor(stringRepresentation = "#EC807C"),
+                    callToActionSecondaryBackground = PaywallColor(stringRepresentation = "#FC609C"),
                     callToActionForeground = PaywallColor(stringRepresentation = "#FFFFFF"),
                     accent1 = PaywallColor(stringRepresentation = "#BC66FF"),
                     accent2 = PaywallColor(stringRepresentation = "#222222"),

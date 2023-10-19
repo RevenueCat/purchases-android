@@ -14,7 +14,6 @@ internal object ColorsFactory {
         val callToActionBackgroundColorInt = paywallDataColors.callToActionBackground.colorInt
         val callToActionForegroundColorInt = paywallDataColors.callToActionForeground.colorInt
         val callToActionSecondaryBackgroundColorInt = paywallDataColors.callToActionSecondaryBackground?.colorInt
-            ?: callToActionBackgroundColorInt
         val accent1ColorInt = paywallDataColors.accent1?.colorInt ?: callToActionForegroundColorInt
         val accent2ColorInt = paywallDataColors.accent2?.colorInt ?: accent1ColorInt
         return TemplateConfiguration.Colors(
@@ -23,7 +22,7 @@ internal object ColorsFactory {
             text2 = Color(text2ColorInt),
             callToActionBackground = Color(callToActionBackgroundColorInt),
             callToActionForeground = Color(callToActionForegroundColorInt),
-            callToActionSecondaryBackground = Color(callToActionSecondaryBackgroundColorInt),
+            callToActionSecondaryBackground = callToActionSecondaryBackgroundColorInt?.let(::Color),
             accent1 = Color(accent1ColorInt),
             accent2 = Color(accent2ColorInt),
         )
