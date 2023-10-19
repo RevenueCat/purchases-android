@@ -47,6 +47,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.currentColors
 import com.revenuecat.purchases.ui.revenuecatui.data.isInFullScreenMode
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.selectedLocalization
+import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockViewModel
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.extensions.introEligibility
 import com.revenuecat.purchases.ui.revenuecatui.extensions.packageButtonActionInProgressOpacityAnimation
@@ -243,8 +244,7 @@ private fun CheckmarkBox(isSelected: Boolean, colors: TemplateConfiguration.Colo
 @Composable
 private fun Template4PaywallPreview() {
     InternalPaywall(
-        options = PaywallOptions.Builder()
-            .setOffering(TestData.template4Offering)
-            .build(),
+        options = PaywallOptions.Builder().build(),
+        viewModel = MockViewModel(offering = TestData.template4Offering),
     )
 }
