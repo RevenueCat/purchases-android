@@ -1,9 +1,50 @@
 ## 7.1.0-beta.2
 ### New Features
+#### ✨ Introducing Android Paywalls (beta) 🐾🧱
+
+RevenueCat's Paywalls allow you to to remotely configure your entire paywall view without any code changes or app updates.
+Our paywall templates use native code to deliver smooth, intuitive experiences to your customers when you’re ready to deliver them an Offering; and you can use our Dashboard to pick the right template and configuration to meet your needs.
+
+To use RevenueCat Paywalls on Android, simply:
+
+1. Create a Paywall on the Dashboard for the `Offering` you intend to serve to your customers
+2. Add the `purchases-ui` dependency to your project:
+```groovy
+implementation 'com.revenuecat.purchases:purchases-ui:7.1.0-beta.2'
+```
+3. Display the paywall in your app:
+```kotlin
+@Composable
+private fun LockedScreen() {
+    YourContent()
+
+    PaywallDialog(
+        PaywallDialogOptions.Builder()
+            .setRequiredEntitlementIdentifier(Constants.ENTITLEMENT_ID)
+            .build()
+    )
+}
+```
+
+Check out [our documentation](https://www.revenuecat.com/docs/paywalls) for more information.
+
+
+<details>
+
+<summary>List of changes</summary>
+
 * Add `StoreProduct.pricePerMonth` (#1369) via NachoSoto (@NachoSoto)
 * Paywalls: Support condensed footer presentation in template 2 (#1365) via Toni Rico (@tonidero)
 * Paywalls: Support Google fonts and font families with multiple fonts (#1338) via Toni Rico (@tonidero)
 * Paywalls: Support custom fonts through FontProvider (#1328) via Toni Rico (@tonidero)
+* Paywalls: Enable footer modes in paywall tester paywalls tab (#1368) via Toni Rico (@tonidero)
+* `Paywalls`: calculate `discountRelativeToMostExpensivePerMonth` (#1370) via NachoSoto (@NachoSoto)
+* `Paywalls`: improve handling of lifetime/custom packages (#1363) via NachoSoto (@NachoSoto)
+* `Paywalls`: finished localization support (#1362) via NachoSoto (@NachoSoto)
+* Paywalls: backwards compatible blurring (#1327) via Andy Boedo (@aboedo)
+* `Paywalls`: improve `LoadingPaywall` (#1364) via NachoSoto (@NachoSoto)
+* Paywalls: Fix paywall compose previews (#1360) via Toni Rico (@tonidero)
+* Paywalls: Add custom font example to paywalls screen (#1358) via Toni Rico (@tonidero)
 * Add sample templates to paywalls tester  (#1330) via Cesar de la Vega (@vegaro)
 * Expose new `TestStoreProduct` (#1333) via NachoSoto (@NachoSoto)
 * Add support for multiple intro offers in IntroEligibilityStateView (#1319) via Cesar de la Vega (@vegaro)
@@ -34,15 +75,6 @@
 * Serializes PaywallData (#1222) via Cesar de la Vega (@vegaro)
 * Adds kotlinx serialization (#1221) via Cesar de la Vega (@vegaro)
 * Add PaywallData and its classes (#1219) via Cesar de la Vega (@vegaro)
-### RevenueCatUI
-* Paywalls: Enable footer modes in paywall tester paywalls tab (#1368) via Toni Rico (@tonidero)
-* `Paywalls`: calculate `discountRelativeToMostExpensivePerMonth` (#1370) via NachoSoto (@NachoSoto)
-* `Paywalls`: improve handling of lifetime/custom packages (#1363) via NachoSoto (@NachoSoto)
-* `Paywalls`: finished localization support (#1362) via NachoSoto (@NachoSoto)
-* Paywalls: backwards compatible blurring (#1327) via Andy Boedo (@aboedo)
-* `Paywalls`: improve `LoadingPaywall` (#1364) via NachoSoto (@NachoSoto)
-* Paywalls: Fix paywall compose previews (#1360) via Toni Rico (@tonidero)
-* Paywalls: Add custom font example to paywalls screen (#1358) via Toni Rico (@tonidero)
 * `Paywalls`: fixed `Footer` padding (#1354) via NachoSoto (@NachoSoto)
 * Paywalls: Rename `PaywallView` to `Paywall` (#1351) via Toni Rico (@tonidero)
 * `Paywalls`: disable `PurchaseButton` during purchases (#1352) via NachoSoto (@NachoSoto)
@@ -103,11 +135,6 @@
 * Paywalls: Add simple paywall and use in tester app (#1223) via Toni Rico (@tonidero)
 * PaywallTester: Visualize offerings in offerings tab and navigate to new screen (#1220) via Toni Rico (@tonidero)
 * Add RevenueCatUI module and initial API (#1213) via Toni Rico (@tonidero)
-### Bugfixes
-* Paywalls: Support footer in template 3 (#1367) via Toni Rico (@tonidero)
-* Paywalls: Add offer details in template 2 when in condensed form (#1371) via Toni Rico (@tonidero)
-* Paywalls: Support footer in template 1 (#1366) via Toni Rico (@tonidero)
-* Paywalls: Fix proguard rules kotlinx serialization (#1356) via Toni Rico (@tonidero)
 * Paywalls: Add restore paywall callbacks (#1350) via Toni Rico (@tonidero)
 * Update to use name instead of id when creating sample offering  (#1347) via Cesar de la Vega (@vegaro)
 * Fix loading another template in Paywalls screen (#1345) via Cesar de la Vega (@vegaro)
@@ -118,28 +145,15 @@
 * Paywalls: Fix locale selection logic for previews (#1267) via Toni Rico (@tonidero)
 * Fix OfferingsParser exceptions being swallowed (#1228) via Cesar de la Vega (@vegaro)
 * Fix tests that broke when adding PaywallData (#1229) via Cesar de la Vega (@vegaro)
-### Other Changes
-* `Paywalls`: `PaywallViewModel` tests (#1357) via NachoSoto (@NachoSoto)
-* Merge branch 'main' into paywalls via NachoSoto (@NachoSoto)
 * `Paywalls`: disallow purchasing currently subscribed products (#1334) via NachoSoto (@NachoSoto)
-* Prepare next version: 7.1.0-SNAPSHOT (#1340)
-
-Co-authored-by: revenuecat-ops <ops@revenuecat.com> via RevenueCat Git Bot (@RCGitBot)
-* [AUTOMATIC] Release/7.0.1 (#1339)
-
-**This is an automatic release.**
-
-### Bugfixes
-* Optimize billing client connection retries (#1300) via Toni Rico
-(@tonidero)
-
-Co-authored-by: revenuecat-ops <ops@revenuecat.com> via RevenueCat Git Bot (@RCGitBot)
 * `Paywalls`: `PaywallColor` supports RGBA (#1332) via NachoSoto (@NachoSoto)
-* Merge branch 'main' of github.com:RevenueCat/purchases-android into paywalls via Toni Rico (@tonidero)
 * offerdetails is optional via Cesar de la Vega (@vegaro)
 * Nightly deploy of paywall tester (#1231) via Cesar de la Vega (@vegaro)
 * Paywalls: Use paywall data in paywall (#1230) via Toni Rico (@tonidero)
 * Create paywall tester app (#1218) via Toni Rico (@tonidero)
+
+</details>
+
 ## 7.0.1
 ### Bugfixes
 * Optimize billing client connection retries (#1300) via Toni Rico (@tonidero)
