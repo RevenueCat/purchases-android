@@ -1,5 +1,8 @@
 package com.revenuecat.purchases.ui.revenuecatui.templates
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -21,6 +24,10 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -74,21 +81,27 @@ internal fun Template2(
         PaywallBackground(state.templateConfiguration)
 
         Column {
-            Template2MainContent(state, viewModel, childModifier)
+            var packageSelectorVisible by remember {
+                mutableStateOf(state.templateConfiguration.mode != PaywallMode.FOOTER_CONDENSED)
+            }
+            Template2MainContent(state, viewModel, packageSelectorVisible, childModifier)
             PurchaseButton(state, viewModel, childModifier)
             Footer(
                 templateConfiguration = state.templateConfiguration,
                 viewModel = viewModel,
                 childModifier = childModifier,
+                allPlansTapped = { packageSelectorVisible = !packageSelectorVisible },
             )
         }
     }
 }
 
+@Suppress("LongMethod")
 @Composable
 private fun ColumnScope.Template2MainContent(
     state: PaywallState.Loaded,
     viewModel: PaywallViewModel,
+    packageSelectionVisible: Boolean,
     childModifier: Modifier,
 ) {
     Column(
@@ -132,12 +145,26 @@ private fun ColumnScope.Template2MainContent(
             Spacer(Modifier.weight(1f))
         }
 
-        state.templateConfiguration.packages.all.forEach { packageInfo ->
-            SelectPackageButton(state, packageInfo, viewModel, childModifier)
-        }
+        AnimatedVisibility(
+            visible = packageSelectionVisible,
+            enter = expandVertically(expandFrom = Alignment.Bottom),
+            exit = shrinkVertically(shrinkTowards = Alignment.Bottom),
+            label = "AllPlansVisibility",
+        ) {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(
+                    UIConstant.defaultVerticalSpacing,
+                    Alignment.CenterVertically,
+                ),
+            ) {
+                state.templateConfiguration.packages.all.forEach { packageInfo ->
+                    SelectPackageButton(state, packageInfo, viewModel, childModifier)
+                }
 
-        if (state.isInFullScreenMode) {
-            Spacer(Modifier.weight(1f))
+                if (state.isInFullScreenMode) {
+                    Spacer(Modifier.weight(1f))
+                }
+            }
         }
     }
 }
@@ -245,5 +272,15 @@ private fun Template2PaywallFooterPreview() {
     InternalPaywall(
         options = PaywallOptions.Builder().build(),
         viewModel = MockViewModel(mode = PaywallMode.FOOTER, offering = TestData.template2Offering),
+    )
+}
+
+@Preview(showBackground = true, locale = "en-rUS")
+@Preview(showBackground = true, locale = "es-rES")
+@Composable
+private fun Template2PaywallFooterCondensedPreview() {
+    InternalPaywall(
+        options = PaywallOptions.Builder().build(),
+        viewModel = MockViewModel(mode = PaywallMode.FOOTER_CONDENSED, offering = TestData.template2Offering),
     )
 }

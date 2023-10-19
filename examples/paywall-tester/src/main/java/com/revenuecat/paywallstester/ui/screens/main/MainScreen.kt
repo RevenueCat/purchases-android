@@ -26,19 +26,30 @@ import com.revenuecat.purchases.Offering
 fun MainScreen(
     navigateToPaywallScreen: (Offering?) -> Unit,
     navigateToPaywallFooterScreen: (Offering?) -> Unit,
+    navigateToPaywallCondensedFooterScreen: (Offering?) -> Unit,
     navController: NavHostController = rememberNavController(),
 ) {
     Scaffold(
         bottomBar = { BottomBarNavigation(navController) },
     ) {
-        MainNavHost(navController, navigateToPaywallScreen, navigateToPaywallFooterScreen, Modifier.padding(it))
+        MainNavHost(
+            navController,
+            navigateToPaywallScreen,
+            navigateToPaywallFooterScreen,
+            navigateToPaywallCondensedFooterScreen,
+            Modifier.padding(it),
+        )
     }
 }
 
 @Preview
 @Composable
 fun MainScreenPreview() {
-    MainScreen(navigateToPaywallScreen = {}, navigateToPaywallFooterScreen = {})
+    MainScreen(
+        navigateToPaywallScreen = {},
+        navigateToPaywallFooterScreen = {},
+        navigateToPaywallCondensedFooterScreen = {},
+    )
 }
 
 private val bottomNavigationItems = listOf(
@@ -52,6 +63,7 @@ private fun MainNavHost(
     navController: NavHostController,
     navigateToPaywallScreen: (Offering?) -> Unit,
     navigateToPaywallFooterScreen: (Offering?) -> Unit,
+    navigateToPaywallCondensedFooterScreen: (Offering?) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     NavHost(
@@ -69,6 +81,7 @@ private fun MainNavHost(
             OfferingsScreen(
                 tappedOnOffering = { offering -> navigateToPaywallScreen(offering) },
                 tappedOnOfferingFooter = { offering -> navigateToPaywallFooterScreen(offering) },
+                tappedOnOfferingCondensedFooter = { offering -> navigateToPaywallCondensedFooterScreen(offering) },
             )
         }
     }

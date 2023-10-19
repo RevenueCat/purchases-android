@@ -8,5 +8,6 @@ sealed class PaywallScreenState {
     data class Loaded(
         val offering: Offering,
         val dialogText: String? = null,
+        val footerCondensed: Boolean = false,
     ) : PaywallScreenState()
 }
