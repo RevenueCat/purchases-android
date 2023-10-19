@@ -15,7 +15,11 @@ class PriceExtensionsTest {
         val price = Price("$59.99", 59_990_000, "USD")
         val billingPeriod = Period.create("P1Y")
         val locale = Locale.US
-        assertThat(price.formattedPricePerMonth(billingPeriod, locale)).isEqualTo("$5.00")
+        val pricePerMonth = price.pricePerMonth(billingPeriod, locale)
+
+        assertThat(pricePerMonth.formatted).isEqualTo("$5.00")
+        assertThat(pricePerMonth.currencyCode).isEqualTo(price.currencyCode)
+        assertThat(pricePerMonth.amountMicros).isEqualTo(price.amountMicros / 12)
     }
 
     @Test
@@ -23,7 +27,11 @@ class PriceExtensionsTest {
         val price = Price("$59.99", 59_990_000, "USD")
         val billingPeriod = Period.create("P1Y")
         val locale = Locale("es", "ES")
-        assertThat(price.formattedPricePerMonth(billingPeriod, locale)).isEqualTo("5,00 US$")
+        val pricePerMonth = price.pricePerMonth(billingPeriod, locale)
+
+        assertThat(pricePerMonth.formatted).isEqualTo("5,00 US$")
+        assertThat(pricePerMonth.currencyCode).isEqualTo("USD")
+        assertThat(pricePerMonth.amountMicros).isEqualTo(price.amountMicros / 12)
     }
 
     @Test
@@ -31,7 +39,11 @@ class PriceExtensionsTest {
         val price = Price("59.99€", 59_990_000, "EUR")
         val billingPeriod = Period.create("P1Y")
         val locale = Locale("es", "ES")
-        assertThat(price.formattedPricePerMonth(billingPeriod, locale)).isEqualTo("5,00 €")
+        val pricePerMonth = price.pricePerMonth(billingPeriod, locale)
+
+        assertThat(pricePerMonth.formatted).isEqualTo("5,00 €")
+        assertThat(pricePerMonth.currencyCode).isEqualTo("EUR")
+        assertThat(pricePerMonth.amountMicros).isEqualTo(price.amountMicros / 12)
     }
 
     @Test
@@ -39,7 +51,11 @@ class PriceExtensionsTest {
         val price = Price("59.99€", 59_990_000, "EUR")
         val billingPeriod = Period.create("P1Y")
         val locale = Locale.US
-        assertThat(price.formattedPricePerMonth(billingPeriod, locale)).isEqualTo("€5.00")
+        val pricePerMonth = price.pricePerMonth(billingPeriod, locale)
+
+        assertThat(pricePerMonth.formatted).isEqualTo("€5.00")
+        assertThat(pricePerMonth.currencyCode).isEqualTo("EUR")
+        assertThat(pricePerMonth.amountMicros).isEqualTo(price.amountMicros / 12)
     }
 
     @Test
@@ -47,6 +63,10 @@ class PriceExtensionsTest {
         val price = Price("9.99€", 9_990_000, "USD")
         val billingPeriod = Period.create("P1M")
         val locale = Locale.US
-        assertThat(price.formattedPricePerMonth(billingPeriod, locale)).isEqualTo("$9.99")
+        val pricePerMonth = price.pricePerMonth(billingPeriod, locale)
+
+        assertThat(pricePerMonth.formatted).isEqualTo("$9.99")
+        assertThat(pricePerMonth.currencyCode).isEqualTo("USD")
+        assertThat(pricePerMonth.amountMicros).isEqualTo(price.amountMicros)
     }
 }

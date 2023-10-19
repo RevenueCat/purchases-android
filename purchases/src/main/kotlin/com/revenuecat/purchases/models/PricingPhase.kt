@@ -1,7 +1,7 @@
 package com.revenuecat.purchases.models
 
 import android.os.Parcelable
-import com.revenuecat.purchases.utils.formattedPricePerMonth
+import com.revenuecat.purchases.utils.pricePerMonth
 import kotlinx.parcelize.Parcelize
 import java.util.Locale
 
@@ -62,6 +62,6 @@ data class PricingPhase(
      */
     @JvmOverloads
     fun formattedPriceInMonths(locale: Locale = Locale.getDefault()): String {
-        return price.formattedPricePerMonth(billingPeriod, locale)
+        return price.pricePerMonth(billingPeriod, locale).formatted
     }
 }
