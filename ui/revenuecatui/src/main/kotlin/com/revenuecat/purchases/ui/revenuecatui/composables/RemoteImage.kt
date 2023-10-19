@@ -25,7 +25,7 @@ internal fun RemoteImage(
     transformation: Transformation? = null,
     alpha: Float = 1f,
 ) {
-    return AsyncImage(
+    AsyncImage(
         model = ImageRequest.Builder(LocalContext.current)
             .data(urlString)
             .crossfade(durationMillis = UIConstant.defaultAnimationDurationMillis)

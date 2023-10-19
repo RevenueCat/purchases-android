@@ -20,7 +20,6 @@ internal class BlurTransformation(
     private val context: Context,
     private val radius: Float,
 ) : Transformation {
-
     override val cacheKey: String = "${javaClass.name}-$radius"
 
     override suspend fun transform(
@@ -29,19 +28,12 @@ internal class BlurTransformation(
     ): Bitmap {
         return input.blur(context, radius)
     }
-
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        return other is BlurTransformation && radius == other.radius
-    }
-
-    override fun hashCode(): Int = radius.hashCode()
 }
 
 // max radius supported by RenderScript
-private const val MAX_SUPPORTED_RADIUS = 25
+private const val MAX_SUPPORTED_RADIUS = 25f
 
-internal fun Bitmap.blur(context: Context, radius: Float = 25f): Bitmap {
+internal fun Bitmap.blur(context: Context, radius: Float = MAX_SUPPORTED_RADIUS): Bitmap {
     if (radius < 1f) {
         return this@blur
     }
