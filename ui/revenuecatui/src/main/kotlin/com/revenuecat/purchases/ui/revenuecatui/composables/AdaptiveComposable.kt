@@ -27,14 +27,16 @@ internal fun RowScope.AdaptiveComposable(composables: List<@Composable () -> Uni
         modifier = Modifier
             .fillMaxWidth()
             .onGloballyPositioned { coordinates ->
-                maxSize = coordinates.size.width
+                if (coordinates.size.width != maxSize) {
+                    maxSize = coordinates.size.width
+                }
             }
             .align(Alignment.CenterVertically),
     ) {
         // Offscreen measurement
         Box(
             Modifier
-                .graphicsLayer(alpha = 0.2f)
+                .graphicsLayer(alpha = 0.0f)
                 .fillMaxWidth()
                 .wrapContentWidth(unbounded = true)
                 .align(Alignment.Center),
@@ -42,8 +44,10 @@ internal fun RowScope.AdaptiveComposable(composables: List<@Composable () -> Uni
             composables.forEachIndexed { index, view ->
                 Box(
                     Modifier.layout { measurable, _ ->
-                        val placeable = measurable.measure(Constraints())
-                        viewSizes[index] = placeable.width
+                        if (viewSizes[index] == 0) {
+                            viewSizes[index] = measurable.measure(Constraints()).width
+                        }
+
                         layout(0, 0) {}
                     },
                 ) {
