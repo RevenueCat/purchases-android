@@ -47,6 +47,7 @@ internal fun RemoteImage(
     )
 }
 
+// Note: these values have to match those in CoilImageDownloader
 private const val MAX_CACHE_SIZE_BYTES = 25 * 1024 * 1024L // 25 MB
 private const val PAYWALL_IMAGE_CACHE_FOLDER = "revenuecatui_cache"
 

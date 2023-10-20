@@ -6,10 +6,11 @@ import coil.ImageLoader
 import coil.disk.DiskCache
 import coil.request.ImageRequest
 
+// Note: these values have to match those in RemoteImage
 private const val MAX_CACHE_SIZE_BYTES = 25 * 1024 * 1024L // 25 MB
 private const val PAYWALL_IMAGE_CACHE_FOLDER = "revenuecatui_cache"
 
-class CoilImageDownloader(
+internal class CoilImageDownloader(
     private val applicationContext: Context,
 ) {
     fun downloadImage(uri: Uri) {
