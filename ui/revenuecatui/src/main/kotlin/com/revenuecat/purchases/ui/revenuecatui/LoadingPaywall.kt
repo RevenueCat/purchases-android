@@ -15,6 +15,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
+import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.TestStoreProduct
@@ -155,6 +156,7 @@ private class LoadingViewModel(
         get() = _state.asStateFlow()
 
     override val actionInProgress: State<Boolean> = mutableStateOf(false)
+    override val actionError: State<PurchasesError?> = mutableStateOf(null)
 
     override fun refreshStateIfLocaleChanged() = Unit
     override fun refreshStateIfColorsChanged(colorScheme: ColorScheme) = Unit
@@ -176,6 +178,8 @@ private class LoadingViewModel(
     override fun openURL(url: URL, context: Context) {
         error("Can't open URL")
     }
+
+    override fun clearActionError() = Unit
 }
 
 @Preview(showBackground = true)

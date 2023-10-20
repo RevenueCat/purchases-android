@@ -7,7 +7,6 @@ import androidx.lifecycle.viewModelScope
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
-import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.awaitOfferings
 import com.revenuecat.purchases.models.StoreTransaction
@@ -66,16 +65,7 @@ class PaywallScreenViewModelImpl(
         }
     }
 
-    override fun onRestoreError(error: PurchasesError) {
-        val value = _state.value
-        if (value is PaywallScreenState.Loaded) {
-            _state.update {
-                value.copy(
-                    dialogText = "There was an error restoring purchases:\n${error.message}",
-                )
-            }
-        }
-    }
+    override fun onRestoreError(error: PurchasesError) = Unit
 
     override fun onPurchaseCompleted(customerInfo: CustomerInfo, storeTransaction: StoreTransaction) {
         val value = _state.value
@@ -88,18 +78,7 @@ class PaywallScreenViewModelImpl(
         }
     }
 
-    override fun onPurchaseError(error: PurchasesError) {
-        val value = _state.value
-        if (value is PaywallScreenState.Loaded) {
-            if (error.code != PurchasesErrorCode.PurchaseCancelledError) {
-                _state.update {
-                    value.copy(
-                        dialogText = "There was an error purchasing:\n${error.message}",
-                    )
-                }
-            }
-        }
-    }
+    override fun onPurchaseError(error: PurchasesError) = Unit
 
     override fun onDialogDismissed() {
         val value = _state.value
