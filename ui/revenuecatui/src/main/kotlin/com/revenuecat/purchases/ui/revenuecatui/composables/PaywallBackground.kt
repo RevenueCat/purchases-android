@@ -2,7 +2,6 @@ package com.revenuecat.purchases.ui.revenuecatui.composables
 
 import BlurTransformation
 import android.os.Build
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -11,7 +10,6 @@ import androidx.compose.ui.draw.blur
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.paywalls.PaywallData
@@ -43,23 +41,21 @@ internal fun BoxScope.PaywallBackground(templateConfiguration: TemplateConfigura
         }
 
     if (templateConfiguration.configuration.images.background == PaywallData.defaultBackgroundPlaceholder) {
-        Image(
+        LocalImage(
+            resource = R.drawable.default_background,
             modifier = modifier,
-            painter = painterResource(id = R.drawable.default_background),
-            contentDescription = null,
             contentScale = BackgroundUIConstants.contentScale,
+            transformation = backwardsCompatibleTransformation,
             alpha = imageAlpha,
         )
-    } else {
-        templateConfiguration.images.backgroundUri?.let {
-            RemoteImage(
-                urlString = it.toString(),
-                modifier = modifier,
-                contentScale = BackgroundUIConstants.contentScale,
-                transformation = backwardsCompatibleTransformation,
-                alpha = imageAlpha,
-            )
-        }
+    } else if (templateConfiguration.images.backgroundUri != null) {
+        RemoteImage(
+            urlString = templateConfiguration.images.backgroundUri.toString(),
+            modifier = modifier,
+            contentScale = BackgroundUIConstants.contentScale,
+            transformation = backwardsCompatibleTransformation,
+            alpha = imageAlpha,
+        )
     }
 }
 
