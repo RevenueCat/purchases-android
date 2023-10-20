@@ -10,7 +10,7 @@ import com.revenuecat.purchases.common.debugLog
 
 private const val MAX_CACHE_SIZE_BYTES = 25 * 1024 * 1024L // 25 MB
 
-class OfferingImagePreDownloader(
+internal class OfferingImagePreDownloader(
     private val applicationContext: Context,
 ) {
     private val shouldPredownloadImages: Boolean = try {
