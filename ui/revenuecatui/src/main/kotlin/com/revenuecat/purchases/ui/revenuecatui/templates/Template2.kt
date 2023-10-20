@@ -305,7 +305,7 @@ private fun CheckmarkBox(isSelected: Boolean, colors: TemplateConfiguration.Colo
 @Composable
 private fun Template2PaywallPreview() {
     InternalPaywall(
-        options = PaywallOptions.Builder().build(),
+        options = PaywallOptions.Builder(dismissRequest = {}).build(),
         viewModel = MockViewModel(offering = TestData.template2Offering),
     )
 }
@@ -315,7 +315,7 @@ private fun Template2PaywallPreview() {
 @Composable
 private fun Template2PaywallFooterPreview() {
     InternalPaywall(
-        options = PaywallOptions.Builder().build(),
+        options = PaywallOptions.Builder(dismissRequest = {}).build(),
         viewModel = MockViewModel(mode = PaywallMode.FOOTER, offering = TestData.template2Offering),
     )
 }
@@ -325,7 +325,7 @@ private fun Template2PaywallFooterPreview() {
 @Composable
 private fun Template2PaywallFooterCondensedPreview() {
     InternalPaywall(
-        options = PaywallOptions.Builder().build(),
+        options = PaywallOptions.Builder(dismissRequest = {}).build(),
         viewModel = MockViewModel(mode = PaywallMode.FOOTER_CONDENSED, offering = TestData.template2Offering),
     )
 }

@@ -243,7 +243,7 @@ class PaywallViewModelTest {
         return PaywallViewModelImpl(
             MockApplicationContext(),
             purchases,
-            PaywallOptions.Builder()
+            PaywallOptions.Builder(dismissRequest = {})
                 .setListener(listener)
                 .setOffering(offering)
                 .build(),

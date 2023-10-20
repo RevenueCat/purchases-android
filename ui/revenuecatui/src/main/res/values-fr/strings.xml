@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="OK">D\'ACCORD</string>
     <string name="privacy">Confidentialité</string>
     <string name="privacy_policy">Politique de confidentialité</string>
     <string name="restore">Restaurer</string>

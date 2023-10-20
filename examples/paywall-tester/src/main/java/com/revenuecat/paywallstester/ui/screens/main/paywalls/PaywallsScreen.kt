@@ -117,7 +117,7 @@ private fun FooterDialog(currentState: DisplayPaywallState.Footer, onDismiss: ()
         Scaffold { scaffoldPadding ->
             Box(modifier = Modifier.padding(scaffoldPadding)) {
                 PaywallFooter(
-                    options = PaywallOptions.Builder()
+                    options = PaywallOptions.Builder(dismissRequest = onDismiss)
                         .setOffering(currentState.offering)
                         .setListener(PaywallListenerImpl(onDismiss))
                         .build(),

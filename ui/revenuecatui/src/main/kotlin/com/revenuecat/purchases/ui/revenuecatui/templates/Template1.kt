@@ -177,34 +177,34 @@ private object Template1UIConstants {
 
 @Preview(showBackground = true)
 @Composable
-internal fun Template1PaywallPreview() {
+private fun Template1PaywallPreview() {
     InternalPaywall(
-        options = PaywallOptions.Builder().build(),
+        options = PaywallOptions.Builder(dismissRequest = {}).build(),
         viewModel = MockViewModel(offering = TestData.template1Offering),
     )
 }
 
 @Preview(showBackground = true)
 @Composable
-internal fun Template1FooterPaywallPreview() {
+private fun Template1FooterPaywallPreview() {
     InternalPaywall(
-        options = PaywallOptions.Builder().build(),
+        options = PaywallOptions.Builder(dismissRequest = {}).build(),
         viewModel = MockViewModel(mode = PaywallMode.FOOTER, offering = TestData.template1Offering),
     )
 }
 
 @Preview(showBackground = true)
 @Composable
-internal fun Template1CondensedFooterPaywallPreview() {
+private fun Template1CondensedFooterPaywallPreview() {
     InternalPaywall(
-        options = PaywallOptions.Builder().build(),
+        options = PaywallOptions.Builder(dismissRequest = {}).build(),
         viewModel = MockViewModel(mode = PaywallMode.FOOTER_CONDENSED, offering = TestData.template1Offering),
     )
 }
 
 @Preview(heightDp = 700, widthDp = 400)
 @Composable
-internal fun CircleMaskPreview() {
+private fun CircleMaskPreview() {
     Box {
         Box(
             modifier = Modifier

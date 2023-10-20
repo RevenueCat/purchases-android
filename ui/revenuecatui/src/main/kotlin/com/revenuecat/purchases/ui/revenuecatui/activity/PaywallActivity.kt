@@ -74,7 +74,7 @@ internal class PaywallActivity : ComponentActivity(), PaywallListener {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val paywallOptions = PaywallOptions.Builder()
+        val paywallOptions = PaywallOptions.Builder(dismissRequest = ::finish)
             .setOfferingId(getArgs()?.offeringId)
             .setFontProvider(getFontProvider())
             .setListener(this)

@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="OK">TAMAM</string>
     <string name="all_plans">Tüm abonelikler</string>
     <string name="privacy">Mahremiyet</string>
     <string name="privacy_policy">Gizlilik Politikası</string>

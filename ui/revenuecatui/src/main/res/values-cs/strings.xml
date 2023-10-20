@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="OK">OK</string>
     <string name="all_plans">Všechna předplatná</string>
     <string name="privacy">Soukromí</string>
     <string name="privacy_policy">Zásady ochrany osobních údajů</string>
