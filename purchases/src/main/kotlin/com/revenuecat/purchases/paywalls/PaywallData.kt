@@ -144,7 +144,10 @@ data class PaywallData(
              * Image displayed as an app icon in a template.
              */
             val icon: String? = null,
-        )
+        ) {
+            internal val all: List<String>
+                get() = listOfNotNull(header, background, icon)
+        }
 
         @Serializable
         data class ColorInformation(
