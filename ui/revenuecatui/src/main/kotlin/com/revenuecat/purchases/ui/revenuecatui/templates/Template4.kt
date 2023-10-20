@@ -5,15 +5,22 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.BoxWithConstraintsScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -26,9 +33,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.Placeable
+import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.ui.revenuecatui.InternalPaywall
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
@@ -52,6 +64,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.extensions.introEligibility
 import com.revenuecat.purchases.ui.revenuecatui.extensions.packageButtonActionInProgressOpacityAnimation
 import com.revenuecat.purchases.ui.revenuecatui.extensions.packageButtonColorAnimation
+import kotlin.math.min
 
 private object Template4UIConstants {
     val packageHorizontalSpacing = 8.dp
@@ -145,19 +158,100 @@ private fun ColumnScope.Packages(
     state: PaywallState.Loaded,
     viewModel: PaywallViewModel,
 ) {
-    Row(
-        modifier = Modifier
-            .horizontalScroll(rememberScrollState())
-//            .conditional(state.isInFullScreenMode) {
-//                Modifier.weight(1f)
-//            }
-            .padding(horizontal = UIConstant.defaultHorizontalPadding, vertical = UIConstant.defaultVerticalSpacing),
-        horizontalArrangement = Arrangement.spacedBy(space = Template4UIConstants.packageHorizontalSpacing),
-    ) {
-        state.templateConfiguration.packages.all.forEach { packageInfo ->
-            SelectPackageButton(state, packageInfo, viewModel)
+    BoxWithConstraints {
+        val numberOfPackages = state.templateConfiguration.packages.all.size
+        val packageWidth = packageWidth(numberOfPackages.toFloat())
+        Row(
+            modifier = Modifier
+                .height(IntrinsicSize.Min)
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState())
+                .padding(
+                    horizontal = UIConstant.defaultHorizontalPadding,
+                    vertical = UIConstant.defaultVerticalSpacing,
+                ),
+            horizontalArrangement = Arrangement.spacedBy(
+                space = Template4UIConstants.packageHorizontalSpacing,
+            ),
+        ) {
+            state.templateConfiguration.packages.all.forEach { packageInfo ->
+                SelectPackageButton(
+                    state,
+                    packageInfo,
+                    viewModel,
+                    if (numberOfPackages <= 3) {
+                        Modifier.weight(1f)
+                    } else {
+                        Modifier.width(packageWidth)
+                    },
+                )
+            }
         }
     }
+}
+
+@Composable
+fun SubcomposeRow(
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit = {},
+) {
+    SubcomposeLayout(modifier = modifier) { constraints ->
+
+        var recompositionIndex = 0
+
+        var placeables: List<Placeable> = subcompose(recompositionIndex++, content).map {
+            it.measure(constraints)
+        }
+
+        var rowSize =
+            placeables.fold(IntSize.Zero) { currentMax: IntSize, placeable: Placeable ->
+                IntSize(
+                    width = currentMax.width + placeable.width,
+                    height = maxOf(currentMax.height, placeable.height),
+                )
+            }
+
+        // Remeasure every element using height of longest item as minHeight of Constraint
+        if (!placeables.isNullOrEmpty() && placeables.size > 1) {
+            placeables = subcompose(recompositionIndex, content).map { measurable ->
+                measurable.measure(
+                    Constraints(
+                        minHeight = rowSize.height,
+                        maxHeight = constraints.maxHeight,
+                    ),
+                )
+            }
+
+            rowSize =
+                placeables.fold(IntSize.Zero) { currentMax: IntSize, placeable: Placeable ->
+                    IntSize(
+                        width = currentMax.width + placeable.width,
+                        height = maxOf(currentMax.height, placeable.height),
+                    )
+                }
+        }
+
+        layout(rowSize.width, rowSize.height) {
+            var xPos = 0
+            placeables.forEach { placeable: Placeable ->
+                placeable.placeRelative(xPos, 0)
+                xPos += placeable.width
+            }
+        }
+    }
+}
+
+private fun BoxWithConstraintsScope.packageWidth(numberOfPackages: Float): Dp {
+    val packages = packagesToDisplay(numberOfPackages)
+    val availableWidth = maxWidth - UIConstant.defaultHorizontalPadding * 2
+    return availableWidth / packages - Template4UIConstants.packageHorizontalSpacing * (packages - 1)
+}
+
+private fun packagesToDisplay(numberOfPackages: Float): Float {
+    // TODO: Implement different counts for different screen sizes
+    val desiredCount = 3.5f
+    val maximumPackagesToDisplay = 3f
+    return min(min(desiredCount, numberOfPackages), maximumPackagesToDisplay)
 }
 
 @SuppressWarnings("LongMethod")
@@ -166,6 +260,7 @@ private fun RowScope.SelectPackageButton(
     state: PaywallState.Loaded,
     packageInfo: TemplateConfiguration.PackageInfo,
     viewModel: PaywallViewModel,
+    modifier: Modifier = Modifier,
 ) {
     val colors = state.templateConfiguration.getCurrentColors()
     val isSelected = packageInfo == state.selectedPackage.value
@@ -191,8 +286,9 @@ private fun RowScope.SelectPackageButton(
         )
     }
     Button(
-        modifier = Modifier
-            .alpha(buttonAlpha),
+        modifier = modifier
+            .alpha(buttonAlpha)
+            .fillMaxHeight(),
         onClick = { viewModel.selectPackage(packageInfo) },
         colors = ButtonDefaults.buttonColors(containerColor = background, contentColor = textColor),
         shape = RoundedCornerShape(UIConstant.defaultCornerRadius),
@@ -213,6 +309,8 @@ private fun RowScope.SelectPackageButton(
                 color = textColor,
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.SemiBold,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.wrapContentSize().weight(1f),
             )
 
             Text(
