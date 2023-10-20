@@ -13,10 +13,14 @@ private const val MAX_CACHE_SIZE_BYTES = 25 * 1024 * 1024L // 25 MB
 internal class OfferingImagePreDownloader(
     private val applicationContext: Context,
 ) {
+    /**
+     * We check for the existance of the paywalls SDK. If so, the Coil SDK should be available to
+     * pre-download the images.
+     */
     private val shouldPredownloadImages: Boolean = try {
         Class.forName("com.revenuecat.purchases.ui.revenuecatui.PaywallKt")
         true
-    } catch (e: ClassNotFoundException) {
+    } catch (_: ClassNotFoundException) {
         false
     }
 
