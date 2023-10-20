@@ -3,6 +3,7 @@ package com.revenuecat.purchases.utils
 import android.net.Uri
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.common.debugLog
+import com.revenuecat.purchases.common.verboseLog
 
 internal class OfferingImagePreDownloader(
     /**
@@ -19,7 +20,13 @@ internal class OfferingImagePreDownloader(
 ) {
 
     fun preDownloadOfferingImages(offering: Offering) {
-        if (!shouldPredownloadImages) return
+        if (!shouldPredownloadImages) {
+            verboseLog("OfferingImagePreDownloader won't pre-download images")
+            return
+        }
+
+        debugLog("OfferingImagePreDownloader: starting image download")
+
         offering.paywall?.let { paywallData ->
             val imageUris = paywallData.config.images.all.map {
                 Uri.parse(paywallData.assetBaseURL.toString()).buildUpon().path(it).build()
