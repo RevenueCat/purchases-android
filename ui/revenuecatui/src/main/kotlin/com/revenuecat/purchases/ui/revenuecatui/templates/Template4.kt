@@ -67,6 +67,7 @@ private object Template4UIConstants {
     val packageHorizontalSpacing = 8.dp
     val checkmarkSize = 18.dp
     const val fadedColorOpacity = 0.3f
+    const val maxPackagesToDisplay = 3f
 }
 
 @Composable
@@ -176,7 +177,7 @@ private fun ColumnScope.Packages(
                     state,
                     packageInfo,
                     viewModel,
-                    if (numberOfPackages <= 3) {
+                    if (numberOfPackages <= Template4UIConstants.maxPackagesToDisplay) {
                         Modifier.weight(1f)
                     } else {
                         Modifier.width(packageWidth)
@@ -196,9 +197,8 @@ private fun BoxWithConstraintsScope.packageWidth(numberOfPackages: Float): Dp {
 @SuppressWarnings("MagicNumber")
 private fun packagesToDisplay(numberOfPackages: Float): Float {
     // TODO-PAYWALLS: Implement different counts for different screen sizes
-    val desiredCount = 3.5f
-    val maximumPackagesToDisplay = 3f
-    return min(min(desiredCount, numberOfPackages), maximumPackagesToDisplay)
+    val desiredCount = Template4UIConstants.maxPackagesToDisplay + 0.5f
+    return min(min(desiredCount, numberOfPackages), Template4UIConstants.maxPackagesToDisplay)
 }
 
 @SuppressWarnings("LongMethod")
