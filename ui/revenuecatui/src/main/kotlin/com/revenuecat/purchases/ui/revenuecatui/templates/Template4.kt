@@ -33,6 +33,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.Placeable
 import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.text.font.FontWeight
@@ -304,13 +305,9 @@ private fun RowScope.SelectPackageButton(
         ) {
 //            Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
 //                CheckmarkBox(isSelected = isSelected, colors = state.currentColors)
-            Text(
-                text = packageInfo.localization.offerName ?: packageInfo.rcPackage.product.title,
-                color = textColor,
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.SemiBold,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.wrapContentSize().weight(1f),
+            OfferName(
+                packageInfo,
+                textColor,
             )
 
             Text(
@@ -321,6 +318,50 @@ private fun RowScope.SelectPackageButton(
             )
 //            }
         }
+    }
+}
+
+@Composable
+private fun ColumnScope.OfferName(
+    packageInfo: TemplateConfiguration.PackageInfo,
+    textColor: Color,
+) {
+    var firstRow: String? = null
+    var secondRow: String = packageInfo.rcPackage.product.title
+
+    packageInfo.localization.offerName?.let { offerName ->
+        val components = offerName.split(" ", limit = 2)
+        if (components.size == 2) {
+            firstRow = components[0]
+            secondRow = components[1]
+        } else {
+            secondRow = offerName
+        }
+    }
+
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier
+            .wrapContentSize()
+            .weight(1f),
+    ) {
+        firstRow?.let {
+            Text(
+                text = it,
+                color = textColor,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
+            )
+        }
+
+        Text(
+            text = secondRow,
+            color = textColor,
+            style = MaterialTheme.typography.bodyLarge,
+            fontWeight = FontWeight.Normal,
+            textAlign = TextAlign.Center,
+        )
     }
 }
 

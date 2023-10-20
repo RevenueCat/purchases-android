@@ -314,6 +314,7 @@ object SamplePaywalls {
                     PackageType.MONTHLY.identifier!!,
                     PackageType.SIX_MONTH.identifier!!,
                     PackageType.ANNUAL.identifier!!,
+                    PackageType.LIFETIME.identifier!!,
                 ),
                 defaultPackage = PackageType.SIX_MONTH.identifier!!,
             ),
