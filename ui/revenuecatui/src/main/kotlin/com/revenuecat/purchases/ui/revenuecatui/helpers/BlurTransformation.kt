@@ -32,15 +32,18 @@ internal class BlurTransformation(
     }
 }
 
-// max radius supported by RenderScript
-private const val MAX_SUPPORTED_RADIUS = 25f
+private object BlurConstants {
+    // max radius supported by RenderScript
+    const val maxSupportedRadius = 25f
+    const val maxImageSize = 400
+}
 
 @VisibleForTesting
 internal fun Bitmap.blur(context: Context, radius: Float, scaleDown: Boolean = true): Bitmap {
     if (radius < 1f) {
         return this@blur
     }
-    val updatedRadius = min(radius.toDouble(), MAX_SUPPORTED_RADIUS.toDouble())
+    val updatedRadius = min(radius.toDouble(), BlurConstants.maxSupportedRadius.toDouble())
 
     val bitmap = if (scaleDown) this.scaledDown() else this
 
@@ -65,9 +68,10 @@ internal fun Bitmap.blur(context: Context, radius: Float, scaleDown: Boolean = t
 }
 
 private fun Bitmap.scaledDown(): Bitmap {
-    val maxImageSize = 400
-
-    val ratio = min(maxImageSize.toFloat() / width, maxImageSize.toFloat() / height)
+    val ratio = min(
+        BlurConstants.maxImageSize.toFloat() / width,
+        BlurConstants.maxImageSize.toFloat() / height,
+    )
     val width = (ratio * width).roundToInt()
     val height = (ratio * height).roundToInt()
 
