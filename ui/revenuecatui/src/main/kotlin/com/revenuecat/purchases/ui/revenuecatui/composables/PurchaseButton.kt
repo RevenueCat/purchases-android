@@ -1,8 +1,12 @@
 package com.revenuecat.purchases.ui.revenuecatui.composables
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -67,11 +71,6 @@ private fun PurchaseButton(
             animationSpec = UIConstant.defaultAnimation(),
             label = "PurchaseButton.label",
         )
-        val progressIndicatorOpacity by animateFloatAsState(
-            targetValue = if (viewModel.actionInProgress.value) 1.0f else 0.0f,
-            animationSpec = UIConstant.defaultAnimation(),
-            label = "PurchaseButton.progressIndicator",
-        )
 
         Button(
             modifier = Modifier.fillMaxWidth(),
@@ -102,14 +101,30 @@ private fun PurchaseButton(
                     )
                 }
 
-                CircularProgressIndicator(
-                    color = colors.callToActionForeground,
-                    modifier = Modifier
-                        .align(Alignment.Center)
-                        .alpha(progressIndicatorOpacity),
-                )
+                Box(
+                    // Ensure that the spinner takes the same size as the label
+                    modifier = Modifier.matchParentSize(),
+                ) {
+                    LoadingSpinner(shouldShow = viewModel.actionInProgress.value, colors = colors)
+                }
             }
         }
+    }
+}
+
+@Composable
+private fun BoxScope.LoadingSpinner(shouldShow: Boolean, colors: TemplateConfiguration.Colors) {
+    AnimatedVisibility(
+        visible = shouldShow,
+        modifier = Modifier.align(Alignment.Center),
+        enter = fadeIn(animationSpec = UIConstant.defaultAnimation()),
+        exit = fadeOut(animationSpec = UIConstant.defaultAnimation()),
+        label = "PurchaseButton.LoadingSpinner",
+    ) {
+        CircularProgressIndicator(
+            color = colors.callToActionForeground,
+            modifier = Modifier.align(Alignment.Center),
+        )
     }
 }
 
