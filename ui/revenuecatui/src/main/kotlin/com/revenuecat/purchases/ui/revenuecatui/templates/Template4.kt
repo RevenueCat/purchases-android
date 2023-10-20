@@ -8,11 +8,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.BoxWithConstraintsScope
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -152,10 +150,23 @@ private fun Template4MainContent(
 }
 
 @Composable
-private fun ColumnScope.Packages(
+private fun Packages(
     state: PaywallState.Loaded,
     viewModel: PaywallViewModel,
 ) {
+    @SuppressWarnings("MagicNumber")
+    fun packagesToDisplay(numberOfPackages: Float): Float {
+        // TODO-PAYWALLS: Implement different counts for different screen sizes
+        val desiredCount = Template4UIConstants.maxPackagesToDisplay + 0.5f
+        return min(min(desiredCount, numberOfPackages), Template4UIConstants.maxPackagesToDisplay)
+    }
+
+    fun BoxWithConstraintsScope.packageWidth(numberOfPackages: Float): Dp {
+        val packages = packagesToDisplay(numberOfPackages)
+        val availableWidth = maxWidth - UIConstant.defaultHorizontalPadding * 2
+        return availableWidth / packages - Template4UIConstants.packageHorizontalSpacing * (packages - 1)
+    }
+
     BoxWithConstraints {
         val numberOfPackages = state.templateConfiguration.packages.all.size
         val packageWidth = packageWidth(numberOfPackages.toFloat())
@@ -188,22 +199,9 @@ private fun ColumnScope.Packages(
     }
 }
 
-private fun BoxWithConstraintsScope.packageWidth(numberOfPackages: Float): Dp {
-    val packages = packagesToDisplay(numberOfPackages)
-    val availableWidth = maxWidth - UIConstant.defaultHorizontalPadding * 2
-    return availableWidth / packages - Template4UIConstants.packageHorizontalSpacing * (packages - 1)
-}
-
-@SuppressWarnings("MagicNumber")
-private fun packagesToDisplay(numberOfPackages: Float): Float {
-    // TODO-PAYWALLS: Implement different counts for different screen sizes
-    val desiredCount = Template4UIConstants.maxPackagesToDisplay + 0.5f
-    return min(min(desiredCount, numberOfPackages), Template4UIConstants.maxPackagesToDisplay)
-}
-
 @SuppressWarnings("LongMethod")
 @Composable
-private fun RowScope.SelectPackageButton(
+private fun SelectPackageButton(
     state: PaywallState.Loaded,
     packageInfo: TemplateConfiguration.PackageInfo,
     viewModel: PaywallViewModel,
@@ -251,8 +249,11 @@ private fun RowScope.SelectPackageButton(
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 OfferName(
-                    packageInfo,
-                    textColor,
+                    packageInfo = packageInfo,
+                    textColor = textColor,
+                    modifier = Modifier
+                        .wrapContentSize()
+                        .weight(1f),
                 )
 
                 Text(
@@ -267,15 +268,18 @@ private fun RowScope.SelectPackageButton(
         CheckmarkBox(
             isSelected = isSelected,
             colors = state.currentColors,
-            modifier = Modifier.align(Alignment.TopEnd).padding(8.dp),
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(8.dp),
         )
     }
 }
 
 @Composable
-private fun ColumnScope.OfferName(
+private fun OfferName(
     packageInfo: TemplateConfiguration.PackageInfo,
     textColor: Color,
+    modifier: Modifier = Modifier,
 ) {
     var firstRow: String? = null
     var secondRow: String = packageInfo.rcPackage.product.title
@@ -292,9 +296,7 @@ private fun ColumnScope.OfferName(
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier
-            .wrapContentSize()
-            .weight(1f),
+        modifier = modifier,
     ) {
         firstRow?.let {
             Text(
