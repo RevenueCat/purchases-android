@@ -44,7 +44,7 @@ internal data class TemplateConfiguration(
         val text2: Color,
         val callToActionBackground: Color,
         val callToActionForeground: Color,
-        val callToActionSecondaryBackground: Color,
+        val callToActionSecondaryBackground: Color?,
         val accent1: Color,
         val accent2: Color,
     )
