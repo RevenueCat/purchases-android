@@ -34,14 +34,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.Placeable
-import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.ui.revenuecatui.InternalPaywall
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
@@ -191,65 +187,15 @@ private fun ColumnScope.Packages(
     }
 }
 
-@Composable
-fun SubcomposeRow(
-    modifier: Modifier = Modifier,
-    content: @Composable () -> Unit = {},
-) {
-    SubcomposeLayout(modifier = modifier) { constraints ->
-
-        var recompositionIndex = 0
-
-        var placeables: List<Placeable> = subcompose(recompositionIndex++, content).map {
-            it.measure(constraints)
-        }
-
-        var rowSize =
-            placeables.fold(IntSize.Zero) { currentMax: IntSize, placeable: Placeable ->
-                IntSize(
-                    width = currentMax.width + placeable.width,
-                    height = maxOf(currentMax.height, placeable.height),
-                )
-            }
-
-        // Remeasure every element using height of longest item as minHeight of Constraint
-        if (!placeables.isNullOrEmpty() && placeables.size > 1) {
-            placeables = subcompose(recompositionIndex, content).map { measurable ->
-                measurable.measure(
-                    Constraints(
-                        minHeight = rowSize.height,
-                        maxHeight = constraints.maxHeight,
-                    ),
-                )
-            }
-
-            rowSize =
-                placeables.fold(IntSize.Zero) { currentMax: IntSize, placeable: Placeable ->
-                    IntSize(
-                        width = currentMax.width + placeable.width,
-                        height = maxOf(currentMax.height, placeable.height),
-                    )
-                }
-        }
-
-        layout(rowSize.width, rowSize.height) {
-            var xPos = 0
-            placeables.forEach { placeable: Placeable ->
-                placeable.placeRelative(xPos, 0)
-                xPos += placeable.width
-            }
-        }
-    }
-}
-
 private fun BoxWithConstraintsScope.packageWidth(numberOfPackages: Float): Dp {
     val packages = packagesToDisplay(numberOfPackages)
     val availableWidth = maxWidth - UIConstant.defaultHorizontalPadding * 2
     return availableWidth / packages - Template4UIConstants.packageHorizontalSpacing * (packages - 1)
 }
 
+@SuppressWarnings("MagicNumber")
 private fun packagesToDisplay(numberOfPackages: Float): Float {
-    // TODO: Implement different counts for different screen sizes
+    // TODO-PAYWALLS: Implement different counts for different screen sizes
     val desiredCount = 3.5f
     val maximumPackagesToDisplay = 3f
     return min(min(desiredCount, numberOfPackages), maximumPackagesToDisplay)
@@ -286,38 +232,43 @@ private fun RowScope.SelectPackageButton(
             colors.text1.copy(alpha = Template4UIConstants.fadedColorOpacity),
         )
     }
-    Button(
-        modifier = modifier
-            .alpha(buttonAlpha)
-            .fillMaxHeight(),
-        onClick = { viewModel.selectPackage(packageInfo) },
-        colors = ButtonDefaults.buttonColors(containerColor = background, contentColor = textColor),
-        shape = RoundedCornerShape(UIConstant.defaultCornerRadius),
-        contentPadding = PaddingValues(
-            vertical = UIConstant.defaultVerticalSpacing,
-            horizontal = UIConstant.defaultHorizontalPadding,
-        ),
-        border = border,
-    ) {
-        Column(
-            verticalArrangement = Arrangement.spacedBy(4.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
+    Box {
+        Button(
+            modifier = modifier
+                .alpha(buttonAlpha)
+                .fillMaxHeight(),
+            onClick = { viewModel.selectPackage(packageInfo) },
+            colors = ButtonDefaults.buttonColors(containerColor = background, contentColor = textColor),
+            shape = RoundedCornerShape(UIConstant.defaultCornerRadius),
+            contentPadding = PaddingValues(
+                vertical = UIConstant.defaultVerticalSpacing,
+                horizontal = UIConstant.defaultHorizontalPadding,
+            ),
+            border = border,
         ) {
-//            Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-//                CheckmarkBox(isSelected = isSelected, colors = state.currentColors)
-            OfferName(
-                packageInfo,
-                textColor,
-            )
+            Column(
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                OfferName(
+                    packageInfo,
+                    textColor,
+                )
 
-            Text(
-                text = packageInfo.rcPackage.product.price.formatted,
-                color = textColor,
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.SemiBold,
-            )
-//            }
+                Text(
+                    text = packageInfo.rcPackage.product.price.formatted,
+                    color = textColor,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.SemiBold,
+                )
+            }
         }
+
+        CheckmarkBox(
+            isSelected = isSelected,
+            colors = state.currentColors,
+            modifier = Modifier.align(Alignment.TopEnd).padding(8.dp),
+        )
     }
 }
 
@@ -366,12 +317,15 @@ private fun ColumnScope.OfferName(
 }
 
 @Composable
-private fun CheckmarkBox(isSelected: Boolean, colors: TemplateConfiguration.Colors) {
+private fun CheckmarkBox(
+    isSelected: Boolean,
+    colors: TemplateConfiguration.Colors,
+    modifier: Modifier = Modifier,
+) {
     Box(
-        modifier = Modifier
+        modifier = modifier
             .size(Template4UIConstants.checkmarkSize)
-            .clip(CircleShape)
-            .background(colors.accent2.copy(alpha = Template4UIConstants.fadedColorOpacity)),
+            .clip(CircleShape),
     ) {
         if (isSelected) {
             PaywallIcon(icon = PaywallIconName.CHECK_CIRCLE, tintColor = colors.accent1)
