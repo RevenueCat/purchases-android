@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -89,7 +90,18 @@ internal fun Template2(
                 mutableStateOf(state.templateConfiguration.mode != PaywallMode.FOOTER_CONDENSED)
             }
             Template2MainContent(state, viewModel, packageSelectorVisible, childModifier)
+
+            AnimatedVisibility(
+                visible = packageSelectorVisible,
+                enter = fadeIn(animationSpec = UIConstant.defaultAnimation()),
+                exit = fadeOut(animationSpec = UIConstant.defaultAnimation()),
+                label = "Template2.packageSpacig",
+            ) {
+                Spacer(modifier = Modifier.height(UIConstant.defaultVerticalSpacing))
+            }
+
             PurchaseButton(state, viewModel, childModifier)
+
             Footer(
                 templateConfiguration = state.templateConfiguration,
                 viewModel = viewModel,
