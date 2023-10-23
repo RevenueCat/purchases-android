@@ -2,7 +2,6 @@ package com.revenuecat.purchases.ui.revenuecatui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -69,7 +68,6 @@ private fun LoadedPaywall(state: PaywallState.Loaded, viewModel: PaywallViewMode
                         ),
                     )
                     .background(backgroundColor)
-                    .padding(top = UIConstant.footerRoundedBorderHeight)
             },
     ) {
         TemplatePaywall(state = state, viewModel = viewModel)
