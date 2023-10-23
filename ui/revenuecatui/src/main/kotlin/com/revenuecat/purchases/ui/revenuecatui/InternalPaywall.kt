@@ -81,8 +81,8 @@ private fun LoadedPaywall(state: PaywallState.Loaded, viewModel: PaywallViewMode
                 Modifier
                     .clip(
                         RoundedCornerShape(
-                            topStart = UIConstant.footerRoundedBorderHeight,
-                            topEnd = UIConstant.footerRoundedBorderHeight,
+                            topStart = UIConstant.defaultCornerRadius,
+                            topEnd = UIConstant.defaultCornerRadius,
                         ),
                     )
                     .background(backgroundColor)

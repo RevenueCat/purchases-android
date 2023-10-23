@@ -34,14 +34,14 @@ fun PaywallFooter(
         modifier = Modifier.fillMaxSize(),
         // This is a workaround to make the main content be able to go below the footer, so it's visible through
         // the rounded corners. We pass this padding back to the developer so they can add this padding to their content
-        verticalArrangement = Arrangement.spacedBy(-UIConstant.footerRoundedBorderHeight),
+        verticalArrangement = Arrangement.spacedBy(-UIConstant.defaultCornerRadius),
     ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f),
         ) {
-            mainContent(PaddingValues(bottom = UIConstant.footerRoundedBorderHeight))
+            mainContent(PaddingValues(bottom = UIConstant.defaultCornerRadius))
         }
         options.mode = PaywallMode.footerMode(condensed)
         Paywall(options)
