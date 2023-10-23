@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -74,6 +75,9 @@ internal fun Template3(
                 Template3MainContent(state)
             }
         }
+
+        Spacer(modifier = Modifier.height(UIConstant.defaultVerticalSpacing))
+
         OfferDetails(state)
         PurchaseButton(state, viewModel)
         Footer(templateConfiguration = state.templateConfiguration, viewModel = viewModel)

@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -116,6 +117,8 @@ private fun ColumnScope.Template1MainContent(state: PaywallState.Loaded) {
 
             Spacer(modifier = Modifier.weight(2f))
         }
+    } else {
+        Spacer(modifier = Modifier.height(UIConstant.defaultVerticalSpacing))
     }
 
     OfferDetails(state)

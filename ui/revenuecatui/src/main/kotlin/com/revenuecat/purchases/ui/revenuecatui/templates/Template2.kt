@@ -89,6 +89,9 @@ internal fun Template2(
             var packageSelectorVisible by remember {
                 mutableStateOf(state.templateConfiguration.mode != PaywallMode.FOOTER_CONDENSED)
             }
+
+            Spacer(modifier = Modifier.height(UIConstant.defaultVerticalSpacing))
+
             Template2MainContent(state, viewModel, packageSelectorVisible, childModifier)
 
             AnimatedVisibility(
