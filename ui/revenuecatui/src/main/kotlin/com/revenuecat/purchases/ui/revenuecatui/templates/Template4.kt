@@ -60,6 +60,7 @@ import com.revenuecat.purchases.ui.revenuecatui.extensions.introEligibility
 import com.revenuecat.purchases.ui.revenuecatui.extensions.packageButtonActionInProgressOpacityAnimation
 import com.revenuecat.purchases.ui.revenuecatui.extensions.packageButtonColorAnimation
 import kotlin.math.min
+import kotlin.math.roundToInt
 
 private object Template4UIConstants {
     val packageHorizontalSpacing = 8.dp
@@ -211,67 +212,99 @@ private fun SelectPackageButton(
     val isSelected = packageInfo == state.selectedPackage.value
 
     val buttonAlpha = viewModel.packageButtonActionInProgressOpacityAnimation()
-    val background = state.packageButtonColorAnimation(
-        packageInfo = packageInfo,
-        selectedColor = colors.accent2,
-        unselectedColor = colors.background,
-    )
-    val textColor = state.packageButtonColorAnimation(
+    val mainColor = state.packageButtonColorAnimation(
         packageInfo = packageInfo,
         selectedColor = colors.accent1,
-        unselectedColor = colors.text1,
+        unselectedColor = colors.accent2,
     )
 
+    var modifier1 = Modifier
+        .clip(RoundedCornerShape(UIConstant.defaultCornerRadius))
+
+    if (packageInfo.discountRelativeToMostExpensivePerMonth != null) {
+        modifier1 = modifier1
+            .background(mainColor)
+    }
+
     val border = if (isSelected) {
-        null
+        BorderStroke(
+            UIConstant.defaultPackageBorderWidth,
+            mainColor,
+        )
     } else {
         BorderStroke(
             UIConstant.defaultPackageBorderWidth,
-            colors.text1.copy(alpha = Template4UIConstants.fadedColorOpacity),
+            mainColor,
         )
     }
-    Box {
-        Button(
-            modifier = modifier
-                .alpha(buttonAlpha)
-                .fillMaxHeight(),
-            onClick = { viewModel.selectPackage(packageInfo) },
-            colors = ButtonDefaults.buttonColors(containerColor = background, contentColor = textColor),
-            shape = RoundedCornerShape(UIConstant.defaultCornerRadius),
-            contentPadding = PaddingValues(
-                vertical = UIConstant.defaultVerticalSpacing,
+
+    Column(
+        modifier = modifier1,
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Box(
+            modifier = Modifier.padding(
                 horizontal = UIConstant.defaultHorizontalPadding,
+                vertical = 4.dp,
             ),
-            border = border,
         ) {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(4.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                OfferName(
-                    packageInfo = packageInfo,
-                    textColor = textColor,
-                    modifier = Modifier
-                        .wrapContentSize()
-                        .weight(1f),
-                )
-
-                Text(
-                    text = packageInfo.rcPackage.product.price.formatted,
-                    color = textColor,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.SemiBold,
-                )
-            }
+            val text = packageInfo.discountRelativeToMostExpensivePerMonth?.let { discount ->
+                // TODO-PAywalls: cleanup and localize
+                val d = (discount * 100.0).roundToInt()
+                "$d% OFF"
+            } ?: ""
+            Text(
+                text = text,
+                color = colors.text1,
+                style = MaterialTheme.typography.bodySmall,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
+                maxLines = 1,
+            )
         }
+        Box {
+            Button(
+                modifier = modifier
+                    .alpha(buttonAlpha)
+                    .fillMaxHeight(),
+                onClick = { viewModel.selectPackage(packageInfo) },
+                colors = ButtonDefaults.buttonColors(containerColor = colors.background),
+                shape = RoundedCornerShape(UIConstant.defaultCornerRadius),
+                contentPadding = PaddingValues(
+                    vertical = UIConstant.defaultVerticalSpacing,
+                    horizontal = UIConstant.defaultHorizontalPadding,
+                ),
+                border = border,
+            ) {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    OfferName(
+                        packageInfo = packageInfo,
+                        textColor = colors.text1,
+                        modifier = Modifier
+                            .wrapContentSize()
+                            .weight(1f),
+                    )
 
-        CheckmarkBox(
-            isSelected = isSelected,
-            colors = state.currentColors,
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(8.dp),
-        )
+                    Text(
+                        text = packageInfo.rcPackage.product.price.formatted,
+                        color = colors.text1,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                }
+            }
+
+            CheckmarkBox(
+                isSelected = isSelected,
+                colors = state.currentColors,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(8.dp),
+            )
+        }
     }
 }
 
