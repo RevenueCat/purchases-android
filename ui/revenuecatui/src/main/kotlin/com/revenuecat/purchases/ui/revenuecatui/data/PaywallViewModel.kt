@@ -159,6 +159,7 @@ internal class PaywallViewModelImpl(
                     PurchaseParams.Builder(activity, packageToPurchase),
                 )
                 listener?.onPurchaseCompleted(purchaseResult.customerInfo, purchaseResult.storeTransaction)
+                options.dismissRequest()
             } catch (e: PurchasesException) {
                 listener?.onPurchaseError(e.error)
             }

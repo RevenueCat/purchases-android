@@ -28,13 +28,10 @@ import com.revenuecat.paywallstester.SamplePaywalls
 import com.revenuecat.paywallstester.SamplePaywallsLoader
 import com.revenuecat.paywallstester.ui.screens.paywallfooter.SamplePaywall
 import com.revenuecat.paywallstester.ui.theme.googleFont
-import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Offering
-import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.ui.revenuecatui.PaywallDialog
 import com.revenuecat.purchases.ui.revenuecatui.PaywallDialogOptions
 import com.revenuecat.purchases.ui.revenuecatui.PaywallFooter
-import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.fonts.CustomFontProvider
 import com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider
@@ -102,7 +99,6 @@ private fun FullScreenDialog(currentState: DisplayPaywallState.FullScreen, onDis
     PaywallDialog(
         PaywallDialogOptions.Builder(dismissRequest = onDismiss)
             .setOffering(currentState.offering)
-            .setListener(PaywallListenerImpl(onDismiss))
             .setFontProvider(currentState.fontProvider)
             .build(),
     )
@@ -119,7 +115,6 @@ private fun FooterDialog(currentState: DisplayPaywallState.Footer, onDismiss: ()
                 PaywallFooter(
                     options = PaywallOptions.Builder(dismissRequest = onDismiss)
                         .setOffering(currentState.offering)
-                        .setListener(PaywallListenerImpl(onDismiss))
                         .build(),
                     condensed = currentState.condensed,
                 ) { footerPadding ->
@@ -140,12 +135,6 @@ private sealed class DisplayPaywallState {
         val offering: Offering? = null,
         val condensed: Boolean = false,
     ) : DisplayPaywallState()
-}
-
-private class PaywallListenerImpl(private val onDismiss: () -> Unit) : PaywallListener {
-    override fun onPurchaseCompleted(customerInfo: CustomerInfo, storeTransaction: StoreTransaction) {
-        onDismiss()
-    }
 }
 
 @Composable
