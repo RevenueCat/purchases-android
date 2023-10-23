@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.ui.revenuecatui.composables
 
 import android.content.Context
+import androidx.annotation.DrawableRes
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.ui.Modifier
@@ -17,6 +18,26 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 
 @SuppressWarnings("LongParameterList")
 @Composable
+internal fun LocalImage(
+    @DrawableRes resource: Int,
+    modifier: Modifier = Modifier,
+    contentScale: ContentScale = ContentScale.Fit,
+    contentDescription: String? = null,
+    transformation: Transformation? = null,
+    alpha: Float = 1f,
+) {
+    Image(
+        source = ImageSource.Local(resource),
+        modifier = modifier,
+        contentScale = contentScale,
+        contentDescription = contentDescription,
+        transformation = transformation,
+        alpha = alpha,
+    )
+}
+
+@SuppressWarnings("LongParameterList")
+@Composable
 internal fun RemoteImage(
     urlString: String,
     modifier: Modifier = Modifier,
@@ -25,9 +46,40 @@ internal fun RemoteImage(
     transformation: Transformation? = null,
     alpha: Float = 1f,
 ) {
+    Image(
+        source = ImageSource.Remote(urlString),
+        modifier = modifier,
+        contentScale = contentScale,
+        contentDescription = contentDescription,
+        transformation = transformation,
+        alpha = alpha,
+    )
+}
+
+private sealed class ImageSource {
+    data class Local(@DrawableRes val resource: Int) : ImageSource() {
+        override val data: Any = resource
+    }
+    data class Remote(val urlString: String) : ImageSource() {
+        override val data: Any = urlString
+    }
+
+    abstract val data: Any
+}
+
+@SuppressWarnings("LongParameterList")
+@Composable
+private fun Image(
+    source: ImageSource,
+    modifier: Modifier = Modifier,
+    contentScale: ContentScale,
+    contentDescription: String?,
+    transformation: Transformation?,
+    alpha: Float,
+) {
     AsyncImage(
         model = ImageRequest.Builder(LocalContext.current)
-            .data(urlString)
+            .data(source.data)
             .crossfade(durationMillis = UIConstant.defaultAnimationDurationMillis)
             .transformations(listOfNotNull(transformation))
             .build(),
@@ -39,7 +91,12 @@ internal fun RemoteImage(
         onState = {
             when (it) {
                 is AsyncImagePainter.State.Error -> {
-                    Logger.e("Error loading image from '$urlString': ${it.result}")
+                    val error = when (source) {
+                        is ImageSource.Local -> "Error loading local image: '${source.resource}'"
+                        is ImageSource.Remote -> "Error loading image from '${source.urlString}'"
+                    }
+
+                    Logger.e("$error: ${it.result}")
                 }
                 else -> {}
             }
