@@ -56,6 +56,13 @@ internal fun InternalPaywall(
 
             is PaywallState.Loaded -> {
                 LoadedPaywall(state = state, viewModel = viewModel)
+
+                viewModel.actionError.value?.let {
+                    ErrorDialog(
+                        dismissRequest = viewModel::clearActionError,
+                        error = it.message,
+                    )
+                }
             }
         }
     }

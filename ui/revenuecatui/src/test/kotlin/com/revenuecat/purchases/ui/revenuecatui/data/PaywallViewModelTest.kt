@@ -9,6 +9,9 @@ import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PurchaseResult
+import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.Transaction
 import com.revenuecat.purchases.paywalls.PaywallData
@@ -213,6 +216,38 @@ class PaywallViewModelTest {
     }
 
     @Test
+    fun `purchasePackage fails`() {
+        val model = create()
+
+        val state = model.state.value
+        if (state !is PaywallState.Loaded) {
+            fail("Invalid state")
+            return
+        }
+
+        val selectedPackage = state.selectedPackage.value
+        val expectedError = PurchasesError(PurchasesErrorCode.ProductNotAvailableForPurchaseError)
+
+        coEvery {
+            purchases.awaitPurchase(any())
+        } throws PurchasesException(expectedError)
+
+        model.purchaseSelectedPackage(context)
+
+        coVerify {
+            purchases.awaitPurchase(any())
+        }
+
+        verifyOrder {
+            listener.onPurchaseStarted(selectedPackage.rcPackage)
+            listener.onPurchaseError(expectedError)
+        }
+
+        assertThat(model.actionInProgress.value).isFalse
+        assertThat(model.actionError.value).isEqualTo(expectedError)
+    }
+
+    @Test
     fun `restorePurchases`() {
         val model = create()
 
@@ -239,6 +274,58 @@ class PaywallViewModelTest {
 
         assertThat(model.actionInProgress.value).isFalse
         assertThat(dismissInvoked).isFalse
+    }
+
+    @Test
+    fun `restorePurchases fails`() {
+        val model = create()
+
+        val state = model.state.value
+        if (state !is PaywallState.Loaded) {
+            fail("Invalid state")
+            return
+        }
+
+        val expectedError = PurchasesError(PurchasesErrorCode.NetworkError)
+
+        coEvery {
+            purchases.awaitRestore()
+        } throws PurchasesException(expectedError)
+
+        model.restorePurchases()
+
+        coVerify {
+            purchases.awaitRestore()
+        }
+
+        verifyOrder {
+            listener.onRestoreStarted()
+            listener.onRestoreError(expectedError)
+        }
+
+        assertThat(model.actionInProgress.value).isFalse
+        assertThat(model.actionError.value).isEqualTo(expectedError)
+    }
+
+    @Test
+    fun `clearActionError`() {
+        val model = create()
+
+        val state = model.state.value
+        if (state !is PaywallState.Loaded) {
+            fail("Invalid state")
+            return
+        }
+
+        coEvery {
+            purchases.awaitRestore()
+        } throws PurchasesException(PurchasesError(PurchasesErrorCode.NetworkError))
+
+        model.restorePurchases()
+
+        assertThat(model.actionError.value).isNotNull
+        model.clearActionError()
+        assertThat(model.actionError.value).isNull()
     }
 
     private fun create(
