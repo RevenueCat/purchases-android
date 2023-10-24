@@ -218,50 +218,17 @@ private fun SelectPackageButton(
         unselectedColor = colors.accent2,
     )
 
-    var modifier1 = Modifier
-        .clip(RoundedCornerShape(UIConstant.defaultCornerRadius))
+    var columnModifier = Modifier.clip(RoundedCornerShape(UIConstant.defaultCornerRadius))
 
     if (packageInfo.discountRelativeToMostExpensivePerMonth != null) {
-        modifier1 = modifier1
-            .background(mainColor)
-    }
-
-    val border = if (isSelected) {
-        BorderStroke(
-            UIConstant.defaultPackageBorderWidth,
-            mainColor,
-        )
-    } else {
-        BorderStroke(
-            UIConstant.defaultPackageBorderWidth,
-            mainColor,
-        )
+        columnModifier = columnModifier.background(mainColor)
     }
 
     Column(
-        modifier = modifier1,
+        modifier = columnModifier,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Box(
-            modifier = Modifier.padding(
-                horizontal = UIConstant.defaultHorizontalPadding,
-                vertical = 4.dp,
-            ),
-        ) {
-            val text = packageInfo.discountRelativeToMostExpensivePerMonth?.let { discount ->
-                // TODO-PAywalls: cleanup and localize
-                val d = (discount * 100.0).roundToInt()
-                "$d% OFF"
-            } ?: ""
-            Text(
-                text = text,
-                color = colors.text1,
-                style = MaterialTheme.typography.bodySmall,
-                fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center,
-                maxLines = 1,
-            )
-        }
+        DiscountRelativeToMostExpensivePerMonth(packageInfo, colors)
         Box {
             Button(
                 modifier = modifier
@@ -274,27 +241,12 @@ private fun SelectPackageButton(
                     vertical = UIConstant.defaultVerticalSpacing,
                     horizontal = UIConstant.defaultHorizontalPadding,
                 ),
-                border = border,
+                border = BorderStroke(
+                    UIConstant.defaultPackageBorderWidth,
+                    mainColor,
+                ),
             ) {
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(4.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    OfferName(
-                        packageInfo = packageInfo,
-                        textColor = colors.text1,
-                        modifier = Modifier
-                            .wrapContentSize()
-                            .weight(1f),
-                    )
-
-                    Text(
-                        text = packageInfo.rcPackage.product.price.formatted,
-                        color = colors.text1,
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.SemiBold,
-                    )
-                }
+                SelectPackageButtonContent(packageInfo, colors)
             }
 
             CheckmarkBox(
@@ -305,6 +257,59 @@ private fun SelectPackageButton(
                     .padding(8.dp),
             )
         }
+    }
+}
+
+@Composable
+private fun SelectPackageButtonContent(
+    packageInfo: TemplateConfiguration.PackageInfo,
+    colors: TemplateConfiguration.Colors,
+) {
+    Column(
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        OfferName(
+            packageInfo = packageInfo,
+            textColor = colors.text1,
+            modifier = Modifier
+                .wrapContentSize()
+                .weight(1f),
+        )
+
+        Text(
+            text = packageInfo.rcPackage.product.price.formatted,
+            color = colors.text1,
+            style = MaterialTheme.typography.bodyLarge,
+            fontWeight = FontWeight.SemiBold,
+        )
+    }
+}
+
+@Composable
+private fun DiscountRelativeToMostExpensivePerMonth(
+    packageInfo: TemplateConfiguration.PackageInfo,
+    colors: TemplateConfiguration.Colors,
+) {
+    Box(
+        modifier = Modifier.padding(
+            horizontal = UIConstant.defaultHorizontalPadding,
+            vertical = 4.dp,
+        ),
+    ) {
+        val text = packageInfo.discountRelativeToMostExpensivePerMonth?.let { discount ->
+            // TODO-PAywalls: cleanup and localize
+            val d = (discount * 100.0).roundToInt()
+            "$d% OFF"
+        } ?: ""
+        Text(
+            text = text,
+            color = colors.text1,
+            style = MaterialTheme.typography.bodySmall,
+            fontWeight = FontWeight.Bold,
+            textAlign = TextAlign.Center,
+            maxLines = 1,
+        )
     }
 }
 
