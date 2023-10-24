@@ -243,7 +243,7 @@ internal class MockApplicationContext : ApplicationContext {
 
     // This is hardcoding the english version of the strings for now. We can't access the actual resources since
     // we don't have access to a real context in some cases here.
-    override fun getString(resId: Int): String {
+    override fun getString(resId: Int, vararg formatArgs: Any?): String {
         return when (resId) {
             R.string.restore_purchases -> "Restore purchases"
             R.string.annual -> "Annual"
@@ -257,6 +257,7 @@ internal class MockApplicationContext : ApplicationContext {
             R.string.default_offer_details_with_intro_offer ->
                 "Start your {{ sub_offer_duration }} trial, " +
                     "then {{ total_price_and_per_month }}."
+            R.string.package_discount -> "${formatArgs[0]}% off"
             else -> error("Unknown string resource $resId")
         }
     }

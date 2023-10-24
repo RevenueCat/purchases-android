@@ -61,6 +61,7 @@ import com.revenuecat.purchases.ui.revenuecatui.extensions.introEligibility
 import com.revenuecat.purchases.ui.revenuecatui.extensions.localizedDiscount
 import com.revenuecat.purchases.ui.revenuecatui.extensions.packageButtonActionInProgressOpacityAnimation
 import com.revenuecat.purchases.ui.revenuecatui.extensions.packageButtonColorAnimation
+import com.revenuecat.purchases.ui.revenuecatui.helpers.toAndroidContext
 import kotlin.math.min
 
 private object Template4UIConstants {
@@ -298,8 +299,7 @@ private fun DiscountRelativeToMostExpensivePerMonth(
             vertical = 4.dp,
         ),
     ) {
-        val resources = LocalContext.current.applicationContext.resources
-        val text = packageInfo.localizedDiscount(resources)
+        val text = packageInfo.localizedDiscount(LocalContext.current.applicationContext.toAndroidContext())
         Text(
             text = text,
             color = colors.text1,
