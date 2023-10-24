@@ -2,8 +2,6 @@ package com.revenuecat.purchases.ui.revenuecatui.data
 
 import android.app.Activity
 import android.content.Context
-import android.content.Intent
-import android.net.Uri
 import androidx.compose.material3.ColorScheme
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
@@ -32,7 +30,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import java.net.URL
 
 internal interface PaywallViewModel {
     val state: StateFlow<PaywallState>
@@ -52,8 +49,6 @@ internal interface PaywallViewModel {
     fun restorePurchases()
 
     fun clearActionError()
-
-    fun openURL(url: URL, context: Context)
 }
 
 @Suppress("TooManyFunctions")
@@ -150,11 +145,6 @@ internal class PaywallViewModelImpl(
 
             finishAction()
         }
-    }
-
-    override fun openURL(url: URL, context: Context) {
-        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url.toString()))
-        context.startActivity(intent)
     }
 
     override fun clearActionError() {

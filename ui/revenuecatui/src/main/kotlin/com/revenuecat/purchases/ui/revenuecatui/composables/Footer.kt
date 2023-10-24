@@ -26,6 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
@@ -70,7 +71,7 @@ private fun Footer(
     childModifier: Modifier = Modifier,
     allPlansTapped: (() -> Unit)? = null,
 ) {
-    val context = LocalContext.current
+    val uriHandler = LocalUriHandler.current
 
     Row(
         modifier = Modifier
@@ -118,7 +119,7 @@ private fun Footer(
                 childModifier = childModifier,
                 R.string.terms_and_conditions,
                 R.string.terms,
-            ) { viewModel.openURL(it, context) }
+            ) { uriHandler.openUri(it.toString()) }
 
             if (configuration.privacyURL != null) {
                 Separator(color = color)
@@ -131,7 +132,7 @@ private fun Footer(
                 childModifier = childModifier,
                 R.string.privacy_policy,
                 R.string.privacy,
-            ) { viewModel.openURL(it, context) }
+            ) { uriHandler.openUri(it.toString()) }
         }
     }
 }

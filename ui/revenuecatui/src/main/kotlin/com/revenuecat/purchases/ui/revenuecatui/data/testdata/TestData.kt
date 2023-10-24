@@ -310,10 +310,6 @@ internal class MockViewModel(
         }
     }
 
-    override fun openURL(url: URL, context: Context) {
-        error("Can't open URL")
-    }
-
     override fun clearActionError() = Unit
 
     private fun simulateActionInProgress() {
