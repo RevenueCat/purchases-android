@@ -2,6 +2,7 @@
 
 package com.revenuecat.purchases.ui.revenuecatui.composables
 
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
@@ -14,6 +15,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextLayoutResult
@@ -346,6 +349,7 @@ private fun MarkdownText(
     modifier: Modifier = Modifier,
 ) {
     val layoutResult = remember { mutableStateOf<TextLayoutResult?>(null) }
+    val uriHandler = LocalUriHandler.current
 
     Text(
         text = text,
@@ -353,7 +357,19 @@ private fun MarkdownText(
         style = style,
         fontWeight = fontWeight,
         textAlign = textAlign,
-        modifier = modifier,
+        modifier = modifier
+            .pointerInput(Unit) {
+                detectTapGestures { offset ->
+                    layoutResult.value?.let { layoutResult ->
+                        val position = layoutResult.getOffsetForPosition(offset)
+                        text.getStringAnnotations(position, position)
+                            .firstOrNull { it.tag == TAG_URL }
+                            ?.let {
+                                uriHandler.openUri(it.item)
+                            }
+                    }
+                }
+            },
         onTextLayout = { layoutResult.value = it },
     )
 }
