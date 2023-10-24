@@ -38,24 +38,26 @@ fun PaywallDialog(
         }
     }
     if (shouldDisplayDialog) {
+        val dismissRequest = { shouldDisplayDialog = false }
+
         Dialog(
-            onDismissRequest = paywallDialogOptions.dismissRequest,
+            onDismissRequest = dismissRequest,
             properties = DialogProperties(usePlatformDefaultWidth = shouldUsePlatformDefaultWidth()),
         ) {
-            DialogScaffold(paywallDialogOptions)
+            DialogScaffold(paywallDialogOptions.toPaywallOptions(dismissRequest))
         }
     }
 }
 
 @Composable
-private fun DialogScaffold(paywallDialogOptions: PaywallDialogOptions) {
+private fun DialogScaffold(paywallOptions: PaywallOptions) {
     Scaffold(modifier = Modifier.fillMaxSize()) { paddingValues ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues),
         ) {
-            Paywall(paywallDialogOptions.toPaywallOptions())
+            Paywall(paywallOptions)
         }
     }
 }

@@ -97,7 +97,8 @@ fun PaywallsScreen(
 @Composable
 private fun FullScreenDialog(currentState: DisplayPaywallState.FullScreen, onDismiss: () -> Unit) {
     PaywallDialog(
-        PaywallDialogOptions.Builder(dismissRequest = onDismiss)
+        PaywallDialogOptions.Builder()
+            .setDismissRequest(onDismiss)
             .setOffering(currentState.offering)
             .setFontProvider(currentState.fontProvider)
             .build(),
