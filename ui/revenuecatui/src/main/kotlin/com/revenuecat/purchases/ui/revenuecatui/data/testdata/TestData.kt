@@ -3,7 +3,6 @@ package com.revenuecat.purchases.ui.revenuecatui.data.testdata
 import android.content.Context
 import androidx.compose.material3.ColorScheme
 import androidx.compose.runtime.State
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
@@ -11,6 +10,7 @@ import androidx.lifecycle.viewModelScope
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
+import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.TestStoreProduct
@@ -261,7 +261,9 @@ internal class MockViewModel(
     override val state: StateFlow<PaywallState>
         get() = _state.asStateFlow()
     override val actionInProgress: State<Boolean>
-        get() = derivedStateOf { _actionInProgress.value }
+        get() = _actionInProgress
+    override val actionError: State<PurchasesError?>
+        get() = _actionError
 
     fun loadedState(): PaywallState.Loaded? {
         return when (val state = state.value) {
@@ -283,6 +285,7 @@ internal class MockViewModel(
     )
 
     private val _actionInProgress = mutableStateOf(false)
+    private val _actionError = mutableStateOf<PurchasesError?>(null)
 
     override fun refreshStateIfLocaleChanged() = Unit
     override fun refreshStateIfColorsChanged(colorScheme: ColorScheme) = Unit
@@ -310,6 +313,8 @@ internal class MockViewModel(
     override fun openURL(url: URL, context: Context) {
         error("Can't open URL")
     }
+
+    override fun clearActionError() = Unit
 
     private fun simulateActionInProgress() {
         viewModelScope.launch {

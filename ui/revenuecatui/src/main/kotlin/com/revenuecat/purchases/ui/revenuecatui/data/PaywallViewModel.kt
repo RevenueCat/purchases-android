@@ -15,6 +15,7 @@ import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PurchaseParams
+import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
@@ -36,6 +37,7 @@ import java.net.URL
 internal interface PaywallViewModel {
     val state: StateFlow<PaywallState>
     val actionInProgress: State<Boolean>
+    val actionError: State<PurchasesError?>
 
     fun refreshStateIfLocaleChanged()
     fun refreshStateIfColorsChanged(colorScheme: ColorScheme)
@@ -48,6 +50,8 @@ internal interface PaywallViewModel {
     fun purchaseSelectedPackage(context: Context)
 
     fun restorePurchases()
+
+    fun clearActionError()
 
     fun openURL(url: URL, context: Context)
 }
@@ -66,9 +70,12 @@ internal class PaywallViewModelImpl(
         get() = _state.asStateFlow()
     override val actionInProgress: State<Boolean>
         get() = _actionInProgress
+    override val actionError: State<PurchasesError?>
+        get() = _actionError
 
     private val _state: MutableStateFlow<PaywallState> = MutableStateFlow(PaywallState.Loading)
     private val _actionInProgress: MutableState<Boolean> = mutableStateOf(false)
+    private val _actionError: MutableState<PurchasesError?> = mutableStateOf(null)
     private val _lastLocaleList = MutableStateFlow(getCurrentLocaleList())
     private val _colorScheme = MutableStateFlow(colorScheme)
 
@@ -138,6 +145,7 @@ internal class PaywallViewModelImpl(
             } catch (e: PurchasesException) {
                 Logger.e("Error restoring purchases: $e")
                 listener?.onRestoreError(e.error)
+                _actionError.value = e.error
             }
 
             finishAction()
@@ -147,6 +155,10 @@ internal class PaywallViewModelImpl(
     override fun openURL(url: URL, context: Context) {
         val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url.toString()))
         context.startActivity(intent)
+    }
+
+    override fun clearActionError() {
+        _actionError.value = null
     }
 
     private fun purchasePackage(activity: Activity, packageToPurchase: Package) {
@@ -162,6 +174,7 @@ internal class PaywallViewModelImpl(
                 options.dismissRequest()
             } catch (e: PurchasesException) {
                 listener?.onPurchaseError(e.error)
+                _actionError.value = e.error
             }
 
             finishAction()
