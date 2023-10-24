@@ -50,6 +50,8 @@ class PaywallViewModelTest {
     private lateinit var activity: Activity
     private lateinit var listener: PaywallListener
 
+    private var dismissInvoked = false
+
     private val offerings = Offerings(
         defaultOffering,
         mapOf(
@@ -70,6 +72,8 @@ class PaywallViewModelTest {
         context = mockk()
 
         listener = mockk()
+
+        dismissInvoked = false
 
         // Allows mocking Context.getActivity
         mockkStatic("com.revenuecat.purchases.ui.revenuecatui.extensions.ContextExtensionsKt")
@@ -110,13 +114,14 @@ class PaywallViewModelTest {
         }
 
         assertThat(model.actionInProgress.value).isFalse
+        assertThat(dismissInvoked).isFalse
     }
 
     @Test
     fun `Should load default offering`() {
         val model = create(
             activeSubscriptions = setOf(TestData.Packages.monthly.product.id),
-            nonSubscriptionTransactionProductIdentifiers = setOf(TestData.Packages.lifetime.product.id),
+            nonSubscriptionTransactionProductIdentifiers = setOf(TestData.Packages.lifetime.product.id)
         )
 
         coVerify { purchases.awaitOfferings() }
@@ -190,6 +195,8 @@ class PaywallViewModelTest {
             purchases.awaitPurchase(any())
         } returns PurchaseResult(transaction, customerInfo)
 
+        assertThat(dismissInvoked).isFalse
+
         model.purchaseSelectedPackage(context)
 
         coVerify {
@@ -202,6 +209,7 @@ class PaywallViewModelTest {
         }
 
         assertThat(model.actionInProgress.value).isFalse
+        assertThat(dismissInvoked).isTrue
     }
 
     @Test
@@ -230,6 +238,7 @@ class PaywallViewModelTest {
         }
 
         assertThat(model.actionInProgress.value).isFalse
+        assertThat(dismissInvoked).isFalse
     }
 
     private fun create(
@@ -243,7 +252,7 @@ class PaywallViewModelTest {
         return PaywallViewModelImpl(
             MockApplicationContext(),
             purchases,
-            PaywallOptions.Builder()
+            PaywallOptions.Builder(dismissRequest = { dismissInvoked = true })
                 .setListener(listener)
                 .setOffering(offering)
                 .build(),

@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="OK">نعم</string>
     <string name="all_plans">كل الاشتراكات</string>
     <string name="privacy">خصوصية</string>
     <string name="privacy_policy">سياسة الخصوصية</string>

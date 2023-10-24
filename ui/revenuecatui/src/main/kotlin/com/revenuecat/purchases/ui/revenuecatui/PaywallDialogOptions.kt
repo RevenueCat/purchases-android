@@ -24,7 +24,7 @@ class PaywallDialogOptions(builder: Builder) {
     }
 
     internal fun toPaywallOptions(): PaywallOptions {
-        return PaywallOptions.Builder()
+        return PaywallOptions.Builder(dismissRequest)
             .setOffering(offering)
             .setShouldDisplayDismissButton(shouldDisplayDismissButton)
             .setFontProvider(fontProvider)

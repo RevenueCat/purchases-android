@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="OK">OK</string>
     <string name="all_plans">Kaikki tilaukset</string>
     <string name="privacy">Yksityisyys</string>
     <string name="privacy_policy">Tietosuojakäytäntö</string>

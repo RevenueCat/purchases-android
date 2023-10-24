@@ -141,7 +141,7 @@ internal fun DefaultPaywallPreview() {
         serverDescription = "",
     )
     InternalPaywall(
-        options = PaywallOptions.Builder().build(),
+        options = PaywallOptions.Builder(dismissRequest = {}).build(),
         viewModel = MockViewModel(offering = template2Offering),
     )
 }

@@ -26,7 +26,7 @@ import androidx.compose.ui.tooling.preview.Preview
  */
 @Composable
 fun PaywallFooter(
-    options: PaywallOptions = PaywallOptions.Builder().build(),
+    options: PaywallOptions,
     condensed: Boolean = false,
     mainContent: @Composable (PaddingValues) -> Unit,
 ) {
@@ -52,7 +52,9 @@ fun PaywallFooter(
 @Preview(showBackground = true)
 @Composable
 private fun PaywallFooterPreview() {
-    PaywallFooter {
+    PaywallFooter(
+        options = PaywallOptions.Builder(dismissRequest = {}).build(),
+    ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()

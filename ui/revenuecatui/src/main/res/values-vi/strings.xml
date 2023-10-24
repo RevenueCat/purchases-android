@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="OK">ĐƯỢC RỒI</string>
     <string name="all_plans">Tất cả đăng ký</string>
     <string name="privacy">Sự riêng tư</string>
     <string name="privacy_policy">Chính sách bảo mật</string>

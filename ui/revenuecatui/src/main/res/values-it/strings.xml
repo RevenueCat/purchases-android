@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="OK">OK</string>
     <string name="all_plans">Tutti gli abbonamenti</string>
     <string name="privacy">Riservatezza</string>
     <string name="privacy_policy">Politica sulla riservatezza</string>

@@ -186,7 +186,7 @@ private fun Feature(
 @Composable
 private fun Template3Preview() {
     InternalPaywall(
-        options = PaywallOptions.Builder().build(),
+        options = PaywallOptions.Builder(dismissRequest = {}).build(),
         viewModel = MockViewModel(offering = TestData.template3Offering),
     )
 }
@@ -195,7 +195,7 @@ private fun Template3Preview() {
 @Composable
 private fun Template3FooterPreview() {
     InternalPaywall(
-        options = PaywallOptions.Builder().build(),
+        options = PaywallOptions.Builder(dismissRequest = {}).build(),
         viewModel = MockViewModel(mode = PaywallMode.FOOTER, offering = TestData.template3Offering),
     )
 }
@@ -204,7 +204,7 @@ private fun Template3FooterPreview() {
 @Composable
 private fun Template3CondensedFooterPreview() {
     InternalPaywall(
-        options = PaywallOptions.Builder().build(),
+        options = PaywallOptions.Builder(dismissRequest = {}).build(),
         viewModel = MockViewModel(mode = PaywallMode.FOOTER_CONDENSED, offering = TestData.template3Offering),
     )
 }
