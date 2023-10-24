@@ -243,7 +243,7 @@ internal class MockApplicationContext : ApplicationContext {
 
     // This is hardcoding the english version of the strings for now. We can't access the actual resources since
     // we don't have access to a real context in some cases here.
-    override fun getString(resId: Int, vararg formatArgs: Any?): String {
+    override fun getString(resId: Int, vararg formatArgs: Any): String {
         return when (resId) {
             R.string.restore_purchases -> "Restore purchases"
             R.string.annual -> "Annual"
