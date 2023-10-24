@@ -66,6 +66,7 @@ import kotlin.math.min
 
 private object Template4UIConstants {
     val packageHorizontalSpacing = 8.dp
+    val packagesHorizontalPadding = 24.dp
     val checkmarkSize = 18.dp
     const val fadedColorOpacity = 0.3f
     const val maxPackagesToDisplay = 3f
@@ -166,8 +167,10 @@ private fun Packages(
 
     fun BoxWithConstraintsScope.packageWidth(numberOfPackages: Float): Dp {
         val packages = packagesToDisplay(numberOfPackages)
-        val availableWidth = maxWidth - UIConstant.defaultHorizontalPadding * 2
-        return availableWidth / packages - Template4UIConstants.packageHorizontalSpacing * (packages - 1)
+        val totalPadding = Template4UIConstants.packagesHorizontalPadding * 2
+        val totalSpaceBetweenPackages = Template4UIConstants.packageHorizontalSpacing * (packages - 1)
+        val availableWidth = maxWidth - totalPadding - totalSpaceBetweenPackages
+        return availableWidth / packages
     }
 
     BoxWithConstraints {
@@ -179,7 +182,7 @@ private fun Packages(
                 .fillMaxWidth()
                 .horizontalScroll(rememberScrollState())
                 .padding(
-                    horizontal = UIConstant.defaultHorizontalPadding,
+                    horizontal = Template4UIConstants.packagesHorizontalPadding,
                     vertical = UIConstant.defaultVerticalSpacing,
                 ),
             horizontalArrangement = Arrangement.spacedBy(
@@ -191,11 +194,7 @@ private fun Packages(
                     state,
                     packageInfo,
                     viewModel,
-                    if (numberOfPackages <= Template4UIConstants.maxPackagesToDisplay) {
-                        Modifier.weight(1f)
-                    } else {
-                        Modifier.width(packageWidth)
-                    },
+                    Modifier.width(packageWidth),
                 )
             }
         }
