@@ -32,6 +32,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -57,10 +58,10 @@ import com.revenuecat.purchases.ui.revenuecatui.data.selectedLocalization
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockViewModel
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.extensions.introEligibility
+import com.revenuecat.purchases.ui.revenuecatui.extensions.localizedDiscount
 import com.revenuecat.purchases.ui.revenuecatui.extensions.packageButtonActionInProgressOpacityAnimation
 import com.revenuecat.purchases.ui.revenuecatui.extensions.packageButtonColorAnimation
 import kotlin.math.min
-import kotlin.math.roundToInt
 
 private object Template4UIConstants {
     val packageHorizontalSpacing = 8.dp
@@ -297,11 +298,8 @@ private fun DiscountRelativeToMostExpensivePerMonth(
             vertical = 4.dp,
         ),
     ) {
-        val text = packageInfo.discountRelativeToMostExpensivePerMonth?.let { discount ->
-            // TODO-PAywalls: cleanup and localize
-            val d = (discount * 100.0).roundToInt()
-            "$d% OFF"
-        } ?: ""
+        val resources = LocalContext.current.applicationContext.resources
+        val text = packageInfo.localizedDiscount(resources)
         Text(
             text = text,
             color = colors.text1,

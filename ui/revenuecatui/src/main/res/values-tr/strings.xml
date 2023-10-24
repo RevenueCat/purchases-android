@@ -15,7 +15,7 @@
     <string name="monthly">Aylık</string>
     <string name="weekly">Haftalık</string>
     <string name="lifetime">Ömür</string>
-    <string name="package_discount">%%1$d%% indirim</string>
+    <string name="package_discount">%1$d%% indirim</string>
     <string name="continue_cta">Devam etmek</string>
     <string name="default_offer_details_with_intro_offer">{{ sub_offer_duration }} denemenizi başlatın, ardından {{ total_price_and_per_month }}.</string>
 </resources>

@@ -93,7 +93,7 @@ internal object PackageConfigurationFactory {
     private fun productDiscount(pricePerMonth: Price?, mostExpensive: Price?): Double? {
         return pricePerMonth?.amountMicros?.let { price ->
             mostExpensive?.amountMicros?.let { expensive ->
-                return if (price >= expensive) {
+                if (price >= expensive) {
                     null
                 } else {
                     (expensive - price).toDouble() / expensive.toDouble()
