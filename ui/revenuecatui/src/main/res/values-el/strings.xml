@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="OK">Εντάξει</string>
     <string name="all_plans">Όλες οι συνδρομές</string>
     <string name="privacy">Μυστικότητα</string>
     <string name="privacy_policy">Πολιτική απορρήτου</string>

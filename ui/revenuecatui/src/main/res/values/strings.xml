@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="OK">OK</string>
     <string name="restore_purchases">Restore purchases</string>
     <string name="restore">Restore</string>
     <string name="terms_and_conditions">Terms and conditions</string>

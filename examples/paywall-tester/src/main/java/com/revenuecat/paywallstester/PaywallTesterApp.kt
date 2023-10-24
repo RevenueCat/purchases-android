@@ -52,7 +52,7 @@ private fun AppNavHost(
             route = AppScreen.Paywall.route.plus("/{${PaywallScreenViewModel.OFFERING_ID_KEY}}"),
             arguments = listOf(navArgument(PaywallScreenViewModel.OFFERING_ID_KEY) { type = NavType.StringType }),
         ) {
-            PaywallScreen()
+            PaywallScreen(dismissRequest = navController::popBackStack)
         }
         composable(
             route = AppScreen.PaywallFooter.route
@@ -68,7 +68,9 @@ private fun AppNavHost(
                 },
             ),
         ) {
-            PaywallFooterScreen()
+            PaywallFooterScreen(
+                dismissRequest = navController::popBackStack,
+            )
         }
     }
 }

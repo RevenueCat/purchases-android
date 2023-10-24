@@ -25,6 +25,7 @@ import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 @Composable
 fun PaywallFooterScreen(
     viewModel: PaywallScreenViewModel = viewModel<PaywallScreenViewModelImpl>(),
+    dismissRequest: () -> Unit,
 ) {
     Column(
         modifier = Modifier.fillMaxSize(),
@@ -40,7 +41,7 @@ fun PaywallFooterScreen(
             }
             is PaywallScreenState.Loaded -> {
                 PaywallFooter(
-                    options = PaywallOptions.Builder()
+                    options = PaywallOptions.Builder(dismissRequest)
                         .setOffering(state.offering)
                         .setListener(viewModel)
                         .build(),

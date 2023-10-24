@@ -26,19 +26,23 @@ internal sealed class OfferingSelection {
 class PaywallOptions(builder: Builder) {
 
     internal val offeringSelection: OfferingSelection
-    val shouldDisplayDismissButton: Boolean
+    private val shouldDisplayDismissButton: Boolean
     val fontProvider: FontProvider?
     val listener: PaywallListener?
     internal var mode: PaywallMode = PaywallMode.default
+    val dismissRequest: () -> Unit
 
     init {
         this.offeringSelection = builder.offeringSelection
         this.shouldDisplayDismissButton = builder.shouldDisplayDismissButton
         this.fontProvider = builder.fontProvider
         this.listener = builder.listener
+        this.dismissRequest = builder.dismissRequest
     }
 
-    class Builder {
+    class Builder(
+        internal val dismissRequest: () -> Unit,
+    ) {
         internal var offeringSelection: OfferingSelection = OfferingSelection.None
         internal var shouldDisplayDismissButton: Boolean = false
         internal var fontProvider: FontProvider? = null
