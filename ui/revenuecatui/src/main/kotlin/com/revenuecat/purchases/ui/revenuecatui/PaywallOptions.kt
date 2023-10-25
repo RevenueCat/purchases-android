@@ -53,11 +53,10 @@ class PaywallOptions(builder: Builder) {
     ): PaywallOptions {
         return Builder(dismissRequest ?: this.dismissRequest)
             .apply {
-                when (offeringSelection) {
-                    is OfferingSelection.OfferingId -> setOfferingId(offeringSelection.offeringId)
-                    is OfferingSelection.OfferingType -> setOffering(offeringSelection.offeringType)
-                    is OfferingSelection.None -> OfferingSelection.None
-                    null -> this.offeringSelection
+                when (val offeringSelectionToCheck = offeringSelection ?: this@PaywallOptions.offeringSelection) {
+                    is OfferingSelection.OfferingId -> setOfferingId(offeringSelectionToCheck.offeringId)
+                    is OfferingSelection.OfferingType -> setOffering(offeringSelectionToCheck.offeringType)
+                    is OfferingSelection.None -> { /* Do nothing */ }
                 }
             }
             .setShouldDisplayDismissButton(shouldDisplayDismissButton ?: this.shouldDisplayDismissButton)
