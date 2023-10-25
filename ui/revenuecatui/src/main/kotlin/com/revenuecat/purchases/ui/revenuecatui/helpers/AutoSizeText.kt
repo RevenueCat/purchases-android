@@ -54,7 +54,6 @@ fun AutoResizedText(
                     )
                 }
                 val newFontSize = resizedTextStyle.fontSize * 0.95
-                Logger.d("$newFontSize")
                 resizedTextStyle = resizedTextStyle.copy(
                     fontSize = newFontSize,
                 )
