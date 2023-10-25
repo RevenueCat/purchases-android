@@ -61,13 +61,17 @@ import com.revenuecat.purchases.ui.revenuecatui.extensions.introEligibility
 import com.revenuecat.purchases.ui.revenuecatui.extensions.localizedDiscount
 import com.revenuecat.purchases.ui.revenuecatui.extensions.packageButtonActionInProgressOpacityAnimation
 import com.revenuecat.purchases.ui.revenuecatui.extensions.packageButtonColorAnimation
+import com.revenuecat.purchases.ui.revenuecatui.helpers.AutoResizedText
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toAndroidContext
 import kotlin.math.min
 
 private object Template4UIConstants {
+    val packageButtonContentVerticalSpacing = 4.dp
     val packageHorizontalSpacing = 8.dp
     val packagesHorizontalPadding = 24.dp
     val checkmarkSize = 18.dp
+    val checkmarkPadding = 8.dp
+    val discountVerticalPadding = 4.dp
     const val fadedColorOpacity = 0.3f
     const val maxPackagesToDisplay = 3f
 }
@@ -219,7 +223,7 @@ private fun SelectPackageButton(
         unselectedColor = colors.accent2,
     )
 
-    var columnModifier = Modifier.clip(RoundedCornerShape(UIConstant.defaultCornerRadius))
+    var columnModifier = modifier.clip(RoundedCornerShape(UIConstant.defaultCornerRadius))
 
     if (packageInfo.discountRelativeToMostExpensivePerMonth != null) {
         columnModifier = columnModifier.background(mainColor)
@@ -255,7 +259,7 @@ private fun SelectPackageButton(
                 colors = state.currentColors,
                 modifier = Modifier
                     .align(Alignment.TopEnd)
-                    .padding(8.dp),
+                    .padding(Template4UIConstants.checkmarkPadding),
             )
         }
     }
@@ -267,7 +271,7 @@ private fun SelectPackageButtonContent(
     colors: TemplateConfiguration.Colors,
 ) {
     Column(
-        verticalArrangement = Arrangement.spacedBy(4.dp),
+        verticalArrangement = Arrangement.spacedBy(Template4UIConstants.packageButtonContentVerticalSpacing),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         OfferName(
@@ -292,22 +296,18 @@ private fun DiscountRelativeToMostExpensivePerMonth(
     packageInfo: TemplateConfiguration.PackageInfo,
     colors: TemplateConfiguration.Colors,
 ) {
-    Box(
+    val text = packageInfo.localizedDiscount(LocalContext.current.applicationContext.toAndroidContext())
+    AutoResizedText(
+        text = text,
+        color = colors.text1,
+        style = MaterialTheme.typography.bodySmall,
+        fontWeight = FontWeight.Bold,
+        textAlign = TextAlign.Center,
         modifier = Modifier.padding(
             horizontal = UIConstant.defaultHorizontalPadding,
-            vertical = 4.dp,
+            vertical = Template4UIConstants.discountVerticalPadding,
         ),
-    ) {
-        val text = packageInfo.localizedDiscount(LocalContext.current.applicationContext.toAndroidContext())
-        Text(
-            text = text,
-            color = colors.text1,
-            style = MaterialTheme.typography.bodySmall,
-            fontWeight = FontWeight.Bold,
-            textAlign = TextAlign.Center,
-            maxLines = 1,
-        )
-    }
+    )
 }
 
 @Composable
@@ -370,7 +370,8 @@ private fun CheckmarkBox(
     }
 }
 
-@Preview(showBackground = true)
+@Preview(showBackground = true, locale = "en-rUS")
+@Preview(showBackground = true, locale = "es-rES")
 @Composable
 private fun Template4PaywallPreview() {
     InternalPaywall(

@@ -15,6 +15,7 @@ internal val TestData.template4: PaywallData
                 PackageType.MONTHLY.identifier!!,
                 PackageType.SIX_MONTH.identifier!!,
                 PackageType.ANNUAL.identifier!!,
+                PackageType.WEEKLY.identifier!!,
             ),
             defaultPackage = PackageType.SIX_MONTH.identifier!!,
             images = PaywallData.Configuration.Images(
