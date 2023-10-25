@@ -27,7 +27,7 @@ internal sealed class OfferingSelection {
 class PaywallOptions(builder: Builder) {
 
     internal val offeringSelection: OfferingSelection
-    private val shouldDisplayDismissButton: Boolean
+    internal val shouldDisplayDismissButton: Boolean
     val fontProvider: FontProvider?
     val listener: PaywallListener?
     internal var mode: PaywallMode = PaywallMode.default
@@ -59,6 +59,10 @@ class PaywallOptions(builder: Builder) {
                 ?: OfferingSelection.None
         }
 
+        /**
+         * Sets whether to display a close button on the paywall screen. Only available when using
+         * [Paywall], not [PaywallFooter]. Defaults to false.
+         */
         fun setShouldDisplayDismissButton(shouldDisplayDismissButton: Boolean) = apply {
             this.shouldDisplayDismissButton = shouldDisplayDismissButton
         }

@@ -13,8 +13,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
@@ -23,6 +21,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.revenuecat.purchases.ui.revenuecatui.UIConstant.defaultAnimation
+import com.revenuecat.purchases.ui.revenuecatui.composables.CloseButton
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModel
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModelFactory
@@ -55,7 +54,11 @@ internal fun InternalPaywall(
             enter = fadeIn(animationSpec = defaultAnimation()),
             exit = fadeOut(animationSpec = defaultAnimation()),
         ) {
-            LoadingPaywall(mode = options.mode)
+            LoadingPaywall(
+                mode = options.mode,
+                shouldDisplayDismissButton = options.shouldDisplayDismissButton,
+                onDismiss = viewModel::closeButtonPressed,
+            )
         }
 
         AnimatedVisibility(
@@ -108,6 +111,7 @@ private fun LoadedPaywall(state: PaywallState.Loaded, viewModel: PaywallViewMode
             },
     ) {
         TemplatePaywall(state = state, viewModel = viewModel)
+        CloseButton(state.shouldDisplayDismissButton, viewModel::closeButtonPressed)
     }
 }
 
