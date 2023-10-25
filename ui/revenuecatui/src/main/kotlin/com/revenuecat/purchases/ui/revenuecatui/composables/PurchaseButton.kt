@@ -26,6 +26,10 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.text
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -80,6 +84,17 @@ private fun PurchaseButton(
         Button(
             modifier = Modifier
                 .fillMaxWidth()
+                .semantics(mergeDescendants = true) {
+                    val p = selectedPackage.value
+                    text = AnnotatedString(
+                        introEligibilityText(
+                            eligibility = p.introEligibility,
+                            textWithIntroOffer = p.localization.callToActionWithIntroOffer,
+                            textWithMultipleIntroOffers = p.localization.callToActionWithMultipleIntroOffers,
+                            textWithNoIntroOffer = p.localization.callToAction,
+                        ),
+                    )
+                }
                 .background(
                     brush = buttonBrush(colors),
                     shape = ButtonDefaults.shape,
@@ -90,7 +105,10 @@ private fun PurchaseButton(
                 contentColor = colors.callToActionForeground,
             ),
         ) {
-            Box {
+            Box(
+                // Ignore children as accessibility elements
+                modifier = Modifier.clearAndSetSemantics {},
+            ) {
                 ConsistentPackageContentView(
                     packages = packages.all,
                     selected = selectedPackage.value,
