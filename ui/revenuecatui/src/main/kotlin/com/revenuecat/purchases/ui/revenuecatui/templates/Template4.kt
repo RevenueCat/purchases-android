@@ -296,7 +296,8 @@ private fun DiscountRelativeToMostExpensivePerMonth(
     packageInfo: TemplateConfiguration.PackageInfo,
     colors: TemplateConfiguration.Colors,
 ) {
-    val text = packageInfo.localizedDiscount(LocalContext.current.applicationContext.toAndroidContext())
+    val applicationContext = LocalContext.current.applicationContext.toAndroidContext()
+    val text = packageInfo.localizedDiscount(applicationContext).uppercase()
     AutoResizedText(
         text = text,
         color = colors.text1,
@@ -375,7 +376,7 @@ private fun CheckmarkBox(
 @Composable
 private fun Template4PaywallPreview() {
     InternalPaywall(
-        options = PaywallOptions.Builder().build(),
+        options = PaywallOptions.Builder(dismissRequest = {}).build(),
         viewModel = MockViewModel(offering = TestData.template4Offering),
     )
 }
