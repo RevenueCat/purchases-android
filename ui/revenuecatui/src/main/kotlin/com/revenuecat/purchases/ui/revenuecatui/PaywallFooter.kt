@@ -44,8 +44,12 @@ fun PaywallFooter(
         ) {
             mainContent(PaddingValues(bottom = UIConstant.defaultCornerRadius))
         }
-        options.mode = PaywallMode.footerMode(condensed)
-        Paywall(options)
+        Paywall(
+            options.copy(
+                mode = PaywallMode.footerMode(condensed),
+                shouldDisplayDismissButton = false,
+            ),
+        )
     }
 }
 

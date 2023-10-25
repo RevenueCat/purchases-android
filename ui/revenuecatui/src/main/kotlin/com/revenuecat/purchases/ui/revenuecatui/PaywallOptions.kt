@@ -30,7 +30,7 @@ class PaywallOptions(builder: Builder) {
     internal val shouldDisplayDismissButton: Boolean
     val fontProvider: FontProvider?
     val listener: PaywallListener?
-    internal var mode: PaywallMode = PaywallMode.default
+    internal val mode: PaywallMode
     val dismissRequest: () -> Unit
 
     init {
@@ -38,7 +38,33 @@ class PaywallOptions(builder: Builder) {
         this.shouldDisplayDismissButton = builder.shouldDisplayDismissButton
         this.fontProvider = builder.fontProvider
         this.listener = builder.listener
+        this.mode = builder.mode
         this.dismissRequest = builder.dismissRequest
+    }
+
+    @Suppress("LongParameterList")
+    internal fun copy(
+        offeringSelection: OfferingSelection? = null,
+        shouldDisplayDismissButton: Boolean? = null,
+        fontProvider: FontProvider? = null,
+        listener: PaywallListener? = null,
+        mode: PaywallMode? = null,
+        dismissRequest: (() -> Unit)? = null,
+    ): PaywallOptions {
+        return Builder(dismissRequest ?: this.dismissRequest)
+            .apply {
+                when (offeringSelection) {
+                    is OfferingSelection.OfferingId -> setOfferingId(offeringSelection.offeringId)
+                    is OfferingSelection.OfferingType -> setOffering(offeringSelection.offeringType)
+                    is OfferingSelection.None -> OfferingSelection.None
+                    null -> this.offeringSelection
+                }
+            }
+            .setShouldDisplayDismissButton(shouldDisplayDismissButton ?: this.shouldDisplayDismissButton)
+            .setFontProvider(fontProvider ?: this.fontProvider)
+            .setListener(listener ?: this.listener)
+            .setMode(mode ?: this.mode)
+            .build()
     }
 
     class Builder(
@@ -48,6 +74,7 @@ class PaywallOptions(builder: Builder) {
         internal var shouldDisplayDismissButton: Boolean = false
         internal var fontProvider: FontProvider? = null
         internal var listener: PaywallListener? = null
+        internal var mode: PaywallMode = PaywallMode.default
 
         fun setOffering(offering: Offering?) = apply {
             this.offeringSelection = offering?.let { OfferingSelection.OfferingType(it) }
@@ -61,7 +88,7 @@ class PaywallOptions(builder: Builder) {
 
         /**
          * Sets whether to display a close button on the paywall screen. Only available when using
-         * [Paywall], not [PaywallFooter]. Defaults to false.
+         * [Paywall]. Ignored when using [PaywallFooter]. Defaults to false.
          */
         fun setShouldDisplayDismissButton(shouldDisplayDismissButton: Boolean) = apply {
             this.shouldDisplayDismissButton = shouldDisplayDismissButton
@@ -73,6 +100,10 @@ class PaywallOptions(builder: Builder) {
 
         fun setListener(listener: PaywallListener?) = apply {
             this.listener = listener
+        }
+
+        internal fun setMode(mode: PaywallMode) = apply {
+            this.mode = mode
         }
 
         fun build(): PaywallOptions {
