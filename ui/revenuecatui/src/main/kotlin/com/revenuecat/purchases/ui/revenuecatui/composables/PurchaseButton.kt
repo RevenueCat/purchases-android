@@ -58,6 +58,7 @@ internal fun PurchaseButton(
     }
 }
 
+@Suppress("LongMethod")
 @Composable
 private fun PurchaseButton(
     colors: TemplateConfiguration.Colors,
