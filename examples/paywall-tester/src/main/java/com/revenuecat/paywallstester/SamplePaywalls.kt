@@ -205,6 +205,7 @@ object SamplePaywalls {
                     PackageType.WEEKLY.identifier!!,
                     PackageType.MONTHLY.identifier!!,
                     PackageType.ANNUAL.identifier!!,
+                    PackageType.LIFETIME.identifier!!,
                 ),
                 blurredBackgroundImage = true,
             ),
