@@ -120,6 +120,7 @@ private fun Template4MainContent(
         modifier = Modifier
             .padding(top = UIConstant.defaultVerticalSpacing),
         verticalArrangement = Arrangement.spacedBy(UIConstant.defaultVerticalSpacing),
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         if (state.isInFullScreenMode) {
             val localizedConfig = state.selectedLocalization
