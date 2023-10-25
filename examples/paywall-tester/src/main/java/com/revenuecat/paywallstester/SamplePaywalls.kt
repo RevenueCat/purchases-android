@@ -166,7 +166,8 @@ object SamplePaywalls {
             localization = mapOf(
                 "en_US" to PaywallData.LocalizedConfiguration(
                     title = "Ignite your child's curiosity",
-                    subtitle = "Get access to all our educational content trusted by thousands of parents.",
+                    subtitle = "Get access to **all our [educational content](https://rev.cat/paywalls)** " +
+                        "trusted by _thousands_ of parents.",
                     callToAction = "Purchase for {{ price }}",
                     callToActionWithIntroOffer = "Purchase for {{ sub_price_per_month }} per month",
                     offerDetails = "{{ sub_price_per_month }} per month",
