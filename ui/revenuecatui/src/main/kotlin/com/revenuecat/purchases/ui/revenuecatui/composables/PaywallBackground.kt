@@ -2,7 +2,6 @@ package com.revenuecat.purchases.ui.revenuecatui.composables
 
 import BlurTransformation
 import android.os.Build
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -54,13 +53,19 @@ internal fun BoxScope.PaywallBackground(templateConfiguration: TemplateConfigura
             alpha = imageAlpha,
         )
     } else if (templateConfiguration.images.backgroundUri != null) {
-        RemoteImage(
-            urlString = templateConfiguration.images.backgroundUri.toString(),
-            modifier = modifier,
-            contentScale = BackgroundUIConstants.contentScale,
-            transformation = backwardsCompatibleTransformation,
-            alpha = imageAlpha,
-        )
+        if (isInPreviewMode()) {
+            Box(
+                modifier = modifier.background(Color.Gray),
+            )
+        } else {
+            RemoteImage(
+                urlString = templateConfiguration.images.backgroundUri.toString(),
+                modifier = modifier,
+                contentScale = BackgroundUIConstants.contentScale,
+                transformation = backwardsCompatibleTransformation,
+                alpha = imageAlpha,
+            )
+        }
     }
 }
 
