@@ -37,7 +37,6 @@ import com.revenuecat.purchases.ui.revenuecatui.templates.Template2
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import java.net.URL
 
 @Composable
 internal fun LoadingPaywall(mode: PaywallMode) {
@@ -173,10 +172,6 @@ private class LoadingViewModel(
 
     override fun restorePurchases() {
         error("Can't restore purchases")
-    }
-
-    override fun openURL(url: URL, context: Context) {
-        error("Can't open URL")
     }
 
     override fun clearActionError() = Unit
