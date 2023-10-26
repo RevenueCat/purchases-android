@@ -133,16 +133,19 @@ data class PaywallData(
             /**
              * Image displayed as a header in a template.
              */
+            @Serializable(with = EmptyStringToNullSerializer::class)
             val header: String? = null,
 
             /**
              * Image displayed as a background in a template.
              */
+            @Serializable(with = EmptyStringToNullSerializer::class)
             val background: String? = null,
 
             /**
              * Image displayed as an app icon in a template.
              */
+            @Serializable(with = EmptyStringToNullSerializer::class)
             val icon: String? = null,
         ) {
             internal val all: List<String>

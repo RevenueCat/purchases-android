@@ -15,9 +15,11 @@ import org.json.JSONObject
 
 internal abstract class OfferingParser {
 
-    // TODO-PAYWALLS: uncomment after testing
-    private val json = Json {
-        ignoreUnknownKeys = true
+    companion object {
+        @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+        internal val json = Json {
+            ignoreUnknownKeys = true
+        }
     }
 
     protected abstract fun findMatchingProduct(
