@@ -7,8 +7,8 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.shouldDisplayBlockForEnt
 
 class PaywallDialogOptions(builder: Builder) {
 
-    val dismissRequest: () -> Unit
     val shouldDisplayBlock: ((CustomerInfo) -> Boolean)?
+    val dismissRequest: (() -> Unit)?
     val offering: Offering?
     val shouldDisplayDismissButton: Boolean
     val fontProvider: FontProvider?
@@ -23,8 +23,11 @@ class PaywallDialogOptions(builder: Builder) {
         this.listener = builder.listener
     }
 
-    internal fun toPaywallOptions(): PaywallOptions {
-        return PaywallOptions.Builder(dismissRequest)
+    internal fun toPaywallOptions(dismissRequest: () -> Unit): PaywallOptions {
+        return PaywallOptions.Builder {
+            dismissRequest()
+            this.dismissRequest?.invoke()
+        }
             .setOffering(offering)
             .setShouldDisplayDismissButton(shouldDisplayDismissButton)
             .setFontProvider(fontProvider)
@@ -32,10 +35,9 @@ class PaywallDialogOptions(builder: Builder) {
             .build()
     }
 
-    class Builder(
-        val dismissRequest: () -> Unit,
-    ) {
+    class Builder {
         internal var shouldDisplayBlock: ((CustomerInfo) -> Boolean)? = null
+        internal var dismissRequest: (() -> Unit)? = null
         internal var offering: Offering? = null
         internal var shouldDisplayDismissButton: Boolean = true
         internal var fontProvider: FontProvider? = null
@@ -55,6 +57,10 @@ class PaywallDialogOptions(builder: Builder) {
             requiredEntitlementIdentifier?.let { requiredEntitlementIdentifier ->
                 this.shouldDisplayBlock = shouldDisplayBlockForEntitlementIdentifier(requiredEntitlementIdentifier)
             }
+        }
+
+        fun setDismissRequest(dismissRequest: () -> Unit) = apply {
+            this.dismissRequest = dismissRequest
         }
 
         fun setOffering(offering: Offering?) = apply {

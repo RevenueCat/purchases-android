@@ -9,7 +9,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.window.Dialog
@@ -29,7 +29,7 @@ fun PaywallDialog(
     paywallDialogOptions: PaywallDialogOptions,
 ) {
     val shouldDisplayBlock = paywallDialogOptions.shouldDisplayBlock
-    var shouldDisplayDialog by remember { mutableStateOf(shouldDisplayBlock == null) }
+    var shouldDisplayDialog by rememberSaveable { mutableStateOf(shouldDisplayBlock == null) }
     if (shouldDisplayBlock != null) {
         LaunchedEffect(paywallDialogOptions) {
             launch {
@@ -38,24 +38,26 @@ fun PaywallDialog(
         }
     }
     if (shouldDisplayDialog) {
+        val dismissRequest = { shouldDisplayDialog = false }
+
         Dialog(
-            onDismissRequest = paywallDialogOptions.dismissRequest,
+            onDismissRequest = dismissRequest,
             properties = DialogProperties(usePlatformDefaultWidth = shouldUsePlatformDefaultWidth()),
         ) {
-            DialogScaffold(paywallDialogOptions)
+            DialogScaffold(paywallDialogOptions.toPaywallOptions(dismissRequest))
         }
     }
 }
 
 @Composable
-private fun DialogScaffold(paywallDialogOptions: PaywallDialogOptions) {
+private fun DialogScaffold(paywallOptions: PaywallOptions) {
     Scaffold(modifier = Modifier.fillMaxSize()) { paddingValues ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues),
         ) {
-            Paywall(paywallDialogOptions.toPaywallOptions())
+            Paywall(paywallOptions)
         }
     }
 }

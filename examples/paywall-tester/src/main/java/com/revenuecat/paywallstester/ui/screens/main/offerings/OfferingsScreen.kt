@@ -26,13 +26,10 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.revenuecat.paywallstester.MainActivity
-import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
-import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.ui.revenuecatui.PaywallDialog
 import com.revenuecat.purchases.ui.revenuecatui.PaywallDialogOptions
-import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -124,17 +121,9 @@ private fun OfferingsListScreen(
 
     if (displayPaywallDialogOffering != null) {
         PaywallDialog(
-            PaywallDialogOptions.Builder(
-                dismissRequest = {
-                    displayPaywallDialogOffering = null
-                },
-            )
+            PaywallDialogOptions.Builder()
+                .setDismissRequest { displayPaywallDialogOffering = null }
                 .setOffering(displayPaywallDialogOffering)
-                .setListener(object : PaywallListener {
-                    override fun onPurchaseCompleted(customerInfo: CustomerInfo, storeTransaction: StoreTransaction) {
-                        displayPaywallDialogOffering = null
-                    }
-                })
                 .build(),
         )
     }
