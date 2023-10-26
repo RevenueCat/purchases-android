@@ -1,4 +1,4 @@
-package com.revenuecat.purchases.ui.revenuecatui.helpers
+package com.revenuecat.purchases.ui.revenuecatui.composables
 
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text

@@ -41,6 +41,7 @@ import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.ui.revenuecatui.InternalPaywall
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.UIConstant
+import com.revenuecat.purchases.ui.revenuecatui.composables.AutoResizedText
 import com.revenuecat.purchases.ui.revenuecatui.composables.ConsistentPackageContentView
 import com.revenuecat.purchases.ui.revenuecatui.composables.Footer
 import com.revenuecat.purchases.ui.revenuecatui.composables.IntroEligibilityStateView
@@ -61,7 +62,6 @@ import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.extensions.introEligibility
 import com.revenuecat.purchases.ui.revenuecatui.extensions.packageButtonActionInProgressOpacityAnimation
 import com.revenuecat.purchases.ui.revenuecatui.extensions.packageButtonColorAnimation
-import com.revenuecat.purchases.ui.revenuecatui.helpers.AutoResizedText
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toAndroidContext
 import kotlin.math.min
 
