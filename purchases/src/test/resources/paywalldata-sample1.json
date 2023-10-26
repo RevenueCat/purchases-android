@@ -27,7 +27,9 @@
     "es_ES": {
       "title": "Tienda",
       "call_to_action": "Comprar",
+      "call_to_action_with_multiple_intro_offers": " ",
       "offer_details_with_intro_offer": " ",
+      "offer_details_with_multiple_intro_offers": "",
       "offer_name": "{{ period }}",
       "features": [
         {
