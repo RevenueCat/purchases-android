@@ -11,6 +11,7 @@ import com.revenuecat.purchases.ui.revenuecatui.extensions.localizedAbbreviatedP
 import com.revenuecat.purchases.ui.revenuecatui.extensions.localizedPeriod
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ApplicationContext
 import java.util.Locale
+import kotlin.math.roundToInt
 
 @Suppress("UnusedParameter", "FunctionOnlyReturningConstant", "TooManyFunctions")
 internal class VariableDataProvider(
@@ -106,6 +107,15 @@ internal class VariableDataProvider(
         }
         return null
     }
+}
+
+@SuppressWarnings("MagicNumber")
+internal fun TemplateConfiguration.PackageInfo.localizedDiscount(
+    applicationContext: ApplicationContext,
+): String {
+    return (discountRelativeToMostExpensivePerMonth?.times(100.0))?.roundToInt()?.let {
+        applicationContext.getString(R.string.package_discount, it)
+    } ?: ""
 }
 
 /**
