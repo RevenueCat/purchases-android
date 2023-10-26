@@ -30,7 +30,7 @@ internal fun OfferDetails(state: PaywallState.Loaded) {
 @Composable
 internal fun OfferDetails(
     state: PaywallState.Loaded,
-    color: Color
+    color: Color,
 ) {
     Box(
         modifier = Modifier
