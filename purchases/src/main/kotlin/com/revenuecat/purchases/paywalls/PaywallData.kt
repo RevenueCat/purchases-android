@@ -234,18 +234,22 @@ data class PaywallData(
         /**
          * The subtitle of the paywall screen.
          */
+        @Serializable(with = EmptyStringToNullSerializer::class)
         val subtitle: String? = null,
 
         /**
          * The content of the main action button for purchasing a subscription.
          */
-        @SerialName("call_to_action") val callToAction: String,
+        @SerialName("call_to_action")
+        val callToAction: String,
 
         /**
          * The content of the main action button for purchasing a subscription when an intro offer is available.
          * If `null`, no information regarding trial eligibility will be displayed.
          */
-        @SerialName("call_to_action_with_intro_offer") val callToActionWithIntroOffer: String? = null,
+        @SerialName("call_to_action_with_intro_offer")
+        @Serializable(with = EmptyStringToNullSerializer::class)
+        val callToActionWithIntroOffer: String? = null,
 
         /**
          * The content of the main action button for purchasing a subscription when multiple intro offer are available.
@@ -253,30 +257,39 @@ data class PaywallData(
          * If `null`, no information regarding trial eligibility will be displayed.
          */
         @SerialName("call_to_action_with_multiple_intro_offers")
+        @Serializable(with = EmptyStringToNullSerializer::class)
         val callToActionWithMultipleIntroOffers: String? = null,
 
         /**
          * Description for the offer to be purchased.
          */
-        @SerialName("offer_details") val offerDetails: String? = null,
+        @SerialName("offer_details")
+        @Serializable(with = EmptyStringToNullSerializer::class)
+        val offerDetails: String? = null,
 
         /**
          * Description for the offer to be purchased when an intro offer is available.
          * If `null`, no information regarding trial eligibility will be displayed.
          */
-        @SerialName("offer_details_with_intro_offer") val offerDetailsWithIntroOffer: String? = null,
+        @SerialName("offer_details_with_intro_offer")
+        @Serializable(with = EmptyStringToNullSerializer::class)
+        val offerDetailsWithIntroOffer: String? = null,
 
         /**
          * Description for the offer to be purchased when multiple intro offers are available.
          * This may happen in Google Play, if you have an offer with both a free trial and a discounted price.
          * If `null`, no information regarding trial eligibility will be displayed.
          */
-        @SerialName("offer_details_with_multiple_intro_offers") val offerDetailsWithMultipleIntroOffers: String? = null,
+        @SerialName("offer_details_with_multiple_intro_offers")
+        @Serializable(with = EmptyStringToNullSerializer::class)
+        val offerDetailsWithMultipleIntroOffers: String? = null,
 
         /**
          * The name representing each of the packages, most commonly a variable.
          */
-        @SerialName("offer_name") val offerName: String? = null,
+        @SerialName("offer_name")
+        @Serializable(with = EmptyStringToNullSerializer::class)
+        val offerName: String? = null,
 
         /**
          * An optional list of features that describe this paywall.

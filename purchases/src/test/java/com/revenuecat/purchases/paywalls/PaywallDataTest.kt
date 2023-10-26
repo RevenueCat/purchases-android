@@ -62,16 +62,42 @@ class PaywallDataTest {
         val unknownLocale = "gl_ES".toLocale()
         assertThat(paywall.configForLocale(unknownLocale)).isNull()
 
-        val validLocale = "en_US".toLocale()
-        val localizedConfiguration = paywall.configForLocale(validLocale)
-        assertThat(localizedConfiguration).isNotNull
-        assertThat(localizedConfiguration?.callToActionWithMultipleIntroOffers).isEqualTo(
-            "Purchase now with multiple offers"
-        )
-        assertThat(localizedConfiguration?.offerDetailsWithMultipleIntroOffers).isEqualTo(
-            "Try {{ sub_offer_duration }} for free, then {{ sub_offer_price_2 }} for your first " +
-                "{{ sub_offer_duration_2 }}, and just {{ sub_price_per_month }} thereafter."
-        )
+        val english = paywall.configForLocale("en_US".toLocale())
+        assertThat(english).isNotNull
+        english?.apply {
+            assertThat(title).isEqualTo("Paywall")
+            assertThat(subtitle).isEqualTo("Description")
+
+            assertThat(callToAction).isEqualTo("Purchase now")
+            assertThat(callToActionWithIntroOffer).isEqualTo("Purchase now")
+            assertThat(callToActionWithMultipleIntroOffers).isEqualTo("Purchase now with multiple offers")
+
+            assertThat(offerDetails).isEqualTo("{{ sub_price_per_month }} per month")
+            assertThat(offerDetailsWithIntroOffer).isEqualTo(
+                "Start your {{ sub_offer_duration }} trial, " +
+                    "then {{ sub_price_per_month }} per month"
+            )
+            assertThat(offerDetailsWithMultipleIntroOffers).isEqualTo(
+                "Try {{ sub_offer_duration }} for free, " +
+                    "then {{ sub_offer_price_2 }} for your first {{ sub_offer_duration_2 }}, " +
+                    "and just {{ sub_price_per_month }} thereafter."
+            )
+        }
+
+        val spanish = paywall.configForLocale("es".toLocale())
+        assertThat(spanish).isNotNull
+        spanish?.apply {
+            assertThat(title).isEqualTo("Tienda")
+            assertThat(subtitle).isNull()
+
+            assertThat(callToAction).isEqualTo("Comprar")
+            assertThat(callToActionWithIntroOffer).isNull()
+            assertThat(callToActionWithMultipleIntroOffers).isNull()
+
+            assertThat(offerDetails).isNull()
+            assertThat(offerDetailsWithIntroOffer).isNull()
+            assertThat(offerDetailsWithMultipleIntroOffers).isNull()
+        }
     }
 
     @Test
