@@ -1,5 +1,8 @@
 package com.revenuecat.purchases.ui.revenuecatui.templates
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
@@ -366,7 +369,11 @@ private fun CheckmarkBox(
             .size(Template4UIConstants.checkmarkSize)
             .clip(CircleShape),
     ) {
-        if (isSelected) {
+        AnimatedVisibility(
+            visible = isSelected,
+            enter = fadeIn(animationSpec = UIConstant.defaultAnimation()),
+            exit = fadeOut(animationSpec = UIConstant.defaultAnimation()),
+        ) {
             PaywallIcon(icon = PaywallIconName.CHECK_CIRCLE, tintColor = colors.accent1)
         }
     }
