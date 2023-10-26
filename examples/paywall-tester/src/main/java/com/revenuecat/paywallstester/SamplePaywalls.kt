@@ -298,7 +298,9 @@ object SamplePaywalls {
         return PaywallData(
             templateName = "4",
             config = PaywallData.Configuration(
-                images = images,
+                images = PaywallData.Configuration.Images(
+                    background = "300883_1690710097.jpg",
+                ),
                 colors = PaywallData.Configuration.ColorInformation(
                     light = PaywallData.Configuration.Colors(
                         background = PaywallColor("#FFFFFF"),
@@ -314,9 +316,9 @@ object SamplePaywalls {
                     PackageType.MONTHLY.identifier!!,
                     PackageType.SIX_MONTH.identifier!!,
                     PackageType.ANNUAL.identifier!!,
+                    PackageType.LIFETIME.identifier!!,
                 ),
                 defaultPackage = PackageType.SIX_MONTH.identifier!!,
-                blurredBackgroundImage = true,
             ),
             assetBaseURL = paywallAssetBaseURL,
             localization = mapOf(

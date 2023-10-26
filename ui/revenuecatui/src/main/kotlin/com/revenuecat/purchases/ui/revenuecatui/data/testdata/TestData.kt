@@ -25,6 +25,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvi
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.templates.template1
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.templates.template2
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.templates.template3
+import com.revenuecat.purchases.ui.revenuecatui.data.testdata.templates.template4
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ApplicationContext
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toPaywallState
 import kotlinx.coroutines.delay
@@ -131,6 +132,19 @@ internal object TestData {
         serverDescription = "",
     )
 
+    val template4Offering = Offering(
+        identifier = "Template4",
+        availablePackages = listOf(
+            Packages.monthly,
+            Packages.semester,
+            Packages.annual,
+            Packages.weekly,
+        ),
+        metadata = mapOf(),
+        paywall = template4,
+        serverDescription = "",
+    )
+
     object Packages {
         val weekly = Package(
             packageType = PackageType.WEEKLY,
@@ -230,7 +244,7 @@ internal class MockApplicationContext : ApplicationContext {
 
     // This is hardcoding the english version of the strings for now. We can't access the actual resources since
     // we don't have access to a real context in some cases here.
-    override fun getString(resId: Int): String {
+    override fun getString(resId: Int, vararg formatArgs: Any): String {
         return when (resId) {
             R.string.restore_purchases -> "Restore purchases"
             R.string.annual -> "Annual"
@@ -244,6 +258,7 @@ internal class MockApplicationContext : ApplicationContext {
             R.string.default_offer_details_with_intro_offer ->
                 "Start your {{ sub_offer_duration }} trial, " +
                     "then {{ total_price_and_per_month }}."
+            R.string.package_discount -> "${formatArgs[0]}% off"
             else -> error("Unknown string resource $resId")
         }
     }

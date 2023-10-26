@@ -9,7 +9,7 @@ import java.util.Locale
  */
 internal interface ApplicationContext {
     fun getApplicationName(): String
-    fun getString(@StringRes resId: Int): String
+    fun getString(@StringRes resId: Int, vararg formatArgs: Any): String
     fun getLocale(): Locale
 }
 
@@ -18,8 +18,8 @@ internal class AndroidApplicationContext(private val applicationContext: Context
         return applicationContext.applicationInfo.loadLabel(applicationContext.packageManager).toString()
     }
 
-    override fun getString(@StringRes resId: Int): String {
-        return applicationContext.resources.getString(resId)
+    override fun getString(@StringRes resId: Int, vararg formatArgs: Any): String {
+        return applicationContext.resources.getString(resId, *formatArgs)
     }
 
     override fun getLocale(): Locale {
