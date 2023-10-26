@@ -6,10 +6,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import com.revenuecat.purchases.ui.revenuecatui.UIConstant
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
+import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.selectedLocalization
 import com.revenuecat.purchases.ui.revenuecatui.extensions.introEligibility
 
@@ -20,6 +22,7 @@ import com.revenuecat.purchases.ui.revenuecatui.extensions.introEligibility
 @Composable
 internal fun OfferDetails(
     state: PaywallState.Loaded,
+    color: (TemplateConfiguration.Colors) -> Color = { it.text1 }
 ) {
     Box(
         modifier = Modifier
@@ -30,7 +33,7 @@ internal fun OfferDetails(
             textWithIntroOffer = state.selectedLocalization.offerDetailsWithIntroOffer,
             textWithMultipleIntroOffers = state.selectedLocalization.offerDetailsWithMultipleIntroOffers,
             eligibility = state.selectedPackage.value.introEligibility,
-            color = state.templateConfiguration.getCurrentColors().text1,
+            color = color(state.templateConfiguration.getCurrentColors()),
             style = MaterialTheme.typography.bodyMedium,
             fontWeight = FontWeight.Normal,
             textAlign = TextAlign.Center,
