@@ -60,7 +60,7 @@ internal fun BoxScope.PaywallBackground(templateConfiguration: TemplateConfigura
 }
 
 private object BackgroundUIConstants {
-    val blurSize = 40.dp
+    val blurSize = 60.dp
     val contentScale = ContentScale.Crop
     const val blurAlpha = 0.7f
     const val minSDKVersionSupportingBlur = 31
