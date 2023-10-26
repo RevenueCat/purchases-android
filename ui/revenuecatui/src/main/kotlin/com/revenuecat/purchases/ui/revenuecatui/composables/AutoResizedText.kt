@@ -15,6 +15,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.isUnspecified
 
+/**
+ * Composable function that automatically adjusts the size of text to fit within the given constraints.
+ */
 @SuppressWarnings("LongParameterList")
 @Composable
 fun AutoResizedText(
