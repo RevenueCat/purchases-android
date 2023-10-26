@@ -10,6 +10,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
@@ -30,6 +32,7 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.toAndroidContext
 import com.revenuecat.purchases.ui.revenuecatui.templates.Template1
 import com.revenuecat.purchases.ui.revenuecatui.templates.Template2
 import com.revenuecat.purchases.ui.revenuecatui.templates.Template3
+import com.revenuecat.purchases.ui.revenuecatui.templates.Template4
 
 @Composable
 internal fun InternalPaywall(
@@ -80,8 +83,8 @@ private fun LoadedPaywall(state: PaywallState.Loaded, viewModel: PaywallViewMode
                 Modifier
                     .clip(
                         RoundedCornerShape(
-                            topStart = UIConstant.footerRoundedBorderHeight,
-                            topEnd = UIConstant.footerRoundedBorderHeight,
+                            topStart = UIConstant.defaultCornerRadius,
+                            topEnd = UIConstant.defaultCornerRadius,
                         ),
                     )
                     .background(backgroundColor)
@@ -97,7 +100,7 @@ private fun TemplatePaywall(state: PaywallState.Loaded, viewModel: PaywallViewMo
         PaywallTemplate.TEMPLATE_1 -> Template1(state = state, viewModel = viewModel)
         PaywallTemplate.TEMPLATE_2 -> Template2(state = state, viewModel = viewModel)
         PaywallTemplate.TEMPLATE_3 -> Template3(state = state, viewModel = viewModel)
-        PaywallTemplate.TEMPLATE_4 -> Text(text = "Error: Template 4 not supported")
+        PaywallTemplate.TEMPLATE_4 -> Template4(state = state, viewModel = viewModel)
         PaywallTemplate.TEMPLATE_5 -> Text(text = "Error: Template 5 not supported")
     }
 }

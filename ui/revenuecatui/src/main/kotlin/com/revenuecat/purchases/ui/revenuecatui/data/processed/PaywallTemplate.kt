@@ -4,7 +4,7 @@ internal enum class PaywallTemplate(val id: String, val configurationType: Packa
     TEMPLATE_1("1", PackageConfigurationType.SINGLE),
     TEMPLATE_2("2", PackageConfigurationType.MULTIPLE),
     TEMPLATE_3("3", PackageConfigurationType.SINGLE),
-    TEMPLATE_4("4_disabled", PackageConfigurationType.MULTIPLE),
+    TEMPLATE_4("4", PackageConfigurationType.MULTIPLE),
     TEMPLATE_5("5_disabled", PackageConfigurationType.MULTIPLE),
     ;
 
