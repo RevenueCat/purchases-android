@@ -19,12 +19,15 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.unit.Constraints
 
 @Composable
-internal fun RowScope.AdaptiveComposable(composables: List<@Composable () -> Unit>) {
+internal fun RowScope.AdaptiveComposable(
+    modifier: Modifier = Modifier,
+    composables: List<@Composable () -> Unit>,
+) {
     var maxSize by remember { mutableStateOf(0) }
     val viewSizes = remember { mutableStateListOf<Int>().also { it.addAll(List(composables.size) { 0 }) } }
 
     Box(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .onGloballyPositioned { coordinates ->
                 if (coordinates.size.width != maxSize) {

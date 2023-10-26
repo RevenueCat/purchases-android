@@ -27,6 +27,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.text
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -165,6 +169,8 @@ private fun RowScope.Button(
         return first + second
     }
 
+    val firstText = stringResource(texts.first())
+
     Column(
         modifier = Modifier
             .weight(1f)
@@ -173,11 +179,18 @@ private fun RowScope.Button(
         TextButton(
             onClick = action::invoke,
             contentPadding = PaddingValues(4.dp),
-            modifier = Modifier.align(CenterHorizontally),
+            modifier = Modifier
+                .align(CenterHorizontally)
+                .semantics(mergeDescendants = true) {
+                    // Accessibility will see only the largest text
+                    text = AnnotatedString(firstText)
+                },
         ) {
             // Find the first view that fits, starting from the longest text and fitting in one line,
             // ending with the shortest in multiple lines.
             AdaptiveComposable(
+                // Ignore children as accessibility elements
+                modifier = Modifier.clearAndSetSemantics {},
                 merge(
                     texts.map {
                         {
