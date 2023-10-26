@@ -2,6 +2,9 @@ package com.revenuecat.purchases.ui.revenuecatui.composables
 
 import android.content.Context
 import androidx.annotation.DrawableRes
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.ui.Modifier
@@ -15,6 +18,7 @@ import coil.request.ImageRequest
 import coil.transform.Transformation
 import com.revenuecat.purchases.ui.revenuecatui.UIConstant
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
+import com.revenuecat.purchases.ui.revenuecatui.helpers.isInPreviewMode
 
 @SuppressWarnings("LongParameterList")
 @Composable
@@ -77,6 +81,11 @@ private fun Image(
     transformation: Transformation?,
     alpha: Float,
 ) {
+    // Previews don't support images
+    if (isInPreviewMode()) {
+        return ImageForPreviews(modifier)
+    }
+
     AsyncImage(
         model = ImageRequest.Builder(LocalContext.current)
             .data(source.data)
@@ -101,6 +110,13 @@ private fun Image(
                 else -> {}
             }
         },
+    )
+}
+
+@Composable
+private fun ImageForPreviews(modifier: Modifier) {
+    Box(
+        modifier = modifier.background(MaterialTheme.colorScheme.primary),
     )
 }
 

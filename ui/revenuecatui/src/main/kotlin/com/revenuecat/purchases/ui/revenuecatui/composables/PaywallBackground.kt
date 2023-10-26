@@ -2,14 +2,11 @@ package com.revenuecat.purchases.ui.revenuecatui.composables
 
 import BlurTransformation
 import android.os.Build
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.BlurredEdgeTreatment
 import androidx.compose.ui.draw.blur
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -20,7 +17,6 @@ import com.revenuecat.purchases.ui.revenuecatui.R
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
 import com.revenuecat.purchases.ui.revenuecatui.extensions.defaultBackgroundPlaceholder
-import com.revenuecat.purchases.ui.revenuecatui.helpers.isInPreviewMode
 
 // Current implementation uses a transformation on API level < 31, modifier on > 31.
 @Composable
@@ -53,19 +49,13 @@ internal fun BoxScope.PaywallBackground(templateConfiguration: TemplateConfigura
             alpha = imageAlpha,
         )
     } else if (templateConfiguration.images.backgroundUri != null) {
-        if (isInPreviewMode()) {
-            Box(
-                modifier = modifier.background(Color.Gray),
-            )
-        } else {
-            RemoteImage(
-                urlString = templateConfiguration.images.backgroundUri.toString(),
-                modifier = modifier,
-                contentScale = BackgroundUIConstants.contentScale,
-                transformation = backwardsCompatibleTransformation,
-                alpha = imageAlpha,
-            )
-        }
+        RemoteImage(
+            urlString = templateConfiguration.images.backgroundUri.toString(),
+            modifier = modifier,
+            contentScale = BackgroundUIConstants.contentScale,
+            transformation = backwardsCompatibleTransformation,
+            alpha = imageAlpha,
+        )
     }
 }
 
