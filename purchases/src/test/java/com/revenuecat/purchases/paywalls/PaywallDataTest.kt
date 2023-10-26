@@ -2,9 +2,9 @@ package com.revenuecat.purchases.paywalls
 
 import android.graphics.Color
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.common.OfferingParser
 import com.revenuecat.purchases.utils.toLocale
 import kotlinx.serialization.decodeFromString
-import kotlinx.serialization.json.Json
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -15,16 +15,14 @@ import java.util.*
 
 private const val PAYWALLDATA_SAMPLE1 = "paywalldata-sample1.json"
 private const val PAYWALLDATA_MISSING_CURRENT_LOCALE = "paywalldata-missing_current_locale.json"
+private const val PAYWALLDATA_EMPTY_IMAGES = "paywalldata-empty-images.json"
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
 class PaywallDataTest {
-
     @Test
     fun `test PaywallData properties`() {
-        val json = loadJSON(PAYWALLDATA_SAMPLE1)
-
-        val paywall: PaywallData = Json.decodeFromString(json)
+        val paywall: PaywallData = decode(PAYWALLDATA_SAMPLE1)
 
         assertThat(paywall.templateName).isEqualTo("1")
         assertThat(paywall.assetBaseURL).isEqualTo(URL("https://rc-paywalls.s3.amazonaws.com"))
@@ -78,9 +76,7 @@ class PaywallDataTest {
 
     @Test
     fun `finds locale if it only has language`() {
-        val json = loadJSON(PAYWALLDATA_SAMPLE1)
-
-        val paywall: PaywallData = Json.decodeFromString(json)
+        val paywall: PaywallData = decode(PAYWALLDATA_SAMPLE1)
 
         val enConfig = paywall.configForLocale(Locale("en"))
         assertThat(enConfig?.title).isEqualTo("Paywall")
@@ -91,9 +87,7 @@ class PaywallDataTest {
 
     @Test
     fun `does not return a locale if no matching language`() {
-        val json = loadJSON(PAYWALLDATA_SAMPLE1)
-
-        val paywall: PaywallData = Json.decodeFromString(json)
+        val paywall: PaywallData = decode(PAYWALLDATA_SAMPLE1)
 
         val enConfig = paywall.configForLocale(Locale("fr"))
         assertThat(enConfig).isNull()
@@ -101,13 +95,21 @@ class PaywallDataTest {
 
     @Test
     fun `if current locale is missing it loads available locale`() {
-        val json = loadJSON(PAYWALLDATA_MISSING_CURRENT_LOCALE)
-
-        val paywall: PaywallData = Json.decodeFromString(json)
+        val paywall: PaywallData = decode(PAYWALLDATA_MISSING_CURRENT_LOCALE)
 
         val localization = paywall.localizedConfiguration.second
         assertThat(localization.callToAction).isEqualTo("Comprar")
         assertThat(localization.title).isEqualTo("Tienda")
+    }
+
+    @Test
+    fun `decodes empty images as null`() {
+        val paywall: PaywallData = decode(PAYWALLDATA_EMPTY_IMAGES)
+
+        val images = paywall.config.images
+        assertThat(images.background).isNull()
+        assertThat(images.header).isNull()
+        assertThat(images.icon).isNull()
     }
 
     @Test
@@ -121,5 +123,6 @@ class PaywallDataTest {
     }
 
     private fun loadJSON(jsonFileName: String) = File(javaClass.classLoader!!.getResource(jsonFileName).file).readText()
-
+    private fun decode(file: String): PaywallData =
+        OfferingParser.json.decodeFromString(loadJSON(file))
 }
