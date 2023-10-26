@@ -38,6 +38,63 @@ class OfferingsFactoryTest {
         "'description': 'This is the base offering', " +
         "'packages': []}]," +
         "'current_offering_id': '$STUB_OFFERING_IDENTIFIER'}")
+    private val oneOfferingWithInvalidPaywallResponse = JSONObject(
+        "" +
+            "{" +
+            "'offerings': [" +
+            "{" +
+            "'identifier': '$STUB_OFFERING_IDENTIFIER', " +
+            "'description': 'This is the base offering', " +
+            "'packages': [" +
+            "{'identifier': '\$rc_monthly','platform_product_identifier': '$STUB_PRODUCT_IDENTIFIER'}" +
+            "]," +
+            "'paywall': 'not a paywall'" +
+            "}" +
+            "]," +
+            "'current_offering_id': '$STUB_OFFERING_IDENTIFIER'" +
+            "}"
+    )
+    private val oneOfferingWithPaywall = JSONObject(
+        "" +
+            "{" +
+            "'offerings': [" +
+            "{" +
+            "'identifier': '$STUB_OFFERING_IDENTIFIER', " +
+            "'description': 'This is the base offering', " +
+            "'packages': [" +
+            "{'identifier': '\$rc_monthly','platform_product_identifier': '$STUB_PRODUCT_IDENTIFIER'}" +
+            "]," +
+            "'paywall': {\n" +
+            "    \"template_name\": \"1\",\n" +
+            "    \"localized_strings\": {\n" +
+            "        \"en_US\": {\n" +
+            "            \"title\": \"Paywall\",\n" +
+            "            \"call_to_action\": \"Purchase\",\n" +
+            "            \"subtitle\": \"Description\"\n" +
+            "        }\n" +
+            "    },\n" +
+            "    \"config\": {\n" +
+            "        \"packages\": [\"\$rc_monthly\"],\n" +
+            "        \"default_package\": \"\$rc_monthly\",\n" +
+            "        \"images\": {},\n" +
+            "        \"colors\": {\n" +
+            "            \"light\": {\n" +
+            "                \"background\": \"#FF00AA\",\n" +
+            "                \"text_1\": \"#FF00AA22\",\n" +
+            "                \"call_to_action_background\": \"#FF00AACC\",\n" +
+            "                \"call_to_action_foreground\": \"#FF00AA\"\n" +
+            "            }\n" +
+            "        }\n" +
+            "    },\n" +
+            "    \"asset_base_url\": \"https://rc-paywalls.s3.amazonaws.com\",\n" +
+            "    \"revision\": 7\n" +
+            "}" +
+            "}" +
+            "]," +
+            "'current_offering_id': '$STUB_OFFERING_IDENTIFIER'" +
+            "}"
+    )
+
     private val oneOfferingResponse = JSONObject(ONE_OFFERINGS_RESPONSE)
     private val oneOfferingInAppProductResponse = JSONObject(ONE_OFFERINGS_INAPP_PRODUCT_RESPONSE)
 
@@ -140,6 +197,42 @@ class OfferingsFactoryTest {
         assertThat(offerings).isNotNull
         assertThat(offerings!!.all.size).isEqualTo(1)
         assertThat(offerings!![STUB_OFFERING_IDENTIFIER]!!.monthly!!.product).isNotNull
+    }
+
+    @Test
+    fun `createOfferings with paywall`() {
+        val productIds = listOf(productId)
+        mockStoreProduct(productIds, emptyList(), ProductType.SUBS)
+        mockStoreProduct(productIds, productIds, ProductType.INAPP)
+
+        var offerings: Offerings? = null
+        offeringsFactory.createOfferings(
+            oneOfferingWithPaywall,
+            { fail("Error: $it") },
+            { offerings = it }
+        )
+
+        assertThat(offerings).isNotNull
+        assertThat(offerings!!.current).isNotNull
+        assertThat(offerings!!.current?.paywall).isNotNull
+    }
+
+    @Test
+    fun `createOfferings does not fail if paywall is invalid`() {
+        val productIds = listOf(productId)
+        mockStoreProduct(productIds, emptyList(), ProductType.SUBS)
+        mockStoreProduct(productIds, productIds, ProductType.INAPP)
+
+        var offerings: Offerings? = null
+        offeringsFactory.createOfferings(
+            oneOfferingWithInvalidPaywallResponse,
+            { fail("Error: $it") },
+            { offerings = it }
+        )
+
+        assertThat(offerings).isNotNull
+        assertThat(offerings!!.current).isNotNull
+        assertThat(offerings!!.current?.paywall).isNull()
     }
 
     // region helpers
