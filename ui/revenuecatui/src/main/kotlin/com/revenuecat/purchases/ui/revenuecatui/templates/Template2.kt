@@ -154,6 +154,7 @@ private fun ColumnScope.Template2MainContent(
                 color = colors.text1,
                 modifier = childModifier,
             )
+            Spacer(Modifier.weight(1f))
             Markdown(
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Normal,
