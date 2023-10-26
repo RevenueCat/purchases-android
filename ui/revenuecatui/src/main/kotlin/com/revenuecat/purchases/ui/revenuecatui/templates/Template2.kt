@@ -36,6 +36,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -249,7 +251,10 @@ private fun ColumnScope.SelectPackageButton(
         modifier = childModifier
             .fillMaxWidth()
             .alpha(buttonAlpha)
-            .align(Alignment.Start),
+            .align(Alignment.Start)
+            .semantics {
+                selected = isSelected
+            },
         onClick = { viewModel.selectPackage(packageInfo) },
         colors = ButtonDefaults.buttonColors(containerColor = background, contentColor = textColor),
         shape = RoundedCornerShape(UIConstant.defaultPackageCornerRadius),

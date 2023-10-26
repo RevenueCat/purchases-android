@@ -20,6 +20,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -141,7 +142,8 @@ private fun Feature(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = UIConstant.defaultHorizontalPadding)
-            .padding(top = Template3UIConstants.iconPadding * 2),
+            .padding(top = Template3UIConstants.iconPadding * 2)
+            .semantics(mergeDescendants = true) {},
     ) {
         feature.iconID?.let { PaywallIconName.fromValue(it) }?.let { icon ->
             Box(

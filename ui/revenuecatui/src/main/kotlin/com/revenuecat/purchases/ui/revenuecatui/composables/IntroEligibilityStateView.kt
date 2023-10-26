@@ -27,17 +27,13 @@ internal fun IntroEligibilityStateView(
     textAlign: TextAlign? = null,
     modifier: Modifier = Modifier,
 ) {
-    val text: String = when (eligibility) {
-        IntroOfferEligibility.SINGLE_OFFER_ELIGIBLE -> textWithIntroOffer
-        IntroOfferEligibility.MULTIPLE_OFFERS_ELIGIBLE -> textWithMultipleIntroOffers
-        else -> textWithNoIntroOffer
-    } // Display text with intro offer as a backup to ensure layout does not change when switching states.
-        ?: textWithNoIntroOffer
-        ?: textWithIntroOffer
-        ?: ""
-
     Crossfade(
-        targetState = text,
+        targetState = introEligibilityText(
+            eligibility,
+            textWithIntroOffer,
+            textWithMultipleIntroOffers,
+            textWithNoIntroOffer,
+        ),
         animationSpec = UIConstant.defaultAnimation(),
         label = "IntroEligibilityStateView",
     ) {
@@ -50,6 +46,22 @@ internal fun IntroEligibilityStateView(
             modifier = modifier,
         )
     }
+}
+
+internal fun introEligibilityText(
+    eligibility: IntroOfferEligibility,
+    textWithIntroOffer: String?,
+    textWithMultipleIntroOffers: String?,
+    textWithNoIntroOffer: String?,
+): String {
+    return when (eligibility) {
+        IntroOfferEligibility.SINGLE_OFFER_ELIGIBLE -> textWithIntroOffer
+        IntroOfferEligibility.MULTIPLE_OFFERS_ELIGIBLE -> textWithMultipleIntroOffers
+        else -> textWithNoIntroOffer
+    } // Display text with intro offer as a backup to ensure layout does not change when switching states.
+        ?: textWithNoIntroOffer
+        ?: textWithIntroOffer
+        ?: ""
 }
 
 internal enum class IntroOfferEligibility {
