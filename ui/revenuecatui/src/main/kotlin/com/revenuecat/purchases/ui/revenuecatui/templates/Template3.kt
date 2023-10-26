@@ -78,7 +78,7 @@ internal fun Template3(
 
         Spacer(modifier = Modifier.height(UIConstant.defaultVerticalSpacing))
 
-        OfferDetails(state) { it.text2 }
+        OfferDetails(state = state, color = state.templateConfiguration.getCurrentColors().text2)
         PurchaseButton(state, viewModel)
         Footer(templateConfiguration = state.templateConfiguration, viewModel = viewModel)
     }
