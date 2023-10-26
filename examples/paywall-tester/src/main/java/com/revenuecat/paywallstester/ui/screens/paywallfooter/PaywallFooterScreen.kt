@@ -19,9 +19,11 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.revenuecat.paywallstester.ui.screens.paywall.PaywallScreenState
 import com.revenuecat.paywallstester.ui.screens.paywall.PaywallScreenViewModel
 import com.revenuecat.paywallstester.ui.screens.paywall.PaywallScreenViewModelImpl
+import com.revenuecat.purchases.ui.revenuecatui.ExperimentalPreviewRevenueCatUIPurchasesAPI
 import com.revenuecat.purchases.ui.revenuecatui.PaywallFooter
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 
+@OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class)
 @Composable
 fun PaywallFooterScreen(
     viewModel: PaywallScreenViewModel = viewModel<PaywallScreenViewModelImpl>(),

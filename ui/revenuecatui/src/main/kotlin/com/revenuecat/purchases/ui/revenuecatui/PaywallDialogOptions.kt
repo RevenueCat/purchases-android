@@ -5,6 +5,7 @@ import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider
 import com.revenuecat.purchases.ui.revenuecatui.helpers.shouldDisplayBlockForEntitlementIdentifier
 
+@ExperimentalPreviewRevenueCatUIPurchasesAPI
 class PaywallDialogOptions(builder: Builder) {
 
     val shouldDisplayBlock: ((CustomerInfo) -> Boolean)?
