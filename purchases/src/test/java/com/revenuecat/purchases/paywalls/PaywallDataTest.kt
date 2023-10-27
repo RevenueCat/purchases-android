@@ -113,6 +113,14 @@ class PaywallDataTest {
     }
 
     @Test
+    fun `does not fail to decode invalid URLs`() {
+        val paywall: PaywallData = decode(PAYWALLDATA_EMPTY_IMAGES)
+
+        assertThat(paywall.config.privacyURL).isNull()
+        assertThat(paywall.config.termsOfServiceURL).isNull()
+    }
+
+    @Test
     fun `paywall color can be created from a ColorInt`() {
         val colorInt = Color.parseColor("#FFAABB")
         val paywallColor = PaywallColor(colorInt)

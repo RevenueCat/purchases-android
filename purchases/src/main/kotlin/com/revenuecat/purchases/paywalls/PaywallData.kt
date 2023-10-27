@@ -116,12 +116,16 @@ data class PaywallData(
         /**
          * If set, the paywall will display a terms of service link.
          */
-        @SerialName("tos_url") @Serializable(with = URLSerializer::class) val termsOfServiceURL: URL? = null,
+        @SerialName("tos_url")
+        @Serializable(with = OptionalURLSerializer::class)
+        val termsOfServiceURL: URL? = null,
 
         /**
          * If set, the paywall will display a privacy policy link.
          */
-        @SerialName("privacy_url") @Serializable(with = URLSerializer::class) val privacyURL: URL? = null,
+        @SerialName("privacy_url")
+        @Serializable(with = OptionalURLSerializer::class)
+        val privacyURL: URL? = null,
 
         /**
          * The set of colors used.
