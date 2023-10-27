@@ -2,7 +2,9 @@ package com.revenuecat.purchases.ui.revenuecatui
 
 /**
  * This annotation marks the experimental preview of the RevenueCat UI Purchases API.
- * This API is in a preview state and has a very high chance of being changed in the future.
+ * This API is in a preview state and has a very high chance of being changed in the near future.
+ 
+ Once RevenueCat UI is stable, this annotation will be removed.
  *
  * Any usage of a declaration annotated with `@ExperimentalPreviewRevenueCatUIPurchasesAPI` must be
  * accepted either by annotating that usage with the [OptIn] annotation,
