@@ -25,6 +25,7 @@ internal fun IntroEligibilityStateView(
     style: TextStyle = LocalTextStyle.current,
     fontWeight: FontWeight? = null,
     textAlign: TextAlign? = null,
+    allowLinks: Boolean = true,
     modifier: Modifier = Modifier,
 ) {
     Crossfade(
@@ -43,6 +44,7 @@ internal fun IntroEligibilityStateView(
             style = style,
             fontWeight = fontWeight,
             textAlign = textAlign,
+            allowLinks = allowLinks,
             modifier = modifier,
         )
     }

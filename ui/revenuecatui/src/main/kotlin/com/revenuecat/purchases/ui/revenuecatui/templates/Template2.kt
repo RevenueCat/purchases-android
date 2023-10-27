@@ -288,6 +288,7 @@ private fun ColumnScope.SelectPackageButton(
                 eligibility = packageInfo.introEligibility,
                 color = textColor,
                 style = MaterialTheme.typography.bodyMedium,
+                allowLinks = false,
             )
         }
     }
