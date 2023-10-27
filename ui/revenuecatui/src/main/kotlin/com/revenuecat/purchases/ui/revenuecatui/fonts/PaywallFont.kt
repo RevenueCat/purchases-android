@@ -4,12 +4,14 @@ import android.os.Parcelable
 import androidx.annotation.FontRes
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import com.revenuecat.purchases.ui.revenuecatui.ExperimentalPreviewRevenueCatUIPurchasesAPI
 import kotlinx.parcelize.Parcelize
 import kotlinx.parcelize.TypeParceler
 
 /**
  * Represents a font. You can create either a [GoogleFont] or a [ResourceFont].
  */
+@ExperimentalPreviewRevenueCatUIPurchasesAPI
 sealed class PaywallFont : Parcelable {
     /**
      * Represents a downloadable Google Font.

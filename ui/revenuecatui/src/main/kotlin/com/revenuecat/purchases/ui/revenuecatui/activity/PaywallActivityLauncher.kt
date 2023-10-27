@@ -6,6 +6,7 @@ import androidx.activity.result.ActivityResultLauncher
 import androidx.fragment.app.Fragment
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Offering
+import com.revenuecat.purchases.ui.revenuecatui.ExperimentalPreviewRevenueCatUIPurchasesAPI
 import com.revenuecat.purchases.ui.revenuecatui.fonts.ParcelizableFontProvider
 import com.revenuecat.purchases.ui.revenuecatui.helpers.shouldDisplayBlockForEntitlementIdentifier
 import com.revenuecat.purchases.ui.revenuecatui.helpers.shouldDisplayPaywall
@@ -13,12 +14,14 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.shouldDisplayPaywall
 /**
  * Implement this interface to receive the result of the paywall activity.
  */
+@ExperimentalPreviewRevenueCatUIPurchasesAPI
 interface PaywallResultHandler : ActivityResultCallback<PaywallResult>
 
 /**
  * Launches the paywall activity. You need to create this object during the activity's onCreate.
  * Then launch the activity at your moment of choice
  */
+@ExperimentalPreviewRevenueCatUIPurchasesAPI
 class PaywallActivityLauncher {
 
     private var activityResultLauncher: ActivityResultLauncher<PaywallActivityArgs>
