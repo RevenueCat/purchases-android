@@ -36,6 +36,7 @@ import com.revenuecat.purchases.ui.revenuecatui.templates.Template1
 import com.revenuecat.purchases.ui.revenuecatui.templates.Template2
 import com.revenuecat.purchases.ui.revenuecatui.templates.Template3
 import com.revenuecat.purchases.ui.revenuecatui.templates.Template4
+import com.revenuecat.purchases.ui.revenuecatui.templates.Template5
 
 @OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class)
 @Composable
@@ -122,7 +123,7 @@ private fun TemplatePaywall(state: PaywallState.Loaded, viewModel: PaywallViewMo
         PaywallTemplate.TEMPLATE_2 -> Template2(state = state, viewModel = viewModel)
         PaywallTemplate.TEMPLATE_3 -> Template3(state = state, viewModel = viewModel)
         PaywallTemplate.TEMPLATE_4 -> Template4(state = state, viewModel = viewModel)
-        PaywallTemplate.TEMPLATE_5 -> Text(text = "Error: Template 5 not supported")
+        PaywallTemplate.TEMPLATE_5 -> Template5(state = state, viewModel = viewModel)
     }
 }
 
