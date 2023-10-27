@@ -219,6 +219,7 @@ internal class PaywallViewModelImpl(
             Logger.w(validationError.associatedErrorString(offering))
             Logger.w(PaywallValidationErrorStrings.DISPLAYING_DEFAULT)
         }
+
         return offering.toPaywallState(
             variableDataProvider = variableDataProvider,
             activelySubscribedProductIdentifiers = customerInfo.activeSubscriptions,
