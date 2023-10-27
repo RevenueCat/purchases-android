@@ -47,7 +47,7 @@ fun PaywallDialog(
             properties = DialogProperties(usePlatformDefaultWidth = shouldUsePlatformDefaultWidth()),
         ) {
             DialogScaffold(
-                paywallDialogOptions.toPaywallOptions(paywallDialogDismissRequest = {
+                paywallDialogOptions.toPaywallOptions(dismissRequest = {
                     shouldDisplayDialog = false
                 }),
             )
