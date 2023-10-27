@@ -24,9 +24,9 @@ class PaywallDialogOptions(builder: Builder) {
         this.listener = builder.listener
     }
 
-    internal fun toPaywallOptions(dismissRequest: () -> Unit): PaywallOptions {
+    internal fun toPaywallOptions(paywallDialogDismissRequest: () -> Unit): PaywallOptions {
         return PaywallOptions.Builder {
-            dismissRequest()
+            paywallDialogDismissRequest()
             this.dismissRequest?.invoke()
         }
             .setOffering(offering)

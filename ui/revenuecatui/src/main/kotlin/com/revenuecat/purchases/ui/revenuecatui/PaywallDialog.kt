@@ -39,16 +39,18 @@ fun PaywallDialog(
         }
     }
     if (shouldDisplayDialog) {
-        val dismissRequest = {
-            paywallDialogOptions.dismissRequest?.invoke()
-            shouldDisplayDialog = false
-        }
-
         Dialog(
-            onDismissRequest = dismissRequest,
+            onDismissRequest = {
+                shouldDisplayDialog = false
+                paywallDialogOptions.dismissRequest?.invoke()
+            },
             properties = DialogProperties(usePlatformDefaultWidth = shouldUsePlatformDefaultWidth()),
         ) {
-            DialogScaffold(paywallDialogOptions.toPaywallOptions(dismissRequest))
+            DialogScaffold(
+                paywallDialogOptions.toPaywallOptions(paywallDialogDismissRequest = {
+                    shouldDisplayDialog = false
+                }),
+            )
         }
     }
 }
