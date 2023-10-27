@@ -98,7 +98,7 @@ internal fun Template2(
                 visible = packageSelectorVisible,
                 enter = fadeIn(animationSpec = UIConstant.defaultAnimation()),
                 exit = fadeOut(animationSpec = UIConstant.defaultAnimation()),
-                label = "Template2.packageSpacig",
+                label = "Template2.packageSpacing",
             ) {
                 Spacer(modifier = Modifier.height(UIConstant.defaultVerticalSpacing))
             }
