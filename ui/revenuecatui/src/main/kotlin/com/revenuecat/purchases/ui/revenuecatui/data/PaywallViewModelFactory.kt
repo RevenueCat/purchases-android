@@ -3,9 +3,11 @@ package com.revenuecat.purchases.ui.revenuecatui.data
 import androidx.compose.material3.ColorScheme
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import com.revenuecat.purchases.ui.revenuecatui.ExperimentalPreviewRevenueCatUIPurchasesAPI
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ApplicationContext
 
+@OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class)
 internal class PaywallViewModelFactory(
     private val applicationContext: ApplicationContext,
     private val options: PaywallOptions,

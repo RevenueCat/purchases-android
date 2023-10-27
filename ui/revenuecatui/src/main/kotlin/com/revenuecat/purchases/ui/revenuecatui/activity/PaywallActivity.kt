@@ -19,6 +19,7 @@ import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.ui.revenuecatui.ExperimentalPreviewRevenueCatUIPurchasesAPI
 import com.revenuecat.purchases.ui.revenuecatui.Paywall
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
@@ -31,6 +32,7 @@ import com.revenuecat.purchases.ui.revenuecatui.fonts.TypographyType
  * Wrapper activity around [Paywall] that allows using it when you are not using Jetpack Compose directly.
  * It receives the [PaywallActivityArgs] as an extra and returns the [PaywallResult] as a result.
  */
+@OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class)
 internal class PaywallActivity : ComponentActivity(), PaywallListener {
     companion object {
         const val ARGS_EXTRA = "paywall_args"

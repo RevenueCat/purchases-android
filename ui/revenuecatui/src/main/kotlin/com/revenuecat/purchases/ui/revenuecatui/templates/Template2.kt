@@ -42,6 +42,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.revenuecat.purchases.ui.revenuecatui.ExperimentalPreviewRevenueCatUIPurchasesAPI
 import com.revenuecat.purchases.ui.revenuecatui.InternalPaywall
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
@@ -306,6 +307,7 @@ private fun CheckmarkBox(isSelected: Boolean, colors: TemplateConfiguration.Colo
     }
 }
 
+@OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class)
 @Preview(showBackground = true, locale = "en-rUS")
 @Preview(showBackground = true, locale = "es-rES")
 @Composable
@@ -316,6 +318,7 @@ private fun Template2PaywallPreview() {
     )
 }
 
+@OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class)
 @Preview(showBackground = true, locale = "en-rUS")
 @Preview(showBackground = true, locale = "es-rES")
 @Composable
@@ -326,6 +329,7 @@ private fun Template2PaywallFooterPreview() {
     )
 }
 
+@OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class)
 @Preview(showBackground = true, locale = "en-rUS")
 @Preview(showBackground = true, locale = "es-rES")
 @Composable

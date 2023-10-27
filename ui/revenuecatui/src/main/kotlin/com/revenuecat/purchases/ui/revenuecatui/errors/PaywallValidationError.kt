@@ -3,7 +3,7 @@ package com.revenuecat.purchases.ui.revenuecatui.errors
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.ui.revenuecatui.strings.PaywallValidationErrorStrings
 
-sealed class PaywallValidationError : Throwable() {
+internal sealed class PaywallValidationError : Throwable() {
 
     fun associatedErrorString(offering: Offering): String {
         return when (this) {

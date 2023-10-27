@@ -26,6 +26,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.paywalls.PaywallData
+import com.revenuecat.purchases.ui.revenuecatui.ExperimentalPreviewRevenueCatUIPurchasesAPI
 import com.revenuecat.purchases.ui.revenuecatui.InternalPaywall
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
@@ -183,6 +184,7 @@ private fun Feature(
     }
 }
 
+@OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class)
 @Preview(locale = "en-rUS", showBackground = true)
 @Preview(locale = "es-rES", showBackground = true)
 @Composable
@@ -193,6 +195,7 @@ private fun Template3Preview() {
     )
 }
 
+@OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class)
 @Preview(showBackground = true)
 @Composable
 private fun Template3FooterPreview() {
@@ -202,6 +205,7 @@ private fun Template3FooterPreview() {
     )
 }
 
+@OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class)
 @Preview(showBackground = true)
 @Composable
 private fun Template3CondensedFooterPreview() {

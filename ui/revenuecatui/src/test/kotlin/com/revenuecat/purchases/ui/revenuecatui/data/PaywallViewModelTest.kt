@@ -15,6 +15,7 @@ import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.Transaction
 import com.revenuecat.purchases.paywalls.PaywallData
+import com.revenuecat.purchases.ui.revenuecatui.ExperimentalPreviewRevenueCatUIPurchasesAPI
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
@@ -42,6 +43,7 @@ import org.junit.runner.RunWith
 import java.util.Date
 import java.util.UUID
 
+@OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class)
 @RunWith(AndroidJUnit4::class)
 class PaywallViewModelTest {
     private val defaultOffering = TestData.template2Offering

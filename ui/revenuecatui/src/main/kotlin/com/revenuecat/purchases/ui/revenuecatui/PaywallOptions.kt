@@ -23,6 +23,7 @@ internal sealed class OfferingSelection {
         }
 }
 
+@ExperimentalPreviewRevenueCatUIPurchasesAPI
 class PaywallOptions(builder: Builder) {
 
     internal val offeringSelection: OfferingSelection

@@ -35,6 +35,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
+import com.revenuecat.purchases.ui.revenuecatui.ExperimentalPreviewRevenueCatUIPurchasesAPI
 import com.revenuecat.purchases.ui.revenuecatui.InternalPaywall
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
@@ -175,6 +176,7 @@ private object Template1UIConstants {
     const val circleScale = 3.0f
 }
 
+@OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class)
 @Preview(showBackground = true)
 @Composable
 private fun Template1PaywallPreview() {
@@ -184,6 +186,7 @@ private fun Template1PaywallPreview() {
     )
 }
 
+@OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class)
 @Preview(showBackground = true)
 @Composable
 private fun Template1FooterPaywallPreview() {
@@ -193,6 +196,7 @@ private fun Template1FooterPaywallPreview() {
     )
 }
 
+@OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class)
 @Preview(showBackground = true)
 @Composable
 private fun Template1CondensedFooterPaywallPreview() {
