@@ -1,5 +1,8 @@
 package com.revenuecat.purchases.ui.revenuecatui
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -19,6 +22,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.revenuecat.purchases.ui.revenuecatui.UIConstant.defaultAnimation
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModel
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModelFactory
@@ -44,14 +48,28 @@ internal fun InternalPaywall(
         viewModel.refreshStateIfLocaleChanged()
         viewModel.refreshStateIfColorsChanged(MaterialTheme.colorScheme)
 
-        when (val state = viewModel.state.collectAsState().value) {
-            is PaywallState.Loading -> {
-                LoadingPaywall(mode = options.mode)
-            }
+        val state = viewModel.state.collectAsState().value
+
+        AnimatedVisibility(
+            visible = state is PaywallState.Loading || state is PaywallState.Error,
+            enter = fadeIn(animationSpec = defaultAnimation()),
+            exit = fadeOut(animationSpec = defaultAnimation()),
+        ) {
+            LoadingPaywall(mode = options.mode)
+        }
+
+        AnimatedVisibility(
+            visible = state is PaywallState.Loaded,
+            enter = fadeIn(animationSpec = defaultAnimation()),
+            exit = fadeOut(animationSpec = defaultAnimation()),
+        ) {
+            LoadedPaywall(state = state as PaywallState.Loaded, viewModel = viewModel)
+        }
+
+        when (state) {
+            is PaywallState.Loading -> {}
 
             is PaywallState.Error -> {
-                LoadingPaywall(mode = options.mode)
-
                 ErrorDialog(
                     dismissRequest = options.dismissRequest,
                     error = state.errorMessage,
@@ -59,8 +77,6 @@ internal fun InternalPaywall(
             }
 
             is PaywallState.Loaded -> {
-                LoadedPaywall(state = state, viewModel = viewModel)
-
                 viewModel.actionError.value?.let {
                     ErrorDialog(
                         dismissRequest = viewModel::clearActionError,
