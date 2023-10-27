@@ -39,7 +39,10 @@ fun PaywallDialog(
         }
     }
     if (shouldDisplayDialog) {
-        val dismissRequest = { shouldDisplayDialog = false }
+        val dismissRequest = {
+            paywallDialogOptions.dismissRequest?.invoke()
+            shouldDisplayDialog = false
+        }
 
         Dialog(
             onDismissRequest = dismissRequest,
