@@ -130,10 +130,10 @@ private fun FooterDialog(currentState: DisplayPaywallState.Footer, onDismiss: ()
     }
 }
 
+@OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class)
 private sealed class DisplayPaywallState {
     object None : DisplayPaywallState()
     data class FullScreen
-    @OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class)
     constructor(
         val offering: Offering? = null,
         val fontProvider: FontProvider? = null,
