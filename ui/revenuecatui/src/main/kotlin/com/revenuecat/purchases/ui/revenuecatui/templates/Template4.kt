@@ -81,7 +81,6 @@ private object Template4UIConstants {
     val checkmarkSize = 18.dp
     val checkmarkPadding = 8.dp
     val discountVerticalPadding = 4.dp
-    const val fadedColorOpacity = 0.3f
     const val maxPackagesToDisplay = 3f
 }
 
