@@ -68,7 +68,7 @@ private fun PurchaseButton(
     childModifier: Modifier = Modifier,
 ) {
     Column(
-        modifier = childModifier
+        modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = UIConstant.defaultHorizontalPadding),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -83,7 +83,7 @@ private fun PurchaseButton(
         )
 
         Button(
-            modifier = Modifier
+            modifier = childModifier
                 .fillMaxWidth()
                 .semantics(mergeDescendants = true) {
                     val p = selectedPackage.value
