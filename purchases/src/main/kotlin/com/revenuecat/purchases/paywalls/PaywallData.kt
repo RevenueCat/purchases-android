@@ -189,6 +189,12 @@ data class PaywallData(
             @Serializable(with = PaywallColor.Serializer::class) val text2: PaywallColor? = null,
 
             /**
+             * Color for tertiary text element.
+             */
+            @SerialName("text_3")
+            @Serializable(with = PaywallColor.Serializer::class) val text3: PaywallColor? = null,
+
+            /**
              * Background color of the main call to action button.
              */
             @SerialName("call_to_action_background")
@@ -218,6 +224,12 @@ data class PaywallData(
              */
             @SerialName("accent_2")
             @Serializable(with = PaywallColor.Serializer::class) val accent2: PaywallColor? = null,
+
+            /**
+             * Tertiary accent color.
+             */
+            @SerialName("accent_3")
+            @Serializable(with = PaywallColor.Serializer::class) val accent3: PaywallColor? = null,
         )
     }
 

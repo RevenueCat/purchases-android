@@ -161,9 +161,12 @@ class PaywallDataValidationTest {
     ) {
         assertThat(actualColors.accent1).isEqualTo(defaultColors.accent1)
         assertThat(actualColors.accent2).isEqualTo(defaultColors.accent2)
+        assertThat(actualColors.accent3).isEqualTo(defaultColors.accent3)
         assertThat(actualColors.background).isEqualTo(defaultColors.background)
         assertThat(actualColors.callToActionBackground).isEqualTo(defaultColors.callToActionBackground)
         assertThat(actualColors.callToActionForeground).isEqualTo(defaultColors.callToActionForeground)
         assertThat(actualColors.text1).isEqualTo(defaultColors.text1)
+        assertThat(actualColors.text2).isEqualTo(defaultColors.text2)
+        assertThat(actualColors.text3).isEqualTo(defaultColors.text3)
     }
 }
