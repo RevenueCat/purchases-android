@@ -6,6 +6,10 @@ import com.revenuecat.purchases.PackageType
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockApplicationContext
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ApplicationContext
+import com.revenuecat.purchases.ui.revenuecatui.helpers.getPackageInfoForTest
+import io.mockk.CapturingSlot
+import io.mockk.every
+import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Test
@@ -353,8 +357,19 @@ class VariableProcessorTest {
     // endregion Variables
 
     @Test
-    fun `localizedDiscount works`() {
+    fun `localizedDiscount returns correct discount string`() {
+        val captor = CapturingSlot<Int>()
+        val mock = mockk<ApplicationContext>()
+        every {
+            mock.getString(any(), capture(captor))
+        } answers {
+            "${captor.captured}% OFF"
+        }
 
+        val packageInfo = rcPackage.getPackageInfoForTest()
+
+        val localizedDiscount = packageInfo.localizedDiscount(mock)
+        assertThat(localizedDiscount).isEqualTo("29% OFF")
     }
 
     private fun expectVariablesResult(

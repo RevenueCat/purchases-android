@@ -8,6 +8,7 @@ import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockApplicationContext
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.templates.template2
+import com.revenuecat.purchases.ui.revenuecatui.helpers.getPackageInfoForTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Test
@@ -69,9 +70,9 @@ internal class TemplateConfigurationFactoryTest {
         )
         val packageConfiguration = template2Configuration.packages as TemplateConfiguration.PackageConfiguration.Multiple
 
-        val annualPackage = getPackageInfo(TestData.Packages.annual, currentlySubscribed = false)
-        val monthlyPackage = getPackageInfo(TestData.Packages.monthly, currentlySubscribed = true)
-        val lifetime = getPackageInfo(TestData.Packages.lifetime, currentlySubscribed = true)
+        val annualPackage = TestData.Packages.annual.getPackageInfoForTest(currentlySubscribed = false)
+        val monthlyPackage = TestData.Packages.monthly.getPackageInfoForTest(currentlySubscribed = true)
+        val lifetime = TestData.Packages.lifetime.getPackageInfoForTest(currentlySubscribed = true)
 
         val expectedConfiguration = TemplateConfiguration.PackageConfiguration.Multiple(
             first = annualPackage,
@@ -98,63 +99,4 @@ internal class TemplateConfigurationFactoryTest {
             .isEqualTo(Uri.parse("https://assets.pawwalls.com/9a17e0a7_1689854430..jpeg"))
     }
 
-    private fun getPackageInfo(
-        rcPackage: Package,
-        currentlySubscribed: Boolean = false,
-    ): TemplateConfiguration.PackageInfo {
-        val localizedConfiguration = TestData.template2.configForLocale(Locale.US)!!
-        val periodName = when(rcPackage.packageType) {
-            PackageType.ANNUAL -> "Annual"
-            PackageType.MONTHLY -> "Monthly"
-            PackageType.WEEKLY -> "Weekly"
-            PackageType.LIFETIME -> "Lifetime"
-            else -> error("Unknown package type ${rcPackage.packageType}")
-        }
-        val callToAction = when(rcPackage.packageType) {
-            PackageType.ANNUAL -> "Subscribe for $67.99/yr"
-            PackageType.MONTHLY -> "Subscribe for $7.99/mth"
-            PackageType.WEEKLY -> "Subscribe for $1.99/wk"
-            PackageType.LIFETIME -> "Subscribe for $1,000"
-            else -> error("Unknown package type ${rcPackage.packageType}")
-        }
-        val offerDetails = when(rcPackage.packageType) {
-            PackageType.ANNUAL -> "$67.99/yr ($5.67/mth)"
-            PackageType.MONTHLY -> "$7.99/mth"
-            PackageType.WEEKLY -> "$1.99/wk ($7.96/mth)"
-            PackageType.LIFETIME -> "$1,000"
-            else -> error("Unknown package type ${rcPackage.packageType}")
-        }
-        val offerDetailsWithIntroOffer = when(rcPackage.packageType) {
-            PackageType.ANNUAL -> "$67.99/yr ($5.67/mth) after 1 month trial"
-            PackageType.MONTHLY -> "$7.99/mth after  trial"
-            PackageType.WEEKLY -> "$1.99/wk ($7.96/mth) after  trial"
-            PackageType.LIFETIME -> "$1,000 after  trial"
-            else -> error("Unknown package type ${rcPackage.packageType}")
-        }
-        val discountRelativeToMostExpensivePerMonth = when(rcPackage.packageType) {
-            PackageType.ANNUAL -> 0.29088448060075095
-            PackageType.MONTHLY -> null
-            PackageType.WEEKLY -> null
-            PackageType.LIFETIME -> null
-            else -> error("Unknown package type ${rcPackage.packageType}")
-        }
-        val processedLocalization = ProcessedLocalizedConfiguration(
-            title = localizedConfiguration.title,
-            subtitle = localizedConfiguration.subtitle,
-            callToAction = callToAction,
-            callToActionWithIntroOffer = null,
-            callToActionWithMultipleIntroOffers = null,
-            offerDetails = offerDetails,
-            offerDetailsWithIntroOffer = offerDetailsWithIntroOffer,
-            offerDetailsWithMultipleIntroOffers = null,
-            offerName = periodName,
-            features = emptyList(),
-        )
-        return TemplateConfiguration.PackageInfo(
-            rcPackage = rcPackage,
-            localization = processedLocalization,
-            currentlySubscribed = currentlySubscribed,
-            discountRelativeToMostExpensivePerMonth = discountRelativeToMostExpensivePerMonth,
-        )
-    }
 }
