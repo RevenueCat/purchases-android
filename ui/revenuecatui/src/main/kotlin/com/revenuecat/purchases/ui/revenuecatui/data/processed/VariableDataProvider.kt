@@ -112,10 +112,10 @@ internal class VariableDataProvider(
 @SuppressWarnings("MagicNumber")
 internal fun TemplateConfiguration.PackageInfo.localizedDiscount(
     applicationContext: ApplicationContext,
-): String {
+): String? {
     return (discountRelativeToMostExpensivePerMonth?.times(100.0))?.roundToInt()?.let {
         applicationContext.getString(R.string.package_discount, it)
-    } ?: ""
+    }
 }
 
 /**

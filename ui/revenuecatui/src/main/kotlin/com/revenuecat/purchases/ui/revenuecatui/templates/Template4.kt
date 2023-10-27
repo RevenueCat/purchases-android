@@ -36,6 +36,11 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.text
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -230,19 +235,31 @@ private fun SelectPackageButton(
 
     var columnModifier = modifier.clip(RoundedCornerShape(UIConstant.defaultCornerRadius))
 
+    val applicationContext = LocalContext.current.applicationContext.toAndroidContext()
+    val discountText = packageInfo.localizedDiscount(applicationContext)
+
     if (packageInfo.discountRelativeToMostExpensivePerMonth != null) {
         columnModifier = columnModifier.background(mainColor)
     }
 
     Column(
-        modifier = columnModifier,
+        modifier = columnModifier
+            .semantics(mergeDescendants = true) {},
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        DiscountRelativeToMostExpensivePerMonth(packageInfo, colors)
+        DiscountRelativeToMostExpensivePerMonth(colors = colors, text = discountText)
+
         Box {
             Button(
                 modifier = modifier
                     .alpha(buttonAlpha)
+                    .semantics {
+                        selected = isSelected
+                        // Append discount
+                        discountText?.let {
+                            text = AnnotatedString(it)
+                        }
+                    }
                     .fillMaxHeight(),
                 onClick = { viewModel.selectPackage(packageInfo) },
                 colors = ButtonDefaults.buttonColors(containerColor = colors.background),
@@ -298,21 +315,21 @@ private fun SelectPackageButtonContent(
 
 @Composable
 private fun DiscountRelativeToMostExpensivePerMonth(
-    packageInfo: TemplateConfiguration.PackageInfo,
+    text: String?,
     colors: TemplateConfiguration.Colors,
 ) {
-    val applicationContext = LocalContext.current.applicationContext.toAndroidContext()
-    val text = packageInfo.localizedDiscount(applicationContext).uppercase()
     AutoResizedText(
-        text = text,
+        text = text?.uppercase() ?: "",
         color = colors.text1,
         style = MaterialTheme.typography.bodySmall,
         fontWeight = FontWeight.Bold,
         textAlign = TextAlign.Center,
-        modifier = Modifier.padding(
-            horizontal = UIConstant.defaultHorizontalPadding,
-            vertical = Template4UIConstants.discountVerticalPadding,
-        ),
+        modifier = Modifier
+            .padding(
+                horizontal = UIConstant.defaultHorizontalPadding,
+                vertical = Template4UIConstants.discountVerticalPadding,
+            )
+            .clearAndSetSemantics {},
     )
 }
 
