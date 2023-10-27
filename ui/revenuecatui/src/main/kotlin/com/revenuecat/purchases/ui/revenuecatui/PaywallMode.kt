@@ -14,3 +14,6 @@ internal enum class PaywallMode {
         }
     }
 }
+
+internal val PaywallMode.isFullScreen: Boolean
+    get() = this == PaywallMode.FULL_SCREEN

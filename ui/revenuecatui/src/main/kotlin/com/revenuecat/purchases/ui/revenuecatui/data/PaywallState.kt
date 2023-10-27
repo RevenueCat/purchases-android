@@ -4,9 +4,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.mutableStateOf
-import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.ProcessedLocalizedConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
+import com.revenuecat.purchases.ui.revenuecatui.isFullScreen
 
 internal sealed class PaywallState {
     object Loading : PaywallState()
@@ -39,4 +39,4 @@ internal val PaywallState.Loaded.currentColors: TemplateConfiguration.Colors
     get() = templateConfiguration.getCurrentColors()
 
 internal val PaywallState.Loaded.isInFullScreenMode: Boolean
-    get() = templateConfiguration.mode == PaywallMode.FULL_SCREEN
+    get() = templateConfiguration.mode.isFullScreen

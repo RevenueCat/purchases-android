@@ -17,6 +17,7 @@ import com.revenuecat.purchases.ui.revenuecatui.R
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
 import com.revenuecat.purchases.ui.revenuecatui.extensions.defaultBackgroundPlaceholder
+import com.revenuecat.purchases.ui.revenuecatui.isFullScreen
 
 // Current implementation uses a transformation on API level < 31, modifier on > 31.
 @Composable
@@ -49,13 +50,16 @@ internal fun BoxScope.PaywallBackground(templateConfiguration: TemplateConfigura
             alpha = imageAlpha,
         )
     } else if (templateConfiguration.images.backgroundUri != null) {
-        RemoteImage(
-            urlString = templateConfiguration.images.backgroundUri.toString(),
-            modifier = modifier,
-            contentScale = BackgroundUIConstants.contentScale,
-            transformation = backwardsCompatibleTransformation,
-            alpha = imageAlpha,
-        )
+        // Don't display background images on footer unless it's blurred
+        if (shouldBlur || templateConfiguration.mode.isFullScreen) {
+            RemoteImage(
+                urlString = templateConfiguration.images.backgroundUri.toString(),
+                modifier = modifier,
+                contentScale = BackgroundUIConstants.contentScale,
+                transformation = backwardsCompatibleTransformation,
+                alpha = imageAlpha,
+            )
+        }
     }
 }
 
