@@ -352,6 +352,11 @@ class VariableProcessorTest {
 
     // endregion Variables
 
+    @Test
+    fun `localizedDiscount works`() {
+
+    }
+
     private fun expectVariablesResult(
         originalText: String,
         expectedText: String,
