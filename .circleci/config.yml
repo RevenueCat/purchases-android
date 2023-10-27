@@ -42,7 +42,7 @@ orbs:
 parameters:
   action:
     type: enum
-    enum: [default, bump]
+    enum: [default, bump, paywall_tester_release]
     default: default
 
 commands:
@@ -651,3 +651,9 @@ workflows:
               ignore: /.*/
             branches:
               only: paywalls
+
+  manual-paywall-tester-release:
+    when:
+      equal: [ paywall_tester_release, << pipeline.parameters.action >> ]
+    jobs:
+        - publish-paywall-tester-release
