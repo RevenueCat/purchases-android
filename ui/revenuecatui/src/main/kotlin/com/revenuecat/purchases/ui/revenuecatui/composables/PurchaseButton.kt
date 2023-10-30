@@ -113,6 +113,7 @@ private fun PurchaseButton(
                 ConsistentPackageContentView(
                     packages = packages.all,
                     selected = selectedPackage.value,
+                    shouldAnimate = packages.hasDifferentCallToActionText(),
                 ) {
                     val localization = it.localization
                     IntroEligibilityStateView(
@@ -182,4 +183,19 @@ private fun PurchaseButtonPreview() {
             viewModel = viewModel,
         )
     }
+}
+
+private fun TemplateConfiguration.PackageConfiguration.hasDifferentCallToActionText(): Boolean {
+    val firstLocalization = all.first().localization
+    all.forEach {
+        with(it.localization) {
+            if (callToAction != firstLocalization.callToAction ||
+                callToActionWithIntroOffer != firstLocalization.callToActionWithIntroOffer ||
+                callToActionWithMultipleIntroOffers != firstLocalization.callToActionWithMultipleIntroOffers
+            ) {
+                return true
+            }
+        }
+    }
+    return false
 }
