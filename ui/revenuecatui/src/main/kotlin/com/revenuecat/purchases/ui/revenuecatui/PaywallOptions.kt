@@ -60,6 +60,30 @@ class PaywallOptions(builder: Builder) {
             .build()
     }
 
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is PaywallOptions) return false
+
+        if (offeringSelection != other.offeringSelection) return false
+        if (shouldDisplayDismissButton != other.shouldDisplayDismissButton) return false
+        if (fontProvider != other.fontProvider) return false
+        if (listener != other.listener) return false
+        if (mode != other.mode) return false
+        if (dismissRequest != other.dismissRequest) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var hashCode = offeringSelection.hashCode()
+        hashCode = 31 * hashCode + shouldDisplayDismissButton.hashCode()
+        hashCode = 31 * hashCode + (fontProvider?.hashCode() ?: 0)
+        hashCode = 31 * hashCode + (listener?.hashCode() ?: 0)
+        hashCode = 31 * hashCode + mode.hashCode()
+        hashCode = 31 * hashCode + dismissRequest.hashCode()
+        return hashCode
+    }
+
     class Builder(
         internal val dismissRequest: () -> Unit,
     ) {

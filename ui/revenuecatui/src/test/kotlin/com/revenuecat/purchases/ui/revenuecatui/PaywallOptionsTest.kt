@@ -40,4 +40,47 @@ class PaywallOptionsTest {
         val copy = options.copy(listener = null)
         assertThat(copy.listener).isNull()
     }
+
+    @Test
+    fun `equals true if two different paywall options are equal`() {
+        val onDismiss = {}
+        val listener = object : PaywallListener {}
+        val fontProvider = CustomFontProvider(FontFamily.Default)
+        val options1 = PaywallOptions.Builder(onDismiss)
+            .setOfferingId("offeringId")
+            .setShouldDisplayDismissButton(true)
+            .setListener(listener)
+            .setFontProvider(fontProvider)
+            .setMode(PaywallMode.footerMode(true))
+            .build()
+        val options2 = PaywallOptions.Builder(onDismiss)
+            .setOfferingId("offeringId")
+            .setShouldDisplayDismissButton(true)
+            .setListener(listener)
+            .setFontProvider(fontProvider)
+            .setMode(PaywallMode.footerMode(true))
+            .build()
+        assertThat(options1).isEqualTo(options2)
+    }
+
+    @Test
+    fun `equals false if two different onDismiss are used`() {
+        val listener = object : PaywallListener {}
+        val fontProvider = CustomFontProvider(FontFamily.Default)
+        val options1 = PaywallOptions.Builder { /* Callback one */ }
+            .setOfferingId("offeringId")
+            .setShouldDisplayDismissButton(true)
+            .setListener(listener)
+            .setFontProvider(fontProvider)
+            .setMode(PaywallMode.footerMode(true))
+            .build()
+        val options2 = PaywallOptions.Builder { /* Callback two */ }
+            .setOfferingId("offeringId")
+            .setShouldDisplayDismissButton(true)
+            .setListener(listener)
+            .setFontProvider(fontProvider)
+            .setMode(PaywallMode.footerMode(true))
+            .build()
+        assertThat(options1).isNotEqualTo(options2)
+    }
 }
