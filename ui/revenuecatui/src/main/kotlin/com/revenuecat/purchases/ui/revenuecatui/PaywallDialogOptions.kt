@@ -6,23 +6,23 @@ import com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider
 import com.revenuecat.purchases.ui.revenuecatui.helpers.shouldDisplayBlockForEntitlementIdentifier
 
 @ExperimentalPreviewRevenueCatUIPurchasesAPI
-class PaywallDialogOptions(builder: Builder) {
+data class PaywallDialogOptions internal constructor(
+    val shouldDisplayBlock: ((CustomerInfo) -> Boolean)?,
+    val dismissRequest: (() -> Unit)?,
+    val offering: Offering?,
+    val shouldDisplayDismissButton: Boolean,
+    val fontProvider: FontProvider?,
+    val listener: PaywallListener?,
+) {
 
-    val shouldDisplayBlock: ((CustomerInfo) -> Boolean)?
-    val dismissRequest: (() -> Unit)?
-    val offering: Offering?
-    val shouldDisplayDismissButton: Boolean
-    val fontProvider: FontProvider?
-    val listener: PaywallListener?
-
-    init {
-        this.shouldDisplayBlock = builder.shouldDisplayBlock
-        this.dismissRequest = builder.dismissRequest
-        this.offering = builder.offering
-        this.shouldDisplayDismissButton = builder.shouldDisplayDismissButton
-        this.fontProvider = builder.fontProvider
-        this.listener = builder.listener
-    }
+    constructor(builder: Builder) : this(
+        shouldDisplayBlock = builder.shouldDisplayBlock,
+        dismissRequest = builder.dismissRequest,
+        offering = builder.offering,
+        shouldDisplayDismissButton = builder.shouldDisplayDismissButton,
+        fontProvider = builder.fontProvider,
+        listener = builder.listener,
+    )
 
     internal fun toPaywallOptions(dismissRequest: () -> Unit): PaywallOptions {
         return PaywallOptions.Builder {
