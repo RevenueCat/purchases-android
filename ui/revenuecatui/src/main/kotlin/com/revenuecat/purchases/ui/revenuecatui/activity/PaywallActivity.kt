@@ -76,9 +76,11 @@ internal class PaywallActivity : ComponentActivity(), PaywallListener {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        val args = getArgs()
         val paywallOptions = PaywallOptions.Builder(dismissRequest = ::finish)
-            .setOfferingId(getArgs()?.offeringId)
+            .setOfferingId(args?.offeringId)
             .setFontProvider(getFontProvider())
+            .setShouldDisplayDismissButton(args?.shouldDisplayDismissButton ?: DEFAULT_DISPLAY_DISMISS_BUTTON)
             .setListener(this)
             .build()
         setContent {

@@ -296,6 +296,7 @@ internal class MockViewModel(
             mode = mode,
             validatedPaywallData = offering.paywall!!,
             template = PaywallTemplate.fromId(offering.paywall!!.templateName)!!,
+            shouldDisplayDismissButton = false,
         ),
     )
 
@@ -306,6 +307,10 @@ internal class MockViewModel(
     override fun refreshStateIfColorsChanged(colorScheme: ColorScheme) = Unit
 
     override fun selectPackage(packageToSelect: TemplateConfiguration.PackageInfo) {
+        error("Not supported")
+    }
+
+    override fun closeButtonPressed() {
         error("Not supported")
     }
 

@@ -7,14 +7,22 @@ import com.revenuecat.purchases.ui.revenuecatui.fonts.PaywallFontFamily
 import com.revenuecat.purchases.ui.revenuecatui.fonts.TypographyType
 import kotlinx.parcelize.Parcelize
 
+internal const val DEFAULT_DISPLAY_DISMISS_BUTTON = true
+
 @OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class)
 @Parcelize
 internal data class PaywallActivityArgs(
     val offeringId: String? = null,
     val fonts: Map<TypographyType, PaywallFontFamily?>? = null,
+    val shouldDisplayDismissButton: Boolean = DEFAULT_DISPLAY_DISMISS_BUTTON,
 ) : Parcelable {
-    constructor(offeringId: String? = null, fontProvider: ParcelizableFontProvider?) : this(
+    constructor(
+        offeringId: String? = null,
+        fontProvider: ParcelizableFontProvider?,
+        shouldDisplayDismissButton: Boolean = DEFAULT_DISPLAY_DISMISS_BUTTON,
+    ) : this(
         offeringId,
         fontProvider?.let { TypographyType.values().associateBy({ it }, { fontProvider.getFont(it) }) },
+        shouldDisplayDismissButton,
     )
 }

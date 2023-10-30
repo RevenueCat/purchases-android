@@ -16,9 +16,14 @@ internal sealed class PaywallState {
     data class Loaded(
         val templateConfiguration: TemplateConfiguration,
         val selectedPackage: MutableState<TemplateConfiguration.PackageInfo>,
+        val shouldDisplayDismissButton: Boolean,
     ) : PaywallState() {
-        constructor(templateConfiguration: TemplateConfiguration, selectedPackage: TemplateConfiguration.PackageInfo) :
-            this(templateConfiguration, mutableStateOf(selectedPackage))
+        constructor(
+            templateConfiguration: TemplateConfiguration,
+            selectedPackage: TemplateConfiguration.PackageInfo,
+            shouldDisplayDismissButton: Boolean,
+        ) :
+            this(templateConfiguration, mutableStateOf(selectedPackage), shouldDisplayDismissButton)
 
         fun selectPackage(packageInfo: TemplateConfiguration.PackageInfo) {
             selectedPackage.value = packageInfo

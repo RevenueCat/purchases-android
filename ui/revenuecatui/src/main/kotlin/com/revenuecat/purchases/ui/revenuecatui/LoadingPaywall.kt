@@ -20,6 +20,7 @@ import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.TestStoreProduct
 import com.revenuecat.purchases.paywalls.PaywallData
+import com.revenuecat.purchases.ui.revenuecatui.composables.CloseButton
 import com.revenuecat.purchases.ui.revenuecatui.composables.DisableTouchesComposable
 import com.revenuecat.purchases.ui.revenuecatui.composables.Fade
 import com.revenuecat.purchases.ui.revenuecatui.composables.PlaceholderDefaults
@@ -39,7 +40,11 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 @Composable
-internal fun LoadingPaywall(mode: PaywallMode) {
+internal fun LoadingPaywall(
+    mode: PaywallMode,
+    shouldDisplayDismissButton: Boolean,
+    onDismiss: () -> Unit,
+) {
     val applicationContext = LocalContext.current.applicationContext.toAndroidContext()
 
     val paywallData: PaywallData = PaywallData.createDefault(
@@ -66,6 +71,7 @@ internal fun LoadingPaywall(mode: PaywallMode) {
         mode = mode,
         validatedPaywallData = paywallData,
         template = LoadingPaywallConstants.template,
+        shouldDisplayDismissButton = shouldDisplayDismissButton,
     )
 
     when (state) {
@@ -75,28 +81,35 @@ internal fun LoadingPaywall(mode: PaywallMode) {
         is PaywallState.Loading,
         -> Box {}
 
-        is PaywallState.Loaded -> LoadingPaywall(state, LoadingViewModel(state))
+        is PaywallState.Loaded -> LoadingPaywall(state, LoadingViewModel(state), onDismiss)
     }
 }
 
 @Composable
-private fun LoadingPaywall(state: PaywallState.Loaded, viewModel: PaywallViewModel) {
-    DisableTouchesComposable {
-        // Template
-        Template2(
-            state = state,
-            viewModel = viewModel,
-            childModifier = Modifier
-                .placeholder(
-                    visible = true,
-                    shape = RoundedCornerShape(UIConstant.defaultPackageCornerRadius),
-                    highlight = Fade(
-                        highlightColor = LoadingPaywallConstants.placeholderColor,
-                        animationSpec = PlaceholderDefaults.fadeAnimationSpec,
+private fun LoadingPaywall(
+    state: PaywallState.Loaded,
+    viewModel: PaywallViewModel,
+    onDismiss: () -> Unit,
+) {
+    Box {
+        DisableTouchesComposable {
+            // Template
+            Template2(
+                state = state,
+                viewModel = viewModel,
+                childModifier = Modifier
+                    .placeholder(
+                        visible = true,
+                        shape = RoundedCornerShape(UIConstant.defaultPackageCornerRadius),
+                        highlight = Fade(
+                            highlightColor = LoadingPaywallConstants.placeholderColor,
+                            animationSpec = PlaceholderDefaults.fadeAnimationSpec,
+                        ),
+                        color = LoadingPaywallConstants.placeholderColor,
                     ),
-                    color = LoadingPaywallConstants.placeholderColor,
-                ),
-        )
+            )
+        }
+        CloseButton(state.shouldDisplayDismissButton, onDismiss)
     }
 }
 
@@ -166,6 +179,10 @@ private class LoadingViewModel(
         error("Not supported")
     }
 
+    override fun closeButtonPressed() {
+        error("Not supported")
+    }
+
     override fun purchaseSelectedPackage(context: Context) {
         error("Can't purchase loading view model")
     }
@@ -180,5 +197,9 @@ private class LoadingViewModel(
 @Preview(showBackground = true)
 @Composable
 internal fun LoadingPaywallPreview() {
-    LoadingPaywall(mode = PaywallMode.FULL_SCREEN)
+    LoadingPaywall(
+        mode = PaywallMode.FULL_SCREEN,
+        shouldDisplayDismissButton = false,
+        onDismiss = {},
+    )
 }

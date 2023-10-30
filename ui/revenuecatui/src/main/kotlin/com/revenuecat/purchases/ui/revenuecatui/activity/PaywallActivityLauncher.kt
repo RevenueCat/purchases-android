@@ -45,13 +45,19 @@ class PaywallActivityLauncher {
      * @param offering The offering to be shown in the paywall. If null, the current offering will be shown.
      * @param fontProvider The [ParcelizableFontProvider] to be used in the paywall. If null, the default fonts
      * will be used.
+     * @param shouldDisplayDismissButton Whether to display the dismiss button in the paywall.
      */
     @JvmOverloads
-    fun launch(offering: Offering? = null, fontProvider: ParcelizableFontProvider? = null) {
+    fun launch(
+        offering: Offering? = null,
+        fontProvider: ParcelizableFontProvider? = null,
+        shouldDisplayDismissButton: Boolean = DEFAULT_DISPLAY_DISMISS_BUTTON,
+    ) {
         activityResultLauncher.launch(
             PaywallActivityArgs(
                 offeringId = offering?.identifier,
                 fontProvider = fontProvider,
+                shouldDisplayDismissButton = shouldDisplayDismissButton,
             ),
         )
     }
@@ -63,17 +69,20 @@ class PaywallActivityLauncher {
      * will be used.
      * @param requiredEntitlementIdentifier the paywall will be displayed only if the current user does not
      * have this entitlement active.
+     * @param shouldDisplayDismissButton Whether to display the dismiss button in the paywall.
      */
     @JvmOverloads
     fun launchIfNeeded(
         offering: Offering? = null,
         fontProvider: ParcelizableFontProvider? = null,
         requiredEntitlementIdentifier: String,
+        shouldDisplayDismissButton: Boolean = DEFAULT_DISPLAY_DISMISS_BUTTON,
     ) {
         launchIfNeeded(
             offering = offering,
             fontProvider = fontProvider,
             shouldDisplayBlock = shouldDisplayBlockForEntitlementIdentifier(requiredEntitlementIdentifier),
+            shouldDisplayDismissButton = shouldDisplayDismissButton,
         )
     }
 
@@ -82,12 +91,14 @@ class PaywallActivityLauncher {
      * @param offering The offering to be shown in the paywall. If null, the current offering will be shown.
      * @param fontProvider The [ParcelizableFontProvider] to be used in the paywall. If null, the default fonts
      * will be used.
+     * @param shouldDisplayDismissButton Whether to display the dismiss button in the paywall.
      * @param shouldDisplayBlock the paywall will be displayed only if this returns true.
      */
     @JvmOverloads
     fun launchIfNeeded(
         offering: Offering? = null,
         fontProvider: ParcelizableFontProvider? = null,
+        shouldDisplayDismissButton: Boolean = DEFAULT_DISPLAY_DISMISS_BUTTON,
         shouldDisplayBlock: (CustomerInfo) -> Boolean,
     ) {
         shouldDisplayPaywall(shouldDisplayBlock) { shouldDisplay ->
@@ -96,6 +107,7 @@ class PaywallActivityLauncher {
                     PaywallActivityArgs(
                         offeringId = offering?.identifier,
                         fontProvider = fontProvider,
+                        shouldDisplayDismissButton = shouldDisplayDismissButton,
                     ),
                 )
             }
