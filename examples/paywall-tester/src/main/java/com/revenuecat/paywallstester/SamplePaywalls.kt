@@ -305,6 +305,8 @@ object SamplePaywalls {
                     light = PaywallData.Configuration.Colors(
                         background = PaywallColor("#FFFFFF"),
                         text1 = PaywallColor("#111111"),
+                        text2 = PaywallColor(stringRepresentation = "#333333"),
+                        text3 = PaywallColor(stringRepresentation = "#999999"),
                         callToActionBackground = PaywallColor("#06357D"),
                         callToActionForeground = PaywallColor("#FFFFFF"),
                         accent1 = PaywallColor("#D4B5FC"),

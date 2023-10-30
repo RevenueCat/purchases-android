@@ -81,7 +81,6 @@ private object Template4UIConstants {
     val checkmarkSize = 18.dp
     val checkmarkPadding = 8.dp
     val discountVerticalPadding = 4.dp
-    const val fadedColorOpacity = 0.3f
     const val maxPackagesToDisplay = 3f
 }
 
@@ -247,7 +246,7 @@ private fun SelectPackageButton(
             .semantics(mergeDescendants = true) {},
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        DiscountRelativeToMostExpensivePerMonth(colors = colors, text = discountText)
+        DiscountRelativeToMostExpensivePerMonth(colors = colors, text = discountText, selected = isSelected)
 
         Box {
             Button(
@@ -317,10 +316,11 @@ private fun SelectPackageButtonContent(
 private fun DiscountRelativeToMostExpensivePerMonth(
     text: String?,
     colors: TemplateConfiguration.Colors,
+    selected: Boolean,
 ) {
     AutoResizedText(
         text = text?.uppercase() ?: "",
-        color = colors.text1,
+        color = if (selected) colors.text2 else colors.text3,
         style = MaterialTheme.typography.bodySmall,
         fontWeight = FontWeight.Bold,
         textAlign = TextAlign.Center,
