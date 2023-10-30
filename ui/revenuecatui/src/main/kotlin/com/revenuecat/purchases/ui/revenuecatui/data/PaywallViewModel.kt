@@ -58,7 +58,7 @@ internal interface PaywallViewModel {
 internal class PaywallViewModelImpl(
     private val applicationContext: ApplicationContext,
     private val purchases: PurchasesType = PurchasesImpl(),
-    private val options: PaywallOptions,
+    private var options: PaywallOptions,
     colorScheme: ColorScheme,
     preview: Boolean = false,
 ) : ViewModel(), PaywallViewModel {
@@ -85,6 +85,13 @@ internal class PaywallViewModelImpl(
 
     init {
         updateState()
+    }
+
+    fun updateOptions(options: PaywallOptions) {
+        if (this.options != options) {
+            this.options = options
+            updateState()
+        }
     }
 
     override fun refreshStateIfLocaleChanged() {

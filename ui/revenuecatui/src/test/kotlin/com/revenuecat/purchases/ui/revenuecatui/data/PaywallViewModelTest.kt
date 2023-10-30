@@ -31,6 +31,7 @@ import io.mockk.just
 import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.runs
+import io.mockk.verify
 import io.mockk.verifyOrder
 import junit.framework.TestCase.fail
 import kotlinx.coroutines.delay
@@ -120,6 +121,43 @@ class PaywallViewModelTest {
 
         assertThat(model.actionInProgress.value).isFalse
         assertThat(dismissInvoked).isFalse
+    }
+
+    @Test
+    fun `updateState does not update if same state`() {
+        val options = PaywallOptions.Builder(dismissRequest = { dismissInvoked = true })
+            .setListener(listener)
+            .build()
+        val model = PaywallViewModelImpl(
+            MockApplicationContext(),
+            purchases,
+            options,
+            TestData.Constants.currentColorScheme
+        )
+        coVerify(exactly = 1) { purchases.awaitOfferings() }
+        model.updateOptions(options)
+        coVerify(exactly = 1) { purchases.awaitOfferings() }
+    }
+
+    @Test
+    fun `updateState does update if different state`() {
+        val options1 = PaywallOptions.Builder(dismissRequest = { dismissInvoked = true })
+            .setListener(listener)
+            .build()
+        val options2 = PaywallOptions.Builder(dismissRequest = { dismissInvoked = true })
+            .setListener(object : PaywallListener {})
+            .build()
+        val model = PaywallViewModelImpl(
+            MockApplicationContext(),
+            purchases,
+            options1,
+            TestData.Constants.currentColorScheme
+        )
+        coVerify(exactly = 1) { purchases.awaitOfferings() }
+        model.updateOptions(options1)
+        coVerify(exactly = 1) { purchases.awaitOfferings() }
+        model.updateOptions(options2)
+        coVerify(exactly = 2) { purchases.awaitOfferings() }
     }
 
     @Test

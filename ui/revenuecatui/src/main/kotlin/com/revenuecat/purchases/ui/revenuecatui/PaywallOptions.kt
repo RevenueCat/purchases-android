@@ -24,41 +24,23 @@ internal sealed class OfferingSelection {
 }
 
 @ExperimentalPreviewRevenueCatUIPurchasesAPI
-class PaywallOptions(builder: Builder) {
+data class PaywallOptions internal constructor(
+    internal val offeringSelection: OfferingSelection,
+    internal val shouldDisplayDismissButton: Boolean,
+    val fontProvider: FontProvider?,
+    val listener: PaywallListener?,
+    internal val mode: PaywallMode,
+    val dismissRequest: () -> Unit,
+) {
 
-    internal val offeringSelection: OfferingSelection
-    internal val shouldDisplayDismissButton: Boolean
-    val fontProvider: FontProvider?
-    val listener: PaywallListener?
-    internal val mode: PaywallMode
-    val dismissRequest: () -> Unit
-
-    init {
-        this.offeringSelection = builder.offeringSelection
-        this.shouldDisplayDismissButton = builder.shouldDisplayDismissButton
-        this.fontProvider = builder.fontProvider
-        this.listener = builder.listener
-        this.mode = builder.mode
-        this.dismissRequest = builder.dismissRequest
-    }
-
-    @Suppress("LongParameterList")
-    internal fun copy(
-        offeringSelection: OfferingSelection = this.offeringSelection,
-        shouldDisplayDismissButton: Boolean = this.shouldDisplayDismissButton,
-        fontProvider: FontProvider? = this.fontProvider,
-        listener: PaywallListener? = this.listener,
-        mode: PaywallMode = this.mode,
-        dismissRequest: () -> Unit = this.dismissRequest,
-    ): PaywallOptions {
-        return Builder(dismissRequest)
-            .setOfferingSelection(offeringSelection)
-            .setShouldDisplayDismissButton(shouldDisplayDismissButton)
-            .setFontProvider(fontProvider)
-            .setListener(listener)
-            .setMode(mode)
-            .build()
-    }
+    constructor(builder: Builder) : this(
+        offeringSelection = builder.offeringSelection,
+        shouldDisplayDismissButton = builder.shouldDisplayDismissButton,
+        fontProvider = builder.fontProvider,
+        listener = builder.listener,
+        mode = builder.mode,
+        dismissRequest = builder.dismissRequest,
+    )
 
     class Builder(
         internal val dismissRequest: () -> Unit,
@@ -72,10 +54,6 @@ class PaywallOptions(builder: Builder) {
         fun setOffering(offering: Offering?) = apply {
             this.offeringSelection = offering?.let { OfferingSelection.OfferingType(it) }
                 ?: OfferingSelection.None
-        }
-
-        internal fun setOfferingSelection(offeringSelection: OfferingSelection?) = apply {
-            this.offeringSelection = offeringSelection ?: OfferingSelection.None
         }
 
         internal fun setOfferingId(offeringId: String?) = apply {
