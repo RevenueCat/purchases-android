@@ -40,6 +40,7 @@ internal interface PaywallViewModel {
     fun refreshStateIfLocaleChanged()
     fun refreshStateIfColorsChanged(colorScheme: ColorScheme)
     fun selectPackage(packageToSelect: TemplateConfiguration.PackageInfo)
+    fun closeButtonPressed()
 
     /**
      * Purchase the selected package
@@ -110,6 +111,11 @@ internal class PaywallViewModelImpl(
                 Logger.e("Unexpected state trying to select package: $currentState")
             }
         }
+    }
+
+    override fun closeButtonPressed() {
+        Logger.d("Paywalls: Close button pressed.")
+        options.dismissRequest()
     }
 
     override fun purchaseSelectedPackage(context: Context) {
@@ -229,6 +235,7 @@ internal class PaywallViewModelImpl(
             mode = mode,
             validatedPaywallData = displayablePaywall,
             template = template,
+            shouldDisplayDismissButton = options.shouldDisplayDismissButton,
         )
     }
 

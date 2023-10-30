@@ -68,6 +68,9 @@ class PaywallDialogOptions(builder: Builder) {
             this.offering = offering
         }
 
+        /**
+         * Sets whether to display a close button on the paywall screen. Defaults to true.
+         */
         fun setShouldDisplayDismissButton(shouldDisplayDismissButton: Boolean) = apply {
             this.shouldDisplayDismissButton = shouldDisplayDismissButton
         }

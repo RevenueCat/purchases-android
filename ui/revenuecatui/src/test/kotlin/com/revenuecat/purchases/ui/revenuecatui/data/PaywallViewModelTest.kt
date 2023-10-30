@@ -330,6 +330,15 @@ class PaywallViewModelTest {
         assertThat(model.actionError.value).isNull()
     }
 
+    @Test
+    fun `close button pressed`() {
+        val model = create()
+
+        assertThat(dismissInvoked).isFalse
+        model.closeButtonPressed()
+        assertThat(dismissInvoked).isTrue
+    }
+
     private fun create(
         offering: Offering? = null,
         activeSubscriptions: Set<String> = setOf(),
