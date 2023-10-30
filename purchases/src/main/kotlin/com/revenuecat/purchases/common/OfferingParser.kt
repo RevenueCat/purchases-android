@@ -65,8 +65,13 @@ internal abstract class OfferingParser {
 
         val paywallDataJson = offeringJson.optJSONObject("paywall")
 
-        val paywallData = paywallDataJson?.let {
-            json.decodeFromString<PaywallData>(it.toString())
+        val paywallData: PaywallData? = paywallDataJson?.let {
+            try {
+                json.decodeFromString<PaywallData>(it.toString())
+            } catch (e: IllegalArgumentException) {
+                errorLog("Error deserializing paywall data", e)
+                null
+            }
         }
 
         return if (availablePackages.isNotEmpty()) {
