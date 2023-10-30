@@ -355,13 +355,12 @@ private fun CheckmarkBox(isSelected: Boolean, colors: TemplateConfiguration.Colo
         modifier = Modifier
             .size(Template5UIConstants.checkmarkSize)
             .clip(CircleShape)
-            // TODO: this is wrong?
-            .background(if (isSelected) colors.selectedOutline else colors.unselectedOutline),
+            .background(if (isSelected) colors.background else colors.unselectedOutline),
     ) {
         if (isSelected) {
             PaywallIcon(
                 icon = PaywallIconName.CHECK_CIRCLE,
-                tintColor = colors.background,
+                tintColor = colors.selectedOutline,
             )
         }
     }
