@@ -27,7 +27,7 @@ import androidx.compose.ui.window.DialogProperties
 import com.revenuecat.paywallstester.SamplePaywalls
 import com.revenuecat.paywallstester.SamplePaywallsLoader
 import com.revenuecat.paywallstester.ui.screens.paywallfooter.SamplePaywall
-import com.revenuecat.paywallstester.ui.theme.googleFont
+import com.revenuecat.paywallstester.ui.theme.bundledLobsterTwoFontFamily
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.ui.revenuecatui.ExperimentalPreviewRevenueCatUIPurchasesAPI
 import com.revenuecat.purchases.ui.revenuecatui.PaywallDialog
@@ -76,7 +76,10 @@ fun PaywallsScreen(
                 )
                 ButtonWithEmoji(
                     onClick = {
-                        displayPaywallState = DisplayPaywallState.FullScreen(offering, CustomFontProvider(googleFont))
+                        displayPaywallState = DisplayPaywallState.FullScreen(
+                            offering,
+                            CustomFontProvider(bundledLobsterTwoFontFamily),
+                        )
                     },
                     emoji = "\uD83C\uDD70️",
                     label = "Custom font",
