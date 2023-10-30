@@ -185,6 +185,7 @@ private fun PurchaseButtonPreview() {
     }
 }
 
+// This checks whether any of the packages has a different call to action text than the others.
 private fun TemplateConfiguration.PackageConfiguration.hasDifferentCallToActionText(): Boolean {
     val firstText = with(all.first()) {
         introEligibilityText(
@@ -195,7 +196,8 @@ private fun TemplateConfiguration.PackageConfiguration.hasDifferentCallToActionT
         )
     }
 
-    all.forEach {
+    // We skip the first element since it will always be true.
+    all.drop(1).forEach {
         if (firstText != introEligibilityText(
                 it.introEligibility,
                 it.localization.callToAction,
