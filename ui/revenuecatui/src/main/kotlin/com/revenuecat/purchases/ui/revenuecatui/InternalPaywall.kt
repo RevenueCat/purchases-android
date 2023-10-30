@@ -132,10 +132,7 @@ private fun getPaywallViewModel(
     options: PaywallOptions,
 ): PaywallViewModel {
     val applicationContext = LocalContext.current.applicationContext
-    return viewModel<PaywallViewModelImpl>(
-        // We need to pass the key in order to create different view models for different offerings when
-        // trying to load different paywalls for the same view model store owner.
-        key = options.offeringSelection.offeringIdentifier + options.mode,
+    val viewModel = viewModel<PaywallViewModelImpl>(
         factory = PaywallViewModelFactory(
             applicationContext.toAndroidContext(),
             options,
@@ -143,6 +140,8 @@ private fun getPaywallViewModel(
             preview = isInPreviewMode(),
         ),
     )
+    viewModel.updateOptions(options)
+    return viewModel
 }
 
 @Composable
