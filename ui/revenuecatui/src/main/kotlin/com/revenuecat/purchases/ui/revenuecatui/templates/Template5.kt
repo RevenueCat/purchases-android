@@ -202,17 +202,20 @@ private fun Feature(
             .fillMaxWidth()
             .semantics(mergeDescendants = true) {},
     ) {
-        feature.iconID?.let { PaywallIconName.fromValue(it) }?.let { icon ->
-            Box(
-                modifier = Modifier
-                    .size(Template5UIConstants.featureIconSize),
-            ) {
-                PaywallIcon(
-                    icon = icon,
-                    tintColor = colors.featureIcon,
-                )
-            }
+        Box(
+            modifier = Modifier
+                .size(Template5UIConstants.featureIconSize),
+        ) {
+            feature.iconID
+                ?.let { PaywallIconName.fromValue(it) }
+                ?.let { icon ->
+                    PaywallIcon(
+                        icon = icon,
+                        tintColor = colors.featureIcon,
+                    )
+                }
         }
+
         Column(
             modifier = Modifier
                 .padding(start = UIConstant.defaultHorizontalPadding),
