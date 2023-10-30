@@ -113,6 +113,7 @@ private fun PurchaseButton(
                 ConsistentPackageContentView(
                     packages = packages.all,
                     selected = selectedPackage.value,
+                    shouldAnimate = packages.hasDifferentCallToActionText(),
                 ) {
                     val localization = it.localization
                     IntroEligibilityStateView(
@@ -182,4 +183,30 @@ private fun PurchaseButtonPreview() {
             viewModel = viewModel,
         )
     }
+}
+
+// This checks whether any of the packages has a different call to action text than the others.
+private fun TemplateConfiguration.PackageConfiguration.hasDifferentCallToActionText(): Boolean {
+    val firstText = with(all.first()) {
+        introEligibilityText(
+            introEligibility,
+            localization.callToAction,
+            localization.callToActionWithIntroOffer,
+            localization.callToActionWithMultipleIntroOffers,
+        )
+    }
+
+    // We skip the first element since it will always be true.
+    all.drop(1).forEach {
+        if (firstText != introEligibilityText(
+                it.introEligibility,
+                it.localization.callToAction,
+                it.localization.callToActionWithIntroOffer,
+                it.localization.callToActionWithMultipleIntroOffers,
+            )
+        ) {
+            return true
+        }
+    }
+    return false
 }

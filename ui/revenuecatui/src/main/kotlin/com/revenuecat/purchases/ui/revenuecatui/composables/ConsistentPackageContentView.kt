@@ -31,15 +31,20 @@ internal fun ConsistentPackageContentView(
 internal fun ConsistentPackageContentView(
     packages: List<TemplateConfiguration.PackageInfo>,
     selected: TemplateConfiguration.PackageInfo,
+    shouldAnimate: Boolean = true,
     creator: @Composable (TemplateConfiguration.PackageInfo) -> Unit,
 ) {
     Box {
         packages.forEach { packageItem ->
-            val opacity by animateFloatAsState(
-                targetValue = if (packageItem.rcPackage == selected.rcPackage) 1.0f else 0.0f,
-                animationSpec = UIConstant.defaultAnimation(),
-                label = "ConsistentPackageContentView",
-            )
+            val opacity = if (shouldAnimate) {
+                animateFloatAsState(
+                    targetValue = if (packageItem.rcPackage == selected.rcPackage) 1.0f else 0.0f,
+                    animationSpec = UIConstant.defaultAnimation(),
+                    label = "ConsistentPackageContentView",
+                ).value
+            } else {
+                if (packageItem.rcPackage == selected.rcPackage) 1.0f else 0.0f
+            }
 
             Box(
                 modifier = Modifier
