@@ -42,11 +42,13 @@ internal data class TemplateConfiguration(
         val background: Color,
         val text1: Color,
         val text2: Color,
+        val text3: Color,
         val callToActionBackground: Color,
         val callToActionForeground: Color,
         val callToActionSecondaryBackground: Color?,
         val accent1: Color,
         val accent2: Color,
+        val accent3: Color,
     )
 
     sealed class PackageConfiguration(open val default: PackageInfo, open val all: List<PackageInfo>) {
