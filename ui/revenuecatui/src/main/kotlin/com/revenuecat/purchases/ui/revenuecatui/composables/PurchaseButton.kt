@@ -186,15 +186,24 @@ private fun PurchaseButtonPreview() {
 }
 
 private fun TemplateConfiguration.PackageConfiguration.hasDifferentCallToActionText(): Boolean {
-    val firstLocalization = all.first().localization
+    val firstText = with(all.first()) {
+        introEligibilityText(
+            introEligibility,
+            localization.callToAction,
+            localization.callToActionWithIntroOffer,
+            localization.callToActionWithMultipleIntroOffers,
+        )
+    }
+
     all.forEach {
-        with(it.localization) {
-            if (callToAction != firstLocalization.callToAction ||
-                callToActionWithIntroOffer != firstLocalization.callToActionWithIntroOffer ||
-                callToActionWithMultipleIntroOffers != firstLocalization.callToActionWithMultipleIntroOffers
-            ) {
-                return true
-            }
+        if (firstText != introEligibilityText(
+                it.introEligibility,
+                it.localization.callToAction,
+                it.localization.callToActionWithIntroOffer,
+                it.localization.callToActionWithMultipleIntroOffers,
+            )
+        ) {
+            return true
         }
     }
     return false
