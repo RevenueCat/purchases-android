@@ -137,8 +137,6 @@ private fun ColumnScope.Template5MainContent(
         verticalArrangement = Arrangement.spacedBy(UIConstant.defaultVerticalSpacing, Alignment.CenterVertically),
     ) {
         if (state.isInFullScreenMode) {
-//            Spacer(Modifier.weight(1f))
-
             val localizedConfig = state.selectedLocalization
             val colors = state.templateConfiguration.getCurrentColors()
             Markdown(
