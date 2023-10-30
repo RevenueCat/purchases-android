@@ -41,11 +41,13 @@ class PaywallDataTest {
             assertThat(lightColors.background.stringRepresentation).isEqualTo("#FF00AA")
             assertThat(lightColors.text1.stringRepresentation).isEqualTo("#FF00AA22")
             assertThat(lightColors.text2?.stringRepresentation).isEqualTo("#FF00AA11")
+            assertThat(lightColors.text3?.stringRepresentation).isEqualTo("#FF00AA33")
             assertThat(lightColors.callToActionBackground.stringRepresentation).isEqualTo("#FF00AACC")
             assertThat(lightColors.callToActionForeground.stringRepresentation).isEqualTo("#FF00AA")
             assertThat(lightColors.callToActionSecondaryBackground?.stringRepresentation).isEqualTo("#FF00BB")
             assertThat(lightColors.accent1?.stringRepresentation).isEqualTo("#FF0000")
             assertThat(lightColors.accent2?.stringRepresentation).isEqualTo("#00FF00")
+            assertThat(lightColors.accent3?.stringRepresentation).isEqualTo("#0000FF")
         }
 
         assertThat(paywall.config.colors.dark).isNotNull
@@ -53,10 +55,12 @@ class PaywallDataTest {
             assertThat(darkColors.background.stringRepresentation).isEqualTo("#FF0000")
             assertThat(darkColors.text1.stringRepresentation).isEqualTo("#FF0011")
             assertThat(darkColors.text2).isNull()
+            assertThat(darkColors.text3).isNull()
             assertThat(darkColors.callToActionBackground.stringRepresentation).isEqualTo("#112233AA")
             assertThat(darkColors.callToActionForeground.stringRepresentation).isEqualTo("#AABBCC")
             assertThat(darkColors.accent1?.stringRepresentation).isEqualTo("#00FFFF")
             assertThat(darkColors.accent2?.stringRepresentation).isEqualTo("#FF00FF")
+            assertThat(darkColors.accent3?.stringRepresentation).isNull()
         }
 
         val unknownLocale = "gl_ES".toLocale()
