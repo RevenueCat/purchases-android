@@ -27,11 +27,13 @@ class SamplePaywallsLoader {
             SamplePaywalls.SampleTemplate.TEMPLATE_2 -> SamplePaywalls.template2()
             SamplePaywalls.SampleTemplate.TEMPLATE_3 -> SamplePaywalls.template3()
             SamplePaywalls.SampleTemplate.TEMPLATE_4 -> SamplePaywalls.template4()
+            SamplePaywalls.SampleTemplate.TEMPLATE_5 -> SamplePaywalls.template5()
             SamplePaywalls.SampleTemplate.UNRECOGNIZED_TEMPLATE -> SamplePaywalls.unrecognizedTemplate()
         }
     }
 }
 
+@SuppressWarnings("LongMethod")
 object SamplePaywalls {
 
     enum class SampleTemplate(val displayableName: String) {
@@ -39,6 +41,7 @@ object SamplePaywalls {
         TEMPLATE_2("#2: Bold packages"),
         TEMPLATE_3("#3: Feature list"),
         TEMPLATE_4("#4: Horizontal packages"),
+        TEMPLATE_5("#5: Minimalist with small banner"),
         UNRECOGNIZED_TEMPLATE("Default template"),
     }
 
@@ -330,6 +333,68 @@ object SamplePaywalls {
                     offerDetails = "Cancel anytime",
                     offerDetailsWithIntroOffer = "Includes {{ sub_offer_duration }} **free** trial",
                     offerName = "{{ sub_duration_in_months }}",
+                ),
+            ),
+        )
+    }
+
+    fun template5(): PaywallData {
+        return PaywallData(
+            templateName = "5",
+            config = PaywallData.Configuration(
+                packageIds = listOf(
+                    PackageType.ANNUAL.identifier!!,
+                    PackageType.MONTHLY.identifier!!,
+                ),
+                defaultPackage = PackageType.MONTHLY.identifier!!,
+                images = PaywallData.Configuration.Images(
+                    header = "954459_1692992845.png",
+                ),
+                displayRestorePurchases = true,
+                termsOfServiceURL = URL("https://revenuecat.com/tos"),
+                privacyURL = URL("https://revenuecat.com/privacy"),
+                colors = PaywallData.Configuration.ColorInformation(
+                    light = PaywallData.Configuration.Colors(
+                        background = PaywallColor(stringRepresentation = "#FFFFFF"),
+                        text1 = PaywallColor(stringRepresentation = "#000000"),
+                        text2 = PaywallColor(stringRepresentation = "#adf5c5"),
+                        text3 = PaywallColor(stringRepresentation = "#b15d5d"),
+                        callToActionBackground = PaywallColor(stringRepresentation = "#45c186"),
+                        callToActionForeground = PaywallColor(stringRepresentation = "#ffffff"),
+                        accent1 = PaywallColor(stringRepresentation = "#b24010"),
+                        accent2 = PaywallColor(stringRepresentation = "#027424"),
+                        accent3 = PaywallColor(stringRepresentation = "#D1D1D1"),
+                    ),
+                ),
+            ),
+            assetBaseURL = paywallAssetBaseURL,
+            localization = mapOf(
+                "en_US" to PaywallData.LocalizedConfiguration(
+                    title = "Spice Up Your Kitchen - Go Pro for Exclusive Benefits!",
+                    callToAction = "Continue",
+                    callToActionWithIntroOffer = "Start your Free Trial",
+                    offerDetails = "{{ total_price_and_per_month }}",
+                    offerDetailsWithIntroOffer = "Free for {{ sub_offer_duration }}, " +
+                        "then {{ total_price_and_per_month }}",
+                    offerName = "{{ sub_period }}",
+                    features = listOf(
+                        PaywallData.LocalizedConfiguration.Feature(
+                            title = "Unique gourmet recipes",
+                            iconID = "tick",
+                        ),
+                        PaywallData.LocalizedConfiguration.Feature(
+                            title = "Advanced nutritional recipes",
+                            iconID = "apple",
+                        ),
+                        PaywallData.LocalizedConfiguration.Feature(
+                            title = "Personalized support from our Chef",
+                            iconID = "warning",
+                        ),
+                        PaywallData.LocalizedConfiguration.Feature(
+                            title = "Unlimited receipt collections",
+                            iconID = "bookmark",
+                        ),
+                    ),
                 ),
             ),
         )
