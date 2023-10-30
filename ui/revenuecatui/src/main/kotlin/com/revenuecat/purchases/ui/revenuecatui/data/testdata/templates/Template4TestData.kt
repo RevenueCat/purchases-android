@@ -28,6 +28,8 @@ internal val TestData.template4: PaywallData
                 light = PaywallData.Configuration.Colors(
                     background = PaywallColor(stringRepresentation = "#FFFFFF"),
                     text1 = PaywallColor(stringRepresentation = "#111111"),
+                    text2 = PaywallColor(stringRepresentation = "#333333"),
+                    text3 = PaywallColor(stringRepresentation = "#999999"),
                     callToActionBackground = PaywallColor(stringRepresentation = "#06357D"),
                     callToActionForeground = PaywallColor(stringRepresentation = "#FFFFFF"),
                     accent1 = PaywallColor(stringRepresentation = "#D4B5FC"),
