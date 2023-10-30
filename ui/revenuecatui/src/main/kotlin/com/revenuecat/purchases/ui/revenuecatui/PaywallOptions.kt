@@ -44,25 +44,19 @@ class PaywallOptions(builder: Builder) {
 
     @Suppress("LongParameterList")
     internal fun copy(
-        offeringSelection: OfferingSelection? = null,
-        shouldDisplayDismissButton: Boolean? = null,
-        fontProvider: FontProvider? = null,
-        listener: PaywallListener? = null,
-        mode: PaywallMode? = null,
-        dismissRequest: (() -> Unit)? = null,
+        offeringSelection: OfferingSelection = this.offeringSelection,
+        shouldDisplayDismissButton: Boolean = this.shouldDisplayDismissButton,
+        fontProvider: FontProvider? = this.fontProvider,
+        listener: PaywallListener? = this.listener,
+        mode: PaywallMode = this.mode,
+        dismissRequest: () -> Unit = this.dismissRequest,
     ): PaywallOptions {
-        return Builder(dismissRequest ?: this.dismissRequest)
-            .apply {
-                when (val offeringSelectionToCheck = offeringSelection ?: this@PaywallOptions.offeringSelection) {
-                    is OfferingSelection.OfferingId -> setOfferingId(offeringSelectionToCheck.offeringId)
-                    is OfferingSelection.OfferingType -> setOffering(offeringSelectionToCheck.offeringType)
-                    is OfferingSelection.None -> { /* Do nothing */ }
-                }
-            }
-            .setShouldDisplayDismissButton(shouldDisplayDismissButton ?: this.shouldDisplayDismissButton)
-            .setFontProvider(fontProvider ?: this.fontProvider)
-            .setListener(listener ?: this.listener)
-            .setMode(mode ?: this.mode)
+        return Builder(dismissRequest)
+            .setOfferingSelection(offeringSelection)
+            .setShouldDisplayDismissButton(shouldDisplayDismissButton)
+            .setFontProvider(fontProvider)
+            .setListener(listener)
+            .setMode(mode)
             .build()
     }
 
@@ -78,6 +72,10 @@ class PaywallOptions(builder: Builder) {
         fun setOffering(offering: Offering?) = apply {
             this.offeringSelection = offering?.let { OfferingSelection.OfferingType(it) }
                 ?: OfferingSelection.None
+        }
+
+        internal fun setOfferingSelection(offeringSelection: OfferingSelection?) = apply {
+            this.offeringSelection = offeringSelection ?: OfferingSelection.None
         }
 
         internal fun setOfferingId(offeringId: String?) = apply {
