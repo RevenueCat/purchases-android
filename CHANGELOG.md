@@ -2,7 +2,7 @@
 ### New Features
 #### ✨📱 Introducing Android Paywalls 🐾🧱
 
-RevenueCat's Paywalls allow you to to remotely configure your entire paywall view without any code changes or app updates.
+RevenueCat's Paywalls allow you to remotely configure your entire paywall view without any code changes or app updates.
 Our paywall templates use native code to deliver smooth, intuitive experiences to your customers when you’re ready to deliver them an Offering; and you can use our Dashboard to pick the right template and configuration to meet your needs.
 
 To use RevenueCat Paywalls on Android, simply:
