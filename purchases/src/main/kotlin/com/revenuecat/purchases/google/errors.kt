@@ -12,6 +12,8 @@ internal fun @receiver:BillingClient.BillingResponseCode Int.getBillingResponseC
         ?: "$this"
 }
 
+internal const val IN_APP_BILLING_LESS_THAN_3_ERROR_MESSAGE = "Google Play In-app Billing API version is less than 3"
+
 internal fun Int.billingResponseToPurchasesError(underlyingErrorMessage: String): PurchasesError {
     val errorCode = when (this) {
         BillingClient.BillingResponseCode.BILLING_UNAVAILABLE,

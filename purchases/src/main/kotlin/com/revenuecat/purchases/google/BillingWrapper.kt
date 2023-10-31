@@ -93,6 +93,8 @@ internal class BillingWrapper(
     // how long before the data source tries to reconnect to Google play
     private var reconnectMilliseconds = RECONNECT_TIMER_START_MILLISECONDS
 
+    @get:Synchronized
+    @set:Synchronized
     private var reconnectionAlreadyScheduled = false
 
     class ClientFactory(private val context: Context) {
@@ -693,21 +695,29 @@ internal class BillingWrapper(
                 BillingClient.BillingResponseCode.FEATURE_NOT_SUPPORTED,
                 BillingClient.BillingResponseCode.BILLING_UNAVAILABLE,
                 -> {
-                    val message =
-                        BillingStrings.BILLING_UNAVAILABLE.format(billingResult.toHumanReadableDescription())
-                    log(LogIntent.GOOGLE_WARNING, message)
+                    val originalErrorMessage = billingResult.toHumanReadableDescription()
+
+                    val error = if (billingResult.debugMessage == IN_APP_BILLING_LESS_THAN_3_ERROR_MESSAGE) {
+                        val underlyingErrorMessage =
+                            BillingStrings.BILLING_UNAVAILABLE_LESS_THAN_3.format(originalErrorMessage)
+                        PurchasesError(PurchasesErrorCode.StoreProblemError, underlyingErrorMessage)
+                            .also { errorLog(it) }
+                    } else {
+                        val underlyingErrorMessage = BillingStrings.BILLING_UNAVAILABLE.format(originalErrorMessage)
+                        billingResult.responseCode
+                            .billingResponseToPurchasesError(underlyingErrorMessage)
+                            .also { errorLog(it) }
+                    }
+
                     // The calls will fail with an error that will be surfaced. We want to surface these errors
                     // Can't call executePendingRequests because it will not do anything since it checks for isReady()
-                    val error = billingResult.responseCode
-                        .billingResponseToPurchasesError(message)
-                        .also { errorLog(it) }
                     sendErrorsToAllPendingRequests(error)
                 }
-                BillingClient.BillingResponseCode.SERVICE_TIMEOUT,
                 BillingClient.BillingResponseCode.ERROR,
                 BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE,
                 BillingClient.BillingResponseCode.USER_CANCELED,
                 BillingClient.BillingResponseCode.SERVICE_DISCONNECTED,
+                BillingClient.BillingResponseCode.NETWORK_ERROR,
                 -> {
                     log(
                         LogIntent.GOOGLE_WARNING,
@@ -735,7 +745,6 @@ internal class BillingWrapper(
 
     override fun onBillingServiceDisconnected() {
         log(LogIntent.WARNING, BillingStrings.BILLING_SERVICE_DISCONNECTED.format(billingClient?.toString()))
-        retryBillingServiceConnectionWithExponentialBackoff()
     }
 
     /**
