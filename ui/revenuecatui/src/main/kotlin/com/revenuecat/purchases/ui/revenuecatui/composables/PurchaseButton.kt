@@ -125,6 +125,7 @@ private fun PurchaseButton(
                         textAlign = TextAlign.Center,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold,
+                        allowLinks = false,
                         modifier = Modifier
                             .padding(vertical = UIConstant.defaultVerticalSpacing / 3)
                             .alpha(labelOpacity),
