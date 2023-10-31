@@ -1,6 +1,5 @@
 package com.revenuecat.purchases.ui.revenuecatui
 
-import android.content.res.Configuration
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -25,6 +24,7 @@ import kotlinx.coroutines.launch
 
 private object UIDialogConstants {
     const val MAX_HEIGHT_PERCENTAGE_TABLET = 0.85f
+    const val MAX_ASPECT_RATIO_TO_APPLY_MAX_HEIGHT = 1.5f
 }
 
 /**
@@ -84,8 +84,8 @@ private fun DialogScaffold(paywallOptions: PaywallOptions) {
 @Composable
 @ReadOnlyComposable
 private fun getDialogMaxHeightPercentage(): Float {
-    val orientation = LocalConfiguration.current.orientation
-    if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
+    val aspectRatio = LocalConfiguration.current.screenHeightDp.toFloat() / LocalConfiguration.current.screenWidthDp
+    if (aspectRatio < UIDialogConstants.MAX_ASPECT_RATIO_TO_APPLY_MAX_HEIGHT) {
         return 1f
     }
     return computeWindowWidthSizeClass().let {
