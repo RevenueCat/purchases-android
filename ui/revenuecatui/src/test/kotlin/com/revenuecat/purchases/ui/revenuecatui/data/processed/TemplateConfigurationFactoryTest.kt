@@ -2,10 +2,8 @@ package com.revenuecat.purchases.ui.revenuecatui.data.processed
 
 import android.net.Uri
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.revenuecat.purchases.Package
-import com.revenuecat.purchases.PackageType
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
-import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockApplicationContext
+import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.templates.template2
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getPackageInfoForTest
@@ -13,7 +11,6 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import java.util.Locale
 
 @RunWith(AndroidJUnit4::class)
 internal class TemplateConfigurationFactoryTest {
@@ -26,7 +23,7 @@ internal class TemplateConfigurationFactoryTest {
 
     @Before
     fun setUp() {
-        variableDataProvider = VariableDataProvider(MockApplicationContext())
+        variableDataProvider = VariableDataProvider(MockResourceProvider())
         val result = TemplateConfigurationFactory.create(
             variableDataProvider = variableDataProvider,
             mode = paywallMode,

@@ -3,9 +3,9 @@ package com.revenuecat.purchases.ui.revenuecatui.data.processed
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
-import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockApplicationContext
+import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
-import com.revenuecat.purchases.ui.revenuecatui.helpers.ApplicationContext
+import com.revenuecat.purchases.ui.revenuecatui.helpers.ResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getPackageInfoForTest
 import io.mockk.CapturingSlot
 import io.mockk.every
@@ -22,15 +22,15 @@ class VariableProcessorTest {
     private val usLocale = Locale.US
     private val esLocale = Locale("es", "ES")
 
-    private lateinit var applicationContext: ApplicationContext
+    private lateinit var resourceProvider: ResourceProvider
     private lateinit var variableDataProvider: VariableDataProvider
     private lateinit var context: VariableProcessor.PackageContext
     private lateinit var rcPackage: Package
 
     @Before
     fun setUp() {
-        applicationContext = MockApplicationContext()
-        variableDataProvider = VariableDataProvider(applicationContext)
+        resourceProvider = MockResourceProvider()
+        variableDataProvider = VariableDataProvider(resourceProvider)
         context = mockk()
         rcPackage = TestData.Packages.annual
     }
@@ -391,7 +391,7 @@ class VariableProcessorTest {
     @Test
     fun `localizedDiscount returns correct discount string`() {
         val captor = CapturingSlot<Int>()
-        val mock = mockk<ApplicationContext>()
+        val mock = mockk<ResourceProvider>()
         every {
             mock.getString(any(), capture(captor))
         } answers {

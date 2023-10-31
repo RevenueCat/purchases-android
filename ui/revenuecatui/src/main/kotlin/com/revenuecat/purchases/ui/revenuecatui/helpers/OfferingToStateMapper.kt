@@ -18,14 +18,14 @@ import com.revenuecat.purchases.ui.revenuecatui.extensions.defaultTemplate
 @Suppress("ReturnCount")
 internal fun Offering.validatedPaywall(
     currentColorScheme: ColorScheme,
-    applicationContext: ApplicationContext,
+    resourceProvider: ResourceProvider,
 ): PaywallValidationResult {
     val paywallData = this.paywall
         ?: return PaywallValidationResult(
             PaywallData.createDefault(
                 availablePackages,
                 currentColorScheme,
-                applicationContext,
+                resourceProvider,
             ),
             PaywallData.defaultTemplate,
             PaywallValidationError.MissingPaywall,
@@ -36,7 +36,7 @@ internal fun Offering.validatedPaywall(
             PaywallData.createDefaultForIdentifiers(
                 paywallData.config.packageIds,
                 currentColorScheme,
-                applicationContext,
+                resourceProvider,
             ),
             PaywallData.defaultTemplate,
             it as PaywallValidationError,
