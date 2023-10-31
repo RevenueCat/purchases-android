@@ -42,10 +42,6 @@ android {
     }
 }
 
-kotlin {
-    jvmToolchain(17)
-}
-
 dependencies {
     implementation project(path: ':purchases')
 
@@ -73,10 +69,10 @@ dependencies {
     debugImplementation libs.compose.ui.tooling
     debugImplementation libs.androidx.test.compose.manifest
 
-    androidTestImplementation "com.emergetools.snapshots:snapshots:0.8.1"
+    androidTestImplementation "com.emergetools.snapshots:snapshots:0.8.3"
     // For Compose @Preview snapshot generation from the main source set:
-    ksp "com.emergetools.snapshots:snapshots-processor:0.8.1"
-    kspAndroidTest "com.emergetools.snapshots:snapshots-processor:0.8.1"
+    ksp "com.emergetools.snapshots:snapshots-processor:0.8.3"
+    kspAndroidTest "com.emergetools.snapshots:snapshots-processor:0.8.3"
 
     testImplementation libs.bundles.test
     testImplementation libs.coroutines.test

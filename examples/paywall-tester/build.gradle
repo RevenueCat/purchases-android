@@ -48,11 +48,11 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_17
-        targetCompatibility JavaVersion.VERSION_17
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
     }
     kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_17.toString()
+        jvmTarget = JavaVersion.VERSION_1_8.toString()
     }
     buildFeatures {
         compose true
@@ -65,10 +65,6 @@ android {
             excludes += '/META-INF/{AL2.0,LGPL2.1}'
         }
     }
-}
-
-kotlin {
-    jvmToolchain(17)
 }
 
 dependencies {
@@ -93,8 +89,8 @@ dependencies {
     debugImplementation libs.compose.ui.tooling
     debugImplementation libs.androidx.test.compose.manifest
 
-    implementation "com.emergetools.snapshots:snapshots-annotations:0.8.1"
+    implementation "com.emergetools.snapshots:snapshots-annotations:0.8.3"
 
-    androidTestImplementation "com.emergetools.snapshots:snapshots:0.8.1"
-    ksp "com.emergetools.snapshots:snapshots-processor:0.8.1"
+    androidTestImplementation "com.emergetools.snapshots:snapshots:0.8.3"
+    ksp "com.emergetools.snapshots:snapshots-processor:0.8.3"
 }
