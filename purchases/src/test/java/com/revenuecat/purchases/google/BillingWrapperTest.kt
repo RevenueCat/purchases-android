@@ -2685,6 +2685,36 @@ class BillingWrapperTest {
 
     // endregion inapp messages
 
+    // region BILLING_UNAVAILABLE
+
+    @Test
+    fun `BILLING_UNAVAILABLE errors are forwarded to billing client calls`() {
+        every { mockClient.isReady } returns false
+
+        var receivedError: PurchasesError? = null
+        wrapper.queryPurchases(
+            "abc",
+            {
+                error("Unexpected success")
+            },
+            { error ->
+                receivedError = error
+            }
+        )
+        val billingResult = BillingResult.newBuilder()
+            .setResponseCode(BillingClient.BillingResponseCode.BILLING_UNAVAILABLE)
+            .setDebugMessage(IN_APP_BILLING_LESS_THAN_3_ERROR_MESSAGE)
+            .build()
+
+        billingClientStateListener!!.onBillingSetupFinished(billingResult)
+
+        assertThat(receivedError).isNotNull
+        assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
+    }
+
+
+    // endregion
+
     private fun mockEmptyProductDetailsResponse() {
         val slot = slot<ProductDetailsResponseListener>()
         every {
