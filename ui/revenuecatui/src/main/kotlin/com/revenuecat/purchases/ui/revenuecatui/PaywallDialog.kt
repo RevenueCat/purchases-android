@@ -24,7 +24,7 @@ import kotlinx.coroutines.launch
 
 private object UIDialogConstants {
     const val MAX_HEIGHT_PERCENTAGE_TABLET = 0.85f
-    const val MAX_ASPECT_RATIO_TO_APPLY_MAX_HEIGHT = 1.5f
+    const val MAX_ASPECT_RATIO_TO_APPLY_MAX_HEIGHT = 1.25f
 }
 
 /**
