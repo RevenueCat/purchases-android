@@ -2252,62 +2252,6 @@ class BillingWrapperTest {
     }
 
     @Test
-    fun `if BillingService disconnects, will try to reconnect with exponential backoff`() {
-        // ensure delay on first retry
-        val runnableSlot = slot<Runnable>()
-        val firstRetryMillisecondsSlot = slot<Long>()
-        every {
-            handler.postDelayed(capture(runnableSlot), capture(firstRetryMillisecondsSlot))
-        } returns true
-
-        wrapper.onBillingServiceDisconnected()
-
-        assertThat(firstRetryMillisecondsSlot.isCaptured).isTrue
-        assertThat(firstRetryMillisecondsSlot.captured).isNotEqualTo(0)
-
-        runnableSlot.captured.run()
-
-        // ensure 2nd retry has longer delay
-        val secondRetryMillisecondsSlot = slot<Long>()
-        every {
-            handler.postDelayed(capture(runnableSlot), capture(secondRetryMillisecondsSlot))
-        } returns true
-        wrapper.onBillingServiceDisconnected()
-
-        assertThat(secondRetryMillisecondsSlot.isCaptured).isTrue
-        assertThat(secondRetryMillisecondsSlot.captured).isGreaterThan(firstRetryMillisecondsSlot.captured)
-
-        runnableSlot.captured.run()
-
-        // ensure milliseconds backoff gets reset to default after successful connection
-        wrapper.onBillingSetupFinished(billingClientOKResult)
-        val afterSuccessfulConnectionRetryMillisecondsSlot = slot<Long>()
-        every {
-            handler.postDelayed(any(), capture(afterSuccessfulConnectionRetryMillisecondsSlot))
-        } returns true
-        wrapper.onBillingServiceDisconnected()
-
-        assertThat(afterSuccessfulConnectionRetryMillisecondsSlot.isCaptured).isTrue
-        assertThat(afterSuccessfulConnectionRetryMillisecondsSlot.captured == firstRetryMillisecondsSlot.captured)
-    }
-
-    @Test
-    fun `if BillingService disconnect callback called multiple times, single retry is done`() {
-        every {
-            handler.postDelayed(any(), any())
-        } returns true
-
-        wrapper.onBillingServiceDisconnected()
-        wrapper.onBillingServiceDisconnected()
-        wrapper.onBillingServiceDisconnected()
-
-        // One is done during the initial connect attempt. The second one is the retry.
-        verify(exactly = 2) {
-            handler.postDelayed(any(), any())
-        }
-    }
-
-    @Test
     fun `if billing setup returns recoverable error code, will try to reconnect with exponential backoff`() {
         val runnableSlot = slot<Runnable>()
         every {
@@ -2315,11 +2259,11 @@ class BillingWrapperTest {
         } returns true
 
         val errorCodes = listOf(
-            BillingClient.BillingResponseCode.SERVICE_TIMEOUT,
             BillingClient.BillingResponseCode.ERROR,
             BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE,
             BillingClient.BillingResponseCode.USER_CANCELED,
-            BillingClient.BillingResponseCode.SERVICE_DISCONNECTED
+            BillingClient.BillingResponseCode.SERVICE_DISCONNECTED,
+            BillingClient.BillingResponseCode.NETWORK_ERROR
         )
         var currentCallback = 1 // we get one call before triggering it manually
         for (errorCode in errorCodes) {
