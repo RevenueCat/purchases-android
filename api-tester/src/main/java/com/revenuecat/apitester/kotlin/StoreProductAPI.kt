@@ -25,7 +25,9 @@ private class StoreProductAPI {
             val price: Price? = price
             val formattedPricePerMonth: String? = formattedPricePerMonth(locale)
             val formattedPricePerMonthNoLocale: String? = formattedPricePerMonth()
+            val pricePerWeek: Price? = pricePerWeek(locale)
             val pricePerMonth: Price? = pricePerMonth(locale)
+            val pricePerYear: Price? = pricePerYear(locale)
             val pricePerMonthNoLocale: Price? = pricePerMonth()
             val title: String = title
             val description: String = description

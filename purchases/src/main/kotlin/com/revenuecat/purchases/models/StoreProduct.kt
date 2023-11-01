@@ -2,6 +2,8 @@ package com.revenuecat.purchases.models
 
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.utils.pricePerMonth
+import com.revenuecat.purchases.utils.pricePerWeek
+import com.revenuecat.purchases.utils.pricePerYear
 import java.util.Locale
 
 /**
@@ -92,6 +94,18 @@ interface StoreProduct {
     fun copyWithOfferingId(offeringId: String): StoreProduct
 
     /**
+     * Null for INAPP products. The price of the [StoreProduct] in the given locale in a weekly recurrence.
+     * This means that, for example, if the period is monthly, the price will be divided by 4.
+     * It uses a currency formatter to format the price in the given locale.
+     * Note that this value may be an approximation.
+     * For Google subscriptions, this value will use the basePlan to calculate the value.
+     * @param locale Locale to use for formatting the price. Default is the system default locale.
+     */
+    fun pricePerWeek(locale: Locale = Locale.getDefault()): Price? {
+        return period?.let { price.pricePerWeek(it, locale) }
+    }
+
+    /**
      * Null for INAPP products. The price of the [StoreProduct] in the given locale in a monthly recurrence.
      * This means that, for example, if the period is annual, the price will be divided by 12.
      * It uses a currency formatter to format the price in the given locale.
@@ -101,6 +115,18 @@ interface StoreProduct {
      */
     fun pricePerMonth(locale: Locale = Locale.getDefault()): Price? {
         return period?.let { price.pricePerMonth(it, locale) }
+    }
+
+    /**
+     * Null for INAPP products. The price of the [StoreProduct] in the given locale in a yearly recurrence.
+     * This means that, for example, if the period is monthly, the price will be multiplied by 12.
+     * It uses a currency formatter to format the price in the given locale.
+     * Note that this value may be an approximation.
+     * For Google subscriptions, this value will use the basePlan to calculate the value.
+     * @param locale Locale to use for formatting the price. Default is the system default locale.
+     */
+    fun pricePerYear(locale: Locale = Locale.getDefault()): Price? {
+        return period?.let { price.pricePerYear(it, locale) }
     }
 
     /**

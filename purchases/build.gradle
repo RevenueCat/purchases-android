@@ -91,6 +91,7 @@ dependencies {
     testImplementation libs.amazon.appstore.sdk
     testImplementation libs.okhttp.mockwebserver
     testImplementation libs.playServices.ads.identifier
+    testImplementation libs.testJUnitParams
 
     androidTestImplementation libs.androidx.appcompat
     androidTestImplementation libs.androidx.lifecycle.runtime.ktx
