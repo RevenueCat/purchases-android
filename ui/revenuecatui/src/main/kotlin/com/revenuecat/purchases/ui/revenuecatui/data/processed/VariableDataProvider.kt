@@ -29,8 +29,12 @@ internal class VariableDataProvider(
         return rcPackage.product.price.formatted
     }
 
+    fun localizedPricePerWeek(rcPackage: Package, locale: Locale): String? {
+        return rcPackage.product.pricePerWeek(locale)?.formatted
+    }
+
     fun localizedPricePerMonth(rcPackage: Package, locale: Locale): String? {
-        return rcPackage.product.formattedPricePerMonth(locale)
+        return rcPackage.product.pricePerMonth(locale)?.formatted
     }
 
     fun localizedFirstIntroductoryOfferPrice(rcPackage: Package): String? {
