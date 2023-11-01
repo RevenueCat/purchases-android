@@ -76,6 +76,7 @@ internal object VariableProcessor {
         }
     }
 
+    @SuppressWarnings("CyclomaticComplexMethod")
     private fun processVariable(
         variableName: VariableName,
         variableDataProvider: VariableDataProvider,

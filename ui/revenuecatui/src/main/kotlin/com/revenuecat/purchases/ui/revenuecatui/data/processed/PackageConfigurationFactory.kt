@@ -37,20 +37,10 @@ internal object PackageConfigurationFactory {
         val mostExpensivePricePerMonth = mostExpensivePricePerMonth(filteredRCPackages)
 
         val packageInfos = filteredRCPackages.map {
-            val currentlySubscribed = when (it.packageType) {
-                PackageType.ANNUAL,
-                PackageType.SIX_MONTH,
-                PackageType.THREE_MONTH,
-                PackageType.TWO_MONTH,
-                PackageType.MONTHLY,
-                PackageType.WEEKLY,
-                -> activelySubscribedProductIdentifiers.contains(it.product.id)
-
-                PackageType.LIFETIME, PackageType.CUSTOM,
-                -> nonSubscriptionProductIdentifiers.contains(it.product.id)
-
-                PackageType.UNKNOWN -> false
-            }
+            val currentlySubscribed = it.currentlySubscribed(
+                activelySubscribedProductIdentifiers,
+                nonSubscriptionProductIdentifiers,
+            )
 
             val discountRelativeToMostExpensivePerMonth = productDiscount(
                 it.product.pricePerMonth(),
@@ -108,4 +98,22 @@ internal object PackageConfigurationFactory {
             }
         }
     }
+}
+
+private fun Package.currentlySubscribed(
+    activelySubscribedProductIdentifiers: Set<String>,
+    nonSubscriptionProductIdentifiers: Set<String>,
+): Boolean = when (packageType) {
+    PackageType.ANNUAL,
+    PackageType.SIX_MONTH,
+    PackageType.THREE_MONTH,
+    PackageType.TWO_MONTH,
+    PackageType.MONTHLY,
+    PackageType.WEEKLY,
+    -> activelySubscribedProductIdentifiers.contains(product.id)
+
+    PackageType.LIFETIME, PackageType.CUSTOM,
+    -> nonSubscriptionProductIdentifiers.contains(product.id)
+
+    PackageType.UNKNOWN -> false
 }
