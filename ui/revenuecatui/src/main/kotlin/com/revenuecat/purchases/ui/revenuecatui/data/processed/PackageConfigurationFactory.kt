@@ -52,14 +52,21 @@ internal object PackageConfigurationFactory {
                 PackageType.UNKNOWN -> false
             }
 
+            val discountRelativeToMostExpensivePerMonth = productDiscount(
+                it.product.pricePerMonth(),
+                mostExpensivePricePerMonth,
+            )
             TemplateConfiguration.PackageInfo(
                 rcPackage = it,
-                localization = ProcessedLocalizedConfiguration.create(variableDataProvider, localization, it, locale),
-                currentlySubscribed = currentlySubscribed,
-                discountRelativeToMostExpensivePerMonth = productDiscount(
-                    it.product.pricePerMonth(),
-                    mostExpensivePricePerMonth,
+                localization = ProcessedLocalizedConfiguration.create(
+                    variableDataProvider,
+                    VariableProcessor.Context(discountRelativeToMostExpensivePerMonth),
+                    localization,
+                    it,
+                    locale,
                 ),
+                currentlySubscribed = currentlySubscribed,
+                discountRelativeToMostExpensivePerMonth = discountRelativeToMostExpensivePerMonth,
             )
         }
 

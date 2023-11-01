@@ -8,6 +8,11 @@ internal object VariableProcessor {
     private val REGEX = Regex("\\{\\{\\s[a-zA-Z0-9_]+\\s\\}\\}")
 
     /**
+     * Information necessary for computing variables.
+     */
+    data class Context(val discountRelativeToMostExpensivePerMonth: Double?)
+
+    /**
      * Returns a set of invalid variables in the String
      */
     fun validateVariables(originalString: String): Set<String> {
@@ -21,12 +26,13 @@ internal object VariableProcessor {
 
     fun processVariables(
         variableDataProvider: VariableDataProvider,
+        context: Context,
         originalString: String,
         rcPackage: Package,
         locale: Locale,
     ): String {
         val resultString = handleVariablesAndReplace(originalString) { variable ->
-            variableValue(variableDataProvider, variable, rcPackage, locale)
+            variableValue(variableDataProvider, context, variable, rcPackage, locale)
         }
         return resultString
     }
@@ -49,6 +55,7 @@ internal object VariableProcessor {
 
     private fun variableValue(
         variableDataProvider: VariableDataProvider,
+        context: Context,
         variableNameString: String,
         rcPackage: Package,
         locale: Locale,
@@ -58,7 +65,7 @@ internal object VariableProcessor {
             Logger.e("Unknown variable: $variableNameString")
             null
         } else {
-            return processVariable(variableName, variableDataProvider, rcPackage, locale) ?: run {
+            return processVariable(variableName, variableDataProvider, context, rcPackage, locale) ?: run {
                 Logger.w(
                     "Could not process value for variable '$variableNameString' for " +
                         "package '${rcPackage.identifier}'. Please check that the product for that package matches " +
@@ -72,9 +79,10 @@ internal object VariableProcessor {
     private fun processVariable(
         variableName: VariableName,
         variableDataProvider: VariableDataProvider,
+        context: Context,
         rcPackage: Package,
         locale: Locale,
-    ) = when (variableName) {
+    ): String? = when (variableName) {
         VariableName.APP_NAME -> variableDataProvider.applicationName
         VariableName.PRICE -> variableDataProvider.localizedPrice(rcPackage)
         VariableName.PRICE_PER_PERIOD -> variableDataProvider.localizedPricePerPeriod(rcPackage, locale)
@@ -96,6 +104,9 @@ internal object VariableProcessor {
         VariableName.SUB_OFFER_DURATION_2 -> variableDataProvider.secondIntroductoryOfferDuration(rcPackage, locale)
         VariableName.SUB_OFFER_PRICE -> variableDataProvider.localizedFirstIntroductoryOfferPrice(rcPackage)
         VariableName.SUB_OFFER_PRICE_2 -> variableDataProvider.localizedSecondIntroductoryOfferPrice(rcPackage)
+        VariableName.SUB_RELATIVE_DISCOUNT -> variableDataProvider.localizedRelativeDiscount(
+            context.discountRelativeToMostExpensivePerMonth,
+        )
     }
 
     private enum class VariableName(val identifier: String) {
@@ -112,6 +123,7 @@ internal object VariableProcessor {
         SUB_OFFER_DURATION_2("sub_offer_duration_2"),
         SUB_OFFER_PRICE("sub_offer_price"),
         SUB_OFFER_PRICE_2("sub_offer_price_2"),
+        SUB_RELATIVE_DISCOUNT("sub_relative_discount"),
         ;
 
         companion object {

@@ -95,6 +95,11 @@ internal class VariableDataProvider(
         return "$pricePerPeriod ($pricePerMonth/$unit)"
     }
 
+    @SuppressWarnings("MagicNumber")
+    fun localizedRelativeDiscount(discountRelativeToMostExpensivePerMonth: Double?): String? {
+        return applicationContext.localizedDiscount(discountRelativeToMostExpensivePerMonth)
+    }
+
     private fun getFirstIntroOfferToApply(rcPackage: Package): PricingPhase? {
         val option = rcPackage.product.defaultOption
         return option?.freePhase ?: option?.introPhase
@@ -109,12 +114,18 @@ internal class VariableDataProvider(
     }
 }
 
-@SuppressWarnings("MagicNumber")
 internal fun TemplateConfiguration.PackageInfo.localizedDiscount(
     applicationContext: ApplicationContext,
 ): String? {
+    return applicationContext.localizedDiscount(discountRelativeToMostExpensivePerMonth)
+}
+
+@SuppressWarnings("MagicNumber")
+private fun ApplicationContext.localizedDiscount(
+    discountRelativeToMostExpensivePerMonth: Double?,
+): String? {
     return (discountRelativeToMostExpensivePerMonth?.times(100.0))?.roundToInt()?.let {
-        applicationContext.getString(R.string.package_discount, it)
+        getString(R.string.package_discount, it)
     }
 }
 
