@@ -1,3 +1,9 @@
+## 7.1.1
+### RevenueCatUI
+* Paywalls: Decrease max aspect ratio for tablets to have a max height (#1422) via Toni Rico (@tonidero)
+### Bugfixes
+* Improvements on BillingWrapper retrying mechanism  (#1420) via Cesar de la Vega (@vegaro)
+
 ## 7.1.0
 ### New Features
 #### ✨📱 Introducing Android Paywalls 🐾🧱
