@@ -93,6 +93,8 @@ internal class BillingWrapper(
     // how long before the data source tries to reconnect to Google play
     private var reconnectMilliseconds = RECONNECT_TIMER_START_MILLISECONDS
 
+    @get:Synchronized
+    @set:Synchronized
     private var reconnectionAlreadyScheduled = false
 
     class ClientFactory(private val context: Context) {
@@ -693,21 +695,40 @@ internal class BillingWrapper(
                 BillingClient.BillingResponseCode.FEATURE_NOT_SUPPORTED,
                 BillingClient.BillingResponseCode.BILLING_UNAVAILABLE,
                 -> {
-                    val message =
-                        BillingStrings.BILLING_UNAVAILABLE.format(billingResult.toHumanReadableDescription())
-                    log(LogIntent.GOOGLE_WARNING, message)
+                    val originalErrorMessage = billingResult.toHumanReadableDescription()
+
+                    /**
+                     * We check for cases when Google sends Google Play In-app Billing API version is less than 3
+                     * as a debug message. Version 3 is from 2012, so the message is a bit useless.
+                     * We have detected this message in several cases:
+                     *
+                     * - When there's no Google account configured in the device
+                     * - When there's no Play Store (this happens in incorrectly configured emulators)
+                     * - When language is changed in the device and Play Store caches get corrupted. Opening the
+                     * Play Store or clearing its caches would fix this case.
+                     * See https://github.com/RevenueCat/purchases-android/issues/1288
+                     */
+                    val error = if (billingResult.debugMessage == IN_APP_BILLING_LESS_THAN_3_ERROR_MESSAGE) {
+                        val underlyingErrorMessage =
+                            BillingStrings.BILLING_UNAVAILABLE_LESS_THAN_3.format(originalErrorMessage)
+                        PurchasesError(PurchasesErrorCode.StoreProblemError, underlyingErrorMessage)
+                            .also { errorLog(it) }
+                    } else {
+                        val underlyingErrorMessage = BillingStrings.BILLING_UNAVAILABLE.format(originalErrorMessage)
+                        billingResult.responseCode
+                            .billingResponseToPurchasesError(underlyingErrorMessage)
+                            .also { errorLog(it) }
+                    }
+
                     // The calls will fail with an error that will be surfaced. We want to surface these errors
                     // Can't call executePendingRequests because it will not do anything since it checks for isReady()
-                    val error = billingResult.responseCode
-                        .billingResponseToPurchasesError(message)
-                        .also { errorLog(it) }
                     sendErrorsToAllPendingRequests(error)
                 }
-                BillingClient.BillingResponseCode.SERVICE_TIMEOUT,
                 BillingClient.BillingResponseCode.ERROR,
                 BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE,
                 BillingClient.BillingResponseCode.USER_CANCELED,
                 BillingClient.BillingResponseCode.SERVICE_DISCONNECTED,
+                BillingClient.BillingResponseCode.NETWORK_ERROR,
                 -> {
                     log(
                         LogIntent.GOOGLE_WARNING,
@@ -735,7 +756,6 @@ internal class BillingWrapper(
 
     override fun onBillingServiceDisconnected() {
         log(LogIntent.WARNING, BillingStrings.BILLING_SERVICE_DISCONNECTED.format(billingClient?.toString()))
-        retryBillingServiceConnectionWithExponentialBackoff()
     }
 
     /**

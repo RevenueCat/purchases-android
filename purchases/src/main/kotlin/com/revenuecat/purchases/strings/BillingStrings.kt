@@ -9,6 +9,9 @@ internal object BillingStrings {
     const val BILLING_SERVICE_DISCONNECTED = "Billing Service disconnected for %s"
     const val BILLING_SERVICE_SETUP_FINISHED = "Billing Service Setup finished for %s"
     const val BILLING_UNAVAILABLE = "Billing is not available in this device. %s"
+    const val BILLING_UNAVAILABLE_LESS_THAN_3 = "Billing is not available in this device. Make sure there's an " +
+        "account configured in Play Store. Reopen the Play Store or clean its caches if this keeps happening. " +
+        "Original error message: %s"
     const val BILLING_WRAPPER_PURCHASES_ERROR = "BillingWrapper purchases failed to update: %s"
     const val BILLING_WRAPPER_PURCHASES_UPDATED = "BillingWrapper purchases updated: %s"
     const val BILLING_PURCHASE_HISTORY_RECORD_MORE_THAN_ONE_SKU = "There's more than one sku in the " +
