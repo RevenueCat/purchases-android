@@ -37,29 +37,26 @@ internal object PackageConfigurationFactory {
         val mostExpensivePricePerMonth = mostExpensivePricePerMonth(filteredRCPackages)
 
         val packageInfos = filteredRCPackages.map {
-            val currentlySubscribed = when (it.packageType) {
-                PackageType.ANNUAL,
-                PackageType.SIX_MONTH,
-                PackageType.THREE_MONTH,
-                PackageType.TWO_MONTH,
-                PackageType.MONTHLY,
-                PackageType.WEEKLY,
-                -> activelySubscribedProductIdentifiers.contains(it.product.id)
+            val currentlySubscribed = it.currentlySubscribed(
+                activelySubscribedProductIdentifiers,
+                nonSubscriptionProductIdentifiers,
+            )
 
-                PackageType.LIFETIME, PackageType.CUSTOM,
-                -> nonSubscriptionProductIdentifiers.contains(it.product.id)
-
-                PackageType.UNKNOWN -> false
-            }
-
+            val discountRelativeToMostExpensivePerMonth = productDiscount(
+                it.product.pricePerMonth(),
+                mostExpensivePricePerMonth,
+            )
             TemplateConfiguration.PackageInfo(
                 rcPackage = it,
-                localization = ProcessedLocalizedConfiguration.create(variableDataProvider, localization, it, locale),
-                currentlySubscribed = currentlySubscribed,
-                discountRelativeToMostExpensivePerMonth = productDiscount(
-                    it.product.pricePerMonth(),
-                    mostExpensivePricePerMonth,
+                localization = ProcessedLocalizedConfiguration.create(
+                    variableDataProvider = variableDataProvider,
+                    context = VariableProcessor.PackageContext(discountRelativeToMostExpensivePerMonth),
+                    localizedConfiguration = localization,
+                    rcPackage = it,
+                    locale = locale,
                 ),
+                currentlySubscribed = currentlySubscribed,
+                discountRelativeToMostExpensivePerMonth = discountRelativeToMostExpensivePerMonth,
             )
         }
 
@@ -101,4 +98,22 @@ internal object PackageConfigurationFactory {
             }
         }
     }
+}
+
+private fun Package.currentlySubscribed(
+    activelySubscribedProductIdentifiers: Set<String>,
+    nonSubscriptionProductIdentifiers: Set<String>,
+): Boolean = when (packageType) {
+    PackageType.ANNUAL,
+    PackageType.SIX_MONTH,
+    PackageType.THREE_MONTH,
+    PackageType.TWO_MONTH,
+    PackageType.MONTHLY,
+    PackageType.WEEKLY,
+    -> activelySubscribedProductIdentifiers.contains(product.id)
+
+    PackageType.LIFETIME, PackageType.CUSTOM,
+    -> nonSubscriptionProductIdentifiers.contains(product.id)
+
+    PackageType.UNKNOWN -> false
 }

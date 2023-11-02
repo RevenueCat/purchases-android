@@ -24,12 +24,14 @@ class VariableProcessorTest {
 
     private lateinit var applicationContext: ApplicationContext
     private lateinit var variableDataProvider: VariableDataProvider
+    private lateinit var context: VariableProcessor.PackageContext
     private lateinit var rcPackage: Package
 
     @Before
     fun setUp() {
         applicationContext = MockApplicationContext()
         variableDataProvider = VariableDataProvider(applicationContext)
+        context = mockk()
         rcPackage = TestData.Packages.annual
     }
 
@@ -354,6 +356,22 @@ class VariableProcessorTest {
 
     // endregion
 
+    // region sub_relative_discount
+
+    @Test
+    fun `process variables processes sub_relative_discount with no discount`() {
+        every { context.discountRelativeToMostExpensivePerMonth }.returns(null)
+        expectVariablesResult("{{ sub_relative_discount }}", "")
+    }
+
+    @Test
+    fun `process variables processes sub_relative_discount`() {
+        every { context.discountRelativeToMostExpensivePerMonth }.returns(0.1)
+        expectVariablesResult("{{ sub_relative_discount }}", "10% off")
+    }
+
+    // endregion
+
     // endregion Variables
 
     @Test
@@ -378,7 +396,13 @@ class VariableProcessorTest {
         locale: Locale = usLocale,
         rcPackage: Package = this.rcPackage,
     ) {
-        val resultText = VariableProcessor.processVariables(variableDataProvider, originalText, rcPackage, locale)
+        val resultText = VariableProcessor.processVariables(
+            variableDataProvider,
+            context,
+            originalText,
+            rcPackage,
+            locale
+        )
         assertThat(resultText).isEqualTo(expectedText)
     }
 }
