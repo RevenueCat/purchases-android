@@ -94,6 +94,10 @@ internal object VariableProcessor {
 
         VariableName.PRODUCT_NAME -> variableDataProvider.productName(rcPackage)
         VariableName.SUB_PERIOD -> variableDataProvider.periodName(rcPackage)
+        VariableName.SUB_PRICE_PER_WEEK -> variableDataProvider.localizedPricePerWeek(
+            rcPackage,
+            locale,
+        )
         VariableName.SUB_PRICE_PER_MONTH -> variableDataProvider.localizedPricePerMonth(
             rcPackage,
             locale,
@@ -117,6 +121,7 @@ internal object VariableProcessor {
         TOTAL_PRICE_AND_PER_MONTH("total_price_and_per_month"),
         PRODUCT_NAME("product_name"),
         SUB_PERIOD("sub_period"),
+        SUB_PRICE_PER_WEEK("sub_price_per_week"),
         SUB_PRICE_PER_MONTH("sub_price_per_month"),
         SUB_DURATION("sub_duration"),
         SUB_DURATION_IN_MONTHS("sub_duration_in_months"),
