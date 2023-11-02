@@ -24,7 +24,7 @@ class VariableProcessorTest {
 
     private lateinit var applicationContext: ApplicationContext
     private lateinit var variableDataProvider: VariableDataProvider
-    private lateinit var context: VariableProcessor.Context
+    private lateinit var context: VariableProcessor.PackageContext
     private lateinit var rcPackage: Package
 
     @Before

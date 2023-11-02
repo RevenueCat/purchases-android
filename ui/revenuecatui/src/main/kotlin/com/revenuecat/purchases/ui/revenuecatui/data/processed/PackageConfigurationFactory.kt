@@ -49,11 +49,11 @@ internal object PackageConfigurationFactory {
             TemplateConfiguration.PackageInfo(
                 rcPackage = it,
                 localization = ProcessedLocalizedConfiguration.create(
-                    variableDataProvider,
-                    VariableProcessor.Context(discountRelativeToMostExpensivePerMonth),
-                    localization,
-                    it,
-                    locale,
+                    variableDataProvider = variableDataProvider,
+                    context = VariableProcessor.PackageContext(discountRelativeToMostExpensivePerMonth),
+                    localizedConfiguration = localization,
+                    rcPackage = it,
+                    locale = locale,
                 ),
                 currentlySubscribed = currentlySubscribed,
                 discountRelativeToMostExpensivePerMonth = discountRelativeToMostExpensivePerMonth,

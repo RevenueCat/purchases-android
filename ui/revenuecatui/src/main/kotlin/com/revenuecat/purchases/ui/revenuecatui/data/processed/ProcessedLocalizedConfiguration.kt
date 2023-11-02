@@ -19,7 +19,7 @@ internal data class ProcessedLocalizedConfiguration(
     companion object {
         fun create(
             variableDataProvider: VariableDataProvider,
-            context: VariableProcessor.Context,
+            context: VariableProcessor.PackageContext,
             localizedConfiguration: PaywallData.LocalizedConfiguration,
             rcPackage: Package,
             locale: Locale,

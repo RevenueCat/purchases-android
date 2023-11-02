@@ -10,7 +10,7 @@ internal object VariableProcessor {
     /**
      * Information necessary for computing variables.
      */
-    data class Context(val discountRelativeToMostExpensivePerMonth: Double?)
+    data class PackageContext(val discountRelativeToMostExpensivePerMonth: Double?)
 
     /**
      * Returns a set of invalid variables in the String
@@ -26,7 +26,7 @@ internal object VariableProcessor {
 
     fun processVariables(
         variableDataProvider: VariableDataProvider,
-        context: Context,
+        context: PackageContext,
         originalString: String,
         rcPackage: Package,
         locale: Locale,
@@ -55,7 +55,7 @@ internal object VariableProcessor {
 
     private fun variableValue(
         variableDataProvider: VariableDataProvider,
-        context: Context,
+        context: PackageContext,
         variableNameString: String,
         rcPackage: Package,
         locale: Locale,
@@ -80,7 +80,7 @@ internal object VariableProcessor {
     private fun processVariable(
         variableName: VariableName,
         variableDataProvider: VariableDataProvider,
-        context: Context,
+        context: PackageContext,
         rcPackage: Package,
         locale: Locale,
     ): String? = when (variableName) {
