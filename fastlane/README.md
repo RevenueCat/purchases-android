@@ -103,6 +103,14 @@ Creates PR changing version to next minor adding a -SNAPSHOT suffix
 
 Tag current branch with current version number
 
+### android build_bundle
+
+```sh
+[bundle exec] fastlane android build_bundle
+```
+
+Build app bundle
+
 ### android build_purchase_tester_bundle
 
 ```sh
@@ -110,6 +118,14 @@ Tag current branch with current version number
 ```
 
 Build purchase tester app bundle
+
+### android build_paywall_tester_bundle
+
+```sh
+[bundle exec] fastlane android build_paywall_tester_bundle
+```
+
+Build paywall tester app bundle
 
 ### android build_default_purchases_integration_tests
 
@@ -147,6 +163,14 @@ Build and run purchases module custom entitlement computation integration tests
 
 This requires the google cloud cli to be installed and initialized.
 
+### android publish_to_test_track
+
+```sh
+[bundle exec] fastlane android publish_to_test_track
+```
+
+Publish to test track in Play Console
+
 ### android publish_purchase_tester
 
 ```sh
@@ -154,6 +178,14 @@ This requires the google cloud cli to be installed and initialized.
 ```
 
 Publish purchase tester to test track in Play Console
+
+### android publish_paywall_tester
+
+```sh
+[bundle exec] fastlane android publish_paywall_tester
+```
+
+Publish paywall tester to test track in Play Console
 
 ### android build_magic_weather_compose
 
@@ -206,6 +238,54 @@ Builds a Purchase Tester APK and prompts for:
 ```
 
 
+
+### android fetch_snapshots
+
+```sh
+[bundle exec] fastlane android fetch_snapshots
+```
+
+Clones or updates snapshots repo
+
+### android verify_revenuecatui_snapshot_tests
+
+```sh
+[bundle exec] fastlane android verify_revenuecatui_snapshot_tests
+```
+
+Verify RevenueCat UI snapshots
+
+### android record_revenuecatui_snapshot_tests
+
+```sh
+[bundle exec] fastlane android record_revenuecatui_snapshot_tests
+```
+
+Record RevenueCat UI snapshots
+
+### android create_snapshots_repo_pr
+
+```sh
+[bundle exec] fastlane android create_snapshots_repo_pr
+```
+
+Creates a new PR on purchases-ios-snapshots after new snapshot files were generated
+
+### android generate_snapshots_RCUI
+
+```sh
+[bundle exec] fastlane android generate_snapshots_RCUI
+```
+
+Trigger CircleCI job to generate snapshots for RevenueCatUI
+
+### android update_snapshots_repo
+
+```sh
+[bundle exec] fastlane android update_snapshots_repo
+```
+
+Updates purchases-ios-snapshots-commit to point to latest commit on main
 
 ----
 

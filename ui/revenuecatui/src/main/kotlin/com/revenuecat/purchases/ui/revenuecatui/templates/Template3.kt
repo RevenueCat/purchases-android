@@ -23,6 +23,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.paywalls.PaywallData
@@ -187,6 +188,8 @@ private fun Feature(
 @OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class)
 @Preview(locale = "en-rUS", showBackground = true)
 @Preview(locale = "es-rES", showBackground = true)
+@Preview(showBackground = true, device = Devices.NEXUS_7)
+@Preview(showBackground = true, device = Devices.NEXUS_10)
 @Composable
 private fun Template3Preview() {
     InternalPaywall(
