@@ -28,8 +28,11 @@ data class Period(
 ) : Parcelable {
 
     companion object Factory {
+        private const val DAYS_PER_WEEK = 7.0
         private const val DAYS_PER_MONTH = 30.0
+        private const val DAYS_PER_YEAR = 365.0
         private const val WEEKS_PER_MONTH = 4.0
+        private const val WEEKS_PER_YEAR = 52.14
         private const val MONTHS_PER_YEAR = 12.0
 
         fun create(iso8601: String): Period {
@@ -48,6 +51,21 @@ data class Period(
     }
 
     /**
+     * The period value in week units. This is an approximated value.
+     */
+    internal val valueInWeeks: Double
+        get() = when (unit) {
+            Unit.DAY -> value / DAYS_PER_WEEK
+            Unit.WEEK -> value.toDouble()
+            Unit.MONTH -> value.toDouble() * WEEKS_PER_MONTH
+            Unit.YEAR -> value * WEEKS_PER_YEAR
+            Unit.UNKNOWN -> {
+                errorLog("Unknown period unit trying to get value in months: $unit")
+                0.0
+            }
+        }
+
+    /**
      * The period value in month units. This is an approximated value.
      */
     val valueInMonths: Double
@@ -56,6 +74,21 @@ data class Period(
             Unit.WEEK -> value / WEEKS_PER_MONTH
             Unit.MONTH -> value.toDouble()
             Unit.YEAR -> value * MONTHS_PER_YEAR
+            Unit.UNKNOWN -> {
+                errorLog("Unknown period unit trying to get value in months: $unit")
+                0.0
+            }
+        }
+
+    /**
+     * The period value in week units. This is an approximated value.
+     */
+    internal val valueInYears: Double
+        get() = when (unit) {
+            Unit.DAY -> value / DAYS_PER_YEAR
+            Unit.WEEK -> value / WEEKS_PER_YEAR
+            Unit.MONTH -> value / MONTHS_PER_YEAR
+            Unit.YEAR -> value.toDouble()
             Unit.UNKNOWN -> {
                 errorLog("Unknown period unit trying to get value in months: $unit")
                 0.0
