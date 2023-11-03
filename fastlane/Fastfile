@@ -608,7 +608,7 @@ DESC
     fetch_snapshots
     Dir.chdir("..") do
       sh "rm", "-rf", "#{revenuecatui_snapshots_location}/*"
-      sh "cp", "-rf", "#{snapshots_repo_name}/revenuecatui/", "#{revenuecatui_snapshots_location}/"
+      sh "cp -rf #{snapshots_repo_name}/revenuecatui/** #{revenuecatui_snapshots_location}/"
     end
     gradle(task: "ui:revenuecatui:verifyPaparazziDebug")
   end
@@ -617,12 +617,12 @@ DESC
   lane :record_revenuecatui_snapshot_tests do
     fetch_snapshots
     Dir.chdir("..") do
+      sh "rm", "-rf", "#{revenuecatui_snapshots_location}/*"
       sh "rm", "-rf", "#{snapshots_repo_name}/revenuecatui/*"
     end
     gradle(task: "ui:revenuecatui:recordPaparazziDebug")
     Dir.chdir("..") do
-      sh "rm", "-rf", "#{revenuecatui_snapshots_location}/*"
-      sh "cp", "-rf", "#{revenuecatui_snapshots_location}/", "#{snapshots_repo_name}/revenuecatui"
+      sh "cp -rf #{revenuecatui_snapshots_location}/** #{snapshots_repo_name}/revenuecatui"
     end
     create_snapshots_repo_pr
   end
