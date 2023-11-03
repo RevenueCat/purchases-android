@@ -42,7 +42,7 @@ orbs:
 parameters:
   action:
     type: enum
-    enum: [default, bump, paywall_tester_release]
+    enum: [default, bump, paywall_tester_release, generate_revenuecatui_snapshots]
     default: default
 
 commands:
@@ -534,6 +534,39 @@ jobs:
       - store_test_results:
           path: build/test-results
 
+  verify-revenuecatui-snapshots:
+    description: "Verify RevenueCatUI snapshots"
+    <<: *android-executor
+    steps:
+      - checkout
+      - install-sdkman
+      - revenuecat/install-gem-unix-dependencies:
+          cache-version: v1
+      - android/restore-build-cache
+      - run:
+          name: Build and run RevenueCat UI snapshot tests
+          command: |
+            bundle exec fastlane android verify_revenuecatui_snapshots
+      - android/save-build-cache
+
+  record-revenuecatui-snapshots:
+    description: "Record new RevenueCatUI snapshots"
+    <<: *android-executor
+    steps:
+      - checkout
+      - install-sdkman
+      - revenuecat/install-gem-unix-dependencies:
+          cache-version: v1
+      - android/restore-build-cache
+      - run:
+          name: Records new RevenueCat UI snapshots to become the new golden
+          command: |
+            bundle exec fastlane android record_revenuecatui_snapshots
+      - run:
+          command: |
+            bundle exec fastlane android create_snapshots_repo_pr
+      - android/save-build-cache
+
 workflows:
   version: 2
   danger:
@@ -552,6 +585,7 @@ workflows:
       - detekt
       - assemble-purchase-tester
       - run-backend-integration-tests
+      - verify-revenuecatui-snapshots
 
   snapshot-deploy-sample-app-tests:
     when:
@@ -657,3 +691,9 @@ workflows:
       equal: [ paywall_tester_release, << pipeline.parameters.action >> ]
     jobs:
         - publish-paywall-tester-release
+
+  record-revenuecatui-snapshots:
+    when:
+      equal: [ generate_revenuecatui_snapshots, << pipeline.parameters.action >> ]
+    jobs:
+      - record-revenuecatui-snapshots

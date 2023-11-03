@@ -127,3 +127,6 @@ integration-tests/keystore
 # CircleCI folders
 vendor/
 .bundle/
+
+# Snapshots repo folder
+purchases-android-snapshots

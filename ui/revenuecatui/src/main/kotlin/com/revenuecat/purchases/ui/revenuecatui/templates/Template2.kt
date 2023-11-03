@@ -40,6 +40,7 @@ import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.ui.revenuecatui.ExperimentalPreviewRevenueCatUIPurchasesAPI
@@ -311,6 +312,8 @@ private fun CheckmarkBox(isSelected: Boolean, colors: TemplateConfiguration.Colo
 @OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class)
 @Preview(showBackground = true, locale = "en-rUS")
 @Preview(showBackground = true, locale = "es-rES")
+@Preview(showBackground = true, device = Devices.NEXUS_7)
+@Preview(showBackground = true, device = Devices.NEXUS_10)
 @Composable
 private fun Template2PaywallPreview() {
     InternalPaywall(

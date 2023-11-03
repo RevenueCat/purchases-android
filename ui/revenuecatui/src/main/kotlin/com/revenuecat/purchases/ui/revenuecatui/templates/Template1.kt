@@ -32,6 +32,7 @@ import androidx.compose.ui.graphics.asAndroidPath
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
@@ -178,6 +179,8 @@ private object Template1UIConstants {
 
 @OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class)
 @Preview(showBackground = true)
+@Preview(showBackground = true, device = Devices.NEXUS_7)
+@Preview(showBackground = true, device = Devices.NEXUS_10)
 @Composable
 private fun Template1PaywallPreview() {
     InternalPaywall(

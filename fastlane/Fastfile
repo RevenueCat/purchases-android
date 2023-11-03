@@ -27,6 +27,8 @@ files_with_version_number = {
 }
 
 repo_name = 'purchases-android'
+revenuecatui_snapshots_location = 'ui/revenuecatui/src/test/snapshots/images'
+snapshots_repo_name = 'purchases-android-snapshots'
 changelog_latest_path = './CHANGELOG.latest.md'
 changelog_path = './CHANGELOG.md'
 
@@ -582,6 +584,140 @@ DESC
       default_payloads: [:git_branch]
     )
   end
+
+  desc "Clones or updates snapshots repo"
+  lane :fetch_snapshots do
+    Dir.chdir("..") do
+      if !File.directory?(snapshots_repo_name)
+        UI.important("Cloning snapshots repo")
+
+        sh "git", "clone", "git@github.com:RevenueCat/#{snapshots_repo_name}.git"
+      end
+
+      commit = current_snapshots_commit
+      UI.message("Updating snapshots repo to #{commit}")
+      Dir.chdir(snapshots_repo_name) do
+        sh "git", "fetch", "origin"
+        sh "git", "checkout", commit
+      end
+    end
+  end
+
+  desc "Verify RevenueCat UI snapshots"
+  lane :verify_revenuecatui_snapshots do
+    fetch_snapshots
+    Dir.chdir("..") do
+      sh "rm", "-rf", "#{revenuecatui_snapshots_location}/*"
+      sh "cp -rf #{snapshots_repo_name}/revenuecatui/** #{revenuecatui_snapshots_location}/"
+    end
+    gradle(task: "ui:revenuecatui:verifyPaparazziDebug")
+  end
+
+  desc "Record RevenueCat UI snapshots"
+  lane :record_revenuecatui_snapshots do
+    fetch_snapshots
+    Dir.chdir("..") do
+      sh "rm", "-rf", "#{revenuecatui_snapshots_location}/*"
+      sh "rm", "-rf", "#{snapshots_repo_name}/revenuecatui/*"
+    end
+    gradle(task: "ui:revenuecatui:recordPaparazziDebug")
+    Dir.chdir("..") do
+      sh "cp -rf #{revenuecatui_snapshots_location}/** #{snapshots_repo_name}/revenuecatui"
+    end
+    create_snapshots_repo_pr
+  end
+
+  desc "Creates a new PR on purchases-ios-snapshots after new snapshot files were generated"
+  lane :create_snapshots_repo_pr do |options|
+    Dir.chdir("../#{snapshots_repo_name}") { |dir|
+      push_snapshot_pr(
+        repo: "revenuecat/#{snapshots_repo_name}",
+        base_branch: "main",
+        files_to_add: "."
+      )
+    }
+  end
+
+  desc "Trigger CircleCI job to generate snapshots for RevenueCatUI"
+  lane :generate_snapshots_RCUI do
+    generate_snapshots(
+      pipeline: "record-revenuecatui-snapshots"
+    )
+  end
+
+  desc "Updates purchases-ios-snapshots-commit to point to latest commit on main"
+  lane :update_snapshots_repo do
+    new_hash = ""
+
+    Dir.chdir("../#{snapshots_repo_name}") do
+      sh "git", "checkout", "main"
+      sh "git", "pull", "--rebase", "origin"
+      new_hash = sh("git", "rev-parse", "HEAD")
+    end
+
+    UI.important("Updating snapshot commit to #{new_hash}")
+    update_snapshots_commit(new_hash)
+  end
+
+  private_lane :generate_snapshots do |options|
+    require 'rest-client'
+
+    # Prompt branch
+    default_branch = git_branch
+    branch = UI.input("Branch (defaults to #{default_branch}): ")
+    branch = default_branch if branch == ""
+
+    # Get CircleCI token
+    circle_token = ENV["CIRCLE_TOKEN"]
+    UI.user_error! "Please set the CIRCLE_TOKEN environment variable" unless circle_token
+
+    # Make request
+    headers = {"Circle-Token": circle_token, "Content-Type": "application/json", "Accept": "application/json"}
+    data = {parameters: {options[:pipeline] => true}, branch: branch}
+    url = "https://circleci.com/api/v2/project/github/RevenueCat/#{repo_name}/pipeline"
+
+    resp = RestClient.post url, data.to_json, headers
+
+    # Print workflow url
+    number = JSON.parse(resp.body)["number"]
+    workflow_url = "https://app.circleci.com/pipelines/github/RevenueCat/#{repo_name}/#{number}"
+
+    UI.important "Workflow: #{workflow_url}"
+  end
+
+  private_lane :push_snapshot_pr do |options|
+    base_branch = options[:base_branch]
+    build_id = ENV["CIRCLE_BUILD_NUM"] || Time.now.utc.strftime("%Y%m%d%H%M%S")
+
+    branch_name = "generated_snapshots/#{base_branch}-#{build_id}"
+
+    sh("git", "checkout", "-b", branch_name)
+    sh("git", "add", options[:files_to_add])
+
+    file_count = sh("git diff --cached --numstat | wc -l").strip.to_i
+
+    if file_count == 0
+      UI.important("No files to be committed")
+    else
+      sh("git", "commit", "-m", "[skip ci] Generating new test snapshots")
+      sh("git", "push", "origin", branch_name)
+
+      circle_user = ENV["CIRCLE_USERNAME"]
+      username = circle_user.nil? ? "local user" : "@#{circle_user}"
+      branch_link = "https://github.com/RevenueCat/#{repo_name}/tree/#{base_branch}"
+      body = "Requested by #{username} for [#{base_branch}](#{branch_link})"
+
+      create_pull_request(
+        repo: options[:repo],
+        title: "Generating new test snapshots for `#{base_branch}`",
+        body: body,
+        base: base_branch,
+        api_token: ENV["GITHUB_TOKEN"],
+        head: branch_name,
+        labels: ["test"]
+      )
+    end
+  end
 end
 
 def is_snapshot_version?(version_name)
@@ -616,4 +752,17 @@ def build_purchases_android_test_apk(package_name, apk_name, build_type, flavor)
     artifacts: ['purchases/build/**/*.apk'],
     fail_on_missing: true
   )
+end
+
+# Snapshots
+
+def snapshots_commit_file
+  "fastlane/.purchases-android-snapshots-commit"
+end
+
+def current_snapshots_commit
+  File.read(snapshots_commit_file).strip
+end
+def update_snapshots_commit(hash)
+  File.write(snapshots_commit_file, hash)
 end
