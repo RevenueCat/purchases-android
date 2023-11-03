@@ -247,18 +247,18 @@ Builds a Purchase Tester APK and prompts for:
 
 Clones or updates snapshots repo
 
-### android verify_revenuecatui_snapshot_tests
+### android verify_revenuecatui_snapshots
 
 ```sh
-[bundle exec] fastlane android verify_revenuecatui_snapshot_tests
+[bundle exec] fastlane android verify_revenuecatui_snapshots
 ```
 
 Verify RevenueCat UI snapshots
 
-### android record_revenuecatui_snapshot_tests
+### android record_revenuecatui_snapshots
 
 ```sh
-[bundle exec] fastlane android record_revenuecatui_snapshot_tests
+[bundle exec] fastlane android record_revenuecatui_snapshots
 ```
 
 Record RevenueCat UI snapshots

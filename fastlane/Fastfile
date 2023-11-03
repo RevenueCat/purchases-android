@@ -604,7 +604,7 @@ DESC
   end
 
   desc "Verify RevenueCat UI snapshots"
-  lane :verify_revenuecatui_snapshot_tests do
+  lane :verify_revenuecatui_snapshots do
     fetch_snapshots
     Dir.chdir("..") do
       sh "rm", "-rf", "#{revenuecatui_snapshots_location}/*"
@@ -614,7 +614,7 @@ DESC
   end
 
   desc "Record RevenueCat UI snapshots"
-  lane :record_revenuecatui_snapshot_tests do
+  lane :record_revenuecatui_snapshots do
     fetch_snapshots
     Dir.chdir("..") do
       sh "rm", "-rf", "#{revenuecatui_snapshots_location}/*"
@@ -757,7 +757,7 @@ end
 # Snapshots
 
 def snapshots_commit_file
-  ".purchases-android-snapshots-commit"
+  "fastlane/.purchases-android-snapshots-commit"
 end
 
 def current_snapshots_commit

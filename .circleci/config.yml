@@ -534,8 +534,8 @@ jobs:
       - store_test_results:
           path: build/test-results
 
-  verify-revenuecatui-snapshot-tests:
-    description: "Verify RevenueCatUI snapshot tests"
+  verify-revenuecatui-snapshots:
+    description: "Verify RevenueCatUI snapshots"
     <<: *android-executor
     steps:
       - checkout
@@ -546,10 +546,10 @@ jobs:
       - run:
           name: Build and run RevenueCat UI snapshot tests
           command: |
-            bundle exec fastlane android verify_revenuecatui_snapshot_tests
+            bundle exec fastlane android verify_revenuecatui_snapshots
       - android/save-build-cache
 
-  record-revenuecatui-snapshot-tests:
+  record-revenuecatui-snapshots:
     description: "Record new RevenueCatUI snapshots"
     <<: *android-executor
     steps:
@@ -561,7 +561,7 @@ jobs:
       - run:
           name: Records new RevenueCat UI snapshots to become the new golden
           command: |
-            bundle exec fastlane android record_revenuecatui_snapshot_tests
+            bundle exec fastlane android record_revenuecatui_snapshots
       - run:
           command: |
             bundle exec fastlane android create_snapshots_repo_pr
@@ -585,7 +585,7 @@ workflows:
       - detekt
       - assemble-purchase-tester
       - run-backend-integration-tests
-      - verify-revenuecatui-snapshot-tests
+      - verify-revenuecatui-snapshots
 
   snapshot-deploy-sample-app-tests:
     when:
@@ -696,4 +696,4 @@ workflows:
     when:
       equal: [ generate_revenuecatui_snapshots, << pipeline.parameters.action >> ]
     jobs:
-      - record-revenuecatui-snapshot-tests
+      - record-revenuecatui-snapshots
