@@ -17,7 +17,7 @@ android {
     }
 
     defaultConfig {
-        minSdkVersion 21 // Compose requires minSdkVersion 21
+        minSdkVersion 24 // RevenueCat UI requires 24
     }
 
     compileOptions {

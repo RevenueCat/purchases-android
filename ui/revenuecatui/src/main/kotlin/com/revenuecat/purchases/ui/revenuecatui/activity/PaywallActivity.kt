@@ -13,6 +13,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.googlefonts.Font
 import androidx.compose.ui.text.googlefonts.GoogleFont
 import com.revenuecat.purchases.CustomerInfo
@@ -53,7 +54,7 @@ internal class PaywallActivity : ComponentActivity(), PaywallListener {
         val fontsMap = getArgs()?.fonts?.mapValues { (_, fontFamily) ->
             val fonts = fontFamily?.fonts?.map { font ->
                 when (font) {
-                    is PaywallFont.ResourceFont -> Font(font.resourceId, font.fontWeight, font.fontStyle)
+                    is PaywallFont.ResourceFont -> Font(font.resourceId, font.fontWeight, FontStyle(font.fontStyle))
                     is PaywallFont.GoogleFont -> {
                         val googleFontProvider = font.fontProvider
                         val provider = googleFontProviders.getOrElse(googleFontProvider) {
@@ -61,7 +62,7 @@ internal class PaywallActivity : ComponentActivity(), PaywallListener {
                             googleFontProviders[googleFontProvider] = googleProvider
                             googleProvider
                         }
-                        Font(GoogleFont(font.fontName), provider, font.fontWeight, font.fontStyle)
+                        Font(GoogleFont(font.fontName), provider, font.fontWeight, FontStyle(font.fontStyle))
                     }
                 }
             }

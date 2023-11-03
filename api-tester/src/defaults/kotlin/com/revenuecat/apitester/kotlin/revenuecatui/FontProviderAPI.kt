@@ -2,7 +2,6 @@ package com.revenuecat.apitester.kotlin.revenuecatui
 
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontFamily.Companion.Default
-import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.googlefonts.GoogleFont
 import com.revenuecat.purchases.ui.revenuecatui.ExperimentalPreviewRevenueCatUIPurchasesAPI
@@ -47,7 +46,7 @@ private class FontProviderAPI {
             val fontName: String = font.fontName
             val provider: GoogleFontProvider = font.fontProvider
             val fontWeight: FontWeight = font.fontWeight
-            val fontStyle: FontStyle = font.fontStyle
+            val fontStyle: Int = font.fontStyle
             val googleFont = PaywallFont.GoogleFont(
                 fontName,
                 provider,
@@ -57,7 +56,7 @@ private class FontProviderAPI {
         } else if (font is PaywallFont.ResourceFont) {
             val fontRes: Int = font.resourceId
             val fontWeight: FontWeight = font.fontWeight
-            val fontStyle: FontStyle = font.fontStyle
+            val fontStyle: Int = font.fontStyle
             val resourceFont = PaywallFont.ResourceFont(fontRes, fontWeight, fontStyle)
         }
     }
