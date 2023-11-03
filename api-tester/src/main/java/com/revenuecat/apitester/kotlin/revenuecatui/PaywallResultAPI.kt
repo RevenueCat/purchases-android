@@ -17,14 +17,18 @@ private class PaywallResultAPI {
         val callback: ActivityResultCallback<PaywallResult> = resultHandler
     }
 
-    fun checkResult(error: PurchasesError, customerInfo: CustomerInfo) {
-        val result: PaywallResult = PaywallResult.Cancelled
-        val parcelable: Parcelable = result
+    fun checkResult(paywallResult: PaywallResult, error: PurchasesError, customerInfo: CustomerInfo) {
+        when (paywallResult) {
+            is PaywallResult.Cancelled -> {}
+            is PaywallResult.Error -> {
+                val error2: PurchasesError = paywallResult.error
+            }
+            is PaywallResult.Purchased -> {
+                val customerInfo2: CustomerInfo = paywallResult.customerInfo
+            }
+        }
+        val parcelable: Parcelable = paywallResult
         val result2 = PaywallResult.Error(error)
-        val error2: PurchasesError = result2.error
         val result3 = PaywallResult.Purchased(customerInfo)
-        val customerInfo: CustomerInfo = result3.customerInfo
-        val result2AsSealedClass: PaywallResult = result2
-        val result3AsSealedClass: PaywallResult = result3
     }
 }

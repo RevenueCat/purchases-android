@@ -7,7 +7,7 @@ import com.revenuecat.purchases.ui.revenuecatui.PaywallDialogOptions
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider
 
-@Suppress("unused", "UNUSED_VARIABLE")
+@Suppress("unused", "UNUSED_VARIABLE", "LongParameterList")
 @OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class)
 private class PaywallDialogOptionsAPI {
     fun check(

@@ -52,7 +52,7 @@ private class FontProviderAPI {
                 fontName,
                 provider,
                 fontWeight,
-                fontStyle
+                fontStyle,
             )
         } else if (font is PaywallFont.ResourceFont) {
             val fontRes: Int = font.resourceId
@@ -90,7 +90,8 @@ private class FontProviderAPI {
             TypographyType.BODY_SMALL,
             TypographyType.LABEL_LARGE,
             TypographyType.LABEL_MEDIUM,
-            TypographyType.LABEL_SMALL -> return true
+            TypographyType.LABEL_SMALL,
+            -> return true
         }
     }
 }
