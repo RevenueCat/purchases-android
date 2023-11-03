@@ -44,6 +44,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
@@ -51,6 +52,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.ui.revenuecatui.ExperimentalPreviewRevenueCatUIPurchasesAPI
@@ -80,7 +82,6 @@ import com.revenuecat.purchases.ui.revenuecatui.extensions.introEligibility
 import com.revenuecat.purchases.ui.revenuecatui.extensions.packageButtonActionInProgressOpacityAnimation
 import com.revenuecat.purchases.ui.revenuecatui.extensions.packageButtonColorAnimation
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toAndroidContext
-import com.revenuecat.purchases.ui.revenuecatui.helpers.windowAspectRatio
 
 private object Template5UIConstants {
     val featureIconSize = 25.dp
@@ -95,13 +96,17 @@ internal fun Template5(
     state: PaywallState.Loaded,
     viewModel: PaywallViewModel,
 ) {
-    Column {
+    var size by remember { mutableStateOf(IntSize.Zero) }
+
+    Column(
+        modifier = Modifier.onGloballyPositioned { size = it.size },
+    ) {
         var packageSelectorVisible by remember {
             mutableStateOf(state.templateConfiguration.mode != PaywallMode.FOOTER_CONDENSED)
         }
 
         if (state.isInFullScreenMode) {
-            HeaderImage(state.templateConfiguration.images.headerUri)
+            HeaderImage(state.templateConfiguration.images.headerUri, size)
         }
 
         Template5MainContent(state, viewModel, packageSelectorVisible)
@@ -171,9 +176,9 @@ private fun ColumnScope.Template5MainContent(
 }
 
 @Composable
-private fun HeaderImage(uri: Uri?) {
+private fun HeaderImage(uri: Uri?, template5Size: IntSize) {
     uri?.let {
-        val aspectRatio = windowAspectRatio()
+        val aspectRatio = template5Size.height.toFloat() / template5Size.width.toFloat()
         RemoteImage(
             urlString = uri.toString(),
             modifier = Modifier
