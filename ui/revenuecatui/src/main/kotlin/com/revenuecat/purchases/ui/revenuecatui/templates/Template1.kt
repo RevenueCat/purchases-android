@@ -30,12 +30,14 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.asAndroidPath
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.ui.revenuecatui.ExperimentalPreviewRevenueCatUIPurchasesAPI
 import com.revenuecat.purchases.ui.revenuecatui.InternalPaywall
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
@@ -53,6 +55,8 @@ import com.revenuecat.purchases.ui.revenuecatui.data.isInFullScreenMode
 import com.revenuecat.purchases.ui.revenuecatui.data.selectedLocalization
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockViewModel
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
+import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
+import com.revenuecat.purchases.ui.revenuecatui.helpers.windowAspectRatio
 
 @Composable
 internal fun Template1(state: PaywallState.Loaded, viewModel: PaywallViewModel) {
@@ -130,10 +134,17 @@ private fun ColumnScope.Template1MainContent(state: PaywallState.Loaded) {
 private fun HeaderImage(uri: Uri?) {
     uri?.let {
         CircleMask {
+            val aspectRatio = windowAspectRatio()
+            val screenHeight = LocalConfiguration.current.screenHeightDp
             RemoteImage(
                 urlString = uri.toString(),
                 modifier = Modifier
-                    .aspectRatio(ratio = 1.2f),
+                    .conditional(aspectRatio > 1f) {
+                        aspectRatio(ratio = 1.2f)
+                    }
+                    .conditional(aspectRatio <= 1f) {
+                        fillMaxWidth().height(screenHeight.dp / 2f)
+                    },
                 contentScale = ContentScale.Crop,
             )
         }

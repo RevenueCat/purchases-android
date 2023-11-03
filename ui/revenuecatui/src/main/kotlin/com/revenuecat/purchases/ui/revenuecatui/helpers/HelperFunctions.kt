@@ -2,6 +2,7 @@ package com.revenuecat.purchases.ui.revenuecatui.helpers
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalInspectionMode
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Purchases
@@ -13,6 +14,12 @@ import kotlin.coroutines.suspendCoroutine
 @Composable
 @ReadOnlyComposable
 internal fun isInPreviewMode() = LocalInspectionMode.current
+
+@Composable
+@ReadOnlyComposable
+internal fun windowAspectRatio(): Float {
+    return LocalConfiguration.current.screenHeightDp.toFloat() / LocalConfiguration.current.screenWidthDp
+}
 
 /**
  * Evaluates [shouldDisplayBlock] with the current CustomerInfo to determine if a paywall should be displayed.

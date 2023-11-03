@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
@@ -79,12 +80,14 @@ import com.revenuecat.purchases.ui.revenuecatui.extensions.introEligibility
 import com.revenuecat.purchases.ui.revenuecatui.extensions.packageButtonActionInProgressOpacityAnimation
 import com.revenuecat.purchases.ui.revenuecatui.extensions.packageButtonColorAnimation
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toAndroidContext
+import com.revenuecat.purchases.ui.revenuecatui.helpers.windowAspectRatio
 
 private object Template5UIConstants {
     val featureIconSize = 25.dp
     val checkmarkSize = 18.dp
     val discountPadding = 8.dp
     const val headerAspectRatio = 2f
+    const val percentageScreenImageInLandscape = 0.4f
 }
 
 @Composable
@@ -170,10 +173,16 @@ private fun ColumnScope.Template5MainContent(
 @Composable
 private fun HeaderImage(uri: Uri?) {
     uri?.let {
+        val aspectRatio = windowAspectRatio()
         RemoteImage(
             urlString = uri.toString(),
             modifier = Modifier
-                .aspectRatio(ratio = Template5UIConstants.headerAspectRatio),
+                .conditional(aspectRatio > 1f) {
+                    aspectRatio(ratio = Template5UIConstants.headerAspectRatio)
+                }
+                .conditional(aspectRatio <= 1f) {
+                    fillMaxHeight(Template5UIConstants.percentageScreenImageInLandscape).fillMaxWidth()
+                },
             contentScale = ContentScale.Crop,
         )
     }
@@ -425,6 +434,7 @@ private val TemplateConfiguration.Colors.unselectedDiscountText: Color
 @OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class)
 @Preview(showBackground = true, locale = "en-rUS")
 @Preview(showBackground = true, locale = "es-rES")
+@Preview(showBackground = true, widthDp = 1000, heightDp = 1000)
 @Preview(showBackground = true, device = Devices.NEXUS_7)
 @Preview(showBackground = true, device = Devices.NEXUS_10)
 @Composable
