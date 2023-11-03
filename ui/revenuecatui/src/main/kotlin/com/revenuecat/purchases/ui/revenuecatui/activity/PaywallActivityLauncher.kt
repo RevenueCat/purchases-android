@@ -73,9 +73,9 @@ class PaywallActivityLauncher {
      */
     @JvmOverloads
     fun launchIfNeeded(
+        requiredEntitlementIdentifier: String,
         offering: Offering? = null,
         fontProvider: ParcelizableFontProvider? = null,
-        requiredEntitlementIdentifier: String,
         shouldDisplayDismissButton: Boolean = DEFAULT_DISPLAY_DISMISS_BUTTON,
     ) {
         launchIfNeeded(
