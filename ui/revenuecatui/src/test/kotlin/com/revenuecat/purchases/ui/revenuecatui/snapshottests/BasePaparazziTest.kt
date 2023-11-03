@@ -27,7 +27,7 @@ data class TestConfig(
  * - To run them locally you need:
  * `bundle exec fastlane verify_revenuecatui_snapshot_tests`
  * - If your PR requires updating snapshots, you can generate them on CI:
- * `bundle exec fastlane record_revenuecatui_snapshot_tests`
+ * `bundle exec fastlane generate_snapshots_RCUI`
  * - Once those PRs are merged in `purchases-android-snapshots`, you can update the commit:
  * `bundle exec fastlane update_snapshots_repo`
  */
