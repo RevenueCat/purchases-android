@@ -50,8 +50,12 @@ dependencies {
     implementation project(path: ':purchases')
     implementation project(path: ':feature:amazon')
     implementation project(path: ':ui:debugview')
+    implementation project(path: ':ui:revenuecatui')
 
     implementation(platform(libs.kotlin.bom))
     implementation platform(libs.compose.bom)
     implementation libs.compose.ui
+    implementation libs.activity.compose
+    implementation libs.androidx.fragment.ktx
+    implementation libs.compose.ui.google.fonts
 }
