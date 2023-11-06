@@ -21,6 +21,7 @@ import com.revenuecat.purchases.models.BillingFeature
 import com.revenuecat.purchases.models.GoogleProrationMode
 import com.revenuecat.purchases.models.InAppMessageType
 import com.revenuecat.purchases.models.StoreProduct
+import com.revenuecat.purchases.paywalls.events.PaywallEvent
 import com.revenuecat.purchases.strings.BillingStrings
 import com.revenuecat.purchases.strings.ConfigureStrings
 import java.net.URL
@@ -448,6 +449,15 @@ class Purchases internal constructor(
      */
     fun invalidateCustomerInfoCache() {
         purchasesOrchestrator.invalidateCustomerInfoCache()
+    }
+
+    /**
+     * Used by `RevenueCatUI` to keep track of [PaywallEvent]s.
+     */
+    @ExperimentalPreviewRevenueCatPurchasesAPI
+    @JvmSynthetic
+    fun track(paywallEvent: PaywallEvent) {
+        purchasesOrchestrator.track(paywallEvent)
     }
 
     // region Subscriber Attributes

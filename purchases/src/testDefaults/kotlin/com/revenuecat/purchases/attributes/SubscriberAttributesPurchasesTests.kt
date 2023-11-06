@@ -96,6 +96,7 @@ class SubscriberAttributesPurchasesTests {
             postPendingTransactionsHelper = postPendingTransactionsHelper,
             syncPurchasesHelper = mockk(),
             offeringsManager = offeringsManagerMock,
+            paywallEventsManager = null,
         )
 
         underTest = Purchases(purchasesOrchestrator)

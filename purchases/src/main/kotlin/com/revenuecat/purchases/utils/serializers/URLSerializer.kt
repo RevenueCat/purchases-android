@@ -1,4 +1,4 @@
-package com.revenuecat.purchases.paywalls
+package com.revenuecat.purchases.utils.serializers
 
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.builtins.nullable
