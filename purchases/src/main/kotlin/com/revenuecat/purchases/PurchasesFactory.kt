@@ -267,6 +267,9 @@ internal class PurchasesFactory(
         identityManager: IdentityManager,
         eventsDispatcher: Dispatcher,
     ): PaywallEventsManager? {
+        // RevenueCatUI is Android 24+ so it should always enter here when using RevenueCatUI.
+        // Still, we check for Android N or newer since we use Streams which are 24+ and the main SDK supports
+        // older versions.
         return if (isAndroidNOrNewer()) {
             PaywallEventsManager(
                 PaywallEventsFileHelper(FileHelper(context)),
