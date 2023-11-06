@@ -182,7 +182,7 @@ private fun HeaderImage(uri: Uri?, template5Size: IntSize) {
         RemoteImage(
             urlString = uri.toString(),
             modifier = Modifier
-                .conditional(aspectRatio > 1f) {
+                .conditional(aspectRatio > 1f || template5Size == IntSize.Zero) {
                     aspectRatio(ratio = Template5UIConstants.headerAspectRatio)
                 }
                 .conditional(aspectRatio <= 1f) {
