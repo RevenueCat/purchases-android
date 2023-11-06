@@ -80,10 +80,17 @@ internal class BillingWrapper(
     private val dateProvider: DateProvider = DefaultDateProvider(),
 ) : BillingAbstract(), PurchasesUpdatedListener, BillingClientStateListener {
 
-    @get:Synchronized
-    @set:Synchronized
+    var billingClient: BillingClient
+        @Synchronized get() {
+            return _billingClient ?: clientFactory.buildClient(this)
+        }
+
+        @Synchronized set(value) {
+            _billingClient = value
+        }
+
     @Volatile
-    var billingClient: BillingClient? = null
+    private var _billingClient: BillingClient? = null
 
     private val purchaseContext = mutableMapOf<String, PurchaseContext>()
 
@@ -107,7 +114,7 @@ internal class BillingWrapper(
 
     private fun executePendingRequests() {
         synchronized(this@BillingWrapper) {
-            while (billingClient?.isReady == true) {
+            while (billingClient.isReady) {
                 serviceRequests.poll()?.let { mainHandler.post { it(null) } } ?: break
             }
         }
@@ -122,25 +129,19 @@ internal class BillingWrapper(
 
     override fun startConnection() {
         synchronized(this@BillingWrapper) {
-            if (billingClient == null) {
-                billingClient = clientFactory.buildClient(this)
-            }
-
             reconnectionAlreadyScheduled = false
 
-            billingClient?.let {
-                if (!it.isReady) {
-                    log(LogIntent.DEBUG, BillingStrings.BILLING_CLIENT_STARTING.format(it))
-                    try {
-                        it.startConnection(this)
-                    } catch (e: IllegalStateException) {
-                        log(
-                            LogIntent.GOOGLE_ERROR,
-                            BillingStrings.ILLEGAL_STATE_EXCEPTION_WHEN_CONNECTING.format(e),
-                        )
-                        val error = PurchasesError(PurchasesErrorCode.StoreProblemError, e.message)
-                        sendErrorsToAllPendingRequests(error)
-                    }
+            if (!billingClient.isReady) {
+                log(LogIntent.DEBUG, BillingStrings.BILLING_CLIENT_STARTING.format(it))
+                try {
+                    billingClient.startConnection(this)
+                } catch (e: IllegalStateException) {
+                    log(
+                        LogIntent.GOOGLE_ERROR,
+                        BillingStrings.ILLEGAL_STATE_EXCEPTION_WHEN_CONNECTING.format(e),
+                    )
+                    val error = PurchasesError(PurchasesErrorCode.StoreProblemError, e.message)
+                    sendErrorsToAllPendingRequests(error)
                 }
             }
         }
@@ -149,11 +150,9 @@ internal class BillingWrapper(
     override fun endConnection() {
         mainHandler.post {
             synchronized(this@BillingWrapper) {
-                billingClient?.let {
-                    log(LogIntent.DEBUG, BillingStrings.BILLING_CLIENT_ENDING.format(it))
-                    it.endConnection()
-                }
-                billingClient = null
+                log(LogIntent.DEBUG, BillingStrings.BILLING_CLIENT_ENDING.format(billingClient))
+                billingClient.endConnection()
+                _billingClient = null
             }
         }
     }
@@ -162,7 +161,7 @@ internal class BillingWrapper(
     private fun executeRequestOnUIThread(request: (PurchasesError?) -> Unit) {
         if (purchasesUpdatedListener != null) {
             serviceRequests.add(request)
-            if (billingClient?.isReady == false) {
+            if (!billingClient.isReady) {
                 startConnectionOnMainThread()
             } else {
                 executePendingRequests()
@@ -330,9 +329,8 @@ internal class BillingWrapper(
         executeRequestOnUIThread { connectionError ->
             if (connectionError == null) {
                 withConnectedClient {
-                    queryPurchaseHistoryAsyncEnsuringOneResponse(productType) {
-                            billingResult, purchaseHistoryRecordList ->
-                        if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
+                    queryPurchaseHistoryAsyncEnsuringOneResponse(productType) { result, purchaseHistoryRecordList ->
+                        if (result.responseCode == BillingClient.BillingResponseCode.OK) {
                             purchaseHistoryRecordList.takeUnless { it.isNullOrEmpty() }?.forEach {
                                 log(
                                     LogIntent.RC_PURCHASE_SUCCESS,
@@ -343,8 +341,8 @@ internal class BillingWrapper(
                             onReceivePurchaseHistory(purchaseHistoryRecordList ?: emptyList())
                         } else {
                             onReceivePurchaseHistoryError(
-                                billingResult.responseCode.billingResponseToPurchasesError(
-                                    "Error receiving purchase history. ${billingResult.toHumanReadableDescription()}",
+                                result.responseCode.billingResponseToPurchasesError(
+                                    "Error receiving purchase history. ${result.toHumanReadableDescription()}",
                                 ).also { errorLog(it) },
                             )
                         }
@@ -549,28 +547,28 @@ internal class BillingWrapper(
     override fun findPurchaseInPurchaseHistory(
         appUserID: String,
         productType: ProductType,
-        productId: String,
+        sku: String,
         onCompletion: (StoreTransaction) -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {
         withConnectedClient {
-            log(LogIntent.DEBUG, RestoreStrings.QUERYING_PURCHASE_WITH_TYPE.format(productId, productType.name))
+            log(LogIntent.DEBUG, RestoreStrings.QUERYING_PURCHASE_WITH_TYPE.format(sku, productType.name))
             productType.toGoogleProductType()?.let { googleProductType ->
                 queryPurchaseHistoryAsyncEnsuringOneResponse(googleProductType) { result, purchasesList ->
                     if (result.isSuccessful()) {
                         val purchaseHistoryRecordWrapper =
-                            purchasesList?.firstOrNull { it.products.contains(productId) }
+                            purchasesList?.firstOrNull { it.products.contains(sku) }
                                 ?.toStoreTransaction(productType)
 
                         if (purchaseHistoryRecordWrapper != null) {
                             onCompletion(purchaseHistoryRecordWrapper)
                         } else {
-                            val message = PurchaseStrings.NO_EXISTING_PURCHASE.format(productId)
+                            val message = PurchaseStrings.NO_EXISTING_PURCHASE.format(sku)
                             val error = PurchasesError(PurchasesErrorCode.PurchaseInvalidError, message)
                             onError(error)
                         }
                     } else {
-                        val underlyingErrorMessage = PurchaseStrings.ERROR_FINDING_PURCHASE.format(productId)
+                        val underlyingErrorMessage = PurchaseStrings.ERROR_FINDING_PURCHASE.format(sku)
                         val error =
                             result.responseCode.billingResponseToPurchasesError(underlyingErrorMessage)
                         onError(error)
@@ -585,49 +583,46 @@ internal class BillingWrapper(
     @VisibleForTesting(otherwise = PRIVATE)
     @Suppress("ReturnCount")
     internal fun getPurchaseType(purchaseToken: String, listener: (ProductType) -> Unit) {
-        billingClient?.let { client ->
+        val querySubsPurchasesParams = BillingClient.ProductType.SUBS.buildQueryPurchasesParams()
+        if (querySubsPurchasesParams == null) {
+            errorLog(PurchaseStrings.INVALID_PRODUCT_TYPE.format("getPurchaseType"))
+            listener(ProductType.UNKNOWN)
+            return
+        }
 
-            val querySubsPurchasesParams = BillingClient.ProductType.SUBS.buildQueryPurchasesParams()
-            if (querySubsPurchasesParams == null) {
+        billingClient.queryPurchasesAsyncWithTracking(
+            BillingClient.ProductType.SUBS,
+            querySubsPurchasesParams,
+        ) querySubPurchasesAsync@{ querySubsResult, subsPurchasesList ->
+
+            val subsResponseOK = querySubsResult.responseCode == BillingClient.BillingResponseCode.OK
+            val subFound = subsPurchasesList.any { it.purchaseToken == purchaseToken }
+            if (subsResponseOK && subFound) {
+                listener(ProductType.SUBS)
+                return@querySubPurchasesAsync
+            }
+
+            val queryInAppsPurchasesParams = BillingClient.ProductType.INAPP.buildQueryPurchasesParams()
+            if (queryInAppsPurchasesParams == null) {
                 errorLog(PurchaseStrings.INVALID_PRODUCT_TYPE.format("getPurchaseType"))
                 listener(ProductType.UNKNOWN)
-                return
+                return@querySubPurchasesAsync
             }
+            billingClient.queryPurchasesAsyncWithTracking(
+                BillingClient.ProductType.INAPP,
+                queryInAppsPurchasesParams,
+            ) queryInAppPurchasesAsync@{ queryInAppsResult, inAppPurchasesList ->
 
-            client.queryPurchasesAsyncWithTracking(
-                BillingClient.ProductType.SUBS,
-                querySubsPurchasesParams,
-            ) querySubPurchasesAsync@{ querySubsResult, subsPurchasesList ->
-
-                val subsResponseOK = querySubsResult.responseCode == BillingClient.BillingResponseCode.OK
-                val subFound = subsPurchasesList.any { it.purchaseToken == purchaseToken }
-                if (subsResponseOK && subFound) {
-                    listener(ProductType.SUBS)
-                    return@querySubPurchasesAsync
-                }
-
-                val queryInAppsPurchasesParams = BillingClient.ProductType.INAPP.buildQueryPurchasesParams()
-                if (queryInAppsPurchasesParams == null) {
-                    errorLog(PurchaseStrings.INVALID_PRODUCT_TYPE.format("getPurchaseType"))
-                    listener(ProductType.UNKNOWN)
-                    return@querySubPurchasesAsync
-                }
-                client.queryPurchasesAsyncWithTracking(
-                    BillingClient.ProductType.INAPP,
-                    queryInAppsPurchasesParams,
-                ) queryInAppPurchasesAsync@{ queryInAppsResult, inAppPurchasesList ->
-
-                    val inAppsResponseIsOK = queryInAppsResult.responseCode == BillingClient.BillingResponseCode.OK
-                    val inAppFound = inAppPurchasesList.any { it.purchaseToken == purchaseToken }
-                    if (inAppsResponseIsOK && inAppFound) {
-                        listener(ProductType.INAPP)
-                        return@queryInAppPurchasesAsync
-                    }
-                    listener(ProductType.UNKNOWN)
+                val inAppsResponseIsOK = queryInAppsResult.responseCode == BillingClient.BillingResponseCode.OK
+                val inAppFound = inAppPurchasesList.any { it.purchaseToken == purchaseToken }
+                if (inAppsResponseIsOK && inAppFound) {
+                    listener(ProductType.INAPP)
                     return@queryInAppPurchasesAsync
                 }
+                listener(ProductType.UNKNOWN)
+                return@queryInAppPurchasesAsync
             }
-        } ?: listener(ProductType.UNKNOWN)
+        }
     }
 
     override fun onPurchasesUpdated(
@@ -685,7 +680,7 @@ internal class BillingWrapper(
                     log(
                         LogIntent.DEBUG,
                         BillingStrings.BILLING_SERVICE_SETUP_FINISHED
-                            .format(billingClient?.toString()),
+                            .format(billingClient.toString()),
                     )
                     stateListener?.onConnected()
                     executePendingRequests()
@@ -755,7 +750,7 @@ internal class BillingWrapper(
     }
 
     override fun onBillingServiceDisconnected() {
-        log(LogIntent.WARNING, BillingStrings.BILLING_SERVICE_DISCONNECTED.format(billingClient?.toString()))
+        log(LogIntent.WARNING, BillingStrings.BILLING_SERVICE_DISCONNECTED.format(billingClient.toString()))
     }
 
     /**
@@ -778,7 +773,7 @@ internal class BillingWrapper(
         }
     }
 
-    override fun isConnected(): Boolean = billingClient?.isReady ?: false
+    override fun isConnected(): Boolean = billingClient.isReady ?: false
 
     override fun showInAppMessagesIfNeeded(
         activity: Activity,
@@ -824,7 +819,7 @@ internal class BillingWrapper(
     }
 
     private fun withConnectedClient(receivingFunction: BillingClient.() -> Unit) {
-        billingClient?.takeIf { it.isReady }?.let {
+        billingClient.takeIf { it.isReady }?.let {
             it.receivingFunction()
         } ?: log(LogIntent.GOOGLE_WARNING, BillingStrings.BILLING_CLIENT_DISCONNECTED.format(getStackTrace()))
     }
@@ -848,7 +843,7 @@ internal class BillingWrapper(
 
         synchronized(this@BillingWrapper) {
             val context = purchaseContext[purchase.firstProductId]
-            context?.productType?.let { productType ->
+            context?.productType?.let {
                 completion(
                     purchase.toStoreTransaction(context),
                 )
@@ -972,9 +967,8 @@ internal class BillingWrapper(
 
     private fun trackProductDetailsNotSupportedIfNeeded() {
         if (diagnosticsTrackerIfEnabled == null) return
-        val billingResult = billingClient?.isFeatureSupported(BillingClient.FeatureType.PRODUCT_DETAILS)
+        val billingResult = billingClient.isFeatureSupported(BillingClient.FeatureType.PRODUCT_DETAILS)
         if (
-            billingResult != null &&
             billingResult.responseCode == BillingClient.BillingResponseCode.FEATURE_NOT_SUPPORTED
         ) {
             diagnosticsTrackerIfEnabled.trackProductDetailsNotSupported(
