@@ -61,6 +61,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.isInFullScreenMode
 import com.revenuecat.purchases.ui.revenuecatui.data.selectedLocalization
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockViewModel
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
+import com.revenuecat.purchases.ui.revenuecatui.extensions.aspectRatio
 import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
 
 @Composable
@@ -138,15 +139,15 @@ private fun ColumnScope.Template1MainContent(state: PaywallState.Loaded, templat
 }
 
 @Composable
-private fun HeaderImage(uri: Uri?, template1Size: IntSize) {
+private fun HeaderImage(uri: Uri?, templateSize: IntSize) {
     uri?.let {
         CircleMask {
-            val aspectRatio = template1Size.height.toFloat() / template1Size.width
+            val aspectRatio = templateSize.aspectRatio
             val screenHeight = LocalConfiguration.current.screenHeightDp
             RemoteImage(
                 urlString = uri.toString(),
                 modifier = Modifier
-                    .conditional(aspectRatio > 1f || template1Size == IntSize.Zero) {
+                    .conditional(aspectRatio > 1f || templateSize == IntSize.Zero) {
                         aspectRatio(ratio = 1.2f)
                     }
                     .conditional(aspectRatio <= 1f) {

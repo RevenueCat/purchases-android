@@ -77,6 +77,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.processed.localizedDiscount
 import com.revenuecat.purchases.ui.revenuecatui.data.selectedLocalization
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockViewModel
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
+import com.revenuecat.purchases.ui.revenuecatui.extensions.aspectRatio
 import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
 import com.revenuecat.purchases.ui.revenuecatui.extensions.introEligibility
 import com.revenuecat.purchases.ui.revenuecatui.extensions.packageButtonActionInProgressOpacityAnimation
@@ -176,13 +177,13 @@ private fun ColumnScope.Template5MainContent(
 }
 
 @Composable
-private fun HeaderImage(uri: Uri?, template5Size: IntSize) {
+private fun HeaderImage(uri: Uri?, templateSize: IntSize) {
     uri?.let {
-        val aspectRatio = template5Size.height.toFloat() / template5Size.width.toFloat()
+        val aspectRatio = templateSize.aspectRatio
         RemoteImage(
             urlString = uri.toString(),
             modifier = Modifier
-                .conditional(aspectRatio > 1f || template5Size == IntSize.Zero) {
+                .conditional(aspectRatio > 1f || templateSize == IntSize.Zero) {
                     aspectRatio(ratio = Template5UIConstants.headerAspectRatio)
                 }
                 .conditional(aspectRatio <= 1f) {

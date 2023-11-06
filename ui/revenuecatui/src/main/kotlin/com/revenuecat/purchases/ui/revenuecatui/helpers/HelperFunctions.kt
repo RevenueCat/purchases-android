@@ -18,7 +18,8 @@ internal fun isInPreviewMode() = LocalInspectionMode.current
 @Composable
 @ReadOnlyComposable
 internal fun windowAspectRatio(): Float {
-    return LocalConfiguration.current.screenHeightDp.toFloat() / LocalConfiguration.current.screenWidthDp
+    val configuration = LocalConfiguration.current
+    return configuration.screenHeightDp.toFloat() / configuration.screenWidthDp
 }
 
 /**
