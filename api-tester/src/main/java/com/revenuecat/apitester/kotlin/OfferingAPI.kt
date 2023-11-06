@@ -36,7 +36,7 @@ private class OfferingAPI {
                 serverDescription = serverDescription,
                 metadata = metadata,
                 availablePackages = availablePackages,
-                paywall = paywall
+                paywall = paywall,
             )
         }
     }
