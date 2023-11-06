@@ -41,6 +41,7 @@ import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.mockkStatic
+import io.mockk.runs
 import io.mockk.slot
 import io.mockk.unmockkStatic
 import org.junit.After
@@ -154,6 +155,10 @@ internal open class BasePurchasesTest {
             } answers {
                 purchasesUpdatedListener = null
             }
+
+            every {
+                startConnectionOnMainThread()
+            } just runs
         }
     }
 

@@ -847,8 +847,8 @@ class AmazonBillingTest {
         } just Runs
 
         underTest.startConnection()
-        // First call is when setting purchasesUpdatedListener
-        verify(exactly = 2) {
+
+        verify(exactly = 1) {
             mockPurchasingServiceProvider.registerListener(any(), any())
         }
     }

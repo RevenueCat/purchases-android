@@ -182,6 +182,7 @@ class BillingWrapperTest {
 
         wrapper = BillingWrapper(mockClientFactory, handler, mockDeviceCache, mockDiagnosticsTracker, mockDateProvider)
         wrapper.purchasesUpdatedListener = mockPurchasesListener
+        wrapper.startConnectionOnMainThread()
         onConnectedCalled = false
         wrapper.stateListener = object : BillingAbstract.StateListener {
             override fun onConnected() {
@@ -595,7 +596,7 @@ class BillingWrapperTest {
     @Test
     fun `properly sets billingFlowParams for inapp purchase`() {
         mockkStatic(BillingFlowParams::class)
-        mockkStatic(BillingFlowParams.ProductDetailsParams::class)
+        mockkStatic(ProductDetailsParams::class)
 
         val mockBuilder = mockk<BillingFlowParams.Builder>(relaxed = true)
         every {
@@ -654,7 +655,7 @@ class BillingWrapperTest {
     @Test
     fun `properly sets ProductDetailsParams for subscription product`() {
         mockkStatic(BillingFlowParams::class)
-        mockkStatic(BillingFlowParams.ProductDetailsParams::class)
+        mockkStatic(ProductDetailsParams::class)
         mockkStatic(BillingFlowParams.SubscriptionUpdateParams::class)
 
         val mockProductDetailsBuilder = mockk<ProductDetailsParams.Builder>(relaxed = true)
@@ -704,7 +705,7 @@ class BillingWrapperTest {
     @Test
     fun `properly sets ProductDetailsParams for inapp product`() {
         mockkStatic(BillingFlowParams::class)
-        mockkStatic(BillingFlowParams.ProductDetailsParams::class)
+        mockkStatic(ProductDetailsParams::class)
 
         val mockProductDetailsBuilder = mockk<ProductDetailsParams.Builder>(relaxed = true)
         every {
@@ -969,7 +970,7 @@ class BillingWrapperTest {
         wrapper.makePurchaseAsync(
             mockActivity,
             appUserId,
-            storeProduct.subscriptionOptions!!.first().purchasingData,
+            storeProduct.subscriptionOptions.first().purchasingData,
             mockReplaceSkuInfo(),
             null
         )
@@ -1151,14 +1152,15 @@ class BillingWrapperTest {
     }
 
     @Test
-    fun nullifyBillingClientAfterEndingConnection() {
+    fun closingBillingClientAfterEndingConnection() {
         every {
             mockClient.endConnection()
         } just Runs
         every {
             mockClient.isReady
         } returns true
-        wrapper.purchasesUpdatedListener = null
+
+        wrapper.close()
 
         assertThat<BillingClient>(wrapper.billingClient).isNull()
     }
@@ -1204,7 +1206,7 @@ class BillingWrapperTest {
             mockClient.isReady
         } returns false
 
-        wrapper.purchasesUpdatedListener = null
+        wrapper.close()
         verify {
             mockClient.endConnection()
         }
@@ -2298,17 +2300,6 @@ class BillingWrapperTest {
             wrapper.onBillingSetupFinished(errorCode.buildResult())
         }
         verify(exactly = 1) { handler.postDelayed(any(), any()) }
-    }
-
-    @Test
-    fun `setting purchasesUpdatedListener will connect to BillingService with no delay`() {
-        val retryMillisecondsSlot = slot<Long>()
-        every {
-            handler.postDelayed(any(), capture(retryMillisecondsSlot))
-        } returns true
-
-        wrapper.purchasesUpdatedListener = mockPurchasesListener
-        assertThat(retryMillisecondsSlot.captured == 0L)
     }
 
     @Test

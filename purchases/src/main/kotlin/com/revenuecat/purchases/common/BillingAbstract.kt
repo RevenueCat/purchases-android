@@ -22,16 +22,6 @@ internal abstract class BillingAbstract {
     @get:Synchronized
     @Volatile
     var purchasesUpdatedListener: PurchasesUpdatedListener? = null
-        set(value) {
-            synchronized(this@BillingAbstract) {
-                field = value
-            }
-            if (value != null) {
-                startConnectionOnMainThread()
-            } else {
-                endConnection()
-            }
-        }
 
     interface StateListener {
         fun onConnected()

@@ -141,6 +141,7 @@ internal class PurchasesOrchestrator constructor(
             }
         }
         billing.purchasesUpdatedListener = getPurchasesUpdatedListener()
+        billing.startConnectionOnMainThread()
 
         dispatch {
             // This needs to happen after the billing client listeners have been set. This is because
