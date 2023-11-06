@@ -15,12 +15,12 @@ import com.revenuecat.purchases.paywalls.PaywallData
  * @property availablePackages Array of [Package] objects available for purchase.
  * @property metadata Offering metadata defined in RevenueCat dashboard.
  */
-data class Offering constructor(
+data class Offering @JvmOverloads constructor(
     val identifier: String,
     val serverDescription: String,
     val metadata: Map<String, Any>,
     val availablePackages: List<Package>,
-    val paywall: PaywallData?,
+    val paywall: PaywallData? = null,
 ) {
 
     /**

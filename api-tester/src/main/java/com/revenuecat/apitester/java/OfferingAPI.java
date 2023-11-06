@@ -1,7 +1,10 @@
 package com.revenuecat.apitester.java;
 
+import androidx.annotation.Nullable;
+
 import com.revenuecat.purchases.Offering;
 import com.revenuecat.purchases.Package;
+import com.revenuecat.purchases.paywalls.PaywallData;
 
 import java.util.List;
 import java.util.Map;
@@ -25,5 +28,22 @@ final class OfferingAPI {
 
         final Map<String, Object> metadata = offering.getMetadata();
         final String metadataString = offering.getMetadataString("key", "default");
+
+        final @Nullable PaywallData paywallData = offering.getPaywall();
+
+        new Offering(
+                identifier,
+                serverDescription,
+                metadata,
+                availablePackages
+        );
+
+        new Offering(
+                identifier,
+                serverDescription,
+                metadata,
+                availablePackages,
+                paywallData
+        );
     }
 }
