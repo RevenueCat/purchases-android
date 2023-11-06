@@ -33,9 +33,9 @@ sealed class PaywallFont : Parcelable {
         val fontWeight: FontWeight = FontWeight.Normal,
         /**
          * The style of the font, normal or italic. The system uses this to match a font to a font request.
+         * We use int instead of [FontStyle] because [FontStyle] is not compatible with Java.
          */
-        @TypeParceler<FontStyle, FontStyleParceler>()
-        val fontStyle: FontStyle = FontStyle.Normal,
+        val fontStyle: Int = FontStyle.Normal.value,
     ) : PaywallFont()
 
     @Parcelize
@@ -52,8 +52,8 @@ sealed class PaywallFont : Parcelable {
         val fontWeight: FontWeight = FontWeight.Normal,
         /**
          * The style of the font, normal or italic. The system uses this to match a font to a font request.
+         * We use int instead of [FontStyle] because [FontStyle] is not compatible with Java.
          */
-        @TypeParceler<FontStyle, FontStyleParceler>()
-        val fontStyle: FontStyle = FontStyle.Normal,
+        val fontStyle: Int = FontStyle.Normal.value,
     ) : PaywallFont()
 }
