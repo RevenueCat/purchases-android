@@ -2,6 +2,7 @@ package com.revenuecat.apitester.java.revenuecatui;
 
 
 import androidx.activity.ComponentActivity;
+import androidx.activity.result.ActivityResultCaller;
 import androidx.fragment.app.Fragment;
 
 import com.revenuecat.purchases.Offering;
@@ -17,12 +18,14 @@ final class PaywallActivityLauncherAPI {
     static void check(
             ComponentActivity activity,
             Fragment fragment,
+            ActivityResultCaller resultCaller,
             PaywallResultHandler resultHandler,
             Offering offering,
             ParcelizableFontProvider fontProvider
     ) {
         PaywallActivityLauncher launcher = new PaywallActivityLauncher(activity, resultHandler);
         PaywallActivityLauncher launcher2 = new PaywallActivityLauncher(fragment, resultHandler);
+        PaywallActivityLauncher launcher3 = new PaywallActivityLauncher(resultCaller, resultHandler);
         launcher.launch();
         launcher.launch(offering);
         launcher.launch(null, fontProvider);

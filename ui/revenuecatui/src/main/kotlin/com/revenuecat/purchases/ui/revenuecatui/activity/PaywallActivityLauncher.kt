@@ -2,6 +2,7 @@ package com.revenuecat.purchases.ui.revenuecatui.activity
 
 import androidx.activity.ComponentActivity
 import androidx.activity.result.ActivityResultCallback
+import androidx.activity.result.ActivityResultCaller
 import androidx.activity.result.ActivityResultLauncher
 import androidx.fragment.app.Fragment
 import com.revenuecat.purchases.CustomerInfo
@@ -29,15 +30,20 @@ class PaywallActivityLauncher {
     /**
      * Creates a new PaywallActivityLauncher from an activity.
      */
-    constructor(activity: ComponentActivity, resultHandler: PaywallResultHandler) {
-        activityResultLauncher = activity.registerForActivityResult(PaywallContract(), resultHandler)
-    }
+    constructor(activity: ComponentActivity, resultHandler: PaywallResultHandler) :
+        this(activity as ActivityResultCaller, resultHandler)
 
     /**
      * Creates a new PaywallActivityLauncher from a fragment.
      */
-    constructor(fragment: Fragment, resultHandler: PaywallResultHandler) {
-        activityResultLauncher = fragment.registerForActivityResult(PaywallContract(), resultHandler)
+    constructor(fragment: Fragment, resultHandler: PaywallResultHandler) :
+        this(fragment as ActivityResultCaller, resultHandler)
+
+    /**
+     * Creates a new PaywallActivityLauncher from an [ActivityResultCaller] instance.
+     */
+    constructor(resultCaller: ActivityResultCaller, resultHandler: PaywallResultHandler) {
+        activityResultLauncher = resultCaller.registerForActivityResult(PaywallContract(), resultHandler)
     }
 
     /**

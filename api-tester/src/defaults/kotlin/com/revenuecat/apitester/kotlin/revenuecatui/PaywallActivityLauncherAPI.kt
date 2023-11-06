@@ -1,6 +1,7 @@
 package com.revenuecat.apitester.kotlin.revenuecatui
 
 import androidx.activity.ComponentActivity
+import androidx.activity.result.ActivityResultCaller
 import androidx.fragment.app.Fragment
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Offering
@@ -9,18 +10,20 @@ import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivityLauncher
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResultHandler
 import com.revenuecat.purchases.ui.revenuecatui.fonts.ParcelizableFontProvider
 
-@Suppress("unused", "UNUSED_VARIABLE")
+@Suppress("unused", "UNUSED_VARIABLE", "LongParameterList")
 @OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class)
 private class PaywallActivityLauncherAPI {
     fun check(
         componentActivity: ComponentActivity,
         fragment: Fragment,
+        resultCaller: ActivityResultCaller,
         resultHandler: PaywallResultHandler,
         offering: Offering,
         fontProvider: ParcelizableFontProvider,
     ) {
         val activityLauncher = PaywallActivityLauncher(componentActivity, resultHandler)
         val activityLauncher2 = PaywallActivityLauncher(fragment, resultHandler)
+        val activityLauncher3 = PaywallActivityLauncher(resultCaller, resultHandler)
         activityLauncher.launch()
         activityLauncher.launch(offering)
         activityLauncher.launch(
