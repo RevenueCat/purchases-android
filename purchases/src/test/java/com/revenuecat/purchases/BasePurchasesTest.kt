@@ -28,6 +28,7 @@ import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.SubscriptionOption
+import com.revenuecat.purchases.paywalls.events.PaywallEventsManager
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.utils.STUB_PRODUCT_IDENTIFIER
 import com.revenuecat.purchases.utils.createMockOneTimeProductDetails
@@ -67,6 +68,7 @@ internal open class BasePurchasesTest {
     internal val mockPostPendingTransactionsHelper = mockk<PostPendingTransactionsHelper>()
     internal val mockSyncPurchasesHelper = mockk<SyncPurchasesHelper>()
     protected val mockOfferingsManager = mockk<OfferingsManager>()
+    internal val mockPaywallEventsManager = mockk<PaywallEventsManager>()
 
     protected var capturedPurchasesUpdatedListener = slot<BillingAbstract.PurchasesUpdatedListener>()
     protected var capturedBillingWrapperStateListener = slot<BillingAbstract.StateListener>()
@@ -109,6 +111,9 @@ internal open class BasePurchasesTest {
         every {
             mockOfflineEntitlementsManager.updateProductEntitlementMappingCacheIfStale()
         } just Runs
+        every {
+            mockPaywallEventsManager.flushEvents()
+        } just Runs
 
         anonymousSetup(false)
     }
@@ -123,6 +128,7 @@ internal open class BasePurchasesTest {
             mockOfferingsManager,
             mockCustomerInfoUpdateHandler,
             mockPostPendingTransactionsHelper,
+            mockPaywallEventsManager,
         )
         unmockkStatic(ProcessLifecycleOwner::class)
     }
@@ -364,7 +370,8 @@ internal open class BasePurchasesTest {
             postTransactionWithProductDetailsHelper = postTransactionsHelper,
             postPendingTransactionsHelper = mockPostPendingTransactionsHelper,
             syncPurchasesHelper = mockSyncPurchasesHelper,
-            offeringsManager = mockOfferingsManager
+            offeringsManager = mockOfferingsManager,
+            paywallEventsManager = mockPaywallEventsManager,
         )
         purchases = Purchases(purchasesOrchestrator)
         Purchases.sharedInstance = purchases

@@ -4,6 +4,8 @@ import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.core.os.LocaleListCompat
 import com.revenuecat.purchases.utils.convertToCorrectlyFormattedLocale
+import com.revenuecat.purchases.utils.serializers.OptionalURLSerializer
+import com.revenuecat.purchases.utils.serializers.URLSerializer
 import com.revenuecat.purchases.utils.sharedLanguageCodeWith
 import com.revenuecat.purchases.utils.toLocale
 import kotlinx.serialization.SerialName

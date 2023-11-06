@@ -17,6 +17,7 @@ import com.revenuecat.purchases.common.HTTPClient
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.caching.DeviceCache
+import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsAnonymizer
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsFileHelper
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsSynchronizer
@@ -33,6 +34,8 @@ import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import com.revenuecat.purchases.common.verification.SigningManager
 import com.revenuecat.purchases.common.warnLog
 import com.revenuecat.purchases.identity.IdentityManager
+import com.revenuecat.purchases.paywalls.events.PaywallEventsFileHelper
+import com.revenuecat.purchases.paywalls.events.PaywallEventsManager
 import com.revenuecat.purchases.strings.ConfigureStrings
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesPoster
@@ -83,7 +86,7 @@ internal class PurchasesFactory(
 
             val dispatcher = Dispatcher(createDefaultExecutor(), runningIntegrationTests)
             val backendDispatcher = Dispatcher(service ?: createDefaultExecutor(), runningIntegrationTests)
-            val diagnosticsDispatcher = Dispatcher(createDiagnosticsExecutor(), runningIntegrationTests)
+            val eventsDispatcher = Dispatcher(createEventsExecutor(), runningIntegrationTests)
 
             var diagnosticsFileHelper: DiagnosticsFileHelper? = null
             var diagnosticsTracker: DiagnosticsTracker? = null
@@ -93,7 +96,7 @@ internal class PurchasesFactory(
                     appConfig,
                     diagnosticsFileHelper,
                     DiagnosticsAnonymizer(Anonymizer()),
-                    diagnosticsDispatcher,
+                    eventsDispatcher,
                 )
             } else if (diagnosticsEnabled) {
                 warnLog("Diagnostics are only supported on Android N or newer.")
@@ -109,7 +112,7 @@ internal class PurchasesFactory(
             val backend = Backend(
                 appConfig,
                 backendDispatcher,
-                diagnosticsDispatcher,
+                eventsDispatcher,
                 httpClient,
                 backendHelper,
             )
@@ -206,7 +209,7 @@ internal class PurchasesFactory(
                     diagnosticsFileHelper,
                     diagnosticsTracker,
                     backend,
-                    diagnosticsDispatcher,
+                    eventsDispatcher,
                     DiagnosticsSynchronizer.initializeSharedPreferences(context),
                 )
             }
@@ -252,9 +255,30 @@ internal class PurchasesFactory(
                 postPendingTransactionsHelper,
                 syncPurchasesHelper,
                 offeringsManager,
+                createPaywallEventsManager(application, identityManager, eventsDispatcher),
             )
 
             return Purchases(purchasesOrchestrator)
+        }
+    }
+
+    private fun createPaywallEventsManager(
+        context: Context,
+        identityManager: IdentityManager,
+        eventsDispatcher: Dispatcher,
+    ): PaywallEventsManager? {
+        // RevenueCatUI is Android 24+ so it should always enter here when using RevenueCatUI.
+        // Still, we check for Android N or newer since we use Streams which are 24+ and the main SDK supports
+        // older versions.
+        return if (isAndroidNOrNewer()) {
+            PaywallEventsManager(
+                PaywallEventsFileHelper(FileHelper(context)),
+                identityManager,
+                eventsDispatcher,
+            )
+        } else {
+            debugLog("Paywall events are only supported on Android N or newer.")
+            null
         }
     }
 
@@ -283,8 +307,8 @@ internal class PurchasesFactory(
         return Executors.newSingleThreadScheduledExecutor()
     }
 
-    private fun createDiagnosticsExecutor(): ExecutorService {
-        return Executors.newSingleThreadScheduledExecutor(LowPriorityThreadFactory("revenuecat-diagnostics-thread"))
+    private fun createEventsExecutor(): ExecutorService {
+        return Executors.newSingleThreadScheduledExecutor(LowPriorityThreadFactory("revenuecat-events-thread"))
     }
 
     private class LowPriorityThreadFactory(private val threadName: String) : ThreadFactory {

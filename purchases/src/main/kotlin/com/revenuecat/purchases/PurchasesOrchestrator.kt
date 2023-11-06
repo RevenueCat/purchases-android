@@ -49,6 +49,8 @@ import com.revenuecat.purchases.models.InAppMessageType
 import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.paywalls.events.PaywallEvent
+import com.revenuecat.purchases.paywalls.events.PaywallEventsManager
 import com.revenuecat.purchases.strings.AttributionStrings
 import com.revenuecat.purchases.strings.ConfigureStrings
 import com.revenuecat.purchases.strings.CustomerInfoStrings
@@ -81,6 +83,7 @@ internal class PurchasesOrchestrator constructor(
     private val postPendingTransactionsHelper: PostPendingTransactionsHelper,
     private val syncPurchasesHelper: SyncPurchasesHelper,
     private val offeringsManager: OfferingsManager,
+    private val paywallEventsManager: PaywallEventsManager?,
     // This is nullable due to: https://github.com/RevenueCat/purchases-flutter/issues/408
     private val mainHandler: Handler? = Handler(Looper.getMainLooper()),
 ) : LifecycleDelegate, CustomActivityLifecycleHandler {
@@ -189,6 +192,7 @@ internal class PurchasesOrchestrator constructor(
         postPendingTransactionsHelper.syncPendingPurchaseQueue(allowSharingPlayStoreAccount)
         synchronizeSubscriberAttributesIfNeeded()
         offlineEntitlementsManager.updateProductEntitlementMappingCacheIfStale()
+        flushPaywallEvents()
     }
 
     override fun onActivityStarted(activity: Activity) {
@@ -481,6 +485,13 @@ internal class PurchasesOrchestrator constructor(
     ) {
         val validTypes = types.filter { it != ProductType.UNKNOWN }.toSet()
         getProductsOfTypes(productIds, validTypes, emptyList(), callback)
+    }
+
+    @ExperimentalPreviewRevenueCatPurchasesAPI
+    fun track(paywallEvent: PaywallEvent) {
+        if (isAndroidNOrNewer()) {
+            paywallEventsManager?.track(paywallEvent)
+        }
     }
 
     // region Subscriber Attributes
@@ -1091,6 +1102,12 @@ internal class PurchasesOrchestrator constructor(
 
     private fun synchronizeSubscriberAttributesIfNeeded() {
         subscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(appUserID)
+    }
+
+    private fun flushPaywallEvents() {
+        if (isAndroidNOrNewer()) {
+            paywallEventsManager?.flushEvents()
+        }
     }
 
     // endregion
