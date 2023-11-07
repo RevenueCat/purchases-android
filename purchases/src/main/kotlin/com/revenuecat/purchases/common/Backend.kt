@@ -60,7 +60,7 @@ internal typealias IdentifyCallback = Pair<(CustomerInfo, Boolean) -> Unit, (Pur
 internal typealias DiagnosticsCallback = Pair<(JSONObject) -> Unit, (PurchasesError, Boolean) -> Unit>
 
 /** @suppress */
-internal typealias PaywallEventsCallback = Pair<() -> Unit, (PurchasesError) -> Unit>
+internal typealias PaywallEventsCallback = Pair<() -> Unit, (PurchasesError, Boolean) -> Unit>
 
 /** @suppress */
 internal typealias ProductEntitlementCallback = Pair<(ProductEntitlementMapping) -> Unit, (PurchasesError) -> Unit>
@@ -465,7 +465,7 @@ internal class Backend(
     fun postPaywallEvents(
         paywallEventRequest: PaywallEventRequest,
         onSuccessHandler: () -> Unit,
-        onErrorHandler: (PurchasesError) -> Unit,
+        onErrorHandler: (error: PurchasesError, shouldMarkAsSynced: Boolean) -> Unit,
     ) {
         val body = PaywallEventsManager.json.encodeToJsonElement(paywallEventRequest).asMap()
         if (body == null) {
@@ -474,6 +474,7 @@ internal class Backend(
                     PurchasesErrorCode.UnknownError,
                     "Error encoding paywall event request",
                 ).also { errorLog(it) },
+                true,
             )
             return
         }
@@ -492,7 +493,7 @@ internal class Backend(
                 synchronized(this@Backend) {
                     paywallEventsCallbacks.remove(paywallEventRequest.cacheKey)
                 }?.forEach { (_, onErrorHandler) ->
-                    onErrorHandler(error)
+                    onErrorHandler(error, true)
                 }
             }
 
@@ -503,7 +504,7 @@ internal class Backend(
                     if (result.isSuccessful()) {
                         onSuccessHandler()
                     } else {
-                        onErrorHandler(result.toPurchasesError())
+                        onErrorHandler(result.toPurchasesError(), RCHTTPStatusCodes.isSynced(result.responseCode))
                     }
                 }
             }

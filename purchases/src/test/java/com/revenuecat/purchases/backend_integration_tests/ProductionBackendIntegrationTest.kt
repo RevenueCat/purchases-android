@@ -186,8 +186,8 @@ internal class ProductionBackendIntegrationTest: BaseBackendIntegrationTest() {
                 onSuccessHandler = {
                     latch.countDown()
                 },
-                onErrorHandler = {
-                    fail("Expected success. Got $it")
+                onErrorHandler = { error, _ ->
+                    fail("Expected success. Got $error")
                 }
             )
         }

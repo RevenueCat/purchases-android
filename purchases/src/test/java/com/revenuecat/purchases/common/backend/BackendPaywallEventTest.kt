@@ -97,7 +97,7 @@ class BackendPaywallEventTest {
         backend.postPaywallEvents(
             paywallEventRequest,
             onSuccessHandler = {},
-            onErrorHandler = {},
+            onErrorHandler = { _, _ -> },
         )
         verifyCallWithBody(
             "{" +
@@ -127,7 +127,7 @@ class BackendPaywallEventTest {
         backend.postPaywallEvents(
             paywallEventRequest,
             onSuccessHandler = { successCalled = true },
-            onErrorHandler = { fail("Expected success") },
+            onErrorHandler = { _, _ -> fail("Expected success") },
         )
         assertThat(successCalled).isTrue
     }
@@ -139,19 +139,67 @@ class BackendPaywallEventTest {
         backend.postPaywallEvents(
             paywallEventRequest,
             onSuccessHandler = { fail("Expected error") },
-            onErrorHandler = { errorCalled = true },
+            onErrorHandler = { _, _ -> errorCalled = true },
         )
         assertThat(errorCalled).isTrue
     }
 
     @Test
-    fun `postPaywallEvents calls error handler if json error`() {
+    fun `postPaywallEvents calls error handler with shouldMarkAsSynced false if server error`() {
+        mockHttpResult(responseCode = RCHTTPStatusCodes.ERROR)
+        var errorCalled = false
+        backend.postPaywallEvents(
+            paywallEventRequest,
+            onSuccessHandler = { fail("Expected error") },
+            onErrorHandler = { _, shouldMarkAsSynced ->
+                assertThat(shouldMarkAsSynced).isFalse
+                errorCalled = true
+            },
+        )
+        assertThat(errorCalled).isTrue
+    }
+
+    @Test
+    fun `postPaywallEvents calls error handler with shouldMarkAsSynced false if 404`() {
+        mockHttpResult(responseCode = RCHTTPStatusCodes.NOT_FOUND)
+        var errorCalled = false
+        backend.postPaywallEvents(
+            paywallEventRequest,
+            onSuccessHandler = { fail("Expected error") },
+            onErrorHandler = { _, shouldMarkAsSynced ->
+                assertThat(shouldMarkAsSynced).isFalse
+                errorCalled = true
+            },
+        )
+        assertThat(errorCalled).isTrue
+    }
+
+    @Test
+    fun `postPaywallEvents calls error handler with shouldMarkAsSynced true if 400`() {
+        mockHttpResult(responseCode = RCHTTPStatusCodes.BAD_REQUEST)
+        var errorCalled = false
+        backend.postPaywallEvents(
+            paywallEventRequest,
+            onSuccessHandler = { fail("Expected error") },
+            onErrorHandler = { _, shouldMarkAsSynced ->
+                assertThat(shouldMarkAsSynced).isTrue
+                errorCalled = true
+            },
+        )
+        assertThat(errorCalled).isTrue
+    }
+
+    @Test
+    fun `postPaywallEvents calls error handler with shouldMarkAsSynced true if json error`() {
         mockHttpClientException()
         var errorCalled = false
         backend.postPaywallEvents(
             paywallEventRequest,
             onSuccessHandler = { fail("Expected error") },
-            onErrorHandler = { errorCalled = true },
+            onErrorHandler = { _, shouldMarkAsSynced ->
+                assertThat(shouldMarkAsSynced).isTrue
+                errorCalled = true
+            },
         )
         assertThat(errorCalled).isTrue
     }
@@ -163,12 +211,12 @@ class BackendPaywallEventTest {
         asyncBackend.postPaywallEvents(
             paywallEventRequest,
             onSuccessHandler = { lock.countDown() },
-            onErrorHandler = {},
+            onErrorHandler = { _, _ -> },
         )
         asyncBackend.postPaywallEvents(
             paywallEventRequest,
             onSuccessHandler = { lock.countDown() },
-            onErrorHandler = {},
+            onErrorHandler = { _, _ -> },
         )
         lock.await(100, TimeUnit.MILLISECONDS)
         assertThat(lock.count).isEqualTo(0)
