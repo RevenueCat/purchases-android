@@ -4,7 +4,6 @@ import com.android.billingclient.api.BillingClient.BillingResponseCode
 
 sealed class BillingResponse {
 
-    object ServiceTimeout : BillingResponse()
     object FeatureNotSupported : BillingResponse()
     object ServiceDisconnected : BillingResponse()
     object OK : BillingResponse()
@@ -23,7 +22,7 @@ sealed class BillingResponse {
         @Suppress("CyclomaticComplexMethod")
         fun fromCode(code: Int): BillingResponse {
             return when (code) {
-                BillingResponseCode.SERVICE_TIMEOUT -> ServiceTimeout
+                BillingResponseCode.SERVICE_TIMEOUT -> ServiceUnavailable
                 BillingResponseCode.FEATURE_NOT_SUPPORTED -> FeatureNotSupported
                 BillingResponseCode.SERVICE_DISCONNECTED -> ServiceDisconnected
                 BillingResponseCode.OK -> OK

@@ -219,20 +219,18 @@ internal class BillingWrapper(
                                 val storeProducts = productDetailsList.toStoreProducts()
                                 onReceive(storeProducts)
                             }
-                            BillingResponse.BillingUnavailable,
-                            BillingResponse.DeveloperError,
-                            BillingResponse.Error,
-                            BillingResponse.FeatureNotSupported,
-                            BillingResponse.ItemAlreadyOwned,
-                            BillingResponse.ItemNotOwned,
-                            BillingResponse.ItemUnavailable,
+                            BillingResponse.ServiceDisconnected -> {
+                                reconnectAndRetry {
+                                    queryProductDetailsAsync(productType, productIds, onReceive, onError)
+                                }
+                            }
                             BillingResponse.NetworkError,
-                            BillingResponse.ServiceDisconnected,
-                            BillingResponse.ServiceTimeout,
                             BillingResponse.ServiceUnavailable,
-                            BillingResponse.UserCanceled,
-                            BillingResponse.Unknown,
+                            BillingResponse.Error,
                             -> {
+                                simpleRetry()
+                            }
+                            else -> {
                                 log(
                                     LogIntent.GOOGLE_ERROR,
                                     OfferingStrings.FETCHING_PRODUCTS_ERROR
