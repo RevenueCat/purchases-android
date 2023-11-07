@@ -16,12 +16,12 @@ import com.revenuecat.purchases.paywalls.events.PaywallBackendEvent
 import com.revenuecat.purchases.paywalls.events.PaywallEventRequest
 import com.revenuecat.purchases.paywalls.events.PaywallEventType
 import com.revenuecat.purchases.paywalls.events.PaywallEventsManager
+import com.revenuecat.purchases.utils.asMap
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.encodeToJsonElement
-import kotlinx.serialization.json.jsonObject
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Assert.fail
 import org.junit.Before
@@ -105,7 +105,7 @@ class BackendPaywallEventTest {
                     "{" +
                         "\"id\":\"id\"," +
                         "\"version\":1," +
-                        "\"type\":\"CANCEL\"," +
+                        "\"type\":\"paywall_cancel\"," +
                         "\"app_user_id\":\"appUserID\"," +
                         "\"session_id\":\"sessionID\"," +
                         "\"offering_id\":\"offeringID\"," +
@@ -185,7 +185,7 @@ class BackendPaywallEventTest {
 
     private fun verifyCallWithBody(body: String) {
         val expectedRequest: PaywallEventRequest = PaywallEventsManager.json.decodeFromString(body)
-        val expectedBody = PaywallEventsManager.json.encodeToJsonElement(expectedRequest).jsonObject
+        val expectedBody = PaywallEventsManager.json.encodeToJsonElement(expectedRequest).asMap()
         verify(exactly = 1) {
             httpClient.performRequest(
                 testPaywallEventsURL,
