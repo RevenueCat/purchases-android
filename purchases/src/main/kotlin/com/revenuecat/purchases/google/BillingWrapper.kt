@@ -174,6 +174,7 @@ internal class BillingWrapper(
         }
     }
 
+    @Suppress("LongMethod")
     override fun queryProductDetailsAsync(
         productType: ProductType,
         productIds: Set<String>,
@@ -199,34 +200,50 @@ internal class BillingWrapper(
                         googleType,
                         params,
                     ) { billingResult, productDetailsList ->
-                        if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
-                            log(
-                                LogIntent.DEBUG,
-                                OfferingStrings.FETCHING_PRODUCTS_FINISHED
-                                    .format(productIds.joinToString()),
-                            )
-                            log(
-                                LogIntent.PURCHASE,
-                                OfferingStrings.RETRIEVED_PRODUCTS
-                                    .format(productDetailsList.joinToString { it.toString() }),
-                            )
-                            productDetailsList.takeUnless { it.isEmpty() }?.forEach {
-                                log(LogIntent.PURCHASE, OfferingStrings.LIST_PRODUCTS.format(it.productId, it))
-                            }
+                        when (BillingResponse.fromCode(billingResult.responseCode)) {
+                            BillingResponse.OK -> {
+                                log(
+                                    LogIntent.DEBUG,
+                                    OfferingStrings.FETCHING_PRODUCTS_FINISHED
+                                        .format(productIds.joinToString()),
+                                )
+                                log(
+                                    LogIntent.PURCHASE,
+                                    OfferingStrings.RETRIEVED_PRODUCTS
+                                        .format(productDetailsList.joinToString { it.toString() }),
+                                )
+                                productDetailsList.takeUnless { it.isEmpty() }?.forEach {
+                                    log(LogIntent.PURCHASE, OfferingStrings.LIST_PRODUCTS.format(it.productId, it))
+                                }
 
-                            val storeProducts = productDetailsList.toStoreProducts()
-                            onReceive(storeProducts)
-                        } else {
-                            log(
-                                LogIntent.GOOGLE_ERROR,
-                                OfferingStrings.FETCHING_PRODUCTS_ERROR
-                                    .format(billingResult.toHumanReadableDescription()),
-                            )
-                            onError(
-                                billingResult.responseCode.billingResponseToPurchasesError(
-                                    "Error when fetching products. ${billingResult.toHumanReadableDescription()}",
-                                ).also { errorLog(it) },
-                            )
+                                val storeProducts = productDetailsList.toStoreProducts()
+                                onReceive(storeProducts)
+                            }
+                            BillingResponse.BillingUnavailable,
+                            BillingResponse.DeveloperError,
+                            BillingResponse.Error,
+                            BillingResponse.FeatureNotSupported,
+                            BillingResponse.ItemAlreadyOwned,
+                            BillingResponse.ItemNotOwned,
+                            BillingResponse.ItemUnavailable,
+                            BillingResponse.NetworkError,
+                            BillingResponse.ServiceDisconnected,
+                            BillingResponse.ServiceTimeout,
+                            BillingResponse.ServiceUnavailable,
+                            BillingResponse.UserCanceled,
+                            BillingResponse.Unknown,
+                            -> {
+                                log(
+                                    LogIntent.GOOGLE_ERROR,
+                                    OfferingStrings.FETCHING_PRODUCTS_ERROR
+                                        .format(billingResult.toHumanReadableDescription()),
+                                )
+                                onError(
+                                    billingResult.responseCode.billingResponseToPurchasesError(
+                                        "Error when fetching products. ${billingResult.toHumanReadableDescription()}",
+                                    ).also { errorLog(it) },
+                                )
+                            }
                         }
                     }
                 }
