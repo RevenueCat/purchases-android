@@ -14,12 +14,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.window.core.layout.WindowWidthSizeClass
 import com.revenuecat.purchases.ui.revenuecatui.helpers.computeWindowWidthSizeClass
 import com.revenuecat.purchases.ui.revenuecatui.helpers.shouldDisplayPaywall
+import com.revenuecat.purchases.ui.revenuecatui.helpers.windowAspectRatio
 import kotlinx.coroutines.launch
 
 private object UIDialogConstants {
@@ -84,8 +84,7 @@ private fun DialogScaffold(paywallOptions: PaywallOptions) {
 @Composable
 @ReadOnlyComposable
 private fun getDialogMaxHeightPercentage(): Float {
-    val aspectRatio = LocalConfiguration.current.screenHeightDp.toFloat() / LocalConfiguration.current.screenWidthDp
-    if (aspectRatio < UIDialogConstants.MAX_ASPECT_RATIO_TO_APPLY_MAX_HEIGHT) {
+    if (windowAspectRatio() < UIDialogConstants.MAX_ASPECT_RATIO_TO_APPLY_MAX_HEIGHT) {
         return 1f
     }
     return computeWindowWidthSizeClass().let {

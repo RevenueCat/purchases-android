@@ -18,6 +18,10 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -30,12 +34,16 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.asAndroidPath
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.ui.revenuecatui.ExperimentalPreviewRevenueCatUIPurchasesAPI
 import com.revenuecat.purchases.ui.revenuecatui.InternalPaywall
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
@@ -53,14 +61,18 @@ import com.revenuecat.purchases.ui.revenuecatui.data.isInFullScreenMode
 import com.revenuecat.purchases.ui.revenuecatui.data.selectedLocalization
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockViewModel
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
+import com.revenuecat.purchases.ui.revenuecatui.extensions.aspectRatio
+import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
 
 @Composable
 internal fun Template1(state: PaywallState.Loaded, viewModel: PaywallViewModel) {
+    var size by remember { mutableStateOf(IntSize.Zero) }
+
     Column(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().onGloballyPositioned { size = it.size },
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Template1MainContent(state)
+        Template1MainContent(state, size)
         PurchaseButton(state, viewModel)
         Footer(templateConfiguration = state.templateConfiguration, viewModel = viewModel)
     }
@@ -68,7 +80,7 @@ internal fun Template1(state: PaywallState.Loaded, viewModel: PaywallViewModel) 
 
 @SuppressWarnings("LongMethod")
 @Composable
-private fun ColumnScope.Template1MainContent(state: PaywallState.Loaded) {
+private fun ColumnScope.Template1MainContent(state: PaywallState.Loaded, template1Size: IntSize) {
     val localizedConfig = state.selectedLocalization
     val colors = state.currentColors
 
@@ -82,7 +94,7 @@ private fun ColumnScope.Template1MainContent(state: PaywallState.Loaded) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
         ) {
-            HeaderImage(state.templateConfiguration.images.headerUri)
+            HeaderImage(state.templateConfiguration.images.headerUri, template1Size)
 
             Spacer(modifier = Modifier.weight(1f))
 
@@ -127,13 +139,20 @@ private fun ColumnScope.Template1MainContent(state: PaywallState.Loaded) {
 }
 
 @Composable
-private fun HeaderImage(uri: Uri?) {
+private fun HeaderImage(uri: Uri?, templateSize: IntSize) {
     uri?.let {
         CircleMask {
+            val aspectRatio = templateSize.aspectRatio
+            val screenHeight = LocalConfiguration.current.screenHeightDp
             RemoteImage(
                 urlString = uri.toString(),
                 modifier = Modifier
-                    .aspectRatio(ratio = 1.2f),
+                    .conditional(aspectRatio > 1f || templateSize == IntSize.Zero) {
+                        aspectRatio(ratio = 1.2f)
+                    }
+                    .conditional(aspectRatio <= 1f) {
+                        fillMaxWidth().height(screenHeight.dp / 2f)
+                    },
                 contentScale = ContentScale.Crop,
             )
         }

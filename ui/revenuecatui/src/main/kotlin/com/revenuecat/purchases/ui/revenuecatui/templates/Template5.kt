@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
@@ -43,6 +44,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
@@ -50,6 +52,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.ui.revenuecatui.ExperimentalPreviewRevenueCatUIPurchasesAPI
@@ -74,6 +77,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.processed.localizedDiscount
 import com.revenuecat.purchases.ui.revenuecatui.data.selectedLocalization
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockViewModel
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
+import com.revenuecat.purchases.ui.revenuecatui.extensions.aspectRatio
 import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
 import com.revenuecat.purchases.ui.revenuecatui.extensions.introEligibility
 import com.revenuecat.purchases.ui.revenuecatui.extensions.packageButtonActionInProgressOpacityAnimation
@@ -85,6 +89,7 @@ private object Template5UIConstants {
     val checkmarkSize = 18.dp
     val discountPadding = 8.dp
     const val headerAspectRatio = 2f
+    const val percentageScreenImageInLandscape = 0.4f
 }
 
 @Composable
@@ -92,13 +97,17 @@ internal fun Template5(
     state: PaywallState.Loaded,
     viewModel: PaywallViewModel,
 ) {
-    Column {
+    var size by remember { mutableStateOf(IntSize.Zero) }
+
+    Column(
+        modifier = Modifier.onGloballyPositioned { size = it.size },
+    ) {
         var packageSelectorVisible by remember {
             mutableStateOf(state.templateConfiguration.mode != PaywallMode.FOOTER_CONDENSED)
         }
 
         if (state.isInFullScreenMode) {
-            HeaderImage(state.templateConfiguration.images.headerUri)
+            HeaderImage(state.templateConfiguration.images.headerUri, size)
         }
 
         Template5MainContent(state, viewModel, packageSelectorVisible)
@@ -168,12 +177,18 @@ private fun ColumnScope.Template5MainContent(
 }
 
 @Composable
-private fun HeaderImage(uri: Uri?) {
+private fun HeaderImage(uri: Uri?, templateSize: IntSize) {
     uri?.let {
+        val aspectRatio = templateSize.aspectRatio
         RemoteImage(
             urlString = uri.toString(),
             modifier = Modifier
-                .aspectRatio(ratio = Template5UIConstants.headerAspectRatio),
+                .conditional(aspectRatio > 1f || templateSize == IntSize.Zero) {
+                    aspectRatio(ratio = Template5UIConstants.headerAspectRatio)
+                }
+                .conditional(aspectRatio <= 1f) {
+                    fillMaxHeight(Template5UIConstants.percentageScreenImageInLandscape).fillMaxWidth()
+                },
             contentScale = ContentScale.Crop,
         )
     }
@@ -425,6 +440,7 @@ private val TemplateConfiguration.Colors.unselectedDiscountText: Color
 @OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class)
 @Preview(showBackground = true, locale = "en-rUS")
 @Preview(showBackground = true, locale = "es-rES")
+@Preview(showBackground = true, widthDp = 1000, heightDp = 1000)
 @Preview(showBackground = true, device = Devices.NEXUS_7)
 @Preview(showBackground = true, device = Devices.NEXUS_10)
 @Composable
