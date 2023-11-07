@@ -217,9 +217,7 @@ internal class BillingWrapper(
                             googleType,
                             params,
                         ) { billingResult, productDetailsList ->
-//                            val code = BillingResponse.fromCode(billingResult.responseCode)
-                            val code = BillingResponse.ServiceDisconnected
-                            when (code as BillingResponse) {
+                            when (BillingResponse.fromCode(billingResult.responseCode)) {
                                 BillingResponse.OK -> {
                                     log(
                                         LogIntent.DEBUG,
