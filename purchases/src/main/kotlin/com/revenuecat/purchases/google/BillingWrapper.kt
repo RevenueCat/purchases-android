@@ -195,60 +195,85 @@ internal class BillingWrapper(
                 val googleType = productType.toGoogleProductType() ?: BillingClient.ProductType.INAPP
                 val params = googleType.buildQueryProductDetailsParams(nonEmptyProductIds)
 
-                withConnectedClient {
-                    queryProductDetailsAsyncEnsuringOneResponse(
-                        googleType,
-                        params,
-                    ) { billingResult, productDetailsList ->
-                        when (BillingResponse.fromCode(billingResult.responseCode)) {
-                            BillingResponse.OK -> {
-                                log(
-                                    LogIntent.DEBUG,
-                                    OfferingStrings.FETCHING_PRODUCTS_FINISHED
-                                        .format(productIds.joinToString()),
-                                )
-                                log(
-                                    LogIntent.PURCHASE,
-                                    OfferingStrings.RETRIEVED_PRODUCTS
-                                        .format(productDetailsList.joinToString { it.toString() }),
-                                )
-                                productDetailsList.takeUnless { it.isEmpty() }?.forEach {
-                                    log(LogIntent.PURCHASE, OfferingStrings.LIST_PRODUCTS.format(it.productId, it))
+                withConnectedClient(object : RetryableFunction {
+                    override val maxRetries: Int
+                        get() = 3
+
+                    override fun forwardError(billingResult: BillingResult) {
+                        log(
+                            LogIntent.GOOGLE_ERROR,
+                            OfferingStrings.FETCHING_PRODUCTS_ERROR
+                                .format(billingResult.toHumanReadableDescription()),
+                        )
+                        onError(
+                            billingResult.responseCode.billingResponseToPurchasesError(
+                                "Error when fetching products. ${billingResult.toHumanReadableDescription()}",
+                            ).also { errorLog(it) },
+                        )
+                    }
+
+                    override fun retryable(billingClient: BillingClient, retry: Int) {
+                        billingClient.queryProductDetailsAsyncEnsuringOneResponse(
+                            googleType,
+                            params,
+                        ) { billingResult, productDetailsList ->
+//                            val code = BillingResponse.fromCode(billingResult.responseCode)
+                            val code = BillingResponse.ServiceDisconnected
+                            when (code as BillingResponse) {
+                                BillingResponse.OK -> {
+                                    log(
+                                        LogIntent.DEBUG,
+                                        OfferingStrings.FETCHING_PRODUCTS_FINISHED
+                                            .format(productIds.joinToString()),
+                                    )
+                                    log(
+                                        LogIntent.PURCHASE,
+                                        OfferingStrings.RETRIEVED_PRODUCTS
+                                            .format(productDetailsList.joinToString { it.toString() }),
+                                    )
+                                    productDetailsList.takeUnless { it.isEmpty() }?.forEach {
+                                        log(LogIntent.PURCHASE, OfferingStrings.LIST_PRODUCTS.format(it.productId, it))
+                                    }
+
+                                    val storeProducts = productDetailsList.toStoreProducts()
+                                    onReceive(storeProducts)
                                 }
 
-                                val storeProducts = productDetailsList.toStoreProducts()
-                                onReceive(storeProducts)
-                            }
-                            BillingResponse.ServiceDisconnected -> {
-                                reconnectAndRetry {
-                                    queryProductDetailsAsync(productType, productIds, onReceive, onError)
+                                BillingResponse.ServiceDisconnected -> {
+                                    reconnectAndRetry {
+                                        queryProductDetailsAsync(productType, productIds, onReceive, onError)
+                                    }
                                 }
-                            }
-                            BillingResponse.NetworkError,
-                            BillingResponse.ServiceUnavailable,
-                            BillingResponse.Error,
-                            -> {
-                                simpleRetry()
-                            }
-                            else -> {
-                                log(
-                                    LogIntent.GOOGLE_ERROR,
-                                    OfferingStrings.FETCHING_PRODUCTS_ERROR
-                                        .format(billingResult.toHumanReadableDescription()),
-                                )
-                                onError(
-                                    billingResult.responseCode.billingResponseToPurchasesError(
-                                        "Error when fetching products. ${billingResult.toHumanReadableDescription()}",
-                                    ).also { errorLog(it) },
-                                )
+
+                                BillingResponse.NetworkError,
+                                BillingResponse.ServiceUnavailable,
+                                BillingResponse.Error,
+                                -> {
+                                    if (retry < maxRetries) {
+                                        retryable(billingClient, retry + 1)
+                                    } else {
+                                        forwardError(billingResult)
+                                    }
+                                }
+
+                                else -> {
+                                    forwardError(billingResult)
+                                }
                             }
                         }
                     }
-                }
+
+                    override fun onConnected(billingClient: BillingClient) {
+                        retryable(billingClient)
+                    }
+                })
             } else {
                 onError(connectionError)
             }
         }
+    }
+
+    private fun reconnectAndRetry(function: () -> Unit) {
     }
 
     override fun makePurchaseAsync(
@@ -839,6 +864,12 @@ internal class BillingWrapper(
         }
     }
 
+    private fun withConnectedClient(receivingFunction: RetryableFunction) {
+        billingClient?.takeIf { it.isReady }?.let {
+            receivingFunction.onConnected(it)
+        } ?: log(LogIntent.GOOGLE_WARNING, BillingStrings.BILLING_CLIENT_DISCONNECTED.format(getStackTrace()))
+    }
+
     private fun withConnectedClient(receivingFunction: BillingClient.() -> Unit) {
         billingClient?.takeIf { it.isReady }?.let {
             it.receivingFunction()
@@ -1080,4 +1111,13 @@ internal class BillingWrapper(
             } ?: break
         }
     }
+}
+
+interface RetryableFunction {
+
+    val maxRetries: Int
+
+    fun forwardError(billingResult: BillingResult)
+    fun retryable(billingClient: BillingClient, retry: Int = 0)
+    fun onConnected(billingClient: BillingClient)
 }
