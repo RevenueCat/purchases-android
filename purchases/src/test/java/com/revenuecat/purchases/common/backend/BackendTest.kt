@@ -1,9 +1,4 @@
-//  Purchases
-//
-//  Copyright © 2019 RevenueCat, Inc. All rights reserved.
-//
-
-package com.revenuecat.purchases.common
+package com.revenuecat.purchases.common.backend
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.CustomerInfo
@@ -12,11 +7,25 @@ import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.VerificationResult
+import com.revenuecat.purchases.common.AppConfig
+import com.revenuecat.purchases.common.Backend
+import com.revenuecat.purchases.common.BackendHelper
+import com.revenuecat.purchases.common.CustomerInfoFactory
+import com.revenuecat.purchases.common.Delay
+import com.revenuecat.purchases.common.Dispatcher
+import com.revenuecat.purchases.common.HTTPClient
+import com.revenuecat.purchases.common.PostReceiptDataErrorCallback
+import com.revenuecat.purchases.common.PostReceiptErrorHandlingBehavior
+import com.revenuecat.purchases.common.ReceiptInfo
+import com.revenuecat.purchases.common.SyncDispatcher
+import com.revenuecat.purchases.common.createCustomerInfo
+import com.revenuecat.purchases.common.createResult
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
 import com.revenuecat.purchases.common.offlineentitlements.ProductEntitlementMapping
 import com.revenuecat.purchases.common.offlineentitlements.createProductEntitlementMapping
+import com.revenuecat.purchases.common.toMap
 import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.GoogleStoreProduct
 import com.revenuecat.purchases.models.GoogleSubscriptionOption
@@ -38,19 +47,17 @@ import io.mockk.slot
 import io.mockk.spyk
 import io.mockk.unmockkObject
 import io.mockk.verify
-import org.assertj.core.api.Assertions.assertThat
-import org.assertj.core.api.Fail.fail
+import org.assertj.core.api.Assertions
+import org.assertj.core.api.Fail
 import org.json.JSONArray
 import org.json.JSONObject
 import org.junit.After
-import org.junit.Assert.assertFalse
-import org.junit.Assert.assertTrue
+import org.junit.Assert
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import java.io.IOException
-import java.lang.Thread.sleep
 import java.net.URL
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.LinkedBlockingQueue
@@ -98,15 +105,17 @@ class BackendTest {
         mockClient,
         backendHelper
     )
-    private val asyncDispatcher = spyk(Dispatcher(
-        ThreadPoolExecutor(
-            1,
-            2,
-            0,
-            TimeUnit.MILLISECONDS,
-            LinkedBlockingQueue()
+    private val asyncDispatcher = spyk(
+        Dispatcher(
+            ThreadPoolExecutor(
+                1,
+                2,
+                0,
+                TimeUnit.MILLISECONDS,
+                LinkedBlockingQueue()
+            )
         )
-    ))
+    )
     private var asyncBackendHelper: BackendHelper = BackendHelper(API_KEY, asyncDispatcher, mockAppConfig, mockClient)
     private var asyncBackend: Backend = Backend(
         mockAppConfig,
@@ -186,7 +195,7 @@ class BackendTest {
     // region general backend functionality
     @Test
     fun canBeCreated() {
-        assertThat(backend).isNotNull
+        Assertions.assertThat(backend).isNotNull
     }
 
     @Test
@@ -194,8 +203,8 @@ class BackendTest {
 
         val info = getCustomerInfo(200, null, null)
 
-        assertThat(receivedCustomerInfo).isNotNull
-        assertThat(receivedCustomerInfo).isEqualTo(info)
+        Assertions.assertThat(receivedCustomerInfo).isNotNull
+        Assertions.assertThat(receivedCustomerInfo).isEqualTo(info)
     }
 
     @Test
@@ -204,43 +213,43 @@ class BackendTest {
 
         getCustomerInfo(failureCode, null, null)
 
-        assertThat(receivedCustomerInfo).isNull()
-        assertThat(receivedError).`as`("Received error is not null").isNotNull
+        Assertions.assertThat(receivedCustomerInfo).isNull()
+        Assertions.assertThat(receivedError).`as`("Received error is not null").isNotNull
     }
 
     @Test
     fun clientErrorCallsErrorHandler() {
         getCustomerInfo(200, IOException(), null)
 
-        assertThat(receivedCustomerInfo).isNull()
-        assertThat(receivedError).`as`("Received error is not null").isNotNull
+        Assertions.assertThat(receivedCustomerInfo).isNull()
+        Assertions.assertThat(receivedError).`as`("Received error is not null").isNotNull
     }
 
     @Test
     fun attemptsToParseErrorMessageFromServer() {
         getCustomerInfo(404, null, "{'code': 7225, 'message': 'Dude not found'}")
 
-        assertThat(receivedError).`as`("Received error is not null").isNotNull
-        assertThat(receivedError!!.underlyingErrorMessage).`as`("Received underlying message is not null").isNotNull
-        assertThat(receivedError!!.underlyingErrorMessage!!).contains("Dude not found")
+        Assertions.assertThat(receivedError).`as`("Received error is not null").isNotNull
+        Assertions.assertThat(receivedError!!.underlyingErrorMessage).`as`("Received underlying message is not null").isNotNull
+        Assertions.assertThat(receivedError!!.underlyingErrorMessage!!).contains("Dude not found")
     }
 
     @Test
     fun handlesMissingMessageInErrorBody() {
         getCustomerInfo(404, null, "{'no_message': 'Dude not found'}")
-        assertThat(receivedError).`as`("Received error is not null").isNotNull
+        Assertions.assertThat(receivedError).`as`("Received error is not null").isNotNull
     }
 
     @Test
     fun `getCustomerInfo error callback returns isServerError true if response code is 500`() {
         getCustomerInfo(RCHTTPStatusCodes.ERROR, null, "{}")
-        assertThat(receivedIsServerError).isEqualTo(true)
+        Assertions.assertThat(receivedIsServerError).isEqualTo(true)
     }
 
     @Test
     fun `getCustomerInfo error callback returns isServerError false if response code is 400`() {
         getCustomerInfo(RCHTTPStatusCodes.BAD_REQUEST, null, "{}")
-        assertThat(receivedIsServerError).isEqualTo(false)
+        Assertions.assertThat(receivedIsServerError).isEqualTo(false)
     }
 
     @Test
@@ -294,8 +303,8 @@ class BackendTest {
 
         val info = getCustomerInfo(200, null, null)
 
-        assertThat(receivedCustomerInfo).isNotNull
-        assertThat(receivedCustomerInfo).isEqualTo(info)
+        Assertions.assertThat(receivedCustomerInfo).isNotNull
+        Assertions.assertThat(receivedCustomerInfo).isEqualTo(info)
     }
 
     @Test
@@ -304,8 +313,8 @@ class BackendTest {
 
         getCustomerInfo(failureCode, null, null)
 
-        assertThat(receivedCustomerInfo).isNull()
-        assertThat(receivedError).`as`("Received error is not null").isNotNull
+        Assertions.assertThat(receivedCustomerInfo).isNull()
+        Assertions.assertThat(receivedError).`as`("Received error is not null").isNotNull
     }
 
     @Test
@@ -326,7 +335,7 @@ class BackendTest {
             lock.countDown()
         }, onError = onReceiveCustomerInfoErrorHandler)
         lock.await(defaultTimeout, TimeUnit.MILLISECONDS)
-        assertThat(lock.count).isEqualTo(0)
+        Assertions.assertThat(lock.count).isEqualTo(0)
         verify(exactly = 1) {
             mockClient.performRequest(
                 mockBaseURL,
@@ -356,7 +365,7 @@ class BackendTest {
             lock.countDown()
         }, onError = onReceiveCustomerInfoErrorHandler)
         lock.await(defaultTimeout, TimeUnit.MILLISECONDS)
-        assertThat(lock.count).isEqualTo(0)
+        Assertions.assertThat(lock.count).isEqualTo(0)
         verify(exactly = 1) {
             asyncDispatcher.enqueue(any(), Delay.NONE)
         }
@@ -380,7 +389,7 @@ class BackendTest {
             lock.countDown()
         }, onError = onReceiveCustomerInfoErrorHandler)
         lock.await(defaultTimeout, TimeUnit.MILLISECONDS)
-        assertThat(lock.count).isEqualTo(0)
+        Assertions.assertThat(lock.count).isEqualTo(0)
         verify(exactly = 2) {
             mockClient.performRequest(
                 mockBaseURL,
@@ -399,8 +408,8 @@ class BackendTest {
         getCustomerInfo(200, clientException = null, resultBody = null, appInBackground = true)
 
         val calledWithRandomDelay: Delay? = dispatcher.calledDelay
-        assertThat(calledWithRandomDelay).isNotNull
-        assertThat(calledWithRandomDelay).isEqualTo(Delay.DEFAULT)
+        Assertions.assertThat(calledWithRandomDelay).isNotNull
+        Assertions.assertThat(calledWithRandomDelay).isEqualTo(Delay.DEFAULT)
     }
 
     // endregion
@@ -421,8 +430,8 @@ class BackendTest {
             initiationSource = initiationSource,
         )
 
-        assertThat(receivedCustomerInfo).`as`("Received info is not null").isNotNull
-        assertThat(info).isEqualTo(receivedCustomerInfo)
+        Assertions.assertThat(receivedCustomerInfo).`as`("Received info is not null").isNotNull
+        Assertions.assertThat(info).isEqualTo(receivedCustomerInfo)
     }
 
     @Test
@@ -468,11 +477,11 @@ class BackendTest {
 
         val expectedPricingPhases = receiptInfo.pricingPhases
         val mappedExpectedPricingPhases = expectedPricingPhases?.map { it.toMap() }
-        assertThat(requestBodySlot.isCaptured).isTrue
-        assertThat(requestBodySlot.captured.keys).contains("pricing_phases")
-        assertThat(requestBodySlot.captured["pricing_phases"]).isEqualTo(mappedExpectedPricingPhases)
+        Assertions.assertThat(requestBodySlot.isCaptured).isTrue
+        Assertions.assertThat(requestBodySlot.captured.keys).contains("pricing_phases")
+        Assertions.assertThat(requestBodySlot.captured["pricing_phases"]).isEqualTo(mappedExpectedPricingPhases)
 
-        assertThat(mappedExpectedPricingPhases).isEqualTo(
+        Assertions.assertThat(mappedExpectedPricingPhases).isEqualTo(
             listOf(
                 mapOf(
                     "billingPeriod" to "P1M",
@@ -485,8 +494,8 @@ class BackendTest {
             )
         )
 
-        assertThat(requestBodySlot.captured.keys).contains("proration_mode")
-        assertThat(requestBodySlot.captured["proration_mode"]).isEqualTo("IMMEDIATE_WITHOUT_PRORATION")
+        Assertions.assertThat(requestBodySlot.captured.keys).contains("proration_mode")
+        Assertions.assertThat(requestBodySlot.captured["proration_mode"]).isEqualTo("IMMEDIATE_WITHOUT_PRORATION")
     }
 
     @Test
@@ -543,8 +552,8 @@ class BackendTest {
             initiationSource = initiationSource,
         )
 
-        assertThat(requestBodySlot.isCaptured).isTrue
-        assertThat(requestBodySlot.captured["platform_product_ids"]).isEqualTo(
+        Assertions.assertThat(requestBodySlot.isCaptured).isTrue
+        Assertions.assertThat(requestBodySlot.captured["platform_product_ids"]).isEqualTo(
             listOf(
                 mapOf(
                     "product_id" to productId,
@@ -587,8 +596,8 @@ class BackendTest {
             initiationSource = initiationSource,
         )
 
-        assertThat(requestBodySlot.isCaptured).isTrue
-        assertThat(requestBodySlot.captured["product_plan_id"]).isNull()
+        Assertions.assertThat(requestBodySlot.isCaptured).isTrue
+        Assertions.assertThat(requestBodySlot.captured["product_plan_id"]).isNull()
     }
 
     @Test
@@ -612,9 +621,9 @@ class BackendTest {
             initiationSource = initiationSource,
         )
 
-        assertThat(requestBodySlot.isCaptured).isTrue
-        assertThat(requestBodySlot.captured.keys).contains("normal_duration")
-        assertThat(requestBodySlot.captured["normal_duration"]).isEqualTo(expectedDuration)
+        Assertions.assertThat(requestBodySlot.isCaptured).isTrue
+        Assertions.assertThat(requestBodySlot.captured.keys).contains("normal_duration")
+        Assertions.assertThat(requestBodySlot.captured["normal_duration"]).isEqualTo(expectedDuration)
     }
 
     @Test
@@ -638,9 +647,9 @@ class BackendTest {
             initiationSource = initiationSource,
         )
 
-        assertThat(requestBodySlot.isCaptured).isTrue
-        assertThat(requestBodySlot.captured.keys).contains("store_user_id")
-        assertThat(requestBodySlot.captured["store_user_id"]).isEqualTo(expectedStoreUserId)
+        Assertions.assertThat(requestBodySlot.isCaptured).isTrue
+        Assertions.assertThat(requestBodySlot.captured.keys).contains("store_user_id")
+        Assertions.assertThat(requestBodySlot.captured["store_user_id"]).isEqualTo(expectedStoreUserId)
     }
 
     @Test
@@ -657,9 +666,9 @@ class BackendTest {
             initiationSource = initiationSource,
         )
 
-        assertThat(requestBodySlot.isCaptured).isTrue
-        assertThat(requestBodySlot.captured.keys).contains("initiation_source")
-        assertThat(requestBodySlot.captured["initiation_source"]).isEqualTo(initiationSource.postReceiptFieldValue)
+        Assertions.assertThat(requestBodySlot.isCaptured).isTrue
+        Assertions.assertThat(requestBodySlot.captured.keys).contains("initiation_source")
+        Assertions.assertThat(requestBodySlot.captured["initiation_source"]).isEqualTo(initiationSource.postReceiptFieldValue)
     }
 
     @Test
@@ -676,8 +685,8 @@ class BackendTest {
             initiationSource = initiationSource,
         )
 
-        assertThat(receivedCustomerInfo).`as`("Received info is null").isNull()
-        assertThat(receivedError).`as`("Received error is not null").isNotNull
+        Assertions.assertThat(receivedCustomerInfo).`as`("Received info is null").isNull()
+        Assertions.assertThat(receivedError).`as`("Received error is not null").isNotNull
     }
 
     @Test
@@ -712,7 +721,7 @@ class BackendTest {
         )
 
         lock.await(defaultTimeout, TimeUnit.MILLISECONDS)
-        assertThat(lock.count).isEqualTo(0)
+        Assertions.assertThat(lock.count).isEqualTo(0)
         verify(exactly = 1) {
             mockClient.performRequest(
                 mockBaseURL,
@@ -730,7 +739,7 @@ class BackendTest {
         val initialInfo = createCustomerInfo(Responses.validFullPurchaserResponse)
         val updatedInfo = createCustomerInfo(Responses.validEmptyPurchaserResponse)
 
-        assertThat(initialInfo).isEqualTo(
+        Assertions.assertThat(initialInfo).isEqualTo(
             CustomerInfoFactory.buildCustomerInfo(initialInfo.rawData, null, verificationResult)
         )
 
@@ -749,7 +758,7 @@ class BackendTest {
         // Given calls
 
         asyncBackend.getCustomerInfo(appUserID, appInBackground = false, onSuccess = {
-            assertThat(it).isEqualTo(initialInfo)
+            Assertions.assertThat(it).isEqualTo(initialInfo)
             lock.countDown()
         }, onError = onReceiveCustomerInfoErrorHandler)
         mockPostReceiptResponseAndPost(
@@ -776,14 +785,14 @@ class BackendTest {
             onError = postReceiptErrorCallback
         )
         asyncBackend.getCustomerInfo(appUserID, appInBackground = false, onSuccess = {
-            assertThat(it).isEqualTo(updatedInfo)
+            Assertions.assertThat(it).isEqualTo(updatedInfo)
             lock.countDown()
         }, onError = onReceiveCustomerInfoErrorHandler)
 
         // Expect requests:
 
         lock.await(defaultTimeout, TimeUnit.MILLISECONDS)
-        assertThat(lock.count).isEqualTo(0)
+        Assertions.assertThat(lock.count).isEqualTo(0)
         verify(exactly = 1) {
             mockClient.performRequest(
                 mockBaseURL,
@@ -818,8 +827,8 @@ class BackendTest {
             initiationSource = initiationSource,
         )
 
-        assertThat(receivedCustomerInfo).`as`("Received info is not null").isNotNull
-        assertThat(info).isEqualTo(receivedCustomerInfo)
+        Assertions.assertThat(receivedCustomerInfo).`as`("Received info is not null").isNotNull
+        Assertions.assertThat(info).isEqualTo(receivedCustomerInfo)
     }
 
     @Test
@@ -839,8 +848,8 @@ class BackendTest {
             initiationSource = initiationSource,
         )
 
-        assertThat(receivedCustomerInfo).`as`("Received info is not null").isNotNull
-        assertThat(info).isEqualTo(receivedCustomerInfo)
+        Assertions.assertThat(receivedCustomerInfo).`as`("Received info is not null").isNotNull
+        Assertions.assertThat(info).isEqualTo(receivedCustomerInfo)
     }
 
     @Test
@@ -887,7 +896,7 @@ class BackendTest {
             onError = postReceiptErrorCallback
         )
         lock.await(defaultTimeout, TimeUnit.MILLISECONDS)
-        assertThat(lock.count).isEqualTo(0)
+        Assertions.assertThat(lock.count).isEqualTo(0)
         verify(exactly = 2) {
             mockClient.performRequest(
                 mockBaseURL,
@@ -949,7 +958,7 @@ class BackendTest {
             onError = postReceiptErrorCallback
         )
         lock.await(defaultTimeout, TimeUnit.MILLISECONDS)
-        assertThat(lock.count).isEqualTo(0)
+        Assertions.assertThat(lock.count).isEqualTo(0)
         verify(exactly = 2) {
             mockClient.performRequest(
                 mockBaseURL,
@@ -997,7 +1006,7 @@ class BackendTest {
             onError = postReceiptErrorCallback
         )
         lock.await()
-        assertThat(lock.count).isEqualTo(0)
+        Assertions.assertThat(lock.count).isEqualTo(0)
         verify(exactly = 2) {
             mockClient.performRequest(
                 mockBaseURL,
@@ -1046,7 +1055,7 @@ class BackendTest {
             onError = postReceiptErrorCallback
         )
         lock.await()
-        assertThat(lock.count).isEqualTo(0)
+        Assertions.assertThat(lock.count).isEqualTo(0)
         verify(exactly = 1) {
             mockClient.performRequest(
                 mockBaseURL,
@@ -1075,8 +1084,8 @@ class BackendTest {
             initiationSource = initiationSource,
         )
 
-        assertThat(receivedCustomerInfo).`as`("Received purchaser info is not null").isNotNull
-        assertThat(info).isEqualTo(receivedCustomerInfo)
+        Assertions.assertThat(receivedCustomerInfo).`as`("Received purchaser info is not null").isNotNull
+        Assertions.assertThat(info).isEqualTo(receivedCustomerInfo)
     }
 
     @Test
@@ -1112,7 +1121,7 @@ class BackendTest {
             onError = postReceiptErrorCallback
         )
         lock.await()
-        assertThat(lock.count).isEqualTo(0)
+        Assertions.assertThat(lock.count).isEqualTo(0)
         verify(exactly = 2) {
             mockClient.performRequest(
                 mockBaseURL,
@@ -1141,12 +1150,13 @@ class BackendTest {
             initiationSource = initiationSource,
         )
 
-        assertThat(receivedCustomerInfo).`as`("Received info is null").isNull()
-        assertThat(receivedError).`as`("Received error is not null").isNotNull
-        assertThat(receivedError!!.code)
+        Assertions.assertThat(receivedCustomerInfo).`as`("Received info is null").isNull()
+        Assertions.assertThat(receivedError).`as`("Received error is not null").isNotNull
+        Assertions.assertThat(receivedError!!.code)
             .`as`("Received error code is the right one")
             .isEqualTo(PurchasesErrorCode.UnsupportedError)
-        assertThat(receivedPostReceiptErrorHandlingBehavior).isEqualTo(PostReceiptErrorHandlingBehavior.SHOULD_NOT_CONSUME)
+        Assertions.assertThat(receivedPostReceiptErrorHandlingBehavior)
+            .isEqualTo(PostReceiptErrorHandlingBehavior.SHOULD_NOT_CONSUME)
     }
 
     @Test
@@ -1166,7 +1176,8 @@ class BackendTest {
             initiationSource = initiationSource,
         )
 
-        assertThat(receivedPostReceiptErrorHandlingBehavior).isEqualTo(PostReceiptErrorHandlingBehavior.SHOULD_BE_CONSUMED)
+        Assertions.assertThat(receivedPostReceiptErrorHandlingBehavior)
+            .isEqualTo(PostReceiptErrorHandlingBehavior.SHOULD_BE_CONSUMED)
     }
 
     @Test
@@ -1186,7 +1197,8 @@ class BackendTest {
             initiationSource = initiationSource,
         )
 
-        assertThat(receivedPostReceiptErrorHandlingBehavior).isEqualTo(PostReceiptErrorHandlingBehavior.SHOULD_USE_OFFLINE_ENTITLEMENTS_AND_NOT_CONSUME)
+        Assertions.assertThat(receivedPostReceiptErrorHandlingBehavior)
+            .isEqualTo(PostReceiptErrorHandlingBehavior.SHOULD_USE_OFFLINE_ENTITLEMENTS_AND_NOT_CONSUME)
     }
 
     @Test
@@ -1206,7 +1218,8 @@ class BackendTest {
             initiationSource = initiationSource,
         )
 
-        assertThat(receivedPostReceiptErrorHandlingBehavior).isEqualTo(PostReceiptErrorHandlingBehavior.SHOULD_NOT_CONSUME)
+        Assertions.assertThat(receivedPostReceiptErrorHandlingBehavior)
+            .isEqualTo(PostReceiptErrorHandlingBehavior.SHOULD_NOT_CONSUME)
     }
 
     @Test
@@ -1226,9 +1239,9 @@ class BackendTest {
             initiationSource = initiationSource,
         )
 
-        assertThat(headersSlot.isCaptured).isTrue
-        assertThat(headersSlot.captured.keys).contains("price_string")
-        assertThat(headersSlot.captured["price_string"]).isEqualTo("$4.99")
+        Assertions.assertThat(headersSlot.isCaptured).isTrue
+        Assertions.assertThat(headersSlot.captured.keys).contains("price_string")
+        Assertions.assertThat(headersSlot.captured["price_string"]).isEqualTo("$4.99")
     }
 
     @Test
@@ -1249,9 +1262,9 @@ class BackendTest {
             marketplace = "DE"
         )
 
-        assertThat(headersSlot.isCaptured).isTrue
-        assertThat(headersSlot.captured.keys).contains("marketplace")
-        assertThat(headersSlot.captured["marketplace"]).isEqualTo("DE")
+        Assertions.assertThat(headersSlot.isCaptured).isTrue
+        Assertions.assertThat(headersSlot.captured.keys).contains("marketplace")
+        Assertions.assertThat(headersSlot.captured["marketplace"]).isEqualTo("DE")
     }
 
     @Test
@@ -1272,11 +1285,11 @@ class BackendTest {
             marketplace = "US"
         )
 
-        assertThat(headersSlot.isCaptured).isTrue
-        assertThat(headersSlot.captured.keys).contains("price_string")
-        assertThat(headersSlot.captured["price_string"]).isEqualTo("$4.99")
-        assertThat(headersSlot.captured.keys).contains("marketplace")
-        assertThat(headersSlot.captured["marketplace"]).isEqualTo("US")
+        Assertions.assertThat(headersSlot.isCaptured).isTrue
+        Assertions.assertThat(headersSlot.captured.keys).contains("price_string")
+        Assertions.assertThat(headersSlot.captured["price_string"]).isEqualTo("$4.99")
+        Assertions.assertThat(headersSlot.captured.keys).contains("marketplace")
+        Assertions.assertThat(headersSlot.captured["marketplace"]).isEqualTo("US")
     }
 
     @Test
@@ -1323,12 +1336,12 @@ class BackendTest {
             appUserID,
             appInBackground = false,
             onSuccess = onReceiveOfferingsResponseSuccessHandler,
-            onError = { _, _ -> fail("Should be success") }
+            onError = { _, _ -> Fail.fail("Should be success") }
         )
 
-        assertThat(receivedOfferingsJSON).`as`("Received offerings response is not null").isNotNull
-        assertThat(receivedOfferingsJSON!!.getJSONArray("offerings").length()).isZero
-        assertThat(receivedOfferingsJSON!!.getNullableString("current_offering_id")).isNull()
+        Assertions.assertThat(receivedOfferingsJSON).`as`("Received offerings response is not null").isNotNull
+        Assertions.assertThat(receivedOfferingsJSON!!.getJSONArray("offerings").length()).isZero
+        Assertions.assertThat(receivedOfferingsJSON!!.getNullableString("current_offering_id")).isNull()
     }
 
     @Test
@@ -1338,12 +1351,12 @@ class BackendTest {
         backend.getOfferings(
             appUserID,
             appInBackground = false,
-            onSuccess = { fail("Should be error") },
+            onSuccess = { Fail.fail("Should be error") },
             onError = onReceiveOfferingsErrorHandler
         )
 
-        assertThat(receivedError).isNotNull
-        assertThat(receivedIsServerError).isTrue
+        Assertions.assertThat(receivedError).isNotNull
+        Assertions.assertThat(receivedIsServerError).isTrue
     }
 
     @Test
@@ -1353,12 +1366,12 @@ class BackendTest {
         backend.getOfferings(
             appUserID,
             appInBackground = false,
-            onSuccess = { fail("Should be error") },
+            onSuccess = { Fail.fail("Should be error") },
             onError = onReceiveOfferingsErrorHandler
         )
 
-        assertThat(receivedError).isNotNull
-        assertThat(receivedIsServerError).isFalse
+        Assertions.assertThat(receivedError).isNotNull
+        Assertions.assertThat(receivedIsServerError).isFalse
     }
 
     @Test
@@ -1379,7 +1392,7 @@ class BackendTest {
             lock.countDown()
         }, onError = onReceiveOfferingsErrorHandler)
         lock.await(defaultTimeout, TimeUnit.MILLISECONDS)
-        assertThat(lock.count).isEqualTo(0)
+        Assertions.assertThat(lock.count).isEqualTo(0)
         verify(exactly = 1) {
             mockClient.performRequest(
                 mockBaseURL,
@@ -1409,7 +1422,7 @@ class BackendTest {
             lock.countDown()
         }, onError = onReceiveOfferingsErrorHandler)
         lock.await(defaultTimeout, TimeUnit.MILLISECONDS)
-        assertThat(lock.count).isEqualTo(0)
+        Assertions.assertThat(lock.count).isEqualTo(0)
         verify(exactly = 1) {
             mockClient.performRequest(
                 mockBaseURL,
@@ -1448,7 +1461,7 @@ class BackendTest {
             lock.countDown()
         }, onError = onReceiveOfferingsErrorHandler)
         lock.await(defaultTimeout, TimeUnit.MILLISECONDS)
-        assertThat(lock.count).isEqualTo(0)
+        Assertions.assertThat(lock.count).isEqualTo(0)
         verify(exactly = 1) {
             asyncDispatcher.enqueue(any(), Delay.NONE)
         }
@@ -1472,7 +1485,7 @@ class BackendTest {
             lock.countDown()
         }, onError = onReceiveOfferingsErrorHandler)
         lock.await(defaultTimeout, TimeUnit.MILLISECONDS)
-        assertThat(lock.count).isEqualTo(0)
+        Assertions.assertThat(lock.count).isEqualTo(0)
         verify(exactly = 2) {
             mockClient.performRequest(
                 mockBaseURL,
@@ -1496,8 +1509,8 @@ class BackendTest {
         )
 
         val calledDelay = dispatcher.calledDelay
-        assertThat(calledDelay).isNotNull
-        assertThat(calledDelay).isEqualTo(Delay.DEFAULT)
+        Assertions.assertThat(calledDelay).isNotNull
+        Assertions.assertThat(calledDelay).isEqualTo(Delay.DEFAULT)
     }
 
     @Test
@@ -1508,7 +1521,7 @@ class BackendTest {
             appUserID,
             appInBackground = false,
             onSuccess = onReceiveOfferingsResponseSuccessHandler,
-            onError = { _, _ -> fail("Should be success") }
+            onError = { _, _ -> Fail.fail("Should be success") }
         )
 
         verify(exactly = 1) {
@@ -1545,7 +1558,7 @@ class BackendTest {
             newAppUserID,
             onLoginSuccessHandler
         ) {
-            fail("Should have called success")
+            Fail.fail("Should have called success")
         }
         verify(exactly = 1) {
             mockClient.performRequest(
@@ -1582,10 +1595,10 @@ class BackendTest {
             newAppUserID,
             onLoginSuccessHandler
         ) {
-            fail("Should have called success")
+            Fail.fail("Should have called success")
         }
-        assertThat(receivedCustomerInfo).isEqualTo(expectedCustomerInfo)
-        assertThat(receivedCustomerInfoCreated).isEqualTo(true)
+        Assertions.assertThat(receivedCustomerInfo).isEqualTo(expectedCustomerInfo)
+        Assertions.assertThat(receivedCustomerInfoCreated).isEqualTo(true)
     }
 
     @Test
@@ -1609,12 +1622,12 @@ class BackendTest {
             appUserID,
             newAppUserID,
             { _, _ ->
-                fail("Should have called error")
+                Fail.fail("Should have called error")
             },
             onReceiveLoginErrorHandler
         )
-        assertThat(receivedError).isNotNull
-        assertThat(receivedError?.code).isEqualTo(PurchasesErrorCode.UnknownError)
+        Assertions.assertThat(receivedError).isNotNull
+        Assertions.assertThat(receivedError?.code).isEqualTo(PurchasesErrorCode.UnknownError)
     }
 
     @Test
@@ -1638,9 +1651,9 @@ class BackendTest {
             newAppUserID,
             onLoginSuccessHandler
         ) {
-            fail("Should have called success")
+            Fail.fail("Should have called success")
         }
-        assertThat(receivedCustomerInfoCreated).isTrue
+        Assertions.assertThat(receivedCustomerInfoCreated).isTrue
     }
 
     @Test
@@ -1664,9 +1677,9 @@ class BackendTest {
             newAppUserID,
             onLoginSuccessHandler
         ) {
-            fail("Should have called success")
+            Fail.fail("Should have called success")
         }
-        assertThat(receivedCustomerInfoCreated).isFalse
+        Assertions.assertThat(receivedCustomerInfoCreated).isFalse
     }
 
     @Test
@@ -1690,7 +1703,7 @@ class BackendTest {
             newAppUserID,
             onLoginSuccessHandler
         ) {
-            fail("Should have called success")
+            Fail.fail("Should have called success")
         }
 
         val expectedPostFieldsToSign = listOf(
@@ -1733,7 +1746,7 @@ class BackendTest {
                 lock.countDown()
             },
             {
-                fail("Should have called success")
+                Fail.fail("Should have called success")
             }
         )
         asyncBackend.logIn(
@@ -1743,11 +1756,11 @@ class BackendTest {
                 lock.countDown()
             },
             {
-                fail("Should have called success")
+                Fail.fail("Should have called success")
             }
         )
         lock.await(defaultTimeout, TimeUnit.MILLISECONDS)
-        assertThat(lock.count).isEqualTo(0)
+        Assertions.assertThat(lock.count).isEqualTo(0)
         verify(exactly = 1) {
             mockClient.performRequest(
                 mockBaseURL,
@@ -1781,7 +1794,7 @@ class BackendTest {
             appUserID,
             newAppUserID,
             { _, _ ->
-                fail("Should have called error")
+                Fail.fail("Should have called error")
             },
             {
                 lock.countDown()
@@ -1791,14 +1804,14 @@ class BackendTest {
             appUserID,
             newAppUserID,
             { _, _ ->
-                fail("Should have called error")
+                Fail.fail("Should have called error")
             },
             {
                 lock.countDown()
             }
         )
         lock.await(defaultTimeout, TimeUnit.MILLISECONDS)
-        assertThat(lock.count).isEqualTo(0)
+        Assertions.assertThat(lock.count).isEqualTo(0)
         verify(exactly = 1) {
             mockClient.performRequest(
                 mockBaseURL,
@@ -1832,7 +1845,7 @@ class BackendTest {
             appUserID,
             newAppUserID,
             { _, _ ->
-                fail("Should have called error")
+                Fail.fail("Should have called error")
             },
             {
                 lock.countDown()
@@ -1842,14 +1855,14 @@ class BackendTest {
             appUserID,
             newAppUserID,
             { _, _ ->
-                fail("Should have called error")
+                Fail.fail("Should have called error")
             },
             {
                 lock.countDown()
             }
         )
         lock.await(defaultTimeout, TimeUnit.MILLISECONDS)
-        assertThat(lock.count).isEqualTo(0)
+        Assertions.assertThat(lock.count).isEqualTo(0)
         verify(exactly = 1) {
             mockClient.performRequest(
                 mockBaseURL,
@@ -1891,11 +1904,11 @@ class BackendTest {
             baseURL = mockDiagnosticsBaseURL
         )
         val lock = CountDownLatch(3)
-        asyncBackend.postDiagnostics(diagnosticsList, { lock.countDown() }, { _, _ -> fail("expected success") })
-        asyncBackend.postDiagnostics(diagnosticsList, { lock.countDown() }, { _, _ -> fail("expected success") })
-        asyncBackend.postDiagnostics(diagnosticsList, { lock.countDown() }, { _, _ -> fail("expected success") })
+        asyncBackend.postDiagnostics(diagnosticsList, { lock.countDown() }, { _, _ -> Fail.fail("expected success") })
+        asyncBackend.postDiagnostics(diagnosticsList, { lock.countDown() }, { _, _ -> Fail.fail("expected success") })
+        asyncBackend.postDiagnostics(diagnosticsList, { lock.countDown() }, { _, _ -> Fail.fail("expected success") })
         lock.await(defaultTimeout, TimeUnit.MILLISECONDS)
-        assertThat(lock.count).isEqualTo(0)
+        Assertions.assertThat(lock.count).isEqualTo(0)
         verify(exactly = 1) {
             mockClient.performRequest(
                 baseURL = mockDiagnosticsBaseURL,
@@ -1920,13 +1933,13 @@ class BackendTest {
             baseURL = mockDiagnosticsBaseURL
         )
         val lock = CountDownLatch(1)
-        asyncBackend.postDiagnostics(diagnosticsList, { lock.countDown() }, { _, _ -> fail("expected success") })
+        asyncBackend.postDiagnostics(diagnosticsList, { lock.countDown() }, { _, _ -> Fail.fail("expected success") })
         lock.await(defaultTimeout, TimeUnit.MILLISECONDS)
-        assertThat(lock.count).isEqualTo(0)
+        Assertions.assertThat(lock.count).isEqualTo(0)
         val lock2 = CountDownLatch(1)
-        asyncBackend.postDiagnostics(diagnosticsList, { lock2.countDown() }, { _, _ -> fail("expected success") })
+        asyncBackend.postDiagnostics(diagnosticsList, { lock2.countDown() }, { _, _ -> Fail.fail("expected success") })
         lock2.await(defaultTimeout, TimeUnit.MILLISECONDS)
-        assertThat(lock2.count).isEqualTo(0)
+        Assertions.assertThat(lock2.count).isEqualTo(0)
         verify(exactly = 2) {
             mockClient.performRequest(
                 baseURL = mockDiagnosticsBaseURL,
@@ -1952,14 +1965,14 @@ class BackendTest {
         var errorCalled = false
         backend.postDiagnostics(
             diagnosticsList,
-            { fail("expected error") },
+            { Fail.fail("expected error") },
             { error, shouldRetry ->
                 errorCalled = true
-                assertThat(error.code).isEqualTo(PurchasesErrorCode.InsufficientPermissionsError)
-                assertFalse(shouldRetry)
+                Assertions.assertThat(error.code).isEqualTo(PurchasesErrorCode.InsufficientPermissionsError)
+                Assert.assertFalse(shouldRetry)
             }
         )
-        assertTrue(errorCalled)
+        Assert.assertTrue(errorCalled)
     }
 
     @Test
@@ -1976,14 +1989,14 @@ class BackendTest {
         var errorCalled = false
         backend.postDiagnostics(
             diagnosticsList,
-            { fail("expected error") },
+            { Fail.fail("expected error") },
             { error, shouldRetry ->
                 errorCalled = true
-                assertThat(error.code).isEqualTo(PurchasesErrorCode.NetworkError)
-                assertTrue(shouldRetry)
+                Assertions.assertThat(error.code).isEqualTo(PurchasesErrorCode.NetworkError)
+                Assert.assertTrue(shouldRetry)
             }
         )
-        assertTrue(errorCalled)
+        Assert.assertTrue(errorCalled)
     }
 
     @Test
@@ -2000,14 +2013,14 @@ class BackendTest {
         var errorCalled = false
         backend.postDiagnostics(
             diagnosticsList,
-            { fail("expected error") },
+            { Fail.fail("expected error") },
             { error, shouldRetry ->
                 errorCalled = true
-                assertThat(error.code).isEqualTo(PurchasesErrorCode.UnknownBackendError)
-                assertTrue(shouldRetry)
+                Assertions.assertThat(error.code).isEqualTo(PurchasesErrorCode.UnknownBackendError)
+                Assert.assertTrue(shouldRetry)
             }
         )
-        assertTrue(errorCalled)
+        Assert.assertTrue(errorCalled)
     }
 
     @Test
@@ -2024,14 +2037,14 @@ class BackendTest {
         var errorCalled = false
         backend.postDiagnostics(
             diagnosticsList,
-            { fail("expected error") },
+            { Fail.fail("expected error") },
             { error, shouldRetry ->
                 errorCalled = true
-                assertThat(error.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
-                assertFalse(shouldRetry)
+                Assertions.assertThat(error.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
+                Assert.assertFalse(shouldRetry)
             }
         )
-        assertTrue(errorCalled)
+        Assert.assertTrue(errorCalled)
     }
 
     @Test
@@ -2051,11 +2064,11 @@ class BackendTest {
             diagnosticsList,
             {
                 successCalled = true
-                assertThat(it.toString()).isEqualTo(resultBody)
+                Assertions.assertThat(it.toString()).isEqualTo(resultBody)
             },
-            { _, _ -> fail("expected success") }
+            { _, _ -> Fail.fail("expected success") }
         )
-        assertTrue(successCalled)
+        Assert.assertTrue(successCalled)
     }
 
     @Test
@@ -2072,12 +2085,12 @@ class BackendTest {
         backend.postDiagnostics(
             listOf(JSONObject("{\"test-key\":\"test-value\"}")),
             {},
-            { _, _ -> fail("expected success") }
+            { _, _ -> Fail.fail("expected success") }
         )
 
         val calledDelay = dispatcher.calledDelay
-        assertThat(calledDelay).isNotNull
-        assertThat(calledDelay).isEqualTo(Delay.LONG)
+        Assertions.assertThat(calledDelay).isNotNull
+        Assertions.assertThat(calledDelay).isEqualTo(Delay.LONG)
     }
 
     // endregion
@@ -2109,11 +2122,11 @@ class BackendTest {
             delayed = true
         )
         val lock = CountDownLatch(3)
-        asyncBackend.getProductEntitlementMapping({ lock.countDown() }, { fail("expected succcess") })
-        asyncBackend.getProductEntitlementMapping({ lock.countDown() }, { fail("expected succcess") })
-        asyncBackend.getProductEntitlementMapping({ lock.countDown() }, { fail("expected succcess") })
+        asyncBackend.getProductEntitlementMapping({ lock.countDown() }, { Fail.fail("expected succcess") })
+        asyncBackend.getProductEntitlementMapping({ lock.countDown() }, { Fail.fail("expected succcess") })
+        asyncBackend.getProductEntitlementMapping({ lock.countDown() }, { Fail.fail("expected succcess") })
         lock.await(defaultTimeout, TimeUnit.MILLISECONDS)
-        assertThat(lock.count).isEqualTo(0)
+        Assertions.assertThat(lock.count).isEqualTo(0)
         verify(exactly = 1) {
             mockClient.performRequest(
                 baseURL = mockBaseURL,
@@ -2137,14 +2150,14 @@ class BackendTest {
         )
 
         val lock = CountDownLatch(1)
-        asyncBackend.getProductEntitlementMapping({ lock.countDown() }, { fail("expected succcess") })
+        asyncBackend.getProductEntitlementMapping({ lock.countDown() }, { Fail.fail("expected succcess") })
         lock.await(defaultTimeout, TimeUnit.MILLISECONDS)
-        assertThat(lock.count).isEqualTo(0)
+        Assertions.assertThat(lock.count).isEqualTo(0)
 
         val lock2 = CountDownLatch(1)
-        asyncBackend.getProductEntitlementMapping({ lock2.countDown() }, { fail("expected succcess") })
+        asyncBackend.getProductEntitlementMapping({ lock2.countDown() }, { Fail.fail("expected succcess") })
         lock2.await(defaultTimeout, TimeUnit.MILLISECONDS)
-        assertThat(lock2.count).isEqualTo(0)
+        Assertions.assertThat(lock2.count).isEqualTo(0)
 
         verify(exactly = 2) {
             mockClient.performRequest(
@@ -2168,13 +2181,13 @@ class BackendTest {
         )
         var errorCalled = false
         backend.getProductEntitlementMapping(
-            { fail("expected error") },
+            { Fail.fail("expected error") },
             { error ->
                 errorCalled = true
-                assertThat(error.code).isEqualTo(PurchasesErrorCode.NetworkError)
+                Assertions.assertThat(error.code).isEqualTo(PurchasesErrorCode.NetworkError)
             }
         )
-        assertTrue(errorCalled)
+        Assert.assertTrue(errorCalled)
     }
 
     @Test
@@ -2189,13 +2202,13 @@ class BackendTest {
         )
         var errorCalled = false
         backend.getProductEntitlementMapping(
-            { fail("expected error") },
+            { Fail.fail("expected error") },
             { error ->
                 errorCalled = true
-                assertThat(error.code).isEqualTo(PurchasesErrorCode.UnknownBackendError)
+                Assertions.assertThat(error.code).isEqualTo(PurchasesErrorCode.UnknownBackendError)
             }
         )
-        assertTrue(errorCalled)
+        Assert.assertTrue(errorCalled)
     }
 
     @Test
@@ -2210,13 +2223,13 @@ class BackendTest {
         )
         var errorCalled = false
         backend.getProductEntitlementMapping(
-            { fail("expected error") },
+            { Fail.fail("expected error") },
             { error ->
                 errorCalled = true
-                assertThat(error.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
+                Assertions.assertThat(error.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
             }
         )
-        assertTrue(errorCalled)
+        Assert.assertTrue(errorCalled)
     }
 
     @Test
@@ -2246,11 +2259,11 @@ class BackendTest {
                         )
                     )
                 )
-                assertThat(it).isEqualTo(expectedMapping)
+                Assertions.assertThat(it).isEqualTo(expectedMapping)
             },
-            { error -> fail("expected success $error", error) }
+            { error -> Fail.fail("expected success $error", error) }
         )
-        assertTrue(successCalled)
+        Assert.assertTrue(successCalled)
     }
 
     @Test
@@ -2266,12 +2279,12 @@ class BackendTest {
         dispatcher.calledDelay = null
         backend.getProductEntitlementMapping(
             {},
-            { fail("expected success") }
+            { Fail.fail("expected success") }
         )
 
         val calledDelay = dispatcher.calledDelay
-        assertThat(calledDelay).isNotNull
-        assertThat(calledDelay).isEqualTo(Delay.LONG)
+        Assertions.assertThat(calledDelay).isNotNull
+        Assertions.assertThat(calledDelay).isEqualTo(Delay.LONG)
     }
 
     // endregion
@@ -2309,7 +2322,7 @@ class BackendTest {
 
         if (clientException == null) {
             everyMockedCall answers {
-                if (delayed) sleep(200)
+                if (delayed) Thread.sleep(200)
                 result
             }
         } else {

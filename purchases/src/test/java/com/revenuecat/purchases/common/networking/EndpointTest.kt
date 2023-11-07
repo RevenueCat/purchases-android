@@ -19,6 +19,7 @@ class EndpointTest {
         Endpoint.GetAmazonReceipt("test-user-id", "test-receipt-id"),
         Endpoint.PostAttributes("test-user-id"),
         Endpoint.PostDiagnostics,
+        Endpoint.PostPaywallEvents,
     )
 
     @Test
@@ -53,6 +54,13 @@ class EndpointTest {
     fun `Diagnostics has correct path`() {
         val endpoint = Endpoint.PostDiagnostics
         val expectedPath = "/diagnostics"
+        assertThat(endpoint.getPath()).isEqualTo(expectedPath)
+    }
+
+    @Test
+    fun `Paywall events has correct path`() {
+        val endpoint = Endpoint.PostPaywallEvents
+        val expectedPath = "/events"
         assertThat(endpoint.getPath()).isEqualTo(expectedPath)
     }
 
@@ -99,6 +107,7 @@ class EndpointTest {
             Endpoint.GetAmazonReceipt("test-user-id", "test-receipt-id"),
             Endpoint.PostAttributes("test-user-id"),
             Endpoint.PostDiagnostics,
+            Endpoint.PostPaywallEvents,
         )
         for (endpoint in expectedNotSupportsValidationEndpoints) {
             assertThat(endpoint.supportsSignatureVerification)
@@ -140,6 +149,7 @@ class EndpointTest {
             Endpoint.GetAmazonReceipt("test-user-id", "test-receipt-id"),
             Endpoint.PostAttributes("test-user-id"),
             Endpoint.PostDiagnostics,
+            Endpoint.PostPaywallEvents,
         )
         for (endpoint in expectedEndpoints) {
             assertThat(endpoint.needsNonceToPerformSigning)
