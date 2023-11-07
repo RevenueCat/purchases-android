@@ -240,9 +240,7 @@ internal class BillingWrapper(
                                 }
 
                                 BillingResponse.ServiceDisconnected -> {
-                                    reconnectAndRetry {
-                                        queryProductDetailsAsync(productType, productIds, onReceive, onError)
-                                    }
+                                    queryProductDetailsAsync(productType, productIds, onReceive, onError)
                                 }
 
                                 BillingResponse.NetworkError,
@@ -271,9 +269,6 @@ internal class BillingWrapper(
                 onError(connectionError)
             }
         }
-    }
-
-    private fun reconnectAndRetry(function: () -> Unit) {
     }
 
     override fun makePurchaseAsync(
