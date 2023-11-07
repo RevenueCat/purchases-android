@@ -20,29 +20,15 @@ interface PaywallResultHandler : ActivityResultCallback<PaywallResult>
 
 /**
  * Launches the paywall activity. You need to create this object during the activity's onCreate.
- * Then launch the activity at your moment of choice
+ * Then launch the activity at your moment of choice.
+ * This can be instantiated with an [ActivityResultCaller] instance
+ * like a [ComponentActivity] or a [Fragment].
  */
 @ExperimentalPreviewRevenueCatUIPurchasesAPI
-class PaywallActivityLauncher {
+class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler: PaywallResultHandler) {
+    private val activityResultLauncher: ActivityResultLauncher<PaywallActivityArgs>
 
-    private var activityResultLauncher: ActivityResultLauncher<PaywallActivityArgs>
-
-    /**
-     * Creates a new PaywallActivityLauncher from an activity.
-     */
-    constructor(activity: ComponentActivity, resultHandler: PaywallResultHandler) :
-        this(activity as ActivityResultCaller, resultHandler)
-
-    /**
-     * Creates a new PaywallActivityLauncher from a fragment.
-     */
-    constructor(fragment: Fragment, resultHandler: PaywallResultHandler) :
-        this(fragment as ActivityResultCaller, resultHandler)
-
-    /**
-     * Creates a new PaywallActivityLauncher from an [ActivityResultCaller] instance.
-     */
-    constructor(resultCaller: ActivityResultCaller, resultHandler: PaywallResultHandler) {
+    init {
         activityResultLauncher = resultCaller.registerForActivityResult(PaywallContract(), resultHandler)
     }
 
