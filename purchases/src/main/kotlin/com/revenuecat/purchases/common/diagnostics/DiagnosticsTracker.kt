@@ -6,6 +6,7 @@ import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.verboseLog
+import com.revenuecat.purchases.utils.EventsFileHelper
 import com.revenuecat.purchases.utils.isAndroidNOrNewer
 import java.io.IOException
 import kotlin.time.Duration
@@ -16,7 +17,7 @@ import kotlin.time.Duration
  */
 internal class DiagnosticsTracker(
     private val appConfig: AppConfig,
-    private val diagnosticsFileHelper: DiagnosticsFileHelper,
+    private val diagnosticsFileHelper: EventsFileHelper<DiagnosticsEntry>,
     private val diagnosticsAnonymizer: DiagnosticsAnonymizer,
     private val diagnosticsDispatcher: Dispatcher,
 ) {
@@ -166,7 +167,7 @@ internal class DiagnosticsTracker(
             val anonymizedEvent = diagnosticsAnonymizer.anonymizeEntryIfNeeded(diagnosticsEntry)
             verboseLog("Tracking diagnostics event: $anonymizedEvent")
             try {
-                diagnosticsFileHelper.appendEntryToDiagnosticsFile(anonymizedEvent)
+                diagnosticsFileHelper.appendEvent(anonymizedEvent)
             } catch (e: IOException) {
                 verboseLog("Error tracking diagnostics event: $e")
             }

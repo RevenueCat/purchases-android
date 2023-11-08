@@ -35,7 +35,7 @@ class PaywallEventSerializationTests {
 
     @Test
     fun `can encode paywall event correctly`() {
-        val eventString = PaywallEventsManager.json.encodeToString(event)
+        val eventString = PaywallStoredEvent.json.encodeToString(event)
         assertThat(eventString).isEqualTo(
             "{" +
                 "\"event\":{" +
@@ -60,8 +60,8 @@ class PaywallEventSerializationTests {
 
     @Test
     fun `can encode and decode event correctly`() {
-        val eventString = PaywallEventsManager.json.encodeToString(event)
-        val decodedEvent = PaywallEventsManager.json.decodeFromString<PaywallStoredEvent>(eventString)
+        val eventString = PaywallStoredEvent.json.encodeToString(event)
+        val decodedEvent = PaywallStoredEvent.json.decodeFromString<PaywallStoredEvent>(eventString)
         assertThat(decodedEvent).isEqualTo(event)
     }
 }

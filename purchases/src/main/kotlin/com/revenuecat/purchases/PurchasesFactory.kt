@@ -34,13 +34,14 @@ import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import com.revenuecat.purchases.common.verification.SigningManager
 import com.revenuecat.purchases.common.warnLog
 import com.revenuecat.purchases.identity.IdentityManager
-import com.revenuecat.purchases.paywalls.events.PaywallEventsFileHelper
 import com.revenuecat.purchases.paywalls.events.PaywallEventsManager
+import com.revenuecat.purchases.paywalls.events.PaywallStoredEvent
 import com.revenuecat.purchases.strings.ConfigureStrings
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesPoster
 import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesCache
 import com.revenuecat.purchases.utils.CoilImageDownloader
+import com.revenuecat.purchases.utils.EventsFileHelper
 import com.revenuecat.purchases.utils.OfferingImagePreDownloader
 import com.revenuecat.purchases.utils.isAndroidNOrNewer
 import java.net.URL
@@ -273,7 +274,11 @@ internal class PurchasesFactory(
         // older versions.
         return if (isAndroidNOrNewer()) {
             PaywallEventsManager(
-                PaywallEventsFileHelper(FileHelper(context)),
+                EventsFileHelper(
+                    FileHelper(context),
+                    PaywallEventsManager.PAYWALL_EVENTS_FILE_PATH,
+                    PaywallStoredEvent::fromString,
+                ),
                 identityManager,
                 eventsDispatcher,
                 backend,

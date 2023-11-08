@@ -230,8 +230,8 @@ class BackendPaywallEventTest {
     }
 
     private fun verifyCallWithBody(body: String) {
-        val expectedRequest: PaywallEventRequest = PaywallEventsManager.json.decodeFromString(body)
-        val expectedBody = PaywallEventsManager.json.encodeToJsonElement(expectedRequest).asMap()
+        val expectedRequest: PaywallEventRequest = PaywallEventRequest.json.decodeFromString(body)
+        val expectedBody = PaywallEventRequest.json.encodeToJsonElement(expectedRequest).asMap()
         verify(exactly = 1) {
             httpClient.performRequest(
                 AppConfig.paywallEventsURL,

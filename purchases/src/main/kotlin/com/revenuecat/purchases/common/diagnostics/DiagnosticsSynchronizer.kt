@@ -66,7 +66,7 @@ internal class DiagnosticsSynchronizer(
                     onSuccessHandler = {
                         verboseLog("Synced diagnostics file successfully.")
                         clearConsecutiveNumberOfErrors()
-                        diagnosticsFileHelper.deleteOlderDiagnostics(diagnosticsCount)
+                        diagnosticsFileHelper.clear(diagnosticsCount)
                     },
                     onErrorHandler = { error, shouldRetry ->
                         if (shouldRetry) {
@@ -104,7 +104,7 @@ internal class DiagnosticsSynchronizer(
 
     private fun getEventsToSync(): List<JSONObject> {
         var eventsToSync: List<JSONObject> = emptyList()
-        diagnosticsFileHelper.readDiagnosticsFile { stream ->
+        diagnosticsFileHelper.readFileAsJson { stream ->
             eventsToSync = stream.limit(MAX_EVENTS_TO_SYNC_PER_REQUEST).collect(Collectors.toList())
         }
         return eventsToSync
@@ -126,6 +126,6 @@ internal class DiagnosticsSynchronizer(
 
     private fun resetDiagnosticsStatus() {
         clearConsecutiveNumberOfErrors()
-        diagnosticsFileHelper.deleteDiagnosticsFile()
+        diagnosticsFileHelper.deleteFile()
     }
 }

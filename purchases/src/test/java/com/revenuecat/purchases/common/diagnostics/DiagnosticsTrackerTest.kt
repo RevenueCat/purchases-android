@@ -86,17 +86,17 @@ class DiagnosticsTrackerTest {
 
     @Test
     fun `trackEvent performs correct calls`() {
-        every { diagnosticsFileHelper.appendEntryToDiagnosticsFile(testAnonymizedEvent) } just Runs
+        every { diagnosticsFileHelper.appendEvent(testAnonymizedEvent) } just Runs
         every { diagnosticsAnonymizer.anonymizeEntryIfNeeded(testDiagnosticsEntry) } returns testAnonymizedEvent
         diagnosticsTracker.trackEvent(testDiagnosticsEntry)
-        verify(exactly = 1) { diagnosticsFileHelper.appendEntryToDiagnosticsFile(testAnonymizedEvent) }
+        verify(exactly = 1) { diagnosticsFileHelper.appendEvent(testAnonymizedEvent) }
         verify(exactly = 1) { diagnosticsAnonymizer.anonymizeEntryIfNeeded(testDiagnosticsEntry) }
     }
 
     @Test
     fun `trackEvent handles IOException`() {
         every { diagnosticsAnonymizer.anonymizeEntryIfNeeded(testDiagnosticsEntry) } returns testDiagnosticsEntry
-        every { diagnosticsFileHelper.appendEntryToDiagnosticsFile(any()) } throws IOException()
+        every { diagnosticsFileHelper.appendEvent(any()) } throws IOException()
         diagnosticsTracker.trackEvent(testDiagnosticsEntry)
     }
 
@@ -104,7 +104,7 @@ class DiagnosticsTrackerTest {
     fun `trackEventInCurrentThread does not enqueue request`() {
         dispatcher.close()
         every { diagnosticsAnonymizer.anonymizeEntryIfNeeded(testDiagnosticsEntry) } returns testDiagnosticsEntry
-        every { diagnosticsFileHelper.appendEntryToDiagnosticsFile(any()) } throws IOException()
+        every { diagnosticsFileHelper.appendEvent(any()) } throws IOException()
         diagnosticsTracker.trackEventInCurrentThread(testDiagnosticsEntry)
     }
 
@@ -118,7 +118,7 @@ class DiagnosticsTrackerTest {
             "etag_hit" to true,
             "verification_result" to "NOT_REQUESTED"
         )
-        every { diagnosticsFileHelper.appendEntryToDiagnosticsFile(any()) } just Runs
+        every { diagnosticsFileHelper.appendEvent(any()) } just Runs
         diagnosticsTracker.trackHttpRequestPerformed(
             Endpoint.PostReceipt,
             1234L.milliseconds,
@@ -128,7 +128,7 @@ class DiagnosticsTrackerTest {
             VerificationResult.NOT_REQUESTED
         )
         verify(exactly = 1) {
-            diagnosticsFileHelper.appendEntryToDiagnosticsFile(match { event ->
+            diagnosticsFileHelper.appendEvent(match { event ->
                 event is DiagnosticsEntry.Event &&
                     event.name == DiagnosticsEventName.HTTP_REQUEST_PERFORMED &&
                     event.properties == expectedProperties
@@ -146,7 +146,7 @@ class DiagnosticsTrackerTest {
             "etag_hit" to false,
             "verification_result" to "NOT_REQUESTED"
         )
-        every { diagnosticsFileHelper.appendEntryToDiagnosticsFile(any()) } just Runs
+        every { diagnosticsFileHelper.appendEvent(any()) } just Runs
         diagnosticsTracker.trackHttpRequestPerformed(
             Endpoint.GetOfferings("test id"),
             1234L.milliseconds,
@@ -156,7 +156,7 @@ class DiagnosticsTrackerTest {
             VerificationResult.NOT_REQUESTED
         )
         verify(exactly = 1) {
-            diagnosticsFileHelper.appendEntryToDiagnosticsFile(match { event ->
+            diagnosticsFileHelper.appendEvent(match { event ->
                 event is DiagnosticsEntry.Event &&
                     event.name == DiagnosticsEventName.HTTP_REQUEST_PERFORMED &&
                     event.properties == expectedProperties
@@ -173,7 +173,7 @@ class DiagnosticsTrackerTest {
             "etag_hit" to "true",
             "verification_result" to "NOT_REQUESTED"
         )
-        every { diagnosticsFileHelper.appendEntryToDiagnosticsFile(any()) } just Runs
+        every { diagnosticsFileHelper.appendEvent(any()) } just Runs
         diagnosticsTracker.trackHttpRequestPerformed(
             Endpoint.PostReceipt,
             1234L.milliseconds,
@@ -183,7 +183,7 @@ class DiagnosticsTrackerTest {
             VerificationResult.NOT_REQUESTED
         )
         verify(exactly = 1) {
-            diagnosticsFileHelper.appendEntryToDiagnosticsFile(match { event ->
+            diagnosticsFileHelper.appendEvent(match { event ->
                 event is DiagnosticsEntry.Counter &&
                     event.name == DiagnosticsCounterName.HTTP_REQUEST_PERFORMED &&
                     event.tags == expectedProperties &&
@@ -194,10 +194,10 @@ class DiagnosticsTrackerTest {
 
     @Test
     fun `trackMaxEventsStoredLimitReached tracks correct event`() {
-        every { diagnosticsFileHelper.appendEntryToDiagnosticsFile(any()) } just Runs
+        every { diagnosticsFileHelper.appendEvent(any()) } just Runs
         diagnosticsTracker.trackMaxEventsStoredLimitReached()
         verify(exactly = 1) {
-            diagnosticsFileHelper.appendEntryToDiagnosticsFile(match { event ->
+            diagnosticsFileHelper.appendEvent(match { event ->
                 event is DiagnosticsEntry.Event &&
                     event.name == DiagnosticsEventName.MAX_EVENTS_STORED_LIMIT_REACHED &&
                     event.properties == emptyMap<String, Any>()
@@ -213,7 +213,7 @@ class DiagnosticsTrackerTest {
             "billing_debug_message" to "test-debug-message",
             "response_time_millis" to 1234L
         )
-        every { diagnosticsFileHelper.appendEntryToDiagnosticsFile(any()) } just Runs
+        every { diagnosticsFileHelper.appendEvent(any()) } just Runs
         diagnosticsTracker.trackGoogleQueryProductDetailsRequest(
             productType = "subs",
             billingResponseCode = 12,
@@ -221,7 +221,7 @@ class DiagnosticsTrackerTest {
             responseTime = 1234L.milliseconds
         )
         verify(exactly = 1) {
-            diagnosticsFileHelper.appendEntryToDiagnosticsFile(match { event ->
+            diagnosticsFileHelper.appendEvent(match { event ->
                 event is DiagnosticsEntry.Event &&
                     event.name == DiagnosticsEventName.GOOGLE_QUERY_PRODUCT_DETAILS_REQUEST &&
                     event.properties == expectedProperties
@@ -237,7 +237,7 @@ class DiagnosticsTrackerTest {
             "billing_debug_message" to "test-debug-message",
             "response_time_millis" to 1234L
         )
-        every { diagnosticsFileHelper.appendEntryToDiagnosticsFile(any()) } just Runs
+        every { diagnosticsFileHelper.appendEvent(any()) } just Runs
         diagnosticsTracker.trackGoogleQueryPurchasesRequest(
             productType = "subs",
             billingResponseCode = 12,
@@ -245,7 +245,7 @@ class DiagnosticsTrackerTest {
             responseTime = 1234L.milliseconds
         )
         verify(exactly = 1) {
-            diagnosticsFileHelper.appendEntryToDiagnosticsFile(match { event ->
+            diagnosticsFileHelper.appendEvent(match { event ->
                 event is DiagnosticsEntry.Event &&
                     event.name == DiagnosticsEventName.GOOGLE_QUERY_PURCHASES_REQUEST &&
                     event.properties == expectedProperties
@@ -261,7 +261,7 @@ class DiagnosticsTrackerTest {
             "billing_debug_message" to "test-debug-message",
             "response_time_millis" to 1234L
         )
-        every { diagnosticsFileHelper.appendEntryToDiagnosticsFile(any()) } just Runs
+        every { diagnosticsFileHelper.appendEvent(any()) } just Runs
         diagnosticsTracker.trackGoogleQueryPurchaseHistoryRequest(
             productType = "inapp",
             billingResponseCode = 12,
@@ -269,7 +269,7 @@ class DiagnosticsTrackerTest {
             responseTime = 1234L.milliseconds
         )
         verify(exactly = 1) {
-            diagnosticsFileHelper.appendEntryToDiagnosticsFile(match { event ->
+            diagnosticsFileHelper.appendEvent(match { event ->
                 event is DiagnosticsEntry.Event &&
                     event.name == DiagnosticsEventName.GOOGLE_QUERY_PURCHASE_HISTORY_REQUEST &&
                     event.properties == expectedProperties
@@ -285,13 +285,13 @@ class DiagnosticsTrackerTest {
             "billing_response_code" to "-2",
             "billing_debug_message" to "debug message",
         )
-        every { diagnosticsFileHelper.appendEntryToDiagnosticsFile(any()) } just Runs
+        every { diagnosticsFileHelper.appendEvent(any()) } just Runs
         diagnosticsTracker.trackProductDetailsNotSupported(
             billingResponseCode = -2,
             billingDebugMessage = "debug message"
         )
         verify(exactly = 1) {
-            diagnosticsFileHelper.appendEntryToDiagnosticsFile(match { event ->
+            diagnosticsFileHelper.appendEvent(match { event ->
                 event is DiagnosticsEntry.Counter &&
                     event.name == DiagnosticsCounterName.PRODUCT_DETAILS_NOT_SUPPORTED &&
                     event.tags == expectedProperties

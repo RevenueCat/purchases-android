@@ -68,7 +68,7 @@ class DiagnosticsSynchronizerTest {
         diagnosticsSynchronizer.clearDiagnosticsFileIfTooBig()
 
         verify(exactly = 0) { diagnosticsTracker.trackMaxEventsStoredLimitReached() }
-        verify(exactly = 0) { diagnosticsFileHelper.deleteDiagnosticsFile() }
+        verify(exactly = 0) { diagnosticsFileHelper.deleteFile() }
     }
 
     @Test
@@ -88,7 +88,7 @@ class DiagnosticsSynchronizerTest {
 
         diagnosticsSynchronizer.clearDiagnosticsFileIfTooBig()
 
-        verify(exactly = 1) { diagnosticsFileHelper.deleteDiagnosticsFile() }
+        verify(exactly = 1) { diagnosticsFileHelper.deleteFile() }
     }
 
     // endregion clearDiagnosticsFileIfTooBig
@@ -101,7 +101,7 @@ class DiagnosticsSynchronizerTest {
 
         diagnosticsSynchronizer.syncDiagnosticsFileIfNeeded()
 
-        verify(exactly = 1) { diagnosticsFileHelper.readDiagnosticsFile(any()) }
+        verify(exactly = 1) { diagnosticsFileHelper.readFileAsJson(any()) }
         verify(exactly = 0) { backend.postDiagnostics(any(), any(), any()) }
     }
 
@@ -111,7 +111,7 @@ class DiagnosticsSynchronizerTest {
 
         diagnosticsSynchronizer.syncDiagnosticsFileIfNeeded()
 
-        verify(exactly = 1) { diagnosticsFileHelper.readDiagnosticsFile(any()) }
+        verify(exactly = 1) { diagnosticsFileHelper.readFileAsJson(any()) }
         verify(exactly = 1) { backend.postDiagnostics(testDiagnosticsEntryJSONs, any(), any()) }
     }
 
@@ -121,7 +121,7 @@ class DiagnosticsSynchronizerTest {
 
         diagnosticsSynchronizer.syncDiagnosticsFileIfNeeded()
 
-        verify(exactly = 1) { diagnosticsFileHelper.deleteOlderDiagnostics(testDiagnosticsEntryJSONs.size) }
+        verify(exactly = 1) { diagnosticsFileHelper.clear(testDiagnosticsEntryJSONs.size) }
     }
 
     @Test
@@ -143,7 +143,7 @@ class DiagnosticsSynchronizerTest {
         verify(exactly = 1) {
             sharedPreferencesEditor.putInt(DiagnosticsSynchronizer.CONSECUTIVE_FAILURES_COUNT_KEY, 1)
         }
-        verify(exactly = 0) { diagnosticsFileHelper.deleteDiagnosticsFile() }
+        verify(exactly = 0) { diagnosticsFileHelper.deleteFile() }
         verify(exactly = 0) { sharedPreferencesEditor.remove(DiagnosticsSynchronizer.CONSECUTIVE_FAILURES_COUNT_KEY) }
     }
 
@@ -154,7 +154,7 @@ class DiagnosticsSynchronizerTest {
 
         diagnosticsSynchronizer.syncDiagnosticsFileIfNeeded()
 
-        verify(exactly = 0) { diagnosticsFileHelper.deleteDiagnosticsFile() }
+        verify(exactly = 0) { diagnosticsFileHelper.deleteFile() }
     }
 
     @Test
@@ -167,7 +167,7 @@ class DiagnosticsSynchronizerTest {
 
         diagnosticsSynchronizer.syncDiagnosticsFileIfNeeded()
 
-        verify(exactly = 1) { diagnosticsFileHelper.deleteDiagnosticsFile() }
+        verify(exactly = 1) { diagnosticsFileHelper.deleteFile() }
     }
 
     @Test
@@ -190,7 +190,7 @@ class DiagnosticsSynchronizerTest {
 
         diagnosticsSynchronizer.syncDiagnosticsFileIfNeeded()
 
-        verify(exactly = 1) { diagnosticsFileHelper.deleteDiagnosticsFile() }
+        verify(exactly = 1) { diagnosticsFileHelper.deleteFile() }
     }
 
     @Test
@@ -205,29 +205,29 @@ class DiagnosticsSynchronizerTest {
 
     @Test
     fun `syncDiagnosticsFileIfNeeded deletes file if IOException happens`() {
-        every { diagnosticsFileHelper.readDiagnosticsFile(any()) } throws IOException()
+        every { diagnosticsFileHelper.readFileAsJson(any()) } throws IOException()
         diagnosticsSynchronizer.syncDiagnosticsFileIfNeeded()
-        verify(exactly = 1) { diagnosticsFileHelper.deleteDiagnosticsFile()  }
+        verify(exactly = 1) { diagnosticsFileHelper.deleteFile() }
     }
 
     @Test
     fun `syncDiagnosticsFileIfNeeded deletes file if JSONException happens`() {
-        every { diagnosticsFileHelper.readDiagnosticsFile(any()) } throws JSONException("test-exception")
+        every { diagnosticsFileHelper.readFileAsJson(any()) } throws JSONException("test-exception")
         diagnosticsSynchronizer.syncDiagnosticsFileIfNeeded()
-        verify(exactly = 1) { diagnosticsFileHelper.deleteDiagnosticsFile()  }
+        verify(exactly = 1) { diagnosticsFileHelper.deleteFile() }
     }
 
     @Test
     fun `syncDiagnosticsFileIfNeeded removes consecutive failures count if IOException happens`() {
-        every { diagnosticsFileHelper.readDiagnosticsFile(any()) } throws IOException()
+        every { diagnosticsFileHelper.readFileAsJson(any()) } throws IOException()
         diagnosticsSynchronizer.syncDiagnosticsFileIfNeeded()
         verify(exactly = 1) { sharedPreferencesEditor.remove(DiagnosticsSynchronizer.CONSECUTIVE_FAILURES_COUNT_KEY) }
     }
 
     @Test
     fun `syncDiagnosticsFileIfNeeded does not crash if IOException happens when deleting file`() {
-        every { diagnosticsFileHelper.readDiagnosticsFile(any()) } throws IOException()
-        every { diagnosticsFileHelper.deleteDiagnosticsFile() } throws IOException()
+        every { diagnosticsFileHelper.readFileAsJson(any()) } throws IOException()
+        every { diagnosticsFileHelper.deleteFile() } throws IOException()
         diagnosticsSynchronizer.syncDiagnosticsFileIfNeeded()
     }
 
@@ -252,8 +252,8 @@ class DiagnosticsSynchronizerTest {
     private fun mockDiagnosticsFileHelper() {
         diagnosticsFileHelper = mockk()
         mockReadDiagnosticsFile(testDiagnosticsEntryJSONs)
-        every { diagnosticsFileHelper.deleteDiagnosticsFile() } just Runs
-        every { diagnosticsFileHelper.deleteOlderDiagnostics(testDiagnosticsEntryJSONs.size) } just Runs
+        every { diagnosticsFileHelper.deleteFile() } just Runs
+        every { diagnosticsFileHelper.clear(testDiagnosticsEntryJSONs.size) } just Runs
     }
 
     private fun mockBackendResponse(
@@ -278,7 +278,7 @@ class DiagnosticsSynchronizerTest {
 
     private fun mockReadDiagnosticsFile(jsons: List<JSONObject>) {
         val slot = slot<((Stream<JSONObject>) -> Unit)>()
-        every { diagnosticsFileHelper.readDiagnosticsFile(capture(slot)) } answers {
+        every { diagnosticsFileHelper.readFileAsJson(capture(slot)) } answers {
             slot.captured(jsons.stream())
         }
     }

@@ -2,11 +2,12 @@ package com.revenuecat.purchases.common.diagnostics
 
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.DefaultDateProvider
+import com.revenuecat.purchases.utils.Event
 import org.json.JSONArray
 import org.json.JSONObject
 import java.util.Date
 
-internal sealed class DiagnosticsEntry(val diagnosticType: String) {
+internal sealed class DiagnosticsEntry(val diagnosticType: String) : Event {
     companion object {
         private const val VERSION_KEY = "version"
         private const val TYPE_KEY = "type"

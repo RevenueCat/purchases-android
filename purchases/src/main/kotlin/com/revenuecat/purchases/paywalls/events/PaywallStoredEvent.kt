@@ -1,14 +1,25 @@
 package com.revenuecat.purchases.paywalls.events
 
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
+import com.revenuecat.purchases.utils.Event
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Serializable
 internal data class PaywallStoredEvent(
     val event: PaywallEvent,
     val userID: String,
-) {
+) : Event {
+    companion object {
+        val json = Json.Default
+        fun fromString(string: String): PaywallStoredEvent {
+            return json.decodeFromString(string)
+        }
+    }
+
     fun toPaywallBackendEvent(): PaywallBackendEvent {
         return PaywallBackendEvent(
             id = event.creationData.id.toString(),
@@ -23,5 +34,9 @@ internal data class PaywallStoredEvent(
             darkMode = event.data.darkMode,
             localeIdentifier = event.data.localeIdentifier,
         )
+    }
+
+    override fun toString(): String {
+        return json.encodeToString(this)
     }
 }
