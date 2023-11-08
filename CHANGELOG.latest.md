@@ -1,11 +1,7 @@
-### New Features
-* `StoreProduct`: new `pricePerWeek` and `pricePerYear` (#1426) via NachoSoto (@NachoSoto)
 ### RevenueCatUI
-* Fix RevenueCatUI API issues and add API tests  (#1433) via Toni Rico (@tonidero)
-* Paywalls: Add initial snapshot testings for RevenueCatUI library (#1432) via Toni Rico (@tonidero)
-* `Paywalls`: new `{{ sub_price_per_week }}` variable (#1427) via NachoSoto (@NachoSoto)
-* `Paywalls`: new `{{ sub_relative_discount }}` variable (#1425) via NachoSoto (@NachoSoto)
-### Dependency Updates
-* Bump fastlane-plugin-revenuecat_internal from `a297205` to `0ddee10` (#1431) via dependabot[bot] (@dependabot[bot])
+* `PaywallActivityLauncher`: new constructor for a generic `ActivityResultCaller` (#1441) via NachoSoto (@NachoSoto)
+* Improve fullscreen templates in landscape orientation (#1435) via Toni Rico (@tonidero)
+* `Paywalls`: improve Japanese localization (#1439) via NachoSoto (@NachoSoto)
+* Paywalls: Store paywall events on disk and API (1) (#1436) via Toni Rico (@tonidero)
 ### Other Changes
-* `Offering`: restore constructor with no `PaywallData` (#1437) via NachoSoto (@NachoSoto)
+* Remove side effect from setting purchasesUpdatedListener (#1443) via Cesar de la Vega (@vegaro)
