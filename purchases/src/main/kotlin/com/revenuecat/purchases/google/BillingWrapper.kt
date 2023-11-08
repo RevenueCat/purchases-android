@@ -47,6 +47,7 @@ import com.revenuecat.purchases.common.sha256
 import com.revenuecat.purchases.common.toHumanReadableDescription
 import com.revenuecat.purchases.common.verboseLog
 import com.revenuecat.purchases.google.usecase.QueryProductDetailsUseCase
+import com.revenuecat.purchases.google.usecase.QueryProductDetailsUseCaseParams
 import com.revenuecat.purchases.models.GooglePurchasingData
 import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.InAppMessageType
@@ -78,7 +79,6 @@ internal class BillingWrapper(
     @Suppress("unused")
     private val diagnosticsTrackerIfEnabled: DiagnosticsTracker?,
     private val dateProvider: DateProvider = DefaultDateProvider(),
-    private val queryProductDetailsUseCase: QueryProductDetailsUseCase,
 ) : BillingAbstract(), PurchasesUpdatedListener, BillingClientStateListener {
 
     @get:Synchronized
@@ -160,7 +160,7 @@ internal class BillingWrapper(
     }
 
     @Synchronized
-    private fun executeRequestOnUIThread(request: (PurchasesError?) -> Unit) {
+    fun executeRequestOnUIThread(request: (PurchasesError?) -> Unit) {
         if (purchasesUpdatedListener != null) {
             serviceRequests.add(request)
             if (billingClient?.isReady == false) {
@@ -190,24 +190,26 @@ internal class BillingWrapper(
         }
 
         log(LogIntent.DEBUG, OfferingStrings.FETCHING_PRODUCTS.format(productIds.joinToString()))
-
-        executeRequestOnUIThread { connectionError ->
-            if (connectionError == null) {
+        val useCase = QueryProductDetailsUseCase(
+            QueryProductDetailsUseCaseParams(
+                dateProvider,
+                diagnosticsTrackerIfEnabled,
+                productIds,
+            ),
+            onReceive,
+            onError,
+            executeAsync = {
                 withConnectedClient {
-                    queryProductDetailsUseCase.queryProductDetailsAsync(
-                        this,
+                    (this@QueryProductDetailsUseCase as QueryProductDetailsUseCase).queryProductDetailsAsync(
+                        this@withConnectedClient,
                         productType,
                         nonEmptyProductIds,
-                        productIds,
-                        onReceive,
-                        onError,
-                        ::queryProductDetailsAsync,
                     )
                 }
-            } else {
-                onError(connectionError)
-            }
-        }
+            },
+            ::executeRequestOnUIThread,
+        )
+        useCase.run()
     }
 
     override fun makePurchaseAsync(
@@ -667,6 +669,7 @@ internal class BillingWrapper(
                     reconnectMilliseconds = RECONNECT_TIMER_START_MILLISECONDS
                     trackProductDetailsNotSupportedIfNeeded()
                 }
+
                 BillingClient.BillingResponseCode.FEATURE_NOT_SUPPORTED,
                 BillingClient.BillingResponseCode.BILLING_UNAVAILABLE,
                 -> {
@@ -699,6 +702,7 @@ internal class BillingWrapper(
                     // Can't call executePendingRequests because it will not do anything since it checks for isReady()
                     sendErrorsToAllPendingRequests(error)
                 }
+
                 BillingClient.BillingResponseCode.ERROR,
                 BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE,
                 BillingClient.BillingResponseCode.USER_CANCELED,
@@ -712,6 +716,7 @@ internal class BillingWrapper(
                     )
                     retryBillingServiceConnectionWithExponentialBackoff()
                 }
+
                 BillingClient.BillingResponseCode.ITEM_UNAVAILABLE,
                 BillingClient.BillingResponseCode.ITEM_ALREADY_OWNED,
                 BillingClient.BillingResponseCode.ITEM_NOT_OWNED,
@@ -722,6 +727,7 @@ internal class BillingWrapper(
                             .format(billingResult.toHumanReadableDescription()),
                     )
                 }
+
                 BillingClient.BillingResponseCode.DEVELOPER_ERROR -> {
                     // Billing service is already trying to connect. Don't do anything.
                 }
@@ -787,10 +793,12 @@ internal class BillingWrapper(
                         InAppMessageResult.InAppMessageResponseCode.NO_ACTION_NEEDED -> {
                             verboseLog(BillingStrings.BILLING_INAPP_MESSAGE_NONE)
                         }
+
                         InAppMessageResult.InAppMessageResponseCode.SUBSCRIPTION_STATUS_UPDATED -> {
                             debugLog(BillingStrings.BILLING_INAPP_MESSAGE_UPDATE)
                             subscriptionStatusChange()
                         }
+
                         else -> errorLog(BillingStrings.BILLING_INAPP_MESSAGE_UNEXPECTED_CODE.format(responseCode))
                     }
                 }
