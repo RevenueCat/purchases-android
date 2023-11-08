@@ -3,6 +3,7 @@ package com.revenuecat.purchases.paywalls.events
 import android.content.Context
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
+import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.FileHelper
 import com.revenuecat.purchases.common.SyncDispatcher
@@ -27,6 +28,7 @@ class PaywallEventsManagerTest {
     private lateinit var fileHelper: PaywallEventsFileHelper
     private lateinit var identityManager: IdentityManager
     private lateinit var paywallEventsDispatcher: Dispatcher
+    private lateinit var backend: Backend
 
     private lateinit var eventsManager: PaywallEventsManager
 
@@ -46,11 +48,13 @@ class PaywallEventsManagerTest {
             every { currentAppUserID } returns "testAppUserId"
         }
         paywallEventsDispatcher = SyncDispatcher()
+        backend = mockk()
 
         eventsManager = PaywallEventsManager(
             fileHelper,
             identityManager,
-            paywallEventsDispatcher
+            paywallEventsDispatcher,
+            backend,
         )
     }
 

@@ -255,7 +255,7 @@ internal class PurchasesFactory(
                 postPendingTransactionsHelper,
                 syncPurchasesHelper,
                 offeringsManager,
-                createPaywallEventsManager(application, identityManager, eventsDispatcher),
+                createPaywallEventsManager(application, identityManager, eventsDispatcher, backend),
             )
 
             return Purchases(purchasesOrchestrator)
@@ -266,6 +266,7 @@ internal class PurchasesFactory(
         context: Context,
         identityManager: IdentityManager,
         eventsDispatcher: Dispatcher,
+        backend: Backend,
     ): PaywallEventsManager? {
         // RevenueCatUI is Android 24+ so it should always enter here when using RevenueCatUI.
         // Still, we check for Android N or newer since we use Streams which are 24+ and the main SDK supports
@@ -275,6 +276,7 @@ internal class PurchasesFactory(
                 PaywallEventsFileHelper(FileHelper(context)),
                 identityManager,
                 eventsDispatcher,
+                backend,
             )
         } else {
             debugLog("Paywall events are only supported on Android N or newer.")
