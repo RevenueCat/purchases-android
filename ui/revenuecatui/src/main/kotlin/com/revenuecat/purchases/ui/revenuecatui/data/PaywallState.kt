@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.mutableStateOf
+import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.ProcessedLocalizedConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.isFullScreen
@@ -14,16 +15,18 @@ internal sealed class PaywallState {
     data class Error(val errorMessage: String) : PaywallState()
 
     data class Loaded(
+        val offering: Offering,
         val templateConfiguration: TemplateConfiguration,
         val selectedPackage: MutableState<TemplateConfiguration.PackageInfo>,
         val shouldDisplayDismissButton: Boolean,
     ) : PaywallState() {
         constructor(
+            offering: Offering,
             templateConfiguration: TemplateConfiguration,
             selectedPackage: TemplateConfiguration.PackageInfo,
             shouldDisplayDismissButton: Boolean,
         ) :
-            this(templateConfiguration, mutableStateOf(selectedPackage), shouldDisplayDismissButton)
+            this(offering, templateConfiguration, mutableStateOf(selectedPackage), shouldDisplayDismissButton)
 
         fun selectPackage(packageInfo: TemplateConfiguration.PackageInfo) {
             selectedPackage.value = packageInfo

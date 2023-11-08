@@ -132,7 +132,8 @@ class PaywallViewModelTest {
             MockApplicationContext(),
             purchases,
             options,
-            TestData.Constants.currentColorScheme
+            TestData.Constants.currentColorScheme,
+            isDarkMode = false,
         )
         coVerify(exactly = 1) { purchases.awaitOfferings() }
         model.updateOptions(options)
@@ -151,7 +152,8 @@ class PaywallViewModelTest {
             MockApplicationContext(),
             purchases,
             options1,
-            TestData.Constants.currentColorScheme
+            TestData.Constants.currentColorScheme,
+            isDarkMode = false,
         )
         coVerify(exactly = 1) { purchases.awaitOfferings() }
         model.updateOptions(options1)
@@ -373,7 +375,7 @@ class PaywallViewModelTest {
         val model = create()
 
         assertThat(dismissInvoked).isFalse
-        model.closeButtonPressed()
+        model.close()
         assertThat(dismissInvoked).isTrue
     }
 
@@ -392,7 +394,8 @@ class PaywallViewModelTest {
                 .setListener(listener)
                 .setOffering(offering)
                 .build(),
-            TestData.Constants.currentColorScheme
+            TestData.Constants.currentColorScheme,
+            isDarkMode = false,
         )
     }
 

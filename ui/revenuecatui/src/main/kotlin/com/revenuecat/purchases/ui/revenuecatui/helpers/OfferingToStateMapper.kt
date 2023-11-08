@@ -90,6 +90,7 @@ internal fun Offering.toPaywallState(
         return PaywallState.Error(it.message ?: "Unknown error")
     }
     return PaywallState.Loaded(
+        offering = this,
         templateConfiguration = templateConfiguration,
         selectedPackage = templateConfiguration.packages.default,
         shouldDisplayDismissButton = shouldDisplayDismissButton,
