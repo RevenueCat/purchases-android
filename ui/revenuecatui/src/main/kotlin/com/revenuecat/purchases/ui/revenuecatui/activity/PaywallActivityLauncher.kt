@@ -2,6 +2,7 @@ package com.revenuecat.purchases.ui.revenuecatui.activity
 
 import androidx.activity.ComponentActivity
 import androidx.activity.result.ActivityResultCallback
+import androidx.activity.result.ActivityResultCaller
 import androidx.activity.result.ActivityResultLauncher
 import androidx.fragment.app.Fragment
 import com.revenuecat.purchases.CustomerInfo
@@ -19,25 +20,16 @@ interface PaywallResultHandler : ActivityResultCallback<PaywallResult>
 
 /**
  * Launches the paywall activity. You need to create this object during the activity's onCreate.
- * Then launch the activity at your moment of choice
+ * Then launch the activity at your moment of choice.
+ * This can be instantiated with an [ActivityResultCaller] instance
+ * like a [ComponentActivity] or a [Fragment].
  */
 @ExperimentalPreviewRevenueCatUIPurchasesAPI
-class PaywallActivityLauncher {
+class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler: PaywallResultHandler) {
+    private val activityResultLauncher: ActivityResultLauncher<PaywallActivityArgs>
 
-    private var activityResultLauncher: ActivityResultLauncher<PaywallActivityArgs>
-
-    /**
-     * Creates a new PaywallActivityLauncher from an activity.
-     */
-    constructor(activity: ComponentActivity, resultHandler: PaywallResultHandler) {
-        activityResultLauncher = activity.registerForActivityResult(PaywallContract(), resultHandler)
-    }
-
-    /**
-     * Creates a new PaywallActivityLauncher from a fragment.
-     */
-    constructor(fragment: Fragment, resultHandler: PaywallResultHandler) {
-        activityResultLauncher = fragment.registerForActivityResult(PaywallContract(), resultHandler)
+    init {
+        activityResultLauncher = resultCaller.registerForActivityResult(PaywallContract(), resultHandler)
     }
 
     /**
