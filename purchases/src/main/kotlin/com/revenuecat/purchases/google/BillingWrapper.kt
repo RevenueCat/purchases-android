@@ -19,13 +19,11 @@ import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.ConsumeParams
 import com.android.billingclient.api.InAppMessageParams
 import com.android.billingclient.api.InAppMessageResult
-import com.android.billingclient.api.ProductDetailsResponseListener
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchaseHistoryRecord
 import com.android.billingclient.api.PurchaseHistoryResponseListener
 import com.android.billingclient.api.PurchasesResponseListener
 import com.android.billingclient.api.PurchasesUpdatedListener
-import com.android.billingclient.api.QueryProductDetailsParams
 import com.android.billingclient.api.QueryPurchasesParams
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
@@ -48,6 +46,7 @@ import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.sha256
 import com.revenuecat.purchases.common.toHumanReadableDescription
 import com.revenuecat.purchases.common.verboseLog
+import com.revenuecat.purchases.google.usecase.QueryProductDetailsUseCase
 import com.revenuecat.purchases.models.GooglePurchasingData
 import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.InAppMessageType
@@ -79,6 +78,7 @@ internal class BillingWrapper(
     @Suppress("unused")
     private val diagnosticsTrackerIfEnabled: DiagnosticsTracker?,
     private val dateProvider: DateProvider = DefaultDateProvider(),
+    private val queryProductDetailsUseCase: QueryProductDetailsUseCase,
 ) : BillingAbstract(), PurchasesUpdatedListener, BillingClientStateListener {
 
     @get:Synchronized
@@ -190,79 +190,20 @@ internal class BillingWrapper(
         }
 
         log(LogIntent.DEBUG, OfferingStrings.FETCHING_PRODUCTS.format(productIds.joinToString()))
+
         executeRequestOnUIThread { connectionError ->
             if (connectionError == null) {
-                val googleType = productType.toGoogleProductType() ?: BillingClient.ProductType.INAPP
-                val params = googleType.buildQueryProductDetailsParams(nonEmptyProductIds)
-
-                withConnectedClient(object : RetryableFunction {
-                    override val maxRetries: Int
-                        get() = 3
-
-                    override fun forwardError(billingResult: BillingResult) {
-                        log(
-                            LogIntent.GOOGLE_ERROR,
-                            OfferingStrings.FETCHING_PRODUCTS_ERROR
-                                .format(billingResult.toHumanReadableDescription()),
-                        )
-                        onError(
-                            billingResult.responseCode.billingResponseToPurchasesError(
-                                "Error when fetching products. ${billingResult.toHumanReadableDescription()}",
-                            ).also { errorLog(it) },
-                        )
-                    }
-
-                    override fun retryable(billingClient: BillingClient, retry: Int) {
-                        billingClient.queryProductDetailsAsyncEnsuringOneResponse(
-                            googleType,
-                            params,
-                        ) { billingResult, productDetailsList ->
-                            when (BillingResponse.fromCode(billingResult.responseCode)) {
-                                BillingResponse.OK -> {
-                                    log(
-                                        LogIntent.DEBUG,
-                                        OfferingStrings.FETCHING_PRODUCTS_FINISHED
-                                            .format(productIds.joinToString()),
-                                    )
-                                    log(
-                                        LogIntent.PURCHASE,
-                                        OfferingStrings.RETRIEVED_PRODUCTS
-                                            .format(productDetailsList.joinToString { it.toString() }),
-                                    )
-                                    productDetailsList.takeUnless { it.isEmpty() }?.forEach {
-                                        log(LogIntent.PURCHASE, OfferingStrings.LIST_PRODUCTS.format(it.productId, it))
-                                    }
-
-                                    val storeProducts = productDetailsList.toStoreProducts()
-                                    onReceive(storeProducts)
-                                }
-
-                                BillingResponse.ServiceDisconnected -> {
-                                    queryProductDetailsAsync(productType, productIds, onReceive, onError)
-                                }
-
-                                BillingResponse.NetworkError,
-                                BillingResponse.ServiceUnavailable,
-                                BillingResponse.Error,
-                                -> {
-                                    if (retry < maxRetries) {
-                                        retryable(billingClient, retry + 1)
-                                    } else {
-                                        forwardError(billingResult)
-                                    }
-                                }
-
-                                else -> {
-                                    forwardError(billingResult)
-                                }
-                            }
-                        }
-                    }
-
-                    override fun onConnected(billingClient: BillingClient) {
-                        retryable(billingClient)
-                    }
-                })
+                withConnectedClient {
+                    queryProductDetailsUseCase.queryProductDetailsAsync(
+                        this,
+                        productType,
+                        nonEmptyProductIds,
+                        productIds,
+                        onReceive,
+                        onError,
+                        ::queryProductDetailsAsync,
+                    )
+                }
             } else {
                 onError(connectionError)
             }
@@ -906,26 +847,6 @@ internal class BillingWrapper(
         }
     }
 
-    private fun BillingClient.queryProductDetailsAsyncEnsuringOneResponse(
-        @BillingClient.ProductType productType: String,
-        params: QueryProductDetailsParams,
-        listener: ProductDetailsResponseListener,
-    ) {
-        val hasResponded = AtomicBoolean(false)
-        val requestStartTime = dateProvider.now
-        queryProductDetailsAsync(params) { billingResult, productDetailsList ->
-            if (hasResponded.getAndSet(true)) {
-                log(
-                    LogIntent.GOOGLE_ERROR,
-                    OfferingStrings.EXTRA_QUERY_PRODUCT_DETAILS_RESPONSE.format(billingResult.responseCode),
-                )
-                return@queryProductDetailsAsync
-            }
-            trackGoogleQueryProductDetailsRequestIfNeeded(productType, billingResult, requestStartTime)
-            listener.onProductDetailsResponse(billingResult, productDetailsList)
-        }
-    }
-
     private fun BillingClient.queryPurchaseHistoryAsyncEnsuringOneResponse(
         @BillingClient.ProductType productType: String,
         listener: PurchaseHistoryResponseListener,
@@ -971,19 +892,6 @@ internal class BillingWrapper(
             trackGoogleQueryPurchasesRequestIfNeeded(productType, billingResult, requestStartTime)
             listener.onQueryPurchasesResponse(billingResult, purchases)
         }
-    }
-
-    private fun trackGoogleQueryProductDetailsRequestIfNeeded(
-        @BillingClient.ProductType productType: String,
-        billingResult: BillingResult,
-        requestStartTime: Date,
-    ) {
-        diagnosticsTrackerIfEnabled?.trackGoogleQueryProductDetailsRequest(
-            productType,
-            billingResult.responseCode,
-            billingResult.debugMessage,
-            responseTime = Duration.between(requestStartTime, dateProvider.now),
-        )
     }
 
     private fun trackGoogleQueryPurchasesRequestIfNeeded(
