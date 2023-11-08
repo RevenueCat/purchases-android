@@ -11,7 +11,9 @@ import com.revenuecat.purchases.common.FileHelper
 import com.revenuecat.purchases.common.SyncDispatcher
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.utils.EventsFileHelper
+import io.mockk.Runs
 import io.mockk.every
+import io.mockk.just
 import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
@@ -171,6 +173,14 @@ class PaywallEventsManagerTest {
     }
 
     @Test
+    fun `flushEvents without events, does not call backend`() {
+        eventsManager.flushEvents()
+        verify(exactly = 0) {
+            backend.postPaywallEvents(any(), any(), any())
+        }
+    }
+
+    @Test
     fun `if more than maximum events flushEvents only posts maximum events`() {
         mockBackendResponse(success = true)
         for (i in 0..99) {
@@ -201,6 +211,49 @@ class PaywallEventsManagerTest {
         checkFileNumberOfEvents(100)
         eventsManager.flushEvents()
         checkFileNumberOfEvents(50)
+    }
+
+    @Test
+    fun `flushEvents multiple times only executes once`() {
+        every {
+            backend.postPaywallEvents(any(), any(), any())
+        } just Runs
+        eventsManager.track(event)
+        eventsManager.track(event)
+        eventsManager.flushEvents()
+        eventsManager.flushEvents()
+        eventsManager.flushEvents()
+        verify(exactly = 1) {
+            backend.postPaywallEvents(any(), any(), any())
+        }
+    }
+
+    @Test
+    fun `flushEvents multiple times, then finishing, adding events and flushing again works`() {
+        val successSlot = slot<() -> Unit>()
+        every {
+            backend.postPaywallEvents(any(), capture(successSlot), any())
+        } just Runs
+        eventsManager.track(event)
+        eventsManager.track(event)
+        eventsManager.flushEvents()
+        eventsManager.flushEvents()
+        eventsManager.flushEvents()
+        verify(exactly = 1) {
+            backend.postPaywallEvents(any(), any(), any())
+        }
+        successSlot.captured()
+        checkFileContents("")
+        eventsManager.track(event)
+        eventsManager.track(event)
+        eventsManager.track(event)
+        eventsManager.flushEvents()
+        eventsManager.flushEvents()
+        verify(exactly = 2) {
+            backend.postPaywallEvents(any(), any(), any())
+        }
+        successSlot.captured()
+        checkFileContents("")
     }
 
     private fun checkFileNumberOfEvents(expectedNumberOfEvents: Int) {
