@@ -527,7 +527,7 @@ internal class Backend(
         val foregroundCacheKey = cacheKey.copy(appInBackground = false)
         val foregroundCallAlreadyInPlace = containsKey(foregroundCacheKey)
         val cacheKeyToUse = if (cacheKey.appInBackground && foregroundCallAlreadyInPlace) {
-            warnLog(NetworkStrings.SAME_CALL_SCHEDULED_WITHOUT_JITTER.format(foregroundCacheKey))
+            debugLog(NetworkStrings.SAME_CALL_SCHEDULED_WITHOUT_JITTER.format(foregroundCacheKey))
             foregroundCacheKey
         } else {
             cacheKey
@@ -538,7 +538,7 @@ internal class Backend(
         val backgroundedCacheKey = cacheKey.copy(appInBackground = true)
         val backgroundCallAlreadyInPlace = containsKey(foregroundCacheKey)
         if (!cacheKey.appInBackground && backgroundCallAlreadyInPlace) {
-            warnLog(NetworkStrings.SAME_CALL_SCHEDULED_WITH_JITTER.format(foregroundCacheKey))
+            debugLog(NetworkStrings.SAME_CALL_SCHEDULED_WITH_JITTER.format(foregroundCacheKey))
             remove(backgroundedCacheKey)?.takeIf { it.isNotEmpty() }?.let { backgroundedCallbacks ->
                 if (containsKey(cacheKey)) {
                     this[cacheKey]?.addAll(backgroundedCallbacks)
