@@ -20,6 +20,7 @@ import com.revenuecat.purchases.common.offerings.OfferingsManager
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
 import com.revenuecat.purchases.common.subscriberattributes.SubscriberAttributeKey
 import com.revenuecat.purchases.identity.IdentityManager
+import com.revenuecat.purchases.paywalls.PaywallPresentedCache
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.utils.SyncDispatcher
 import io.mockk.Runs
@@ -97,6 +98,7 @@ class SubscriberAttributesPurchasesTests {
             syncPurchasesHelper = mockk(),
             offeringsManager = offeringsManagerMock,
             paywallEventsManager = null,
+            paywallPresentedCache = PaywallPresentedCache()
         )
 
         underTest = Purchases(purchasesOrchestrator)

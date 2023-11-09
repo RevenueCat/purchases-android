@@ -10,6 +10,7 @@ import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.paywalls.PaywallPresentedCache
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.subscriberattributes.getAttributeErrors
 import com.revenuecat.purchases.subscriberattributes.toBackendMap
@@ -23,6 +24,7 @@ internal class PostReceiptHelper(
     private val deviceCache: DeviceCache,
     private val subscriberAttributesManager: SubscriberAttributesManager,
     private val offlineEntitlementsManager: OfflineEntitlementsManager,
+    private val paywallPresentedCache: PaywallPresentedCache,
 ) {
     private val finishTransactions: Boolean
         get() = appConfig.finishTransactions
@@ -122,6 +124,7 @@ internal class PostReceiptHelper(
         )
     }
 
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     private fun postReceiptAndSubscriberAttributes(
         appUserID: String,
         purchaseToken: String,
@@ -133,6 +136,7 @@ internal class PostReceiptHelper(
         onSuccess: (CustomerInfo) -> Unit,
         onError: PostReceiptDataErrorCallback,
     ) {
+        val presentedPaywall = paywallPresentedCache.getAndRemovePresentedEvent()
         subscriberAttributesManager.getUnsyncedSubscriberAttributes(appUserID) { unsyncedSubscriberAttributesByKey ->
             backend.postReceiptData(
                 purchaseToken = purchaseToken,
@@ -144,6 +148,7 @@ internal class PostReceiptHelper(
                 storeAppUserID = storeUserID,
                 marketplace = marketplace,
                 initiationSource = initiationSource,
+                paywallPostReceiptData = presentedPaywall?.toPaywallPostReceiptData(),
                 onSuccess = { customerInfo, responseBody ->
                     offlineEntitlementsManager.resetOfflineCustomerInfoCache()
                     subscriberAttributesManager.markAsSynced(
@@ -155,6 +160,7 @@ internal class PostReceiptHelper(
                     onSuccess(customerInfo)
                 },
                 onError = { error, errorHandlingBehavior, responseBody ->
+                    presentedPaywall?.let { paywallPresentedCache.cachePresentedPaywall(it) }
                     if (errorHandlingBehavior == PostReceiptErrorHandlingBehavior.SHOULD_BE_CONSUMED) {
                         subscriberAttributesManager.markAsSynced(
                             appUserID,

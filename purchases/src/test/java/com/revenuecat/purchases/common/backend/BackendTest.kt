@@ -2368,6 +2368,7 @@ class BackendTest {
             storeAppUserID = storeAppUserID,
             marketplace = marketplace,
             initiationSource = initiationSource,
+            paywallPostReceiptData = null,
             onSuccess = onSuccess,
             onError = onError
         )

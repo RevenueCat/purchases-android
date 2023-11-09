@@ -49,6 +49,7 @@ import com.revenuecat.purchases.models.InAppMessageType
 import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.paywalls.PaywallPresentedCache
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
 import com.revenuecat.purchases.paywalls.events.PaywallEventsManager
 import com.revenuecat.purchases.strings.AttributionStrings
@@ -84,6 +85,7 @@ internal class PurchasesOrchestrator constructor(
     private val syncPurchasesHelper: SyncPurchasesHelper,
     private val offeringsManager: OfferingsManager,
     private val paywallEventsManager: PaywallEventsManager?,
+    private val paywallPresentedCache: PaywallPresentedCache,
     // This is nullable due to: https://github.com/RevenueCat/purchases-flutter/issues/408
     private val mainHandler: Handler? = Handler(Looper.getMainLooper()),
 ) : LifecycleDelegate, CustomActivityLifecycleHandler {
@@ -490,6 +492,7 @@ internal class PurchasesOrchestrator constructor(
 
     @ExperimentalPreviewRevenueCatPurchasesAPI
     fun track(paywallEvent: PaywallEvent) {
+        paywallPresentedCache.receiveEvent(paywallEvent)
         if (isAndroidNOrNewer()) {
             paywallEventsManager?.track(paywallEvent)
         }

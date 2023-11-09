@@ -310,6 +310,7 @@ class SubscriberAttributesPosterTests {
             receiptInfo = productInfo,
             storeAppUserID = null,
             initiationSource = initiationSource,
+            paywallPostReceiptData = null,
             onSuccess = expectedOnSuccessPostReceipt,
             onError = unexpectedOnErrorPostReceipt
         )
@@ -337,6 +338,7 @@ class SubscriberAttributesPosterTests {
             receiptInfo = productInfo,
             storeAppUserID = null,
             initiationSource = initiationSource,
+            paywallPostReceiptData = null,
             onSuccess = expectedOnSuccessPostReceipt,
             onError = unexpectedOnErrorPostReceipt
         )
@@ -363,6 +365,7 @@ class SubscriberAttributesPosterTests {
             receiptInfo = productInfo,
             storeAppUserID = null,
             initiationSource = initiationSource,
+            paywallPostReceiptData = null,
             onSuccess = expectedOnSuccessPostReceipt,
             onError = unexpectedOnErrorPostReceipt
         )
@@ -392,6 +395,7 @@ class SubscriberAttributesPosterTests {
             receiptInfo = productInfo,
             storeAppUserID = null,
             initiationSource = initiationSource,
+            paywallPostReceiptData = null,
             onSuccess = expectedOnSuccessPostReceipt,
             onError = unexpectedOnErrorPostReceipt
         )
@@ -420,6 +424,7 @@ class SubscriberAttributesPosterTests {
             receiptInfo = productInfo,
             storeAppUserID = null,
             initiationSource = initiationSource,
+            paywallPostReceiptData = null,
             onSuccess = unexpectedOnSuccessPostReceipt,
             onError = expectedOnErrorPostReceipt
         )
@@ -448,6 +453,7 @@ class SubscriberAttributesPosterTests {
             receiptInfo = productInfo,
             storeAppUserID = null,
             initiationSource = initiationSource,
+            paywallPostReceiptData = null,
             onSuccess = unexpectedOnSuccessPostReceipt,
             onError = expectedOnErrorPostReceipt
         )

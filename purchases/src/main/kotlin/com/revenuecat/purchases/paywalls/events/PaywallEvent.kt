@@ -57,4 +57,14 @@ data class PaywallEvent(
         val localeIdentifier: String,
         val darkMode: Boolean,
     )
+
+    internal fun toPaywallPostReceiptData(): PaywallPostReceiptData {
+        return PaywallPostReceiptData(
+            sessionID = data.sessionIdentifier.toString(),
+            paywallRevision = data.paywallRevision,
+            displayMode = data.displayMode,
+            darkMode = data.darkMode,
+            localeIdentifier = data.localeIdentifier,
+        )
+    }
 }

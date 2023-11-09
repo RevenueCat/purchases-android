@@ -34,6 +34,7 @@ import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import com.revenuecat.purchases.common.verification.SigningManager
 import com.revenuecat.purchases.common.warnLog
 import com.revenuecat.purchases.identity.IdentityManager
+import com.revenuecat.purchases.paywalls.PaywallPresentedCache
 import com.revenuecat.purchases.paywalls.events.PaywallEventsManager
 import com.revenuecat.purchases.paywalls.events.PaywallStoredEvent
 import com.revenuecat.purchases.strings.ConfigureStrings
@@ -171,6 +172,8 @@ internal class PurchasesFactory(
                 appConfig = appConfig,
             )
 
+            val paywallPresentedCache = PaywallPresentedCache()
+
             val postReceiptHelper = PostReceiptHelper(
                 appConfig,
                 backend,
@@ -179,6 +182,7 @@ internal class PurchasesFactory(
                 cache,
                 subscriberAttributesManager,
                 offlineEntitlementsManager,
+                paywallPresentedCache,
             )
 
             val postTransactionWithProductDetailsHelper = PostTransactionWithProductDetailsHelper(
@@ -257,6 +261,7 @@ internal class PurchasesFactory(
                 syncPurchasesHelper,
                 offeringsManager,
                 createPaywallEventsManager(application, identityManager, eventsDispatcher, backend),
+                paywallPresentedCache,
             )
 
             return Purchases(purchasesOrchestrator)

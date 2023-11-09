@@ -28,6 +28,7 @@ import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.SubscriptionOption
+import com.revenuecat.purchases.paywalls.PaywallPresentedCache
 import com.revenuecat.purchases.paywalls.events.PaywallEventsManager
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.utils.STUB_PRODUCT_IDENTIFIER
@@ -76,6 +77,8 @@ internal open class BasePurchasesTest {
     private val capturedConsumePurchaseWrapper = slot<StoreTransaction>()
     private val capturedShouldTryToConsume = slot<Boolean>()
 
+    protected lateinit var paywallPresentedCache: PaywallPresentedCache
+
     protected val randomAppUserId = "\$RCAnonymousID:ff68f26e432648369a713849a9f93b58"
     protected val appUserId = "fakeUserID"
     protected lateinit var purchases: Purchases
@@ -96,6 +99,7 @@ internal open class BasePurchasesTest {
         mockCustomerInfoHelper()
         mockCustomerInfoUpdateHandler()
         mockPostPendingTransactionsHelper()
+        paywallPresentedCache = PaywallPresentedCache()
 
         every {
             updatedCustomerInfoListener.onReceived(any())
@@ -377,6 +381,7 @@ internal open class BasePurchasesTest {
             syncPurchasesHelper = mockSyncPurchasesHelper,
             offeringsManager = mockOfferingsManager,
             paywallEventsManager = mockPaywallEventsManager,
+            paywallPresentedCache = paywallPresentedCache,
         )
         purchases = Purchases(purchasesOrchestrator)
         Purchases.sharedInstance = purchases
