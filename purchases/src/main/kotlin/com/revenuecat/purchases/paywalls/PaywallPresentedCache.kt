@@ -7,6 +7,8 @@ import com.revenuecat.purchases.paywalls.events.PaywallEventType
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 internal class PaywallPresentedCache {
+    @get:Synchronized
+    @set:Synchronized
     private var lastPaywallImpressionEvent: PaywallEvent? = null
 
     fun getAndRemovePresentedEvent(): PaywallEvent? {
