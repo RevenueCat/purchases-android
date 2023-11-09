@@ -14,7 +14,7 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.longOrNull
 
-fun JsonElement.asMap(): Map<String, Any?>? {
+internal fun JsonElement.asMap(): Map<String, Any?>? {
     if (this is JsonObject) {
         return jsonObject.entries.associate {
             it.key to it.value.extractedContent

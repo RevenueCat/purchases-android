@@ -419,7 +419,7 @@ internal class Backend(
         val call = object : Dispatcher.AsyncCall() {
             override fun call(): HTTPResult {
                 return httpClient.performRequest(
-                    appConfig.diagnosticsURL,
+                    AppConfig.diagnosticsURL,
                     Endpoint.PostDiagnostics,
                     body,
                     postFieldsToSign = null,
@@ -481,7 +481,7 @@ internal class Backend(
         val call = object : Dispatcher.AsyncCall() {
             override fun call(): HTTPResult {
                 return httpClient.performRequest(
-                    appConfig.paywallEventsURL,
+                    AppConfig.paywallEventsURL,
                     Endpoint.PostPaywallEvents,
                     body,
                     postFieldsToSign = null,

@@ -52,8 +52,8 @@ import org.assertj.core.api.Fail.fail
 import org.json.JSONArray
 import org.json.JSONObject
 import org.junit.After
-import org.junit.Assert.assertTrue
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -88,13 +88,11 @@ class BackendTest {
 
     private var mockClient: HTTPClient = mockk(relaxed = true)
     private val mockBaseURL = URL("http://mock-api-test.revenuecat.com/")
-    private val mockDiagnosticsBaseURL = URL("https://mock-api-diagnostics.revenuecat.com/")
     private val diagnosticsEndpoint = Endpoint.PostDiagnostics
     private val productEntitlementMappingEndpoint = Endpoint.GetProductEntitlementMapping
     private val defaultAuthHeaders = mapOf("Authorization" to "Bearer $API_KEY")
     private val mockAppConfig: AppConfig = mockk<AppConfig>().apply {
         every { baseURL } returns mockBaseURL
-        every { diagnosticsURL } returns mockDiagnosticsBaseURL
         every { customEntitlementComputation } returns false
     }
     private val dispatcher = spyk(SyncDispatcher())
@@ -1883,7 +1881,7 @@ class BackendTest {
         backend.postDiagnostics(diagnosticsList, {}, { _, _ -> })
         verify(exactly = 1) {
             mockClient.performRequest(
-                baseURL = mockDiagnosticsBaseURL,
+                baseURL = AppConfig.diagnosticsURL,
                 endpoint = diagnosticsEndpoint,
                 body = mapOf("entries" to JSONArray(diagnosticsList)),
                 postFieldsToSign = null,
@@ -1902,7 +1900,7 @@ class BackendTest {
             clientException = null,
             resultBody = null,
             delayed = true,
-            baseURL = mockDiagnosticsBaseURL
+            baseURL = AppConfig.diagnosticsURL,
         )
         val lock = CountDownLatch(3)
         asyncBackend.postDiagnostics(diagnosticsList, { lock.countDown() }, { _, _ -> fail("expected success") })
@@ -1912,7 +1910,7 @@ class BackendTest {
         assertThat(lock.count).isEqualTo(0)
         verify(exactly = 1) {
             mockClient.performRequest(
-                baseURL = mockDiagnosticsBaseURL,
+                baseURL = AppConfig.diagnosticsURL,
                 endpoint = diagnosticsEndpoint,
                 body = mapOf("entries" to JSONArray(diagnosticsList)),
                 postFieldsToSign = null,
@@ -1931,7 +1929,7 @@ class BackendTest {
             clientException = null,
             resultBody = null,
             delayed = true,
-            baseURL = mockDiagnosticsBaseURL
+            baseURL = AppConfig.diagnosticsURL,
         )
         val lock = CountDownLatch(1)
         asyncBackend.postDiagnostics(diagnosticsList, { lock.countDown() }, { _, _ -> fail("expected success") })
@@ -1943,7 +1941,7 @@ class BackendTest {
         assertThat(lock2.count).isEqualTo(0)
         verify(exactly = 2) {
             mockClient.performRequest(
-                baseURL = mockDiagnosticsBaseURL,
+                baseURL = AppConfig.diagnosticsURL,
                 endpoint = diagnosticsEndpoint,
                 body = mapOf("entries" to JSONArray(diagnosticsList)),
                 postFieldsToSign = null,
@@ -1961,7 +1959,7 @@ class BackendTest {
             responseCode = 200,
             clientException = SecurityException(),
             resultBody = null,
-            baseURL = mockDiagnosticsBaseURL
+            baseURL = AppConfig.diagnosticsURL,
         )
         var errorCalled = false
         backend.postDiagnostics(
@@ -1985,7 +1983,7 @@ class BackendTest {
             responseCode = 200,
             clientException = IOException(),
             resultBody = null,
-            baseURL = mockDiagnosticsBaseURL
+            baseURL = AppConfig.diagnosticsURL,
         )
         var errorCalled = false
         backend.postDiagnostics(
@@ -2009,7 +2007,7 @@ class BackendTest {
             responseCode = 500,
             clientException = null,
             resultBody = null,
-            baseURL = mockDiagnosticsBaseURL
+            baseURL = AppConfig.diagnosticsURL,
         )
         var errorCalled = false
         backend.postDiagnostics(
@@ -2033,7 +2031,7 @@ class BackendTest {
             responseCode = 400,
             clientException = null,
             resultBody = "{\"code\":7101}", // BackendStoreProblem
-            baseURL = mockDiagnosticsBaseURL
+            baseURL = AppConfig.diagnosticsURL,
         )
         var errorCalled = false
         backend.postDiagnostics(
@@ -2058,7 +2056,7 @@ class BackendTest {
             responseCode = 200,
             clientException = null,
             resultBody = resultBody,
-            baseURL = mockDiagnosticsBaseURL
+            baseURL = AppConfig.diagnosticsURL,
         )
         var successCalled = false
         backend.postDiagnostics(
@@ -2080,7 +2078,7 @@ class BackendTest {
             responseCode = 200,
             clientException = null,
             resultBody = "{}",
-            baseURL = mockDiagnosticsBaseURL
+            baseURL = AppConfig.diagnosticsURL,
         )
         dispatcher.calledDelay = null
         backend.postDiagnostics(

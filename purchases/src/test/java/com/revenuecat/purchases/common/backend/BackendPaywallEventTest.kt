@@ -38,7 +38,7 @@ import java.util.concurrent.TimeUnit
 @RunWith(AndroidJUnit4::class)
 class BackendPaywallEventTest {
 
-    private val testPaywallEventsURL = URL("http://mock-api-paywall-events-test.revenuecat.com/")
+
     private val paywallEventRequest = PaywallEventRequest(listOf(
         PaywallBackendEvent(
             id = "id",
@@ -63,9 +63,7 @@ class BackendPaywallEventTest {
 
     @Before
     fun setUp() {
-        appConfig = mockk<AppConfig>().apply {
-            every { paywallEventsURL } returns testPaywallEventsURL
-        }
+        appConfig = mockk()
         httpClient = mockk()
         val backendHelper = BackendHelper("TEST_API_KEY", SyncDispatcher(), appConfig, httpClient)
 
@@ -222,7 +220,7 @@ class BackendPaywallEventTest {
         assertThat(lock.count).isEqualTo(0)
         verify(exactly = 1) {
             httpClient.performRequest(
-                testPaywallEventsURL,
+                AppConfig.paywallEventsURL,
                 Endpoint.PostPaywallEvents,
                 body = any(),
                 postFieldsToSign = null,
@@ -236,7 +234,7 @@ class BackendPaywallEventTest {
         val expectedBody = PaywallEventsManager.json.encodeToJsonElement(expectedRequest).asMap()
         verify(exactly = 1) {
             httpClient.performRequest(
-                testPaywallEventsURL,
+                AppConfig.paywallEventsURL,
                 Endpoint.PostPaywallEvents,
                 body = expectedBody,
                 postFieldsToSign = null,
