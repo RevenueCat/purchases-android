@@ -8,10 +8,14 @@ import org.json.JSONObject
 import java.util.stream.Stream
 
 @RequiresApi(Build.VERSION_CODES.N)
+/**
+ * Class to handle file operations for event types like PaywallEvents and Diagnostics.
+ * When [eventDeserializer] is null, [readFile] with the deserialized type won't return any events.
+ */
 internal open class EventsFileHelper<T : Event> (
     private val fileHelper: FileHelper,
     private val filePath: String,
-    private val stringToEventConverter: ((String) -> T)? = null,
+    private val eventDeserializer: ((String) -> T)? = null,
 ) {
     @Synchronized
     fun appendEvent(event: T) {
@@ -20,7 +24,7 @@ internal open class EventsFileHelper<T : Event> (
 
     @Synchronized
     fun readFile(streamBlock: ((Stream<T>) -> Unit)) {
-        val stringToEventConverter = stringToEventConverter
+        val stringToEventConverter = eventDeserializer
         if (stringToEventConverter == null || fileHelper.fileIsEmpty(filePath)) {
             streamBlock(Stream.empty())
         } else {
