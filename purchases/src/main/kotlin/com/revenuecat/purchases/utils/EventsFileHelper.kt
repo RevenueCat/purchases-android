@@ -24,12 +24,12 @@ internal open class EventsFileHelper<T : Event> (
 
     @Synchronized
     fun readFile(streamBlock: ((Stream<T>) -> Unit)) {
-        val stringToEventConverter = eventDeserializer
-        if (stringToEventConverter == null || fileHelper.fileIsEmpty(filePath)) {
+        val eventDeserializer = eventDeserializer
+        if (eventDeserializer == null || fileHelper.fileIsEmpty(filePath)) {
             streamBlock(Stream.empty())
         } else {
             fileHelper.readFilePerLines(filePath) { stream ->
-                streamBlock(stream.map { stringToEventConverter(it) })
+                streamBlock(stream.map { eventDeserializer(it) })
             }
         }
     }
