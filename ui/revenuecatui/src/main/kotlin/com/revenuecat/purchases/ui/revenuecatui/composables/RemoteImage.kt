@@ -105,7 +105,7 @@ private fun Image(
                         is ImageSource.Remote -> "Error loading image from '${source.urlString}'"
                     }
 
-                    Logger.e("$error: ${it.result}")
+                    Logger.e(error, it.result.throwable)
                 }
                 else -> {}
             }
