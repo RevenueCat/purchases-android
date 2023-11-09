@@ -62,7 +62,7 @@ internal interface PaywallViewModel {
     fun clearActionError()
 }
 
-@OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class)
+@OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class, ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Suppress("TooManyFunctions")
 internal class PaywallViewModelImpl(
     private val applicationContext: ApplicationContext,
@@ -93,7 +93,6 @@ internal class PaywallViewModelImpl(
     private val mode: PaywallMode
         get() = options.mode
 
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     private var paywallPresentationData: PaywallEvent.Data? = null
 
     init {
@@ -184,7 +183,6 @@ internal class PaywallViewModelImpl(
         _actionError.value = null
     }
 
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     override fun trackPaywallImpressionIfNeeded() {
         if (paywallPresentationData == null) {
             paywallPresentationData = createEventData()
@@ -292,7 +290,6 @@ internal class PaywallViewModelImpl(
         _actionInProgress.value = false
     }
 
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     private fun trackPaywallClose() {
         if (paywallPresentationData != null) {
             track(PaywallEventType.CLOSE)
@@ -300,12 +297,10 @@ internal class PaywallViewModelImpl(
         }
     }
 
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     private fun trackPaywallCancel() {
         track(PaywallEventType.CANCEL)
     }
 
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     private fun track(eventType: PaywallEventType) {
         val eventData = paywallPresentationData
         if (eventData == null) {
@@ -322,7 +317,6 @@ internal class PaywallViewModelImpl(
     }
 
     @Suppress("ReturnCount")
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     private fun createEventData(): PaywallEvent.Data? {
         val currentState = state.value
         if (currentState !is PaywallState.Loaded) {
