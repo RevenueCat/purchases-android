@@ -256,6 +256,29 @@ class PaywallEventsManagerTest {
         checkFileContents("")
     }
 
+    @Test
+    fun `flushEvents with invalid events, flushes valid events`() {
+        mockBackendResponse(success = true)
+        eventsManager.track(event)
+        appendToFile("invalid event\n")
+        eventsManager.track(event)
+        appendToFile("invalid event 2\n")
+        checkFileNumberOfEvents(4)
+        eventsManager.flushEvents()
+        checkFileNumberOfEvents(0)
+        val expectedRequest = PaywallEventRequest(
+            List(2) { storedEvent.toPaywallBackendEvent() }
+        )
+        verify(exactly = 1) {
+            backend.postPaywallEvents(
+                expectedRequest,
+                any(),
+                any(),
+            )
+        }
+    }
+
+
     private fun checkFileNumberOfEvents(expectedNumberOfEvents: Int) {
         val file = File(testFolder, PaywallEventsManager.PAYWALL_EVENTS_FILE_PATH)
         assertThat(file.readLines().size).isEqualTo(expectedNumberOfEvents)
@@ -278,5 +301,10 @@ class PaywallEventsManagerTest {
                 errorSlot.captured.invoke(PurchasesError(PurchasesErrorCode.UnknownError), shouldMarkAsSyncedOnError)
             }
         }
+    }
+
+    private fun appendToFile(contents: String) {
+        val file = File(testFolder, PaywallEventsManager.PAYWALL_EVENTS_FILE_PATH)
+        file.appendText(contents)
     }
 }

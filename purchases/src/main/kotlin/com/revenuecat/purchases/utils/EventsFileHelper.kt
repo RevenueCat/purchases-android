@@ -3,6 +3,7 @@ package com.revenuecat.purchases.utils
 import android.os.Build
 import androidx.annotation.RequiresApi
 import com.revenuecat.purchases.common.FileHelper
+import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.verboseLog
 import org.json.JSONObject
 import java.util.stream.Stream
@@ -29,7 +30,7 @@ internal open class EventsFileHelper<T : Event> (
             streamBlock(Stream.empty())
         } else {
             fileHelper.readFilePerLines(filePath) { stream ->
-                streamBlock(stream.map { eventDeserializer(it) })
+                streamBlock(stream.map { line -> mapToEvent(line) })
             }
         }
     }
@@ -57,6 +58,19 @@ internal open class EventsFileHelper<T : Event> (
     fun deleteFile() {
         if (!fileHelper.deleteFile(filePath)) {
             verboseLog("Failed to delete events file in $filePath.")
+        }
+    }
+
+    private fun mapToEvent(string: String): T? {
+        val eventDeserializer = eventDeserializer ?: return null
+        return try {
+            eventDeserializer(string)
+        } catch (e: SerializationException) {
+            errorLog("Error parsing event from file: $string", e)
+            null
+        } catch (e: IllegalArgumentException) {
+            errorLog("Error parsing event from file: $string", e)
+            null
         }
     }
 }
