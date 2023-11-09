@@ -46,7 +46,6 @@ internal fun InternalPaywall(
     options: PaywallOptions,
     viewModel: PaywallViewModel = getPaywallViewModel(options),
 ) {
-    viewModel.trackPaywallImpressionIfNeeded()
     BackHandler {
         viewModel.close()
     }
@@ -100,6 +99,7 @@ internal fun InternalPaywall(
 
 @Composable
 private fun LoadedPaywall(state: PaywallState.Loaded, viewModel: PaywallViewModel) {
+    viewModel.trackPaywallImpressionIfNeeded()
     val backgroundColor = state.templateConfiguration.getCurrentColors().background
     Box(
         modifier = Modifier

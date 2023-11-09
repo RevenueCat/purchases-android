@@ -14,7 +14,6 @@ import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PurchaseParams
-import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
@@ -304,7 +303,7 @@ internal class PaywallViewModelImpl(
     private fun track(eventType: PaywallEventType) {
         val eventData = paywallPresentationData
         if (eventData == null) {
-            Logger.e("Paywall event data is null, not tracking event")
+            Logger.e("Paywall event data is null, not tracking event $eventType")
             return
         }
         val event = PaywallEvent(
@@ -313,7 +312,7 @@ internal class PaywallViewModelImpl(
             type = eventType,
         )
 
-        Purchases.sharedInstance.track(event)
+        purchases.track(event)
     }
 
     @Suppress("ReturnCount")
