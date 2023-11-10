@@ -19,6 +19,9 @@ internal sealed class Endpoint(val pathTemplate: String, val name: String) {
     object PostDiagnostics : Endpoint("/diagnostics", "post_diagnostics") {
         override fun getPath() = pathTemplate
     }
+    object PostPaywallEvents : Endpoint("/events", "post_paywall_events") {
+        override fun getPath() = pathTemplate
+    }
     data class PostAttributes(val userId: String) : Endpoint("/subscribers/%s/attributes", "post_attributes") {
         override fun getPath() = pathTemplate.format(Uri.encode(userId))
     }
@@ -44,6 +47,7 @@ internal sealed class Endpoint(val pathTemplate: String, val name: String) {
             is GetAmazonReceipt,
             is PostAttributes,
             PostDiagnostics,
+            PostPaywallEvents,
             ->
                 false
         }
@@ -59,6 +63,7 @@ internal sealed class Endpoint(val pathTemplate: String, val name: String) {
             is GetOfferings,
             is PostAttributes,
             PostDiagnostics,
+            PostPaywallEvents,
             GetProductEntitlementMapping,
             ->
                 false

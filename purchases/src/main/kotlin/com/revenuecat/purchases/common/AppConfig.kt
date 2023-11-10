@@ -20,6 +20,11 @@ internal class AppConfig(
     forceServerErrors: Boolean = false,
     forceSigningErrors: Boolean = false,
 ) {
+    companion object {
+        val diagnosticsURL = URL("https://api-diagnostics.revenuecat.com/")
+        val paywallEventsURL = URL("https://api-paywalls.revenuecat.com/")
+    }
+
     // Should only be used for tests
     var forceServerErrors: Boolean = forceServerErrors
         get() = runningTests && field
@@ -34,7 +39,6 @@ internal class AppConfig(
     val baseURL: URL = proxyURL?.also {
         log(LogIntent.INFO, ConfigureStrings.CONFIGURING_PURCHASES_PROXY_URL_SET)
     } ?: URL("https://api.revenuecat.com/")
-    val diagnosticsURL = URL("https://api-diagnostics.revenuecat.com/")
     val customEntitlementComputation: Boolean
         get() = dangerousSettings.customEntitlementComputation
 

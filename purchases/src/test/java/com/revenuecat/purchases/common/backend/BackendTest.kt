@@ -1,9 +1,4 @@
-//  Purchases
-//
-//  Copyright © 2019 RevenueCat, Inc. All rights reserved.
-//
-
-package com.revenuecat.purchases.common
+package com.revenuecat.purchases.common.backend
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.CustomerInfo
@@ -12,11 +7,25 @@ import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.VerificationResult
+import com.revenuecat.purchases.common.AppConfig
+import com.revenuecat.purchases.common.Backend
+import com.revenuecat.purchases.common.BackendHelper
+import com.revenuecat.purchases.common.CustomerInfoFactory
+import com.revenuecat.purchases.common.Delay
+import com.revenuecat.purchases.common.Dispatcher
+import com.revenuecat.purchases.common.HTTPClient
+import com.revenuecat.purchases.common.PostReceiptDataErrorCallback
+import com.revenuecat.purchases.common.PostReceiptErrorHandlingBehavior
+import com.revenuecat.purchases.common.ReceiptInfo
+import com.revenuecat.purchases.common.SyncDispatcher
+import com.revenuecat.purchases.common.createCustomerInfo
+import com.revenuecat.purchases.common.createResult
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
 import com.revenuecat.purchases.common.offlineentitlements.ProductEntitlementMapping
 import com.revenuecat.purchases.common.offlineentitlements.createProductEntitlementMapping
+import com.revenuecat.purchases.common.toMap
 import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.GoogleStoreProduct
 import com.revenuecat.purchases.models.GoogleSubscriptionOption
@@ -50,7 +59,6 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import java.io.IOException
-import java.lang.Thread.sleep
 import java.net.URL
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.LinkedBlockingQueue
@@ -80,13 +88,11 @@ class BackendTest {
 
     private var mockClient: HTTPClient = mockk(relaxed = true)
     private val mockBaseURL = URL("http://mock-api-test.revenuecat.com/")
-    private val mockDiagnosticsBaseURL = URL("https://mock-api-diagnostics.revenuecat.com/")
     private val diagnosticsEndpoint = Endpoint.PostDiagnostics
     private val productEntitlementMappingEndpoint = Endpoint.GetProductEntitlementMapping
     private val defaultAuthHeaders = mapOf("Authorization" to "Bearer $API_KEY")
     private val mockAppConfig: AppConfig = mockk<AppConfig>().apply {
         every { baseURL } returns mockBaseURL
-        every { diagnosticsURL } returns mockDiagnosticsBaseURL
         every { customEntitlementComputation } returns false
     }
     private val dispatcher = spyk(SyncDispatcher())
@@ -98,15 +104,17 @@ class BackendTest {
         mockClient,
         backendHelper
     )
-    private val asyncDispatcher = spyk(Dispatcher(
-        ThreadPoolExecutor(
-            1,
-            2,
-            0,
-            TimeUnit.MILLISECONDS,
-            LinkedBlockingQueue()
+    private val asyncDispatcher = spyk(
+        Dispatcher(
+            ThreadPoolExecutor(
+                1,
+                2,
+                0,
+                TimeUnit.MILLISECONDS,
+                LinkedBlockingQueue()
+            )
         )
-    ))
+    )
     private var asyncBackendHelper: BackendHelper = BackendHelper(API_KEY, asyncDispatcher, mockAppConfig, mockClient)
     private var asyncBackend: Backend = Backend(
         mockAppConfig,
@@ -1146,7 +1154,8 @@ class BackendTest {
         assertThat(receivedError!!.code)
             .`as`("Received error code is the right one")
             .isEqualTo(PurchasesErrorCode.UnsupportedError)
-        assertThat(receivedPostReceiptErrorHandlingBehavior).isEqualTo(PostReceiptErrorHandlingBehavior.SHOULD_NOT_CONSUME)
+        assertThat(receivedPostReceiptErrorHandlingBehavior)
+            .isEqualTo(PostReceiptErrorHandlingBehavior.SHOULD_NOT_CONSUME)
     }
 
     @Test
@@ -1166,7 +1175,8 @@ class BackendTest {
             initiationSource = initiationSource,
         )
 
-        assertThat(receivedPostReceiptErrorHandlingBehavior).isEqualTo(PostReceiptErrorHandlingBehavior.SHOULD_BE_CONSUMED)
+        assertThat(receivedPostReceiptErrorHandlingBehavior)
+            .isEqualTo(PostReceiptErrorHandlingBehavior.SHOULD_BE_CONSUMED)
     }
 
     @Test
@@ -1186,7 +1196,8 @@ class BackendTest {
             initiationSource = initiationSource,
         )
 
-        assertThat(receivedPostReceiptErrorHandlingBehavior).isEqualTo(PostReceiptErrorHandlingBehavior.SHOULD_USE_OFFLINE_ENTITLEMENTS_AND_NOT_CONSUME)
+        assertThat(receivedPostReceiptErrorHandlingBehavior)
+            .isEqualTo(PostReceiptErrorHandlingBehavior.SHOULD_USE_OFFLINE_ENTITLEMENTS_AND_NOT_CONSUME)
     }
 
     @Test
@@ -1206,7 +1217,8 @@ class BackendTest {
             initiationSource = initiationSource,
         )
 
-        assertThat(receivedPostReceiptErrorHandlingBehavior).isEqualTo(PostReceiptErrorHandlingBehavior.SHOULD_NOT_CONSUME)
+        assertThat(receivedPostReceiptErrorHandlingBehavior)
+            .isEqualTo(PostReceiptErrorHandlingBehavior.SHOULD_NOT_CONSUME)
     }
 
     @Test
@@ -1869,7 +1881,7 @@ class BackendTest {
         backend.postDiagnostics(diagnosticsList, {}, { _, _ -> })
         verify(exactly = 1) {
             mockClient.performRequest(
-                baseURL = mockDiagnosticsBaseURL,
+                baseURL = AppConfig.diagnosticsURL,
                 endpoint = diagnosticsEndpoint,
                 body = mapOf("entries" to JSONArray(diagnosticsList)),
                 postFieldsToSign = null,
@@ -1888,7 +1900,7 @@ class BackendTest {
             clientException = null,
             resultBody = null,
             delayed = true,
-            baseURL = mockDiagnosticsBaseURL
+            baseURL = AppConfig.diagnosticsURL,
         )
         val lock = CountDownLatch(3)
         asyncBackend.postDiagnostics(diagnosticsList, { lock.countDown() }, { _, _ -> fail("expected success") })
@@ -1898,7 +1910,7 @@ class BackendTest {
         assertThat(lock.count).isEqualTo(0)
         verify(exactly = 1) {
             mockClient.performRequest(
-                baseURL = mockDiagnosticsBaseURL,
+                baseURL = AppConfig.diagnosticsURL,
                 endpoint = diagnosticsEndpoint,
                 body = mapOf("entries" to JSONArray(diagnosticsList)),
                 postFieldsToSign = null,
@@ -1917,7 +1929,7 @@ class BackendTest {
             clientException = null,
             resultBody = null,
             delayed = true,
-            baseURL = mockDiagnosticsBaseURL
+            baseURL = AppConfig.diagnosticsURL,
         )
         val lock = CountDownLatch(1)
         asyncBackend.postDiagnostics(diagnosticsList, { lock.countDown() }, { _, _ -> fail("expected success") })
@@ -1929,7 +1941,7 @@ class BackendTest {
         assertThat(lock2.count).isEqualTo(0)
         verify(exactly = 2) {
             mockClient.performRequest(
-                baseURL = mockDiagnosticsBaseURL,
+                baseURL = AppConfig.diagnosticsURL,
                 endpoint = diagnosticsEndpoint,
                 body = mapOf("entries" to JSONArray(diagnosticsList)),
                 postFieldsToSign = null,
@@ -1947,7 +1959,7 @@ class BackendTest {
             responseCode = 200,
             clientException = SecurityException(),
             resultBody = null,
-            baseURL = mockDiagnosticsBaseURL
+            baseURL = AppConfig.diagnosticsURL,
         )
         var errorCalled = false
         backend.postDiagnostics(
@@ -1971,7 +1983,7 @@ class BackendTest {
             responseCode = 200,
             clientException = IOException(),
             resultBody = null,
-            baseURL = mockDiagnosticsBaseURL
+            baseURL = AppConfig.diagnosticsURL,
         )
         var errorCalled = false
         backend.postDiagnostics(
@@ -1995,7 +2007,7 @@ class BackendTest {
             responseCode = 500,
             clientException = null,
             resultBody = null,
-            baseURL = mockDiagnosticsBaseURL
+            baseURL = AppConfig.diagnosticsURL,
         )
         var errorCalled = false
         backend.postDiagnostics(
@@ -2019,7 +2031,7 @@ class BackendTest {
             responseCode = 400,
             clientException = null,
             resultBody = "{\"code\":7101}", // BackendStoreProblem
-            baseURL = mockDiagnosticsBaseURL
+            baseURL = AppConfig.diagnosticsURL,
         )
         var errorCalled = false
         backend.postDiagnostics(
@@ -2044,7 +2056,7 @@ class BackendTest {
             responseCode = 200,
             clientException = null,
             resultBody = resultBody,
-            baseURL = mockDiagnosticsBaseURL
+            baseURL = AppConfig.diagnosticsURL,
         )
         var successCalled = false
         backend.postDiagnostics(
@@ -2066,7 +2078,7 @@ class BackendTest {
             responseCode = 200,
             clientException = null,
             resultBody = "{}",
-            baseURL = mockDiagnosticsBaseURL
+            baseURL = AppConfig.diagnosticsURL,
         )
         dispatcher.calledDelay = null
         backend.postDiagnostics(
@@ -2309,7 +2321,7 @@ class BackendTest {
 
         if (clientException == null) {
             everyMockedCall answers {
-                if (delayed) sleep(200)
+                if (delayed) Thread.sleep(200)
                 result
             }
         } else {

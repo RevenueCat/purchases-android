@@ -5,6 +5,8 @@
 
 package com.revenuecat.purchases.common
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.PostReceiptInitiationSource
 import com.revenuecat.purchases.PurchasesError
@@ -16,8 +18,12 @@ import com.revenuecat.purchases.common.offlineentitlements.ProductEntitlementMap
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.PricingPhase
+import com.revenuecat.purchases.paywalls.events.PaywallEventRequest
+import com.revenuecat.purchases.paywalls.events.PaywallEventsManager
 import com.revenuecat.purchases.strings.NetworkStrings
+import com.revenuecat.purchases.utils.asMap
 import com.revenuecat.purchases.utils.filterNotNullValues
+import kotlinx.serialization.json.encodeToJsonElement
 import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
@@ -54,6 +60,9 @@ internal typealias IdentifyCallback = Pair<(CustomerInfo, Boolean) -> Unit, (Pur
 internal typealias DiagnosticsCallback = Pair<(JSONObject) -> Unit, (PurchasesError, Boolean) -> Unit>
 
 /** @suppress */
+internal typealias PaywallEventsCallback = Pair<() -> Unit, (PurchasesError, Boolean) -> Unit>
+
+/** @suppress */
 internal typealias ProductEntitlementCallback = Pair<(ProductEntitlementMapping) -> Unit, (PurchasesError) -> Unit>
 
 internal enum class PostReceiptErrorHandlingBehavior {
@@ -66,7 +75,7 @@ internal enum class PostReceiptErrorHandlingBehavior {
 internal class Backend(
     private val appConfig: AppConfig,
     private val dispatcher: Dispatcher,
-    private val diagnosticsDispatcher: Dispatcher,
+    private val eventsDispatcher: Dispatcher,
     private val httpClient: HTTPClient,
     private val backendHelper: BackendHelper,
 ) {
@@ -93,6 +102,9 @@ internal class Backend(
 
     @get:Synchronized @set:Synchronized
     @Volatile var diagnosticsCallbacks = mutableMapOf<CallbackCacheKey, MutableList<DiagnosticsCallback>>()
+
+    @get:Synchronized @set:Synchronized
+    @Volatile var paywallEventsCallbacks = mutableMapOf<CallbackCacheKey, MutableList<PaywallEventsCallback>>()
 
     @get:Synchronized @set:Synchronized
     @Volatile var productEntitlementCallbacks = mutableMapOf<String, MutableList<ProductEntitlementCallback>>()
@@ -407,7 +419,7 @@ internal class Backend(
         val call = object : Dispatcher.AsyncCall() {
             override fun call(): HTTPResult {
                 return httpClient.performRequest(
-                    appConfig.diagnosticsURL,
+                    AppConfig.diagnosticsURL,
                     Endpoint.PostDiagnostics,
                     body,
                     postFieldsToSign = null,
@@ -441,8 +453,67 @@ internal class Backend(
         synchronized(this@Backend) {
             diagnosticsCallbacks.addCallback(
                 call,
-                diagnosticsDispatcher,
+                eventsDispatcher,
                 cacheKey,
+                onSuccessHandler to onErrorHandler,
+                Delay.LONG,
+            )
+        }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.N)
+    fun postPaywallEvents(
+        paywallEventRequest: PaywallEventRequest,
+        onSuccessHandler: () -> Unit,
+        onErrorHandler: (error: PurchasesError, shouldMarkAsSynced: Boolean) -> Unit,
+    ) {
+        val body = PaywallEventsManager.json.encodeToJsonElement(paywallEventRequest).asMap()
+        if (body == null) {
+            onErrorHandler(
+                PurchasesError(
+                    PurchasesErrorCode.UnknownError,
+                    "Error encoding paywall event request",
+                ).also { errorLog(it) },
+                true,
+            )
+            return
+        }
+        val call = object : Dispatcher.AsyncCall() {
+            override fun call(): HTTPResult {
+                return httpClient.performRequest(
+                    AppConfig.paywallEventsURL,
+                    Endpoint.PostPaywallEvents,
+                    body,
+                    postFieldsToSign = null,
+                    backendHelper.authenticationHeaders,
+                )
+            }
+
+            override fun onError(error: PurchasesError) {
+                synchronized(this@Backend) {
+                    paywallEventsCallbacks.remove(paywallEventRequest.cacheKey)
+                }?.forEach { (_, onErrorHandler) ->
+                    onErrorHandler(error, true)
+                }
+            }
+
+            override fun onCompletion(result: HTTPResult) {
+                synchronized(this@Backend) {
+                    paywallEventsCallbacks.remove(paywallEventRequest.cacheKey)
+                }?.forEach { (onSuccessHandler, onErrorHandler) ->
+                    if (result.isSuccessful()) {
+                        onSuccessHandler()
+                    } else {
+                        onErrorHandler(result.toPurchasesError(), RCHTTPStatusCodes.isSynced(result.responseCode))
+                    }
+                }
+            }
+        }
+        synchronized(this@Backend) {
+            paywallEventsCallbacks.addCallback(
+                call,
+                eventsDispatcher,
+                paywallEventRequest.cacheKey,
                 onSuccessHandler to onErrorHandler,
                 Delay.LONG,
             )
