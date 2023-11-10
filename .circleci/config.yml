@@ -36,7 +36,7 @@ version: 2.1
 orbs:
   android: circleci/android@2.2.0
   gcp-cli: circleci/gcp-cli@2.1.0
-  revenuecat: revenuecat/sdks-common-config@2.0.0
+  revenuecat: revenuecat/sdks-common-config@2.2.0
   codecov: codecov/codecov@3.2.4
 
 parameters:
