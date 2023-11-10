@@ -806,12 +806,6 @@ internal class BillingWrapper(
         }
     }
 
-    private fun withConnectedClient(receivingFunction: RetryableFunction) {
-        billingClient?.takeIf { it.isReady }?.let {
-            receivingFunction.onConnected(it)
-        } ?: log(LogIntent.GOOGLE_WARNING, BillingStrings.BILLING_CLIENT_DISCONNECTED.format(getStackTrace()))
-    }
-
     private fun withConnectedClient(receivingFunction: BillingClient.() -> Unit) {
         billingClient?.takeIf { it.isReady }?.let {
             it.receivingFunction()
@@ -1020,13 +1014,4 @@ internal class BillingWrapper(
             } ?: break
         }
     }
-}
-
-interface RetryableFunction {
-
-    val maxRetries: Int
-
-    fun forwardError(billingResult: BillingResult)
-    fun retryable(billingClient: BillingClient, retry: Int = 0)
-    fun onConnected(billingClient: BillingClient)
 }
