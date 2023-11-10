@@ -323,7 +323,7 @@ internal class MockViewModel(
         error("Not supported")
     }
 
-    override fun close() {
+    override fun closePaywall() {
         error("Not supported")
     }
 

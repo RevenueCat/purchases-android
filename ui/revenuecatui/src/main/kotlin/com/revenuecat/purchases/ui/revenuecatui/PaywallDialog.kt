@@ -57,7 +57,7 @@ fun PaywallDialog(
         Dialog(
             onDismissRequest = {
                 dismissRequest()
-                viewModel.close()
+                viewModel.closePaywall()
                 paywallDialogOptions.dismissRequest?.invoke()
             },
             properties = DialogProperties(usePlatformDefaultWidth = shouldUsePlatformDefaultWidth()),

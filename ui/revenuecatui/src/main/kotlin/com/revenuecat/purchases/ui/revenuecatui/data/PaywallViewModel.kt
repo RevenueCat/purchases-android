@@ -48,7 +48,7 @@ internal interface PaywallViewModel {
     fun refreshStateIfColorsChanged(colorScheme: ColorScheme, isDark: Boolean)
     fun selectPackage(packageToSelect: TemplateConfiguration.PackageInfo)
     fun trackPaywallImpressionIfNeeded()
-    fun close()
+    fun closePaywall()
 
     /**
      * Purchase the selected package
@@ -135,7 +135,7 @@ internal class PaywallViewModelImpl(
         }
     }
 
-    override fun close() {
+    override fun closePaywall() {
         Logger.d("Paywalls: Close paywall initiated")
         trackPaywallClose()
         options.dismissRequest()

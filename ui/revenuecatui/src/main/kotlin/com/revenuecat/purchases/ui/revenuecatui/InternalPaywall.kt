@@ -47,7 +47,7 @@ internal fun InternalPaywall(
     viewModel: PaywallViewModel = getPaywallViewModel(options),
 ) {
     BackHandler {
-        viewModel.close()
+        viewModel.closePaywall()
     }
     PaywallTheme(fontProvider = options.fontProvider) {
         viewModel.refreshStateIfLocaleChanged()
@@ -63,7 +63,7 @@ internal fun InternalPaywall(
             LoadingPaywall(
                 mode = options.mode,
                 shouldDisplayDismissButton = options.shouldDisplayDismissButton,
-                onDismiss = viewModel::close,
+                onDismiss = viewModel::closePaywall,
             )
         }
 
@@ -118,7 +118,7 @@ private fun LoadedPaywall(state: PaywallState.Loaded, viewModel: PaywallViewMode
             },
     ) {
         TemplatePaywall(state = state, viewModel = viewModel)
-        CloseButton(state.shouldDisplayDismissButton, viewModel::close)
+        CloseButton(state.shouldDisplayDismissButton, viewModel::closePaywall)
     }
 }
 

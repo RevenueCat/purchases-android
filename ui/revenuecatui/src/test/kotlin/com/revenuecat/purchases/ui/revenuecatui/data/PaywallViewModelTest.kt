@@ -16,7 +16,6 @@ import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.Transaction
 import com.revenuecat.purchases.paywalls.PaywallData
-import com.revenuecat.purchases.paywalls.events.PaywallEvent
 import com.revenuecat.purchases.paywalls.events.PaywallEventType
 import com.revenuecat.purchases.ui.revenuecatui.ExperimentalPreviewRevenueCatUIPurchasesAPI
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
@@ -110,7 +109,7 @@ class PaywallViewModelTest {
 
     @Test
     fun `Initial state is correct`() {
-        delayGettingOfferings()
+        delayFetchingOfferings()
 
         val model = create()
 
@@ -377,7 +376,7 @@ class PaywallViewModelTest {
         val model = create()
 
         assertThat(dismissInvoked).isFalse
-        model.close()
+        model.closePaywall()
         assertThat(dismissInvoked).isTrue
     }
 
@@ -405,7 +404,7 @@ class PaywallViewModelTest {
     fun `trackPaywallImpression after close tracks again`() {
         val model = create()
         model.trackPaywallImpressionIfNeeded()
-        model.close()
+        model.closePaywall()
         model.trackPaywallImpressionIfNeeded()
         verifyEventTracked(PaywallEventType.IMPRESSION, 2)
     }
@@ -414,7 +413,7 @@ class PaywallViewModelTest {
     fun `close tracks close event`() {
         val model = create()
         model.trackPaywallImpressionIfNeeded()
-        model.close()
+        model.closePaywall()
         verifyEventTracked(PaywallEventType.CLOSE, 1)
     }
 
@@ -422,9 +421,9 @@ class PaywallViewModelTest {
     fun `close tracks close event only once before another impression`() {
         val model = create()
         model.trackPaywallImpressionIfNeeded()
-        model.close()
-        model.close()
-        model.close()
+        model.closePaywall()
+        model.closePaywall()
+        model.closePaywall()
         verify(exactly = 1) {
             purchases.track(
                 withArg {
@@ -437,7 +436,7 @@ class PaywallViewModelTest {
             )
         }
         model.trackPaywallImpressionIfNeeded()
-        model.close()
+        model.closePaywall()
         verifyEventTracked(PaywallEventType.CLOSE, 2)
     }
 
@@ -471,7 +470,7 @@ class PaywallViewModelTest {
 
     @Test
     fun `trackPaywallImpression does nothing if state is loading`() {
-        delayGettingOfferings()
+        delayFetchingOfferings()
         val model = create()
         model.trackPaywallImpressionIfNeeded()
         assertThat(model.state.value).isInstanceOf(PaywallState.Loading::class.java)
@@ -568,7 +567,7 @@ class PaywallViewModelTest {
         }
     }
 
-    private fun delayGettingOfferings() {
+    private fun delayFetchingOfferings() {
         coEvery { purchases.awaitOfferings() } coAnswers {
             // Delay response to verify initial state
             delay(100)
