@@ -757,7 +757,7 @@ end
 # Snapshots
 
 def snapshots_commit_file
-  "#{File.dirname(__FILE__)}/.purchases-android-snapshots-commit"
+  File.join(Dir.pwd, 'fastlane', '.purchases-android-snapshots-commit')
 end
 
 def current_snapshots_commit
