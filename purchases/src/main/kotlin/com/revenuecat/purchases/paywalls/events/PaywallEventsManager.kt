@@ -3,11 +3,15 @@ package com.revenuecat.purchases.paywalls.events
 import android.os.Build
 import androidx.annotation.RequiresApi
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
+import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.Delay
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.debugLog
+import com.revenuecat.purchases.common.errorLog
+import com.revenuecat.purchases.common.verboseLog
 import com.revenuecat.purchases.identity.IdentityManager
 import kotlinx.serialization.json.Json
+import java.util.stream.Collectors
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @RequiresApi(Build.VERSION_CODES.N)
@@ -15,12 +19,19 @@ internal class PaywallEventsManager(
     private val fileHelper: PaywallEventsFileHelper,
     private val identityManager: IdentityManager,
     private val paywallEventsDispatcher: Dispatcher,
+    private val backend: Backend,
 ) {
 
     companion object {
         internal val json = Json.Default
+        private const val FLUSH_COUNT = 50L
     }
 
+    @get:Synchronized
+    @set:Synchronized
+    private var flushInProgress = false
+
+    @Synchronized
     fun track(event: PaywallEvent) {
         enqueue {
             debugLog("Tracking paywall event: $event")
@@ -28,8 +39,50 @@ internal class PaywallEventsManager(
         }
     }
 
+    @Synchronized
     fun flushEvents() {
-        // WIP
+        enqueue {
+            if (flushInProgress) {
+                debugLog("Flush already in progress.")
+                return@enqueue
+            }
+            flushInProgress = true
+            val eventsToSync = getEventsToSync()
+            val eventsToSyncSize = eventsToSync.size
+            if (eventsToSync.isEmpty()) {
+                verboseLog("No paywall events to sync.")
+                flushInProgress = false
+                return@enqueue
+            }
+            verboseLog("Paywall event flush: posting $eventsToSyncSize events.")
+            backend.postPaywallEvents(
+                paywallEventRequest = PaywallEventRequest(eventsToSync.map { it.toPaywallBackendEvent() }),
+                onSuccessHandler = {
+                    verboseLog("Paywall event flush: success.")
+                    enqueue {
+                        fileHelper.clear(eventsToSyncSize)
+                        flushInProgress = false
+                    }
+                },
+                onErrorHandler = { error, shouldMarkAsSynced ->
+                    errorLog("Paywall event flush error: $error.")
+                    enqueue {
+                        if (shouldMarkAsSynced) {
+                            fileHelper.clear(eventsToSyncSize)
+                        }
+                        flushInProgress = false
+                    }
+                },
+            )
+        }
+    }
+
+    private fun getEventsToSync(): List<PaywallStoredEvent> {
+        var eventsToSync: List<PaywallStoredEvent> = emptyList()
+        fileHelper.readFile { stream ->
+            eventsToSync = stream.limit(FLUSH_COUNT).collect(Collectors.toList())
+        }
+        return eventsToSync
     }
 
     private fun enqueue(delay: Delay = Delay.NONE, command: () -> Unit) {
