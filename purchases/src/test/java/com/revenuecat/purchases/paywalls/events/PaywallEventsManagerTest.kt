@@ -256,6 +256,38 @@ class PaywallEventsManagerTest {
         checkFileContents("")
     }
 
+    @Test
+    fun `flushEvents with invalid events, flushes valid events`() {
+        mockBackendResponse(success = true)
+        eventsManager.track(event)
+        appendToFile("invalid event\n")
+        eventsManager.track(event)
+        appendToFile("invalid event 2\n")
+        checkFileNumberOfEvents(4)
+        eventsManager.flushEvents()
+        checkFileNumberOfEvents(0)
+        expectNumberOfEventsSynced(2)
+    }
+
+    @Test
+    fun `flushEvents with invalid events, flushes valid events when reaching max count per request`() {
+        mockBackendResponse(success = true)
+        for (i in 0..24) {
+            eventsManager.track(event)
+        }
+        appendToFile("invalid event\n")
+        appendToFile("invalid event 2\n")
+        for (i in 0..49) {
+            eventsManager.track(event)
+        }
+        appendToFile("invalid event 3\n")
+        checkFileNumberOfEvents(78)
+        eventsManager.flushEvents()
+        checkFileNumberOfEvents(28)
+        expectNumberOfEventsSynced(48)
+    }
+
+
     private fun checkFileNumberOfEvents(expectedNumberOfEvents: Int) {
         val file = File(testFolder, PaywallEventsManager.PAYWALL_EVENTS_FILE_PATH)
         assertThat(file.readLines().size).isEqualTo(expectedNumberOfEvents)
@@ -278,5 +310,23 @@ class PaywallEventsManagerTest {
                 errorSlot.captured.invoke(PurchasesError(PurchasesErrorCode.UnknownError), shouldMarkAsSyncedOnError)
             }
         }
+    }
+
+    private fun expectNumberOfEventsSynced(eventsSynced: Int) {
+        val expectedRequest = PaywallEventRequest(
+            List(eventsSynced) { storedEvent.toPaywallBackendEvent() }
+        )
+        verify(exactly = 1) {
+            backend.postPaywallEvents(
+                expectedRequest,
+                any(),
+                any(),
+            )
+        }
+    }
+
+    private fun appendToFile(contents: String) {
+        val file = File(testFolder, PaywallEventsManager.PAYWALL_EVENTS_FILE_PATH)
+        file.appendText(contents)
     }
 }

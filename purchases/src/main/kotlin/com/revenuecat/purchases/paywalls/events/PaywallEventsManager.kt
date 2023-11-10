@@ -46,7 +46,8 @@ internal class PaywallEventsManager(
                 return@enqueue
             }
             flushInProgress = true
-            val eventsToSync = getEventsToSync()
+            val eventsToSyncWithNullValues = getEventsToSync()
+            val eventsToSync = eventsToSyncWithNullValues.filterNotNull()
             val eventsToSyncSize = eventsToSync.size
             if (eventsToSync.isEmpty()) {
                 verboseLog("No paywall events to sync.")
@@ -59,7 +60,7 @@ internal class PaywallEventsManager(
                 onSuccessHandler = {
                     verboseLog("Paywall event flush: success.")
                     enqueue {
-                        fileHelper.clear(eventsToSyncSize)
+                        fileHelper.clear(eventsToSyncWithNullValues.size)
                         flushInProgress = false
                     }
                 },
@@ -67,7 +68,7 @@ internal class PaywallEventsManager(
                     errorLog("Paywall event flush error: $error.")
                     enqueue {
                         if (shouldMarkAsSynced) {
-                            fileHelper.clear(eventsToSyncSize)
+                            fileHelper.clear(eventsToSyncWithNullValues.size)
                         }
                         flushInProgress = false
                     }
@@ -76,7 +77,7 @@ internal class PaywallEventsManager(
         }
     }
 
-    private fun getEventsToSync(): List<PaywallStoredEvent> {
+    private fun getEventsToSync(): List<PaywallStoredEvent?> {
         var eventsToSync: List<PaywallStoredEvent> = emptyList()
         fileHelper.readFile { stream ->
             eventsToSync = stream.limit(FLUSH_COUNT).collect(Collectors.toList())
