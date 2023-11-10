@@ -15,6 +15,10 @@ import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsMa
 import com.revenuecat.purchases.google.toStoreTransaction
 import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.paywalls.PaywallPresentedCache
+import com.revenuecat.purchases.paywalls.events.PaywallEvent
+import com.revenuecat.purchases.paywalls.events.PaywallEventType
+import com.revenuecat.purchases.paywalls.events.PaywallPostReceiptData
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttribute
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.subscriberattributes.toBackendMap
@@ -36,7 +40,10 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
+import java.util.Date
+import java.util.UUID
 
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
 class PostReceiptHelperTest {
@@ -70,6 +77,18 @@ class PostReceiptHelperTest {
         VerificationResult.NOT_REQUESTED
     )
     private val unsyncedSubscriberAttributes = getUnsyncedSubscriberAttributes()
+    private val event = PaywallEvent(
+        creationData = PaywallEvent.CreationData(UUID.randomUUID(), Date()),
+        data = PaywallEvent.Data(
+            "offering_id",
+            10,
+            UUID.randomUUID(),
+            "footer",
+            "es_ES",
+            false,
+        ),
+        type = PaywallEventType.CLOSE,
+    )
 
     private lateinit var postedReceiptInfoSlot: CapturingSlot<ReceiptInfo>
 
@@ -80,6 +99,7 @@ class PostReceiptHelperTest {
     private lateinit var deviceCache: DeviceCache
     private lateinit var subscriberAttributesManager: SubscriberAttributesManager
     private lateinit var offlineEntitlementsManager: OfflineEntitlementsManager
+    private lateinit var paywallPresentedCache: PaywallPresentedCache
 
     private lateinit var postReceiptHelper: PostReceiptHelper
 
@@ -92,6 +112,7 @@ class PostReceiptHelperTest {
         deviceCache = mockk()
         subscriberAttributesManager = mockk()
         offlineEntitlementsManager = mockk()
+        paywallPresentedCache = PaywallPresentedCache()
 
         postedReceiptInfoSlot = slot()
 
@@ -102,7 +123,8 @@ class PostReceiptHelperTest {
             customerInfoUpdateHandler = customerInfoUpdateHandler,
             deviceCache = deviceCache,
             subscriberAttributesManager = subscriberAttributesManager,
-            offlineEntitlementsManager = offlineEntitlementsManager
+            offlineEntitlementsManager = offlineEntitlementsManager,
+            paywallPresentedCache = paywallPresentedCache
         )
 
         mockUnsyncedSubscriberAttributes()
@@ -146,6 +168,7 @@ class PostReceiptHelperTest {
                 storeAppUserID = mockStoreTransaction.storeUserID,
                 marketplace = mockStoreTransaction.marketplace,
                 initiationSource = PostReceiptInitiationSource.PURCHASE,
+                paywallPostReceiptData = null,
                 onSuccess = any(),
                 onError = any()
             )
@@ -178,6 +201,7 @@ class PostReceiptHelperTest {
                 storeAppUserID = any(),
                 marketplace = any(),
                 initiationSource = any(),
+                paywallPostReceiptData = null,
                 onSuccess = any(),
                 onError = any()
             )
@@ -805,6 +829,7 @@ class PostReceiptHelperTest {
                 storeAppUserID = storeUserId,
                 marketplace = marketplace,
                 initiationSource = PostReceiptInitiationSource.RESTORE,
+                paywallPostReceiptData = null,
                 onSuccess = any(),
                 onError = any()
             )
@@ -839,6 +864,7 @@ class PostReceiptHelperTest {
                 storeAppUserID = any(),
                 marketplace = any(),
                 initiationSource = any(),
+                paywallPostReceiptData = null,
                 onSuccess = any(),
                 onError = any()
             )
@@ -1336,6 +1362,62 @@ class PostReceiptHelperTest {
 
     // endregion
 
+    // region paywall data
+
+    @Test
+    fun `postReceipt posts paywall data if cached`() {
+        val expectedPaywallData = event.toPaywallPostReceiptData()
+
+        mockPostReceiptSuccess()
+
+        paywallPresentedCache.cachePresentedPaywall(event)
+        postReceiptHelper.postTransactionAndConsumeIfNeeded(
+            purchase = mockStoreTransaction,
+            storeProduct = mockStoreProduct,
+            isRestore = false,
+            appUserID = appUserID,
+            initiationSource = PostReceiptInitiationSource.PURCHASE,
+            onSuccess = { _, _ -> },
+            onError = { _, _ -> fail("Should succeed") }
+        )
+        verify(exactly = 1) {
+            backend.postReceiptData(
+                purchaseToken = any(),
+                appUserID = any(),
+                isRestore = any(),
+                observerMode = any(),
+                subscriberAttributes = any(),
+                receiptInfo = any(),
+                storeAppUserID = any(),
+                marketplace = any(),
+                initiationSource = any(),
+                paywallPostReceiptData = expectedPaywallData,
+                onSuccess = any(),
+                onError = any()
+            )
+        }
+        assertThat(paywallPresentedCache.getAndRemovePresentedEvent()).isNull()
+    }
+
+    @Test
+    fun `postReceipt keeps paywall data in cache if request fails`() {
+        mockPostReceiptError(errorHandlingBehavior = PostReceiptErrorHandlingBehavior.SHOULD_NOT_CONSUME)
+
+        paywallPresentedCache.cachePresentedPaywall(event)
+        postReceiptHelper.postTransactionAndConsumeIfNeeded(
+            purchase = mockStoreTransaction,
+            storeProduct = mockStoreProduct,
+            isRestore = false,
+            appUserID = appUserID,
+            initiationSource = PostReceiptInitiationSource.PURCHASE,
+            onSuccess = { _, _ -> fail("Should error") },
+            onError = { _, _ -> }
+        )
+        assertThat(paywallPresentedCache.getAndRemovePresentedEvent()).isEqualTo(event)
+    }
+
+    // endregion paywall data
+
     // region helpers
 
     private enum class PostType {
@@ -1368,6 +1450,7 @@ class PostReceiptHelperTest {
                 storeAppUserID = any(),
                 marketplace = any(),
                 initiationSource = postReceiptInitiationSource,
+                paywallPostReceiptData = any(),
                 onSuccess = captureLambda(),
                 onError = any()
             )
@@ -1400,6 +1483,7 @@ class PostReceiptHelperTest {
                 storeAppUserID = any(),
                 marketplace = any(),
                 initiationSource = initiationSource,
+                paywallPostReceiptData = any(),
                 onSuccess = any(),
                 onError = captureLambda()
             )

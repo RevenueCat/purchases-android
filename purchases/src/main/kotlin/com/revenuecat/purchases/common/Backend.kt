@@ -19,6 +19,7 @@ import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.PricingPhase
 import com.revenuecat.purchases.paywalls.events.PaywallEventRequest
+import com.revenuecat.purchases.paywalls.events.PaywallPostReceiptData
 import com.revenuecat.purchases.strings.NetworkStrings
 import com.revenuecat.purchases.utils.asMap
 import com.revenuecat.purchases.utils.filterNotNullValues
@@ -190,6 +191,7 @@ internal class Backend(
         @SuppressWarnings("UnusedPrivateMember")
         marketplace: String? = null,
         initiationSource: PostReceiptInitiationSource,
+        paywallPostReceiptData: PaywallPostReceiptData?,
         onSuccess: PostReceiptDataSuccessCallback,
         onError: PostReceiptDataErrorCallback,
     ) {
@@ -219,6 +221,7 @@ internal class Backend(
             "pricing_phases" to receiptInfo.pricingPhases?.map { it.toMap() },
             "proration_mode" to (receiptInfo.replacementMode as? GoogleReplacementMode)?.asGoogleProrationMode?.name,
             "initiation_source" to initiationSource.postReceiptFieldValue,
+            "paywall" to paywallPostReceiptData?.toMap(),
         ).filterNotNullValues()
 
         val postFieldsToSign = listOf(

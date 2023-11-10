@@ -23,6 +23,8 @@ import com.revenuecat.purchases.models.GoogleProrationMode
 import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.paywalls.events.PaywallEvent
+import com.revenuecat.purchases.paywalls.events.PaywallEventType
 import com.revenuecat.purchases.utils.Responses
 import com.revenuecat.purchases.utils.STUB_OFFERING_IDENTIFIER
 import com.revenuecat.purchases.utils.createMockOneTimeProductDetails
@@ -47,6 +49,7 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import kotlin.random.Random
 
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
 @Suppress("DEPRECATION")
@@ -1210,6 +1213,47 @@ internal class PurchasesTest : BasePurchasesTest() {
     }
 
     // endregion
+
+    // region track events
+
+    @Test
+    fun `track impression event caches it`() {
+        val event = mockk<PaywallEvent>().apply {
+            every { type } returns PaywallEventType.IMPRESSION
+        }
+        every { mockPaywallEventsManager.track(event) } just Runs
+        assertThat(paywallPresentedCache.getAndRemovePresentedEvent()).isNull()
+        purchases.track(event)
+        assertThat(paywallPresentedCache.getAndRemovePresentedEvent()).isEqualTo(event)
+    }
+
+    @Test
+    fun `track close event clears cache`() {
+        every { mockPaywallEventsManager.track(any()) } just Runs
+        val impressionEvent = mockk<PaywallEvent>().apply {
+            every { type } returns PaywallEventType.IMPRESSION
+        }
+        val closeEvent = mockk<PaywallEvent>().apply {
+            every { type } returns PaywallEventType.CLOSE
+        }
+        assertThat(paywallPresentedCache.getAndRemovePresentedEvent()).isNull()
+        purchases.track(impressionEvent)
+        purchases.track(closeEvent)
+        assertThat(paywallPresentedCache.getAndRemovePresentedEvent()).isNull()
+    }
+
+    @Test
+    fun `track event tracks event`() {
+        val event = mockk<PaywallEvent>().apply {
+            every { type } returns PaywallEventType.IMPRESSION
+        }
+        every { mockPaywallEventsManager.track(event) } just Runs
+
+        purchases.track(event)
+        verify(exactly = 1) { mockPaywallEventsManager.track(event) }
+    }
+
+    // endregion track events
 
     @Test
     fun `Setting platform info sets it in the AppConfig when configuring the SDK`() {
