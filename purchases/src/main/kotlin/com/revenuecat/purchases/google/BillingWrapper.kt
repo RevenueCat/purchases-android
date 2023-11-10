@@ -195,6 +195,8 @@ internal class BillingWrapper(
                 dateProvider,
                 diagnosticsTrackerIfEnabled,
                 productIds,
+                productType,
+                nonEmptyProductIds,
             ),
             onReceive,
             onError,
@@ -202,8 +204,6 @@ internal class BillingWrapper(
                 withConnectedClient {
                     (this@QueryProductDetailsUseCase as QueryProductDetailsUseCase).queryProductDetailsAsync(
                         this@withConnectedClient,
-                        productType,
-                        nonEmptyProductIds,
                     )
                 }
             },

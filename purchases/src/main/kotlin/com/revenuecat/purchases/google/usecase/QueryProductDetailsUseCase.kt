@@ -29,6 +29,8 @@ internal data class QueryProductDetailsUseCaseParams(
     val dateProvider: DateProvider = DefaultDateProvider(),
     val diagnosticsTrackerIfEnabled: DiagnosticsTracker?,
     val productIds: Set<String>,
+    val productType: ProductType,
+    val nonEmptyProductIds: Set<String>,
 )
 
 internal class QueryProductDetailsUseCase(
@@ -41,11 +43,9 @@ internal class QueryProductDetailsUseCase(
 
     fun queryProductDetailsAsync(
         billingClient: BillingClient,
-        productType: ProductType,
-        nonEmptyProductIds: Set<String>,
     ) {
-        val googleType: String = productType.toGoogleProductType() ?: BillingClient.ProductType.INAPP
-        val params = googleType.buildQueryProductDetailsParams(nonEmptyProductIds)
+        val googleType: String = useCaseParams.productType.toGoogleProductType() ?: BillingClient.ProductType.INAPP
+        val params = googleType.buildQueryProductDetailsParams(useCaseParams.nonEmptyProductIds)
 
         queryProductDetailsAsyncEnsuringOneResponse(
             billingClient,
