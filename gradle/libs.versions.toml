@@ -1,5 +1,5 @@
 [versions]
-agp = "8.1.0"
+agp = "8.1.1"
 kotlin = "1.7.21"
 # Can't update until we use more recent kotlin. 1.5.0 uses Kotlin 1.8.0
 kotlinxSerializationJSON = "1.4.1"
