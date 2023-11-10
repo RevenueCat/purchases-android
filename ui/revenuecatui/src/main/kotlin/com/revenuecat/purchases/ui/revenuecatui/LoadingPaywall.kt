@@ -170,8 +170,9 @@ private class LoadingViewModel(
     override val actionInProgress: State<Boolean> = mutableStateOf(false)
     override val actionError: State<PurchasesError?> = mutableStateOf(null)
 
+    override fun trackPaywallImpressionIfNeeded() = Unit
     override fun refreshStateIfLocaleChanged() = Unit
-    override fun refreshStateIfColorsChanged(colorScheme: ColorScheme) = Unit
+    override fun refreshStateIfColorsChanged(colorScheme: ColorScheme, isDarkMode: Boolean) = Unit
 
     private val _state = MutableStateFlow(state)
 
@@ -179,7 +180,7 @@ private class LoadingViewModel(
         error("Not supported")
     }
 
-    override fun closeButtonPressed() {
+    override fun closePaywall() {
         error("Not supported")
     }
 

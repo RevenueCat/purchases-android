@@ -10,11 +10,15 @@ import androidx.core.os.LocaleListCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PurchaseParams
 import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
+import com.revenuecat.purchases.paywalls.events.PaywallEvent
+import com.revenuecat.purchases.paywalls.events.PaywallEventType
 import com.revenuecat.purchases.ui.revenuecatui.ExperimentalPreviewRevenueCatUIPurchasesAPI
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
@@ -31,6 +35,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import java.util.Date
+import java.util.Locale
+import java.util.UUID
 
 internal interface PaywallViewModel {
     val state: StateFlow<PaywallState>
@@ -38,9 +45,10 @@ internal interface PaywallViewModel {
     val actionError: State<PurchasesError?>
 
     fun refreshStateIfLocaleChanged()
-    fun refreshStateIfColorsChanged(colorScheme: ColorScheme)
+    fun refreshStateIfColorsChanged(colorScheme: ColorScheme, isDark: Boolean)
     fun selectPackage(packageToSelect: TemplateConfiguration.PackageInfo)
-    fun closeButtonPressed()
+    fun trackPaywallImpressionIfNeeded()
+    fun closePaywall()
 
     /**
      * Purchase the selected package
@@ -53,13 +61,14 @@ internal interface PaywallViewModel {
     fun clearActionError()
 }
 
-@OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class)
+@OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class, ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Suppress("TooManyFunctions")
 internal class PaywallViewModelImpl(
     private val applicationContext: ApplicationContext,
     private val purchases: PurchasesType = PurchasesImpl(),
     private var options: PaywallOptions,
     colorScheme: ColorScheme,
+    private var isDarkMode: Boolean,
     preview: Boolean = false,
 ) : ViewModel(), PaywallViewModel {
     private val variableDataProvider = VariableDataProvider(applicationContext, preview)
@@ -83,6 +92,8 @@ internal class PaywallViewModelImpl(
     private val mode: PaywallMode
         get() = options.mode
 
+    private var paywallPresentationData: PaywallEvent.Data? = null
+
     init {
         updateState()
     }
@@ -101,7 +112,11 @@ internal class PaywallViewModelImpl(
         }
     }
 
-    override fun refreshStateIfColorsChanged(colorScheme: ColorScheme) {
+    override fun refreshStateIfColorsChanged(colorScheme: ColorScheme, isDark: Boolean) {
+        if (isDarkMode != isDark) {
+            // This is only used for events so no need to update the state here currently.
+            isDarkMode = isDark
+        }
         if (_colorScheme.value != colorScheme) {
             _colorScheme.value = colorScheme
             updateState()
@@ -120,8 +135,9 @@ internal class PaywallViewModelImpl(
         }
     }
 
-    override fun closeButtonPressed() {
-        Logger.d("Paywalls: Close button pressed.")
+    override fun closePaywall() {
+        Logger.d("Paywalls: Close paywall initiated")
+        trackPaywallClose()
         options.dismissRequest()
     }
 
@@ -166,6 +182,13 @@ internal class PaywallViewModelImpl(
         _actionError.value = null
     }
 
+    override fun trackPaywallImpressionIfNeeded() {
+        if (paywallPresentationData == null) {
+            paywallPresentationData = createEventData()
+            track(PaywallEventType.IMPRESSION)
+        }
+    }
+
     private fun purchasePackage(activity: Activity, packageToPurchase: Package) {
         if (verifyNoActionInProgressOrStartAction()) { return }
 
@@ -178,6 +201,9 @@ internal class PaywallViewModelImpl(
                 listener?.onPurchaseCompleted(purchaseResult.customerInfo, purchaseResult.storeTransaction)
                 options.dismissRequest()
             } catch (e: PurchasesException) {
+                if (e.code == PurchasesErrorCode.PurchaseCancelledError) {
+                    trackPaywallCancel()
+                }
                 listener?.onPurchaseError(e.error)
                 _actionError.value = e.error
             }
@@ -261,5 +287,54 @@ internal class PaywallViewModelImpl(
 
     private fun finishAction() {
         _actionInProgress.value = false
+    }
+
+    private fun trackPaywallClose() {
+        if (paywallPresentationData != null) {
+            track(PaywallEventType.CLOSE)
+            paywallPresentationData = null
+        }
+    }
+
+    private fun trackPaywallCancel() {
+        track(PaywallEventType.CANCEL)
+    }
+
+    private fun track(eventType: PaywallEventType) {
+        val eventData = paywallPresentationData
+        if (eventData == null) {
+            Logger.e("Paywall event data is null, not tracking event $eventType")
+            return
+        }
+        val event = PaywallEvent(
+            creationData = PaywallEvent.CreationData(UUID.randomUUID(), Date()),
+            data = eventData,
+            type = eventType,
+        )
+
+        purchases.track(event)
+    }
+
+    @Suppress("ReturnCount")
+    private fun createEventData(): PaywallEvent.Data? {
+        val currentState = state.value
+        if (currentState !is PaywallState.Loaded) {
+            Logger.e("Unexpected state trying to create event data: $currentState")
+            return null
+        }
+        val offering = currentState.offering
+        val paywallData = currentState.offering.paywall ?: kotlin.run {
+            Logger.e("Null paywall revision trying to create event data")
+            return null
+        }
+        val locale = _lastLocaleList.value.get(0) ?: Locale.getDefault()
+        return PaywallEvent.Data(
+            offeringIdentifier = offering.identifier,
+            paywallRevision = paywallData.revision,
+            sessionIdentifier = UUID.randomUUID(),
+            displayMode = mode.name.lowercase(),
+            localeIdentifier = locale.toString(),
+            darkMode = isDarkMode,
+        )
     }
 }

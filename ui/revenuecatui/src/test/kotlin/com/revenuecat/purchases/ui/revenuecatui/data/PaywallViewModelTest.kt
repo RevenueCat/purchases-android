@@ -5,6 +5,7 @@ import android.content.Context
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.Package
@@ -15,6 +16,7 @@ import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.Transaction
 import com.revenuecat.purchases.paywalls.PaywallData
+import com.revenuecat.purchases.paywalls.events.PaywallEventType
 import com.revenuecat.purchases.ui.revenuecatui.ExperimentalPreviewRevenueCatUIPurchasesAPI
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
@@ -23,6 +25,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfigura
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockApplicationContext
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.extensions.getActivity
+import io.mockk.Runs
 import io.mockk.clearAllMocks
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -44,7 +47,7 @@ import org.junit.runner.RunWith
 import java.util.Date
 import java.util.UUID
 
-@OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class)
+@OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class, ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @RunWith(AndroidJUnit4::class)
 class PaywallViewModelTest {
     private val defaultOffering = TestData.template2Offering
@@ -89,6 +92,8 @@ class PaywallViewModelTest {
         coEvery { purchases.awaitOfferings() } returns offerings
         coEvery { purchases.awaitCustomerInfo(any()) } returns customerInfo
 
+        every { purchases.track(any()) } just Runs
+
         every { listener.onPurchaseStarted(any()) } just runs
         every { listener.onPurchaseCompleted(any(), any()) } just runs
         every { listener.onPurchaseError(any()) } just runs
@@ -104,11 +109,7 @@ class PaywallViewModelTest {
 
     @Test
     fun `Initial state is correct`() {
-        coEvery { purchases.awaitOfferings() } coAnswers {
-            // Delay response to verify initial state
-            delay(100)
-            offerings
-        }
+        delayFetchingOfferings()
 
         val model = create()
 
@@ -132,7 +133,8 @@ class PaywallViewModelTest {
             MockApplicationContext(),
             purchases,
             options,
-            TestData.Constants.currentColorScheme
+            TestData.Constants.currentColorScheme,
+            isDarkMode = false,
         )
         coVerify(exactly = 1) { purchases.awaitOfferings() }
         model.updateOptions(options)
@@ -151,7 +153,8 @@ class PaywallViewModelTest {
             MockApplicationContext(),
             purchases,
             options1,
-            TestData.Constants.currentColorScheme
+            TestData.Constants.currentColorScheme,
+            isDarkMode = false,
         )
         coVerify(exactly = 1) { purchases.awaitOfferings() }
         model.updateOptions(options1)
@@ -373,9 +376,115 @@ class PaywallViewModelTest {
         val model = create()
 
         assertThat(dismissInvoked).isFalse
-        model.closeButtonPressed()
+        model.closePaywall()
         assertThat(dismissInvoked).isTrue
     }
+
+    // region events
+
+    @Test
+    fun `trackPaywallImpression tracks event with correct data`() {
+        val model = create()
+        model.trackPaywallImpressionIfNeeded()
+        verifyEventTracked(PaywallEventType.IMPRESSION, 1)
+    }
+
+    @Test
+    fun `trackPaywallImpression multiple times in a row only tracks once`() {
+        val model = create()
+        model.trackPaywallImpressionIfNeeded()
+        model.trackPaywallImpressionIfNeeded()
+        model.trackPaywallImpressionIfNeeded()
+        verify(exactly = 1) {
+            purchases.track(any())
+        }
+    }
+
+    @Test
+    fun `trackPaywallImpression after close tracks again`() {
+        val model = create()
+        model.trackPaywallImpressionIfNeeded()
+        model.closePaywall()
+        model.trackPaywallImpressionIfNeeded()
+        verifyEventTracked(PaywallEventType.IMPRESSION, 2)
+    }
+
+    @Test
+    fun `close tracks close event`() {
+        val model = create()
+        model.trackPaywallImpressionIfNeeded()
+        model.closePaywall()
+        verifyEventTracked(PaywallEventType.CLOSE, 1)
+    }
+
+    @Test
+    fun `close tracks close event only once before another impression`() {
+        val model = create()
+        model.trackPaywallImpressionIfNeeded()
+        model.closePaywall()
+        model.closePaywall()
+        model.closePaywall()
+        verify(exactly = 1) {
+            purchases.track(
+                withArg {
+                    assertThat(it.data.offeringIdentifier).isEqualTo(defaultOffering.identifier)
+                    assertThat(it.data.paywallRevision).isEqualTo(defaultOffering.paywall!!.revision)
+                    assertThat(it.data.displayMode).isEqualTo("full_screen")
+                    assertThat(it.data.darkMode).isFalse
+                    assertThat(it.type).isEqualTo(PaywallEventType.CLOSE)
+                }
+            )
+        }
+        model.trackPaywallImpressionIfNeeded()
+        model.closePaywall()
+        verifyEventTracked(PaywallEventType.CLOSE, 2)
+    }
+
+    @Test
+    fun `purchase cancellation tracks cancel event`() {
+        val model = create()
+        model.trackPaywallImpressionIfNeeded()
+        val expectedError = PurchasesError(PurchasesErrorCode.PurchaseCancelledError)
+        coEvery {
+            purchases.awaitPurchase(any())
+        } throws PurchasesException(expectedError)
+
+        model.purchaseSelectedPackage(context)
+
+        verifyEventTracked(PaywallEventType.CANCEL, 1)
+    }
+
+    @Test
+    fun `purchase errors other than cancellation do not track cancel event`() {
+        val model = create()
+        model.trackPaywallImpressionIfNeeded()
+        val expectedError = PurchasesError(PurchasesErrorCode.StoreProblemError)
+        coEvery {
+            purchases.awaitPurchase(any())
+        } throws PurchasesException(expectedError)
+
+        model.purchaseSelectedPackage(context)
+
+        verifyNoEventsOfTypeTracked(PaywallEventType.CANCEL)
+    }
+
+    @Test
+    fun `trackPaywallImpression does nothing if state is loading`() {
+        delayFetchingOfferings()
+        val model = create()
+        model.trackPaywallImpressionIfNeeded()
+        assertThat(model.state.value).isInstanceOf(PaywallState.Loading::class.java)
+        verify(exactly = 0) { purchases.track(any()) }
+    }
+
+    @Test
+    fun `trackPaywallImpression does nothing if offering does not have a paywall`() {
+        val model = create(offering = defaultOffering.copy(paywall = null))
+        model.trackPaywallImpressionIfNeeded()
+        verify(exactly = 0) { purchases.track(any()) }
+    }
+
+    // endregion events
 
     private fun create(
         offering: Offering? = null,
@@ -392,7 +501,8 @@ class PaywallViewModelTest {
                 .setListener(listener)
                 .setOffering(offering)
                 .build(),
-            TestData.Constants.currentColorScheme
+            TestData.Constants.currentColorScheme,
+            isDarkMode = false,
         )
     }
 
@@ -431,5 +541,37 @@ class PaywallViewModelTest {
         assertThat(state.templateConfiguration.template.id).isEqualTo(expectedPaywall.templateName)
         assertThat(state.templateConfiguration.mode).isEqualTo(PaywallMode.FULL_SCREEN)
         assertThat(state.templateConfiguration.packages.all).hasSameSizeAs(expectedPaywall.config.packageIds)
+    }
+
+    private fun verifyEventTracked(eventType: PaywallEventType, times: Int) {
+        verify(exactly = times) {
+            purchases.track(
+                withArg {
+                    assertThat(it.data.offeringIdentifier).isEqualTo(defaultOffering.identifier)
+                    assertThat(it.data.paywallRevision).isEqualTo(defaultOffering.paywall!!.revision)
+                    assertThat(it.data.displayMode).isEqualTo("full_screen")
+                    assertThat(it.data.darkMode).isFalse
+                    assertThat(it.type).isEqualTo(eventType)
+                }
+            )
+        }
+    }
+
+    private fun verifyNoEventsOfTypeTracked(eventType: PaywallEventType) {
+        verify(exactly = 0) {
+            purchases.track(
+                withArg {
+                    assertThat(it.type).isEqualTo(eventType)
+                }
+            )
+        }
+    }
+
+    private fun delayFetchingOfferings() {
+        coEvery { purchases.awaitOfferings() } coAnswers {
+            // Delay response to verify initial state
+            delay(100)
+            offerings
+        }
     }
 }

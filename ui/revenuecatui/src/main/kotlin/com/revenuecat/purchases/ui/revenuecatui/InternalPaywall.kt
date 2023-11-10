@@ -1,9 +1,11 @@
 package com.revenuecat.purchases.ui.revenuecatui
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
@@ -44,9 +46,12 @@ internal fun InternalPaywall(
     options: PaywallOptions,
     viewModel: PaywallViewModel = getPaywallViewModel(options),
 ) {
+    BackHandler {
+        viewModel.closePaywall()
+    }
     PaywallTheme(fontProvider = options.fontProvider) {
         viewModel.refreshStateIfLocaleChanged()
-        viewModel.refreshStateIfColorsChanged(MaterialTheme.colorScheme)
+        viewModel.refreshStateIfColorsChanged(MaterialTheme.colorScheme, isSystemInDarkTheme())
 
         val state = viewModel.state.collectAsState().value
 
@@ -58,7 +63,7 @@ internal fun InternalPaywall(
             LoadingPaywall(
                 mode = options.mode,
                 shouldDisplayDismissButton = options.shouldDisplayDismissButton,
-                onDismiss = viewModel::closeButtonPressed,
+                onDismiss = viewModel::closePaywall,
             )
         }
 
@@ -94,6 +99,7 @@ internal fun InternalPaywall(
 
 @Composable
 private fun LoadedPaywall(state: PaywallState.Loaded, viewModel: PaywallViewModel) {
+    viewModel.trackPaywallImpressionIfNeeded()
     val backgroundColor = state.templateConfiguration.getCurrentColors().background
     Box(
         modifier = Modifier
@@ -112,7 +118,7 @@ private fun LoadedPaywall(state: PaywallState.Loaded, viewModel: PaywallViewMode
             },
     ) {
         TemplatePaywall(state = state, viewModel = viewModel)
-        CloseButton(state.shouldDisplayDismissButton, viewModel::closeButtonPressed)
+        CloseButton(state.shouldDisplayDismissButton, viewModel::closePaywall)
     }
 }
 
@@ -129,7 +135,7 @@ private fun TemplatePaywall(state: PaywallState.Loaded, viewModel: PaywallViewMo
 
 @ExperimentalPreviewRevenueCatUIPurchasesAPI
 @Composable
-private fun getPaywallViewModel(
+internal fun getPaywallViewModel(
     options: PaywallOptions,
 ): PaywallViewModel {
     val applicationContext = LocalContext.current.applicationContext
@@ -138,6 +144,7 @@ private fun getPaywallViewModel(
             applicationContext.toAndroidContext(),
             options,
             MaterialTheme.colorScheme,
+            isSystemInDarkTheme(),
             preview = isInPreviewMode(),
         ),
     )

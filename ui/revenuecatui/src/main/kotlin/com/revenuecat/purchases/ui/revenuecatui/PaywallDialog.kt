@@ -50,15 +50,19 @@ fun PaywallDialog(
         val dismissRequest = {
             shouldDisplayDialog = false
         }
+        val paywallOptions = paywallDialogOptions.toPaywallOptions(dismissRequest)
+
+        val viewModel = getPaywallViewModel(options = paywallOptions)
 
         Dialog(
             onDismissRequest = {
                 dismissRequest()
+                viewModel.closePaywall()
                 paywallDialogOptions.dismissRequest?.invoke()
             },
             properties = DialogProperties(usePlatformDefaultWidth = shouldUsePlatformDefaultWidth()),
         ) {
-            DialogScaffold(paywallDialogOptions.toPaywallOptions(dismissRequest))
+            DialogScaffold(paywallOptions)
         }
     }
 }

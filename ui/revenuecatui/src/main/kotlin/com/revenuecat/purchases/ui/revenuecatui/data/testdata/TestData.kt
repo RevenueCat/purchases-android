@@ -315,14 +315,15 @@ internal class MockViewModel(
     private val _actionInProgress = mutableStateOf(false)
     private val _actionError = mutableStateOf<PurchasesError?>(null)
 
+    override fun trackPaywallImpressionIfNeeded() = Unit
     override fun refreshStateIfLocaleChanged() = Unit
-    override fun refreshStateIfColorsChanged(colorScheme: ColorScheme) = Unit
+    override fun refreshStateIfColorsChanged(colorScheme: ColorScheme, isDarkMode: Boolean) = Unit
 
     override fun selectPackage(packageToSelect: TemplateConfiguration.PackageInfo) {
         error("Not supported")
     }
 
-    override fun closeButtonPressed() {
+    override fun closePaywall() {
         error("Not supported")
     }
 
