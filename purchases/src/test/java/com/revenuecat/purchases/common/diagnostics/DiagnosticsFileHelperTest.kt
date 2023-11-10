@@ -55,21 +55,21 @@ class DiagnosticsFileHelperTest {
     fun `appendEntryToDiagnosticsFile calls are correct`() {
         val contentToAppend = "$testDiagnosticsEntry\n"
         every { fileHelper.appendToFile(diagnosticsFilePath, contentToAppend) } just Runs
-        diagnosticsFileHelper.appendEntryToDiagnosticsFile(testDiagnosticsEntry)
+        diagnosticsFileHelper.appendEvent(testDiagnosticsEntry)
         verify(exactly = 1) { fileHelper.appendToFile(diagnosticsFilePath, contentToAppend) }
     }
 
     @Test
     fun `deleteOlderDiagnostics calls are correct`() {
         every { fileHelper.removeFirstLinesFromFile(diagnosticsFilePath, 2) } just Runs
-        diagnosticsFileHelper.deleteOlderDiagnostics(2)
+        diagnosticsFileHelper.clear(2)
         verify(exactly = 1) { fileHelper.removeFirstLinesFromFile(diagnosticsFilePath, 2) }
     }
 
     @Test
     fun `deleteDiagnosticsFile calls are correct`() {
         every { fileHelper.deleteFile(diagnosticsFilePath) } returns true
-        diagnosticsFileHelper.deleteDiagnosticsFile()
+        diagnosticsFileHelper.deleteFile()
         verify(exactly = 1) { fileHelper.deleteFile(diagnosticsFilePath) }
     }
 
@@ -77,7 +77,7 @@ class DiagnosticsFileHelperTest {
     fun `readDiagnosticsFile returns empty list if file is empty`() {
         every { fileHelper.fileIsEmpty(diagnosticsFilePath) } returns true
         var resultList: List<JSONObject>? = null
-        diagnosticsFileHelper.readDiagnosticsFile() { stream ->
+        diagnosticsFileHelper.readFileAsJson { stream ->
             resultList = stream.toList()
         }
         verify(exactly = 1) { fileHelper.fileIsEmpty(diagnosticsFilePath) }
@@ -94,7 +94,7 @@ class DiagnosticsFileHelperTest {
             streamBlockSlot.captured(Stream.of("{}", "{\"test_key\": \"test_value\"}"))
         }
         var resultList: List<JSONObject>? = null
-        diagnosticsFileHelper.readDiagnosticsFile { stream ->
+        diagnosticsFileHelper.readFileAsJson { stream ->
             resultList = stream.toList()
         }
         assertThat(resultList).isNotNull

@@ -10,20 +10,19 @@ import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.verboseLog
 import com.revenuecat.purchases.identity.IdentityManager
-import kotlinx.serialization.json.Json
+import com.revenuecat.purchases.utils.EventsFileHelper
 import java.util.stream.Collectors
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @RequiresApi(Build.VERSION_CODES.N)
 internal class PaywallEventsManager(
-    private val fileHelper: PaywallEventsFileHelper,
+    private val fileHelper: EventsFileHelper<PaywallStoredEvent>,
     private val identityManager: IdentityManager,
     private val paywallEventsDispatcher: Dispatcher,
     private val backend: Backend,
 ) {
-
     companion object {
-        internal val json = Json.Default
+        const val PAYWALL_EVENTS_FILE_PATH = "RevenueCat/paywall_event_store/paywall_event_store.jsonl"
         private const val FLUSH_COUNT = 50L
     }
 

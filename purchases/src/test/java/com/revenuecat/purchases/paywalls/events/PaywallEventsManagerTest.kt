@@ -10,6 +10,7 @@ import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.FileHelper
 import com.revenuecat.purchases.common.SyncDispatcher
 import com.revenuecat.purchases.identity.IdentityManager
+import com.revenuecat.purchases.utils.EventsFileHelper
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
@@ -49,7 +50,7 @@ class PaywallEventsManagerTest {
 
     private val testFolder = "temp_test_folder"
 
-    private lateinit var fileHelper: PaywallEventsFileHelper
+    private lateinit var fileHelper: EventsFileHelper<PaywallStoredEvent>
     private lateinit var identityManager: IdentityManager
     private lateinit var paywallEventsDispatcher: Dispatcher
     private lateinit var backend: Backend
@@ -67,8 +68,10 @@ class PaywallEventsManagerTest {
         val context = mockk<Context>().apply {
             every { filesDir } returns tempTestFolder
         }
-        fileHelper = PaywallEventsFileHelper(
+        fileHelper = EventsFileHelper(
             FileHelper(context),
+            PaywallEventsManager.PAYWALL_EVENTS_FILE_PATH,
+            PaywallStoredEvent::fromString,
         )
         identityManager = mockk<IdentityManager>().apply {
             every { currentAppUserID } returns userID
@@ -254,12 +257,12 @@ class PaywallEventsManagerTest {
     }
 
     private fun checkFileNumberOfEvents(expectedNumberOfEvents: Int) {
-        val file = File(testFolder, PaywallEventsFileHelper.PAYWALL_EVENTS_FILE_PATH)
+        val file = File(testFolder, PaywallEventsManager.PAYWALL_EVENTS_FILE_PATH)
         assertThat(file.readLines().size).isEqualTo(expectedNumberOfEvents)
     }
 
     private fun checkFileContents(expectedContents: String) {
-        val file = File(testFolder, PaywallEventsFileHelper.PAYWALL_EVENTS_FILE_PATH)
+        val file = File(testFolder, PaywallEventsManager.PAYWALL_EVENTS_FILE_PATH)
         assertThat(file.readText()).isEqualTo(expectedContents)
     }
 

@@ -19,7 +19,6 @@ import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.PricingPhase
 import com.revenuecat.purchases.paywalls.events.PaywallEventRequest
-import com.revenuecat.purchases.paywalls.events.PaywallEventsManager
 import com.revenuecat.purchases.strings.NetworkStrings
 import com.revenuecat.purchases.utils.asMap
 import com.revenuecat.purchases.utils.filterNotNullValues
@@ -467,7 +466,7 @@ internal class Backend(
         onSuccessHandler: () -> Unit,
         onErrorHandler: (error: PurchasesError, shouldMarkAsSynced: Boolean) -> Unit,
     ) {
-        val body = PaywallEventsManager.json.encodeToJsonElement(paywallEventRequest).asMap()
+        val body = PaywallEventRequest.json.encodeToJsonElement(paywallEventRequest).asMap()
         if (body == null) {
             onErrorHandler(
                 PurchasesError(
