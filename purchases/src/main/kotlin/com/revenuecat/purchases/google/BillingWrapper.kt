@@ -181,14 +181,6 @@ internal class BillingWrapper(
         onReceive: StoreProductsCallback,
         onError: PurchasesErrorCallback,
     ) {
-        val nonEmptyProductIds = productIds.filter { it.isNotEmpty() }.toSet()
-
-        if (nonEmptyProductIds.isEmpty()) {
-            log(LogIntent.DEBUG, OfferingStrings.EMPTY_PRODUCT_ID_LIST)
-            onReceive(emptyList())
-            return
-        }
-
         log(LogIntent.DEBUG, OfferingStrings.FETCHING_PRODUCTS.format(productIds.joinToString()))
         val useCase = QueryProductDetailsUseCase(
             QueryProductDetailsUseCaseParams(
@@ -196,17 +188,10 @@ internal class BillingWrapper(
                 diagnosticsTrackerIfEnabled,
                 productIds,
                 productType,
-                nonEmptyProductIds,
             ),
             onReceive,
             onError,
-            executeAsync = {
-                withConnectedClient {
-                    (this@QueryProductDetailsUseCase as QueryProductDetailsUseCase).queryProductDetailsAsync(
-                        this@withConnectedClient,
-                    )
-                }
-            },
+            ::withConnectedClient,
             ::executeRequestOnUIThread,
         )
         useCase.run()

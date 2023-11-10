@@ -1,15 +1,20 @@
 package com.revenuecat.purchases.google.usecase
 
+import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingResult
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCallback
+import com.revenuecat.purchases.common.LogIntent
+import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.google.BillingResponse
+import com.revenuecat.purchases.strings.BillingStrings
+import java.io.PrintWriter
+import java.io.StringWriter
 
 private const val MAX_RETRIES_DEFAULT = 3
 
 abstract class UseCase<T>(
     private val onError: PurchasesErrorCallback,
-    val executeAsync: UseCase<T>.() -> Unit,
     val executeRequestOnUIThread: ((PurchasesError?) -> Unit) -> Unit,
 ) {
     private val maxRetries: Int = MAX_RETRIES_DEFAULT
@@ -25,6 +30,21 @@ abstract class UseCase<T>(
         }
     }
 
+    protected fun BillingClient?.withConnectedClient(receivingFunction: BillingClient.() -> Unit) {
+        this?.takeIf { it.isReady }?.let {
+            it.receivingFunction()
+        } ?: log(LogIntent.GOOGLE_WARNING, BillingStrings.BILLING_CLIENT_DISCONNECTED.format(getStackTrace()))
+    }
+
+    @Suppress("ThrowingExceptionsWithoutMessageOrCause")
+    private fun getStackTrace(): String {
+        val stringWriter = StringWriter()
+        val printWriter = PrintWriter(stringWriter)
+        Throwable().printStackTrace(printWriter)
+        return stringWriter.toString()
+    }
+
+    abstract fun executeAsync()
     abstract fun onOk(received: T)
     abstract fun forwardError(billingResult: BillingResult, onError: PurchasesErrorCallback)
 

@@ -30,29 +30,35 @@ internal data class QueryProductDetailsUseCaseParams(
     val diagnosticsTrackerIfEnabled: DiagnosticsTracker?,
     val productIds: Set<String>,
     val productType: ProductType,
-    val nonEmptyProductIds: Set<String>,
 )
 
 internal class QueryProductDetailsUseCase(
     private val useCaseParams: QueryProductDetailsUseCaseParams,
     val onReceive: StoreProductsCallback,
     val onError: PurchasesErrorCallback,
-    executeAsync: UseCase<List<ProductDetails>>.() -> Unit,
+    val withConnectedClient: (BillingClient.() -> Unit) -> Unit,
     executeRequestOnUIThread: ((PurchasesError?) -> Unit) -> Unit,
-) : UseCase<List<ProductDetails>>(onError, executeAsync, executeRequestOnUIThread) {
+) : UseCase<List<ProductDetails>>(onError, executeRequestOnUIThread) {
 
-    fun queryProductDetailsAsync(
-        billingClient: BillingClient,
-    ) {
-        val googleType: String = useCaseParams.productType.toGoogleProductType() ?: BillingClient.ProductType.INAPP
-        val params = googleType.buildQueryProductDetailsParams(useCaseParams.nonEmptyProductIds)
+    override fun executeAsync() {
+        val nonEmptyProductIds = useCaseParams.productIds.filter { it.isNotEmpty() }.toSet()
 
-        queryProductDetailsAsyncEnsuringOneResponse(
-            billingClient,
-            googleType,
-            params,
-        ) { billingResult, productDetailsList ->
-            processResult(billingResult, productDetailsList)
+        if (nonEmptyProductIds.isEmpty()) {
+            log(LogIntent.DEBUG, OfferingStrings.EMPTY_PRODUCT_ID_LIST)
+            onReceive(emptyList())
+            return
+        }
+        withConnectedClient {
+            val googleType: String = useCaseParams.productType.toGoogleProductType() ?: BillingClient.ProductType.INAPP
+            val params = googleType.buildQueryProductDetailsParams(nonEmptyProductIds)
+
+            queryProductDetailsAsyncEnsuringOneResponse(
+                this,
+                googleType,
+                params,
+            ) { billingResult, productDetailsList ->
+                processResult(billingResult, productDetailsList)
+            }
         }
     }
 
