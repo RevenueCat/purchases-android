@@ -11,16 +11,19 @@ internal class PaywallPresentedCache {
     @set:Synchronized
     private var lastPaywallImpressionEvent: PaywallEvent? = null
 
+    @Synchronized
     fun getAndRemovePresentedEvent(): PaywallEvent? {
         val event = lastPaywallImpressionEvent
         lastPaywallImpressionEvent = null
         return event
     }
 
+    @Synchronized
     fun cachePresentedPaywall(paywallEvent: PaywallEvent) {
         lastPaywallImpressionEvent = paywallEvent
     }
 
+    @Synchronized
     fun receiveEvent(event: PaywallEvent) {
         when (event.type) {
             PaywallEventType.IMPRESSION -> {
