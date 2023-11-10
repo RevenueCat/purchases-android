@@ -19,6 +19,7 @@ import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import com.revenuecat.purchases.ui.revenuecatui.R
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModel
+import com.revenuecat.purchases.ui.revenuecatui.data.loaded
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.PaywallTemplate
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvider
@@ -27,7 +28,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.testdata.templates.template
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.templates.template3
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.templates.template4
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.templates.template5
-import com.revenuecat.purchases.ui.revenuecatui.helpers.ApplicationContext
+import com.revenuecat.purchases.ui.revenuecatui.helpers.ResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toPaywallState
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -249,7 +250,7 @@ internal object TestData {
     }
 }
 
-internal class MockApplicationContext : ApplicationContext {
+internal class MockResourceProvider : ResourceProvider {
     override fun getApplicationName(): String {
         return "Mock Paywall"
     }
@@ -285,6 +286,8 @@ internal class MockViewModel(
     offering: Offering,
     private val allowsPurchases: Boolean = false,
 ) : ViewModel(), PaywallViewModel {
+    override val resourceProvider: ResourceProvider
+        get() = MockResourceProvider()
     override val state: StateFlow<PaywallState>
         get() = _state.asStateFlow()
     override val actionInProgress: State<Boolean>
@@ -293,16 +296,12 @@ internal class MockViewModel(
         get() = _actionError
 
     fun loadedState(): PaywallState.Loaded? {
-        return when (val state = state.value) {
-            is PaywallState.Error -> null
-            is PaywallState.Loaded -> state
-            is PaywallState.Loading -> null
-        }
+        return state.value.loaded()
     }
 
     private val _state = MutableStateFlow(
         offering.toPaywallState(
-            variableDataProvider = VariableDataProvider(MockApplicationContext()),
+            variableDataProvider = VariableDataProvider(resourceProvider),
             activelySubscribedProductIdentifiers = setOf(),
             nonSubscriptionProductIdentifiers = setOf(),
             mode = mode,

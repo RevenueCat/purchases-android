@@ -5,11 +5,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.revenuecat.purchases.ui.revenuecatui.ExperimentalPreviewRevenueCatUIPurchasesAPI
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
-import com.revenuecat.purchases.ui.revenuecatui.helpers.ApplicationContext
+import com.revenuecat.purchases.ui.revenuecatui.helpers.ResourceProvider
 
 @OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class)
 internal class PaywallViewModelFactory(
-    private val applicationContext: ApplicationContext,
+    private val resourceProvider: ResourceProvider,
     private val options: PaywallOptions,
     private val colorScheme: ColorScheme,
     private val isDarkMode: Boolean,
@@ -18,7 +18,7 @@ internal class PaywallViewModelFactory(
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         return PaywallViewModelImpl(
-            applicationContext = applicationContext,
+            resourceProvider = resourceProvider,
             options = options,
             colorScheme = colorScheme,
             isDarkMode = isDarkMode,

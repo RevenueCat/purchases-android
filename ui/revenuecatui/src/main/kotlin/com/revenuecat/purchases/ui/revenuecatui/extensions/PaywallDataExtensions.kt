@@ -15,10 +15,10 @@ import com.revenuecat.purchases.ui.revenuecatui.InternalPaywall
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.R
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.PaywallTemplate
-import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockApplicationContext
+import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockViewModel
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
-import com.revenuecat.purchases.ui.revenuecatui.helpers.ApplicationContext
+import com.revenuecat.purchases.ui.revenuecatui.helpers.ResourceProvider
 import java.net.URL
 
 /***
@@ -28,19 +28,19 @@ import java.net.URL
 internal fun PaywallData.Companion.createDefault(
     packages: List<Package>,
     currentColorScheme: ColorScheme,
-    applicationContext: ApplicationContext,
+    resourceProvider: ResourceProvider,
 ): PaywallData {
     return PaywallData.createDefaultForIdentifiers(
         packages.map { it.identifier },
         currentColorScheme,
-        applicationContext,
+        resourceProvider,
     )
 }
 
 internal fun PaywallData.Companion.createDefaultForIdentifiers(
     packageIdentifiers: List<String>,
     currentColors: ColorScheme,
-    applicationContext: ApplicationContext,
+    resourceProvider: ResourceProvider,
 ): PaywallData {
     return PaywallData(
         templateName = PaywallData.defaultTemplate.id,
@@ -55,7 +55,7 @@ internal fun PaywallData.Companion.createDefaultForIdentifiers(
             displayRestorePurchases = true,
         ),
         localization = mapOf(
-            applicationContext.getLocale().toString() to PaywallData.defaultLocalization(applicationContext),
+            resourceProvider.getLocale().toString() to PaywallData.defaultLocalization(resourceProvider),
         ),
         assetBaseURL = PaywallData.defaultTemplateBaseURL,
         revision = PaywallData.revisionID,
@@ -81,13 +81,13 @@ private val PaywallData.Companion.revisionID: Int
     get() = -1
 
 private fun PaywallData.Companion.defaultLocalization(
-    applicationContext: ApplicationContext,
+    resourceProvider: ResourceProvider,
 ): PaywallData.LocalizedConfiguration {
     return PaywallData.LocalizedConfiguration(
         title = "{{ app_name }}",
-        callToAction = applicationContext.getString(R.string.continue_cta),
+        callToAction = resourceProvider.getString(R.string.continue_cta),
         offerDetails = "{{ total_price_and_per_month }}",
-        offerDetailsWithIntroOffer = applicationContext.getString(R.string.default_offer_details_with_intro_offer),
+        offerDetailsWithIntroOffer = resourceProvider.getString(R.string.default_offer_details_with_intro_offer),
         offerName = "{{ sub_period }}",
     )
 }
@@ -133,7 +133,7 @@ internal fun DefaultPaywallPreview() {
     val paywallData = PaywallData.createDefault(
         availablePackages,
         MaterialTheme.colorScheme,
-        MockApplicationContext(),
+        MockResourceProvider(),
     )
     val template2Offering = Offering(
         identifier = "Template2",

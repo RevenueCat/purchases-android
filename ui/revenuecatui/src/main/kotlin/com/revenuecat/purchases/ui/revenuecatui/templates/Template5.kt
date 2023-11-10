@@ -45,7 +45,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -82,7 +81,7 @@ import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
 import com.revenuecat.purchases.ui.revenuecatui.extensions.introEligibility
 import com.revenuecat.purchases.ui.revenuecatui.extensions.packageButtonActionInProgressOpacityAnimation
 import com.revenuecat.purchases.ui.revenuecatui.extensions.packageButtonColorAnimation
-import com.revenuecat.purchases.ui.revenuecatui.helpers.toAndroidContext
+import com.revenuecat.purchases.ui.revenuecatui.helpers.ResourceProvider
 
 private object Template5UIConstants {
     val featureIconSize = 25.dp
@@ -350,7 +349,7 @@ private fun ColumnScope.SelectPackageButton(
                     fontWeight = FontWeight.SemiBold,
                 )
                 Spacer(modifier = Modifier.weight(1f))
-                DiscountBanner(state = state, packageInfo = packageInfo)
+                DiscountBanner(state = state, resourceProvider = viewModel.resourceProvider, packageInfo = packageInfo)
             }
             IntroEligibilityStateView(
                 textWithNoIntroOffer = packageInfo.localization.offerDetails,
@@ -385,10 +384,10 @@ private fun CheckmarkBox(isSelected: Boolean, colors: TemplateConfiguration.Colo
 @Composable
 private fun DiscountBanner(
     state: PaywallState.Loaded,
+    resourceProvider: ResourceProvider,
     packageInfo: TemplateConfiguration.PackageInfo,
 ) {
-    val applicationContext = LocalContext.current.applicationContext.toAndroidContext()
-    val text = packageInfo.localizedDiscount(applicationContext)?.uppercase() ?: return
+    val text = packageInfo.localizedDiscount(resourceProvider)?.uppercase() ?: return
 
     val colors = state.currentColors
 

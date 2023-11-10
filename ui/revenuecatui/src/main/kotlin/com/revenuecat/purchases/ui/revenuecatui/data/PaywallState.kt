@@ -34,6 +34,14 @@ internal sealed class PaywallState {
     }
 }
 
+internal fun PaywallState.loaded(): PaywallState.Loaded? {
+    return when (val state = this) {
+        is PaywallState.Error -> null
+        is PaywallState.Loaded -> state
+        is PaywallState.Loading -> null
+    }
+}
+
 internal val PaywallState.Loaded.selectedLocalization: ProcessedLocalizedConfiguration
     get() = selectedPackage.value.localization
 

@@ -31,9 +31,10 @@ import com.revenuecat.purchases.ui.revenuecatui.data.processed.PaywallTemplate
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvider
 import com.revenuecat.purchases.ui.revenuecatui.extensions.createDefault
+import com.revenuecat.purchases.ui.revenuecatui.helpers.ResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.helpers.isInPreviewMode
-import com.revenuecat.purchases.ui.revenuecatui.helpers.toAndroidContext
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toPaywallState
+import com.revenuecat.purchases.ui.revenuecatui.helpers.toResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.templates.Template2
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -45,12 +46,12 @@ internal fun LoadingPaywall(
     shouldDisplayDismissButton: Boolean,
     onDismiss: () -> Unit,
 ) {
-    val applicationContext = LocalContext.current.applicationContext.toAndroidContext()
+    val resourceProvider = LocalContext.current.toResourceProvider()
 
     val paywallData: PaywallData = PaywallData.createDefault(
         LoadingPaywallConstants.packages,
         MaterialTheme.colorScheme,
-        applicationContext,
+        resourceProvider,
     )
 
     val offering = Offering(
@@ -63,7 +64,7 @@ internal fun LoadingPaywall(
 
     val state = offering.toPaywallState(
         variableDataProvider = VariableDataProvider(
-            applicationContext,
+            resourceProvider,
             isInPreviewMode(),
         ),
         activelySubscribedProductIdentifiers = setOf(),
@@ -81,7 +82,7 @@ internal fun LoadingPaywall(
         is PaywallState.Loading,
         -> Box {}
 
-        is PaywallState.Loaded -> LoadingPaywall(state, LoadingViewModel(state), onDismiss)
+        is PaywallState.Loaded -> LoadingPaywall(state, LoadingViewModel(state, resourceProvider), onDismiss)
     }
 }
 
@@ -163,6 +164,7 @@ private object LoadingPaywallConstants {
 
 private class LoadingViewModel(
     state: PaywallState,
+    override val resourceProvider: ResourceProvider,
 ) : PaywallViewModel {
     override val state: StateFlow<PaywallState>
         get() = _state.asStateFlow()

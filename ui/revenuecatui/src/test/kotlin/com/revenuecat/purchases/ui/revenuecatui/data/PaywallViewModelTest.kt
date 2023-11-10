@@ -22,7 +22,7 @@ import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
-import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockApplicationContext
+import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.extensions.getActivity
 import io.mockk.Runs
@@ -130,7 +130,7 @@ class PaywallViewModelTest {
             .setListener(listener)
             .build()
         val model = PaywallViewModelImpl(
-            MockApplicationContext(),
+            MockResourceProvider(),
             purchases,
             options,
             TestData.Constants.currentColorScheme,
@@ -150,7 +150,7 @@ class PaywallViewModelTest {
             .setListener(object : PaywallListener {})
             .build()
         val model = PaywallViewModelImpl(
-            MockApplicationContext(),
+            MockResourceProvider(),
             purchases,
             options1,
             TestData.Constants.currentColorScheme,
@@ -495,7 +495,7 @@ class PaywallViewModelTest {
         mockNonSubscriptionTransactions(nonSubscriptionTransactionProductIdentifiers)
 
         return PaywallViewModelImpl(
-            MockApplicationContext(),
+            MockResourceProvider(),
             purchases,
             PaywallOptions.Builder(dismissRequest = { dismissInvoked = true })
                 .setListener(listener)

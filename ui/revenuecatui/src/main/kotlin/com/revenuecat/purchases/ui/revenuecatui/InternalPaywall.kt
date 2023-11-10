@@ -1,5 +1,7 @@
 package com.revenuecat.purchases.ui.revenuecatui
 
+import android.content.Context
+import android.content.res.Configuration
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -14,9 +16,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -33,7 +38,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.processed.PaywallTemplate
 import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
 import com.revenuecat.purchases.ui.revenuecatui.fonts.PaywallTheme
 import com.revenuecat.purchases.ui.revenuecatui.helpers.isInPreviewMode
-import com.revenuecat.purchases.ui.revenuecatui.helpers.toAndroidContext
+import com.revenuecat.purchases.ui.revenuecatui.helpers.toResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.templates.Template1
 import com.revenuecat.purchases.ui.revenuecatui.templates.Template2
 import com.revenuecat.purchases.ui.revenuecatui.templates.Template3
@@ -117,7 +122,14 @@ private fun LoadedPaywall(state: PaywallState.Loaded, viewModel: PaywallViewMode
                     .background(backgroundColor)
             },
     ) {
-        TemplatePaywall(state = state, viewModel = viewModel)
+        val configuration = state.configurationWithOverriddenLocale()
+
+        CompositionLocalProvider(
+            LocalContext provides state.contextWithConfiguration(configuration),
+            LocalConfiguration provides configuration,
+        ) {
+            TemplatePaywall(state = state, viewModel = viewModel)
+        }
         CloseButton(state.shouldDisplayDismissButton, viewModel::closePaywall)
     }
 }
@@ -141,7 +153,7 @@ internal fun getPaywallViewModel(
     val applicationContext = LocalContext.current.applicationContext
     val viewModel = viewModel<PaywallViewModelImpl>(
         factory = PaywallViewModelFactory(
-            applicationContext.toAndroidContext(),
+            applicationContext.toResourceProvider(),
             options,
             MaterialTheme.colorScheme,
             isSystemInDarkTheme(),
@@ -150,6 +162,24 @@ internal fun getPaywallViewModel(
     )
     viewModel.updateOptions(options)
     return viewModel
+}
+
+@ReadOnlyComposable
+@Composable
+private fun PaywallState.Loaded.contextWithConfiguration(configuration: Configuration): Context {
+    val context = LocalContext.current
+
+    // Context.createConfigurationContext returns `null` with Paparazzi
+    return context.createConfigurationContext(configuration) ?: context
+}
+
+@ReadOnlyComposable
+@Composable
+private fun PaywallState.Loaded.configurationWithOverriddenLocale(): Configuration {
+    val configuration = Configuration(LocalConfiguration.current)
+    configuration.setLocale(templateConfiguration.locale)
+
+    return configuration
 }
 
 @Composable

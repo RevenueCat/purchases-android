@@ -8,6 +8,7 @@ import androidx.compose.ui.graphics.Color
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
+import java.util.Locale
 
 internal data class TemplateConfiguration(
     val template: PaywallTemplate,
@@ -15,6 +16,7 @@ internal data class TemplateConfiguration(
     val packages: PackageConfiguration,
     val configuration: PaywallData.Configuration,
     val images: Images,
+    val locale: Locale,
 ) {
     private val darkModeColors = ColorsFactory.create(configuration.colors.dark ?: configuration.colors.light)
     private val lightModeColors = ColorsFactory.create(configuration.colors.light)

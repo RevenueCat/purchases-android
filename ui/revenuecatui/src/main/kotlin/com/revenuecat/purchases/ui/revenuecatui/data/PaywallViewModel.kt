@@ -26,8 +26,8 @@ import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvider
 import com.revenuecat.purchases.ui.revenuecatui.extensions.getActivity
-import com.revenuecat.purchases.ui.revenuecatui.helpers.ApplicationContext
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
+import com.revenuecat.purchases.ui.revenuecatui.helpers.ResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toPaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.validatedPaywall
 import com.revenuecat.purchases.ui.revenuecatui.strings.PaywallValidationErrorStrings
@@ -41,6 +41,7 @@ import java.util.UUID
 
 internal interface PaywallViewModel {
     val state: StateFlow<PaywallState>
+    val resourceProvider: ResourceProvider
     val actionInProgress: State<Boolean>
     val actionError: State<PurchasesError?>
 
@@ -64,14 +65,14 @@ internal interface PaywallViewModel {
 @OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class, ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Suppress("TooManyFunctions")
 internal class PaywallViewModelImpl(
-    private val applicationContext: ApplicationContext,
+    override val resourceProvider: ResourceProvider,
     private val purchases: PurchasesType = PurchasesImpl(),
     private var options: PaywallOptions,
     colorScheme: ColorScheme,
     private var isDarkMode: Boolean,
     preview: Boolean = false,
 ) : ViewModel(), PaywallViewModel {
-    private val variableDataProvider = VariableDataProvider(applicationContext, preview)
+    private val variableDataProvider = VariableDataProvider(resourceProvider, preview)
 
     override val state: StateFlow<PaywallState>
         get() = _state.asStateFlow()
@@ -251,7 +252,7 @@ internal class PaywallViewModelImpl(
         }
         val (displayablePaywall, template, error) = offering.validatedPaywall(
             colorScheme,
-            applicationContext,
+            resourceProvider,
         )
 
         error?.let { validationError ->

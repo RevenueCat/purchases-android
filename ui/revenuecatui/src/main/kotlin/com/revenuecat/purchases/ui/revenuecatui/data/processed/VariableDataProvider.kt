@@ -9,18 +9,18 @@ import com.revenuecat.purchases.ui.revenuecatui.extensions.isMonthly
 import com.revenuecat.purchases.ui.revenuecatui.extensions.isSubscription
 import com.revenuecat.purchases.ui.revenuecatui.extensions.localizedAbbreviatedPeriod
 import com.revenuecat.purchases.ui.revenuecatui.extensions.localizedPeriod
-import com.revenuecat.purchases.ui.revenuecatui.helpers.ApplicationContext
+import com.revenuecat.purchases.ui.revenuecatui.helpers.ResourceProvider
 import java.util.Locale
 import kotlin.math.roundToInt
 
 @Suppress("UnusedParameter", "FunctionOnlyReturningConstant", "TooManyFunctions")
 internal class VariableDataProvider(
-    private val applicationContext: ApplicationContext,
+    private val resourceProvider: ResourceProvider,
     private val preview: Boolean = false,
 ) {
     val applicationName: String
         get() = if (!preview) {
-            applicationContext.getApplicationName()
+            resourceProvider.getApplicationName()
         } else {
             "Application Name"
         }
@@ -60,7 +60,7 @@ internal class VariableDataProvider(
             PackageType.WEEKLY -> R.string.weekly
             PackageType.UNKNOWN, PackageType.CUSTOM -> null
         }
-        return stringId?.let { applicationContext.getString(it) }
+        return stringId?.let { resourceProvider.getString(it) }
     }
 
     fun subscriptionDuration(rcPackage: Package, locale: Locale): String? {
@@ -101,7 +101,7 @@ internal class VariableDataProvider(
 
     @SuppressWarnings("MagicNumber")
     fun localizedRelativeDiscount(discountRelativeToMostExpensivePerMonth: Double?): String? {
-        return applicationContext.localizedDiscount(discountRelativeToMostExpensivePerMonth)
+        return resourceProvider.localizedDiscount(discountRelativeToMostExpensivePerMonth)
     }
 
     private fun getFirstIntroOfferToApply(rcPackage: Package): PricingPhase? {
@@ -119,13 +119,13 @@ internal class VariableDataProvider(
 }
 
 internal fun TemplateConfiguration.PackageInfo.localizedDiscount(
-    applicationContext: ApplicationContext,
+    resourceProvider: ResourceProvider,
 ): String? {
-    return applicationContext.localizedDiscount(discountRelativeToMostExpensivePerMonth)
+    return resourceProvider.localizedDiscount(discountRelativeToMostExpensivePerMonth)
 }
 
 @SuppressWarnings("MagicNumber")
-private fun ApplicationContext.localizedDiscount(
+private fun ResourceProvider.localizedDiscount(
     discountRelativeToMostExpensivePerMonth: Double?,
 ): String? {
     return (discountRelativeToMostExpensivePerMonth?.times(100.0))?.roundToInt()?.let {

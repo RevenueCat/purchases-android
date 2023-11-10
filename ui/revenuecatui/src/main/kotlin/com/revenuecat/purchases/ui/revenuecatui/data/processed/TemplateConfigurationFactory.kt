@@ -40,6 +40,7 @@ internal object TemplateConfigurationFactory {
         }
         return Result.success(
             TemplateConfiguration(
+                locale = locale,
                 template = template,
                 mode = mode,
                 packages = packageConfiguration,

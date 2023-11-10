@@ -35,7 +35,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
@@ -72,7 +71,6 @@ import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.extensions.introEligibility
 import com.revenuecat.purchases.ui.revenuecatui.extensions.packageButtonActionInProgressOpacityAnimation
 import com.revenuecat.purchases.ui.revenuecatui.extensions.packageButtonColorAnimation
-import com.revenuecat.purchases.ui.revenuecatui.helpers.toAndroidContext
 import kotlin.math.min
 
 private object Template4UIConstants {
@@ -235,8 +233,7 @@ private fun SelectPackageButton(
 
     var columnModifier = modifier.clip(RoundedCornerShape(UIConstant.defaultCornerRadius))
 
-    val applicationContext = LocalContext.current.applicationContext.toAndroidContext()
-    val discountText = packageInfo.localizedDiscount(applicationContext)
+    val discountText = packageInfo.localizedDiscount(viewModel.resourceProvider)
 
     if (packageInfo.discountRelativeToMostExpensivePerMonth != null) {
         columnModifier = columnModifier.background(mainColor)
