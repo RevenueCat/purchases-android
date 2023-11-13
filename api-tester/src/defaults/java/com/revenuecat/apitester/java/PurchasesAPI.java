@@ -85,7 +85,6 @@ final class PurchasesAPI {
         purchases.setFBAnonymousID("");
         purchases.setMparticleID("");
         purchases.setOnesignalID("");
-        purchases.setOnesignalUserID("");
         purchases.setAirshipChannelID("");
         purchases.setMediaSource("");
         purchases.setCampaign("");

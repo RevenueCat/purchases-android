@@ -120,7 +120,6 @@ private class PurchasesAPI {
             setFBAnonymousID("")
             setMparticleID("")
             setOnesignalID("")
-            setOnesignalUserID("")
             setAirshipChannelID("")
             setMixpanelDistinctID("")
             setFirebaseAppInstanceID("")
