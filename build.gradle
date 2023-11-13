@@ -1,5 +1,5 @@
 buildscript {
-    ext.compileVersion = 33
+    ext.compileVersion = 34
     ext.minVersion = 19
 }
 
