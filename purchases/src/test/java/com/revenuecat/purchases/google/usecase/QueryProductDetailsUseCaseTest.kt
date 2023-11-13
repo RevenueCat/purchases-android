@@ -3,6 +3,7 @@ package com.revenuecat.purchases.google.usecase
 import android.app.Activity
 import android.content.Intent
 import android.os.Handler
+import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.billingclient.api.AcknowledgePurchaseParams
 import com.android.billingclient.api.AcknowledgePurchaseResponseListener
 import com.android.billingclient.api.BillingClient
@@ -37,9 +38,13 @@ import org.assertj.core.api.AssertionsForClassTypes
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.annotation.Config
 import java.util.Date
 import java.util.concurrent.CountDownLatch
 
+@RunWith(AndroidJUnit4::class)
+@Config(manifest = Config.NONE)
 class QueryProductDetailsUseCaseTest {
 
     private var onConnectedCalled: Boolean = false
