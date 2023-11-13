@@ -1133,25 +1133,6 @@ class BillingWrapperTest {
     }
 
     @Test
-    fun whenProductDetailsIsEmptyPassAnEmptyListToTheListener() {
-        mockEmptyProductDetailsResponse()
-
-        val productIDs = setOf("product_a")
-
-        var receivedList: List<StoreProduct>? = null
-        wrapper.queryProductDetailsAsync(
-            ProductType.SUBS,
-            productIDs, {
-                receivedList = it
-            }, {
-                fail("shouldn't be an error")
-            })
-        wrapper.onBillingSetupFinished(billingClientOKResult)
-        assertThat(receivedList).isNotNull
-        assertThat(receivedList!!.size).isZero
-    }
-
-    @Test
     fun closingBillingClientAfterEndingConnection() {
         every {
             mockClient.endConnection()
@@ -1951,31 +1932,6 @@ class BillingWrapperTest {
     }
 
     @Test
-    fun `product type defaults to INAPP when querying product details`() {
-        val slot = slot<QueryProductDetailsParams>()
-        every {
-            mockClient.queryProductDetailsAsync(
-                capture(slot),
-                any()
-            )
-        } just Runs
-
-        val productIDs = setOf("product_a")
-
-        wrapper.queryProductDetailsAsync(
-            ProductType.UNKNOWN,
-            productIDs,
-            {
-                this@BillingWrapperTest.storeProducts = it
-            }, {
-                fail("shouldn't be an error")
-            })
-
-        assertThat(slot.isCaptured).isTrue
-        assertThat(slot.captured.productList[0].productType).isEqualTo(BillingClient.ProductType.INAPP)
-    }
-
-    @Test
     fun `if it shouldn't consume transactions, don't consume and save it in cache`() {
         val sku = "consumable"
         val token = "token_consumable"
@@ -2133,128 +2089,6 @@ class BillingWrapperTest {
         verify(exactly = 0) {
             mockDeviceCache.addSuccessfullyPostedToken(token)
         }
-    }
-
-    @Test
-    fun `queryProductDetails filters empty productIds before querying BillingClient`() {
-        val productIdsSet = setOf("abcd", "", "1", "")
-
-        val slot = slot<QueryProductDetailsParams>()
-        every {
-            mockClient.queryProductDetailsAsync(capture(slot), any())
-        } just Runs
-
-        wrapper.queryProductDetailsAsync(
-            ProductType.SUBS,
-            productIdsSet,
-            {}, {
-                fail("shouldn't be an error")
-            })
-
-        assertThat(slot.captured).isNotNull
-        val queryProductDetailsParamsProductList = slot.captured.productList
-        val queriedProductIds = queryProductDetailsParamsProductList.map { it.productId }
-        assertThat(queriedProductIds).isEqualTo(productIdsSet.filter { it.isNotEmpty() })
-    }
-
-    @Test
-    fun `queryProductDetails with empty list returns empty list and does not query BillingClient`() {
-        wrapper.queryProductDetailsAsync(
-            ProductType.SUBS,
-            emptySet(),
-            {
-                assertThat(it.isEmpty())
-            }, {
-                fail("shouldn't be an error")
-            })
-
-        verify(exactly = 0) {
-            mockClient.queryProductDetailsAsync(any(), any())
-        }
-    }
-
-    @Test
-    fun `queryProductDetails with only empty productIds returns empty list and does not query BillingClient`() {
-        wrapper.queryProductDetailsAsync(
-            ProductType.SUBS,
-            setOf("", ""),
-            {
-                assertThat(it.isEmpty())
-            }, {
-                fail("shouldn't be an error")
-            })
-
-        verify(exactly = 0) {
-            mockClient.queryProductDetailsAsync(any(), any())
-        }
-    }
-
-    @Test
-    fun `queryProductDetailsAsync only calls one response when BillingClient responds twice`() {
-        var numCallbacks = 0
-
-        val slot = slot<ProductDetailsResponseListener>()
-        every {
-            mockClient.queryProductDetailsAsync(
-                any(),
-                capture(slot)
-            )
-        } answers {
-            slot.captured.onProductDetailsResponse(billingClientOKResult, emptyList())
-            slot.captured.onProductDetailsResponse(billingClientOKResult, emptyList())
-        }
-
-        wrapper.queryProductDetailsAsync(
-            ProductType.SUBS,
-            setOf("asdf", "asdf"),
-            {
-                sleep(200)
-                numCallbacks++
-            }, {
-                numCallbacks++
-            })
-
-        assertThat(numCallbacks == 1)
-    }
-
-    @Test
-    fun `queryProductDetailsAsync only calls one response when BillingClient responds twice in separate threads`() {
-        val numCallbacks = AtomicInteger(0)
-
-        val slot = slot<ProductDetailsResponseListener>()
-        val lock = CountDownLatch(3)
-        every {
-            mockClient.queryProductDetailsAsync(
-                any(),
-                capture(slot)
-            )
-        } answers {
-            Thread {
-                slot.captured.onProductDetailsResponse(billingClientOKResult, emptyList())
-                lock.countDown()
-            }.start()
-
-            Thread {
-                slot.captured.onProductDetailsResponse(billingClientOKResult, emptyList())
-                lock.countDown()
-            }.start()
-        }
-
-        wrapper.queryProductDetailsAsync(
-            ProductType.SUBS,
-            setOf("asdf"),
-            {
-                // ensuring we don't hit an edge case where numCallbacks doesn't increment before the final assert
-                numCallbacks.incrementAndGet()
-                lock.countDown()
-            }, {
-                fail("shouldn't be an error")
-            })
-
-        lock.await()
-        assertThat(lock.count).isEqualTo(0)
-
-        assertThat(numCallbacks.get()).isEqualTo(1)
     }
 
     @Test
