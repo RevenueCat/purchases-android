@@ -309,6 +309,61 @@ class QueryProductDetailsUseCaseTest {
         Assertions.assertThat(numCallbacks).isEqualTo(1)
     }
 
+    @Test
+    fun `If service is disconnected, re-executeRequestOnUIThread`() {
+        val slot = slot<ProductDetailsResponseListener>()
+        val queryProductDetailsStubbing = every {
+            mockClient.queryProductDetailsAsync(
+                any(),
+                capture(slot)
+            )
+        }
+        val productIDs = setOf("product_a")
+        var receivedList: List<StoreProduct>? = null
+        var timesExecutedInMainThread = 0
+        val useCase = QueryProductDetailsUseCase(
+            QueryProductDetailsUseCaseParams(
+                mockDateProvider,
+                mockDiagnosticsTracker,
+                productIDs,
+                ProductType.SUBS,
+            ),
+            { received ->
+                receivedList = received
+            },
+            { _ ->
+                AssertionsForClassTypes.fail("shouldn't be an error")
+            },
+            withConnectedClient = {
+                it.invoke(mockClient)
+            },
+            executeRequestOnUIThread = {
+                timesExecutedInMainThread++
+
+                queryProductDetailsStubbing answers {
+                    if (timesExecutedInMainThread == 0) {
+                        slot.captured.onProductDetailsResponse(
+                            BillingClient.BillingResponseCode.SERVICE_DISCONNECTED.buildResult(),
+                            emptyList()
+                        )
+                    } else {
+                        slot.captured.onProductDetailsResponse(
+                            BillingClient.BillingResponseCode.OK.buildResult(),
+                            mockDetailsList
+                        )
+                    }
+                }
+
+                it.invoke(null)
+            },
+        )
+
+        useCase.run()
+
+        Assertions.assertThat(receivedList).isNotNull
+        Assertions.assertThat(receivedList!!.size).isOne
+    }
+
     private fun mockEmptyProductDetailsResponse() {
         val slot = slot<ProductDetailsResponseListener>()
         every {
@@ -368,5 +423,4 @@ class QueryProductDetailsUseCaseTest {
             mockDiagnosticsTracker.trackProductDetailsNotSupported(any(), any())
         } just Runs
     }
-
 }
