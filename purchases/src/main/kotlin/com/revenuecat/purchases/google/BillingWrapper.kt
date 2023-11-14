@@ -875,14 +875,12 @@ internal class BillingWrapper(
         val hasResponded = AtomicBoolean(false)
         val requestStartTime = dateProvider.now
         queryProductDetailsAsync(params) { billingResult, productDetailsList ->
-            synchronized(this@BillingWrapper) {
-                if (hasResponded.getAndSet(true)) {
-                    log(
-                        LogIntent.GOOGLE_ERROR,
-                        OfferingStrings.EXTRA_QUERY_PRODUCT_DETAILS_RESPONSE.format(billingResult.responseCode),
-                    )
-                    return@queryProductDetailsAsync
-                }
+            if (hasResponded.getAndSet(true)) {
+                log(
+                    LogIntent.GOOGLE_ERROR,
+                    OfferingStrings.EXTRA_QUERY_PRODUCT_DETAILS_RESPONSE.format(billingResult.responseCode),
+                )
+                return@queryProductDetailsAsync
             }
             trackGoogleQueryProductDetailsRequestIfNeeded(productType, billingResult, requestStartTime)
             listener.onProductDetailsResponse(billingResult, productDetailsList)
@@ -898,14 +896,12 @@ internal class BillingWrapper(
 
         productType.buildQueryPurchaseHistoryParams()?.let { queryPurchaseHistoryParams ->
             queryPurchaseHistoryAsync(queryPurchaseHistoryParams) { billingResult, purchaseHistory ->
-                synchronized(this@BillingWrapper) {
-                    if (hasResponded.getAndSet(true)) {
-                        log(
-                            LogIntent.GOOGLE_ERROR,
-                            RestoreStrings.EXTRA_QUERY_PURCHASE_HISTORY_RESPONSE.format(billingResult.responseCode),
-                        )
-                        return@queryPurchaseHistoryAsync
-                    }
+                if (hasResponded.getAndSet(true)) {
+                    log(
+                        LogIntent.GOOGLE_ERROR,
+                        RestoreStrings.EXTRA_QUERY_PURCHASE_HISTORY_RESPONSE.format(billingResult.responseCode),
+                    )
+                    return@queryPurchaseHistoryAsync
                 }
                 trackGoogleQueryPurchaseHistoryRequestIfNeeded(productType, billingResult, requestStartTime)
                 listener.onPurchaseHistoryResponse(billingResult, purchaseHistory)
