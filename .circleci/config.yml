@@ -587,6 +587,9 @@ jobs:
       - run:
           command: |
             ./gradlew ui:revenuecatui:connectedDebugAndroidTest
+      - android/save-gradle-cache
+      - store_test_results:
+          path: ui/revenuecatui/build/reports/androidTests/connected/**/*.xml
 
 workflows:
   version: 2
