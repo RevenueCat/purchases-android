@@ -12,6 +12,8 @@ internal object OfferingStrings {
     const val LIST_PRODUCTS = "%s - %s"
     const val EXTRA_QUERY_PRODUCT_DETAILS_RESPONSE = "BillingClient queryProductDetails has returned more than once, " +
         "with result: %s. More info here: https://rev.cat/google-duplicated-listener-timeouts"
+    const val EXTRA_QUERY_PURCHASES_RESPONSE = "BillingClient queryPurchases has returned more than once, " +
+        "with result: %s."
     const val NO_CACHED_OFFERINGS_FETCHING_NETWORK = "No cached Offerings, fetching from network"
     const val OFFERINGS_STALE_UPDATING_IN_BACKGROUND = "Offerings cache is stale, updating from network in background"
     const val OFFERINGS_STALE_UPDATING_IN_FOREGROUND = "Offerings cache is stale, updating from network in foreground"
