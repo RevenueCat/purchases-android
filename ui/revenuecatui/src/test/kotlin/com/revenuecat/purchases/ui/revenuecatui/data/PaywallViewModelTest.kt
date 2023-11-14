@@ -243,7 +243,7 @@ class PaywallViewModelTest {
 
         assertThat(dismissInvoked).isFalse
 
-        model.purchaseSelectedPackage(context)
+        model.purchaseSelectedPackage(activity)
 
         coVerify {
             purchases.awaitPurchase(any())
@@ -275,7 +275,7 @@ class PaywallViewModelTest {
             purchases.awaitPurchase(any())
         } throws PurchasesException(expectedError)
 
-        model.purchaseSelectedPackage(context)
+        model.purchaseSelectedPackage(activity)
 
         coVerify {
             purchases.awaitPurchase(any())
@@ -449,7 +449,7 @@ class PaywallViewModelTest {
             purchases.awaitPurchase(any())
         } throws PurchasesException(expectedError)
 
-        model.purchaseSelectedPackage(context)
+        model.purchaseSelectedPackage(activity)
 
         verifyEventTracked(PaywallEventType.CANCEL, 1)
     }
@@ -463,7 +463,7 @@ class PaywallViewModelTest {
             purchases.awaitPurchase(any())
         } throws PurchasesException(expectedError)
 
-        model.purchaseSelectedPackage(context)
+        model.purchaseSelectedPackage(activity)
 
         verifyNoEventsOfTypeTracked(PaywallEventType.CANCEL)
     }

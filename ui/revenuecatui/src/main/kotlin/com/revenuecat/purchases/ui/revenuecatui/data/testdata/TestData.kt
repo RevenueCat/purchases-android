@@ -326,7 +326,7 @@ internal class MockViewModel(
         error("Not supported")
     }
 
-    override fun purchaseSelectedPackage(activity: Activity) {
+    override fun purchaseSelectedPackage(activity: Activity?) {
         if (allowsPurchases) {
             simulateActionInProgress()
         } else {

@@ -74,7 +74,7 @@ private fun PurchaseButton(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
-        val activity = LocalActivity.current ?: error("No activity found in the composition tree")
+        val activity = LocalActivity.current
 
         val labelOpacity by animateFloatAsState(
             targetValue = if (viewModel.actionInProgress.value) 0.0f else 1.0f,

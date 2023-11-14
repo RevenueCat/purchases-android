@@ -53,7 +53,7 @@ internal interface PaywallViewModel {
      * Purchase the selected package
      * Note: This method requires the context to be an activity or to allow reaching an activity
      */
-    fun purchaseSelectedPackage(activity: Activity)
+    fun purchaseSelectedPackage(activity: Activity?)
 
     fun restorePurchases()
 
@@ -140,7 +140,11 @@ internal class PaywallViewModelImpl(
         options.dismissRequest()
     }
 
-    override fun purchaseSelectedPackage(activity: Activity) {
+    override fun purchaseSelectedPackage(activity: Activity?) {
+        if (activity == null) {
+            Logger.e("Activity is null, not initiating package purchase")
+            return
+        }
         when (val currentState = _state.value) {
             is PaywallState.Loaded -> {
                 val selectedPackage = currentState.selectedPackage.value

@@ -186,7 +186,7 @@ private class LoadingViewModel(
         error("Not supported")
     }
 
-    override fun purchaseSelectedPackage(activity: Activity) {
+    override fun purchaseSelectedPackage(activity: Activity?) {
         error("Can't purchase loading view model")
     }
 
