@@ -36,6 +36,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -75,6 +76,10 @@ private object Template2UIConstants {
     val iconCornerRadius = 16.dp
     val checkmarkSize = 18.dp
     const val fadedColorOpacity = 0.3f
+}
+
+internal fun template2SelectButtonTestTag(packageId: String): String {
+    return "Template2SelectButton_$packageId"
 }
 
 /**
@@ -257,7 +262,8 @@ private fun ColumnScope.SelectPackageButton(
             .align(Alignment.Start)
             .semantics {
                 selected = isSelected
-            },
+            }
+            .testTag(template2SelectButtonTestTag(packageInfo.rcPackage.identifier)),
         onClick = { viewModel.selectPackage(packageInfo) },
         colors = ButtonDefaults.buttonColors(containerColor = background, contentColor = textColor),
         shape = RoundedCornerShape(UIConstant.defaultPackageCornerRadius),
