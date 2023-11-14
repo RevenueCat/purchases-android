@@ -536,6 +536,20 @@ class Purchases internal constructor(
     }
 
     /**
+     * Subscriber attribute associated with the OneSignal User ID for the user
+     * Deprecated, use `setOnesignalID` instead
+     *
+     * @param onesignalUserID null or an empty string will delete the subscriber attribute
+     */
+    @Deprecated(
+        "This API is not currently available. Contact support if you need to use it.",
+        ReplaceWith("setOnesignalID"),
+    )
+    fun setOnesignalUserID(onesignalUserID: String?) {
+        purchasesOrchestrator.setOnesignalUserID(onesignalUserID)
+    }
+
+    /**
      * Subscriber attribute associated with the Airship Channel ID
      * Required for the RevenueCat Airship integration
      *

@@ -559,6 +559,15 @@ internal class PurchasesOrchestrator constructor(
         )
     }
 
+    fun setOnesignalUserID(onesignalUserID: String?) {
+        log(LogIntent.DEBUG, AttributionStrings.METHOD_CALLED.format("setOnesignalUserID"))
+        subscriberAttributesManager.setAttribute(
+            SubscriberAttributeKey.IntegrationIds.OneSignalUserId,
+            onesignalUserID,
+            appUserID,
+        )
+    }
+
     fun setAirshipChannelID(airshipChannelID: String?) {
         log(LogIntent.DEBUG, AttributionStrings.METHOD_CALLED.format("setAirshipChannelID"))
         subscriberAttributesManager.setAttribute(
