@@ -1,8 +1,12 @@
+@file:Suppress("TooManyFunctions")
+
 package com.revenuecat.purchases.ui.revenuecatui.templates
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
@@ -30,6 +34,10 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -48,6 +56,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.ui.revenuecatui.ExperimentalPreviewRevenueCatUIPurchasesAPI
 import com.revenuecat.purchases.ui.revenuecatui.InternalPaywall
+import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.UIConstant
 import com.revenuecat.purchases.ui.revenuecatui.composables.AutoResizedText
@@ -141,7 +150,18 @@ private fun Template4MainContent(
             )
         }
 
-        Packages(state, viewModel)
+        var packageSelectorVisible by remember {
+            mutableStateOf(state.templateConfiguration.mode != PaywallMode.FOOTER_CONDENSED)
+        }
+
+        AnimatedVisibility(
+            visible = packageSelectorVisible,
+            enter = expandVertically(expandFrom = Alignment.Bottom),
+            exit = shrinkVertically(shrinkTowards = Alignment.Bottom),
+            label = "SelectPackagesVisibility",
+        ) {
+            Packages(state, viewModel)
+        }
 
         ConsistentPackageContentView(state = state) {
             IntroEligibilityStateView(
@@ -161,6 +181,7 @@ private fun Template4MainContent(
         Footer(
             templateConfiguration = state.templateConfiguration,
             viewModel = viewModel,
+            allPlansTapped = { packageSelectorVisible = !packageSelectorVisible },
         )
     }
 }
@@ -405,5 +426,29 @@ private fun Template4PaywallPreview() {
     InternalPaywall(
         options = PaywallOptions.Builder(dismissRequest = {}).build(),
         viewModel = MockViewModel(offering = TestData.template4Offering),
+    )
+}
+
+@OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class)
+@Preview(showBackground = true, locale = "en-rUS")
+@Preview(showBackground = true, device = Devices.NEXUS_7)
+@Preview(showBackground = true, device = Devices.NEXUS_10)
+@Composable
+private fun Template4PaywallFooterPreview() {
+    InternalPaywall(
+        options = PaywallOptions.Builder(dismissRequest = {}).build(),
+        viewModel = MockViewModel(mode = PaywallMode.FOOTER, offering = TestData.template4Offering),
+    )
+}
+
+@OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class)
+@Preview(showBackground = true, locale = "en-rUS")
+@Preview(showBackground = true, device = Devices.NEXUS_7)
+@Preview(showBackground = true, device = Devices.NEXUS_10)
+@Composable
+private fun Template4PaywallFooterCondensedPreview() {
+    InternalPaywall(
+        options = PaywallOptions.Builder(dismissRequest = {}).build(),
+        viewModel = MockViewModel(mode = PaywallMode.FOOTER_CONDENSED, offering = TestData.template4Offering),
     )
 }
