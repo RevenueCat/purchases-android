@@ -594,7 +594,7 @@ jobs:
           command: |
             bundle exec fastlane android build_default_purchases_integration_tests
       - android/start-emulator-and-run-tests:
-          system-image: system-images;android-33;google_apis;x86_64
+          system-image: system-images;android-32;google_apis;x86_64
 
 
 workflows:
