@@ -64,6 +64,7 @@ import java.io.StringWriter
 import java.lang.ref.WeakReference
 import java.util.Date
 import java.util.concurrent.ConcurrentLinkedQueue
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.math.min
 import kotlin.time.Duration
 
@@ -486,7 +487,7 @@ internal class BillingWrapper(
                     )
                     return@withConnectedClient
                 }
-                this.queryPurchasesAsyncWithTracking(
+                this.queryPurchasesAsyncWithTrackingEnsuringOneResponse(
                     BillingClient.ProductType.SUBS,
                     querySubsPurchasesParams,
                 ) querySubPurchasesAsync@{ activeSubsResult, activeSubsPurchases ->
@@ -513,7 +514,7 @@ internal class BillingWrapper(
                         return@querySubPurchasesAsync
                     }
 
-                    this.queryPurchasesAsyncWithTracking(
+                    this.queryPurchasesAsyncWithTrackingEnsuringOneResponse(
                         BillingClient.ProductType.INAPP,
                         queryInAppsPurchasesParams,
                     ) queryInAppsPurchasesAsync@{ unconsumedInAppsResult, unconsumedInAppsPurchases ->
@@ -594,7 +595,7 @@ internal class BillingWrapper(
                 return
             }
 
-            client.queryPurchasesAsyncWithTracking(
+            client.queryPurchasesAsyncWithTrackingEnsuringOneResponse(
                 BillingClient.ProductType.SUBS,
                 querySubsPurchasesParams,
             ) querySubPurchasesAsync@{ querySubsResult, subsPurchasesList ->
@@ -612,7 +613,7 @@ internal class BillingWrapper(
                     listener(ProductType.UNKNOWN)
                     return@querySubPurchasesAsync
                 }
-                client.queryPurchasesAsyncWithTracking(
+                client.queryPurchasesAsyncWithTrackingEnsuringOneResponse(
                     BillingClient.ProductType.INAPP,
                     queryInAppsPurchasesParams,
                 ) queryInAppPurchasesAsync@{ queryInAppsResult, inAppPurchasesList ->
@@ -871,18 +872,17 @@ internal class BillingWrapper(
         params: QueryProductDetailsParams,
         listener: ProductDetailsResponseListener,
     ) {
-        var hasResponded = false
+        val hasResponded = AtomicBoolean(false)
         val requestStartTime = dateProvider.now
         queryProductDetailsAsync(params) { billingResult, productDetailsList ->
             synchronized(this@BillingWrapper) {
-                if (hasResponded) {
+                if (hasResponded.getAndSet(true)) {
                     log(
                         LogIntent.GOOGLE_ERROR,
                         OfferingStrings.EXTRA_QUERY_PRODUCT_DETAILS_RESPONSE.format(billingResult.responseCode),
                     )
                     return@queryProductDetailsAsync
                 }
-                hasResponded = true
             }
             trackGoogleQueryProductDetailsRequestIfNeeded(productType, billingResult, requestStartTime)
             listener.onProductDetailsResponse(billingResult, productDetailsList)
@@ -893,20 +893,19 @@ internal class BillingWrapper(
         @BillingClient.ProductType productType: String,
         listener: PurchaseHistoryResponseListener,
     ) {
-        var hasResponded = false
+        val hasResponded = AtomicBoolean(false)
         val requestStartTime = dateProvider.now
 
         productType.buildQueryPurchaseHistoryParams()?.let { queryPurchaseHistoryParams ->
             queryPurchaseHistoryAsync(queryPurchaseHistoryParams) { billingResult, purchaseHistory ->
                 synchronized(this@BillingWrapper) {
-                    if (hasResponded) {
+                    if (hasResponded.getAndSet(true)) {
                         log(
                             LogIntent.GOOGLE_ERROR,
                             RestoreStrings.EXTRA_QUERY_PURCHASE_HISTORY_RESPONSE.format(billingResult.responseCode),
                         )
                         return@queryPurchaseHistoryAsync
                     }
-                    hasResponded = true
                 }
                 trackGoogleQueryPurchaseHistoryRequestIfNeeded(productType, billingResult, requestStartTime)
                 listener.onPurchaseHistoryResponse(billingResult, purchaseHistory)
@@ -919,13 +918,21 @@ internal class BillingWrapper(
         }
     }
 
-    private fun BillingClient.queryPurchasesAsyncWithTracking(
+    private fun BillingClient.queryPurchasesAsyncWithTrackingEnsuringOneResponse(
         @BillingClient.ProductType productType: String,
         queryParams: QueryPurchasesParams,
         listener: PurchasesResponseListener,
     ) {
+        val hasResponded = AtomicBoolean(false)
         val requestStartTime = dateProvider.now
         queryPurchasesAsync(queryParams) { billingResult, purchases ->
+            if (hasResponded.getAndSet(true)) {
+                log(
+                    LogIntent.GOOGLE_ERROR,
+                    OfferingStrings.EXTRA_QUERY_PRODUCT_DETAILS_RESPONSE.format(billingResult.responseCode),
+                )
+                return@queryPurchasesAsync
+            }
             trackGoogleQueryPurchasesRequestIfNeeded(productType, billingResult, requestStartTime)
             listener.onQueryPurchasesResponse(billingResult, purchases)
         }

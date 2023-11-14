@@ -2711,6 +2711,76 @@ class BillingWrapperTest {
 
     // endregion
 
+    @Test
+    fun `queryPurchasesAsync only calls one response when BillingClient responds twice`() {
+        var numCallbacks = 0
+
+        val slot = slot<PurchasesResponseListener>()
+        every {
+            mockClient.queryPurchasesAsync(
+                any<QueryPurchasesParams>(),
+                capture(slot)
+            )
+        } answers {
+            slot.captured.onQueryPurchasesResponse(billingClientOKResult, emptyList())
+            slot.captured.onQueryPurchasesResponse(billingClientOKResult, emptyList())
+        }
+
+        wrapper.queryPurchases(
+            appUserID = "appUserID",
+            onSuccess = {
+                numCallbacks++
+            },
+            onError = {
+                fail("shouldn't be an error")
+            }
+        )
+
+        assertThat(numCallbacks).isEqualTo(1)
+    }
+
+    @Test
+    fun `queryPurchasesAsync only calls one response when BillingClient responds twice from different threads`() {
+        var numCallbacks = 0
+
+        val slot = slot<PurchasesResponseListener>()
+        val lock = CountDownLatch(2)
+        every {
+            mockClient.queryPurchasesAsync(
+                any<QueryPurchasesParams>(),
+                capture(slot)
+            )
+        } answers {
+            Thread {
+                slot.captured.onQueryPurchasesResponse(billingClientOKResult, emptyList())
+                lock.countDown()
+            }.start()
+
+            Thread {
+                slot.captured.onQueryPurchasesResponse(billingClientOKResult, emptyList())
+                lock.countDown()
+            }.start()
+        }
+
+        wrapper.queryPurchases(
+            appUserID = "appUserID",
+            onSuccess = {
+                // ensuring we don't hit an edge case where numCallbacks doesn't increment before the final assert
+                handler.post {
+                    numCallbacks++
+                }
+            },
+            onError = {
+                fail("shouldn't be an error")
+            }
+        )
+
+        lock.await()
+        assertThat(lock.count).isEqualTo(0)
+
+        assertThat(numCallbacks).isEqualTo(1)
+    }
+
     private fun mockEmptyProductDetailsResponse() {
         val slot = slot<ProductDetailsResponseListener>()
         every {
