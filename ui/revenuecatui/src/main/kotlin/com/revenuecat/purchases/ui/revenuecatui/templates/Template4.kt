@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -154,26 +155,32 @@ private fun Template4MainContent(
             mutableStateOf(state.templateConfiguration.mode != PaywallMode.FOOTER_CONDENSED)
         }
 
-        AnimatedVisibility(
-            visible = packageSelectorVisible,
-            enter = expandVertically(expandFrom = Alignment.Bottom),
-            exit = shrinkVertically(shrinkTowards = Alignment.Bottom),
-            label = "SelectPackagesVisibility",
-        ) {
-            Packages(state, viewModel)
-        }
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            AnimatedVisibility(
+                visible = packageSelectorVisible,
+                enter = expandVertically(expandFrom = Alignment.Bottom),
+                exit = shrinkVertically(shrinkTowards = Alignment.Bottom),
+                label = "SelectPackagesVisibility",
+            ) {
+                Packages(state, viewModel)
+            }
 
-        ConsistentPackageContentView(state = state) {
-            IntroEligibilityStateView(
-                textWithNoIntroOffer = it.localization.offerDetails,
-                textWithIntroOffer = it.localization.offerDetailsWithIntroOffer,
-                textWithMultipleIntroOffers = it.localization.offerDetailsWithMultipleIntroOffers,
-                eligibility = it.introEligibility,
-                color = colors.text1,
-                style = MaterialTheme.typography.bodyMedium,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth(),
-            )
+            AnimatedVisibility(visible = packageSelectorVisible) {
+                Spacer(modifier = Modifier.height(UIConstant.defaultVerticalSpacing))
+            }
+
+            ConsistentPackageContentView(state = state) {
+                IntroEligibilityStateView(
+                    textWithNoIntroOffer = it.localization.offerDetails,
+                    textWithIntroOffer = it.localization.offerDetailsWithIntroOffer,
+                    textWithMultipleIntroOffers = it.localization.offerDetailsWithMultipleIntroOffers,
+                    eligibility = it.introEligibility,
+                    color = colors.text1,
+                    style = MaterialTheme.typography.bodyMedium,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
         }
 
         PurchaseButton(state, viewModel)
