@@ -1,7 +1,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.data
 
 import android.app.Activity
-import android.content.Context
 import androidx.compose.material3.ColorScheme
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
@@ -25,7 +24,6 @@ import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvider
-import com.revenuecat.purchases.ui.revenuecatui.extensions.getActivity
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toPaywallState
@@ -55,7 +53,7 @@ internal interface PaywallViewModel {
      * Purchase the selected package
      * Note: This method requires the context to be an activity or to allow reaching an activity
      */
-    fun purchaseSelectedPackage(context: Context)
+    fun purchaseSelectedPackage(activity: Activity?)
 
     fun restorePurchases()
 
@@ -142,8 +140,11 @@ internal class PaywallViewModelImpl(
         options.dismissRequest()
     }
 
-    override fun purchaseSelectedPackage(context: Context) {
-        val activity = context.getActivity() ?: error("Activity not found")
+    override fun purchaseSelectedPackage(activity: Activity?) {
+        if (activity == null) {
+            Logger.e("Activity is null, not initiating package purchase")
+            return
+        }
         when (val currentState = _state.value) {
             is PaywallState.Loaded -> {
                 val selectedPackage = currentState.selectedPackage.value

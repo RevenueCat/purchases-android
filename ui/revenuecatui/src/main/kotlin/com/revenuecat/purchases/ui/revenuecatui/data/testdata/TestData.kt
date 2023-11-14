@@ -1,6 +1,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.data.testdata
 
-import android.content.Context
+import android.app.Activity
 import androidx.compose.material3.ColorScheme
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
@@ -326,7 +326,7 @@ internal class MockViewModel(
         error("Not supported")
     }
 
-    override fun purchaseSelectedPackage(context: Context) {
+    override fun purchaseSelectedPackage(activity: Activity?) {
         if (allowsPurchases) {
             simulateActionInProgress()
         } else {

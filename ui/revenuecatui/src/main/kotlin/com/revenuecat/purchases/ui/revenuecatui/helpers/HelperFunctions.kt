@@ -1,7 +1,10 @@
 package com.revenuecat.purchases.ui.revenuecatui.helpers
 
+import android.app.Activity
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.ProvidableCompositionLocal
 import androidx.compose.runtime.ReadOnlyComposable
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalInspectionMode
 import com.revenuecat.purchases.CustomerInfo
@@ -10,6 +13,12 @@ import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.getCustomerInfoWith
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
+
+/**
+ * CompositionLocal containing the current Activity.
+ * Needs to be provided, it's null by default.
+ */
+internal val LocalActivity: ProvidableCompositionLocal<Activity?> = compositionLocalOf { null }
 
 @Composable
 @ReadOnlyComposable

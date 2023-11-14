@@ -25,7 +25,6 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.text
@@ -40,6 +39,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfigura
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockViewModel
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.extensions.introEligibility
+import com.revenuecat.purchases.ui.revenuecatui.helpers.LocalActivity
 
 @Composable
 internal fun PurchaseButton(
@@ -74,7 +74,7 @@ private fun PurchaseButton(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
-        val context = LocalContext.current
+        val activity = LocalActivity.current
 
         val labelOpacity by animateFloatAsState(
             targetValue = if (viewModel.actionInProgress.value) 0.0f else 1.0f,
@@ -100,7 +100,7 @@ private fun PurchaseButton(
                     brush = buttonBrush(colors),
                     shape = ButtonDefaults.shape,
                 ),
-            onClick = { viewModel.purchaseSelectedPackage(context) },
+            onClick = { viewModel.purchaseSelectedPackage(activity) },
             colors = ButtonDefaults.buttonColors(
                 containerColor = Color.Transparent, // color set on background
                 contentColor = colors.callToActionForeground,

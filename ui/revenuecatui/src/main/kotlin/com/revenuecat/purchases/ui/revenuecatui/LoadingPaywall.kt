@@ -1,6 +1,6 @@
 package com.revenuecat.purchases.ui.revenuecatui
 
-import android.content.Context
+import android.app.Activity
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ColorScheme
@@ -186,7 +186,7 @@ private class LoadingViewModel(
         error("Not supported")
     }
 
-    override fun purchaseSelectedPackage(context: Context) {
+    override fun purchaseSelectedPackage(activity: Activity?) {
         error("Can't purchase loading view model")
     }
 
