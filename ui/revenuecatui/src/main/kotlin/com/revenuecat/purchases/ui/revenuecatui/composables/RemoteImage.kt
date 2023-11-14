@@ -7,6 +7,10 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -14,6 +18,8 @@ import coil.ImageLoader
 import coil.compose.AsyncImage
 import coil.compose.AsyncImagePainter
 import coil.disk.DiskCache
+import coil.memory.MemoryCache
+import coil.request.CachePolicy
 import coil.request.ImageRequest
 import coil.transform.Transformation
 import com.revenuecat.purchases.ui.revenuecatui.UIConstant
@@ -86,14 +92,58 @@ private fun Image(
         return ImageForPreviews(modifier)
     }
 
+    var useCache by remember { mutableStateOf(true) }
+    val imageLoader = LocalContext.current.getRevenueCatUIImageLoader(readCache = useCache)
+
+    val imageRequest = ImageRequest.Builder(LocalContext.current)
+        .data(source.data)
+        .crossfade(durationMillis = UIConstant.defaultAnimationDurationMillis)
+        .transformations(listOfNotNull(transformation))
+        .build()
+
+    if (useCache) {
+        AsyncImage(
+            source = source,
+            imageRequest = imageRequest,
+            contentDescription = contentDescription,
+            imageLoader = imageLoader,
+            modifier = modifier,
+            contentScale = contentScale,
+            alpha = alpha,
+            onError = {
+                Logger.w("Image failed to load. Will try again disabling cache")
+                useCache = false
+            },
+        )
+    } else {
+        AsyncImage(
+            source = source,
+            imageRequest = imageRequest,
+            contentDescription = contentDescription,
+            imageLoader = imageLoader,
+            modifier = modifier,
+            contentScale = contentScale,
+            alpha = alpha,
+        )
+    }
+}
+
+@SuppressWarnings("LongParameterList")
+@Composable
+private fun AsyncImage(
+    source: ImageSource,
+    imageRequest: ImageRequest,
+    imageLoader: ImageLoader,
+    modifier: Modifier = Modifier,
+    contentScale: ContentScale,
+    contentDescription: String?,
+    alpha: Float,
+    onError: ((AsyncImagePainter.State.Error) -> Unit)? = null,
+) {
     AsyncImage(
-        model = ImageRequest.Builder(LocalContext.current)
-            .data(source.data)
-            .crossfade(durationMillis = UIConstant.defaultAnimationDurationMillis)
-            .transformations(listOfNotNull(transformation))
-            .build(),
+        model = imageRequest,
         contentDescription = contentDescription,
-        imageLoader = LocalContext.current.getRevenueCatUIImageLoader(),
+        imageLoader = imageLoader,
         modifier = modifier,
         contentScale = contentScale,
         alpha = alpha,
@@ -106,6 +156,7 @@ private fun Image(
                     }
 
                     Logger.e(error, it.result.throwable)
+                    onError?.invoke(it)
                 }
                 else -> {}
             }
@@ -127,10 +178,14 @@ private const val PAYWALL_IMAGE_CACHE_FOLDER = "revenuecatui_cache"
 /**
  * This downloads paywall images in a specific cache for RevenueCat.
  * If you update this, make sure the version in the [CoilImageDownloader] class is also updated.
+ *
+ * @param readCache: set to false to ignore cache for reading, but allow overwriting with updated image.
  */
 @Composable
 @ReadOnlyComposable
-private fun Context.getRevenueCatUIImageLoader(): ImageLoader {
+private fun Context.getRevenueCatUIImageLoader(readCache: Boolean): ImageLoader {
+    val cachePolicy = if (readCache) CachePolicy.ENABLED else CachePolicy.WRITE_ONLY
+
     return ImageLoader.Builder(this)
         .diskCache {
             DiskCache.Builder()
@@ -138,5 +193,11 @@ private fun Context.getRevenueCatUIImageLoader(): ImageLoader {
                 .maxSizeBytes(MAX_CACHE_SIZE_BYTES)
                 .build()
         }
+        .memoryCache(
+            MemoryCache.Builder(this)
+                .build(),
+        )
+        .diskCachePolicy(cachePolicy)
+        .memoryCachePolicy(cachePolicy)
         .build()
 }
