@@ -372,7 +372,7 @@ class BillingWrapperTest {
         var numCallbacks = 0
 
         val slot = slot<PurchaseHistoryResponseListener>()
-        val lock = CountDownLatch(2)
+        val lock = CountDownLatch(3)
         every {
             mockClient.queryPurchaseHistoryAsync(
                 any<QueryPurchaseHistoryParams>(),
@@ -394,9 +394,8 @@ class BillingWrapperTest {
             BillingClient.ProductType.SUBS,
             {
                 // ensuring we don't hit an edge case where numCallbacks doesn't increment before the final assert
-                handler.post {
-                    numCallbacks++
-                }
+                numCallbacks++
+                lock.countDown()
             }, {
                 fail("shouldn't be an error")
             })
@@ -2222,7 +2221,7 @@ class BillingWrapperTest {
         var numCallbacks = 0
 
         val slot = slot<ProductDetailsResponseListener>()
-        val lock = CountDownLatch(2)
+        val lock = CountDownLatch(3)
         every {
             mockClient.queryProductDetailsAsync(
                 any(),
@@ -2245,9 +2244,8 @@ class BillingWrapperTest {
             setOf("asdf"),
             {
                 // ensuring we don't hit an edge case where numCallbacks doesn't increment before the final assert
-                handler.post {
-                    numCallbacks++
-                }
+                numCallbacks++
+                lock.countDown()
             }, {
                 fail("shouldn't be an error")
             })
@@ -2744,7 +2742,7 @@ class BillingWrapperTest {
         var numCallbacks = 0
 
         val slot = slot<PurchasesResponseListener>()
-        val lock = CountDownLatch(2)
+        val lock = CountDownLatch(3)
         every {
             mockClient.queryPurchasesAsync(
                 any<QueryPurchasesParams>(),
@@ -2766,9 +2764,8 @@ class BillingWrapperTest {
             appUserID = "appUserID",
             onSuccess = {
                 // ensuring we don't hit an edge case where numCallbacks doesn't increment before the final assert
-                handler.post {
-                    numCallbacks++
-                }
+                numCallbacks++
+                lock.countDown()
             },
             onError = {
                 fail("shouldn't be an error")
