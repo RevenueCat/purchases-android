@@ -370,7 +370,7 @@ class BillingWrapperTest {
 
     @Test
     fun `queryPurchaseHistoryAsync only calls one response when BillingClient responds twice from different threads`() {
-        var numCallbacks = 0
+        val numCallbacks = AtomicInteger(0)
 
         val slot = slot<PurchaseHistoryResponseListener>()
         val lock = CountDownLatch(3)
@@ -395,7 +395,7 @@ class BillingWrapperTest {
             BillingClient.ProductType.SUBS,
             {
                 // ensuring we don't hit an edge case where numCallbacks doesn't increment before the final assert
-                numCallbacks++
+                numCallbacks.incrementAndGet()
                 lock.countDown()
             }, {
                 fail("shouldn't be an error")
@@ -404,7 +404,7 @@ class BillingWrapperTest {
         lock.await()
         assertThat(lock.count).isEqualTo(0)
 
-        assertThat(numCallbacks).isEqualTo(1)
+        assertThat(numCallbacks.get()).isEqualTo(1)
     }
 
     @Test
@@ -2219,7 +2219,7 @@ class BillingWrapperTest {
 
     @Test
     fun `queryProductDetailsAsync only calls one response when BillingClient responds twice in separate threads`() {
-        var numCallbacks = 0
+        val numCallbacks = AtomicInteger(0)
 
         val slot = slot<ProductDetailsResponseListener>()
         val lock = CountDownLatch(3)
@@ -2245,7 +2245,7 @@ class BillingWrapperTest {
             setOf("asdf"),
             {
                 // ensuring we don't hit an edge case where numCallbacks doesn't increment before the final assert
-                numCallbacks++
+                numCallbacks.incrementAndGet()
                 lock.countDown()
             }, {
                 fail("shouldn't be an error")
@@ -2254,7 +2254,7 @@ class BillingWrapperTest {
         lock.await()
         assertThat(lock.count).isEqualTo(0)
 
-        assertThat(numCallbacks).isEqualTo(1)
+        assertThat(numCallbacks.get()).isEqualTo(1)
     }
 
     @Test
