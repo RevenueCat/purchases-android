@@ -592,7 +592,7 @@ workflows:
             name: android/android-machine
             resource-class: xlarge
             tag: 2023.11.1
-          system-image: system-images;android-33;default;x86
+          system-image: system-images;android-33;google_apis;x86_64
 
   snapshot-deploy-sample-app-tests:
     when:
