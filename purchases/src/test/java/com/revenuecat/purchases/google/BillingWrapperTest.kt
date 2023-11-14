@@ -85,6 +85,7 @@ import java.lang.Thread.sleep
 import java.util.Date
 import java.util.Locale
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.atomic.AtomicInteger
 import kotlin.time.Duration.Companion.milliseconds
 
 @RunWith(AndroidJUnit4::class)
@@ -2739,7 +2740,7 @@ class BillingWrapperTest {
 
     @Test
     fun `queryPurchasesAsync only calls one response when BillingClient responds twice from different threads`() {
-        var numCallbacks = 0
+        val numCallbacks = AtomicInteger(0)
 
         val slot = slot<PurchasesResponseListener>()
         val lock = CountDownLatch(3)
@@ -2764,7 +2765,7 @@ class BillingWrapperTest {
             appUserID = "appUserID",
             onSuccess = {
                 // ensuring we don't hit an edge case where numCallbacks doesn't increment before the final assert
-                numCallbacks++
+                numCallbacks.incrementAndGet()
                 lock.countDown()
             },
             onError = {
@@ -2775,7 +2776,7 @@ class BillingWrapperTest {
         lock.await()
         assertThat(lock.count).isEqualTo(0)
 
-        assertThat(numCallbacks).isEqualTo(1)
+        assertThat(numCallbacks.get()).isEqualTo(1)
     }
 
     private fun mockEmptyProductDetailsResponse() {
