@@ -147,10 +147,10 @@ private fun HeaderImage(uri: Uri?, templateSize: IntSize) {
             RemoteImage(
                 urlString = uri.toString(),
                 modifier = Modifier
-                    .conditional(aspectRatio > 1f || templateSize == IntSize.Zero) {
+                    .conditional(aspectRatio <= 1f || templateSize == IntSize.Zero) {
                         aspectRatio(ratio = 1.2f)
                     }
-                    .conditional(aspectRatio <= 1f) {
+                    .conditional(aspectRatio > 1f) {
                         fillMaxWidth().height(screenHeight.dp / 2f)
                     },
                 contentScale = ContentScale.Crop,
