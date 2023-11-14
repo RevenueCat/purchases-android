@@ -1,6 +1,8 @@
 package com.revenuecat.purchases.ui.revenuecatui
 
+import android.app.Activity
 import android.content.Context
+import android.content.ContextWrapper
 import android.content.res.Configuration
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
@@ -36,7 +38,6 @@ import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModelImpl
 import com.revenuecat.purchases.ui.revenuecatui.data.isInFullScreenMode
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.PaywallTemplate
 import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
-import com.revenuecat.purchases.ui.revenuecatui.extensions.getActivity
 import com.revenuecat.purchases.ui.revenuecatui.fonts.PaywallTheme
 import com.revenuecat.purchases.ui.revenuecatui.helpers.LocalActivity
 import com.revenuecat.purchases.ui.revenuecatui.helpers.isInPreviewMode
@@ -207,4 +208,20 @@ private fun ErrorDialog(
             Text(text = error)
         },
     )
+}
+
+/**
+ * Returns the activity from a given context. Most times, the context itself will be
+ * an activity, but in the case it's not, it will iterate through the context wrappers until it
+ * finds one that is an activity.
+ */
+private fun Context.getActivity(): Activity? {
+    var currentContext = this
+    while (currentContext is ContextWrapper) {
+        if (currentContext is Activity) {
+            return currentContext
+        }
+        currentContext = currentContext.baseContext
+    }
+    return null
 }

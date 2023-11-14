@@ -24,7 +24,6 @@ import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
-import com.revenuecat.purchases.ui.revenuecatui.extensions.getActivity
 import io.mockk.Runs
 import io.mockk.clearAllMocks
 import io.mockk.coEvery
@@ -83,11 +82,6 @@ class PaywallViewModelTest {
         listener = mockk()
 
         dismissInvoked = false
-
-        // Allows mocking Context.getActivity
-        mockkStatic("com.revenuecat.purchases.ui.revenuecatui.extensions.ContextExtensionsKt")
-
-        every { context.getActivity() } returns activity
 
         coEvery { purchases.awaitOfferings() } returns offerings
         coEvery { purchases.awaitCustomerInfo(any()) } returns customerInfo
