@@ -925,7 +925,7 @@ internal class BillingWrapper(
             if (hasResponded.getAndSet(true)) {
                 log(
                     LogIntent.GOOGLE_ERROR,
-                    OfferingStrings.EXTRA_QUERY_PRODUCT_DETAILS_RESPONSE.format(billingResult.responseCode),
+                    OfferingStrings.EXTRA_QUERY_PURCHASES_RESPONSE.format(billingResult.responseCode),
                 )
                 return@queryPurchasesAsync
             }
