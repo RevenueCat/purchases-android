@@ -27,14 +27,14 @@ aliases:
     executor:
       name: android/android-docker
       resource-class: large
-      tag: 2023.06.1
+      tag: 2023.11.1
     environment:
       JVM_OPTS: -Xmx6g
       GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.workers.max=2"
 
 version: 2.1
 orbs:
-  android: circleci/android@2.2.0
+  android: circleci/android@2.3.0
   gcp-cli: circleci/gcp-cli@2.1.0
   revenuecat: revenuecat/sdks-common-config@2.2.0
   codecov: codecov/codecov@3.2.4
@@ -587,6 +587,12 @@ workflows:
       - assemble-purchase-tester
       - run-backend-integration-tests
       - verify-revenuecatui-snapshots
+      - android/run-ui-tests:
+          executor:
+            name: android/android-machine
+            resource-class: xlarge
+            tag: 2023.11.1
+          system-image: system-images;android-33;default;x86
 
   snapshot-deploy-sample-app-tests:
     when:
