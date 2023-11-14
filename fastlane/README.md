@@ -285,7 +285,7 @@ Trigger CircleCI job to generate snapshots for RevenueCatUI
 [bundle exec] fastlane android update_snapshots_repo
 ```
 
-Updates purchases-ios-snapshots-commit to point to latest commit on main
+Updates purchases-android-snapshots-commit to point to latest commit on main
 
 ----
 
