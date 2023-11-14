@@ -568,6 +568,35 @@ jobs:
             bundle exec fastlane android create_snapshots_repo_pr
       - android/save-build-cache
 
+  run-ui-tests:
+    description: "Run UI tests for Android in CircleCI"
+    executor:
+      name: android/android-machine
+      resource-class: large
+      tag: 2023.11.1
+    steps:
+      - checkout
+      - install-sdkman
+      - run:
+          name: Replace API_KEY paywall tester
+          working_directory: examples/paywall-tester/src/main/java/com/revenuecat/paywallstester/
+          command: |
+            sed -i s/\"API_KEY\"/\"$PAYWALL_TESTER_API_KEY\"/ Constants.kt
+      - run:
+          name: Replace API_KEY integration tests
+          working_directory: integration-tests/src/androidTest/java/com/revenuecat/purchases/integrationtests/
+          command: |
+            sed -i s/REVENUECAT_API_KEY/$API_KEY/ IntegrationTest.kt
+      - revenuecat/install-gem-unix-dependencies:
+          cache-version: v1
+      - run:
+          name: Create purchases integration tests apks
+          command: |
+            bundle exec fastlane android build_default_purchases_integration_tests
+      - android/start-emulator-and-run-tests:
+          system-image: system-images;android-33;google_apis;x86_64
+
+
 workflows:
   version: 2
   danger:
@@ -587,12 +616,7 @@ workflows:
       - assemble-purchase-tester
       - run-backend-integration-tests
       - verify-revenuecatui-snapshots
-      - android/run-ui-tests:
-          executor:
-            name: android/android-machine
-            resource-class: xlarge
-            tag: 2023.11.1
-          system-image: system-images;android-33;google_apis;x86_64
+      - run-ui-tests
 
   snapshot-deploy-sample-app-tests:
     when:
