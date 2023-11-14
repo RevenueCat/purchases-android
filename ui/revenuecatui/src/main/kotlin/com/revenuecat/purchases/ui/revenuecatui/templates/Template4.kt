@@ -1,8 +1,12 @@
+@file:Suppress("TooManyFunctions")
+
 package com.revenuecat.purchases.ui.revenuecatui.templates
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
@@ -14,6 +18,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -30,6 +35,10 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -48,6 +57,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.ui.revenuecatui.ExperimentalPreviewRevenueCatUIPurchasesAPI
 import com.revenuecat.purchases.ui.revenuecatui.InternalPaywall
+import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.UIConstant
 import com.revenuecat.purchases.ui.revenuecatui.composables.AutoResizedText
@@ -141,19 +151,36 @@ private fun Template4MainContent(
             )
         }
 
-        Packages(state, viewModel)
+        var packageSelectorVisible by remember {
+            mutableStateOf(state.templateConfiguration.mode != PaywallMode.FOOTER_CONDENSED)
+        }
 
-        ConsistentPackageContentView(state = state) {
-            IntroEligibilityStateView(
-                textWithNoIntroOffer = it.localization.offerDetails,
-                textWithIntroOffer = it.localization.offerDetailsWithIntroOffer,
-                textWithMultipleIntroOffers = it.localization.offerDetailsWithMultipleIntroOffers,
-                eligibility = it.introEligibility,
-                color = colors.text1,
-                style = MaterialTheme.typography.bodyMedium,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth(),
-            )
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            AnimatedVisibility(
+                visible = packageSelectorVisible,
+                enter = expandVertically(expandFrom = Alignment.Bottom),
+                exit = shrinkVertically(shrinkTowards = Alignment.Bottom),
+                label = "SelectPackagesVisibility",
+            ) {
+                Packages(state, viewModel)
+            }
+
+            AnimatedVisibility(visible = packageSelectorVisible) {
+                Spacer(modifier = Modifier.height(UIConstant.defaultVerticalSpacing))
+            }
+
+            ConsistentPackageContentView(state = state) {
+                IntroEligibilityStateView(
+                    textWithNoIntroOffer = it.localization.offerDetails,
+                    textWithIntroOffer = it.localization.offerDetailsWithIntroOffer,
+                    textWithMultipleIntroOffers = it.localization.offerDetailsWithMultipleIntroOffers,
+                    eligibility = it.introEligibility,
+                    color = colors.text1,
+                    style = MaterialTheme.typography.bodyMedium,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
         }
 
         PurchaseButton(state, viewModel)
@@ -161,6 +188,7 @@ private fun Template4MainContent(
         Footer(
             templateConfiguration = state.templateConfiguration,
             viewModel = viewModel,
+            allPlansTapped = { packageSelectorVisible = !packageSelectorVisible },
         )
     }
 }
@@ -405,5 +433,29 @@ private fun Template4PaywallPreview() {
     InternalPaywall(
         options = PaywallOptions.Builder(dismissRequest = {}).build(),
         viewModel = MockViewModel(offering = TestData.template4Offering),
+    )
+}
+
+@OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class)
+@Preview(showBackground = true, locale = "en-rUS")
+@Preview(showBackground = true, device = Devices.NEXUS_7)
+@Preview(showBackground = true, device = Devices.NEXUS_10)
+@Composable
+private fun Template4PaywallFooterPreview() {
+    InternalPaywall(
+        options = PaywallOptions.Builder(dismissRequest = {}).build(),
+        viewModel = MockViewModel(mode = PaywallMode.FOOTER, offering = TestData.template4Offering),
+    )
+}
+
+@OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class)
+@Preview(showBackground = true, locale = "en-rUS")
+@Preview(showBackground = true, device = Devices.NEXUS_7)
+@Preview(showBackground = true, device = Devices.NEXUS_10)
+@Composable
+private fun Template4PaywallFooterCondensedPreview() {
+    InternalPaywall(
+        options = PaywallOptions.Builder(dismissRequest = {}).build(),
+        viewModel = MockViewModel(mode = PaywallMode.FOOTER_CONDENSED, offering = TestData.template4Offering),
     )
 }

@@ -645,7 +645,7 @@ DESC
     )
   end
 
-  desc "Updates purchases-ios-snapshots-commit to point to latest commit on main"
+  desc "Updates purchases-android-snapshots-commit to point to latest commit on main"
   lane :update_snapshots_repo do
     new_hash = ""
 
