@@ -32,6 +32,12 @@ aliases:
       JVM_OPTS: -Xmx6g
       GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.workers.max=2"
 
+  android-machine-emulator: &android-machine-emulator
+    executor:
+      name: android/android-machine
+      resource-class: large
+      tag: 2023.11.1
+
 version: 2.1
 orbs:
   android: circleci/android@2.3.0
@@ -570,7 +576,7 @@ jobs:
 
   run-revenuecatui-ui-tests:
     description: "Run RevenueCatUI UI tests for Android in CircleCI"
-    <<: *android-executor
+    <<: *android-machine-emulator
     steps:
       - checkout
       - install-sdkman
