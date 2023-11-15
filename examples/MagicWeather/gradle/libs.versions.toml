@@ -1,5 +1,5 @@
 [versions]
-agp = "8.1.1"
+agp = "8.1.3"
 androidxNavigation = "2.6.0"
 kotlin = "1.9.0"
 purchases = "7.3.0-SNAPSHOT"
