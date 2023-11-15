@@ -590,8 +590,6 @@ jobs:
       - run:
           command: |
             ./gradlew ui:revenuecatui:connectedDebugAndroidTest
-      - store_test_results:
-          path: ui/revenuecatui/build/outputs/androidTest-results/connected/**/*.xml
 
 workflows:
   version: 2
