@@ -58,6 +58,7 @@ internal abstract class UseCase<T>(
             }
 
             BillingResponse.ServiceDisconnected -> {
+                log(LogIntent.GOOGLE_ERROR, BillingStrings.BILLING_SERVICE_DISCONNECTED)
                 run()
             }
 

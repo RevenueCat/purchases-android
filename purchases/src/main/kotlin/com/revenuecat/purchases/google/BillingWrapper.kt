@@ -721,7 +721,7 @@ internal class BillingWrapper(
     }
 
     override fun onBillingServiceDisconnected() {
-        log(LogIntent.WARNING, BillingStrings.BILLING_SERVICE_DISCONNECTED.format(billingClient?.toString()))
+        log(LogIntent.WARNING, BillingStrings.BILLING_SERVICE_DISCONNECTED_INSTANCE.format(billingClient?.toString()))
     }
 
     /**
