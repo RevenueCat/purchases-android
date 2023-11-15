@@ -2776,7 +2776,7 @@ class BillingWrapperTest {
             }
         )
 
-        lock.await(2, TimeUnit.SECONDS)
+        lock.await(300, TimeUnit.MILLISECONDS)
         assertThat(lock.count).isEqualTo(0)
 
         assertThat(numCallbacks.get()).isEqualTo(1)
