@@ -14,12 +14,9 @@ import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.StoreProductsCallback
 import com.revenuecat.purchases.common.between
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
-import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.log
-import com.revenuecat.purchases.google.billingResponseToPurchasesError
 import com.revenuecat.purchases.google.buildQueryProductDetailsParams
 import com.revenuecat.purchases.google.toGoogleProductType
-import com.revenuecat.purchases.google.toHumanReadableDescription
 import com.revenuecat.purchases.google.toStoreProducts
 import com.revenuecat.purchases.strings.OfferingStrings
 import java.util.Date
@@ -40,6 +37,9 @@ internal class QueryProductDetailsUseCase(
     val withConnectedClient: (BillingClient.() -> Unit) -> Unit,
     executeRequestOnUIThread: ((PurchasesError?) -> Unit) -> Unit,
 ) : UseCase<List<ProductDetails>>(onError, executeRequestOnUIThread) {
+
+    override val errorMessage: String
+        get() = "Error when fetching products"
 
     override fun executeAsync() {
         val nonEmptyProductIds = useCaseParams.productIds.filter { it.isNotEmpty() }.toSet()
@@ -78,18 +78,6 @@ internal class QueryProductDetailsUseCase(
 
         val storeProducts = received.toStoreProducts()
         onReceive(storeProducts)
-    }
-
-    override fun forwardError(billingResult: BillingResult, onError: PurchasesErrorCallback) {
-        log(
-            LogIntent.GOOGLE_ERROR,
-            OfferingStrings.FETCHING_PRODUCTS_ERROR.format(billingResult.toHumanReadableDescription()),
-        )
-        onError(
-            billingResult.responseCode.billingResponseToPurchasesError(
-                "Error when fetching products. ${billingResult.toHumanReadableDescription()}",
-            ).also { errorLog(it) },
-        )
     }
 
     @Synchronized
