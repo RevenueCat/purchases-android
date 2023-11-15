@@ -2,7 +2,7 @@ package com.revenuecat.purchases.google
 
 import com.android.billingclient.api.BillingClient.BillingResponseCode
 
-sealed class BillingResponse {
+internal sealed class BillingResponse {
 
     object FeatureNotSupported : BillingResponse()
     object ServiceDisconnected : BillingResponse()
