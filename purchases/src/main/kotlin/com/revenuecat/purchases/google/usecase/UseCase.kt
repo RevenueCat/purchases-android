@@ -67,6 +67,7 @@ internal abstract class UseCase<T>(
             BillingResponse.Error,
             -> {
                 if (retryAttempt < maxRetries) {
+                    retryAttempt++
                     executeAsync()
                 } else {
                     forwardError(billingResult, onError)

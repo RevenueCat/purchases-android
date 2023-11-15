@@ -16,6 +16,8 @@ import com.android.billingclient.api.ProductDetailsResponseListener
 import com.android.billingclient.api.PurchasesUpdatedListener
 import com.android.billingclient.api.QueryProductDetailsParams
 import com.revenuecat.purchases.ProductType
+import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.caching.DeviceCache
@@ -33,8 +35,8 @@ import io.mockk.just
 import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
-import org.assertj.core.api.Assertions
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.fail
 import org.assertj.core.api.AssertionsForClassTypes
 import org.junit.After
 import org.junit.Before
@@ -216,7 +218,7 @@ class QueryProductDetailsUseCaseTest {
             ProductType.SUBS,
             emptySet(),
             {
-                assertThat(it.isEmpty())
+                assertThat(it).isEmpty()
             }, {
                 AssertionsForClassTypes.fail("shouldn't be an error")
             })
@@ -232,7 +234,7 @@ class QueryProductDetailsUseCaseTest {
             ProductType.SUBS,
             setOf("", ""),
             {
-                assertThat(it.isEmpty())
+                assertThat(it).isEmpty()
             }, {
                 AssertionsForClassTypes.fail("shouldn't be an error")
             })
@@ -267,7 +269,7 @@ class QueryProductDetailsUseCaseTest {
                 numCallbacks++
             })
 
-        assertThat(numCallbacks == 1)
+        assertThat(numCallbacks).isEqualTo(1)
     }
 
     @Test
@@ -333,7 +335,7 @@ class QueryProductDetailsUseCaseTest {
                 receivedList = received
             },
             { _ ->
-                AssertionsForClassTypes.fail("shouldn't be an error")
+                fail("shouldn't be an error")
             },
             withConnectedClient = {
                 it.invoke(mockClient)
@@ -363,6 +365,198 @@ class QueryProductDetailsUseCaseTest {
 
         assertThat(receivedList).isNotNull
         assertThat(receivedList!!.size).isOne
+    }
+
+    @Test
+    fun `If service returns NETWORK_ERROR, re-execute a max of 3 times`() {
+        val slot = slot<ProductDetailsResponseListener>()
+        val queryProductDetailsStubbing = every {
+            mockClient.queryProductDetailsAsync(
+                any(),
+                capture(slot)
+            )
+        }
+        val productIDs = setOf("product_a")
+        var receivedError: PurchasesError? = null
+        var timesRetried = 0
+        val useCase = QueryProductDetailsUseCase(
+            QueryProductDetailsUseCaseParams(
+                mockDateProvider,
+                mockDiagnosticsTracker,
+                productIDs,
+                ProductType.SUBS,
+            ),
+            { _ ->
+                fail("shouldn't be success")
+            },
+            { error ->
+                receivedError = error
+            },
+            withConnectedClient = {
+                timesRetried++
+                it.invoke(mockClient)
+            },
+            executeRequestOnUIThread = {
+                queryProductDetailsStubbing answers {
+                    slot.captured.onProductDetailsResponse(
+                        BillingClient.BillingResponseCode.NETWORK_ERROR.buildResult(),
+                        emptyList()
+                    )
+                }
+
+                it.invoke(null)
+            },
+        )
+
+        useCase.run()
+
+        assertThat(timesRetried).isEqualTo(4) // First attempt plus 3 retries
+        assertThat(receivedError).isNotNull
+        assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.NetworkError)
+    }
+
+    @Test
+    fun `If service returns SERVICE_UNAVAILABLE, re-execute a max of 3 times`() {
+        val slot = slot<ProductDetailsResponseListener>()
+        val queryProductDetailsStubbing = every {
+            mockClient.queryProductDetailsAsync(
+                any(),
+                capture(slot)
+            )
+        }
+        val productIDs = setOf("product_a")
+        var receivedError: PurchasesError? = null
+        var timesRetried = 0
+        val useCase = QueryProductDetailsUseCase(
+            QueryProductDetailsUseCaseParams(
+                mockDateProvider,
+                mockDiagnosticsTracker,
+                productIDs,
+                ProductType.SUBS,
+            ),
+            { _ ->
+                fail("shouldn't be success")
+            },
+            { error ->
+                receivedError = error
+            },
+            withConnectedClient = {
+                timesRetried++
+                it.invoke(mockClient)
+            },
+            executeRequestOnUIThread = {
+                queryProductDetailsStubbing answers {
+                    slot.captured.onProductDetailsResponse(
+                        BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE.buildResult(),
+                        emptyList()
+                    )
+                }
+
+                it.invoke(null)
+            },
+        )
+
+        useCase.run()
+
+        assertThat(timesRetried).isEqualTo(4) // First attempt plus 3 retries
+        assertThat(receivedError).isNotNull
+        assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
+    }
+
+    @Test
+    fun `If service returns ERROR, re-execute a max of 3 times`() {
+        val slot = slot<ProductDetailsResponseListener>()
+        val queryProductDetailsStubbing = every {
+            mockClient.queryProductDetailsAsync(
+                any(),
+                capture(slot)
+            )
+        }
+        val productIDs = setOf("product_a")
+        var receivedError: PurchasesError? = null
+        var timesRetried = 0
+        val useCase = QueryProductDetailsUseCase(
+            QueryProductDetailsUseCaseParams(
+                mockDateProvider,
+                mockDiagnosticsTracker,
+                productIDs,
+                ProductType.SUBS,
+            ),
+            { _ ->
+                fail("shouldn't be success")
+            },
+            { error ->
+                receivedError = error
+            },
+            withConnectedClient = {
+                timesRetried++
+                it.invoke(mockClient)
+            },
+            executeRequestOnUIThread = {
+                queryProductDetailsStubbing answers {
+                    slot.captured.onProductDetailsResponse(
+                        BillingClient.BillingResponseCode.ERROR.buildResult(),
+                        emptyList()
+                    )
+                }
+
+                it.invoke(null)
+            },
+        )
+
+        useCase.run()
+
+        assertThat(timesRetried).isEqualTo(4) // First attempt plus 3 retries
+        assertThat(receivedError).isNotNull
+        assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
+    }
+
+    @Test
+    fun `If service returns ITEM_UNAVAILABLE, doesn't retry`() {
+        val slot = slot<ProductDetailsResponseListener>()
+        val queryProductDetailsStubbing = every {
+            mockClient.queryProductDetailsAsync(
+                any(),
+                capture(slot)
+            )
+        }
+        val productIDs = setOf("product_a")
+        var receivedError: PurchasesError? = null
+        var timesRetried = 0
+        val useCase = QueryProductDetailsUseCase(
+            QueryProductDetailsUseCaseParams(
+                mockDateProvider,
+                mockDiagnosticsTracker,
+                productIDs,
+                ProductType.SUBS,
+            ),
+            { _ ->
+                fail("shouldn't be success")
+            },
+            { error ->
+                receivedError = error
+            },
+            withConnectedClient = {
+                timesRetried++
+                it.invoke(mockClient)
+            },
+            executeRequestOnUIThread = {
+                queryProductDetailsStubbing answers {
+                    slot.captured.onProductDetailsResponse(
+                        BillingClient.BillingResponseCode.ITEM_UNAVAILABLE.buildResult(),
+                        emptyList()
+                    )
+                }
+
+                it.invoke(null)
+            },
+        )
+
+        useCase.run()
+
+        assertThat(timesRetried).isEqualTo(1)
+        assertThat(receivedError).isNotNull
+        assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.ProductNotAvailableForPurchaseError)
     }
 
     private fun mockEmptyProductDetailsResponse() {
