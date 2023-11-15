@@ -85,6 +85,7 @@ import java.lang.Thread.sleep
 import java.util.Date
 import java.util.Locale
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -2577,7 +2578,9 @@ class BillingWrapperTest {
         val numCallbacks = AtomicInteger(0)
 
         val slot = slot<PurchasesResponseListener>()
-        val lock = CountDownLatch(3)
+        // queryPurchasesAsync is called twice, so 4 would come from calls to onQueryPurchasesResponse
+        // and 1 for the onSuccess
+        val lock = CountDownLatch(5)
         every {
             mockClient.queryPurchasesAsync(
                 any<QueryPurchasesParams>(),
@@ -2607,7 +2610,7 @@ class BillingWrapperTest {
             }
         )
 
-        lock.await()
+        lock.await(300, TimeUnit.MILLISECONDS)
         assertThat(lock.count).isEqualTo(0)
 
         assertThat(numCallbacks.get()).isEqualTo(1)

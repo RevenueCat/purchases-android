@@ -23,6 +23,7 @@ import com.revenuecat.purchases.google.toHumanReadableDescription
 import com.revenuecat.purchases.google.toStoreProducts
 import com.revenuecat.purchases.strings.OfferingStrings
 import java.util.Date
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.time.Duration
 
 internal data class QueryProductDetailsUseCaseParams(
@@ -98,17 +99,16 @@ internal class QueryProductDetailsUseCase(
         params: QueryProductDetailsParams,
         listener: ProductDetailsResponseListener,
     ) {
-        var hasResponded = false
+        val hasResponded = AtomicBoolean(false)
         val requestStartTime = useCaseParams.dateProvider.now
         billingClient.queryProductDetailsAsync(params) { billingResult, productDetailsList ->
-            if (hasResponded) {
+            if (hasResponded.getAndSet(true)) {
                 log(
                     LogIntent.GOOGLE_ERROR,
                     OfferingStrings.EXTRA_QUERY_PRODUCT_DETAILS_RESPONSE.format(billingResult.responseCode),
                 )
                 return@queryProductDetailsAsync
             }
-            hasResponded = true
             trackGoogleQueryProductDetailsRequestIfNeeded(productType, billingResult, requestStartTime)
             listener.onProductDetailsResponse(billingResult, productDetailsList)
         }

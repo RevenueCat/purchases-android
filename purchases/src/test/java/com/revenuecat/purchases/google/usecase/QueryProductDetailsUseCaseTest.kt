@@ -34,6 +34,7 @@ import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
 import org.assertj.core.api.Assertions
+import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.AssertionsForClassTypes
 import org.junit.After
 import org.junit.Before
@@ -42,6 +43,7 @@ import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import java.util.Date
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.atomic.AtomicInteger
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
@@ -157,8 +159,8 @@ class QueryProductDetailsUseCaseTest {
                 AssertionsForClassTypes.fail("shouldn't be an error")
             })
         wrapper.onBillingSetupFinished(billingClientOKResult)
-        Assertions.assertThat(receivedList).isNotNull
-        Assertions.assertThat(receivedList!!.size).isZero
+        assertThat(receivedList).isNotNull
+        assertThat(receivedList!!.size).isZero
     }
 
     @Test
@@ -182,8 +184,8 @@ class QueryProductDetailsUseCaseTest {
                 AssertionsForClassTypes.fail("shouldn't be an error")
             })
 
-        Assertions.assertThat(slot.isCaptured).isTrue
-        Assertions.assertThat(slot.captured.productList[0].productType).isEqualTo(BillingClient.ProductType.INAPP)
+        assertThat(slot.isCaptured).isTrue
+        assertThat(slot.captured.productList[0].productType).isEqualTo(BillingClient.ProductType.INAPP)
     }
 
     @Test
@@ -202,10 +204,10 @@ class QueryProductDetailsUseCaseTest {
                 AssertionsForClassTypes.fail("shouldn't be an error")
             })
 
-        Assertions.assertThat(slot.captured).isNotNull
+        assertThat(slot.captured).isNotNull
         val queryProductDetailsParamsProductList = slot.captured.productList
         val queriedProductIds = queryProductDetailsParamsProductList.map { it.productId }
-        Assertions.assertThat(queriedProductIds).isEqualTo(productIdsSet.filter { it.isNotEmpty() })
+        assertThat(queriedProductIds).isEqualTo(productIdsSet.filter { it.isNotEmpty() })
     }
 
     @Test
@@ -214,7 +216,7 @@ class QueryProductDetailsUseCaseTest {
             ProductType.SUBS,
             emptySet(),
             {
-                Assertions.assertThat(it.isEmpty())
+                assertThat(it.isEmpty())
             }, {
                 AssertionsForClassTypes.fail("shouldn't be an error")
             })
@@ -230,7 +232,7 @@ class QueryProductDetailsUseCaseTest {
             ProductType.SUBS,
             setOf("", ""),
             {
-                Assertions.assertThat(it.isEmpty())
+                assertThat(it.isEmpty())
             }, {
                 AssertionsForClassTypes.fail("shouldn't be an error")
             })
@@ -265,15 +267,15 @@ class QueryProductDetailsUseCaseTest {
                 numCallbacks++
             })
 
-        Assertions.assertThat(numCallbacks == 1)
+        assertThat(numCallbacks == 1)
     }
 
     @Test
     fun `queryProductDetailsAsync only calls one response when BillingClient responds twice in separate threads`() {
-        var numCallbacks = 0
+        val numCallbacks = AtomicInteger(0)
 
         val slot = slot<ProductDetailsResponseListener>()
-        val lock = CountDownLatch(2)
+        val lock = CountDownLatch(3)
         every {
             mockClient.queryProductDetailsAsync(
                 any(),
@@ -296,17 +298,16 @@ class QueryProductDetailsUseCaseTest {
             setOf("asdf"),
             {
                 // ensuring we don't hit an edge case where numCallbacks doesn't increment before the final assert
-                handler.post {
-                    numCallbacks++
-                }
+                numCallbacks.incrementAndGet()
+                lock.countDown()
             }, {
                 AssertionsForClassTypes.fail("shouldn't be an error")
             })
 
         lock.await()
-        Assertions.assertThat(lock.count).isEqualTo(0)
+        assertThat(lock.count).isEqualTo(0)
 
-        Assertions.assertThat(numCallbacks).isEqualTo(1)
+        assertThat(numCallbacks.get()).isEqualTo(1)
     }
 
     @Test
@@ -360,8 +361,8 @@ class QueryProductDetailsUseCaseTest {
 
         useCase.run()
 
-        Assertions.assertThat(receivedList).isNotNull
-        Assertions.assertThat(receivedList!!.size).isOne
+        assertThat(receivedList).isNotNull
+        assertThat(receivedList!!.size).isOne
     }
 
     private fun mockEmptyProductDetailsResponse() {
