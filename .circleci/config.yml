@@ -570,10 +570,7 @@ jobs:
 
   run-revenuecatui-ui-tests:
     description: "Run RevenueCatUI UI tests for Android in CircleCI"
-    executor:
-      name: android/android-machine
-      resource-class: large
-      tag: 2023.11.1
+    <<: *android-executor
     steps:
       - checkout
       - install-sdkman
@@ -587,9 +584,8 @@ jobs:
       - run:
           command: |
             ./gradlew ui:revenuecatui:connectedDebugAndroidTest
-      - android/save-gradle-cache
       - store_test_results:
-          path: ui/revenuecatui/build/reports/androidTests/connected/**/*.xml
+          path: ui/revenuecatui/build/outputs/androidTest-results/connected/**/*.xml
 
 workflows:
   version: 2
