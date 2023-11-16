@@ -40,4 +40,6 @@ internal object BillingStrings {
     const val BILLING_CLIENT_RETRY_ALREADY_SCHEDULED = "BillingClient connection retry already scheduled. Ignoring"
     const val BILLING_INITIATE_GETTING_COUNTRY_CODE = "Billing client: Initiating getting country code."
     const val BILLING_COUNTRY_CODE = "Billing connected with country code: %s"
+    const val BILLING_STOREFRONT_CACHING = "Setting storefront cache to %s"
+    const val BILLING_STOREFRONT_NULL_FROM_CACHE = "Getting storefront from cache was null."
 }

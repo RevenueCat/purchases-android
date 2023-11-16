@@ -12,11 +12,15 @@ import com.revenuecat.purchases.common.CustomerInfoFactory
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.DefaultDateProvider
 import com.revenuecat.purchases.common.LogIntent
+import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.offlineentitlements.ProductEntitlementMapping
 import com.revenuecat.purchases.common.sha1
+import com.revenuecat.purchases.common.verboseLog
+import com.revenuecat.purchases.interfaces.StorefrontProvider
 import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.strings.BillingStrings
 import com.revenuecat.purchases.strings.OfflineEntitlementsStrings
 import com.revenuecat.purchases.strings.ReceiptStrings
 import org.json.JSONException
@@ -28,11 +32,12 @@ private val PRODUCT_ENTITLEMENT_MAPPING_CACHE_REFRESH_PERIOD = 25.hours
 private const val SHARED_PREFERENCES_PREFIX = "com.revenuecat.purchases."
 internal const val CUSTOMER_INFO_SCHEMA_VERSION = 3
 
+@Suppress("TooManyFunctions")
 internal open class DeviceCache(
     private val preferences: SharedPreferences,
     private val apiKey: String,
     private val dateProvider: DateProvider = DefaultDateProvider(),
-) {
+) : StorefrontProvider {
     companion object {
         private const val CUSTOMER_INFO_SCHEMA_VERSION_KEY = "schema_version"
         private const val CUSTOMER_INFO_VERIFICATION_RESULT_KEY = "verification_result"
@@ -44,6 +49,7 @@ internal open class DeviceCache(
     val appUserIDCacheKey: String by lazy { "$apiKeyPrefix.new" }
     internal val attributionCacheKey = "$SHARED_PREFERENCES_PREFIX.attribution"
     val tokensCacheKey: String by lazy { "$apiKeyPrefix.tokens" }
+    val storefrontCacheKey: String by lazy { "storefrontCacheKey" }
 
     private val productEntitlementMappingCacheKey: String by lazy {
         "$apiKeyPrefix.productEntitlementMapping"
@@ -175,6 +181,21 @@ internal open class DeviceCache(
     @Synchronized
     fun setCustomerInfoCacheTimestamp(appUserID: String, date: Date) {
         preferences.edit().putLong(customerInfoLastUpdatedCacheKey(appUserID), date.time).apply()
+    }
+
+    @Synchronized
+    fun setStorefront(countryCode: String) {
+        verboseLog(BillingStrings.BILLING_STOREFRONT_CACHING.format(countryCode))
+        preferences.edit().putString(storefrontCacheKey, countryCode).apply()
+    }
+
+    @Synchronized
+    override fun getStorefront(): String? {
+        val storefront = preferences.getString(storefrontCacheKey, null)
+        if (storefront == null) {
+            debugLog(BillingStrings.BILLING_STOREFRONT_NULL_FROM_CACHE)
+        }
+        return storefront
     }
 
     @Synchronized

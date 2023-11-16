@@ -32,7 +32,6 @@
     <ID>Filename:subscriberAttributesFactories.kt$com.revenuecat.purchases.subscriberattributes.subscriberAttributesFactories.kt</ID>
     <ID>Filename:subscriptionOptionConversions.kt$com.revenuecat.purchases.google.subscriptionOptionConversions.kt</ID>
     <ID>Filename:utils.kt$com.revenuecat.purchases.common.utils.kt</ID>
-    <ID>LargeClass:PurchasesOrchestrator.kt$PurchasesOrchestrator : LifecycleDelegate</ID>
     <ID>MagicNumber:SampleWeatherData.kt$SampleWeatherData.Companion$120</ID>
     <ID>MagicNumber:SampleWeatherData.kt$SampleWeatherData.Companion$20</ID>
     <ID>MagicNumber:SampleWeatherData.kt$SampleWeatherData.Companion$32</ID>
@@ -54,11 +53,8 @@
     <ID>TooGenericExceptionCaught:DeviceCache.kt$DeviceCache$e: NullPointerException</ID>
     <ID>TooGenericExceptionThrown:HTTPClient.kt$HTTPClient$throw RuntimeException(e)</ID>
     <ID>TooManyFunctions:AmazonBilling.kt$AmazonBilling : BillingAbstractProductDataResponseListenerPurchaseResponseListenerPurchaseUpdatesResponseListenerUserDataResponseListener</ID>
-    <ID>TooManyFunctions:DeviceCache.kt$DeviceCache</ID>
     <ID>TooManyFunctions:HTTPClient.kt$HTTPClient</ID>
-    <ID>TooManyFunctions:ListenerConversionsCommon.kt$com.revenuecat.purchases.ListenerConversionsCommon.kt</ID>
     <ID>TooManyFunctions:Purchases.kt$Purchases : LifecycleDelegate</ID>
-    <ID>TooManyFunctions:PurchasesOrchestrator.kt$PurchasesOrchestrator : LifecycleDelegate</ID>
     <ID>TooManyFunctions:SubscriberAttributesCache.kt$SubscriberAttributesCache</ID>
     <ID>TooManyFunctions:listenerConversions.kt$com.revenuecat.purchases.listenerConversions.kt</ID>
     <ID>UnusedParameter:SampleWeatherData.kt$SampleWeatherData.Companion$environment: Environment</ID>

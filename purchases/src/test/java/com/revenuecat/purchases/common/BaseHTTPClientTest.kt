@@ -4,12 +4,14 @@ import android.content.Context
 import com.revenuecat.purchases.DangerousSettings
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.VerificationResult
+import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.networking.ETagManager
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPRequest
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.verification.SigningManager
+import com.revenuecat.purchases.interfaces.StorefrontProvider
 import io.mockk.every
 import io.mockk.mockk
 import okhttp3.mockwebserver.MockResponse
@@ -22,13 +24,20 @@ import java.util.Locale
 
 internal abstract class BaseHTTPClientTest {
 
+    protected val countryCode = "JP"
+
     protected lateinit var server: MockWebServer
     protected lateinit var baseURL: URL
 
     protected lateinit var mockSigningManager: SigningManager
+    protected lateinit var mockStorefrontProvider: StorefrontProvider
 
     @Before
     fun setup() {
+        mockStorefrontProvider = mockk<StorefrontProvider>().apply {
+            every { getStorefront() } returns countryCode
+        }
+
         server = MockWebServer()
         baseURL = server.url("/v1").toUrl()
     }
@@ -54,11 +63,13 @@ internal abstract class BaseHTTPClientTest {
         dateProvider: DateProvider = DefaultDateProvider(),
         eTagManager: ETagManager = mockETagManager,
         signingManager: SigningManager? = null,
+        storefrontProvider: StorefrontProvider = mockStorefrontProvider
     ) = HTTPClient(
         appConfig,
         eTagManager,
         diagnosticsTracker,
         signingManager ?: mockSigningManager,
+        storefrontProvider,
         dateProvider
     )
 

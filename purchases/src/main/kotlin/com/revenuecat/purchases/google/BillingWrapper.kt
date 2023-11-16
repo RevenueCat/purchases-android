@@ -798,6 +798,7 @@ internal class BillingWrapper(
     ) {
         verboseLog(BillingStrings.BILLING_INITIATE_GETTING_COUNTRY_CODE)
         GetBillingConfigUseCase(
+            deviceCache = deviceCache,
             onReceive = { billingConfig -> onSuccess(billingConfig.countryCode) },
             onError = onError,
             withConnectedClient = ::withConnectedClient,

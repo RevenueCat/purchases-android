@@ -658,6 +658,29 @@ class DeviceCacheTest {
 
     // endregion offerings response
 
+    // region storefront
+
+    @Test
+    fun `setStorefront saves storefront in cache`() {
+        val storefront = "JP"
+        cache.setStorefront(storefront)
+        verifyAll {
+            mockEditor.putString(cache.storefrontCacheKey, storefront)
+            mockEditor.apply()
+        }
+    }
+
+    @Test
+    fun `getStorefront gets storefront from cache`() {
+        val storefront = "JP"
+        every { mockPrefs.getString(cache.storefrontCacheKey, null) } returns storefront
+        val cachedStorefront = cache.getStorefront()
+        assertThat(cachedStorefront).isNotNull
+        assertThat(cachedStorefront).isEqualTo(storefront)
+    }
+
+    // endregion storefront
+
     private fun mockString(key: String, value: String?) {
         every {
             mockPrefs.getString(eq(key), isNull())

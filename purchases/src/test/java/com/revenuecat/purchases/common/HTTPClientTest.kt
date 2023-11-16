@@ -187,6 +187,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         assertThat(request.getHeader("X-Client-Version")).isEqualTo("")
         assertThat(request.getHeader("X-Client-Bundle-ID")).isEqualTo("mock-package-name")
         assertThat(request.getHeader("X-Observer-Mode-Enabled")).isEqualTo("false")
+        assertThat(request.getHeader("X-Storefront")).isEqualTo("JP")
     }
 
     @Test
@@ -203,6 +204,23 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         val request = server.takeRequest()
 
         assertThat(request.headers.names()).doesNotContain("X-Custom-Entitlements-Computation")
+    }
+
+    @Test
+    fun `does not add storefront header if not cached`() {
+        every { mockStorefrontProvider.getStorefront() } returns null
+        val expectedResult = HTTPResult.createResult()
+        val endpoint = Endpoint.LogIn
+        enqueue(
+            endpoint,
+            expectedResult
+        )
+
+        client.performRequest(baseURL, endpoint, body = null, postFieldsToSign = null, mapOf("" to ""))
+
+        val request = server.takeRequest()
+
+        assertThat(request.headers.names()).doesNotContain("X-Storefront")
     }
 
     @Test
