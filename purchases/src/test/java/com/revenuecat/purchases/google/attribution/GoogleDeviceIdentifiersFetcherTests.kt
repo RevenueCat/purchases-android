@@ -73,7 +73,7 @@ class GoogleDeviceIdentifiersFetcherTests {
             mockContext = mockContext,
             expectedAdID = "12345",
             expectedAndroidID = "androidid",
-            expectedException = GooglePlayServicesRepairableException(1, "error", null)
+            expectedException = GooglePlayServicesRepairableException(1, "error", mockk())
         )
 
         var completionCalled = false
@@ -100,7 +100,7 @@ class GoogleDeviceIdentifiersFetcherTests {
             mockContext = mockContext,
             expectedAdID = "12345",
             expectedAndroidID = "androidid",
-            expectedException = GooglePlayServicesRepairableException(1, "error", null)
+            expectedException = GooglePlayServicesRepairableException(1, "error", mockk())
         )
 
         var completionCalled = false
