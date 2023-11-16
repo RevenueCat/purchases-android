@@ -8,6 +8,7 @@ import com.amazon.device.iap.model.ProductType
 import com.amazon.device.iap.model.Receipt
 import com.amazon.device.iap.model.UserData
 import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.PurchasesErrorCallback
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.amazon.handler.ProductDataHandler
 import com.revenuecat.purchases.amazon.handler.PurchaseHandler
@@ -40,6 +41,7 @@ import kotlin.time.Duration.Companion.hours
 @RunWith(AndroidJUnit4::class)
 class AmazonBillingTest {
     private val appUserID: String = "appUserID"
+    private val countryCode = "JP"
     private lateinit var underTest: AmazonBilling
 
     private val mockPurchasingServiceProvider = mockk<PurchasingServiceProvider>()
@@ -480,17 +482,11 @@ class AmazonBillingTest {
         underTest.startConnection()
 
         val productIds = setOf("sku", "sku_2")
-        val marketplace = "ES"
-        val dummyUserData = dummyUserData(marketplace = marketplace)
 
-        every {
-            mockUserDataHandler.getUserData(captureLambda(), any())
-        } answers {
-            lambda<(UserData) -> Unit>().captured.invoke(dummyUserData)
-        }
+        mockGetUserData()
 
         val marketplaceSlot = slot<String>()
-        val storeProducts = listOfNotNull(dummyAmazonProduct().toStoreProduct(marketplace))
+        val storeProducts = listOfNotNull(dummyAmazonProduct().toStoreProduct(countryCode))
 
         every {
             mockProductDataHandler.getProductData(productIds, capture(marketplaceSlot), captureLambda(), any())
@@ -511,7 +507,7 @@ class AmazonBillingTest {
         )
 
         assertThat(onReceiveCalled).isTrue()
-        assertThat(marketplaceSlot.captured).isEqualTo(marketplace)
+        assertThat(marketplaceSlot.captured).isEqualTo(countryCode)
     }
 
     @Test
@@ -984,6 +980,30 @@ class AmazonBillingTest {
         assertThat(receivedCorrectProductID).isEqualTo(expectedTermSku)
     }
 
+    @Test
+    fun `querying storefront success`() {
+        setup()
+        mockGetUserData()
+        var countryCode: String? = null
+        underTest.getStorefront(
+            onSuccess = { countryCode = it },
+            onError = { fail("Should be a success") },
+        )
+        assertThat(countryCode).isEqualTo(countryCode)
+    }
+
+    @Test
+    fun `querying storefront error`() {
+        setup()
+        mockGetUserDataError()
+        var error: PurchasesError? = null
+        underTest.getStorefront(
+            onSuccess = { fail("Should be a error") },
+            onError = { error = it },
+        )
+        assertThat(error?.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
+    }
+
     private fun verifyBackendCalled(
         receipt: Receipt,
         dummyUserData: UserData,
@@ -1044,6 +1064,22 @@ class AmazonBillingTest {
             )
         } answers {
             lambda<(JSONObject) -> Unit>().captured.invoke(JSONObject(successfulRVSResponse(expectedTermSku)))
+        }
+    }
+
+    private fun mockGetUserData(userData: UserData = dummyUserData(marketplace = countryCode)) {
+        every {
+            mockUserDataHandler.getUserData(captureLambda(), any())
+        } answers {
+            lambda<(UserData) -> Unit>().captured.invoke(userData)
+        }
+    }
+
+    private fun mockGetUserDataError(error: PurchasesError = PurchasesError(PurchasesErrorCode.StoreProblemError)) {
+        every {
+            mockUserDataHandler.getUserData(any(), captureLambda())
+        } answers {
+            lambda<PurchasesErrorCallback>().captured.invoke(error)
         }
     }
 

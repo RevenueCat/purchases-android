@@ -46,6 +46,7 @@ import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.sha256
 import com.revenuecat.purchases.common.toHumanReadableDescription
 import com.revenuecat.purchases.common.verboseLog
+import com.revenuecat.purchases.google.usecase.GetBillingConfigUseCase
 import com.revenuecat.purchases.google.usecase.QueryProductDetailsUseCase
 import com.revenuecat.purchases.google.usecase.QueryProductDetailsUseCaseParams
 import com.revenuecat.purchases.models.GooglePurchasingData
@@ -789,6 +790,19 @@ internal class BillingWrapper(
                 }
             }
         }
+    }
+
+    override fun getStorefront(
+        onSuccess: (String) -> Unit,
+        onError: PurchasesErrorCallback,
+    ) {
+        verboseLog(BillingStrings.BILLING_INITIATE_GETTING_COUNTRY_CODE)
+        GetBillingConfigUseCase(
+            onReceive = { billingConfig -> onSuccess(billingConfig.countryCode) },
+            onError = onError,
+            withConnectedClient = ::withConnectedClient,
+            executeRequestOnUIThread = ::executeRequestOnUIThread,
+        ).run()
     }
 
     private fun withConnectedClient(receivingFunction: BillingClient.() -> Unit) {

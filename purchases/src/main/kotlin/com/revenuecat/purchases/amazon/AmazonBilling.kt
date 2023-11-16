@@ -39,6 +39,7 @@ import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.strings.BillingStrings
 import com.revenuecat.purchases.strings.PurchaseStrings
 import com.revenuecat.purchases.strings.RestoreStrings
 import org.json.JSONException
@@ -296,6 +297,37 @@ internal class AmazonBilling constructor(
         subscriptionStatusChange: () -> Unit,
     ) {
         // No-op: Amazon doesn't have in-app messages
+    }
+
+    override fun getStorefront(
+        onSuccess: (String) -> Unit,
+        onError: PurchasesErrorCallback,
+    ) {
+        executeRequestOnUIThread { connectionError ->
+            if (connectionError == null) {
+                userDataHandler.getUserData(
+                    onSuccess = { userData ->
+                        val marketplace = userData.marketplace ?: run {
+                            onError(
+                                PurchasesError(
+                                    PurchasesErrorCode.StoreProblemError,
+                                    AmazonStrings.ERROR_USER_DATA_MARKETPLACE_NULL_STORE_PROBLEM,
+                                ),
+                            )
+                            return@getUserData
+                        }
+                        onSuccess(marketplace)
+                    },
+                    onError = { error ->
+                        errorLog(BillingStrings.BILLING_AMAZON_ERROR_STOREFRONT.format(error))
+                        onError(error)
+                    },
+                )
+            } else {
+                errorLog(BillingStrings.BILLING_CONNECTION_ERROR_STORE_COUNTRY.format(connectionError))
+                onError(connectionError)
+            }
+        }
     }
 
     private fun List<Receipt>.toMapOfReceiptHashesToRestoredPurchases(
