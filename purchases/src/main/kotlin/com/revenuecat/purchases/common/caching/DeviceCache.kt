@@ -12,6 +12,7 @@ import com.revenuecat.purchases.common.CustomerInfoFactory
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.DefaultDateProvider
 import com.revenuecat.purchases.common.LogIntent
+import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.offlineentitlements.ProductEntitlementMapping
@@ -188,7 +189,11 @@ internal open class DeviceCache(
 
     @Synchronized
     fun getStorefront(): String? {
-        return preferences.getString(storefrontCacheKey, null)
+        val storefront = preferences.getString(storefrontCacheKey, null)
+        if (storefront == null) {
+            debugLog(BillingStrings.BILLING_STOREFRONT_NULL_FROM_CACHE)
+        }
+        return storefront
     }
 
     @Synchronized
