@@ -6,7 +6,6 @@ internal object OfferingStrings {
         "More info here: https://errors.rev.cat/configuring-products"
     const val FETCHING_OFFERINGS_ERROR = "Error fetching offerings - %s"
     const val FETCHING_PRODUCTS = "Requesting products from the store with identifiers: %s"
-    const val FETCHING_PRODUCTS_ERROR = "Error when fetching products %s"
     const val FETCHING_PRODUCTS_FINISHED = "Products request finished for %s"
     const val JSON_EXCEPTION_ERROR = "JSONException when building Offerings object. Message: %s"
     const val LIST_PRODUCTS = "%s - %s"

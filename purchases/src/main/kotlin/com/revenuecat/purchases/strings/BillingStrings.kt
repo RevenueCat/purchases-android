@@ -6,7 +6,8 @@ internal object BillingStrings {
     const val BILLING_CLIENT_ERROR = "Billing Service Setup finished with error code: %s"
     const val BILLING_CLIENT_STARTING = "Starting connection for %s"
     const val BILLING_INTENT_FAILED = "Failed to launch billing intent. %s"
-    const val BILLING_SERVICE_DISCONNECTED = "Billing Service disconnected for %s"
+    const val BILLING_SERVICE_DISCONNECTED = "Billing Service disconnected"
+    const val BILLING_SERVICE_DISCONNECTED_INSTANCE = "Billing Service disconnected for %s"
     const val BILLING_SERVICE_SETUP_FINISHED = "Billing Service Setup finished for %s"
     const val BILLING_UNAVAILABLE = "Billing is not available in this device. %s"
     const val BILLING_UNAVAILABLE_LESS_THAN_3 = "Billing is not available in this device. Make sure there's an " +

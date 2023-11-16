@@ -49,7 +49,6 @@ import io.mockk.verify
 import io.mockk.verifyAll
 import io.mockk.verifyOrder
 import org.assertj.core.api.Assertions.assertThat
-import org.assertj.core.api.AssertionsForClassTypes
 import org.junit.After
 import org.junit.Assert.fail
 import org.junit.Test
@@ -1426,7 +1425,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
             receivedCanMakePayments = it
         }
         listener.captured.onBillingSetupFinished(BillingClient.BillingResponseCode.FEATURE_NOT_SUPPORTED.buildResult())
-        AssertionsForClassTypes.assertThat(receivedCanMakePayments).isFalse
+        assertThat(receivedCanMakePayments).isFalse
         verify(exactly = 1) { mockLocalBillingClient.endConnection() }
     }
 
@@ -1481,7 +1480,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
 
         listener.captured.onBillingSetupFinished(BillingClient.BillingResponseCode.BILLING_UNAVAILABLE.buildResult())
 
-        AssertionsForClassTypes.assertThat(receivedCanMakePayments).isFalse
+        assertThat(receivedCanMakePayments).isFalse
         verify(exactly = 1) { mockLocalBillingClient.endConnection() }
     }
 
@@ -1501,7 +1500,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
 
         listener.captured.onBillingSetupFinished(BillingClient.BillingResponseCode.OK.buildResult())
 
-        AssertionsForClassTypes.assertThat(receivedCanMakePayments).isFalse
+        assertThat(receivedCanMakePayments).isFalse
         verify(exactly = 1) { mockLocalBillingClient.endConnection() }
     }
 
@@ -1531,7 +1530,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
 
         listener.captured.onBillingSetupFinished(BillingClient.BillingResponseCode.OK.buildResult())
 
-        AssertionsForClassTypes.assertThat(receivedCanMakePayments).isFalse
+        assertThat(receivedCanMakePayments).isFalse
         verify(exactly = 1) { mockLocalBillingClient.endConnection() }
     }
 
@@ -1552,7 +1551,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
 
         listener.captured.onBillingSetupFinished(BillingClient.BillingResponseCode.OK.buildResult())
 
-        AssertionsForClassTypes.assertThat(receivedCanMakePayments).isTrue
+        assertThat(receivedCanMakePayments).isTrue
         verify(exactly = 1) { mockLocalBillingClient.endConnection() }
     }
 

@@ -19,13 +19,11 @@ import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.ConsumeParams
 import com.android.billingclient.api.InAppMessageParams
 import com.android.billingclient.api.InAppMessageResult
-import com.android.billingclient.api.ProductDetailsResponseListener
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchaseHistoryRecord
 import com.android.billingclient.api.PurchaseHistoryResponseListener
 import com.android.billingclient.api.PurchasesResponseListener
 import com.android.billingclient.api.PurchasesUpdatedListener
-import com.android.billingclient.api.QueryProductDetailsParams
 import com.android.billingclient.api.QueryPurchasesParams
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
@@ -48,6 +46,8 @@ import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.sha256
 import com.revenuecat.purchases.common.toHumanReadableDescription
 import com.revenuecat.purchases.common.verboseLog
+import com.revenuecat.purchases.google.usecase.QueryProductDetailsUseCase
+import com.revenuecat.purchases.google.usecase.QueryProductDetailsUseCaseParams
 import com.revenuecat.purchases.models.GooglePurchasingData
 import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.InAppMessageType
@@ -174,66 +174,27 @@ internal class BillingWrapper(
         }
     }
 
+    @Suppress("LongMethod")
     override fun queryProductDetailsAsync(
         productType: ProductType,
         productIds: Set<String>,
         onReceive: StoreProductsCallback,
         onError: PurchasesErrorCallback,
     ) {
-        val nonEmptyProductIds = productIds.filter { it.isNotEmpty() }.toSet()
-
-        if (nonEmptyProductIds.isEmpty()) {
-            log(LogIntent.DEBUG, OfferingStrings.EMPTY_PRODUCT_ID_LIST)
-            onReceive(emptyList())
-            return
-        }
-
         log(LogIntent.DEBUG, OfferingStrings.FETCHING_PRODUCTS.format(productIds.joinToString()))
-        executeRequestOnUIThread { connectionError ->
-            if (connectionError == null) {
-                val googleType = productType.toGoogleProductType() ?: BillingClient.ProductType.INAPP
-                val params = googleType.buildQueryProductDetailsParams(nonEmptyProductIds)
-
-                withConnectedClient {
-                    queryProductDetailsAsyncEnsuringOneResponse(
-                        googleType,
-                        params,
-                    ) { billingResult, productDetailsList ->
-                        if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
-                            log(
-                                LogIntent.DEBUG,
-                                OfferingStrings.FETCHING_PRODUCTS_FINISHED
-                                    .format(productIds.joinToString()),
-                            )
-                            log(
-                                LogIntent.PURCHASE,
-                                OfferingStrings.RETRIEVED_PRODUCTS
-                                    .format(productDetailsList.joinToString { it.toString() }),
-                            )
-                            productDetailsList.takeUnless { it.isEmpty() }?.forEach {
-                                log(LogIntent.PURCHASE, OfferingStrings.LIST_PRODUCTS.format(it.productId, it))
-                            }
-
-                            val storeProducts = productDetailsList.toStoreProducts()
-                            onReceive(storeProducts)
-                        } else {
-                            log(
-                                LogIntent.GOOGLE_ERROR,
-                                OfferingStrings.FETCHING_PRODUCTS_ERROR
-                                    .format(billingResult.toHumanReadableDescription()),
-                            )
-                            onError(
-                                billingResult.responseCode.billingResponseToPurchasesError(
-                                    "Error when fetching products. ${billingResult.toHumanReadableDescription()}",
-                                ).also { errorLog(it) },
-                            )
-                        }
-                    }
-                }
-            } else {
-                onError(connectionError)
-            }
-        }
+        val useCase = QueryProductDetailsUseCase(
+            QueryProductDetailsUseCaseParams(
+                dateProvider,
+                diagnosticsTrackerIfEnabled,
+                productIds,
+                productType,
+            ),
+            onReceive,
+            onError,
+            ::withConnectedClient,
+            ::executeRequestOnUIThread,
+        )
+        useCase.run()
     }
 
     override fun makePurchaseAsync(
@@ -693,6 +654,7 @@ internal class BillingWrapper(
                     reconnectMilliseconds = RECONNECT_TIMER_START_MILLISECONDS
                     trackProductDetailsNotSupportedIfNeeded()
                 }
+
                 BillingClient.BillingResponseCode.FEATURE_NOT_SUPPORTED,
                 BillingClient.BillingResponseCode.BILLING_UNAVAILABLE,
                 -> {
@@ -725,6 +687,7 @@ internal class BillingWrapper(
                     // Can't call executePendingRequests because it will not do anything since it checks for isReady()
                     sendErrorsToAllPendingRequests(error)
                 }
+
                 BillingClient.BillingResponseCode.ERROR,
                 BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE,
                 BillingClient.BillingResponseCode.USER_CANCELED,
@@ -738,6 +701,7 @@ internal class BillingWrapper(
                     )
                     retryBillingServiceConnectionWithExponentialBackoff()
                 }
+
                 BillingClient.BillingResponseCode.ITEM_UNAVAILABLE,
                 BillingClient.BillingResponseCode.ITEM_ALREADY_OWNED,
                 BillingClient.BillingResponseCode.ITEM_NOT_OWNED,
@@ -748,6 +712,7 @@ internal class BillingWrapper(
                             .format(billingResult.toHumanReadableDescription()),
                     )
                 }
+
                 BillingClient.BillingResponseCode.DEVELOPER_ERROR -> {
                     // Billing service is already trying to connect. Don't do anything.
                 }
@@ -756,7 +721,7 @@ internal class BillingWrapper(
     }
 
     override fun onBillingServiceDisconnected() {
-        log(LogIntent.WARNING, BillingStrings.BILLING_SERVICE_DISCONNECTED.format(billingClient?.toString()))
+        log(LogIntent.WARNING, BillingStrings.BILLING_SERVICE_DISCONNECTED_INSTANCE.format(billingClient?.toString()))
     }
 
     /**
@@ -813,10 +778,12 @@ internal class BillingWrapper(
                         InAppMessageResult.InAppMessageResponseCode.NO_ACTION_NEEDED -> {
                             verboseLog(BillingStrings.BILLING_INAPP_MESSAGE_NONE)
                         }
+
                         InAppMessageResult.InAppMessageResponseCode.SUBSCRIPTION_STATUS_UPDATED -> {
                             debugLog(BillingStrings.BILLING_INAPP_MESSAGE_UPDATE)
                             subscriptionStatusChange()
                         }
+
                         else -> errorLog(BillingStrings.BILLING_INAPP_MESSAGE_UNEXPECTED_CODE.format(responseCode))
                     }
                 }
@@ -867,26 +834,6 @@ internal class BillingWrapper(
         }
     }
 
-    private fun BillingClient.queryProductDetailsAsyncEnsuringOneResponse(
-        @BillingClient.ProductType productType: String,
-        params: QueryProductDetailsParams,
-        listener: ProductDetailsResponseListener,
-    ) {
-        val hasResponded = AtomicBoolean(false)
-        val requestStartTime = dateProvider.now
-        queryProductDetailsAsync(params) { billingResult, productDetailsList ->
-            if (hasResponded.getAndSet(true)) {
-                log(
-                    LogIntent.GOOGLE_ERROR,
-                    OfferingStrings.EXTRA_QUERY_PRODUCT_DETAILS_RESPONSE.format(billingResult.responseCode),
-                )
-                return@queryProductDetailsAsync
-            }
-            trackGoogleQueryProductDetailsRequestIfNeeded(productType, billingResult, requestStartTime)
-            listener.onProductDetailsResponse(billingResult, productDetailsList)
-        }
-    }
-
     private fun BillingClient.queryPurchaseHistoryAsyncEnsuringOneResponse(
         @BillingClient.ProductType productType: String,
         listener: PurchaseHistoryResponseListener,
@@ -932,19 +879,6 @@ internal class BillingWrapper(
             trackGoogleQueryPurchasesRequestIfNeeded(productType, billingResult, requestStartTime)
             listener.onQueryPurchasesResponse(billingResult, purchases)
         }
-    }
-
-    private fun trackGoogleQueryProductDetailsRequestIfNeeded(
-        @BillingClient.ProductType productType: String,
-        billingResult: BillingResult,
-        requestStartTime: Date,
-    ) {
-        diagnosticsTrackerIfEnabled?.trackGoogleQueryProductDetailsRequest(
-            productType,
-            billingResult.responseCode,
-            billingResult.debugMessage,
-            responseTime = Duration.between(requestStartTime, dateProvider.now),
-        )
     }
 
     private fun trackGoogleQueryPurchasesRequestIfNeeded(

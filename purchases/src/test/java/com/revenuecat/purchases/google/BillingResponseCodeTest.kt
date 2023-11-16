@@ -62,4 +62,12 @@ class BillingResponseCodeTest {
             assertThat(billingResponseCode.getBillingResponseCodeName()).isEqualTo(name)
         }
     }
+
+    @Test
+    fun `BillingResponseCode covers all cases`() {
+        val allPossibleBillingResponseCodes = BillingClient.BillingResponseCode::class.java.declaredFields
+        allPossibleBillingResponseCodes.map{ it.get(null) as Int }.forEach {
+            assertThat(BillingResponse.fromCode(it)).isNotEqualTo(BillingResponse.Unknown)
+        }
+    }
 }
