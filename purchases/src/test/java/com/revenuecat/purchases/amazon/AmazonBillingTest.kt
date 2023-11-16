@@ -18,6 +18,7 @@ import com.revenuecat.purchases.amazon.helpers.dummyAmazonProduct
 import com.revenuecat.purchases.amazon.helpers.dummyReceipt
 import com.revenuecat.purchases.amazon.helpers.dummyUserData
 import com.revenuecat.purchases.amazon.helpers.successfulRVSResponse
+import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.StoreProduct
@@ -846,6 +847,24 @@ class AmazonBillingTest {
 
         verify(exactly = 1) {
             mockPurchasingServiceProvider.registerListener(any(), any())
+        }
+    }
+
+    @Test
+    fun `on connection, stateListener called`() {
+        setup()
+        val stateListenerMock = mockk<BillingAbstract.StateListener>()
+        underTest.stateListener = stateListenerMock
+        every { stateListenerMock.onConnected() } just Runs
+
+        every {
+            mockPurchasingServiceProvider.registerListener(mockContext, any())
+        } just Runs
+
+        underTest.startConnection()
+
+        verify(exactly = 1) {
+            stateListenerMock.onConnected()
         }
     }
 
