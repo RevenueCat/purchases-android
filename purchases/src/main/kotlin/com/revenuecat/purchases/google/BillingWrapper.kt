@@ -49,6 +49,8 @@ import com.revenuecat.purchases.common.verboseLog
 import com.revenuecat.purchases.google.usecase.GetBillingConfigUseCase
 import com.revenuecat.purchases.google.usecase.QueryProductDetailsUseCase
 import com.revenuecat.purchases.google.usecase.QueryProductDetailsUseCaseParams
+import com.revenuecat.purchases.google.usecase.QueryPurchaseHistoryUseCase
+import com.revenuecat.purchases.google.usecase.QueryPurchaseHistoryUseCaseParams
 import com.revenuecat.purchases.models.GooglePurchasingData
 import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.InAppMessageType
@@ -290,33 +292,18 @@ internal class BillingWrapper(
         onReceivePurchaseHistoryError: (PurchasesError) -> Unit,
     ) {
         log(LogIntent.DEBUG, RestoreStrings.QUERYING_PURCHASE_HISTORY.format(productType))
-        executeRequestOnUIThread { connectionError ->
-            if (connectionError == null) {
-                withConnectedClient {
-                    queryPurchaseHistoryAsyncEnsuringOneResponse(productType) {
-                            billingResult, purchaseHistoryRecordList ->
-                        if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
-                            purchaseHistoryRecordList.takeUnless { it.isNullOrEmpty() }?.forEach {
-                                log(
-                                    LogIntent.RC_PURCHASE_SUCCESS,
-                                    RestoreStrings.PURCHASE_HISTORY_RETRIEVED
-                                        .format(it.toHumanReadableDescription()),
-                                )
-                            } ?: log(LogIntent.DEBUG, RestoreStrings.PURCHASE_HISTORY_EMPTY)
-                            onReceivePurchaseHistory(purchaseHistoryRecordList ?: emptyList())
-                        } else {
-                            onReceivePurchaseHistoryError(
-                                billingResult.responseCode.billingResponseToPurchasesError(
-                                    "Error receiving purchase history. ${billingResult.toHumanReadableDescription()}",
-                                ).also { errorLog(it) },
-                            )
-                        }
-                    }
-                }
-            } else {
-                onReceivePurchaseHistoryError(connectionError)
-            }
-        }
+        val useCase = QueryPurchaseHistoryUseCase(
+            QueryPurchaseHistoryUseCaseParams(
+                dateProvider,
+                diagnosticsTrackerIfEnabled,
+                productType,
+            ),
+            onReceivePurchaseHistory,
+            onReceivePurchaseHistoryError,
+            ::withConnectedClient,
+            ::executeRequestOnUIThread,
+        )
+        useCase.run()
     }
 
     override fun queryAllPurchases(
