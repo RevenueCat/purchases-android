@@ -208,7 +208,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
 
     @Test
     fun `does not add storefront header if not cached`() {
-        every { mockDeviceCache.getStorefront() } returns null
+        every { mockStorefrontProvider.getStorefront() } returns null
         val expectedResult = HTTPResult.createResult()
         val endpoint = Endpoint.LogIn
         enqueue(

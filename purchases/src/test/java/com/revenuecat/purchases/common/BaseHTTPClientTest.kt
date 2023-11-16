@@ -11,6 +11,7 @@ import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPRequest
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.verification.SigningManager
+import com.revenuecat.purchases.interfaces.StorefrontProvider
 import io.mockk.every
 import io.mockk.mockk
 import okhttp3.mockwebserver.MockResponse
@@ -29,11 +30,11 @@ internal abstract class BaseHTTPClientTest {
     protected lateinit var baseURL: URL
 
     protected lateinit var mockSigningManager: SigningManager
-    protected lateinit var mockDeviceCache: DeviceCache
+    protected lateinit var mockStorefrontProvider: StorefrontProvider
 
     @Before
     fun setup() {
-        mockDeviceCache = mockk<DeviceCache>().apply {
+        mockStorefrontProvider = mockk<StorefrontProvider>().apply {
             every { getStorefront() } returns countryCode
         }
 
@@ -62,13 +63,13 @@ internal abstract class BaseHTTPClientTest {
         dateProvider: DateProvider = DefaultDateProvider(),
         eTagManager: ETagManager = mockETagManager,
         signingManager: SigningManager? = null,
-        deviceCache: DeviceCache = mockDeviceCache
+        storefrontProvider: StorefrontProvider = mockStorefrontProvider
     ) = HTTPClient(
         appConfig,
         eTagManager,
         diagnosticsTracker,
         signingManager ?: mockSigningManager,
-        deviceCache,
+        storefrontProvider,
         dateProvider
     )
 

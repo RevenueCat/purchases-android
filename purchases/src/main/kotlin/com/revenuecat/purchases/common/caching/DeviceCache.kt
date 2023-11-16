@@ -18,6 +18,7 @@ import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.offlineentitlements.ProductEntitlementMapping
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.verboseLog
+import com.revenuecat.purchases.interfaces.StorefrontProvider
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.strings.BillingStrings
 import com.revenuecat.purchases.strings.OfflineEntitlementsStrings
@@ -31,11 +32,12 @@ private val PRODUCT_ENTITLEMENT_MAPPING_CACHE_REFRESH_PERIOD = 25.hours
 private const val SHARED_PREFERENCES_PREFIX = "com.revenuecat.purchases."
 internal const val CUSTOMER_INFO_SCHEMA_VERSION = 3
 
+@Suppress("TooManyFunctions")
 internal open class DeviceCache(
     private val preferences: SharedPreferences,
     private val apiKey: String,
     private val dateProvider: DateProvider = DefaultDateProvider(),
-) {
+) : StorefrontProvider {
     companion object {
         private const val CUSTOMER_INFO_SCHEMA_VERSION_KEY = "schema_version"
         private const val CUSTOMER_INFO_VERIFICATION_RESULT_KEY = "verification_result"
@@ -188,7 +190,7 @@ internal open class DeviceCache(
     }
 
     @Synchronized
-    fun getStorefront(): String? {
+    override fun getStorefront(): String? {
         val storefront = preferences.getString(storefrontCacheKey, null)
         if (storefront == null) {
             debugLog(BillingStrings.BILLING_STOREFRONT_NULL_FROM_CACHE)

@@ -9,7 +9,6 @@ import android.os.Build
 import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.VerificationResult
-import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.networking.ETagManager
 import com.revenuecat.purchases.common.networking.Endpoint
@@ -20,6 +19,7 @@ import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
 import com.revenuecat.purchases.common.verification.SignatureVerificationException
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import com.revenuecat.purchases.common.verification.SigningManager
+import com.revenuecat.purchases.interfaces.StorefrontProvider
 import com.revenuecat.purchases.strings.NetworkStrings
 import com.revenuecat.purchases.utils.filterNotNullValues
 import org.json.JSONException
@@ -43,7 +43,7 @@ internal class HTTPClient(
     private val eTagManager: ETagManager,
     private val diagnosticsTrackerIfEnabled: DiagnosticsTracker?,
     val signingManager: SigningManager,
-    private val deviceCache: DeviceCache,
+    private val storefrontProvider: StorefrontProvider,
     private val dateProvider: DateProvider = DefaultDateProvider(),
     private val mapConverter: MapConverter = MapConverter(),
 ) {
@@ -273,7 +273,7 @@ internal class HTTPClient(
             "X-Nonce" to nonce,
             HTTPRequest.POST_PARAMS_HASH to postFieldsToSignHeader,
             "X-Custom-Entitlements-Computation" to if (appConfig.customEntitlementComputation) "true" else null,
-            "X-Storefront" to deviceCache.getStorefront(),
+            "X-Storefront" to storefrontProvider.getStorefront(),
         )
             .plus(authenticationHeaders)
             .plus(eTagManager.getETagHeaders(urlPath, shouldSignResponse, refreshETag))
