@@ -36,6 +36,8 @@ internal object AmazonStrings {
         "Failed to get user data. Call is not supported."
     const val ERROR_USER_DATA_STORE_PROBLEM =
         "Failed to get user data. There was an Amazon store problem."
+    const val ERROR_USER_DATA_MARKETPLACE_NULL_STORE_PROBLEM =
+        "Failed to get marketplace from user data. It was null."
     const val PRODUCT_PRICE_MISSING = "Product %s is missing a price. This is common if you're trying to load a " +
         "product SKU instead of a subscription term SKU. Make sure you configure the subscription term SKUs " +
         "in the RevenueCat dashboard."

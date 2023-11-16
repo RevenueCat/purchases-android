@@ -103,6 +103,15 @@ internal abstract class BillingAbstract {
         subscriptionStatusChange: () -> Unit,
     )
 
+    /**
+     * Obtain store country code in ISO 3166-1-alpha-2 standard format.
+     * Null if there has been an error.
+     */
+    abstract fun getStoreCountryCode(
+        onSuccess: (String) -> Unit,
+        onError: PurchasesErrorCallback,
+    )
+
     interface PurchasesUpdatedListener {
         fun onPurchasesUpdated(purchases: List<StoreTransaction>)
         fun onPurchasesFailedToUpdate(purchasesError: PurchasesError)

@@ -22,6 +22,7 @@ import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.ReplaceProductInfo
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.currentLogHandler
+import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.debugLogsEnabled
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsSynchronizer
 import com.revenuecat.purchases.common.errorLog
@@ -53,6 +54,7 @@ import com.revenuecat.purchases.paywalls.PaywallPresentedCache
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
 import com.revenuecat.purchases.paywalls.events.PaywallEventsManager
 import com.revenuecat.purchases.strings.AttributionStrings
+import com.revenuecat.purchases.strings.BillingStrings
 import com.revenuecat.purchases.strings.ConfigureStrings
 import com.revenuecat.purchases.strings.CustomerInfoStrings
 import com.revenuecat.purchases.strings.IdentityStrings
@@ -143,6 +145,14 @@ internal class PurchasesOrchestrator constructor(
         billing.stateListener = object : BillingAbstract.StateListener {
             override fun onConnected() {
                 postPendingTransactionsHelper.syncPendingPurchaseQueue(allowSharingPlayStoreAccount)
+                billing.getStoreCountryCode(
+                    onSuccess = { countryCode ->
+                        debugLog(BillingStrings.BILLING_COUNTRY_CODE.format(countryCode))
+                    },
+                    onError = { error ->
+                        errorLog(error)
+                    },
+                )
             }
         }
         billing.purchasesUpdatedListener = getPurchasesUpdatedListener()

@@ -28,10 +28,16 @@ internal object BillingStrings {
         "BillingClient. This has been reported to occur on Samsung devices on unknown circumstances.\nException: %s"
     const val BILLING_CONNECTION_ERROR_INAPP_MESSAGES = "Error connecting to billing client to display " +
         "in-app messages: %s"
+    const val BILLING_CONNECTION_ERROR_STORE_COUNTRY = "Error connecting to billing client to get store " +
+        "country: %s"
+    const val BILLING_AMAZON_ERROR_STORE_COUNTRY = "Error obtaining store country in Amazon: %s"
+    const val BILLING_CONFIG_NULL_ON_SUCCESS = "Billing config is null even though Google return OK result"
     const val BILLING_INAPP_MESSAGE_NONE = "No Google Play in-app message was available."
     const val BILLING_INAPP_MESSAGE_UPDATE = "Subscription status was updated from in-app message."
     const val BILLING_INAPP_MESSAGE_UNEXPECTED_CODE = "Unexpected billing code: %s"
     const val BILLING_UNSPECIFIED_INAPP_MESSAGE_TYPES = "Tried to show in-app messages without specifying any types. " +
         "Please add what types of in-app message you want to display."
     const val BILLING_CLIENT_RETRY_ALREADY_SCHEDULED = "BillingClient connection retry already scheduled. Ignoring"
+    const val BILLING_INITIATE_GETTING_COUNTRY_CODE = "Billing client: Initiating getting country code."
+    const val BILLING_COUNTRY_CODE = "Billing connected with country code: %s"
 }
