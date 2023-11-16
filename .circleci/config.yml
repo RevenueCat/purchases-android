@@ -27,14 +27,20 @@ aliases:
     executor:
       name: android/android-docker
       resource-class: large
-      tag: 2023.06.1
+      tag: 2023.11.1
     environment:
       JVM_OPTS: -Xmx6g
       GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.workers.max=2"
 
+  android-machine-emulator: &android-machine-emulator
+    executor:
+      name: android/android-machine
+      resource-class: large
+      tag: 2023.11.1
+
 version: 2.1
 orbs:
-  android: circleci/android@2.2.0
+  android: circleci/android@2.3.0
   gcp-cli: circleci/gcp-cli@2.1.0
   revenuecat: revenuecat/sdks-common-config@2.2.0
   codecov: codecov/codecov@3.2.4
@@ -568,6 +574,23 @@ jobs:
             bundle exec fastlane android create_snapshots_repo_pr
       - android/save-build-cache
 
+  run-revenuecatui-ui-tests:
+    description: "Run RevenueCatUI UI tests for Android in CircleCI"
+    <<: *android-machine-emulator
+    steps:
+      - checkout
+      - install-sdkman
+      - android/create-avd:
+          avd-name: test-revenuecat-ui
+          system-image: system-images;android-32;google_apis;x86_64
+          install: true
+      - android/start-emulator:
+          avd-name: test-revenuecat-ui
+          post-emulator-launch-assemble-command: ./gradlew ui:revenuecatui:assembleDebugAndroidTest
+      - run:
+          command: |
+            ./gradlew ui:revenuecatui:connectedDebugAndroidTest
+
 workflows:
   version: 2
   danger:
@@ -587,6 +610,7 @@ workflows:
       - assemble-purchase-tester
       - run-backend-integration-tests
       - verify-revenuecatui-snapshots
+      - run-revenuecatui-ui-tests
 
   snapshot-deploy-sample-app-tests:
     when:

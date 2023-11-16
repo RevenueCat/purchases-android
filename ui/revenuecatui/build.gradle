@@ -40,6 +40,8 @@ android {
         resources {
             excludes += '/META-INF/{AL2.0,LGPL2.1}'
         }
+        resources.excludes.add("META-INF/LICENSE.md")
+        resources.excludes.add("META-INF/LICENSE-notice.md")
     }
 }
 
@@ -73,4 +75,9 @@ dependencies {
     testImplementation libs.bundles.test
     testImplementation libs.coroutines.test
     testImplementation libs.kotlinx.serialization.json
+
+    androidTestImplementation libs.assertJ
+    androidTestImplementation libs.mockk.android
+    androidTestImplementation libs.mockk.agent
+    androidTestImplementation libs.androidx.test.compose
 }

@@ -25,6 +25,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.text
@@ -40,6 +41,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockViewModel
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.extensions.introEligibility
 import com.revenuecat.purchases.ui.revenuecatui.helpers.LocalActivity
+import com.revenuecat.purchases.ui.revenuecatui.helpers.TestTag
 
 @Composable
 internal fun PurchaseButton(
@@ -70,7 +72,8 @@ private fun PurchaseButton(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = UIConstant.defaultHorizontalPadding),
+            .padding(horizontal = UIConstant.defaultHorizontalPadding)
+            .testTag(TestTag.PURCHASE_BUTTON_TAG),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
