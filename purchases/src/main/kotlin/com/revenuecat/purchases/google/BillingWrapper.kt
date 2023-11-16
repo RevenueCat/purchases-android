@@ -792,7 +792,7 @@ internal class BillingWrapper(
         }
     }
 
-    override fun getStoreCountryCode(
+    override fun getStorefront(
         onSuccess: (String) -> Unit,
         onError: PurchasesErrorCallback,
     ) {

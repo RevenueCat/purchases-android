@@ -86,10 +86,10 @@ class GetBillingConfigUseCaseTest {
     }
 
     @Test
-    fun `querying store country code success`() {
+    fun `querying storefront success`() {
         mockGetBillingConfig()
         var countryCode: String? = null
-        wrapper.getStoreCountryCode(
+        wrapper.getStorefront(
             onSuccess = { countryCode = it },
             onError = { fail("Should succeed") }
         )
@@ -97,10 +97,10 @@ class GetBillingConfigUseCaseTest {
     }
 
     @Test
-    fun `querying store country code error code`() {
+    fun `querying storefront error code`() {
         mockGetBillingConfig(BillingResponseCode.ERROR)
         var error: PurchasesError? = null
-        wrapper.getStoreCountryCode(
+        wrapper.getStorefront(
             onSuccess = { fail("Should error") },
             onError = { error = it }
         )
@@ -108,7 +108,7 @@ class GetBillingConfigUseCaseTest {
     }
 
     @Test
-    fun `querying store country code only calls one response when BillingClient responds twice`() {
+    fun `querying storefront only calls one response when BillingClient responds twice`() {
         var numCallbacks = 0
 
         val billingResult = BillingResult.newBuilder().setResponseCode(BillingResponseCode.OK).build()
@@ -120,7 +120,7 @@ class GetBillingConfigUseCaseTest {
             listenerSlot.captured.onBillingConfigResponse(billingResult, mockConfig)
         }
 
-        wrapper.getStoreCountryCode(
+        wrapper.getStorefront(
             onSuccess = { numCallbacks++ },
             onError = { numCallbacks++ }
         )

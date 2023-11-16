@@ -299,7 +299,7 @@ internal class AmazonBilling constructor(
         // No-op: Amazon doesn't have in-app messages
     }
 
-    override fun getStoreCountryCode(
+    override fun getStorefront(
         onSuccess: (String) -> Unit,
         onError: PurchasesErrorCallback,
     ) {
@@ -319,7 +319,7 @@ internal class AmazonBilling constructor(
                         onSuccess(marketplace)
                     },
                     onError = { error ->
-                        errorLog(BillingStrings.BILLING_AMAZON_ERROR_STORE_COUNTRY.format(error))
+                        errorLog(BillingStrings.BILLING_AMAZON_ERROR_STOREFRONT.format(error))
                         onError(error)
                     },
                 )

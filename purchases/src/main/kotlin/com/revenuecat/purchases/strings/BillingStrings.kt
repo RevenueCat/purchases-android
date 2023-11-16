@@ -30,7 +30,7 @@ internal object BillingStrings {
         "in-app messages: %s"
     const val BILLING_CONNECTION_ERROR_STORE_COUNTRY = "Error connecting to billing client to get store " +
         "country: %s"
-    const val BILLING_AMAZON_ERROR_STORE_COUNTRY = "Error obtaining store country in Amazon: %s"
+    const val BILLING_AMAZON_ERROR_STOREFRONT = "Error obtaining storefront in Amazon: %s"
     const val BILLING_CONFIG_NULL_ON_SUCCESS = "Billing config is null even though Google return OK result"
     const val BILLING_INAPP_MESSAGE_NONE = "No Google Play in-app message was available."
     const val BILLING_INAPP_MESSAGE_UPDATE = "Subscription status was updated from in-app message."

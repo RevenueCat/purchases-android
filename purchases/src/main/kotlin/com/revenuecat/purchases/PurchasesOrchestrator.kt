@@ -145,7 +145,7 @@ internal class PurchasesOrchestrator constructor(
         billing.stateListener = object : BillingAbstract.StateListener {
             override fun onConnected() {
                 postPendingTransactionsHelper.syncPendingPurchaseQueue(allowSharingPlayStoreAccount)
-                billing.getStoreCountryCode(
+                billing.getStorefront(
                     onSuccess = { countryCode ->
                         debugLog(BillingStrings.BILLING_COUNTRY_CODE.format(countryCode))
                     },

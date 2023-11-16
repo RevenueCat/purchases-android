@@ -981,11 +981,11 @@ class AmazonBillingTest {
     }
 
     @Test
-    fun `querying store country code success`() {
+    fun `querying storefront success`() {
         setup()
         mockGetUserData()
         var countryCode: String? = null
-        underTest.getStoreCountryCode(
+        underTest.getStorefront(
             onSuccess = { countryCode = it },
             onError = { fail("Should be a success") },
         )
@@ -993,11 +993,11 @@ class AmazonBillingTest {
     }
 
     @Test
-    fun `querying store country code error`() {
+    fun `querying storefront error`() {
         setup()
         mockGetUserDataError()
         var error: PurchasesError? = null
-        underTest.getStoreCountryCode(
+        underTest.getStorefront(
             onSuccess = { fail("Should be a error") },
             onError = { error = it },
         )

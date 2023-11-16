@@ -107,7 +107,7 @@ internal abstract class BillingAbstract {
      * Obtain store country code in ISO 3166-1-alpha-2 standard format.
      * Null if there has been an error.
      */
-    abstract fun getStoreCountryCode(
+    abstract fun getStorefront(
         onSuccess: (String) -> Unit,
         onError: PurchasesErrorCallback,
     )
