@@ -4,10 +4,9 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import com.revenuecat.purchases.PackageType
-import com.revenuecat.purchases.ui.revenuecatui.composables.PURCHASE_BUTTON_TAG
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
+import com.revenuecat.purchases.ui.revenuecatui.helpers.TestTag
 import com.revenuecat.purchases.ui.revenuecatui.mocks.FakeViewModel
-import com.revenuecat.purchases.ui.revenuecatui.templates.template2SelectButtonTestTag
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Assert
 import org.junit.Before
@@ -33,7 +32,7 @@ class PaywallUITest {
 
         assertThat(viewModel.purchaseSelectedPackageCallCount).isEqualTo(0)
 
-        composeTestRule.onNodeWithTag(PURCHASE_BUTTON_TAG).performClick()
+        composeTestRule.onNodeWithTag(TestTag.PURCHASE_BUTTON_TAG).performClick()
 
         assertThat(viewModel.purchaseSelectedPackageCallCount).isEqualTo(1)
         assertThat(viewModel.purchaseSelectedPackageParams[0]).isNotNull
@@ -46,7 +45,7 @@ class PaywallUITest {
         assertThat(viewModel.selectPackageCallCount).isEqualTo(0)
 
         val packageId = PackageType.ANNUAL.identifier!!
-        composeTestRule.onNodeWithTag(template2SelectButtonTestTag(packageId)).performClick()
+        composeTestRule.onNodeWithTag(TestTag.selectButtonTestTag(packageId)).performClick()
 
         assertThat(viewModel.selectPackageCallCount).isEqualTo(1)
         assertThat(viewModel.selectPackageCallParams[0].rcPackage.identifier).isEqualTo(packageId)

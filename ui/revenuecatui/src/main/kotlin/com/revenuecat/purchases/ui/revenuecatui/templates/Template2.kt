@@ -70,16 +70,13 @@ import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
 import com.revenuecat.purchases.ui.revenuecatui.extensions.introEligibility
 import com.revenuecat.purchases.ui.revenuecatui.extensions.packageButtonActionInProgressOpacityAnimation
 import com.revenuecat.purchases.ui.revenuecatui.extensions.packageButtonColorAnimation
+import com.revenuecat.purchases.ui.revenuecatui.helpers.TestTag
 
 private object Template2UIConstants {
     val maxIconWidth = 140.dp
     val iconCornerRadius = 16.dp
     val checkmarkSize = 18.dp
     const val fadedColorOpacity = 0.3f
-}
-
-internal fun template2SelectButtonTestTag(packageId: String): String {
-    return "Template2SelectButton_$packageId"
 }
 
 /**
@@ -263,7 +260,7 @@ private fun ColumnScope.SelectPackageButton(
             .semantics {
                 selected = isSelected
             }
-            .testTag(template2SelectButtonTestTag(packageInfo.rcPackage.identifier)),
+            .testTag(TestTag.selectButtonTestTag(packageInfo.rcPackage.identifier)),
         onClick = { viewModel.selectPackage(packageInfo) },
         colors = ButtonDefaults.buttonColors(containerColor = background, contentColor = textColor),
         shape = RoundedCornerShape(UIConstant.defaultPackageCornerRadius),
