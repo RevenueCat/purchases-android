@@ -89,6 +89,7 @@ internal class AmazonBilling constructor(
 
         purchasingServiceProvider.registerListener(applicationContext, this)
         connected = true
+        stateListener?.onConnected()
         executePendingRequests()
     }
 
