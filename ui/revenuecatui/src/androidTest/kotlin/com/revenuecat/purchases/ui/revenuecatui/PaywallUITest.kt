@@ -4,9 +4,9 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import com.revenuecat.purchases.PackageType
+import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockViewModel
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.helpers.TestTag
-import com.revenuecat.purchases.ui.revenuecatui.mocks.FakeViewModel
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Assert
 import org.junit.Before
@@ -19,11 +19,11 @@ class PaywallUITest {
     @get:Rule
     val composeTestRule = createComposeRule()
 
-    private lateinit var viewModel: FakeViewModel
+    private lateinit var viewModel: MockViewModel
 
     @Before
     fun setUp() {
-        viewModel = FakeViewModel(offering = TestData.template2Offering)
+        viewModel = MockViewModel(offering = TestData.template2Offering, shouldErrorOnUnsupportedMethods = false)
     }
 
     @Test

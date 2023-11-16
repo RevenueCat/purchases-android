@@ -281,10 +281,12 @@ internal class MockResourceProvider : ResourceProvider {
     }
 }
 
+@Suppress("TooManyFunctions")
 internal class MockViewModel(
     mode: PaywallMode = PaywallMode.default,
     offering: Offering,
     private val allowsPurchases: Boolean = false,
+    private val shouldErrorOnUnsupportedMethods: Boolean = true,
 ) : ViewModel(), PaywallViewModel {
     override val resourceProvider: ResourceProvider
         get() = MockResourceProvider()
@@ -314,41 +316,84 @@ internal class MockViewModel(
     private val _actionInProgress = mutableStateOf(false)
     private val _actionError = mutableStateOf<PurchasesError?>(null)
 
-    override fun trackPaywallImpressionIfNeeded() = Unit
-    override fun refreshStateIfLocaleChanged() = Unit
-    override fun refreshStateIfColorsChanged(colorScheme: ColorScheme, isDarkMode: Boolean) = Unit
+    var trackPaywallImpressionIfNeededCallCount = 0
+        private set
+    override fun trackPaywallImpressionIfNeeded() {
+        trackPaywallImpressionIfNeededCallCount++
+    }
 
+    var refreshStateIfLocaleChangedCallCount = 0
+        private set
+    override fun refreshStateIfLocaleChanged() {
+        refreshStateIfLocaleChangedCallCount++
+    }
+
+    var refreshStateIfColorsChangedCallCount = 0
+        private set
+    override fun refreshStateIfColorsChanged(colorScheme: ColorScheme, isDarkMode: Boolean) {
+        refreshStateIfColorsChangedCallCount++
+    }
+
+    var selectPackageCallCount = 0
+        private set
+    var selectPackageCallParams = mutableListOf<TemplateConfiguration.PackageInfo>()
+        private set
     override fun selectPackage(packageToSelect: TemplateConfiguration.PackageInfo) {
-        error("Not supported")
+        selectPackageCallCount++
+        selectPackageCallParams.add(packageToSelect)
+        unsupportedMethod()
     }
 
+    var closePaywallCallCount = 0
+        private set
     override fun closePaywall() {
-        error("Not supported")
+        closePaywallCallCount++
+        unsupportedMethod()
     }
 
+    var purchaseSelectedPackageCallCount = 0
+        private set
+    var purchaseSelectedPackageParams = mutableListOf<Activity?>()
+        private set
     override fun purchaseSelectedPackage(activity: Activity?) {
+        purchaseSelectedPackageCallCount++
+        purchaseSelectedPackageParams.add(activity)
         if (allowsPurchases) {
             simulateActionInProgress()
         } else {
-            error("Can't purchase mock view model")
+            unsupportedMethod("Can't purchase mock view model")
         }
     }
 
+    var restorePurchasesCallCount = 0
+        private set
     override fun restorePurchases() {
+        restorePurchasesCallCount++
         if (allowsPurchases) {
             simulateActionInProgress()
         } else {
-            error("Can't restore purchases")
+            unsupportedMethod("Can't restore purchases")
         }
     }
 
-    override fun clearActionError() = Unit
+    var clearActionErrorCallCount = 0
+        private set
+    override fun clearActionError() {
+        clearActionErrorCallCount++
+        _actionError.value = null
+    }
 
     private fun simulateActionInProgress() {
         viewModelScope.launch {
             _actionInProgress.value = true
             delay(fakePurchaseDelayMillis)
             _actionInProgress.value = false
+        }
+    }
+
+    private fun unsupportedMethod(errorMessage: String = "Not supported") {
+        if (shouldErrorOnUnsupportedMethods) {
+            error(errorMessage)
         }
     }
 
