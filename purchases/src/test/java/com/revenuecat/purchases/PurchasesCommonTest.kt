@@ -1603,6 +1603,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
 
     @Test
     fun `on billing wrapper connected, sync pending purchases`() {
+        mockGetStoreCountryCode()
         capturedBillingWrapperStateListener.captured.onConnected()
         verify(exactly = 1) {
             mockPostPendingTransactionsHelper.syncPendingPurchaseQueue(any())
@@ -1620,6 +1621,15 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
     }
 
     // endregion
+
+    @Test
+    fun `on billing wrapper connected, gets store country`() {
+        mockGetStoreCountryCode()
+        capturedBillingWrapperStateListener.captured.onConnected()
+        verify(exactly = 1) {
+            mockBillingAbstract.getStoreCountryCode(any(), any())
+        }
+    }
 
     // region Private Methods
     private fun mockSynchronizeSubscriberAttributesForAllUsers() {
@@ -1763,6 +1773,14 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         } answers {
             lst.captured.run()
             true
+        }
+    }
+
+    private fun mockGetStoreCountryCode() {
+        every {
+            mockBillingAbstract.getStoreCountryCode(captureLambda(), any())
+        } answers {
+            lambda<(String) -> Unit>().captured.invoke("US")
         }
     }
 
