@@ -36,7 +36,7 @@ internal class QueryProductDetailsUseCase(
     val onError: PurchasesErrorCallback,
     val withConnectedClient: (BillingClient.() -> Unit) -> Unit,
     executeRequestOnUIThread: ((PurchasesError?) -> Unit) -> Unit,
-) : UseCase<List<ProductDetails>>(onError, executeRequestOnUIThread) {
+) : BillingClientUseCase<List<ProductDetails>>(onError, executeRequestOnUIThread) {
 
     override val errorMessage: String
         get() = "Error when fetching products"

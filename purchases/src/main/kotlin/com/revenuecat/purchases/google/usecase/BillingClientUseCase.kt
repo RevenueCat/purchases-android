@@ -16,7 +16,7 @@ import java.io.StringWriter
 
 private const val MAX_RETRIES_DEFAULT = 3
 
-internal abstract class UseCase<T>(
+internal abstract class BillingClientUseCase<T>(
     private val onError: PurchasesErrorCallback,
     val executeRequestOnUIThread: ((PurchasesError?) -> Unit) -> Unit,
 ) {
