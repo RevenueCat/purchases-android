@@ -4,6 +4,7 @@ import android.content.Context
 import com.revenuecat.purchases.DangerousSettings
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.VerificationResult
+import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.networking.ETagManager
 import com.revenuecat.purchases.common.networking.Endpoint
@@ -22,13 +23,20 @@ import java.util.Locale
 
 internal abstract class BaseHTTPClientTest {
 
+    protected val countryCode = "JP"
+
     protected lateinit var server: MockWebServer
     protected lateinit var baseURL: URL
 
     protected lateinit var mockSigningManager: SigningManager
+    protected lateinit var mockDeviceCache: DeviceCache
 
     @Before
     fun setup() {
+        mockDeviceCache = mockk<DeviceCache>().apply {
+            every { getStorefront() } returns countryCode
+        }
+
         server = MockWebServer()
         baseURL = server.url("/v1").toUrl()
     }
@@ -54,11 +62,13 @@ internal abstract class BaseHTTPClientTest {
         dateProvider: DateProvider = DefaultDateProvider(),
         eTagManager: ETagManager = mockETagManager,
         signingManager: SigningManager? = null,
+        deviceCache: DeviceCache = mockDeviceCache
     ) = HTTPClient(
         appConfig,
         eTagManager,
         diagnosticsTracker,
         signingManager ?: mockSigningManager,
+        deviceCache,
         dateProvider
     )
 

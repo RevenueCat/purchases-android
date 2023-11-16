@@ -9,6 +9,7 @@ import com.revenuecat.purchases.common.BackendHelper
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.HTTPClient
 import com.revenuecat.purchases.common.PlatformInfo
+import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.networking.ETagManager
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import com.revenuecat.purchases.common.verification.SigningManager
@@ -57,6 +58,7 @@ internal abstract class BaseBackendIntegrationTest {
     lateinit var signingManager: SigningManager
     lateinit var httpClient: HTTPClient
     lateinit var backendHelper: BackendHelper
+    lateinit var deviceCache: DeviceCache
 
     lateinit var backend: Backend
 
@@ -94,7 +96,8 @@ internal abstract class BaseBackendIntegrationTest {
         }
         eTagManager = ETagManager(sharedPreferences)
         signingManager = spyk(SigningManager(signatureVerificationMode, appConfig, apiKey()))
-        httpClient = HTTPClient(appConfig, eTagManager, diagnosticsTrackerIfEnabled = null, signingManager)
+        deviceCache = DeviceCache(sharedPreferences, apiKey())
+        httpClient = HTTPClient(appConfig, eTagManager, diagnosticsTrackerIfEnabled = null, signingManager, deviceCache)
         backendHelper = BackendHelper(apiKey(), dispatcher, appConfig, httpClient)
         backend = Backend(appConfig, dispatcher, diagnosticsDispatcher, httpClient, backendHelper)
     }

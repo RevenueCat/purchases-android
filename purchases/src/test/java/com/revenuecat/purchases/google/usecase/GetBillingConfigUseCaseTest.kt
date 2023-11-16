@@ -11,6 +11,7 @@ import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.PurchasesUpdatedListener
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.google.BillingWrapper
 import com.revenuecat.purchases.utils.MockHandlerFactory
 import io.mockk.Runs
@@ -19,6 +20,7 @@ import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.slot
+import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Assert.fail
@@ -39,6 +41,7 @@ class GetBillingConfigUseCaseTest {
 
     private var mockClientFactory: BillingWrapper.ClientFactory = mockk()
     private var mockClient: BillingClient = mockk()
+    private var deviceCache: DeviceCache = mockk()
     private var purchasesUpdatedListener: PurchasesUpdatedListener? = null
     private var billingClientStateListener: BillingClientStateListener? = null
 
@@ -51,6 +54,8 @@ class GetBillingConfigUseCaseTest {
         handler = MockHandlerFactory.createMockHandler()
         purchasesUpdatedListener = null
         billingClientStateListener = null
+
+        every { deviceCache.setStorefront(expectedCountryCode) } just Runs
 
         val listenerSlot = slot<PurchasesUpdatedListener>()
         every {
@@ -75,7 +80,7 @@ class GetBillingConfigUseCaseTest {
             mockClient.isReady
         } returns false andThen true
 
-        wrapper = BillingWrapper(mockClientFactory, handler, mockk(), mockk(), mockk())
+        wrapper = BillingWrapper(mockClientFactory, handler, deviceCache, mockk(), mockk())
         wrapper.purchasesUpdatedListener = mockk()
         wrapper.startConnectionOnMainThread()
     }
@@ -94,6 +99,16 @@ class GetBillingConfigUseCaseTest {
             onError = { fail("Should succeed") }
         )
         assertThat(countryCode).isEqualTo(expectedCountryCode)
+    }
+
+    @Test
+    fun `querying store country code stores country code in cache`() {
+        mockGetBillingConfig()
+        wrapper.getStorefront(
+            onSuccess = { },
+            onError = { fail("Should succeed") }
+        )
+        verify(exactly = 1) { deviceCache.setStorefront(expectedCountryCode) }
     }
 
     @Test
@@ -126,6 +141,16 @@ class GetBillingConfigUseCaseTest {
         )
 
         assertThat(numCallbacks).isEqualTo(1)
+    }
+
+    @Test
+    fun `querying store country code does not store country code on error`() {
+        mockGetBillingConfig(BillingResponseCode.ERROR)
+        wrapper.getStorefront(
+            onSuccess = { fail("Should error") },
+            onError = { }
+        )
+        verify(exactly = 0) { deviceCache.setStorefront(expectedCountryCode) }
     }
 
     private fun mockGetBillingConfig(

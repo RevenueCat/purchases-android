@@ -7,12 +7,14 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCallback
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.LogIntent
+import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.strings.BillingStrings
 import com.revenuecat.purchases.strings.OfferingStrings
 import java.util.concurrent.atomic.AtomicBoolean
 
 internal class GetBillingConfigUseCase(
+    val deviceCache: DeviceCache,
     val onReceive: (BillingConfig) -> Unit,
     val onError: PurchasesErrorCallback,
     val withConnectedClient: (BillingClient.() -> Unit) -> Unit,
@@ -42,6 +44,7 @@ internal class GetBillingConfigUseCase(
         if (received == null) {
             onError(PurchasesError(PurchasesErrorCode.StoreProblemError, BillingStrings.BILLING_CONFIG_NULL_ON_SUCCESS))
         } else {
+            deviceCache.setStorefront(received.countryCode)
             onReceive(received)
         }
     }

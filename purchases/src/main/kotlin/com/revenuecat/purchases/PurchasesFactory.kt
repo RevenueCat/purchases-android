@@ -109,7 +109,9 @@ internal class PurchasesFactory(
             )
             val signingManager = SigningManager(signatureVerificationMode, appConfig, apiKey)
 
-            val httpClient = HTTPClient(appConfig, eTagManager, diagnosticsTracker, signingManager)
+            val cache = DeviceCache(prefs, apiKey)
+
+            val httpClient = HTTPClient(appConfig, eTagManager, diagnosticsTracker, signingManager, cache)
             val backendHelper = BackendHelper(apiKey, backendDispatcher, appConfig, httpClient)
             val backend = Backend(
                 appConfig,
@@ -118,7 +120,6 @@ internal class PurchasesFactory(
                 httpClient,
                 backendHelper,
             )
-            val cache = DeviceCache(prefs, apiKey)
 
             // Override used for integration tests.
             val billing: BillingAbstract = overrideBillingAbstract ?: BillingFactory.createBilling(

@@ -9,6 +9,7 @@ import android.os.Build
 import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.VerificationResult
+import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.networking.ETagManager
 import com.revenuecat.purchases.common.networking.Endpoint
@@ -36,11 +37,13 @@ import java.net.URLConnection
 import java.util.Date
 import kotlin.time.Duration
 
+@Suppress("LongParameterList")
 internal class HTTPClient(
     private val appConfig: AppConfig,
     private val eTagManager: ETagManager,
     private val diagnosticsTrackerIfEnabled: DiagnosticsTracker?,
     val signingManager: SigningManager,
+    private val deviceCache: DeviceCache,
     private val dateProvider: DateProvider = DefaultDateProvider(),
     private val mapConverter: MapConverter = MapConverter(),
 ) {
@@ -270,6 +273,7 @@ internal class HTTPClient(
             "X-Nonce" to nonce,
             HTTPRequest.POST_PARAMS_HASH to postFieldsToSignHeader,
             "X-Custom-Entitlements-Computation" to if (appConfig.customEntitlementComputation) "true" else null,
+            "X-Storefront" to deviceCache.getStorefront(),
         )
             .plus(authenticationHeaders)
             .plus(eTagManager.getETagHeaders(urlPath, shouldSignResponse, refreshETag))

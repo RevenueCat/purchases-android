@@ -16,7 +16,9 @@ import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.offlineentitlements.ProductEntitlementMapping
 import com.revenuecat.purchases.common.sha1
+import com.revenuecat.purchases.common.verboseLog
 import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.strings.BillingStrings
 import com.revenuecat.purchases.strings.OfflineEntitlementsStrings
 import com.revenuecat.purchases.strings.ReceiptStrings
 import org.json.JSONException
@@ -44,6 +46,7 @@ internal open class DeviceCache(
     val appUserIDCacheKey: String by lazy { "$apiKeyPrefix.new" }
     internal val attributionCacheKey = "$SHARED_PREFERENCES_PREFIX.attribution"
     val tokensCacheKey: String by lazy { "$apiKeyPrefix.tokens" }
+    val storefrontCacheKey: String by lazy { "storefrontCacheKey" }
 
     private val productEntitlementMappingCacheKey: String by lazy {
         "$apiKeyPrefix.productEntitlementMapping"
@@ -175,6 +178,17 @@ internal open class DeviceCache(
     @Synchronized
     fun setCustomerInfoCacheTimestamp(appUserID: String, date: Date) {
         preferences.edit().putLong(customerInfoLastUpdatedCacheKey(appUserID), date.time).apply()
+    }
+
+    @Synchronized
+    fun setStorefront(countryCode: String) {
+        verboseLog(BillingStrings.BILLING_STOREFRONT_CACHING.format(countryCode))
+        preferences.edit().putString(storefrontCacheKey, countryCode).apply()
+    }
+
+    @Synchronized
+    fun getStorefront(): String? {
+        return preferences.getString(storefrontCacheKey, null)
     }
 
     @Synchronized
