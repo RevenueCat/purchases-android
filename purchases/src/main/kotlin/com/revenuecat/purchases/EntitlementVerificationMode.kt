@@ -27,7 +27,9 @@ enum class EntitlementVerificationMode {
      * If verification fails when fetching [CustomerInfo] and/or [EntitlementInfos]
      * [PurchasesErrorCode.SignatureVerificationError] will be returned in the error handler.
      */
-    ENFORCED;
+    ENFORCED,
+
+    ;
 
     companion object {
         /**
