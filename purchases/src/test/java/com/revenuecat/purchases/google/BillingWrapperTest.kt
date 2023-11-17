@@ -218,25 +218,6 @@ class BillingWrapperTest {
     }
 
     @Test
-    fun `if no listener is set, we fail`() {
-        wrapper.purchasesUpdatedListener = null
-
-        var error: PurchasesError? = null
-        wrapper.queryPurchaseHistoryAsync(
-            ProductType.SUBS.toGoogleProductType()!!,
-            {
-                fail("call should not succeed")
-            },
-            {
-                error = it
-            }
-        )
-        assertThat(error).isNotNull
-        assertThat(error?.code).isEqualTo(PurchasesErrorCode.UnknownError)
-        assertThat(error?.underlyingErrorMessage).isEqualTo("BillingWrapper is not attached to a listener")
-    }
-
-    @Test
     fun defersCallUntilConnected() {
         every { mockClient.isReady } returns false
 
@@ -316,92 +297,6 @@ class BillingWrapperTest {
         }
         assertThat(error).isNotNull
         assertThat(error?.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
-    }
-
-    @Test
-    fun `queryPurchaseHistoryAsync fails if sent invalid type`() {
-        billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
-
-        mockClient.mockQueryPurchaseHistory(
-            billingClientOKResult,
-            emptyList()
-        )
-        var errorCalled = false
-        wrapper.queryPurchaseHistoryAsync(
-            "notValid",
-            {
-                fail("call should not succeed")
-            },
-            {
-                errorCalled = true
-            }
-        )
-        assertThat(errorCalled).isTrue
-    }
-
-    @Test
-    fun `queryPurchaseHistoryAsync only calls one response when BillingClient responds twice`() {
-        var numCallbacks = 0
-
-        val slot = slot<PurchaseHistoryResponseListener>()
-        every {
-            mockClient.queryPurchaseHistoryAsync(
-                any<QueryPurchaseHistoryParams>(),
-                capture(slot)
-            )
-        } answers {
-            slot.captured.onPurchaseHistoryResponse(billingClientOKResult, null)
-            slot.captured.onPurchaseHistoryResponse(billingClientOKResult, null)
-        }
-
-        wrapper.queryPurchaseHistoryAsync(
-            BillingClient.ProductType.SUBS,
-            {
-                numCallbacks++
-            }, {
-                fail("shouldn't be an error")
-            })
-
-        assertThat(numCallbacks).isEqualTo(1)
-    }
-
-    @Test
-    fun `queryPurchaseHistoryAsync only calls one response when BillingClient responds twice from different threads`() {
-        val numCallbacks = AtomicInteger(0)
-
-        val slot = slot<PurchaseHistoryResponseListener>()
-        val lock = CountDownLatch(3)
-        every {
-            mockClient.queryPurchaseHistoryAsync(
-                any<QueryPurchaseHistoryParams>(),
-                capture(slot)
-            )
-        } answers {
-            Thread {
-                slot.captured.onPurchaseHistoryResponse(billingClientOKResult, null)
-                lock.countDown()
-            }.start()
-
-            Thread {
-                slot.captured.onPurchaseHistoryResponse(billingClientOKResult, null)
-                lock.countDown()
-            }.start()
-        }
-
-        wrapper.queryPurchaseHistoryAsync(
-            BillingClient.ProductType.SUBS,
-            {
-                // ensuring we don't hit an edge case where numCallbacks doesn't increment before the final assert
-                numCallbacks.incrementAndGet()
-                lock.countDown()
-            }, {
-                fail("shouldn't be an error")
-            })
-
-        lock.await()
-        assertThat(lock.count).isEqualTo(0)
-
-        assertThat(numCallbacks.get()).isEqualTo(1)
     }
 
     @Test
@@ -1035,52 +930,6 @@ class BillingWrapperTest {
     }
 
     @Test
-    fun queryHistoryCallsListenerIfOk() {
-        billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
-
-        mockClient.mockQueryPurchaseHistory(
-            billingClientOKResult,
-            emptyList()
-        )
-
-        var successCalled = false
-        wrapper.queryPurchaseHistoryAsync(
-            subsGoogleProductType,
-            {
-                successCalled = true
-            },
-            {
-                fail("shouldn't go to on error")
-            }
-        )
-        assertThat(successCalled).isTrue
-    }
-
-    @Test
-    fun queryHistoryErrorCalledIfNotOK() {
-        billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
-
-        mockClient.mockQueryPurchaseHistory(
-            BillingClient.BillingResponseCode.FEATURE_NOT_SUPPORTED.buildResult(),
-            emptyList()
-        )
-
-        var errorCalled = false
-        wrapper.queryPurchaseHistoryAsync(
-            subsGoogleProductType,
-            {
-                fail("should go to on error")
-            },
-            {
-                assertThat(it.code).isEqualTo(PurchasesErrorCode.PurchaseNotAllowedError)
-                errorCalled = true
-            }
-        )
-
-        assertThat(errorCalled).isTrue
-    }
-
-    @Test
     fun canConsumeAToken() {
         val token = "mockToken"
 
@@ -1211,37 +1060,6 @@ class BillingWrapperTest {
     fun `on successfully connected billing client, listener is called`() {
         billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
         assertThat(onConnectedCalled).isTrue
-    }
-
-    @Test
-    fun `queryPurchaseHistoryAsync sets correct type`() {
-        billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
-
-        val subsBuilder = mockClient.mockQueryPurchaseHistory(
-            billingClientOKResult,
-            emptyList()
-        )
-
-        wrapper.queryPurchaseHistoryAsync(
-            subsGoogleProductType,
-            {},
-            {}
-        )
-
-        mockClient.verifyQueryPurchaseHistoryCalledWithType(subsGoogleProductType, subsBuilder)
-
-        val inAppBuilder = mockClient.mockQueryPurchaseHistory(
-            billingClientOKResult,
-            emptyList()
-        )
-
-        wrapper.queryPurchaseHistoryAsync(
-            inAppGoogleProductType,
-            {},
-            {}
-        )
-
-        mockClient.verifyQueryPurchaseHistoryCalledWithType(inAppGoogleProductType, inAppBuilder)
     }
 
     @Test
@@ -2154,66 +1972,6 @@ class BillingWrapperTest {
     }
 
     // region diagnostics tracking
-
-    @Test
-    fun `queryPurchaseHistoryAsync tracks diagnostics call with correct parameters`() {
-        every { mockDateProvider.now } returnsMany listOf(Date(timestamp0), Date(timestamp123))
-
-        val result = BillingResult.newBuilder()
-            .setResponseCode(BillingClient.BillingResponseCode.OK)
-            .setDebugMessage("test-debug-message")
-            .build()
-        val slot = slot<PurchaseHistoryResponseListener>()
-        every {
-            mockClient.queryPurchaseHistoryAsync(
-                any<QueryPurchaseHistoryParams>(),
-                capture(slot)
-            )
-        } answers {
-            slot.captured.onPurchaseHistoryResponse(result, null)
-        }
-
-        wrapper.queryPurchaseHistoryAsync(BillingClient.ProductType.SUBS, {}, { fail("shouldn't be an error") })
-
-        verify(exactly = 1) {
-            mockDiagnosticsTracker.trackGoogleQueryPurchaseHistoryRequest(
-                BillingClient.ProductType.SUBS,
-                BillingClient.BillingResponseCode.OK,
-                billingDebugMessage = "test-debug-message",
-                responseTime = 123.milliseconds
-            )
-        }
-    }
-
-    @Test
-    fun `queryPurchaseHistoryAsync tracks diagnostics call with correct parameters on error`() {
-        every { mockDateProvider.now } returnsMany listOf(Date(timestamp0), Date(timestamp123))
-
-        val result = BillingResult.newBuilder()
-            .setResponseCode(BillingClient.BillingResponseCode.BILLING_UNAVAILABLE)
-            .setDebugMessage("test-debug-message")
-            .build()
-        val slot = slot<PurchaseHistoryResponseListener>()
-        every {
-            mockClient.queryPurchaseHistoryAsync(
-                any<QueryPurchaseHistoryParams>(),
-                capture(slot)
-            )
-        } answers {
-            slot.captured.onPurchaseHistoryResponse(result, null)
-        }
-
-        wrapper.queryPurchaseHistoryAsync(BillingClient.ProductType.SUBS, { fail("should be an error") }, {})
-
-        verify(exactly = 1) {
-            mockDiagnosticsTracker.trackGoogleQueryPurchaseHistoryRequest(
-                BillingClient.ProductType.SUBS,
-                BillingClient.BillingResponseCode.BILLING_UNAVAILABLE,
-                billingDebugMessage = "test-debug-message",
-                responseTime = 123.milliseconds
-            )
-        }
-    }
 
     @Test
     fun `querySkuDetailsAsync tracks diagnostics call with correct parameters`() {
