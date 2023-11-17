@@ -400,7 +400,7 @@ class QueryPurchaseHistoryUseCaseTest {
         }
     }
 
-    // endregion
+    // endregion diagnostics tracking
 
     // region retries
 
@@ -645,7 +645,7 @@ class QueryPurchaseHistoryUseCaseTest {
         assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.ProductNotAvailableForPurchaseError)
     }
 
-    // endregion
+    // endregion retries
 
     private fun Int.buildResult(): BillingResult {
         return BillingResult.newBuilder().setResponseCode(this).build()
