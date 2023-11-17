@@ -33,14 +33,6 @@ import kotlin.time.Duration.Companion.milliseconds
 @Config(manifest = Config.NONE)
 internal class QueryPurchaseHistoryUseCaseTest: BaseBillingUseCaseTest() {
 
-    private companion object {
-        const val timestamp0 = 1676379370000 // Tuesday, February 14, 2023 12:56:10.000 PM GMT
-        const val timestamp123 = 1676379370123 // Tuesday, February 14, 2023 12:56:10.123 PM GMT
-    }
-
-    private var capturedConsumeResponseListener = slot<ConsumeResponseListener>()
-    private var capturedConsumeParams = slot<ConsumeParams>()
-
     private val subsGoogleProductType = ProductType.SUBS.toGoogleProductType()!!
     private val inAppGoogleProductType = ProductType.INAPP.toGoogleProductType()!!
 
