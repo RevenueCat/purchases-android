@@ -4,7 +4,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingResult
-import com.android.billingclient.api.ProductDetailsResponseListener
 import com.android.billingclient.api.PurchasesResponseListener
 import com.android.billingclient.api.QueryPurchasesParams
 import com.revenuecat.purchases.ProductType
@@ -32,13 +31,13 @@ import kotlin.time.Duration.Companion.milliseconds
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
-internal class QueryPurchasesUseCaseTest: BaseBillingUseCaseTest() {
+internal class QueryPurchasesUseCaseTest : BaseBillingUseCaseTest() {
 
     private val appUserId = "jerry"
     private var billingClientStateListener: BillingClientStateListener? = null
     private val billingClientBillingUnavailableResult =
         BillingClient.BillingResponseCode.BILLING_UNAVAILABLE.buildResult()
-
+    
     @Before
     override fun setup() {
         super.setup()
@@ -119,6 +118,7 @@ internal class QueryPurchasesUseCaseTest: BaseBillingUseCaseTest() {
 
         assertThat(purchasesByHashedToken).isNotNull
     }
+
     @Test
     fun `queryPurchases returns error if error connecting`() {
         every { mockClient.isReady } returns false
@@ -127,7 +127,7 @@ internal class QueryPurchasesUseCaseTest: BaseBillingUseCaseTest() {
         wrapper.queryPurchases(
             appUserID = "appUserID",
             onSuccess = { fail("should be an error") },
-            onError = { receivedError = it}
+            onError = { receivedError = it }
         )
 
         billingClientStateListener!!.onBillingSetupFinished(billingClientBillingUnavailableResult)
@@ -180,8 +180,8 @@ internal class QueryPurchasesUseCaseTest: BaseBillingUseCaseTest() {
         assertThat(purchaseWrapper.purchaseTime).isEqualTo(time)
         assertThat(purchaseWrapper.productIds[0]).isEqualTo(sku)
         assertThat(purchasesByHashedToken?.size == 1)
-
     }
+
     @Test
     fun `when querying SUBS result is created properly`() {
         val token = "token"
@@ -406,10 +406,13 @@ internal class QueryPurchasesUseCaseTest: BaseBillingUseCaseTest() {
                 timesExecutedInMainThread++
 
                 queryPurchasesStubbing answers {
-                    if (timesExecutedInMainThread == 0) {
+                    if (timesExecutedInMainThread == 1) {
                         slot.captured.onQueryPurchasesResponse(billingClientDisconnectedResult, emptyList())
                     } else {
-                        slot.captured.onQueryPurchasesResponse(billingClientOKResult, emptyList())
+                        slot.captured.onQueryPurchasesResponse(
+                            billingClientOKResult,
+                            listOf(stubGooglePurchase())
+                        )
                     }
                 }
 
@@ -417,28 +420,27 @@ internal class QueryPurchasesUseCaseTest: BaseBillingUseCaseTest() {
             },
         ).run()
 
+        assertThat(timesExecutedInMainThread).isEqualTo(2)
         assertThat(receivedList).isNotNull
         assertThat(receivedList!!.size).isOne
     }
 
     @Test
     fun `If service returns NETWORK_ERROR, re-execute a max of 3 times`() {
-        val slot = slot<ProductDetailsResponseListener>()
-        val queryProductDetailsStubbing = every {
-            mockClient.queryProductDetailsAsync(
-                any(),
+        val slot = slot<PurchasesResponseListener>()
+        val queryPurchasesStubbing = every {
+            mockClient.queryPurchasesAsync(
+                any<QueryPurchasesParams>(),
                 capture(slot)
             )
         }
-        val productIDs = setOf("product_a")
+
         var receivedError: PurchasesError? = null
         var timesRetried = 0
-        val useCase = QueryProductDetailsUseCase(
-            QueryProductDetailsUseCaseParams(
+        QueryPurchasesUseCase(
+            QueryPurchasesUseCaseParams(
                 mockDateProvider,
                 mockDiagnosticsTracker,
-                productIDs,
-                ProductType.SUBS,
             ),
             { _ ->
                 fail("shouldn't be success")
@@ -451,8 +453,8 @@ internal class QueryPurchasesUseCaseTest: BaseBillingUseCaseTest() {
                 it.invoke(mockClient)
             },
             executeRequestOnUIThread = {
-                queryProductDetailsStubbing answers {
-                    slot.captured.onProductDetailsResponse(
+                queryPurchasesStubbing answers {
+                    slot.captured.onQueryPurchasesResponse(
                         BillingClient.BillingResponseCode.NETWORK_ERROR.buildResult(),
                         emptyList()
                     )
@@ -460,9 +462,7 @@ internal class QueryPurchasesUseCaseTest: BaseBillingUseCaseTest() {
 
                 it.invoke(null)
             },
-        )
-
-        useCase.run()
+        ).run()
 
         assertThat(timesRetried).isEqualTo(4) // First attempt plus 3 retries
         assertThat(receivedError).isNotNull
@@ -471,22 +471,19 @@ internal class QueryPurchasesUseCaseTest: BaseBillingUseCaseTest() {
 
     @Test
     fun `If service returns SERVICE_UNAVAILABLE, re-execute a max of 3 times`() {
-        val slot = slot<ProductDetailsResponseListener>()
-        val queryProductDetailsStubbing = every {
-            mockClient.queryProductDetailsAsync(
-                any(),
+        val slot = slot<PurchasesResponseListener>()
+        val queryPurchasesStubbing = every {
+            mockClient.queryPurchasesAsync(
+                any<QueryPurchasesParams>(),
                 capture(slot)
             )
         }
-        val productIDs = setOf("product_a")
         var receivedError: PurchasesError? = null
         var timesRetried = 0
-        val useCase = QueryProductDetailsUseCase(
-            QueryProductDetailsUseCaseParams(
+        QueryPurchasesUseCase(
+            QueryPurchasesUseCaseParams(
                 mockDateProvider,
                 mockDiagnosticsTracker,
-                productIDs,
-                ProductType.SUBS,
             ),
             { _ ->
                 fail("shouldn't be success")
@@ -499,8 +496,8 @@ internal class QueryPurchasesUseCaseTest: BaseBillingUseCaseTest() {
                 it.invoke(mockClient)
             },
             executeRequestOnUIThread = {
-                queryProductDetailsStubbing answers {
-                    slot.captured.onProductDetailsResponse(
+                queryPurchasesStubbing answers {
+                    slot.captured.onQueryPurchasesResponse(
                         BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE.buildResult(),
                         emptyList()
                     )
@@ -508,9 +505,7 @@ internal class QueryPurchasesUseCaseTest: BaseBillingUseCaseTest() {
 
                 it.invoke(null)
             },
-        )
-
-        useCase.run()
+        ).run()
 
         assertThat(timesRetried).isEqualTo(4) // First attempt plus 3 retries
         assertThat(receivedError).isNotNull
@@ -519,22 +514,20 @@ internal class QueryPurchasesUseCaseTest: BaseBillingUseCaseTest() {
 
     @Test
     fun `If service returns ERROR, re-execute a max of 3 times`() {
-        val slot = slot<ProductDetailsResponseListener>()
-        val queryProductDetailsStubbing = every {
-            mockClient.queryProductDetailsAsync(
-                any(),
+        val slot = slot<PurchasesResponseListener>()
+        val queryPurchasesStubbing = every {
+            mockClient.queryPurchasesAsync(
+                any<QueryPurchasesParams>(),
                 capture(slot)
             )
         }
-        val productIDs = setOf("product_a")
+
         var receivedError: PurchasesError? = null
         var timesRetried = 0
-        val useCase = QueryProductDetailsUseCase(
-            QueryProductDetailsUseCaseParams(
+        QueryPurchasesUseCase(
+            QueryPurchasesUseCaseParams(
                 mockDateProvider,
                 mockDiagnosticsTracker,
-                productIDs,
-                ProductType.SUBS,
             ),
             { _ ->
                 fail("shouldn't be success")
@@ -547,8 +540,8 @@ internal class QueryPurchasesUseCaseTest: BaseBillingUseCaseTest() {
                 it.invoke(mockClient)
             },
             executeRequestOnUIThread = {
-                queryProductDetailsStubbing answers {
-                    slot.captured.onProductDetailsResponse(
+                queryPurchasesStubbing answers {
+                    slot.captured.onQueryPurchasesResponse(
                         BillingClient.BillingResponseCode.ERROR.buildResult(),
                         emptyList()
                     )
@@ -556,9 +549,7 @@ internal class QueryPurchasesUseCaseTest: BaseBillingUseCaseTest() {
 
                 it.invoke(null)
             },
-        )
-
-        useCase.run()
+        ).run()
 
         assertThat(timesRetried).isEqualTo(4) // First attempt plus 3 retries
         assertThat(receivedError).isNotNull
@@ -567,22 +558,19 @@ internal class QueryPurchasesUseCaseTest: BaseBillingUseCaseTest() {
 
     @Test
     fun `If service returns ITEM_UNAVAILABLE, doesn't retry`() {
-        val slot = slot<ProductDetailsResponseListener>()
-        val queryProductDetailsStubbing = every {
-            mockClient.queryProductDetailsAsync(
-                any(),
+        val slot = slot<PurchasesResponseListener>()
+        val queryPurchasesStubbing = every {
+            mockClient.queryPurchasesAsync(
+                any<QueryPurchasesParams>(),
                 capture(slot)
             )
         }
-        val productIDs = setOf("product_a")
         var receivedError: PurchasesError? = null
         var timesRetried = 0
-        val useCase = QueryProductDetailsUseCase(
-            QueryProductDetailsUseCaseParams(
+        QueryPurchasesUseCase(
+            QueryPurchasesUseCaseParams(
                 mockDateProvider,
                 mockDiagnosticsTracker,
-                productIDs,
-                ProductType.SUBS,
             ),
             { _ ->
                 fail("shouldn't be success")
@@ -595,8 +583,8 @@ internal class QueryPurchasesUseCaseTest: BaseBillingUseCaseTest() {
                 it.invoke(mockClient)
             },
             executeRequestOnUIThread = {
-                queryProductDetailsStubbing answers {
-                    slot.captured.onProductDetailsResponse(
+                queryPurchasesStubbing answers {
+                    slot.captured.onQueryPurchasesResponse(
                         BillingClient.BillingResponseCode.ITEM_UNAVAILABLE.buildResult(),
                         emptyList()
                     )
@@ -604,9 +592,7 @@ internal class QueryPurchasesUseCaseTest: BaseBillingUseCaseTest() {
 
                 it.invoke(null)
             },
-        )
-
-        useCase.run()
+        ).run()
 
         assertThat(timesRetried).isEqualTo(1)
         assertThat(receivedError).isNotNull

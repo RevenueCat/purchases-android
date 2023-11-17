@@ -38,6 +38,7 @@ internal open class BaseBillingUseCaseTest {
     protected var mockDeviceCache: DeviceCache = mockk()
     protected var mockDiagnosticsTracker: DiagnosticsTracker = mockk()
     protected var mockDateProvider: DateProvider = mockk()
+
     protected val billingClientOKResult = BillingClient.BillingResponseCode.OK.buildResult()
     protected val billingClientDisconnectedResult = BillingClient.BillingResponseCode.SERVICE_DISCONNECTED.buildResult()
 

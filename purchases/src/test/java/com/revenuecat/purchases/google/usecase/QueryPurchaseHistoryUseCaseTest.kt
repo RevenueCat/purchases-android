@@ -314,7 +314,7 @@ internal class QueryPurchaseHistoryUseCaseTest: BaseBillingUseCaseTest() {
                 timesExecutedInMainThread++
 
                 queryPurchaseHistoryStubbing answers {
-                    if (timesExecutedInMainThread == 0) {
+                    if (timesExecutedInMainThread == 1) {
                         slot.captured.onPurchaseHistoryResponse(
                             billingClientDisconnectedResult,
                             emptyList()
@@ -337,6 +337,7 @@ internal class QueryPurchaseHistoryUseCaseTest: BaseBillingUseCaseTest() {
 
         useCase.run()
 
+        assertThat(timesExecutedInMainThread).isEqualTo(2)
         assertThat(receivedList).isNotNull
         assertThat(receivedList!!.size).isOne
     }
