@@ -457,7 +457,7 @@ internal class QueryProductDetailsUseCaseTest: BaseBillingUseCaseTest() {
         assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.ProductNotAvailableForPurchaseError)
     }
 
-    // endregion
+    // endregion retries
 
     private fun mockEmptyProductDetailsResponse() {
         val slot = slot<ProductDetailsResponseListener>()

@@ -527,16 +527,4 @@ internal class QueryPurchaseHistoryUseCaseTest: BaseBillingUseCaseTest() {
 
     // endregion retries
 
-
-    private fun mockConsumeAsync(billingResult: BillingResult) {
-        every {
-            mockClient.consumeAsync(capture(capturedConsumeParams), capture(capturedConsumeResponseListener))
-        } answers {
-            capturedConsumeResponseListener.captured.onConsumeResponse(
-                billingResult,
-                capturedConsumeParams.captured.purchaseToken
-            )
-        }
-    }
-
 }
