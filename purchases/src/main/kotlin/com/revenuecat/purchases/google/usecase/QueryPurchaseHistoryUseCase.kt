@@ -68,7 +68,7 @@ internal class QueryPurchaseHistoryUseCase(
         }
     }
 
-    private fun onOk(received: List<PurchaseHistoryRecord>?) {
+    override fun onOk(received: List<PurchaseHistoryRecord>?) {
         received.takeUnless { it.isNullOrEmpty() }?.forEach {
             log(
                 LogIntent.RC_PURCHASE_SUCCESS,

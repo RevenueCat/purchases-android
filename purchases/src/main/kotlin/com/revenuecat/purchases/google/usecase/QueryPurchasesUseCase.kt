@@ -38,14 +38,14 @@ internal class QueryPurchasesUseCase(
     val onError: (PurchasesError) -> Unit,
     val withConnectedClient: (BillingClient.() -> Unit) -> Unit,
     executeRequestOnUIThread: ((PurchasesError?) -> Unit) -> Unit,
-) : BillingClientUseCase<List<Purchase>>(onError, executeRequestOnUIThread) {
+) : BillingClientUseCase<Map<String, StoreTransaction>>(onError, executeRequestOnUIThread) {
 
     override val errorMessage: String
         get() = "Error when querying purchases"
 
     private fun queryInApps(
         billingClient: BillingClient,
-        onQueryInAppsSuccess: (List<Purchase>) -> Unit,
+        onQueryInAppsSuccess: (Map<String, StoreTransaction>) -> Unit,
         onQueryInAppsError: (BillingResult) -> Unit,
     ) {
         val queryInAppsPurchasesParams = BillingClient.ProductType.INAPP.buildQueryPurchasesParams()
@@ -65,7 +65,7 @@ internal class QueryPurchasesUseCase(
             listener = { unconsumedInAppsResult, unconsumedInAppsPurchases ->
                 processResult(
                     unconsumedInAppsResult,
-                    unconsumedInAppsPurchases,
+                    unconsumedInAppsPurchases.toMapOfGooglePurchaseWrapper(BillingClient.ProductType.INAPP),
                     onQueryInAppsSuccess,
                     onQueryInAppsError,
                 )
@@ -75,7 +75,7 @@ internal class QueryPurchasesUseCase(
 
     private fun querySubscriptions(
         billingClient: BillingClient,
-        onQuerySubscriptionsSuccess: (List<Purchase>) -> Unit,
+        onQuerySubscriptionsSuccess: (Map<String, StoreTransaction>) -> Unit,
         onQuerySubscriptionsError: (BillingResult) -> Unit,
     ) {
         val querySubsPurchasesParams = BillingClient.ProductType.SUBS.buildQueryPurchasesParams()
@@ -94,7 +94,7 @@ internal class QueryPurchasesUseCase(
         ) { activeSubsResult, activeSubsPurchases ->
             processResult(
                 activeSubsResult,
-                activeSubsPurchases,
+                activeSubsPurchases.toMapOfGooglePurchaseWrapper(BillingClient.ProductType.SUBS),
                 onQuerySubscriptionsSuccess,
                 onQuerySubscriptionsError,
             )
@@ -105,16 +105,11 @@ internal class QueryPurchasesUseCase(
         withConnectedClient {
             querySubscriptions(
                 this,
-                onQuerySubscriptionsSuccess = { received ->
-                    val mapOfActiveSubscriptions =
-                        received.toMapOfGooglePurchaseWrapper(BillingClient.ProductType.SUBS)
-
+                onQuerySubscriptionsSuccess = { activeSubs ->
                     queryInApps(
                         this,
-                        onQueryInAppsSuccess = { received ->
-                            val mapOfUnconsumedInApps: Map<String, StoreTransaction> =
-                                received.toMapOfGooglePurchaseWrapper(BillingClient.ProductType.INAPP)
-                            onSuccess(mapOfActiveSubscriptions + mapOfUnconsumedInApps)
+                        onQueryInAppsSuccess = { unconsumedInApps ->
+                            onOk(activeSubs + unconsumedInApps)
                         },
                         onQueryInAppsError = { received ->
                             forwardError(
@@ -134,6 +129,10 @@ internal class QueryPurchasesUseCase(
                 },
             )
         }
+    }
+
+    override fun onOk(received: Map<String, StoreTransaction>) {
+        onSuccess(received)
     }
 
     private fun forwardError(billingResult: BillingResult, underlyingErrorMessage: String) {

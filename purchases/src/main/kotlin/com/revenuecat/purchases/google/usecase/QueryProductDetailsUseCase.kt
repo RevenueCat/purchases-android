@@ -67,7 +67,7 @@ internal class QueryProductDetailsUseCase(
         }
     }
 
-    private fun onOk(received: List<ProductDetails>) {
+    override fun onOk(received: List<ProductDetails>) {
         log(
             LogIntent.DEBUG,
             OfferingStrings.FETCHING_PRODUCTS_FINISHED.format(useCaseParams.productIds.joinToString()),

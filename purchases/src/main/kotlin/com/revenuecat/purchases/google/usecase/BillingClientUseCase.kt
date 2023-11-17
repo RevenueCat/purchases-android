@@ -37,11 +37,12 @@ internal abstract class BillingClientUseCase<T>(
     }
 
     abstract fun executeAsync()
+    abstract fun onOk(received: T)
 
     fun processResult(
         billingResult: BillingResult,
         response: T,
-        onSuccess: (T) -> Unit,
+        onSuccess: (T) -> Unit = ::onOk,
         onError: (BillingResult) -> Unit = ::forwardError,
     ) {
         when (BillingResponse.fromCode(billingResult.responseCode)) {

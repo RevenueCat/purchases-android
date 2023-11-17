@@ -40,7 +40,7 @@ internal class GetBillingConfigUseCase(
         }
     }
 
-    private fun onOk(received: BillingConfig?) {
+    override fun onOk(received: BillingConfig?) {
         if (received == null) {
             onError(PurchasesError(PurchasesErrorCode.StoreProblemError, BillingStrings.BILLING_CONFIG_NULL_ON_SUCCESS))
         } else {
