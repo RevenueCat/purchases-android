@@ -1,28 +1,19 @@
 package com.revenuecat.purchases.google.usecase
 
-import android.os.Handler
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingClient.BillingResponseCode
-import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingConfig
 import com.android.billingclient.api.BillingConfigResponseListener
 import com.android.billingclient.api.BillingResult
-import com.android.billingclient.api.PurchasesUpdatedListener
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
-import com.revenuecat.purchases.common.caching.DeviceCache
-import com.revenuecat.purchases.google.BillingWrapper
-import com.revenuecat.purchases.utils.MockHandlerFactory
 import io.mockk.Runs
-import io.mockk.clearAllMocks
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.After
 import org.junit.Assert.fail
 import org.junit.Before
 import org.junit.Test
@@ -31,7 +22,7 @@ import org.robolectric.annotation.Config
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
-class GetBillingConfigUseCaseTest {
+internal class GetBillingConfigUseCaseTest: BaseBillingUseCaseTest() {
 
     private val expectedCountryCode = "JP"
 
@@ -39,55 +30,10 @@ class GetBillingConfigUseCaseTest {
         every { countryCode } returns expectedCountryCode
     }
 
-    private var mockClientFactory: BillingWrapper.ClientFactory = mockk()
-    private var mockClient: BillingClient = mockk()
-    private var deviceCache: DeviceCache = mockk()
-    private var purchasesUpdatedListener: PurchasesUpdatedListener? = null
-    private var billingClientStateListener: BillingClientStateListener? = null
-
-    private lateinit var handler: Handler
-
-    private lateinit var wrapper: BillingWrapper
-
     @Before
-    fun setup() {
-        handler = MockHandlerFactory.createMockHandler()
-        purchasesUpdatedListener = null
-        billingClientStateListener = null
-
-        every { deviceCache.setStorefront(expectedCountryCode) } just Runs
-
-        val listenerSlot = slot<PurchasesUpdatedListener>()
-        every {
-            mockClientFactory.buildClient(capture(listenerSlot))
-        } answers {
-            purchasesUpdatedListener = listenerSlot.captured
-            mockClient
-        }
-
-        val billingClientStateListenerSlot = slot<BillingClientStateListener>()
-        every {
-            mockClient.startConnection(capture(billingClientStateListenerSlot))
-        } answers {
-            billingClientStateListener = billingClientStateListenerSlot.captured
-        }
-
-        every {
-            mockClient.endConnection()
-        } just Runs
-
-        every {
-            mockClient.isReady
-        } returns false andThen true
-
-        wrapper = BillingWrapper(mockClientFactory, handler, deviceCache, mockk(), mockk())
-        wrapper.purchasesUpdatedListener = mockk()
-        wrapper.startConnectionOnMainThread()
-    }
-
-    @After
-    fun tearDown() {
-        clearAllMocks()
+    override fun setup() {
+        super.setup()
+        every { mockDeviceCache.setStorefront(expectedCountryCode) } just Runs
     }
 
     @Test
@@ -108,7 +54,7 @@ class GetBillingConfigUseCaseTest {
             onSuccess = { },
             onError = { fail("Should succeed") }
         )
-        verify(exactly = 1) { deviceCache.setStorefront(expectedCountryCode) }
+        verify(exactly = 1) { mockDeviceCache.setStorefront(expectedCountryCode) }
     }
 
     @Test
@@ -150,7 +96,7 @@ class GetBillingConfigUseCaseTest {
             onSuccess = { fail("Should error") },
             onError = { }
         )
-        verify(exactly = 0) { deviceCache.setStorefront(expectedCountryCode) }
+        verify(exactly = 0) { mockDeviceCache.setStorefront(expectedCountryCode) }
     }
 
     private fun mockGetBillingConfig(
