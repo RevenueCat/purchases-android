@@ -316,7 +316,7 @@ internal class QueryPurchaseHistoryUseCaseTest: BaseBillingUseCaseTest() {
                 queryPurchaseHistoryStubbing answers {
                     if (timesExecutedInMainThread == 0) {
                         slot.captured.onPurchaseHistoryResponse(
-                            BillingClient.BillingResponseCode.SERVICE_DISCONNECTED.buildResult(),
+                            billingClientDisconnectedResult,
                             emptyList()
                         )
                     } else {
@@ -325,7 +325,7 @@ internal class QueryPurchaseHistoryUseCaseTest: BaseBillingUseCaseTest() {
                             every { it.firstSku } returns sku + "somethingrandom"
                         }
                         slot.captured.onPurchaseHistoryResponse(
-                            BillingClient.BillingResponseCode.OK.buildResult(),
+                            billingClientOKResult,
                             listOf(purchaseHistoryRecord)
                         )
                     }

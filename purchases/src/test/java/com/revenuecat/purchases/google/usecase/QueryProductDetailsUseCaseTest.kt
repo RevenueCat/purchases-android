@@ -244,12 +244,12 @@ internal class QueryProductDetailsUseCaseTest: BaseBillingUseCaseTest() {
                 queryProductDetailsStubbing answers {
                     if (timesExecutedInMainThread == 0) {
                         slot.captured.onProductDetailsResponse(
-                            BillingClient.BillingResponseCode.SERVICE_DISCONNECTED.buildResult(),
+                            billingClientDisconnectedResult,
                             emptyList()
                         )
                     } else {
                         slot.captured.onProductDetailsResponse(
-                            BillingClient.BillingResponseCode.OK.buildResult(),
+                            billingClientOKResult,
                             mockDetailsList
                         )
                     }

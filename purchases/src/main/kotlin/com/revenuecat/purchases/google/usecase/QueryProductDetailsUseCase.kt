@@ -58,12 +58,16 @@ internal class QueryProductDetailsUseCase(
                 googleType,
                 params,
             ) { billingResult, productDetailsList ->
-                processResult(billingResult, productDetailsList)
+                processResult(
+                    billingResult,
+                    productDetailsList,
+                    ::onOk,
+                )
             }
         }
     }
 
-    override fun onOk(received: List<ProductDetails>) {
+    private fun onOk(received: List<ProductDetails>) {
         log(
             LogIntent.DEBUG,
             OfferingStrings.FETCHING_PRODUCTS_FINISHED.format(useCaseParams.productIds.joinToString()),

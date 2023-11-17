@@ -35,12 +35,12 @@ internal class GetBillingConfigUseCase(
                     )
                     return@getBillingConfigAsync
                 }
-                processResult(result, config)
+                processResult(result, config, ::onOk)
             }
         }
     }
 
-    override fun onOk(received: BillingConfig?) {
+    private fun onOk(received: BillingConfig?) {
         if (received == null) {
             onError(PurchasesError(PurchasesErrorCode.StoreProblemError, BillingStrings.BILLING_CONFIG_NULL_ON_SUCCESS))
         } else {
