@@ -37,7 +37,7 @@ internal class QueryPurchasesUseCaseTest : BaseBillingUseCaseTest() {
     private var billingClientStateListener: BillingClientStateListener? = null
     private val billingClientBillingUnavailableResult =
         BillingClient.BillingResponseCode.BILLING_UNAVAILABLE.buildResult()
-    
+
     @Before
     override fun setup() {
         super.setup()

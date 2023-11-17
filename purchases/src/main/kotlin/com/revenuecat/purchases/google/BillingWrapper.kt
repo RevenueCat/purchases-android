@@ -164,7 +164,7 @@ internal class BillingWrapper(
     }
 
     @Synchronized
-    fun executeRequestOnUIThread(request: (PurchasesError?) -> Unit) {
+    private fun executeRequestOnUIThread(request: (PurchasesError?) -> Unit) {
         if (purchasesUpdatedListener != null) {
             serviceRequests.add(request)
             if (billingClient?.isReady == false) {
