@@ -21,10 +21,13 @@ enum class EntitlementVerificationMode {
      */
     INFORMATIONAL,
 
-    ;
-
-    // Hidden ENFORCED mode during feature beta
-    // ENFORCED;
+    /**
+     * Enable entitlement verification.
+     *
+     * If verification fails when fetching [CustomerInfo] and/or [EntitlementInfos]
+     * [PurchasesErrorCode.SignatureVerificationError] will be returned in the error handler.
+     */
+    ENFORCED;
 
     companion object {
         /**
