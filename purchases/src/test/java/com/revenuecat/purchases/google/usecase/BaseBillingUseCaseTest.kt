@@ -1,7 +1,6 @@
 package com.revenuecat.purchases.google.usecase
 
 import android.os.Handler
-import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingResult
@@ -20,12 +19,8 @@ import io.mockk.mockk
 import io.mockk.slot
 import org.junit.After
 import org.junit.Before
-import org.junit.runner.RunWith
-import org.robolectric.annotation.Config
 import java.util.Date
 
-@RunWith(AndroidJUnit4::class)
-@Config(manifest = Config.NONE)
 internal open class BaseBillingUseCaseTest {
     private var onConnectedCalled: Boolean = false
 
