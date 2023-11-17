@@ -27,6 +27,7 @@ import com.revenuecat.purchases.google.productId
 import com.revenuecat.purchases.google.productList
 import com.revenuecat.purchases.google.productType
 import com.revenuecat.purchases.models.StoreProduct
+import com.revenuecat.purchases.utils.MockHandlerFactory
 import com.revenuecat.purchases.utils.mockProductDetails
 import io.mockk.Runs
 import io.mockk.clearAllMocks
@@ -56,7 +57,6 @@ class QueryProductDetailsUseCaseTest {
     private var mockClient: BillingClient = mockk()
     private var purchasesUpdatedListener: PurchasesUpdatedListener? = null
     private var billingClientStateListener: BillingClientStateListener? = null
-    private var handler: Handler = mockk()
     private var mockDeviceCache: DeviceCache = mockk()
     private var mockDiagnosticsTracker: DiagnosticsTracker = mockk()
     private var mockDateProvider: DateProvider = mockk()
@@ -68,6 +68,7 @@ class QueryProductDetailsUseCaseTest {
     private var capturedConsumeResponseListener = slot<ConsumeResponseListener>()
     private var capturedConsumeParams = slot<ConsumeParams>()
 
+    private lateinit var handler: Handler
     private lateinit var wrapper: BillingWrapper
 
     private lateinit var mockDetailsList: List<ProductDetails>
@@ -79,11 +80,12 @@ class QueryProductDetailsUseCaseTest {
 
     @Before
     fun setup() {
+        handler = MockHandlerFactory.createMockHandler()
+
         storeProducts = null
         purchasesUpdatedListener = null
         billingClientStateListener = null
 
-        mockRunnables()
         mockDiagnosticsTracker()
         every { mockDateProvider.now } returns Date(1676379370000) // Tuesday, February 14, 2023 12:56:10 PM GMT
 
@@ -587,24 +589,6 @@ class QueryProductDetailsUseCaseTest {
                 billingResult,
                 capturedConsumeParams.captured.purchaseToken
             )
-        }
-    }
-
-    private fun mockRunnables() {
-        val slot = slot<Runnable>()
-        every {
-            handler.post(capture(slot))
-        } answers {
-            slot.captured.run()
-            true
-        }
-
-        val delayedSlot = slot<Runnable>()
-        every {
-            handler.postDelayed(capture(delayedSlot), any())
-        } answers {
-            delayedSlot.captured.run()
-            true
         }
     }
 
