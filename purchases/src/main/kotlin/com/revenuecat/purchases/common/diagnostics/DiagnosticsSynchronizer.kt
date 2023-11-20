@@ -45,10 +45,12 @@ internal class DiagnosticsSynchronizer(
     }
 
     fun clearDiagnosticsFileIfTooBig() {
-        if (diagnosticsFileHelper.isDiagnosticsFileTooBig()) {
-            verboseLog("Diagnostics file is too big. Deleting it.")
-            diagnosticsTracker.trackMaxEventsStoredLimitReached()
-            resetDiagnosticsStatus()
+        enqueue {
+            if (diagnosticsFileHelper.isDiagnosticsFileTooBig()) {
+                verboseLog("Diagnostics file is too big. Deleting it.")
+                diagnosticsTracker.trackMaxEventsStoredLimitReached()
+                resetDiagnosticsStatus()
+            }
         }
     }
 
