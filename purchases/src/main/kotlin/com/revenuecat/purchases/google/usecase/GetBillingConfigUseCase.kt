@@ -35,7 +35,7 @@ internal class GetBillingConfigUseCase(
                     )
                     return@getBillingConfigAsync
                 }
-                processResult(result, config, ::onOk)
+                processResult(result, config)
             }
         }
     }

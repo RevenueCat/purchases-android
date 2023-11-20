@@ -55,7 +55,7 @@ internal class QueryPurchaseHistoryUseCase(
                             billingResult,
                             requestStartTime,
                         )
-                        processResult(billingResult, purchaseHistory, ::onOk)
+                        processResult(billingResult, purchaseHistory)
                     }
                 }
             } ?: run {
@@ -63,7 +63,7 @@ internal class QueryPurchaseHistoryUseCase(
                 val devErrorResponseCode = BillingResult.newBuilder()
                     .setResponseCode(BillingClient.BillingResponseCode.DEVELOPER_ERROR)
                     .build()
-                processResult(devErrorResponseCode, null, ::onOk)
+                processResult(devErrorResponseCode, null)
             }
         }
     }
