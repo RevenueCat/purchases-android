@@ -94,7 +94,7 @@ internal abstract class BaseBackendIntegrationTest {
             every { getString(any(), any()) } answers { secondArg() as String? }
             every { edit() } returns sharedPreferencesEditor
         }
-        eTagManager = ETagManager(sharedPreferences)
+        eTagManager = ETagManager(mockk(), lazy { sharedPreferences })
         signingManager = spyk(SigningManager(signatureVerificationMode, appConfig, apiKey()))
         deviceCache = DeviceCache(sharedPreferences, apiKey())
         httpClient = HTTPClient(appConfig, eTagManager, diagnosticsTrackerIfEnabled = null, signingManager, deviceCache)

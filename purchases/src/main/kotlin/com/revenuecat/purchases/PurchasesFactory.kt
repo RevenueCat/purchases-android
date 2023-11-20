@@ -83,8 +83,7 @@ internal class PurchasesFactory(
 
             val prefs = PreferenceManager.getDefaultSharedPreferences(application)
 
-            val sharedPreferencesForETags = ETagManager.initializeSharedPreferences(context)
-            val eTagManager = ETagManager(sharedPreferencesForETags)
+            val eTagManager = ETagManager(context)
 
             val dispatcher = Dispatcher(createDefaultExecutor(), runningIntegrationTests)
             val backendDispatcher = Dispatcher(service ?: createDefaultExecutor(), runningIntegrationTests)
@@ -212,11 +211,11 @@ internal class PurchasesFactory(
             var diagnosticsSynchronizer: DiagnosticsSynchronizer? = null
             if (diagnosticsFileHelper != null && diagnosticsTracker != null && isAndroidNOrNewer()) {
                 diagnosticsSynchronizer = DiagnosticsSynchronizer(
+                    context,
                     diagnosticsFileHelper,
                     diagnosticsTracker,
                     backend,
                     eventsDispatcher,
-                    DiagnosticsSynchronizer.initializeSharedPreferences(context),
                 )
             }
 

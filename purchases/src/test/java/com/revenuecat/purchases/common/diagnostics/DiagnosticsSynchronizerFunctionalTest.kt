@@ -40,11 +40,12 @@ class DiagnosticsSynchronizerFunctionalTest {
         every { diagnosticsTracker.trackMaxEventsStoredLimitReached() } just Runs
 
         diagnosticsSynchronizer = DiagnosticsSynchronizer(
+            mockk(),
             DiagnosticsFileHelper(FileHelper(applicationContext)),
             diagnosticsTracker = diagnosticsTracker,
             backend = mockk(),
             diagnosticsDispatcher = SyncDispatcher(),
-            sharedPreferences = mockk(relaxed = true),
+            sharedPreferences = lazy { mockk(relaxed = true) },
         )
     }
 
