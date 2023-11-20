@@ -49,7 +49,8 @@ internal data class HTTPResultWithETag(
 }
 
 internal class ETagManager(
-    private val prefs: SharedPreferences,
+    context: Context,
+    private val prefs: Lazy<SharedPreferences> = lazy { initializeSharedPreferences(context) },
     private val dateProvider: DateProvider = DefaultDateProvider(),
 ) {
 
@@ -126,7 +127,7 @@ internal class ETagManager(
 
     @Synchronized
     internal fun clearCaches() {
-        prefs.edit().clear().apply()
+        prefs.value.edit().clear().apply()
     }
 
     @Synchronized
@@ -138,11 +139,11 @@ internal class ETagManager(
         val cacheResult = result.copy(origin = HTTPResult.Origin.CACHE)
         val eTagData = ETagData(eTag, dateProvider.now)
         val httpResultWithETag = HTTPResultWithETag(eTagData, cacheResult)
-        prefs.edit().putString(path, httpResultWithETag.serialize()).apply()
+        prefs.value.edit().putString(path, httpResultWithETag.serialize()).apply()
     }
 
     private fun getStoredResultSavedInSharedPreferences(path: String): HTTPResultWithETag? {
-        val serializedHTTPResultWithETag = prefs.getString(path, null)
+        val serializedHTTPResultWithETag = prefs.value.getString(path, null)
         return serializedHTTPResultWithETag?.let {
             HTTPResultWithETag.deserialize(it)
         }

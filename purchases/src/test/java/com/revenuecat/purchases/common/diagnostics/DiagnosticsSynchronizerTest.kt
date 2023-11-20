@@ -51,11 +51,12 @@ class DiagnosticsSynchronizerTest {
         mockDiagnosticsFileHelper()
 
         diagnosticsSynchronizer = DiagnosticsSynchronizer(
+            mockk(),
             diagnosticsFileHelper,
             diagnosticsTracker,
             backend,
             dispatcher,
-            sharedPreferences
+            lazy { sharedPreferences }
         )
     }
 

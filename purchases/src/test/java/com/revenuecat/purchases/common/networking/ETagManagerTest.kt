@@ -30,7 +30,7 @@ class ETagManagerTest {
             get() = testDate
     }
     private val mockedPrefs = mockk<SharedPreferences>()
-    private val underTest = ETagManager(mockedPrefs, testDateProvider)
+    private val underTest = ETagManager(mockk(), lazy { mockedPrefs }, testDateProvider)
     private val slotPutStringSharedPreferencesKey = slot<String>()
     private val slotPutSharedPreferencesValue = slot<String>()
     private val mockEditor = mockk<SharedPreferences.Editor>()

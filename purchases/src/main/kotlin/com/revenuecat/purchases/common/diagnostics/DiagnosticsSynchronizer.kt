@@ -21,11 +21,12 @@ import java.util.stream.Collectors
  */
 @RequiresApi(Build.VERSION_CODES.N)
 internal class DiagnosticsSynchronizer(
+    context: Context,
     private val diagnosticsFileHelper: DiagnosticsFileHelper,
     private val diagnosticsTracker: DiagnosticsTracker,
     private val backend: Backend,
     private val diagnosticsDispatcher: Dispatcher,
-    private val sharedPreferences: SharedPreferences,
+    private val sharedPreferences: Lazy<SharedPreferences> = lazy { initializeSharedPreferences(context) },
 ) {
     companion object {
         @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
@@ -117,12 +118,12 @@ internal class DiagnosticsSynchronizer(
     }
 
     private fun clearConsecutiveNumberOfErrors() {
-        sharedPreferences.edit().remove(CONSECUTIVE_FAILURES_COUNT_KEY).apply()
+        sharedPreferences.value.edit().remove(CONSECUTIVE_FAILURES_COUNT_KEY).apply()
     }
 
     private fun increaseConsecutiveNumberOfErrors(): Int {
-        var count = sharedPreferences.getInt(CONSECUTIVE_FAILURES_COUNT_KEY, 0)
-        sharedPreferences.edit().putInt(CONSECUTIVE_FAILURES_COUNT_KEY, ++count).apply()
+        var count = sharedPreferences.value.getInt(CONSECUTIVE_FAILURES_COUNT_KEY, 0)
+        sharedPreferences.value.edit().putInt(CONSECUTIVE_FAILURES_COUNT_KEY, ++count).apply()
         return count
     }
 
