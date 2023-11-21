@@ -33,14 +33,6 @@ import kotlin.time.Duration.Companion.milliseconds
 @Config(manifest = Config.NONE)
 internal class QueryPurchaseHistoryUseCaseTest: BaseBillingUseCaseTest() {
 
-    private companion object {
-        const val timestamp0 = 1676379370000 // Tuesday, February 14, 2023 12:56:10.000 PM GMT
-        const val timestamp123 = 1676379370123 // Tuesday, February 14, 2023 12:56:10.123 PM GMT
-    }
-
-    private var capturedConsumeResponseListener = slot<ConsumeResponseListener>()
-    private var capturedConsumeParams = slot<ConsumeParams>()
-
     private val subsGoogleProductType = ProductType.SUBS.toGoogleProductType()!!
     private val inAppGoogleProductType = ProductType.INAPP.toGoogleProductType()!!
 
@@ -314,9 +306,9 @@ internal class QueryPurchaseHistoryUseCaseTest: BaseBillingUseCaseTest() {
                 timesExecutedInMainThread++
 
                 queryPurchaseHistoryStubbing answers {
-                    if (timesExecutedInMainThread == 0) {
+                    if (timesExecutedInMainThread == 1) {
                         slot.captured.onPurchaseHistoryResponse(
-                            BillingClient.BillingResponseCode.SERVICE_DISCONNECTED.buildResult(),
+                            billingClientDisconnectedResult,
                             emptyList()
                         )
                     } else {
@@ -325,7 +317,7 @@ internal class QueryPurchaseHistoryUseCaseTest: BaseBillingUseCaseTest() {
                             every { it.firstSku } returns sku + "somethingrandom"
                         }
                         slot.captured.onPurchaseHistoryResponse(
-                            BillingClient.BillingResponseCode.OK.buildResult(),
+                            billingClientOKResult,
                             listOf(purchaseHistoryRecord)
                         )
                     }
@@ -337,6 +329,7 @@ internal class QueryPurchaseHistoryUseCaseTest: BaseBillingUseCaseTest() {
 
         useCase.run()
 
+        assertThat(timesExecutedInMainThread).isEqualTo(2)
         assertThat(receivedList).isNotNull
         assertThat(receivedList!!.size).isOne
     }

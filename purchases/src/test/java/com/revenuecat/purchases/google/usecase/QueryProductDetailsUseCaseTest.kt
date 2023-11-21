@@ -242,14 +242,14 @@ internal class QueryProductDetailsUseCaseTest: BaseBillingUseCaseTest() {
                 timesExecutedInMainThread++
 
                 queryProductDetailsStubbing answers {
-                    if (timesExecutedInMainThread == 0) {
+                    if (timesExecutedInMainThread == 1) {
                         slot.captured.onProductDetailsResponse(
-                            BillingClient.BillingResponseCode.SERVICE_DISCONNECTED.buildResult(),
+                            billingClientDisconnectedResult,
                             emptyList()
                         )
                     } else {
                         slot.captured.onProductDetailsResponse(
-                            BillingClient.BillingResponseCode.OK.buildResult(),
+                            billingClientOKResult,
                             mockDetailsList
                         )
                     }
@@ -261,6 +261,7 @@ internal class QueryProductDetailsUseCaseTest: BaseBillingUseCaseTest() {
 
         useCase.run()
 
+        assertThat(timesExecutedInMainThread).isEqualTo(2)
         assertThat(receivedList).isNotNull
         assertThat(receivedList!!.size).isOne
     }

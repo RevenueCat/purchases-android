@@ -22,9 +22,13 @@ import org.junit.Before
 import java.util.Date
 
 internal open class BaseBillingUseCaseTest {
-    private var onConnectedCalled: Boolean = false
 
-    private var mockPurchasesListener: BillingAbstract.PurchasesUpdatedListener = mockk()
+    protected companion object {
+        const val timestamp0 = 1676379370000 // Tuesday, February 14, 2023 12:56:10.000 PM GMT
+        const val timestamp123 = 1676379370123 // Tuesday, February 14, 2023 12:56:10.123 PM GMT
+        const val timestamp500 = 1676379370500 // Tuesday, February 14, 2023 12:56:10.500 PM GMT
+        const val timestamp900 = 1676379370900 // Tuesday, February 14, 2023 12:56:10.900 PM GMT
+    }
 
     protected lateinit var handler: Handler
 
@@ -34,7 +38,12 @@ internal open class BaseBillingUseCaseTest {
     protected var mockDeviceCache: DeviceCache = mockk()
     protected var mockDiagnosticsTracker: DiagnosticsTracker = mockk()
     protected var mockDateProvider: DateProvider = mockk()
+
     protected val billingClientOKResult = BillingClient.BillingResponseCode.OK.buildResult()
+    protected val billingClientDisconnectedResult = BillingClient.BillingResponseCode.SERVICE_DISCONNECTED.buildResult()
+
+    private var onConnectedCalled: Boolean = false
+    private var mockPurchasesListener: BillingAbstract.PurchasesUpdatedListener = mockk()
 
     @Before
     open fun setup() {

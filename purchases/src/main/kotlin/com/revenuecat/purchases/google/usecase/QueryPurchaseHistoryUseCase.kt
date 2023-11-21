@@ -3,7 +3,6 @@ package com.revenuecat.purchases.google.usecase
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.PurchaseHistoryRecord
-import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCallback
 import com.revenuecat.purchases.common.DateProvider
@@ -15,7 +14,6 @@ import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.toHumanReadableDescription
 import com.revenuecat.purchases.google.buildQueryPurchaseHistoryParams
-import com.revenuecat.purchases.google.toHumanReadableDescription
 import com.revenuecat.purchases.strings.PurchaseStrings
 import com.revenuecat.purchases.strings.RestoreStrings
 import java.util.Date

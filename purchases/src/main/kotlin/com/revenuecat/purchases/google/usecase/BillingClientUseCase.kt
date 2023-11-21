@@ -42,10 +42,12 @@ internal abstract class BillingClientUseCase<T>(
     fun processResult(
         billingResult: BillingResult,
         response: T,
+        onSuccess: (T) -> Unit = ::onOk,
+        onError: (BillingResult) -> Unit = ::forwardError,
     ) {
         when (BillingResponse.fromCode(billingResult.responseCode)) {
             BillingResponse.OK -> {
-                onOk(response)
+                onSuccess(response)
             }
 
             BillingResponse.ServiceDisconnected -> {
@@ -61,12 +63,12 @@ internal abstract class BillingClientUseCase<T>(
                     retryAttempt++
                     executeAsync()
                 } else {
-                    forwardError(billingResult, onError)
+                    onError(billingResult)
                 }
             }
 
             else -> {
-                forwardError(billingResult, onError)
+                onError(billingResult)
             }
         }
     }
@@ -85,7 +87,7 @@ internal abstract class BillingClientUseCase<T>(
         return stringWriter.toString()
     }
 
-    private fun forwardError(billingResult: BillingResult, onError: PurchasesErrorCallback) {
+    private fun forwardError(billingResult: BillingResult) {
         val underlyingErrorMessage = "$errorMessage - ${billingResult.toHumanReadableDescription()}"
         log(LogIntent.GOOGLE_ERROR, underlyingErrorMessage)
         onError(

@@ -57,9 +57,8 @@ internal class QueryProductDetailsUseCase(
                 this,
                 googleType,
                 params,
-            ) { billingResult, productDetailsList ->
-                processResult(billingResult, productDetailsList)
-            }
+                ::processResult,
+            )
         }
     }
 
