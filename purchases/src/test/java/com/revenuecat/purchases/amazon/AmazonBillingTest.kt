@@ -110,6 +110,7 @@ class AmazonBillingTest {
         var receivedPurchases: Map<String, StoreTransaction>? = null
         underTest.queryPurchases(
             appUserID,
+            appInBackground = false,
             onSuccess = {
                 receivedPurchases = it
             },
@@ -138,6 +139,7 @@ class AmazonBillingTest {
         var receivedPurchases: Map<String, StoreTransaction>? = null
         underTest.queryPurchases(
             appUserID,
+            appInBackground = false,
             onSuccess = {
                 receivedPurchases = it
             },
@@ -178,6 +180,7 @@ class AmazonBillingTest {
         var receivedPurchases: Map<String, StoreTransaction>? = null
         underTest.queryPurchases(
             appUserID,
+            appInBackground = false,
             onSuccess = {
                 receivedPurchases = it
             },
@@ -227,6 +230,7 @@ class AmazonBillingTest {
         var receivedPurchases: Map<String, StoreTransaction>? = null
         underTest.queryPurchases(
             appUserID,
+            appInBackground = false,
             onSuccess = {
                 receivedPurchases = it
             },
@@ -274,6 +278,7 @@ class AmazonBillingTest {
         var receivedPurchases: Map<String, StoreTransaction>? = null
         underTest.queryPurchases(
             appUserID,
+            appInBackground = false,
             onSuccess = {
                 receivedPurchases = it
             },
@@ -313,6 +318,7 @@ class AmazonBillingTest {
         var receivedPurchases: Map<String, StoreTransaction>? = null
         underTest.queryPurchases(
             appUserID,
+            appInBackground = false,
             onSuccess = {
                 receivedPurchases = it
             },
@@ -354,6 +360,7 @@ class AmazonBillingTest {
         var receivedPurchases: Map<String, StoreTransaction>? = null
         underTest.queryPurchases(
             appUserID,
+            appInBackground = false,
             onSuccess = {
                 receivedPurchases = it
             },
@@ -415,6 +422,7 @@ class AmazonBillingTest {
         var receivedError: PurchasesError? = null
         underTest.queryPurchases(
             appUserID,
+            appInBackground = false,
             onSuccess = {
                 fail("Should be an error")
             },
@@ -460,6 +468,7 @@ class AmazonBillingTest {
         var successCalled: Boolean = false
         underTest.queryPurchases(
             appUserID,
+            appInBackground = false,
             onSuccess = {
                 successCalled = true
                 receivedPurchases = it
@@ -498,13 +507,15 @@ class AmazonBillingTest {
         var onReceiveCalled = false
         underTest.queryProductDetailsAsync(
             productType = com.revenuecat.purchases.ProductType.SUBS,
-            productIds = productIds,,
+            productIds = productIds,
+            appInBackground = false,
             onError = {
                 fail("should be a success")
-            }
-        ) {
-            onReceiveCalled = true
-        }
+            },
+            onReceive = {
+                onReceiveCalled = true
+            },
+        )
 
         assertThat(onReceiveCalled).isTrue()
         assertThat(marketplaceSlot.captured).isEqualTo(countryCode)
@@ -523,7 +534,8 @@ class AmazonBillingTest {
                     storeUserId = "store_user_id",
                     marketplace = "US"
                 ),
-            )
+            ),
+            appInBackground = false,
         )
 
         verify(exactly = 0) {
@@ -554,7 +566,8 @@ class AmazonBillingTest {
                     storeUserId = "store_user_id",
                     marketplace = "US"
                 )
-            )
+            ),
+            appInBackground = false,
         )
 
         verify(exactly = 1) {
@@ -589,7 +602,8 @@ class AmazonBillingTest {
                     storeUserId = "store_user_id",
                     marketplace = "US"
                 )
-            )
+            ),
+            appInBackground = false,
         )
 
         verify(exactly = 0) {
@@ -617,6 +631,7 @@ class AmazonBillingTest {
         var receivedPurchases: List<StoreTransaction>? = null
         underTest.queryAllPurchases(
             appUserID,
+            appInBackground = false,
             onReceivePurchaseHistory = {
                 receivedPurchases = it
             },
@@ -792,6 +807,7 @@ class AmazonBillingTest {
         var receivedPurchases: List<StoreTransaction>? = null
         underTest.queryAllPurchases(
             appUserID,
+            appInBackground = false,
             onReceivePurchaseHistory = {
                 receivedPurchases = it
             },
@@ -1004,6 +1020,7 @@ class AmazonBillingTest {
         mockGetUserData()
         var countryCode: String? = null
         underTest.getStorefront(
+            appInBackground = false,
             onSuccess = { countryCode = it },
             onError = { fail("Should be a success") },
         )
@@ -1016,6 +1033,7 @@ class AmazonBillingTest {
         mockGetUserDataError()
         var error: PurchasesError? = null
         underTest.getStorefront(
+            appInBackground = false,
             onSuccess = { fail("Should be a error") },
             onError = { error = it },
         )

@@ -275,6 +275,7 @@ class BillingWrapperTest {
         var error: PurchasesError? = null
         wrapper.queryPurchases(
             appUserID = "appUserID",
+            appInBackground = false,
             onSuccess = {
                 fail("should be an error")
             },
@@ -998,11 +999,12 @@ class BillingWrapperTest {
 
         wrapper.queryProductDetailsAsync(
             ProductType.SUBS,
-            setOf("product_a"),,
+            setOf("product_a"),
+            appInBackground = false,
+            {},
             {
                 fail("shouldn't be an error")
-            },
-            {})
+            })
 
         wrapper.purchasesUpdatedListener = null
         wrapper.onBillingSetupFinished(billingClientOKResult)
@@ -1814,7 +1816,13 @@ class BillingWrapperTest {
             slot.captured.onProductDetailsResponse(result, emptyList())
         }
 
-        wrapper.queryProductDetailsAsync(ProductType.SUBS, setOf("test-sku"),, { fail("shouldn't be an error") }, {})
+        wrapper.queryProductDetailsAsync(
+            productType = ProductType.SUBS,
+            productIds = setOf("test-sku"),
+            appInBackground = false,
+            onReceive = {},
+            onError = { fail("shouldn't be an error") }
+        )
 
         verify(exactly = 1) {
             mockDiagnosticsTracker.trackGoogleQueryProductDetailsRequest(
@@ -1844,7 +1852,13 @@ class BillingWrapperTest {
             slot.captured.onProductDetailsResponse(result, emptyList())
         }
 
-        wrapper.queryProductDetailsAsync(ProductType.SUBS, setOf("test-sku"),, {}, { fail("should be an error") })
+        wrapper.queryProductDetailsAsync(
+            productType = ProductType.SUBS,
+            productIds = setOf("test-sku"),
+            appInBackground = false,
+            onReceive = { fail("should be an error") },
+            onError = {}
+        )
 
         verify(exactly = 1) {
             mockDiagnosticsTracker.trackGoogleQueryProductDetailsRequest(

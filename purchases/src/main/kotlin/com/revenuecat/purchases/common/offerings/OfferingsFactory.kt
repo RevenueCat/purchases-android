@@ -114,13 +114,10 @@ internal class OfferingsFactory(
         onError: (PurchasesError) -> Unit,
     ) {
         billing.queryProductDetailsAsync(
-            ProductType.SUBS,
-            productIds,
-            appInBackground,
-            {
-                onError(it)
-            },
-            { subscriptionProducts ->
+            productType = ProductType.SUBS,
+            productIds = productIds,
+            appInBackground = appInBackground,
+            onReceive = { subscriptionProducts ->
                 dispatcher.enqueue(command = {
                     val productsById = subscriptionProducts
                         .groupBy { subProduct -> subProduct.purchasingData.productId }
@@ -133,20 +130,23 @@ internal class OfferingsFactory(
                             productType = ProductType.INAPP,
                             productIds = inAppProductIds,
                             appInBackground = appInBackground,
-                            onError = {
-                                onError(it)
-                            },
                             onReceive = { inAppProducts ->
                                 dispatcher.enqueue(command = {
                                     productsById.putAll(inAppProducts.map { it.purchasingData.productId to listOf(it) })
                                     onCompleted(productsById)
                                 })
                             },
+                            onError = {
+                                onError(it)
+                            },
                         )
                     } else {
                         onCompleted(productsById)
                     }
                 })
+            },
+            onError = {
+                onError(it)
             },
         )
     }

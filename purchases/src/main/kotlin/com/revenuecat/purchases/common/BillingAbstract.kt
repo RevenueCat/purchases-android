@@ -49,8 +49,8 @@ internal abstract class BillingAbstract {
         productType: ProductType,
         productIds: Set<String>,
         appInBackground: Boolean,
-        onError: PurchasesErrorCallback,
         onReceive: StoreProductsCallback,
+        onError: PurchasesErrorCallback,
     )
 
     abstract fun consumeAndSave(

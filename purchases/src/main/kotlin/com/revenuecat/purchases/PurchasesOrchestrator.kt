@@ -754,15 +754,10 @@ internal class PurchasesOrchestrator constructor(
 
         type?.let {
             billing.queryProductDetailsAsync(
-                it,
-                productIds,
-                state.appInBackground,
-                {
-                    dispatch {
-                        callback.onError(it)
-                    }
-                },
-                { storeProducts ->
+                productType = it,
+                productIds = productIds,
+                appInBackground = state.appInBackground,
+                onReceive = { storeProducts ->
                     dispatch {
                         getProductsOfTypes(
                             productIds,
@@ -770,6 +765,11 @@ internal class PurchasesOrchestrator constructor(
                             collectedStoreProducts + storeProducts,
                             callback,
                         )
+                    }
+                },
+                onError = {
+                    dispatch {
+                        callback.onError(it)
                     }
                 },
             )

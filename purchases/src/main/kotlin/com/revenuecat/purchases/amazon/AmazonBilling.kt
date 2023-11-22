@@ -158,11 +158,11 @@ internal class AmazonBilling constructor(
     // region Product Data
 
     override fun queryProductDetailsAsync(
-        productType: com.revenuecat.purchases.ProductType,
+        productType: RevenueCatProductType,
         productIds: Set<String>,
         appInBackground: Boolean,
-        onError: PurchasesErrorCallback,
         onReceive: StoreProductsCallback,
+        onError: PurchasesErrorCallback,
     ) {
         if (checkObserverMode()) return
         executeRequestOnUIThread { connectionError ->

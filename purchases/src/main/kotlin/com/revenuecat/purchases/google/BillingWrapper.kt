@@ -193,8 +193,8 @@ internal class BillingWrapper(
         productType: ProductType,
         productIds: Set<String>,
         appInBackground: Boolean,
-        onError: PurchasesErrorCallback,
         onReceive: StoreProductsCallback,
+        onError: PurchasesErrorCallback,
     ) {
         log(LogIntent.DEBUG, OfferingStrings.FETCHING_PRODUCTS.format(productIds.joinToString()))
         val useCase = QueryProductDetailsUseCase(
