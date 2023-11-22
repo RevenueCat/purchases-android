@@ -19,6 +19,7 @@ import io.mockk.verify
 import io.mockk.verifySequence
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
+import org.assertj.core.data.Offset
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -489,7 +490,7 @@ internal class QueryPurchasesUseCaseTest : BaseBillingUseCaseTest() {
     }
 
     @Test
-    fun `If service returns SERVICE_UNAVAILABLE, re-execute a max of 3 times`() {
+    fun `If service returns SERVICE_UNAVAILABLE, don't retry and error if user in session`() {
         val slot = slot<PurchasesResponseListener>()
         val queryPurchasesStubbing = every {
             mockClient.queryPurchasesAsync(
@@ -528,6 +529,51 @@ internal class QueryPurchasesUseCaseTest : BaseBillingUseCaseTest() {
         ).run()
 
         assertThat(timesRetried).isEqualTo(4) // First attempt plus 3 retries
+        assertThat(receivedError).isNotNull
+        assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
+    }
+
+    @Test
+    fun `If service returns SERVICE_UNAVAILABLE, re-execute with backoff`() {
+        val slot = slot<PurchasesResponseListener>()
+        val queryPurchasesStubbing = every {
+            mockClient.queryPurchasesAsync(
+                any<QueryPurchasesParams>(),
+                capture(slot)
+            )
+        }
+        var receivedError: PurchasesError? = null
+        val capturedDelays = mutableListOf<Long>()
+        QueryPurchasesUseCase(
+            QueryPurchasesUseCaseParams(
+                mockDateProvider,
+                mockDiagnosticsTracker,
+                appInBackground = true,
+            ),
+            { _ ->
+                fail("shouldn't be success")
+            },
+            { error ->
+                receivedError = error
+            },
+            withConnectedClient = {
+                it.invoke(mockClient)
+            },
+            executeRequestOnUIThread = { delay, request ->
+                capturedDelays.add(delay)
+                queryPurchasesStubbing answers {
+                    slot.captured.onQueryPurchasesResponse(
+                        BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE.buildResult(),
+                        emptyList()
+                    )
+                }
+
+                request(null)
+            },
+        ).run()
+
+        assertThat(capturedDelays.size).isEqualTo(12)
+        assertThat(capturedDelays.last()).isCloseTo(RETRY_TIMER_MAX_TIME_MILLISECONDS, Offset.offset(1000L))
         assertThat(receivedError).isNotNull
         assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
     }

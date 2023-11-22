@@ -396,8 +396,8 @@ class CustomerInfoHelperTest {
             mockOfflineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(
                 appUserId = appUserId,
                 appInBackground = any(),
-                onSuccess = captureLambda(),
-                onError = any(),
+                onSuccess = any(),
+                onError = captureLambda(),
             )
         } answers {
             lambda<(PurchasesError) -> Unit>().captured.invoke(error)
@@ -435,7 +435,12 @@ class CustomerInfoHelperTest {
         )
 
         verify(exactly = 1) {
-            mockPostPendingTransactionsHelper.syncPendingPurchaseQueue(allowSharingPlayStoreAccount, any(), any())
+            mockPostPendingTransactionsHelper.syncPendingPurchaseQueue(
+                allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
+                appInBackground = any(),
+                onError = any(),
+                onSuccess = any()
+            )
         }
         verify(exactly = 1) { callbackMock.onReceived(syncPendingPurchasesCustomerInfo) }
         verify(exactly = 0) { mockBackend.getCustomerInfo(any(), any(), any(), any()) }
@@ -456,7 +461,12 @@ class CustomerInfoHelperTest {
         )
 
         verify(exactly = 1) {
-            mockPostPendingTransactionsHelper.syncPendingPurchaseQueue(allowSharingPlayStoreAccount, any(), any())
+            mockPostPendingTransactionsHelper.syncPendingPurchaseQueue(
+                allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
+                appInBackground = any(),
+                onError = any(),
+                onSuccess = any()
+            )
         }
         verify(exactly = 1) { mockBackend.getCustomerInfo(appUserId, appInBackground, any(), any()) }
         verify(exactly = 1) { callbackMock.onReceived(mockInfo) }
@@ -478,7 +488,12 @@ class CustomerInfoHelperTest {
         )
 
         verify(exactly = 1) {
-            mockPostPendingTransactionsHelper.syncPendingPurchaseQueue(allowSharingPlayStoreAccount, any(), any())
+            mockPostPendingTransactionsHelper.syncPendingPurchaseQueue(
+                allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
+                appInBackground = any(),
+                onError = any(),
+                onSuccess = any()
+            )
         }
         verify(exactly = 1) { mockBackend.getCustomerInfo(appUserId, appInBackground, any(), any()) }
         verify(exactly = 1) { callbackMock.onReceived(mockInfo) }

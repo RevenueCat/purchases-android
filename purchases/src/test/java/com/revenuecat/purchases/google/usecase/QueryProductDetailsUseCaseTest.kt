@@ -21,6 +21,7 @@ import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
 import org.assertj.core.api.AssertionsForClassTypes
+import org.assertj.core.data.Offset
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -339,7 +340,57 @@ internal class QueryProductDetailsUseCaseTest: BaseBillingUseCaseTest() {
     }
 
     @Test
-    fun `If service returns SERVICE_UNAVAILABLE, re-execute a max of 3 times`() {
+    fun `If service returns SERVICE_UNAVAILABLE, re-execute with backoff`() {
+        val slot = slot<ProductDetailsResponseListener>()
+        val queryProductDetailsStubbing = every {
+            mockClient.queryProductDetailsAsync(
+                any(),
+                capture(slot)
+            )
+        }
+        val productIDs = setOf("product_a")
+        var receivedError: PurchasesError? = null
+        val capturedDelays = mutableListOf<Long>()
+        val useCase = QueryProductDetailsUseCase(
+            QueryProductDetailsUseCaseParams(
+                mockDateProvider,
+                mockDiagnosticsTracker,
+                productIDs,
+                ProductType.SUBS,
+                appInBackground = true
+            ),
+            { _ ->
+                fail("shouldn't be success")
+            },
+            { error ->
+                receivedError = error
+            },
+            withConnectedClient = {
+                it.invoke(mockClient)
+            },
+            executeRequestOnUIThread = { delay, request ->
+                capturedDelays.add(delay)
+                queryProductDetailsStubbing answers {
+                    slot.captured.onProductDetailsResponse(
+                        BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE.buildResult(),
+                        emptyList()
+                    )
+                }
+
+                request(null)
+            },
+        )
+
+        useCase.run()
+
+        assertThat(capturedDelays.size).isEqualTo(12)
+        assertThat(capturedDelays.last()).isCloseTo(RETRY_TIMER_MAX_TIME_MILLISECONDS, Offset.offset(1000L))
+        assertThat(receivedError).isNotNull
+        assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
+    }
+
+    @Test
+    fun `If service returns SERVICE_UNAVAILABLE, don't retry and error if user in session`() {
         val slot = slot<ProductDetailsResponseListener>()
         val queryProductDetailsStubbing = every {
             mockClient.queryProductDetailsAsync(
@@ -382,7 +433,7 @@ internal class QueryProductDetailsUseCaseTest: BaseBillingUseCaseTest() {
 
         useCase.run()
 
-        assertThat(timesRetried).isEqualTo(4) // First attempt plus 3 retries
+        assertThat(timesRetried).isEqualTo(1)
         assertThat(receivedError).isNotNull
         assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
     }

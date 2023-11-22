@@ -140,12 +140,13 @@ class PostPendingTransactionsHelperTest {
 
         verify(exactly = 1) {
             postTransactionWithProductDetailsHelper.postTransactions(
-                listOf(activePurchase),
-                allowSharingPlayStoreAccount,
-                appUserId,
-                initiationSource,
-                any(),
-                any()
+                transactions = listOf(activePurchase),
+                allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
+                appUserID = appUserId,
+                initiationSource = initiationSource,
+                appInBackground = any(),
+                transactionPostSuccess = any(),
+                transactionPostError = any()
             )
         }
     }

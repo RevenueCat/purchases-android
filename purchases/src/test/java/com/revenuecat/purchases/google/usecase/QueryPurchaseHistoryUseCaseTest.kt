@@ -21,6 +21,7 @@ import io.mockk.slot
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
+import org.assertj.core.data.Offset
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
@@ -401,7 +402,7 @@ internal class QueryPurchaseHistoryUseCaseTest: BaseBillingUseCaseTest() {
     }
 
     @Test
-    fun `If service returns SERVICE_UNAVAILABLE, re-execute a max of 3 times`() {
+    fun `If service returns SERVICE_UNAVAILABLE, don't retry and error if user in session`() {
         val slot = slot<PurchaseHistoryResponseListener>()
         val queryPurchaseHistoryStubbing = every {
             mockClient.queryPurchaseHistoryAsync(
@@ -443,6 +444,54 @@ internal class QueryPurchaseHistoryUseCaseTest: BaseBillingUseCaseTest() {
         useCase.run()
 
         assertThat(timesRetried).isEqualTo(4) // First attempt plus 3 retries
+        assertThat(receivedError).isNotNull
+        assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
+    }
+
+    @Test
+    fun `If service returns SERVICE_UNAVAILABLE, re-execute with backoff`() {
+        val slot = slot<PurchaseHistoryResponseListener>()
+        val queryPurchaseHistoryStubbing = every {
+            mockClient.queryPurchaseHistoryAsync(
+                any<QueryPurchaseHistoryParams>(),
+                capture(slot)
+            )
+        }
+        var receivedError: PurchasesError? = null
+        val capturedDelays = mutableListOf<Long>()
+        val useCase = QueryPurchaseHistoryUseCase(
+            QueryPurchaseHistoryUseCaseParams(
+                mockDateProvider,
+                mockDiagnosticsTracker,
+                BillingClient.ProductType.SUBS,
+                appInBackground = true,
+            ),
+            { _ ->
+                fail("shouldn't be success")
+            },
+            { error ->
+                receivedError = error
+            },
+            withConnectedClient = {
+                it.invoke(mockClient)
+            },
+            executeRequestOnUIThread = { delay, request ->
+                capturedDelays.add(delay)
+                queryPurchaseHistoryStubbing answers {
+                    slot.captured.onPurchaseHistoryResponse(
+                        BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE.buildResult(),
+                        emptyList()
+                    )
+                }
+
+                request(null)
+            },
+        )
+
+        useCase.run()
+
+        assertThat(capturedDelays.size).isEqualTo(12)
+        assertThat(capturedDelays.last()).isCloseTo(RETRY_TIMER_MAX_TIME_MILLISECONDS, Offset.offset(1000L))
         assertThat(receivedError).isNotNull
         assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
     }
