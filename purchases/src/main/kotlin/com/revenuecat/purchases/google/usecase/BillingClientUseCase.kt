@@ -15,7 +15,7 @@ import java.io.PrintWriter
 import java.io.StringWriter
 import kotlin.math.min
 
-internal typealias ExecuteRequestOnUIThreadFunction = (delay: Long, onError: (PurchasesError?) -> Unit) -> Unit
+internal typealias ExecuteRequestOnUIThreadFunction = (delayInMillis: Long, onError: (PurchasesError?) -> Unit) -> Unit
 
 private const val MAX_RETRIES_DEFAULT = 3
 private const val RETRY_TIMER_START_MILLISECONDS = 878L // So it gets close to 15 minutes in last retry
