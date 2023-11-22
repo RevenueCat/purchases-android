@@ -94,7 +94,7 @@ internal class BillingWrapper(
     private val purchaseContext = mutableMapOf<String, PurchaseContext>()
 
     private val serviceRequests =
-        ConcurrentLinkedQueue<Pair<(connectionError: PurchasesError?) -> Unit, Long>>()
+        ConcurrentLinkedQueue<Pair<(connectionError: PurchasesError?) -> Unit, Long?>>()
 
     // how long before the data source tries to reconnect to Google play
     private var reconnectMilliseconds = RECONNECT_TIMER_START_MILLISECONDS
@@ -115,10 +115,14 @@ internal class BillingWrapper(
         synchronized(this@BillingWrapper) {
             while (billingClient?.isReady == true) {
                 serviceRequests.poll()?.let { (request, delayMilliseconds) ->
-                    mainHandler.postDelayed(
-                        { request(null) },
-                        delayMilliseconds,
-                    )
+                    if (delayMilliseconds != null) {
+                        mainHandler.postDelayed(
+                            { request(null) },
+                            delayMilliseconds,
+                        )
+                    } else {
+                        mainHandler.post { request(null) }
+                    }
                 } ?: break
             }
         }
@@ -170,7 +174,7 @@ internal class BillingWrapper(
     }
 
     @Synchronized
-    private fun executeRequestOnUIThread(delayMilliseconds: Long = 0, request: (PurchasesError?) -> Unit) {
+    private fun executeRequestOnUIThread(delayMilliseconds: Long? = null, request: (PurchasesError?) -> Unit) {
         if (purchasesUpdatedListener != null) {
             serviceRequests.add(request to delayMilliseconds)
             if (billingClient?.isReady == false) {
