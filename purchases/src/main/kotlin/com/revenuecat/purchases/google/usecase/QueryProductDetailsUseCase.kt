@@ -22,13 +22,13 @@ import java.util.Date
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.time.Duration
 
-internal class QueryProductDetailsUseCaseParams(
+internal data class QueryProductDetailsUseCaseParams(
     val dateProvider: DateProvider = DefaultDateProvider(),
     val diagnosticsTrackerIfEnabled: DiagnosticsTracker?,
     val productIds: Set<String>,
     val productType: ProductType,
-    appInBackground: Boolean,
-) : UseCaseParams(appInBackground)
+    override val appInBackground: Boolean,
+) : UseCaseParams
 
 internal class QueryProductDetailsUseCase(
     private val useCaseParams: QueryProductDetailsUseCaseParams,

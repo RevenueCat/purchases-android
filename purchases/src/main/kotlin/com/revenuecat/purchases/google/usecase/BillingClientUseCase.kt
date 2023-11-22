@@ -21,9 +21,9 @@ private const val MAX_RETRIES_DEFAULT = 3
 private const val RETRY_TIMER_START_MILLISECONDS = 878L // So it gets close to 15 minutes in last retry
 internal const val RETRY_TIMER_MAX_TIME_MILLISECONDS = 1000L * 60L * 15L // 15 minutes
 
-internal open class UseCaseParams(
-    val appInBackground: Boolean,
-)
+internal interface UseCaseParams {
+    val appInBackground: Boolean
+}
 
 internal abstract class BillingClientUseCase<T>(
     private val useCaseParams: UseCaseParams,

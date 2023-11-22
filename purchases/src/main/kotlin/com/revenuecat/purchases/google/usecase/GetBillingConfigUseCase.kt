@@ -13,8 +13,12 @@ import com.revenuecat.purchases.strings.BillingStrings
 import com.revenuecat.purchases.strings.OfferingStrings
 import java.util.concurrent.atomic.AtomicBoolean
 
+internal data class GetBillingConfigUseCaseParams(
+    override val appInBackground: Boolean,
+) : UseCaseParams
+
 internal class GetBillingConfigUseCase(
-    val useCaseParams: UseCaseParams,
+    val useCaseParams: GetBillingConfigUseCaseParams,
     val deviceCache: DeviceCache,
     val onReceive: (BillingConfig) -> Unit,
     val onError: PurchasesErrorCallback,

@@ -19,12 +19,12 @@ import java.util.Date
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.time.Duration
 
-internal class QueryPurchaseHistoryUseCaseParams(
+internal data class QueryPurchaseHistoryUseCaseParams(
     val dateProvider: DateProvider = DefaultDateProvider(),
     val diagnosticsTrackerIfEnabled: DiagnosticsTracker?,
     @BillingClient.ProductType val productType: String,
-    appInBackground: Boolean,
-) : UseCaseParams(appInBackground)
+    override val appInBackground: Boolean,
+) : UseCaseParams
 
 internal class QueryPurchaseHistoryUseCase(
     private val useCaseParams: QueryPurchaseHistoryUseCaseParams,

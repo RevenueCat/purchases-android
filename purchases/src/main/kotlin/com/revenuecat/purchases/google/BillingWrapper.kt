@@ -46,13 +46,13 @@ import com.revenuecat.purchases.common.sha256
 import com.revenuecat.purchases.common.toHumanReadableDescription
 import com.revenuecat.purchases.common.verboseLog
 import com.revenuecat.purchases.google.usecase.GetBillingConfigUseCase
+import com.revenuecat.purchases.google.usecase.GetBillingConfigUseCaseParams
 import com.revenuecat.purchases.google.usecase.QueryProductDetailsUseCase
 import com.revenuecat.purchases.google.usecase.QueryProductDetailsUseCaseParams
 import com.revenuecat.purchases.google.usecase.QueryPurchaseHistoryUseCase
 import com.revenuecat.purchases.google.usecase.QueryPurchaseHistoryUseCaseParams
 import com.revenuecat.purchases.google.usecase.QueryPurchasesUseCase
 import com.revenuecat.purchases.google.usecase.QueryPurchasesUseCaseParams
-import com.revenuecat.purchases.google.usecase.UseCaseParams
 import com.revenuecat.purchases.models.GooglePurchasingData
 import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.InAppMessageType
@@ -744,7 +744,7 @@ internal class BillingWrapper(
     ) {
         verboseLog(BillingStrings.BILLING_INITIATE_GETTING_COUNTRY_CODE)
         GetBillingConfigUseCase(
-            UseCaseParams(appInBackground),
+            GetBillingConfigUseCaseParams(appInBackground),
             deviceCache = deviceCache,
             onReceive = { billingConfig -> onSuccess(billingConfig.countryCode) },
             onError = onError,

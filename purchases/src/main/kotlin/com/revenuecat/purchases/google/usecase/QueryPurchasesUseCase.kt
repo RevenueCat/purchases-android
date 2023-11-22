@@ -27,11 +27,11 @@ import java.util.Date
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.time.Duration
 
-internal class QueryPurchasesUseCaseParams(
+internal data class QueryPurchasesUseCaseParams(
     val dateProvider: DateProvider = DefaultDateProvider(),
     val diagnosticsTrackerIfEnabled: DiagnosticsTracker?,
-    appInBackground: Boolean,
-) : UseCaseParams(appInBackground)
+    override val appInBackground: Boolean,
+) : UseCaseParams
 
 internal class QueryPurchasesUseCase(
     private val useCaseParams: QueryPurchasesUseCaseParams,
