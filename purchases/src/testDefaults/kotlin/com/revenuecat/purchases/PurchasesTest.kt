@@ -6,7 +6,6 @@
 package com.revenuecat.purchases
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.android.billingclient.api.BillingFlowParams.ProrationMode
 import com.android.billingclient.api.Purchase
 import com.revenuecat.purchases.common.CustomerInfoFactory
 import com.revenuecat.purchases.common.PlatformInfo
@@ -39,7 +38,6 @@ import io.mockk.verifyAll
 import org.assertj.core.api.Assertions.assertThat
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -1343,9 +1341,9 @@ internal class PurchasesTest : BasePurchasesTest() {
         every {
             mockBillingAbstract.queryProductDetailsAsync(
                 storeProduct.type,
-                setOf(productId),
-                captureLambda(),
+                setOf(productId),,
                 any(),
+                captureLambda(),
             )
         } answers {
             lambda<(List<StoreProduct>) -> Unit>().captured.invoke(listOf(storeProduct))

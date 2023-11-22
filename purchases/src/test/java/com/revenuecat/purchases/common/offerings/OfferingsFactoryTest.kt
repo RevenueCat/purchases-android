@@ -250,9 +250,9 @@ class OfferingsFactoryTest {
         every {
             billing.queryProductDetailsAsync(
                 type,
-                productIds.toSet(),
-                captureLambda(),
-                any()
+                productIds.toSet(),,
+                any(),
+                captureLambda()
             )
         } answers {
             lambda<(List<StoreProduct>) -> Unit>().captured.invoke(storeProducts)

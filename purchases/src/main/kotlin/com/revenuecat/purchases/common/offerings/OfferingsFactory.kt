@@ -21,9 +21,10 @@ internal class OfferingsFactory(
     private val dispatcher: Dispatcher,
 ) {
 
-    @SuppressWarnings("TooGenericExceptionCaught")
+    @SuppressWarnings("TooGenericExceptionCaught", "LongMethod")
     fun createOfferings(
         offeringsJSON: JSONObject,
+        appInBackground: Boolean,
         onError: (PurchasesError) -> Unit,
         onSuccess: (Offerings) -> Unit,
     ) {
@@ -37,40 +38,47 @@ internal class OfferingsFactory(
                     ),
                 )
             } else {
-                getStoreProductsById(allRequestedProductIdentifiers, { productsById ->
-                    try {
-                        logMissingProducts(allRequestedProductIdentifiers, productsById)
+                getStoreProductsById(
+                    productIds = allRequestedProductIdentifiers,
+                    appInBackground = appInBackground,
+                    onCompleted = { productsById ->
+                        try {
+                            logMissingProducts(allRequestedProductIdentifiers, productsById)
 
-                        val offerings = offeringParser.createOfferings(offeringsJSON, productsById)
-                        if (offerings.all.isEmpty()) {
-                            onError(
-                                PurchasesError(
-                                    PurchasesErrorCode.ConfigurationError,
-                                    OfferingStrings.CONFIGURATION_ERROR_PRODUCTS_NOT_FOUND,
-                                ),
-                            )
-                        } else {
-                            onSuccess(offerings)
-                        }
-                    } catch (error: Exception) {
-                        when (error) {
-                            is JSONException, is SerializationException -> {
-                                log(
-                                    LogIntent.RC_ERROR,
-                                    OfferingStrings.JSON_EXCEPTION_ERROR.format(error.localizedMessage),
-                                )
+                            val offerings = offeringParser.createOfferings(offeringsJSON, productsById)
+                            if (offerings.all.isEmpty()) {
                                 onError(
                                     PurchasesError(
-                                        PurchasesErrorCode.UnexpectedBackendResponseError,
-                                        error.localizedMessage,
+                                        PurchasesErrorCode.ConfigurationError,
+                                        OfferingStrings.CONFIGURATION_ERROR_PRODUCTS_NOT_FOUND,
                                     ),
                                 )
-                            } else -> throw error
+                            } else {
+                                onSuccess(offerings)
+                            }
+                        } catch (error: Exception) {
+                            when (error) {
+                                is JSONException, is SerializationException -> {
+                                    log(
+                                        LogIntent.RC_ERROR,
+                                        OfferingStrings.JSON_EXCEPTION_ERROR.format(error.localizedMessage),
+                                    )
+                                    onError(
+                                        PurchasesError(
+                                            PurchasesErrorCode.UnexpectedBackendResponseError,
+                                            error.localizedMessage,
+                                        ),
+                                    )
+                                }
+
+                                else -> throw error
+                            }
                         }
-                    }
-                }, { error ->
-                    onError(error)
-                })
+                    },
+                    onError = { error ->
+                        onError(error)
+                    },
+                )
             }
         } catch (error: JSONException) {
             log(LogIntent.RC_ERROR, OfferingStrings.JSON_EXCEPTION_ERROR.format(error.localizedMessage))
@@ -101,12 +109,17 @@ internal class OfferingsFactory(
 
     private fun getStoreProductsById(
         productIds: Set<String>,
+        appInBackground: Boolean,
         onCompleted: (Map<String, List<StoreProduct>>) -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {
         billing.queryProductDetailsAsync(
             ProductType.SUBS,
             productIds,
+            appInBackground,
+            {
+                onError(it)
+            },
             { subscriptionProducts ->
                 dispatcher.enqueue(command = {
                     val productsById = subscriptionProducts
@@ -117,25 +130,23 @@ internal class OfferingsFactory(
                     val inAppProductIds = productIds - subscriptionIds
                     if (inAppProductIds.isNotEmpty()) {
                         billing.queryProductDetailsAsync(
-                            ProductType.INAPP,
-                            inAppProductIds,
-                            { inAppProducts ->
+                            productType = ProductType.INAPP,
+                            productIds = inAppProductIds,
+                            appInBackground = appInBackground,
+                            onError = {
+                                onError(it)
+                            },
+                            onReceive = { inAppProducts ->
                                 dispatcher.enqueue(command = {
                                     productsById.putAll(inAppProducts.map { it.purchasingData.productId to listOf(it) })
                                     onCompleted(productsById)
                                 })
-                            },
-                            {
-                                onError(it)
                             },
                         )
                     } else {
                         onCompleted(productsById)
                     }
                 })
-            },
-            {
-                onError(it)
             },
         )
     }

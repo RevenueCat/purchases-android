@@ -227,9 +227,9 @@ class PostTransactionWithProductDetailsHelperTest {
         every {
             billing.queryProductDetailsAsync(
                 transaction.type,
-                transaction.productIds.toSet(),
-                captureLambda(),
+                transaction.productIds.toSet(),,
                 any(),
+                captureLambda(),
             )
         } answers {
             lambda<(List<StoreProduct>) -> Unit>().captured.invoke(storeProducts)
@@ -243,9 +243,9 @@ class PostTransactionWithProductDetailsHelperTest {
         every {
             billing.queryProductDetailsAsync(
                 transaction.type,
-                transaction.productIds.toSet(),
-                any(),
+                transaction.productIds.toSet(),,
                 captureLambda(),
+                any(),
             )
         } answers {
             lambda<(PurchasesError) -> Unit>().captured.invoke(error)

@@ -20,6 +20,7 @@ internal class PurchasedProductsFetcher(
 
     fun queryActiveProducts(
         appUserID: String,
+        appInBackground: Boolean,
         onSuccess: (List<PurchasedProduct>) -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {
@@ -35,6 +36,7 @@ internal class PurchasedProductsFetcher(
 
         billing.queryPurchases(
             appUserID,
+            appInBackground,
             onSuccess = { activePurchasesByHashedToken ->
                 val activePurchases = activePurchasesByHashedToken.values.toList()
                 val purchasedProducts = activePurchases.map {

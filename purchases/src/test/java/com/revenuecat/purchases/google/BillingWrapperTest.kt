@@ -21,11 +21,8 @@ import com.android.billingclient.api.ProductDetails
 import com.android.billingclient.api.ProductDetailsResponseListener
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchaseHistoryRecord
-import com.android.billingclient.api.PurchaseHistoryResponseListener
 import com.android.billingclient.api.PurchasesResponseListener
 import com.android.billingclient.api.PurchasesUpdatedListener
-import com.android.billingclient.api.QueryPurchaseHistoryParams
-import com.android.billingclient.api.QueryPurchasesParams
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
@@ -38,7 +35,6 @@ import com.revenuecat.purchases.common.ReplaceProductInfo
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.firstSku
-import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.sha256
 import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.InAppMessageType
@@ -80,9 +76,6 @@ import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import java.util.Date
 import java.util.Locale
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicInteger
 import kotlin.time.Duration.Companion.milliseconds
 
 @RunWith(AndroidJUnit4::class)
@@ -1005,11 +998,11 @@ class BillingWrapperTest {
 
         wrapper.queryProductDetailsAsync(
             ProductType.SUBS,
-            setOf("product_a"),
-            {},
+            setOf("product_a"),,
             {
                 fail("shouldn't be an error")
-            })
+            },
+            {})
 
         wrapper.purchasesUpdatedListener = null
         wrapper.onBillingSetupFinished(billingClientOKResult)
@@ -1821,7 +1814,7 @@ class BillingWrapperTest {
             slot.captured.onProductDetailsResponse(result, emptyList())
         }
 
-        wrapper.queryProductDetailsAsync(ProductType.SUBS, setOf("test-sku"), {}, { fail("shouldn't be an error") })
+        wrapper.queryProductDetailsAsync(ProductType.SUBS, setOf("test-sku"),, { fail("shouldn't be an error") }, {})
 
         verify(exactly = 1) {
             mockDiagnosticsTracker.trackGoogleQueryProductDetailsRequest(
@@ -1851,7 +1844,7 @@ class BillingWrapperTest {
             slot.captured.onProductDetailsResponse(result, emptyList())
         }
 
-        wrapper.queryProductDetailsAsync(ProductType.SUBS, setOf("test-sku"), { fail("should be an error") }, {})
+        wrapper.queryProductDetailsAsync(ProductType.SUBS, setOf("test-sku"),, {}, { fail("should be an error") })
 
         verify(exactly = 1) {
             mockDiagnosticsTracker.trackGoogleQueryProductDetailsRequest(

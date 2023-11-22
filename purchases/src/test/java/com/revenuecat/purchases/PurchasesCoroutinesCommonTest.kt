@@ -173,9 +173,9 @@ internal class PurchasesCoroutinesCommonTest : BasePurchasesTest() {
         every {
             mockBillingAbstract.queryProductDetailsAsync(
                 ProductType.SUBS,
-                productIds.toSet(),
-                captureLambda(),
-                any()
+                productIds.toSet(),,
+                any(),
+                captureLambda()
             )
         } answers {
             lambda<(List<StoreProduct>) -> Unit>().captured.invoke(subs)
@@ -183,9 +183,9 @@ internal class PurchasesCoroutinesCommonTest : BasePurchasesTest() {
         every {
             mockBillingAbstract.queryProductDetailsAsync(
                 ProductType.INAPP,
-                productIds.toSet(),
-                captureLambda(),
-                any()
+                productIds.toSet(),,
+                any(),
+                captureLambda()
             )
         } answers {
             lambda<(List<StoreProduct>) -> Unit>().captured.invoke(inApps)
@@ -208,9 +208,9 @@ internal class PurchasesCoroutinesCommonTest : BasePurchasesTest() {
         every {
             mockBillingAbstract.queryProductDetailsAsync(
                 ProductType.SUBS,
-                productIds.toSet(),
-                any(),
-                captureLambda()
+                productIds.toSet(),,
+                captureLambda(),
+                any()
             )
         } answers {
             lambda<(PurchasesError) -> Unit>().captured.invoke(error)

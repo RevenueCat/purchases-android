@@ -149,6 +149,7 @@ internal class PurchasesOrchestrator constructor(
                     state.appInBackground,
                 )
                 billing.getStorefront(
+                    state.appInBackground,
                     onSuccess = { countryCode ->
                         debugLog(BillingStrings.BILLING_COUNTRY_CODE.format(countryCode))
                     },
@@ -264,6 +265,7 @@ internal class PurchasesOrchestrator constructor(
                     appUserID,
                     marketplace = null,
                     PostReceiptInitiationSource.RESTORE,
+                    state.appInBackground,
                     {
                         val logMessage = PurchaseStrings.PURCHASE_SYNCED_USER_ID.format(receiptID, amazonUserID)
                         log(LogIntent.PURCHASE, logMessage)
@@ -358,6 +360,7 @@ internal class PurchasesOrchestrator constructor(
 
         billing.queryAllPurchases(
             appUserID,
+            state.appInBackground,
             onReceivePurchaseHistory = { allPurchases ->
                 if (allPurchases.isEmpty()) {
                     getCustomerInfo(callback)
@@ -753,6 +756,12 @@ internal class PurchasesOrchestrator constructor(
             billing.queryProductDetailsAsync(
                 it,
                 productIds,
+                state.appInBackground,
+                {
+                    dispatch {
+                        callback.onError(it)
+                    }
+                },
                 { storeProducts ->
                     dispatch {
                         getProductsOfTypes(
@@ -761,11 +770,6 @@ internal class PurchasesOrchestrator constructor(
                             collectedStoreProducts + storeProducts,
                             callback,
                         )
-                    }
-                },
-                {
-                    dispatch {
-                        callback.onError(it)
                     }
                 },
             )
@@ -1098,6 +1102,7 @@ internal class PurchasesOrchestrator constructor(
             appUserID,
             ProductType.SUBS,
             previousProductId,
+            state.appInBackground,
             onCompletion = { purchaseRecord ->
                 log(LogIntent.PURCHASE, PurchaseStrings.FOUND_EXISTING_PURCHASE.format(previousProductId))
 

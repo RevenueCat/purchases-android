@@ -498,14 +498,13 @@ class AmazonBillingTest {
         var onReceiveCalled = false
         underTest.queryProductDetailsAsync(
             productType = com.revenuecat.purchases.ProductType.SUBS,
-            productIds = productIds,
-            onReceive = {
-                onReceiveCalled = true
-            },
+            productIds = productIds,,
             onError = {
                 fail("should be a success")
             }
-        )
+        ) {
+            onReceiveCalled = true
+        }
 
         assertThat(onReceiveCalled).isTrue()
         assertThat(marketplaceSlot.captured).isEqualTo(countryCode)

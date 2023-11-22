@@ -29,6 +29,7 @@ internal class SyncPurchasesHelper(
 
         billing.queryAllPurchases(
             appUserID,
+            appInBackground,
             onReceivePurchaseHistory = { allPurchases ->
                 if (allPurchases.isNotEmpty()) {
                     val lastPurchase = allPurchases.last()
@@ -54,6 +55,7 @@ internal class SyncPurchasesHelper(
                             appUserID,
                             purchase.marketplace,
                             PostReceiptInitiationSource.RESTORE,
+                            appInBackground,
                             {
                                 log(LogIntent.PURCHASE, PurchaseStrings.PURCHASE_SYNCED.format(purchase))
                                 handleLastPurchase(purchase, lastPurchase)

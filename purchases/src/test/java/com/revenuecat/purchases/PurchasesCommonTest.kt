@@ -1714,9 +1714,9 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         every {
             mockBillingAbstract.queryProductDetailsAsync(
                 storeProduct.type,
-                setOf(productId),
-                captureLambda(),
-                any()
+                setOf(productId),,
+                any(),
+                captureLambda()
             )
         } answers {
             lambda<(List<StoreProduct>) -> Unit>().captured.invoke(listOf(storeProduct))

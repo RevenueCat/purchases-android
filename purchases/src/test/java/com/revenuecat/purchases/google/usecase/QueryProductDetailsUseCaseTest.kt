@@ -51,10 +51,10 @@ internal class QueryProductDetailsUseCaseTest: BaseBillingUseCaseTest() {
         var receivedList: List<StoreProduct>? = null
         wrapper.queryProductDetailsAsync(
             ProductType.SUBS,
-            productIDs, {
-                receivedList = it
-            }, {
+            productIDs,, {
                 AssertionsForClassTypes.fail("shouldn't be an error")
+            }, {
+                receivedList = it
             })
 
         assertThat(receivedList).isNotNull
@@ -75,11 +75,10 @@ internal class QueryProductDetailsUseCaseTest: BaseBillingUseCaseTest() {
 
         wrapper.queryProductDetailsAsync(
             ProductType.UNKNOWN,
-            productIDs,
-            {
-                this@QueryProductDetailsUseCaseTest.storeProducts = it
-            }, {
+            productIDs,, {
                 AssertionsForClassTypes.fail("shouldn't be an error")
+            }, {
+                this@QueryProductDetailsUseCaseTest.storeProducts = it
             })
 
         assertThat(slot.isCaptured).isTrue
@@ -97,10 +96,9 @@ internal class QueryProductDetailsUseCaseTest: BaseBillingUseCaseTest() {
 
         wrapper.queryProductDetailsAsync(
             ProductType.SUBS,
-            productIdsSet,
-            {}, {
+            productIdsSet,, {
                 AssertionsForClassTypes.fail("shouldn't be an error")
-            })
+            }, {})
 
         assertThat(slot.captured).isNotNull
         val queryProductDetailsParamsProductList = slot.captured.productList
@@ -112,11 +110,10 @@ internal class QueryProductDetailsUseCaseTest: BaseBillingUseCaseTest() {
     fun `queryProductDetails with empty list returns empty list and does not query BillingClient`() {
         wrapper.queryProductDetailsAsync(
             ProductType.SUBS,
-            emptySet(),
-            {
-                assertThat(it).isEmpty()
-            }, {
+            emptySet(),, {
                 AssertionsForClassTypes.fail("shouldn't be an error")
+            }, {
+                assertThat(it).isEmpty()
             })
 
         verify(exactly = 0) {
@@ -128,11 +125,10 @@ internal class QueryProductDetailsUseCaseTest: BaseBillingUseCaseTest() {
     fun `queryProductDetails with only empty productIds returns empty list and does not query BillingClient`() {
         wrapper.queryProductDetailsAsync(
             ProductType.SUBS,
-            setOf("", ""),
-            {
-                assertThat(it).isEmpty()
-            }, {
+            setOf("", ""),, {
                 AssertionsForClassTypes.fail("shouldn't be an error")
+            }, {
+                assertThat(it).isEmpty()
             })
 
         verify(exactly = 0) {
@@ -157,11 +153,10 @@ internal class QueryProductDetailsUseCaseTest: BaseBillingUseCaseTest() {
 
         wrapper.queryProductDetailsAsync(
             ProductType.SUBS,
-            setOf("asdf", "asdf"),
-            {
-                Thread.sleep(200)
+            setOf("asdf", "asdf"),, {
                 numCallbacks++
             }, {
+                Thread.sleep(200)
                 numCallbacks++
             })
 
@@ -193,13 +188,12 @@ internal class QueryProductDetailsUseCaseTest: BaseBillingUseCaseTest() {
 
         wrapper.queryProductDetailsAsync(
             ProductType.SUBS,
-            setOf("asdf"),
-            {
+            setOf("asdf"),, {
+                AssertionsForClassTypes.fail("shouldn't be an error")
+            }, {
                 // ensuring we don't hit an edge case where numCallbacks doesn't increment before the final assert
                 numCallbacks.incrementAndGet()
                 lock.countDown()
-            }, {
-                AssertionsForClassTypes.fail("shouldn't be an error")
             })
 
         lock.await()

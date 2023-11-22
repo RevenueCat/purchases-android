@@ -37,6 +37,7 @@ internal class PostPendingTransactionsHelper(
         dispatcher.enqueue({
             billing.queryPurchases(
                 appUserID,
+                appInBackground,
                 onSuccess = { purchasesByHashedToken ->
                     purchasesByHashedToken.forEach { (hash, purchase) ->
                         log(

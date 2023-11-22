@@ -25,7 +25,6 @@ import com.android.billingclient.api.PurchaseHistoryResponseListener
 import com.android.billingclient.api.PurchasesResponseListener
 import com.android.billingclient.api.PurchasesUpdatedListener
 import com.android.billingclient.api.QueryPurchasesParams
-import com.revenuecat.purchases.PostReceiptInitiationSource
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCallback
@@ -53,6 +52,7 @@ import com.revenuecat.purchases.google.usecase.QueryPurchaseHistoryUseCase
 import com.revenuecat.purchases.google.usecase.QueryPurchaseHistoryUseCaseParams
 import com.revenuecat.purchases.google.usecase.QueryPurchasesUseCase
 import com.revenuecat.purchases.google.usecase.QueryPurchasesUseCaseParams
+import com.revenuecat.purchases.google.usecase.UseCaseParams
 import com.revenuecat.purchases.models.GooglePurchasingData
 import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.InAppMessageType
@@ -188,8 +188,9 @@ internal class BillingWrapper(
     override fun queryProductDetailsAsync(
         productType: ProductType,
         productIds: Set<String>,
-        onReceive: StoreProductsCallback,
+        appInBackground: Boolean,
         onError: PurchasesErrorCallback,
+        onReceive: StoreProductsCallback,
     ) {
         log(LogIntent.DEBUG, OfferingStrings.FETCHING_PRODUCTS.format(productIds.joinToString()))
         val useCase = QueryProductDetailsUseCase(
@@ -198,6 +199,7 @@ internal class BillingWrapper(
                 diagnosticsTrackerIfEnabled,
                 productIds,
                 productType,
+                appInBackground,
             ),
             onReceive,
             onError,
@@ -295,6 +297,7 @@ internal class BillingWrapper(
 
     fun queryPurchaseHistoryAsync(
         @BillingClient.ProductType productType: String,
+        appInBackground: Boolean,
         onReceivePurchaseHistory: (List<PurchaseHistoryRecord>) -> Unit,
         onReceivePurchaseHistoryError: (PurchasesError) -> Unit,
     ) {
@@ -304,6 +307,7 @@ internal class BillingWrapper(
                 dateProvider,
                 diagnosticsTrackerIfEnabled,
                 productType,
+                appInBackground,
             ),
             onReceivePurchaseHistory,
             onReceivePurchaseHistoryError,
@@ -315,14 +319,17 @@ internal class BillingWrapper(
 
     override fun queryAllPurchases(
         appUserID: String,
+        appInBackground: Boolean,
         onReceivePurchaseHistory: (List<StoreTransaction>) -> Unit,
         onReceivePurchaseHistoryError: (PurchasesError) -> Unit,
     ) {
         queryPurchaseHistoryAsync(
             BillingClient.ProductType.SUBS,
+            appInBackground,
             { subsPurchasesList ->
                 queryPurchaseHistoryAsync(
                     BillingClient.ProductType.INAPP,
+                    appInBackground,
                     { inAppPurchasesList ->
                         onReceivePurchaseHistory(
                             subsPurchasesList.map {
@@ -342,7 +349,6 @@ internal class BillingWrapper(
     override fun consumeAndSave(
         shouldTryToConsume: Boolean,
         purchase: StoreTransaction,
-        initiationSource: PostReceiptInitiationSource,
         appInBackground: Boolean,
     ) {
         if (purchase.type == ProductType.UNKNOWN) {
@@ -424,6 +430,7 @@ internal class BillingWrapper(
     @Suppress("ReturnCount", "LongMethod")
     override fun queryPurchases(
         appUserID: String,
+        appInBackground: Boolean,
         onSuccess: (Map<String, StoreTransaction>) -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {
@@ -432,6 +439,7 @@ internal class BillingWrapper(
             QueryPurchasesUseCaseParams(
                 dateProvider,
                 diagnosticsTrackerIfEnabled,
+                appInBackground,
             ),
             onSuccess,
             onError,
@@ -445,6 +453,7 @@ internal class BillingWrapper(
         appUserID: String,
         productType: ProductType,
         productId: String,
+        appInBackground: Boolean,
         onCompletion: (StoreTransaction) -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {
@@ -725,11 +734,13 @@ internal class BillingWrapper(
     }
 
     override fun getStorefront(
+        appInBackground: Boolean,
         onSuccess: (String) -> Unit,
         onError: PurchasesErrorCallback,
     ) {
         verboseLog(BillingStrings.BILLING_INITIATE_GETTING_COUNTRY_CODE)
         GetBillingConfigUseCase(
+            UseCaseParams(appInBackground),
             deviceCache = deviceCache,
             onReceive = { billingConfig -> onSuccess(billingConfig.countryCode) },
             onError = onError,

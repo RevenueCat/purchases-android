@@ -40,6 +40,7 @@ internal abstract class BillingAbstract {
 
     abstract fun queryAllPurchases(
         appUserID: String,
+        appInBackground: Boolean,
         onReceivePurchaseHistory: (List<StoreTransaction>) -> Unit,
         onReceivePurchaseHistoryError: PurchasesErrorCallback,
     )
@@ -47,19 +48,23 @@ internal abstract class BillingAbstract {
     abstract fun queryProductDetailsAsync(
         productType: ProductType,
         productIds: Set<String>,
-        onReceive: StoreProductsCallback,
+        appInBackground: Boolean,
         onError: PurchasesErrorCallback,
+        onReceive: StoreProductsCallback,
     )
 
     abstract fun consumeAndSave(
         shouldTryToConsume: Boolean,
         purchase: StoreTransaction,
+        appInBackground: Boolean,
     )
 
+    @SuppressWarnings("LongParameterList")
     abstract fun findPurchaseInPurchaseHistory(
         appUserID: String,
         productType: ProductType,
-        sku: String,
+        productId: String,
+        appInBackground: Boolean,
         onCompletion: (StoreTransaction) -> Unit,
         onError: (PurchasesError) -> Unit,
     )
@@ -78,6 +83,7 @@ internal abstract class BillingAbstract {
 
     abstract fun queryPurchases(
         appUserID: String,
+        appInBackground: Boolean,
         onSuccess: (Map<String, StoreTransaction>) -> Unit,
         onError: (PurchasesError) -> Unit,
     )
@@ -108,6 +114,7 @@ internal abstract class BillingAbstract {
      * Null if there has been an error.
      */
     abstract fun getStorefront(
+        appInBackground: Boolean,
         onSuccess: (String) -> Unit,
         onError: PurchasesErrorCallback,
     )
