@@ -144,7 +144,10 @@ internal class PurchasesOrchestrator constructor(
 
         billing.stateListener = object : BillingAbstract.StateListener {
             override fun onConnected() {
-                postPendingTransactionsHelper.syncPendingPurchaseQueue(allowSharingPlayStoreAccount)
+                postPendingTransactionsHelper.syncPendingPurchaseQueue(
+                    allowSharingPlayStoreAccount,
+                    state.appInBackground,
+                )
                 billing.getStorefront(
                     onSuccess = { countryCode ->
                         debugLog(BillingStrings.BILLING_COUNTRY_CODE.format(countryCode))
@@ -202,7 +205,7 @@ internal class PurchasesOrchestrator constructor(
             )
         }
         offeringsManager.onAppForeground(identityManager.currentAppUserID)
-        postPendingTransactionsHelper.syncPendingPurchaseQueue(allowSharingPlayStoreAccount)
+        postPendingTransactionsHelper.syncPendingPurchaseQueue(allowSharingPlayStoreAccount, state.appInBackground)
         synchronizeSubscriberAttributesIfNeeded()
         offlineEntitlementsManager.updateProductEntitlementMappingCacheIfStale()
         flushPaywallEvents()
@@ -367,6 +370,7 @@ internal class PurchasesOrchestrator constructor(
                                 isRestore = true,
                                 appUserID = appUserID,
                                 initiationSource = PostReceiptInitiationSource.RESTORE,
+                                appInBackground = state.appInBackground,
                                 onSuccess = { _, info ->
                                     log(LogIntent.DEBUG, RestoreStrings.PURCHASE_RESTORED.format(purchase))
                                     if (sortedByTime.last() == purchase) {
@@ -832,6 +836,7 @@ internal class PurchasesOrchestrator constructor(
                     allowSharingPlayStoreAccount,
                     appUserID,
                     PostReceiptInitiationSource.PURCHASE,
+                    appInBackground = state.appInBackground,
                     transactionPostSuccess = callbackPair.first,
                     transactionPostError = callbackPair.second,
                 )

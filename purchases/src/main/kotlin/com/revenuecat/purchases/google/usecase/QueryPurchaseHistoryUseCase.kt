@@ -3,7 +3,6 @@ package com.revenuecat.purchases.google.usecase
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.PurchaseHistoryRecord
-import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCallback
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.DefaultDateProvider
@@ -20,19 +19,20 @@ import java.util.Date
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.time.Duration
 
-internal data class QueryPurchaseHistoryUseCaseParams(
+internal class QueryPurchaseHistoryUseCaseParams(
     val dateProvider: DateProvider = DefaultDateProvider(),
     val diagnosticsTrackerIfEnabled: DiagnosticsTracker?,
     @BillingClient.ProductType val productType: String,
-)
+    appInBackground: Boolean,
+) : UseCaseParams(appInBackground)
 
 internal class QueryPurchaseHistoryUseCase(
     private val useCaseParams: QueryPurchaseHistoryUseCaseParams,
     val onReceive: (List<PurchaseHistoryRecord>) -> Unit,
     val onError: PurchasesErrorCallback,
     val withConnectedClient: (BillingClient.() -> Unit) -> Unit,
-    executeRequestOnUIThread: ((PurchasesError?) -> Unit) -> Unit,
-) : BillingClientUseCase<List<PurchaseHistoryRecord>?>(onError, executeRequestOnUIThread) {
+    executeRequestOnUIThread: ExecuteRequestOnUIThreadFunction,
+) : BillingClientUseCase<List<PurchaseHistoryRecord>?>(useCaseParams, onError, executeRequestOnUIThread) {
 
     override val errorMessage: String
         get() = "Error receiving purchase history"

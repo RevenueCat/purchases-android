@@ -14,12 +14,13 @@ import com.revenuecat.purchases.strings.OfferingStrings
 import java.util.concurrent.atomic.AtomicBoolean
 
 internal class GetBillingConfigUseCase(
+    val useCaseParams: UseCaseParams,
     val deviceCache: DeviceCache,
     val onReceive: (BillingConfig) -> Unit,
     val onError: PurchasesErrorCallback,
     val withConnectedClient: (BillingClient.() -> Unit) -> Unit,
-    executeRequestOnUIThread: ((PurchasesError?) -> Unit) -> Unit,
-) : BillingClientUseCase<BillingConfig?>(onError, executeRequestOnUIThread) {
+    executeRequestOnUIThread: ExecuteRequestOnUIThreadFunction,
+) : BillingClientUseCase<BillingConfig?>(useCaseParams, onError, executeRequestOnUIThread) {
     override val errorMessage: String
         get() = "Error getting billing config"
 

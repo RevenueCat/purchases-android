@@ -6,7 +6,6 @@ import com.android.billingclient.api.ProductDetails
 import com.android.billingclient.api.ProductDetailsResponseListener
 import com.android.billingclient.api.QueryProductDetailsParams
 import com.revenuecat.purchases.ProductType
-import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCallback
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.DefaultDateProvider
@@ -23,20 +22,21 @@ import java.util.Date
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.time.Duration
 
-internal data class QueryProductDetailsUseCaseParams(
+internal class QueryProductDetailsUseCaseParams(
     val dateProvider: DateProvider = DefaultDateProvider(),
     val diagnosticsTrackerIfEnabled: DiagnosticsTracker?,
     val productIds: Set<String>,
     val productType: ProductType,
-)
+    appInBackground: Boolean,
+) : UseCaseParams(appInBackground)
 
 internal class QueryProductDetailsUseCase(
     private val useCaseParams: QueryProductDetailsUseCaseParams,
     val onReceive: StoreProductsCallback,
     val onError: PurchasesErrorCallback,
     val withConnectedClient: (BillingClient.() -> Unit) -> Unit,
-    executeRequestOnUIThread: ((PurchasesError?) -> Unit) -> Unit,
-) : BillingClientUseCase<List<ProductDetails>>(onError, executeRequestOnUIThread) {
+    executeRequestOnUIThread: ExecuteRequestOnUIThreadFunction,
+) : BillingClientUseCase<List<ProductDetails>>(useCaseParams, onError, executeRequestOnUIThread) {
 
     override val errorMessage: String
         get() = "Error when fetching products"

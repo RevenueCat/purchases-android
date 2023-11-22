@@ -25,6 +25,7 @@ import com.android.billingclient.api.PurchaseHistoryResponseListener
 import com.android.billingclient.api.PurchasesResponseListener
 import com.android.billingclient.api.PurchasesUpdatedListener
 import com.android.billingclient.api.QueryPurchasesParams
+import com.revenuecat.purchases.PostReceiptInitiationSource
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCallback
@@ -93,7 +94,7 @@ internal class BillingWrapper(
     private val purchaseContext = mutableMapOf<String, PurchaseContext>()
 
     private val serviceRequests =
-        ConcurrentLinkedQueue<(connectionError: PurchasesError?) -> Unit>()
+        ConcurrentLinkedQueue<Pair<(connectionError: PurchasesError?) -> Unit, Long>>()
 
     // how long before the data source tries to reconnect to Google play
     private var reconnectMilliseconds = RECONNECT_TIMER_START_MILLISECONDS
@@ -113,7 +114,12 @@ internal class BillingWrapper(
     private fun executePendingRequests() {
         synchronized(this@BillingWrapper) {
             while (billingClient?.isReady == true) {
-                serviceRequests.poll()?.let { mainHandler.post { it(null) } } ?: break
+                serviceRequests.poll()?.let { (request, delayMilliseconds) ->
+                    mainHandler.postDelayed(
+                        { request(null) },
+                        delayMilliseconds,
+                    )
+                } ?: break
             }
         }
     }
@@ -164,9 +170,9 @@ internal class BillingWrapper(
     }
 
     @Synchronized
-    private fun executeRequestOnUIThread(request: (PurchasesError?) -> Unit) {
+    private fun executeRequestOnUIThread(delayMilliseconds: Long = 0, request: (PurchasesError?) -> Unit) {
         if (purchasesUpdatedListener != null) {
-            serviceRequests.add(request)
+            serviceRequests.add(request to delayMilliseconds)
             if (billingClient?.isReady == false) {
                 startConnectionOnMainThread()
             } else {
@@ -336,6 +342,8 @@ internal class BillingWrapper(
     override fun consumeAndSave(
         shouldTryToConsume: Boolean,
         purchase: StoreTransaction,
+        initiationSource: PostReceiptInitiationSource,
+        appInBackground: Boolean,
     ) {
         if (purchase.type == ProductType.UNKNOWN) {
             // Would only get here if the purchase was triggered from outside of the app and there was
@@ -931,7 +939,7 @@ internal class BillingWrapper(
     @Synchronized
     private fun sendErrorsToAllPendingRequests(error: PurchasesError) {
         while (true) {
-            serviceRequests.poll()?.let { serviceRequest ->
+            serviceRequests.poll()?.let { (serviceRequest, _) ->
                 mainHandler.post {
                     serviceRequest(error)
                 }

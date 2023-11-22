@@ -238,7 +238,7 @@ internal class QueryProductDetailsUseCaseTest: BaseBillingUseCaseTest() {
             withConnectedClient = {
                 it.invoke(mockClient)
             },
-            executeRequestOnUIThread = {
+            executeRequestOnUIThread = { _, request ->
                 timesExecutedInMainThread++
 
                 queryProductDetailsStubbing answers {
@@ -255,7 +255,7 @@ internal class QueryProductDetailsUseCaseTest: BaseBillingUseCaseTest() {
                     }
                 }
 
-                it.invoke(null)
+                request(null)
             },
         )
 
@@ -295,7 +295,7 @@ internal class QueryProductDetailsUseCaseTest: BaseBillingUseCaseTest() {
                 timesRetried++
                 it.invoke(mockClient)
             },
-            executeRequestOnUIThread = {
+            executeRequestOnUIThread = { _, request ->
                 queryProductDetailsStubbing answers {
                     slot.captured.onProductDetailsResponse(
                         BillingClient.BillingResponseCode.NETWORK_ERROR.buildResult(),
@@ -303,7 +303,7 @@ internal class QueryProductDetailsUseCaseTest: BaseBillingUseCaseTest() {
                     )
                 }
 
-                it.invoke(null)
+                request(null)
             },
         )
 
@@ -343,7 +343,7 @@ internal class QueryProductDetailsUseCaseTest: BaseBillingUseCaseTest() {
                 timesRetried++
                 it.invoke(mockClient)
             },
-            executeRequestOnUIThread = {
+            executeRequestOnUIThread = { _, request ->
                 queryProductDetailsStubbing answers {
                     slot.captured.onProductDetailsResponse(
                         BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE.buildResult(),
@@ -351,7 +351,7 @@ internal class QueryProductDetailsUseCaseTest: BaseBillingUseCaseTest() {
                     )
                 }
 
-                it.invoke(null)
+                request(null)
             },
         )
 
@@ -391,7 +391,7 @@ internal class QueryProductDetailsUseCaseTest: BaseBillingUseCaseTest() {
                 timesRetried++
                 it.invoke(mockClient)
             },
-            executeRequestOnUIThread = {
+            executeRequestOnUIThread = { _, request ->
                 queryProductDetailsStubbing answers {
                     slot.captured.onProductDetailsResponse(
                         BillingClient.BillingResponseCode.ERROR.buildResult(),
@@ -399,7 +399,7 @@ internal class QueryProductDetailsUseCaseTest: BaseBillingUseCaseTest() {
                     )
                 }
 
-                it.invoke(null)
+                request(null)
             },
         )
 
@@ -439,7 +439,7 @@ internal class QueryProductDetailsUseCaseTest: BaseBillingUseCaseTest() {
                 timesRetried++
                 it.invoke(mockClient)
             },
-            executeRequestOnUIThread = {
+            executeRequestOnUIThread = { _, request ->
                 queryProductDetailsStubbing answers {
                     slot.captured.onProductDetailsResponse(
                         BillingClient.BillingResponseCode.ITEM_UNAVAILABLE.buildResult(),
@@ -447,7 +447,7 @@ internal class QueryProductDetailsUseCaseTest: BaseBillingUseCaseTest() {
                     )
                 }
 
-                it.invoke(null)
+                request(null)
             },
         )
 

@@ -27,18 +27,19 @@ import java.util.Date
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.time.Duration
 
-internal data class QueryPurchasesUseCaseParams(
+internal class QueryPurchasesUseCaseParams(
     val dateProvider: DateProvider = DefaultDateProvider(),
     val diagnosticsTrackerIfEnabled: DiagnosticsTracker?,
-)
+    appInBackground: Boolean,
+) : UseCaseParams(appInBackground)
 
 internal class QueryPurchasesUseCase(
     private val useCaseParams: QueryPurchasesUseCaseParams,
     val onSuccess: (Map<String, StoreTransaction>) -> Unit,
     val onError: (PurchasesError) -> Unit,
     val withConnectedClient: (BillingClient.() -> Unit) -> Unit,
-    executeRequestOnUIThread: ((PurchasesError?) -> Unit) -> Unit,
-) : BillingClientUseCase<Map<String, StoreTransaction>>(onError, executeRequestOnUIThread) {
+    executeRequestOnUIThread: ExecuteRequestOnUIThreadFunction,
+) : BillingClientUseCase<Map<String, StoreTransaction>>(useCaseParams, onError, executeRequestOnUIThread) {
 
     override val errorMessage: String
         get() = "Error when querying purchases"

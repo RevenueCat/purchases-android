@@ -402,7 +402,7 @@ internal class QueryPurchasesUseCaseTest : BaseBillingUseCaseTest() {
             withConnectedClient = {
                 it.invoke(mockClient)
             },
-            executeRequestOnUIThread = {
+            executeRequestOnUIThread = { _, request ->
                 timesExecutedInMainThread++
 
                 queryPurchasesStubbing answers {
@@ -416,7 +416,7 @@ internal class QueryPurchasesUseCaseTest : BaseBillingUseCaseTest() {
                     }
                 }
 
-                it.invoke(null)
+                request(null)
             },
         ).run()
 
@@ -452,7 +452,7 @@ internal class QueryPurchasesUseCaseTest : BaseBillingUseCaseTest() {
                 timesRetried++
                 it.invoke(mockClient)
             },
-            executeRequestOnUIThread = {
+            executeRequestOnUIThread = { _, request ->
                 queryPurchasesStubbing answers {
                     slot.captured.onQueryPurchasesResponse(
                         BillingClient.BillingResponseCode.NETWORK_ERROR.buildResult(),
@@ -460,7 +460,7 @@ internal class QueryPurchasesUseCaseTest : BaseBillingUseCaseTest() {
                     )
                 }
 
-                it.invoke(null)
+                request(null)
             },
         ).run()
 
@@ -495,7 +495,7 @@ internal class QueryPurchasesUseCaseTest : BaseBillingUseCaseTest() {
                 timesRetried++
                 it.invoke(mockClient)
             },
-            executeRequestOnUIThread = {
+            executeRequestOnUIThread = { _, request ->
                 queryPurchasesStubbing answers {
                     slot.captured.onQueryPurchasesResponse(
                         BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE.buildResult(),
@@ -503,7 +503,7 @@ internal class QueryPurchasesUseCaseTest : BaseBillingUseCaseTest() {
                     )
                 }
 
-                it.invoke(null)
+                request(null)
             },
         ).run()
 
@@ -539,7 +539,7 @@ internal class QueryPurchasesUseCaseTest : BaseBillingUseCaseTest() {
                 timesRetried++
                 it.invoke(mockClient)
             },
-            executeRequestOnUIThread = {
+            executeRequestOnUIThread = { _, request ->
                 queryPurchasesStubbing answers {
                     slot.captured.onQueryPurchasesResponse(
                         BillingClient.BillingResponseCode.ERROR.buildResult(),
@@ -547,7 +547,7 @@ internal class QueryPurchasesUseCaseTest : BaseBillingUseCaseTest() {
                     )
                 }
 
-                it.invoke(null)
+                request(null)
             },
         ).run()
 
@@ -582,7 +582,7 @@ internal class QueryPurchasesUseCaseTest : BaseBillingUseCaseTest() {
                 timesRetried++
                 it.invoke(mockClient)
             },
-            executeRequestOnUIThread = {
+            executeRequestOnUIThread = { _, request ->
                 queryPurchasesStubbing answers {
                     slot.captured.onQueryPurchasesResponse(
                         BillingClient.BillingResponseCode.ITEM_UNAVAILABLE.buildResult(),
@@ -590,7 +590,7 @@ internal class QueryPurchasesUseCaseTest : BaseBillingUseCaseTest() {
                     )
                 }
 
-                it.invoke(null)
+                request(null)
             },
         ).run()
 

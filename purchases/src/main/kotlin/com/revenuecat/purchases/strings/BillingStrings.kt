@@ -42,4 +42,7 @@ internal object BillingStrings {
     const val BILLING_COUNTRY_CODE = "Billing connected with country code: %s"
     const val BILLING_STOREFRONT_CACHING = "Setting storefront cache to %s"
     const val BILLING_STOREFRONT_NULL_FROM_CACHE = "Getting storefront from cache was null."
+    const val BILLING_SERVICE_UNAVAILABLE_FOREGROUND = "Billing is unavailable. App is in foreground. Won't retry."
+    const val BILLING_SERVICE_UNAVAILABLE_BACKGROUND = "Billing is unavailable. App is in background, will retry with" +
+        "backoff."
 }
