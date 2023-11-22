@@ -32,6 +32,30 @@ internal class PostTransactionWithProductDetailsHelper(
                     productType = transaction.type,
                     productIds = transaction.productIds.toSet(),
                     appInBackground = appInBackground,
+                    onReceive = { storeProducts ->
+                        val purchasedStoreProduct = if (transaction.type == ProductType.SUBS) {
+                            storeProducts.firstOrNull { product ->
+                                product.subscriptionOptions?.let { subscriptionOptions ->
+                                    subscriptionOptions.any { it.id == transaction.subscriptionOptionId }
+                                } ?: false
+                            }
+                        } else {
+                            storeProducts.firstOrNull { product ->
+                                product.id == transaction.productIds.firstOrNull()
+                            }
+                        }
+
+                        postReceiptHelper.postTransactionAndConsumeIfNeeded(
+                            purchase = transaction,
+                            storeProduct = purchasedStoreProduct,
+                            isRestore = allowSharingPlayStoreAccount,
+                            appUserID = appUserID,
+                            initiationSource = initiationSource,
+                            appInBackground = appInBackground,
+                            onSuccess = transactionPostSuccess,
+                            onError = transactionPostError,
+                        )
+                    },
                     onError = {
                         postReceiptHelper.postTransactionAndConsumeIfNeeded(
                             purchase = transaction,
@@ -44,30 +68,7 @@ internal class PostTransactionWithProductDetailsHelper(
                             onError = transactionPostError,
                         )
                     },
-                ) { storeProducts ->
-                    val purchasedStoreProduct = if (transaction.type == ProductType.SUBS) {
-                        storeProducts.firstOrNull { product ->
-                            product.subscriptionOptions?.let { subscriptionOptions ->
-                                subscriptionOptions.any { it.id == transaction.subscriptionOptionId }
-                            } ?: false
-                        }
-                    } else {
-                        storeProducts.firstOrNull { product ->
-                            product.id == transaction.productIds.firstOrNull()
-                        }
-                    }
-
-                    postReceiptHelper.postTransactionAndConsumeIfNeeded(
-                        purchase = transaction,
-                        storeProduct = purchasedStoreProduct,
-                        isRestore = allowSharingPlayStoreAccount,
-                        appUserID = appUserID,
-                        initiationSource = initiationSource,
-                        appInBackground = appInBackground,
-                        onSuccess = transactionPostSuccess,
-                        onError = transactionPostError,
-                    )
-                }
+                )
             } else {
                 transactionPostError?.invoke(
                     transaction,
