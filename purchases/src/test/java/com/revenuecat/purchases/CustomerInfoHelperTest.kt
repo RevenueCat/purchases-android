@@ -316,7 +316,14 @@ class CustomerInfoHelperTest {
             appInBackground,
             allowSharingPlayStoreAccount,
         )
-        verify(exactly = 0) { mockOfflineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(any(), any(), any()) }
+        verify(exactly = 0) {
+            mockOfflineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(
+                appUserId = any(),
+                appInBackground = any(),
+                onSuccess = any(),
+                onError = any(),
+            )
+        }
     }
 
     @Test
@@ -331,7 +338,12 @@ class CustomerInfoHelperTest {
             allowSharingPlayStoreAccount,
         )
         verify(exactly = 1) {
-            mockOfflineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(appUserId, any(), any())
+            mockOfflineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(
+                appUserId = appUserId,
+                appInBackground = any(),
+                onSuccess = any(),
+                onError = any(),
+            )
         }
     }
 
@@ -381,7 +393,12 @@ class CustomerInfoHelperTest {
             )
         } returns true
         every {
-            mockOfflineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(appUserId, any(), captureLambda())
+            mockOfflineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(
+                appUserId = appUserId,
+                appInBackground = any(),
+                onSuccess = captureLambda(),
+                onError = any(),
+            )
         } answers {
             lambda<(PurchasesError) -> Unit>().captured.invoke(error)
         }
@@ -726,7 +743,12 @@ class CustomerInfoHelperTest {
             )
         } returns true
         every {
-            mockOfflineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(appUserId, captureLambda(), any())
+            mockOfflineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(
+                appUserId = appUserId,
+                appInBackground = any(),
+                onSuccess = captureLambda(),
+                onError = any(),
+            )
         } answers {
             lambda<(CustomerInfo) -> Unit>().captured.invoke(mockInfo)
         }
@@ -748,7 +770,12 @@ class CustomerInfoHelperTest {
     private fun setupPostPendingTransactionsHelperSuccess(customerInfo: CustomerInfo? = null) {
         val slotList = mutableListOf<((CustomerInfo?) -> Unit)?>()
         every {
-            mockPostPendingTransactionsHelper.syncPendingPurchaseQueue(any(), any(), captureNullable(slotList))
+            mockPostPendingTransactionsHelper.syncPendingPurchaseQueue(
+                allowSharingPlayStoreAccount = any(),
+                appInBackground = any(),
+                onError = any(),
+                onSuccess = captureNullable(slotList),
+            )
         } answers {
             slotList.firstOrNull()?.invoke(customerInfo)
         }
@@ -756,7 +783,12 @@ class CustomerInfoHelperTest {
 
     private fun setupPostPendingTransactionsHelperError() {
         every {
-            mockPostPendingTransactionsHelper.syncPendingPurchaseQueue(any(), captureLambda(), any())
+            mockPostPendingTransactionsHelper.syncPendingPurchaseQueue(
+                allowSharingPlayStoreAccount = any(),
+                appInBackground = any(),
+                onError = captureLambda(),
+                onSuccess = any(),
+            )
         } answers {
             lambda<(PurchasesError) -> Unit>().captured.invoke(mockk())
         }

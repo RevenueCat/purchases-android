@@ -101,6 +101,7 @@ internal class PurchasesTest : BasePurchasesTest() {
                 isRestore = true,
                 appUserID = appUserId,
                 initiationSource = initiationSource,
+                appInBackground = false,
                 onSuccess = any(),
                 onError = any(),
             )
@@ -124,11 +125,12 @@ internal class PurchasesTest : BasePurchasesTest() {
         val oldTransaction = getMockedStoreTransaction(oldSubId, "token", ProductType.SUBS)
         every {
             mockBillingAbstract.findPurchaseInPurchaseHistory(
-                appUserId,
-                ProductType.SUBS,
-                oldSubId,
-                captureLambda(),
-                any(),
+                appUserID = appUserId,
+                productType = ProductType.SUBS,
+                productId = oldSubId,
+                appInBackground = false,
+                onCompletion = captureLambda(),
+                onError = any(),
             )
         } answers {
             lambda<(StoreTransaction) -> Unit>().captured.invoke(oldTransaction)
@@ -168,11 +170,12 @@ internal class PurchasesTest : BasePurchasesTest() {
         val oldTransaction = getMockedStoreTransaction(oldSubId, "token", ProductType.SUBS)
         every {
             mockBillingAbstract.findPurchaseInPurchaseHistory(
-                appUserId,
-                ProductType.SUBS,
-                oldSubId,
-                captureLambda(),
-                any(),
+                appUserID = appUserId,
+                productType = ProductType.SUBS,
+                productId = oldSubId,
+                appInBackground = false,
+                onCompletion = captureLambda(),
+                onError = any(),
             )
         } answers {
             lambda<(StoreTransaction) -> Unit>().captured.invoke(oldTransaction)
@@ -702,6 +705,7 @@ internal class PurchasesTest : BasePurchasesTest() {
                 appUserID = appUserId,
                 marketplace = null,
                 initiationSource = restoreInitiationSource,
+                appInBackground = false,
                 onSuccess = any(),
                 onError = any()
             )
@@ -759,6 +763,7 @@ internal class PurchasesTest : BasePurchasesTest() {
                 appUserID = appUserId,
                 marketplace = null,
                 initiationSource = restoreInitiationSource,
+                appInBackground = false,
                 onSuccess = any(),
                 onError = any()
             )
@@ -785,6 +790,7 @@ internal class PurchasesTest : BasePurchasesTest() {
                 appUserID = appUserId,
                 marketplace = null,
                 initiationSource = restoreInitiationSource,
+                appInBackground = false,
                 onSuccess = any(),
                 onError = any()
             )
@@ -836,6 +842,7 @@ internal class PurchasesTest : BasePurchasesTest() {
                 appUserID = appUserId,
                 marketplace = null,
                 initiationSource = restoreInitiationSource,
+                appInBackground = false,
                 onSuccess = any(),
                 onError = any()
             )
@@ -891,6 +898,7 @@ internal class PurchasesTest : BasePurchasesTest() {
                 appUserID = appUserId,
                 marketplace = null,
                 initiationSource = restoreInitiationSource,
+                appInBackground = false,
                 onSuccess = any(),
                 onError = any()
             )
@@ -972,6 +980,7 @@ internal class PurchasesTest : BasePurchasesTest() {
                 appUserID = appUserId,
                 marketplace = null,
                 initiationSource = restoreInitiationSource,
+                appInBackground = false,
                 onSuccess = any(),
                 onError = any(),
             )
@@ -1031,6 +1040,7 @@ internal class PurchasesTest : BasePurchasesTest() {
                 appUserID = appUserId,
                 marketplace = null,
                 initiationSource = restoreInitiationSource,
+                appInBackground = false,
                 onSuccess = any(),
                 onError = any(),
             )
@@ -1048,9 +1058,10 @@ internal class PurchasesTest : BasePurchasesTest() {
         var capturedLambda: ((List<StoreTransaction>) -> Unit)? = null
         every {
             mockBillingAbstract.queryAllPurchases(
-                appUserId,
-                captureLambda(),
-                any()
+                appUserID = appUserId,
+                appInBackground = false,
+                onReceivePurchaseHistory = captureLambda(),
+                onReceivePurchaseHistoryError = any()
             )
         } answers {
             capturedLambda = lambda<(List<StoreTransaction>) -> Unit>().captured.also {
@@ -1063,9 +1074,10 @@ internal class PurchasesTest : BasePurchasesTest() {
         assertThat(capturedLambda).isNotNull
         verify {
             mockBillingAbstract.queryAllPurchases(
-                appUserId,
-                any(),
-                any()
+                appUserID = appUserId,
+                appInBackground = any(),
+                onReceivePurchaseHistory = any(),
+                onReceivePurchaseHistoryError = any()
             )
         }
     }
@@ -1078,9 +1090,10 @@ internal class PurchasesTest : BasePurchasesTest() {
 
         every {
             mockBillingAbstract.queryAllPurchases(
-                appUserId,
-                captureLambda(),
-                any()
+                appUserID = appUserId,
+                appInBackground = any(),
+                onReceivePurchaseHistory = captureLambda(),
+                onReceivePurchaseHistoryError = any()
             )
         } answers {
             capturedLambda = lambda<(List<StoreTransaction>) -> Unit>().captured
@@ -1103,6 +1116,7 @@ internal class PurchasesTest : BasePurchasesTest() {
                 isRestore = true,
                 appUserID = appUserId,
                 initiationSource = restoreInitiationSource,
+                appInBackground = false,
                 onSuccess = any(),
                 onError = any()
             )
@@ -1112,6 +1126,7 @@ internal class PurchasesTest : BasePurchasesTest() {
                 isRestore = true,
                 appUserID = appUserId,
                 initiationSource = restoreInitiationSource,
+                appInBackground = false,
                 onSuccess = any(),
                 onError = any()
             )
@@ -1122,7 +1137,12 @@ internal class PurchasesTest : BasePurchasesTest() {
     fun failedToRestorePurchases() {
         val purchasesError = PurchasesError(PurchasesErrorCode.StoreProblemError, "Broken")
         every {
-            mockBillingAbstract.queryAllPurchases(appUserId, any(), captureLambda())
+            mockBillingAbstract.queryAllPurchases(
+                appUserID = appUserId,
+                appInBackground = false,
+                onReceivePurchaseHistory = any(),
+                onReceivePurchaseHistoryError = captureLambda()
+            )
         } answers {
             lambda<(PurchasesError) -> Unit>().captured.invoke(purchasesError)
         }
@@ -1148,9 +1168,10 @@ internal class PurchasesTest : BasePurchasesTest() {
         var capturedLambda: ((List<StoreTransaction>) -> Unit)? = null
         every {
             mockBillingAbstract.queryAllPurchases(
-                appUserId,
-                captureLambda(),
-                any()
+                appUserID = appUserId,
+                appInBackground = false,
+                onReceivePurchaseHistory = captureLambda(),
+                onReceivePurchaseHistoryError = any()
             )
         } answers {
             capturedLambda = lambda<(List<StoreTransaction>) -> Unit>().captured.also {
@@ -1168,7 +1189,14 @@ internal class PurchasesTest : BasePurchasesTest() {
         )
         every {
             mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(
-                any(), any(), any(), any(), any(), captureLambda(), any(),
+                purchase = any(),
+                storeProduct = any(),
+                isRestore = any(),
+                appUserID = any(),
+                initiationSource = any(),
+                appInBackground = any(),
+                onSuccess = captureLambda(),
+                onError = any(),
             )
         } answers {
             lambda<SuccessfulPurchaseCallback>().captured.invoke(firstArg(), mockInfo)
@@ -1184,7 +1212,12 @@ internal class PurchasesTest : BasePurchasesTest() {
 
         assertThat(capturedLambda).isNotNull
         verify(exactly = 1) {
-            mockBillingAbstract.queryAllPurchases(appUserId, any(), any())
+            mockBillingAbstract.queryAllPurchases(
+                appUserID = appUserId,
+                appInBackground = any(),
+                onReceivePurchaseHistory = any(),
+                onReceivePurchaseHistoryError = any()
+            )
         }
 
         assertThat(callbackCalled).isTrue()
@@ -1194,9 +1227,10 @@ internal class PurchasesTest : BasePurchasesTest() {
     fun whenNoTokensRestoringPurchasesStillCallListener() {
         every {
             mockBillingAbstract.queryAllPurchases(
-                appUserId,
-                captureLambda(),
-                any()
+                appUserID = appUserId,
+                appInBackground = any(),
+                onReceivePurchaseHistory = captureLambda(),
+                onReceivePurchaseHistoryError = any(),
             )
         } answers {
             lambda<(List<Purchase>) -> Unit>().captured.invoke(emptyList())
@@ -1340,10 +1374,11 @@ internal class PurchasesTest : BasePurchasesTest() {
 
         every {
             mockBillingAbstract.queryProductDetailsAsync(
-                storeProduct.type,
-                setOf(productId),,
-                any(),
-                captureLambda(),
+                productType = storeProduct.type,
+                productIds = setOf(productId),
+                appInBackground = any(),
+                onReceive = captureLambda(),
+                onError = any(),
             )
         } answers {
             lambda<(List<StoreProduct>) -> Unit>().captured.invoke(listOf(storeProduct))
@@ -1362,11 +1397,12 @@ internal class PurchasesTest : BasePurchasesTest() {
 
         every {
             mockBillingAbstract.findPurchaseInPurchaseHistory(
-                appUserId,
-                ProductType.SUBS,
-                oldProductId,
-                if (error == null) captureLambda() else any(),
-                if (error != null) captureLambda() else any(),
+                appUserID = appUserId,
+                productType = ProductType.SUBS,
+                productId = oldProductId,
+                appInBackground = any(),
+                onCompletion = if (error == null) captureLambda() else any(),
+                onError = if (error != null) captureLambda() else any(),
             )
         } answers {
             if (error != null) {

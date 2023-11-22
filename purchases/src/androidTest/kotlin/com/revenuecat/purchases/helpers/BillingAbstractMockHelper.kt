@@ -15,14 +15,26 @@ internal fun BillingAbstract.mockQueryProductDetails(
     return apply {
         val subsReceiveCallbackSlot = slot<StoreProductsCallback>()
         every {
-            queryProductDetailsAsync(ProductType.SUBS, any(), any(), any(), capture(subsReceiveCallbackSlot))
+            queryProductDetailsAsync(
+                productType = ProductType.SUBS,
+                productIds = any(),
+                appInBackground = any(),
+                onReceive = capture(subsReceiveCallbackSlot),
+                onError = any(),
+            )
         } answers {
             subsReceiveCallbackSlot.captured.invoke(queryProductDetailsSubsReturn)
         }
 
         val inappReceiveCallbackSlot = slot<StoreProductsCallback>()
         every {
-            queryProductDetailsAsync(ProductType.INAPP, any(), any(), any(), capture(inappReceiveCallbackSlot))
+            queryProductDetailsAsync(
+                productType = ProductType.INAPP,
+                productIds = any(),
+                appInBackground = any(),
+                capture(inappReceiveCallbackSlot),
+                any(),
+            )
         } answers {
             inappReceiveCallbackSlot.captured.invoke(queryProductDetailsInAppReturn)
         }

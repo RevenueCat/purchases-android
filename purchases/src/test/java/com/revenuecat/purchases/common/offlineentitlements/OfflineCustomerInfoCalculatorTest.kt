@@ -69,9 +69,10 @@ class OfflineCustomerInfoCalculatorTest {
 
         var receivedCustomerInfo: CustomerInfo? = null
         offlineCustomerInfoCalculator.computeOfflineCustomerInfo(
-            appUserID,
-            { receivedCustomerInfo = it },
-            { fail("Should've succeeded") }
+            appUserID = appUserID,
+            appInBackground = false,
+            onSuccess = { receivedCustomerInfo = it },
+            onError = { fail("Should've succeeded") }
         )
         assertThat(receivedCustomerInfo).isNotNull
         assertThat(receivedCustomerInfo?.activeSubscriptions).isEqualTo(
@@ -89,9 +90,10 @@ class OfflineCustomerInfoCalculatorTest {
 
         var receivedCustomerInfo: CustomerInfo? = null
         offlineCustomerInfoCalculator.computeOfflineCustomerInfo(
-            appUserID,
-            { receivedCustomerInfo = it },
-            { fail("Should've succeeded") }
+            appUserID = appUserID,
+            appInBackground = false,
+            onSuccess = { receivedCustomerInfo = it },
+            onError = { fail("Should've succeeded") }
         )
         assertThat(receivedCustomerInfo).isNotNull
         assertThat(receivedCustomerInfo?.rawData).isNotNull
@@ -131,9 +133,10 @@ class OfflineCustomerInfoCalculatorTest {
 
         var receivedCustomerInfo: CustomerInfo? = null
         offlineCustomerInfoCalculator.computeOfflineCustomerInfo(
-            appUserID,
-            { receivedCustomerInfo = it },
-            { fail("Should've succeeded") }
+            appUserID = appUserID,
+            appInBackground = false,
+            onSuccess = { receivedCustomerInfo = it },
+            onError = { fail("Should've succeeded") }
         )
         assertThat(receivedCustomerInfo).isNotNull
         assertThat(receivedCustomerInfo?.activeSubscriptions).isEqualTo(
@@ -184,9 +187,10 @@ class OfflineCustomerInfoCalculatorTest {
 
         every {
             purchasedProductsFetcher.queryActiveProducts(
-                appUserID,
-                captureLambda(),
-                any()
+                appUserID = appUserID,
+                appInBackground = any(),
+                onSuccess = captureLambda(),
+                onError = any()
             )
         } answers {
             lambda<(List<PurchasedProduct>) -> Unit>().captured.invoke(listOf(p1mProduct, notBwProduct))
@@ -194,9 +198,10 @@ class OfflineCustomerInfoCalculatorTest {
 
         var receivedCustomerInfo: CustomerInfo? = null
         offlineCustomerInfoCalculator.computeOfflineCustomerInfo(
-            appUserID,
-            { receivedCustomerInfo = it },
-            { fail("Should've succeeded") }
+            appUserID = appUserID,
+            appInBackground = false,
+            onSuccess = { receivedCustomerInfo = it },
+            onError = { fail("Should've succeeded") }
         )
         assertThat(receivedCustomerInfo).isNotNull
         assertThat(receivedCustomerInfo?.activeSubscriptions!!.size).isEqualTo(1)
@@ -252,9 +257,10 @@ class OfflineCustomerInfoCalculatorTest {
 
         var receivedCustomerInfo: CustomerInfo? = null
         offlineCustomerInfoCalculator.computeOfflineCustomerInfo(
-            appUserID,
-            { receivedCustomerInfo = it },
-            { fail("Should've succeeded") }
+            appUserID = appUserID,
+            appInBackground = false,
+            onSuccess = { receivedCustomerInfo = it },
+            onError = { fail("Should've succeeded") }
         )
         assertThat(receivedCustomerInfo).isNotNull
 
@@ -297,9 +303,10 @@ class OfflineCustomerInfoCalculatorTest {
 
         var receivedCustomerInfo: CustomerInfo? = null
         offlineCustomerInfoCalculator.computeOfflineCustomerInfo(
-            appUserID,
-            { receivedCustomerInfo = it },
-            { fail("Should've succeeded") }
+            appUserID = appUserID,
+            appInBackground = false,
+            onSuccess = { receivedCustomerInfo = it },
+            onError = { fail("Should've succeeded") }
         )
         assertThat(receivedCustomerInfo).isNotNull
 
@@ -338,9 +345,10 @@ class OfflineCustomerInfoCalculatorTest {
 
         var receivedCustomerInfo: CustomerInfo? = null
         offlineCustomerInfoCalculator.computeOfflineCustomerInfo(
-            appUserID,
-            { receivedCustomerInfo = it },
-            { fail("Should've succeeded") }
+            appUserID = appUserID,
+            appInBackground = false,
+            onSuccess = { receivedCustomerInfo = it },
+            onError = { fail("Should've succeeded") }
         )
         assertThat(receivedCustomerInfo).isNotNull
 
@@ -372,9 +380,10 @@ class OfflineCustomerInfoCalculatorTest {
 
         var receivedCustomerInfo: CustomerInfo? = null
         offlineCustomerInfoCalculator.computeOfflineCustomerInfo(
-            appUserID,
-            { receivedCustomerInfo = it },
-            { fail("Should've succeeded") }
+            appUserID = appUserID,
+            appInBackground = false,
+            onSuccess = { receivedCustomerInfo = it },
+            onError = { fail("Should've succeeded") }
         )
         assertThat(receivedCustomerInfo).isNotNull
 
@@ -404,9 +413,10 @@ class OfflineCustomerInfoCalculatorTest {
 
         every {
             purchasedProductsFetcher.queryActiveProducts(
-                appUserID,
-                captureLambda(),
-                any()
+                appUserID = appUserID,
+                appInBackground = any(),
+                onSuccess = captureLambda(),
+                onError = any()
             )
         } answers {
             lambda<(List<PurchasedProduct>) -> Unit>().captured.invoke(products)
@@ -414,9 +424,10 @@ class OfflineCustomerInfoCalculatorTest {
 
         var receivedError: PurchasesError? = null
         offlineCustomerInfoCalculator.computeOfflineCustomerInfo(
-            appUserID,
-            { fail("Should've failed") },
-            { receivedError = it }
+            appUserID = appUserID,
+            appInBackground = false,
+            onSuccess = { fail("Should've failed") },
+            onError = { receivedError = it }
         )
         assertThat(receivedError).isNotNull
         assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.UnsupportedError)
@@ -426,9 +437,10 @@ class OfflineCustomerInfoCalculatorTest {
     fun `error is triggered when fetching products fails`() {
         every {
             purchasedProductsFetcher.queryActiveProducts(
-                appUserID,
-                any(),
-                captureLambda()
+                appUserID = appUserID,
+                appInBackground = any(),
+                onSuccess = any(),
+                onError = captureLambda()
             )
         } answers {
             lambda<(PurchasesError) -> Unit>().captured.invoke(PurchasesError(PurchasesErrorCode.StoreProblemError))
@@ -436,9 +448,10 @@ class OfflineCustomerInfoCalculatorTest {
 
         var receivedError: PurchasesError? = null
         offlineCustomerInfoCalculator.computeOfflineCustomerInfo(
-            appUserID,
-            { fail("Should've failed") },
-            { receivedError = it }
+            appUserID = appUserID,
+            appInBackground = false,
+            onSuccess = { fail("Should've failed") },
+            onError = { receivedError = it }
         )
         assertThat(receivedError).isNotNull
         assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
@@ -500,9 +513,10 @@ class OfflineCustomerInfoCalculatorTest {
 
         every {
             purchasedProductsFetcher.queryActiveProducts(
-                appUserID,
-                captureLambda(),
-                any()
+                appUserID = appUserID,
+                appInBackground = any(),
+                onSuccess = captureLambda(),
+                onError = any()
             )
         } answers {
             lambda<(List<PurchasedProduct>) -> Unit>().captured.invoke(products)

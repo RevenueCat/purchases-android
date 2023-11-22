@@ -42,11 +42,12 @@ internal class QueryPurchaseHistoryUseCaseTest: BaseBillingUseCaseTest() {
 
         var error: PurchasesError? = null
         wrapper.queryPurchaseHistoryAsync(
-            ProductType.SUBS.toGoogleProductType()!!,
-            {
+            productType = ProductType.SUBS.toGoogleProductType()!!,
+            appInBackground = false,
+            onReceivePurchaseHistory = {
                 fail("call should not succeed")
             },
-            {
+            onReceivePurchaseHistoryError = {
                 error = it
             }
         )
@@ -63,11 +64,12 @@ internal class QueryPurchaseHistoryUseCaseTest: BaseBillingUseCaseTest() {
         )
         var errorCalled = false
         wrapper.queryPurchaseHistoryAsync(
-            "notValid",
-            {
+            productType = "notValid",
+            appInBackground = false,
+            onReceivePurchaseHistory = {
                 fail("call should not succeed")
             },
-            {
+            onReceivePurchaseHistoryError = {
                 errorCalled = true
             }
         )
@@ -90,10 +92,11 @@ internal class QueryPurchaseHistoryUseCaseTest: BaseBillingUseCaseTest() {
         }
 
         wrapper.queryPurchaseHistoryAsync(
-            BillingClient.ProductType.SUBS,
-            {
+            productType = BillingClient.ProductType.SUBS,
+            appInBackground = false,
+            onReceivePurchaseHistory = {
                 numCallbacks++
-            }, {
+            }, onReceivePurchaseHistoryError = {
                 fail("shouldn't be an error")
             })
 
@@ -124,12 +127,13 @@ internal class QueryPurchaseHistoryUseCaseTest: BaseBillingUseCaseTest() {
         }
 
         wrapper.queryPurchaseHistoryAsync(
-            BillingClient.ProductType.SUBS,
-            {
+            productType = BillingClient.ProductType.SUBS,
+            appInBackground = false,
+            onReceivePurchaseHistory = {
                 // ensuring we don't hit an edge case where numCallbacks doesn't increment before the final assert
                 numCallbacks.incrementAndGet()
                 lock.countDown()
-            }, {
+            }, onReceivePurchaseHistoryError = {
                 fail("shouldn't be an error")
             })
 
@@ -148,11 +152,12 @@ internal class QueryPurchaseHistoryUseCaseTest: BaseBillingUseCaseTest() {
 
         var successCalled = false
         wrapper.queryPurchaseHistoryAsync(
-            subsGoogleProductType,
-            {
+            productType = subsGoogleProductType,
+            appInBackground = false,
+            onReceivePurchaseHistory = {
                 successCalled = true
             },
-            {
+            onReceivePurchaseHistoryError = {
                 fail("shouldn't go to on error")
             }
         )
@@ -168,11 +173,12 @@ internal class QueryPurchaseHistoryUseCaseTest: BaseBillingUseCaseTest() {
 
         var errorCalled = false
         wrapper.queryPurchaseHistoryAsync(
-            subsGoogleProductType,
-            {
+            productType = subsGoogleProductType,
+            appInBackground = false,
+            onReceivePurchaseHistory = {
                 fail("should go to on error")
             },
-            {
+            onReceivePurchaseHistoryError = {
                 assertThat(it.code).isEqualTo(PurchasesErrorCode.PurchaseNotAllowedError)
                 errorCalled = true
             }
@@ -189,9 +195,10 @@ internal class QueryPurchaseHistoryUseCaseTest: BaseBillingUseCaseTest() {
         )
 
         wrapper.queryPurchaseHistoryAsync(
-            subsGoogleProductType,
-            {},
-            {}
+            productType = subsGoogleProductType,
+            appInBackground = false,
+            onReceivePurchaseHistory = {},
+            onReceivePurchaseHistoryError = {}
         )
 
         mockClient.verifyQueryPurchaseHistoryCalledWithType(subsGoogleProductType, subsBuilder)
@@ -202,9 +209,10 @@ internal class QueryPurchaseHistoryUseCaseTest: BaseBillingUseCaseTest() {
         )
 
         wrapper.queryPurchaseHistoryAsync(
-            inAppGoogleProductType,
-            {},
-            {}
+            productType = inAppGoogleProductType,
+            appInBackground = false,
+            onReceivePurchaseHistory = {},
+            onReceivePurchaseHistoryError = {}
         )
 
         mockClient.verifyQueryPurchaseHistoryCalledWithType(inAppGoogleProductType, inAppBuilder)
@@ -230,7 +238,12 @@ internal class QueryPurchaseHistoryUseCaseTest: BaseBillingUseCaseTest() {
             slot.captured.onPurchaseHistoryResponse(result, null)
         }
 
-        wrapper.queryPurchaseHistoryAsync(BillingClient.ProductType.SUBS, {}, { fail("shouldn't be an error") })
+        wrapper.queryPurchaseHistoryAsync(
+            productType = BillingClient.ProductType.SUBS,
+            appInBackground = false,
+            onReceivePurchaseHistory = {},
+            onReceivePurchaseHistoryError = { fail("shouldn't be an error") }
+        )
 
         verify(exactly = 1) {
             mockDiagnosticsTracker.trackGoogleQueryPurchaseHistoryRequest(
@@ -260,7 +273,12 @@ internal class QueryPurchaseHistoryUseCaseTest: BaseBillingUseCaseTest() {
             slot.captured.onPurchaseHistoryResponse(result, null)
         }
 
-        wrapper.queryPurchaseHistoryAsync(BillingClient.ProductType.SUBS, { fail("should be an error") }, {})
+        wrapper.queryPurchaseHistoryAsync(
+            productType = BillingClient.ProductType.SUBS,
+            appInBackground = false,
+            onReceivePurchaseHistory = { fail("should be an error") },
+            onReceivePurchaseHistoryError = {}
+        )
 
         verify(exactly = 1) {
             mockDiagnosticsTracker.trackGoogleQueryPurchaseHistoryRequest(
@@ -292,6 +310,7 @@ internal class QueryPurchaseHistoryUseCaseTest: BaseBillingUseCaseTest() {
                 mockDateProvider,
                 mockDiagnosticsTracker,
                 BillingClient.ProductType.SUBS,
+                appInBackground = false,
             ),
             { received ->
                 receivedList = received
@@ -350,6 +369,7 @@ internal class QueryPurchaseHistoryUseCaseTest: BaseBillingUseCaseTest() {
                 mockDateProvider,
                 mockDiagnosticsTracker,
                 BillingClient.ProductType.SUBS,
+                appInBackground = false,
             ),
             { _ ->
                 fail("shouldn't be success")
@@ -396,6 +416,7 @@ internal class QueryPurchaseHistoryUseCaseTest: BaseBillingUseCaseTest() {
                 mockDateProvider,
                 mockDiagnosticsTracker,
                 BillingClient.ProductType.SUBS,
+                appInBackground = false,
             ),
             { _ ->
                 fail("shouldn't be success")
@@ -442,6 +463,7 @@ internal class QueryPurchaseHistoryUseCaseTest: BaseBillingUseCaseTest() {
                 mockDateProvider,
                 mockDiagnosticsTracker,
                 BillingClient.ProductType.SUBS,
+                appInBackground = false,
             ),
             { _ ->
                 fail("shouldn't be success")
@@ -488,6 +510,7 @@ internal class QueryPurchaseHistoryUseCaseTest: BaseBillingUseCaseTest() {
                 mockDateProvider,
                 mockDiagnosticsTracker,
                 BillingClient.ProductType.SUBS,
+                appInBackground = false,
             ),
             { _ ->
                 fail("shouldn't be success")

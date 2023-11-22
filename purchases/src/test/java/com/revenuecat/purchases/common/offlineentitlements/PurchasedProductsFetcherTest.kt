@@ -58,6 +58,7 @@ class PurchasedProductsFetcherTest {
 
         fetcher.queryActiveProducts(
             appUserID = "appUserID",
+            appInBackground = false,
             onSuccess = { fail("Should not have succeeded") },
             onError = { error = it },
         )
@@ -74,6 +75,7 @@ class PurchasedProductsFetcherTest {
 
         fetcher.queryActiveProducts(
             appUserID = "appUserID",
+            appInBackground = false,
             onSuccess = { fail("Should not have succeeded") },
             onError = { error = it },
         )
@@ -90,6 +92,7 @@ class PurchasedProductsFetcherTest {
         every {
             billing.queryPurchases(
                 appUserID,
+                appInBackground = any(),
                 onSuccess = captureLambda(),
                 onError = any(),
             )
@@ -100,6 +103,7 @@ class PurchasedProductsFetcherTest {
 
         fetcher.queryActiveProducts(
             appUserID = "appUserID",
+            appInBackground = false,
             onSuccess = {
                 receivedListOfPurchasedProducts = it
             },
@@ -115,6 +119,7 @@ class PurchasedProductsFetcherTest {
         every {
             billing.queryPurchases(
                 appUserID,
+                appInBackground = any(),
                 onSuccess = captureLambda(),
                 onError = any(),
             )
@@ -125,6 +130,7 @@ class PurchasedProductsFetcherTest {
 
         fetcher.queryActiveProducts(
             appUserID = "appUserID",
+            appInBackground = false,
             onSuccess = {
                 receivedListOfPurchasedProducts = it
             },
@@ -148,6 +154,7 @@ class PurchasedProductsFetcherTest {
 
         fetcher.queryActiveProducts(
             appUserID = "appUserID",
+            appInBackground = false,
             onSuccess = {
                 receivedListOfPurchasedProducts = it
             },
@@ -176,6 +183,7 @@ class PurchasedProductsFetcherTest {
 
         fetcher.queryActiveProducts(
             appUserID = "appUserID",
+            appInBackground = false,
             onSuccess = {
                 receivedListOfPurchasedProducts = it
             },
@@ -215,6 +223,7 @@ class PurchasedProductsFetcherTest {
 
         fetcher.queryActiveProducts(
             appUserID = "appUserID",
+            appInBackground = false,
             onSuccess = {
                 receivedListOfPurchasedProducts = it
             },
@@ -263,6 +272,7 @@ class PurchasedProductsFetcherTest {
 
         fetcher.queryActiveProducts(
             appUserID = "appUserID",
+            appInBackground = false,
             onSuccess = {
                 receivedListOfPurchasedProducts = it
             },
@@ -305,6 +315,7 @@ class PurchasedProductsFetcherTest {
         every {
             billing.queryPurchases(
                 appUserID,
+                appInBackground = any(),
                 onSuccess = captureLambda(),
                 onError = any(),
             )

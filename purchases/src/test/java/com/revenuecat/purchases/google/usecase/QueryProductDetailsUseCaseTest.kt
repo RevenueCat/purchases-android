@@ -50,12 +50,16 @@ internal class QueryProductDetailsUseCaseTest: BaseBillingUseCaseTest() {
 
         var receivedList: List<StoreProduct>? = null
         wrapper.queryProductDetailsAsync(
-            ProductType.SUBS,
-            productIDs,, {
-                AssertionsForClassTypes.fail("shouldn't be an error")
-            }, {
+            productType = ProductType.SUBS,
+            productIds = productIDs,
+            appInBackground = false,
+            onReceive = {
                 receivedList = it
-            })
+            },
+            onError = {
+                AssertionsForClassTypes.fail("shouldn't be an error")
+            },
+        )
 
         assertThat(receivedList).isNotNull
         assertThat(receivedList!!.size).isZero
@@ -74,12 +78,16 @@ internal class QueryProductDetailsUseCaseTest: BaseBillingUseCaseTest() {
         val productIDs = setOf("product_a")
 
         wrapper.queryProductDetailsAsync(
-            ProductType.UNKNOWN,
-            productIDs,, {
-                AssertionsForClassTypes.fail("shouldn't be an error")
-            }, {
+            productType = ProductType.UNKNOWN,
+            productIds = productIDs,
+            appInBackground = false,
+            onReceive = {
                 this@QueryProductDetailsUseCaseTest.storeProducts = it
-            })
+            },
+            onError = {
+                AssertionsForClassTypes.fail("shouldn't be an error")
+            },
+        )
 
         assertThat(slot.isCaptured).isTrue
         assertThat(slot.captured.productList[0].productType).isEqualTo(BillingClient.ProductType.INAPP)
@@ -95,10 +103,14 @@ internal class QueryProductDetailsUseCaseTest: BaseBillingUseCaseTest() {
         } just Runs
 
         wrapper.queryProductDetailsAsync(
-            ProductType.SUBS,
-            productIdsSet,, {
+            productType = ProductType.SUBS,
+            productIds = productIdsSet,
+            appInBackground = false,
+            onReceive = {},
+            onError = {
                 AssertionsForClassTypes.fail("shouldn't be an error")
-            }, {})
+            },
+        )
 
         assertThat(slot.captured).isNotNull
         val queryProductDetailsParamsProductList = slot.captured.productList
@@ -109,12 +121,16 @@ internal class QueryProductDetailsUseCaseTest: BaseBillingUseCaseTest() {
     @Test
     fun `queryProductDetails with empty list returns empty list and does not query BillingClient`() {
         wrapper.queryProductDetailsAsync(
-            ProductType.SUBS,
-            emptySet(),, {
-                AssertionsForClassTypes.fail("shouldn't be an error")
-            }, {
+            productType = ProductType.SUBS,
+            productIds = emptySet(),
+            appInBackground = false,
+            onReceive = {
                 assertThat(it).isEmpty()
-            })
+            },
+            onError = {
+                AssertionsForClassTypes.fail("shouldn't be an error")
+            },
+        )
 
         verify(exactly = 0) {
             mockClient.queryProductDetailsAsync(any(), any())
@@ -124,12 +140,16 @@ internal class QueryProductDetailsUseCaseTest: BaseBillingUseCaseTest() {
     @Test
     fun `queryProductDetails with only empty productIds returns empty list and does not query BillingClient`() {
         wrapper.queryProductDetailsAsync(
-            ProductType.SUBS,
-            setOf("", ""),, {
-                AssertionsForClassTypes.fail("shouldn't be an error")
-            }, {
+            productType = ProductType.SUBS,
+            productIds = setOf("", ""),
+            appInBackground = false,
+            onReceive = {
                 assertThat(it).isEmpty()
-            })
+            },
+            onError = {
+                AssertionsForClassTypes.fail("shouldn't be an error")
+            },
+        )
 
         verify(exactly = 0) {
             mockClient.queryProductDetailsAsync(any(), any())
@@ -152,13 +172,17 @@ internal class QueryProductDetailsUseCaseTest: BaseBillingUseCaseTest() {
         }
 
         wrapper.queryProductDetailsAsync(
-            ProductType.SUBS,
-            setOf("asdf", "asdf"),, {
-                numCallbacks++
-            }, {
+            productType = ProductType.SUBS,
+            productIds = setOf("asdf", "asdf"),
+            appInBackground = false,
+            onReceive = {
                 Thread.sleep(200)
                 numCallbacks++
-            })
+            },
+            onError = {
+                numCallbacks++
+            },
+        )
 
         assertThat(numCallbacks).isEqualTo(1)
     }
@@ -187,14 +211,18 @@ internal class QueryProductDetailsUseCaseTest: BaseBillingUseCaseTest() {
         }
 
         wrapper.queryProductDetailsAsync(
-            ProductType.SUBS,
-            setOf("asdf"),, {
-                AssertionsForClassTypes.fail("shouldn't be an error")
-            }, {
+            productType = ProductType.SUBS,
+            productIds = setOf("asdf"),
+            appInBackground = false,
+            onReceive = {
                 // ensuring we don't hit an edge case where numCallbacks doesn't increment before the final assert
                 numCallbacks.incrementAndGet()
                 lock.countDown()
-            })
+            },
+            onError = {
+                AssertionsForClassTypes.fail("shouldn't be an error")
+            },
+        )
 
         lock.await()
         assertThat(lock.count).isEqualTo(0)
@@ -222,6 +250,7 @@ internal class QueryProductDetailsUseCaseTest: BaseBillingUseCaseTest() {
                 mockDiagnosticsTracker,
                 productIDs,
                 ProductType.SUBS,
+                appInBackground = false
             ),
             { received ->
                 receivedList = received
@@ -278,6 +307,7 @@ internal class QueryProductDetailsUseCaseTest: BaseBillingUseCaseTest() {
                 mockDiagnosticsTracker,
                 productIDs,
                 ProductType.SUBS,
+                appInBackground = false
             ),
             { _ ->
                 fail("shouldn't be success")
@@ -326,6 +356,7 @@ internal class QueryProductDetailsUseCaseTest: BaseBillingUseCaseTest() {
                 mockDiagnosticsTracker,
                 productIDs,
                 ProductType.SUBS,
+                appInBackground = false
             ),
             { _ ->
                 fail("shouldn't be success")
@@ -374,6 +405,7 @@ internal class QueryProductDetailsUseCaseTest: BaseBillingUseCaseTest() {
                 mockDiagnosticsTracker,
                 productIDs,
                 ProductType.SUBS,
+                appInBackground = false
             ),
             { _ ->
                 fail("shouldn't be success")
@@ -422,6 +454,7 @@ internal class QueryProductDetailsUseCaseTest: BaseBillingUseCaseTest() {
                 mockDiagnosticsTracker,
                 productIDs,
                 ProductType.SUBS,
+                appInBackground = false
             ),
             { _ ->
                 fail("shouldn't be success")
