@@ -443,7 +443,7 @@ internal class QueryPurchaseHistoryUseCaseTest: BaseBillingUseCaseTest() {
 
         useCase.run()
 
-        assertThat(timesRetried).isEqualTo(4) // First attempt plus 3 retries
+        assertThat(timesRetried).isEqualTo(1)
         assertThat(receivedError).isNotNull
         assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
     }
