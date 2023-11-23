@@ -11,7 +11,6 @@ import android.os.Handler
 import androidx.annotation.UiThread
 import androidx.annotation.VisibleForTesting
 import androidx.annotation.VisibleForTesting.PRIVATE
-import com.android.billingclient.api.AcknowledgePurchaseParams
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingFlowParams
@@ -45,6 +44,8 @@ import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.sha256
 import com.revenuecat.purchases.common.toHumanReadableDescription
 import com.revenuecat.purchases.common.verboseLog
+import com.revenuecat.purchases.google.usecase.AcknowledgePurchaseUseCase
+import com.revenuecat.purchases.google.usecase.AcknowledgePurchaseUseCaseParams
 import com.revenuecat.purchases.google.usecase.ConsumePurchaseUseCase
 import com.revenuecat.purchases.google.usecase.ConsumePurchaseUseCaseParams
 import com.revenuecat.purchases.google.usecase.GetBillingConfigUseCase
@@ -378,17 +379,12 @@ internal class BillingWrapper(
                 onConsumed = deviceCache::addSuccessfullyPostedToken,
             )
         } else if (shouldTryToConsume && !alreadyAcknowledged) {
-            acknowledge(purchase.purchaseToken) { billingResult, purchaseToken ->
-                if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
-                    deviceCache.addSuccessfullyPostedToken(purchaseToken)
-                } else {
-                    log(
-                        LogIntent.GOOGLE_ERROR,
-                        PurchaseStrings.ACKNOWLEDGING_PURCHASE_ERROR
-                            .format(billingResult.toHumanReadableDescription()),
-                    )
-                }
-            }
+            acknowledge(
+                purchase.purchaseToken,
+                initiationSource,
+                appInBackground,
+                onAcknowledged = deviceCache::addSuccessfullyPostedToken,
+            )
         } else {
             deviceCache.addSuccessfullyPostedToken(purchase.purchaseToken)
         }
@@ -423,20 +419,29 @@ internal class BillingWrapper(
 
     internal fun acknowledge(
         token: String,
-        onAcknowledged: (billingResult: BillingResult, purchaseToken: String) -> Unit,
+        initiationSource: PostReceiptInitiationSource,
+        appInBackground: Boolean,
+        onAcknowledged: (purchaseToken: String) -> Unit,
     ) {
         log(LogIntent.PURCHASE, PurchaseStrings.ACKNOWLEDGING_PURCHASE.format(token))
-        executeRequestOnUIThread { connectionError ->
-            if (connectionError == null) {
-                withConnectedClient {
-                    acknowledgePurchase(
-                        AcknowledgePurchaseParams.newBuilder().setPurchaseToken(token).build(),
-                    ) { billingResult ->
-                        onAcknowledged(billingResult, token)
-                    }
-                }
-            }
-        }
+        AcknowledgePurchaseUseCase(
+            AcknowledgePurchaseUseCaseParams(
+                token,
+                initiationSource,
+                appInBackground,
+            ),
+            onReceive = onAcknowledged,
+            { error ->
+                // TODO-retry: if ITEM_NOT_OWNED queryPurchasesAsync
+                log(
+                    LogIntent.GOOGLE_ERROR,
+                    PurchaseStrings.ACKNOWLEDGING_PURCHASE_ERROR
+                        .format(error.underlyingErrorMessage),
+                )
+            },
+            ::withConnectedClient,
+            ::executeRequestOnUIThread,
+        ).run()
     }
 
     @Suppress("ReturnCount", "LongMethod")

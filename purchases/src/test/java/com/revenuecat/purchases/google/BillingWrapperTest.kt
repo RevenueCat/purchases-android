@@ -1154,7 +1154,11 @@ class BillingWrapperTest {
         val token = "token"
 
         billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
-        wrapper.acknowledge(token) { _, _ -> }
+        wrapper.acknowledge(
+            token,
+            initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
+            appInBackground = false
+        ) { }
 
         assertThat(capturedAcknowledgePurchaseParams.isCaptured).isTrue
         assertThat(capturedAcknowledgePurchaseParams.captured.purchaseToken).isEqualTo(token)
