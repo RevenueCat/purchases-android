@@ -351,7 +351,12 @@ class OfferingsManagerTest {
         assertThat(receivedOfferings).isEqualTo(testOfferings)
 
         verify(exactly = 1) { cache.cacheOfferings(testOfferings, backendResponse) }
-        verify(exactly = 1) { offeringsFactory.createOfferings(backendResponse, any(), any()) }
+        verify(exactly = 1) { offeringsFactory.createOfferings(
+            offeringsJSON = backendResponse,
+            appInBackground = any(),
+            onError = any(),
+            onSuccess = any()
+        ) }
     }
 
     @Test
@@ -490,13 +495,23 @@ class OfferingsManagerTest {
     ) {
         if (error == null) {
             every {
-                offeringsFactory.createOfferings(any(), any(), captureLambda())
+                offeringsFactory.createOfferings(
+                    offeringsJSON = any(),
+                    appInBackground = any(),
+                    onError = any(),
+                    onSuccess = captureLambda()
+                )
             } answers {
                 lambda<(Offerings) -> Unit>().captured.invoke(offerings)
             }
         } else {
             every {
-                offeringsFactory.createOfferings(any(), captureLambda(), any())
+                offeringsFactory.createOfferings(
+                    offeringsJSON = any(),
+                    appInBackground = any(),
+                    onError = captureLambda(),
+                    onSuccess = any()
+                )
             } answers {
                 lambda<(PurchasesError) -> Unit>().captured.invoke(error)
             }

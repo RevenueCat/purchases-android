@@ -43,7 +43,6 @@ import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.mockkStatic
-import io.mockk.runs
 import io.mockk.slot
 import io.mockk.unmockkStatic
 import org.junit.After
@@ -148,7 +147,7 @@ internal open class BasePurchasesTest {
                 purchasesUpdatedListener = capture(capturedPurchasesUpdatedListener)
             } just Runs
             every {
-                consumeAndSave(capture(capturedShouldTryToConsume), capture(capturedConsumePurchaseWrapper))
+                consumeAndSave(capture(capturedShouldTryToConsume), capture(capturedConsumePurchaseWrapper), any())
             } just Runs
             every {
                 purchasesUpdatedListener = null
@@ -186,7 +185,16 @@ internal open class BasePurchasesTest {
     private fun mockPostReceiptHelper() {
         with(mockPostReceiptHelper) {
             every {
-                postTransactionAndConsumeIfNeeded(any(), any(), any(), any(), any(), captureLambda(), any())
+                postTransactionAndConsumeIfNeeded(
+                    purchase = any(),
+                    storeProduct = any(),
+                    isRestore = any(),
+                    appUserID = any(),
+                    initiationSource = any(),
+                    appInBackground = any(),
+                    onSuccess = captureLambda(),
+                    onError = any(),
+                )
             } answers {
                 lambda<SuccessfulPurchaseCallback>().captured.invoke(
                     firstArg(),
@@ -194,7 +202,18 @@ internal open class BasePurchasesTest {
                 )
             }
             every {
-                postTokenWithoutConsuming(any(), any(), any(), any(), any(), any(), any(), captureLambda(), any())
+                postTokenWithoutConsuming(
+                    purchaseToken = any(),
+                    storeUserID = any(),
+                    receiptInfo = any(),
+                    isRestore = any(),
+                    appUserID = any(),
+                    marketplace = any(),
+                    initiationSource = any(),
+                    appInBackground = any(),
+                    onSuccess = captureLambda(),
+                    onError = any(),
+                )
             } answers {
                 lambda<(CustomerInfo) -> Unit>().captured.invoke(mockInfo)
             }
@@ -321,8 +340,9 @@ internal open class BasePurchasesTest {
             mockBillingAbstract.queryProductDetailsAsync(
                 type,
                 productIds.toSet(),
+                any(),
                 captureLambda(),
-                any()
+                any(),
             )
         } answers {
             lambda<(List<StoreProduct>) -> Unit>().captured.invoke(storeProducts)

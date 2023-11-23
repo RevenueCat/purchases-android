@@ -144,8 +144,12 @@ internal class PurchasesOrchestrator constructor(
 
         billing.stateListener = object : BillingAbstract.StateListener {
             override fun onConnected() {
-                postPendingTransactionsHelper.syncPendingPurchaseQueue(allowSharingPlayStoreAccount)
+                postPendingTransactionsHelper.syncPendingPurchaseQueue(
+                    allowSharingPlayStoreAccount,
+                    state.appInBackground,
+                )
                 billing.getStorefront(
+                    state.appInBackground,
                     onSuccess = { countryCode ->
                         debugLog(BillingStrings.BILLING_COUNTRY_CODE.format(countryCode))
                     },
@@ -202,7 +206,7 @@ internal class PurchasesOrchestrator constructor(
             )
         }
         offeringsManager.onAppForeground(identityManager.currentAppUserID)
-        postPendingTransactionsHelper.syncPendingPurchaseQueue(allowSharingPlayStoreAccount)
+        postPendingTransactionsHelper.syncPendingPurchaseQueue(allowSharingPlayStoreAccount, state.appInBackground)
         synchronizeSubscriberAttributesIfNeeded()
         offlineEntitlementsManager.updateProductEntitlementMappingCacheIfStale()
         flushPaywallEvents()
@@ -261,6 +265,7 @@ internal class PurchasesOrchestrator constructor(
                     appUserID,
                     marketplace = null,
                     PostReceiptInitiationSource.RESTORE,
+                    state.appInBackground,
                     {
                         val logMessage = PurchaseStrings.PURCHASE_SYNCED_USER_ID.format(receiptID, amazonUserID)
                         log(LogIntent.PURCHASE, logMessage)
@@ -355,6 +360,7 @@ internal class PurchasesOrchestrator constructor(
 
         billing.queryAllPurchases(
             appUserID,
+            state.appInBackground,
             onReceivePurchaseHistory = { allPurchases ->
                 if (allPurchases.isEmpty()) {
                     getCustomerInfo(callback)
@@ -367,6 +373,7 @@ internal class PurchasesOrchestrator constructor(
                                 isRestore = true,
                                 appUserID = appUserID,
                                 initiationSource = PostReceiptInitiationSource.RESTORE,
+                                appInBackground = state.appInBackground,
                                 onSuccess = { _, info ->
                                     log(LogIntent.DEBUG, RestoreStrings.PURCHASE_RESTORED.format(purchase))
                                     if (sortedByTime.last() == purchase) {
@@ -747,9 +754,10 @@ internal class PurchasesOrchestrator constructor(
 
         type?.let {
             billing.queryProductDetailsAsync(
-                it,
-                productIds,
-                { storeProducts ->
+                productType = it,
+                productIds = productIds,
+                appInBackground = state.appInBackground,
+                onReceive = { storeProducts ->
                     dispatch {
                         getProductsOfTypes(
                             productIds,
@@ -759,7 +767,7 @@ internal class PurchasesOrchestrator constructor(
                         )
                     }
                 },
-                {
+                onError = {
                     dispatch {
                         callback.onError(it)
                     }
@@ -832,6 +840,7 @@ internal class PurchasesOrchestrator constructor(
                     allowSharingPlayStoreAccount,
                     appUserID,
                     PostReceiptInitiationSource.PURCHASE,
+                    appInBackground = state.appInBackground,
                     transactionPostSuccess = callbackPair.first,
                     transactionPostError = callbackPair.second,
                 )
@@ -1093,6 +1102,7 @@ internal class PurchasesOrchestrator constructor(
             appUserID,
             ProductType.SUBS,
             previousProductId,
+            state.appInBackground,
             onCompletion = { purchaseRecord ->
                 log(LogIntent.PURCHASE, PurchaseStrings.FOUND_EXISTING_PURCHASE.format(previousProductId))
 

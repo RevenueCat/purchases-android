@@ -172,20 +172,22 @@ internal class PurchasesCoroutinesCommonTest : BasePurchasesTest() {
         val inApps = mockStoreProduct(inAppIds, inAppIds, ProductType.INAPP)
         every {
             mockBillingAbstract.queryProductDetailsAsync(
-                ProductType.SUBS,
-                productIds.toSet(),
-                captureLambda(),
-                any()
+                productType = ProductType.SUBS,
+                productIds = productIds.toSet(),
+                appInBackground = any(),
+                onReceive = captureLambda(),
+                onError = any(),
             )
         } answers {
             lambda<(List<StoreProduct>) -> Unit>().captured.invoke(subs)
         }
         every {
             mockBillingAbstract.queryProductDetailsAsync(
-                ProductType.INAPP,
-                productIds.toSet(),
-                captureLambda(),
-                any()
+                productType = ProductType.INAPP,
+                productIds = productIds.toSet(),
+                appInBackground = any(),
+                onReceive = captureLambda(),
+                onError = any(),
             )
         } answers {
             lambda<(List<StoreProduct>) -> Unit>().captured.invoke(inApps)
@@ -207,10 +209,11 @@ internal class PurchasesCoroutinesCommonTest : BasePurchasesTest() {
         val productIds = subsIds + inAppIds
         every {
             mockBillingAbstract.queryProductDetailsAsync(
-                ProductType.SUBS,
-                productIds.toSet(),
-                any(),
-                captureLambda()
+                productType = ProductType.SUBS,
+                productIds = productIds.toSet(),
+                appInBackground = any(),
+                onReceive = any(),
+                onError = captureLambda(),
             )
         } answers {
             lambda<(PurchasesError) -> Unit>().captured.invoke(error)
@@ -238,9 +241,10 @@ internal class PurchasesCoroutinesCommonTest : BasePurchasesTest() {
     fun `restore - Success`() = runTest {
         every {
             mockBillingAbstract.queryAllPurchases(
-                appUserId,
-                captureLambda(),
-                any()
+                appUserID = appUserId,
+                appInBackground = any(),
+                onReceivePurchaseHistory = captureLambda(),
+                onReceivePurchaseHistoryError = any(),
             )
         } answers {
             lambda<(List<StoreTransaction>) -> Unit>().captured.also {
@@ -255,6 +259,7 @@ internal class PurchasesCoroutinesCommonTest : BasePurchasesTest() {
                 appUserId,
                 any(),
                 any(),
+                any(),
             )
         }
         assertThat(result).isNotNull
@@ -266,13 +271,14 @@ internal class PurchasesCoroutinesCommonTest : BasePurchasesTest() {
         val storeTransaction = mockk<StoreTransaction>(relaxed = true)
         every {
             mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(
-                storeTransaction,
-                any(),
-                true,
-                appUserId,
-                PostReceiptInitiationSource.RESTORE,
+                purchase = storeTransaction,
+                storeProduct = any(),
+                isRestore = true,
+                appUserID = appUserId,
+                initiationSource = PostReceiptInitiationSource.RESTORE,
+                appInBackground = any(),
                 onSuccess = captureLambda(),
-                any()
+                onError = any(),
             )
         } answers {
             lambda<(StoreTransaction, CustomerInfo) -> Unit>().captured.also {
@@ -281,9 +287,10 @@ internal class PurchasesCoroutinesCommonTest : BasePurchasesTest() {
         }
         every {
             mockBillingAbstract.queryAllPurchases(
-                appUserId,
-                captureLambda(),
-                any()
+                appUserID = appUserId,
+                appInBackground = any(),
+                onReceivePurchaseHistory = captureLambda(),
+                onReceivePurchaseHistoryError = any()
             )
         } answers {
             lambda<(List<StoreTransaction>) -> Unit>().captured.also {
@@ -295,9 +302,10 @@ internal class PurchasesCoroutinesCommonTest : BasePurchasesTest() {
 
         verify(exactly = 1) {
             mockBillingAbstract.queryAllPurchases(
-                appUserId,
-                any(),
-                any(),
+                appUserID = appUserId,
+                appInBackground = any(),
+                onReceivePurchaseHistory = any(),
+                onReceivePurchaseHistoryError = any(),
             )
         }
         assertThat(result).isNotNull
@@ -309,8 +317,9 @@ internal class PurchasesCoroutinesCommonTest : BasePurchasesTest() {
         val error = PurchasesError(PurchasesErrorCode.CustomerInfoError, "Customer info error")
         every {
             mockBillingAbstract.queryAllPurchases(
-                appUserId,
-                any(),
+                appUserID = appUserId,
+                appInBackground = any(),
+                onReceivePurchaseHistory = any(),
                 onReceivePurchaseHistoryError = captureLambda(),
             )
         } answers {
@@ -327,9 +336,10 @@ internal class PurchasesCoroutinesCommonTest : BasePurchasesTest() {
 
         verify(exactly = 1) {
             mockBillingAbstract.queryAllPurchases(
-                appUserId,
-                any(),
-                any(),
+                appUserID = appUserId,
+                appInBackground = any(),
+                onReceivePurchaseHistory = any(),
+                onReceivePurchaseHistoryError = any(),
             )
         }
 

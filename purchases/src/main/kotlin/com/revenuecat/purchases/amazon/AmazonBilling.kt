@@ -108,6 +108,7 @@ internal class AmazonBilling constructor(
 
     override fun queryAllPurchases(
         appUserID: String,
+        appInBackground: Boolean,
         onReceivePurchaseHistory: (List<StoreTransaction>) -> Unit,
         onReceivePurchaseHistoryError: PurchasesErrorCallback,
     ) {
@@ -159,6 +160,7 @@ internal class AmazonBilling constructor(
     override fun queryProductDetailsAsync(
         productType: RevenueCatProductType,
         productIds: Set<String>,
+        appInBackground: Boolean,
         onReceive: StoreProductsCallback,
         onError: PurchasesErrorCallback,
     ) {
@@ -182,6 +184,7 @@ internal class AmazonBilling constructor(
     override fun consumeAndSave(
         shouldTryToConsume: Boolean,
         purchase: StoreTransaction,
+        appInBackground: Boolean,
     ) {
         if (checkObserverMode() || purchase.type == RevenueCatProductType.UNKNOWN) return
 
@@ -204,20 +207,22 @@ internal class AmazonBilling constructor(
     override fun findPurchaseInPurchaseHistory(
         appUserID: String,
         productType: RevenueCatProductType,
-        sku: String,
+        productId: String,
+        appInBackground: Boolean,
         onCompletion: (StoreTransaction) -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {
-        log(LogIntent.DEBUG, RestoreStrings.QUERYING_PURCHASE_WITH_TYPE.format(sku, productType.name))
+        log(LogIntent.DEBUG, RestoreStrings.QUERYING_PURCHASE_WITH_TYPE.format(productId, productType.name))
         queryAllPurchases(
             appUserID,
+            appInBackground,
             onReceivePurchaseHistory = {
                 // We get productIds[0] because the list is guaranteed to have just one item in Amazon's case.
-                val record: StoreTransaction? = it.firstOrNull { record -> sku == record.productIds[0] }
+                val record: StoreTransaction? = it.firstOrNull { record -> productId == record.productIds[0] }
                 if (record != null) {
                     onCompletion(record)
                 } else {
-                    val message = PurchaseStrings.NO_EXISTING_PURCHASE.format(sku)
+                    val message = PurchaseStrings.NO_EXISTING_PURCHASE.format(productId)
                     val error = PurchasesError(PurchasesErrorCode.PurchaseInvalidError, message)
                     onError(error)
                 }
@@ -281,6 +286,7 @@ internal class AmazonBilling constructor(
 
     override fun queryPurchases(
         appUserID: String,
+        appInBackground: Boolean,
         onSuccess: (Map<String, StoreTransaction>) -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {
@@ -301,6 +307,7 @@ internal class AmazonBilling constructor(
     }
 
     override fun getStorefront(
+        appInBackground: Boolean,
         onSuccess: (String) -> Unit,
         onError: PurchasesErrorCallback,
     ) {

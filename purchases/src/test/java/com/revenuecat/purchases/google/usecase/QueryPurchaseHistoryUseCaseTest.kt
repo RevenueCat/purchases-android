@@ -21,6 +21,7 @@ import io.mockk.slot
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
+import org.assertj.core.data.Offset
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
@@ -42,11 +43,12 @@ internal class QueryPurchaseHistoryUseCaseTest: BaseBillingUseCaseTest() {
 
         var error: PurchasesError? = null
         wrapper.queryPurchaseHistoryAsync(
-            ProductType.SUBS.toGoogleProductType()!!,
-            {
+            productType = ProductType.SUBS.toGoogleProductType()!!,
+            appInBackground = false,
+            onReceivePurchaseHistory = {
                 fail("call should not succeed")
             },
-            {
+            onReceivePurchaseHistoryError = {
                 error = it
             }
         )
@@ -63,11 +65,12 @@ internal class QueryPurchaseHistoryUseCaseTest: BaseBillingUseCaseTest() {
         )
         var errorCalled = false
         wrapper.queryPurchaseHistoryAsync(
-            "notValid",
-            {
+            productType = "notValid",
+            appInBackground = false,
+            onReceivePurchaseHistory = {
                 fail("call should not succeed")
             },
-            {
+            onReceivePurchaseHistoryError = {
                 errorCalled = true
             }
         )
@@ -90,10 +93,11 @@ internal class QueryPurchaseHistoryUseCaseTest: BaseBillingUseCaseTest() {
         }
 
         wrapper.queryPurchaseHistoryAsync(
-            BillingClient.ProductType.SUBS,
-            {
+            productType = BillingClient.ProductType.SUBS,
+            appInBackground = false,
+            onReceivePurchaseHistory = {
                 numCallbacks++
-            }, {
+            }, onReceivePurchaseHistoryError = {
                 fail("shouldn't be an error")
             })
 
@@ -124,12 +128,13 @@ internal class QueryPurchaseHistoryUseCaseTest: BaseBillingUseCaseTest() {
         }
 
         wrapper.queryPurchaseHistoryAsync(
-            BillingClient.ProductType.SUBS,
-            {
+            productType = BillingClient.ProductType.SUBS,
+            appInBackground = false,
+            onReceivePurchaseHistory = {
                 // ensuring we don't hit an edge case where numCallbacks doesn't increment before the final assert
                 numCallbacks.incrementAndGet()
                 lock.countDown()
-            }, {
+            }, onReceivePurchaseHistoryError = {
                 fail("shouldn't be an error")
             })
 
@@ -148,11 +153,12 @@ internal class QueryPurchaseHistoryUseCaseTest: BaseBillingUseCaseTest() {
 
         var successCalled = false
         wrapper.queryPurchaseHistoryAsync(
-            subsGoogleProductType,
-            {
+            productType = subsGoogleProductType,
+            appInBackground = false,
+            onReceivePurchaseHistory = {
                 successCalled = true
             },
-            {
+            onReceivePurchaseHistoryError = {
                 fail("shouldn't go to on error")
             }
         )
@@ -168,11 +174,12 @@ internal class QueryPurchaseHistoryUseCaseTest: BaseBillingUseCaseTest() {
 
         var errorCalled = false
         wrapper.queryPurchaseHistoryAsync(
-            subsGoogleProductType,
-            {
+            productType = subsGoogleProductType,
+            appInBackground = false,
+            onReceivePurchaseHistory = {
                 fail("should go to on error")
             },
-            {
+            onReceivePurchaseHistoryError = {
                 assertThat(it.code).isEqualTo(PurchasesErrorCode.PurchaseNotAllowedError)
                 errorCalled = true
             }
@@ -189,9 +196,10 @@ internal class QueryPurchaseHistoryUseCaseTest: BaseBillingUseCaseTest() {
         )
 
         wrapper.queryPurchaseHistoryAsync(
-            subsGoogleProductType,
-            {},
-            {}
+            productType = subsGoogleProductType,
+            appInBackground = false,
+            onReceivePurchaseHistory = {},
+            onReceivePurchaseHistoryError = {}
         )
 
         mockClient.verifyQueryPurchaseHistoryCalledWithType(subsGoogleProductType, subsBuilder)
@@ -202,9 +210,10 @@ internal class QueryPurchaseHistoryUseCaseTest: BaseBillingUseCaseTest() {
         )
 
         wrapper.queryPurchaseHistoryAsync(
-            inAppGoogleProductType,
-            {},
-            {}
+            productType = inAppGoogleProductType,
+            appInBackground = false,
+            onReceivePurchaseHistory = {},
+            onReceivePurchaseHistoryError = {}
         )
 
         mockClient.verifyQueryPurchaseHistoryCalledWithType(inAppGoogleProductType, inAppBuilder)
@@ -230,7 +239,12 @@ internal class QueryPurchaseHistoryUseCaseTest: BaseBillingUseCaseTest() {
             slot.captured.onPurchaseHistoryResponse(result, null)
         }
 
-        wrapper.queryPurchaseHistoryAsync(BillingClient.ProductType.SUBS, {}, { fail("shouldn't be an error") })
+        wrapper.queryPurchaseHistoryAsync(
+            productType = BillingClient.ProductType.SUBS,
+            appInBackground = false,
+            onReceivePurchaseHistory = {},
+            onReceivePurchaseHistoryError = { fail("shouldn't be an error") }
+        )
 
         verify(exactly = 1) {
             mockDiagnosticsTracker.trackGoogleQueryPurchaseHistoryRequest(
@@ -260,7 +274,12 @@ internal class QueryPurchaseHistoryUseCaseTest: BaseBillingUseCaseTest() {
             slot.captured.onPurchaseHistoryResponse(result, null)
         }
 
-        wrapper.queryPurchaseHistoryAsync(BillingClient.ProductType.SUBS, { fail("should be an error") }, {})
+        wrapper.queryPurchaseHistoryAsync(
+            productType = BillingClient.ProductType.SUBS,
+            appInBackground = false,
+            onReceivePurchaseHistory = { fail("should be an error") },
+            onReceivePurchaseHistoryError = {}
+        )
 
         verify(exactly = 1) {
             mockDiagnosticsTracker.trackGoogleQueryPurchaseHistoryRequest(
@@ -292,6 +311,7 @@ internal class QueryPurchaseHistoryUseCaseTest: BaseBillingUseCaseTest() {
                 mockDateProvider,
                 mockDiagnosticsTracker,
                 BillingClient.ProductType.SUBS,
+                appInBackground = false,
             ),
             { received ->
                 receivedList = received
@@ -302,7 +322,7 @@ internal class QueryPurchaseHistoryUseCaseTest: BaseBillingUseCaseTest() {
             withConnectedClient = {
                 it.invoke(mockClient)
             },
-            executeRequestOnUIThread = {
+            executeRequestOnUIThread = { _, request ->
                 timesExecutedInMainThread++
 
                 queryPurchaseHistoryStubbing answers {
@@ -323,7 +343,7 @@ internal class QueryPurchaseHistoryUseCaseTest: BaseBillingUseCaseTest() {
                     }
                 }
 
-                it.invoke(null)
+                request(null)
             },
         )
 
@@ -350,6 +370,7 @@ internal class QueryPurchaseHistoryUseCaseTest: BaseBillingUseCaseTest() {
                 mockDateProvider,
                 mockDiagnosticsTracker,
                 BillingClient.ProductType.SUBS,
+                appInBackground = false,
             ),
             { _ ->
                 fail("shouldn't be success")
@@ -361,7 +382,7 @@ internal class QueryPurchaseHistoryUseCaseTest: BaseBillingUseCaseTest() {
                 timesRetried++
                 it.invoke(mockClient)
             },
-            executeRequestOnUIThread = {
+            executeRequestOnUIThread = { _, request ->
                 queryPurchaseHistoryStubbing answers {
                     slot.captured.onPurchaseHistoryResponse(
                         BillingClient.BillingResponseCode.NETWORK_ERROR.buildResult(),
@@ -369,7 +390,7 @@ internal class QueryPurchaseHistoryUseCaseTest: BaseBillingUseCaseTest() {
                     )
                 }
 
-                it.invoke(null)
+                request(null)
             },
         )
 
@@ -381,7 +402,7 @@ internal class QueryPurchaseHistoryUseCaseTest: BaseBillingUseCaseTest() {
     }
 
     @Test
-    fun `If service returns SERVICE_UNAVAILABLE, re-execute a max of 3 times`() {
+    fun `If service returns SERVICE_UNAVAILABLE, don't retry and error if user in session`() {
         val slot = slot<PurchaseHistoryResponseListener>()
         val queryPurchaseHistoryStubbing = every {
             mockClient.queryPurchaseHistoryAsync(
@@ -396,6 +417,7 @@ internal class QueryPurchaseHistoryUseCaseTest: BaseBillingUseCaseTest() {
                 mockDateProvider,
                 mockDiagnosticsTracker,
                 BillingClient.ProductType.SUBS,
+                appInBackground = false,
             ),
             { _ ->
                 fail("shouldn't be success")
@@ -407,7 +429,7 @@ internal class QueryPurchaseHistoryUseCaseTest: BaseBillingUseCaseTest() {
                 timesRetried++
                 it.invoke(mockClient)
             },
-            executeRequestOnUIThread = {
+            executeRequestOnUIThread = { _, request ->
                 queryPurchaseHistoryStubbing answers {
                     slot.captured.onPurchaseHistoryResponse(
                         BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE.buildResult(),
@@ -415,13 +437,61 @@ internal class QueryPurchaseHistoryUseCaseTest: BaseBillingUseCaseTest() {
                     )
                 }
 
-                it.invoke(null)
+                request(null)
             },
         )
 
         useCase.run()
 
-        assertThat(timesRetried).isEqualTo(4) // First attempt plus 3 retries
+        assertThat(timesRetried).isEqualTo(1)
+        assertThat(receivedError).isNotNull
+        assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
+    }
+
+    @Test
+    fun `If service returns SERVICE_UNAVAILABLE, re-execute with backoff`() {
+        val slot = slot<PurchaseHistoryResponseListener>()
+        val queryPurchaseHistoryStubbing = every {
+            mockClient.queryPurchaseHistoryAsync(
+                any<QueryPurchaseHistoryParams>(),
+                capture(slot)
+            )
+        }
+        var receivedError: PurchasesError? = null
+        val capturedDelays = mutableListOf<Long>()
+        val useCase = QueryPurchaseHistoryUseCase(
+            QueryPurchaseHistoryUseCaseParams(
+                mockDateProvider,
+                mockDiagnosticsTracker,
+                BillingClient.ProductType.SUBS,
+                appInBackground = true,
+            ),
+            { _ ->
+                fail("shouldn't be success")
+            },
+            { error ->
+                receivedError = error
+            },
+            withConnectedClient = {
+                it.invoke(mockClient)
+            },
+            executeRequestOnUIThread = { delay, request ->
+                capturedDelays.add(delay)
+                queryPurchaseHistoryStubbing answers {
+                    slot.captured.onPurchaseHistoryResponse(
+                        BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE.buildResult(),
+                        emptyList()
+                    )
+                }
+
+                request(null)
+            },
+        )
+
+        useCase.run()
+
+        assertThat(capturedDelays.size).isEqualTo(12)
+        assertThat(capturedDelays.last()).isCloseTo(RETRY_TIMER_MAX_TIME_MILLISECONDS, Offset.offset(1000L))
         assertThat(receivedError).isNotNull
         assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
     }
@@ -442,6 +512,7 @@ internal class QueryPurchaseHistoryUseCaseTest: BaseBillingUseCaseTest() {
                 mockDateProvider,
                 mockDiagnosticsTracker,
                 BillingClient.ProductType.SUBS,
+                appInBackground = false,
             ),
             { _ ->
                 fail("shouldn't be success")
@@ -453,7 +524,7 @@ internal class QueryPurchaseHistoryUseCaseTest: BaseBillingUseCaseTest() {
                 timesRetried++
                 it.invoke(mockClient)
             },
-            executeRequestOnUIThread = {
+            executeRequestOnUIThread = { _, request ->
                 queryPurchaseHistoryStubbing answers {
                     slot.captured.onPurchaseHistoryResponse(
                         BillingClient.BillingResponseCode.ERROR.buildResult(),
@@ -461,7 +532,7 @@ internal class QueryPurchaseHistoryUseCaseTest: BaseBillingUseCaseTest() {
                     )
                 }
 
-                it.invoke(null)
+                request(null)
             },
         )
 
@@ -488,6 +559,7 @@ internal class QueryPurchaseHistoryUseCaseTest: BaseBillingUseCaseTest() {
                 mockDateProvider,
                 mockDiagnosticsTracker,
                 BillingClient.ProductType.SUBS,
+                appInBackground = false,
             ),
             { _ ->
                 fail("shouldn't be success")
@@ -499,7 +571,7 @@ internal class QueryPurchaseHistoryUseCaseTest: BaseBillingUseCaseTest() {
                 timesRetried++
                 it.invoke(mockClient)
             },
-            executeRequestOnUIThread = {
+            executeRequestOnUIThread = { _, request ->
                 queryPurchaseHistoryStubbing answers {
                     slot.captured.onPurchaseHistoryResponse(
                         BillingClient.BillingResponseCode.ITEM_UNAVAILABLE.buildResult(),
@@ -507,7 +579,7 @@ internal class QueryPurchaseHistoryUseCaseTest: BaseBillingUseCaseTest() {
                     )
                 }
 
-                it.invoke(null)
+                request(null)
             },
         )
 

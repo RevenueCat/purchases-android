@@ -21,11 +21,8 @@ import com.android.billingclient.api.ProductDetails
 import com.android.billingclient.api.ProductDetailsResponseListener
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchaseHistoryRecord
-import com.android.billingclient.api.PurchaseHistoryResponseListener
 import com.android.billingclient.api.PurchasesResponseListener
 import com.android.billingclient.api.PurchasesUpdatedListener
-import com.android.billingclient.api.QueryPurchaseHistoryParams
-import com.android.billingclient.api.QueryPurchasesParams
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
@@ -38,7 +35,6 @@ import com.revenuecat.purchases.common.ReplaceProductInfo
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.firstSku
-import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.sha256
 import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.InAppMessageType
@@ -80,9 +76,6 @@ import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import java.util.Date
 import java.util.Locale
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicInteger
 import kotlin.time.Duration.Companion.milliseconds
 
 @RunWith(AndroidJUnit4::class)
@@ -282,6 +275,7 @@ class BillingWrapperTest {
         var error: PurchasesError? = null
         wrapper.queryPurchases(
             appUserID = "appUserID",
+            appInBackground = false,
             onSuccess = {
                 fail("should be an error")
             },
@@ -1006,6 +1000,7 @@ class BillingWrapperTest {
         wrapper.queryProductDetailsAsync(
             ProductType.SUBS,
             setOf("product_a"),
+            appInBackground = false,
             {},
             {
                 fail("shouldn't be an error")
@@ -1045,9 +1040,14 @@ class BillingWrapperTest {
         )
 
         var receivedPurchases = listOf<StoreTransaction>()
-        wrapper.queryAllPurchases("appUserID", {
-            receivedPurchases = it
-        }, { fail("Shouldn't be error") })
+        wrapper.queryAllPurchases(
+            appUserID = "appUserID",
+            appInBackground = false,
+            onReceivePurchaseHistory = {
+                receivedPurchases = it
+            },
+            onReceivePurchaseHistoryError = { fail("Shouldn't be error") }
+        )
 
         assertThat(receivedPurchases.size).isNotZero
         mockClient.verifyQueryPurchaseHistoryCalledWithType(subsGoogleProductType, builder)
@@ -1234,9 +1234,10 @@ class BillingWrapperTest {
 
         var recordFound: StoreTransaction? = null
         wrapper.findPurchaseInPurchaseHistory(
-            appUserId,
-            ProductType.SUBS,
-            sku,
+            appUserID = appUserId,
+            productType = ProductType.SUBS,
+            productId = sku,
+            appInBackground = false,
             onCompletion = {
                 recordFound = it
             },
@@ -1264,9 +1265,10 @@ class BillingWrapperTest {
         )
         var errorReturned: PurchasesError? = null
         wrapper.findPurchaseInPurchaseHistory(
-            appUserId,
-            ProductType.SUBS,
-            sku,
+            appUserID = appUserId,
+            productType = ProductType.SUBS,
+            productId = sku,
+            appInBackground = false,
             onCompletion = {
                 fail("should be error")
             },
@@ -1294,7 +1296,11 @@ class BillingWrapperTest {
             mockDeviceCache.addSuccessfullyPostedToken(token)
         } just Runs
 
-        wrapper.consumeAndSave(true, googlePurchaseWrapper)
+        wrapper.consumeAndSave(
+            shouldTryToConsume = true,
+            purchase = googlePurchaseWrapper,
+            appInBackground = false
+        )
 
         assertThat(capturedAcknowledgeResponseListener.isCaptured).isTrue
         capturedAcknowledgeResponseListener.captured.onAcknowledgePurchaseResponse(
@@ -1320,7 +1326,11 @@ class BillingWrapperTest {
             mockDeviceCache.addSuccessfullyPostedToken(token)
         } just Runs
 
-        wrapper.consumeAndSave(true, historyRecordWrapper)
+        wrapper.consumeAndSave(
+            shouldTryToConsume = true,
+            purchase = historyRecordWrapper,
+            appInBackground = false
+        )
 
         assertThat(capturedAcknowledgeResponseListener.isCaptured).isTrue
         capturedAcknowledgeResponseListener.captured.onAcknowledgePurchaseResponse(
@@ -1347,7 +1357,11 @@ class BillingWrapperTest {
             mockDeviceCache.addSuccessfullyPostedToken(token)
         } just Runs
 
-        wrapper.consumeAndSave(true, googlePurchaseWrapper)
+        wrapper.consumeAndSave(
+            shouldTryToConsume = true,
+            purchase = googlePurchaseWrapper,
+            appInBackground = false
+        )
 
         assertThat(capturedConsumeResponseListener.isCaptured).isTrue
 
@@ -1370,7 +1384,11 @@ class BillingWrapperTest {
             mockDeviceCache.addSuccessfullyPostedToken(token)
         } just Runs
 
-        wrapper.consumeAndSave(true, historyRecordWrapper)
+        wrapper.consumeAndSave(
+            shouldTryToConsume = true,
+            purchase = historyRecordWrapper,
+            appInBackground = false
+        )
 
         assertThat(capturedConsumeResponseListener.isCaptured).isTrue
 
@@ -1390,7 +1408,11 @@ class BillingWrapperTest {
             "offering_a"
         )
 
-        wrapper.consumeAndSave(true, googlePurchaseWrapper)
+        wrapper.consumeAndSave(
+            shouldTryToConsume = true,
+            purchase = googlePurchaseWrapper,
+            appInBackground = false
+        )
 
         assertThat(capturedAcknowledgeResponseListener.isCaptured).isTrue
         capturedAcknowledgeResponseListener.captured.onAcknowledgePurchaseResponse(
@@ -1412,7 +1434,7 @@ class BillingWrapperTest {
             ProductType.SUBS
         )
 
-        wrapper.consumeAndSave(true, historyRecordWrapper)
+        wrapper.consumeAndSave(true, historyRecordWrapper, appInBackground = false)
 
         assertThat(capturedAcknowledgeResponseListener.isCaptured).isTrue
         capturedAcknowledgeResponseListener.captured.onAcknowledgePurchaseResponse(
@@ -1437,7 +1459,7 @@ class BillingWrapperTest {
 
         mockConsumeAsync(BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE.buildResult())
 
-        wrapper.consumeAndSave(true, googlePurchaseWrapper)
+        wrapper.consumeAndSave(true, googlePurchaseWrapper, appInBackground = false)
 
         assertThat(capturedConsumeResponseListener.isCaptured).isTrue
 
@@ -1459,7 +1481,7 @@ class BillingWrapperTest {
 
         mockConsumeAsync(BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE.buildResult())
 
-        wrapper.consumeAndSave(true, historyRecordWrapper)
+        wrapper.consumeAndSave(true, historyRecordWrapper, appInBackground = false)
 
         assertThat(capturedConsumeResponseListener.isCaptured).isTrue
 
@@ -1483,7 +1505,7 @@ class BillingWrapperTest {
             mockDeviceCache.addSuccessfullyPostedToken(token)
         } just Runs
 
-        wrapper.consumeAndSave(true, googlePurchaseWrapper)
+        wrapper.consumeAndSave(true, googlePurchaseWrapper, appInBackground = false)
 
         assertThat(capturedAcknowledgeResponseListener.isCaptured).isTrue
         capturedAcknowledgeResponseListener.captured.onAcknowledgePurchaseResponse(
@@ -1509,7 +1531,7 @@ class BillingWrapperTest {
             mockDeviceCache.addSuccessfullyPostedToken(token)
         } just Runs
 
-        wrapper.consumeAndSave(true, historyRecordWrapper)
+        wrapper.consumeAndSave(true, historyRecordWrapper, appInBackground = false)
 
         assertThat(capturedAcknowledgeResponseListener.isCaptured).isTrue
         capturedAcknowledgeResponseListener.captured.onAcknowledgePurchaseResponse(
@@ -1536,7 +1558,7 @@ class BillingWrapperTest {
             mockDeviceCache.addSuccessfullyPostedToken(token)
         } just Runs
 
-        wrapper.consumeAndSave(true, googlePurchaseWrapper)
+        wrapper.consumeAndSave(true, googlePurchaseWrapper, appInBackground = false)
 
         assertThat(capturedConsumeResponseListener.isCaptured).isTrue
         capturedConsumeResponseListener.captured.onConsumeResponse(
@@ -1563,7 +1585,11 @@ class BillingWrapperTest {
             mockDeviceCache.addSuccessfullyPostedToken(token)
         } just Runs
 
-        wrapper.consumeAndSave(true, historyRecordWrapper)
+        wrapper.consumeAndSave(
+            shouldTryToConsume = true,
+            purchase = historyRecordWrapper,
+            appInBackground = false
+        )
 
         assertThat(capturedConsumeResponseListener.isCaptured).isTrue
         capturedConsumeResponseListener.captured.onConsumeResponse(
@@ -1591,7 +1617,7 @@ class BillingWrapperTest {
             mockDeviceCache.addSuccessfullyPostedToken(token)
         } just Runs
 
-        wrapper.consumeAndSave(shouldTryToConsume = false, googlePurchaseWrapper)
+        wrapper.consumeAndSave(shouldTryToConsume = false, googlePurchaseWrapper, appInBackground = false)
 
         verify(exactly = 0) {
             mockClient.consumeAsync(any(), any())
@@ -1616,7 +1642,7 @@ class BillingWrapperTest {
             mockDeviceCache.addSuccessfullyPostedToken(token)
         } just Runs
 
-        wrapper.consumeAndSave(shouldTryToConsume = false, historyRecordWrapper)
+        wrapper.consumeAndSave(shouldTryToConsume = false, historyRecordWrapper, appInBackground = false)
 
         verify(exactly = 0) {
             mockClient.consumeAsync(any(), any())
@@ -1642,7 +1668,7 @@ class BillingWrapperTest {
             mockDeviceCache.addSuccessfullyPostedToken(token)
         } just Runs
 
-        wrapper.consumeAndSave(shouldTryToConsume = false, googlePurchaseWrapper)
+        wrapper.consumeAndSave(shouldTryToConsume = false, googlePurchaseWrapper, appInBackground = false)
 
         verify(exactly = 0) {
             mockClient.acknowledgePurchase(any(), any())
@@ -1667,7 +1693,11 @@ class BillingWrapperTest {
             mockDeviceCache.addSuccessfullyPostedToken(token)
         } just Runs
 
-        wrapper.consumeAndSave(shouldTryToConsume = false, historyRecordWrapper)
+        wrapper.consumeAndSave(
+            shouldTryToConsume = false,
+            purchase = historyRecordWrapper,
+            appInBackground = false
+        )
 
         verify(exactly = 0) {
             mockClient.acknowledgePurchase(any(), any())
@@ -1694,7 +1724,7 @@ class BillingWrapperTest {
             mockDeviceCache.addSuccessfullyPostedToken(token)
         } just Runs
 
-        wrapper.consumeAndSave(shouldTryToConsume = true, googlePurchaseWrapper)
+        wrapper.consumeAndSave(shouldTryToConsume = true, googlePurchaseWrapper, appInBackground = false)
 
         verify(exactly = 0) {
             mockClient.acknowledgePurchase(any(), any())
@@ -1721,7 +1751,11 @@ class BillingWrapperTest {
             mockDeviceCache.addSuccessfullyPostedToken(token)
         } just Runs
 
-        wrapper.consumeAndSave(shouldTryToConsume = true, googlePurchaseWrapper)
+        wrapper.consumeAndSave(
+            shouldTryToConsume = true,
+            purchase = googlePurchaseWrapper,
+            appInBackground = false
+        )
 
         verify(exactly = 0) {
             mockClient.acknowledgePurchase(any(), any())
@@ -1821,7 +1855,13 @@ class BillingWrapperTest {
             slot.captured.onProductDetailsResponse(result, emptyList())
         }
 
-        wrapper.queryProductDetailsAsync(ProductType.SUBS, setOf("test-sku"), {}, { fail("shouldn't be an error") })
+        wrapper.queryProductDetailsAsync(
+            productType = ProductType.SUBS,
+            productIds = setOf("test-sku"),
+            appInBackground = false,
+            onReceive = {},
+            onError = { fail("shouldn't be an error") }
+        )
 
         verify(exactly = 1) {
             mockDiagnosticsTracker.trackGoogleQueryProductDetailsRequest(
@@ -1851,7 +1891,13 @@ class BillingWrapperTest {
             slot.captured.onProductDetailsResponse(result, emptyList())
         }
 
-        wrapper.queryProductDetailsAsync(ProductType.SUBS, setOf("test-sku"), { fail("should be an error") }, {})
+        wrapper.queryProductDetailsAsync(
+            productType = ProductType.SUBS,
+            productIds = setOf("test-sku"),
+            appInBackground = false,
+            onReceive = { fail("should be an error") },
+            onError = {}
+        )
 
         verify(exactly = 1) {
             mockDiagnosticsTracker.trackGoogleQueryProductDetailsRequest(
@@ -2034,11 +2080,12 @@ class BillingWrapperTest {
 
         var receivedError: PurchasesError? = null
         wrapper.queryPurchases(
-            "abc",
-            {
+            appUserID = "abc",
+            appInBackground = false,
+            onSuccess = {
                 error("Unexpected success")
             },
-            { error ->
+            onError = { error ->
                 receivedError = error
             }
         )

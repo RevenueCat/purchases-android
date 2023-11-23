@@ -19,6 +19,7 @@ import io.mockk.verify
 import io.mockk.verifySequence
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
+import org.assertj.core.data.Offset
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -68,6 +69,7 @@ internal class QueryPurchasesUseCaseTest : BaseBillingUseCaseTest() {
         var purchasesByHashedToken: Map<String, StoreTransaction>? = null
         wrapper.queryPurchases(
             appUserID = "appUserID",
+            appInBackground = false,
             onSuccess = {
                 purchasesByHashedToken = it
             },
@@ -87,6 +89,7 @@ internal class QueryPurchasesUseCaseTest : BaseBillingUseCaseTest() {
         var purchasesByHashedToken: Map<String, StoreTransaction>? = null
         wrapper.queryPurchases(
             appUserID = "appUserID",
+            appInBackground = false,
             onSuccess = {
                 purchasesByHashedToken = it
             },
@@ -126,6 +129,7 @@ internal class QueryPurchasesUseCaseTest : BaseBillingUseCaseTest() {
         var receivedError: PurchasesError? = null
         wrapper.queryPurchases(
             appUserID = "appUserID",
+            appInBackground = false,
             onSuccess = { fail("should be an error") },
             onError = { receivedError = it }
         )
@@ -162,6 +166,7 @@ internal class QueryPurchasesUseCaseTest : BaseBillingUseCaseTest() {
         var purchasesByHashedToken: Map<String, StoreTransaction>? = null
         wrapper.queryPurchases(
             appUserID = "appUserID",
+            appInBackground = false,
             onSuccess = {
                 purchasesByHashedToken = it
             },
@@ -179,7 +184,7 @@ internal class QueryPurchasesUseCaseTest : BaseBillingUseCaseTest() {
         assertThat(purchaseWrapper.purchaseToken).isEqualTo(token)
         assertThat(purchaseWrapper.purchaseTime).isEqualTo(time)
         assertThat(purchaseWrapper.productIds[0]).isEqualTo(sku)
-        assertThat(purchasesByHashedToken?.size == 1)
+        assertThat(purchasesByHashedToken?.size).isEqualTo(1)
     }
 
     @Test
@@ -204,6 +209,7 @@ internal class QueryPurchasesUseCaseTest : BaseBillingUseCaseTest() {
         var purchasesByHashedToken: Map<String, StoreTransaction>? = null
         wrapper.queryPurchases(
             appUserID = "appUserID",
+            appInBackground = false,
             onSuccess = {
                 purchasesByHashedToken = it
             },
@@ -250,7 +256,12 @@ internal class QueryPurchasesUseCaseTest : BaseBillingUseCaseTest() {
             slot.captured.onQueryPurchasesResponse(result, emptyList())
         }
 
-        wrapper.queryPurchases(appUserId, {}, { fail("shouldn't be an error") })
+        wrapper.queryPurchases(
+            appUserID = appUserId,
+            appInBackground = false,
+            onSuccess = {},
+            onError = { fail("shouldn't be an error") }
+        )
 
         verifySequence {
             mockDiagnosticsTracker.trackGoogleQueryPurchasesRequest(
@@ -286,7 +297,12 @@ internal class QueryPurchasesUseCaseTest : BaseBillingUseCaseTest() {
             slot.captured.onQueryPurchasesResponse(result, emptyList())
         }
 
-        wrapper.queryPurchases(appUserId, { fail("should be an error") }, {})
+        wrapper.queryPurchases(
+            appUserID = appUserId,
+            appInBackground = false,
+            onSuccess = { fail("should be an error") },
+            onError = {}
+        )
 
         verify(exactly = 1) {
             mockDiagnosticsTracker.trackGoogleQueryPurchasesRequest(
@@ -319,6 +335,7 @@ internal class QueryPurchasesUseCaseTest : BaseBillingUseCaseTest() {
 
         wrapper.queryPurchases(
             appUserID = "appUserID",
+            appInBackground = false,
             onSuccess = {
                 numCallbacks++
             },
@@ -357,6 +374,7 @@ internal class QueryPurchasesUseCaseTest : BaseBillingUseCaseTest() {
 
         wrapper.queryPurchases(
             appUserID = "appUserID",
+            appInBackground = false,
             onSuccess = {
                 // ensuring we don't hit an edge case where numCallbacks doesn't increment before the final assert
                 numCallbacks.incrementAndGet()
@@ -392,6 +410,7 @@ internal class QueryPurchasesUseCaseTest : BaseBillingUseCaseTest() {
             QueryPurchasesUseCaseParams(
                 mockDateProvider,
                 mockDiagnosticsTracker,
+                appInBackground = false,
             ),
             { received ->
                 receivedList = received
@@ -402,7 +421,7 @@ internal class QueryPurchasesUseCaseTest : BaseBillingUseCaseTest() {
             withConnectedClient = {
                 it.invoke(mockClient)
             },
-            executeRequestOnUIThread = {
+            executeRequestOnUIThread = { _, request ->
                 timesExecutedInMainThread++
 
                 queryPurchasesStubbing answers {
@@ -416,7 +435,7 @@ internal class QueryPurchasesUseCaseTest : BaseBillingUseCaseTest() {
                     }
                 }
 
-                it.invoke(null)
+                request(null)
             },
         ).run()
 
@@ -441,6 +460,7 @@ internal class QueryPurchasesUseCaseTest : BaseBillingUseCaseTest() {
             QueryPurchasesUseCaseParams(
                 mockDateProvider,
                 mockDiagnosticsTracker,
+                appInBackground = false,
             ),
             { _ ->
                 fail("shouldn't be success")
@@ -452,7 +472,7 @@ internal class QueryPurchasesUseCaseTest : BaseBillingUseCaseTest() {
                 timesRetried++
                 it.invoke(mockClient)
             },
-            executeRequestOnUIThread = {
+            executeRequestOnUIThread = { _, request ->
                 queryPurchasesStubbing answers {
                     slot.captured.onQueryPurchasesResponse(
                         BillingClient.BillingResponseCode.NETWORK_ERROR.buildResult(),
@@ -460,7 +480,7 @@ internal class QueryPurchasesUseCaseTest : BaseBillingUseCaseTest() {
                     )
                 }
 
-                it.invoke(null)
+                request(null)
             },
         ).run()
 
@@ -470,7 +490,7 @@ internal class QueryPurchasesUseCaseTest : BaseBillingUseCaseTest() {
     }
 
     @Test
-    fun `If service returns SERVICE_UNAVAILABLE, re-execute a max of 3 times`() {
+    fun `If service returns SERVICE_UNAVAILABLE, don't retry and error if user in session`() {
         val slot = slot<PurchasesResponseListener>()
         val queryPurchasesStubbing = every {
             mockClient.queryPurchasesAsync(
@@ -484,6 +504,7 @@ internal class QueryPurchasesUseCaseTest : BaseBillingUseCaseTest() {
             QueryPurchasesUseCaseParams(
                 mockDateProvider,
                 mockDiagnosticsTracker,
+                appInBackground = false,
             ),
             { _ ->
                 fail("shouldn't be success")
@@ -495,7 +516,7 @@ internal class QueryPurchasesUseCaseTest : BaseBillingUseCaseTest() {
                 timesRetried++
                 it.invoke(mockClient)
             },
-            executeRequestOnUIThread = {
+            executeRequestOnUIThread = { _, request ->
                 queryPurchasesStubbing answers {
                     slot.captured.onQueryPurchasesResponse(
                         BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE.buildResult(),
@@ -503,11 +524,56 @@ internal class QueryPurchasesUseCaseTest : BaseBillingUseCaseTest() {
                     )
                 }
 
-                it.invoke(null)
+                request(null)
             },
         ).run()
 
-        assertThat(timesRetried).isEqualTo(4) // First attempt plus 3 retries
+        assertThat(timesRetried).isEqualTo(1)
+        assertThat(receivedError).isNotNull
+        assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
+    }
+
+    @Test
+    fun `If service returns SERVICE_UNAVAILABLE, re-execute with backoff`() {
+        val slot = slot<PurchasesResponseListener>()
+        val queryPurchasesStubbing = every {
+            mockClient.queryPurchasesAsync(
+                any<QueryPurchasesParams>(),
+                capture(slot)
+            )
+        }
+        var receivedError: PurchasesError? = null
+        val capturedDelays = mutableListOf<Long>()
+        QueryPurchasesUseCase(
+            QueryPurchasesUseCaseParams(
+                mockDateProvider,
+                mockDiagnosticsTracker,
+                appInBackground = true,
+            ),
+            { _ ->
+                fail("shouldn't be success")
+            },
+            { error ->
+                receivedError = error
+            },
+            withConnectedClient = {
+                it.invoke(mockClient)
+            },
+            executeRequestOnUIThread = { delay, request ->
+                capturedDelays.add(delay)
+                queryPurchasesStubbing answers {
+                    slot.captured.onQueryPurchasesResponse(
+                        BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE.buildResult(),
+                        emptyList()
+                    )
+                }
+
+                request(null)
+            },
+        ).run()
+
+        assertThat(capturedDelays.size).isEqualTo(12)
+        assertThat(capturedDelays.last()).isCloseTo(RETRY_TIMER_MAX_TIME_MILLISECONDS, Offset.offset(1000L))
         assertThat(receivedError).isNotNull
         assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
     }
@@ -528,6 +594,7 @@ internal class QueryPurchasesUseCaseTest : BaseBillingUseCaseTest() {
             QueryPurchasesUseCaseParams(
                 mockDateProvider,
                 mockDiagnosticsTracker,
+                appInBackground = false,
             ),
             { _ ->
                 fail("shouldn't be success")
@@ -539,7 +606,7 @@ internal class QueryPurchasesUseCaseTest : BaseBillingUseCaseTest() {
                 timesRetried++
                 it.invoke(mockClient)
             },
-            executeRequestOnUIThread = {
+            executeRequestOnUIThread = { _, request ->
                 queryPurchasesStubbing answers {
                     slot.captured.onQueryPurchasesResponse(
                         BillingClient.BillingResponseCode.ERROR.buildResult(),
@@ -547,7 +614,7 @@ internal class QueryPurchasesUseCaseTest : BaseBillingUseCaseTest() {
                     )
                 }
 
-                it.invoke(null)
+                request(null)
             },
         ).run()
 
@@ -571,6 +638,7 @@ internal class QueryPurchasesUseCaseTest : BaseBillingUseCaseTest() {
             QueryPurchasesUseCaseParams(
                 mockDateProvider,
                 mockDiagnosticsTracker,
+                appInBackground = false,
             ),
             { _ ->
                 fail("shouldn't be success")
@@ -582,7 +650,7 @@ internal class QueryPurchasesUseCaseTest : BaseBillingUseCaseTest() {
                 timesRetried++
                 it.invoke(mockClient)
             },
-            executeRequestOnUIThread = {
+            executeRequestOnUIThread = { _, request ->
                 queryPurchasesStubbing answers {
                     slot.captured.onQueryPurchasesResponse(
                         BillingClient.BillingResponseCode.ITEM_UNAVAILABLE.buildResult(),
@@ -590,7 +658,7 @@ internal class QueryPurchasesUseCaseTest : BaseBillingUseCaseTest() {
                     )
                 }
 
-                it.invoke(null)
+                request(null)
             },
         ).run()
 

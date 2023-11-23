@@ -121,9 +121,10 @@ class OfferingsFactoryTest {
     fun `configuration error if no products configured`() {
         var purchasesError: PurchasesError? = null
         offeringsFactory.createOfferings(
-            oneOfferingWithNoProductsResponse,
-            { purchasesError = it },
-            { fail("Expected error") }
+            offeringsJSON = oneOfferingWithNoProductsResponse,
+            appInBackground = false,
+            onError = { purchasesError = it },
+            onSuccess = { fail("Expected error") }
         )
         assertThat(purchasesError).isNotNull
         assertThat(purchasesError!!.code).isEqualTo(PurchasesErrorCode.ConfigurationError)
@@ -136,9 +137,10 @@ class OfferingsFactoryTest {
     fun `createOfferings returns error if json with wrong format`() {
         var purchasesError: PurchasesError? = null
         offeringsFactory.createOfferings(
-            JSONObject("{}"),
-            { purchasesError = it },
-            { fail("Expected error") }
+            offeringsJSON = JSONObject("{}"),
+            appInBackground = false,
+            onError = { purchasesError = it },
+            onSuccess = { fail("Expected error") }
         )
         assertThat(purchasesError).isNotNull
         assertThat(purchasesError!!.code).isEqualTo(PurchasesErrorCode.UnexpectedBackendResponseError)
@@ -152,9 +154,10 @@ class OfferingsFactoryTest {
 
         var purchasesError: PurchasesError? = null
         offeringsFactory.createOfferings(
-            oneOfferingResponse,
-            { purchasesError = it },
-            { fail("Expected error") }
+            offeringsJSON = oneOfferingResponse,
+            appInBackground = false,
+            onError = { purchasesError = it },
+            onSuccess = { fail("Expected error") }
         )
 
         assertThat(purchasesError).isNotNull
@@ -171,9 +174,10 @@ class OfferingsFactoryTest {
 
         var offerings: Offerings? = null
         offeringsFactory.createOfferings(
-            oneOfferingResponse,
-            { fail("Expected success. Got error: $it") },
-            { offerings = it }
+            offeringsJSON = oneOfferingResponse,
+            appInBackground = false,
+            onError = { fail("Expected success. Got error: $it") },
+            onSuccess = { offerings = it }
         )
 
         assertThat(offerings).isNotNull
@@ -189,9 +193,10 @@ class OfferingsFactoryTest {
 
         var offerings: Offerings? = null
         offeringsFactory.createOfferings(
-            oneOfferingInAppProductResponse,
-            { fail("Expected success. Got error: $it") },
-            { offerings = it }
+            offeringsJSON = oneOfferingInAppProductResponse,
+            appInBackground = false,
+            onError = { fail("Expected success. Got error: $it") },
+            onSuccess = { offerings = it }
         )
 
         assertThat(offerings).isNotNull
@@ -207,9 +212,10 @@ class OfferingsFactoryTest {
 
         var offerings: Offerings? = null
         offeringsFactory.createOfferings(
-            oneOfferingWithPaywall,
-            { fail("Error: $it") },
-            { offerings = it }
+            offeringsJSON = oneOfferingWithPaywall,
+            appInBackground = false,
+            onError = { fail("Error: $it") },
+            onSuccess = { offerings = it }
         )
 
         assertThat(offerings).isNotNull
@@ -225,9 +231,10 @@ class OfferingsFactoryTest {
 
         var offerings: Offerings? = null
         offeringsFactory.createOfferings(
-            oneOfferingWithInvalidPaywallResponse,
-            { fail("Error: $it") },
-            { offerings = it }
+            offeringsJSON = oneOfferingWithInvalidPaywallResponse,
+            appInBackground = false,
+            onError = { fail("Error: $it") },
+            onSuccess = { offerings = it }
         )
 
         assertThat(offerings).isNotNull
@@ -251,8 +258,9 @@ class OfferingsFactoryTest {
             billing.queryProductDetailsAsync(
                 type,
                 productIds.toSet(),
+                any(),
                 captureLambda(),
-                any()
+                any(),
             )
         } answers {
             lambda<(List<StoreProduct>) -> Unit>().captured.invoke(storeProducts)

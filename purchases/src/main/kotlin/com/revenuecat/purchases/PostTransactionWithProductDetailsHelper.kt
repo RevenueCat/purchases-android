@@ -22,6 +22,7 @@ internal class PostTransactionWithProductDetailsHelper(
         allowSharingPlayStoreAccount: Boolean,
         appUserID: String,
         initiationSource: PostReceiptInitiationSource,
+        appInBackground: Boolean,
         transactionPostSuccess: (SuccessfulPurchaseCallback)? = null,
         transactionPostError: (ErrorPurchaseCallback)? = null,
     ) {
@@ -30,6 +31,7 @@ internal class PostTransactionWithProductDetailsHelper(
                 billing.queryProductDetailsAsync(
                     productType = transaction.type,
                     productIds = transaction.productIds.toSet(),
+                    appInBackground = appInBackground,
                     onReceive = { storeProducts ->
                         val purchasedStoreProduct = if (transaction.type == ProductType.SUBS) {
                             storeProducts.firstOrNull { product ->
@@ -49,6 +51,7 @@ internal class PostTransactionWithProductDetailsHelper(
                             isRestore = allowSharingPlayStoreAccount,
                             appUserID = appUserID,
                             initiationSource = initiationSource,
+                            appInBackground = appInBackground,
                             onSuccess = transactionPostSuccess,
                             onError = transactionPostError,
                         )
@@ -60,6 +63,7 @@ internal class PostTransactionWithProductDetailsHelper(
                             isRestore = allowSharingPlayStoreAccount,
                             appUserID = appUserID,
                             initiationSource = initiationSource,
+                            appInBackground = appInBackground,
                             onSuccess = transactionPostSuccess,
                             onError = transactionPostError,
                         )

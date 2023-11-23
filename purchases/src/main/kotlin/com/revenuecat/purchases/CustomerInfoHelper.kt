@@ -79,6 +79,7 @@ internal class CustomerInfoHelper(
     ) {
         postPendingTransactionsHelper.syncPendingPurchaseQueue(
             allowSharingPlayStoreAccount,
+            appInBackground,
             onError = { getCustomerInfoFetchOnly(appUserID, appInBackground, callback) },
             onSuccess = { customerInfo ->
                 if (customerInfo == null) {
@@ -116,6 +117,7 @@ internal class CustomerInfoHelper(
                 ) {
                     offlineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(
                         appUserID,
+                        appInBackground,
                         onSuccess = { offlineComputedCustomerInfo ->
                             customerInfoUpdateHandler.notifyListeners(offlineComputedCustomerInfo)
                             dispatch { callback?.onReceived(offlineComputedCustomerInfo) }

@@ -54,6 +54,7 @@ class PostTransactionWithProductDetailsHelperTest {
             allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
             appUserID = appUserID,
             initiationSource = initiationSource,
+            appInBackground = false,
             transactionPostSuccess = { _, _ -> fail("Should not be called") },
             transactionPostError = { _, _ -> fail("Should not be called") },
         )
@@ -70,6 +71,7 @@ class PostTransactionWithProductDetailsHelperTest {
             allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
             appUserID = appUserID,
             initiationSource = initiationSource,
+            appInBackground = false,
             transactionPostSuccess = { _, _ -> fail("Should not be called") },
             transactionPostError = { _, error -> receivedError = error },
         )
@@ -90,6 +92,7 @@ class PostTransactionWithProductDetailsHelperTest {
             allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
             appUserID = appUserID,
             initiationSource = initiationSource,
+            appInBackground = false,
             transactionPostSuccess = { _, _ -> fail("Should not be called") },
             transactionPostError = { _, _ -> errorCallCount++ },
         )
@@ -112,19 +115,21 @@ class PostTransactionWithProductDetailsHelperTest {
             allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
             appUserID = appUserID,
             initiationSource = initiationSource,
+            appInBackground = false,
             transactionPostSuccess = { _, _ ->  },
             transactionPostError = { _, _ -> fail("Should be success") },
         )
 
         verify(exactly = 1) {
             postReceiptHelper.postTransactionAndConsumeIfNeeded(
-                mockSubsTransaction,
-                null,
-                allowSharingPlayStoreAccount,
-                appUserID,
-                initiationSource,
-                any(),
-                any(),
+                purchase = mockSubsTransaction,
+                storeProduct = null,
+                isRestore = allowSharingPlayStoreAccount,
+                appUserID = appUserID,
+                initiationSource = initiationSource,
+                appInBackground = any(),
+                onSuccess = any(),
+                onError = any(),
             )
         }
     }
@@ -139,19 +144,21 @@ class PostTransactionWithProductDetailsHelperTest {
             allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
             appUserID = appUserID,
             initiationSource = initiationSource,
+            appInBackground = false,
             transactionPostSuccess = { _, _ ->  },
             transactionPostError = { _, _ -> fail("Should be success") },
         )
 
         verify(exactly = 1) {
             postReceiptHelper.postTransactionAndConsumeIfNeeded(
-                mockInAppTransaction,
-                mockStoreProduct,
-                allowSharingPlayStoreAccount,
-                appUserID,
-                initiationSource,
-                any(),
-                any(),
+                purchase = mockInAppTransaction,
+                storeProduct = mockStoreProduct,
+                isRestore = allowSharingPlayStoreAccount,
+                appUserID = appUserID,
+                initiationSource = initiationSource,
+                appInBackground = any(),
+                onSuccess = any(),
+                onError = any(),
             )
         }
     }
@@ -166,19 +173,21 @@ class PostTransactionWithProductDetailsHelperTest {
             allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
             appUserID = appUserID,
             initiationSource = initiationSource,
+            appInBackground = false,
             transactionPostSuccess = { _, _ ->  },
             transactionPostError = { _, _ -> fail("Should be success") },
         )
 
         verify(exactly = 1) {
             postReceiptHelper.postTransactionAndConsumeIfNeeded(
-                mockSubsTransaction,
-                mockStoreProduct,
-                allowSharingPlayStoreAccount,
-                appUserID,
-                initiationSource,
-                any(),
-                any(),
+                purchase = mockSubsTransaction,
+                storeProduct = mockStoreProduct,
+                isRestore = allowSharingPlayStoreAccount,
+                appUserID = appUserID,
+                initiationSource = initiationSource,
+                appInBackground = any(),
+                onSuccess = any(),
+                onError = any(),
             )
         }
     }
@@ -196,6 +205,7 @@ class PostTransactionWithProductDetailsHelperTest {
             allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
             appUserID = appUserID,
             initiationSource = initiationSource,
+            appInBackground = false,
             transactionPostSuccess = { storeTransaction, customerInfo ->
                 receivedStoreTransaction = storeTransaction
                 receivedCustomerInfo = customerInfo
@@ -226,10 +236,11 @@ class PostTransactionWithProductDetailsHelperTest {
     ) {
         every {
             billing.queryProductDetailsAsync(
-                transaction.type,
-                transaction.productIds.toSet(),
-                captureLambda(),
-                any(),
+                productType = transaction.type,
+                productIds = transaction.productIds.toSet(),
+                appInBackground = false,
+                onReceive = captureLambda(),
+                onError = any(),
             )
         } answers {
             lambda<(List<StoreProduct>) -> Unit>().captured.invoke(storeProducts)
@@ -242,10 +253,11 @@ class PostTransactionWithProductDetailsHelperTest {
     ) {
         every {
             billing.queryProductDetailsAsync(
-                transaction.type,
-                transaction.productIds.toSet(),
-                any(),
-                captureLambda(),
+                productType = transaction.type,
+                productIds = transaction.productIds.toSet(),
+                appInBackground = false,
+                onReceive = any(),
+                onError = captureLambda(),
             )
         } answers {
             lambda<(PurchasesError) -> Unit>().captured.invoke(error)
@@ -259,13 +271,14 @@ class PostTransactionWithProductDetailsHelperTest {
     ) {
         every {
             postReceiptHelper.postTransactionAndConsumeIfNeeded(
-                transaction,
-                storeProduct,
-                allowSharingPlayStoreAccount,
-                appUserID,
-                initiationSource,
-                captureLambda(),
-                any()
+                purchase = transaction,
+                storeProduct = storeProduct,
+                isRestore = allowSharingPlayStoreAccount,
+                appUserID = appUserID,
+                initiationSource = initiationSource,
+                appInBackground = any(),
+                onSuccess = captureLambda(),
+                onError = any()
             )
         } answers {
             lambda<SuccessfulPurchaseCallback>().captured.invoke(transaction, customerInfoResult)

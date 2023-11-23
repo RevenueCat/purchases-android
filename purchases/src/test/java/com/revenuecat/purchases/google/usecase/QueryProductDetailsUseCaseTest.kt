@@ -21,6 +21,7 @@ import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
 import org.assertj.core.api.AssertionsForClassTypes
+import org.assertj.core.data.Offset
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -50,12 +51,16 @@ internal class QueryProductDetailsUseCaseTest: BaseBillingUseCaseTest() {
 
         var receivedList: List<StoreProduct>? = null
         wrapper.queryProductDetailsAsync(
-            ProductType.SUBS,
-            productIDs, {
+            productType = ProductType.SUBS,
+            productIds = productIDs,
+            appInBackground = false,
+            onReceive = {
                 receivedList = it
-            }, {
+            },
+            onError = {
                 AssertionsForClassTypes.fail("shouldn't be an error")
-            })
+            },
+        )
 
         assertThat(receivedList).isNotNull
         assertThat(receivedList!!.size).isZero
@@ -74,13 +79,16 @@ internal class QueryProductDetailsUseCaseTest: BaseBillingUseCaseTest() {
         val productIDs = setOf("product_a")
 
         wrapper.queryProductDetailsAsync(
-            ProductType.UNKNOWN,
-            productIDs,
-            {
+            productType = ProductType.UNKNOWN,
+            productIds = productIDs,
+            appInBackground = false,
+            onReceive = {
                 this@QueryProductDetailsUseCaseTest.storeProducts = it
-            }, {
+            },
+            onError = {
                 AssertionsForClassTypes.fail("shouldn't be an error")
-            })
+            },
+        )
 
         assertThat(slot.isCaptured).isTrue
         assertThat(slot.captured.productList[0].productType).isEqualTo(BillingClient.ProductType.INAPP)
@@ -96,11 +104,14 @@ internal class QueryProductDetailsUseCaseTest: BaseBillingUseCaseTest() {
         } just Runs
 
         wrapper.queryProductDetailsAsync(
-            ProductType.SUBS,
-            productIdsSet,
-            {}, {
+            productType = ProductType.SUBS,
+            productIds = productIdsSet,
+            appInBackground = false,
+            onReceive = {},
+            onError = {
                 AssertionsForClassTypes.fail("shouldn't be an error")
-            })
+            },
+        )
 
         assertThat(slot.captured).isNotNull
         val queryProductDetailsParamsProductList = slot.captured.productList
@@ -111,13 +122,16 @@ internal class QueryProductDetailsUseCaseTest: BaseBillingUseCaseTest() {
     @Test
     fun `queryProductDetails with empty list returns empty list and does not query BillingClient`() {
         wrapper.queryProductDetailsAsync(
-            ProductType.SUBS,
-            emptySet(),
-            {
+            productType = ProductType.SUBS,
+            productIds = emptySet(),
+            appInBackground = false,
+            onReceive = {
                 assertThat(it).isEmpty()
-            }, {
+            },
+            onError = {
                 AssertionsForClassTypes.fail("shouldn't be an error")
-            })
+            },
+        )
 
         verify(exactly = 0) {
             mockClient.queryProductDetailsAsync(any(), any())
@@ -127,13 +141,16 @@ internal class QueryProductDetailsUseCaseTest: BaseBillingUseCaseTest() {
     @Test
     fun `queryProductDetails with only empty productIds returns empty list and does not query BillingClient`() {
         wrapper.queryProductDetailsAsync(
-            ProductType.SUBS,
-            setOf("", ""),
-            {
+            productType = ProductType.SUBS,
+            productIds = setOf("", ""),
+            appInBackground = false,
+            onReceive = {
                 assertThat(it).isEmpty()
-            }, {
+            },
+            onError = {
                 AssertionsForClassTypes.fail("shouldn't be an error")
-            })
+            },
+        )
 
         verify(exactly = 0) {
             mockClient.queryProductDetailsAsync(any(), any())
@@ -156,14 +173,17 @@ internal class QueryProductDetailsUseCaseTest: BaseBillingUseCaseTest() {
         }
 
         wrapper.queryProductDetailsAsync(
-            ProductType.SUBS,
-            setOf("asdf", "asdf"),
-            {
+            productType = ProductType.SUBS,
+            productIds = setOf("asdf", "asdf"),
+            appInBackground = false,
+            onReceive = {
                 Thread.sleep(200)
                 numCallbacks++
-            }, {
+            },
+            onError = {
                 numCallbacks++
-            })
+            },
+        )
 
         assertThat(numCallbacks).isEqualTo(1)
     }
@@ -192,15 +212,18 @@ internal class QueryProductDetailsUseCaseTest: BaseBillingUseCaseTest() {
         }
 
         wrapper.queryProductDetailsAsync(
-            ProductType.SUBS,
-            setOf("asdf"),
-            {
+            productType = ProductType.SUBS,
+            productIds = setOf("asdf"),
+            appInBackground = false,
+            onReceive = {
                 // ensuring we don't hit an edge case where numCallbacks doesn't increment before the final assert
                 numCallbacks.incrementAndGet()
                 lock.countDown()
-            }, {
+            },
+            onError = {
                 AssertionsForClassTypes.fail("shouldn't be an error")
-            })
+            },
+        )
 
         lock.await()
         assertThat(lock.count).isEqualTo(0)
@@ -228,6 +251,7 @@ internal class QueryProductDetailsUseCaseTest: BaseBillingUseCaseTest() {
                 mockDiagnosticsTracker,
                 productIDs,
                 ProductType.SUBS,
+                appInBackground = false
             ),
             { received ->
                 receivedList = received
@@ -238,7 +262,7 @@ internal class QueryProductDetailsUseCaseTest: BaseBillingUseCaseTest() {
             withConnectedClient = {
                 it.invoke(mockClient)
             },
-            executeRequestOnUIThread = {
+            executeRequestOnUIThread = { _, request ->
                 timesExecutedInMainThread++
 
                 queryProductDetailsStubbing answers {
@@ -255,7 +279,7 @@ internal class QueryProductDetailsUseCaseTest: BaseBillingUseCaseTest() {
                     }
                 }
 
-                it.invoke(null)
+                request(null)
             },
         )
 
@@ -284,6 +308,7 @@ internal class QueryProductDetailsUseCaseTest: BaseBillingUseCaseTest() {
                 mockDiagnosticsTracker,
                 productIDs,
                 ProductType.SUBS,
+                appInBackground = false
             ),
             { _ ->
                 fail("shouldn't be success")
@@ -295,7 +320,7 @@ internal class QueryProductDetailsUseCaseTest: BaseBillingUseCaseTest() {
                 timesRetried++
                 it.invoke(mockClient)
             },
-            executeRequestOnUIThread = {
+            executeRequestOnUIThread = { _, request ->
                 queryProductDetailsStubbing answers {
                     slot.captured.onProductDetailsResponse(
                         BillingClient.BillingResponseCode.NETWORK_ERROR.buildResult(),
@@ -303,7 +328,7 @@ internal class QueryProductDetailsUseCaseTest: BaseBillingUseCaseTest() {
                     )
                 }
 
-                it.invoke(null)
+                request(null)
             },
         )
 
@@ -315,7 +340,57 @@ internal class QueryProductDetailsUseCaseTest: BaseBillingUseCaseTest() {
     }
 
     @Test
-    fun `If service returns SERVICE_UNAVAILABLE, re-execute a max of 3 times`() {
+    fun `If service returns SERVICE_UNAVAILABLE, re-execute with backoff`() {
+        val slot = slot<ProductDetailsResponseListener>()
+        val queryProductDetailsStubbing = every {
+            mockClient.queryProductDetailsAsync(
+                any(),
+                capture(slot)
+            )
+        }
+        val productIDs = setOf("product_a")
+        var receivedError: PurchasesError? = null
+        val capturedDelays = mutableListOf<Long>()
+        val useCase = QueryProductDetailsUseCase(
+            QueryProductDetailsUseCaseParams(
+                mockDateProvider,
+                mockDiagnosticsTracker,
+                productIDs,
+                ProductType.SUBS,
+                appInBackground = true
+            ),
+            { _ ->
+                fail("shouldn't be success")
+            },
+            { error ->
+                receivedError = error
+            },
+            withConnectedClient = {
+                it.invoke(mockClient)
+            },
+            executeRequestOnUIThread = { delay, request ->
+                capturedDelays.add(delay)
+                queryProductDetailsStubbing answers {
+                    slot.captured.onProductDetailsResponse(
+                        BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE.buildResult(),
+                        emptyList()
+                    )
+                }
+
+                request(null)
+            },
+        )
+
+        useCase.run()
+
+        assertThat(capturedDelays.size).isEqualTo(12)
+        assertThat(capturedDelays.last()).isCloseTo(RETRY_TIMER_MAX_TIME_MILLISECONDS, Offset.offset(1000L))
+        assertThat(receivedError).isNotNull
+        assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
+    }
+
+    @Test
+    fun `If service returns SERVICE_UNAVAILABLE, don't retry and error if user in session`() {
         val slot = slot<ProductDetailsResponseListener>()
         val queryProductDetailsStubbing = every {
             mockClient.queryProductDetailsAsync(
@@ -332,6 +407,7 @@ internal class QueryProductDetailsUseCaseTest: BaseBillingUseCaseTest() {
                 mockDiagnosticsTracker,
                 productIDs,
                 ProductType.SUBS,
+                appInBackground = false
             ),
             { _ ->
                 fail("shouldn't be success")
@@ -343,7 +419,7 @@ internal class QueryProductDetailsUseCaseTest: BaseBillingUseCaseTest() {
                 timesRetried++
                 it.invoke(mockClient)
             },
-            executeRequestOnUIThread = {
+            executeRequestOnUIThread = { _, request ->
                 queryProductDetailsStubbing answers {
                     slot.captured.onProductDetailsResponse(
                         BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE.buildResult(),
@@ -351,13 +427,13 @@ internal class QueryProductDetailsUseCaseTest: BaseBillingUseCaseTest() {
                     )
                 }
 
-                it.invoke(null)
+                request(null)
             },
         )
 
         useCase.run()
 
-        assertThat(timesRetried).isEqualTo(4) // First attempt plus 3 retries
+        assertThat(timesRetried).isEqualTo(1)
         assertThat(receivedError).isNotNull
         assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
     }
@@ -380,6 +456,7 @@ internal class QueryProductDetailsUseCaseTest: BaseBillingUseCaseTest() {
                 mockDiagnosticsTracker,
                 productIDs,
                 ProductType.SUBS,
+                appInBackground = false
             ),
             { _ ->
                 fail("shouldn't be success")
@@ -391,7 +468,7 @@ internal class QueryProductDetailsUseCaseTest: BaseBillingUseCaseTest() {
                 timesRetried++
                 it.invoke(mockClient)
             },
-            executeRequestOnUIThread = {
+            executeRequestOnUIThread = { _, request ->
                 queryProductDetailsStubbing answers {
                     slot.captured.onProductDetailsResponse(
                         BillingClient.BillingResponseCode.ERROR.buildResult(),
@@ -399,7 +476,7 @@ internal class QueryProductDetailsUseCaseTest: BaseBillingUseCaseTest() {
                     )
                 }
 
-                it.invoke(null)
+                request(null)
             },
         )
 
@@ -428,6 +505,7 @@ internal class QueryProductDetailsUseCaseTest: BaseBillingUseCaseTest() {
                 mockDiagnosticsTracker,
                 productIDs,
                 ProductType.SUBS,
+                appInBackground = false
             ),
             { _ ->
                 fail("shouldn't be success")
@@ -439,7 +517,7 @@ internal class QueryProductDetailsUseCaseTest: BaseBillingUseCaseTest() {
                 timesRetried++
                 it.invoke(mockClient)
             },
-            executeRequestOnUIThread = {
+            executeRequestOnUIThread = { _, request ->
                 queryProductDetailsStubbing answers {
                     slot.captured.onProductDetailsResponse(
                         BillingClient.BillingResponseCode.ITEM_UNAVAILABLE.buildResult(),
@@ -447,7 +525,7 @@ internal class QueryProductDetailsUseCaseTest: BaseBillingUseCaseTest() {
                     )
                 }
 
-                it.invoke(null)
+                request(null)
             },
         )
 

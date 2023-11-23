@@ -30,15 +30,16 @@ import kotlin.time.Duration
 internal data class QueryPurchasesUseCaseParams(
     val dateProvider: DateProvider = DefaultDateProvider(),
     val diagnosticsTrackerIfEnabled: DiagnosticsTracker?,
-)
+    override val appInBackground: Boolean,
+) : UseCaseParams
 
 internal class QueryPurchasesUseCase(
     private val useCaseParams: QueryPurchasesUseCaseParams,
     val onSuccess: (Map<String, StoreTransaction>) -> Unit,
     val onError: (PurchasesError) -> Unit,
     val withConnectedClient: (BillingClient.() -> Unit) -> Unit,
-    executeRequestOnUIThread: ((PurchasesError?) -> Unit) -> Unit,
-) : BillingClientUseCase<Map<String, StoreTransaction>>(onError, executeRequestOnUIThread) {
+    executeRequestOnUIThread: ExecuteRequestOnUIThreadFunction,
+) : BillingClientUseCase<Map<String, StoreTransaction>>(useCaseParams, onError, executeRequestOnUIThread) {
 
     override val errorMessage: String
         get() = "Error when querying purchases"

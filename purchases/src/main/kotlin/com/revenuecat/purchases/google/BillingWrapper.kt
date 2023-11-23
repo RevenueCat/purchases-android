@@ -46,6 +46,7 @@ import com.revenuecat.purchases.common.sha256
 import com.revenuecat.purchases.common.toHumanReadableDescription
 import com.revenuecat.purchases.common.verboseLog
 import com.revenuecat.purchases.google.usecase.GetBillingConfigUseCase
+import com.revenuecat.purchases.google.usecase.GetBillingConfigUseCaseParams
 import com.revenuecat.purchases.google.usecase.QueryProductDetailsUseCase
 import com.revenuecat.purchases.google.usecase.QueryProductDetailsUseCaseParams
 import com.revenuecat.purchases.google.usecase.QueryPurchaseHistoryUseCase
@@ -93,7 +94,7 @@ internal class BillingWrapper(
     private val purchaseContext = mutableMapOf<String, PurchaseContext>()
 
     private val serviceRequests =
-        ConcurrentLinkedQueue<(connectionError: PurchasesError?) -> Unit>()
+        ConcurrentLinkedQueue<Pair<(connectionError: PurchasesError?) -> Unit, Long?>>()
 
     // how long before the data source tries to reconnect to Google play
     private var reconnectMilliseconds = RECONNECT_TIMER_START_MILLISECONDS
@@ -113,7 +114,16 @@ internal class BillingWrapper(
     private fun executePendingRequests() {
         synchronized(this@BillingWrapper) {
             while (billingClient?.isReady == true) {
-                serviceRequests.poll()?.let { mainHandler.post { it(null) } } ?: break
+                serviceRequests.poll()?.let { (request, delayMilliseconds) ->
+                    if (delayMilliseconds != null) {
+                        mainHandler.postDelayed(
+                            { request(null) },
+                            delayMilliseconds,
+                        )
+                    } else {
+                        mainHandler.post { request(null) }
+                    }
+                } ?: break
             }
         }
     }
@@ -164,9 +174,9 @@ internal class BillingWrapper(
     }
 
     @Synchronized
-    private fun executeRequestOnUIThread(request: (PurchasesError?) -> Unit) {
+    private fun executeRequestOnUIThread(delayMilliseconds: Long? = null, request: (PurchasesError?) -> Unit) {
         if (purchasesUpdatedListener != null) {
-            serviceRequests.add(request)
+            serviceRequests.add(request to delayMilliseconds)
             if (billingClient?.isReady == false) {
                 startConnectionOnMainThread()
             } else {
@@ -182,6 +192,7 @@ internal class BillingWrapper(
     override fun queryProductDetailsAsync(
         productType: ProductType,
         productIds: Set<String>,
+        appInBackground: Boolean,
         onReceive: StoreProductsCallback,
         onError: PurchasesErrorCallback,
     ) {
@@ -192,6 +203,7 @@ internal class BillingWrapper(
                 diagnosticsTrackerIfEnabled,
                 productIds,
                 productType,
+                appInBackground,
             ),
             onReceive,
             onError,
@@ -289,6 +301,7 @@ internal class BillingWrapper(
 
     fun queryPurchaseHistoryAsync(
         @BillingClient.ProductType productType: String,
+        appInBackground: Boolean,
         onReceivePurchaseHistory: (List<PurchaseHistoryRecord>) -> Unit,
         onReceivePurchaseHistoryError: (PurchasesError) -> Unit,
     ) {
@@ -298,6 +311,7 @@ internal class BillingWrapper(
                 dateProvider,
                 diagnosticsTrackerIfEnabled,
                 productType,
+                appInBackground,
             ),
             onReceivePurchaseHistory,
             onReceivePurchaseHistoryError,
@@ -309,14 +323,17 @@ internal class BillingWrapper(
 
     override fun queryAllPurchases(
         appUserID: String,
+        appInBackground: Boolean,
         onReceivePurchaseHistory: (List<StoreTransaction>) -> Unit,
         onReceivePurchaseHistoryError: (PurchasesError) -> Unit,
     ) {
         queryPurchaseHistoryAsync(
             BillingClient.ProductType.SUBS,
+            appInBackground,
             { subsPurchasesList ->
                 queryPurchaseHistoryAsync(
                     BillingClient.ProductType.INAPP,
+                    appInBackground,
                     { inAppPurchasesList ->
                         onReceivePurchaseHistory(
                             subsPurchasesList.map {
@@ -336,6 +353,7 @@ internal class BillingWrapper(
     override fun consumeAndSave(
         shouldTryToConsume: Boolean,
         purchase: StoreTransaction,
+        appInBackground: Boolean,
     ) {
         if (purchase.type == ProductType.UNKNOWN) {
             // Would only get here if the purchase was triggered from outside of the app and there was
@@ -416,6 +434,7 @@ internal class BillingWrapper(
     @Suppress("ReturnCount", "LongMethod")
     override fun queryPurchases(
         appUserID: String,
+        appInBackground: Boolean,
         onSuccess: (Map<String, StoreTransaction>) -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {
@@ -424,6 +443,7 @@ internal class BillingWrapper(
             QueryPurchasesUseCaseParams(
                 dateProvider,
                 diagnosticsTrackerIfEnabled,
+                appInBackground,
             ),
             onSuccess,
             onError,
@@ -437,6 +457,7 @@ internal class BillingWrapper(
         appUserID: String,
         productType: ProductType,
         productId: String,
+        appInBackground: Boolean,
         onCompletion: (StoreTransaction) -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {
@@ -717,11 +738,13 @@ internal class BillingWrapper(
     }
 
     override fun getStorefront(
+        appInBackground: Boolean,
         onSuccess: (String) -> Unit,
         onError: PurchasesErrorCallback,
     ) {
         verboseLog(BillingStrings.BILLING_INITIATE_GETTING_COUNTRY_CODE)
         GetBillingConfigUseCase(
+            GetBillingConfigUseCaseParams(appInBackground),
             deviceCache = deviceCache,
             onReceive = { billingConfig -> onSuccess(billingConfig.countryCode) },
             onError = onError,
@@ -931,7 +954,7 @@ internal class BillingWrapper(
     @Synchronized
     private fun sendErrorsToAllPendingRequests(error: PurchasesError) {
         while (true) {
-            serviceRequests.poll()?.let { serviceRequest ->
+            serviceRequests.poll()?.let { (serviceRequest, _) ->
                 mainHandler.post {
                     serviceRequest(error)
                 }
