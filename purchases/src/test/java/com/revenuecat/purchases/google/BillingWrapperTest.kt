@@ -23,6 +23,7 @@ import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchaseHistoryRecord
 import com.android.billingclient.api.PurchasesResponseListener
 import com.android.billingclient.api.PurchasesUpdatedListener
+import com.revenuecat.purchases.PostReceiptInitiationSource
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
@@ -103,8 +104,6 @@ class BillingWrapperTest {
 
     private var capturedAcknowledgeResponseListener = slot<AcknowledgePurchaseResponseListener>()
     private var capturedAcknowledgePurchaseParams = slot<AcknowledgePurchaseParams>()
-    private var capturedConsumeResponseListener = slot<ConsumeResponseListener>()
-    private var capturedConsumeParams = slot<ConsumeParams>()
 
     private lateinit var wrapper: BillingWrapper
 
@@ -214,7 +213,11 @@ class BillingWrapperTest {
 
         val token = "token"
         var consumePurchaseCompleted = false
-        wrapper.consumePurchase(token) { _, _ ->
+        wrapper.consumePurchase(
+            token = token,
+            initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
+            appInBackground = false,
+        ) {
             consumePurchaseCompleted = true
         }
 
@@ -234,12 +237,20 @@ class BillingWrapperTest {
         val token = "token"
 
         var consumePurchaseResponse1Called = false
-        wrapper.consumePurchase(token) { _, _ ->
+        wrapper.consumePurchase(
+            token = token,
+            initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
+            appInBackground = false,
+        ) {
             consumePurchaseResponse1Called = true
         }
 
         var consumePurchaseResponse2Called = false
-        wrapper.consumePurchase(token) { _, _ ->
+        wrapper.consumePurchase(
+            token = token,
+            initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
+            appInBackground = false,
+        ) {
             consumePurchaseResponse2Called = true
         }
         assertThat(consumePurchaseResponse1Called).isFalse
@@ -258,7 +269,11 @@ class BillingWrapperTest {
         every { mockClient.isReady } returns false
 
         val token = "token"
-        wrapper.consumePurchase(token) { _, _ -> }
+        wrapper.consumePurchase(
+            token = token,
+            initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
+            appInBackground = false,
+        ) {  }
 
         verify(exactly = 2) {
             mockClient.startConnection(billingClientStateListener!!)
@@ -922,17 +937,6 @@ class BillingWrapperTest {
     }
 
     @Test
-    fun canConsumeAToken() {
-        val token = "mockToken"
-
-        billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
-        wrapper.consumePurchase(token) { _, _ -> }
-
-        assertThat(capturedConsumeResponseListener.isCaptured).isTrue
-        assertThat(capturedConsumeParams.captured.purchaseToken).isEqualTo(token)
-    }
-
-    @Test
     fun `calling billing close() sets purchasesUpdatedListener to null and disconnects from BillingClient`() {
         every {
             mockClient.endConnection()
@@ -963,7 +967,11 @@ class BillingWrapperTest {
             mockClient.endConnection()
         } just Runs
         wrapper.purchasesUpdatedListener = null
-        wrapper.consumePurchase("token") { _, _ -> }
+        wrapper.consumePurchase(
+            token = "token",
+            initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
+            appInBackground = false,
+        ) { }
 
         verify(exactly = 1) { // Just the original connection
             mockClient.startConnection(wrapper)
@@ -1282,122 +1290,6 @@ class BillingWrapperTest {
     }
 
     @Test
-    fun `tokens are saved in cache when acknowledging`() {
-        val sku = "sub"
-        val token = "token_sub"
-        val googlePurchaseWrapper = getMockedPurchaseWrapper(
-            sku,
-            token,
-            ProductType.SUBS,
-            "offering_a"
-        )
-
-        every {
-            mockDeviceCache.addSuccessfullyPostedToken(token)
-        } just Runs
-
-        wrapper.consumeAndSave(
-            shouldTryToConsume = true,
-            purchase = googlePurchaseWrapper,
-            appInBackground = false
-        )
-
-        assertThat(capturedAcknowledgeResponseListener.isCaptured).isTrue
-        capturedAcknowledgeResponseListener.captured.onAcknowledgePurchaseResponse(
-            billingClientOKResult
-        )
-
-        verify(exactly = 1) {
-            mockDeviceCache.addSuccessfullyPostedToken(token)
-        }
-    }
-
-    @Test
-    fun `restored tokens are saved in cache when acknowledging`() {
-        val sku = "sub"
-        val token = "token_sub"
-        val historyRecordWrapper = getMockedPurchaseHistoryRecordWrapper(
-            sku,
-            token,
-            ProductType.SUBS
-        )
-
-        every {
-            mockDeviceCache.addSuccessfullyPostedToken(token)
-        } just Runs
-
-        wrapper.consumeAndSave(
-            shouldTryToConsume = true,
-            purchase = historyRecordWrapper,
-            appInBackground = false
-        )
-
-        assertThat(capturedAcknowledgeResponseListener.isCaptured).isTrue
-        capturedAcknowledgeResponseListener.captured.onAcknowledgePurchaseResponse(
-            billingClientOKResult
-        )
-
-        verify(exactly = 1) {
-            mockDeviceCache.addSuccessfullyPostedToken(token)
-        }
-    }
-
-    @Test
-    fun `tokens are saved in cache when consuming`() {
-        val sku = "consumable"
-        val token = "token_consumable"
-        val googlePurchaseWrapper = getMockedPurchaseWrapper(
-            sku,
-            token,
-            ProductType.INAPP,
-            "offering_a"
-        )
-
-        every {
-            mockDeviceCache.addSuccessfullyPostedToken(token)
-        } just Runs
-
-        wrapper.consumeAndSave(
-            shouldTryToConsume = true,
-            purchase = googlePurchaseWrapper,
-            appInBackground = false
-        )
-
-        assertThat(capturedConsumeResponseListener.isCaptured).isTrue
-
-        verify(exactly = 1) {
-            mockDeviceCache.addSuccessfullyPostedToken(token)
-        }
-    }
-
-    @Test
-    fun `restored tokens are saved in cache when consuming`() {
-        val sku = "consumable"
-        val token = "token_consumable"
-        val historyRecordWrapper = getMockedPurchaseHistoryRecordWrapper(
-            sku,
-            token,
-            ProductType.INAPP
-        )
-
-        every {
-            mockDeviceCache.addSuccessfullyPostedToken(token)
-        } just Runs
-
-        wrapper.consumeAndSave(
-            shouldTryToConsume = true,
-            purchase = historyRecordWrapper,
-            appInBackground = false
-        )
-
-        assertThat(capturedConsumeResponseListener.isCaptured).isTrue
-
-        verify(exactly = 1) {
-            mockDeviceCache.addSuccessfullyPostedToken(token)
-        }
-    }
-
-    @Test
     fun `tokens are not saved in cache if acknowledge fails`() {
         val sku = "sub"
         val token = "token_sub"
@@ -1411,7 +1303,8 @@ class BillingWrapperTest {
         wrapper.consumeAndSave(
             shouldTryToConsume = true,
             purchase = googlePurchaseWrapper,
-            appInBackground = false
+            appInBackground = false,
+            initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
         )
 
         assertThat(capturedAcknowledgeResponseListener.isCaptured).isTrue
@@ -1434,56 +1327,17 @@ class BillingWrapperTest {
             ProductType.SUBS
         )
 
-        wrapper.consumeAndSave(true, historyRecordWrapper, appInBackground = false)
+        wrapper.consumeAndSave(
+            shouldTryToConsume = true,
+            purchase = historyRecordWrapper,
+            appInBackground = false,
+            initiationSource = PostReceiptInitiationSource.RESTORE
+        )
 
         assertThat(capturedAcknowledgeResponseListener.isCaptured).isTrue
         capturedAcknowledgeResponseListener.captured.onAcknowledgePurchaseResponse(
             BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE.buildResult()
         )
-
-        verify(exactly = 0) {
-            mockDeviceCache.addSuccessfullyPostedToken(token)
-        }
-    }
-
-    @Test
-    fun `tokens are not save in cache if consuming fails`() {
-        val sku = "consumable"
-        val token = "token_consumable"
-        val googlePurchaseWrapper = getMockedPurchaseWrapper(
-            sku,
-            token,
-            ProductType.INAPP,
-            "offering_a"
-        )
-
-        mockConsumeAsync(BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE.buildResult())
-
-        wrapper.consumeAndSave(true, googlePurchaseWrapper, appInBackground = false)
-
-        assertThat(capturedConsumeResponseListener.isCaptured).isTrue
-
-        verify(exactly = 0) {
-            mockDeviceCache.addSuccessfullyPostedToken(token)
-        }
-    }
-
-    @Test
-    fun `restored tokens are not save in cache if consuming fails`() {
-        val sku = "consumable"
-        val token = "token_consumable"
-
-        val historyRecordWrapper = getMockedPurchaseHistoryRecordWrapper(
-            sku,
-            token,
-            ProductType.INAPP
-        )
-
-        mockConsumeAsync(BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE.buildResult())
-
-        wrapper.consumeAndSave(true, historyRecordWrapper, appInBackground = false)
-
-        assertThat(capturedConsumeResponseListener.isCaptured).isTrue
 
         verify(exactly = 0) {
             mockDeviceCache.addSuccessfullyPostedToken(token)
@@ -1505,7 +1359,12 @@ class BillingWrapperTest {
             mockDeviceCache.addSuccessfullyPostedToken(token)
         } just Runs
 
-        wrapper.consumeAndSave(true, googlePurchaseWrapper, appInBackground = false)
+        wrapper.consumeAndSave(
+            shouldTryToConsume = true,
+            purchase = googlePurchaseWrapper,
+            initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
+            appInBackground = false
+        )
 
         assertThat(capturedAcknowledgeResponseListener.isCaptured).isTrue
         capturedAcknowledgeResponseListener.captured.onAcknowledgePurchaseResponse(
@@ -1531,7 +1390,12 @@ class BillingWrapperTest {
             mockDeviceCache.addSuccessfullyPostedToken(token)
         } just Runs
 
-        wrapper.consumeAndSave(true, historyRecordWrapper, appInBackground = false)
+        wrapper.consumeAndSave(
+            shouldTryToConsume = true,
+            purchase = historyRecordWrapper,
+            appInBackground = false,
+            initiationSource = PostReceiptInitiationSource.RESTORE,
+        )
 
         assertThat(capturedAcknowledgeResponseListener.isCaptured).isTrue
         capturedAcknowledgeResponseListener.captured.onAcknowledgePurchaseResponse(
@@ -1541,116 +1405,6 @@ class BillingWrapperTest {
         assertThat(capturedAcknowledgePurchaseParams.isCaptured).isTrue
         val capturedAcknowledgeParams = capturedAcknowledgePurchaseParams.captured
         assertThat(capturedAcknowledgeParams.purchaseToken).isEqualTo(token)
-    }
-
-    @Test
-    fun `consumables are consumed`() {
-        val sku = "consumable"
-        val token = "token_consumable"
-        val googlePurchaseWrapper = getMockedPurchaseWrapper(
-            sku,
-            token,
-            ProductType.INAPP,
-            "offering_a"
-        )
-
-        every {
-            mockDeviceCache.addSuccessfullyPostedToken(token)
-        } just Runs
-
-        wrapper.consumeAndSave(true, googlePurchaseWrapper, appInBackground = false)
-
-        assertThat(capturedConsumeResponseListener.isCaptured).isTrue
-        capturedConsumeResponseListener.captured.onConsumeResponse(
-            billingClientOKResult,
-            token
-        )
-
-        assertThat(capturedConsumeParams.isCaptured).isTrue
-        val capturedConsumeParams = capturedConsumeParams.captured
-        assertThat(capturedConsumeParams.purchaseToken).isEqualTo(token)
-    }
-
-    @Test
-    fun `restored consumables are consumed`() {
-        val sku = "consumable"
-        val token = "token_consumable"
-        val historyRecordWrapper = getMockedPurchaseHistoryRecordWrapper(
-            sku,
-            token,
-            ProductType.INAPP
-        )
-
-        every {
-            mockDeviceCache.addSuccessfullyPostedToken(token)
-        } just Runs
-
-        wrapper.consumeAndSave(
-            shouldTryToConsume = true,
-            purchase = historyRecordWrapper,
-            appInBackground = false
-        )
-
-        assertThat(capturedConsumeResponseListener.isCaptured).isTrue
-        capturedConsumeResponseListener.captured.onConsumeResponse(
-            billingClientOKResult,
-            token
-        )
-
-        assertThat(capturedConsumeParams.isCaptured).isTrue
-        val capturedConsumeParams = capturedConsumeParams.captured
-        assertThat(capturedConsumeParams.purchaseToken).isEqualTo(token)
-    }
-
-    @Test
-    fun `if it shouldn't consume transactions, don't consume and save it in cache`() {
-        val sku = "consumable"
-        val token = "token_consumable"
-        val googlePurchaseWrapper = getMockedPurchaseWrapper(
-            sku,
-            token,
-            ProductType.INAPP,
-            "offering_a"
-        )
-
-        every {
-            mockDeviceCache.addSuccessfullyPostedToken(token)
-        } just Runs
-
-        wrapper.consumeAndSave(shouldTryToConsume = false, googlePurchaseWrapper, appInBackground = false)
-
-        verify(exactly = 0) {
-            mockClient.consumeAsync(any(), any())
-        }
-
-        verify(exactly = 1) {
-            mockDeviceCache.addSuccessfullyPostedToken(token)
-        }
-    }
-
-    @Test
-    fun `if it shouldn't consume restored transactions, don't consume and save it in cache`() {
-        val sku = "consumable"
-        val token = "token_consumable"
-        val historyRecordWrapper = getMockedPurchaseHistoryRecordWrapper(
-            sku,
-            token,
-            ProductType.INAPP
-        )
-
-        every {
-            mockDeviceCache.addSuccessfullyPostedToken(token)
-        } just Runs
-
-        wrapper.consumeAndSave(shouldTryToConsume = false, historyRecordWrapper, appInBackground = false)
-
-        verify(exactly = 0) {
-            mockClient.consumeAsync(any(), any())
-        }
-
-        verify(exactly = 1) {
-            mockDeviceCache.addSuccessfullyPostedToken(token)
-        }
     }
 
     @Test
@@ -1668,7 +1422,12 @@ class BillingWrapperTest {
             mockDeviceCache.addSuccessfullyPostedToken(token)
         } just Runs
 
-        wrapper.consumeAndSave(shouldTryToConsume = false, googlePurchaseWrapper, appInBackground = false)
+        wrapper.consumeAndSave(
+            shouldTryToConsume = false,
+            purchase = googlePurchaseWrapper,
+            appInBackground = false,
+            initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
+        )
 
         verify(exactly = 0) {
             mockClient.acknowledgePurchase(any(), any())
@@ -1696,7 +1455,8 @@ class BillingWrapperTest {
         wrapper.consumeAndSave(
             shouldTryToConsume = false,
             purchase = historyRecordWrapper,
-            appInBackground = false
+            appInBackground = false,
+            initiationSource = PostReceiptInitiationSource.RESTORE,
         )
 
         verify(exactly = 0) {
@@ -1724,48 +1484,18 @@ class BillingWrapperTest {
             mockDeviceCache.addSuccessfullyPostedToken(token)
         } just Runs
 
-        wrapper.consumeAndSave(shouldTryToConsume = true, googlePurchaseWrapper, appInBackground = false)
+        wrapper.consumeAndSave(
+            shouldTryToConsume = true,
+            purchase = googlePurchaseWrapper,
+            appInBackground = false,
+            initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
+        )
 
         verify(exactly = 0) {
             mockClient.acknowledgePurchase(any(), any())
         }
 
         verify(exactly = 1) {
-            mockDeviceCache.addSuccessfullyPostedToken(token)
-        }
-    }
-
-    @Test
-    fun `Do not consume nor acknowledge pending purchases`() {
-        val sku = "sub"
-        val token = "token_sub"
-        val googlePurchaseWrapper = getMockedPurchaseWrapper(
-            sku,
-            token,
-            ProductType.SUBS,
-            "offering_a",
-            purchaseState = Purchase.PurchaseState.PENDING
-        )
-
-        every {
-            mockDeviceCache.addSuccessfullyPostedToken(token)
-        } just Runs
-
-        wrapper.consumeAndSave(
-            shouldTryToConsume = true,
-            purchase = googlePurchaseWrapper,
-            appInBackground = false
-        )
-
-        verify(exactly = 0) {
-            mockClient.acknowledgePurchase(any(), any())
-        }
-
-        verify(exactly = 0) {
-            mockClient.consumeAsync(any(), any())
-        }
-
-        verify(exactly = 0) {
             mockDeviceCache.addSuccessfullyPostedToken(token)
         }
     }
@@ -2199,6 +1929,9 @@ class BillingWrapperTest {
     }
 
     private fun mockConsumeAsync(billingResult: BillingResult) {
+        val capturedConsumeResponseListener = slot<ConsumeResponseListener>()
+        val capturedConsumeParams = slot<ConsumeParams>()
+
         every {
             mockClient.consumeAsync(capture(capturedConsumeParams), capture(capturedConsumeResponseListener))
         } answers {

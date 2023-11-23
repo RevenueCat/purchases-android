@@ -16,7 +16,6 @@ import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingFlowParams
 import com.android.billingclient.api.BillingResult
-import com.android.billingclient.api.ConsumeParams
 import com.android.billingclient.api.InAppMessageParams
 import com.android.billingclient.api.InAppMessageResult
 import com.android.billingclient.api.Purchase
@@ -25,6 +24,7 @@ import com.android.billingclient.api.PurchaseHistoryResponseListener
 import com.android.billingclient.api.PurchasesResponseListener
 import com.android.billingclient.api.PurchasesUpdatedListener
 import com.android.billingclient.api.QueryPurchasesParams
+import com.revenuecat.purchases.PostReceiptInitiationSource
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCallback
@@ -45,6 +45,8 @@ import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.sha256
 import com.revenuecat.purchases.common.toHumanReadableDescription
 import com.revenuecat.purchases.common.verboseLog
+import com.revenuecat.purchases.google.usecase.ConsumePurchaseUseCase
+import com.revenuecat.purchases.google.usecase.ConsumePurchaseUseCaseParams
 import com.revenuecat.purchases.google.usecase.GetBillingConfigUseCase
 import com.revenuecat.purchases.google.usecase.GetBillingConfigUseCaseParams
 import com.revenuecat.purchases.google.usecase.QueryProductDetailsUseCase
@@ -353,6 +355,7 @@ internal class BillingWrapper(
     override fun consumeAndSave(
         shouldTryToConsume: Boolean,
         purchase: StoreTransaction,
+        initiationSource: PostReceiptInitiationSource,
         appInBackground: Boolean,
     ) {
         if (purchase.type == ProductType.UNKNOWN) {
@@ -368,17 +371,12 @@ internal class BillingWrapper(
         val originalGooglePurchase = purchase.originalGooglePurchase
         val alreadyAcknowledged = originalGooglePurchase?.isAcknowledged ?: false
         if (shouldTryToConsume && purchase.type == ProductType.INAPP) {
-            consumePurchase(purchase.purchaseToken) { billingResult, purchaseToken ->
-                if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
-                    deviceCache.addSuccessfullyPostedToken(purchaseToken)
-                } else {
-                    log(
-                        LogIntent.GOOGLE_ERROR,
-                        PurchaseStrings.CONSUMING_PURCHASE_ERROR
-                            .format(billingResult.toHumanReadableDescription()),
-                    )
-                }
-            }
+            consumePurchase(
+                purchase.purchaseToken,
+                initiationSource,
+                appInBackground,
+                onConsumed = deviceCache::addSuccessfullyPostedToken,
+            )
         } else if (shouldTryToConsume && !alreadyAcknowledged) {
             acknowledge(purchase.purchaseToken) { billingResult, purchaseToken ->
                 if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
@@ -398,19 +396,29 @@ internal class BillingWrapper(
 
     internal fun consumePurchase(
         token: String,
-        onConsumed: (billingResult: BillingResult, purchaseToken: String) -> Unit,
+        initiationSource: PostReceiptInitiationSource,
+        appInBackground: Boolean,
+        onConsumed: (purchaseToken: String) -> Unit,
     ) {
         log(LogIntent.PURCHASE, PurchaseStrings.CONSUMING_PURCHASE.format(token))
-        executeRequestOnUIThread { connectionError ->
-            if (connectionError == null) {
-                withConnectedClient {
-                    consumeAsync(
-                        ConsumeParams.newBuilder().setPurchaseToken(token).build(),
-                        onConsumed,
-                    )
-                }
-            }
-        }
+        ConsumePurchaseUseCase(
+            ConsumePurchaseUseCaseParams(
+                token,
+                initiationSource,
+                appInBackground,
+            ),
+            onReceive = onConsumed,
+            onError = { error ->
+                // TODO-retry: if ITEM_NOT_OWNED queryPurchasesAsync
+                log(
+                    LogIntent.GOOGLE_ERROR,
+                    PurchaseStrings.CONSUMING_PURCHASE_ERROR
+                        .format(error.underlyingErrorMessage),
+                )
+            },
+            ::withConnectedClient,
+            ::executeRequestOnUIThread,
+        ).run()
     }
 
     internal fun acknowledge(
