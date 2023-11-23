@@ -215,7 +215,11 @@ class BillingWrapperTest {
 
         val token = "token"
         var consumePurchaseCompleted = false
-        wrapper.consumePurchase(token, PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES) {
+        wrapper.consumePurchase(
+            token = token,
+            initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
+            appInBackground = false,
+        ) {
             consumePurchaseCompleted = true
         }
 
@@ -235,12 +239,20 @@ class BillingWrapperTest {
         val token = "token"
 
         var consumePurchaseResponse1Called = false
-        wrapper.consumePurchase(token, PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES) {
+        wrapper.consumePurchase(
+            token = token,
+            initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
+            appInBackground = false,
+        ) {
             consumePurchaseResponse1Called = true
         }
 
         var consumePurchaseResponse2Called = false
-        wrapper.consumePurchase(token, PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES) {
+        wrapper.consumePurchase(
+            token = token,
+            initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
+            appInBackground = false,
+        ) {
             consumePurchaseResponse2Called = true
         }
         assertThat(consumePurchaseResponse1Called).isFalse
@@ -259,7 +271,11 @@ class BillingWrapperTest {
         every { mockClient.isReady } returns false
 
         val token = "token"
-        wrapper.consumePurchase(token, PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES) {  }
+        wrapper.consumePurchase(
+            token = token,
+            initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
+            appInBackground = false,
+        ) {  }
 
         verify(exactly = 2) {
             mockClient.startConnection(billingClientStateListener!!)
@@ -953,7 +969,11 @@ class BillingWrapperTest {
             mockClient.endConnection()
         } just Runs
         wrapper.purchasesUpdatedListener = null
-        wrapper.consumePurchase("token", PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES) { }
+        wrapper.consumePurchase(
+            token = "token",
+            initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
+            appInBackground = false,
+        ) { }
 
         verify(exactly = 1) { // Just the original connection
             mockClient.startConnection(wrapper)

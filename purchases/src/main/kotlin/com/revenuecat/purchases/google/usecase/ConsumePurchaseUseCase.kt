@@ -8,8 +8,8 @@ import com.revenuecat.purchases.PurchasesErrorCallback
 internal class ConsumePurchaseUseCaseParams(
     val purchaseToken: String,
     val initiationSource: PostReceiptInitiationSource,
-    appInBackground: Boolean,
-) : UseCaseParams(appInBackground)
+    override val appInBackground: Boolean,
+) : UseCaseParams
 
 internal class ConsumePurchaseUseCase(
     private val useCaseParams: ConsumePurchaseUseCaseParams,

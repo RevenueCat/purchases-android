@@ -53,7 +53,11 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
     fun canConsumeAToken() {
         val token = "mockToken"
 
-        wrapper.consumePurchase(token, PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES) {  }
+        wrapper.consumePurchase(
+            token,
+            initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
+            appInBackground = false
+        ) {  }
 
         assertThat(capturedConsumeResponseListener.isCaptured).isTrue
         assertThat(capturedConsumeParams.captured.purchaseToken).isEqualTo(token)
@@ -74,7 +78,12 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
             mockDeviceCache.addSuccessfullyPostedToken(token)
         } just Runs
 
-        wrapper.consumeAndSave(true, googlePurchaseWrapper, PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES)
+        wrapper.consumeAndSave(
+            shouldTryToConsume = true,
+            purchase = googlePurchaseWrapper,
+            initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
+            appInBackground = false,
+        )
 
         assertThat(capturedConsumeResponseListener.isCaptured).isTrue
 
@@ -97,7 +106,12 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
             mockDeviceCache.addSuccessfullyPostedToken(token)
         } just Runs
 
-        wrapper.consumeAndSave(true, historyRecordWrapper, PostReceiptInitiationSource.RESTORE)
+        wrapper.consumeAndSave(
+            shouldTryToConsume = true,
+            purchase = historyRecordWrapper,
+            initiationSource = PostReceiptInitiationSource.RESTORE,
+            appInBackground = false,
+        )
 
         assertThat(capturedConsumeResponseListener.isCaptured).isTrue
 
@@ -119,7 +133,12 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
 
         mockConsumeAsync(BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE.buildResult())
 
-        wrapper.consumeAndSave(true, googlePurchaseWrapper, PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES)
+        wrapper.consumeAndSave(
+            shouldTryToConsume = true,
+            purchase = googlePurchaseWrapper,
+            initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
+            appInBackground = false
+        )
 
         assertThat(capturedConsumeResponseListener.isCaptured).isTrue
 
@@ -141,7 +160,12 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
 
         mockConsumeAsync(BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE.buildResult())
 
-        wrapper.consumeAndSave(true, historyRecordWrapper, PostReceiptInitiationSource.RESTORE)
+        wrapper.consumeAndSave(
+            shouldTryToConsume = true,
+            purchase = historyRecordWrapper,
+            initiationSource = PostReceiptInitiationSource.RESTORE,
+            appInBackground = false
+        )
 
         assertThat(capturedConsumeResponseListener.isCaptured).isTrue
 
@@ -165,7 +189,12 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
             mockDeviceCache.addSuccessfullyPostedToken(token)
         } just Runs
 
-        wrapper.consumeAndSave(true, googlePurchaseWrapper, PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES)
+        wrapper.consumeAndSave(
+            shouldTryToConsume = true,
+            purchase = googlePurchaseWrapper,
+            initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
+            appInBackground = false
+        )
 
         assertThat(capturedConsumeResponseListener.isCaptured).isTrue
         capturedConsumeResponseListener.captured.onConsumeResponse(
@@ -192,7 +221,12 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
             mockDeviceCache.addSuccessfullyPostedToken(token)
         } just Runs
 
-        wrapper.consumeAndSave(true, historyRecordWrapper, PostReceiptInitiationSource.RESTORE)
+        wrapper.consumeAndSave(
+            shouldTryToConsume = true,
+            purchase = historyRecordWrapper,
+            initiationSource = PostReceiptInitiationSource.RESTORE,
+            appInBackground = false
+        )
 
         assertThat(capturedConsumeResponseListener.isCaptured).isTrue
         capturedConsumeResponseListener.captured.onConsumeResponse(
@@ -223,7 +257,8 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         wrapper.consumeAndSave(
             shouldTryToConsume = false,
             purchase = googlePurchaseWrapper,
-            initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES
+            initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
+            appInBackground = false
         )
 
         verify(exactly = 0) {
@@ -249,7 +284,12 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
             mockDeviceCache.addSuccessfullyPostedToken(token)
         } just Runs
 
-        wrapper.consumeAndSave(shouldTryToConsume = false, historyRecordWrapper, PostReceiptInitiationSource.RESTORE)
+        wrapper.consumeAndSave(
+            shouldTryToConsume = false,
+            purchase = historyRecordWrapper,
+            initiationSource = PostReceiptInitiationSource.RESTORE,
+            appInBackground = false
+        )
 
         verify(exactly = 0) {
             mockClient.consumeAsync(any(), any())
@@ -278,8 +318,9 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
 
         wrapper.consumeAndSave(
             shouldTryToConsume = true,
-            googlePurchaseWrapper,
-            PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES
+            purchase = googlePurchaseWrapper,
+            initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
+            appInBackground = false,
         )
 
         verify(exactly = 0) {
@@ -312,6 +353,7 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
             ConsumePurchaseUseCaseParams(
                 "purchaseToken",
                 PostReceiptInitiationSource.PURCHASE,
+                appInBackground = false,
             ),
             { received ->
                 receivedToken = received
@@ -365,6 +407,7 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
             ConsumePurchaseUseCaseParams(
                 "purchaseToken",
                 PostReceiptInitiationSource.RESTORE,
+                appInBackground = false,
             ),
             { received ->
                 receivedToken = received
@@ -418,6 +461,7 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
             ConsumePurchaseUseCaseParams(
                 "purchaseToken",
                 PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
+                appInBackground = false,
             ),
             { received ->
                 receivedToken = received
@@ -471,6 +515,7 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
             ConsumePurchaseUseCaseParams(
                 "purchaseToken",
                 PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
+                appInBackground = false,
             ),
             { _ ->
                 Assertions.fail("shouldn't be success")
@@ -517,6 +562,7 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
             ConsumePurchaseUseCaseParams(
                 "purchaseToken",
                 PostReceiptInitiationSource.PURCHASE,
+                appInBackground = false,
             ),
             { _ ->
                 Assertions.fail("shouldn't be success")
@@ -562,6 +608,7 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
             ConsumePurchaseUseCaseParams(
                 "purchaseToken",
                 PostReceiptInitiationSource.RESTORE,
+                appInBackground = false,
             ),
             { _ ->
                 Assertions.fail("shouldn't be success")
@@ -607,6 +654,7 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
             ConsumePurchaseUseCaseParams(
                 "purchaseToken",
                 PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
+                appInBackground = false,
             ),
             { _ ->
                 Assertions.fail("shouldn't be success")
@@ -653,6 +701,7 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
             ConsumePurchaseUseCaseParams(
                 "purchaseToken",
                 PostReceiptInitiationSource.PURCHASE,
+                appInBackground = false,
             ),
             { _ ->
                 Assertions.fail("shouldn't be success")
@@ -698,6 +747,7 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
             ConsumePurchaseUseCaseParams(
                 "purchaseToken",
                 PostReceiptInitiationSource.RESTORE,
+                appInBackground = false,
             ),
             { _ ->
                 Assertions.fail("shouldn't be success")
@@ -729,7 +779,54 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
     }
 
     @Test
-    fun `If service returns SERVICE_UNAVAILABLE, re-execute a max of 3 times for restores`() {
+    fun `If service returns SERVICE_UNAVAILABLE, re-execute with backoff for restores`() {
+        val slot = slot<ConsumeResponseListener>()
+        val consumeStubbing = every {
+            mockClient.consumeAsync(
+                any(),
+                capture(slot),
+            )
+        }
+        var receivedError: PurchasesError? = null
+        val capturedDelays = mutableListOf<Long>()
+        val useCase = ConsumePurchaseUseCase(
+            ConsumePurchaseUseCaseParams(
+                "purchaseToken",
+                PostReceiptInitiationSource.RESTORE,
+                appInBackground = true,
+            ),
+            { _ ->
+                Assertions.fail("shouldn't be success")
+            },
+            { error ->
+                receivedError = error
+            },
+            withConnectedClient = {
+                it.invoke(mockClient)
+            },
+            executeRequestOnUIThread = { delay, request ->
+                capturedDelays.add(delay)
+                consumeStubbing answers {
+                    slot.captured.onConsumeResponse(
+                        BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE.buildResult(),
+                        "purchaseToken"
+                    )
+                }
+
+                request(null)
+            },
+        )
+
+        useCase.run()
+
+        assertThat(capturedDelays.size).isEqualTo(12)
+        assertThat(capturedDelays.last()).isCloseTo(RETRY_TIMER_MAX_TIME_MILLISECONDS, Offset.offset(1000L))
+        assertThat(receivedError).isNotNull
+        assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
+    }
+
+    @Test
+    fun `If service returns SERVICE_UNAVAILABLE, don't retry and error if user in session for restores`() {
         val slot = slot<ConsumeResponseListener>()
         val consumeStubbing = every {
             mockClient.consumeAsync(
@@ -743,6 +840,7 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
             ConsumePurchaseUseCaseParams(
                 "purchaseToken",
                 PostReceiptInitiationSource.RESTORE,
+                appInBackground = false,
             ),
             { _ ->
                 Assertions.fail("shouldn't be success")
@@ -768,13 +866,60 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
 
         useCase.run()
 
-        assertThat(timesRetried).isEqualTo(4) // First attempt plus 3 retries
+        assertThat(timesRetried).isEqualTo(1)
         assertThat(receivedError).isNotNull
         assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
     }
 
     @Test
-    fun `If service returns SERVICE_UNAVAILABLE, re-execute a max of 3 times for purchases`() {
+    fun `If service returns SERVICE_UNAVAILABLE, re-execute with backoff for purchases`() {
+        val slot = slot<ConsumeResponseListener>()
+        val consumeStubbing = every {
+            mockClient.consumeAsync(
+                any(),
+                capture(slot),
+            )
+        }
+        var receivedError: PurchasesError? = null
+        val capturedDelays = mutableListOf<Long>()
+        val useCase = ConsumePurchaseUseCase(
+            ConsumePurchaseUseCaseParams(
+                "purchaseToken",
+                PostReceiptInitiationSource.PURCHASE,
+                appInBackground = true,
+            ),
+            { _ ->
+                Assertions.fail("shouldn't be success")
+            },
+            { error ->
+                receivedError = error
+            },
+            withConnectedClient = {
+                it.invoke(mockClient)
+            },
+            executeRequestOnUIThread = { delay, request ->
+                capturedDelays.add(delay)
+                consumeStubbing answers {
+                    slot.captured.onConsumeResponse(
+                        BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE.buildResult(),
+                        "purchaseToken"
+                    )
+                }
+
+                request(null)
+            },
+        )
+
+        useCase.run()
+
+        assertThat(capturedDelays.size).isEqualTo(12)
+        assertThat(capturedDelays.last()).isCloseTo(RETRY_TIMER_MAX_TIME_MILLISECONDS, Offset.offset(1000L))
+        assertThat(receivedError).isNotNull
+        assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
+    }
+
+    @Test
+    fun `If service returns SERVICE_UNAVAILABLE, don't retry and error if user in session for purchases`() {
         val slot = slot<ConsumeResponseListener>()
         val consumeStubbing = every {
             mockClient.consumeAsync(
@@ -788,6 +933,7 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
             ConsumePurchaseUseCaseParams(
                 "purchaseToken",
                 PostReceiptInitiationSource.PURCHASE,
+                appInBackground = false,
             ),
             { _ ->
                 Assertions.fail("shouldn't be success")
@@ -813,13 +959,60 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
 
         useCase.run()
 
-        assertThat(timesRetried).isEqualTo(4) // First attempt plus 3 retries
+        assertThat(timesRetried).isEqualTo(1)
         assertThat(receivedError).isNotNull
         assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
     }
 
     @Test
-    fun `If service returns SERVICE_UNAVAILABLE, re-execute a max of 3 times for unsynced active purchases`() {
+    fun `If service returns SERVICE_UNAVAILABLE, re-execute with backoff for unsynced active purchases`() {
+        val slot = slot<ConsumeResponseListener>()
+        val consumeStubbing = every {
+            mockClient.consumeAsync(
+                any(),
+                capture(slot),
+            )
+        }
+        var receivedError: PurchasesError? = null
+        val capturedDelays = mutableListOf<Long>()
+        val useCase = ConsumePurchaseUseCase(
+            ConsumePurchaseUseCaseParams(
+                "purchaseToken",
+                PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
+                appInBackground = true,
+            ),
+            { _ ->
+                Assertions.fail("shouldn't be success")
+            },
+            { error ->
+                receivedError = error
+            },
+            withConnectedClient = {
+                it.invoke(mockClient)
+            },
+            executeRequestOnUIThread = { delay, request ->
+                capturedDelays.add(delay)
+                consumeStubbing answers {
+                    slot.captured.onConsumeResponse(
+                        BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE.buildResult(),
+                        "purchaseToken"
+                    )
+                }
+
+                request(null)
+            },
+        )
+
+        useCase.run()
+
+        assertThat(capturedDelays.size).isEqualTo(12)
+        assertThat(capturedDelays.last()).isCloseTo(RETRY_TIMER_MAX_TIME_MILLISECONDS, Offset.offset(1000L))
+        assertThat(receivedError).isNotNull
+        assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
+    }
+
+    @Test
+    fun `If service returns SERVICE_UNAVAILABLE, don't retry and error if user in session for unsynced active purchases`() {
         val slot = slot<ConsumeResponseListener>()
         val consumeStubbing = every {
             mockClient.consumeAsync(
@@ -833,6 +1026,7 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
             ConsumePurchaseUseCaseParams(
                 "purchaseToken",
                 PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
+                appInBackground = false,
             ),
             { _ ->
                 Assertions.fail("shouldn't be success")
@@ -858,7 +1052,7 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
 
         useCase.run()
 
-        assertThat(timesRetried).isEqualTo(4) // First attempt plus 3 retries
+        assertThat(timesRetried).isEqualTo(1)
         assertThat(receivedError).isNotNull
         assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
     }
@@ -878,6 +1072,7 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
             ConsumePurchaseUseCaseParams(
                 "purchaseToken",
                 PostReceiptInitiationSource.RESTORE,
+                appInBackground = false,
             ),
             { _ ->
                 Assertions.fail("shouldn't be success")
@@ -923,6 +1118,7 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
             ConsumePurchaseUseCaseParams(
                 "purchaseToken",
                 PostReceiptInitiationSource.PURCHASE,
+                appInBackground = false,
             ),
             { _ ->
                 Assertions.fail("shouldn't be success")
@@ -968,6 +1164,7 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
             ConsumePurchaseUseCaseParams(
                 "purchaseToken",
                 PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
+                appInBackground = false,
             ),
             { _ ->
                 Assertions.fail("shouldn't be success")
