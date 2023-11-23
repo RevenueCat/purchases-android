@@ -59,7 +59,7 @@ internal class QueryPurchaseHistoryUseCase(
                     }
                 }
             } ?: run {
-                errorLog(PurchaseStrings.INVALID_PRODUCT_TYPE.format("getPurchaseType"))
+                errorLog(PurchaseStrings.INVALID_PRODUCT_TYPE.format("queryPurchaseHistory"))
                 val devErrorResponseCode = BillingResult.newBuilder()
                     .setResponseCode(BillingClient.BillingResponseCode.DEVELOPER_ERROR)
                     .build()

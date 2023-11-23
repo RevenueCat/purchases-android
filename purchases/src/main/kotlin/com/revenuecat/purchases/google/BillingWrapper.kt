@@ -53,6 +53,8 @@ import com.revenuecat.purchases.google.usecase.QueryProductDetailsUseCase
 import com.revenuecat.purchases.google.usecase.QueryProductDetailsUseCaseParams
 import com.revenuecat.purchases.google.usecase.QueryPurchaseHistoryUseCase
 import com.revenuecat.purchases.google.usecase.QueryPurchaseHistoryUseCaseParams
+import com.revenuecat.purchases.google.usecase.QueryPurchasesByTypeUseCase
+import com.revenuecat.purchases.google.usecase.QueryPurchasesByTypeUseCaseParams
 import com.revenuecat.purchases.google.usecase.QueryPurchasesUseCase
 import com.revenuecat.purchases.google.usecase.QueryPurchasesUseCaseParams
 import com.revenuecat.purchases.models.GooglePurchasingData
@@ -447,7 +449,7 @@ internal class BillingWrapper(
         onError: (PurchasesError) -> Unit,
     ) {
         log(LogIntent.DEBUG, RestoreStrings.QUERYING_PURCHASE)
-        val useCase = QueryPurchasesUseCase(
+        QueryPurchasesUseCase(
             QueryPurchasesUseCaseParams(
                 dateProvider,
                 diagnosticsTrackerIfEnabled,
@@ -457,8 +459,7 @@ internal class BillingWrapper(
             onError,
             ::withConnectedClient,
             ::executeRequestOnUIThread,
-        )
-        useCase.run()
+        ).run()
     }
 
     override fun findPurchaseInPurchaseHistory(
@@ -499,51 +500,45 @@ internal class BillingWrapper(
     }
 
     @VisibleForTesting(otherwise = PRIVATE)
-    @Suppress("ReturnCount")
     internal fun getPurchaseType(purchaseToken: String, listener: (ProductType) -> Unit) {
-        billingClient?.let { client ->
-
-            val querySubsPurchasesParams = BillingClient.ProductType.SUBS.buildQueryPurchasesParams()
-            if (querySubsPurchasesParams == null) {
-                errorLog(PurchaseStrings.INVALID_PRODUCT_TYPE.format("getPurchaseType"))
-                listener(ProductType.UNKNOWN)
-                return
-            }
-
-            client.queryPurchasesAsyncWithTrackingEnsuringOneResponse(
-                BillingClient.ProductType.SUBS,
-                querySubsPurchasesParams,
-            ) querySubPurchasesAsync@{ querySubsResult, subsPurchasesList ->
-
-                val subsResponseOK = querySubsResult.responseCode == BillingClient.BillingResponseCode.OK
-                val subFound = subsPurchasesList.any { it.purchaseToken == purchaseToken }
-                if (subsResponseOK && subFound) {
-                    listener(ProductType.SUBS)
-                    return@querySubPurchasesAsync
-                }
-
-                val queryInAppsPurchasesParams = BillingClient.ProductType.INAPP.buildQueryPurchasesParams()
-                if (queryInAppsPurchasesParams == null) {
-                    errorLog(PurchaseStrings.INVALID_PRODUCT_TYPE.format("getPurchaseType"))
-                    listener(ProductType.UNKNOWN)
-                    return@querySubPurchasesAsync
-                }
-                client.queryPurchasesAsyncWithTrackingEnsuringOneResponse(
-                    BillingClient.ProductType.INAPP,
-                    queryInAppsPurchasesParams,
-                ) queryInAppPurchasesAsync@{ queryInAppsResult, inAppPurchasesList ->
-
-                    val inAppsResponseIsOK = queryInAppsResult.responseCode == BillingClient.BillingResponseCode.OK
-                    val inAppFound = inAppPurchasesList.any { it.purchaseToken == purchaseToken }
-                    if (inAppsResponseIsOK && inAppFound) {
+        queryPurchaseType(BillingClient.ProductType.SUBS, purchaseToken, listener) { subFound ->
+            if (subFound) {
+                listener(ProductType.SUBS)
+            } else {
+                queryPurchaseType(BillingClient.ProductType.INAPP, purchaseToken, listener) { inAppFound ->
+                    if (inAppFound) {
                         listener(ProductType.INAPP)
-                        return@queryInAppPurchasesAsync
+                    } else {
+                        listener(ProductType.UNKNOWN)
                     }
-                    listener(ProductType.UNKNOWN)
-                    return@queryInAppPurchasesAsync
                 }
             }
-        } ?: listener(ProductType.UNKNOWN)
+        }
+    }
+
+    private fun queryPurchaseType(
+        productType: String,
+        purchaseToken: String,
+        listener: (ProductType) -> Unit,
+        resultHandler: (Boolean) -> Unit,
+    ) {
+        QueryPurchasesByTypeUseCase(
+            QueryPurchasesByTypeUseCaseParams(
+                dateProvider,
+                diagnosticsTrackerIfEnabled,
+                appInBackground = false,
+                productType = productType,
+            ),
+            onSuccess = { purchases ->
+                resultHandler(purchases.values.any { it.purchaseToken == purchaseToken })
+            },
+            onError = { error ->
+                errorLog(error)
+                listener(ProductType.UNKNOWN)
+            },
+            withConnectedClient = ::withConnectedClient,
+            executeRequestOnUIThread = ::executeRequestOnUIThread,
+        ).run()
     }
 
     override fun onPurchasesUpdated(

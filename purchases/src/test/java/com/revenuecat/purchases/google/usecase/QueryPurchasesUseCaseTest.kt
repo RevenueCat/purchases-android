@@ -439,7 +439,7 @@ internal class QueryPurchasesUseCaseTest : BaseBillingUseCaseTest() {
             },
         ).run()
 
-        assertThat(timesExecutedInMainThread).isEqualTo(2)
+        assertThat(timesExecutedInMainThread).isEqualTo(3)
         assertThat(receivedList).isNotNull
         assertThat(receivedList!!.size).isOne
     }
@@ -484,7 +484,7 @@ internal class QueryPurchasesUseCaseTest : BaseBillingUseCaseTest() {
             },
         ).run()
 
-        assertThat(timesRetried).isEqualTo(4) // First attempt plus 3 retries
+        assertThat(timesRetried).isEqualTo(5) // First attempt plus 3 retries + another call for other type
         assertThat(receivedError).isNotNull
         assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.NetworkError)
     }
@@ -528,7 +528,7 @@ internal class QueryPurchasesUseCaseTest : BaseBillingUseCaseTest() {
             },
         ).run()
 
-        assertThat(timesRetried).isEqualTo(1)
+        assertThat(timesRetried).isEqualTo(2)
         assertThat(receivedError).isNotNull
         assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
     }
@@ -572,7 +572,7 @@ internal class QueryPurchasesUseCaseTest : BaseBillingUseCaseTest() {
             },
         ).run()
 
-        assertThat(capturedDelays.size).isEqualTo(12)
+        assertThat(capturedDelays.size).isEqualTo(13)
         assertThat(capturedDelays.last()).isCloseTo(RETRY_TIMER_MAX_TIME_MILLISECONDS, Offset.offset(1000L))
         assertThat(receivedError).isNotNull
         assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
@@ -618,7 +618,7 @@ internal class QueryPurchasesUseCaseTest : BaseBillingUseCaseTest() {
             },
         ).run()
 
-        assertThat(timesRetried).isEqualTo(4) // First attempt plus 3 retries
+        assertThat(timesRetried).isEqualTo(5) // First attempt plus 3 retries + another call for other type
         assertThat(receivedError).isNotNull
         assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
     }
@@ -662,7 +662,7 @@ internal class QueryPurchasesUseCaseTest : BaseBillingUseCaseTest() {
             },
         ).run()
 
-        assertThat(timesRetried).isEqualTo(1)
+        assertThat(timesRetried).isEqualTo(2)
         assertThat(receivedError).isNotNull
         assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.ProductNotAvailableForPurchaseError)
     }
