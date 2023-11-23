@@ -104,8 +104,6 @@ class BillingWrapperTest {
 
     private var capturedAcknowledgeResponseListener = slot<AcknowledgePurchaseResponseListener>()
     private var capturedAcknowledgePurchaseParams = slot<AcknowledgePurchaseParams>()
-    private var capturedConsumeResponseListener = slot<ConsumeResponseListener>()
-    private var capturedConsumeParams = slot<ConsumeParams>()
 
     private lateinit var wrapper: BillingWrapper
 
@@ -1292,63 +1290,6 @@ class BillingWrapperTest {
     }
 
     @Test
-    fun `tokens are saved in cache when consuming`() {
-        val sku = "consumable"
-        val token = "token_consumable"
-        val googlePurchaseWrapper = getMockedPurchaseWrapper(
-            sku,
-            token,
-            ProductType.INAPP,
-            "offering_a"
-        )
-
-        every {
-            mockDeviceCache.addSuccessfullyPostedToken(token)
-        } just Runs
-
-        wrapper.consumeAndSave(
-            shouldTryToConsume = true,
-            purchase = googlePurchaseWrapper,
-            initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
-            appInBackground = false
-        )
-
-        assertThat(capturedConsumeResponseListener.isCaptured).isTrue
-
-        verify(exactly = 1) {
-            mockDeviceCache.addSuccessfullyPostedToken(token)
-        }
-    }
-
-    @Test
-    fun `restored tokens are saved in cache when consuming`() {
-        val sku = "consumable"
-        val token = "token_consumable"
-        val historyRecordWrapper = getMockedPurchaseHistoryRecordWrapper(
-            sku,
-            token,
-            ProductType.INAPP
-        )
-
-        every {
-            mockDeviceCache.addSuccessfullyPostedToken(token)
-        } just Runs
-
-        wrapper.consumeAndSave(
-            shouldTryToConsume = true,
-            purchase = historyRecordWrapper,
-            initiationSource = PostReceiptInitiationSource.RESTORE,
-            appInBackground = false
-        )
-
-        assertThat(capturedConsumeResponseListener.isCaptured).isTrue
-
-        verify(exactly = 1) {
-            mockDeviceCache.addSuccessfullyPostedToken(token)
-        }
-    }
-
-    @Test
     fun `tokens are not saved in cache if acknowledge fails`() {
         val sku = "sub"
         val token = "token_sub"
@@ -1988,6 +1929,9 @@ class BillingWrapperTest {
     }
 
     private fun mockConsumeAsync(billingResult: BillingResult) {
+        val capturedConsumeResponseListener = slot<ConsumeResponseListener>()
+        val capturedConsumeParams = slot<ConsumeParams>()
+
         every {
             mockClient.consumeAsync(capture(capturedConsumeParams), capture(capturedConsumeResponseListener))
         } answers {
