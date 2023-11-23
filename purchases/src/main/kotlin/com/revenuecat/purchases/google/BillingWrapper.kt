@@ -21,7 +21,6 @@ import com.android.billingclient.api.InAppMessageParams
 import com.android.billingclient.api.InAppMessageResult
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchaseHistoryRecord
-import com.android.billingclient.api.PurchaseHistoryResponseListener
 import com.android.billingclient.api.PurchasesResponseListener
 import com.android.billingclient.api.PurchasesUpdatedListener
 import com.android.billingclient.api.QueryPurchasesParams
@@ -306,7 +305,7 @@ internal class BillingWrapper(
         onReceivePurchaseHistoryError: (PurchasesError) -> Unit,
     ) {
         log(LogIntent.DEBUG, RestoreStrings.QUERYING_PURCHASE_HISTORY.format(productType))
-        val useCase = QueryPurchaseHistoryUseCase(
+        QueryPurchaseHistoryUseCase(
             QueryPurchaseHistoryUseCaseParams(
                 dateProvider,
                 diagnosticsTrackerIfEnabled,
@@ -317,8 +316,7 @@ internal class BillingWrapper(
             onReceivePurchaseHistoryError,
             ::withConnectedClient,
             ::executeRequestOnUIThread,
-        )
-        useCase.run()
+        ).run()
     }
 
     override fun queryAllPurchases(
@@ -461,33 +459,33 @@ internal class BillingWrapper(
         onCompletion: (StoreTransaction) -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {
-        withConnectedClient {
-            log(LogIntent.DEBUG, RestoreStrings.QUERYING_PURCHASE_WITH_TYPE.format(productId, productType.name))
-            productType.toGoogleProductType()?.let { googleProductType ->
-                queryPurchaseHistoryAsyncEnsuringOneResponse(googleProductType) { result, purchasesList ->
-                    if (result.isSuccessful()) {
-                        val purchaseHistoryRecordWrapper =
-                            purchasesList?.firstOrNull { it.products.contains(productId) }
-                                ?.toStoreTransaction(productType)
-
-                        if (purchaseHistoryRecordWrapper != null) {
-                            onCompletion(purchaseHistoryRecordWrapper)
-                        } else {
-                            val message = PurchaseStrings.NO_EXISTING_PURCHASE.format(productId)
-                            val error = PurchasesError(PurchasesErrorCode.PurchaseInvalidError, message)
-                            onError(error)
-                        }
+        log(LogIntent.DEBUG, RestoreStrings.QUERYING_PURCHASE_WITH_TYPE.format(productId, productType.name))
+        productType.toGoogleProductType()?.let { googleProductType ->
+            QueryPurchaseHistoryUseCase(
+                QueryPurchaseHistoryUseCaseParams(
+                    dateProvider,
+                    diagnosticsTrackerIfEnabled,
+                    googleProductType,
+                    appInBackground,
+                ),
+                { purchasesList ->
+                    val purchaseHistoryRecordWrapper =
+                        purchasesList.firstOrNull { it.products.contains(productId) }?.toStoreTransaction(productType)
+                    if (purchaseHistoryRecordWrapper != null) {
+                        onCompletion(purchaseHistoryRecordWrapper)
                     } else {
-                        val underlyingErrorMessage = PurchaseStrings.ERROR_FINDING_PURCHASE.format(productId)
-                        val error =
-                            result.responseCode.billingResponseToPurchasesError(underlyingErrorMessage)
+                        val message = PurchaseStrings.NO_EXISTING_PURCHASE.format(productId)
+                        val error = PurchasesError(PurchasesErrorCode.PurchaseInvalidError, message)
                         onError(error)
                     }
-                }
-            } ?: onError(
-                PurchasesError(PurchasesErrorCode.PurchaseInvalidError, PurchaseStrings.NOT_RECOGNIZED_PRODUCT_TYPE),
-            )
-        }
+                },
+                onError,
+                ::withConnectedClient,
+                ::executeRequestOnUIThread,
+            ).run()
+        } ?: onError(
+            PurchasesError(PurchasesErrorCode.PurchaseInvalidError, PurchaseStrings.NOT_RECOGNIZED_PRODUCT_TYPE),
+        )
     }
 
     @VisibleForTesting(otherwise = PRIVATE)
@@ -796,33 +794,6 @@ internal class BillingWrapper(
         }
     }
 
-    private fun BillingClient.queryPurchaseHistoryAsyncEnsuringOneResponse(
-        @BillingClient.ProductType productType: String,
-        listener: PurchaseHistoryResponseListener,
-    ) {
-        val hasResponded = AtomicBoolean(false)
-        val requestStartTime = dateProvider.now
-
-        productType.buildQueryPurchaseHistoryParams()?.let { queryPurchaseHistoryParams ->
-            queryPurchaseHistoryAsync(queryPurchaseHistoryParams) { billingResult, purchaseHistory ->
-                if (hasResponded.getAndSet(true)) {
-                    log(
-                        LogIntent.GOOGLE_ERROR,
-                        RestoreStrings.EXTRA_QUERY_PURCHASE_HISTORY_RESPONSE.format(billingResult.responseCode),
-                    )
-                    return@queryPurchaseHistoryAsync
-                }
-                trackGoogleQueryPurchaseHistoryRequestIfNeeded(productType, billingResult, requestStartTime)
-                listener.onPurchaseHistoryResponse(billingResult, purchaseHistory)
-            }
-        } ?: run {
-            errorLog(PurchaseStrings.INVALID_PRODUCT_TYPE.format("getPurchaseType"))
-            val devErrorResponseCode =
-                BillingResult.newBuilder().setResponseCode(BillingClient.BillingResponseCode.DEVELOPER_ERROR).build()
-            listener.onPurchaseHistoryResponse(devErrorResponseCode, null)
-        }
-    }
-
     private fun BillingClient.queryPurchasesAsyncWithTrackingEnsuringOneResponse(
         @BillingClient.ProductType productType: String,
         queryParams: QueryPurchasesParams,
@@ -849,19 +820,6 @@ internal class BillingWrapper(
         requestStartTime: Date,
     ) {
         diagnosticsTrackerIfEnabled?.trackGoogleQueryPurchasesRequest(
-            productType,
-            billingResult.responseCode,
-            billingResult.debugMessage,
-            responseTime = Duration.between(requestStartTime, dateProvider.now),
-        )
-    }
-
-    private fun trackGoogleQueryPurchaseHistoryRequestIfNeeded(
-        @BillingClient.ProductType productType: String,
-        billingResult: BillingResult,
-        requestStartTime: Date,
-    ) {
-        diagnosticsTrackerIfEnabled?.trackGoogleQueryPurchaseHistoryRequest(
             productType,
             billingResult.responseCode,
             billingResult.debugMessage,
