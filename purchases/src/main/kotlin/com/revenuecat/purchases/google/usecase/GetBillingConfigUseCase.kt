@@ -18,7 +18,7 @@ internal data class GetBillingConfigUseCaseParams(
 ) : UseCaseParams
 
 internal class GetBillingConfigUseCase(
-    val useCaseParams: GetBillingConfigUseCaseParams,
+    useCaseParams: GetBillingConfigUseCaseParams,
     val deviceCache: DeviceCache,
     val onReceive: (BillingConfig) -> Unit,
     val onError: PurchasesErrorCallback,
