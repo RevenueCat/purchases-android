@@ -56,7 +56,6 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         } just Runs
     }
 
-
     @Test
     fun `Acknowledge works`() {
         val token = "token"
@@ -288,17 +287,17 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
 
     @Test
     fun `If service is disconnected, re-executeRequestOnUIThread for purchases`() {
-        val slot = slot<ConsumeResponseListener>()
-        val consumeStubbing = every {
-            mockClient.consumeAsync(
+        val slot = slot<AcknowledgePurchaseResponseListener>()
+        val acknowledgeStubbing = every {
+            mockClient.acknowledgePurchase(
                 any(),
                 capture(slot),
             )
         }
         var receivedToken: String? = null
         var timesExecutedInMainThread = 0
-        val useCase = ConsumePurchaseUseCase(
-            ConsumePurchaseUseCaseParams(
+        val useCase = AcknowledgePurchaseUseCase(
+            AcknowledgePurchaseUseCaseParams(
                 "purchaseToken",
                 PostReceiptInitiationSource.PURCHASE,
                 appInBackground = false,
@@ -315,16 +314,14 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
             executeRequestOnUIThread = { _, request ->
                 timesExecutedInMainThread++
 
-                consumeStubbing answers {
+                acknowledgeStubbing answers {
                     if (timesExecutedInMainThread == 1) {
-                        slot.captured.onConsumeResponse(
+                        slot.captured.onAcknowledgePurchaseResponse(
                             billingClientDisconnectedResult,
-                            "purchaseToken"
                         )
                     } else {
-                        slot.captured.onConsumeResponse(
+                        slot.captured.onAcknowledgePurchaseResponse(
                             billingClientOKResult,
-                            "purchaseToken"
                         )
                     }
                 }
@@ -342,17 +339,17 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
 
     @Test
     fun `If service is disconnected, re-executeRequestOnUIThread for restores`() {
-        val slot = slot<ConsumeResponseListener>()
-        val consumeStubbing = every {
-            mockClient.consumeAsync(
+        val slot = slot<AcknowledgePurchaseResponseListener>()
+        val acknowledgeStubbing = every {
+            mockClient.acknowledgePurchase(
                 any(),
                 capture(slot),
             )
         }
         var receivedToken: String? = null
         var timesExecutedInMainThread = 0
-        val useCase = ConsumePurchaseUseCase(
-            ConsumePurchaseUseCaseParams(
+        val useCase = AcknowledgePurchaseUseCase(
+            AcknowledgePurchaseUseCaseParams(
                 "purchaseToken",
                 PostReceiptInitiationSource.RESTORE,
                 appInBackground = false,
@@ -369,16 +366,14 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
             executeRequestOnUIThread = { _, request ->
                 timesExecutedInMainThread++
 
-                consumeStubbing answers {
+                acknowledgeStubbing answers {
                     if (timesExecutedInMainThread == 1) {
-                        slot.captured.onConsumeResponse(
+                        slot.captured.onAcknowledgePurchaseResponse(
                             billingClientDisconnectedResult,
-                            "purchaseToken"
                         )
                     } else {
-                        slot.captured.onConsumeResponse(
+                        slot.captured.onAcknowledgePurchaseResponse(
                             billingClientOKResult,
-                            "purchaseToken"
                         )
                     }
                 }
@@ -396,17 +391,17 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
 
     @Test
     fun `If service is disconnected, re-executeRequestOnUIThread for unsynced active purchases`() {
-        val slot = slot<ConsumeResponseListener>()
-        val consumeStubbing = every {
-            mockClient.consumeAsync(
+        val slot = slot<AcknowledgePurchaseResponseListener>()
+        val acknowledgeStubbing = every {
+            mockClient.acknowledgePurchase(
                 any(),
                 capture(slot),
             )
         }
         var receivedToken: String? = null
         var timesExecutedInMainThread = 0
-        val useCase = ConsumePurchaseUseCase(
-            ConsumePurchaseUseCaseParams(
+        val useCase = AcknowledgePurchaseUseCase(
+            AcknowledgePurchaseUseCaseParams(
                 "purchaseToken",
                 PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
                 appInBackground = false,
@@ -423,16 +418,14 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
             executeRequestOnUIThread = { _, request ->
                 timesExecutedInMainThread++
 
-                consumeStubbing answers {
+                acknowledgeStubbing answers {
                     if (timesExecutedInMainThread == 1) {
-                        slot.captured.onConsumeResponse(
+                        slot.captured.onAcknowledgePurchaseResponse(
                             billingClientDisconnectedResult,
-                            "purchaseToken"
                         )
                     } else {
-                        slot.captured.onConsumeResponse(
+                        slot.captured.onAcknowledgePurchaseResponse(
                             billingClientOKResult,
-                            "purchaseToken"
                         )
                     }
                 }
@@ -450,17 +443,17 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
 
     @Test
     fun `If service returns NETWORK_ERROR, re-execute with backoff if source is unsynced active purchases`() {
-        val slot = slot<ConsumeResponseListener>()
-        val consumeStubbing = every {
-            mockClient.consumeAsync(
+        val slot = slot<AcknowledgePurchaseResponseListener>()
+        val acknowledgeStubbing = every {
+            mockClient.acknowledgePurchase(
                 any(),
                 capture(slot),
             )
         }
         var receivedError: PurchasesError? = null
         val capturedDelays = mutableListOf<Long>()
-        val useCase = ConsumePurchaseUseCase(
-            ConsumePurchaseUseCaseParams(
+        val useCase = AcknowledgePurchaseUseCase(
+            AcknowledgePurchaseUseCaseParams(
                 "purchaseToken",
                 PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
                 appInBackground = false,
@@ -476,10 +469,9 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
             },
             executeRequestOnUIThread = { delay, request ->
                 capturedDelays.add(delay)
-                consumeStubbing answers {
-                    slot.captured.onConsumeResponse(
+                acknowledgeStubbing answers {
+                    slot.captured.onAcknowledgePurchaseResponse(
                         BillingClient.BillingResponseCode.NETWORK_ERROR.buildResult(),
-                        "purchaseToken"
                     )
                 }
 
@@ -497,17 +489,17 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
 
     @Test
     fun `If service returns NETWORK_ERROR, re-execute a max of 3 times if source is a purchase`() {
-        val slot = slot<ConsumeResponseListener>()
-        val consumeStubbing = every {
-            mockClient.consumeAsync(
+        val slot = slot<AcknowledgePurchaseResponseListener>()
+        val acknowledgeStubbing = every {
+            mockClient.acknowledgePurchase(
                 any(),
                 capture(slot),
             )
         }
         var receivedError: PurchasesError? = null
         var timesRetried = 0
-        val useCase = ConsumePurchaseUseCase(
-            ConsumePurchaseUseCaseParams(
+        val useCase = AcknowledgePurchaseUseCase(
+            AcknowledgePurchaseUseCaseParams(
                 "purchaseToken",
                 PostReceiptInitiationSource.PURCHASE,
                 appInBackground = false,
@@ -523,10 +515,9 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
                 it.invoke(mockClient)
             },
             executeRequestOnUIThread = { _, request ->
-                consumeStubbing answers {
-                    slot.captured.onConsumeResponse(
+                acknowledgeStubbing answers {
+                    slot.captured.onAcknowledgePurchaseResponse(
                         BillingClient.BillingResponseCode.NETWORK_ERROR.buildResult(),
-                        "purchaseToken"
                     )
                 }
 
@@ -543,17 +534,17 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
 
     @Test
     fun `If service returns NETWORK_ERROR, re-execute a max of 3 times if source is a restore`() {
-        val slot = slot<ConsumeResponseListener>()
-        val consumeStubbing = every {
-            mockClient.consumeAsync(
+        val slot = slot<AcknowledgePurchaseResponseListener>()
+        val acknowledgeStubbing = every {
+            mockClient.acknowledgePurchase(
                 any(),
                 capture(slot),
             )
         }
         var receivedError: PurchasesError? = null
         var timesRetried = 0
-        val useCase = ConsumePurchaseUseCase(
-            ConsumePurchaseUseCaseParams(
+        val useCase = AcknowledgePurchaseUseCase(
+            AcknowledgePurchaseUseCaseParams(
                 "purchaseToken",
                 PostReceiptInitiationSource.RESTORE,
                 appInBackground = false,
@@ -569,10 +560,9 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
                 it.invoke(mockClient)
             },
             executeRequestOnUIThread = { _, request ->
-                consumeStubbing answers {
-                    slot.captured.onConsumeResponse(
+                acknowledgeStubbing answers {
+                    slot.captured.onAcknowledgePurchaseResponse(
                         BillingClient.BillingResponseCode.NETWORK_ERROR.buildResult(),
-                        "purchaseToken"
                     )
                 }
 
@@ -589,17 +579,17 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
 
     @Test
     fun `If service returns ERROR, re-execute with backoff if source is unsynced active purchases`() {
-        val slot = slot<ConsumeResponseListener>()
-        val consumeStubbing = every {
-            mockClient.consumeAsync(
+        val slot = slot<AcknowledgePurchaseResponseListener>()
+        val acknowledgeStubbing = every {
+            mockClient.acknowledgePurchase(
                 any(),
                 capture(slot),
             )
         }
         var receivedError: PurchasesError? = null
         val capturedDelays = mutableListOf<Long>()
-        val useCase = ConsumePurchaseUseCase(
-            ConsumePurchaseUseCaseParams(
+        val useCase = AcknowledgePurchaseUseCase(
+            AcknowledgePurchaseUseCaseParams(
                 "purchaseToken",
                 PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
                 appInBackground = false,
@@ -615,10 +605,9 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
             },
             executeRequestOnUIThread = { delay, request ->
                 capturedDelays.add(delay)
-                consumeStubbing answers {
-                    slot.captured.onConsumeResponse(
+                acknowledgeStubbing answers {
+                    slot.captured.onAcknowledgePurchaseResponse(
                         BillingClient.BillingResponseCode.ERROR.buildResult(),
-                        "purchaseToken"
                     )
                 }
 
@@ -636,17 +625,17 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
 
     @Test
     fun `If service returns ERROR, re-execute a max of 3 times if source is a purchase`() {
-        val slot = slot<ConsumeResponseListener>()
-        val consumeStubbing = every {
-            mockClient.consumeAsync(
+        val slot = slot<AcknowledgePurchaseResponseListener>()
+        val acknowledgeStubbing = every {
+            mockClient.acknowledgePurchase(
                 any(),
                 capture(slot),
             )
         }
         var receivedError: PurchasesError? = null
         var timesRetried = 0
-        val useCase = ConsumePurchaseUseCase(
-            ConsumePurchaseUseCaseParams(
+        val useCase = AcknowledgePurchaseUseCase(
+            AcknowledgePurchaseUseCaseParams(
                 "purchaseToken",
                 PostReceiptInitiationSource.PURCHASE,
                 appInBackground = false,
@@ -662,10 +651,9 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
                 it.invoke(mockClient)
             },
             executeRequestOnUIThread = { _, request ->
-                consumeStubbing answers {
-                    slot.captured.onConsumeResponse(
+                acknowledgeStubbing answers {
+                    slot.captured.onAcknowledgePurchaseResponse(
                         BillingClient.BillingResponseCode.ERROR.buildResult(),
-                        "purchaseToken"
                     )
                 }
 
@@ -682,17 +670,17 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
 
     @Test
     fun `If service returns ERROR, re-execute a max of 3 times if source is a restore`() {
-        val slot = slot<ConsumeResponseListener>()
-        val consumeStubbing = every {
-            mockClient.consumeAsync(
+        val slot = slot<AcknowledgePurchaseResponseListener>()
+        val acknowledgeStubbing = every {
+            mockClient.acknowledgePurchase(
                 any(),
                 capture(slot),
             )
         }
         var receivedError: PurchasesError? = null
         var timesRetried = 0
-        val useCase = ConsumePurchaseUseCase(
-            ConsumePurchaseUseCaseParams(
+        val useCase = AcknowledgePurchaseUseCase(
+            AcknowledgePurchaseUseCaseParams(
                 "purchaseToken",
                 PostReceiptInitiationSource.RESTORE,
                 appInBackground = false,
@@ -708,10 +696,9 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
                 it.invoke(mockClient)
             },
             executeRequestOnUIThread = { _, request ->
-                consumeStubbing answers {
-                    slot.captured.onConsumeResponse(
+                acknowledgeStubbing answers {
+                    slot.captured.onAcknowledgePurchaseResponse(
                         BillingClient.BillingResponseCode.ERROR.buildResult(),
-                        "purchaseToken"
                     )
                 }
 
@@ -728,17 +715,17 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
 
     @Test
     fun `If service returns SERVICE_UNAVAILABLE, re-execute with backoff for restores`() {
-        val slot = slot<ConsumeResponseListener>()
-        val consumeStubbing = every {
-            mockClient.consumeAsync(
+        val slot = slot<AcknowledgePurchaseResponseListener>()
+        val acknowledgeStubbing = every {
+            mockClient.acknowledgePurchase(
                 any(),
                 capture(slot),
             )
         }
         var receivedError: PurchasesError? = null
         val capturedDelays = mutableListOf<Long>()
-        val useCase = ConsumePurchaseUseCase(
-            ConsumePurchaseUseCaseParams(
+        val useCase = AcknowledgePurchaseUseCase(
+            AcknowledgePurchaseUseCaseParams(
                 "purchaseToken",
                 PostReceiptInitiationSource.RESTORE,
                 appInBackground = true,
@@ -754,10 +741,9 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
             },
             executeRequestOnUIThread = { delay, request ->
                 capturedDelays.add(delay)
-                consumeStubbing answers {
-                    slot.captured.onConsumeResponse(
+                acknowledgeStubbing answers {
+                    slot.captured.onAcknowledgePurchaseResponse(
                         BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE.buildResult(),
-                        "purchaseToken"
                     )
                 }
 
@@ -775,17 +761,17 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
 
     @Test
     fun `If service returns SERVICE_UNAVAILABLE, don't retry and error if user in session for restores`() {
-        val slot = slot<ConsumeResponseListener>()
-        val consumeStubbing = every {
-            mockClient.consumeAsync(
+        val slot = slot<AcknowledgePurchaseResponseListener>()
+        val acknowledgeStubbing = every {
+            mockClient.acknowledgePurchase(
                 any(),
                 capture(slot),
             )
         }
         var receivedError: PurchasesError? = null
         var timesRetried = 0
-        val useCase = ConsumePurchaseUseCase(
-            ConsumePurchaseUseCaseParams(
+        val useCase = AcknowledgePurchaseUseCase(
+            AcknowledgePurchaseUseCaseParams(
                 "purchaseToken",
                 PostReceiptInitiationSource.RESTORE,
                 appInBackground = false,
@@ -801,10 +787,9 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
                 it.invoke(mockClient)
             },
             executeRequestOnUIThread = { _, request ->
-                consumeStubbing answers {
-                    slot.captured.onConsumeResponse(
+                acknowledgeStubbing answers {
+                    slot.captured.onAcknowledgePurchaseResponse(
                         BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE.buildResult(),
-                        "purchaseToken"
                     )
                 }
 
@@ -821,17 +806,17 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
 
     @Test
     fun `If service returns SERVICE_UNAVAILABLE, re-execute with backoff for purchases`() {
-        val slot = slot<ConsumeResponseListener>()
-        val consumeStubbing = every {
-            mockClient.consumeAsync(
+        val slot = slot<AcknowledgePurchaseResponseListener>()
+        val acknowledgeStubbing = every {
+            mockClient.acknowledgePurchase(
                 any(),
                 capture(slot),
             )
         }
         var receivedError: PurchasesError? = null
         val capturedDelays = mutableListOf<Long>()
-        val useCase = ConsumePurchaseUseCase(
-            ConsumePurchaseUseCaseParams(
+        val useCase = AcknowledgePurchaseUseCase(
+            AcknowledgePurchaseUseCaseParams(
                 "purchaseToken",
                 PostReceiptInitiationSource.PURCHASE,
                 appInBackground = true,
@@ -847,10 +832,9 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
             },
             executeRequestOnUIThread = { delay, request ->
                 capturedDelays.add(delay)
-                consumeStubbing answers {
-                    slot.captured.onConsumeResponse(
+                acknowledgeStubbing answers {
+                    slot.captured.onAcknowledgePurchaseResponse(
                         BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE.buildResult(),
-                        "purchaseToken"
                     )
                 }
 
@@ -868,17 +852,17 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
 
     @Test
     fun `If service returns SERVICE_UNAVAILABLE, don't retry and error if user in session for purchases`() {
-        val slot = slot<ConsumeResponseListener>()
-        val consumeStubbing = every {
-            mockClient.consumeAsync(
+        val slot = slot<AcknowledgePurchaseResponseListener>()
+        val acknowledgeStubbing = every {
+            mockClient.acknowledgePurchase(
                 any(),
                 capture(slot),
             )
         }
         var receivedError: PurchasesError? = null
         var timesRetried = 0
-        val useCase = ConsumePurchaseUseCase(
-            ConsumePurchaseUseCaseParams(
+        val useCase = AcknowledgePurchaseUseCase(
+            AcknowledgePurchaseUseCaseParams(
                 "purchaseToken",
                 PostReceiptInitiationSource.PURCHASE,
                 appInBackground = false,
@@ -894,10 +878,9 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
                 it.invoke(mockClient)
             },
             executeRequestOnUIThread = { _, request ->
-                consumeStubbing answers {
-                    slot.captured.onConsumeResponse(
+                acknowledgeStubbing answers {
+                    slot.captured.onAcknowledgePurchaseResponse(
                         BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE.buildResult(),
-                        "purchaseToken"
                     )
                 }
 
@@ -914,17 +897,17 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
 
     @Test
     fun `If service returns SERVICE_UNAVAILABLE, re-execute with backoff for unsynced active purchases`() {
-        val slot = slot<ConsumeResponseListener>()
-        val consumeStubbing = every {
-            mockClient.consumeAsync(
+        val slot = slot<AcknowledgePurchaseResponseListener>()
+        val acknowledgeStubbing = every {
+            mockClient.acknowledgePurchase(
                 any(),
                 capture(slot),
             )
         }
         var receivedError: PurchasesError? = null
         val capturedDelays = mutableListOf<Long>()
-        val useCase = ConsumePurchaseUseCase(
-            ConsumePurchaseUseCaseParams(
+        val useCase = AcknowledgePurchaseUseCase(
+            AcknowledgePurchaseUseCaseParams(
                 "purchaseToken",
                 PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
                 appInBackground = true,
@@ -940,10 +923,9 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
             },
             executeRequestOnUIThread = { delay, request ->
                 capturedDelays.add(delay)
-                consumeStubbing answers {
-                    slot.captured.onConsumeResponse(
+                acknowledgeStubbing answers {
+                    slot.captured.onAcknowledgePurchaseResponse(
                         BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE.buildResult(),
-                        "purchaseToken"
                     )
                 }
 
@@ -961,17 +943,17 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
 
     @Test
     fun `If service returns SERVICE_UNAVAILABLE, don't retry and error if user in session for unsynced active purchases`() {
-        val slot = slot<ConsumeResponseListener>()
-        val consumeStubbing = every {
-            mockClient.consumeAsync(
+        val slot = slot<AcknowledgePurchaseResponseListener>()
+        val acknowledgeStubbing = every {
+            mockClient.acknowledgePurchase(
                 any(),
                 capture(slot),
             )
         }
         var receivedError: PurchasesError? = null
         var timesRetried = 0
-        val useCase = ConsumePurchaseUseCase(
-            ConsumePurchaseUseCaseParams(
+        val useCase = AcknowledgePurchaseUseCase(
+            AcknowledgePurchaseUseCaseParams(
                 "purchaseToken",
                 PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
                 appInBackground = false,
@@ -987,10 +969,9 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
                 it.invoke(mockClient)
             },
             executeRequestOnUIThread = { _, request ->
-                consumeStubbing answers {
-                    slot.captured.onConsumeResponse(
+                acknowledgeStubbing answers {
+                    slot.captured.onAcknowledgePurchaseResponse(
                         BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE.buildResult(),
-                        "purchaseToken"
                     )
                 }
 
@@ -1007,17 +988,17 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
 
     @Test
     fun `If service returns ITEM_UNAVAILABLE, doesn't retry for restores`() {
-        val slot = slot<ConsumeResponseListener>()
-        val consumeStubbing = every {
-            mockClient.consumeAsync(
+        val slot = slot<AcknowledgePurchaseResponseListener>()
+        val acknowledgeStubbing = every {
+            mockClient.acknowledgePurchase(
                 any(),
                 capture(slot),
             )
         }
         var receivedError: PurchasesError? = null
         var timesRetried = 0
-        val useCase = ConsumePurchaseUseCase(
-            ConsumePurchaseUseCaseParams(
+        val useCase = AcknowledgePurchaseUseCase(
+            AcknowledgePurchaseUseCaseParams(
                 "purchaseToken",
                 PostReceiptInitiationSource.RESTORE,
                 appInBackground = false,
@@ -1033,10 +1014,9 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
                 it.invoke(mockClient)
             },
             executeRequestOnUIThread = { _, request ->
-                consumeStubbing answers {
-                    slot.captured.onConsumeResponse(
+                acknowledgeStubbing answers {
+                    slot.captured.onAcknowledgePurchaseResponse(
                         BillingClient.BillingResponseCode.ITEM_UNAVAILABLE.buildResult(),
-                        "purchaseToken"
                     )
                 }
 
@@ -1053,17 +1033,17 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
 
     @Test
     fun `If service returns ITEM_UNAVAILABLE, doesn't retry for purchases`() {
-        val slot = slot<ConsumeResponseListener>()
-        val consumeStubbing = every {
-            mockClient.consumeAsync(
+        val slot = slot<AcknowledgePurchaseResponseListener>()
+        val acknowledgeStubbing = every {
+            mockClient.acknowledgePurchase(
                 any(),
                 capture(slot),
             )
         }
         var receivedError: PurchasesError? = null
         var timesRetried = 0
-        val useCase = ConsumePurchaseUseCase(
-            ConsumePurchaseUseCaseParams(
+        val useCase = AcknowledgePurchaseUseCase(
+            AcknowledgePurchaseUseCaseParams(
                 "purchaseToken",
                 PostReceiptInitiationSource.PURCHASE,
                 appInBackground = false,
@@ -1079,10 +1059,9 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
                 it.invoke(mockClient)
             },
             executeRequestOnUIThread = { _, request ->
-                consumeStubbing answers {
-                    slot.captured.onConsumeResponse(
+                acknowledgeStubbing answers {
+                    slot.captured.onAcknowledgePurchaseResponse(
                         BillingClient.BillingResponseCode.ITEM_UNAVAILABLE.buildResult(),
-                        "purchaseToken"
                     )
                 }
 
@@ -1099,17 +1078,17 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
 
     @Test
     fun `If service returns ITEM_UNAVAILABLE, doesn't retry for unsynced active purchases`() {
-        val slot = slot<ConsumeResponseListener>()
-        val consumeStubbing = every {
-            mockClient.consumeAsync(
+        val slot = slot<AcknowledgePurchaseResponseListener>()
+        val acknowledgeStubbing = every {
+            mockClient.acknowledgePurchase(
                 any(),
                 capture(slot),
             )
         }
         var receivedError: PurchasesError? = null
         var timesRetried = 0
-        val useCase = ConsumePurchaseUseCase(
-            ConsumePurchaseUseCaseParams(
+        val useCase = AcknowledgePurchaseUseCase(
+            AcknowledgePurchaseUseCaseParams(
                 "purchaseToken",
                 PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
                 appInBackground = false,
@@ -1125,10 +1104,9 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
                 it.invoke(mockClient)
             },
             executeRequestOnUIThread = { _, request ->
-                consumeStubbing answers {
-                    slot.captured.onConsumeResponse(
+                acknowledgeStubbing answers {
+                    slot.captured.onAcknowledgePurchaseResponse(
                         BillingClient.BillingResponseCode.ITEM_UNAVAILABLE.buildResult(),
-                        "purchaseToken"
                     )
                 }
 
