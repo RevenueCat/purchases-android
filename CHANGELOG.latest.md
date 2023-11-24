@@ -1,8 +1,16 @@
+### RevenueCatUI
+* `Paywalls`: Fix Turkish translation (#1478) via iremkaraoglu (@iremkaraoglu)
 ### Bugfixes
-* Prevents queryPurchases from being called twice (#1468) via Cesar de la Vega (@vegaro)
+* Check diagnostics file size in background thread (#1488) via Toni Rico (@tonidero)
 ### Dependency Updates
-* Bump fastlane from 2.216.0 to 2.217.0 (#1475) via dependabot[bot] (@dependabot[bot])
-* Bump danger from 9.3.2 to 9.4.0 (#1474) via dependabot[bot] (@dependabot[bot])
+* Update Billing client to 6.1.0 (#1481) via Toni Rico (@tonidero)
 ### Other Changes
-* Fix flaky test in BillingWrapperTest (#1477) via Cesar de la Vega (@vegaro)
-* Update AGP to 8.1.3 (#1476) via Toni Rico (@tonidero)
+* Add retries to queryPurchases (#1460) via Cesar de la Vega (@vegaro)
+* Initialize shared preferences lazily (#1489) via Toni Rico (@tonidero)
+* Create a BaseBillingUseCaseTest (#1486) via Cesar de la Vega (@vegaro)
+* Add retries to queryPurchaseHistoryAsync (#1448) via Cesar de la Vega (@vegaro)
+* Add `X-Storefront` header to requests (#1484) via Toni Rico (@tonidero)
+* Paywalls: Add paywalls UI tests (#1470) via Toni Rico (@tonidero)
+* Use state listener in Amazon store (#1483) via Toni Rico (@tonidero)
+* Add method to get storefront for Google and Amazon stores (#1482) via Toni Rico (@tonidero)
+* Add retries to queryProductDetailsAsync (#1444) via Cesar de la Vega (@vegaro)

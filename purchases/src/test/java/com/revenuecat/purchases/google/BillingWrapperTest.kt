@@ -1210,65 +1210,6 @@ class BillingWrapperTest {
     }
 
     @Test
-    fun `findPurchaseInPurchaseHistory works`() {
-        val sku = "aPurchase"
-        val purchaseHistoryRecord = stubPurchaseHistoryRecord(productIds = listOf(sku))
-
-        mockClient.mockQueryPurchaseHistory(
-            billingClientOKResult,
-            listOf(purchaseHistoryRecord)
-        )
-
-        var recordFound: StoreTransaction? = null
-        wrapper.findPurchaseInPurchaseHistory(
-            appUserID = appUserId,
-            productType = ProductType.SUBS,
-            productId = sku,
-            appInBackground = false,
-            onCompletion = {
-                recordFound = it
-            },
-            onError = {
-                fail("should be success")
-            }
-        )
-
-        assertThat(recordFound).isNotNull
-        assertThat(recordFound!!.productIds[0]).isEqualTo(purchaseHistoryRecord.firstSku)
-        assertThat(recordFound!!.purchaseTime).isEqualTo(purchaseHistoryRecord.purchaseTime)
-        assertThat(recordFound!!.purchaseToken).isEqualTo(purchaseHistoryRecord.purchaseToken)
-    }
-
-    @Test
-    fun `findPurchaseInPurchaseHistory returns error if not found`() {
-        val sku = "aPurchase"
-        val purchaseHistoryRecord = mockk<PurchaseHistoryRecord>(relaxed = true).also {
-            every { it.firstSku } returns sku + "somethingrandom"
-        }
-
-        mockClient.mockQueryPurchaseHistory(
-            billingClientOKResult,
-            listOf(purchaseHistoryRecord)
-        )
-        var errorReturned: PurchasesError? = null
-        wrapper.findPurchaseInPurchaseHistory(
-            appUserID = appUserId,
-            productType = ProductType.SUBS,
-            productId = sku,
-            appInBackground = false,
-            onCompletion = {
-                fail("should be error")
-            },
-            onError = {
-                errorReturned = it
-            }
-        )
-
-        assertThat(errorReturned).isNotNull
-        assertThat(errorReturned!!.code).isEqualTo(PurchasesErrorCode.PurchaseInvalidError)
-    }
-
-    @Test
     fun `if billing setup returns recoverable error code, will try to reconnect with exponential backoff`() {
         val runnableSlot = slot<Runnable>()
         every {
