@@ -5,7 +5,7 @@ import com.revenuecat.purchases.common.Dispatcher
 import io.mockk.mockk
 import java.util.concurrent.RejectedExecutionException
 
-internal class SyncDispatcher : Dispatcher(mockk()) {
+internal class SyncDispatcher : Dispatcher(mockk(), MockHandlerFactory.createMockHandler()) {
 
     private var closed = false
 
