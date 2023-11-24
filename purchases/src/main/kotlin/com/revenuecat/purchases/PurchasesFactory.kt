@@ -85,9 +85,15 @@ internal class PurchasesFactory(
 
             val eTagManager = ETagManager(context)
 
-            val dispatcher = Dispatcher(createDefaultExecutor(), runningIntegrationTests)
-            val backendDispatcher = Dispatcher(service ?: createDefaultExecutor(), runningIntegrationTests)
-            val eventsDispatcher = Dispatcher(createEventsExecutor(), runningIntegrationTests)
+            val dispatcher = Dispatcher(createDefaultExecutor(), runningIntegrationTests = runningIntegrationTests)
+            val backendDispatcher = Dispatcher(
+                service ?: createDefaultExecutor(),
+                runningIntegrationTests = runningIntegrationTests,
+            )
+            val eventsDispatcher = Dispatcher(
+                createEventsExecutor(),
+                runningIntegrationTests = runningIntegrationTests,
+            )
 
             var diagnosticsFileHelper: DiagnosticsFileHelper? = null
             var diagnosticsTracker: DiagnosticsTracker? = null
