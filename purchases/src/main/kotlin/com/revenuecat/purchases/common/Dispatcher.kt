@@ -62,23 +62,24 @@ internal open class Dispatcher(
     ) {
         synchronized(this.executorService) {
             if (!executorService.isShutdown) {
+                val commandHandlingExceptions = {
+                    try {
+                        command.run()
+                    } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+                        errorLog("Exception running command: $e")
+                        mainHandler?.post {
+                            e.cause?.let { throw it }
+                        }
+                    }
+                }
                 if (delay != Delay.NONE && executorService is ScheduledExecutorService) {
                     var delayToApply = (delay.minDelay.inWholeMilliseconds..delay.maxDelay.inWholeMilliseconds).random()
                     if (runningIntegrationTests) {
                         delayToApply = (delayToApply * INTEGRATION_TEST_DELAY_PERCENTAGE).toLong()
                     }
-                    executorService.schedule(command, delayToApply, TimeUnit.MILLISECONDS)
+                    executorService.schedule(commandHandlingExceptions, delayToApply, TimeUnit.MILLISECONDS)
                 } else {
-                    executorService.submit {
-                        try {
-                            command.run()
-                        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-                            errorLog("Exception running command: $e")
-                            mainHandler?.post {
-                                e.cause?.let { throw it }
-                            }
-                        }
-                    }
+                    executorService.submit(commandHandlingExceptions)
                 }
             }
         }
