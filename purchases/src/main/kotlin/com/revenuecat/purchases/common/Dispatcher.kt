@@ -62,13 +62,13 @@ internal open class Dispatcher(
     ) {
         synchronized(this.executorService) {
             if (!executorService.isShutdown) {
-                val commandHandlingExceptions: Runnable = Runnable {
+                val commandHandlingExceptions = Runnable {
                     try {
                         command.run()
                     } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
                         errorLog("Exception running command: $e")
                         mainHandler?.post {
-                            e.cause?.let { throw it }
+                            throw e.cause ?: e
                         }
                     }
                 }
