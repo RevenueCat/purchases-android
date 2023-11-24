@@ -40,6 +40,7 @@ internal open class BaseBillingUseCaseTest {
     protected var mockDateProvider: DateProvider = mockk()
 
     protected val billingClientOKResult = BillingClient.BillingResponseCode.OK.buildResult()
+    protected val billingClientErrorResult = BillingClient.BillingResponseCode.ERROR.buildResult()
     protected val billingClientDisconnectedResult = BillingClient.BillingResponseCode.SERVICE_DISCONNECTED.buildResult()
 
     private var onConnectedCalled: Boolean = false

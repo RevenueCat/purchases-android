@@ -21,9 +21,7 @@ import com.android.billingclient.api.InAppMessageResult
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchaseHistoryRecord
 import com.android.billingclient.api.PurchaseHistoryResponseListener
-import com.android.billingclient.api.PurchasesResponseListener
 import com.android.billingclient.api.PurchasesUpdatedListener
-import com.android.billingclient.api.QueryPurchasesParams
 import com.revenuecat.purchases.PostReceiptInitiationSource
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
@@ -824,39 +822,6 @@ internal class BillingWrapper(
                 BillingResult.newBuilder().setResponseCode(BillingClient.BillingResponseCode.DEVELOPER_ERROR).build()
             listener.onPurchaseHistoryResponse(devErrorResponseCode, null)
         }
-    }
-
-    private fun BillingClient.queryPurchasesAsyncWithTrackingEnsuringOneResponse(
-        @BillingClient.ProductType productType: String,
-        queryParams: QueryPurchasesParams,
-        listener: PurchasesResponseListener,
-    ) {
-        val hasResponded = AtomicBoolean(false)
-        val requestStartTime = dateProvider.now
-        queryPurchasesAsync(queryParams) { billingResult, purchases ->
-            if (hasResponded.getAndSet(true)) {
-                log(
-                    LogIntent.GOOGLE_ERROR,
-                    OfferingStrings.EXTRA_QUERY_PURCHASES_RESPONSE.format(billingResult.responseCode),
-                )
-                return@queryPurchasesAsync
-            }
-            trackGoogleQueryPurchasesRequestIfNeeded(productType, billingResult, requestStartTime)
-            listener.onQueryPurchasesResponse(billingResult, purchases)
-        }
-    }
-
-    private fun trackGoogleQueryPurchasesRequestIfNeeded(
-        @BillingClient.ProductType productType: String,
-        billingResult: BillingResult,
-        requestStartTime: Date,
-    ) {
-        diagnosticsTrackerIfEnabled?.trackGoogleQueryPurchasesRequest(
-            productType,
-            billingResult.responseCode,
-            billingResult.debugMessage,
-            responseTime = Duration.between(requestStartTime, dateProvider.now),
-        )
     }
 
     private fun trackGoogleQueryPurchaseHistoryRequestIfNeeded(

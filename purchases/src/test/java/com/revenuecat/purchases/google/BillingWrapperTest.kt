@@ -21,7 +21,6 @@ import com.android.billingclient.api.ProductDetails
 import com.android.billingclient.api.ProductDetailsResponseListener
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchaseHistoryRecord
-import com.android.billingclient.api.PurchasesResponseListener
 import com.android.billingclient.api.PurchasesUpdatedListener
 import com.revenuecat.purchases.PostReceiptInitiationSource
 import com.revenuecat.purchases.ProductType
@@ -67,7 +66,6 @@ import io.mockk.mockkStatic
 import io.mockk.runs
 import io.mockk.slot
 import io.mockk.verify
-import io.mockk.verifySequence
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
 import org.junit.After
@@ -86,8 +84,6 @@ class BillingWrapperTest {
     private companion object {
         const val timestamp0 = 1676379370000 // Tuesday, February 14, 2023 12:56:10.000 PM GMT
         const val timestamp123 = 1676379370123 // Tuesday, February 14, 2023 12:56:10.123 PM GMT
-        const val timestamp500 = 1676379370500 // Tuesday, February 14, 2023 12:56:10.500 PM GMT
-        const val timestamp900 = 1676379370900 // Tuesday, February 14, 2023 12:56:10.900 PM GMT
     }
 
     private var onConnectedCalled: Boolean = false
@@ -112,7 +108,6 @@ class BillingWrapperTest {
     private var storeProducts: List<StoreProduct>? = null
 
     private val billingClientOKResult = BillingClient.BillingResponseCode.OK.buildResult()
-    private val billingClientErrorResult = BillingClient.BillingResponseCode.ERROR.buildResult()
     private val appUserId = "jerry"
     private var mockActivity = mockk<Activity>()
 
@@ -848,6 +843,8 @@ class BillingWrapperTest {
                 get() = purchasingData
             override val presentedOfferingIdentifier: String?
                 get() = null
+
+            @Deprecated("Replaced with id", replaceWith = ReplaceWith("id"))
             override val sku: String
                 get() = id
 
@@ -1161,76 +1158,6 @@ class BillingWrapperTest {
     }
 
     @Test
-    fun `Getting SUBS type`() {
-        val inAppToken = "inAppToken"
-        val subsToken = "subsToken"
-
-        mockClient.mockQueryPurchasesAsync(
-            billingClientOKResult,
-            billingClientOKResult,
-            getMockedPurchaseList(subsToken),
-            getMockedPurchaseList(inAppToken)
-        )
-
-        wrapper.getPurchaseType(subsToken) { productType ->
-            assertThat(productType).isEqualTo(ProductType.SUBS)
-        }
-    }
-
-    @Test
-    fun `Getting INAPPs type`() {
-        val inAppToken = "inAppToken"
-        val subToken = "subToken"
-
-        mockClient.mockQueryPurchasesAsync(
-            billingClientOKResult,
-            billingClientOKResult,
-            getMockedPurchaseList(subToken),
-            getMockedPurchaseList(inAppToken)
-        )
-
-        wrapper.getPurchaseType(inAppToken) { productType ->
-            assertThat(productType).isEqualTo(ProductType.INAPP)
-        }
-
-    }
-
-    @Test
-    fun `getPurchaseType returns UNKNOWN if sub and inapps response not OK`() {
-        val errorResult = BillingClient.BillingResponseCode.ERROR.buildResult()
-        val subToken = "subToken"
-        val inAppToken = "abcd"
-
-        mockClient.mockQueryPurchasesAsync(
-            errorResult,
-            errorResult,
-            getMockedPurchaseList(subToken),
-            getMockedPurchaseList(inAppToken)
-        )
-
-        wrapper.getPurchaseType(inAppToken) { productType ->
-            assertThat(productType).isEqualTo(ProductType.UNKNOWN)
-        }
-    }
-
-    @Test
-    fun `getPurchaseType returns UNKNOWN if sub not found and inapp responses not OK`() {
-        val subPurchaseToken = "subToken"
-        val inAppPurchaseToken = "inAppToken"
-
-        mockClient.mockQueryPurchasesAsync(
-            subsResult = billingClientOKResult,
-            inAppResult = billingClientErrorResult,
-            subPurchases = getMockedPurchaseList(subPurchaseToken),
-            inAppPurchases = getMockedPurchaseList(inAppPurchaseToken)
-        )
-
-        wrapper.getPurchaseType(inAppPurchaseToken) { productType ->
-            assertThat(productType).isEqualTo(ProductType.UNKNOWN)
-        }
-    }
-
-    @Test
     fun `findPurchaseInPurchaseHistory works`() {
         val sku = "aPurchase"
         val purchaseHistoryRecord = stubPurchaseHistoryRecord(productIds = listOf(sku))
@@ -1291,14 +1218,8 @@ class BillingWrapperTest {
 
     @Test
     fun `tokens are not saved in cache if acknowledge fails`() {
-        val sku = "sub"
-        val token = "token_sub"
-        val googlePurchaseWrapper = getMockedPurchaseWrapper(
-            sku,
-            token,
-            ProductType.SUBS,
-            "offering_a"
-        )
+        val googlePurchaseWrapper = getMockedPurchaseWrapper()
+        val token = googlePurchaseWrapper.purchaseToken
 
         wrapper.consumeAndSave(
             shouldTryToConsume = true,
@@ -1319,13 +1240,8 @@ class BillingWrapperTest {
 
     @Test
     fun `restored tokens are not save in cache if acknowledge fails`() {
-        val sku = "sub"
-        val token = "token_sub"
-        val historyRecordWrapper = getMockedPurchaseHistoryRecordWrapper(
-            sku,
-            token,
-            ProductType.SUBS
-        )
+        val historyRecordWrapper = getMockedPurchaseHistoryRecordWrapper()
+        val token = historyRecordWrapper.purchaseToken
 
         wrapper.consumeAndSave(
             shouldTryToConsume = true,
@@ -1346,14 +1262,8 @@ class BillingWrapperTest {
 
     @Test
     fun `subscriptions are acknowledged`() {
-        val sku = "sub"
-        val token = "token_sub"
-        val googlePurchaseWrapper = getMockedPurchaseWrapper(
-            sku,
-            token,
-            ProductType.SUBS,
-            "offering_a"
-        )
+        val googlePurchaseWrapper = getMockedPurchaseWrapper()
+        val token = googlePurchaseWrapper.purchaseToken
 
         every {
             mockDeviceCache.addSuccessfullyPostedToken(token)
@@ -1378,13 +1288,8 @@ class BillingWrapperTest {
 
     @Test
     fun `restored subscriptions are acknowledged`() {
-        val sku = "sub"
-        val token = "token_sub"
-        val historyRecordWrapper = getMockedPurchaseHistoryRecordWrapper(
-            sku,
-            token,
-            ProductType.SUBS
-        )
+        val historyRecordWrapper = getMockedPurchaseHistoryRecordWrapper()
+        val token = historyRecordWrapper.purchaseToken
 
         every {
             mockDeviceCache.addSuccessfullyPostedToken(token)
@@ -1409,14 +1314,8 @@ class BillingWrapperTest {
 
     @Test
     fun `if it shouldn't consume transactions, don't acknowledge and save it in cache`() {
-        val sku = "sub"
-        val token = "token_sub"
-        val googlePurchaseWrapper = getMockedPurchaseWrapper(
-            sku,
-            token,
-            ProductType.SUBS,
-            "offering_a"
-        )
+        val googlePurchaseWrapper = getMockedPurchaseWrapper()
+        val token = googlePurchaseWrapper.purchaseToken
 
         every {
             mockDeviceCache.addSuccessfullyPostedToken(token)
@@ -1440,13 +1339,8 @@ class BillingWrapperTest {
 
     @Test
     fun `if it shouldn't consume restored transactions, don't acknowledge and save it in cache`() {
-        val sku = "sub"
-        val token = "token_sub"
-        val historyRecordWrapper = getMockedPurchaseHistoryRecordWrapper(
-            sku,
-            token,
-            ProductType.SUBS
-        )
+        val historyRecordWrapper = getMockedPurchaseHistoryRecordWrapper()
+        val token = historyRecordWrapper.purchaseToken
 
         every {
             mockDeviceCache.addSuccessfullyPostedToken(token)
@@ -1470,15 +1364,8 @@ class BillingWrapperTest {
 
     @Test
     fun `Do not acknowledge purchases that are already acknowledged`() {
-        val sku = "sub"
-        val token = "token_sub"
-        val googlePurchaseWrapper = getMockedPurchaseWrapper(
-            sku,
-            token,
-            ProductType.SUBS,
-            "offering_a",
-            acknowledged = true
-        )
+        val googlePurchaseWrapper = getMockedPurchaseWrapper()
+        val token = googlePurchaseWrapper.purchaseToken
 
         every {
             mockDeviceCache.addSuccessfullyPostedToken(token)
@@ -1640,69 +1527,6 @@ class BillingWrapperTest {
     }
 
     @Test
-    fun `getPurchaseType tracks query purchases diagnostics calls for subs and inapp`() {
-        every {
-            mockDateProvider.now
-        } returnsMany listOf(
-            Date(timestamp0),
-            Date(timestamp123),
-            Date(timestamp500),
-            Date(timestamp900)
-        )
-
-        mockQueryPurchasesAsyncResponse(
-            BillingClient.ProductType.SUBS,
-            getMockedPurchaseList("subToken")
-        )
-        mockQueryPurchasesAsyncResponse(
-            BillingClient.ProductType.INAPP,
-            getMockedPurchaseList("inappToken")
-        )
-
-        var returnedType: ProductType? = null
-        wrapper.getPurchaseType("inappToken") { returnedType = it }
-        assertThat(returnedType).isEqualTo(ProductType.INAPP)
-
-        verifySequence {
-            mockDiagnosticsTracker.trackGoogleQueryPurchasesRequest(
-                BillingClient.ProductType.SUBS,
-                BillingClient.BillingResponseCode.OK,
-                billingDebugMessage = "",
-                responseTime = 123.milliseconds
-            )
-            mockDiagnosticsTracker.trackGoogleQueryPurchasesRequest(
-                BillingClient.ProductType.INAPP,
-                BillingClient.BillingResponseCode.OK,
-                billingDebugMessage = "",
-                responseTime = 400.milliseconds
-            )
-        }
-    }
-
-    @Test
-    fun `getPurchaseType tracks query purchases diagnostics calls for subs if found as subs`() {
-        every { mockDateProvider.now } returnsMany listOf(Date(timestamp0), Date(timestamp123))
-
-        mockQueryPurchasesAsyncResponse(
-            BillingClient.ProductType.SUBS,
-            getMockedPurchaseList("subToken")
-        )
-
-        var returnedType: ProductType? = null
-        wrapper.getPurchaseType("subToken") { returnedType = it }
-        assertThat(returnedType).isEqualTo(ProductType.SUBS)
-
-        verify(exactly = 1) {
-            mockDiagnosticsTracker.trackGoogleQueryPurchasesRequest(
-                BillingClient.ProductType.SUBS,
-                BillingClient.BillingResponseCode.OK,
-                billingDebugMessage = "",
-                responseTime = 123.milliseconds
-            )
-        }
-    }
-
-    @Test
     fun `trackProductDetailsNotSupported is called when receiving a FEATURE_NOT_SUPPORTED error from isFeatureSupported after setup`() {
         val featureSlot = slot<String>()
         every {
@@ -1847,56 +1671,22 @@ class BillingWrapperTest {
         return ReplaceProductInfo(oldPurchase, GoogleReplacementMode.CHARGE_FULL_PRICE)
     }
 
-    private fun mockQueryPurchasesAsyncResponse(
-        @BillingClient.ProductType productType: String,
-        purchasesToReturn: List<Purchase>,
-        billingResult: BillingResult = billingClientOKResult
-    ) {
-        val queryPurchasesListenerSlot = slot<PurchasesResponseListener>()
-        every {
-            mockClient.queryPurchasesAsync(
-                productType.buildQueryPurchasesParams()!!,
-                capture(queryPurchasesListenerSlot)
-            )
-        } answers {
-            queryPurchasesListenerSlot.captured.onQueryPurchasesResponse(
-                billingResult,
-                purchasesToReturn
-            )
-        }
-    }
-
-    private fun getMockedPurchaseWrapper(
-        productId: String,
-        purchaseToken: String,
-        productType: ProductType,
-        offeringIdentifier: String? = null,
-        purchaseState: Int = Purchase.PurchaseState.PURCHASED,
-        acknowledged: Boolean = false
-    ): StoreTransaction {
+    private fun getMockedPurchaseWrapper(): StoreTransaction {
         val p = stubGooglePurchase(
-            productIds = listOf(productId),
-            purchaseToken = purchaseToken,
-            purchaseState = purchaseState,
-            acknowledged = acknowledged
+            productIds = listOf("sub"),
+            purchaseToken = "token_sub",
         )
 
-        return p.toStoreTransaction(productType, offeringIdentifier)
+        return p.toStoreTransaction(ProductType.SUBS, "offering_a")
     }
 
-    private fun getMockedPurchaseHistoryRecordWrapper(
-        productId: String,
-        purchaseToken: String,
-        productType: ProductType
-    ): StoreTransaction {
+    private fun getMockedPurchaseHistoryRecordWrapper(): StoreTransaction {
         val p: PurchaseHistoryRecord = stubPurchaseHistoryRecord(
-            productIds = listOf(productId),
-            purchaseToken = purchaseToken
+            productIds = listOf("product_id"),
+            purchaseToken = "token_sub"
         )
 
-        return p.toStoreTransaction(
-            type = productType
-        )
+        return p.toStoreTransaction(type = ProductType.SUBS)
     }
 
     private fun setUpForObfuscatedAccountIDTests(): BillingFlowParams.Builder {
@@ -1947,14 +1737,6 @@ class BillingWrapperTest {
         return productDetails.toStoreProduct(
             productDetails.subscriptionOfferDetails!!
         )!!
-    }
-
-    private fun getMockedPurchaseList(purchaseToken: String): List<Purchase> {
-        return listOf(mockk(
-            relaxed = true
-        ) {
-            every { this@mockk.purchaseToken } returns purchaseToken
-        })
     }
 
     private fun mockRunnables() {
