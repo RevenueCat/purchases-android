@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.common
 
 import android.app.Activity
+import com.revenuecat.purchases.PostReceiptInitiationSource
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCallback
@@ -56,6 +57,7 @@ internal abstract class BillingAbstract {
     abstract fun consumeAndSave(
         shouldTryToConsume: Boolean,
         purchase: StoreTransaction,
+        initiationSource: PostReceiptInitiationSource,
         appInBackground: Boolean,
     )
 

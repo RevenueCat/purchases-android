@@ -18,7 +18,6 @@ import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.paywalls.PaywallPresentedCache
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
 import com.revenuecat.purchases.paywalls.events.PaywallEventType
-import com.revenuecat.purchases.paywalls.events.PaywallPostReceiptData
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttribute
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.subscriberattributes.toBackendMap
@@ -277,7 +276,8 @@ class PostReceiptHelperTest {
             billing.consumeAndSave(
                 shouldTryToConsume = expectedShouldConsumeFlag,
                 purchase = mockStoreTransaction,
-                appInBackground = false
+                appInBackground = false,
+                initiationSource = initiationSource,
             )
         }
     }
@@ -304,7 +304,8 @@ class PostReceiptHelperTest {
             billing.consumeAndSave(
                 shouldTryToConsume = expectedShouldConsumeFlag,
                 purchase = mockStoreTransaction,
-                appInBackground = false
+                appInBackground = false,
+                initiationSource = initiationSource,
             )
         }
     }
@@ -400,7 +401,12 @@ class PostReceiptHelperTest {
         )
 
         verify(exactly = 1) {
-            billing.consumeAndSave(true, mockStoreTransaction, appInBackground = false)
+            billing.consumeAndSave(
+                shouldTryToConsume = true,
+                purchase = mockStoreTransaction,
+                appInBackground = false,
+                initiationSource = initiationSource
+            )
         }
     }
 
@@ -421,7 +427,12 @@ class PostReceiptHelperTest {
         )
 
         verify(exactly = 1) {
-            billing.consumeAndSave(false, mockStoreTransaction, appInBackground = false)
+            billing.consumeAndSave(
+                shouldTryToConsume = false,
+                purchase = mockStoreTransaction,
+                appInBackground = false,
+                initiationSource = initiationSource,
+            )
         }
     }
 
@@ -441,7 +452,12 @@ class PostReceiptHelperTest {
         )
 
         verify(exactly = 0) {
-            billing.consumeAndSave(any(), any(), any())
+            billing.consumeAndSave(
+                shouldTryToConsume = any(),
+                purchase = any(),
+                appInBackground = any(),
+                initiationSource = initiationSource
+            )
         }
     }
 
@@ -619,7 +635,12 @@ class PostReceiptHelperTest {
             onError = { _, _ -> fail("Expected success") }
         )
 
-        verify(exactly = 0) { billing.consumeAndSave(any(), any(), any()) }
+        verify(exactly = 0) { billing.consumeAndSave(
+            shouldTryToConsume = any(),
+            purchase = any(),
+            appInBackground = any(),
+            initiationSource = initiationSource
+        ) }
         verify(exactly = 0) { deviceCache.addSuccessfullyPostedToken(any()) }
     }
 
@@ -754,7 +775,12 @@ class PostReceiptHelperTest {
             expectedPresentedOfferingIdentifier
         )
 
-        every { billing.consumeAndSave(true, purchase, false) } just Runs
+        every { billing.consumeAndSave(
+            shouldTryToConsume = true,
+            purchase = purchase,
+            initiationSource = initiationSource,
+            appInBackground = false)
+        } just Runs
 
         postReceiptHelper.postTransactionAndConsumeIfNeeded(
             purchase = purchase,
@@ -1183,7 +1209,11 @@ class PostReceiptHelperTest {
         )
 
         verify(exactly = 0) {
-            billing.consumeAndSave(any(), any(), any())
+            billing.consumeAndSave(
+                shouldTryToConsume = any(),
+                purchase = any(),
+                initiationSource = initiationSource,
+                appInBackground = any())
         }
     }
 
@@ -1208,7 +1238,12 @@ class PostReceiptHelperTest {
         )
 
         verify(exactly = 0) {
-            billing.consumeAndSave(any(), any(), any())
+            billing.consumeAndSave(
+                shouldTryToConsume = any(),
+                purchase = any(),
+                initiationSource = initiationSource,
+                appInBackground = any()
+            )
         }
     }
 
@@ -1392,6 +1427,7 @@ class PostReceiptHelperTest {
         verify(exactly = 0) { billing.consumeAndSave(
             shouldTryToConsume = any(),
             purchase = any(),
+            initiationSource = initiationSource,
             appInBackground = any()
         ) }
         verify(exactly = 0) { deviceCache.addSuccessfullyPostedToken(any()) }
@@ -1541,7 +1577,12 @@ class PostReceiptHelperTest {
         every { subscriberAttributesManager.markAsSynced(appUserID, any(), any()) } just Runs
         every { customerInfoUpdateHandler.cacheAndNotifyListeners(any()) } just Runs
         if (postType == PostType.TRANSACTION_AND_CONSUME) {
-            every { billing.consumeAndSave(any(), mockStoreTransaction, any()) } just Runs
+            every { billing.consumeAndSave(
+                shouldTryToConsume = any(),
+                purchase = mockStoreTransaction,
+                initiationSource = initiationSource,
+                appInBackground = any())
+            } just Runs
         } else {
             every { deviceCache.addSuccessfullyPostedToken(postToken) } just Runs
         }
@@ -1596,6 +1637,7 @@ class PostReceiptHelperTest {
                 every { billing.consumeAndSave(
                     shouldTryToConsume = any(),
                     purchase = mockStoreTransaction,
+                    initiationSource = initiationSource,
                     appInBackground = any()
                 ) } just Runs
             } else {

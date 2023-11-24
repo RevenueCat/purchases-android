@@ -147,7 +147,12 @@ internal open class BasePurchasesTest {
                 purchasesUpdatedListener = capture(capturedPurchasesUpdatedListener)
             } just Runs
             every {
-                consumeAndSave(capture(capturedShouldTryToConsume), capture(capturedConsumePurchaseWrapper), any())
+                consumeAndSave(
+                    capture(capturedShouldTryToConsume),
+                    capture(capturedConsumePurchaseWrapper),
+                    any(),
+                    any(),
+                )
             } just Runs
             every {
                 purchasesUpdatedListener = null

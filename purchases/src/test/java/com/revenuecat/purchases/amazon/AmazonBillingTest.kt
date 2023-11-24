@@ -7,6 +7,7 @@ import com.amazon.device.iap.model.FulfillmentResult
 import com.amazon.device.iap.model.ProductType
 import com.amazon.device.iap.model.Receipt
 import com.amazon.device.iap.model.UserData
+import com.revenuecat.purchases.PostReceiptInitiationSource
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCallback
 import com.revenuecat.purchases.PurchasesErrorCode
@@ -535,6 +536,7 @@ class AmazonBillingTest {
                     marketplace = "US"
                 ),
             ),
+            initiationSource = PostReceiptInitiationSource.PURCHASE,
             appInBackground = false,
         )
 
@@ -567,6 +569,7 @@ class AmazonBillingTest {
                     marketplace = "US"
                 )
             ),
+            initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
             appInBackground = false,
         )
 
@@ -603,6 +606,7 @@ class AmazonBillingTest {
                     marketplace = "US"
                 )
             ),
+            initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
             appInBackground = false,
         )
 
