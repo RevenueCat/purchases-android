@@ -13,7 +13,9 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.firstSku
 import com.revenuecat.purchases.google.toGoogleProductType
+import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.utils.mockQueryPurchaseHistory
+import com.revenuecat.purchases.utils.stubPurchaseHistoryRecord
 import com.revenuecat.purchases.utils.verifyQueryPurchaseHistoryCalledWithType
 import io.mockk.every
 import io.mockk.mockk
@@ -36,6 +38,7 @@ internal class QueryPurchaseHistoryUseCaseTest: BaseBillingUseCaseTest() {
 
     private val subsGoogleProductType = ProductType.SUBS.toGoogleProductType()!!
     private val inAppGoogleProductType = ProductType.INAPP.toGoogleProductType()!!
+    private val appUserId = "jerry"
 
     @Test
     fun `if no listener is set, we fail`() {
@@ -292,6 +295,69 @@ internal class QueryPurchaseHistoryUseCaseTest: BaseBillingUseCaseTest() {
     }
 
     // endregion diagnostics tracking
+
+    // region findPurchaseInPurchaseHistory
+
+    @Test
+    fun `findPurchaseInPurchaseHistory works`() {
+        val sku = "aPurchase"
+        val purchaseHistoryRecord = stubPurchaseHistoryRecord(productIds = listOf(sku))
+
+        mockClient.mockQueryPurchaseHistory(
+            billingClientOKResult,
+            listOf(purchaseHistoryRecord)
+        )
+
+        var recordFound: StoreTransaction? = null
+        wrapper.findPurchaseInPurchaseHistory(
+            appUserID = appUserId,
+            productType = ProductType.SUBS,
+            productId = sku,
+            appInBackground = false,
+            onCompletion = {
+                recordFound = it
+            },
+            onError = {
+                fail("should be success")
+            }
+        )
+
+        assertThat(recordFound).isNotNull
+        assertThat(recordFound!!.productIds[0]).isEqualTo(purchaseHistoryRecord.firstSku)
+        assertThat(recordFound!!.purchaseTime).isEqualTo(purchaseHistoryRecord.purchaseTime)
+        assertThat(recordFound!!.purchaseToken).isEqualTo(purchaseHistoryRecord.purchaseToken)
+    }
+
+    @Test
+    fun `findPurchaseInPurchaseHistory returns error if not found`() {
+        val sku = "aPurchase"
+        val purchaseHistoryRecord = mockk<PurchaseHistoryRecord>(relaxed = true).also {
+            every { it.firstSku } returns sku + "somethingrandom"
+        }
+
+        mockClient.mockQueryPurchaseHistory(
+            billingClientOKResult,
+            listOf(purchaseHistoryRecord)
+        )
+        var errorReturned: PurchasesError? = null
+        wrapper.findPurchaseInPurchaseHistory(
+            appUserID = appUserId,
+            productType = ProductType.SUBS,
+            productId = sku,
+            appInBackground = false,
+            onCompletion = {
+                fail("should be error")
+            },
+            onError = {
+                errorReturned = it
+            }
+        )
+
+        assertThat(errorReturned).isNotNull
+        assertThat(errorReturned!!.code).isEqualTo(PurchasesErrorCode.PurchaseInvalidError)
+    }
+
+    // endregion findPurchaseInPurchaseHistory
 
     // region retries
 
