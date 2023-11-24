@@ -4,29 +4,18 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.billingclient.api.AcknowledgePurchaseParams
 import com.android.billingclient.api.AcknowledgePurchaseResponseListener
 import com.android.billingclient.api.BillingClient
-import com.android.billingclient.api.BillingClientStateListener
-import com.android.billingclient.api.BillingResult
-import com.android.billingclient.api.ConsumeParams
-import com.android.billingclient.api.ConsumeResponseListener
-import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchaseHistoryRecord
-import com.android.billingclient.api.PurchaseHistoryResponseListener
-import com.android.billingclient.api.QueryPurchaseHistoryParams
 import com.revenuecat.purchases.PostReceiptInitiationSource
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
-import com.revenuecat.purchases.amazon.createPeriod
-import com.revenuecat.purchases.common.firstSku
 import com.revenuecat.purchases.google.toStoreTransaction
-import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.utils.stubGooglePurchase
 import com.revenuecat.purchases.utils.stubPurchaseHistoryRecord
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
-import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
 import org.assertj.core.api.Assertions
@@ -35,7 +24,6 @@ import org.assertj.core.data.Offset
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.junit.runners.Parameterized
 import org.robolectric.annotation.Config
 
 @RunWith(AndroidJUnit4::class)
@@ -72,14 +60,8 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
 
     @Test
     fun `tokens from UNSYNCED_ACTIVE_PURCHASES are saved in cache when acknowledging`() {
-        val sku = "sub"
-        val token = "token_sub"
-        val googlePurchaseWrapper = getMockedPurchaseWrapper(
-            sku,
-            token,
-            ProductType.SUBS,
-            "offering_a"
-        )
+        val googlePurchaseWrapper = getMockedPurchaseWrapper()
+        val token = googlePurchaseWrapper.purchaseToken
 
         every {
             mockDeviceCache.addSuccessfullyPostedToken(token)
@@ -104,14 +86,8 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
 
     @Test
     fun `tokens from PURCHASES are saved in cache when acknowledging`() {
-        val sku = "sub"
-        val token = "token_sub"
-        val googlePurchaseWrapper = getMockedPurchaseWrapper(
-            sku,
-            token,
-            ProductType.SUBS,
-            "offering_a"
-        )
+        val googlePurchaseWrapper = getMockedPurchaseWrapper()
+        val token = googlePurchaseWrapper.purchaseToken
 
         every {
             mockDeviceCache.addSuccessfullyPostedToken(token)
@@ -136,13 +112,8 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
 
     @Test
     fun `restored tokens are saved in cache when acknowledging`() {
-        val sku = "sub"
-        val token = "token_sub"
-        val historyRecordWrapper = getMockedPurchaseHistoryRecordWrapper(
-            sku,
-            token,
-            ProductType.SUBS
-        )
+        val historyRecordWrapper = getMockedPurchaseHistoryRecordWrapper()
+        val token = historyRecordWrapper.purchaseToken
 
         every {
             mockDeviceCache.addSuccessfullyPostedToken(token)
@@ -167,14 +138,8 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
 
     @Test
     fun `tokens are not saved in cache if acknowledge fails`() {
-        val sku = "sub"
-        val token = "token_sub"
-        val googlePurchaseWrapper = getMockedPurchaseWrapper(
-            sku,
-            token,
-            ProductType.SUBS,
-            "offering_a"
-        )
+        val googlePurchaseWrapper = getMockedPurchaseWrapper()
+        val token = googlePurchaseWrapper.purchaseToken
 
         wrapper.consumeAndSave(
             shouldTryToConsume = true,
@@ -195,13 +160,8 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
 
     @Test
     fun `restored tokens are not save in cache if acknowledge fails`() {
-        val sku = "sub"
-        val token = "token_sub"
-        val historyRecordWrapper = getMockedPurchaseHistoryRecordWrapper(
-            sku,
-            token,
-            ProductType.SUBS
-        )
+        val historyRecordWrapper = getMockedPurchaseHistoryRecordWrapper()
+        val token = historyRecordWrapper.purchaseToken
 
         wrapper.consumeAndSave(
             shouldTryToConsume = true,
@@ -222,14 +182,8 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
 
     @Test
     fun `subscriptions are acknowledged`() {
-        val sku = "sub"
-        val token = "token_sub"
-        val googlePurchaseWrapper = getMockedPurchaseWrapper(
-            sku,
-            token,
-            ProductType.SUBS,
-            "offering_a"
-        )
+        val googlePurchaseWrapper = getMockedPurchaseWrapper()
+        val token = googlePurchaseWrapper.purchaseToken
 
         every {
             mockDeviceCache.addSuccessfullyPostedToken(token)
@@ -254,13 +208,8 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
 
     @Test
     fun `restored subscriptions are acknowledged`() {
-        val sku = "sub"
-        val token = "token_sub"
-        val historyRecordWrapper = getMockedPurchaseHistoryRecordWrapper(
-            sku,
-            token,
-            ProductType.SUBS
-        )
+        val historyRecordWrapper = getMockedPurchaseHistoryRecordWrapper()
+        val token = historyRecordWrapper.purchaseToken
 
         every {
             mockDeviceCache.addSuccessfullyPostedToken(token)
@@ -285,14 +234,8 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
 
     @Test
     fun `if it shouldn't consume transactions, don't acknowledge and save it in cache`() {
-        val sku = "sub"
-        val token = "token_sub"
-        val googlePurchaseWrapper = getMockedPurchaseWrapper(
-            sku,
-            token,
-            ProductType.SUBS,
-            "offering_a"
-        )
+        val googlePurchaseWrapper = getMockedPurchaseWrapper()
+        val token = googlePurchaseWrapper.purchaseToken
 
         every {
             mockDeviceCache.addSuccessfullyPostedToken(token)
@@ -316,13 +259,8 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
 
     @Test
     fun `if it shouldn't consume restored transactions, don't acknowledge and save it in cache`() {
-        val sku = "sub"
-        val token = "token_sub"
-        val historyRecordWrapper = getMockedPurchaseHistoryRecordWrapper(
-            sku,
-            token,
-            ProductType.SUBS
-        )
+        val historyRecordWrapper = getMockedPurchaseHistoryRecordWrapper()
+        val token = historyRecordWrapper.purchaseToken
 
         every {
             mockDeviceCache.addSuccessfullyPostedToken(token)
@@ -346,15 +284,8 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
 
     @Test
     fun `Do not acknowledge purchases that are already acknowledged`() {
-        val sku = "sub"
-        val token = "token_sub"
-        val googlePurchaseWrapper = getMockedPurchaseWrapper(
-            sku,
-            token,
-            ProductType.SUBS,
-            "offering_a",
-            acknowledged = true
-        )
+        val googlePurchaseWrapper = getMockedPurchaseWrapper(acknowledged = true)
+        val token = googlePurchaseWrapper.purchaseToken
 
         every {
             mockDeviceCache.addSuccessfullyPostedToken(token)
@@ -1037,7 +968,7 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
     }
 
     @Test
-    fun `If service returns SERVICE_UNAVAILABLE, don't retry and error if user in session for unsynced active purchases`() {
+    fun `If SERVICE_UNAVAILABLE, error if user in session acking unsynced active purchases`() {
         val slot = slot<AcknowledgePurchaseResponseListener>()
         val acknowledgeStubbing = every {
             mockClient.acknowledgePurchase(
@@ -1219,35 +1150,25 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
     // endregion retries
 
     private fun getMockedPurchaseWrapper(
-        productId: String,
-        purchaseToken: String,
-        productType: ProductType,
-        offeringIdentifier: String? = null,
-        purchaseState: Int = Purchase.PurchaseState.PURCHASED,
         acknowledged: Boolean = false
     ): StoreTransaction {
         val p = stubGooglePurchase(
-            productIds = listOf(productId),
-            purchaseToken = purchaseToken,
-            purchaseState = purchaseState,
+            productIds = listOf("sub"),
+            purchaseToken = "token_sub",
             acknowledged = acknowledged
         )
 
-        return p.toStoreTransaction(productType, offeringIdentifier)
+        return p.toStoreTransaction(ProductType.SUBS, "offering_a")
     }
 
-    private fun getMockedPurchaseHistoryRecordWrapper(
-        productId: String,
-        purchaseToken: String,
-        productType: ProductType
-    ): StoreTransaction {
+    private fun getMockedPurchaseHistoryRecordWrapper(): StoreTransaction {
         val p: PurchaseHistoryRecord = stubPurchaseHistoryRecord(
-            productIds = listOf(productId),
-            purchaseToken = purchaseToken
+            productIds = listOf("sub"),
+            purchaseToken = "token_sub"
         )
 
         return p.toStoreTransaction(
-            type = productType
+            type = ProductType.SUBS
         )
     }
 
