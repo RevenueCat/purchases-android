@@ -28,7 +28,7 @@ internal class AcknowledgePurchaseUseCase(
         }
 
     override val errorMessage: String
-        get() = "Error consuming purchase"
+        get() = "Error acknowledging purchase"
 
     override fun executeAsync() {
         withConnectedClient {

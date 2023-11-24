@@ -71,6 +71,101 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
     }
 
     @Test
+    fun `tokens from UNSYNCED_ACTIVE_PURCHASES are saved in cache when acknowledging`() {
+        val sku = "sub"
+        val token = "token_sub"
+        val googlePurchaseWrapper = getMockedPurchaseWrapper(
+            sku,
+            token,
+            ProductType.SUBS,
+            "offering_a"
+        )
+
+        every {
+            mockDeviceCache.addSuccessfullyPostedToken(token)
+        } just Runs
+
+        wrapper.consumeAndSave(
+            shouldTryToConsume = true,
+            purchase = googlePurchaseWrapper,
+            appInBackground = false,
+            initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
+        )
+
+        assertThat(capturedAcknowledgeResponseListener.isCaptured).isTrue
+        capturedAcknowledgeResponseListener.captured.onAcknowledgePurchaseResponse(
+            billingClientOKResult
+        )
+
+        verify(exactly = 1) {
+            mockDeviceCache.addSuccessfullyPostedToken(token)
+        }
+    }
+
+    @Test
+    fun `tokens from PURCHASES are saved in cache when acknowledging`() {
+        val sku = "sub"
+        val token = "token_sub"
+        val googlePurchaseWrapper = getMockedPurchaseWrapper(
+            sku,
+            token,
+            ProductType.SUBS,
+            "offering_a"
+        )
+
+        every {
+            mockDeviceCache.addSuccessfullyPostedToken(token)
+        } just Runs
+
+        wrapper.consumeAndSave(
+            shouldTryToConsume = true,
+            purchase = googlePurchaseWrapper,
+            appInBackground = false,
+            initiationSource = PostReceiptInitiationSource.PURCHASE,
+        )
+
+        assertThat(capturedAcknowledgeResponseListener.isCaptured).isTrue
+        capturedAcknowledgeResponseListener.captured.onAcknowledgePurchaseResponse(
+            billingClientOKResult
+        )
+
+        verify(exactly = 1) {
+            mockDeviceCache.addSuccessfullyPostedToken(token)
+        }
+    }
+
+    @Test
+    fun `restored tokens are saved in cache when acknowledging`() {
+        val sku = "sub"
+        val token = "token_sub"
+        val historyRecordWrapper = getMockedPurchaseHistoryRecordWrapper(
+            sku,
+            token,
+            ProductType.SUBS
+        )
+
+        every {
+            mockDeviceCache.addSuccessfullyPostedToken(token)
+        } just Runs
+
+        wrapper.consumeAndSave(
+            shouldTryToConsume = true,
+            purchase = historyRecordWrapper,
+            appInBackground = false,
+            initiationSource = PostReceiptInitiationSource.RESTORE,
+        )
+
+        assertThat(capturedAcknowledgeResponseListener.isCaptured).isTrue
+        capturedAcknowledgeResponseListener.captured.onAcknowledgePurchaseResponse(
+            billingClientOKResult
+        )
+
+        verify(exactly = 1) {
+            mockDeviceCache.addSuccessfullyPostedToken(token)
+        }
+    }
+
+    @Test
     fun `tokens are not saved in cache if acknowledge fails`() {
         val sku = "sub"
         val token = "token_sub"
