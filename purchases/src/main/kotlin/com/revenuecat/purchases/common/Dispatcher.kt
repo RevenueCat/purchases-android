@@ -5,6 +5,8 @@
 
 package com.revenuecat.purchases.common
 
+import android.os.Handler
+import android.os.Looper
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.verification.SignatureVerificationException
@@ -24,6 +26,7 @@ internal enum class Delay(val minDelay: Duration, val maxDelay: Duration) {
 
 internal open class Dispatcher(
     private val executorService: ExecutorService,
+    private val mainHandler: Handler? = Handler(Looper.getMainLooper()),
     private val runningIntegrationTests: Boolean = false,
 ) {
     private companion object {
@@ -59,28 +62,24 @@ internal open class Dispatcher(
     ) {
         synchronized(this.executorService) {
             if (!executorService.isShutdown) {
-                val future = if (delay != Delay.NONE && executorService is ScheduledExecutorService) {
+                if (delay != Delay.NONE && executorService is ScheduledExecutorService) {
                     var delayToApply = (delay.minDelay.inWholeMilliseconds..delay.maxDelay.inWholeMilliseconds).random()
                     if (runningIntegrationTests) {
                         delayToApply = (delayToApply * INTEGRATION_TEST_DELAY_PERCENTAGE).toLong()
                     }
                     executorService.schedule(command, delayToApply, TimeUnit.MILLISECONDS)
                 } else {
-                    executorService.submit(command)
-                }
-
-                // Exceptions are being swallowed if using execute instead of submit
-                // Future.get is blocking so we create a Thread
-                // More info: https://github.com/RevenueCat/purchases-android/pull/234
-                Thread {
-                    try {
-                        future.get()
-                    } catch (e: InterruptedException) {
-                        Thread.currentThread().interrupt()
-                    } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-                        e.cause?.let { throw it }
+                    executorService.submit {
+                        try {
+                            command.run()
+                        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+                            errorLog("Exception running command: $e")
+                            mainHandler?.post {
+                                e.cause?.let { throw it }
+                            }
+                        }
                     }
-                }.start()
+                }
             }
         }
     }
