@@ -19,12 +19,14 @@ internal object BillingFactory {
         cache: DeviceCache,
         observerMode: Boolean,
         diagnosticsTrackerIfEnabled: DiagnosticsTracker?,
+        stateProvider: PurchasesStateProvider,
     ) = when (store) {
         Store.PLAY_STORE -> BillingWrapper(
             BillingWrapper.ClientFactory(application),
             Handler(application.mainLooper),
             cache,
             diagnosticsTrackerIfEnabled,
+            stateProvider,
         )
         Store.AMAZON -> {
             try {
@@ -34,6 +36,7 @@ internal object BillingFactory {
                     observerMode,
                     Handler(application.mainLooper),
                     backendHelper,
+                    stateProvider,
                 )
             } catch (e: NoClassDefFoundError) {
                 errorLog("Make sure purchases-amazon is added as dependency", e)

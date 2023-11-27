@@ -5,6 +5,7 @@ import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.PurchasesUpdatedListener
+import com.revenuecat.purchases.PurchasesStateProvider
 import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.caching.DeviceCache
@@ -45,6 +46,7 @@ internal open class BaseBillingUseCaseTest {
 
     private var onConnectedCalled: Boolean = false
     private var mockPurchasesListener: BillingAbstract.PurchasesUpdatedListener = mockk()
+    private val purchasesStateProvider = PurchasesStateProvider()
 
     @Before
     open fun setup() {
@@ -75,7 +77,14 @@ internal open class BaseBillingUseCaseTest {
             mockClient.isReady
         } returns false andThen true
 
-        wrapper = BillingWrapper(mockClientFactory, handler, mockDeviceCache, mockDiagnosticsTracker, mockDateProvider)
+        wrapper = BillingWrapper(
+            mockClientFactory,
+            handler,
+            mockDeviceCache,
+            mockDiagnosticsTracker,
+            purchasesStateProvider,
+            mockDateProvider
+        )
         wrapper.purchasesUpdatedListener = mockPurchasesListener
         wrapper.startConnectionOnMainThread()
         onConnectedCalled = false
