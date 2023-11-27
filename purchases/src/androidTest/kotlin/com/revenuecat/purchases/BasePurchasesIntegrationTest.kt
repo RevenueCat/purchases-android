@@ -143,8 +143,9 @@ open class BasePurchasesIntegrationTest {
         every {
             mockBillingAbstract.queryPurchases(
                 testUserId,
-                capture(callbackSlot),
-                any(),
+                appInBackground = any(),
+                onSuccess = capture(callbackSlot),
+                onError = any(),
             )
         } answers {
             callbackSlot.captured.invoke(activePurchases)

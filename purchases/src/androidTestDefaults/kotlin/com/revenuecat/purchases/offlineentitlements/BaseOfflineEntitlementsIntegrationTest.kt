@@ -50,13 +50,13 @@ abstract class BaseOfflineEntitlementsIntegrationTest : BasePurchasesIntegration
 
     protected fun assertAcknowledgePurchaseDidNotHappen() {
         verify(exactly = 0) {
-            mockBillingAbstract.consumeAndSave(any(), any(), initiationSource)
+            mockBillingAbstract.consumeAndSave(any(), any(), initiationSource = any(), appInBackground = any())
         }
     }
 
     protected fun assertAcknowledgePurchaseDidHappen(timeout: Duration = testTimeout) {
         verify(timeout = timeout.inWholeMilliseconds) {
-            mockBillingAbstract.consumeAndSave(any(), any(), initiationSource)
+            mockBillingAbstract.consumeAndSave(any(), any(), initiationSource = any(), appInBackground = any())
         }
     }
 
