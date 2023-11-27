@@ -588,11 +588,7 @@ DESC
   desc "Clones or updates snapshots repo"
   lane :fetch_snapshots do
     Dir.chdir("..") do
-      if !File.directory?(snapshots_repo_name)
-        UI.important("Cloning snapshots repo")
-
-        sh "git", "clone", "git@github.com:RevenueCat/#{snapshots_repo_name}.git"
-      end
+      clone_snapshots_repo_if_needed(snapshots_repo_name)
 
       commit = current_snapshots_commit
       UI.message("Updating snapshots repo to #{commit}")
@@ -648,6 +644,10 @@ DESC
   lane :update_snapshots_repo do
     new_hash = ""
 
+    Dir.chdir("..") do
+      clone_snapshots_repo_if_needed(snapshots_repo_name)
+    end
+
     Dir.chdir("../#{snapshots_repo_name}") do
       sh "git", "checkout", "main"
       sh "git", "pull", "--rebase", "origin"
@@ -655,7 +655,9 @@ DESC
     end
 
     UI.important("Updating snapshot commit to #{new_hash}")
-    update_snapshots_commit(new_hash)
+    Dir.chdir("..") do
+      update_snapshots_commit(new_hash)
+    end
   end
 
   private_lane :generate_snapshots do |options|
@@ -762,6 +764,15 @@ end
 def current_snapshots_commit
   File.read(snapshots_commit_file).strip
 end
+
 def update_snapshots_commit(hash)
   File.write(snapshots_commit_file, hash)
+end
+
+def clone_snapshots_repo_if_needed(repo_name)
+  if !File.directory?(repo_name)
+    UI.important("Cloning snapshots repo")
+
+    sh "git", "clone", "git@github.com:RevenueCat/#{repo_name}.git"
+  end
 end
