@@ -44,6 +44,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
@@ -287,7 +288,8 @@ private fun SelectPackageButton(
             Button(
                 modifier = modifier
                     .alpha(buttonAlpha)
-                    .padding(1.dp) // Trick to prevent white line around the button border
+                    // Trick to prevent white line around the button border
+                    .padding(with(LocalDensity.current) { 1.toDp() })
                     .semantics {
                         selected = isSelected
                         // Append discount
