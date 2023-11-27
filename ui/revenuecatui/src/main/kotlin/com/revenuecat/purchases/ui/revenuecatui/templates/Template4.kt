@@ -7,8 +7,8 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -274,10 +274,20 @@ private fun SelectPackageButton(
     ) {
         DiscountRelativeToMostExpensivePerMonth(colors = colors, text = discountText, selected = isSelected)
 
-        Box {
+        Box(
+            modifier = Modifier
+                // Apply the border to the box instead of the button to avoid the border showing
+                // a white line around
+                .border(
+                    width = UIConstant.defaultPackageBorderWidth,
+                    color = mainColor,
+                    shape = RoundedCornerShape(UIConstant.defaultCornerRadius),
+                ),
+        ) {
             Button(
                 modifier = modifier
                     .alpha(buttonAlpha)
+                    .padding(1.dp) // Trick to prevent white line around the button border
                     .semantics {
                         selected = isSelected
                         // Append discount
@@ -292,10 +302,6 @@ private fun SelectPackageButton(
                 contentPadding = PaddingValues(
                     vertical = UIConstant.defaultVerticalSpacing,
                     horizontal = UIConstant.defaultHorizontalPadding,
-                ),
-                border = BorderStroke(
-                    UIConstant.defaultPackageBorderWidth,
-                    mainColor,
                 ),
             ) {
                 SelectPackageButtonContent(packageInfo, colors)
