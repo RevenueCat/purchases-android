@@ -7,8 +7,8 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -44,6 +44,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
@@ -274,10 +275,21 @@ private fun SelectPackageButton(
     ) {
         DiscountRelativeToMostExpensivePerMonth(colors = colors, text = discountText, selected = isSelected)
 
-        Box {
+        Box(
+            modifier = Modifier
+                // Apply the border to the box instead of the button to avoid the border showing
+                // a white line around
+                .border(
+                    width = UIConstant.defaultPackageBorderWidth,
+                    color = mainColor,
+                    shape = RoundedCornerShape(UIConstant.defaultCornerRadius),
+                ),
+        ) {
             Button(
                 modifier = modifier
                     .alpha(buttonAlpha)
+                    // Trick to prevent white line around the button border
+                    .padding(with(LocalDensity.current) { 1.toDp() })
                     .semantics {
                         selected = isSelected
                         // Append discount
@@ -292,10 +304,6 @@ private fun SelectPackageButton(
                 contentPadding = PaddingValues(
                     vertical = UIConstant.defaultVerticalSpacing,
                     horizontal = UIConstant.defaultHorizontalPadding,
-                ),
-                border = BorderStroke(
-                    UIConstant.defaultPackageBorderWidth,
-                    mainColor,
                 ),
             ) {
                 SelectPackageButtonContent(packageInfo, colors)
