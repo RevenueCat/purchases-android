@@ -19,9 +19,7 @@ import com.android.billingclient.api.InAppMessageParams
 import com.android.billingclient.api.InAppMessageResult
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchaseHistoryRecord
-import com.android.billingclient.api.PurchasesResponseListener
 import com.android.billingclient.api.PurchasesUpdatedListener
-import com.android.billingclient.api.QueryPurchasesParams
 import com.revenuecat.purchases.PostReceiptInitiationSource
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
@@ -33,7 +31,6 @@ import com.revenuecat.purchases.common.DefaultDateProvider
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.ReplaceProductInfo
 import com.revenuecat.purchases.common.StoreProductsCallback
-import com.revenuecat.purchases.common.between
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
@@ -53,6 +50,8 @@ import com.revenuecat.purchases.google.usecase.QueryProductDetailsUseCase
 import com.revenuecat.purchases.google.usecase.QueryProductDetailsUseCaseParams
 import com.revenuecat.purchases.google.usecase.QueryPurchaseHistoryUseCase
 import com.revenuecat.purchases.google.usecase.QueryPurchaseHistoryUseCaseParams
+import com.revenuecat.purchases.google.usecase.QueryPurchasesByTypeUseCase
+import com.revenuecat.purchases.google.usecase.QueryPurchasesByTypeUseCaseParams
 import com.revenuecat.purchases.google.usecase.QueryPurchasesUseCase
 import com.revenuecat.purchases.google.usecase.QueryPurchasesUseCaseParams
 import com.revenuecat.purchases.models.GooglePurchasingData
@@ -69,11 +68,8 @@ import com.revenuecat.purchases.utils.Result
 import java.io.PrintWriter
 import java.io.StringWriter
 import java.lang.ref.WeakReference
-import java.util.Date
 import java.util.concurrent.ConcurrentLinkedQueue
-import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.math.min
-import kotlin.time.Duration
 
 private const val RECONNECT_TIMER_START_MILLISECONDS = 1L * 1000L
 private const val RECONNECT_TIMER_MAX_TIME_MILLISECONDS = 1000L * 60L * 15L // 15 minutes
@@ -450,7 +446,7 @@ internal class BillingWrapper(
         onError: (PurchasesError) -> Unit,
     ) {
         log(LogIntent.DEBUG, RestoreStrings.QUERYING_PURCHASE)
-        val useCase = QueryPurchasesUseCase(
+        QueryPurchasesUseCase(
             QueryPurchasesUseCaseParams(
                 dateProvider,
                 diagnosticsTrackerIfEnabled,
@@ -460,8 +456,7 @@ internal class BillingWrapper(
             onError,
             ::withConnectedClient,
             ::executeRequestOnUIThread,
-        )
-        useCase.run()
+        ).run()
     }
 
     override fun findPurchaseInPurchaseHistory(
@@ -502,51 +497,45 @@ internal class BillingWrapper(
     }
 
     @VisibleForTesting(otherwise = PRIVATE)
-    @Suppress("ReturnCount")
     internal fun getPurchaseType(purchaseToken: String, listener: (ProductType) -> Unit) {
-        billingClient?.let { client ->
-
-            val querySubsPurchasesParams = BillingClient.ProductType.SUBS.buildQueryPurchasesParams()
-            if (querySubsPurchasesParams == null) {
-                errorLog(PurchaseStrings.INVALID_PRODUCT_TYPE.format("getPurchaseType"))
-                listener(ProductType.UNKNOWN)
-                return
-            }
-
-            client.queryPurchasesAsyncWithTrackingEnsuringOneResponse(
-                BillingClient.ProductType.SUBS,
-                querySubsPurchasesParams,
-            ) querySubPurchasesAsync@{ querySubsResult, subsPurchasesList ->
-
-                val subsResponseOK = querySubsResult.responseCode == BillingClient.BillingResponseCode.OK
-                val subFound = subsPurchasesList.any { it.purchaseToken == purchaseToken }
-                if (subsResponseOK && subFound) {
-                    listener(ProductType.SUBS)
-                    return@querySubPurchasesAsync
-                }
-
-                val queryInAppsPurchasesParams = BillingClient.ProductType.INAPP.buildQueryPurchasesParams()
-                if (queryInAppsPurchasesParams == null) {
-                    errorLog(PurchaseStrings.INVALID_PRODUCT_TYPE.format("getPurchaseType"))
-                    listener(ProductType.UNKNOWN)
-                    return@querySubPurchasesAsync
-                }
-                client.queryPurchasesAsyncWithTrackingEnsuringOneResponse(
-                    BillingClient.ProductType.INAPP,
-                    queryInAppsPurchasesParams,
-                ) queryInAppPurchasesAsync@{ queryInAppsResult, inAppPurchasesList ->
-
-                    val inAppsResponseIsOK = queryInAppsResult.responseCode == BillingClient.BillingResponseCode.OK
-                    val inAppFound = inAppPurchasesList.any { it.purchaseToken == purchaseToken }
-                    if (inAppsResponseIsOK && inAppFound) {
+        queryPurchaseType(BillingClient.ProductType.SUBS, purchaseToken, listener) { subFound ->
+            if (subFound) {
+                listener(ProductType.SUBS)
+            } else {
+                queryPurchaseType(BillingClient.ProductType.INAPP, purchaseToken, listener) { inAppFound ->
+                    if (inAppFound) {
                         listener(ProductType.INAPP)
-                        return@queryInAppPurchasesAsync
+                    } else {
+                        listener(ProductType.UNKNOWN)
                     }
-                    listener(ProductType.UNKNOWN)
-                    return@queryInAppPurchasesAsync
                 }
             }
-        } ?: listener(ProductType.UNKNOWN)
+        }
+    }
+
+    private fun queryPurchaseType(
+        productType: String,
+        purchaseToken: String,
+        listener: (ProductType) -> Unit,
+        resultHandler: (Boolean) -> Unit,
+    ) {
+        QueryPurchasesByTypeUseCase(
+            QueryPurchasesByTypeUseCaseParams(
+                dateProvider,
+                diagnosticsTrackerIfEnabled,
+                appInBackground = false,
+                productType = productType,
+            ),
+            onSuccess = { purchases ->
+                resultHandler(purchases.values.any { it.purchaseToken == purchaseToken })
+            },
+            onError = { error ->
+                errorLog(error)
+                listener(ProductType.UNKNOWN)
+            },
+            withConnectedClient = ::withConnectedClient,
+            executeRequestOnUIThread = ::executeRequestOnUIThread,
+        ).run()
     }
 
     override fun onPurchasesUpdated(
@@ -805,39 +794,6 @@ internal class BillingWrapper(
                 )
             }
         }
-    }
-
-    private fun BillingClient.queryPurchasesAsyncWithTrackingEnsuringOneResponse(
-        @BillingClient.ProductType productType: String,
-        queryParams: QueryPurchasesParams,
-        listener: PurchasesResponseListener,
-    ) {
-        val hasResponded = AtomicBoolean(false)
-        val requestStartTime = dateProvider.now
-        queryPurchasesAsync(queryParams) { billingResult, purchases ->
-            if (hasResponded.getAndSet(true)) {
-                log(
-                    LogIntent.GOOGLE_ERROR,
-                    OfferingStrings.EXTRA_QUERY_PURCHASES_RESPONSE.format(billingResult.responseCode),
-                )
-                return@queryPurchasesAsync
-            }
-            trackGoogleQueryPurchasesRequestIfNeeded(productType, billingResult, requestStartTime)
-            listener.onQueryPurchasesResponse(billingResult, purchases)
-        }
-    }
-
-    private fun trackGoogleQueryPurchasesRequestIfNeeded(
-        @BillingClient.ProductType productType: String,
-        billingResult: BillingResult,
-        requestStartTime: Date,
-    ) {
-        diagnosticsTrackerIfEnabled?.trackGoogleQueryPurchasesRequest(
-            productType,
-            billingResult.responseCode,
-            billingResult.debugMessage,
-            responseTime = Duration.between(requestStartTime, dateProvider.now),
-        )
     }
 
     private fun trackProductDetailsNotSupportedIfNeeded() {
