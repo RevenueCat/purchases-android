@@ -93,12 +93,9 @@ internal class PurchasesOrchestrator constructor(
     private val mainHandler: Handler? = Handler(Looper.getMainLooper()),
 ) : LifecycleDelegate, CustomActivityLifecycleHandler {
 
-    /** @suppress */
     internal var state: PurchasesState
-        @Synchronized
         get() = stateProvider.purchasesState
 
-        @Synchronized
         set(value) {
             stateProvider.purchasesState = value
         }
