@@ -103,6 +103,9 @@ internal class BillingWrapper(
     @set:Synchronized
     private var reconnectionAlreadyScheduled = false
 
+    val appInBackground: Boolean
+        get() = purchasesStateProvider.purchasesState.appInBackground
+
     class ClientFactory(private val context: Context) {
         @UiThread
         fun buildClient(listener: com.android.billingclient.api.PurchasesUpdatedListener): BillingClient {
@@ -525,7 +528,7 @@ internal class BillingWrapper(
             QueryPurchasesByTypeUseCaseParams(
                 dateProvider,
                 diagnosticsTrackerIfEnabled,
-                appInBackground = purchasesStateProvider.purchasesState.appInBackground,
+                appInBackground = appInBackground,
                 productType = productType,
             ),
             onSuccess = { purchases ->
