@@ -1,5 +1,6 @@
 package com.revenuecat.paywallstester
 
+import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
@@ -38,5 +39,12 @@ class MainActivity : ComponentActivity(), PaywallResultHandler {
 
     fun launchPaywall(offering: Offering? = null) {
         paywallActivityLauncher.launch(offering)
+    }
+
+    @Suppress("UnusedParameter")
+    fun launchPaywallFooterViewAsActivity(offering: Offering? = null) {
+        // WIP: Pass offering to PaywallFooterViewActivity
+        val intent = Intent(this, PaywallFooterViewActivity::class.java)
+        startActivity(intent)
     }
 }

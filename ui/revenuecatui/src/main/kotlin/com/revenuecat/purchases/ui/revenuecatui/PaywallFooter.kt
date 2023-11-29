@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
@@ -29,27 +30,37 @@ import androidx.compose.ui.tooling.preview.Preview
 fun PaywallFooter(
     options: PaywallOptions,
     condensed: Boolean = false,
-    mainContent: @Composable (PaddingValues) -> Unit,
+    mainContent: @Composable ((PaddingValues) -> Unit)? = null,
 ) {
-    Column(
-        modifier = Modifier.fillMaxSize(),
-        // This is a workaround to make the main content be able to go below the footer, so it's visible through
-        // the rounded corners. We pass this padding back to the developer so they can add this padding to their content
-        verticalArrangement = Arrangement.spacedBy(-UIConstant.defaultCornerRadius),
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f),
-        ) {
-            mainContent(PaddingValues(bottom = UIConstant.defaultCornerRadius))
-        }
+    val paywallComposable = @Composable {
         Paywall(
             options.copy(
                 mode = PaywallMode.footerMode(condensed),
                 shouldDisplayDismissButton = false,
             ),
         )
+    }
+    if (mainContent == null) {
+        Box(modifier = Modifier.fillMaxWidth().wrapContentHeight()) {
+            paywallComposable()
+        }
+    } else {
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            // This is a workaround to make the main content be able to go below the footer, so it's visible through
+            // the rounded corners. We pass this padding back to the developer so they can add this padding to
+            // their content
+            verticalArrangement = Arrangement.spacedBy(-UIConstant.defaultCornerRadius),
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+            ) {
+                mainContent(PaddingValues(bottom = UIConstant.defaultCornerRadius))
+            }
+            paywallComposable()
+        }
     }
 }
 
@@ -73,4 +84,14 @@ private fun PaywallFooterPreview() {
             }
         }
     }
+}
+
+@Suppress("MagicNumber")
+@ExperimentalPreviewRevenueCatUIPurchasesAPI
+@Preview(showBackground = true)
+@Composable
+private fun PaywallFooterNoContentPreview() {
+    PaywallFooter(
+        options = PaywallOptions.Builder(dismissRequest = {}).build(),
+    )
 }

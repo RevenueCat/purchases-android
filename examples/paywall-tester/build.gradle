@@ -50,6 +50,9 @@ android {
     buildFeatures {
         compose true
     }
+    viewBinding {
+        enabled = true
+    }
     composeOptions {
         kotlinCompilerExtensionVersion '1.4.0-alpha02'
     }
@@ -79,6 +82,7 @@ dependencies {
     implementation libs.compose.window.size
     implementation libs.navigation.compose
     implementation libs.compose.ui.google.fonts
+    implementation libs.androidx.appcompat
     debugImplementation libs.compose.ui.tooling
     debugImplementation libs.androidx.test.compose.manifest
 }
