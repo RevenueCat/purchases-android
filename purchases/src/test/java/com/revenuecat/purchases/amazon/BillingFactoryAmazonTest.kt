@@ -3,6 +3,7 @@ package com.revenuecat.purchases.amazon
 import android.app.Application
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.BillingFactory
+import com.revenuecat.purchases.PurchasesState
 import com.revenuecat.purchases.PurchasesStateCache
 import com.revenuecat.purchases.PurchasesStateProvider
 import com.revenuecat.purchases.Store
@@ -30,7 +31,7 @@ class BillingFactoryAmazonTest {
             mockCache,
             observerMode = false,
             mockDiagnosticsTracker,
-            stateProvider = PurchasesStateCache()
+            stateProvider = PurchasesStateCache(PurchasesState())
         )
     }
 
@@ -47,7 +48,7 @@ class BillingFactoryAmazonTest {
             mockCache,
             observerMode = false,
             diagnosticsTrackerIfEnabled = null,
-            stateProvider = PurchasesStateCache()
+            stateProvider = PurchasesStateCache(PurchasesState())
         )
     }
 }

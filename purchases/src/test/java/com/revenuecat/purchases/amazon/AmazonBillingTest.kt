@@ -11,6 +11,7 @@ import com.revenuecat.purchases.PostReceiptInitiationSource
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCallback
 import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.PurchasesState
 import com.revenuecat.purchases.PurchasesStateCache
 import com.revenuecat.purchases.PurchasesStateProvider
 import com.revenuecat.purchases.amazon.handler.ProductDataHandler
@@ -73,7 +74,7 @@ class AmazonBillingTest {
             purchaseUpdatesHandler = mockPurchaseUpdatesHandler,
             userDataHandler = mockUserDataHandler,
             mainHandler = handler,
-            stateProvider = PurchasesStateCache()
+            stateProvider = PurchasesStateCache(PurchasesState())
         )
 
         mockSetupFunctions()
@@ -94,7 +95,7 @@ class AmazonBillingTest {
             purchaseHandler = mockPurchaseHandler,
             purchaseUpdatesHandler = mockPurchaseUpdatesHandler,
             userDataHandler = mockUserDataHandler,
-            stateProvider = PurchasesStateCache()
+            stateProvider = PurchasesStateCache(PurchasesState())
         )
 
         mockSetupFunctions()

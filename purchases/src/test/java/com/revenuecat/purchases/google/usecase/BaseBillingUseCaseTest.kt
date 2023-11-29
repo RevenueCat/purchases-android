@@ -5,6 +5,7 @@ import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.PurchasesUpdatedListener
+import com.revenuecat.purchases.PurchasesState
 import com.revenuecat.purchases.PurchasesStateCache
 import com.revenuecat.purchases.PurchasesStateProvider
 import com.revenuecat.purchases.common.BillingAbstract
@@ -47,7 +48,7 @@ internal open class BaseBillingUseCaseTest {
 
     private var onConnectedCalled: Boolean = false
     private var mockPurchasesListener: BillingAbstract.PurchasesUpdatedListener = mockk()
-    private val purchasesStateProvider = PurchasesStateCache()
+    private val purchasesStateProvider = PurchasesStateCache(PurchasesState())
 
     @Before
     open fun setup() {
