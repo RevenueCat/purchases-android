@@ -26,7 +26,7 @@ class BillingFactoryTest {
             mockCache,
             observerMode = false,
             mockDiagnosticsTracker,
-            PurchasesStateProvider()
+            PurchasesStateCache()
         )
     }
 
@@ -43,7 +43,7 @@ class BillingFactoryTest {
             mockCache,
             observerMode = false,
             diagnosticsTrackerIfEnabled = null,
-            PurchasesStateProvider()
+            PurchasesStateCache()
         )
     }
 }

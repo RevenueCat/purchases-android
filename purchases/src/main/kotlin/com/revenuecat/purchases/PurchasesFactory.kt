@@ -126,7 +126,7 @@ internal class PurchasesFactory(
                 backendHelper,
             )
 
-            val purchasesStateProvider = PurchasesStateProvider()
+            val purchasesStateProvider = PurchasesStateCache()
 
             // Override used for integration tests.
             val billing: BillingAbstract = overrideBillingAbstract ?: BillingFactory.createBilling(

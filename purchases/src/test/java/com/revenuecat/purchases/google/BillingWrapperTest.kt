@@ -26,6 +26,7 @@ import com.revenuecat.purchases.PostReceiptInitiationSource
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.PurchasesStateCache
 import com.revenuecat.purchases.PurchasesStateProvider
 import com.revenuecat.purchases.assertDebugLog
 import com.revenuecat.purchases.assertErrorLog
@@ -111,7 +112,7 @@ class BillingWrapperTest {
 
     private val subsGoogleProductType = ProductType.SUBS.toGoogleProductType()!!
     private val inAppGoogleProductType = ProductType.INAPP.toGoogleProductType()!!
-    private val purchasesStateProvider = PurchasesStateProvider()
+    private val purchasesStateProvider = PurchasesStateCache()
 
     @Before
     fun setup() {

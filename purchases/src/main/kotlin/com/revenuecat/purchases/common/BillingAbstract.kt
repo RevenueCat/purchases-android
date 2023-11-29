@@ -15,7 +15,6 @@ internal typealias StoreProductsCallback = (List<StoreProduct>) -> Unit
 
 @SuppressWarnings("TooManyFunctions")
 internal abstract class BillingAbstract(
-    @get:Synchronized
     protected val purchasesStateProvider: PurchasesStateProvider,
 ) {
 
