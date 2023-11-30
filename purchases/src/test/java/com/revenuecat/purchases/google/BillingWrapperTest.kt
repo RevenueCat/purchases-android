@@ -206,7 +206,6 @@ class BillingWrapperTest {
         wrapper.consumePurchase(
             token = token,
             initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
-            appInBackground = false,
         ) {
             consumePurchaseCompleted = true
         }
@@ -230,7 +229,6 @@ class BillingWrapperTest {
         wrapper.consumePurchase(
             token = token,
             initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
-            appInBackground = false,
         ) {
             consumePurchaseResponse1Called = true
         }
@@ -239,7 +237,6 @@ class BillingWrapperTest {
         wrapper.consumePurchase(
             token = token,
             initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
-            appInBackground = false,
         ) {
             consumePurchaseResponse2Called = true
         }
@@ -262,7 +259,6 @@ class BillingWrapperTest {
         wrapper.consumePurchase(
             token = token,
             initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
-            appInBackground = false,
         ) {  }
 
         verify(exactly = 2) {
@@ -961,7 +957,6 @@ class BillingWrapperTest {
         wrapper.consumePurchase(
             token = "token",
             initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
-            appInBackground = false,
         ) { }
 
         verify(exactly = 1) { // Just the original connection

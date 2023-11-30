@@ -48,7 +48,6 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         wrapper.consumePurchase(
             token,
             initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
-            appInBackground = false
         ) {  }
 
         assertThat(capturedConsumeResponseListener.isCaptured).isTrue

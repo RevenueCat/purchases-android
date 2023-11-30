@@ -51,7 +51,6 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         wrapper.acknowledge(
             token,
             initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
-            appInBackground = false
         ) { }
 
         assertThat(capturedAcknowledgePurchaseParams.isCaptured).isTrue

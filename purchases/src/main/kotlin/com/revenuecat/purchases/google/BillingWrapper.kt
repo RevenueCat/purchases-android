@@ -303,7 +303,6 @@ internal class BillingWrapper(
 
     fun queryPurchaseHistoryAsync(
         @BillingClient.ProductType productType: String,
-        appInBackground: Boolean,
         onReceivePurchaseHistory: (List<PurchaseHistoryRecord>) -> Unit,
         onReceivePurchaseHistoryError: (PurchasesError) -> Unit,
     ) {
@@ -329,11 +328,9 @@ internal class BillingWrapper(
     ) {
         queryPurchaseHistoryAsync(
             BillingClient.ProductType.SUBS,
-            appInBackground,
             { subsPurchasesList ->
                 queryPurchaseHistoryAsync(
                     BillingClient.ProductType.INAPP,
-                    appInBackground,
                     { inAppPurchasesList ->
                         onReceivePurchaseHistory(
                             subsPurchasesList.map {
@@ -371,14 +368,12 @@ internal class BillingWrapper(
             consumePurchase(
                 purchase.purchaseToken,
                 initiationSource,
-                appInBackground,
                 onConsumed = deviceCache::addSuccessfullyPostedToken,
             )
         } else if (shouldTryToConsume && !alreadyAcknowledged) {
             acknowledge(
                 purchase.purchaseToken,
                 initiationSource,
-                appInBackground,
                 onAcknowledged = deviceCache::addSuccessfullyPostedToken,
             )
         } else {
@@ -389,7 +384,6 @@ internal class BillingWrapper(
     internal fun consumePurchase(
         token: String,
         initiationSource: PostReceiptInitiationSource,
-        appInBackground: Boolean,
         onConsumed: (purchaseToken: String) -> Unit,
     ) {
         log(LogIntent.PURCHASE, PurchaseStrings.CONSUMING_PURCHASE.format(token))
@@ -416,7 +410,6 @@ internal class BillingWrapper(
     internal fun acknowledge(
         token: String,
         initiationSource: PostReceiptInitiationSource,
-        appInBackground: Boolean,
         onAcknowledged: (purchaseToken: String) -> Unit,
     ) {
         log(LogIntent.PURCHASE, PurchaseStrings.ACKNOWLEDGING_PURCHASE.format(token))
