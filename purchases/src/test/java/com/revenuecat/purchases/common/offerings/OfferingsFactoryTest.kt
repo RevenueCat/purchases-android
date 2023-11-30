@@ -122,7 +122,6 @@ class OfferingsFactoryTest {
         var purchasesError: PurchasesError? = null
         offeringsFactory.createOfferings(
             offeringsJSON = oneOfferingWithNoProductsResponse,
-            appInBackground = false,
             onError = { purchasesError = it },
             onSuccess = { fail("Expected error") }
         )
@@ -138,7 +137,6 @@ class OfferingsFactoryTest {
         var purchasesError: PurchasesError? = null
         offeringsFactory.createOfferings(
             offeringsJSON = JSONObject("{}"),
-            appInBackground = false,
             onError = { purchasesError = it },
             onSuccess = { fail("Expected error") }
         )
@@ -155,7 +153,6 @@ class OfferingsFactoryTest {
         var purchasesError: PurchasesError? = null
         offeringsFactory.createOfferings(
             offeringsJSON = oneOfferingResponse,
-            appInBackground = false,
             onError = { purchasesError = it },
             onSuccess = { fail("Expected error") }
         )
@@ -258,7 +255,6 @@ class OfferingsFactoryTest {
             billing.queryProductDetailsAsync(
                 type,
                 productIds.toSet(),
-                any(),
                 captureLambda(),
                 any(),
             )

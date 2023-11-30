@@ -24,7 +24,6 @@ internal class OfferingsFactory(
     @SuppressWarnings("TooGenericExceptionCaught", "LongMethod")
     fun createOfferings(
         offeringsJSON: JSONObject,
-        appInBackground: Boolean,
         onError: (PurchasesError) -> Unit,
         onSuccess: (Offerings) -> Unit,
     ) {
@@ -40,7 +39,6 @@ internal class OfferingsFactory(
             } else {
                 getStoreProductsById(
                     productIds = allRequestedProductIdentifiers,
-                    appInBackground = appInBackground,
                     onCompleted = { productsById ->
                         try {
                             logMissingProducts(allRequestedProductIdentifiers, productsById)
@@ -109,14 +107,12 @@ internal class OfferingsFactory(
 
     private fun getStoreProductsById(
         productIds: Set<String>,
-        appInBackground: Boolean,
         onCompleted: (Map<String, List<StoreProduct>>) -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {
         billing.queryProductDetailsAsync(
             productType = ProductType.SUBS,
             productIds = productIds,
-            appInBackground = appInBackground,
             onReceive = { subscriptionProducts ->
                 dispatcher.enqueue(command = {
                     val productsById = subscriptionProducts
@@ -129,7 +125,6 @@ internal class OfferingsFactory(
                         billing.queryProductDetailsAsync(
                             productType = ProductType.INAPP,
                             productIds = inAppProductIds,
-                            appInBackground = appInBackground,
                             onReceive = { inAppProducts ->
                                 dispatcher.enqueue(command = {
                                     productsById.putAll(inAppProducts.map { it.purchasingData.productId to listOf(it) })

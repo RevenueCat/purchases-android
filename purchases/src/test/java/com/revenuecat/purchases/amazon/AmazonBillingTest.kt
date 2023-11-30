@@ -513,7 +513,6 @@ class AmazonBillingTest {
         underTest.queryProductDetailsAsync(
             productType = com.revenuecat.purchases.ProductType.SUBS,
             productIds = productIds,
-            appInBackground = false,
             onError = {
                 fail("should be a success")
             },

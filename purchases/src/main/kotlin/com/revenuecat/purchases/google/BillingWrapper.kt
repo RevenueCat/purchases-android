@@ -195,7 +195,6 @@ internal class BillingWrapper(
     override fun queryProductDetailsAsync(
         productType: ProductType,
         productIds: Set<String>,
-        appInBackground: Boolean,
         onReceive: StoreProductsCallback,
         onError: PurchasesErrorCallback,
     ) {

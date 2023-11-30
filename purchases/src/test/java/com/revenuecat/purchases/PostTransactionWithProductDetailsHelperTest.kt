@@ -238,7 +238,6 @@ class PostTransactionWithProductDetailsHelperTest {
             billing.queryProductDetailsAsync(
                 productType = transaction.type,
                 productIds = transaction.productIds.toSet(),
-                appInBackground = false,
                 onReceive = captureLambda(),
                 onError = any(),
             )
@@ -255,7 +254,6 @@ class PostTransactionWithProductDetailsHelperTest {
             billing.queryProductDetailsAsync(
                 productType = transaction.type,
                 productIds = transaction.productIds.toSet(),
-                appInBackground = false,
                 onReceive = any(),
                 onError = captureLambda(),
             )

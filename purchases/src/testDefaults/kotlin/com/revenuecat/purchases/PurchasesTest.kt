@@ -1369,7 +1369,6 @@ internal class PurchasesTest : BasePurchasesTest() {
             mockBillingAbstract.queryProductDetailsAsync(
                 productType = storeProduct.type,
                 productIds = setOf(productId),
-                appInBackground = any(),
                 onReceive = captureLambda(),
                 onError = any(),
             )

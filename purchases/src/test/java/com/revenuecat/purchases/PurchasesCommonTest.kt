@@ -1730,7 +1730,6 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
             mockBillingAbstract.queryProductDetailsAsync(
                 productType = storeProduct.type,
                 productIds = setOf(productId),
-                appInBackground = false,
                 onReceive = captureLambda(),
                 onError = any(),
             )

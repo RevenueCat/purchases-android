@@ -353,7 +353,6 @@ class OfferingsManagerTest {
         verify(exactly = 1) { cache.cacheOfferings(testOfferings, backendResponse) }
         verify(exactly = 1) { offeringsFactory.createOfferings(
             offeringsJSON = backendResponse,
-            appInBackground = any(),
             onError = any(),
             onSuccess = any()
         ) }
@@ -497,7 +496,6 @@ class OfferingsManagerTest {
             every {
                 offeringsFactory.createOfferings(
                     offeringsJSON = any(),
-                    appInBackground = any(),
                     onError = any(),
                     onSuccess = captureLambda()
                 )
@@ -508,7 +506,6 @@ class OfferingsManagerTest {
             every {
                 offeringsFactory.createOfferings(
                     offeringsJSON = any(),
-                    appInBackground = any(),
                     onError = captureLambda(),
                     onSuccess = any()
                 )

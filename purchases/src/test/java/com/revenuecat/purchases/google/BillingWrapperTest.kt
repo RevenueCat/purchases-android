@@ -1000,7 +1000,6 @@ class BillingWrapperTest {
         wrapper.queryProductDetailsAsync(
             ProductType.SUBS,
             setOf("product_a"),
-            appInBackground = false,
             {},
             {
                 fail("shouldn't be an error")
@@ -1227,7 +1226,6 @@ class BillingWrapperTest {
         wrapper.queryProductDetailsAsync(
             productType = ProductType.SUBS,
             productIds = setOf("test-sku"),
-            appInBackground = false,
             onReceive = {},
             onError = { fail("shouldn't be an error") }
         )
@@ -1263,7 +1261,6 @@ class BillingWrapperTest {
         wrapper.queryProductDetailsAsync(
             productType = ProductType.SUBS,
             productIds = setOf("test-sku"),
-            appInBackground = false,
             onReceive = { fail("should be an error") },
             onError = {}
         )

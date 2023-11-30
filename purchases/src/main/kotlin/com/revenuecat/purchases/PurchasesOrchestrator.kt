@@ -751,7 +751,6 @@ internal class PurchasesOrchestrator constructor(
             billing.queryProductDetailsAsync(
                 productType = it,
                 productIds = productIds,
-                appInBackground = state.appInBackground,
                 onReceive = { storeProducts ->
                     dispatch {
                         getProductsOfTypes(
