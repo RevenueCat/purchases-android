@@ -70,12 +70,19 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
         fontProvider: ParcelizableFontProvider? = null,
         shouldDisplayDismissButton: Boolean = DEFAULT_DISPLAY_DISMISS_BUTTON,
     ) {
-        launchIfNeeded(
-            offering = offering,
-            fontProvider = fontProvider,
-            shouldDisplayBlock = shouldDisplayBlockForEntitlementIdentifier(requiredEntitlementIdentifier),
-            shouldDisplayDismissButton = shouldDisplayDismissButton,
-        )
+        val shouldDisplayBlock = shouldDisplayBlockForEntitlementIdentifier(requiredEntitlementIdentifier)
+        shouldDisplayPaywall(shouldDisplayBlock) { shouldDisplay ->
+            if (shouldDisplay) {
+                activityResultLauncher.launch(
+                    PaywallActivityArgs(
+                        requiredEntitlementIdentifier = requiredEntitlementIdentifier,
+                        offeringId = offering?.identifier,
+                        fontProvider = fontProvider,
+                        shouldDisplayDismissButton = shouldDisplayDismissButton,
+                    ),
+                )
+            }
+        }
     }
 
     /**
