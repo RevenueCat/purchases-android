@@ -17,6 +17,7 @@ private class PaywallFooterViewAPI {
         val paywallFooterView: FrameLayout = PaywallFooterView(context)
     }
 
+    @Suppress("LongParameterList")
     fun checkConstructors(
         context: Context,
         attrs: AttributeSet?,
