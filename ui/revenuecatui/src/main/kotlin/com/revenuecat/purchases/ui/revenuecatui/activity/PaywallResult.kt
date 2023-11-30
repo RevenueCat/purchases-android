@@ -31,7 +31,7 @@ sealed class PaywallResult : Parcelable {
     data class Error(val error: PurchasesError) : PaywallResult(), Parcelable
 
     /**
-     * The user restored and got the required entitlement identifier granted.
+     * The last action the user performed in the paywall activity was a restore.
      */
     @Parcelize
     data class Restored(val customerInfo: CustomerInfo) : PaywallResult(), Parcelable

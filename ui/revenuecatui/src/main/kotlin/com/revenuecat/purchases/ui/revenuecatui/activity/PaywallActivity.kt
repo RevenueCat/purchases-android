@@ -102,8 +102,8 @@ internal class PaywallActivity : ComponentActivity(), PaywallListener {
 
     override fun onRestoreCompleted(customerInfo: CustomerInfo) {
         val requiredEntitlementIdentifier = getArgs()?.requiredEntitlementIdentifier ?: return
+        setResult(RESULT_OK, createResultIntent(PaywallResult.Restored(customerInfo)))
         if (customerInfo.entitlements.active.containsKey(requiredEntitlementIdentifier)) {
-            setResult(RESULT_OK, createResultIntent(PaywallResult.Restored(customerInfo)))
             finish()
         }
     }
