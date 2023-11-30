@@ -1059,7 +1059,6 @@ internal class PurchasesTest : BasePurchasesTest() {
         every {
             mockBillingAbstract.queryAllPurchases(
                 appUserID = appUserId,
-                appInBackground = false,
                 onReceivePurchaseHistory = captureLambda(),
                 onReceivePurchaseHistoryError = any()
             )
@@ -1075,7 +1074,6 @@ internal class PurchasesTest : BasePurchasesTest() {
         verify {
             mockBillingAbstract.queryAllPurchases(
                 appUserID = appUserId,
-                appInBackground = any(),
                 onReceivePurchaseHistory = any(),
                 onReceivePurchaseHistoryError = any()
             )
@@ -1091,7 +1089,6 @@ internal class PurchasesTest : BasePurchasesTest() {
         every {
             mockBillingAbstract.queryAllPurchases(
                 appUserID = appUserId,
-                appInBackground = any(),
                 onReceivePurchaseHistory = captureLambda(),
                 onReceivePurchaseHistoryError = any()
             )
@@ -1139,7 +1136,6 @@ internal class PurchasesTest : BasePurchasesTest() {
         every {
             mockBillingAbstract.queryAllPurchases(
                 appUserID = appUserId,
-                appInBackground = false,
                 onReceivePurchaseHistory = any(),
                 onReceivePurchaseHistoryError = captureLambda()
             )
@@ -1169,7 +1165,6 @@ internal class PurchasesTest : BasePurchasesTest() {
         every {
             mockBillingAbstract.queryAllPurchases(
                 appUserID = appUserId,
-                appInBackground = false,
                 onReceivePurchaseHistory = captureLambda(),
                 onReceivePurchaseHistoryError = any()
             )
@@ -1214,7 +1209,6 @@ internal class PurchasesTest : BasePurchasesTest() {
         verify(exactly = 1) {
             mockBillingAbstract.queryAllPurchases(
                 appUserID = appUserId,
-                appInBackground = any(),
                 onReceivePurchaseHistory = any(),
                 onReceivePurchaseHistoryError = any()
             )
@@ -1228,7 +1222,6 @@ internal class PurchasesTest : BasePurchasesTest() {
         every {
             mockBillingAbstract.queryAllPurchases(
                 appUserID = appUserId,
-                appInBackground = any(),
                 onReceivePurchaseHistory = captureLambda(),
                 onReceivePurchaseHistoryError = any(),
             )

@@ -44,7 +44,6 @@ internal abstract class BillingAbstract(
 
     abstract fun queryAllPurchases(
         appUserID: String,
-        appInBackground: Boolean,
         onReceivePurchaseHistory: (List<StoreTransaction>) -> Unit,
         onReceivePurchaseHistoryError: PurchasesErrorCallback,
     )

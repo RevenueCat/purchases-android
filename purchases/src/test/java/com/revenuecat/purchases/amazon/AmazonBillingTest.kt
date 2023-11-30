@@ -13,7 +13,6 @@ import com.revenuecat.purchases.PurchasesErrorCallback
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesState
 import com.revenuecat.purchases.PurchasesStateCache
-import com.revenuecat.purchases.PurchasesStateProvider
 import com.revenuecat.purchases.amazon.handler.ProductDataHandler
 import com.revenuecat.purchases.amazon.handler.PurchaseHandler
 import com.revenuecat.purchases.amazon.handler.PurchaseUpdatesHandler
@@ -640,7 +639,6 @@ class AmazonBillingTest {
         var receivedPurchases: List<StoreTransaction>? = null
         underTest.queryAllPurchases(
             appUserID,
-            appInBackground = false,
             onReceivePurchaseHistory = {
                 receivedPurchases = it
             },
@@ -816,7 +814,6 @@ class AmazonBillingTest {
         var receivedPurchases: List<StoreTransaction>? = null
         underTest.queryAllPurchases(
             appUserID,
-            appInBackground = false,
             onReceivePurchaseHistory = {
                 receivedPurchases = it
             },

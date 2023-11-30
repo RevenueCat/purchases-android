@@ -270,7 +270,6 @@ class SyncPurchasesHelperTest {
         every {
             billing.queryAllPurchases(
                 appUserID = appUserID,
-                appInBackground = any(),
                 onReceivePurchaseHistory = captureLambda(),
                 onReceivePurchaseHistoryError = any()
             )
@@ -285,7 +284,6 @@ class SyncPurchasesHelperTest {
         every {
             billing.queryAllPurchases(
                 appUserID = appUserID,
-                appInBackground = any(),
                 onReceivePurchaseHistory = any(),
                 onReceivePurchaseHistoryError = captureLambda()
             )

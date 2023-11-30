@@ -356,7 +356,6 @@ internal class PurchasesOrchestrator constructor(
 
         billing.queryAllPurchases(
             appUserID,
-            state.appInBackground,
             onReceivePurchaseHistory = { allPurchases ->
                 if (allPurchases.isEmpty()) {
                     getCustomerInfo(callback)

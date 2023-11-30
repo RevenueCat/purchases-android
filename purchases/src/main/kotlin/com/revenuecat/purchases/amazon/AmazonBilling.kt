@@ -119,7 +119,6 @@ internal class AmazonBilling constructor(
 
     override fun queryAllPurchases(
         appUserID: String,
-        appInBackground: Boolean,
         onReceivePurchaseHistory: (List<StoreTransaction>) -> Unit,
         onReceivePurchaseHistoryError: PurchasesErrorCallback,
     ) {
@@ -227,7 +226,6 @@ internal class AmazonBilling constructor(
         log(LogIntent.DEBUG, RestoreStrings.QUERYING_PURCHASE_WITH_TYPE.format(productId, productType.name))
         queryAllPurchases(
             appUserID,
-            appInBackground,
             onReceivePurchaseHistory = {
                 // We get productIds[0] because the list is guaranteed to have just one item in Amazon's case.
                 val record: StoreTransaction? = it.firstOrNull { record -> productId == record.productIds[0] }

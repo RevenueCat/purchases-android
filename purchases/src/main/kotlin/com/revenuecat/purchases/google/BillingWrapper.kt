@@ -325,7 +325,6 @@ internal class BillingWrapper(
 
     override fun queryAllPurchases(
         appUserID: String,
-        appInBackground: Boolean,
         onReceivePurchaseHistory: (List<StoreTransaction>) -> Unit,
         onReceivePurchaseHistoryError: (PurchasesError) -> Unit,
     ) {
