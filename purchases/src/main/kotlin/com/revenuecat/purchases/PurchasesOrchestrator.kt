@@ -1096,7 +1096,6 @@ internal class PurchasesOrchestrator constructor(
             appUserID,
             ProductType.SUBS,
             previousProductId,
-            state.appInBackground,
             onCompletion = { purchaseRecord ->
                 log(LogIntent.PURCHASE, PurchaseStrings.FOUND_EXISTING_PURCHASE.format(previousProductId))
 

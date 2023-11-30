@@ -313,7 +313,6 @@ internal class QueryPurchaseHistoryUseCaseTest: BaseBillingUseCaseTest() {
             appUserID = appUserId,
             productType = ProductType.SUBS,
             productId = sku,
-            appInBackground = false,
             onCompletion = {
                 recordFound = it
             },
@@ -344,7 +343,6 @@ internal class QueryPurchaseHistoryUseCaseTest: BaseBillingUseCaseTest() {
             appUserID = appUserId,
             productType = ProductType.SUBS,
             productId = sku,
-            appInBackground = false,
             onCompletion = {
                 fail("should be error")
             },

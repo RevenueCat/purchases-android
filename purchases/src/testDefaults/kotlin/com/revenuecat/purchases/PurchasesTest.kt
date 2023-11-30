@@ -128,7 +128,6 @@ internal class PurchasesTest : BasePurchasesTest() {
                 appUserID = appUserId,
                 productType = ProductType.SUBS,
                 productId = oldSubId,
-                appInBackground = false,
                 onCompletion = captureLambda(),
                 onError = any(),
             )
@@ -173,7 +172,6 @@ internal class PurchasesTest : BasePurchasesTest() {
                 appUserID = appUserId,
                 productType = ProductType.SUBS,
                 productId = oldSubId,
-                appInBackground = false,
                 onCompletion = captureLambda(),
                 onError = any(),
             )
@@ -1392,7 +1390,6 @@ internal class PurchasesTest : BasePurchasesTest() {
                 appUserID = appUserId,
                 productType = ProductType.SUBS,
                 productId = oldProductId,
-                appInBackground = any(),
                 onCompletion = if (error == null) captureLambda() else any(),
                 onError = if (error != null) captureLambda() else any(),
             )

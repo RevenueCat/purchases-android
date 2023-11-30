@@ -66,7 +66,6 @@ internal abstract class BillingAbstract(
         appUserID: String,
         productType: ProductType,
         productId: String,
-        appInBackground: Boolean,
         onCompletion: (StoreTransaction) -> Unit,
         onError: (PurchasesError) -> Unit,
     )

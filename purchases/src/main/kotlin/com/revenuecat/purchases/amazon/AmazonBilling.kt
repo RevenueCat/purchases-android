@@ -217,7 +217,6 @@ internal class AmazonBilling constructor(
         appUserID: String,
         productType: RevenueCatProductType,
         productId: String,
-        appInBackground: Boolean,
         onCompletion: (StoreTransaction) -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {

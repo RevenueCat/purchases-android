@@ -465,7 +465,6 @@ internal class BillingWrapper(
         appUserID: String,
         productType: ProductType,
         productId: String,
-        appInBackground: Boolean,
         onCompletion: (StoreTransaction) -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {
