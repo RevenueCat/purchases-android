@@ -271,7 +271,6 @@ internal class PurchasesCoroutinesCommonTest : BasePurchasesTest() {
                 isRestore = true,
                 appUserID = appUserId,
                 initiationSource = PostReceiptInitiationSource.RESTORE,
-                appInBackground = any(),
                 onSuccess = captureLambda(),
                 onError = any(),
             )

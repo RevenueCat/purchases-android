@@ -41,7 +41,6 @@ internal class PostReceiptHelper(
         appUserID: String,
         marketplace: String?,
         initiationSource: PostReceiptInitiationSource,
-        appInBackground: Boolean,
         onSuccess: (CustomerInfo) -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {
@@ -64,7 +63,6 @@ internal class PostReceiptHelper(
                 useOfflineEntitlementsCustomerInfoIfNeeded(
                     errorHandlingBehavior,
                     appUserID,
-                    appInBackground,
                     onSuccess = {
                         onSuccess(it)
                     },
@@ -86,7 +84,6 @@ internal class PostReceiptHelper(
         isRestore: Boolean,
         appUserID: String,
         initiationSource: PostReceiptInitiationSource,
-        appInBackground: Boolean,
         onSuccess: (SuccessfulPurchaseCallback)? = null,
         onError: (ErrorPurchaseCallback)? = null,
     ) {
@@ -116,7 +113,6 @@ internal class PostReceiptHelper(
                 useOfflineEntitlementsCustomerInfoIfNeeded(
                     errorHandlingBehavior,
                     appUserID,
-                    appInBackground,
                     onSuccess = { customerInfo ->
                         onSuccess?.let { it(purchase, customerInfo) }
                     },
@@ -181,7 +177,6 @@ internal class PostReceiptHelper(
     private fun useOfflineEntitlementsCustomerInfoIfNeeded(
         errorHandlingBehavior: PostReceiptErrorHandlingBehavior,
         appUserID: String,
-        appInBackground: Boolean,
         onSuccess: (CustomerInfo) -> Unit,
         onError: () -> Unit,
     ) {
@@ -190,7 +185,6 @@ internal class PostReceiptHelper(
         if (offlineEntitlementsManager.shouldCalculateOfflineCustomerInfoInPostReceipt(isServerError)) {
             calculateOfflineCustomerInfo(
                 appUserID,
-                appInBackground,
                 onSuccess = onSuccess,
                 onError = {
                     onError()
@@ -203,13 +197,11 @@ internal class PostReceiptHelper(
 
     private fun calculateOfflineCustomerInfo(
         appUserID: String,
-        appInBackground: Boolean,
         onSuccess: (CustomerInfo) -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {
         offlineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(
             appUserID,
-            appInBackground,
             onSuccess = { customerInfo ->
                 customerInfoUpdateHandler.notifyListeners(customerInfo)
                 onSuccess(customerInfo)

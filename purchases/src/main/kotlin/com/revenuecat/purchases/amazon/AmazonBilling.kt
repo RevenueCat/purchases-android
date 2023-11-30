@@ -293,7 +293,6 @@ internal class AmazonBilling constructor(
 
     override fun queryPurchases(
         appUserID: String,
-        appInBackground: Boolean,
         onSuccess: (Map<String, StoreTransaction>) -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {

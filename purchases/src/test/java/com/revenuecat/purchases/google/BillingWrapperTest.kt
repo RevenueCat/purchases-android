@@ -280,7 +280,6 @@ class BillingWrapperTest {
         var error: PurchasesError? = null
         wrapper.queryPurchases(
             appUserID = "appUserID",
-            appInBackground = false,
             onSuccess = {
                 fail("should be an error")
             },
@@ -1384,7 +1383,6 @@ class BillingWrapperTest {
         var receivedError: PurchasesError? = null
         wrapper.queryPurchases(
             appUserID = "abc",
-            appInBackground = false,
             onSuccess = {
                 error("Unexpected success")
             },

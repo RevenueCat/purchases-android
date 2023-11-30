@@ -443,7 +443,6 @@ internal class BillingWrapper(
     @Suppress("ReturnCount", "LongMethod")
     override fun queryPurchases(
         appUserID: String,
-        appInBackground: Boolean,
         onSuccess: (Map<String, StoreTransaction>) -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {

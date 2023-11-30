@@ -115,7 +115,6 @@ class AmazonBillingTest {
         var receivedPurchases: Map<String, StoreTransaction>? = null
         underTest.queryPurchases(
             appUserID,
-            appInBackground = false,
             onSuccess = {
                 receivedPurchases = it
             },
@@ -144,7 +143,6 @@ class AmazonBillingTest {
         var receivedPurchases: Map<String, StoreTransaction>? = null
         underTest.queryPurchases(
             appUserID,
-            appInBackground = false,
             onSuccess = {
                 receivedPurchases = it
             },
@@ -185,7 +183,6 @@ class AmazonBillingTest {
         var receivedPurchases: Map<String, StoreTransaction>? = null
         underTest.queryPurchases(
             appUserID,
-            appInBackground = false,
             onSuccess = {
                 receivedPurchases = it
             },
@@ -235,7 +232,6 @@ class AmazonBillingTest {
         var receivedPurchases: Map<String, StoreTransaction>? = null
         underTest.queryPurchases(
             appUserID,
-            appInBackground = false,
             onSuccess = {
                 receivedPurchases = it
             },
@@ -283,7 +279,6 @@ class AmazonBillingTest {
         var receivedPurchases: Map<String, StoreTransaction>? = null
         underTest.queryPurchases(
             appUserID,
-            appInBackground = false,
             onSuccess = {
                 receivedPurchases = it
             },
@@ -323,7 +318,6 @@ class AmazonBillingTest {
         var receivedPurchases: Map<String, StoreTransaction>? = null
         underTest.queryPurchases(
             appUserID,
-            appInBackground = false,
             onSuccess = {
                 receivedPurchases = it
             },
@@ -365,7 +359,6 @@ class AmazonBillingTest {
         var receivedPurchases: Map<String, StoreTransaction>? = null
         underTest.queryPurchases(
             appUserID,
-            appInBackground = false,
             onSuccess = {
                 receivedPurchases = it
             },
@@ -427,7 +420,6 @@ class AmazonBillingTest {
         var receivedError: PurchasesError? = null
         underTest.queryPurchases(
             appUserID,
-            appInBackground = false,
             onSuccess = {
                 fail("Should be an error")
             },
@@ -473,7 +465,6 @@ class AmazonBillingTest {
         var successCalled: Boolean = false
         underTest.queryPurchases(
             appUserID,
-            appInBackground = false,
             onSuccess = {
                 successCalled = true
                 receivedPurchases = it

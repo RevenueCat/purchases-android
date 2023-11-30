@@ -142,7 +142,6 @@ internal class PurchasesOrchestrator constructor(
             override fun onConnected() {
                 postPendingTransactionsHelper.syncPendingPurchaseQueue(
                     allowSharingPlayStoreAccount,
-                    state.appInBackground,
                 )
                 billing.getStorefront(
                     state.appInBackground,
@@ -202,7 +201,7 @@ internal class PurchasesOrchestrator constructor(
             )
         }
         offeringsManager.onAppForeground(identityManager.currentAppUserID)
-        postPendingTransactionsHelper.syncPendingPurchaseQueue(allowSharingPlayStoreAccount, state.appInBackground)
+        postPendingTransactionsHelper.syncPendingPurchaseQueue(allowSharingPlayStoreAccount)
         synchronizeSubscriberAttributesIfNeeded()
         offlineEntitlementsManager.updateProductEntitlementMappingCacheIfStale()
         flushPaywallEvents()
@@ -261,7 +260,6 @@ internal class PurchasesOrchestrator constructor(
                     appUserID,
                     marketplace = null,
                     PostReceiptInitiationSource.RESTORE,
-                    state.appInBackground,
                     {
                         val logMessage = PurchaseStrings.PURCHASE_SYNCED_USER_ID.format(receiptID, amazonUserID)
                         log(LogIntent.PURCHASE, logMessage)
@@ -368,7 +366,6 @@ internal class PurchasesOrchestrator constructor(
                                 isRestore = true,
                                 appUserID = appUserID,
                                 initiationSource = PostReceiptInitiationSource.RESTORE,
-                                appInBackground = state.appInBackground,
                                 onSuccess = { _, info ->
                                     log(LogIntent.DEBUG, RestoreStrings.PURCHASE_RESTORED.format(purchase))
                                     if (sortedByTime.last() == purchase) {
@@ -834,7 +831,6 @@ internal class PurchasesOrchestrator constructor(
                     allowSharingPlayStoreAccount,
                     appUserID,
                     PostReceiptInitiationSource.PURCHASE,
-                    appInBackground = state.appInBackground,
                     transactionPostSuccess = callbackPair.first,
                     transactionPostError = callbackPair.second,
                 )

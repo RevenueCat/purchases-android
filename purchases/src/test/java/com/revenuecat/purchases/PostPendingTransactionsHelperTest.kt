@@ -73,7 +73,6 @@ class PostPendingTransactionsHelperTest {
         verify(exactly = 0) {
             billing.queryPurchases(
                 appUserID = any(),
-                appInBackground = any(),
                 onSuccess = any(),
                 onError = any()
             )
@@ -84,7 +83,6 @@ class PostPendingTransactionsHelperTest {
                 allowSharingPlayStoreAccount = any(),
                 appUserID = any(),
                 initiationSource = any(),
-                appInBackground = any(),
                 transactionPostSuccess = any(),
                 transactionPostError = any()
             )
@@ -107,7 +105,6 @@ class PostPendingTransactionsHelperTest {
         verify(exactly = 1) {
             billing.queryPurchases(
                 appUserID = appUserId,
-                appInBackground = any(),
                 onSuccess = any(),
                 onError = any()
             )
@@ -133,10 +130,7 @@ class PostPendingTransactionsHelperTest {
 
         mockPostTransactionsSuccessful(mockk())
 
-        postPendingTransactionsHelper.syncPendingPurchaseQueue(
-            allowSharingPlayStoreAccount,
-            appInBackground = false
-        )
+        postPendingTransactionsHelper.syncPendingPurchaseQueue(allowSharingPlayStoreAccount)
 
         verify(exactly = 1) {
             postTransactionWithProductDetailsHelper.postTransactions(
@@ -144,7 +138,6 @@ class PostPendingTransactionsHelperTest {
                 allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
                 appUserID = appUserId,
                 initiationSource = initiationSource,
-                appInBackground = any(),
                 transactionPostSuccess = any(),
                 transactionPostError = any()
             )
@@ -212,7 +205,6 @@ class PostPendingTransactionsHelperTest {
         every {
             billing.queryPurchases(
                 appUserID = appUserId,
-                appInBackground = any(),
                 onSuccess = any(),
                 onError = captureLambda()
             )
@@ -272,7 +264,6 @@ class PostPendingTransactionsHelperTest {
                 allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
                 appUserID = appUserId,
                 initiationSource = initiationSource,
-                appInBackground = any(),
                 transactionPostSuccess = captureLambda(),
                 transactionPostError = any()
             )
@@ -323,7 +314,6 @@ class PostPendingTransactionsHelperTest {
                 allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
                 appUserID = appUserId,
                 initiationSource = initiationSource,
-                appInBackground = false,
                 transactionPostSuccess = capture(successSlot),
                 transactionPostError = capture(errorSlot)
             )
@@ -348,7 +338,6 @@ class PostPendingTransactionsHelperTest {
                 allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
                 appUserID = appUserId,
                 initiationSource = initiationSource,
-                appInBackground = any(),
                 transactionPostSuccess = captureLambda(),
                 transactionPostError = any()
             )
@@ -387,7 +376,6 @@ class PostPendingTransactionsHelperTest {
         every {
             billing.queryPurchases(
                 appUserId,
-                appInBackground = false,
                 onSuccess = captureLambda(),
                 onError = any()
             )
@@ -410,7 +398,6 @@ class PostPendingTransactionsHelperTest {
         var successCallCount = 0
         postPendingTransactionsHelper.syncPendingPurchaseQueue(
             allowSharingPlayStoreAccount,
-            appInBackground = false,
             onError = { fail("Should be success") },
             onSuccess = {
                 assertThat(it).isEqualTo(resultCustomerInfo)
@@ -424,7 +411,6 @@ class PostPendingTransactionsHelperTest {
         var receivedError: PurchasesError? = null
         postPendingTransactionsHelper.syncPendingPurchaseQueue(
             allowSharingPlayStoreAccount,
-            appInBackground = false,
             onError = { receivedError = it },
             onSuccess = { fail("Should be error") },
         )

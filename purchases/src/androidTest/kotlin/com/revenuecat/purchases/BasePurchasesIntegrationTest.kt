@@ -143,7 +143,6 @@ open class BasePurchasesIntegrationTest {
         every {
             mockBillingAbstract.queryPurchases(
                 testUserId,
-                appInBackground = any(),
                 onSuccess = capture(callbackSlot),
                 onError = any(),
             )

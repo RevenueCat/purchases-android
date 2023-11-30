@@ -84,7 +84,6 @@ internal abstract class BillingAbstract(
 
     abstract fun queryPurchases(
         appUserID: String,
-        appInBackground: Boolean,
         onSuccess: (Map<String, StoreTransaction>) -> Unit,
         onError: (PurchasesError) -> Unit,
     )

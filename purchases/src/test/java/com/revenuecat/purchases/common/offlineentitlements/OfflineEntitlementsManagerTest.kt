@@ -211,7 +211,6 @@ class OfflineEntitlementsManagerTest {
         mockCalculateOfflineEntitlements(successCustomerInfo = customerInfo)
         offlineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(
             appUserID,
-            appInBackground = false,
             onSuccess = {},
             onError = { fail("Should succeed") })
         assertThat(offlineEntitlementsManager.offlineCustomerInfo).isEqualTo(customerInfo)
@@ -229,13 +228,11 @@ class OfflineEntitlementsManagerTest {
         var receivedError: PurchasesError? = null
         offlineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(
             appUserID,
-            appInBackground = false,
             onSuccess = { fail("Should error") },
             onError = { receivedError = it }
         )
         verify(exactly = 0) { offlineEntitlementsCalculator.computeOfflineCustomerInfo(
             appUserID = any(),
-            appInBackground = any(),
             onSuccess = any(),
             onError = any()
         ) }
@@ -249,7 +246,6 @@ class OfflineEntitlementsManagerTest {
         var customerInfoFromCallback: CustomerInfo? = null
         offlineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(
             appUserID,
-            appInBackground = false,
             onSuccess = { customerInfoFromCallback = it },
             onError = { fail("Should succeed") }
         )
@@ -262,7 +258,6 @@ class OfflineEntitlementsManagerTest {
         mockCalculateOfflineEntitlements(successCustomerInfo = customerInfo)
         offlineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(
             appUserID,
-            appInBackground = false,
             onSuccess = {},
             onError = { fail("Should succeed") }
         )
@@ -275,7 +270,6 @@ class OfflineEntitlementsManagerTest {
         mockCalculateOfflineEntitlements(successCustomerInfo = customerInfo)
         offlineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(
             appUserID,
-            appInBackground = false,
             onSuccess = {},
             onError = { fail("Should succeed") }
         )
@@ -291,7 +285,6 @@ class OfflineEntitlementsManagerTest {
         every {
             offlineEntitlementsCalculator.computeOfflineCustomerInfo(
                 appUserID,
-                appInBackground = any(),
                 onSuccess = capture(successCallbackSlot),
                 onError = any()
             )
@@ -299,24 +292,22 @@ class OfflineEntitlementsManagerTest {
         var callback1CustomerInfo: CustomerInfo? = null
         offlineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(
             appUserID,
-            appInBackground = false,
             onSuccess = { callback1CustomerInfo = it },
             onError = { fail("Should succeed") }
         )
         var callback2CustomerInfo: CustomerInfo? = null
         offlineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(
             appUserID,
-            appInBackground = false,
             onSuccess = { callback2CustomerInfo = it },
             onError = { fail("Should succeed") }
         )
         assertThat(callback1CustomerInfo).isNull()
         assertThat(callback2CustomerInfo).isNull()
-        verify(exactly = 1) { offlineEntitlementsCalculator.computeOfflineCustomerInfo(any(), any(), any(), any()) }
+        verify(exactly = 1) { offlineEntitlementsCalculator.computeOfflineCustomerInfo(any(), any(), any()) }
         successCallbackSlot.invoke(customerInfo)
         assertThat(callback1CustomerInfo).isEqualTo(customerInfo)
         assertThat(callback2CustomerInfo).isEqualTo(customerInfo)
-        verify(exactly = 1) { offlineEntitlementsCalculator.computeOfflineCustomerInfo(any(), any(), any(), any()) }
+        verify(exactly = 1) { offlineEntitlementsCalculator.computeOfflineCustomerInfo(any(), any(), any()) }
     }
 
     @Test
@@ -324,7 +315,6 @@ class OfflineEntitlementsManagerTest {
         mockCalculateOfflineEntitlements(error = PurchasesError(PurchasesErrorCode.UnknownError))
         offlineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(
             appUserID,
-            appInBackground = false,
             onSuccess = { fail("Should error") },
             onError = {}
         )
@@ -336,7 +326,6 @@ class OfflineEntitlementsManagerTest {
         mockCalculateOfflineEntitlements(error = PurchasesError(PurchasesErrorCode.UnknownError))
         offlineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(
             appUserID,
-            appInBackground = false,
             onSuccess = { fail("Should error") },
             onError = {}
         )
@@ -352,7 +341,6 @@ class OfflineEntitlementsManagerTest {
         var receivedError: PurchasesError? = null
         offlineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(
             appUserID,
-            appInBackground = false,
             onSuccess = { fail("Should error") },
             onError = { receivedError = it }
         )
@@ -366,7 +354,6 @@ class OfflineEntitlementsManagerTest {
         every {
             offlineEntitlementsCalculator.computeOfflineCustomerInfo(
                 appUserID,
-                appInBackground = any(),
                 onSuccess = any(),
                 onError = capture(errorCallbackSlot)
             )
@@ -374,26 +361,23 @@ class OfflineEntitlementsManagerTest {
         var callback1Error: PurchasesError? = null
         offlineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(
             appUserID,
-            appInBackground = false,
             onSuccess = { fail("Should error") },
             onError = { callback1Error = it }
         )
         var callback2Error: PurchasesError? = null
         offlineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(
             appUserID,
-            appInBackground = false,
             onSuccess = { fail("Should error") },
             onError = { callback2Error = it }
         )
         assertThat(callback1Error).isNull()
         assertThat(callback2Error).isNull()
-        verify(exactly = 1) { offlineEntitlementsCalculator.computeOfflineCustomerInfo(any(), any(), any(), any()) }
+        verify(exactly = 1) { offlineEntitlementsCalculator.computeOfflineCustomerInfo(any(), any(), any()) }
         errorCallbackSlot.invoke(error)
         assertThat(callback1Error).isEqualTo(error)
         assertThat(callback2Error).isEqualTo(error)
         verify(exactly = 1) { offlineEntitlementsCalculator.computeOfflineCustomerInfo(
             appUserID = any(),
-            appInBackground = any(),
             onSuccess = any(),
             onError = any()
         ) }
@@ -480,7 +464,6 @@ class OfflineEntitlementsManagerTest {
             every {
                 offlineEntitlementsCalculator.computeOfflineCustomerInfo(
                     appUserID,
-                    appInBackground = any(),
                     onSuccess = captureLambda(),
                     onError = any()
                 )
@@ -491,7 +474,6 @@ class OfflineEntitlementsManagerTest {
             every {
                 offlineEntitlementsCalculator.computeOfflineCustomerInfo(
                     appUserID,
-                    appInBackground = any(),
                     onSuccess = any(),
                     onError = captureLambda()
                 )

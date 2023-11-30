@@ -196,7 +196,6 @@ internal open class BasePurchasesTest {
                     isRestore = any(),
                     appUserID = any(),
                     initiationSource = any(),
-                    appInBackground = any(),
                     onSuccess = captureLambda(),
                     onError = any(),
                 )
@@ -215,7 +214,6 @@ internal open class BasePurchasesTest {
                     appUserID = any(),
                     marketplace = any(),
                     initiationSource = any(),
-                    appInBackground = any(),
                     onSuccess = captureLambda(),
                     onError = any(),
                 )

@@ -541,7 +541,6 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
                     isRestore = false,
                     appUserID = appUserId,
                     initiationSource = initiationSource,
-                    appInBackground = any(),
                     onSuccess = captureLambda(),
                     onError = any(),
                 )
@@ -559,7 +558,6 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
                 isRestore = false,
                 appUserID = appUserId,
                 initiationSource = initiationSource,
-                appInBackground = any(),
                 onSuccess = any(),
                 onError = any()
             )
@@ -569,7 +567,6 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
                 isRestore = false,
                 appUserID = appUserId,
                 initiationSource = initiationSource,
-                appInBackground = any(),
                 onSuccess = any(),
                 onError = any()
             )
@@ -587,7 +584,6 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
                 isRestore = any(),
                 appUserID = any(),
                 initiationSource = any(),
-                appInBackground = any(),
                 onSuccess = any(),
                 onError = any(),
             )
@@ -1100,7 +1096,6 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
                 isRestore = false,
                 appUserID = appUserId,
                 initiationSource = initiationSource,
-                appInBackground = any(),
                 onSuccess = any(),
                 onError = any()
             )
@@ -1360,7 +1355,6 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
                 isRestore = true,
                 appUserID = randomAppUserId,
                 initiationSource = initiationSource,
-                appInBackground = any(),
                 onSuccess = any(),
                 onError = any()
             )
@@ -1384,7 +1378,6 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
                 isRestore = false,
                 appUserID = appUserId,
                 initiationSource = initiationSource,
-                appInBackground = any(),
                 onSuccess = any(),
                 onError = any()
             )

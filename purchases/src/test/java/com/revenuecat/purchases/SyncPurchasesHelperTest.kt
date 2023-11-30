@@ -67,7 +67,7 @@ class SyncPurchasesHelperTest {
         assertThat(receivedCustomerInfo).isEqualTo(customerInfoMock)
         verify(exactly = 0) {
             postReceiptHelper.postTokenWithoutConsuming(
-                any(), any(), any(), any(), any(), any(), any(), any(), any(), any(),
+                any(), any(), any(), any(), any(), any(), any(), any(), any(),
             )
         }
     }
@@ -110,7 +110,6 @@ class SyncPurchasesHelperTest {
                 appUserID = any(),
                 marketplace = any(),
                 initiationSource = any(),
-                appInBackground = any(),
                 onSuccess = any(),
                 onError = any(),
             )
@@ -142,7 +141,6 @@ class SyncPurchasesHelperTest {
                 appUserID = any(),
                 marketplace = any(),
                 initiationSource = any(),
-                appInBackground = any(),
                 onSuccess = captureLambda(),
                 onError = any(),
             )
@@ -168,7 +166,6 @@ class SyncPurchasesHelperTest {
                 appUserID = appUserID,
                 marketplace = null,
                 initiationSource = initiationSource,
-                appInBackground = any(),
                 onSuccess = any(),
                 onError = any()
             )
@@ -180,7 +177,6 @@ class SyncPurchasesHelperTest {
                 appUserID = appUserID,
                 marketplace = "test-marketplace",
                 initiationSource = initiationSource,
-                appInBackground = any(),
                 onSuccess = any(),
                 onError = any()
             )
@@ -205,7 +201,7 @@ class SyncPurchasesHelperTest {
 
         every {
             postReceiptHelper.postTokenWithoutConsuming(
-                any(), any(), any(), any(), any(), any(), any(), any(), any(), captureLambda(),
+                any(), any(), any(), any(), any(), any(), any(), any(), captureLambda(),
             )
         } answers {
             lambda<(PurchasesError) -> Unit>().captured.invoke(testError)
@@ -229,7 +225,6 @@ class SyncPurchasesHelperTest {
                 appUserID = appUserID,
                 marketplace = null,
                 initiationSource = initiationSource,
-                appInBackground = any(),
                 onSuccess = any(),
                 onError = any()
             )
@@ -241,7 +236,6 @@ class SyncPurchasesHelperTest {
                 appUserID = appUserID,
                 marketplace = "test-marketplace",
                 initiationSource = initiationSource,
-                appInBackground = any(),
                 onSuccess = any(),
                 onError = any()
             )

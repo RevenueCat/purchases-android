@@ -145,7 +145,6 @@ class PostReceiptHelperTest {
             isRestore = allowSharingPlayStoreAccount,
             appUserID = appUserID,
             initiationSource = PostReceiptInitiationSource.PURCHASE,
-            appInBackground = false,
             onSuccess = { _, _ -> },
             onError = { _, _ -> fail("Should succeed") }
         )
@@ -186,7 +185,6 @@ class PostReceiptHelperTest {
             isRestore = true,
             appUserID = appUserID,
             initiationSource = initiationSource,
-            appInBackground = false,
             onSuccess = { _, _ -> },
             onError = { _, _ -> fail("Should succeed") }
         )
@@ -220,7 +218,6 @@ class PostReceiptHelperTest {
             isRestore = true,
             appUserID = appUserID,
             initiationSource = initiationSource,
-            appInBackground = false,
             onSuccess = { _, _ -> },
             onError = { _, _ -> fail("Should succeed") }
         )
@@ -244,7 +241,6 @@ class PostReceiptHelperTest {
             isRestore = true,
             appUserID = appUserID,
             initiationSource = initiationSource,
-            appInBackground = false,
             onSuccess = { _, _ -> },
             onError = { _, _ -> fail("Should succeed") }
         )
@@ -267,7 +263,6 @@ class PostReceiptHelperTest {
             isRestore = true,
             appUserID = appUserID,
             initiationSource = initiationSource,
-            appInBackground = false,
             onSuccess = { _, _ -> },
             onError = { _, _ -> fail("Should succeed") }
         )
@@ -294,7 +289,6 @@ class PostReceiptHelperTest {
             isRestore = true,
             appUserID = appUserID,
             initiationSource = initiationSource,
-            appInBackground = false,
             onSuccess = { _, _ -> },
             onError = { _, _ -> fail("Should succeed") }
         )
@@ -320,7 +314,6 @@ class PostReceiptHelperTest {
             isRestore = true,
             appUserID = appUserID,
             initiationSource = initiationSource,
-            appInBackground = false,
             onSuccess = { transaction, customerInfo ->
                 successTransaction = transaction
                 successCustomerInfo = customerInfo
@@ -343,7 +336,6 @@ class PostReceiptHelperTest {
             isRestore = true,
             appUserID = appUserID,
             initiationSource = initiationSource,
-            appInBackground = false,
             onSuccess = { _, _ -> fail("Expected error") },
             onError = { _, _ -> }
         )
@@ -368,7 +360,6 @@ class PostReceiptHelperTest {
             isRestore = true,
             appUserID = appUserID,
             initiationSource = initiationSource,
-            appInBackground = false,
             onSuccess = { _, _ -> fail("Expected error") },
             onError = { _, _ -> }
         )
@@ -393,7 +384,6 @@ class PostReceiptHelperTest {
             isRestore = true,
             appUserID = appUserID,
             initiationSource = initiationSource,
-            appInBackground = false,
             onSuccess = { _, _ -> fail("Expected error") },
             onError = { _, _ -> }
         )
@@ -418,7 +408,6 @@ class PostReceiptHelperTest {
             isRestore = true,
             appUserID = appUserID,
             initiationSource = initiationSource,
-            appInBackground = false,
             onSuccess = { _, _ -> fail("Expected error") },
             onError = { _, _ -> }
         )
@@ -442,7 +431,6 @@ class PostReceiptHelperTest {
             isRestore = true,
             appUserID = appUserID,
             initiationSource = initiationSource,
-            appInBackground = false,
             onSuccess = { _, _ -> fail("Expected error") },
             onError = { _, _ -> }
         )
@@ -468,7 +456,6 @@ class PostReceiptHelperTest {
             isRestore = true,
             appUserID = appUserID,
             initiationSource = initiationSource,
-            appInBackground = false,
             onSuccess = { _, _ -> fail("Expected error") },
             onError = { transaction, error ->
                 errorTransaction = transaction
@@ -492,7 +479,6 @@ class PostReceiptHelperTest {
             isRestore = true,
             appUserID = appUserID,
             initiationSource = initiationSource,
-            appInBackground = false,
             onSuccess = { _, _ -> },
             onError = { _, _ -> fail("Should succeed") }
         )
@@ -512,7 +498,6 @@ class PostReceiptHelperTest {
             isRestore = true,
             appUserID = appUserID,
             initiationSource = initiationSource,
-            appInBackground = false,
             onSuccess = { _, _ -> fail("Expected error") },
             onError = { _, _ -> }
         )
@@ -520,7 +505,7 @@ class PostReceiptHelperTest {
         verify(exactly = 1) {
             offlineEntitlementsManager.shouldCalculateOfflineCustomerInfoInPostReceipt(isServerError = false)
         }
-        verify(exactly = 0) { offlineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(appUserID, any(), any(), any()) }
+        verify(exactly = 0) { offlineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(appUserID, any(), any()) }
     }
 
     @Test
@@ -533,7 +518,6 @@ class PostReceiptHelperTest {
             isRestore = true,
             appUserID = appUserID,
             initiationSource = initiationSource,
-            appInBackground = false,
             onSuccess = { _, _ -> fail("Expected error") },
             onError = { _, _ -> }
         )
@@ -543,7 +527,6 @@ class PostReceiptHelperTest {
         }
         verify(exactly = 1) { offlineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(
             appUserId = appUserID,
-            appInBackground = any(),
             onSuccess = any(),
             onError = any()
         ) }
@@ -554,7 +537,7 @@ class PostReceiptHelperTest {
         mockPostReceiptError(errorHandlingBehavior = PostReceiptErrorHandlingBehavior.SHOULD_USE_OFFLINE_ENTITLEMENTS_AND_NOT_CONSUME)
 
         every {
-            offlineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(appUserID, false, captureLambda(), any())
+            offlineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(appUserID, captureLambda(), any())
         } answers {
             lambda<(CustomerInfo) -> Unit>().captured(defaultCustomerInfo)
         }
@@ -569,7 +552,6 @@ class PostReceiptHelperTest {
             isRestore = true,
             appUserID = appUserID,
             initiationSource = initiationSource,
-            appInBackground = false,
             onSuccess = { _, customerInfo -> receivedCustomerInfo = customerInfo },
             onError = { _, _ -> fail("Expected success") }
         )
@@ -583,7 +565,7 @@ class PostReceiptHelperTest {
         mockPostReceiptError(errorHandlingBehavior = PostReceiptErrorHandlingBehavior.SHOULD_USE_OFFLINE_ENTITLEMENTS_AND_NOT_CONSUME)
 
         every {
-            offlineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(appUserID, false, captureLambda(), any())
+            offlineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(appUserID, captureLambda(), any())
         } answers {
             lambda<(CustomerInfo) -> Unit>().captured(defaultCustomerInfo)
         }
@@ -597,7 +579,6 @@ class PostReceiptHelperTest {
             isRestore = true,
             appUserID = appUserID,
             initiationSource = initiationSource,
-            appInBackground = false,
             onSuccess = { _, _ ->  },
             onError = { _, _ -> fail("Expected success") }
         )
@@ -611,7 +592,7 @@ class PostReceiptHelperTest {
         mockPostReceiptError(errorHandlingBehavior = PostReceiptErrorHandlingBehavior.SHOULD_USE_OFFLINE_ENTITLEMENTS_AND_NOT_CONSUME)
 
         every {
-            offlineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(appUserID, false, captureLambda(), any())
+            offlineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(appUserID, captureLambda(), any())
         } answers {
             lambda<(CustomerInfo) -> Unit>().captured(defaultCustomerInfo)
         }
@@ -625,7 +606,6 @@ class PostReceiptHelperTest {
             isRestore = true,
             appUserID = appUserID,
             initiationSource = initiationSource,
-            appInBackground = false,
             onSuccess = { _, _ ->  },
             onError = { _, _ -> fail("Expected success") }
         )
@@ -644,7 +624,7 @@ class PostReceiptHelperTest {
         mockPostReceiptError(errorHandlingBehavior = PostReceiptErrorHandlingBehavior.SHOULD_USE_OFFLINE_ENTITLEMENTS_AND_NOT_CONSUME)
 
         every {
-            offlineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(appUserID, false, captureLambda(), any())
+            offlineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(appUserID, captureLambda(), any())
         } answers {
             lambda<(CustomerInfo) -> Unit>().captured(defaultCustomerInfo)
         }
@@ -658,7 +638,6 @@ class PostReceiptHelperTest {
             isRestore = true,
             appUserID = appUserID,
             initiationSource = initiationSource,
-            appInBackground = false,
             onSuccess = { _, _ ->  },
             onError = { _, _ -> fail("Expected success") }
         )
@@ -678,7 +657,6 @@ class PostReceiptHelperTest {
             isRestore = true,
             appUserID = appUserID,
             initiationSource = initiationSource,
-            appInBackground = false,
             onSuccess = { _, _ -> },
             onError = { _, _ -> fail("Should succeed") }
         )
@@ -696,7 +674,6 @@ class PostReceiptHelperTest {
             isRestore = true,
             appUserID = appUserID,
             initiationSource = initiationSource,
-            appInBackground = false,
             onSuccess = { _, _ -> },
             onError = { _, _ -> fail("Should succeed") }
         )
@@ -714,7 +691,6 @@ class PostReceiptHelperTest {
             isRestore = true,
             appUserID = appUserID,
             initiationSource = initiationSource,
-            appInBackground = false,
             onSuccess = { _, _ -> },
             onError = { _, _ -> fail("Should succeed") }
         )
@@ -733,7 +709,6 @@ class PostReceiptHelperTest {
             isRestore = true,
             appUserID = appUserID,
             initiationSource = initiationSource,
-            appInBackground = false,
             onSuccess = { _, _ -> },
             onError = { _, _ -> fail("Should succeed") }
         )
@@ -751,7 +726,6 @@ class PostReceiptHelperTest {
             isRestore = true,
             appUserID = appUserID,
             initiationSource = initiationSource,
-            appInBackground = false,
             onSuccess = { _, _ -> },
             onError = { _, _ -> fail("Should succeed") }
         )
@@ -782,7 +756,6 @@ class PostReceiptHelperTest {
             isRestore = true,
             appUserID = appUserID,
             initiationSource = initiationSource,
-            appInBackground = false,
             onSuccess = { _, _ -> },
             onError = { _, _ -> fail("Should succeed") }
         )
@@ -800,7 +773,6 @@ class PostReceiptHelperTest {
             isRestore = true,
             appUserID = appUserID,
             initiationSource = initiationSource,
-            appInBackground = false,
             onSuccess = { _, _ -> },
             onError = { _, _ -> fail("Should succeed") }
         )
@@ -818,7 +790,6 @@ class PostReceiptHelperTest {
             isRestore = true,
             appUserID = appUserID,
             initiationSource = initiationSource,
-            appInBackground = false,
             onSuccess = { _, _ -> },
             onError = { _, _ -> fail("Should succeed") }
         )
@@ -841,7 +812,6 @@ class PostReceiptHelperTest {
             isRestore = true,
             appUserID = appUserID,
             initiationSource = initiationSource,
-            appInBackground = false,
             onSuccess = { _, _ -> },
             onError = { _, _ -> fail("Should succeed") }
         )
@@ -876,7 +846,6 @@ class PostReceiptHelperTest {
             appUserID = appUserID,
             marketplace = marketplace,
             initiationSource = PostReceiptInitiationSource.RESTORE,
-            appInBackground = false,
             onSuccess = { },
             onError = { fail("Should succeed") }
         )
@@ -912,7 +881,6 @@ class PostReceiptHelperTest {
             appUserID = appUserID,
             marketplace = marketplace,
             initiationSource = PostReceiptInitiationSource.PURCHASE,
-            appInBackground = false,
             onSuccess = { },
             onError = { fail("Should succeed") }
         )
@@ -948,7 +916,6 @@ class PostReceiptHelperTest {
             appUserID = appUserID,
             marketplace = marketplace,
             initiationSource = initiationSource,
-            appInBackground = false,
             onSuccess = { },
             onError = { fail("Should succeed") }
         )
@@ -974,7 +941,6 @@ class PostReceiptHelperTest {
             appUserID = appUserID,
             marketplace = marketplace,
             initiationSource = initiationSource,
-            appInBackground = false,
             onSuccess = { },
             onError = { fail("Should succeed") }
         )
@@ -997,7 +963,6 @@ class PostReceiptHelperTest {
             appUserID = appUserID,
             marketplace = marketplace,
             initiationSource = initiationSource,
-            appInBackground = false,
             onSuccess = { receivedCustomerInfo = it },
             onError = { fail("Should succeed") }
         )
@@ -1020,7 +985,6 @@ class PostReceiptHelperTest {
             appUserID = appUserID,
             marketplace = marketplace,
             initiationSource = initiationSource,
-            appInBackground = false,
             onSuccess = { },
             onError = { fail("Should succeed") }
         )
@@ -1043,7 +1007,6 @@ class PostReceiptHelperTest {
             appUserID = appUserID,
             marketplace = marketplace,
             initiationSource = initiationSource,
-            appInBackground = false,
             onSuccess = { successCalledCount++ },
             onError = { fail("Should succeed") }
         )
@@ -1067,7 +1030,6 @@ class PostReceiptHelperTest {
             appUserID = appUserID,
             marketplace = marketplace,
             initiationSource = initiationSource,
-            appInBackground = false,
             onSuccess = { fail("Should fail") },
             onError = { }
         )
@@ -1097,7 +1059,6 @@ class PostReceiptHelperTest {
             appUserID = appUserID,
             marketplace = marketplace,
             initiationSource = initiationSource,
-            appInBackground = false,
             onSuccess = { fail("Should fail") },
             onError = { }
         )
@@ -1126,7 +1087,6 @@ class PostReceiptHelperTest {
             appUserID = appUserID,
             marketplace = marketplace,
             initiationSource = initiationSource,
-            appInBackground = false,
             onSuccess = { fail("Should fail") },
             onError = { }
         )
@@ -1151,7 +1111,6 @@ class PostReceiptHelperTest {
             appUserID = appUserID,
             marketplace = marketplace,
             initiationSource = initiationSource,
-            appInBackground = false,
             onSuccess = { fail("Should fail") },
             onError = { }
         )
@@ -1177,7 +1136,6 @@ class PostReceiptHelperTest {
             appUserID = appUserID,
             marketplace = marketplace,
             initiationSource = initiationSource,
-            appInBackground = false,
             onSuccess = { fail("Should fail") },
             onError = { purchasesError = it }
         )
@@ -1197,7 +1155,6 @@ class PostReceiptHelperTest {
             appUserID = appUserID,
             marketplace = marketplace,
             initiationSource = initiationSource,
-            appInBackground = false,
             onSuccess = { },
             onError = { fail("Should succeed") }
         )
@@ -1226,7 +1183,6 @@ class PostReceiptHelperTest {
             appUserID = appUserID,
             marketplace = marketplace,
             initiationSource = initiationSource,
-            appInBackground = false,
             onSuccess = { fail("Should fail") },
             onError = { }
         )
@@ -1254,7 +1210,6 @@ class PostReceiptHelperTest {
             appUserID = appUserID,
             marketplace = marketplace,
             initiationSource = initiationSource,
-            appInBackground = false,
             onSuccess = { },
             onError = { fail("Should succeed") }
         )
@@ -1279,7 +1234,6 @@ class PostReceiptHelperTest {
             appUserID = appUserID,
             marketplace = marketplace,
             initiationSource = initiationSource,
-            appInBackground = false,
             onSuccess = { fail("Expected error") },
             onError = { }
         )
@@ -1289,7 +1243,6 @@ class PostReceiptHelperTest {
         }
         verify(exactly = 0) { offlineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(
             appUserId = appUserID,
-            appInBackground = any(),
             onSuccess = any(),
             onError = any()
         ) }
@@ -1310,7 +1263,6 @@ class PostReceiptHelperTest {
             appUserID = appUserID,
             marketplace = marketplace,
             initiationSource = initiationSource,
-            appInBackground = false,
             onSuccess = { fail("Expected error") },
             onError = { }
         )
@@ -1318,7 +1270,7 @@ class PostReceiptHelperTest {
         verify(exactly = 1) {
             offlineEntitlementsManager.shouldCalculateOfflineCustomerInfoInPostReceipt(isServerError = true)
         }
-        verify(exactly = 1) { offlineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(appUserID, any(), any(), any()) }
+        verify(exactly = 1) { offlineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(appUserID, any(), any()) }
     }
 
     @Test
@@ -1329,7 +1281,7 @@ class PostReceiptHelperTest {
         )
 
         every {
-            offlineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(appUserID, false, captureLambda(), any())
+            offlineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(appUserID, captureLambda(), any())
         } answers {
             lambda<(CustomerInfo) -> Unit>().captured(defaultCustomerInfo)
         }
@@ -1346,7 +1298,6 @@ class PostReceiptHelperTest {
             appUserID = appUserID,
             marketplace = marketplace,
             initiationSource = initiationSource,
-            appInBackground = false,
             onSuccess = { successCallCount++ },
             onError = { fail("Should succeed") }
         )
@@ -1363,7 +1314,7 @@ class PostReceiptHelperTest {
         )
 
         every {
-            offlineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(appUserID, false, captureLambda(), any())
+            offlineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(appUserID, captureLambda(), any())
         } answers {
             lambda<(CustomerInfo) -> Unit>().captured(defaultCustomerInfo)
         }
@@ -1379,7 +1330,6 @@ class PostReceiptHelperTest {
             appUserID = appUserID,
             marketplace = marketplace,
             initiationSource = initiationSource,
-            appInBackground = false,
             onSuccess = { },
             onError = { fail("Should succeed") }
         )
@@ -1396,7 +1346,7 @@ class PostReceiptHelperTest {
         )
 
         every {
-            offlineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(appUserID, false, captureLambda(), any())
+            offlineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(appUserID, captureLambda(), any())
         } answers {
             lambda<(CustomerInfo) -> Unit>().captured(defaultCustomerInfo)
         }
@@ -1412,7 +1362,6 @@ class PostReceiptHelperTest {
             appUserID = appUserID,
             marketplace = marketplace,
             initiationSource = initiationSource,
-            appInBackground = false,
             onSuccess = { },
             onError = { fail("Should succeed") }
         )
@@ -1436,7 +1385,6 @@ class PostReceiptHelperTest {
         every {
             offlineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(
                 appUserId = appUserID,
-                appInBackground = false,
                 onSuccess = captureLambda(),
                 onError = any()
             )
@@ -1455,7 +1403,6 @@ class PostReceiptHelperTest {
             appUserID = appUserID,
             marketplace = marketplace,
             initiationSource = initiationSource,
-            appInBackground = false,
             onSuccess = { },
             onError = { fail("Should succeed") }
         )
@@ -1482,7 +1429,6 @@ class PostReceiptHelperTest {
             isRestore = false,
             appUserID = appUserID,
             initiationSource = PostReceiptInitiationSource.PURCHASE,
-            appInBackground = false,
             onSuccess = { _, _ -> },
             onError = { _, _ -> fail("Should succeed") }
         )
@@ -1516,7 +1462,6 @@ class PostReceiptHelperTest {
             isRestore = false,
             appUserID = appUserID,
             initiationSource = PostReceiptInitiationSource.PURCHASE,
-            appInBackground = false,
             onSuccess = { _, _ -> fail("Should error") },
             onError = { _, _ -> }
         )
@@ -1614,7 +1559,6 @@ class PostReceiptHelperTest {
         every {
             offlineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(
                 appUserId = appUserID,
-                appInBackground = any(),
                 onSuccess = any(),
                 onError = captureLambda()
             )
