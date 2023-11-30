@@ -14,9 +14,11 @@ import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 class PaywallFooterViewActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        val offeringId = intent.getStringExtra("offering_id")
         setContentView(R.layout.activity_paywall_footer_view)
         val binding = ActivityPaywallFooterViewBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        binding.paywallFooterView.setOfferingId(offeringId)
         binding.paywallFooterView.setPaywallListener(object : PaywallListener {
             override fun onPurchaseStarted(rcPackage: Package) {
                 super.onPurchaseStarted(rcPackage)

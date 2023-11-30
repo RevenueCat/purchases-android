@@ -2,5 +2,6 @@
 <resources>
     <declare-styleable name="PaywallFooterView">
         <attr name="android:fontFamily" />
+        <attr name="offeringIdentifier" format="string" />
     </declare-styleable>
 </resources>

@@ -41,10 +41,10 @@ class MainActivity : ComponentActivity(), PaywallResultHandler {
         paywallActivityLauncher.launch(offering)
     }
 
-    @Suppress("UnusedParameter")
     fun launchPaywallFooterViewAsActivity(offering: Offering? = null) {
-        // WIP: Pass offering to PaywallFooterViewActivity
+        // WIP: Change to use PaywallActivityLauncher
         val intent = Intent(this, PaywallFooterViewActivity::class.java)
+        offering?.identifier?.let { intent.putExtra("offering_id", it) }
         startActivity(intent)
     }
 }
