@@ -26,9 +26,13 @@ private class PaywallResultAPI {
             is PaywallResult.Purchased -> {
                 val customerInfo2: CustomerInfo = paywallResult.customerInfo
             }
+            is PaywallResult.Restored -> {
+                val customerInfo3: CustomerInfo = paywallResult.customerInfo
+            }
         }
         val parcelable: Parcelable = paywallResult
         val result2 = PaywallResult.Error(error)
         val result3 = PaywallResult.Purchased(customerInfo)
+        val result4 = PaywallResult.Restored(customerInfo)
     }
 }

@@ -29,7 +29,10 @@ final class PaywallResultAPI {
         PurchasesError error2 = result2.getError();
         final PaywallResult.Purchased result3 = new PaywallResult.Purchased(customerInfo);
         CustomerInfo customerInfo2 = result3.getCustomerInfo();
+        final PaywallResult.Restored result4 = new PaywallResult.Restored(customerInfo);
+        CustomerInfo customerInfo3 = result4.getCustomerInfo();
         final PaywallResult result2AsSealedClass = result2;
         final PaywallResult result3AsSealedClass = result3;
+        final PaywallResult result4AsSealedClass = result4;
     }
 }

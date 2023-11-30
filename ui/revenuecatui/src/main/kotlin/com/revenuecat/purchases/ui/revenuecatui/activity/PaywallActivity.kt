@@ -100,6 +100,14 @@ internal class PaywallActivity : ComponentActivity(), PaywallListener {
         finish()
     }
 
+    override fun onRestoreCompleted(customerInfo: CustomerInfo) {
+        setResult(RESULT_OK, createResultIntent(PaywallResult.Restored(customerInfo)))
+        val requiredEntitlementIdentifier = getArgs()?.requiredEntitlementIdentifier ?: return
+        if (customerInfo.entitlements.active.containsKey(requiredEntitlementIdentifier)) {
+            finish()
+        }
+    }
+
     override fun onPurchaseError(error: PurchasesError) {
         val result = if (error.code == PurchasesErrorCode.PurchaseCancelledError) {
             PaywallResult.Cancelled
