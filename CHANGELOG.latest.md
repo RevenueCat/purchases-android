@@ -1,16 +1,14 @@
-### RevenueCatUI
-* `Paywalls`: Fix Turkish translation (#1478) via iremkaraoglu (@iremkaraoglu)
 ### Bugfixes
-* Check diagnostics file size in background thread (#1488) via Toni Rico (@tonidero)
-### Dependency Updates
-* Update Billing client to 6.1.0 (#1481) via Toni Rico (@tonidero)
+* Fix white line around buttons in Template 4 (#1499) via Cesar de la Vega (@vegaro)
+### Performance Improvements
+* Avoid creating threads when dispatching tasks (#1496) via Toni Rico (@tonidero)
 ### Other Changes
-* Add retries to queryPurchases (#1460) via Cesar de la Vega (@vegaro)
-* Initialize shared preferences lazily (#1489) via Toni Rico (@tonidero)
-* Create a BaseBillingUseCaseTest (#1486) via Cesar de la Vega (@vegaro)
-* Add retries to queryPurchaseHistoryAsync (#1448) via Cesar de la Vega (@vegaro)
-* Add `X-Storefront` header to requests (#1484) via Toni Rico (@tonidero)
-* Paywalls: Add paywalls UI tests (#1470) via Toni Rico (@tonidero)
-* Use state listener in Amazon store (#1483) via Toni Rico (@tonidero)
-* Add method to get storefront for Google and Amazon stores (#1482) via Toni Rico (@tonidero)
-* Add retries to queryProductDetailsAsync (#1444) via Cesar de la Vega (@vegaro)
+* Refactor QueryPurchasesUseCase and adds QueryPurchasesByTypeUseCase (#1495) via Cesar de la Vega (@vegaro)
+* Fixes on `update_snapshots_repo` (#1501) via Cesar de la Vega (@vegaro)
+* Fixes on generate_snapshots_RCUI lane (#1500) via Cesar de la Vega (@vegaro)
+* Fix integration tests (#1498) via Toni Rico (@tonidero)
+* Cleanup warnings in AcknowledgePurchaseUseCaseTest (#1497) via Cesar de la Vega (@vegaro)
+* Add AcknowledgePurchaseUseCase (#1492) via Cesar de la Vega (@vegaro)
+* Refactor findPurchaseInPurchaseHistory (#1493) via Cesar de la Vega (@vegaro)
+* ConsumePurchaseUseCase (#1487) via Cesar de la Vega (@vegaro)
+* Add retries with backoff and different treatment to SERVICE_UNAVAILABLE (#1490) via Cesar de la Vega (@vegaro)
