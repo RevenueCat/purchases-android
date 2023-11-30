@@ -319,7 +319,6 @@ class CustomerInfoHelperTest {
         verify(exactly = 0) {
             mockOfflineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(
                 appUserId = any(),
-                appInBackground = any(),
                 onSuccess = any(),
                 onError = any(),
             )
@@ -340,7 +339,6 @@ class CustomerInfoHelperTest {
         verify(exactly = 1) {
             mockOfflineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(
                 appUserId = appUserId,
-                appInBackground = any(),
                 onSuccess = any(),
                 onError = any(),
             )
@@ -395,7 +393,6 @@ class CustomerInfoHelperTest {
         every {
             mockOfflineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(
                 appUserId = appUserId,
-                appInBackground = any(),
                 onSuccess = any(),
                 onError = captureLambda(),
             )
@@ -437,7 +434,6 @@ class CustomerInfoHelperTest {
         verify(exactly = 1) {
             mockPostPendingTransactionsHelper.syncPendingPurchaseQueue(
                 allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
-                appInBackground = any(),
                 onError = any(),
                 onSuccess = any()
             )
@@ -463,7 +459,6 @@ class CustomerInfoHelperTest {
         verify(exactly = 1) {
             mockPostPendingTransactionsHelper.syncPendingPurchaseQueue(
                 allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
-                appInBackground = any(),
                 onError = any(),
                 onSuccess = any()
             )
@@ -490,7 +485,6 @@ class CustomerInfoHelperTest {
         verify(exactly = 1) {
             mockPostPendingTransactionsHelper.syncPendingPurchaseQueue(
                 allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
-                appInBackground = any(),
                 onError = any(),
                 onSuccess = any()
             )
@@ -760,7 +754,6 @@ class CustomerInfoHelperTest {
         every {
             mockOfflineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(
                 appUserId = appUserId,
-                appInBackground = any(),
                 onSuccess = captureLambda(),
                 onError = any(),
             )
@@ -787,7 +780,6 @@ class CustomerInfoHelperTest {
         every {
             mockPostPendingTransactionsHelper.syncPendingPurchaseQueue(
                 allowSharingPlayStoreAccount = any(),
-                appInBackground = any(),
                 onError = any(),
                 onSuccess = captureNullable(slotList),
             )
@@ -800,7 +792,6 @@ class CustomerInfoHelperTest {
         every {
             mockPostPendingTransactionsHelper.syncPendingPurchaseQueue(
                 allowSharingPlayStoreAccount = any(),
-                appInBackground = any(),
                 onError = captureLambda(),
                 onSuccess = any(),
             )

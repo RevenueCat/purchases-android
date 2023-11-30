@@ -18,7 +18,6 @@ internal fun BillingAbstract.mockQueryProductDetails(
             queryProductDetailsAsync(
                 productType = ProductType.SUBS,
                 productIds = any(),
-                appInBackground = any(),
                 onReceive = capture(subsReceiveCallbackSlot),
                 onError = any(),
             )
@@ -31,7 +30,6 @@ internal fun BillingAbstract.mockQueryProductDetails(
             queryProductDetailsAsync(
                 productType = ProductType.INAPP,
                 productIds = any(),
-                appInBackground = any(),
                 capture(inappReceiveCallbackSlot),
                 any(),
             )

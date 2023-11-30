@@ -152,7 +152,6 @@ internal open class BasePurchasesTest {
                     capture(capturedShouldTryToConsume),
                     capture(capturedConsumePurchaseWrapper),
                     any(),
-                    any(),
                 )
             } just Runs
             every {
@@ -197,7 +196,6 @@ internal open class BasePurchasesTest {
                     isRestore = any(),
                     appUserID = any(),
                     initiationSource = any(),
-                    appInBackground = any(),
                     onSuccess = captureLambda(),
                     onError = any(),
                 )
@@ -216,7 +214,6 @@ internal open class BasePurchasesTest {
                     appUserID = any(),
                     marketplace = any(),
                     initiationSource = any(),
-                    appInBackground = any(),
                     onSuccess = captureLambda(),
                     onError = any(),
                 )
@@ -346,7 +343,6 @@ internal open class BasePurchasesTest {
             mockBillingAbstract.queryProductDetailsAsync(
                 type,
                 productIds.toSet(),
-                any(),
                 captureLambda(),
                 any(),
             )

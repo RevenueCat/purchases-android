@@ -48,7 +48,6 @@ internal class OfflineEntitlementsManager(
     @Suppress("FunctionOnlyReturningConstant")
     fun calculateAndCacheOfflineCustomerInfo(
         appUserId: String,
-        appInBackground: Boolean,
         onSuccess: (CustomerInfo) -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {
@@ -72,7 +71,6 @@ internal class OfflineEntitlementsManager(
         }
         offlineCustomerInfoCalculator.computeOfflineCustomerInfo(
             appUserId,
-            appInBackground,
             onSuccess = { customerInfo ->
                 synchronized(this@OfflineEntitlementsManager) {
                     warnLog(OfflineEntitlementsStrings.USING_OFFLINE_ENTITLEMENTS_CUSTOMER_INFO)

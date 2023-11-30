@@ -271,7 +271,6 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
                 appUserId,
                 ProductType.SUBS,
                 oldSubId,
-                appInBackground = false,
                 onCompletion = captureLambda(),
                 onError = any()
             )
@@ -542,7 +541,6 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
                     isRestore = false,
                     appUserID = appUserId,
                     initiationSource = initiationSource,
-                    appInBackground = any(),
                     onSuccess = captureLambda(),
                     onError = any(),
                 )
@@ -560,7 +558,6 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
                 isRestore = false,
                 appUserID = appUserId,
                 initiationSource = initiationSource,
-                appInBackground = any(),
                 onSuccess = any(),
                 onError = any()
             )
@@ -570,7 +567,6 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
                 isRestore = false,
                 appUserID = appUserId,
                 initiationSource = initiationSource,
-                appInBackground = any(),
                 onSuccess = any(),
                 onError = any()
             )
@@ -588,7 +584,6 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
                 isRestore = any(),
                 appUserID = any(),
                 initiationSource = any(),
-                appInBackground = any(),
                 onSuccess = any(),
                 onError = any(),
             )
@@ -1039,7 +1034,6 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
                 appUserID = appUserId,
                 productType = ProductType.SUBS,
                 productId = oldProductId,
-                appInBackground = any(),
                 onCompletion = any(),
                 onError = captureLambda()
             )
@@ -1102,7 +1096,6 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
                 isRestore = false,
                 appUserID = appUserId,
                 initiationSource = initiationSource,
-                appInBackground = any(),
                 onSuccess = any(),
                 onError = any()
             )
@@ -1144,7 +1137,6 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
                 appUserID = appUserId,
                 productType = ProductType.SUBS,
                 productId = oldSubId,
-                appInBackground = any(),
                 onCompletion = captureLambda(),
                 onError = any(),
             )
@@ -1209,7 +1201,6 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
                 appUserID = appUserId,
                 productType = ProductType.SUBS,
                 productId = oldSubId,
-                appInBackground = any(),
                 onCompletion = captureLambda(),
                 onError = any(),
             )
@@ -1364,7 +1355,6 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
                 isRestore = true,
                 appUserID = randomAppUserId,
                 initiationSource = initiationSource,
-                appInBackground = any(),
                 onSuccess = any(),
                 onError = any()
             )
@@ -1388,7 +1378,6 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
                 isRestore = false,
                 appUserID = appUserId,
                 initiationSource = initiationSource,
-                appInBackground = any(),
                 onSuccess = any(),
                 onError = any()
             )
@@ -1642,7 +1631,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         mockGetStorefront()
         capturedBillingWrapperStateListener.captured.onConnected()
         verify(exactly = 1) {
-            mockBillingAbstract.getStorefront(any(), any(), any())
+            mockBillingAbstract.getStorefront(any(), any())
         }
     }
 
@@ -1730,7 +1719,6 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
             mockBillingAbstract.queryProductDetailsAsync(
                 productType = storeProduct.type,
                 productIds = setOf(productId),
-                appInBackground = false,
                 onReceive = captureLambda(),
                 onError = any(),
             )
@@ -1754,7 +1742,6 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
                 appUserID = appUserId,
                 productType = ProductType.SUBS,
                 productId = oldProductId,
-                appInBackground = any(),
                 onCompletion = if (error == null) captureLambda() else any(),
                 onError = if (error != null) captureLambda() else any()
             )
@@ -1796,7 +1783,6 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
     private fun mockGetStorefront() {
         every {
             mockBillingAbstract.getStorefront(
-                appInBackground = any(),
                 onSuccess = captureLambda(),
                 onError = any()
             )

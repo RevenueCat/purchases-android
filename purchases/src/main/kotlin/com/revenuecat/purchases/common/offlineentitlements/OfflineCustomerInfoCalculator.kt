@@ -38,13 +38,11 @@ internal class OfflineCustomerInfoCalculator(
      */
     fun computeOfflineCustomerInfo(
         appUserID: String,
-        appInBackground: Boolean,
         onSuccess: (CustomerInfo) -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {
         purchasedProductsFetcher.queryActiveProducts(
             appUserID,
-            appInBackground,
             onSuccess = { purchasedProducts ->
                 val containsAnyActiveInAppPurchase = purchasedProducts.any {
                     it.storeTransaction.type == ProductType.INAPP

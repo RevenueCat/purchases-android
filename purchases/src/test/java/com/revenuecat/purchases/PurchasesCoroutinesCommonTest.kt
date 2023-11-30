@@ -174,7 +174,6 @@ internal class PurchasesCoroutinesCommonTest : BasePurchasesTest() {
             mockBillingAbstract.queryProductDetailsAsync(
                 productType = ProductType.SUBS,
                 productIds = productIds.toSet(),
-                appInBackground = any(),
                 onReceive = captureLambda(),
                 onError = any(),
             )
@@ -185,7 +184,6 @@ internal class PurchasesCoroutinesCommonTest : BasePurchasesTest() {
             mockBillingAbstract.queryProductDetailsAsync(
                 productType = ProductType.INAPP,
                 productIds = productIds.toSet(),
-                appInBackground = any(),
                 onReceive = captureLambda(),
                 onError = any(),
             )
@@ -211,7 +209,6 @@ internal class PurchasesCoroutinesCommonTest : BasePurchasesTest() {
             mockBillingAbstract.queryProductDetailsAsync(
                 productType = ProductType.SUBS,
                 productIds = productIds.toSet(),
-                appInBackground = any(),
                 onReceive = any(),
                 onError = captureLambda(),
             )
@@ -242,7 +239,6 @@ internal class PurchasesCoroutinesCommonTest : BasePurchasesTest() {
         every {
             mockBillingAbstract.queryAllPurchases(
                 appUserID = appUserId,
-                appInBackground = any(),
                 onReceivePurchaseHistory = captureLambda(),
                 onReceivePurchaseHistoryError = any(),
             )
@@ -257,7 +253,6 @@ internal class PurchasesCoroutinesCommonTest : BasePurchasesTest() {
         verify(exactly = 1) {
             mockBillingAbstract.queryAllPurchases(
                 appUserId,
-                any(),
                 any(),
                 any(),
             )
@@ -276,7 +271,6 @@ internal class PurchasesCoroutinesCommonTest : BasePurchasesTest() {
                 isRestore = true,
                 appUserID = appUserId,
                 initiationSource = PostReceiptInitiationSource.RESTORE,
-                appInBackground = any(),
                 onSuccess = captureLambda(),
                 onError = any(),
             )
@@ -288,7 +282,6 @@ internal class PurchasesCoroutinesCommonTest : BasePurchasesTest() {
         every {
             mockBillingAbstract.queryAllPurchases(
                 appUserID = appUserId,
-                appInBackground = any(),
                 onReceivePurchaseHistory = captureLambda(),
                 onReceivePurchaseHistoryError = any()
             )
@@ -303,7 +296,6 @@ internal class PurchasesCoroutinesCommonTest : BasePurchasesTest() {
         verify(exactly = 1) {
             mockBillingAbstract.queryAllPurchases(
                 appUserID = appUserId,
-                appInBackground = any(),
                 onReceivePurchaseHistory = any(),
                 onReceivePurchaseHistoryError = any(),
             )
@@ -318,7 +310,6 @@ internal class PurchasesCoroutinesCommonTest : BasePurchasesTest() {
         every {
             mockBillingAbstract.queryAllPurchases(
                 appUserID = appUserId,
-                appInBackground = any(),
                 onReceivePurchaseHistory = any(),
                 onReceivePurchaseHistoryError = captureLambda(),
             )
@@ -337,7 +328,6 @@ internal class PurchasesCoroutinesCommonTest : BasePurchasesTest() {
         verify(exactly = 1) {
             mockBillingAbstract.queryAllPurchases(
                 appUserID = appUserId,
-                appInBackground = any(),
                 onReceivePurchaseHistory = any(),
                 onReceivePurchaseHistoryError = any(),
             )

@@ -69,7 +69,6 @@ internal class QueryPurchasesUseCaseTest : BaseBillingUseCaseTest() {
         var purchasesByHashedToken: Map<String, StoreTransaction>? = null
         wrapper.queryPurchases(
             appUserID = "appUserID",
-            appInBackground = false,
             onSuccess = {
                 purchasesByHashedToken = it
             },
@@ -89,7 +88,6 @@ internal class QueryPurchasesUseCaseTest : BaseBillingUseCaseTest() {
         var purchasesByHashedToken: Map<String, StoreTransaction>? = null
         wrapper.queryPurchases(
             appUserID = "appUserID",
-            appInBackground = false,
             onSuccess = {
                 purchasesByHashedToken = it
             },
@@ -129,7 +127,6 @@ internal class QueryPurchasesUseCaseTest : BaseBillingUseCaseTest() {
         var receivedError: PurchasesError? = null
         wrapper.queryPurchases(
             appUserID = "appUserID",
-            appInBackground = false,
             onSuccess = { fail("should be an error") },
             onError = { receivedError = it }
         )
@@ -166,7 +163,6 @@ internal class QueryPurchasesUseCaseTest : BaseBillingUseCaseTest() {
         var purchasesByHashedToken: Map<String, StoreTransaction>? = null
         wrapper.queryPurchases(
             appUserID = "appUserID",
-            appInBackground = false,
             onSuccess = {
                 purchasesByHashedToken = it
             },
@@ -209,7 +205,6 @@ internal class QueryPurchasesUseCaseTest : BaseBillingUseCaseTest() {
         var purchasesByHashedToken: Map<String, StoreTransaction>? = null
         wrapper.queryPurchases(
             appUserID = "appUserID",
-            appInBackground = false,
             onSuccess = {
                 purchasesByHashedToken = it
             },
@@ -258,7 +253,6 @@ internal class QueryPurchasesUseCaseTest : BaseBillingUseCaseTest() {
 
         wrapper.queryPurchases(
             appUserID = appUserId,
-            appInBackground = false,
             onSuccess = {},
             onError = { fail("shouldn't be an error") }
         )
@@ -299,7 +293,6 @@ internal class QueryPurchasesUseCaseTest : BaseBillingUseCaseTest() {
 
         wrapper.queryPurchases(
             appUserID = appUserId,
-            appInBackground = false,
             onSuccess = { fail("should be an error") },
             onError = {}
         )
@@ -335,7 +328,6 @@ internal class QueryPurchasesUseCaseTest : BaseBillingUseCaseTest() {
 
         wrapper.queryPurchases(
             appUserID = "appUserID",
-            appInBackground = false,
             onSuccess = {
                 numCallbacks++
             },
@@ -374,7 +366,6 @@ internal class QueryPurchasesUseCaseTest : BaseBillingUseCaseTest() {
 
         wrapper.queryPurchases(
             appUserID = "appUserID",
-            appInBackground = false,
             onSuccess = {
                 // ensuring we don't hit an edge case where numCallbacks doesn't increment before the final assert
                 numCallbacks.incrementAndGet()

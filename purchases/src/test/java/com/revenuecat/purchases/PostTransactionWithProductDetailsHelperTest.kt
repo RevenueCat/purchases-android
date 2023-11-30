@@ -54,7 +54,6 @@ class PostTransactionWithProductDetailsHelperTest {
             allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
             appUserID = appUserID,
             initiationSource = initiationSource,
-            appInBackground = false,
             transactionPostSuccess = { _, _ -> fail("Should not be called") },
             transactionPostError = { _, _ -> fail("Should not be called") },
         )
@@ -71,7 +70,6 @@ class PostTransactionWithProductDetailsHelperTest {
             allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
             appUserID = appUserID,
             initiationSource = initiationSource,
-            appInBackground = false,
             transactionPostSuccess = { _, _ -> fail("Should not be called") },
             transactionPostError = { _, error -> receivedError = error },
         )
@@ -92,7 +90,6 @@ class PostTransactionWithProductDetailsHelperTest {
             allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
             appUserID = appUserID,
             initiationSource = initiationSource,
-            appInBackground = false,
             transactionPostSuccess = { _, _ -> fail("Should not be called") },
             transactionPostError = { _, _ -> errorCallCount++ },
         )
@@ -115,7 +112,6 @@ class PostTransactionWithProductDetailsHelperTest {
             allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
             appUserID = appUserID,
             initiationSource = initiationSource,
-            appInBackground = false,
             transactionPostSuccess = { _, _ ->  },
             transactionPostError = { _, _ -> fail("Should be success") },
         )
@@ -127,7 +123,6 @@ class PostTransactionWithProductDetailsHelperTest {
                 isRestore = allowSharingPlayStoreAccount,
                 appUserID = appUserID,
                 initiationSource = initiationSource,
-                appInBackground = any(),
                 onSuccess = any(),
                 onError = any(),
             )
@@ -144,7 +139,6 @@ class PostTransactionWithProductDetailsHelperTest {
             allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
             appUserID = appUserID,
             initiationSource = initiationSource,
-            appInBackground = false,
             transactionPostSuccess = { _, _ ->  },
             transactionPostError = { _, _ -> fail("Should be success") },
         )
@@ -156,7 +150,6 @@ class PostTransactionWithProductDetailsHelperTest {
                 isRestore = allowSharingPlayStoreAccount,
                 appUserID = appUserID,
                 initiationSource = initiationSource,
-                appInBackground = any(),
                 onSuccess = any(),
                 onError = any(),
             )
@@ -173,7 +166,6 @@ class PostTransactionWithProductDetailsHelperTest {
             allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
             appUserID = appUserID,
             initiationSource = initiationSource,
-            appInBackground = false,
             transactionPostSuccess = { _, _ ->  },
             transactionPostError = { _, _ -> fail("Should be success") },
         )
@@ -185,7 +177,6 @@ class PostTransactionWithProductDetailsHelperTest {
                 isRestore = allowSharingPlayStoreAccount,
                 appUserID = appUserID,
                 initiationSource = initiationSource,
-                appInBackground = any(),
                 onSuccess = any(),
                 onError = any(),
             )
@@ -205,7 +196,6 @@ class PostTransactionWithProductDetailsHelperTest {
             allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
             appUserID = appUserID,
             initiationSource = initiationSource,
-            appInBackground = false,
             transactionPostSuccess = { storeTransaction, customerInfo ->
                 receivedStoreTransaction = storeTransaction
                 receivedCustomerInfo = customerInfo
@@ -238,7 +228,6 @@ class PostTransactionWithProductDetailsHelperTest {
             billing.queryProductDetailsAsync(
                 productType = transaction.type,
                 productIds = transaction.productIds.toSet(),
-                appInBackground = false,
                 onReceive = captureLambda(),
                 onError = any(),
             )
@@ -255,7 +244,6 @@ class PostTransactionWithProductDetailsHelperTest {
             billing.queryProductDetailsAsync(
                 productType = transaction.type,
                 productIds = transaction.productIds.toSet(),
-                appInBackground = false,
                 onReceive = any(),
                 onError = captureLambda(),
             )
@@ -276,7 +264,6 @@ class PostTransactionWithProductDetailsHelperTest {
                 isRestore = allowSharingPlayStoreAccount,
                 appUserID = appUserID,
                 initiationSource = initiationSource,
-                appInBackground = any(),
                 onSuccess = captureLambda(),
                 onError = any()
             )

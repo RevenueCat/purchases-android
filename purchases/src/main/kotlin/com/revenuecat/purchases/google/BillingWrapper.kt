@@ -195,7 +195,6 @@ internal class BillingWrapper(
     override fun queryProductDetailsAsync(
         productType: ProductType,
         productIds: Set<String>,
-        appInBackground: Boolean,
         onReceive: StoreProductsCallback,
         onError: PurchasesErrorCallback,
     ) {
@@ -304,7 +303,6 @@ internal class BillingWrapper(
 
     fun queryPurchaseHistoryAsync(
         @BillingClient.ProductType productType: String,
-        appInBackground: Boolean,
         onReceivePurchaseHistory: (List<PurchaseHistoryRecord>) -> Unit,
         onReceivePurchaseHistoryError: (PurchasesError) -> Unit,
     ) {
@@ -325,17 +323,14 @@ internal class BillingWrapper(
 
     override fun queryAllPurchases(
         appUserID: String,
-        appInBackground: Boolean,
         onReceivePurchaseHistory: (List<StoreTransaction>) -> Unit,
         onReceivePurchaseHistoryError: (PurchasesError) -> Unit,
     ) {
         queryPurchaseHistoryAsync(
             BillingClient.ProductType.SUBS,
-            appInBackground,
             { subsPurchasesList ->
                 queryPurchaseHistoryAsync(
                     BillingClient.ProductType.INAPP,
-                    appInBackground,
                     { inAppPurchasesList ->
                         onReceivePurchaseHistory(
                             subsPurchasesList.map {
@@ -356,7 +351,6 @@ internal class BillingWrapper(
         shouldTryToConsume: Boolean,
         purchase: StoreTransaction,
         initiationSource: PostReceiptInitiationSource,
-        appInBackground: Boolean,
     ) {
         if (purchase.type == ProductType.UNKNOWN) {
             // Would only get here if the purchase was triggered from outside of the app and there was
@@ -374,14 +368,12 @@ internal class BillingWrapper(
             consumePurchase(
                 purchase.purchaseToken,
                 initiationSource,
-                appInBackground,
                 onConsumed = deviceCache::addSuccessfullyPostedToken,
             )
         } else if (shouldTryToConsume && !alreadyAcknowledged) {
             acknowledge(
                 purchase.purchaseToken,
                 initiationSource,
-                appInBackground,
                 onAcknowledged = deviceCache::addSuccessfullyPostedToken,
             )
         } else {
@@ -392,7 +384,6 @@ internal class BillingWrapper(
     internal fun consumePurchase(
         token: String,
         initiationSource: PostReceiptInitiationSource,
-        appInBackground: Boolean,
         onConsumed: (purchaseToken: String) -> Unit,
     ) {
         log(LogIntent.PURCHASE, PurchaseStrings.CONSUMING_PURCHASE.format(token))
@@ -419,7 +410,6 @@ internal class BillingWrapper(
     internal fun acknowledge(
         token: String,
         initiationSource: PostReceiptInitiationSource,
-        appInBackground: Boolean,
         onAcknowledged: (purchaseToken: String) -> Unit,
     ) {
         log(LogIntent.PURCHASE, PurchaseStrings.ACKNOWLEDGING_PURCHASE.format(token))
@@ -446,7 +436,6 @@ internal class BillingWrapper(
     @Suppress("ReturnCount", "LongMethod")
     override fun queryPurchases(
         appUserID: String,
-        appInBackground: Boolean,
         onSuccess: (Map<String, StoreTransaction>) -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {
@@ -468,7 +457,6 @@ internal class BillingWrapper(
         appUserID: String,
         productType: ProductType,
         productId: String,
-        appInBackground: Boolean,
         onCompletion: (StoreTransaction) -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {
@@ -743,7 +731,6 @@ internal class BillingWrapper(
     }
 
     override fun getStorefront(
-        appInBackground: Boolean,
         onSuccess: (String) -> Unit,
         onError: PurchasesErrorCallback,
     ) {

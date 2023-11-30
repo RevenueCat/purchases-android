@@ -119,7 +119,6 @@ internal class AmazonBilling constructor(
 
     override fun queryAllPurchases(
         appUserID: String,
-        appInBackground: Boolean,
         onReceivePurchaseHistory: (List<StoreTransaction>) -> Unit,
         onReceivePurchaseHistoryError: PurchasesErrorCallback,
     ) {
@@ -171,7 +170,6 @@ internal class AmazonBilling constructor(
     override fun queryProductDetailsAsync(
         productType: RevenueCatProductType,
         productIds: Set<String>,
-        appInBackground: Boolean,
         onReceive: StoreProductsCallback,
         onError: PurchasesErrorCallback,
     ) {
@@ -196,7 +194,6 @@ internal class AmazonBilling constructor(
         shouldTryToConsume: Boolean,
         purchase: StoreTransaction,
         initiationSource: PostReceiptInitiationSource,
-        appInBackground: Boolean,
     ) {
         if (checkObserverMode() || purchase.type == RevenueCatProductType.UNKNOWN) return
 
@@ -220,14 +217,12 @@ internal class AmazonBilling constructor(
         appUserID: String,
         productType: RevenueCatProductType,
         productId: String,
-        appInBackground: Boolean,
         onCompletion: (StoreTransaction) -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {
         log(LogIntent.DEBUG, RestoreStrings.QUERYING_PURCHASE_WITH_TYPE.format(productId, productType.name))
         queryAllPurchases(
             appUserID,
-            appInBackground,
             onReceivePurchaseHistory = {
                 // We get productIds[0] because the list is guaranteed to have just one item in Amazon's case.
                 val record: StoreTransaction? = it.firstOrNull { record -> productId == record.productIds[0] }
@@ -298,7 +293,6 @@ internal class AmazonBilling constructor(
 
     override fun queryPurchases(
         appUserID: String,
-        appInBackground: Boolean,
         onSuccess: (Map<String, StoreTransaction>) -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {
@@ -319,7 +313,6 @@ internal class AmazonBilling constructor(
     }
 
     override fun getStorefront(
-        appInBackground: Boolean,
         onSuccess: (String) -> Unit,
         onError: PurchasesErrorCallback,
     ) {

@@ -51,7 +51,6 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         wrapper.acknowledge(
             token,
             initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
-            appInBackground = false
         ) { }
 
         assertThat(capturedAcknowledgePurchaseParams.isCaptured).isTrue
@@ -70,7 +69,6 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         wrapper.consumeAndSave(
             shouldTryToConsume = true,
             purchase = googlePurchaseWrapper,
-            appInBackground = false,
             initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
         )
 
@@ -96,7 +94,6 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         wrapper.consumeAndSave(
             shouldTryToConsume = true,
             purchase = googlePurchaseWrapper,
-            appInBackground = false,
             initiationSource = PostReceiptInitiationSource.PURCHASE,
         )
 
@@ -122,7 +119,6 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         wrapper.consumeAndSave(
             shouldTryToConsume = true,
             purchase = historyRecordWrapper,
-            appInBackground = false,
             initiationSource = PostReceiptInitiationSource.RESTORE,
         )
 
@@ -144,7 +140,6 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         wrapper.consumeAndSave(
             shouldTryToConsume = true,
             purchase = googlePurchaseWrapper,
-            appInBackground = false,
             initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
         )
 
@@ -166,7 +161,6 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         wrapper.consumeAndSave(
             shouldTryToConsume = true,
             purchase = historyRecordWrapper,
-            appInBackground = false,
             initiationSource = PostReceiptInitiationSource.RESTORE
         )
 
@@ -192,8 +186,7 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         wrapper.consumeAndSave(
             shouldTryToConsume = true,
             purchase = googlePurchaseWrapper,
-            initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
-            appInBackground = false
+            initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES
         )
 
         assertThat(capturedAcknowledgeResponseListener.isCaptured).isTrue
@@ -218,7 +211,6 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         wrapper.consumeAndSave(
             shouldTryToConsume = true,
             purchase = historyRecordWrapper,
-            appInBackground = false,
             initiationSource = PostReceiptInitiationSource.RESTORE,
         )
 
@@ -244,7 +236,6 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         wrapper.consumeAndSave(
             shouldTryToConsume = false,
             purchase = googlePurchaseWrapper,
-            appInBackground = false,
             initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
         )
 
@@ -269,7 +260,6 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         wrapper.consumeAndSave(
             shouldTryToConsume = false,
             purchase = historyRecordWrapper,
-            appInBackground = false,
             initiationSource = PostReceiptInitiationSource.RESTORE,
         )
 
@@ -294,7 +284,6 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         wrapper.consumeAndSave(
             shouldTryToConsume = true,
             purchase = googlePurchaseWrapper,
-            appInBackground = false,
             initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
         )
 

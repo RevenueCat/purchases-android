@@ -101,7 +101,6 @@ internal class PurchasesTest : BasePurchasesTest() {
                 isRestore = true,
                 appUserID = appUserId,
                 initiationSource = initiationSource,
-                appInBackground = false,
                 onSuccess = any(),
                 onError = any(),
             )
@@ -128,7 +127,6 @@ internal class PurchasesTest : BasePurchasesTest() {
                 appUserID = appUserId,
                 productType = ProductType.SUBS,
                 productId = oldSubId,
-                appInBackground = false,
                 onCompletion = captureLambda(),
                 onError = any(),
             )
@@ -173,7 +171,6 @@ internal class PurchasesTest : BasePurchasesTest() {
                 appUserID = appUserId,
                 productType = ProductType.SUBS,
                 productId = oldSubId,
-                appInBackground = false,
                 onCompletion = captureLambda(),
                 onError = any(),
             )
@@ -705,7 +702,6 @@ internal class PurchasesTest : BasePurchasesTest() {
                 appUserID = appUserId,
                 marketplace = null,
                 initiationSource = restoreInitiationSource,
-                appInBackground = false,
                 onSuccess = any(),
                 onError = any()
             )
@@ -763,7 +759,6 @@ internal class PurchasesTest : BasePurchasesTest() {
                 appUserID = appUserId,
                 marketplace = null,
                 initiationSource = restoreInitiationSource,
-                appInBackground = false,
                 onSuccess = any(),
                 onError = any()
             )
@@ -790,7 +785,6 @@ internal class PurchasesTest : BasePurchasesTest() {
                 appUserID = appUserId,
                 marketplace = null,
                 initiationSource = restoreInitiationSource,
-                appInBackground = false,
                 onSuccess = any(),
                 onError = any()
             )
@@ -842,7 +836,6 @@ internal class PurchasesTest : BasePurchasesTest() {
                 appUserID = appUserId,
                 marketplace = null,
                 initiationSource = restoreInitiationSource,
-                appInBackground = false,
                 onSuccess = any(),
                 onError = any()
             )
@@ -898,7 +891,6 @@ internal class PurchasesTest : BasePurchasesTest() {
                 appUserID = appUserId,
                 marketplace = null,
                 initiationSource = restoreInitiationSource,
-                appInBackground = false,
                 onSuccess = any(),
                 onError = any()
             )
@@ -980,7 +972,6 @@ internal class PurchasesTest : BasePurchasesTest() {
                 appUserID = appUserId,
                 marketplace = null,
                 initiationSource = restoreInitiationSource,
-                appInBackground = false,
                 onSuccess = any(),
                 onError = any(),
             )
@@ -1040,7 +1031,6 @@ internal class PurchasesTest : BasePurchasesTest() {
                 appUserID = appUserId,
                 marketplace = null,
                 initiationSource = restoreInitiationSource,
-                appInBackground = false,
                 onSuccess = any(),
                 onError = any(),
             )
@@ -1059,7 +1049,6 @@ internal class PurchasesTest : BasePurchasesTest() {
         every {
             mockBillingAbstract.queryAllPurchases(
                 appUserID = appUserId,
-                appInBackground = false,
                 onReceivePurchaseHistory = captureLambda(),
                 onReceivePurchaseHistoryError = any()
             )
@@ -1075,7 +1064,6 @@ internal class PurchasesTest : BasePurchasesTest() {
         verify {
             mockBillingAbstract.queryAllPurchases(
                 appUserID = appUserId,
-                appInBackground = any(),
                 onReceivePurchaseHistory = any(),
                 onReceivePurchaseHistoryError = any()
             )
@@ -1091,7 +1079,6 @@ internal class PurchasesTest : BasePurchasesTest() {
         every {
             mockBillingAbstract.queryAllPurchases(
                 appUserID = appUserId,
-                appInBackground = any(),
                 onReceivePurchaseHistory = captureLambda(),
                 onReceivePurchaseHistoryError = any()
             )
@@ -1116,7 +1103,6 @@ internal class PurchasesTest : BasePurchasesTest() {
                 isRestore = true,
                 appUserID = appUserId,
                 initiationSource = restoreInitiationSource,
-                appInBackground = false,
                 onSuccess = any(),
                 onError = any()
             )
@@ -1126,7 +1112,6 @@ internal class PurchasesTest : BasePurchasesTest() {
                 isRestore = true,
                 appUserID = appUserId,
                 initiationSource = restoreInitiationSource,
-                appInBackground = false,
                 onSuccess = any(),
                 onError = any()
             )
@@ -1139,7 +1124,6 @@ internal class PurchasesTest : BasePurchasesTest() {
         every {
             mockBillingAbstract.queryAllPurchases(
                 appUserID = appUserId,
-                appInBackground = false,
                 onReceivePurchaseHistory = any(),
                 onReceivePurchaseHistoryError = captureLambda()
             )
@@ -1169,7 +1153,6 @@ internal class PurchasesTest : BasePurchasesTest() {
         every {
             mockBillingAbstract.queryAllPurchases(
                 appUserID = appUserId,
-                appInBackground = false,
                 onReceivePurchaseHistory = captureLambda(),
                 onReceivePurchaseHistoryError = any()
             )
@@ -1194,7 +1177,6 @@ internal class PurchasesTest : BasePurchasesTest() {
                 isRestore = any(),
                 appUserID = any(),
                 initiationSource = any(),
-                appInBackground = any(),
                 onSuccess = captureLambda(),
                 onError = any(),
             )
@@ -1214,7 +1196,6 @@ internal class PurchasesTest : BasePurchasesTest() {
         verify(exactly = 1) {
             mockBillingAbstract.queryAllPurchases(
                 appUserID = appUserId,
-                appInBackground = any(),
                 onReceivePurchaseHistory = any(),
                 onReceivePurchaseHistoryError = any()
             )
@@ -1228,7 +1209,6 @@ internal class PurchasesTest : BasePurchasesTest() {
         every {
             mockBillingAbstract.queryAllPurchases(
                 appUserID = appUserId,
-                appInBackground = any(),
                 onReceivePurchaseHistory = captureLambda(),
                 onReceivePurchaseHistoryError = any(),
             )
@@ -1376,7 +1356,6 @@ internal class PurchasesTest : BasePurchasesTest() {
             mockBillingAbstract.queryProductDetailsAsync(
                 productType = storeProduct.type,
                 productIds = setOf(productId),
-                appInBackground = any(),
                 onReceive = captureLambda(),
                 onError = any(),
             )
@@ -1400,7 +1379,6 @@ internal class PurchasesTest : BasePurchasesTest() {
                 appUserID = appUserId,
                 productType = ProductType.SUBS,
                 productId = oldProductId,
-                appInBackground = any(),
                 onCompletion = if (error == null) captureLambda() else any(),
                 onError = if (error != null) captureLambda() else any(),
             )

@@ -53,7 +53,6 @@ internal class QueryProductDetailsUseCaseTest: BaseBillingUseCaseTest() {
         wrapper.queryProductDetailsAsync(
             productType = ProductType.SUBS,
             productIds = productIDs,
-            appInBackground = false,
             onReceive = {
                 receivedList = it
             },
@@ -81,7 +80,6 @@ internal class QueryProductDetailsUseCaseTest: BaseBillingUseCaseTest() {
         wrapper.queryProductDetailsAsync(
             productType = ProductType.UNKNOWN,
             productIds = productIDs,
-            appInBackground = false,
             onReceive = {
                 this@QueryProductDetailsUseCaseTest.storeProducts = it
             },
@@ -106,7 +104,6 @@ internal class QueryProductDetailsUseCaseTest: BaseBillingUseCaseTest() {
         wrapper.queryProductDetailsAsync(
             productType = ProductType.SUBS,
             productIds = productIdsSet,
-            appInBackground = false,
             onReceive = {},
             onError = {
                 AssertionsForClassTypes.fail("shouldn't be an error")
@@ -124,7 +121,6 @@ internal class QueryProductDetailsUseCaseTest: BaseBillingUseCaseTest() {
         wrapper.queryProductDetailsAsync(
             productType = ProductType.SUBS,
             productIds = emptySet(),
-            appInBackground = false,
             onReceive = {
                 assertThat(it).isEmpty()
             },
@@ -143,7 +139,6 @@ internal class QueryProductDetailsUseCaseTest: BaseBillingUseCaseTest() {
         wrapper.queryProductDetailsAsync(
             productType = ProductType.SUBS,
             productIds = setOf("", ""),
-            appInBackground = false,
             onReceive = {
                 assertThat(it).isEmpty()
             },
@@ -175,7 +170,6 @@ internal class QueryProductDetailsUseCaseTest: BaseBillingUseCaseTest() {
         wrapper.queryProductDetailsAsync(
             productType = ProductType.SUBS,
             productIds = setOf("asdf", "asdf"),
-            appInBackground = false,
             onReceive = {
                 Thread.sleep(200)
                 numCallbacks++
@@ -214,7 +208,6 @@ internal class QueryProductDetailsUseCaseTest: BaseBillingUseCaseTest() {
         wrapper.queryProductDetailsAsync(
             productType = ProductType.SUBS,
             productIds = setOf("asdf"),
-            appInBackground = false,
             onReceive = {
                 // ensuring we don't hit an edge case where numCallbacks doesn't increment before the final assert
                 numCallbacks.incrementAndGet()

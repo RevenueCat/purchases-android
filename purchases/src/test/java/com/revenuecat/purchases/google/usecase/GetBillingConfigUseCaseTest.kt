@@ -41,7 +41,6 @@ internal class GetBillingConfigUseCaseTest: BaseBillingUseCaseTest() {
         mockGetBillingConfig()
         var countryCode: String? = null
         wrapper.getStorefront(
-            appInBackground = false,
             onSuccess = { countryCode = it },
             onError = { fail("Should succeed") }
         )
@@ -52,7 +51,6 @@ internal class GetBillingConfigUseCaseTest: BaseBillingUseCaseTest() {
     fun `querying store country code stores country code in cache`() {
         mockGetBillingConfig()
         wrapper.getStorefront(
-            appInBackground = false,
             onSuccess = { },
             onError = { fail("Should succeed") }
         )
@@ -64,7 +62,6 @@ internal class GetBillingConfigUseCaseTest: BaseBillingUseCaseTest() {
         mockGetBillingConfig(BillingResponseCode.ERROR)
         var error: PurchasesError? = null
         wrapper.getStorefront(
-            appInBackground = false,
             onSuccess = { fail("Should error") },
             onError = { error = it }
         )
@@ -85,7 +82,6 @@ internal class GetBillingConfigUseCaseTest: BaseBillingUseCaseTest() {
         }
 
         wrapper.getStorefront(
-            appInBackground = false,
             onSuccess = { numCallbacks++ },
             onError = { numCallbacks++ }
         )
@@ -97,7 +93,6 @@ internal class GetBillingConfigUseCaseTest: BaseBillingUseCaseTest() {
     fun `querying store country code does not store country code on error`() {
         mockGetBillingConfig(BillingResponseCode.ERROR)
         wrapper.getStorefront(
-            appInBackground = false,
             onSuccess = { fail("Should error") },
             onError = { }
         )

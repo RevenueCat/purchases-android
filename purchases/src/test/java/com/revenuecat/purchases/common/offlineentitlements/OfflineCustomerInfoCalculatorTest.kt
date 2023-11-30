@@ -70,7 +70,6 @@ class OfflineCustomerInfoCalculatorTest {
         var receivedCustomerInfo: CustomerInfo? = null
         offlineCustomerInfoCalculator.computeOfflineCustomerInfo(
             appUserID = appUserID,
-            appInBackground = false,
             onSuccess = { receivedCustomerInfo = it },
             onError = { fail("Should've succeeded") }
         )
@@ -91,7 +90,6 @@ class OfflineCustomerInfoCalculatorTest {
         var receivedCustomerInfo: CustomerInfo? = null
         offlineCustomerInfoCalculator.computeOfflineCustomerInfo(
             appUserID = appUserID,
-            appInBackground = false,
             onSuccess = { receivedCustomerInfo = it },
             onError = { fail("Should've succeeded") }
         )
@@ -134,7 +132,6 @@ class OfflineCustomerInfoCalculatorTest {
         var receivedCustomerInfo: CustomerInfo? = null
         offlineCustomerInfoCalculator.computeOfflineCustomerInfo(
             appUserID = appUserID,
-            appInBackground = false,
             onSuccess = { receivedCustomerInfo = it },
             onError = { fail("Should've succeeded") }
         )
@@ -188,7 +185,6 @@ class OfflineCustomerInfoCalculatorTest {
         every {
             purchasedProductsFetcher.queryActiveProducts(
                 appUserID = appUserID,
-                appInBackground = any(),
                 onSuccess = captureLambda(),
                 onError = any()
             )
@@ -199,7 +195,6 @@ class OfflineCustomerInfoCalculatorTest {
         var receivedCustomerInfo: CustomerInfo? = null
         offlineCustomerInfoCalculator.computeOfflineCustomerInfo(
             appUserID = appUserID,
-            appInBackground = false,
             onSuccess = { receivedCustomerInfo = it },
             onError = { fail("Should've succeeded") }
         )
@@ -258,7 +253,6 @@ class OfflineCustomerInfoCalculatorTest {
         var receivedCustomerInfo: CustomerInfo? = null
         offlineCustomerInfoCalculator.computeOfflineCustomerInfo(
             appUserID = appUserID,
-            appInBackground = false,
             onSuccess = { receivedCustomerInfo = it },
             onError = { fail("Should've succeeded") }
         )
@@ -304,7 +298,6 @@ class OfflineCustomerInfoCalculatorTest {
         var receivedCustomerInfo: CustomerInfo? = null
         offlineCustomerInfoCalculator.computeOfflineCustomerInfo(
             appUserID = appUserID,
-            appInBackground = false,
             onSuccess = { receivedCustomerInfo = it },
             onError = { fail("Should've succeeded") }
         )
@@ -346,7 +339,6 @@ class OfflineCustomerInfoCalculatorTest {
         var receivedCustomerInfo: CustomerInfo? = null
         offlineCustomerInfoCalculator.computeOfflineCustomerInfo(
             appUserID = appUserID,
-            appInBackground = false,
             onSuccess = { receivedCustomerInfo = it },
             onError = { fail("Should've succeeded") }
         )
@@ -381,7 +373,6 @@ class OfflineCustomerInfoCalculatorTest {
         var receivedCustomerInfo: CustomerInfo? = null
         offlineCustomerInfoCalculator.computeOfflineCustomerInfo(
             appUserID = appUserID,
-            appInBackground = false,
             onSuccess = { receivedCustomerInfo = it },
             onError = { fail("Should've succeeded") }
         )
@@ -414,7 +405,6 @@ class OfflineCustomerInfoCalculatorTest {
         every {
             purchasedProductsFetcher.queryActiveProducts(
                 appUserID = appUserID,
-                appInBackground = any(),
                 onSuccess = captureLambda(),
                 onError = any()
             )
@@ -425,7 +415,6 @@ class OfflineCustomerInfoCalculatorTest {
         var receivedError: PurchasesError? = null
         offlineCustomerInfoCalculator.computeOfflineCustomerInfo(
             appUserID = appUserID,
-            appInBackground = false,
             onSuccess = { fail("Should've failed") },
             onError = { receivedError = it }
         )
@@ -438,7 +427,6 @@ class OfflineCustomerInfoCalculatorTest {
         every {
             purchasedProductsFetcher.queryActiveProducts(
                 appUserID = appUserID,
-                appInBackground = any(),
                 onSuccess = any(),
                 onError = captureLambda()
             )
@@ -449,7 +437,6 @@ class OfflineCustomerInfoCalculatorTest {
         var receivedError: PurchasesError? = null
         offlineCustomerInfoCalculator.computeOfflineCustomerInfo(
             appUserID = appUserID,
-            appInBackground = false,
             onSuccess = { fail("Should've failed") },
             onError = { receivedError = it }
         )
@@ -514,7 +501,6 @@ class OfflineCustomerInfoCalculatorTest {
         every {
             purchasedProductsFetcher.queryActiveProducts(
                 appUserID = appUserID,
-                appInBackground = any(),
                 onSuccess = captureLambda(),
                 onError = any()
             )

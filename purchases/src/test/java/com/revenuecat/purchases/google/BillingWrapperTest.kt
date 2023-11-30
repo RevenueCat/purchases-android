@@ -5,8 +5,6 @@ import android.content.Context
 import android.content.Intent
 import android.os.Handler
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.android.billingclient.api.AcknowledgePurchaseParams
-import com.android.billingclient.api.AcknowledgePurchaseResponseListener
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingFlowParams
@@ -19,8 +17,6 @@ import com.android.billingclient.api.InAppMessageResult
 import com.android.billingclient.api.InAppMessageResult.InAppMessageResponseCode
 import com.android.billingclient.api.ProductDetails
 import com.android.billingclient.api.ProductDetailsResponseListener
-import com.android.billingclient.api.Purchase
-import com.android.billingclient.api.PurchaseHistoryRecord
 import com.android.billingclient.api.PurchasesUpdatedListener
 import com.revenuecat.purchases.PostReceiptInitiationSource
 import com.revenuecat.purchases.ProductType
@@ -28,7 +24,6 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesState
 import com.revenuecat.purchases.PurchasesStateCache
-import com.revenuecat.purchases.PurchasesStateProvider
 import com.revenuecat.purchases.assertDebugLog
 import com.revenuecat.purchases.assertErrorLog
 import com.revenuecat.purchases.assertVerboseLog
@@ -37,7 +32,6 @@ import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.ReplaceProductInfo
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
-import com.revenuecat.purchases.common.firstSku
 import com.revenuecat.purchases.common.sha256
 import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.InAppMessageType
@@ -212,7 +206,6 @@ class BillingWrapperTest {
         wrapper.consumePurchase(
             token = token,
             initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
-            appInBackground = false,
         ) {
             consumePurchaseCompleted = true
         }
@@ -236,7 +229,6 @@ class BillingWrapperTest {
         wrapper.consumePurchase(
             token = token,
             initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
-            appInBackground = false,
         ) {
             consumePurchaseResponse1Called = true
         }
@@ -245,7 +237,6 @@ class BillingWrapperTest {
         wrapper.consumePurchase(
             token = token,
             initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
-            appInBackground = false,
         ) {
             consumePurchaseResponse2Called = true
         }
@@ -268,7 +259,6 @@ class BillingWrapperTest {
         wrapper.consumePurchase(
             token = token,
             initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
-            appInBackground = false,
         ) {  }
 
         verify(exactly = 2) {
@@ -286,7 +276,6 @@ class BillingWrapperTest {
         var error: PurchasesError? = null
         wrapper.queryPurchases(
             appUserID = "appUserID",
-            appInBackground = false,
             onSuccess = {
                 fail("should be an error")
             },
@@ -968,7 +957,6 @@ class BillingWrapperTest {
         wrapper.consumePurchase(
             token = "token",
             initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
-            appInBackground = false,
         ) { }
 
         verify(exactly = 1) { // Just the original connection
@@ -1006,7 +994,6 @@ class BillingWrapperTest {
         wrapper.queryProductDetailsAsync(
             ProductType.SUBS,
             setOf("product_a"),
-            appInBackground = false,
             {},
             {
                 fail("shouldn't be an error")
@@ -1048,7 +1035,6 @@ class BillingWrapperTest {
         var receivedPurchases = listOf<StoreTransaction>()
         wrapper.queryAllPurchases(
             appUserID = "appUserID",
-            appInBackground = false,
             onReceivePurchaseHistory = {
                 receivedPurchases = it
             },
@@ -1234,7 +1220,6 @@ class BillingWrapperTest {
         wrapper.queryProductDetailsAsync(
             productType = ProductType.SUBS,
             productIds = setOf("test-sku"),
-            appInBackground = false,
             onReceive = {},
             onError = { fail("shouldn't be an error") }
         )
@@ -1270,7 +1255,6 @@ class BillingWrapperTest {
         wrapper.queryProductDetailsAsync(
             productType = ProductType.SUBS,
             productIds = setOf("test-sku"),
-            appInBackground = false,
             onReceive = { fail("should be an error") },
             onError = {}
         )
@@ -1394,7 +1378,6 @@ class BillingWrapperTest {
         var receivedError: PurchasesError? = null
         wrapper.queryPurchases(
             appUserID = "abc",
-            appInBackground = false,
             onSuccess = {
                 error("Unexpected success")
             },

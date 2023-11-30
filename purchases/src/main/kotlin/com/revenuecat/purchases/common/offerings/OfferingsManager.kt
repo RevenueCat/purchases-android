@@ -66,7 +66,7 @@ internal class OfferingsManager(
             appUserID,
             appInBackground,
             {
-                createAndCacheOfferings(it, appInBackground, onError, onSuccess)
+                createAndCacheOfferings(it, onError, onSuccess)
             },
             { backendError, isServerError ->
                 if (isServerError) {
@@ -75,7 +75,7 @@ internal class OfferingsManager(
                         handleErrorFetchingOfferings(backendError, onError)
                     } else {
                         warnLog(OfferingStrings.ERROR_FETCHING_OFFERINGS_USING_DISK_CACHE)
-                        createAndCacheOfferings(cachedOfferingsResponse, appInBackground, onError, onSuccess)
+                        createAndCacheOfferings(cachedOfferingsResponse, onError, onSuccess)
                     }
                 } else {
                     handleErrorFetchingOfferings(backendError, onError)
@@ -86,13 +86,11 @@ internal class OfferingsManager(
 
     private fun createAndCacheOfferings(
         offeringsJSON: JSONObject,
-        appInBackground: Boolean,
         onError: ((PurchasesError) -> Unit)? = null,
         onSuccess: ((Offerings) -> Unit)? = null,
     ) {
         offeringsFactory.createOfferings(
             offeringsJSON,
-            appInBackground,
             onError = { error ->
                 handleErrorFetchingOfferings(error, onError)
             },

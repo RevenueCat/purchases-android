@@ -23,7 +23,6 @@ internal class PostPendingTransactionsHelper(
 
     fun syncPendingPurchaseQueue(
         allowSharingPlayStoreAccount: Boolean,
-        appInBackground: Boolean,
         onError: ((PurchasesError) -> Unit)? = null,
         onSuccess: ((CustomerInfo?) -> Unit)? = null,
     ) {
@@ -37,7 +36,6 @@ internal class PostPendingTransactionsHelper(
         dispatcher.enqueue({
             billing.queryPurchases(
                 appUserID,
-                appInBackground,
                 onSuccess = { purchasesByHashedToken ->
                     purchasesByHashedToken.forEach { (hash, purchase) ->
                         log(
@@ -51,7 +49,6 @@ internal class PostPendingTransactionsHelper(
                         transactionsToSync,
                         allowSharingPlayStoreAccount,
                         appUserID,
-                        appInBackground,
                         onError,
                         onSuccess,
                     )
@@ -69,7 +66,6 @@ internal class PostPendingTransactionsHelper(
         transactionsToSync: List<StoreTransaction>,
         allowSharingPlayStoreAccount: Boolean,
         appUserID: String,
-        appInBackground: Boolean,
         onError: ((PurchasesError) -> Unit)? = null,
         onSuccess: ((CustomerInfo?) -> Unit)? = null,
     ) {
@@ -83,7 +79,6 @@ internal class PostPendingTransactionsHelper(
                 allowSharingPlayStoreAccount,
                 appUserID,
                 PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
-                appInBackground,
                 transactionPostSuccess = { _, customerInfo ->
                     results.add(Result.Success(customerInfo))
                     callCompletionFromResults(transactionsToSync, results, onError, onSuccess)

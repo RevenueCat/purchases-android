@@ -122,7 +122,6 @@ class OfferingsFactoryTest {
         var purchasesError: PurchasesError? = null
         offeringsFactory.createOfferings(
             offeringsJSON = oneOfferingWithNoProductsResponse,
-            appInBackground = false,
             onError = { purchasesError = it },
             onSuccess = { fail("Expected error") }
         )
@@ -138,7 +137,6 @@ class OfferingsFactoryTest {
         var purchasesError: PurchasesError? = null
         offeringsFactory.createOfferings(
             offeringsJSON = JSONObject("{}"),
-            appInBackground = false,
             onError = { purchasesError = it },
             onSuccess = { fail("Expected error") }
         )
@@ -155,7 +153,6 @@ class OfferingsFactoryTest {
         var purchasesError: PurchasesError? = null
         offeringsFactory.createOfferings(
             offeringsJSON = oneOfferingResponse,
-            appInBackground = false,
             onError = { purchasesError = it },
             onSuccess = { fail("Expected error") }
         )
@@ -175,7 +172,6 @@ class OfferingsFactoryTest {
         var offerings: Offerings? = null
         offeringsFactory.createOfferings(
             offeringsJSON = oneOfferingResponse,
-            appInBackground = false,
             onError = { fail("Expected success. Got error: $it") },
             onSuccess = { offerings = it }
         )
@@ -194,7 +190,6 @@ class OfferingsFactoryTest {
         var offerings: Offerings? = null
         offeringsFactory.createOfferings(
             offeringsJSON = oneOfferingInAppProductResponse,
-            appInBackground = false,
             onError = { fail("Expected success. Got error: $it") },
             onSuccess = { offerings = it }
         )
@@ -213,7 +208,6 @@ class OfferingsFactoryTest {
         var offerings: Offerings? = null
         offeringsFactory.createOfferings(
             offeringsJSON = oneOfferingWithPaywall,
-            appInBackground = false,
             onError = { fail("Error: $it") },
             onSuccess = { offerings = it }
         )
@@ -232,7 +226,6 @@ class OfferingsFactoryTest {
         var offerings: Offerings? = null
         offeringsFactory.createOfferings(
             offeringsJSON = oneOfferingWithInvalidPaywallResponse,
-            appInBackground = false,
             onError = { fail("Error: $it") },
             onSuccess = { offerings = it }
         )
@@ -258,7 +251,6 @@ class OfferingsFactoryTest {
             billing.queryProductDetailsAsync(
                 type,
                 productIds.toSet(),
-                any(),
                 captureLambda(),
                 any(),
             )
