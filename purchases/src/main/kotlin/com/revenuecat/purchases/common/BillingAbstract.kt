@@ -59,7 +59,6 @@ internal abstract class BillingAbstract(
         shouldTryToConsume: Boolean,
         purchase: StoreTransaction,
         initiationSource: PostReceiptInitiationSource,
-        appInBackground: Boolean,
     )
 
     @SuppressWarnings("LongParameterList")

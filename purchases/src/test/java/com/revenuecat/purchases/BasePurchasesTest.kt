@@ -152,7 +152,6 @@ internal open class BasePurchasesTest {
                     capture(capturedShouldTryToConsume),
                     capture(capturedConsumePurchaseWrapper),
                     any(),
-                    any(),
                 )
             } just Runs
             every {

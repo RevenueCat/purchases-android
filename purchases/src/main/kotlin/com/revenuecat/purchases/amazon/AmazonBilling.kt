@@ -194,7 +194,6 @@ internal class AmazonBilling constructor(
         shouldTryToConsume: Boolean,
         purchase: StoreTransaction,
         initiationSource: PostReceiptInitiationSource,
-        appInBackground: Boolean,
     ) {
         if (checkObserverMode() || purchase.type == RevenueCatProductType.UNKNOWN) return
 

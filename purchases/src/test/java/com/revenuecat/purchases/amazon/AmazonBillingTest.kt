@@ -540,7 +540,6 @@ class AmazonBillingTest {
                 ),
             ),
             initiationSource = PostReceiptInitiationSource.PURCHASE,
-            appInBackground = false,
         )
 
         verify(exactly = 0) {
@@ -573,7 +572,6 @@ class AmazonBillingTest {
                 )
             ),
             initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
-            appInBackground = false,
         )
 
         verify(exactly = 1) {
@@ -610,7 +608,6 @@ class AmazonBillingTest {
                 )
             ),
             initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
-            appInBackground = false,
         )
 
         verify(exactly = 0) {

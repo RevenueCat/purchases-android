@@ -106,12 +106,12 @@ internal class PostReceiptHelper(
             marketplace = purchase.marketplace,
             initiationSource = initiationSource,
             onSuccess = { info ->
-                billing.consumeAndSave(finishTransactions, purchase, initiationSource, appInBackground)
+                billing.consumeAndSave(finishTransactions, purchase, initiationSource)
                 onSuccess?.let { it(purchase, info) }
             },
             onError = { backendError, errorHandlingBehavior, _ ->
                 if (errorHandlingBehavior == PostReceiptErrorHandlingBehavior.SHOULD_BE_CONSUMED) {
-                    billing.consumeAndSave(finishTransactions, purchase, initiationSource, appInBackground)
+                    billing.consumeAndSave(finishTransactions, purchase, initiationSource)
                 }
                 useOfflineEntitlementsCustomerInfoIfNeeded(
                     errorHandlingBehavior,

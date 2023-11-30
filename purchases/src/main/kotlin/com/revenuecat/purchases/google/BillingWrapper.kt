@@ -354,7 +354,6 @@ internal class BillingWrapper(
         shouldTryToConsume: Boolean,
         purchase: StoreTransaction,
         initiationSource: PostReceiptInitiationSource,
-        appInBackground: Boolean,
     ) {
         if (purchase.type == ProductType.UNKNOWN) {
             // Would only get here if the purchase was triggered from outside of the app and there was

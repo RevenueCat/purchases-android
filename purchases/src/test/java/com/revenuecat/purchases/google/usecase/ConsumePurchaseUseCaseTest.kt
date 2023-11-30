@@ -82,7 +82,6 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
             shouldTryToConsume = true,
             purchase = googlePurchaseWrapper,
             initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
-            appInBackground = false,
         )
 
         assertThat(capturedConsumeResponseListener.isCaptured).isTrue
@@ -110,7 +109,6 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
             shouldTryToConsume = true,
             purchase = historyRecordWrapper,
             initiationSource = PostReceiptInitiationSource.RESTORE,
-            appInBackground = false,
         )
 
         assertThat(capturedConsumeResponseListener.isCaptured).isTrue
@@ -136,8 +134,7 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         wrapper.consumeAndSave(
             shouldTryToConsume = true,
             purchase = googlePurchaseWrapper,
-            initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
-            appInBackground = false
+            initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES
         )
 
         assertThat(capturedConsumeResponseListener.isCaptured).isTrue
@@ -163,8 +160,7 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         wrapper.consumeAndSave(
             shouldTryToConsume = true,
             purchase = historyRecordWrapper,
-            initiationSource = PostReceiptInitiationSource.RESTORE,
-            appInBackground = false
+            initiationSource = PostReceiptInitiationSource.RESTORE
         )
 
         assertThat(capturedConsumeResponseListener.isCaptured).isTrue
@@ -192,8 +188,7 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         wrapper.consumeAndSave(
             shouldTryToConsume = true,
             purchase = googlePurchaseWrapper,
-            initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
-            appInBackground = false
+            initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES
         )
 
         assertThat(capturedConsumeResponseListener.isCaptured).isTrue
@@ -224,8 +219,7 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         wrapper.consumeAndSave(
             shouldTryToConsume = true,
             purchase = historyRecordWrapper,
-            initiationSource = PostReceiptInitiationSource.RESTORE,
-            appInBackground = false
+            initiationSource = PostReceiptInitiationSource.RESTORE
         )
 
         assertThat(capturedConsumeResponseListener.isCaptured).isTrue
@@ -257,8 +251,7 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         wrapper.consumeAndSave(
             shouldTryToConsume = false,
             purchase = googlePurchaseWrapper,
-            initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
-            appInBackground = false
+            initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES
         )
 
         verify(exactly = 0) {
@@ -287,8 +280,7 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         wrapper.consumeAndSave(
             shouldTryToConsume = false,
             purchase = historyRecordWrapper,
-            initiationSource = PostReceiptInitiationSource.RESTORE,
-            appInBackground = false
+            initiationSource = PostReceiptInitiationSource.RESTORE
         )
 
         verify(exactly = 0) {
@@ -320,7 +312,6 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
             shouldTryToConsume = true,
             purchase = googlePurchaseWrapper,
             initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
-            appInBackground = false,
         )
 
         verify(exactly = 0) {

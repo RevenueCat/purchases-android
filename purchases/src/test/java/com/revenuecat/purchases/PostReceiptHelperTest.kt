@@ -276,7 +276,6 @@ class PostReceiptHelperTest {
             billing.consumeAndSave(
                 shouldTryToConsume = expectedShouldConsumeFlag,
                 purchase = mockStoreTransaction,
-                appInBackground = false,
                 initiationSource = initiationSource,
             )
         }
@@ -304,7 +303,6 @@ class PostReceiptHelperTest {
             billing.consumeAndSave(
                 shouldTryToConsume = expectedShouldConsumeFlag,
                 purchase = mockStoreTransaction,
-                appInBackground = false,
                 initiationSource = initiationSource,
             )
         }
@@ -404,7 +402,6 @@ class PostReceiptHelperTest {
             billing.consumeAndSave(
                 shouldTryToConsume = true,
                 purchase = mockStoreTransaction,
-                appInBackground = false,
                 initiationSource = initiationSource
             )
         }
@@ -430,7 +427,6 @@ class PostReceiptHelperTest {
             billing.consumeAndSave(
                 shouldTryToConsume = false,
                 purchase = mockStoreTransaction,
-                appInBackground = false,
                 initiationSource = initiationSource,
             )
         }
@@ -455,7 +451,6 @@ class PostReceiptHelperTest {
             billing.consumeAndSave(
                 shouldTryToConsume = any(),
                 purchase = any(),
-                appInBackground = any(),
                 initiationSource = initiationSource
             )
         }
@@ -638,7 +633,6 @@ class PostReceiptHelperTest {
         verify(exactly = 0) { billing.consumeAndSave(
             shouldTryToConsume = any(),
             purchase = any(),
-            appInBackground = any(),
             initiationSource = initiationSource
         ) }
         verify(exactly = 0) { deviceCache.addSuccessfullyPostedToken(any()) }
@@ -778,8 +772,8 @@ class PostReceiptHelperTest {
         every { billing.consumeAndSave(
             shouldTryToConsume = true,
             purchase = purchase,
-            initiationSource = initiationSource,
-            appInBackground = false)
+            initiationSource = initiationSource
+        )
         } just Runs
 
         postReceiptHelper.postTransactionAndConsumeIfNeeded(
@@ -1212,8 +1206,8 @@ class PostReceiptHelperTest {
             billing.consumeAndSave(
                 shouldTryToConsume = any(),
                 purchase = any(),
-                initiationSource = initiationSource,
-                appInBackground = any())
+                initiationSource = initiationSource
+            )
         }
     }
 
@@ -1241,8 +1235,7 @@ class PostReceiptHelperTest {
             billing.consumeAndSave(
                 shouldTryToConsume = any(),
                 purchase = any(),
-                initiationSource = initiationSource,
-                appInBackground = any()
+                initiationSource = initiationSource
             )
         }
     }
@@ -1427,8 +1420,7 @@ class PostReceiptHelperTest {
         verify(exactly = 0) { billing.consumeAndSave(
             shouldTryToConsume = any(),
             purchase = any(),
-            initiationSource = initiationSource,
-            appInBackground = any()
+            initiationSource = initiationSource
         ) }
         verify(exactly = 0) { deviceCache.addSuccessfullyPostedToken(any()) }
     }
@@ -1580,8 +1572,8 @@ class PostReceiptHelperTest {
             every { billing.consumeAndSave(
                 shouldTryToConsume = any(),
                 purchase = mockStoreTransaction,
-                initiationSource = initiationSource,
-                appInBackground = any())
+                initiationSource = initiationSource
+            )
             } just Runs
         } else {
             every { deviceCache.addSuccessfullyPostedToken(postToken) } just Runs
@@ -1637,8 +1629,7 @@ class PostReceiptHelperTest {
                 every { billing.consumeAndSave(
                     shouldTryToConsume = any(),
                     purchase = mockStoreTransaction,
-                    initiationSource = initiationSource,
-                    appInBackground = any()
+                    initiationSource = initiationSource
                 ) } just Runs
             } else {
                 every { deviceCache.addSuccessfullyPostedToken(postToken) } just Runs
