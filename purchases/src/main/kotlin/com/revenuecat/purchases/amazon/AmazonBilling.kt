@@ -16,6 +16,7 @@ import com.revenuecat.purchases.PostReceiptInitiationSource
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCallback
 import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.PurchasesStateProvider
 import com.revenuecat.purchases.amazon.handler.ProductDataHandler
 import com.revenuecat.purchases.amazon.handler.PurchaseHandler
 import com.revenuecat.purchases.amazon.handler.PurchaseUpdatesHandler
@@ -50,13 +51,14 @@ import com.revenuecat.purchases.ProductType as RevenueCatProductType
 
 private const val TERM_SKU_JSON_KEY = "termSku"
 
-@SuppressWarnings("LongParameterList")
+@SuppressWarnings("LongParameterList", "TooManyFunctions")
 internal class AmazonBilling constructor(
     private val applicationContext: Context,
     private val amazonBackend: AmazonBackend,
     private val cache: AmazonCache,
     private val observerMode: Boolean,
     private val mainHandler: Handler,
+    stateProvider: PurchasesStateProvider,
     private val purchasingServiceProvider: PurchasingServiceProvider = DefaultPurchasingServiceProvider(),
     private val productDataHandler: ProductDataResponseListener =
         ProductDataHandler(purchasingServiceProvider, mainHandler),
@@ -67,7 +69,7 @@ internal class AmazonBilling constructor(
     ),
     private val userDataHandler: UserDataResponseListener = UserDataHandler(purchasingServiceProvider, mainHandler),
     private val dateProvider: DateProvider = DefaultDateProvider(),
-) : BillingAbstract(),
+) : BillingAbstract(stateProvider),
     ProductDataResponseListener by productDataHandler,
     PurchaseResponseListener by purchaseHandler,
     PurchaseUpdatesResponseListener by purchaseUpdatesHandler,
@@ -81,9 +83,17 @@ internal class AmazonBilling constructor(
         observerMode: Boolean,
         mainHandler: Handler,
         backendHelper: BackendHelper,
-    ) : this(applicationContext, AmazonBackend(backendHelper), AmazonCache(cache), observerMode, mainHandler)
+        stateProvider: PurchasesStateProvider,
+    ) : this(
+        applicationContext,
+        AmazonBackend(backendHelper),
+        AmazonCache(cache),
+        observerMode,
+        mainHandler,
+        stateProvider,
+    )
 
-    var connected = false
+    private var connected = false
 
     override fun startConnection() {
         if (checkObserverMode()) return

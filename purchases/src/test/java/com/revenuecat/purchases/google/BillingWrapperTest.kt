@@ -26,6 +26,9 @@ import com.revenuecat.purchases.PostReceiptInitiationSource
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.PurchasesState
+import com.revenuecat.purchases.PurchasesStateCache
+import com.revenuecat.purchases.PurchasesStateProvider
 import com.revenuecat.purchases.assertDebugLog
 import com.revenuecat.purchases.assertErrorLog
 import com.revenuecat.purchases.assertVerboseLog
@@ -110,6 +113,7 @@ class BillingWrapperTest {
 
     private val subsGoogleProductType = ProductType.SUBS.toGoogleProductType()!!
     private val inAppGoogleProductType = ProductType.INAPP.toGoogleProductType()!!
+    private val purchasesStateProvider = PurchasesStateCache(PurchasesState())
 
     @Before
     fun setup() {
@@ -153,7 +157,14 @@ class BillingWrapperTest {
 
         mockDetailsList = listOf(mockProductDetails())
 
-        wrapper = BillingWrapper(mockClientFactory, handler, mockDeviceCache, mockDiagnosticsTracker, mockDateProvider)
+        wrapper = BillingWrapper(
+            mockClientFactory,
+            handler,
+            mockDeviceCache,
+            mockDiagnosticsTracker,
+            purchasesStateProvider,
+            mockDateProvider
+        )
         wrapper.purchasesUpdatedListener = mockPurchasesListener
         wrapper.startConnectionOnMainThread()
         onConnectedCalled = false

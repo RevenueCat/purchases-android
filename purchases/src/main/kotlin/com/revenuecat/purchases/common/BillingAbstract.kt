@@ -5,6 +5,7 @@ import com.revenuecat.purchases.PostReceiptInitiationSource
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCallback
+import com.revenuecat.purchases.PurchasesStateProvider
 import com.revenuecat.purchases.models.InAppMessageType
 import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreProduct
@@ -13,7 +14,9 @@ import com.revenuecat.purchases.models.StoreTransaction
 internal typealias StoreProductsCallback = (List<StoreProduct>) -> Unit
 
 @SuppressWarnings("TooManyFunctions")
-internal abstract class BillingAbstract {
+internal abstract class BillingAbstract(
+    protected val purchasesStateProvider: PurchasesStateProvider,
+) {
 
     @get:Synchronized
     @set:Synchronized

@@ -88,20 +88,16 @@ internal class PurchasesOrchestrator constructor(
     private val offeringsManager: OfferingsManager,
     private val paywallEventsManager: PaywallEventsManager?,
     private val paywallPresentedCache: PaywallPresentedCache,
+    private val purchasesStateCache: PurchasesStateCache,
     // This is nullable due to: https://github.com/RevenueCat/purchases-flutter/issues/408
     private val mainHandler: Handler? = Handler(Looper.getMainLooper()),
 ) : LifecycleDelegate, CustomActivityLifecycleHandler {
 
-    /** @suppress */
-    @Suppress("RedundantGetter", "RedundantSetter")
-    @Volatile
-    internal var state = PurchasesState()
-        @Synchronized
-        get() = field
+    internal var state: PurchasesState
+        get() = purchasesStateCache.purchasesState
 
-        @Synchronized
         set(value) {
-            field = value
+            purchasesStateCache.purchasesState = value
         }
 
     var finishTransactions: Boolean

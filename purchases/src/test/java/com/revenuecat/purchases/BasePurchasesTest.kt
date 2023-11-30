@@ -70,6 +70,7 @@ internal open class BasePurchasesTest {
     internal val mockSyncPurchasesHelper = mockk<SyncPurchasesHelper>()
     protected val mockOfferingsManager = mockk<OfferingsManager>()
     internal val mockPaywallEventsManager = mockk<PaywallEventsManager>()
+    private val purchasesStateProvider = PurchasesStateCache(PurchasesState())
 
     protected var capturedPurchasesUpdatedListener = slot<BillingAbstract.PurchasesUpdatedListener>()
     protected var capturedBillingWrapperStateListener = slot<BillingAbstract.StateListener>()
@@ -407,6 +408,7 @@ internal open class BasePurchasesTest {
             offeringsManager = mockOfferingsManager,
             paywallEventsManager = mockPaywallEventsManager,
             paywallPresentedCache = paywallPresentedCache,
+            purchasesStateCache = purchasesStateProvider,
         )
         purchases = Purchases(purchasesOrchestrator)
         Purchases.sharedInstance = purchases

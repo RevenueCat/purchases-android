@@ -25,6 +25,7 @@ import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCallback
 import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.PurchasesStateProvider
 import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.DefaultDateProvider
@@ -81,8 +82,9 @@ internal class BillingWrapper(
     private val deviceCache: DeviceCache,
     @Suppress("unused")
     private val diagnosticsTrackerIfEnabled: DiagnosticsTracker?,
+    purchasesStateProvider: PurchasesStateProvider,
     private val dateProvider: DateProvider = DefaultDateProvider(),
-) : BillingAbstract(), PurchasesUpdatedListener, BillingClientStateListener {
+) : BillingAbstract(purchasesStateProvider), PurchasesUpdatedListener, BillingClientStateListener {
 
     @get:Synchronized
     @set:Synchronized
@@ -100,6 +102,9 @@ internal class BillingWrapper(
     @get:Synchronized
     @set:Synchronized
     private var reconnectionAlreadyScheduled = false
+
+    val appInBackground: Boolean
+        get() = purchasesStateProvider.purchasesState.appInBackground
 
     class ClientFactory(private val context: Context) {
         @UiThread
@@ -523,7 +528,7 @@ internal class BillingWrapper(
             QueryPurchasesByTypeUseCaseParams(
                 dateProvider,
                 diagnosticsTrackerIfEnabled,
-                appInBackground = false,
+                appInBackground = appInBackground,
                 productType = productType,
             ),
             onSuccess = { purchases ->

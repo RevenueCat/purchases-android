@@ -10,6 +10,9 @@ import com.revenuecat.purchases.PostReceiptHelper
 import com.revenuecat.purchases.PostTransactionWithProductDetailsHelper
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesOrchestrator
+import com.revenuecat.purchases.PurchasesState
+import com.revenuecat.purchases.PurchasesStateCache
+import com.revenuecat.purchases.PurchasesStateProvider
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
@@ -98,7 +101,8 @@ class SubscriberAttributesPurchasesTests {
             syncPurchasesHelper = mockk(),
             offeringsManager = offeringsManagerMock,
             paywallEventsManager = null,
-            paywallPresentedCache = PaywallPresentedCache()
+            paywallPresentedCache = PaywallPresentedCache(),
+            purchasesStateCache = PurchasesStateCache(PurchasesState()),
         )
 
         underTest = Purchases(purchasesOrchestrator)
