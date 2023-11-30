@@ -114,7 +114,6 @@ internal abstract class BillingAbstract(
      * Null if there has been an error.
      */
     abstract fun getStorefront(
-        appInBackground: Boolean,
         onSuccess: (String) -> Unit,
         onError: PurchasesErrorCallback,
     )

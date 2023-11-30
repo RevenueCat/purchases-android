@@ -1631,7 +1631,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         mockGetStorefront()
         capturedBillingWrapperStateListener.captured.onConnected()
         verify(exactly = 1) {
-            mockBillingAbstract.getStorefront(any(), any(), any())
+            mockBillingAbstract.getStorefront(any(), any())
         }
     }
 
@@ -1783,7 +1783,6 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
     private fun mockGetStorefront() {
         every {
             mockBillingAbstract.getStorefront(
-                appInBackground = any(),
                 onSuccess = captureLambda(),
                 onError = any()
             )

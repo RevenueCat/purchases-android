@@ -1013,7 +1013,6 @@ class AmazonBillingTest {
         mockGetUserData()
         var countryCode: String? = null
         underTest.getStorefront(
-            appInBackground = false,
             onSuccess = { countryCode = it },
             onError = { fail("Should be a success") },
         )
@@ -1026,7 +1025,6 @@ class AmazonBillingTest {
         mockGetUserDataError()
         var error: PurchasesError? = null
         underTest.getStorefront(
-            appInBackground = false,
             onSuccess = { fail("Should be a error") },
             onError = { error = it },
         )

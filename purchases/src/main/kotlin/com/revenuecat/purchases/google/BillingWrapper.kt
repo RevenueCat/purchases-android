@@ -738,7 +738,6 @@ internal class BillingWrapper(
     }
 
     override fun getStorefront(
-        appInBackground: Boolean,
         onSuccess: (String) -> Unit,
         onError: PurchasesErrorCallback,
     ) {

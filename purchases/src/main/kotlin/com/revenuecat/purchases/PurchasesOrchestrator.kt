@@ -144,7 +144,6 @@ internal class PurchasesOrchestrator constructor(
                     allowSharingPlayStoreAccount,
                 )
                 billing.getStorefront(
-                    state.appInBackground,
                     onSuccess = { countryCode ->
                         debugLog(BillingStrings.BILLING_COUNTRY_CODE.format(countryCode))
                     },

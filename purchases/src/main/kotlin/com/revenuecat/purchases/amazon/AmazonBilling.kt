@@ -313,7 +313,6 @@ internal class AmazonBilling constructor(
     }
 
     override fun getStorefront(
-        appInBackground: Boolean,
         onSuccess: (String) -> Unit,
         onError: PurchasesErrorCallback,
     ) {
