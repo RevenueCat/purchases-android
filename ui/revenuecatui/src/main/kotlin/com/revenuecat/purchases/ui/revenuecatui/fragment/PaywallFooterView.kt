@@ -21,7 +21,7 @@ import com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 
 /**
- * WIP: Add docs
+ * View that wraps the [PaywallFooter] Composable to display the Paywall Footer through XML layouts and the View system.
  */
 @ExperimentalPreviewRevenueCatUIPurchasesAPI
 class PaywallFooterView : FrameLayout {
@@ -35,8 +35,7 @@ class PaywallFooterView : FrameLayout {
     }
 
     /**
-     * Constructor when not using XML layouts.
-     * WIP: Add docs
+     * Constructor when creating the view programmatically.
      */
     @JvmOverloads
     constructor(
@@ -69,21 +68,22 @@ class PaywallFooterView : FrameLayout {
     }
 
     /**
-     * WIP: Add docs
+     * Sets a [PaywallListener] to receive callbacks from the Paywall.
      */
     fun setPaywallListener(listener: PaywallListener?) {
         this.listener = listener
     }
 
     /**
-     * WIP: Add docs
+     * Sets a dismiss handler which will be called when the user successfully purchases or if there is an error
+     * loading the offerings and the user clicks through the error dialog.
      */
     fun setDismissHandler(dismissHandler: (() -> Unit)?) {
         this.dismissHandler = dismissHandler
     }
 
     /**
-     * WIP: Add docs
+     * Sets the offering id to be used to display the Paywall. If not set, the default one will be used.
      */
     fun setOfferingId(offeringId: String?) {
         this.offeringId = offeringId
