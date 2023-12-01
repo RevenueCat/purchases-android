@@ -124,7 +124,7 @@ class PaywallFooterView : FrameLayout {
                 recycle()
             }
         }
-        fontFamilyId?.let {
+        fontFamilyId?.takeIf { it > 0 }?.let {
             val typeface = ResourcesCompat.getFont(context, it)
             if (typeface == null) {
                 Logger.e("Font given for PaywallFooterView not found")
