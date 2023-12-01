@@ -4,8 +4,7 @@
     <application>
         <activity
                 android:name=".activity.PaywallActivity"
-                android:exported="false"
-                android:theme="@style/Theme.Purchasesandroid" />
+                android:exported="false" />
     </application>
 
 </manifest>
