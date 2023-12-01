@@ -21,7 +21,7 @@
 
     <com.revenuecat.purchases.ui.revenuecatui.fragment.PaywallFooterView
             android:id="@+id/paywall_footer_view"
-            android:background="@android:color/holo_blue_light"
+            android:layout_marginTop="-20dp"
             android:fontFamily="@font/lobster_two"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"/>
