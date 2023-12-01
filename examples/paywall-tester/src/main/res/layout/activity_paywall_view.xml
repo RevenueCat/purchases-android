@@ -9,7 +9,7 @@
 
     <com.revenuecat.purchases.ui.revenuecatui.views.PaywallView
             android:id="@+id/paywall_view"
-            app:shouldDisplayCloseButton="true"
+            app:shouldDisplayDismissButton="true"
             android:fontFamily="@font/lobster_two"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"/>
