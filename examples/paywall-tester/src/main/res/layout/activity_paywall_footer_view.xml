@@ -19,7 +19,7 @@
                 android:layout_height="wrap_content"/>
     </LinearLayout>
 
-    <com.revenuecat.purchases.ui.revenuecatui.fragment.PaywallFooterView
+    <com.revenuecat.purchases.ui.revenuecatui.views.PaywallFooterView
             android:id="@+id/paywall_footer_view"
             android:layout_marginTop="-20dp"
             android:fontFamily="@font/lobster_two"

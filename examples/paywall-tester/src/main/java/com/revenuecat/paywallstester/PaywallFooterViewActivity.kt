@@ -15,7 +15,6 @@ class PaywallFooterViewActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val offeringId = intent.getStringExtra("offering_id")
-        setContentView(R.layout.activity_paywall_footer_view)
         val binding = ActivityPaywallFooterViewBinding.inflate(layoutInflater)
         setContentView(binding.root)
         binding.paywallFooterView.setOfferingId(offeringId)

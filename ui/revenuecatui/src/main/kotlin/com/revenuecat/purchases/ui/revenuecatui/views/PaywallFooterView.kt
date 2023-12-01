@@ -1,4 +1,4 @@
-package com.revenuecat.purchases.ui.revenuecatui.fragment
+package com.revenuecat.purchases.ui.revenuecatui.views
 
 import android.content.Context
 import android.util.AttributeSet

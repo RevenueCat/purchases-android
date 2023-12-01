@@ -19,7 +19,9 @@ private class PaywallAPI {
 
     @Composable
     fun checkFooter(options: PaywallOptions) {
+        PaywallFooter(options = options)
         PaywallFooter(options = options, condensed = true)
+        PaywallFooter(options = options) {}
         PaywallFooter(options = options, condensed = true) {}
     }
 
