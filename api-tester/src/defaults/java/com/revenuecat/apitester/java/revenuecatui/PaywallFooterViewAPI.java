@@ -18,14 +18,16 @@ final class PaywallFooterViewAPI {
                                   int defStyleAttr,
                                   Offering offering,
                                   PaywallListener listener,
-                                  FontProvider fontProvider ) {
+                                  FontProvider fontProvider,
+                                  Boolean condensed) {
         PaywallFooterView footerView = new PaywallFooterView(context);
         PaywallFooterView footerView2 = new PaywallFooterView(context, attrs);
         PaywallFooterView footerView3 = new PaywallFooterView(context, attrs, defStyleAttr);
         PaywallFooterView footerView4 = new PaywallFooterView(context, offering);
         PaywallFooterView footerView5 = new PaywallFooterView(context, offering, listener);
         PaywallFooterView footerView6 = new PaywallFooterView(context, offering, listener, fontProvider);
-        PaywallFooterView footerView7 = new PaywallFooterView(context, offering, listener, fontProvider, () -> null);
+        PaywallFooterView footerView7 = new PaywallFooterView(context, offering, listener, fontProvider, condensed);
+        PaywallFooterView footerView8 = new PaywallFooterView(context, offering, listener, fontProvider, condensed, () -> null);
     }
 
     static void checkMethods(PaywallFooterView footerView, PaywallListener listener) {

@@ -10,6 +10,7 @@
     <com.revenuecat.purchases.ui.revenuecatui.views.PaywallFooterView
             android:fontFamily="FONT"
             app:offeringIdentifier="offering_id"
+            app:condensed="true"
             android:layout_width="match_parent"
             android:layout_height="match_parent" />
     <com.revenuecat.purchases.ui.revenuecatui.views.PaywallFooterView
