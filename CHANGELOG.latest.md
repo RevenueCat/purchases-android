@@ -1,14 +1,12 @@
+### RevenueCatUI
+* Paywalls: Add `PaywallFooterView` (#1509) via Toni Rico (@tonidero)
+* Paywalls: Remove `PaywallActivity` theme to pickup application's theme by default (#1511) via Toni Rico (@tonidero)
+* Paywalls: Auto-close paywall activity if restore grants required entitlement identifier (#1507) via Toni Rico (@tonidero)
 ### Bugfixes
-* Fix white line around buttons in Template 4 (#1499) via Cesar de la Vega (@vegaro)
-### Performance Improvements
-* Avoid creating threads when dispatching tasks (#1496) via Toni Rico (@tonidero)
+* Improve pricePerYear price calculation precision (#1515) via Toni Rico (@tonidero)
+* Improve price per month accuracy for weekly subscriptions (#1504) via Andy Boedo (@aboedo)
+### Dependency Updates
+* Bump danger from 9.4.0 to 9.4.1 (#1512) via dependabot[bot] (@dependabot[bot])
 ### Other Changes
-* Refactor QueryPurchasesUseCase and adds QueryPurchasesByTypeUseCase (#1495) via Cesar de la Vega (@vegaro)
-* Fixes on `update_snapshots_repo` (#1501) via Cesar de la Vega (@vegaro)
-* Fixes on generate_snapshots_RCUI lane (#1500) via Cesar de la Vega (@vegaro)
-* Fix integration tests (#1498) via Toni Rico (@tonidero)
-* Cleanup warnings in AcknowledgePurchaseUseCaseTest (#1497) via Cesar de la Vega (@vegaro)
-* Add AcknowledgePurchaseUseCase (#1492) via Cesar de la Vega (@vegaro)
-* Refactor findPurchaseInPurchaseHistory (#1493) via Cesar de la Vega (@vegaro)
-* ConsumePurchaseUseCase (#1487) via Cesar de la Vega (@vegaro)
-* Add retries with backoff and different treatment to SERVICE_UNAVAILABLE (#1490) via Cesar de la Vega (@vegaro)
+* Remove unnecessary appInBackground parameters (#1508) via Cesar de la Vega (@vegaro)
+* Create `PurchasesStateProvider` (#1502) via Cesar de la Vega (@vegaro)
