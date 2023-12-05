@@ -164,6 +164,10 @@ private fun DisplayOfferingMenu(
             onClick = { activity.launchPaywall(offering) },
         )
         DropdownMenuItem(
+            text = { Text(text = "Display paywall as view in an activity") },
+            onClick = { activity.launchPaywallViewAsActivity(offering) },
+        )
+        DropdownMenuItem(
             text = { Text(text = "Display paywall as footer view in an activity") },
             onClick = { activity.launchPaywallFooterViewAsActivity(offering) },
         )

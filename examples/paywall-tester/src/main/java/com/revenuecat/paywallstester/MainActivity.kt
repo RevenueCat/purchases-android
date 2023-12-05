@@ -47,4 +47,11 @@ class MainActivity : ComponentActivity(), PaywallResultHandler {
         offering?.identifier?.let { intent.putExtra("offering_id", it) }
         startActivity(intent)
     }
+
+    fun launchPaywallViewAsActivity(offering: Offering? = null) {
+        // WIP: Change to use PaywallActivityLauncher
+        val intent = Intent(this, PaywallViewActivity::class.java)
+        offering?.identifier?.let { intent.putExtra("offering_id", it) }
+        startActivity(intent)
+    }
 }
