@@ -26,6 +26,10 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 @ExperimentalPreviewRevenueCatUIPurchasesAPI
 class PaywallFooterView : FrameLayout {
 
+    companion object {
+        private const val DEFAULT_CONDENSED = false
+    }
+
     constructor(context: Context, attrs: AttributeSet?) : super(context, attrs) {
         init(context, attrs)
     }
@@ -43,17 +47,20 @@ class PaywallFooterView : FrameLayout {
         offering: Offering? = null,
         listener: PaywallListener? = null,
         fontProvider: FontProvider? = null,
+        condensed: Boolean = DEFAULT_CONDENSED,
         dismissHandler: (() -> Unit)? = null,
     ) : super(context) {
         setPaywallListener(listener)
         setDismissHandler(dismissHandler)
         setOfferingId(offering?.identifier)
         this.fontProvider = fontProvider
+        this.condensed = condensed
         init(context, null)
     }
 
     private var offeringId: String? = null
     private var fontProvider: FontProvider? = null
+    private var condensed: Boolean = DEFAULT_CONDENSED
     private var dismissHandler: (() -> Unit)? = null
     private var listener: PaywallListener? = null
     private var internalListener: PaywallListener = object : PaywallListener {
@@ -102,6 +109,7 @@ class PaywallFooterView : FrameLayout {
                         .build()
                     PaywallFooter(
                         options = paywallOptions,
+                        condensed = condensed,
                     )
                 }
             },
@@ -111,6 +119,7 @@ class PaywallFooterView : FrameLayout {
     private fun parseAttributes(context: Context, attrs: AttributeSet?) {
         var fontFamilyId: Int? = null
         var offeringIdentifier: String? = null
+        var condensed: Boolean? = null
         context.obtainStyledAttributes(
             attrs,
             R.styleable.PaywallFooterView,
@@ -120,6 +129,11 @@ class PaywallFooterView : FrameLayout {
             try {
                 fontFamilyId = getResourceId(R.styleable.PaywallFooterView_android_fontFamily, 0)
                 offeringIdentifier = getString(R.styleable.PaywallFooterView_offeringIdentifier)
+                condensed = if (hasValue(R.styleable.PaywallFooterView_condensed)) {
+                    getBoolean(R.styleable.PaywallFooterView_condensed, DEFAULT_CONDENSED)
+                } else {
+                    null
+                }
             } finally {
                 recycle()
             }
@@ -133,5 +147,6 @@ class PaywallFooterView : FrameLayout {
             }
         }
         offeringIdentifier?.let { setOfferingId(offeringIdentifier) }
+        condensed?.let { this.condensed = it }
     }
 }
