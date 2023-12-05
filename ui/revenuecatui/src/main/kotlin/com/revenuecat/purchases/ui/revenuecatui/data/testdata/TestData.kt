@@ -166,7 +166,7 @@ internal object TestData {
             product = TestStoreProduct(
                 id = "com.revenuecat.weekly_product",
                 title = "Weekly",
-                price = Price(amountMicros = 1_990_000, currencyCode = "USD", formatted = "$1.99"),
+                price = Price(amountMicros = 1_490_000, currencyCode = "USD", formatted = "$1.49"),
                 description = "Weekly",
                 period = Period(value = 1, unit = Period.Unit.WEEK, iso8601 = "P1W"),
             ),

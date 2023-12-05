@@ -17,8 +17,8 @@ class PriceExtensionsPricePerMonthTest: PriceExtensionsPricePerPeriodTest() {
         value = [
             "$2, 1D, $60.00",
             "$5, 15D, $10.00",
-            "$10, 1W, $40.00",
-            "$10, 2W, $20.00",
+            "$10, 1W, $43.45",
+            "$10, 2W, $21.73",
             "$14.99, 1M, $14.99",
             "$30, 2M, $15.00",
             "$40, 3M, $13.33",

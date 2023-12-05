@@ -9,7 +9,7 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class PeriodTest {
     companion object {
-        private val MAX_OFFSET = Offset.offset(0.0000001)
+        private val MAX_OFFSET = Offset.offset(0.0001)
     }
 
     @Test
@@ -61,7 +61,7 @@ class PeriodTest {
     @Test
     fun `valueInMonths is correct for weeks`() {
         val period = Period.create("P2W")
-        assertThat(period.valueInMonths).isCloseTo(0.5, MAX_OFFSET)
+        assertThat(period.valueInMonths).isCloseTo(0.4602, MAX_OFFSET)
     }
 
     @Test
