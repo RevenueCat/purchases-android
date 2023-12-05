@@ -39,17 +39,20 @@ class PaywallFooterView : FrameLayout {
         offering: Offering? = null,
         listener: PaywallListener? = null,
         fontProvider: FontProvider? = null,
+        condensed: Boolean = PaywallViewAttributesReader.DEFAULT_CONDENSED,
         dismissHandler: (() -> Unit)? = null,
     ) : super(context) {
         setPaywallListener(listener)
         setDismissHandler(dismissHandler)
         setOfferingId(offering?.identifier)
         this.fontProvider = fontProvider
+        this.condensed = condensed
         init(context, null)
     }
 
     private var offeringId: String? = null
     private var fontProvider: FontProvider? = null
+    private var condensed: Boolean = PaywallViewAttributesReader.DEFAULT_CONDENSED
     private var dismissHandler: (() -> Unit)? = null
     private var listener: PaywallListener? = null
     private var internalListener: PaywallListener = object : PaywallListener {
@@ -98,16 +101,19 @@ class PaywallFooterView : FrameLayout {
                         .build()
                     PaywallFooter(
                         options = paywallOptions,
+                        condensed = condensed,
                     )
                 }
             },
         )
     }
 
+    @SuppressWarnings("DestructuringDeclarationWithTooManyEntries")
     private fun parseAttributes(context: Context, attrs: AttributeSet?) {
-        val (offeringId, fontProvider, _) =
+        val (offeringId, fontProvider, _, condensed) =
             PaywallViewAttributesReader.parseAttributes(context, attrs, R.styleable.PaywallFooterView) ?: return
         setOfferingId(offeringId)
         this.fontProvider = fontProvider
+        condensed?.let { this.condensed = it }
     }
 }

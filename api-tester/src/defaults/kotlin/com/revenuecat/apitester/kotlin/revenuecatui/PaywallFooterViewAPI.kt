@@ -25,6 +25,7 @@ private class PaywallFooterViewAPI {
         offering: Offering,
         listener: PaywallListener,
         fontProvider: FontProvider,
+        condensed: Boolean,
         dismissHandler: () -> Unit,
     ) {
         PaywallFooterView(context)
@@ -33,7 +34,8 @@ private class PaywallFooterViewAPI {
         PaywallFooterView(context, offering)
         PaywallFooterView(context, offering, listener)
         PaywallFooterView(context, offering, listener, fontProvider)
-        PaywallFooterView(context, offering, listener, fontProvider, dismissHandler)
+        PaywallFooterView(context, offering, listener, fontProvider, condensed)
+        PaywallFooterView(context, offering, listener, fontProvider, condensed, dismissHandler)
     }
 
     fun checkMethods(

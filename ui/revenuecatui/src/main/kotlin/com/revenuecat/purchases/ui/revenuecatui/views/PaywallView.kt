@@ -111,8 +111,9 @@ class PaywallView : FrameLayout {
         )
     }
 
+    @SuppressWarnings("DestructuringDeclarationWithTooManyEntries")
     private fun parseAttributes(context: Context, attrs: AttributeSet?) {
-        val (offeringId, fontProvider, shouldDisplayDismissButton) =
+        val (offeringId, fontProvider, shouldDisplayDismissButton, _) =
             PaywallViewAttributesReader.parseAttributes(context, attrs, R.styleable.PaywallView) ?: return
         setOfferingId(offeringId)
         this.fontProvider = fontProvider

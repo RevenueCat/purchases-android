@@ -4,6 +4,7 @@
     <declare-styleable name="PaywallFooterView">
         <attr name="android:fontFamily" />
         <attr name="offeringIdentifier" />
+        <attr name="condensed" format="boolean" />
     </declare-styleable>
     <declare-styleable name="PaywallView">
         <attr name="android:fontFamily" />

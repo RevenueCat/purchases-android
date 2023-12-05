@@ -13,6 +13,8 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 @OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class)
 internal class PaywallViewAttributesReader {
     companion object {
+        internal const val DEFAULT_CONDENSED = false
+
         private enum class Attributes {
             OfferingId,
             ShouldDisplayDismissButton,
@@ -38,6 +40,7 @@ internal class PaywallViewAttributesReader {
             var fontFamilyId: Int? = null
             var offeringIdentifier: String? = null
             var shouldDisplayDismissButton: Boolean? = null
+            var condensed: Boolean? = null
             context.obtainStyledAttributes(
                 attrsSet,
                 styleAttrs,
@@ -58,6 +61,11 @@ internal class PaywallViewAttributesReader {
                             null
                         }
                     }
+                    condensed = if (hasValue(R.styleable.PaywallFooterView_condensed)) {
+                        getBoolean(R.styleable.PaywallFooterView_condensed, DEFAULT_CONDENSED)
+                    } else {
+                        null
+                    }
                 } finally {
                     recycle()
                 }
@@ -75,6 +83,7 @@ internal class PaywallViewAttributesReader {
                 offeringId = offeringIdentifier,
                 fontProvider = fontFamily,
                 shouldDisplayDismissButton = shouldDisplayDismissButton,
+                condensed = condensed,
             )
         }
     }
@@ -83,5 +92,6 @@ internal class PaywallViewAttributesReader {
         val offeringId: String?,
         val fontProvider: FontProvider?,
         val shouldDisplayDismissButton: Boolean?,
+        val condensed: Boolean?,
     )
 }
