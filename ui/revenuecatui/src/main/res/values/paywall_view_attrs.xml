@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <attr name="offeringIdentifier" format="string" />
+    <declare-styleable name="PaywallFooterView">
+        <attr name="android:fontFamily" />
+        <attr name="offeringIdentifier" />
+        <attr name="condensed" format="boolean" />
+    </declare-styleable>
+    <declare-styleable name="PaywallView">
+        <attr name="android:fontFamily" />
+        <attr name="offeringIdentifier" />
+        <attr name="shouldDisplayDismissButton" format="boolean" />
+    </declare-styleable>
+</resources>

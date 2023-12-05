@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:app="http://schemas.android.com/apk/res-auto"
+        xmlns:tools="http://schemas.android.com/tools"
+        android:orientation="vertical"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        tools:ignore="MissingDefaultResource">
+    <com.revenuecat.purchases.ui.revenuecatui.views.PaywallFooterView
+            android:fontFamily="FONT"
+            app:offeringIdentifier="offering_id"
+            app:condensed="true"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+    <com.revenuecat.purchases.ui.revenuecatui.views.PaywallFooterView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+</LinearLayout>
