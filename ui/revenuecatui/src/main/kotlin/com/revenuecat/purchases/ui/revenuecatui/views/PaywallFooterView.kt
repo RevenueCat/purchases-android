@@ -4,8 +4,6 @@ import android.content.Context
 import android.util.AttributeSet
 import android.widget.FrameLayout
 import androidx.compose.ui.platform.ComposeView
-import androidx.compose.ui.text.font.FontFamily
-import androidx.core.content.res.ResourcesCompat
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
@@ -16,9 +14,7 @@ import com.revenuecat.purchases.ui.revenuecatui.PaywallFooter
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.R
-import com.revenuecat.purchases.ui.revenuecatui.fonts.CustomFontProvider
 import com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider
-import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 
 /**
  * View that wraps the [PaywallFooter] Composable to display the Paywall Footer through XML layouts and the View system.
@@ -109,29 +105,9 @@ class PaywallFooterView : FrameLayout {
     }
 
     private fun parseAttributes(context: Context, attrs: AttributeSet?) {
-        var fontFamilyId: Int? = null
-        var offeringIdentifier: String? = null
-        context.obtainStyledAttributes(
-            attrs,
-            R.styleable.PaywallFooterView,
-            0,
-            0,
-        ).apply {
-            try {
-                fontFamilyId = getResourceId(R.styleable.PaywallFooterView_android_fontFamily, 0)
-                offeringIdentifier = getString(R.styleable.PaywallFooterView_offeringIdentifier)
-            } finally {
-                recycle()
-            }
-        }
-        fontFamilyId?.let {
-            val typeface = ResourcesCompat.getFont(context, it)
-            if (typeface == null) {
-                Logger.e("Font given for PaywallFooterView not found")
-            } else {
-                fontProvider = CustomFontProvider(FontFamily(typeface))
-            }
-        }
-        offeringIdentifier?.let { setOfferingId(offeringIdentifier) }
+        val (offeringId, fontProvider, _) =
+            PaywallViewAttributesReader.parseAttributes(context, attrs, R.styleable.PaywallFooterView) ?: return
+        setOfferingId(offeringId)
+        this.fontProvider = fontProvider
     }
 }

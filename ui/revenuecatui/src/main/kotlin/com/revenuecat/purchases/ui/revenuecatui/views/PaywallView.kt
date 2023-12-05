@@ -4,8 +4,6 @@ import android.content.Context
 import android.util.AttributeSet
 import android.widget.FrameLayout
 import androidx.compose.ui.platform.ComposeView
-import androidx.compose.ui.text.font.FontFamily
-import androidx.core.content.res.ResourcesCompat
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
@@ -16,9 +14,7 @@ import com.revenuecat.purchases.ui.revenuecatui.Paywall
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.R
-import com.revenuecat.purchases.ui.revenuecatui.fonts.CustomFontProvider
 import com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider
-import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 
 /**
  * View that wraps the [Paywall] Composable to display the Paywall through XML layouts and the View system.
@@ -116,36 +112,10 @@ class PaywallView : FrameLayout {
     }
 
     private fun parseAttributes(context: Context, attrs: AttributeSet?) {
-        var fontFamilyId: Int? = null
-        var offeringIdentifier: String? = null
-        var shouldShowCloseButton: Boolean? = null
-        context.obtainStyledAttributes(
-            attrs,
-            R.styleable.PaywallView,
-            0,
-            0,
-        ).apply {
-            try {
-                fontFamilyId = getResourceId(R.styleable.PaywallView_android_fontFamily, 0)
-                offeringIdentifier = getString(R.styleable.PaywallView_offeringIdentifier)
-                shouldShowCloseButton = if (hasValue(R.styleable.PaywallView_shouldDisplayDismissButton)) {
-                    getBoolean(R.styleable.PaywallView_shouldDisplayDismissButton, false)
-                } else {
-                    null
-                }
-            } finally {
-                recycle()
-            }
-        }
-        fontFamilyId?.takeIf { it > 0 }?.let {
-            val typeface = ResourcesCompat.getFont(context, it)
-            if (typeface == null) {
-                Logger.e("Font given for PaywallView not found")
-            } else {
-                fontProvider = CustomFontProvider(FontFamily(typeface))
-            }
-        }
-        offeringIdentifier?.let { setOfferingId(offeringIdentifier) }
-        shouldShowCloseButton?.let { shouldDisplayDismissButton = it }
+        val (offeringId, fontProvider, shouldDisplayDismissButton) =
+            PaywallViewAttributesReader.parseAttributes(context, attrs, R.styleable.PaywallView) ?: return
+        setOfferingId(offeringId)
+        this.fontProvider = fontProvider
+        this.shouldDisplayDismissButton = shouldDisplayDismissButton
     }
 }
