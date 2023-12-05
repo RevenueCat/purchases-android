@@ -31,7 +31,7 @@ data class Period(
         private const val DAYS_PER_WEEK = 7.0
         private const val DAYS_PER_MONTH = 30.0
         private const val DAYS_PER_YEAR = 365.0
-        private const val WEEKS_PER_YEAR = 52.14
+        private const val WEEKS_PER_YEAR = DAYS_PER_YEAR / DAYS_PER_WEEK
         private const val MONTHS_PER_YEAR = 12.0
         private const val WEEKS_PER_MONTH = DAYS_PER_YEAR / MONTHS_PER_YEAR / DAYS_PER_WEEK
 
