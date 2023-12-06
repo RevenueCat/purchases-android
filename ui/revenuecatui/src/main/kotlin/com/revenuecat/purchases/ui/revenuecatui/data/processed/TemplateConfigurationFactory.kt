@@ -17,10 +17,12 @@ internal object TemplateConfigurationFactory {
         template: PaywallTemplate,
     ): Result<TemplateConfiguration> {
         val (locale, localizedConfiguration) = paywallData.localizedConfiguration
+        val sourceImages = paywallData.config.images
+
         val images = TemplateConfiguration.Images(
-            iconUri = paywallData.getUriFromImage(paywallData.config.images.icon),
-            backgroundUri = paywallData.getUriFromImage(paywallData.config.images.background),
-            headerUri = paywallData.getUriFromImage(paywallData.config.images.header),
+            iconUri = paywallData.getUriFromImage(sourceImages.icon),
+            backgroundUri = paywallData.getUriFromImage(sourceImages.background),
+            headerUri = paywallData.getUriFromImage(sourceImages.header),
         )
 
         val createPackageResult =

@@ -29,9 +29,9 @@ class PaywallDataTest {
         assertThat(paywall.revision).isEqualTo(7)
         assertThat(paywall.config.packageIds).containsExactly("\$rc_monthly", "\$rc_annual", "custom_package")
         assertThat(paywall.config.defaultPackage).isEqualTo("\$rc_annual")
-        assertThat(paywall.config.images.header).isEqualTo("header.jpg")
+        assertThat(paywall.config.images.header).isEqualTo("header.webp")
         assertThat(paywall.config.images.background).isEqualTo("background.jpg")
-        assertThat(paywall.config.images.icon).isEqualTo("icon.jpg")
+        assertThat(paywall.config.images.icon).isEqualTo("icon.webp")
         assertThat(paywall.config.blurredBackgroundImage).isTrue
         assertThat(paywall.config.displayRestorePurchases).isFalse
         assertThat(paywall.config.termsOfServiceURL).isEqualTo(URL("https://revenuecat.com/tos"))
