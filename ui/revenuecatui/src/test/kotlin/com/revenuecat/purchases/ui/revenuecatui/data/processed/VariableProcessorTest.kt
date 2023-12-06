@@ -165,13 +165,11 @@ class VariableProcessorTest {
         expectVariablesResult("{{ sub_period }}", "3 month", rcPackage = TestData.Packages.quarterly)
         expectVariablesResult("{{ sub_period }}", "6 month", rcPackage = TestData.Packages.semester)
         expectVariablesResult("{{ sub_period }}", "Lifetime", rcPackage = TestData.Packages.lifetime)
-        expectVariablesResult("{{ sub_period }}", "Custom", rcPackage = TestData.Packages.custom)
     }
 
     @Test
     fun `process variables processes sub_period custom period`() {
-        rcPackage = TestData.Packages.annual.copy(packageType = PackageType.CUSTOM)
-        expectVariablesResult("{{ sub_period }}", "")
+        expectVariablesResult("{{ sub_period }}", "Custom", rcPackage = TestData.Packages.custom)
     }
 
     // endregion
