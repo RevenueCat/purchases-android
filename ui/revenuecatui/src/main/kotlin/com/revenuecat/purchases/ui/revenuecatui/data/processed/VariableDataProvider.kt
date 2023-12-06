@@ -50,7 +50,8 @@ internal class VariableDataProvider(
     }
 
     fun periodName(rcPackage: Package): String? {
-        if (rcPackage.packageType == PackageType.CUSTOM) {
+        if (rcPackage.packageType == PackageType.CUSTOM
+            || rcPackage.packageType == PackageType.UNKNOWN) {
             return rcPackage.identifier
         }
         val stringId = when (rcPackage.packageType) {
