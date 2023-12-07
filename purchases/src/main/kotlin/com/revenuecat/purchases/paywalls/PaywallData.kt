@@ -102,6 +102,7 @@ data class PaywallData(
 
         @SerialName("images_webp")
         internal val imagesWebp: Images? = null,
+        
         @SerialName("images")
         internal val legacyImages: Images? = null,
 
