@@ -600,18 +600,6 @@ workflows:
     jobs:
       - revenuecat/danger
 
-  build-test:
-    when:
-      not:
-        equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
-    jobs:
-      - test
-      - detekt
-      - assemble-purchase-tester
-      - run-backend-integration-tests
-      - verify-revenuecatui-snapshots
-      - run-revenuecatui-ui-tests
-
   snapshot-deploy-sample-app-tests:
     when:
       not:
@@ -627,11 +615,17 @@ workflows:
           requires:
             - deploy-snapshot
 
-  deploy:
+  build-test-deploy:
     when:
       not:
         equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
     jobs:
+      - test
+      - detekt
+      - assemble-purchase-tester
+      - run-backend-integration-tests
+      - verify-revenuecatui-snapshots
+      - run-revenuecatui-ui-tests
       - verify_debug_view_snapshot_tests: *release-branches
       - integration-tests-build: *release-branches
       - purchases-integration-tests-build: *release-branches
@@ -650,14 +644,25 @@ workflows:
       - hold:
           type: approval
           requires:
+            - test
+            - assemble-purchase-tester
+            - run-backend-integration-tests
+            - run-revenuecatui-ui-tests
             - run-firebase-tests
             - run-firebase-tests-purchases-integration-test
             - run-firebase-tests-purchases-load-shedder-integration-test
             - run-firebase-tests-purchases-custom-entitlement-computation-integration-test
           <<: *release-branches
+      - force-release-without-waiting-for-tests:
+          type: approval
+          <<: *release-branches
       - revenuecat/tag-current-branch:
           requires:
             - hold
+          <<: *release-branches
+      - revenuecat/tag-current-branch:
+          requires:
+            - force-release-without-waiting-for-tests
           <<: *release-branches
       - deploy: *release-tags
       - docs-deploy: *release-tags
