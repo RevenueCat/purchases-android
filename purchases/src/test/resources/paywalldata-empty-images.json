@@ -12,7 +12,7 @@
   },
   "config": {
     "packages": ["$rc_monthly", "$rc_annual"],
-    "images": {
+    "images_webp": {
       "header": "",
       "background": " ",
       "icon": null

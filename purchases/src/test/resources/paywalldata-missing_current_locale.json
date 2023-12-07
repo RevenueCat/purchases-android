@@ -12,7 +12,7 @@
   },
   "config": {
     "packages": ["$rc_monthly", "$rc_annual"],
-    "images": {},
+    "images_webp": {},
     "colors": {
       "light": {
         "background": "#FFFFFF",

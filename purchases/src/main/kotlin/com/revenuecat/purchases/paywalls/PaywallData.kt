@@ -100,10 +100,11 @@ data class PaywallData(
          */
         @SerialName("default_package") val defaultPackage: String? = null,
 
-        /**
-         * The images for this template.
-         */
-        val images: Images,
+        @SerialName("images_webp")
+        internal val imagesWebp: Images? = null,
+
+        @SerialName("images")
+        internal val legacyImages: Images? = null,
 
         /**
          * Whether the background image will be blurred (in templates with one).
@@ -134,6 +135,38 @@ data class PaywallData(
          */
         val colors: ColorInformation,
     ) {
+        constructor(
+            packageIds: List<String>,
+            defaultPackage: String? = null,
+            images: Images,
+            colors: ColorInformation,
+            blurredBackgroundImage: Boolean = false,
+            displayRestorePurchases: Boolean = true,
+            termsOfServiceURL: URL? = null,
+            privacyURL: URL? = null,
+        ) : this(
+            packageIds = packageIds,
+            imagesWebp = images,
+            colors = colors,
+            defaultPackage = defaultPackage,
+            blurredBackgroundImage = blurredBackgroundImage,
+            displayRestorePurchases = displayRestorePurchases,
+            termsOfServiceURL = termsOfServiceURL,
+            privacyURL = privacyURL,
+        )
+
+        /**
+         * The images for this template.
+         */
+        val images: Images
+            get() {
+                return Images(
+                    header = imagesWebp?.header ?: legacyImages?.header,
+                    background = imagesWebp?.background ?: legacyImages?.background,
+                    icon = imagesWebp?.icon ?: legacyImages?.icon,
+                )
+            }
+
         @Serializable
         data class Images(
             /**
