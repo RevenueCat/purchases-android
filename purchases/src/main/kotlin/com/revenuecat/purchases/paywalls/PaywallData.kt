@@ -102,7 +102,7 @@ data class PaywallData(
 
         @SerialName("images_webp")
         internal val imagesWebp: Images? = null,
-        
+
         @SerialName("images")
         internal val legacyImages: Images? = null,
 
@@ -152,7 +152,7 @@ data class PaywallData(
             blurredBackgroundImage = blurredBackgroundImage,
             displayRestorePurchases = displayRestorePurchases,
             termsOfServiceURL = termsOfServiceURL,
-            privacyURL = privacyURL
+            privacyURL = privacyURL,
         )
 
         /**
@@ -163,7 +163,7 @@ data class PaywallData(
                 return Images(
                     header = imagesWebp?.header ?: legacyImages?.header,
                     background = imagesWebp?.background ?: legacyImages?.background,
-                    icon = imagesWebp?.icon ?: legacyImages?.icon
+                    icon = imagesWebp?.icon ?: legacyImages?.icon,
                 )
             }
 
