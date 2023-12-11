@@ -14,7 +14,7 @@
     <string name="bimonthly">2個月</string>
     <string name="monthly">每月</string>
     <string name="weekly">每週</string>
-    <string name="lifetime">壽命</string>
+    <string name="lifetime">终身</string>
     <string name="package_discount">%1$d%%折</string>
     <string name="continue_cta">繼續</string>
     <string name="default_offer_details_with_intro_offer">開始 {{ sub_offer_duration }} 試用，然後 {{total_price_and_per_month }}。</string>
