@@ -1,3 +1,8 @@
+## 7.2.8
+### RevenueCatUI
+* `Paywalls`: fix traditional chinese string (#1522) via NachoSoto (@NachoSoto)
+* `Paywalls`: use `webp` images (#1520) via NachoSoto (@NachoSoto)
+
 ## 7.2.7
 ### RevenueCatUI
 * Paywalls: Add `PaywallFooterView` (#1509) via Toni Rico (@tonidero)
