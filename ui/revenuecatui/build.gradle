@@ -1,5 +1,6 @@
 plugins {
     alias libs.plugins.android.library
+    alias libs.plugins.dokka
     alias libs.plugins.kotlin.android
     alias libs.plugins.kotlin.serialization
     alias libs.plugins.kotlin.parcelize
@@ -80,4 +81,23 @@ dependencies {
     androidTestImplementation libs.mockk.android
     androidTestImplementation libs.mockk.agent
     androidTestImplementation libs.androidx.test.compose
+}
+
+tasks.dokkaHtmlPartial.configure {
+    dokkaSourceSets {
+        named("main") {
+            reportUndocumented.set(true)
+            includeNonPublic.set(false)
+            skipDeprecated.set(true)
+
+            externalDocumentationLink {
+                url.set(uri("https://developer.android.com/reference/package-list").toURL())
+            }
+            sourceLink {
+                localDirectory.set(file("src/main/kotlin"))
+                remoteUrl.set(uri("https://github.com/revenuecat/purchases-android/blob/main/ui/revenuecatui/src/main/kotlin").toURL())
+                remoteLineSuffix.set("#L")
+            }
+        }
+    }
 }
