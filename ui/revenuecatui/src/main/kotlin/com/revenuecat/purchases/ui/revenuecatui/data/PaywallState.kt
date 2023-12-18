@@ -19,14 +19,22 @@ internal sealed class PaywallState {
         val templateConfiguration: TemplateConfiguration,
         val selectedPackage: MutableState<TemplateConfiguration.PackageInfo>,
         val shouldDisplayDismissButton: Boolean,
+        val actionInProgress: Boolean,
     ) : PaywallState() {
         constructor(
             offering: Offering,
             templateConfiguration: TemplateConfiguration,
             selectedPackage: TemplateConfiguration.PackageInfo,
             shouldDisplayDismissButton: Boolean,
+            actionInProgress: Boolean,
         ) :
-            this(offering, templateConfiguration, mutableStateOf(selectedPackage), shouldDisplayDismissButton)
+            this(
+                offering,
+                templateConfiguration,
+                mutableStateOf(selectedPackage),
+                shouldDisplayDismissButton,
+                actionInProgress,
+            )
 
         fun selectPackage(packageInfo: TemplateConfiguration.PackageInfo) {
             selectedPackage.value = packageInfo

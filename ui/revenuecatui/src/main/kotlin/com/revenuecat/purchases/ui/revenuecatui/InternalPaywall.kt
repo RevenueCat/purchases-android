@@ -134,7 +134,7 @@ private fun LoadedPaywall(state: PaywallState.Loaded, viewModel: PaywallViewMode
         ) {
             TemplatePaywall(state = state, viewModel = viewModel)
         }
-        CloseButton(state.shouldDisplayDismissButton, viewModel::closePaywall)
+        CloseButton(state.shouldDisplayDismissButton, state.actionInProgress, viewModel::closePaywall)
     }
 }
 

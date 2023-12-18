@@ -310,6 +310,7 @@ internal class MockViewModel(
             validatedPaywallData = offering.paywall!!,
             template = PaywallTemplate.fromId(offering.paywall!!.templateName)!!,
             shouldDisplayDismissButton = false,
+            actionInProgress = false,
         ),
     )
 

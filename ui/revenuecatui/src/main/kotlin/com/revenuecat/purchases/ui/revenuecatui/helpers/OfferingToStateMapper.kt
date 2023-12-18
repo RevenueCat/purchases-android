@@ -76,6 +76,7 @@ internal fun Offering.toPaywallState(
     validatedPaywallData: PaywallData,
     template: PaywallTemplate,
     shouldDisplayDismissButton: Boolean,
+    actionInProgress: Boolean,
 ): PaywallState {
     val createTemplateConfigurationResult = TemplateConfigurationFactory.create(
         variableDataProvider = variableDataProvider,
@@ -94,6 +95,7 @@ internal fun Offering.toPaywallState(
         templateConfiguration = templateConfiguration,
         selectedPackage = templateConfiguration.packages.default,
         shouldDisplayDismissButton = shouldDisplayDismissButton,
+        actionInProgress = actionInProgress,
     )
 }
 
