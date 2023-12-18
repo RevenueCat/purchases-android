@@ -18,8 +18,7 @@ fun BoxScope.CloseButton(
     if (shouldDisplayDismissButton) {
         IconButton(
             onClick = onClick,
-            modifier = Modifier
-                .align(Alignment.TopStart),
+            modifier = Modifier.align(Alignment.TopStart),
             enabled = actionInProgress.not(),
         ) {
             Icon(painter = painterResource(id = R.drawable.close), contentDescription = null)
