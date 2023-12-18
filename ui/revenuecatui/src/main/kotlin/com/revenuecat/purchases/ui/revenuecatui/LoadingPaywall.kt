@@ -73,7 +73,6 @@ internal fun LoadingPaywall(
         validatedPaywallData = paywallData,
         template = LoadingPaywallConstants.template,
         shouldDisplayDismissButton = shouldDisplayDismissButton,
-        actionInProgress = false,
     )
 
     when (state) {
@@ -111,7 +110,7 @@ private fun LoadingPaywall(
                     ),
             )
         }
-        CloseButton(state.shouldDisplayDismissButton, state.actionInProgress, onDismiss)
+        CloseButton(state.shouldDisplayDismissButton, viewModel.actionInProgress.value, onDismiss)
     }
 }
 

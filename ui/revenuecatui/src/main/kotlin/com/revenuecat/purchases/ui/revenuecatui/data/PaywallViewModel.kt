@@ -271,7 +271,6 @@ internal class PaywallViewModelImpl(
             validatedPaywallData = displayablePaywall,
             template = template,
             shouldDisplayDismissButton = options.shouldDisplayDismissButton,
-            actionInProgress = actionInProgress.value,
         )
     }
 
