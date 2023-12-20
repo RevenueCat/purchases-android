@@ -169,10 +169,13 @@ class VariableProcessorTest {
 
     @Test
     fun `process variables processes sub_period custom period`() {
-        rcPackage = TestData.Packages.annual.copy(packageType = PackageType.CUSTOM)
-        expectVariablesResult("{{ sub_period }}", "")
+        expectVariablesResult("{{ sub_period }}", "Custom", rcPackage = TestData.Packages.custom)
     }
 
+    @Test
+    fun `process variables processes sub_period unknown period`() {
+        expectVariablesResult("{{ sub_period }}", "Unknown", rcPackage = TestData.Packages.unknown)
+    }
     // endregion
 
     // region sub_price_per_week

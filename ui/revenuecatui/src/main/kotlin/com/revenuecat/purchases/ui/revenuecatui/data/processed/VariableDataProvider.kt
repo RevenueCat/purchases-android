@@ -50,6 +50,11 @@ internal class VariableDataProvider(
     }
 
     fun periodName(rcPackage: Package): String? {
+        if (rcPackage.packageType == PackageType.CUSTOM ||
+            rcPackage.packageType == PackageType.UNKNOWN
+        ) {
+            return rcPackage.identifier
+        }
         val stringId = when (rcPackage.packageType) {
             PackageType.LIFETIME -> R.string.lifetime
             PackageType.ANNUAL -> R.string.annual

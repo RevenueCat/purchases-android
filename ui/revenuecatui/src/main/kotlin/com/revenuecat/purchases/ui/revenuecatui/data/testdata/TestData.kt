@@ -247,6 +247,30 @@ internal object TestData {
                 period = Period(value = 6, unit = Period.Unit.MONTH, iso8601 = "P6M"),
             ),
         )
+        val custom = Package(
+            packageType = PackageType.CUSTOM,
+            identifier = "Custom",
+            offering = "offering",
+            product = TestStoreProduct(
+                id = "com.revenuecat.semester_product",
+                title = "6 month",
+                price = Price(amountMicros = 39_990_000, currencyCode = "USD", formatted = "$39.99"),
+                description = "6 month",
+                period = Period(value = 6, unit = Period.Unit.MONTH, iso8601 = "P6M"),
+            ),
+        )
+        val unknown = Package(
+            packageType = PackageType.UNKNOWN,
+            identifier = "Unknown",
+            offering = "offering",
+            product = TestStoreProduct(
+                id = "com.revenuecat.semester_product",
+                title = "6 month",
+                price = Price(amountMicros = 39_990_000, currencyCode = "USD", formatted = "$39.99"),
+                description = "6 month",
+                period = Period(value = 6, unit = Period.Unit.MONTH, iso8601 = "P6M"),
+            ),
+        )
     }
 }
 
