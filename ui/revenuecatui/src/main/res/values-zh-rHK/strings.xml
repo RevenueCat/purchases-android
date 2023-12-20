@@ -2,20 +2,20 @@
 <resources>
     <string name="OK">好的</string>
     <string name="privacy">隱私</string>
-    <string name="privacy_policy">隱私政策</string>
+    <string name="privacy_policy">隱私權政策</string>
     <string name="restore">恢復</string>
     <string name="restore_purchases">恢復購買</string>
-    <string name="terms">條款</string>
+    <string name="terms">服務條款</string>
     <string name="terms_and_conditions">條款和條件</string>
     <string name="all_plans">所有訂閱</string>
-    <string name="annual">年度的</string>
+    <string name="annual">每年</string>
     <string name="semester">6個月</string>
     <string name="quarter">3個月</string>
     <string name="bimonthly">2個月</string>
     <string name="monthly">每月</string>
     <string name="weekly">每週</string>
-    <string name="lifetime">终身</string>
-    <string name="package_discount">%1$d%%折</string>
+    <string name="lifetime">終身</string>
+    <string name="package_discount">優惠%1$d%%</string>
     <string name="continue_cta">繼續</string>
-    <string name="default_offer_details_with_intro_offer">開始 {{ sub_offer_duration }} 試用，然後 {{total_price_and_per_month }}。</string>
+    <string name="default_offer_details_with_intro_offer">試用期{{ sub_offer_duration }}，屆滿後{{ total_price_and_per_month }}。</string>
 </resources>
