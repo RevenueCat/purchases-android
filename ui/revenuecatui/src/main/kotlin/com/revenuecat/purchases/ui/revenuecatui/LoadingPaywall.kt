@@ -110,7 +110,11 @@ private fun LoadingPaywall(
                     ),
             )
         }
-        CloseButton(state.shouldDisplayDismissButton, onDismiss)
+        CloseButton(
+            shouldDisplayDismissButton = state.shouldDisplayDismissButton,
+            actionInProgress = viewModel.actionInProgress.value,
+            onClick = onDismiss,
+        )
     }
 }
 

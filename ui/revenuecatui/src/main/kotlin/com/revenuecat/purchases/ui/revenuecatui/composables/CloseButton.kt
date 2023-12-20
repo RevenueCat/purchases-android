@@ -10,11 +10,16 @@ import androidx.compose.ui.res.painterResource
 import com.revenuecat.purchases.ui.revenuecatui.R
 
 @Composable
-fun BoxScope.CloseButton(shouldDisplayDismissButton: Boolean, onClick: () -> Unit) {
+fun BoxScope.CloseButton(
+    shouldDisplayDismissButton: Boolean,
+    actionInProgress: Boolean,
+    onClick: () -> Unit,
+) {
     if (shouldDisplayDismissButton) {
         IconButton(
             onClick = onClick,
             modifier = Modifier.align(Alignment.TopStart),
+            enabled = actionInProgress.not(),
         ) {
             Icon(painter = painterResource(id = R.drawable.close), contentDescription = null)
         }
