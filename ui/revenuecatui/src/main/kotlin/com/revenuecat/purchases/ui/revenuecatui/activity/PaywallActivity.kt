@@ -3,6 +3,7 @@ package com.revenuecat.purchases.ui.revenuecatui.activity
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
+import android.view.Window
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Box
@@ -76,6 +77,7 @@ internal class PaywallActivity : ComponentActivity(), PaywallListener {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        requestWindowFeature(Window.FEATURE_NO_TITLE)
         super.onCreate(savedInstanceState)
         val args = getArgs()
         val paywallOptions = PaywallOptions.Builder(dismissRequest = ::finish)
