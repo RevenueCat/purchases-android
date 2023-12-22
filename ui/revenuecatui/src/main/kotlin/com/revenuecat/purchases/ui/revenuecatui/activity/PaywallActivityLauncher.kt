@@ -55,6 +55,32 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
     }
 
     /**
+     * Do not use this method, use the method with the same name that takes an [Offering] instead.
+     * This method is used internally by the hybrid SDKs.
+     *
+     * Launch the paywall activity.
+     * @param offeringIdentifier The offering identifier of the offering to be shown in the paywall. If null, the
+     * current offering will be shown.
+     * @param fontProvider The [ParcelizableFontProvider] to be used in the paywall. If null, the default fonts
+     * will be used.
+     * @param shouldDisplayDismissButton Whether to display the dismiss button in the paywall.
+     */
+    @JvmOverloads
+    fun launch(
+        offeringIdentifier: String,
+        fontProvider: ParcelizableFontProvider? = null,
+        shouldDisplayDismissButton: Boolean = DEFAULT_DISPLAY_DISMISS_BUTTON,
+    ) {
+        activityResultLauncher.launch(
+            PaywallActivityArgs(
+                offeringId = offeringIdentifier,
+                fontProvider = fontProvider,
+                shouldDisplayDismissButton = shouldDisplayDismissButton,
+            ),
+        )
+    }
+
+    /**
      * Launch the paywall activity if the current user does not have [requiredEntitlementIdentifier] active.
      * @param offering The offering to be shown in the paywall. If null, the current offering will be shown.
      * @param fontProvider The [ParcelizableFontProvider] to be used in the paywall. If null, the default fonts
@@ -70,12 +96,19 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
         fontProvider: ParcelizableFontProvider? = null,
         shouldDisplayDismissButton: Boolean = DEFAULT_DISPLAY_DISMISS_BUTTON,
     ) {
-        launchIfNeeded(
-            requiredEntitlementIdentifier = requiredEntitlementIdentifier,
-            offeringIdentifier = offering?.identifier,
-            fontProvider = fontProvider,
-            shouldDisplayDismissButton = shouldDisplayDismissButton,
-        )
+        val shouldDisplayBlock = shouldDisplayBlockForEntitlementIdentifier(requiredEntitlementIdentifier)
+        shouldDisplayPaywall(shouldDisplayBlock) { shouldDisplay ->
+            if (shouldDisplay) {
+                activityResultLauncher.launch(
+                    PaywallActivityArgs(
+                        requiredEntitlementIdentifier = requiredEntitlementIdentifier,
+                        offeringId = offering?.identifier,
+                        fontProvider = fontProvider,
+                        shouldDisplayDismissButton = shouldDisplayDismissButton,
+                    ),
+                )
+            }
+        }
     }
 
     /**
@@ -83,8 +116,8 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
      * This method is used internally by the hybrid SDKs.
      *
      * Launch the paywall activity if the current user does not have [requiredEntitlementIdentifier] active.
-     * @param offeringIdentifier The offering identifier to be shown in the paywall. If null, the current offering
-     * will be shown.
+     * @param offeringIdentifier The offering identifier of the ofering to be shown in the paywall. If null, the
+     * current offering will be shown.
      * @param fontProvider The [ParcelizableFontProvider] to be used in the paywall. If null, the default fonts
      * will be used.
      * @param requiredEntitlementIdentifier the paywall will be displayed only if the current user does not
@@ -94,7 +127,7 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
     @JvmOverloads
     fun launchIfNeeded(
         requiredEntitlementIdentifier: String,
-        offeringIdentifier: String? = null,
+        offeringIdentifier: String,
         fontProvider: ParcelizableFontProvider? = null,
         shouldDisplayDismissButton: Boolean = DEFAULT_DISPLAY_DISMISS_BUTTON,
     ) {
