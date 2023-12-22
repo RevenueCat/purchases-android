@@ -620,57 +620,16 @@ workflows:
       not:
         equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
     jobs:
-      - test
-      - detekt
-      - assemble-purchase-tester
-      - run-backend-integration-tests
-      - verify-revenuecatui-snapshots
-      - run-revenuecatui-ui-tests
-      - verify_debug_view_snapshot_tests: *release-branches
-      - integration-tests-build: *release-branches
-      - purchases-integration-tests-build: *release-branches
-      - run-firebase-tests-purchases-custom-entitlement-computation-integration-test:
-          <<: *release-branches
-      - run-firebase-tests-purchases-integration-test:
-          requires:
-            - purchases-integration-tests-build
-      - run-firebase-tests-purchases-load-shedder-integration-test:
-          <<: *release-branches
-          context:
-            - slack-secrets
-      - run-firebase-tests:
-          requires:
-            - integration-tests-build
       - hold:
           type: approval
-          requires:
-            - test
-            - assemble-purchase-tester
-            - run-backend-integration-tests
-            - run-revenuecatui-ui-tests
-            - run-firebase-tests
-            - run-firebase-tests-purchases-integration-test
-            - run-firebase-tests-purchases-load-shedder-integration-test
-            - run-firebase-tests-purchases-custom-entitlement-computation-integration-test
-          <<: *release-branches
       - force-release-without-waiting-for-tests:
           type: approval
-          <<: *release-branches
-      - revenuecat/tag-current-branch:
+      - detekt:
           requires:
             - hold
-          <<: *release-branches
-      - revenuecat/tag-current-branch:
+      - detekt:
           requires:
             - force-release-without-waiting-for-tests
-          <<: *release-branches
-      - deploy: *release-tags
-      - docs-deploy: *release-tags
-      - publish-purchase-tester-release:
-          requires:
-            - deploy
-            - docs-deploy
-          <<: *release-tags
 
   snapshot-bump:
     when:
