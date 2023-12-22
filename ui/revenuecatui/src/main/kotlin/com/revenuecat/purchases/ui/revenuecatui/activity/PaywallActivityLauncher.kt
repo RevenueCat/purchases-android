@@ -70,13 +70,41 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
         fontProvider: ParcelizableFontProvider? = null,
         shouldDisplayDismissButton: Boolean = DEFAULT_DISPLAY_DISMISS_BUTTON,
     ) {
+        launchIfNeeded(
+            requiredEntitlementIdentifier = requiredEntitlementIdentifier,
+            offeringIdentifier = offering?.identifier,
+            fontProvider = fontProvider,
+            shouldDisplayDismissButton = shouldDisplayDismissButton,
+        )
+    }
+
+    /**
+     * Do not use this method, use the method with the same name that takes an [Offering] instead.
+     * This method is used internally by the hybrid SDKs.
+     *
+     * Launch the paywall activity if the current user does not have [requiredEntitlementIdentifier] active.
+     * @param offeringIdentifier The offering identifier to be shown in the paywall. If null, the current offering
+     * will be shown.
+     * @param fontProvider The [ParcelizableFontProvider] to be used in the paywall. If null, the default fonts
+     * will be used.
+     * @param requiredEntitlementIdentifier the paywall will be displayed only if the current user does not
+     * have this entitlement active.
+     * @param shouldDisplayDismissButton Whether to display the dismiss button in the paywall.
+     */
+    @JvmOverloads
+    fun launchIfNeeded(
+        requiredEntitlementIdentifier: String,
+        offeringIdentifier: String? = null,
+        fontProvider: ParcelizableFontProvider? = null,
+        shouldDisplayDismissButton: Boolean = DEFAULT_DISPLAY_DISMISS_BUTTON,
+    ) {
         val shouldDisplayBlock = shouldDisplayBlockForEntitlementIdentifier(requiredEntitlementIdentifier)
         shouldDisplayPaywall(shouldDisplayBlock) { shouldDisplay ->
             if (shouldDisplay) {
                 activityResultLauncher.launch(
                     PaywallActivityArgs(
                         requiredEntitlementIdentifier = requiredEntitlementIdentifier,
-                        offeringId = offering?.identifier,
+                        offeringId = offeringIdentifier,
                         fontProvider = fontProvider,
                         shouldDisplayDismissButton = shouldDisplayDismissButton,
                     ),
