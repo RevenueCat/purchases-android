@@ -10,7 +10,7 @@ import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivityLauncher
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResultHandler
 import com.revenuecat.purchases.ui.revenuecatui.fonts.ParcelizableFontProvider
 
-@Suppress("unused", "UNUSED_VARIABLE", "LongParameterList")
+@Suppress("unused", "UNUSED_VARIABLE", "LongParameterList", "LongMethod")
 @OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class)
 private class PaywallActivityLauncherAPI {
     fun check(
@@ -20,6 +20,7 @@ private class PaywallActivityLauncherAPI {
         resultHandler: PaywallResultHandler,
         offering: Offering,
         fontProvider: ParcelizableFontProvider,
+        offeringIdentifier: String,
     ) {
         val activityLauncher = PaywallActivityLauncher(componentActivity, resultHandler)
         val activityLauncher2 = PaywallActivityLauncher(fragment, resultHandler)
@@ -29,12 +30,50 @@ private class PaywallActivityLauncherAPI {
         activityLauncher.launch(
             offering = offering,
             fontProvider = fontProvider,
+        )
+        activityLauncher.launch(
+            offering = offering,
+            fontProvider = fontProvider,
+            shouldDisplayDismissButton = true,
+        )
+        activityLauncher.launch(offeringIdentifier)
+        activityLauncher.launch(
+            offeringIdentifier = offeringIdentifier,
+            fontProvider = fontProvider,
+        )
+        activityLauncher.launch(
+            offeringIdentifier = offeringIdentifier,
+            fontProvider = fontProvider,
             shouldDisplayDismissButton = true,
         )
         activityLauncher.launchIfNeeded("requiredEntitlementIdentifier")
         activityLauncher.launchIfNeeded(
             requiredEntitlementIdentifier = "requiredEntitlementIdentifier",
             offering = offering,
+        )
+        activityLauncher.launchIfNeeded(
+            requiredEntitlementIdentifier = "requiredEntitlementIdentifier",
+            offering = offering,
+            fontProvider = fontProvider,
+        )
+        activityLauncher.launchIfNeeded(
+            requiredEntitlementIdentifier = "requiredEntitlementIdentifier",
+            offering = offering,
+            fontProvider = fontProvider,
+            shouldDisplayDismissButton = true,
+        )
+        activityLauncher.launchIfNeeded(
+            requiredEntitlementIdentifier = "requiredEntitlementIdentifier",
+            offeringIdentifier = offeringIdentifier,
+        )
+        activityLauncher.launchIfNeeded(
+            requiredEntitlementIdentifier = "requiredEntitlementIdentifier",
+            offeringIdentifier = offeringIdentifier,
+            fontProvider = fontProvider,
+        )
+        activityLauncher.launchIfNeeded(
+            requiredEntitlementIdentifier = "requiredEntitlementIdentifier",
+            offeringIdentifier = offeringIdentifier,
             fontProvider = fontProvider,
             shouldDisplayDismissButton = true,
         )

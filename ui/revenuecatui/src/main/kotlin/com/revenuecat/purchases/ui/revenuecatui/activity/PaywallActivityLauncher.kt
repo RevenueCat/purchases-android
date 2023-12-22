@@ -65,7 +65,7 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
      * will be used.
      * @param shouldDisplayDismissButton Whether to display the dismiss button in the paywall.
      */
-    @JvmOverloads
+    @JvmSynthetic
     fun launch(
         offeringIdentifier: String,
         fontProvider: ParcelizableFontProvider? = null,
@@ -124,7 +124,7 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
      * have this entitlement active.
      * @param shouldDisplayDismissButton Whether to display the dismiss button in the paywall.
      */
-    @JvmOverloads
+    @JvmSynthetic
     fun launchIfNeeded(
         requiredEntitlementIdentifier: String,
         offeringIdentifier: String,
