@@ -28,9 +28,25 @@ final class PaywallActivityLauncherAPI {
         PaywallActivityLauncher launcher3 = new PaywallActivityLauncher(resultCaller, resultHandler);
         launcher.launch();
         launcher.launch(offering);
+        launcher.launch(null);
+        launcher.launch(offering, fontProvider);
+        launcher.launch(offering, null);
         launcher.launch(null, fontProvider);
+        launcher.launch(null, null);
+        launcher.launch(offering, fontProvider, true);
+        launcher.launch(offering, null, true);
+        launcher.launch(null, fontProvider, true);
         launcher.launch(null, null, true);
         launcher.launchIfNeeded("requiredEntitlementIdentifier");
+        launcher.launchIfNeeded("requiredEntitlementIdentifier", offering);
+        launcher.launchIfNeeded("requiredEntitlementIdentifier", null);
+        launcher.launchIfNeeded("requiredEntitlementIdentifier", offering, fontProvider, true);
+        launcher.launchIfNeeded("requiredEntitlementIdentifier", offering, null, true);
+        launcher.launchIfNeeded("requiredEntitlementIdentifier", null, fontProvider, true);
+        launcher.launchIfNeeded("requiredEntitlementIdentifier", null, null, true);
+        launcher.launchIfNeeded(offering, fontProvider, true, customerInfo -> null);
+        launcher.launchIfNeeded(offering, null, true, customerInfo -> null);
+        launcher.launchIfNeeded(null, fontProvider, true, customerInfo -> null);
         launcher.launchIfNeeded(null, null, true, customerInfo -> null);
     }
 }
