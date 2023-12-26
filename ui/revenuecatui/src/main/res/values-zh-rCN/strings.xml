@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="OK">好的</string>
+    <string name="privacy">隐私</string>
+    <string name="privacy_policy">隐私政策</string>
+    <string name="restore">恢复</string>
+    <string name="restore_purchases">恢复购买</string>
+    <string name="terms">服务条款</string>
+    <string name="terms_and_conditions">条款和条件</string>
+    <string name="all_plans">所有订阅</string>
+    <string name="annual">每年</string>
+    <string name="semester">6个月</string>
+    <string name="quarter">3个月</string>
+    <string name="bimonthly">2个月</string>
+    <string name="monthly">每月</string>
+    <string name="weekly">每周</string>
+    <string name="lifetime">终身</string>
+    <string name="package_discount">优惠%1$d%%</string>
+    <string name="continue_cta">继续</string>
+    <string name="default_offer_details_with_intro_offer">试用期{{ sub_offer_duration }}，届满后{{ total_price_and_per_month }}。</string>
+</resources>
