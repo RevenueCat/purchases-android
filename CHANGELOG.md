@@ -1,3 +1,8 @@
+## 7.3.1
+### RevenueCatUI
+* `Paywalls`: `PurchaseCancelledError` sends `onPurchaseCancelled` instead of an error (#1538) via NachoSoto (@NachoSoto)
+* Paywalls: add Chinese from mainland China (#1537) via Andy Boedo (@aboedo)
+
 ## 7.3.0
 ### RevenueCatUI
 * Add `launchIfNeeded` with `offeringIdentifier` (#1533) via Cesar de la Vega (@vegaro)
