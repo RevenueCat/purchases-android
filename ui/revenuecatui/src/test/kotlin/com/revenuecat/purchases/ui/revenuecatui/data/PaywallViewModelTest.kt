@@ -31,7 +31,6 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
-import io.mockk.mockkStatic
 import io.mockk.runs
 import io.mockk.verify
 import io.mockk.verifyOrder
@@ -446,6 +445,14 @@ class PaywallViewModelTest {
         model.purchaseSelectedPackage(activity)
 
         verifyEventTracked(PaywallEventType.CANCEL, 1)
+
+        assertThat(model.actionError.value).isNull()
+        verify(exactly = 0) {
+            listener.onPurchaseError(any())
+        }
+        verify(exactly = 1) {
+            listener.onPurchaseCancelled()
+        }
     }
 
     @Test

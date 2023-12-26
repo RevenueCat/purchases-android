@@ -10,6 +10,7 @@ interface PaywallListener {
     fun onPurchaseStarted(rcPackage: Package) {}
     fun onPurchaseCompleted(customerInfo: CustomerInfo, storeTransaction: StoreTransaction) {}
     fun onPurchaseError(error: PurchasesError) {}
+    fun onPurchaseCancelled() {}
     fun onRestoreStarted() {}
     fun onRestoreCompleted(customerInfo: CustomerInfo) {}
     fun onRestoreError(error: PurchasesError) {}
