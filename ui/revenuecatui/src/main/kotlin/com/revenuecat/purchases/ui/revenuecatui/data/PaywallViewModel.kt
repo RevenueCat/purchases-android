@@ -205,6 +205,7 @@ internal class PaywallViewModelImpl(
             } catch (e: PurchasesException) {
                 if (e.code == PurchasesErrorCode.PurchaseCancelledError) {
                     trackPaywallCancel()
+                    listener?.onPurchaseCancelled()
                 } else {
                     listener?.onPurchaseError(e.error)
                     _actionError.value = e.error

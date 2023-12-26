@@ -450,6 +450,9 @@ class PaywallViewModelTest {
         verify(exactly = 0) {
             listener.onPurchaseError(any())
         }
+        verify(exactly = 1) {
+            listener.onPurchaseCancelled()
+        }
     }
 
     @Test
