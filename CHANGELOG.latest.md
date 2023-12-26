@@ -1,6 +1,3 @@
 ### RevenueCatUI
-* Add `launchIfNeeded` with `offeringIdentifier` (#1533) via Cesar de la Vega (@vegaro)
-* Hide action bar from paywall activity (#1532) via Toni Rico (@tonidero)
-* Paywalls: improve Chinese localization (#1529) via Andy Boedo (@aboedo)
-### Other Changes
-* Wait for tests to pass when deploying (#1521) via Cesar de la Vega (@vegaro)
+* `Paywalls`: `PurchaseCancelledError` sends `onPurchaseCancelled` instead of an error (#1538) via NachoSoto (@NachoSoto)
+* Paywalls: add Chinese from mainland China (#1537) via Andy Boedo (@aboedo)
