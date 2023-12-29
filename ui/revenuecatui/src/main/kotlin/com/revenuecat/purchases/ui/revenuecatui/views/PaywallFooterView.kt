@@ -20,7 +20,7 @@ import com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider
  * View that wraps the [PaywallFooter] Composable to display the Paywall Footer through XML layouts and the View system.
  */
 @ExperimentalPreviewRevenueCatUIPurchasesAPI
-class PaywallFooterView : FrameLayout {
+open class PaywallFooterView : FrameLayout {
 
     constructor(context: Context, attrs: AttributeSet?) : super(context, attrs) {
         init(context, attrs)
