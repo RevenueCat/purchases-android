@@ -19,7 +19,7 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.shouldDisplayPaywall
 interface PaywallResultHandler : ActivityResultCallback<PaywallResult>
 
 /**
- * Implement this interface to receive whether the paywall was launched when it's conditionally launched
+ * Implement this interface to receive whether the paywall was displayed when it depends on a condition.
  */
 @ExperimentalPreviewRevenueCatUIPurchasesAPI
 interface PaywallDisplayCallback {
