@@ -119,6 +119,10 @@ internal class PaywallActivity : ComponentActivity(), PaywallListener {
         setResult(RESULT_OK, createResultIntent(result))
     }
 
+    override fun onRestoreError(error: PurchasesError) {
+        setResult(RESULT_OK, createResultIntent(PaywallResult.Error(error)))
+    }
+
     private fun createResultIntent(result: PaywallResult): Intent {
         return Intent().putExtra(RESULT_EXTRA, result)
     }

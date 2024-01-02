@@ -24,7 +24,7 @@ sealed class PaywallResult : Parcelable {
     data class Purchased(val customerInfo: CustomerInfo) : PaywallResult(), Parcelable
 
     /**
-     * The user tried to purchase a product but an error occurred. If they tried multiple times,
+     * The user tried to purchase a product or restore purchases but an error occurred. If they tried multiple times,
      * the error corresponds to the last attempt.
      */
     @Parcelize
