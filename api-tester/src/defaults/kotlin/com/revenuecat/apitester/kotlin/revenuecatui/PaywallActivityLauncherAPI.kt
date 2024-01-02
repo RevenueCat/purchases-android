@@ -108,9 +108,9 @@ private class PaywallActivityLauncherAPI {
     }
 
     fun checkPaywallDisplayCallback() {
+        @Suppress("EmptyFunctionBlock")
         val paywallDisplayCallback = object : PaywallDisplayCallback {
-            override fun onPaywallShouldDisplay(shouldDisplayPaywall: Boolean) {
-            }
+            override fun onPaywallShouldDisplay(shouldDisplayPaywall: Boolean) {}
         }
     }
 }
