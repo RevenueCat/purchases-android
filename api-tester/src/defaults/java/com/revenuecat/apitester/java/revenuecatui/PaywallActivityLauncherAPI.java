@@ -8,6 +8,7 @@ import androidx.fragment.app.Fragment;
 import com.revenuecat.purchases.Offering;
 import com.revenuecat.purchases.ui.revenuecatui.ExperimentalPreviewRevenueCatUIPurchasesAPI;
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivityLauncher;
+import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallDisplayCallback;
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResultHandler;
 import com.revenuecat.purchases.ui.revenuecatui.fonts.ParcelizableFontProvider;
 
@@ -25,7 +26,7 @@ final class PaywallActivityLauncherAPI {
             PaywallResultHandler resultHandler,
             Offering offering,
             ParcelizableFontProvider fontProvider,
-            Function1<Boolean, Unit> paywallDisplayedCallback
+            PaywallDisplayCallback paywallDisplayCallback
     ) {
         PaywallActivityLauncher launcher = new PaywallActivityLauncher(activity, resultHandler);
         PaywallActivityLauncher launcher2 = new PaywallActivityLauncher(fragment, resultHandler);
@@ -48,10 +49,18 @@ final class PaywallActivityLauncherAPI {
         launcher.launchIfNeeded("requiredEntitlementIdentifier", offering, null, true);
         launcher.launchIfNeeded("requiredEntitlementIdentifier", null, fontProvider, true);
         launcher.launchIfNeeded("requiredEntitlementIdentifier", null, null, true);
-        launcher.launchIfNeeded("requiredEntitlementIdentifier", offering, fontProvider, true, paywallDisplayedCallback);
+        launcher.launchIfNeeded("requiredEntitlementIdentifier", offering, fontProvider, true, paywallDisplayCallback);
         launcher.launchIfNeeded(offering, fontProvider, true, customerInfo -> null);
         launcher.launchIfNeeded(offering, null, true, customerInfo -> null);
         launcher.launchIfNeeded(null, fontProvider, true, customerInfo -> null);
         launcher.launchIfNeeded(null, null, true, customerInfo -> null);
+    }
+
+    static void checkPaywallDisplayCallback() {
+        PaywallDisplayCallback callback = new PaywallDisplayCallback() {
+            @Override
+            public void onPaywallShouldDisplay(boolean shouldDisplayPaywall) {
+            }
+        };
     }
 }
