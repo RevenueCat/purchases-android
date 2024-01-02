@@ -56,7 +56,7 @@ final class PaywallActivityLauncherAPI {
     static void checkPaywallDisplayCallback() {
         PaywallDisplayCallback callback = new PaywallDisplayCallback() {
             @Override
-            public void onPaywallShouldDisplay(boolean shouldDisplayPaywall) {
+            public void onPaywallDisplayResult(boolean wasDisplayed) {
             }
         };
     }

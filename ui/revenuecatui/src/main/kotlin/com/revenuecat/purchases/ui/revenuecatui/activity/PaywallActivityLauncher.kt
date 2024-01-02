@@ -23,7 +23,7 @@ interface PaywallResultHandler : ActivityResultCallback<PaywallResult>
  */
 @ExperimentalPreviewRevenueCatUIPurchasesAPI
 interface PaywallDisplayCallback {
-    fun onPaywallShouldDisplay(shouldDisplayPaywall: Boolean)
+    fun onPaywallDisplayResult(wasDisplayed: Boolean)
 }
 
 /**
@@ -108,7 +108,7 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
     ) {
         val shouldDisplayBlock = shouldDisplayBlockForEntitlementIdentifier(requiredEntitlementIdentifier)
         shouldDisplayPaywall(shouldDisplayBlock) { shouldDisplay ->
-            paywallDisplayCallback?.onPaywallShouldDisplay(shouldDisplay)
+            paywallDisplayCallback?.onPaywallDisplayResult(shouldDisplay)
             if (shouldDisplay) {
                 activityResultLauncher.launch(
                     PaywallActivityArgs(
@@ -146,7 +146,7 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
     ) {
         val shouldDisplayBlock = shouldDisplayBlockForEntitlementIdentifier(requiredEntitlementIdentifier)
         shouldDisplayPaywall(shouldDisplayBlock) { shouldDisplay ->
-            paywallDisplayCallback?.onPaywallShouldDisplay(shouldDisplay)
+            paywallDisplayCallback?.onPaywallDisplayResult(shouldDisplay)
             if (shouldDisplay) {
                 activityResultLauncher.launch(
                     PaywallActivityArgs(
