@@ -11,6 +11,9 @@ import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivityLauncher
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResultHandler;
 import com.revenuecat.purchases.ui.revenuecatui.fonts.ParcelizableFontProvider;
 
+import kotlin.Unit;
+import kotlin.jvm.functions.Function1;
+
 @SuppressWarnings({"unused"})
 @ExperimentalPreviewRevenueCatUIPurchasesAPI
 final class PaywallActivityLauncherAPI {
@@ -21,7 +24,8 @@ final class PaywallActivityLauncherAPI {
             ActivityResultCaller resultCaller,
             PaywallResultHandler resultHandler,
             Offering offering,
-            ParcelizableFontProvider fontProvider
+            ParcelizableFontProvider fontProvider,
+            Function1<Boolean, Unit> paywallDisplayedCallback
     ) {
         PaywallActivityLauncher launcher = new PaywallActivityLauncher(activity, resultHandler);
         PaywallActivityLauncher launcher2 = new PaywallActivityLauncher(fragment, resultHandler);
@@ -44,6 +48,7 @@ final class PaywallActivityLauncherAPI {
         launcher.launchIfNeeded("requiredEntitlementIdentifier", offering, null, true);
         launcher.launchIfNeeded("requiredEntitlementIdentifier", null, fontProvider, true);
         launcher.launchIfNeeded("requiredEntitlementIdentifier", null, null, true);
+        launcher.launchIfNeeded("requiredEntitlementIdentifier", offering, fontProvider, true, paywallDisplayedCallback);
         launcher.launchIfNeeded(offering, fontProvider, true, customerInfo -> null);
         launcher.launchIfNeeded(offering, null, true, customerInfo -> null);
         launcher.launchIfNeeded(null, fontProvider, true, customerInfo -> null);

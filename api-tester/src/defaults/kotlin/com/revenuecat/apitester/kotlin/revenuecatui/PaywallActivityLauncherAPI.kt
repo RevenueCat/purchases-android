@@ -21,6 +21,7 @@ private class PaywallActivityLauncherAPI {
         offering: Offering,
         fontProvider: ParcelizableFontProvider,
         offeringIdentifier: String,
+        paywallDisplayedCallback: (Boolean) -> Unit,
     ) {
         val activityLauncher = PaywallActivityLauncher(componentActivity, resultHandler)
         val activityLauncher2 = PaywallActivityLauncher(fragment, resultHandler)
@@ -64,6 +65,13 @@ private class PaywallActivityLauncherAPI {
         )
         activityLauncher.launchIfNeeded(
             requiredEntitlementIdentifier = "requiredEntitlementIdentifier",
+            offering = offering,
+            fontProvider = fontProvider,
+            shouldDisplayDismissButton = true,
+            paywallDisplayedCallback = paywallDisplayedCallback,
+        )
+        activityLauncher.launchIfNeeded(
+            requiredEntitlementIdentifier = "requiredEntitlementIdentifier",
             offeringIdentifier = offeringIdentifier,
         )
         activityLauncher.launchIfNeeded(
@@ -76,6 +84,13 @@ private class PaywallActivityLauncherAPI {
             offeringIdentifier = offeringIdentifier,
             fontProvider = fontProvider,
             shouldDisplayDismissButton = true,
+        )
+        activityLauncher.launchIfNeeded(
+            requiredEntitlementIdentifier = "requiredEntitlementIdentifier",
+            offeringIdentifier = offeringIdentifier,
+            fontProvider = fontProvider,
+            shouldDisplayDismissButton = true,
+            paywallDisplayedCallback = paywallDisplayedCallback,
         )
         activityLauncher.launchIfNeeded {
             val customerInfo: CustomerInfo = it

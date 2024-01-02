@@ -88,6 +88,7 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
      * @param requiredEntitlementIdentifier the paywall will be displayed only if the current user does not
      * have this entitlement active.
      * @param shouldDisplayDismissButton Whether to display the dismiss button in the paywall.
+     * @param paywallDisplayedCallback Callback that will be called with true if the paywall was displayed
      */
     @JvmOverloads
     fun launchIfNeeded(
@@ -95,9 +96,11 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
         offering: Offering? = null,
         fontProvider: ParcelizableFontProvider? = null,
         shouldDisplayDismissButton: Boolean = DEFAULT_DISPLAY_DISMISS_BUTTON,
+        paywallDisplayedCallback: ((Boolean) -> Unit)? = null,
     ) {
         val shouldDisplayBlock = shouldDisplayBlockForEntitlementIdentifier(requiredEntitlementIdentifier)
         shouldDisplayPaywall(shouldDisplayBlock) { shouldDisplay ->
+            paywallDisplayedCallback?.invoke(shouldDisplay)
             if (shouldDisplay) {
                 activityResultLauncher.launch(
                     PaywallActivityArgs(
@@ -123,6 +126,7 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
      * @param requiredEntitlementIdentifier the paywall will be displayed only if the current user does not
      * have this entitlement active.
      * @param shouldDisplayDismissButton Whether to display the dismiss button in the paywall.
+     * @param paywallDisplayedCallback Callback that will be called with true if the paywall was displayed
      */
     @JvmSynthetic
     fun launchIfNeeded(
@@ -130,9 +134,11 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
         offeringIdentifier: String,
         fontProvider: ParcelizableFontProvider? = null,
         shouldDisplayDismissButton: Boolean = DEFAULT_DISPLAY_DISMISS_BUTTON,
+        paywallDisplayedCallback: ((Boolean) -> Unit)? = null,
     ) {
         val shouldDisplayBlock = shouldDisplayBlockForEntitlementIdentifier(requiredEntitlementIdentifier)
         shouldDisplayPaywall(shouldDisplayBlock) { shouldDisplay ->
+            paywallDisplayedCallback?.invoke(shouldDisplay)
             if (shouldDisplay) {
                 activityResultLauncher.launch(
                     PaywallActivityArgs(
