@@ -7,6 +7,7 @@ import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.ui.revenuecatui.ExperimentalPreviewRevenueCatUIPurchasesAPI
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivityLauncher
+import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallDisplayCallback
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResultHandler
 import com.revenuecat.purchases.ui.revenuecatui.fonts.ParcelizableFontProvider
 
@@ -21,6 +22,7 @@ private class PaywallActivityLauncherAPI {
         offering: Offering,
         fontProvider: ParcelizableFontProvider,
         offeringIdentifier: String,
+        paywallDisplayCallback: PaywallDisplayCallback,
     ) {
         val activityLauncher = PaywallActivityLauncher(componentActivity, resultHandler)
         val activityLauncher2 = PaywallActivityLauncher(fragment, resultHandler)
@@ -64,6 +66,13 @@ private class PaywallActivityLauncherAPI {
         )
         activityLauncher.launchIfNeeded(
             requiredEntitlementIdentifier = "requiredEntitlementIdentifier",
+            offering = offering,
+            fontProvider = fontProvider,
+            shouldDisplayDismissButton = true,
+            paywallDisplayCallback = paywallDisplayCallback,
+        )
+        activityLauncher.launchIfNeeded(
+            requiredEntitlementIdentifier = "requiredEntitlementIdentifier",
             offeringIdentifier = offeringIdentifier,
         )
         activityLauncher.launchIfNeeded(
@@ -76,6 +85,13 @@ private class PaywallActivityLauncherAPI {
             offeringIdentifier = offeringIdentifier,
             fontProvider = fontProvider,
             shouldDisplayDismissButton = true,
+        )
+        activityLauncher.launchIfNeeded(
+            requiredEntitlementIdentifier = "requiredEntitlementIdentifier",
+            offeringIdentifier = offeringIdentifier,
+            fontProvider = fontProvider,
+            shouldDisplayDismissButton = true,
+            paywallDisplayCallback = paywallDisplayCallback,
         )
         activityLauncher.launchIfNeeded {
             val customerInfo: CustomerInfo = it
@@ -88,6 +104,13 @@ private class PaywallActivityLauncherAPI {
         ) {
             val customerInfo: CustomerInfo = it
             true
+        }
+    }
+
+    fun checkPaywallDisplayCallback() {
+        @Suppress("EmptyFunctionBlock")
+        val paywallDisplayCallback = object : PaywallDisplayCallback {
+            override fun onPaywallDisplayResult(wasDisplayed: Boolean) {}
         }
     }
 }
