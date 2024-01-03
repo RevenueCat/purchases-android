@@ -137,11 +137,11 @@ private fun ColumnScope.Template5MainContent(
     viewModel: PaywallViewModel,
     packageSelectionVisible: Boolean,
 ) {
+    val scrollState = rememberScrollState()
     Column(
         modifier = Modifier
-            .verticalScroll(rememberScrollState())
             .conditional(state.isInFullScreenMode) {
-                Modifier.weight(1f)
+                Modifier.verticalScroll(scrollState).weight(1f)
             }
             .padding(horizontal = UIConstant.defaultHorizontalPadding, vertical = UIConstant.defaultVerticalSpacing),
         horizontalAlignment = Alignment.CenterHorizontally,
