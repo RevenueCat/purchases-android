@@ -14,6 +14,8 @@ internal object AttributionStrings {
         "GooglePlayServicesRepairableException when getting advertising identifier. Message: %s"
     const val IO_EXCEPTION_WHEN_FETCHING_ADVERTISING_IDENTIFIER = "IOException when getting advertising " +
         "identifier. Message: %s"
+    const val NULL_EXCEPTION_WHEN_FETCHING_ADVERTISING_IDENTIFIER = "NullPointerException when getting advertising " +
+        "identifier. Message: %s"
     const val MARKING_ATTRIBUTES_SYNCED = "Marking the following attributes as synced for App User ID: %s"
     const val METHOD_CALLED = "%s called"
     const val NO_SUBSCRIBER_ATTRIBUTES_TO_SYNCHRONIZE = "No subscriber attributes to synchronize."
