@@ -201,6 +201,33 @@ class GoogleDeviceIdentifiersFetcherTests {
     }
 
     @Test
+    fun `NullPointerException when getting device identifiers`() {
+        val mockContext = mockk<Application>(relaxed = true)
+        mockAdvertisingInfo(
+            mockContext = mockContext,
+            expectedAdID = "12345",
+            expectedAndroidID = "androidid",
+            expectedException = NullPointerException()
+        )
+
+        var completionCalled = false
+        underTest.getDeviceIdentifiers(mockContext) { identifiers ->
+            completionCalled = true
+
+            val advertisingID = identifiers[SubscriberAttributeKey.DeviceIdentifiers.GPSAdID.backendKey]
+            assertThat(advertisingID).isNull()
+
+            val androidID = identifiers[SubscriberAttributeKey.DeviceIdentifiers.AndroidID.backendKey]
+            assertThat(androidID).isEqualTo("androidid")
+
+            val ip = identifiers[SubscriberAttributeKey.DeviceIdentifiers.IP.backendKey]
+            assertThat(ip).isEqualTo("true")
+        }
+
+        assertThat(completionCalled).isTrue()
+    }
+
+    @Test
     fun `TimeoutException when getting device identifiers`() {
         val mockContext = mockk<Application>(relaxed = true)
         mockAdvertisingInfo(
