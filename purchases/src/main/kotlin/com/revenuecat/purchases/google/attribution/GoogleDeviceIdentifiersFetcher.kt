@@ -80,6 +80,12 @@ internal class GoogleDeviceIdentifiersFetcher(
                 AttributionStrings.IO_EXCEPTION_WHEN_FETCHING_ADVERTISING_IDENTIFIER
                     .format(e.localizedMessage),
             )
+        } catch (@Suppress("TooGenericExceptionCaught") e: NullPointerException) {
+            log(
+                LogIntent.GOOGLE_ERROR,
+                AttributionStrings.NULL_EXCEPTION_WHEN_FETCHING_ADVERTISING_IDENTIFIER
+                    .format(e.localizedMessage),
+            )
         }
         return advertisingID
     }
