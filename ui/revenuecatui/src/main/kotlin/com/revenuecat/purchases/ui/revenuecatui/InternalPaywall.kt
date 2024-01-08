@@ -11,6 +11,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
@@ -112,7 +113,9 @@ private fun LoadedPaywall(state: PaywallState.Loaded, viewModel: PaywallViewMode
     Box(
         modifier = Modifier
             .conditional(state.isInFullScreenMode) {
-                Modifier.background(backgroundColor)
+                Modifier
+                    .fillMaxHeight()
+                    .background(backgroundColor)
             }
             .conditional(!state.isInFullScreenMode) {
                 Modifier

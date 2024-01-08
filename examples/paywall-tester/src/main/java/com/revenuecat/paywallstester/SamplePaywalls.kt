@@ -207,7 +207,6 @@ object SamplePaywalls {
                 termsOfServiceURL = tosURL,
                 packageIds = listOf(
                     PackageType.WEEKLY.identifier!!,
-                    PackageType.MONTHLY.identifier!!,
                     PackageType.ANNUAL.identifier!!,
                     PackageType.LIFETIME.identifier!!,
                 ),
