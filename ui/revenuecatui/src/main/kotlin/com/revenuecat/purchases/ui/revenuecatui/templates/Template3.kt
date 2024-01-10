@@ -70,7 +70,7 @@ internal fun Template3(
     var landscapeLayout by remember { mutableStateOf(false) }
 
     Column(
-        modifier = state.onLandscapeLayoutChanged { landscapeLayout = it }
+        modifier = state.onLandscapeLayoutChanged { landscapeLayout = it },
     ) {
         if (landscapeLayout) {
             LandscapeContent(state, viewModel)
@@ -172,7 +172,7 @@ private fun Title(
 @Composable
 private fun ColumnScope.Features(
     state: PaywallState.Loaded,
-    spacing: Dp
+    spacing: Dp,
 ) {
     val features = state.selectedLocalization.features
     val colors = state.templateConfiguration.getCurrentColors()
@@ -254,7 +254,7 @@ private fun Feature(
     group = "full_screen",
     name = "Landscape",
     widthDp = 720,
-    heightDp = 380
+    heightDp = 380,
 )
 @Preview(locale = "es-rES", showBackground = true, group = "full_screen")
 @Preview(showBackground = true, device = Devices.NEXUS_7, group = "full_screen")

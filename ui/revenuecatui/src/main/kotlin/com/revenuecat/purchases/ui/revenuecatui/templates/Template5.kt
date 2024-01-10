@@ -101,7 +101,6 @@ internal fun Template5(
     Column(
         modifier = state.onLandscapeLayoutChanged { landscapeLayout = it },
     ) {
-
         if (landscapeLayout) {
             Template5LandscapeContent(state, viewModel)
         } else {
@@ -490,11 +489,12 @@ private val TemplateConfiguration.Colors.unselectedDiscountText: Color
 @OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class)
 @Preview(showBackground = true, locale = "en-rUS", group = "full_screen")
 @Preview(
-    showBackground = true, locale = "en-rUS",
+    showBackground = true,
+    locale = "en-rUS",
     group = "full_screen",
     name = "Landscape",
     widthDp = 720,
-    heightDp = 380
+    heightDp = 380,
 )
 @Preview(showBackground = true, locale = "es-rES", group = "full_screen")
 @Preview(showBackground = true, widthDp = 1000, heightDp = 1000, group = "full_screen")

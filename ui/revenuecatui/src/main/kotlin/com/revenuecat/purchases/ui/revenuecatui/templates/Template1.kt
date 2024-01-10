@@ -37,6 +37,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
@@ -168,6 +169,7 @@ private fun CircleMask(landscapeLayout: Boolean, content: @Composable () -> Unit
     fun circleOffsetX(size: Size): Float {
         return ((size.width * scale) - size.width) / 2f * -1f
     }
+
     fun circleOffsetY(size: Size): Float {
         return ((size.height * scale) - size.height) * -1f
     }
@@ -208,10 +210,10 @@ private object Template1UIConstants {
     group = "full_screen",
     name = "Landscape",
     widthDp = 720,
-    heightDp = 380
+    heightDp = 380,
 )
-//@Preview(showBackground = true, device = Devices.NEXUS_7, group = "full_screen")
-//@Preview(showBackground = true, device = Devices.NEXUS_10, group = "full_screen")
+@Preview(showBackground = true, device = Devices.NEXUS_7, group = "full_screen")
+@Preview(showBackground = true, device = Devices.NEXUS_10, group = "full_screen")
 @Composable
 private fun Template1PaywallPreview() {
     InternalPaywall(

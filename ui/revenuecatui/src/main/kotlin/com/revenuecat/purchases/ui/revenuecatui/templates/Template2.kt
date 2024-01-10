@@ -92,12 +92,12 @@ internal fun Template2(
     var landscapeLayout by remember { mutableStateOf(false) }
 
     Box(
-        modifier = state.onLandscapeLayoutChanged { landscapeLayout = it }
+        modifier = state.onLandscapeLayoutChanged { landscapeLayout = it },
     ) {
         PaywallBackground(state.templateConfiguration)
 
         Column(
-            verticalArrangement = Arrangement.SpaceAround
+            verticalArrangement = Arrangement.SpaceAround,
         ) {
             var packageSelectorVisible by remember {
                 mutableStateOf(state.templateConfiguration.mode != PaywallMode.FOOTER_CONDENSED)
@@ -249,7 +249,7 @@ private fun IconImage(
 private fun Title(
     state: PaywallState.Loaded,
     childModifier: Modifier,
-    textAlign: TextAlign = TextAlign.Center
+    textAlign: TextAlign = TextAlign.Center,
 ) {
     Markdown(
         style = MaterialTheme.typography.displaySmall,
@@ -260,11 +260,12 @@ private fun Title(
         modifier = childModifier,
     )
 }
+
 @Composable
 private fun Subtitle(
     state: PaywallState.Loaded,
     childModifier: Modifier,
-    textAlign: TextAlign = TextAlign.Center
+    textAlign: TextAlign = TextAlign.Center,
 ) {
     Markdown(
         style = MaterialTheme.typography.titleLarge,
@@ -411,7 +412,14 @@ private fun CheckmarkBox(isSelected: Boolean, colors: TemplateConfiguration.Colo
 
 @OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class)
 @Preview(showBackground = true, locale = "en-rUS", group = "full-screen", name = "Portrait")
-@Preview(showBackground = true, locale = "en-rUS", group = "full-screen", name = "Landscape", widthDp = 720, heightDp = 380)
+@Preview(
+    showBackground = true,
+    locale = "en-rUS",
+    group = "full-screen",
+    name = "Landscape",
+    widthDp = 720,
+    heightDp = 380,
+)
 @Preview(showBackground = true, locale = "es-rES", group = "full-screen")
 @Preview(showBackground = true, device = Devices.NEXUS_7, group = "full-screen")
 @Preview(showBackground = true, device = Devices.NEXUS_10, group = "full-screen")

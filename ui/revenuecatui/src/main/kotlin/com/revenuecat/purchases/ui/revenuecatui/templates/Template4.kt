@@ -447,11 +447,12 @@ private fun CheckmarkBox(
 @OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class)
 @Preview(showBackground = true, locale = "en-rUS", group = "full_screen")
 @Preview(
-    showBackground = true, locale = "en-rUS",
+    showBackground = true,
+    locale = "en-rUS",
     group = "full_screen",
     name = "Landscape",
     widthDp = 720,
-    heightDp = 380
+    heightDp = 380,
 )
 @Preview(showBackground = true, locale = "es-rES", group = "full_screen")
 @Preview(showBackground = true, device = Devices.NEXUS_7, group = "full_screen")

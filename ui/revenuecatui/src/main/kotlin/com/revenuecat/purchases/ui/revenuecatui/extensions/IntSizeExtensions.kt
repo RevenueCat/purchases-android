@@ -18,9 +18,9 @@ internal val IntSize.isLandscape: Boolean
  */
 @SuppressLint("ModifierFactoryExtensionFunction")
 internal fun PaywallState.Loaded.onLandscapeLayoutChanged(
-    changed: (Boolean) -> Unit
+    changed: (Boolean) -> Unit,
 ) = Modifier
     .then(
         // TODO: vertical compact?
-        Modifier.onGloballyPositioned { changed(this.isInFullScreenMode && it.size.isLandscape) }
+        Modifier.onGloballyPositioned { changed(this.isInFullScreenMode && it.size.isLandscape) },
     )
