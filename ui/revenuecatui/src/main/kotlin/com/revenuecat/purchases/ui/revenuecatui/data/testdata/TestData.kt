@@ -115,6 +115,7 @@ internal object TestData {
         identifier = "Template2",
         availablePackages = listOf(
             Packages.weekly,
+            Packages.monthly,
             Packages.annual,
             Packages.lifetime,
         ),
