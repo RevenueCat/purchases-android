@@ -1,3 +1,9 @@
+## 7.3.3
+### Bugfixes
+* Fix NullPointerException issues getting advertising id (#1550) via Toni Rico (@tonidero)
+### Dependency Updates
+* Bump fastlane from 2.218.0 to 2.219.0 (#1549) via dependabot[bot] (@dependabot[bot])
+
 ## 7.3.2
 ### RevenueCatUI
 * PaywallActivityLauncher: Add callback indicating whether the paywall was displayed when presented conditionally to an entitlement identifier (#1542) via Toni Rico (@tonidero)
