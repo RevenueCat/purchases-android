@@ -183,7 +183,10 @@ private fun ColumnScope.Template5LandscapeContent(
             modifier = Modifier
                 .verticalScroll(leftScrollState)
                 .weight(1f)
-                .padding(horizontal = UIConstant.defaultHorizontalPadding, vertical = UIConstant.defaultVerticalSpacing),
+                .padding(
+                    horizontal = UIConstant.defaultHorizontalPadding,
+                    vertical = UIConstant.defaultVerticalSpacing,
+                ),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(UIConstant.defaultVerticalSpacing, Alignment.CenterVertically),
         ) {
@@ -200,7 +203,10 @@ private fun ColumnScope.Template5LandscapeContent(
             modifier = Modifier
                 .verticalScroll(rightScrollState)
                 .weight(1f)
-                .padding(horizontal = UIConstant.defaultHorizontalPadding, vertical = UIConstant.defaultVerticalSpacing),
+                .padding(
+                    horizontal = UIConstant.defaultHorizontalPadding,
+                    vertical = UIConstant.defaultVerticalSpacing,
+                ),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(UIConstant.defaultVerticalSpacing, Alignment.CenterVertically),
         ) {

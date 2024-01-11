@@ -1,3 +1,5 @@
+@file:Suppress("TooManyFunctions")
+
 package com.revenuecat.purchases.ui.revenuecatui.templates
 
 import androidx.compose.animation.AnimatedVisibility
