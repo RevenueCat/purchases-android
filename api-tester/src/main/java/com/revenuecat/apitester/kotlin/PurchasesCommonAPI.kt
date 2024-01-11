@@ -173,7 +173,6 @@ private class PurchasesCommonAPI {
         val getProductsResult: List<StoreProduct> = purchases.awaitGetProducts(listOf("product"))
     }
 
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     @Suppress("ForbiddenComment")
     fun checkConfiguration(context: Context, executorService: ExecutorService) {
         val features: List<BillingFeature> = ArrayList()
@@ -196,13 +195,19 @@ private class PurchasesCommonAPI {
             .service(executorService)
             .diagnosticsEnabled(true)
             .entitlementVerificationMode(EntitlementVerificationMode.INFORMATIONAL)
-            .informationalVerificationModeAndDiagnosticsEnabled(true)
             .store(Store.PLAY_STORE)
             .build()
 
         val showInAppMessagesAutomatically: Boolean = build.showInAppMessagesAutomatically
 
         val instance: Purchases = Purchases.sharedInstance
+    }
+
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    @Suppress("ForbiddenComment")
+    fun checkConfigurationDiagnostics(context: Context, executorService: ExecutorService) {
+        val builder: PurchasesConfiguration.Builder = PurchasesConfiguration.Builder(context, apiKey = "")
+            .informationalVerificationModeAndDiagnosticsEnabled(true)
     }
 
     fun checkLogHandler() {

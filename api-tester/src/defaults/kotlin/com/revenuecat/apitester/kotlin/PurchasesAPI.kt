@@ -159,7 +159,6 @@ private class PurchasesAPI {
         LogInResult(customerInfo, created)
     }
 
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     fun checkAmazonConfiguration(context: Context, executorService: ExecutorService) {
         val amazonConfiguration: PurchasesConfiguration = AmazonConfiguration.Builder(context, "")
             .appUserID("")
@@ -169,7 +168,12 @@ private class PurchasesAPI {
             .service(executorService)
             .diagnosticsEnabled(true)
             .entitlementVerificationMode(EntitlementVerificationMode.INFORMATIONAL)
-            .informationalVerificationModeAndDiagnosticsEnabled(true)
             .build()
+    }
+
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    fun checkAmazonConfigurationDiagnostics(context: Context, executorService: ExecutorService) {
+        val builder: PurchasesConfiguration.Builder = AmazonConfiguration.Builder(context, "")
+            .informationalVerificationModeAndDiagnosticsEnabled(true)
     }
 }
