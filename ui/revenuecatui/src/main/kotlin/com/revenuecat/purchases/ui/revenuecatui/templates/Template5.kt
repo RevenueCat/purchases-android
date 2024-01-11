@@ -187,11 +187,11 @@ private fun ColumnScope.Template5LandscapeContent(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(UIConstant.defaultVerticalSpacing, Alignment.CenterVertically),
         ) {
-            Spacer(Modifier.weight(0.5f))
+            Spacer(Modifier.weight(UIConstant.halfWeight))
 
             Title(state)
 
-            Spacer(Modifier.weight(0.5f))
+            Spacer(Modifier.weight(UIConstant.halfWeight))
 
             Features(state)
         }
@@ -204,11 +204,11 @@ private fun ColumnScope.Template5LandscapeContent(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(UIConstant.defaultVerticalSpacing, Alignment.CenterVertically),
         ) {
-            Spacer(Modifier.weight(0.5f))
+            Spacer(Modifier.weight(UIConstant.halfWeight))
 
             AnimatedPackages(state, viewModel)
 
-            Spacer(Modifier.weight(0.5f))
+            Spacer(Modifier.weight(UIConstant.halfWeight))
         }
     }
 }

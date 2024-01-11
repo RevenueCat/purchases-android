@@ -191,39 +191,39 @@ private fun ColumnScope.Template2LandscapeContent(
         Column(
             modifier = Modifier
                 .verticalScroll(leftScrollState)
-                .weight(0.5f),
+                .weight(UIConstant.halfWeight),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(UIConstant.defaultVerticalSpacing, Alignment.CenterVertically),
         ) {
-            Spacer(Modifier.weight(0.5f))
+            Spacer(Modifier.weight(UIConstant.halfWeight))
 
             IconImage(state, childModifier)
 
             Title(state, childModifier, TextAlign.Left)
 
-            Spacer(Modifier.weight(0.5f))
+            Spacer(Modifier.weight(UIConstant.halfWeight))
 
             Subtitle(state, childModifier, TextAlign.Left)
 
-            Spacer(Modifier.weight(0.5f))
+            Spacer(Modifier.weight(UIConstant.halfWeight))
         }
 
         Column(
             modifier = Modifier
                 .verticalScroll(rightScrollState)
-                .weight(0.5f),
+                .weight(UIConstant.halfWeight),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(UIConstant.defaultVerticalSpacing, Alignment.CenterVertically),
         ) {
-            Spacer(Modifier.weight(0.5f))
+            Spacer(Modifier.weight(UIConstant.halfWeight))
 
             AnimatedPackages(state, packageSelectionVisible, viewModel, childModifier)
 
-            Spacer(Modifier.weight(0.5f))
+            Spacer(Modifier.weight(UIConstant.halfWeight))
 
             PurchaseButton(state, viewModel, childModifier, horizontalPadding = 0.dp)
 
-            Spacer(Modifier.weight(0.5f))
+            Spacer(Modifier.weight(UIConstant.halfWeight))
         }
     }
 }

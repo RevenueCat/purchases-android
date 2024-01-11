@@ -119,12 +119,12 @@ private fun ColumnScope.LandscapeContent(state: PaywallState.Loaded, viewModel: 
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(UIConstant.defaultVerticalSpacing, Alignment.CenterVertically),
         ) {
-            Spacer(modifier = Modifier.weight(0.5f))
+            Spacer(modifier = Modifier.weight(UIConstant.halfWeight))
 
             Icon(state)
             Title(state)
 
-            Spacer(modifier = Modifier.weight(0.5f))
+            Spacer(modifier = Modifier.weight(UIConstant.halfWeight))
         }
 
         Column {
