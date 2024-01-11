@@ -154,16 +154,6 @@ final class PurchasesCommonAPI {
                 .store(Store.APP_STORE)
                 .build();
 
-        PurchasesConfiguration amazonConfiguration = new AmazonConfiguration.Builder(context, "")
-                .appUserID("")
-                .observerMode(true)
-                .observerMode(false)
-                .service(executorService)
-                .diagnosticsEnabled(true)
-                .entitlementVerificationMode(EntitlementVerificationMode.INFORMATIONAL)
-                .showInAppMessagesAutomatically(true)
-                .build();
-
         final Boolean showInAppMessagesAutomatically = build.getShowInAppMessagesAutomatically();
 
         final Purchases instance = Purchases.getSharedInstance();

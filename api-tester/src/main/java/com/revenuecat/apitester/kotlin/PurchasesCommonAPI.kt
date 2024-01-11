@@ -16,7 +16,6 @@ import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesConfiguration
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.Store
-import com.revenuecat.purchases.amazon.AmazonConfiguration
 import com.revenuecat.purchases.awaitGetProducts
 import com.revenuecat.purchases.awaitOfferings
 import com.revenuecat.purchases.awaitPurchase
@@ -199,17 +198,6 @@ private class PurchasesCommonAPI {
             .entitlementVerificationMode(EntitlementVerificationMode.INFORMATIONAL)
             .informationalVerificationModeAndDiagnosticsEnabled(true)
             .store(Store.PLAY_STORE)
-            .build()
-
-        val amazonConfiguration: PurchasesConfiguration = AmazonConfiguration.Builder(context, "")
-            .appUserID("")
-            .observerMode(true)
-            .observerMode(false)
-            .showInAppMessagesAutomatically(true)
-            .service(executorService)
-            .diagnosticsEnabled(true)
-            .entitlementVerificationMode(EntitlementVerificationMode.INFORMATIONAL)
-            .informationalVerificationModeAndDiagnosticsEnabled(true)
             .build()
 
         val showInAppMessagesAutomatically: Boolean = build.showInAppMessagesAutomatically
