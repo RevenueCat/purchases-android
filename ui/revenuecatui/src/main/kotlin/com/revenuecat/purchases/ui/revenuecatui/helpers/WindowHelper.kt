@@ -43,6 +43,7 @@ private fun windowSizeClass(): WindowSizeClass {
 @Composable
 private fun getScreenSize(): Pair<Float, Float> {
     return if (isInPreviewMode()) {
+        // WindowMetricsCalculator returns (0, 0) on previews
         val configuration = LocalConfiguration.current
         configuration.screenWidthDp.toFloat() to configuration.screenHeightDp.toFloat()
     } else {
