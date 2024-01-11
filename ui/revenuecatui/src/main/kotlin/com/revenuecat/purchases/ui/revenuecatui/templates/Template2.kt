@@ -95,7 +95,7 @@ internal fun Template2(
         PaywallBackground(state.templateConfiguration)
 
         Column(
-            verticalArrangement = Arrangement.SpaceAround,
+            verticalArrangement = if (state.isInFullScreenMode) Arrangement.SpaceAround else Arrangement.Top
         ) {
             var packageSelectorVisible by remember {
                 mutableStateOf(state.templateConfiguration.mode != PaywallMode.FOOTER_CONDENSED)
@@ -136,6 +136,8 @@ private fun ColumnScope.Template2PortraitContent(
     packageSelectionVisible: Boolean,
     childModifier: Modifier,
 ) {
+    Spacer(modifier = Modifier.height(UIConstant.defaultVerticalSpacing))
+
     val scrollState = rememberScrollState()
     Column(
         modifier = Modifier
@@ -148,8 +150,6 @@ private fun ColumnScope.Template2PortraitContent(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(UIConstant.defaultVerticalSpacing, Alignment.CenterVertically),
     ) {
-        Spacer(modifier = Modifier.height(UIConstant.defaultVerticalSpacing))
-
         if (state.isInFullScreenMode) {
             Spacer(Modifier.weight(1f))
 
@@ -164,7 +164,13 @@ private fun ColumnScope.Template2PortraitContent(
             Spacer(Modifier.weight(1f))
         }
 
-        AnimatedPackages(state, packageSelectionVisible, viewModel, childModifier)
+        AnimatedPackages(
+            state,
+            packageSelectionVisible,
+            landscapeLayout = false,
+            viewModel,
+            childModifier
+        )
 
         if (state.isInFullScreenMode) {
             Spacer(Modifier.weight(1f))
@@ -219,7 +225,13 @@ private fun ColumnScope.Template2LandscapeContent(
         ) {
             Spacer(Modifier.weight(UIConstant.halfWeight))
 
-            AnimatedPackages(state, packageSelectionVisible, viewModel, childModifier)
+            AnimatedPackages(
+                state,
+                packageSelectionVisible,
+                landscapeLayout = true,
+                viewModel,
+                childModifier
+            )
 
             Spacer(Modifier.weight(UIConstant.halfWeight))
 
@@ -279,6 +291,7 @@ private fun Subtitle(
 private fun AnimatedPackages(
     state: PaywallState.Loaded,
     packageSelectionVisible: Boolean,
+    landscapeLayout: Boolean,
     viewModel: PaywallViewModel,
     childModifier: Modifier,
 ) {
@@ -305,7 +318,11 @@ private fun AnimatedPackages(
         ) {
             Column(
                 verticalArrangement = Arrangement.spacedBy(
-                    UIConstant.defaultVerticalSpacing / 2.0f,
+                    if (landscapeLayout) {
+                        UIConstant.defaultVerticalSpacing / 2.0f
+                    } else {
+                        UIConstant.defaultVerticalSpacing
+                    },
                     Alignment.CenterVertically,
                 ),
             ) {
