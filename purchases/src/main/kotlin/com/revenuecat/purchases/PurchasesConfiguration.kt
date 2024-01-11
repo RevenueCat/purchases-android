@@ -3,6 +3,10 @@ package com.revenuecat.purchases
 import android.content.Context
 import java.util.concurrent.ExecutorService
 
+/**
+ * Holds parameters to initialize the SDK. Create an instance of this class using the [Builder] and pass it to
+ * [Purchases.configure].
+ */
 open class PurchasesConfiguration(builder: Builder) {
 
     val context: Context
@@ -58,6 +62,9 @@ open class PurchasesConfiguration(builder: Builder) {
         @set:JvmSynthetic @get:JvmSynthetic
         internal var dangerousSettings: DangerousSettings = DangerousSettings()
 
+        /**
+         * A unique id for identifying the user
+         */
         fun appUserID(appUserID: String?) = apply {
             this.appUserID = appUserID
         }
@@ -73,14 +80,27 @@ open class PurchasesConfiguration(builder: Builder) {
             this.showInAppMessagesAutomatically = showInAppMessagesAutomatically
         }
 
+        /**
+         * An optional boolean. Set this to TRUE if you have your own IAP implementation and
+         * want to use only RevenueCat's backend. Default is FALSE. If you are on Android and setting this to TRUE,
+         * you will have to acknowledge the purchases yourself.
+         */
         fun observerMode(observerMode: Boolean) = apply {
             this.observerMode = observerMode
         }
 
+        /**
+         * Executor service for performing backend operations. This can be used if you want to share an executor between
+         * Purchases and your own code. If not passed in, one will be created.
+         */
         fun service(service: ExecutorService) = apply {
             this.service = service
         }
 
+        /**
+         * The store in which to make purchases. See [Store] for supported stores.
+         * @see Store
+         */
         fun store(store: Store) = apply {
             this.store = store
         }
@@ -153,6 +173,9 @@ open class PurchasesConfiguration(builder: Builder) {
             this.dangerousSettings = dangerousSettings
         }
 
+        /**
+         * Creates a [PurchasesConfiguration] instance with the specified properties.
+         */
         open fun build(): PurchasesConfiguration {
             return PurchasesConfiguration(this)
         }
