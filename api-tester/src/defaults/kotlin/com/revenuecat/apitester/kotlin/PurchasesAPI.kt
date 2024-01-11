@@ -1,11 +1,15 @@
 package com.revenuecat.apitester.kotlin
 
+import android.content.Context
 import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.EntitlementVerificationMode
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesConfiguration
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.Store
+import com.revenuecat.purchases.amazon.AmazonConfiguration
 import com.revenuecat.purchases.awaitCustomerInfo
 import com.revenuecat.purchases.awaitLogIn
 import com.revenuecat.purchases.awaitLogOut
@@ -20,6 +24,7 @@ import com.revenuecat.purchases.logInWith
 import com.revenuecat.purchases.logOutWith
 import com.revenuecat.purchases.models.BillingFeature
 import com.revenuecat.purchases.syncPurchasesWith
+import java.util.concurrent.ExecutorService
 
 @Suppress("unused", "UNUSED_VARIABLE", "EmptyFunctionBlock", "DEPRECATION")
 private class PurchasesAPI {
@@ -152,5 +157,23 @@ private class PurchasesAPI {
         val created: Boolean = logInResult.created
         val customerInfo: CustomerInfo = logInResult.customerInfo
         LogInResult(customerInfo, created)
+    }
+
+    fun checkAmazonConfiguration(context: Context, executorService: ExecutorService) {
+        val amazonConfiguration: PurchasesConfiguration = AmazonConfiguration.Builder(context, "")
+            .appUserID("")
+            .observerMode(true)
+            .observerMode(false)
+            .showInAppMessagesAutomatically(true)
+            .service(executorService)
+            .diagnosticsEnabled(true)
+            .entitlementVerificationMode(EntitlementVerificationMode.INFORMATIONAL)
+            .build()
+    }
+
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    fun checkAmazonConfigurationDiagnostics(context: Context, executorService: ExecutorService) {
+        val builder: PurchasesConfiguration.Builder = AmazonConfiguration.Builder(context, "")
+            .informationalVerificationModeAndDiagnosticsEnabled(true)
     }
 }
