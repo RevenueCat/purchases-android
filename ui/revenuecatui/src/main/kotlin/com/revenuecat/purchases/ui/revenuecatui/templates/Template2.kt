@@ -99,7 +99,7 @@ internal fun Template2(
                 mutableStateOf(state.templateConfiguration.mode != PaywallMode.FOOTER_CONDENSED)
             }
 
-            if (shouldUseLandscapeLayout()) {
+            if (state.shouldUseLandscapeLayout()) {
                 Template2LandscapeContent(state, viewModel, packageSelectorVisible, childModifier)
             } else {
                 Template2PortraitContent(state, viewModel, packageSelectorVisible, childModifier)

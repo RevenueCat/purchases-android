@@ -102,7 +102,7 @@ internal fun Template4(
     viewModel: PaywallViewModel,
 ) {
     if (state.isInFullScreenMode) {
-        val landscapeLayout = shouldUseLandscapeLayout()
+        val landscapeLayout = state.shouldUseLandscapeLayout()
 
         Box(
             modifier = Modifier

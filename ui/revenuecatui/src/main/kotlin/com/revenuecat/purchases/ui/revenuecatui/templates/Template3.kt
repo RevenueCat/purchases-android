@@ -64,7 +64,7 @@ internal fun Template3(
     viewModel: PaywallViewModel,
 ) {
     Column {
-        if (shouldUseLandscapeLayout()) {
+        if (state.shouldUseLandscapeLayout()) {
             LandscapeContent(state, viewModel)
         } else {
             PortraitContent(state, viewModel)

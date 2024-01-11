@@ -9,6 +9,9 @@ import androidx.window.core.layout.WindowHeightSizeClass
 import androidx.window.core.layout.WindowSizeClass
 import androidx.window.core.layout.WindowWidthSizeClass
 import androidx.window.layout.WindowMetricsCalculator
+import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
+import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
+import com.revenuecat.purchases.ui.revenuecatui.isFullScreen
 
 @Composable
 @ReadOnlyComposable
@@ -24,13 +27,20 @@ internal fun computeWindowHeightSizeClass(): WindowHeightSizeClass {
 
 @Composable
 @ReadOnlyComposable
-internal fun shouldUseLandscapeLayout(): Boolean {
-    return computeWindowHeightSizeClass().shouldUseLandscapeLayout
+internal fun PaywallState.Loaded.shouldUseLandscapeLayout(): Boolean {
+    return shouldUseLandscapeLayout(mode = templateConfiguration.mode)
+}
+
+@Composable
+@ReadOnlyComposable
+private fun shouldUseLandscapeLayout(mode: PaywallMode): Boolean {
+    return shouldUseLandscapeLayout(mode, computeWindowHeightSizeClass())
 }
 
 @VisibleForTesting
-internal val WindowHeightSizeClass.shouldUseLandscapeLayout
-    get() = this == WindowHeightSizeClass.COMPACT
+internal fun shouldUseLandscapeLayout(mode: PaywallMode, sizeClass: WindowHeightSizeClass): Boolean {
+    return mode.isFullScreen && sizeClass == WindowHeightSizeClass.COMPACT
+}
 
 @ReadOnlyComposable
 @Composable

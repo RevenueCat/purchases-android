@@ -78,7 +78,7 @@ private fun ColumnScope.Template1MainContent(state: PaywallState.Loaded) {
     val colors = state.currentColors
 
     if (state.isInFullScreenMode) {
-        val landscapeLayout = shouldUseLandscapeLayout()
+        val landscapeLayout = state.shouldUseLandscapeLayout()
 
         Column(
             modifier = Modifier

@@ -97,7 +97,7 @@ internal fun Template5(
     }
 
     Column {
-        if (shouldUseLandscapeLayout()) {
+        if (state.shouldUseLandscapeLayout()) {
             Template5LandscapeContent(state, viewModel)
         } else {
             Template5PortraitContent(state, viewModel, packageSelectorVisible)
