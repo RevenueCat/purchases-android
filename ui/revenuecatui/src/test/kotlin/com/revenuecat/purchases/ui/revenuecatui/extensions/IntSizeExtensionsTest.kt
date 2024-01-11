@@ -24,19 +24,4 @@ class IntSizeExtensionsTest {
     fun `aspectRatio with landscape screen`() {
         assertThat(IntSize(300, 100).aspectRatio).isEqualTo(3.0f)
     }
-
-    @Test
-    fun `isLandscape with square screen`() {
-        assertThat(IntSize(100, 100).isLandscape).isFalse()
-    }
-
-    @Test
-    fun `isLandscape with portrait screen`() {
-        assertThat(IntSize(100, 300).isLandscape).isFalse()
-    }
-
-    @Test
-    fun `isLandscape with landscape screen`() {
-        assertThat(IntSize(300, 100).isLandscape).isTrue()
-    }
 }

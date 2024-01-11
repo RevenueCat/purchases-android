@@ -75,10 +75,10 @@ import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockViewModel
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
 import com.revenuecat.purchases.ui.revenuecatui.extensions.introEligibility
-import com.revenuecat.purchases.ui.revenuecatui.extensions.onLandscapeLayoutChanged
 import com.revenuecat.purchases.ui.revenuecatui.extensions.packageButtonActionInProgressOpacityAnimation
 import com.revenuecat.purchases.ui.revenuecatui.extensions.packageButtonColorAnimation
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ResourceProvider
+import com.revenuecat.purchases.ui.revenuecatui.helpers.shouldUseLandscapeLayout
 
 private object Template5UIConstants {
     val featureIconSize = 25.dp
@@ -92,16 +92,12 @@ internal fun Template5(
     state: PaywallState.Loaded,
     viewModel: PaywallViewModel,
 ) {
-    var landscapeLayout by remember { mutableStateOf(false) }
-
     var packageSelectorVisible by remember {
         mutableStateOf(state.templateConfiguration.mode != PaywallMode.FOOTER_CONDENSED)
     }
 
-    Column(
-        modifier = state.onLandscapeLayoutChanged { landscapeLayout = it },
-    ) {
-        if (landscapeLayout) {
+    Column {
+        if (shouldUseLandscapeLayout()) {
             Template5LandscapeContent(state, viewModel)
         } else {
             Template5PortraitContent(state, viewModel, packageSelectorVisible)

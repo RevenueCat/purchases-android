@@ -68,10 +68,10 @@ import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockViewModel
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
 import com.revenuecat.purchases.ui.revenuecatui.extensions.introEligibility
-import com.revenuecat.purchases.ui.revenuecatui.extensions.onLandscapeLayoutChanged
 import com.revenuecat.purchases.ui.revenuecatui.extensions.packageButtonActionInProgressOpacityAnimation
 import com.revenuecat.purchases.ui.revenuecatui.extensions.packageButtonColorAnimation
 import com.revenuecat.purchases.ui.revenuecatui.helpers.TestTag
+import com.revenuecat.purchases.ui.revenuecatui.helpers.shouldUseLandscapeLayout
 
 private object Template2UIConstants {
     val maxIconWidth = 140.dp
@@ -89,11 +89,7 @@ internal fun Template2(
     viewModel: PaywallViewModel,
     childModifier: Modifier = Modifier,
 ) {
-    var landscapeLayout by remember { mutableStateOf(false) }
-
-    Box(
-        modifier = state.onLandscapeLayoutChanged { landscapeLayout = it },
-    ) {
+    Box {
         PaywallBackground(state.templateConfiguration)
 
         Column(
@@ -103,7 +99,7 @@ internal fun Template2(
                 mutableStateOf(state.templateConfiguration.mode != PaywallMode.FOOTER_CONDENSED)
             }
 
-            if (landscapeLayout) {
+            if (shouldUseLandscapeLayout()) {
                 Template2LandscapeContent(state, viewModel, packageSelectorVisible, childModifier)
             } else {
                 Template2PortraitContent(state, viewModel, packageSelectorVisible, childModifier)

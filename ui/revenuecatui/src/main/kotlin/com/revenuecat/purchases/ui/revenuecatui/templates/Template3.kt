@@ -17,10 +17,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -51,7 +47,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfigura
 import com.revenuecat.purchases.ui.revenuecatui.data.selectedLocalization
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockViewModel
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
-import com.revenuecat.purchases.ui.revenuecatui.extensions.onLandscapeLayoutChanged
+import com.revenuecat.purchases.ui.revenuecatui.helpers.shouldUseLandscapeLayout
 
 private object Template3UIConstants {
     val iconCornerRadius = 8.dp
@@ -67,12 +63,8 @@ internal fun Template3(
     state: PaywallState.Loaded,
     viewModel: PaywallViewModel,
 ) {
-    var landscapeLayout by remember { mutableStateOf(false) }
-
-    Column(
-        modifier = state.onLandscapeLayoutChanged { landscapeLayout = it },
-    ) {
-        if (landscapeLayout) {
+    Column {
+        if (shouldUseLandscapeLayout()) {
             LandscapeContent(state, viewModel)
         } else {
             PortraitContent(state, viewModel)

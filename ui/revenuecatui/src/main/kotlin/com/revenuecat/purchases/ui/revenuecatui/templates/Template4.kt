@@ -81,9 +81,9 @@ import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockViewModel
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
 import com.revenuecat.purchases.ui.revenuecatui.extensions.introEligibility
-import com.revenuecat.purchases.ui.revenuecatui.extensions.onLandscapeLayoutChanged
 import com.revenuecat.purchases.ui.revenuecatui.extensions.packageButtonActionInProgressOpacityAnimation
 import com.revenuecat.purchases.ui.revenuecatui.extensions.packageButtonColorAnimation
+import com.revenuecat.purchases.ui.revenuecatui.helpers.shouldUseLandscapeLayout
 import kotlin.math.min
 
 private object Template4UIConstants {
@@ -102,11 +102,10 @@ internal fun Template4(
     viewModel: PaywallViewModel,
 ) {
     if (state.isInFullScreenMode) {
-        var landscapeLayout by remember { mutableStateOf(false) }
+        val landscapeLayout = shouldUseLandscapeLayout()
 
         Box(
-            modifier = state
-                .onLandscapeLayoutChanged { landscapeLayout = it }
+            modifier = Modifier
                 .fillMaxSize(),
         ) {
             if (!landscapeLayout) {
