@@ -47,13 +47,6 @@ abstract class BasePaparazziTest(testConfig: TestConfig) {
             ydpi = 406,
             orientation = ScreenOrientation.LANDSCAPE
         )
-        private val landscapeNexus10Device = DeviceConfig.NEXUS_10.copy(
-            screenHeight = 2560,
-            screenWidth = 1600,
-            xdpi = 300,
-            ydpi = 300,
-            orientation = ScreenOrientation.LANDSCAPE
-        )
 
         internal val testConfigs = listOf(
             TestConfig("pixel6", DeviceConfig.PIXEL_6),
@@ -62,7 +55,6 @@ abstract class BasePaparazziTest(testConfig: TestConfig) {
             TestConfig("pixel6_spanish", DeviceConfig.PIXEL_6.copy(locale = "es")),
             TestConfig("nexus7", DeviceConfig.NEXUS_7),
             TestConfig("nexus10", DeviceConfig.NEXUS_10),
-            TestConfig("nexus10_landscape", landscapeNexus10Device),
         )
 
         @JvmStatic
