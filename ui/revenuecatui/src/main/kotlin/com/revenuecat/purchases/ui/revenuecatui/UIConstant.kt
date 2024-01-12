@@ -16,6 +16,10 @@ internal object UIConstant {
 
     const val defaultAnimationDurationMillis = 200
 
+    // Useful for providing equal Spacer priorities
+    // But lower than 1.0f
+    const val halfWeight = 0.5f
+
     fun <T> defaultAnimation() = tween<T>(
         durationMillis = defaultAnimationDurationMillis,
         easing = LinearOutSlowInEasing,

@@ -1,3 +1,5 @@
+@file:Suppress("TooManyFunctions")
+
 package com.revenuecat.purchases.ui.revenuecatui.templates
 
 import androidx.compose.animation.AnimatedVisibility
@@ -71,6 +73,7 @@ import com.revenuecat.purchases.ui.revenuecatui.extensions.introEligibility
 import com.revenuecat.purchases.ui.revenuecatui.extensions.packageButtonActionInProgressOpacityAnimation
 import com.revenuecat.purchases.ui.revenuecatui.extensions.packageButtonColorAnimation
 import com.revenuecat.purchases.ui.revenuecatui.helpers.TestTag
+import com.revenuecat.purchases.ui.revenuecatui.helpers.shouldUseLandscapeLayout
 
 private object Template2UIConstants {
     val maxIconWidth = 140.dp
@@ -91,25 +94,29 @@ internal fun Template2(
     Box {
         PaywallBackground(state.templateConfiguration)
 
-        Column {
+        Column(
+            verticalArrangement = if (state.isInFullScreenMode) Arrangement.SpaceAround else Arrangement.Top,
+        ) {
             var packageSelectorVisible by remember {
                 mutableStateOf(state.templateConfiguration.mode != PaywallMode.FOOTER_CONDENSED)
             }
 
-            Spacer(modifier = Modifier.height(UIConstant.defaultVerticalSpacing))
+            if (state.shouldUseLandscapeLayout()) {
+                Template2LandscapeContent(state, viewModel, packageSelectorVisible, childModifier)
+            } else {
+                Template2PortraitContent(state, viewModel, packageSelectorVisible, childModifier)
 
-            Template2MainContent(state, viewModel, packageSelectorVisible, childModifier)
+                AnimatedVisibility(
+                    visible = packageSelectorVisible,
+                    enter = fadeIn(animationSpec = UIConstant.defaultAnimation()),
+                    exit = fadeOut(animationSpec = UIConstant.defaultAnimation()),
+                    label = "Template2.packageSpacing",
+                ) {
+                    Spacer(modifier = Modifier.height(UIConstant.defaultVerticalSpacing))
+                }
 
-            AnimatedVisibility(
-                visible = packageSelectorVisible,
-                enter = fadeIn(animationSpec = UIConstant.defaultAnimation()),
-                exit = fadeOut(animationSpec = UIConstant.defaultAnimation()),
-                label = "Template2.packageSpacing",
-            ) {
-                Spacer(modifier = Modifier.height(UIConstant.defaultVerticalSpacing))
+                PurchaseButton(state, viewModel, childModifier)
             }
-
-            PurchaseButton(state, viewModel, childModifier)
 
             Footer(
                 templateConfiguration = state.templateConfiguration,
@@ -123,17 +130,21 @@ internal fun Template2(
 
 @Suppress("LongMethod")
 @Composable
-private fun ColumnScope.Template2MainContent(
+private fun ColumnScope.Template2PortraitContent(
     state: PaywallState.Loaded,
     viewModel: PaywallViewModel,
     packageSelectionVisible: Boolean,
     childModifier: Modifier,
 ) {
+    Spacer(modifier = Modifier.height(UIConstant.defaultVerticalSpacing))
+
     val scrollState = rememberScrollState()
     Column(
         modifier = Modifier
             .conditional(state.isInFullScreenMode) {
-                Modifier.verticalScroll(scrollState).weight(1f)
+                Modifier
+                    .verticalScroll(scrollState)
+                    .weight(1f)
             }
             .padding(horizontal = UIConstant.defaultHorizontalPadding, vertical = UIConstant.defaultVerticalSpacing),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -142,36 +153,24 @@ private fun ColumnScope.Template2MainContent(
         if (state.isInFullScreenMode) {
             Spacer(Modifier.weight(1f))
 
-            IconImage(
-                uri = state.templateConfiguration.images.iconUri,
-                maxWidth = Template2UIConstants.maxIconWidth,
-                iconCornerRadius = Template2UIConstants.iconCornerRadius,
-                childModifier = childModifier,
-            )
-            val localizedConfig = state.selectedLocalization
-            val colors = state.templateConfiguration.getCurrentColors()
-            Markdown(
-                style = MaterialTheme.typography.displaySmall,
-                fontWeight = FontWeight.Black,
-                textAlign = TextAlign.Center,
-                text = localizedConfig.title,
-                color = colors.text1,
-                modifier = childModifier,
-            )
+            IconImage(state, childModifier)
+
+            Title(state, childModifier)
+
             Spacer(Modifier.weight(1f))
-            Markdown(
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Normal,
-                textAlign = TextAlign.Center,
-                text = localizedConfig.subtitle ?: "",
-                color = colors.text1,
-                modifier = childModifier,
-            )
+
+            Subtitle(state, childModifier)
 
             Spacer(Modifier.weight(1f))
         }
 
-        AnimatedPackages(state, packageSelectionVisible, viewModel, childModifier)
+        AnimatedPackages(
+            state,
+            packageSelectionVisible,
+            landscapeLayout = false,
+            viewModel,
+            childModifier,
+        )
 
         if (state.isInFullScreenMode) {
             Spacer(Modifier.weight(1f))
@@ -179,10 +178,120 @@ private fun ColumnScope.Template2MainContent(
     }
 }
 
+@Suppress("LongMethod")
+@Composable
+private fun ColumnScope.Template2LandscapeContent(
+    state: PaywallState.Loaded,
+    viewModel: PaywallViewModel,
+    packageSelectionVisible: Boolean,
+    childModifier: Modifier,
+) {
+    val leftScrollState = rememberScrollState()
+    val rightScrollState = rememberScrollState()
+
+    Row(
+        horizontalArrangement = Arrangement.Absolute.SpaceEvenly,
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .weight(1.0f)
+            .padding(horizontal = UIConstant.defaultHorizontalPadding, vertical = UIConstant.defaultVerticalSpacing),
+    ) {
+        Column(
+            modifier = Modifier
+                .verticalScroll(leftScrollState)
+                .weight(UIConstant.halfWeight),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(UIConstant.defaultVerticalSpacing, Alignment.CenterVertically),
+        ) {
+            Spacer(Modifier.weight(UIConstant.halfWeight))
+
+            IconImage(state, childModifier)
+
+            Title(state, childModifier, TextAlign.Left)
+
+            Spacer(Modifier.weight(UIConstant.halfWeight))
+
+            Subtitle(state, childModifier, TextAlign.Left)
+
+            Spacer(Modifier.weight(UIConstant.halfWeight))
+        }
+
+        Column(
+            modifier = Modifier
+                .verticalScroll(rightScrollState)
+                .weight(UIConstant.halfWeight),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(UIConstant.defaultVerticalSpacing, Alignment.CenterVertically),
+        ) {
+            Spacer(Modifier.weight(UIConstant.halfWeight))
+
+            AnimatedPackages(
+                state,
+                packageSelectionVisible,
+                landscapeLayout = true,
+                viewModel,
+                childModifier,
+            )
+
+            Spacer(Modifier.weight(UIConstant.halfWeight))
+
+            PurchaseButton(state, viewModel, childModifier, horizontalPadding = 0.dp)
+
+            Spacer(Modifier.weight(UIConstant.halfWeight))
+        }
+    }
+}
+
+@Composable
+private fun IconImage(
+    state: PaywallState.Loaded,
+    childModifier: Modifier,
+) {
+    IconImage(
+        uri = state.templateConfiguration.images.iconUri,
+        maxWidth = Template2UIConstants.maxIconWidth,
+        iconCornerRadius = Template2UIConstants.iconCornerRadius,
+        childModifier = childModifier,
+    )
+}
+
+@Composable
+private fun Title(
+    state: PaywallState.Loaded,
+    childModifier: Modifier,
+    textAlign: TextAlign = TextAlign.Center,
+) {
+    Markdown(
+        style = MaterialTheme.typography.displaySmall,
+        fontWeight = FontWeight.Black,
+        textAlign = textAlign,
+        text = state.selectedLocalization.title,
+        color = state.templateConfiguration.getCurrentColors().text1,
+        modifier = childModifier,
+    )
+}
+
+@Composable
+private fun Subtitle(
+    state: PaywallState.Loaded,
+    childModifier: Modifier,
+    textAlign: TextAlign = TextAlign.Center,
+) {
+    Markdown(
+        style = MaterialTheme.typography.titleLarge,
+        fontWeight = FontWeight.Normal,
+        textAlign = textAlign,
+        text = state.selectedLocalization.subtitle ?: "",
+        color = state.templateConfiguration.getCurrentColors().text1,
+        modifier = childModifier,
+    )
+}
+
 @Composable
 private fun AnimatedPackages(
     state: PaywallState.Loaded,
     packageSelectionVisible: Boolean,
+    landscapeLayout: Boolean,
     viewModel: PaywallViewModel,
     childModifier: Modifier,
 ) {
@@ -209,7 +318,11 @@ private fun AnimatedPackages(
         ) {
             Column(
                 verticalArrangement = Arrangement.spacedBy(
-                    UIConstant.defaultVerticalSpacing,
+                    if (landscapeLayout) {
+                        UIConstant.defaultVerticalSpacing / 2.0f
+                    } else {
+                        UIConstant.defaultVerticalSpacing
+                    },
                     Alignment.CenterVertically,
                 ),
             ) {
@@ -313,10 +426,18 @@ private fun CheckmarkBox(isSelected: Boolean, colors: TemplateConfiguration.Colo
 }
 
 @OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class)
-@Preview(showBackground = true, locale = "en-rUS")
-@Preview(showBackground = true, locale = "es-rES")
-@Preview(showBackground = true, device = Devices.NEXUS_7)
-@Preview(showBackground = true, device = Devices.NEXUS_10)
+@Preview(showBackground = true, locale = "en-rUS", group = "full-screen", name = "Portrait")
+@Preview(
+    showBackground = true,
+    locale = "en-rUS",
+    group = "full-screen",
+    name = "Landscape",
+    widthDp = 720,
+    heightDp = 380,
+)
+@Preview(showBackground = true, locale = "es-rES", group = "full-screen")
+@Preview(showBackground = true, device = Devices.NEXUS_7, group = "full-screen")
+@Preview(showBackground = true, device = Devices.NEXUS_10, group = "full-screen")
 @Composable
 private fun Template2PaywallPreview() {
     InternalPaywall(
@@ -326,8 +447,8 @@ private fun Template2PaywallPreview() {
 }
 
 @OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class)
-@Preview(showBackground = true, locale = "en-rUS")
-@Preview(showBackground = true, locale = "es-rES")
+@Preview(showBackground = true, locale = "en-rUS", group = "footer")
+@Preview(showBackground = true, locale = "es-rES", group = "footer")
 @Composable
 private fun Template2PaywallFooterPreview() {
     InternalPaywall(
@@ -337,8 +458,8 @@ private fun Template2PaywallFooterPreview() {
 }
 
 @OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class)
-@Preview(showBackground = true, locale = "en-rUS")
-@Preview(showBackground = true, locale = "es-rES")
+@Preview(showBackground = true, locale = "en-rUS", group = "condensed")
+@Preview(showBackground = true, locale = "es-rES", group = "condensed")
 @Composable
 private fun Template2PaywallFooterCondensedPreview() {
     InternalPaywall(

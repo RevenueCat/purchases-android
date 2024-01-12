@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
@@ -44,14 +43,12 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.ui.revenuecatui.ExperimentalPreviewRevenueCatUIPurchasesAPI
@@ -76,19 +73,18 @@ import com.revenuecat.purchases.ui.revenuecatui.data.processed.localizedDiscount
 import com.revenuecat.purchases.ui.revenuecatui.data.selectedLocalization
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockViewModel
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
-import com.revenuecat.purchases.ui.revenuecatui.extensions.aspectRatio
 import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
 import com.revenuecat.purchases.ui.revenuecatui.extensions.introEligibility
 import com.revenuecat.purchases.ui.revenuecatui.extensions.packageButtonActionInProgressOpacityAnimation
 import com.revenuecat.purchases.ui.revenuecatui.extensions.packageButtonColorAnimation
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ResourceProvider
+import com.revenuecat.purchases.ui.revenuecatui.helpers.shouldUseLandscapeLayout
 
 private object Template5UIConstants {
     val featureIconSize = 25.dp
     val checkmarkSize = 18.dp
     val discountPadding = 8.dp
     const val headerAspectRatio = 2f
-    const val percentageScreenImageInLandscape = 0.4f
 }
 
 @Composable
@@ -96,28 +92,15 @@ internal fun Template5(
     state: PaywallState.Loaded,
     viewModel: PaywallViewModel,
 ) {
-    var size by remember { mutableStateOf(IntSize.Zero) }
+    var packageSelectorVisible by remember {
+        mutableStateOf(state.templateConfiguration.mode != PaywallMode.FOOTER_CONDENSED)
+    }
 
-    Column(
-        modifier = Modifier.onGloballyPositioned { size = it.size },
-    ) {
-        var packageSelectorVisible by remember {
-            mutableStateOf(state.templateConfiguration.mode != PaywallMode.FOOTER_CONDENSED)
-        }
-
-        if (state.isInFullScreenMode) {
-            HeaderImage(state.templateConfiguration.images.headerUri, size)
-        }
-
-        Template5MainContent(state, viewModel, packageSelectorVisible)
-
-        AnimatedVisibility(
-            visible = packageSelectorVisible,
-            enter = fadeIn(animationSpec = UIConstant.defaultAnimation()),
-            exit = fadeOut(animationSpec = UIConstant.defaultAnimation()),
-            label = "Template2.packageSpacing",
-        ) {
-            Spacer(modifier = Modifier.height(UIConstant.defaultVerticalSpacing))
+    Column {
+        if (state.shouldUseLandscapeLayout()) {
+            Template5LandscapeContent(state, viewModel)
+        } else {
+            Template5PortraitContent(state, viewModel, packageSelectorVisible)
         }
 
         PurchaseButton(state, viewModel)
@@ -132,73 +115,142 @@ internal fun Template5(
 
 @Suppress("LongMethod")
 @Composable
-private fun ColumnScope.Template5MainContent(
+private fun ColumnScope.Template5PortraitContent(
     state: PaywallState.Loaded,
     viewModel: PaywallViewModel,
     packageSelectionVisible: Boolean,
 ) {
+    if (state.isInFullScreenMode) {
+        HeaderImage(state.templateConfiguration.images.headerUri)
+    }
+
     val scrollState = rememberScrollState()
     Column(
         modifier = Modifier
             .conditional(state.isInFullScreenMode) {
-                Modifier.verticalScroll(scrollState).weight(1f)
+                Modifier
+                    .verticalScroll(scrollState)
+                    .weight(1f)
             }
             .padding(horizontal = UIConstant.defaultHorizontalPadding, vertical = UIConstant.defaultVerticalSpacing),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(UIConstant.defaultVerticalSpacing, Alignment.CenterVertically),
     ) {
         if (state.isInFullScreenMode) {
-            val localizedConfig = state.selectedLocalization
-            val colors = state.templateConfiguration.getCurrentColors()
-            Markdown(
-                style = MaterialTheme.typography.displaySmall,
-                fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Left,
-                text = localizedConfig.title,
-                color = colors.text1,
-            )
+            Title(state)
+
             Spacer(Modifier.weight(1f))
 
-            Features(
-                features = localizedConfig.features,
-                colors = colors,
-            )
+            Features(state)
 
             Spacer(Modifier.weight(1f))
         }
 
-        AnimatedPackages(state, packageSelectionVisible, viewModel)
+        AnimatedPackages(state, viewModel, packageSelectionVisible)
 
         if (state.isInFullScreenMode) {
             Spacer(Modifier.weight(1f))
         }
     }
+
+    AnimatedVisibility(
+        visible = packageSelectionVisible,
+        enter = fadeIn(animationSpec = UIConstant.defaultAnimation()),
+        exit = fadeOut(animationSpec = UIConstant.defaultAnimation()),
+        label = "Template5.packageSpacing",
+    ) {
+        Spacer(modifier = Modifier.height(UIConstant.defaultVerticalSpacing))
+    }
 }
 
 @Composable
-private fun HeaderImage(uri: Uri?, templateSize: IntSize) {
+private fun ColumnScope.Template5LandscapeContent(
+    state: PaywallState.Loaded,
+    viewModel: PaywallViewModel,
+) {
+    val leftScrollState = rememberScrollState()
+    val rightScrollState = rememberScrollState()
+
+    Row(
+        horizontalArrangement = Arrangement.Absolute.SpaceEvenly,
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .weight(1.0f)
+            .padding(top = UIConstant.defaultVerticalSpacing)
+            .padding(horizontal = UIConstant.defaultHorizontalPadding),
+    ) {
+        Column(
+            modifier = Modifier
+                .verticalScroll(leftScrollState)
+                .weight(1f)
+                .padding(
+                    horizontal = UIConstant.defaultHorizontalPadding,
+                    vertical = UIConstant.defaultVerticalSpacing,
+                ),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(UIConstant.defaultVerticalSpacing, Alignment.CenterVertically),
+        ) {
+            Spacer(Modifier.weight(UIConstant.halfWeight))
+
+            Title(state)
+
+            Spacer(Modifier.weight(UIConstant.halfWeight))
+
+            Features(state)
+        }
+
+        Column(
+            modifier = Modifier
+                .verticalScroll(rightScrollState)
+                .weight(1f)
+                .padding(
+                    horizontal = UIConstant.defaultHorizontalPadding,
+                    vertical = UIConstant.defaultVerticalSpacing,
+                ),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(UIConstant.defaultVerticalSpacing, Alignment.CenterVertically),
+        ) {
+            Spacer(Modifier.weight(UIConstant.halfWeight))
+
+            AnimatedPackages(state, viewModel)
+
+            Spacer(Modifier.weight(UIConstant.halfWeight))
+        }
+    }
+}
+
+@Composable
+private fun HeaderImage(uri: Uri?) {
     uri?.let {
-        val aspectRatio = templateSize.aspectRatio
         RemoteImage(
             urlString = uri.toString(),
             modifier = Modifier
-                .conditional(aspectRatio <= 1f || templateSize == IntSize.Zero) {
-                    aspectRatio(ratio = Template5UIConstants.headerAspectRatio)
-                }
-                .conditional(aspectRatio > 1f) {
-                    fillMaxHeight(Template5UIConstants.percentageScreenImageInLandscape).fillMaxWidth()
-                },
+                .aspectRatio(ratio = Template5UIConstants.headerAspectRatio),
             contentScale = ContentScale.Crop,
         )
     }
 }
 
 @Composable
-private fun Features(
-    features: List<PaywallData.LocalizedConfiguration.Feature>,
-    colors: TemplateConfiguration.Colors,
+private fun Title(
+    state: PaywallState.Loaded,
 ) {
-    features.forEach { feature ->
+    Markdown(
+        style = MaterialTheme.typography.displaySmall,
+        fontWeight = FontWeight.Bold,
+        textAlign = TextAlign.Left,
+        text = state.selectedLocalization.title,
+        color = state.templateConfiguration.getCurrentColors().text1,
+    )
+}
+
+@Composable
+private fun Features(
+    state: PaywallState.Loaded,
+) {
+    val colors = state.templateConfiguration.getCurrentColors()
+
+    state.selectedLocalization.features.forEach { feature ->
         Feature(
             feature = feature,
             colors = colors,
@@ -258,8 +310,8 @@ private fun Feature(
 @Composable
 private fun AnimatedPackages(
     state: PaywallState.Loaded,
-    packageSelectionVisible: Boolean,
     viewModel: PaywallViewModel,
+    packageSelectionVisible: Boolean = true,
 ) {
     val packagesContentAlignment = if (state.isInFullScreenMode) {
         Alignment.TopStart
@@ -437,11 +489,19 @@ private val TemplateConfiguration.Colors.unselectedDiscountText: Color
     get() = this.text3
 
 @OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class)
-@Preview(showBackground = true, locale = "en-rUS")
-@Preview(showBackground = true, locale = "es-rES")
-@Preview(showBackground = true, widthDp = 1000, heightDp = 1000)
-@Preview(showBackground = true, device = Devices.NEXUS_7)
-@Preview(showBackground = true, device = Devices.NEXUS_10)
+@Preview(showBackground = true, locale = "en-rUS", group = "full_screen")
+@Preview(
+    showBackground = true,
+    locale = "en-rUS",
+    group = "full_screen",
+    name = "Landscape",
+    widthDp = 720,
+    heightDp = 380,
+)
+@Preview(showBackground = true, locale = "es-rES", group = "full_screen")
+@Preview(showBackground = true, widthDp = 1000, heightDp = 1000, group = "full_screen")
+@Preview(showBackground = true, device = Devices.NEXUS_7, group = "full_screen")
+@Preview(showBackground = true, device = Devices.NEXUS_10, group = "full_screen")
 @Composable
 private fun Template5PaywallPreview() {
     InternalPaywall(
@@ -451,8 +511,8 @@ private fun Template5PaywallPreview() {
 }
 
 @OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class)
-@Preview(showBackground = true, locale = "en-rUS")
-@Preview(showBackground = true, locale = "es-rES")
+@Preview(showBackground = true, locale = "en-rUS", group = "footer")
+@Preview(showBackground = true, locale = "es-rES", group = "footer")
 @Composable
 private fun Template5PaywallFooterPreview() {
     InternalPaywall(
@@ -462,8 +522,8 @@ private fun Template5PaywallFooterPreview() {
 }
 
 @OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class)
-@Preview(showBackground = true, locale = "en-rUS")
-@Preview(showBackground = true, locale = "es-rES")
+@Preview(showBackground = true, locale = "en-rUS", group = "condensed")
+@Preview(showBackground = true, locale = "es-rES", group = "condensed")
 @Composable
 private fun Template5PaywallFooterCondensedPreview() {
     InternalPaywall(

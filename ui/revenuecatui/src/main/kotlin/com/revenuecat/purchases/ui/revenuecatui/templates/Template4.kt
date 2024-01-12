@@ -79,9 +79,11 @@ import com.revenuecat.purchases.ui.revenuecatui.data.processed.localizedDiscount
 import com.revenuecat.purchases.ui.revenuecatui.data.selectedLocalization
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockViewModel
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
+import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
 import com.revenuecat.purchases.ui.revenuecatui.extensions.introEligibility
 import com.revenuecat.purchases.ui.revenuecatui.extensions.packageButtonActionInProgressOpacityAnimation
 import com.revenuecat.purchases.ui.revenuecatui.extensions.packageButtonColorAnimation
+import com.revenuecat.purchases.ui.revenuecatui.helpers.shouldUseLandscapeLayout
 import kotlin.math.min
 
 private object Template4UIConstants {
@@ -100,23 +102,33 @@ internal fun Template4(
     viewModel: PaywallViewModel,
 ) {
     if (state.isInFullScreenMode) {
+        val landscapeLayout = state.shouldUseLandscapeLayout()
+
         Box(
             modifier = Modifier
                 .fillMaxSize(),
         ) {
-            PaywallBackground(state.templateConfiguration)
+            if (!landscapeLayout) {
+                PaywallBackground(state.templateConfiguration)
+            }
 
             Column(
                 modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .clip(
-                        RoundedCornerShape(
-                            topStart = UIConstant.defaultCornerRadius,
-                            topEnd = UIConstant.defaultCornerRadius,
-                            bottomStart = 0.dp,
-                            bottomEnd = 0.dp,
-                        ),
-                    )
+                    .conditional(landscapeLayout) {
+                        Modifier.align(Alignment.Center)
+                    }
+                    .conditional(!landscapeLayout) {
+                        Modifier
+                            .align(Alignment.BottomCenter)
+                            .clip(
+                                RoundedCornerShape(
+                                    topStart = UIConstant.defaultCornerRadius,
+                                    topEnd = UIConstant.defaultCornerRadius,
+                                    bottomStart = 0.dp,
+                                    bottomEnd = 0.dp,
+                                ),
+                            )
+                    }
                     .background(state.currentColors.background),
             ) {
                 Template4MainContent(state, viewModel)
@@ -432,10 +444,18 @@ private fun CheckmarkBox(
 }
 
 @OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class)
-@Preview(showBackground = true, locale = "en-rUS")
-@Preview(showBackground = true, locale = "es-rES")
-@Preview(showBackground = true, device = Devices.NEXUS_7)
-@Preview(showBackground = true, device = Devices.NEXUS_10)
+@Preview(showBackground = true, locale = "en-rUS", group = "full_screen")
+@Preview(
+    showBackground = true,
+    locale = "en-rUS",
+    group = "full_screen",
+    name = "Landscape",
+    widthDp = 720,
+    heightDp = 380,
+)
+@Preview(showBackground = true, locale = "es-rES", group = "full_screen")
+@Preview(showBackground = true, device = Devices.NEXUS_7, group = "full_screen")
+@Preview(showBackground = true, device = Devices.NEXUS_10, group = "full_screen")
 @Composable
 private fun Template4PaywallPreview() {
     InternalPaywall(
@@ -445,9 +465,9 @@ private fun Template4PaywallPreview() {
 }
 
 @OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class)
-@Preview(showBackground = true, locale = "en-rUS")
-@Preview(showBackground = true, device = Devices.NEXUS_7)
-@Preview(showBackground = true, device = Devices.NEXUS_10)
+@Preview(showBackground = true, locale = "en-rUS", group = "footer")
+@Preview(showBackground = true, device = Devices.NEXUS_7, group = "footer")
+@Preview(showBackground = true, device = Devices.NEXUS_10, group = "footer")
 @Composable
 private fun Template4PaywallFooterPreview() {
     InternalPaywall(
@@ -457,9 +477,9 @@ private fun Template4PaywallFooterPreview() {
 }
 
 @OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class)
-@Preview(showBackground = true, locale = "en-rUS")
-@Preview(showBackground = true, device = Devices.NEXUS_7)
-@Preview(showBackground = true, device = Devices.NEXUS_10)
+@Preview(showBackground = true, locale = "en-rUS", group = "condensed")
+@Preview(showBackground = true, device = Devices.NEXUS_7, group = "condensed")
+@Preview(showBackground = true, device = Devices.NEXUS_10, group = "condensed")
 @Composable
 private fun Template4PaywallFooterCondensedPreview() {
     InternalPaywall(
