@@ -16,8 +16,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import androidx.window.core.layout.WindowWidthSizeClass
-import com.revenuecat.purchases.ui.revenuecatui.helpers.computeWindowWidthSizeClass
+import com.revenuecat.purchases.ui.revenuecatui.helpers.hasCompactDimension
 import com.revenuecat.purchases.ui.revenuecatui.helpers.shouldDisplayPaywall
 import com.revenuecat.purchases.ui.revenuecatui.helpers.windowAspectRatio
 import kotlinx.coroutines.launch
@@ -91,19 +90,11 @@ private fun getDialogMaxHeightPercentage(): Float {
     if (windowAspectRatio() < UIDialogConstants.MAX_ASPECT_RATIO_TO_APPLY_MAX_HEIGHT) {
         return 1f
     }
-    return computeWindowWidthSizeClass().let {
-        when (it) {
-            WindowWidthSizeClass.MEDIUM, WindowWidthSizeClass.EXPANDED -> UIDialogConstants.MAX_HEIGHT_PERCENTAGE_TABLET
-            else -> 1f
-        }
-    }
+    return if (hasCompactDimension()) 1f else UIDialogConstants.MAX_HEIGHT_PERCENTAGE_TABLET
 }
 
 @Composable
 @ReadOnlyComposable
 private fun shouldUsePlatformDefaultWidth(): Boolean {
-    return when (computeWindowWidthSizeClass()) {
-        WindowWidthSizeClass.MEDIUM, WindowWidthSizeClass.EXPANDED -> true
-        else -> false
-    }
+    return !hasCompactDimension()
 }

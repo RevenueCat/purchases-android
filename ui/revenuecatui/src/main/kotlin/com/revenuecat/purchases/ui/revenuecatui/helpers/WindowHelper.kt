@@ -27,6 +27,13 @@ internal fun computeWindowHeightSizeClass(): WindowHeightSizeClass {
 
 @Composable
 @ReadOnlyComposable
+internal fun hasCompactDimension(): Boolean {
+    return computeWindowHeightSizeClass() == WindowHeightSizeClass.COMPACT ||
+        computeWindowWidthSizeClass() == WindowWidthSizeClass.COMPACT
+}
+
+@Composable
+@ReadOnlyComposable
 internal fun PaywallState.Loaded.shouldUseLandscapeLayout(): Boolean {
     return shouldUseLandscapeLayout(mode = templateConfiguration.mode)
 }
