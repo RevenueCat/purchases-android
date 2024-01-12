@@ -91,11 +91,7 @@ private fun ColumnScope.PortraitContent(state: PaywallState.Loaded, viewModel: P
             Icon(state)
             Title(state)
 
-            Spacer(modifier = Modifier.weight(1f))
-
             Features(state, spacing = Template3UIConstants.featureSpacingPortrait)
-
-            Spacer(modifier = Modifier.weight(1f))
         }
     }
 
@@ -176,7 +172,7 @@ private fun ColumnScope.Features(
             .verticalScroll(rememberScrollState())
             .weight(1.0f)
             .fillMaxHeight(),
-        verticalArrangement = Arrangement.spacedBy(spacing, Alignment.Top),
+        verticalArrangement = Arrangement.spacedBy(spacing, Alignment.CenterVertically),
     ) {
         features.forEach { feature ->
             Feature(
