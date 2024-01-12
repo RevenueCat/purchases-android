@@ -95,7 +95,7 @@ internal fun Template2(
         PaywallBackground(state.templateConfiguration)
 
         Column(
-            verticalArrangement = if (state.isInFullScreenMode) Arrangement.SpaceAround else Arrangement.Top
+            verticalArrangement = if (state.isInFullScreenMode) Arrangement.SpaceAround else Arrangement.Top,
         ) {
             var packageSelectorVisible by remember {
                 mutableStateOf(state.templateConfiguration.mode != PaywallMode.FOOTER_CONDENSED)
@@ -169,7 +169,7 @@ private fun ColumnScope.Template2PortraitContent(
             packageSelectionVisible,
             landscapeLayout = false,
             viewModel,
-            childModifier
+            childModifier,
         )
 
         if (state.isInFullScreenMode) {
@@ -230,7 +230,7 @@ private fun ColumnScope.Template2LandscapeContent(
                 packageSelectionVisible,
                 landscapeLayout = true,
                 viewModel,
-                childModifier
+                childModifier,
             )
 
             Spacer(Modifier.weight(UIConstant.halfWeight))
