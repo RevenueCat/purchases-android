@@ -16,10 +16,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import androidx.window.core.layout.WindowHeightSizeClass
-import androidx.window.core.layout.WindowWidthSizeClass
-import com.revenuecat.purchases.ui.revenuecatui.helpers.computeWindowHeightSizeClass
-import com.revenuecat.purchases.ui.revenuecatui.helpers.computeWindowWidthSizeClass
 import com.revenuecat.purchases.ui.revenuecatui.helpers.hasCompactDimension
 import com.revenuecat.purchases.ui.revenuecatui.helpers.shouldDisplayPaywall
 import com.revenuecat.purchases.ui.revenuecatui.helpers.windowAspectRatio
