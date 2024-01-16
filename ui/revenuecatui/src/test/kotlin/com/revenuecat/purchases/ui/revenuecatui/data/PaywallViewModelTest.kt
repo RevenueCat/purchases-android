@@ -183,6 +183,51 @@ class PaywallViewModelTest {
     }
 
     @Test
+    fun `Error loading offerings`() {
+        coEvery { purchases.awaitOfferings() } throws PurchasesException(
+            PurchasesError(PurchasesErrorCode.NetworkError
+        ))
+
+        val model = create(
+            activeSubscriptions = setOf(TestData.Packages.monthly.product.id),
+            nonSubscriptionTransactionProductIdentifiers = setOf(TestData.Packages.lifetime.product.id)
+        )
+
+        coVerify { purchases.awaitOfferings() }
+
+        val state = model.state.value
+        if (state !is PaywallState.Error) {
+            fail("Invalid state")
+            return
+        }
+
+        assertThat(state.errorMessage).isEqualTo("Error 10: Error performing request.")
+    }
+
+    @Test
+    fun `Error loading empty offerings`() {
+        coEvery { purchases.awaitOfferings() } returns Offerings(
+            null,
+            mapOf()
+        )
+
+        val model = create(
+            activeSubscriptions = setOf(TestData.Packages.monthly.product.id),
+            nonSubscriptionTransactionProductIdentifiers = setOf(TestData.Packages.lifetime.product.id)
+        )
+
+        coVerify { purchases.awaitOfferings() }
+
+        val state = model.state.value
+        if (state !is PaywallState.Error) {
+            fail("Invalid state")
+            return
+        }
+
+        assertThat(state.errorMessage).isEqualTo("The RevenueCat dashboard does not have a current offering configured.")
+    }
+
+    @Test
     fun `Should load selected offering`() {
         val offering = TestData.template1Offering
         val model = create(offering = offering)

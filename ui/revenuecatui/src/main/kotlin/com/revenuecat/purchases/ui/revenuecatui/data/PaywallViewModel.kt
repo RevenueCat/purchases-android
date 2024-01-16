@@ -227,7 +227,9 @@ internal class PaywallViewModelImpl(
                 }
 
                 if (currentOffering == null) {
-                    _state.value = PaywallState.Error("No offering or current offering")
+                    _state.value = PaywallState.Error(
+                        "The RevenueCat dashboard does not have a current offering configured.",
+                    )
                 } else {
                     _state.value = calculateState(
                         currentOffering,
@@ -236,7 +238,9 @@ internal class PaywallViewModelImpl(
                     )
                 }
             } catch (e: PurchasesException) {
-                _state.value = PaywallState.Error(e.toString())
+                _state.value = PaywallState.Error(
+                    "Error ${e.code.code}: ${e.code.description}",
+                )
             }
         }
     }
