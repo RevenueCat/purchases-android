@@ -1,4 +1,8 @@
+### RevenueCatUI
+* `Paywalls`: improve error display (#1558) via NachoSoto (@NachoSoto)
+* Fix paywall dialog composable sizing issues (#1556) via Toni Rico (@tonidero)
+* `Paywalls`: improve landscape layout on all templates (#1551) via NachoSoto (@NachoSoto)
 ### Bugfixes
-* Fix NullPointerException issues getting advertising id (#1550) via Toni Rico (@tonidero)
+* Fix AmazonConfiguration for Java projects (#1554) via Cesar de la Vega (@vegaro)
 ### Dependency Updates
-* Bump fastlane from 2.218.0 to 2.219.0 (#1549) via dependabot[bot] (@dependabot[bot])
+* Bump fastlane-plugin-revenuecat_internal from `0ddee10` to `e6ba247` (#1557) via dependabot[bot] (@dependabot[bot])
