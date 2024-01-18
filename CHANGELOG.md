@@ -1,3 +1,7 @@
+## 7.3.5
+### Bugfixes
+* Revert google ads library bump to remove `AD_ID` permission (#1561) via Toni Rico (@tonidero)
+
 ## 7.3.4
 ### RevenueCatUI
 * `Paywalls`: improve error display (#1558) via NachoSoto (@NachoSoto)
