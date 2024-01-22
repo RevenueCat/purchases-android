@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -399,10 +400,12 @@ private fun ColumnScope.SelectPackageButton(
                     color = textColor,
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.weight(1f, fill = true),
                 )
-                Spacer(modifier = Modifier.weight(1f))
+
                 DiscountBanner(state = state, resourceProvider = viewModel.resourceProvider, packageInfo = packageInfo)
             }
+
             IntroEligibilityStateView(
                 textWithNoIntroOffer = packageInfo.localization.offerDetails,
                 textWithIntroOffer = packageInfo.localization.offerDetailsWithIntroOffer,
@@ -434,7 +437,7 @@ private fun CheckmarkBox(isSelected: Boolean, colors: TemplateConfiguration.Colo
 }
 
 @Composable
-private fun DiscountBanner(
+private fun RowScope.DiscountBanner(
     state: PaywallState.Loaded,
     resourceProvider: ResourceProvider,
     packageInfo: TemplateConfiguration.PackageInfo,
@@ -456,6 +459,7 @@ private fun DiscountBanner(
 
     Box(
         modifier = Modifier
+            .align(Alignment.Top)
             .offset(
                 x = UIConstant.defaultHorizontalPadding - Template5UIConstants.discountPadding,
                 y = -UIConstant.defaultVerticalSpacing + Template5UIConstants.discountPadding,
