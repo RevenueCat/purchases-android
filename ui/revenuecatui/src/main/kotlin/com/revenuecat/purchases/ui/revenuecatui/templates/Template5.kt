@@ -400,7 +400,7 @@ private fun ColumnScope.SelectPackageButton(
                     color = textColor,
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.weight(1f, fill = true)
+                    modifier = Modifier.weight(1f, fill = true),
                 )
 
                 DiscountBanner(state = state, resourceProvider = viewModel.resourceProvider, packageInfo = packageInfo)
