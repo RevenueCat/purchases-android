@@ -1,3 +1,13 @@
+## 7.4.0
+### New Features
+* Add name property to StoreProduct (#1567) via Toni Rico (@tonidero)
+### RevenueCatUI
+* Fix paywall product name variable to not include app name (#1569) via Toni Rico (@tonidero)
+### Bugfixes
+* Use activity instead of context to calculate window size (#1570) via Toni Rico (@tonidero)
+### Other Changes
+* `VariableProcessor`: fix tests (#1572) via NachoSoto (@NachoSoto)
+
 ## 7.3.6
 ### RevenueCatUI
 * `Paywalls`: improve template 5 layout for long product names (#1564) via NachoSoto (@NachoSoto)
