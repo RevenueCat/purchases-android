@@ -143,13 +143,13 @@ class VariableProcessorTest {
 
     @Test
     fun `process variables processes product_name`() {
-        expectVariablesResult("{{ product_name }}", "Annual (App name)", rcPackage = TestData.Packages.annual)
-        expectVariablesResult("{{ product_name }}", "Monthly (App name)", rcPackage = TestData.Packages.monthly)
-        expectVariablesResult("{{ product_name }}", "Weekly (App name)", rcPackage = TestData.Packages.weekly)
-        expectVariablesResult("{{ product_name }}", "2 month (App name)", rcPackage = TestData.Packages.bimonthly)
-        expectVariablesResult("{{ product_name }}", "3 month (App name)", rcPackage = TestData.Packages.quarterly)
-        expectVariablesResult("{{ product_name }}", "6 month (App name)", rcPackage = TestData.Packages.semester)
-        expectVariablesResult("{{ product_name }}", "Lifetime (App name)", rcPackage = TestData.Packages.lifetime)
+        expectVariablesResult("{{ product_name }}", "Annual", rcPackage = TestData.Packages.annual)
+        expectVariablesResult("{{ product_name }}", "Monthly", rcPackage = TestData.Packages.monthly)
+        expectVariablesResult("{{ product_name }}", "Weekly", rcPackage = TestData.Packages.weekly)
+        expectVariablesResult("{{ product_name }}", "2 month", rcPackage = TestData.Packages.bimonthly)
+        expectVariablesResult("{{ product_name }}", "3 month", rcPackage = TestData.Packages.quarterly)
+        expectVariablesResult("{{ product_name }}", "6 month", rcPackage = TestData.Packages.semester)
+        expectVariablesResult("{{ product_name }}", "Lifetime", rcPackage = TestData.Packages.lifetime)
     }
 
     // endregion
