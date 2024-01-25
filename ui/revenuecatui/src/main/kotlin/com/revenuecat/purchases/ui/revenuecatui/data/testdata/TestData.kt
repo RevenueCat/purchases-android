@@ -165,7 +165,8 @@ internal object TestData {
             offering = "offering",
             product = TestStoreProduct(
                 id = "com.revenuecat.weekly_product",
-                title = "Weekly",
+                name = "Weekly",
+                title = "Weekly (App name)",
                 price = Price(amountMicros = 1_490_000, currencyCode = "USD", formatted = "$1.49"),
                 description = "Weekly",
                 period = Period(value = 1, unit = Period.Unit.WEEK, iso8601 = "P1W"),
@@ -177,7 +178,8 @@ internal object TestData {
             offering = "offering",
             product = TestStoreProduct(
                 id = "com.revenuecat.monthly_product",
-                title = "Monthly",
+                name = "Monthly",
+                title = "Monthly (App name)",
                 price = Price(amountMicros = 7_990_000, currencyCode = "USD", formatted = "$7.99"),
                 description = "Monthly",
                 period = Period(value = 1, unit = Period.Unit.MONTH, iso8601 = "P1M"),
@@ -189,7 +191,8 @@ internal object TestData {
             offering = "offering",
             product = TestStoreProduct(
                 id = "com.revenuecat.annual_product",
-                title = "Annual",
+                name = "Annual",
+                title = "Annual (App name)",
                 price = Price(amountMicros = 67_990_000, currencyCode = "USD", formatted = "$67.99"),
                 description = "Annual",
                 period = Period(value = 1, unit = Period.Unit.YEAR, iso8601 = "P1Y"),
@@ -202,7 +205,8 @@ internal object TestData {
             offering = "offering",
             product = TestStoreProduct(
                 id = "com.revenuecat.lifetime_product",
-                title = "Lifetime",
+                name = "Lifetime",
+                title = "Lifetime (App name)",
                 price = Price(amountMicros = 1_000_000_000, currencyCode = "USD", formatted = "$1,000"),
                 description = "Lifetime",
                 period = null,
@@ -214,7 +218,8 @@ internal object TestData {
             offering = "offering",
             product = TestStoreProduct(
                 id = "com.revenuecat.bimonthly_product",
-                title = "2 month",
+                name = "2 month",
+                title = "2 month (App name)",
                 price = Price(amountMicros = 15_990_000, currencyCode = "USD", formatted = "$15.99"),
                 description = "2 month",
                 period = Period(value = 2, unit = Period.Unit.MONTH, iso8601 = "P2M"),
@@ -227,7 +232,8 @@ internal object TestData {
             offering = "offering",
             product = TestStoreProduct(
                 id = "com.revenuecat.quarterly_product",
-                title = "3 month",
+                name = "3 month",
+                title = "3 month (App name)",
                 price = Price(amountMicros = 23_990_000, currencyCode = "USD", formatted = "$23.99"),
                 description = "3 month",
                 period = Period(value = 3, unit = Period.Unit.MONTH, iso8601 = "P3M"),
@@ -241,7 +247,8 @@ internal object TestData {
             offering = "offering",
             product = TestStoreProduct(
                 id = "com.revenuecat.semester_product",
-                title = "6 month",
+                name = "6 month",
+                title = "6 month (App name)",
                 price = Price(amountMicros = 39_990_000, currencyCode = "USD", formatted = "$39.99"),
                 description = "6 month",
                 period = Period(value = 6, unit = Period.Unit.MONTH, iso8601 = "P6M"),
@@ -253,7 +260,8 @@ internal object TestData {
             offering = "offering",
             product = TestStoreProduct(
                 id = "com.revenuecat.semester_product",
-                title = "6 month",
+                name = "6 month",
+                title = "6 month (App name)",
                 price = Price(amountMicros = 39_990_000, currencyCode = "USD", formatted = "$39.99"),
                 description = "6 month",
                 period = Period(value = 6, unit = Period.Unit.MONTH, iso8601 = "P6M"),
@@ -265,7 +273,8 @@ internal object TestData {
             offering = "offering",
             product = TestStoreProduct(
                 id = "com.revenuecat.semester_product",
-                title = "6 month",
+                name = "6 month",
+                title = "6 month (App name)",
                 price = Price(amountMicros = 39_990_000, currencyCode = "USD", formatted = "$39.99"),
                 description = "6 month",
                 period = Period(value = 6, unit = Period.Unit.MONTH, iso8601 = "P6M"),

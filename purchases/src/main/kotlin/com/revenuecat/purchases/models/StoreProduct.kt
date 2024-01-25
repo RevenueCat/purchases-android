@@ -33,7 +33,24 @@ interface StoreProduct {
     val price: Price
 
     /**
+     * Name of the product.
+     *
+     * For google subscriptions, this corresponds with the name of the subscription.
+     * For amazon subscriptions, this will match the title.
+     *
+     * If you are using Google subscriptions with multiple base plans, this title
+     * will be the same for every subscription duration (monthly, yearly, etc) as
+     * base plans don't have their own titles. Google suggests using the duration
+     * as a way to title base plans.
+     */
+    val name: String
+
+    /**
      * Title of the product.
+     *
+     * For google subscriptions, this corresponds with the name of the subscription
+     * and the name of the app. E.g: My subscription name (My app name).
+     * For amazon subscriptions, this will match the name.
      *
      * If you are using Google subscriptions with multiple base plans, this title
      * will be the same for every subscription duration (monthly, yearly, etc) as

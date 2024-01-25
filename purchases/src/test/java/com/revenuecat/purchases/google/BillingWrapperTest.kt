@@ -808,6 +808,8 @@ class BillingWrapperTest {
                 get() = ProductType.SUBS
             override val price: Price
                 get() = Price("$0.00", 0, "USD")
+            override val name: String
+                get() = ""
             override val title: String
                 get() = ""
             override val description: String

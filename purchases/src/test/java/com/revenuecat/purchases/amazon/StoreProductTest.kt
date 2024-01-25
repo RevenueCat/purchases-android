@@ -26,6 +26,7 @@ class StoreProductTest {
         val product1 = AmazonStoreProduct(
             id = "productId",
             type = ProductType.SUBS,
+            name = "title",
             title = "title",
             description = "description",
             period = period,
@@ -41,6 +42,7 @@ class StoreProductTest {
         val product2 = AmazonStoreProduct(
             id = "productId",
             type = ProductType.SUBS,
+            name = "title",
             title = "title",
             description = "description",
             period = period,
@@ -62,6 +64,7 @@ class StoreProductTest {
         val product = AmazonStoreProduct(
             id = "productId",
             type = ProductType.SUBS,
+            name = "title",
             title = "title",
             description = "description",
             period = period,
@@ -102,6 +105,7 @@ class StoreProductTest {
         val product = AmazonStoreProduct(
             id = "productId",
             type = ProductType.INAPP,
+            name = "title",
             title = "title",
             description = "description",
             period = null,
@@ -121,6 +125,7 @@ class StoreProductTest {
         val product = AmazonStoreProduct(
             id = "productId",
             type = ProductType.SUBS,
+            name = "title",
             title = "title",
             description = "description",
             period = period,
@@ -140,6 +145,7 @@ class StoreProductTest {
         val product = AmazonStoreProduct(
             id = "productId",
             type = ProductType.SUBS,
+            name = "title",
             title = "title",
             description = "description",
             period = Period.create("P1Y"),

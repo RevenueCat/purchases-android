@@ -56,8 +56,10 @@ internal val testOffering: Offering
                 get() = ProductType.SUBS
             override val price: Price
                 get() = price
-            override val title: String
+            override val name: String
                 get() = "product_title"
+            override val title: String
+                get() = "product_title (App name)"
             override val description: String
                 get() = "product_description"
             override val period: Period

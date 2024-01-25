@@ -14,7 +14,7 @@ import com.revenuecat.purchases.models.googleProduct
 import org.json.JSONObject
 import java.util.Locale
 
-@Suppress("unused", "UNUSED_VARIABLE")
+@Suppress("unused", "UNUSED_VARIABLE", "LongMethod")
 private class StoreProductAPI {
     fun check(product: StoreProduct) {
         val locale = Locale.getDefault()
@@ -31,6 +31,7 @@ private class StoreProductAPI {
             val pricePerWeekNoLocale: Price? = pricePerYear()
             val pricePerMonthNoLocale: Price? = pricePerMonth()
             val pricePerYearNoLocale: Price? = pricePerYear()
+            val name: String = name
             val title: String = title
             val description: String = description
             val period: Period? = period
@@ -80,6 +81,35 @@ private class StoreProductAPI {
             googleStoreProduct.presentedOfferingIdentifier,
         )
 
+        val constructedGoogleStoreProductWithName = GoogleStoreProduct(
+            googleStoreProduct.id,
+            null,
+            googleStoreProduct.type,
+            googleStoreProduct.price,
+            googleStoreProduct.name,
+            googleStoreProduct.title,
+            googleStoreProduct.description,
+            googleStoreProduct.period,
+            googleStoreProduct.subscriptionOptions,
+            googleStoreProduct.defaultOption,
+            googleStoreProduct.productDetails,
+            googleStoreProduct.presentedOfferingIdentifier,
+        )
+
+        val constructedGoogleStoreProductWithNameButNoOfferingId = GoogleStoreProduct(
+            googleStoreProduct.id,
+            null,
+            googleStoreProduct.type,
+            googleStoreProduct.price,
+            googleStoreProduct.name,
+            googleStoreProduct.title,
+            googleStoreProduct.description,
+            googleStoreProduct.period,
+            googleStoreProduct.subscriptionOptions,
+            googleStoreProduct.defaultOption,
+            googleStoreProduct.productDetails,
+        )
+
         val productId: String = constructedGoogleStoreProduct.productId
         val basePlanId: String? = constructedGoogleStoreProduct.basePlanId
         val productDetails: ProductDetails = googleStoreProduct.productDetails
@@ -104,6 +134,37 @@ private class StoreProductAPI {
         val constructedAmazonStoreProductWithOfferingId = AmazonStoreProduct(
             amazonStoreProduct.id,
             amazonStoreProduct.type,
+            amazonStoreProduct.title,
+            amazonStoreProduct.description,
+            amazonStoreProduct.period,
+            amazonStoreProduct.price,
+            amazonStoreProduct.subscriptionOptions,
+            amazonStoreProduct.defaultOption,
+            amazonStoreProduct.iconUrl,
+            amazonStoreProduct.freeTrialPeriod,
+            amazonStoreProduct.originalProductJSON,
+            amazonStoreProduct.presentedOfferingIdentifier,
+        )
+
+        val constructedAmazonStoreProductWithName = AmazonStoreProduct(
+            amazonStoreProduct.id,
+            amazonStoreProduct.type,
+            amazonStoreProduct.name,
+            amazonStoreProduct.title,
+            amazonStoreProduct.description,
+            amazonStoreProduct.period,
+            amazonStoreProduct.price,
+            amazonStoreProduct.subscriptionOptions,
+            amazonStoreProduct.defaultOption,
+            amazonStoreProduct.iconUrl,
+            amazonStoreProduct.freeTrialPeriod,
+            amazonStoreProduct.originalProductJSON,
+        )
+
+        val constructedAmazonStoreProductWithNameAndOfferingId = AmazonStoreProduct(
+            amazonStoreProduct.id,
+            amazonStoreProduct.type,
+            amazonStoreProduct.name,
             amazonStoreProduct.title,
             amazonStoreProduct.description,
             amazonStoreProduct.period,

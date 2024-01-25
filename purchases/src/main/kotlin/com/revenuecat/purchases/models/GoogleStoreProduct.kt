@@ -31,6 +31,19 @@ data class GoogleStoreProduct(
     override val price: Price,
 
     /**
+     * Name of the product.
+     *
+     * For google subscriptions, this corresponds with the name of the subscription.
+     * For amazon subscriptions, this will match the title.
+     *
+     * If you are using Google subscriptions with multiple base plans, this title
+     * will be the same for every subscription duration (monthly, yearly, etc) as
+     * base plans don't have their own titles. Google suggests using the duration
+     * as a way to title base plans.
+     */
+    override val name: String,
+
+    /**
      * Title of the product.
      *
      * If you are using Google subscriptions with multiple base plans, this title
@@ -75,6 +88,40 @@ data class GoogleStoreProduct(
     override val presentedOfferingIdentifier: String? = null,
 ) : StoreProduct {
 
+    @Deprecated(
+        "Replaced with constructor that takes a name",
+        ReplaceWith(
+            "GoogleStoreProduct(productId, basePlanId, type, price, name, title, description, " +
+                "period, subscriptionOptions, defaultOption, productDetails, presentedOfferingIdentifier)",
+        ),
+    )
+    constructor(
+        productId: String,
+        basePlanId: String?,
+        type: ProductType,
+        price: Price,
+        title: String,
+        description: String,
+        period: Period?,
+        subscriptionOptions: SubscriptionOptions?,
+        defaultOption: SubscriptionOption?,
+        productDetails: ProductDetails,
+        presentedOfferingIdentifier: String? = null,
+    ) : this(
+        productId,
+        basePlanId,
+        type,
+        price,
+        title,
+        title,
+        description,
+        period,
+        subscriptionOptions,
+        defaultOption,
+        productDetails,
+        presentedOfferingIdentifier,
+    )
+
     private constructor(
         otherProduct: GoogleStoreProduct,
         defaultOption: SubscriptionOption?,
@@ -86,6 +133,7 @@ data class GoogleStoreProduct(
             otherProduct.basePlanId,
             otherProduct.type,
             otherProduct.price,
+            otherProduct.name,
             otherProduct.title,
             otherProduct.description,
             otherProduct.period,

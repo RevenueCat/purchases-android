@@ -133,7 +133,8 @@ private object LoadingPaywallConstants {
             offering = this.offeringIdentifier,
             product = TestStoreProduct(
                 id = "com.revenuecat.weekly",
-                title = "Weekly",
+                name = "Weekly",
+                title = "Weekly (App name)",
                 price = Price(formatted = "$1.99", currencyCode = "USD", amountMicros = 1_990_000),
                 description = "Weekly",
                 period = Period(value = 1, unit = Period.Unit.WEEK, iso8601 = "P1W"),
@@ -145,7 +146,8 @@ private object LoadingPaywallConstants {
             offering = this.offeringIdentifier,
             product = TestStoreProduct(
                 id = "com.revenuecat.monthly",
-                title = "Monthly",
+                name = "Monthly",
+                title = "Monthly (App name)",
                 price = Price(formatted = "$5.99", currencyCode = "USD", amountMicros = 5_990_000),
                 description = "Monthly",
                 period = Period(value = 1, unit = Period.Unit.MONTH, iso8601 = "P1M"),
@@ -157,7 +159,8 @@ private object LoadingPaywallConstants {
             offering = this.offeringIdentifier,
             product = TestStoreProduct(
                 id = "com.revenuecat.annual",
-                title = "Annual",
+                name = "Annual",
+                title = "Annual (App name)",
                 price = Price(formatted = "$15.99", currencyCode = "USD", amountMicros = 5_990_000),
                 description = "Annual",
                 period = Period(value = 1, unit = Period.Unit.YEAR, iso8601 = "P1Y"),

@@ -33,6 +33,7 @@ internal fun ProductDetails.toStoreProduct(
         basePlanId = basePlan?.id,
         type = productType.toRevenueCatProductType(),
         price = price,
+        name = name,
         title = title,
         description = description,
         period = basePlan?.billingPeriod,
