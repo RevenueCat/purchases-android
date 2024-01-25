@@ -7,12 +7,17 @@ import androidx.compose.runtime.mutableStateOf
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.ProcessedLocalizedConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
+import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.isFullScreen
 
 internal sealed class PaywallState {
     object Loading : PaywallState()
 
-    data class Error(val errorMessage: String) : PaywallState()
+    data class Error(val errorMessage: String) : PaywallState() {
+        init {
+            Logger.e("Paywall transitioned to error state: $errorMessage")
+        }
+    }
 
     data class Loaded(
         val offering: Offering,
