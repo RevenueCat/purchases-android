@@ -1,3 +1,7 @@
+## 7.3.6
+### RevenueCatUI
+* `Paywalls`: improve template 5 layout for long product names (#1564) via NachoSoto (@NachoSoto)
+
 ## 7.3.5
 ### Bugfixes
 * Revert google ads library bump to remove `AD_ID` permission (#1561) via Toni Rico (@tonidero)
