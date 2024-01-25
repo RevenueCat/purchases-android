@@ -50,6 +50,7 @@ class PurchaseParamsTest {
     fun `Initializing with TestStoreProduct throws error`() {
         val storeProduct = TestStoreProduct(
             "id",
+            "name",
             "title",
             "description",
             Price("$1.99", 1_990_000, "US"),
@@ -94,6 +95,7 @@ class PurchaseParamsTest {
     fun `Initializing with Package containing TestStoreProduct throws error`() {
         val storeProduct = TestStoreProduct(
             "id",
+            "name",
             "title",
             "description",
             Price("$1.99", 1_990_000, "US"),

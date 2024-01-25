@@ -24,6 +24,7 @@ final class StoreProductAPI {
         final String sku = product.getSku();
         final ProductType type = product.getType();
         final Price price = product.getPrice();
+        final String name = product.getName();
         final String title = product.getTitle();
         final String description = product.getDescription();
         final Period period = product.getPeriod();
@@ -64,6 +65,21 @@ final class StoreProductAPI {
                 googleStoreProduct.getPresentedOfferingIdentifier()
         );
 
+        GoogleStoreProduct constructedGoogleStoreProduct2 = new GoogleStoreProduct(
+                googleStoreProduct.getId(),
+                googleStoreProduct.getBasePlanId(),
+                googleStoreProduct.getType(),
+                googleStoreProduct.getPrice(),
+                googleStoreProduct.getName(),
+                googleStoreProduct.getTitle(),
+                googleStoreProduct.getDescription(),
+                googleStoreProduct.getPeriod(),
+                googleStoreProduct.getSubscriptionOptions(),
+                googleStoreProduct.getDefaultOption(),
+                googleStoreProduct.getProductDetails(),
+                googleStoreProduct.getPresentedOfferingIdentifier()
+        );
+
         GoogleStoreProduct constructedGoogleStoreProductWithNullableFieldsNull = new GoogleStoreProduct(
                 googleStoreProduct.getId(),
                 null,
@@ -88,6 +104,22 @@ final class StoreProductAPI {
         AmazonStoreProduct constructedAmazonStoreProduct = new AmazonStoreProduct(
                 amazonStoreProduct.getId(),
                 amazonStoreProduct.getType(),
+                amazonStoreProduct.getTitle(),
+                amazonStoreProduct.getDescription(),
+                amazonStoreProduct.getPeriod(),
+                amazonStoreProduct.getPrice(),
+                amazonStoreProduct.getSubscriptionOptions(),
+                amazonStoreProduct.getDefaultOption(),
+                amazonStoreProduct.getIconUrl(),
+                amazonStoreProduct.getFreeTrialPeriod(),
+                amazonStoreProduct.getOriginalProductJSON(),
+                amazonStoreProduct.getPresentedOfferingIdentifier()
+        );
+
+        AmazonStoreProduct constructedAmazonStoreProduct2 = new AmazonStoreProduct(
+                amazonStoreProduct.getId(),
+                amazonStoreProduct.getType(),
+                amazonStoreProduct.getName(),
                 amazonStoreProduct.getTitle(),
                 amazonStoreProduct.getDescription(),
                 amazonStoreProduct.getPeriod(),

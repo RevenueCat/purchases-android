@@ -57,7 +57,8 @@ object SamplePaywalls {
 
     private val weeklyProduct = TestStoreProduct(
         id = "com.revenuecat.product_1",
-        title = "Weekly",
+        name = "Weekly",
+        title = "Weekly (App name)",
         price = Price(amountMicros = 1_990_000, currencyCode = "USD", formatted = "$1.99"),
         description = "PRO Weekly",
         period = Period(value = 1, unit = Period.Unit.WEEK, iso8601 = "P1W"),
@@ -65,7 +66,8 @@ object SamplePaywalls {
 
     private val monthlyProduct = TestStoreProduct(
         id = "com.revenuecat.product_2",
-        title = "Monthly",
+        name = "Monthly",
+        title = "Monthly (App name)",
         price = Price(amountMicros = 6_990_000, currencyCode = "USD", formatted = "$6.99"),
         description = "PRO Monthly",
         period = Period(value = 1, unit = Period.Unit.MONTH, iso8601 = "P1M"),
@@ -74,7 +76,8 @@ object SamplePaywalls {
 
     private val sixMonthProduct = TestStoreProduct(
         id = "com.revenuecat.product_4",
-        title = "Six Months",
+        name = "Six Months",
+        title = "Six Months (App name)",
         price = Price(amountMicros = 34_990_000, currencyCode = "USD", formatted = "$34.99"),
         description = "PRO Six Months",
         period = Period(value = 6, unit = Period.Unit.MONTH, iso8601 = "P6M"),
@@ -83,7 +86,8 @@ object SamplePaywalls {
 
     private val annualProduct = TestStoreProduct(
         id = "com.revenuecat.product_3",
-        title = "Annual",
+        name = "Annual",
+        title = "Annual (App name)",
         price = Price(amountMicros = 53_990_000, currencyCode = "USD", formatted = "$53.99"),
         description = "PRO Annual",
         period = Period(value = 1, unit = Period.Unit.YEAR, iso8601 = "P1Y"),
@@ -92,7 +96,8 @@ object SamplePaywalls {
 
     private val lifetimeProduct = TestStoreProduct(
         id = "com.revenuecat.product_lifetime",
-        title = "Lifetime",
+        name = "Lifetime",
+        title = "Lifetime (App name)",
         price = Price(amountMicros = 119_490_000, currencyCode = "USD", formatted = "$119.49"),
         description = "Lifetime purchase",
         period = null,

@@ -8,6 +8,7 @@ import com.revenuecat.purchases.ProductType
  */
 data class TestStoreProduct(
     override val id: String,
+    override val name: String,
     override val title: String,
     override val description: String,
     override val price: Price,
@@ -15,6 +16,31 @@ data class TestStoreProduct(
     private val freeTrialPeriod: Period? = null,
     private val introPrice: Price? = null,
 ) : StoreProduct {
+    @Deprecated(
+        "Replaced with constructor that takes a name",
+        ReplaceWith(
+            "TestStoreProduct(id, name, title, description, price, period, " +
+                "freeTrialPeriod, introPrice)",
+        ),
+    )
+    constructor(
+        id: String,
+        title: String,
+        description: String,
+        price: Price,
+        period: Period?,
+        freeTrialPeriod: Period? = null,
+        introPrice: Price? = null,
+    ) : this(
+        id,
+        title,
+        title,
+        description,
+        price,
+        period,
+        freeTrialPeriod,
+        introPrice,
+    )
     override val type: ProductType
         get() = if (period == null) ProductType.INAPP else ProductType.SUBS
     override val subscriptionOptions: SubscriptionOptions?

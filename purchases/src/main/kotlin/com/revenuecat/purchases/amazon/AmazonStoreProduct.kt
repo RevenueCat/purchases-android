@@ -23,6 +23,11 @@ data class AmazonStoreProduct(
     override val type: ProductType,
 
     /**
+     * Name of the product. This will match the title for Amazon products.
+     */
+    override val name: String,
+
+    /**
      * Title of the product.
      */
     override val title: String,
@@ -78,6 +83,43 @@ data class AmazonStoreProduct(
     override val presentedOfferingIdentifier: String? = null,
 ) : StoreProduct {
 
+    @Deprecated(
+        "Replaced with constructor that takes a name",
+        ReplaceWith(
+            "AmazonStoreProduct(productId, type, name, title, description, period, price, " +
+                "subscriptionOptions, defaultOption, iconUrl, freeTrialPeriod, originalProductJSON, " +
+                "presentedOfferingIdentifier)",
+        ),
+    )
+    constructor(
+        id: String,
+        type: ProductType,
+        title: String,
+        description: String,
+        period: Period?,
+        price: Price,
+        subscriptionOptions: SubscriptionOptions?,
+        defaultOption: SubscriptionOption?,
+        iconUrl: String,
+        freeTrialPeriod: Period?,
+        originalProductJSON: JSONObject,
+        presentedOfferingIdentifier: String? = null,
+    ) : this(
+        id = id,
+        type = type,
+        name = title,
+        title = title,
+        description = description,
+        period = period,
+        price = price,
+        subscriptionOptions = subscriptionOptions,
+        defaultOption = defaultOption,
+        iconUrl = iconUrl,
+        freeTrialPeriod = freeTrialPeriod,
+        originalProductJSON = originalProductJSON,
+        presentedOfferingIdentifier = presentedOfferingIdentifier,
+    )
+
     /**
      * Contains only data that is required to make the purchase.
      */
@@ -100,6 +142,7 @@ data class AmazonStoreProduct(
         return AmazonStoreProduct(
             this.id,
             this.type,
+            this.name,
             this.title,
             this.description,
             this.period,

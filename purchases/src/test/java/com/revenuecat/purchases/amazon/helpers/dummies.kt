@@ -55,8 +55,10 @@ fun stubStoreProductForAmazon(
         get() = type
     override val price: Price
         get() = price
+    override val name: String
+        get() = "An awesome name"
     override val title: String
-        get() = "An awesome title"
+        get() = "An awesome name (App name)"
     override val description: String
         get() = "An awesome description"
     override val period: Period?

@@ -60,6 +60,8 @@ fun stubStoreProduct(
         get() = ProductType.SUBS
     override val price: Price
         get() = price
+    override val name: String
+        get() = ""
     override val title: String
         get() = ""
     override val description: String
@@ -144,6 +146,8 @@ fun stubINAPPStoreProduct(
         get() = ProductType.INAPP
     override val price: Price
         get() = Price("\$1.00", MICROS_MULTIPLIER * 1L, "USD")
+    override val name: String
+        get() = ""
     override val title: String
         get() = ""
     override val description: String
@@ -171,6 +175,8 @@ fun stubINAPPStoreProduct(
                 get() = ProductType.INAPP
             override val price: Price
                 get() = Price("\$1.00", MICROS_MULTIPLIER * 1L, "USD")
+            override val name: String
+                get() = ""
             override val title: String
                 get() = ""
             override val description: String

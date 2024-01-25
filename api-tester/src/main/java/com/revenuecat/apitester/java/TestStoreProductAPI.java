@@ -8,10 +8,16 @@ import com.revenuecat.purchases.models.TestStoreProduct;
 final class TestStoreProductAPI {
     static void check(final Price price, final Period period) {
         new TestStoreProduct(
-             "id", "title", "description", price, period, null, null
+                "id", "title", "description", price, period, null, null
         );
         new TestStoreProduct(
-            "id", "title", "description", price, period, period, price
+                "id",  "title", "description", price, period, period, price
+        );
+        new TestStoreProduct(
+             "id", "name", "title", "description", price, period, null, null
+        );
+        new TestStoreProduct(
+            "id", "name", "title", "description", price, period, period, price
         );
     }
 }

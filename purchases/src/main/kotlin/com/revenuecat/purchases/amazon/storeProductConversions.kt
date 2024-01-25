@@ -23,6 +23,7 @@ internal fun Product.toStoreProduct(marketplace: String): StoreProduct? {
         sku,
         productType.toRevenueCatProductType(),
         title,
+        title,
         description,
         period = subscriptionPeriod?.createPeriod(),
         priceInfo,
