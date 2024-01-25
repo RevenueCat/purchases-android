@@ -46,7 +46,7 @@ internal class VariableDataProvider(
     }
 
     fun productName(rcPackage: Package): String {
-        return rcPackage.product.title
+        return rcPackage.product.name
     }
 
     fun periodName(rcPackage: Package): String? {
