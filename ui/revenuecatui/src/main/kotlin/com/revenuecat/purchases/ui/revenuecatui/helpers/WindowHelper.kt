@@ -4,7 +4,6 @@ import androidx.annotation.VisibleForTesting
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalContext
 import androidx.window.core.layout.WindowHeightSizeClass
 import androidx.window.core.layout.WindowSizeClass
 import androidx.window.core.layout.WindowWidthSizeClass
@@ -59,14 +58,14 @@ private fun windowSizeClass(): WindowSizeClass {
 @ReadOnlyComposable
 @Composable
 private fun getScreenSize(): Pair<Float, Float> {
-    return if (isInPreviewMode()) {
+    val activity = LocalActivity.current
+    return if (isInPreviewMode() || activity == null) {
         // WindowMetricsCalculator returns (0, 0) on previews
         val configuration = LocalConfiguration.current
         configuration.screenWidthDp.toFloat() to configuration.screenHeightDp.toFloat()
     } else {
-        val context = LocalContext.current
-        val density = context.resources.displayMetrics.density
-        val metrics = WindowMetricsCalculator.getOrCreate().computeCurrentWindowMetrics(context)
+        val density = activity.resources.displayMetrics.density
+        val metrics = WindowMetricsCalculator.getOrCreate().computeCurrentWindowMetrics(activity)
 
         Pair(
             metrics.bounds.width() / density,
