@@ -89,6 +89,11 @@ open class PaywallFooterView : FrameLayout {
         invalidate()
     }
 
+    fun setFontProvider(fontProvider: FontProvider) {
+        this.fontProvider = fontProvider
+        invalidate()
+    }
+
     private fun init(context: Context, attrs: AttributeSet?) {
         parseAttributes(context, attrs)
         addView(
