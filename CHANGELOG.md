@@ -1,3 +1,7 @@
+## 7.4.1
+### Other Changes
+* `OfferingsFactory`: debug logs when creating `Offerings` (#1576) via NachoSoto (@NachoSoto)
+* `Paywalls`: log error when creating `PaywallState.Error` (#1574) via NachoSoto (@NachoSoto)
 ## 7.4.0
 ### New Features
 * Add name property to StoreProduct (#1567) via Toni Rico (@tonidero)
