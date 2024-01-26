@@ -9,6 +9,7 @@ import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.OfferingParser
 import com.revenuecat.purchases.common.log
+import com.revenuecat.purchases.common.verboseLog
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.strings.OfferingStrings
 import kotlinx.serialization.SerializationException
@@ -52,6 +53,7 @@ internal class OfferingsFactory(
                                     ),
                                 )
                             } else {
+                                verboseLog(OfferingStrings.CREATED_OFFERINGS.format(offerings))
                                 onSuccess(offerings)
                             }
                         } catch (error: Exception) {
