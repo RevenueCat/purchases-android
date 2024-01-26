@@ -52,7 +52,7 @@ internal class OfferingsFactory(
                                     ),
                                 )
                             } else {
-                                log(LogIntent.DEBUG, OfferingStrings.CREATED_OFFERINGS.format(offerings))
+                                log(LogIntent.VERBOSE, OfferingStrings.CREATED_OFFERINGS.format(offerings))
                                 onSuccess(offerings)
                             }
                         } catch (error: Exception) {
