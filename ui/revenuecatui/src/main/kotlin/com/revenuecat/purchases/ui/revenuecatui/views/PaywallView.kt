@@ -92,6 +92,14 @@ class PaywallView : FrameLayout {
         invalidate()
     }
 
+    /**
+     * Sets the font provider to be used to display the Paywall.
+     */
+    fun setFontProvider(fontProvider: FontProvider) {
+        this.fontProvider = fontProvider
+        invalidate()
+    }
+
     private fun init(context: Context, attrs: AttributeSet?) {
         parseAttributes(context, attrs)
         addView(

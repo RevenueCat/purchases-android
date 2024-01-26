@@ -89,6 +89,9 @@ open class PaywallFooterView : FrameLayout {
         invalidate()
     }
 
+    /**
+     * Sets the font provider to be used to display the Paywall Footer View.
+     */
     fun setFontProvider(fontProvider: FontProvider) {
         this.fontProvider = fontProvider
         invalidate()
