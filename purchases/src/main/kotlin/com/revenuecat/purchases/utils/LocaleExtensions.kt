@@ -23,9 +23,33 @@ internal fun String.toLocale(): Locale {
 
 internal fun Locale.sharedLanguageCodeWith(locale: Locale): Boolean {
     return try {
-        isO3Language == locale.isO3Language
+        val sameLanguage = isO3Language == locale.isO3Language
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            val sameScript = inferScript() == locale.inferScript()
+            return sameLanguage && sameScript
+        } else {
+            return sameLanguage
+        }
     } catch (e: MissingResourceException) {
         errorLog("Locale $this or $locale can't obtain ISO3 language code ($e). Falling back to language.")
         language == locale.language
     }
+}
+
+@RequiresApi(Build.VERSION_CODES.LOLLIPOP)
+private fun Locale.inferScript(): String {
+    if (!script.isNullOrEmpty()) {
+        return script
+    }
+
+    // Special handling to allow zh-TW == zh-Hant
+    if (language == "zh") {
+        return when (country) {
+            "TW", "HK", "MO" -> "Hant" // Traditional Chinese regions
+            "CN", "SG" -> "Hans"       // Simplified Chinese regions
+            else -> ""
+        }
+    }
+    return ""
 }
