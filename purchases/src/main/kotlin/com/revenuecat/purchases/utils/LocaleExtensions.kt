@@ -21,6 +21,7 @@ internal fun String.toLocale(): Locale {
     return Locale.forLanguageTag(replace("_", "-"))
 }
 
+@SuppressWarnings("ReturnCount")
 internal fun Locale.sharedLanguageCodeWith(locale: Locale): Boolean {
     return try {
         val sameLanguage = isO3Language == locale.isO3Language
@@ -43,13 +44,13 @@ private fun Locale.inferScript(): String {
         return script
     }
 
-    // Special handling to allow zh-TW == zh-Hant
-    if (language == "zh") {
-        return when (country) {
+    return when (language) {
+        // Special handling to allow zh-TW == zh-Hant
+        "zh" -> when (country) {
             "TW", "HK", "MO" -> "Hant" // Traditional Chinese regions
-            "CN", "SG" -> "Hans"       // Simplified Chinese regions
+            "CN", "SG" -> "Hans" // Simplified Chinese regions
             else -> ""
         }
+        else -> ""
     }
-    return ""
 }
