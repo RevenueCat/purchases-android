@@ -89,11 +89,26 @@ class PaywallView : FrameLayout {
      */
     fun setOfferingId(offeringId: String?) {
         this.offeringId = offeringId
+        recreateComposeView()
         invalidate()
     }
 
     private fun init(context: Context, attrs: AttributeSet?) {
         parseAttributes(context, attrs)
+        recreateComposeView()
+    }
+
+    @SuppressWarnings("DestructuringDeclarationWithTooManyEntries")
+    private fun parseAttributes(context: Context, attrs: AttributeSet?) {
+        val (offeringId, fontProvider, shouldDisplayDismissButton, _) =
+            PaywallViewAttributesReader.parseAttributes(context, attrs, R.styleable.PaywallView) ?: return
+        setOfferingId(offeringId)
+        this.fontProvider = fontProvider
+        this.shouldDisplayDismissButton = shouldDisplayDismissButton
+    }
+
+    private fun recreateComposeView() {
+        removeAllViews()
         addView(
             ComposeView(context).apply {
                 setContent {
@@ -109,14 +124,5 @@ class PaywallView : FrameLayout {
                 }
             },
         )
-    }
-
-    @SuppressWarnings("DestructuringDeclarationWithTooManyEntries")
-    private fun parseAttributes(context: Context, attrs: AttributeSet?) {
-        val (offeringId, fontProvider, shouldDisplayDismissButton, _) =
-            PaywallViewAttributesReader.parseAttributes(context, attrs, R.styleable.PaywallView) ?: return
-        setOfferingId(offeringId)
-        this.fontProvider = fontProvider
-        this.shouldDisplayDismissButton = shouldDisplayDismissButton
     }
 }
