@@ -243,7 +243,7 @@ private fun ColumnScope.Title(
         text = state.selectedLocalization.title,
         color = state.templateConfiguration.getCurrentColors().text1,
         modifier = Modifier
-            .fillMaxWidth()
+            .fillMaxWidth(),
     )
 }
 
