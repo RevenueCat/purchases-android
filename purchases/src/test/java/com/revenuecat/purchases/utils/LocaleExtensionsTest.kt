@@ -56,4 +56,18 @@ class LocaleExtensionsTest {
         val otherLocale = Locale("en", "ES")
         assertThat(locale.sharedLanguageCodeWith(otherLocale)).isFalse
     }
+
+    @Test
+    fun `sharedLanguageCodeWith - chinese with shared script`() {
+        val locale = Locale("zh", "TW")
+        val otherLocale = Locale("zh", "HK")
+        assertThat(locale.sharedLanguageCodeWith(otherLocale)).isTrue
+    }
+
+    @Test
+    fun `sharedLanguageCodeWith - chinese with different scripts`() {
+        val locale = Locale("zh-Hant")
+        val otherLocale = Locale("zh-Hans")
+        assertThat(locale.sharedLanguageCodeWith(otherLocale)).isFalse
+    }
 }

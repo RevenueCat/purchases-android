@@ -14,6 +14,7 @@ import java.net.URL
 import java.util.*
 
 private const val PAYWALLDATA_SAMPLE1 = "paywalldata-sample1.json"
+private const val PAYWALLDATA_CHINESE = "paywalldata-chinese.json"
 private const val PAYWALLDATA_MISSING_CURRENT_LOCALE = "paywalldata-missing_current_locale.json"
 private const val PAYWALLDATA_EMPTY_IMAGES = "paywalldata-empty-images.json"
 
@@ -102,6 +103,22 @@ class PaywallDataTest {
             assertThat(offerDetailsWithIntroOffer).isNull()
             assertThat(offerDetailsWithMultipleIntroOffers).isNull()
         }
+    }
+
+    @Test
+    fun `Chinese localization`() {
+        val paywall: PaywallData = decode(PAYWALLDATA_CHINESE)
+
+        val traditional = paywall.configForLocale("zh-Hant".toLocale())
+        val simplified = paywall.configForLocale("zh-Hans".toLocale())
+        val taiwan = paywall.configForLocale("zh-TW".toLocale())
+        assertThat(traditional).isNotNull
+        assertThat(simplified).isNotNull
+        assertThat(taiwan).isNotNull
+
+        assertThat(traditional?.title).isEqualTo("Traditional")
+        assertThat(simplified?.title).isEqualTo("Simplified")
+        assertThat(taiwan?.title).isEqualTo("Traditional")
     }
 
     @Test
