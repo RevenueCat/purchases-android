@@ -3,6 +3,10 @@ package com.revenuecat.purchases.ui.revenuecatui.views
 import android.content.Context
 import android.util.AttributeSet
 import android.widget.FrameLayout
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.ComposeView
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Offering
@@ -10,6 +14,7 @@ import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.ui.revenuecatui.ExperimentalPreviewRevenueCatUIPurchasesAPI
+import com.revenuecat.purchases.ui.revenuecatui.OfferingSelection
 import com.revenuecat.purchases.ui.revenuecatui.Paywall
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
@@ -50,6 +55,8 @@ class PaywallView : FrameLayout {
         init(context, null)
     }
 
+    private var updateState: (PaywallOptions.() -> PaywallOptions) -> Unit = {}
+
     private var offeringId: String? = null
     private var fontProvider: FontProvider? = null
     private var dismissHandler: (() -> Unit)? = null
@@ -89,7 +96,13 @@ class PaywallView : FrameLayout {
      */
     fun setOfferingId(offeringId: String?) {
         this.offeringId = offeringId
-        invalidate()
+        offeringId?.let {
+            updateState {
+                this.copy(
+                    offeringSelection = OfferingSelection.OfferingId(offeringId)
+                )
+            }
+        }
     }
 
     private fun init(context: Context, attrs: AttributeSet?) {
@@ -97,12 +110,18 @@ class PaywallView : FrameLayout {
         addView(
             ComposeView(context).apply {
                 setContent {
-                    val paywallOptions = PaywallOptions.Builder { dismissHandler?.invoke() }
+                    var paywallOptions by remember {
+                        mutableStateOf(PaywallOptions.Builder { dismissHandler?.invoke() }
                         .setListener(internalListener)
                         .setFontProvider(fontProvider)
                         .setOfferingId(offeringId)
                         .setShouldDisplayDismissButton(shouldDisplayDismissButton ?: false)
                         .build()
+                    ) }
+                    updateState = { modifier ->
+                        val newPaywallOptions = modifier(paywallOptions)
+                        paywallOptions = newPaywallOptions
+                    }
                     Paywall(
                         options = paywallOptions,
                     )
