@@ -239,7 +239,7 @@ private fun Title(
     Markdown(
         style = MaterialTheme.typography.displaySmall,
         fontWeight = FontWeight.Bold,
-        textAlign = TextAlign.Left,
+        textAlign = TextAlign.Start,
         text = state.selectedLocalization.title,
         color = state.templateConfiguration.getCurrentColors().text1,
     )
