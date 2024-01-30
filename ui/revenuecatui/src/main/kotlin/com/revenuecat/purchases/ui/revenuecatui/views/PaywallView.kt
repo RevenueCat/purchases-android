@@ -6,7 +6,6 @@ import android.widget.FrameLayout
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.ComposeView
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Offering
@@ -51,7 +50,7 @@ class PaywallView : FrameLayout {
         setDismissHandler(dismissHandler)
         setOfferingId(offering?.identifier)
         this.shouldDisplayDismissButton = shouldDisplayDismissButton
-        this.fontProvider = fontProvider
+        this.initialFontProvider = fontProvider
         init(context, null)
     }
 
@@ -60,8 +59,8 @@ class PaywallView : FrameLayout {
             dismissHandler?.invoke()
         }.build(),
     )
-    private var offeringId: String? = null
-    private var fontProvider: FontProvider? = null
+    private var initialOfferingId: String? = null
+    private var initialFontProvider: FontProvider? = null
     private var dismissHandler: (() -> Unit)? = null
     private var listener: PaywallListener? = null
     private var shouldDisplayDismissButton: Boolean? = null
@@ -98,7 +97,6 @@ class PaywallView : FrameLayout {
      * Sets the offering id to be used to display the Paywall. If not set, the default one will be used.
      */
     fun setOfferingId(offeringId: String?) {
-        this.offeringId = offeringId
         val offeringSelection = if (offeringId == null) {
             OfferingSelection.None
         } else {
@@ -111,8 +109,8 @@ class PaywallView : FrameLayout {
         parseAttributes(context, attrs)
         paywallOptionsState.value = PaywallOptions.Builder { dismissHandler?.invoke() }
             .setListener(internalListener)
-            .setFontProvider(fontProvider)
-            .setOfferingId(offeringId)
+            .setFontProvider(initialFontProvider)
+            .setOfferingId(initialOfferingId)
             .setShouldDisplayDismissButton(shouldDisplayDismissButton ?: false)
             .build()
         addView(
@@ -132,7 +130,7 @@ class PaywallView : FrameLayout {
         val (offeringId, fontProvider, shouldDisplayDismissButton, _) =
             PaywallViewAttributesReader.parseAttributes(context, attrs, R.styleable.PaywallView) ?: return
         setOfferingId(offeringId)
-        this.fontProvider = fontProvider
+        this.initialFontProvider = fontProvider
         this.shouldDisplayDismissButton = shouldDisplayDismissButton
     }
 }
