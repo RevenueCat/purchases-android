@@ -207,11 +207,11 @@ private fun ColumnScope.Template2LandscapeContent(
 
             IconImage(state, childModifier)
 
-            Title(state, childModifier, TextAlign.Left)
+            Title(state, childModifier, TextAlign.Start)
 
             Spacer(Modifier.weight(UIConstant.halfWeight))
 
-            Subtitle(state, childModifier, TextAlign.Left)
+            Subtitle(state, childModifier, TextAlign.Start)
 
             Spacer(Modifier.weight(UIConstant.halfWeight))
         }
