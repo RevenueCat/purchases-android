@@ -3,6 +3,9 @@ package com.revenuecat.purchases.ui.revenuecatui.views
 import android.content.Context
 import android.util.AttributeSet
 import android.widget.FrameLayout
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.ComposeView
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Offering
@@ -10,6 +13,7 @@ import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.ui.revenuecatui.ExperimentalPreviewRevenueCatUIPurchasesAPI
+import com.revenuecat.purchases.ui.revenuecatui.OfferingSelection
 import com.revenuecat.purchases.ui.revenuecatui.Paywall
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
@@ -46,12 +50,17 @@ class PaywallView : FrameLayout {
         setDismissHandler(dismissHandler)
         setOfferingId(offering?.identifier)
         this.shouldDisplayDismissButton = shouldDisplayDismissButton
-        this.fontProvider = fontProvider
+        this.initialFontProvider = fontProvider
         init(context, null)
     }
 
-    private var offeringId: String? = null
-    private var fontProvider: FontProvider? = null
+    private val paywallOptionsState = mutableStateOf(
+        PaywallOptions.Builder {
+            dismissHandler?.invoke()
+        }.build(),
+    )
+    private var initialOfferingId: String? = null
+    private var initialFontProvider: FontProvider? = null
     private var dismissHandler: (() -> Unit)? = null
     private var listener: PaywallListener? = null
     private var shouldDisplayDismissButton: Boolean? = null
@@ -88,24 +97,29 @@ class PaywallView : FrameLayout {
      * Sets the offering id to be used to display the Paywall. If not set, the default one will be used.
      */
     fun setOfferingId(offeringId: String?) {
-        this.offeringId = offeringId
-        invalidate()
+        val offeringSelection = if (offeringId == null) {
+            OfferingSelection.None
+        } else {
+            OfferingSelection.OfferingId(offeringId)
+        }
+        paywallOptionsState.value = paywallOptionsState.value.copy(offeringSelection = offeringSelection)
     }
 
     private fun init(context: Context, attrs: AttributeSet?) {
         parseAttributes(context, attrs)
+        paywallOptionsState.value = PaywallOptions.Builder { dismissHandler?.invoke() }
+            .setListener(internalListener)
+            .setFontProvider(initialFontProvider)
+            .setOfferingId(initialOfferingId)
+            .setShouldDisplayDismissButton(shouldDisplayDismissButton ?: false)
+            .build()
         addView(
             ComposeView(context).apply {
                 setContent {
-                    val paywallOptions = PaywallOptions.Builder { dismissHandler?.invoke() }
-                        .setListener(internalListener)
-                        .setFontProvider(fontProvider)
-                        .setOfferingId(offeringId)
-                        .setShouldDisplayDismissButton(shouldDisplayDismissButton ?: false)
-                        .build()
-                    Paywall(
-                        options = paywallOptions,
-                    )
+                    val paywallOptions by remember {
+                        paywallOptionsState
+                    }
+                    Paywall(paywallOptions)
                 }
             },
         )
@@ -116,7 +130,7 @@ class PaywallView : FrameLayout {
         val (offeringId, fontProvider, shouldDisplayDismissButton, _) =
             PaywallViewAttributesReader.parseAttributes(context, attrs, R.styleable.PaywallView) ?: return
         setOfferingId(offeringId)
-        this.fontProvider = fontProvider
+        this.initialFontProvider = fontProvider
         this.shouldDisplayDismissButton = shouldDisplayDismissButton
     }
 }
