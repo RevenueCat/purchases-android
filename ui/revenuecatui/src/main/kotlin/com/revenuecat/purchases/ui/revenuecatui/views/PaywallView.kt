@@ -55,7 +55,11 @@ class PaywallView : FrameLayout {
         init(context, null)
     }
 
-    private var updateOfferingId: () -> Unit = {}
+    private val paywallOptionsState = mutableStateOf(
+        PaywallOptions.Builder {
+            dismissHandler?.invoke()
+        }.build(),
+    )
     private var offeringId: String? = null
     private var fontProvider: FontProvider? = null
     private var dismissHandler: (() -> Unit)? = null
@@ -95,34 +99,29 @@ class PaywallView : FrameLayout {
      */
     fun setOfferingId(offeringId: String?) {
         this.offeringId = offeringId
-        this.updateOfferingId()
-        invalidate()
+        val offeringSelection = if (offeringId == null) {
+            OfferingSelection.None
+        } else {
+            OfferingSelection.OfferingId(offeringId)
+        }
+        paywallOptionsState.value = paywallOptionsState.value.copy(offeringSelection = offeringSelection)
     }
 
     private fun init(context: Context, attrs: AttributeSet?) {
         parseAttributes(context, attrs)
+        paywallOptionsState.value = PaywallOptions.Builder { dismissHandler?.invoke() }
+            .setListener(internalListener)
+            .setFontProvider(fontProvider)
+            .setOfferingId(offeringId)
+            .setShouldDisplayDismissButton(shouldDisplayDismissButton ?: false)
+            .build()
         addView(
             ComposeView(context).apply {
                 setContent {
-                    var paywallOptions by remember {
-                        mutableStateOf(PaywallOptions.Builder { dismissHandler?.invoke() }
-                            .setListener(internalListener)
-                            .setFontProvider(fontProvider)
-                            .setOfferingId(offeringId)
-                            .setShouldDisplayDismissButton(shouldDisplayDismissButton ?: false)
-                            .build())
+                    val paywallOptions by remember {
+                        paywallOptionsState
                     }
-                    updateOfferingId = {
-                        val newOfferingId = offeringId
-                        if (newOfferingId != null) {
-                            paywallOptions = paywallOptions.copy(
-                                offeringSelection = OfferingSelection.OfferingId(newOfferingId)
-                            )
-                        }
-                    }
-                    Paywall(
-                        options = paywallOptions,
-                    )
+                    Paywall(paywallOptions)
                 }
             },
         )
