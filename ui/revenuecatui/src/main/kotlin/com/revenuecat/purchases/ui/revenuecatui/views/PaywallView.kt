@@ -105,13 +105,6 @@ class PaywallView : FrameLayout {
         paywallOptionsState.value = paywallOptionsState.value.copy(offeringSelection = offeringSelection)
     }
 
-    /**
-     * Sets the font provider to be used to display the Paywall.
-     */
-    fun setFontProvider(fontProvider: FontProvider) {
-        this.fontProvider = fontProvider
-    }
-
     private fun init(context: Context, attrs: AttributeSet?) {
         parseAttributes(context, attrs)
         paywallOptionsState.value = PaywallOptions.Builder { dismissHandler?.invoke() }
