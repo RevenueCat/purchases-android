@@ -6,7 +6,6 @@ import android.widget.FrameLayout
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.ComposeView
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Offering
@@ -14,6 +13,7 @@ import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.ui.revenuecatui.ExperimentalPreviewRevenueCatUIPurchasesAPI
+import com.revenuecat.purchases.ui.revenuecatui.OfferingSelection
 import com.revenuecat.purchases.ui.revenuecatui.PaywallFooter
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
@@ -49,14 +49,19 @@ open class PaywallFooterView : FrameLayout {
         setPaywallListener(listener)
         setDismissHandler(dismissHandler)
         setOfferingId(offering?.identifier)
-        this.fontProviderState = fontProvider
-        this.condensed = condensed
+        this.initialFontProvider = fontProvider
+        this.initialCondensed = condensed
         init(context, null)
     }
 
-    private var offeringIdState by mutableStateOf<String?>(null)
-    private var fontProviderState by mutableStateOf<FontProvider?>(null)
-    private var condensed: Boolean = PaywallViewAttributesReader.DEFAULT_CONDENSED
+    private val paywallOptionsState = mutableStateOf(
+        PaywallOptions.Builder {
+            dismissHandler?.invoke()
+        }.build(),
+    )
+    private var initialOfferingId: String? = null
+    private var initialFontProvider: FontProvider? = null
+    private var initialCondensed: Boolean = PaywallViewAttributesReader.DEFAULT_CONDENSED
     private var dismissHandler: (() -> Unit)? = null
     private var listener: PaywallListener? = null
     private var internalListener: PaywallListener = object : PaywallListener {
@@ -89,35 +94,34 @@ open class PaywallFooterView : FrameLayout {
      * Sets the offering id to be used to display the Paywall. If not set, the default one will be used.
      */
     fun setOfferingId(offeringId: String?) {
-        this.offeringIdState = offeringId
-    }
-
-    /**
-     * Sets the font provider to be used to display the Paywall Footer View.
-     */
-    fun setFontProvider(fontProvider: FontProvider) {
-        this.fontProviderState = fontProvider
+        val offeringSelection = if (offeringId == null) {
+            OfferingSelection.None
+        } else {
+            OfferingSelection.OfferingId(offeringId)
+        }
+        paywallOptionsState.value = paywallOptionsState.value.copy(offeringSelection = offeringSelection)
     }
 
     private fun init(context: Context, attrs: AttributeSet?) {
         parseAttributes(context, attrs)
+        paywallOptionsState.value = PaywallOptions.Builder { dismissHandler?.invoke() }
+            .setListener(internalListener)
+            .setFontProvider(initialFontProvider)
+            .setOfferingId(initialOfferingId)
+            .build()
         addView(
             ComposeView(context).apply {
                 setContent {
-                    val paywallOptions = remember(fontProviderState, offeringIdState) {
-                        PaywallOptions.Builder { dismissHandler?.invoke() }
-                            .setListener(internalListener)
-                            .setFontProvider(fontProviderState)
-                            .setOfferingId(offeringIdState)
-                            .build()
+                    val paywallOptions by remember {
+                        paywallOptionsState
                     }
-
                     PaywallFooter(
                         options = paywallOptions,
-                        condensed = condensed,
+                        condensed = initialCondensed,
                     )
                 }
-            })
+            },
+        )
     }
 
     @SuppressWarnings("DestructuringDeclarationWithTooManyEntries")
@@ -125,7 +129,7 @@ open class PaywallFooterView : FrameLayout {
         val (offeringId, fontProvider, _, condensed) =
             PaywallViewAttributesReader.parseAttributes(context, attrs, R.styleable.PaywallFooterView) ?: return
         setOfferingId(offeringId)
-        this.fontProviderState = fontProvider
-        condensed?.let { this.condensed = it }
+        this.initialFontProvider = fontProvider
+        condensed?.let { this.initialCondensed = it }
     }
 }

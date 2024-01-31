@@ -31,6 +31,8 @@ internal abstract class OfferingParser {
      * Note: this may return an empty Offerings.
      */
     fun createOfferings(offeringsJson: JSONObject, productsById: Map<String, List<StoreProduct>>): Offerings {
+        log(LogIntent.DEBUG, OfferingStrings.BUILDING_OFFERINGS.format(productsById.size))
+
         val jsonOfferings = offeringsJson.getJSONArray("offerings")
         val currentOfferingID = offeringsJson.getString("current_offering_id")
 

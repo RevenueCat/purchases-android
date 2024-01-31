@@ -233,15 +233,17 @@ private fun HeaderImage(uri: Uri?) {
 }
 
 @Composable
-private fun Title(
+private fun ColumnScope.Title(
     state: PaywallState.Loaded,
 ) {
     Markdown(
         style = MaterialTheme.typography.displaySmall,
         fontWeight = FontWeight.Bold,
-        textAlign = TextAlign.Left,
+        textAlign = TextAlign.Start,
         text = state.selectedLocalization.title,
         color = state.templateConfiguration.getCurrentColors().text1,
+        modifier = Modifier
+            .fillMaxWidth(),
     )
 }
 
