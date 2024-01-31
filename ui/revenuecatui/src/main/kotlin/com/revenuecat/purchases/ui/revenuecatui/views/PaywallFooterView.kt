@@ -2,16 +2,11 @@ package com.revenuecat.purchases.ui.revenuecatui.views
 
 import android.content.Context
 import android.util.AttributeSet
-import android.util.Log
-import android.widget.FrameLayout
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.AbstractComposeView
-import androidx.compose.ui.platform.ComposeView
-import androidx.core.view.get
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
@@ -24,7 +19,6 @@ import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.R
 import com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider
-import kotlinx.coroutines.flow.MutableStateFlow
 
 /**
  * View that wraps the [PaywallFooter] Composable to display the Paywall Footer through XML layouts and the View system.
