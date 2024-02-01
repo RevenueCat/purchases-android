@@ -120,7 +120,7 @@ class PaywallView : AbstractComposeView {
 
     private fun init(context: Context, attrs: AttributeSet?) {
         parseAttributes(context, attrs)
-        paywallOptionsState.value = PaywallOptions.Builder { dismissHandler?.invoke() }
+        paywallOptions = PaywallOptions.Builder { dismissHandler?.invoke() }
             .setListener(internalListener)
             .setFontProvider(initialFontProvider)
             .setOfferingId(initialOfferingId)
