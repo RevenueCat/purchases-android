@@ -107,6 +107,7 @@ open class PaywallFooterView : AbstractComposeView {
         }
         paywallOptions = paywallOptions.copy(offeringSelection = offeringSelection)
     }
+
     /**
      * Sets the font provider to be used for the Paywall. If not set, the default one will be used.
      */
