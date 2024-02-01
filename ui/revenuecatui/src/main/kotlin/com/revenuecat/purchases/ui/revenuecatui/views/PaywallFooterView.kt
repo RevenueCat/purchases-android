@@ -2,11 +2,11 @@ package com.revenuecat.purchases.ui.revenuecatui.views
 
 import android.content.Context
 import android.util.AttributeSet
-import android.widget.FrameLayout
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.platform.AbstractComposeView
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
@@ -24,7 +24,7 @@ import com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider
  * View that wraps the [PaywallFooter] Composable to display the Paywall Footer through XML layouts and the View system.
  */
 @ExperimentalPreviewRevenueCatUIPurchasesAPI
-open class PaywallFooterView : FrameLayout {
+open class PaywallFooterView : AbstractComposeView {
 
     constructor(context: Context, attrs: AttributeSet?) : super(context, attrs) {
         init(context, attrs)
@@ -76,6 +76,12 @@ open class PaywallFooterView : FrameLayout {
         override fun onRestoreError(error: PurchasesError) { listener?.onRestoreError(error) }
     }
 
+    private var paywallOptions: PaywallOptions
+        get() = paywallOptionsState.value
+        set(value) {
+            paywallOptionsState.value = value
+        }
+
     /**
      * Sets a [PaywallListener] to receive callbacks from the Paywall.
      */
@@ -100,29 +106,23 @@ open class PaywallFooterView : FrameLayout {
         } else {
             OfferingSelection.OfferingId(offeringId)
         }
-        paywallOptionsState.value = paywallOptionsState.value.copy(offeringSelection = offeringSelection)
+        paywallOptions = paywallOptions.copy(offeringSelection = offeringSelection)
+    }
+
+    /**
+     * Sets the font provider to be used for the Paywall. If not set, the default one will be used.
+     */
+    fun setFontProvider(fontProvider: FontProvider?) {
+        paywallOptions = paywallOptions.copy(fontProvider = fontProvider)
     }
 
     private fun init(context: Context, attrs: AttributeSet?) {
         parseAttributes(context, attrs)
-        paywallOptionsState.value = PaywallOptions.Builder { dismissHandler?.invoke() }
+        paywallOptions = PaywallOptions.Builder { dismissHandler?.invoke() }
             .setListener(internalListener)
             .setFontProvider(initialFontProvider)
             .setOfferingId(initialOfferingId)
             .build()
-        addView(
-            ComposeView(context).apply {
-                setContent {
-                    val paywallOptions by remember {
-                        paywallOptionsState
-                    }
-                    PaywallFooter(
-                        options = paywallOptions,
-                        condensed = initialCondensed,
-                    )
-                }
-            },
-        )
     }
 
     @SuppressWarnings("DestructuringDeclarationWithTooManyEntries")
@@ -132,5 +132,17 @@ open class PaywallFooterView : FrameLayout {
         setOfferingId(offeringId)
         this.initialFontProvider = fontProvider
         condensed?.let { this.initialCondensed = it }
+    }
+
+    @Composable
+    override fun Content() {
+        val paywallOptions by remember {
+            paywallOptionsState
+        }
+
+        PaywallFooter(
+            options = paywallOptions,
+            condensed = initialCondensed,
+        )
     }
 }
