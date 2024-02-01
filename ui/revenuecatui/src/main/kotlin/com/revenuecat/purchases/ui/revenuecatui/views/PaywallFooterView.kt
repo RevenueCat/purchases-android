@@ -70,10 +70,10 @@ open class PaywallFooterView : FrameLayout {
             listener?.onPurchaseCompleted(customerInfo, storeTransaction)
         }
         override fun onPurchaseError(error: PurchasesError) { listener?.onPurchaseError(error) }
+        override fun onPurchaseCancelled() { listener?.onPurchaseCancelled() }
         override fun onRestoreStarted() { listener?.onRestoreStarted() }
         override fun onRestoreCompleted(customerInfo: CustomerInfo) { listener?.onRestoreCompleted(customerInfo) }
         override fun onRestoreError(error: PurchasesError) { listener?.onRestoreError(error) }
-        override fun onPurchaseCancelled() { listener?.onPurchaseCancelled() }
     }
 
     /**
