@@ -927,8 +927,14 @@ internal class PurchasesOrchestrator constructor(
             if (!state.purchaseCallbacksByProductId.containsKey(purchasingData.productId)) {
                 // When using DEFERRED proration mode, callback needs to be associated with the *old* product we are
                 // switching from, because the transaction we receive on successful purchase is for the old product.
-                val productId =
-                    if (googleProrationMode == GoogleProrationMode.DEFERRED) oldProductId else purchasingData.productId
+                val productId = if (googleProrationMode == GoogleProrationMode.DEFERRED) {
+                    // This is so, in case a developer gives us an oldProductId in the form "oldProductId:basePlanId",
+                    // we only use the oldProductId part as the callback key. Otherwise, it won't be able to find the
+                    // callback when the purchase is completed.
+                    oldProductId.substringBefore(Constants.SUBS_ID_BASE_PLAN_ID_SEPARATOR)
+                } else {
+                    purchasingData.productId
+                }
                 val mapOfProductIdToListener = mapOf(productId to purchaseCallback)
                 state = state.copy(
                     purchaseCallbacksByProductId = state.purchaseCallbacksByProductId + mapOfProductIdToListener,
