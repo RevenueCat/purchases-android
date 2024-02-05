@@ -112,14 +112,17 @@ internal class PaywallViewModelImpl(
     }
 
     override fun refreshStateIfColorsChanged(colorScheme: ColorScheme, isDark: Boolean) {
-        if (isDarkMode != isDark) {
-            // This is only used for events so no need to update the state here currently.
+        val isDarkModeChangePending = isDarkMode != isDark
+        val isColorChangePending = _colorScheme.value != colorScheme
+
+        if (isDarkModeChangePending) {
             isDarkMode = isDark
         }
-        if (_colorScheme.value != colorScheme) {
+        if (isColorChangePending) {
             _colorScheme.value = colorScheme
-            updateState()
         }
+        if (isDarkModeChangePending || isColorChangePending)
+            updateState()
     }
 
     override fun selectPackage(packageToSelect: TemplateConfiguration.PackageInfo) {
@@ -277,6 +280,7 @@ internal class PaywallViewModelImpl(
             validatedPaywallData = displayablePaywall,
             template = template,
             shouldDisplayDismissButton = options.shouldDisplayDismissButton,
+            isDarkMode = isDarkMode,
         )
     }
 
