@@ -113,8 +113,8 @@ internal class PaywallViewModelImpl(
 
     override fun refreshStateIfColorsChanged(colorScheme: ColorScheme, isDark: Boolean) {
         if (isDarkMode != isDark) {
-            // This is only used for events so no need to update the state here currently.
             isDarkMode = isDark
+            updateState()
         }
         if (_colorScheme.value != colorScheme) {
             _colorScheme.value = colorScheme
@@ -277,6 +277,7 @@ internal class PaywallViewModelImpl(
             validatedPaywallData = displayablePaywall,
             template = template,
             shouldDisplayDismissButton = options.shouldDisplayDismissButton,
+            isDarkMode = isDarkMode,
         )
     }
 
