@@ -22,10 +22,8 @@ internal data class TemplateConfiguration(
     private val darkModeColors = ColorsFactory.create(configuration.colors.dark ?: configuration.colors.light)
     private val lightModeColors = ColorsFactory.create(configuration.colors.light)
 
-    @Composable
-    @ReadOnlyComposable
     fun getCurrentColors(): Colors {
-        return if (isDarkMode || isSystemInDarkTheme()) darkModeColors else lightModeColors
+        return if (isDarkMode) darkModeColors else lightModeColors
     }
 
     data class PackageInfo(

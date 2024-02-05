@@ -41,6 +41,7 @@ internal class TemplateConfigurationFactoryTest {
                 TestData.Packages.lifetime.product.id
             ),
             template = PaywallTemplate.TEMPLATE_2,
+            isDarkMode = false,
         )
         template2Configuration = result.getOrNull()!!
     }
