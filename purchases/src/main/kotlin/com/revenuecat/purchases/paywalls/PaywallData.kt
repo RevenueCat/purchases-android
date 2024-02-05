@@ -2,8 +2,9 @@ package com.revenuecat.purchases.paywalls
 
 import android.os.Build
 import androidx.annotation.RequiresApi
-import androidx.core.os.LocaleListCompat
+import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.utils.convertToCorrectlyFormattedLocale
+import com.revenuecat.purchases.utils.getDefaultLocales
 import com.revenuecat.purchases.utils.serializers.OptionalURLSerializer
 import com.revenuecat.purchases.utils.serializers.URLSerializer
 import com.revenuecat.purchases.utils.sharedLanguageCodeWith
@@ -50,19 +51,21 @@ data class PaywallData(
     val localizedConfiguration: Pair<Locale, LocalizedConfiguration>
         @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
         get() {
-            val preferredLocales = LocaleListCompat.getDefault()
-
-            for (i in 0 until preferredLocales.size()) {
-                preferredLocales.get(i)?.let { locale: Locale ->
-                    val localeToCheck = locale.convertToCorrectlyFormattedLocale()
-                    configForLocale(localeToCheck)?.let { localizedConfiguration ->
-                        return (localeToCheck to localizedConfiguration)
-                    }
-                }
-            }
-
-            return fallbackLocalizedConfiguration
+            return localizedConfiguration(locales = getDefaultLocales())
         }
+
+    @VisibleForTesting
+    @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
+    fun localizedConfiguration(locales: List<Locale>): Pair<Locale, LocalizedConfiguration> {
+        for (locale in locales) {
+            val localeToCheck = locale.convertToCorrectlyFormattedLocale()
+            configForLocale(localeToCheck)?.let { localizedConfiguration ->
+                return (localeToCheck to localizedConfiguration)
+            }
+        }
+
+        return fallbackLocalizedConfiguration
+    }
 
     private val fallbackLocalizedConfiguration: Pair<Locale, LocalizedConfiguration>
         @RequiresApi(Build.VERSION_CODES.LOLLIPOP)

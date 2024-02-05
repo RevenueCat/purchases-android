@@ -51,6 +51,14 @@ class LocaleExtensionsTest {
     }
 
     @Test
+    fun `sharedLanguageCodeWith - returns true without region`() {
+        val locale = Locale("en")
+        val otherLocale = Locale("en", "IN")
+        assertThat(locale.sharedLanguageCodeWith(otherLocale)).isTrue
+        assertThat(otherLocale.sharedLanguageCodeWith(locale)).isTrue
+    }
+
+    @Test
     fun `sharedLanguageCodeWith - returns false when locales don't share language code`() {
         val locale = Locale("es", "ES")
         val otherLocale = Locale("en", "ES")
@@ -69,5 +77,12 @@ class LocaleExtensionsTest {
         val locale = Locale("zh-Hant")
         val otherLocale = Locale("zh-Hans")
         assertThat(locale.sharedLanguageCodeWith(otherLocale)).isFalse
+    }
+
+    @Test
+    fun `getDefaultLocales returns the correct list`() {
+        assertThat(
+            getDefaultLocales().map { it.toString() }
+        ).isEqualTo(listOf("en_US"))
     }
 }

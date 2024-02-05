@@ -150,6 +150,19 @@ class PaywallDataTest {
     }
 
     @Test
+    fun `localized configuration finds locale with different region`() {
+        val paywall: PaywallData = decode(PAYWALLDATA_SAMPLE1)
+
+        val configuration = paywall.localizedConfiguration(
+            locales = listOf(
+                Locale("en", "IN")
+            )
+        )
+        assertThat(configuration).isNotNull
+        assertThat(configuration.second.title).isEqualTo("Paywall")
+    }
+
+    @Test
     fun `decodes empty images as null`() {
         val paywall: PaywallData = decode(PAYWALLDATA_EMPTY_IMAGES)
 
