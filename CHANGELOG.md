@@ -1,3 +1,8 @@
+## 6.9.6
+### Bugfixes
+* Fix `DEFERRED` purchases when passing old product id in invalid format (#1593) via Toni Rico (@tonidero)
+
+
 ## 6.9.5
 ### Bugfixes
 * Catch IllegalStateException and forward StoreProblemError (#1248) via Cesar de la Vega (@vegaro)
