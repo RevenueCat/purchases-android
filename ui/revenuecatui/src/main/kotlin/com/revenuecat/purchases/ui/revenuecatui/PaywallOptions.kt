@@ -27,6 +27,7 @@ internal sealed class OfferingSelection {
 data class PaywallOptions internal constructor(
     internal val offeringSelection: OfferingSelection,
     internal val shouldDisplayDismissButton: Boolean,
+    val isDarkMode: Boolean?,
     val fontProvider: FontProvider?,
     val listener: PaywallListener?,
     internal val mode: PaywallMode,
@@ -40,6 +41,7 @@ data class PaywallOptions internal constructor(
         listener = builder.listener,
         mode = builder.mode,
         dismissRequest = builder.dismissRequest,
+        isDarkMode = builder.isDarkMode
     )
 
     class Builder(
@@ -50,6 +52,7 @@ data class PaywallOptions internal constructor(
         internal var fontProvider: FontProvider? = null
         internal var listener: PaywallListener? = null
         internal var mode: PaywallMode = PaywallMode.default
+        internal var isDarkMode: Boolean = false
 
         fun setOffering(offering: Offering?) = apply {
             this.offeringSelection = offering?.let { OfferingSelection.OfferingType(it) }
@@ -59,6 +62,10 @@ data class PaywallOptions internal constructor(
         internal fun setOfferingId(offeringId: String?) = apply {
             this.offeringSelection = offeringId?.let { OfferingSelection.OfferingId(it) }
                 ?: OfferingSelection.None
+        }
+
+        fun setDarkMode(isDarkMode: Boolean) {
+            this.isDarkMode = isDarkMode
         }
 
         /**
