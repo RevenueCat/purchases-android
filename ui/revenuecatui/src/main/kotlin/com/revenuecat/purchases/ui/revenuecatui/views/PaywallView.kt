@@ -119,6 +119,13 @@ class PaywallView : AbstractComposeView {
         paywallOptions = paywallOptions.copy(fontProvider = fontProvider)
     }
 
+    /**
+     * Sets the paywall dark mode. true => darkmode, false => lightmode, null => systemDarkMode.
+     */
+    fun setDarkMode(isDarkMode: Boolean?) {
+        paywallOptions = paywallOptions.copy(isDarkMode = isDarkMode)
+    }
+
     private fun init(context: Context, attrs: AttributeSet?) {
         parseAttributes(context, attrs)
         paywallOptions = PaywallOptions.Builder { dismissHandler?.invoke() }
