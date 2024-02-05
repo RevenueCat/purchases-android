@@ -45,6 +45,7 @@ internal fun LoadingPaywall(
     mode: PaywallMode,
     shouldDisplayDismissButton: Boolean,
     onDismiss: () -> Unit,
+    isDarkMode: Boolean,
 ) {
     val resourceProvider = LocalContext.current.toResourceProvider()
 
@@ -73,6 +74,7 @@ internal fun LoadingPaywall(
         validatedPaywallData = paywallData,
         template = LoadingPaywallConstants.template,
         shouldDisplayDismissButton = shouldDisplayDismissButton,
+        isDarkMode = isDarkMode,
     )
 
     when (state) {
@@ -211,5 +213,6 @@ internal fun LoadingPaywallPreview() {
         mode = PaywallMode.FULL_SCREEN,
         shouldDisplayDismissButton = false,
         onDismiss = {},
+        isDarkMode = false,
     )
 }

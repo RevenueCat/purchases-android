@@ -17,6 +17,7 @@ internal data class TemplateConfiguration(
     val configuration: PaywallData.Configuration,
     val images: Images,
     val locale: Locale,
+    val isDarkMode: Boolean,
 ) {
     private val darkModeColors = ColorsFactory.create(configuration.colors.dark ?: configuration.colors.light)
     private val lightModeColors = ColorsFactory.create(configuration.colors.light)
@@ -24,7 +25,7 @@ internal data class TemplateConfiguration(
     @Composable
     @ReadOnlyComposable
     fun getCurrentColors(): Colors {
-        return if (isSystemInDarkTheme()) darkModeColors else lightModeColors
+        return if (isDarkMode || isSystemInDarkTheme()) darkModeColors else lightModeColors
     }
 
     data class PackageInfo(

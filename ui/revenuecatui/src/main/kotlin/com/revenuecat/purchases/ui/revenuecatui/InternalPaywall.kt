@@ -60,7 +60,7 @@ internal fun InternalPaywall(
     }
     PaywallTheme(fontProvider = options.fontProvider) {
         viewModel.refreshStateIfLocaleChanged()
-        viewModel.refreshStateIfColorsChanged(MaterialTheme.colorScheme, isSystemInDarkTheme())
+        viewModel.refreshStateIfColorsChanged(MaterialTheme.colorScheme, options.isDarkMode ?: isSystemInDarkTheme())
 
         val state = viewModel.state.collectAsState().value
 
@@ -73,6 +73,7 @@ internal fun InternalPaywall(
                 mode = options.mode,
                 shouldDisplayDismissButton = options.shouldDisplayDismissButton,
                 onDismiss = viewModel::closePaywall,
+                isDarkMode = options.isDarkMode ?: isSystemInDarkTheme(),
             )
         }
 
@@ -167,7 +168,7 @@ internal fun getPaywallViewModel(
             applicationContext.toResourceProvider(),
             options,
             MaterialTheme.colorScheme,
-            isSystemInDarkTheme(),
+            options.isDarkMode ?: isSystemInDarkTheme(),
             preview = isInPreviewMode(),
         ),
     )
