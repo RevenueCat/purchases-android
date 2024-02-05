@@ -293,6 +293,51 @@ internal class PurchasesTest : BasePurchasesTest() {
     }
 
     @Test
+    fun `purchasing a deferred upgrade with productId and basePlanId receives passes only productId`() {
+        val (_, offerings) = stubOfferings("onemonth_freetrial")
+        val packageToPurchase = offerings[STUB_OFFERING_IDENTIFIER]!!.monthly!!
+        val purchaseParams = PurchaseParams.Builder(mockActivity, packageToPurchase)
+            .oldProductId("oldProductId:oldBasePlanId")
+            .googleProrationMode(GoogleProrationMode.DEFERRED)
+            .build()
+
+        mockQueryingProductDetails("oldProductId", ProductType.SUBS, null)
+        mockPurchaseFound()
+
+        var purchaseCompletedCallCount = 0
+        purchases.purchase(
+            purchaseParams,
+            object : PurchaseCallback {
+                override fun onCompleted(storeTransaction: StoreTransaction, customerInfo: CustomerInfo) {
+                    purchaseCompletedCallCount++
+                }
+                override fun onError(error: PurchasesError, userCancelled: Boolean) {}
+            },
+        )
+
+        verify(exactly = 1) {
+            mockBillingAbstract.makePurchaseAsync(
+                eq(mockActivity),
+                eq(appUserId),
+                packageToPurchase.product.purchasingData,
+                match { replaceProductInfo ->
+                    replaceProductInfo.oldPurchase.productIds.size == 1 &&
+                        replaceProductInfo.oldPurchase.productIds.first() == "oldProductId" &&
+                        replaceProductInfo.prorationMode == GoogleProrationMode.DEFERRED
+                },
+                STUB_OFFERING_IDENTIFIER,
+                null,
+            )
+        }
+
+        // Note we use the oldProductId, since for deferred purchases the oldProductId is returned
+        val transaction = getMockedStoreTransaction("oldProductId", "newToken", ProductType.SUBS)
+        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(listOf(transaction))
+
+        assertThat(purchaseCompletedCallCount).isEqualTo(1)
+    }
+
+    @Test
     fun `purchasing an upgrade with productId and basePlanId finds purchase with productId`() {
         val (_, offerings) = stubOfferings("onemonth_freetrial")
         val packageToPurchase = offerings[STUB_OFFERING_IDENTIFIER]!!.monthly!!
