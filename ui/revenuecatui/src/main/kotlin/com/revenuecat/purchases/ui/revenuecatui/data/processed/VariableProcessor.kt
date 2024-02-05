@@ -87,13 +87,20 @@ internal object VariableProcessor {
         VariableName.APP_NAME -> variableDataProvider.applicationName
         VariableName.PRICE -> variableDataProvider.localizedPrice(rcPackage)
         VariableName.PRICE_PER_PERIOD -> variableDataProvider.localizedPricePerPeriod(rcPackage, locale)
+        VariableName.PRICE_PER_PERIOD_FULL -> variableDataProvider.localizedPricePerPeriodFull(rcPackage, locale)
         VariableName.TOTAL_PRICE_AND_PER_MONTH -> variableDataProvider.localizedPriceAndPerMonth(
+            rcPackage,
+            locale,
+        )
+        VariableName.TOTAL_PRICE_AND_PER_MONTH_FULL -> variableDataProvider.localizedPriceAndPerMonthFull(
             rcPackage,
             locale,
         )
 
         VariableName.PRODUCT_NAME -> variableDataProvider.productName(rcPackage)
         VariableName.SUB_PERIOD -> variableDataProvider.periodName(rcPackage)
+        VariableName.SUB_PERIOD_LENGTH -> variableDataProvider.periodLength(rcPackage, locale)
+        VariableName.SUB_PERIOD_ABBREVIATED -> variableDataProvider.periodNameAbbreviation(rcPackage, locale)
         VariableName.SUB_PRICE_PER_WEEK -> variableDataProvider.localizedPricePerWeek(
             rcPackage,
             locale,
@@ -118,9 +125,13 @@ internal object VariableProcessor {
         APP_NAME("app_name"),
         PRICE("price"),
         PRICE_PER_PERIOD("price_per_period"),
+        PRICE_PER_PERIOD_FULL("price_per_period_full"),
         TOTAL_PRICE_AND_PER_MONTH("total_price_and_per_month"),
+        TOTAL_PRICE_AND_PER_MONTH_FULL("total_price_and_per_month_full"),
         PRODUCT_NAME("product_name"),
         SUB_PERIOD("sub_period"),
+        SUB_PERIOD_LENGTH("sub_period_length"),
+        SUB_PERIOD_ABBREVIATED("sub_period_abbreviated"),
         SUB_PRICE_PER_WEEK("sub_price_per_week"),
         SUB_PRICE_PER_MONTH("sub_price_per_month"),
         SUB_DURATION("sub_duration"),

@@ -9,11 +9,12 @@ import java.util.Locale
 internal fun Period.localizedAbbreviatedPeriod(
     locale: Locale,
 ): String {
-    var formattedPeriod = localizedPeriod(locale, MeasureFormat.FormatWidth.SHORT)
-    if (value == 1 && formattedPeriod.startsWith("1")) {
-        formattedPeriod = formattedPeriod.substring(startIndex = 1).trim()
-    }
-    return formattedPeriod
+    return localized(locale, MeasureFormat.FormatWidth.SHORT)
+}
+internal fun Period.localizedUnitPeriod(
+    locale: Locale,
+): String {
+    return localized(locale, MeasureFormat.FormatWidth.WIDE)
 }
 
 internal fun Period.localizedPeriod(
@@ -33,3 +34,14 @@ private val Period.Unit.measureUnit: MeasureUnit?
         Period.Unit.YEAR -> MeasureUnit.YEAR
         Period.Unit.UNKNOWN -> null
     }
+
+private fun Period.localized(
+    locale: Locale,
+    width: MeasureFormat.FormatWidth,
+): String {
+    var formattedPeriod = localizedPeriod(locale, width)
+    if (value == 1 && formattedPeriod.startsWith("1")) {
+        formattedPeriod = formattedPeriod.substring(startIndex = 1).trim()
+    }
+    return formattedPeriod
+}
