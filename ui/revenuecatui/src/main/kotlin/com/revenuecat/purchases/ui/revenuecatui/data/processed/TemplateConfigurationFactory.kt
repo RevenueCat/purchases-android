@@ -15,6 +15,7 @@ internal object TemplateConfigurationFactory {
         activelySubscribedProductIdentifiers: Set<String>,
         nonSubscriptionProductIdentifiers: Set<String>,
         template: PaywallTemplate,
+        isDarkMode: Boolean,
     ): Result<TemplateConfiguration> {
         val (locale, localizedConfiguration) = paywallData.localizedConfiguration
         val sourceImages = paywallData.config.images
@@ -48,6 +49,7 @@ internal object TemplateConfigurationFactory {
                 packages = packageConfiguration,
                 configuration = paywallData.config,
                 images = images,
+                isDarkMode = isDarkMode,
             ),
         )
     }

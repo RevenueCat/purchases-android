@@ -76,6 +76,7 @@ internal fun Offering.toPaywallState(
     validatedPaywallData: PaywallData,
     template: PaywallTemplate,
     shouldDisplayDismissButton: Boolean,
+    isDarkMode: Boolean,
 ): PaywallState {
     val createTemplateConfigurationResult = TemplateConfigurationFactory.create(
         variableDataProvider = variableDataProvider,
@@ -85,6 +86,7 @@ internal fun Offering.toPaywallState(
         activelySubscribedProductIdentifiers = activelySubscribedProductIdentifiers,
         nonSubscriptionProductIdentifiers = nonSubscriptionProductIdentifiers,
         template,
+        isDarkMode = isDarkMode,
     )
     val templateConfiguration = createTemplateConfigurationResult.getOrElse {
         return PaywallState.Error(it.message ?: "Unknown error")
