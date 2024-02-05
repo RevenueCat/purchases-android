@@ -70,6 +70,7 @@ class PaywallView : AbstractComposeView {
             listener?.onPurchaseCompleted(customerInfo, storeTransaction)
         }
         override fun onPurchaseError(error: PurchasesError) { listener?.onPurchaseError(error) }
+        override fun onPurchaseCancelled() { listener?.onPurchaseCancelled() }
         override fun onRestoreStarted() { listener?.onRestoreStarted() }
         override fun onRestoreCompleted(customerInfo: CustomerInfo) { listener?.onRestoreCompleted(customerInfo) }
         override fun onRestoreError(error: PurchasesError) { listener?.onRestoreError(error) }
@@ -127,7 +128,7 @@ class PaywallView : AbstractComposeView {
 
     private fun init(context: Context, attrs: AttributeSet?) {
         parseAttributes(context, attrs)
-        paywallOptionsState.value = PaywallOptions.Builder { dismissHandler?.invoke() }
+        paywallOptions = PaywallOptions.Builder { dismissHandler?.invoke() }
             .setListener(internalListener)
             .setFontProvider(initialFontProvider)
             .setOfferingId(initialOfferingId)

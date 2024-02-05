@@ -2,7 +2,7 @@ package com.revenuecat.apitester.kotlin.revenuecatui
 
 import android.content.Context
 import android.util.AttributeSet
-import android.widget.FrameLayout
+import androidx.compose.ui.platform.AbstractComposeView
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.ui.revenuecatui.ExperimentalPreviewRevenueCatUIPurchasesAPI
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
@@ -14,7 +14,7 @@ import com.revenuecat.purchases.ui.revenuecatui.views.PaywallFooterView
 private class PaywallFooterViewAPI {
 
     fun checkType(context: Context) {
-        val paywallFooterView: FrameLayout = PaywallFooterView(context)
+        val paywallFooterView: AbstractComposeView = PaywallFooterView(context)
     }
 
     @Suppress("LongParameterList")
