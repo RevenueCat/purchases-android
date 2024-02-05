@@ -931,7 +931,7 @@ internal class PurchasesOrchestrator constructor(
                     // This is so, in case a developer gives us an oldProductId in the form "oldProductId:basePlanId",
                     // we only use the oldProductId part as the callback key. Otherwise, it won't be able to find the
                     // callback when the purchase is completed.
-                    oldProductId.split(":")[0]
+                    oldProductId.substringBefore(Constants.SUBS_ID_BASE_PLAN_ID_SEPARATOR)
                 } else {
                     purchasingData.productId
                 }
