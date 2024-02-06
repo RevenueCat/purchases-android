@@ -2,11 +2,11 @@ package com.revenuecat.purchases.ui.revenuecatui.views
 
 import android.content.Context
 import android.util.AttributeSet
-import androidx.compose.runtime.Composable
+import android.widget.FrameLayout
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.ui.platform.AbstractComposeView
+import androidx.compose.ui.platform.ComposeView
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
@@ -24,7 +24,7 @@ import com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider
  * View that wraps the [PaywallFooter] Composable to display the Paywall Footer through XML layouts and the View system.
  */
 @ExperimentalPreviewRevenueCatUIPurchasesAPI
-open class PaywallFooterView : AbstractComposeView {
+open class PaywallFooterView : FrameLayout {
 
     constructor(context: Context, attrs: AttributeSet?) : super(context, attrs) {
         init(context, attrs)
@@ -123,6 +123,19 @@ open class PaywallFooterView : AbstractComposeView {
             .setFontProvider(initialFontProvider)
             .setOfferingId(initialOfferingId)
             .build()
+        addView(
+            ComposeView(context).apply {
+                setContent {
+                    val paywallOptions by remember {
+                        paywallOptionsState
+                    }
+                    PaywallFooter(
+                        options = paywallOptions,
+                        condensed = initialCondensed,
+                    )
+                }
+            },
+        )
     }
 
     @SuppressWarnings("DestructuringDeclarationWithTooManyEntries")
@@ -132,17 +145,5 @@ open class PaywallFooterView : AbstractComposeView {
         setOfferingId(offeringId)
         this.initialFontProvider = fontProvider
         condensed?.let { this.initialCondensed = it }
-    }
-
-    @Composable
-    override fun Content() {
-        val paywallOptions by remember {
-            paywallOptionsState
-        }
-
-        PaywallFooter(
-            options = paywallOptions,
-            condensed = initialCondensed,
-        )
     }
 }
