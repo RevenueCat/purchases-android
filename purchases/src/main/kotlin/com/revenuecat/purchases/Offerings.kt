@@ -9,7 +9,7 @@ package com.revenuecat.purchases
 data class Offerings(
     val current: Offering?,
     val all: Map<String, Offering>,
-    val placement: Placement?,
+    val placement: Placements?,
 ) {
 
     /**
@@ -25,11 +25,27 @@ data class Offerings(
      * @param identifier Offering identifier
      */
     operator fun get(identifier: String) = getOffering(identifier)
+
+    fun getCurrentOffering(forPlacement: String): Offering? {
+        val placement = this.placement ?: run {
+            return null
+        }
+
+        val offeringForPlacement = placement.offeringIdsByPlacement[forPlacement]?.let { getOffering(it) }
+        val fallbackOffering = placement.fallbackOfferingId?.let { getOffering(it) }
+
+        val showNoOffering = placement.offeringIdsByPlacement.containsKey(forPlacement)
+        return offeringForPlacement ?: if (showNoOffering) null else fallbackOffering
+    }
 }
 
-data class Placement(
+/**
+ * This class contains all the offerings by placement configured in RevenueCat dashboard.
+ * For more info see https://www.revenuecat.com/docs/targeting
+ * @property fallbackOfferingId The optional offering identifier to fallback on if the placement isn't found.
+ * @property offeringIdsByPlacement Dictionary of all offering identifiers (or null) keyed by their placement identifier.
+ */
+data class Placements(
     val fallbackOfferingId: String?,
     val offeringIdsByPlacement: Map<String, String?>,
-) {
-
-}
+)

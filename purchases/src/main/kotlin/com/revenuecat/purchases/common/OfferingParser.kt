@@ -5,7 +5,7 @@ import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
-import com.revenuecat.purchases.Placement
+import com.revenuecat.purchases.Placements
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.paywalls.PaywallData
@@ -50,14 +50,14 @@ internal abstract class OfferingParser {
             }
         }
 
-        val placement: Placement? = offeringsJson.optJSONObject("placement")?.let {
-            Placement(
+        val placements: Placements? = offeringsJson.optJSONObject("placements")?.let {
+            Placements(
                 it.optString("fallback_offering_id"),
                 it.optJSONObject("offering_ids_by_placement")?.toMap<String?>() ?: emptyMap()
             )
         }
 
-        return Offerings(offerings[currentOfferingID], offerings, placement)
+        return Offerings(offerings[currentOfferingID], offerings, placements)
     }
 
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
