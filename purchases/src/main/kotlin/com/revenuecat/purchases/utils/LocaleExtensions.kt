@@ -2,6 +2,7 @@ package com.revenuecat.purchases.utils
 
 import android.os.Build
 import androidx.annotation.RequiresApi
+import androidx.core.os.LocaleListCompat
 import com.revenuecat.purchases.common.errorLog
 import java.util.Locale
 import java.util.MissingResourceException
@@ -38,6 +39,13 @@ internal fun Locale.sharedLanguageCodeWith(locale: Locale): Boolean {
     }
 }
 
+/**
+ * @return list of Locales from LocaleListCompat.getDefault()
+ */
+fun getDefaultLocales(): List<Locale> {
+    return LocaleListCompat.getDefault().toList()
+}
+
 @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
 private fun Locale.inferScript(): String {
     if (!script.isNullOrEmpty()) {
@@ -53,4 +61,10 @@ private fun Locale.inferScript(): String {
         }
         else -> ""
     }
+}
+
+private fun LocaleListCompat.toList(): List<Locale> {
+    return Array(size()) {
+        this.get(it)
+    }.filterNotNull()
 }
