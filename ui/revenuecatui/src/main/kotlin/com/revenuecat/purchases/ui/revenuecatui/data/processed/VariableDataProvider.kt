@@ -9,6 +9,7 @@ import com.revenuecat.purchases.ui.revenuecatui.extensions.isMonthly
 import com.revenuecat.purchases.ui.revenuecatui.extensions.isSubscription
 import com.revenuecat.purchases.ui.revenuecatui.extensions.localizedAbbreviatedPeriod
 import com.revenuecat.purchases.ui.revenuecatui.extensions.localizedPeriod
+import com.revenuecat.purchases.ui.revenuecatui.extensions.localizedUnitPeriod
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ResourceProvider
 import java.util.Locale
 import kotlin.math.roundToInt
@@ -68,6 +69,14 @@ internal class VariableDataProvider(
         return stringId?.let { resourceProvider.getString(it) }
     }
 
+    fun periodLength(rcPackage: Package, locale: Locale): String? {
+        return rcPackage.product.period?.localizedUnitPeriod(locale)
+    }
+
+    fun periodNameAbbreviation(rcPackage: Package, locale: Locale): String? {
+        return rcPackage.product.period?.localizedAbbreviatedPeriod(locale)
+    }
+
     fun subscriptionDuration(rcPackage: Package, locale: Locale): String? {
         return rcPackage.product.period?.localizedPeriod(locale)
             ?: periodName(rcPackage)
@@ -94,12 +103,30 @@ internal class VariableDataProvider(
         } ?: localizedPrice
     }
 
+    fun localizedPricePerPeriodFull(rcPackage: Package, locale: Locale): String {
+        val localizedPrice = localizedPrice(rcPackage)
+        return rcPackage.product.period?.let { period ->
+            val formattedPeriod = period.localizedUnitPeriod(locale)
+            "$localizedPrice/$formattedPeriod"
+        } ?: localizedPrice
+    }
+
     fun localizedPriceAndPerMonth(rcPackage: Package, locale: Locale): String {
         if (!rcPackage.isSubscription || rcPackage.isMonthly) {
             return localizedPricePerPeriod(rcPackage, locale)
         }
         val unit = Period(1, Period.Unit.MONTH, "P1M").localizedAbbreviatedPeriod(locale)
         val pricePerPeriod = localizedPricePerPeriod(rcPackage, locale)
+        val pricePerMonth = localizedPricePerMonth(rcPackage, locale)
+        return "$pricePerPeriod ($pricePerMonth/$unit)"
+    }
+
+    fun localizedPriceAndPerMonthFull(rcPackage: Package, locale: Locale): String {
+        if (!rcPackage.isSubscription || rcPackage.isMonthly) {
+            return localizedPricePerPeriodFull(rcPackage, locale)
+        }
+        val unit = Period(1, Period.Unit.MONTH, "P1M").localizedUnitPeriod(locale)
+        val pricePerPeriod = localizedPricePerPeriodFull(rcPackage, locale)
         val pricePerMonth = localizedPricePerMonth(rcPackage, locale)
         return "$pricePerPeriod ($pricePerMonth/$unit)"
     }
