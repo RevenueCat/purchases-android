@@ -81,6 +81,9 @@ class LocaleExtensionsTest {
 
     @Test
     fun `getDefaultLocales returns the correct list`() {
+        // Note: this is primarily to test that we use LocaleListCompat correctly.
+        // It might fail locally, but it's meant to be checked on CI where we know this will be the locale.
+        // Fix-me: only run this on CI.
         assertThat(
             getDefaultLocales().map { it.toString() }
         ).isEqualTo(listOf("en_US"))
