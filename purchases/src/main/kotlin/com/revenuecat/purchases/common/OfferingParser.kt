@@ -67,10 +67,11 @@ internal abstract class OfferingParser {
 
         val paywallDataJson = offeringJson.optJSONObject("paywall")
 
+        @Suppress("TooGenericExceptionCaught")
         val paywallData: PaywallData? = paywallDataJson?.let {
             try {
                 json.decodeFromString<PaywallData>(it.toString())
-            } catch (e: IllegalArgumentException) {
+            } catch (e: Exception) {
                 errorLog("Error deserializing paywall data", e)
                 null
             }
