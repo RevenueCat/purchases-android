@@ -9,6 +9,7 @@ package com.revenuecat.purchases
 data class Offerings(
     val current: Offering?,
     val all: Map<String, Offering>,
+    val placement: Placement?,
 ) {
 
     /**
@@ -24,4 +25,11 @@ data class Offerings(
      * @param identifier Offering identifier
      */
     operator fun get(identifier: String) = getOffering(identifier)
+}
+
+data class Placement(
+    val fallbackOfferingId: String?,
+    val offeringIdsByPlacement: Map<String, String?>,
+) {
+
 }

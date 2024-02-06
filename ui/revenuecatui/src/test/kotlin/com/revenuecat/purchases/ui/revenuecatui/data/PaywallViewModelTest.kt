@@ -64,7 +64,8 @@ class PaywallViewModelTest {
         mapOf(
             TestData.template1Offering.identifier to TestData.template1Offering,
             TestData.template2Offering.identifier to TestData.template2Offering
-        )
+        ),
+        null,
     )
 
     @get:Rule
@@ -210,7 +211,8 @@ class PaywallViewModelTest {
     fun `Error loading empty offerings`() {
         coEvery { purchases.awaitOfferings() } returns Offerings(
             null,
-            mapOf()
+            mapOf(),
+            null,
         )
 
         val model = create(

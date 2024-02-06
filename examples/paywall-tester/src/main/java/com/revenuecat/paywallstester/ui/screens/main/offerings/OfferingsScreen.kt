@@ -187,6 +187,7 @@ fun OfferingsScreenPreview() {
                     Offerings(
                         current = null,
                         all = emptyMap(),
+                        null,
                     ),
                 ),
             )
