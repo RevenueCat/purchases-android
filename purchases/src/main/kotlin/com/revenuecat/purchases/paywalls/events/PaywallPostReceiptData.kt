@@ -11,14 +11,16 @@ import kotlinx.serialization.json.encodeToJsonElement
 internal data class PaywallPostReceiptData(
     @SerialName("session_id")
     val sessionID: String,
-    @SerialName("paywall_revision")
-    val paywallRevision: Int,
+    @SerialName("revision")
+    val revision: Int,
     @SerialName("display_mode")
     val displayMode: String,
     @SerialName("dark_mode")
     val darkMode: Boolean,
     @SerialName("locale")
     val localeIdentifier: String,
+    @SerialName("offering_id")
+    val offeringId: String,
 ) {
     companion object {
         val json = Json.Default
