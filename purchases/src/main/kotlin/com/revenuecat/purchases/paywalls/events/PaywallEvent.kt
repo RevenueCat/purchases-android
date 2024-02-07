@@ -61,7 +61,7 @@ data class PaywallEvent(
     internal fun toPaywallPostReceiptData(): PaywallPostReceiptData {
         return PaywallPostReceiptData(
             sessionID = data.sessionIdentifier.toString(),
-            paywallRevision = data.paywallRevision,
+            revision = data.paywallRevision,
             displayMode = data.displayMode,
             darkMode = data.darkMode,
             localeIdentifier = data.localeIdentifier,
