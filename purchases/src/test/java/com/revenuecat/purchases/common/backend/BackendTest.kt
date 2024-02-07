@@ -34,6 +34,7 @@ import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.PricingPhase
 import com.revenuecat.purchases.models.RecurrenceMode
 import com.revenuecat.purchases.models.SubscriptionOptions
+import com.revenuecat.purchases.paywalls.events.PaywallPostReceiptData
 import com.revenuecat.purchases.utils.Responses
 import com.revenuecat.purchases.utils.filterNotNullValues
 import com.revenuecat.purchases.utils.getNullableString
@@ -1325,6 +1326,47 @@ class BackendTest {
         }
     }
 
+    @Test
+    fun `postReceipt passes paywall in body`() {
+        val receiptInfo = ReceiptInfo(
+            productIDs = productIDs,
+            storeProduct = storeProduct
+        )
+
+        val expectedStoreUserId = "id"
+
+        mockPostReceiptResponseAndPost(
+            backend,
+            responseCode = 200,
+            isRestore = false,
+            clientException = null,
+            resultBody = null,
+            observerMode = true,
+            receiptInfo = receiptInfo,
+            storeAppUserID = expectedStoreUserId,
+            initiationSource = initiationSource,
+            paywallPostReceiptData = PaywallPostReceiptData(
+                sessionID = "1234-1234-1234-1234",
+                revision = 17,
+                displayMode = "full_screen",
+                darkMode = true,
+                localeIdentifier = "en_US",
+                offeringId = "onboarding"
+            )
+        )
+
+        assertThat(requestBodySlot.isCaptured).isTrue
+        assertThat(requestBodySlot.captured.keys).contains("paywall")
+        assertThat(requestBodySlot.captured["paywall"]).isEqualTo(mapOf(
+            "session_id" to "1234-1234-1234-1234",
+            "revision" to 17,
+            "display_mode" to "full_screen",
+            "dark_mode" to true,
+            "locale" to "en_US",
+            "offering_id" to "onboarding",
+        ))
+    }
+
     // endregion
 
     // region getOfferings
@@ -2346,6 +2388,7 @@ class BackendTest {
         initiationSource: PostReceiptInitiationSource,
         delayed: Boolean = false,
         marketplace: String? = null,
+        paywallPostReceiptData: PaywallPostReceiptData? = null,
         onSuccess: (CustomerInfo, JSONObject?) -> Unit = onReceivePostReceiptSuccessHandler,
         onError: PostReceiptDataErrorCallback = postReceiptErrorCallback
     ): CustomerInfo {
@@ -2357,6 +2400,7 @@ class BackendTest {
             observerMode = observerMode,
             receiptInfo = receiptInfo,
             storeAppUserID = storeAppUserID,
+            paywallPostReceiptData = paywallPostReceiptData,
             delayed = delayed
         )
 
@@ -2370,7 +2414,7 @@ class BackendTest {
             storeAppUserID = storeAppUserID,
             marketplace = marketplace,
             initiationSource = initiationSource,
-            paywallPostReceiptData = null,
+            paywallPostReceiptData = paywallPostReceiptData,
             onSuccess = onSuccess,
             onError = onError
         )
@@ -2387,7 +2431,8 @@ class BackendTest {
         delayed: Boolean = false,
         observerMode: Boolean,
         receiptInfo: ReceiptInfo,
-        storeAppUserID: String?
+        storeAppUserID: String?,
+        paywallPostReceiptData: PaywallPostReceiptData? = null,
     ): CustomerInfo {
         val body = mapOf(
             "fetch_token" to token,
@@ -2399,7 +2444,8 @@ class BackendTest {
             "price" to receiptInfo.price,
             "currency" to receiptInfo.currency,
             "normal_duration" to receiptInfo.duration,
-            "store_user_id" to storeAppUserID
+            "store_user_id" to storeAppUserID,
+            "paywall" to paywallPostReceiptData?.toMap(),
         ).filterNotNullValues()
 
         return mockResponse(

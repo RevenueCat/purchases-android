@@ -19,6 +19,8 @@ internal data class PaywallPostReceiptData(
     val darkMode: Boolean,
     @SerialName("locale")
     val localeIdentifier: String,
+    @SerialName("offering_id")
+    val offeringId: String,
 ) {
     companion object {
         val json = Json.Default

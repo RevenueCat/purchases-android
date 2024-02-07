@@ -65,6 +65,7 @@ data class PaywallEvent(
             displayMode = data.displayMode,
             darkMode = data.darkMode,
             localeIdentifier = data.localeIdentifier,
+            offeringId = data.offeringIdentifier,
         )
     }
 }
