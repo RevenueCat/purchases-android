@@ -49,6 +49,8 @@
 #    static <1>$$serializer INSTANCE;
 #}
 
+# Adding these because when target Android is 14 but compile version is lower than 14 there are r8 issues
+# https://github.com/RevenueCat/purchases-android/pull/1606
 -keep class kotlinx.serialization.internal.ClassValueParametrizedCache$initClassValue$1 { ** computeValue(java.lang.Class); }
 -keep class kotlinx.serialization.internal.ClassValueCache$initClassValue$1 { ** computeValue(java.lang.Class); }
 # END Keep kotlinx.serialization annotations.
