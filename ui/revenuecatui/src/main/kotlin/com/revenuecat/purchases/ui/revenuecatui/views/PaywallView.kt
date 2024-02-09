@@ -119,6 +119,13 @@ class PaywallView : AbstractComposeView {
         paywallOptions = paywallOptions.copy(fontProvider = fontProvider)
     }
 
+    /**
+     * Sets the visibility of the dismiss button in the Paywall.
+     */
+    fun setDisplayDismissButton(shouldDisplayDismissButton: Boolean) {
+        paywallOptions = paywallOptions.copy(shouldDisplayDismissButton = shouldDisplayDismissButton)
+    }
+
     private fun init(context: Context, attrs: AttributeSet?) {
         parseAttributes(context, attrs)
         paywallOptions = PaywallOptions.Builder { dismissHandler?.invoke() }
