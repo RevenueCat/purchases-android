@@ -1,3 +1,10 @@
+## 7.5.1
+### Bugfixes
+* Fix serialization proguard rules (#1606) via Cesar de la Vega (@vegaro)
+* Fix paywall POST receipt data for paywall revision (#1605) via Josh Holtz (@joshdholtz)
+### Other Changes
+* `Paywalls`: add test coverage for locales with different region (#1600) via NachoSoto (@NachoSoto)
+
 ## 7.5.0
 ### New Features
 * [EXTERNAL] Exposing fontprovider setter in `PaywallView` and `PaywallFooterView` by @Jjastiny (#1589) via Toni Rico (@tonidero)
