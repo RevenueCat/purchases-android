@@ -1,8 +1,14 @@
 package com.revenuecat.paywallstester
 
+import android.graphics.Color
 import android.os.Bundle
 import android.util.Log
+import android.view.View
+import android.view.WindowInsets
+import android.view.WindowManager
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
 import com.revenuecat.paywallstester.databinding.ActivityPaywallViewBinding
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Package
@@ -14,6 +20,17 @@ import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 class PaywallViewActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        val windowInsetsController = ViewCompat.getWindowInsetsController(window.decorView)
+        windowInsetsController?.isAppearanceLightNavigationBars = false
+        windowInsetsController?.isAppearanceLightStatusBars = true
+
+        val window = window
+        // For extending content behind the Navigation Bar as well
+        window.addFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS)
+
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+
         val offeringId = intent.getStringExtra("offering_id")
         val binding = ActivityPaywallViewBinding.inflate(layoutInflater)
         setContentView(binding.root)
