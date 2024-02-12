@@ -128,9 +128,10 @@ class PaywallViewModelTest {
             options,
             TestData.Constants.currentColorScheme,
             isDarkMode = false,
+            shouldDisplayBlock = null,
         )
         coVerify(exactly = 1) { purchases.awaitOfferings() }
-        model.updateOptions(options)
+        model.updateOptions(options, shouldDisplayBlock = null)
         coVerify(exactly = 1) { purchases.awaitOfferings() }
     }
 
@@ -148,11 +149,12 @@ class PaywallViewModelTest {
             options1,
             TestData.Constants.currentColorScheme,
             isDarkMode = false,
+            shouldDisplayBlock = null,
         )
         coVerify(exactly = 1) { purchases.awaitOfferings() }
-        model.updateOptions(options1)
+        model.updateOptions(options1, shouldDisplayBlock = null)
         coVerify(exactly = 1) { purchases.awaitOfferings() }
-        model.updateOptions(options2)
+        model.updateOptions(options2, shouldDisplayBlock = null)
         coVerify(exactly = 2) { purchases.awaitOfferings() }
     }
 
@@ -358,6 +360,37 @@ class PaywallViewModelTest {
     }
 
     @Test
+    fun `restorePurchases calls onDismiss if shouldDisplayBlock condition true`() {
+        val model = create {
+            true
+        }
+
+        coEvery {
+            purchases.awaitRestore()
+        } returns customerInfo
+
+        model.restorePurchases()
+
+        assertThat(dismissInvoked).isTrue()
+    }
+
+    @Test
+    fun `restorePurchases does not call onDismiss if shouldDisplayBlock condition false`() {
+        val model = create {
+            false
+        }
+
+        coEvery {
+            purchases.awaitRestore()
+        } returns customerInfo
+
+        model.restorePurchases()
+
+        assertThat(dismissInvoked).isFalse()
+    }
+
+
+    @Test
     fun `restorePurchases fails`() {
         val model = create()
 
@@ -536,6 +569,7 @@ class PaywallViewModelTest {
         offering: Offering? = null,
         activeSubscriptions: Set<String> = setOf(),
         nonSubscriptionTransactionProductIdentifiers: Set<String> = setOf(),
+        shouldDisplayBlock: ((CustomerInfo) -> Boolean)? = null,
     ): PaywallViewModelImpl {
         mockActiveSubscriptions(activeSubscriptions)
         mockNonSubscriptionTransactions(nonSubscriptionTransactionProductIdentifiers)
@@ -549,6 +583,7 @@ class PaywallViewModelTest {
                 .build(),
             TestData.Constants.currentColorScheme,
             isDarkMode = false,
+            shouldDisplayBlock = shouldDisplayBlock,
         )
     }
 

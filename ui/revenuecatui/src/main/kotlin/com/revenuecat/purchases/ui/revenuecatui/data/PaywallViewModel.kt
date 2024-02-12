@@ -61,13 +61,14 @@ internal interface PaywallViewModel {
 }
 
 @OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class, ExperimentalPreviewRevenueCatPurchasesAPI::class)
-@Suppress("TooManyFunctions")
+@Suppress("TooManyFunctions", "LongParameterList")
 internal class PaywallViewModelImpl(
     override val resourceProvider: ResourceProvider,
     private val purchases: PurchasesType = PurchasesImpl(),
     private var options: PaywallOptions,
     colorScheme: ColorScheme,
     private var isDarkMode: Boolean,
+    private var shouldDisplayBlock: ((CustomerInfo) -> Boolean)?,
     preview: Boolean = false,
 ) : ViewModel(), PaywallViewModel {
     private val variableDataProvider = VariableDataProvider(resourceProvider, preview)
@@ -97,7 +98,11 @@ internal class PaywallViewModelImpl(
         updateState()
     }
 
-    fun updateOptions(options: PaywallOptions) {
+    fun updateOptions(options: PaywallOptions, shouldDisplayBlock: ((CustomerInfo) -> Boolean)?) {
+        if (this.shouldDisplayBlock != shouldDisplayBlock) {
+            // This is only used for closing the paywall upon a restore so no need to update the state here currently.
+            this.shouldDisplayBlock = shouldDisplayBlock
+        }
         if (this.options != options) {
             this.options = options
             updateState()
@@ -170,6 +175,11 @@ internal class PaywallViewModelImpl(
                 val customerInfo = purchases.awaitRestore()
                 Logger.i("Restore purchases successful: $customerInfo")
                 listener?.onRestoreCompleted(customerInfo)
+                shouldDisplayBlock?.let {
+                    if (it(customerInfo)) {
+                        options.dismissRequest()
+                    }
+                }
             } catch (e: PurchasesException) {
                 Logger.e("Error restoring purchases: $e")
                 listener?.onRestoreError(e.error)

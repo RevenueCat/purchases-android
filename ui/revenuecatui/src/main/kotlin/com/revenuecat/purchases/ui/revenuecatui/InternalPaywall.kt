@@ -30,6 +30,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.ui.revenuecatui.UIConstant.defaultAnimation
 import com.revenuecat.purchases.ui.revenuecatui.composables.CloseButton
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
@@ -160,6 +161,7 @@ private fun TemplatePaywall(state: PaywallState.Loaded, viewModel: PaywallViewMo
 @Composable
 internal fun getPaywallViewModel(
     options: PaywallOptions,
+    shouldDisplayBlock: ((CustomerInfo) -> Boolean)? = null,
 ): PaywallViewModel {
     val applicationContext = LocalContext.current.applicationContext
     val viewModel = viewModel<PaywallViewModelImpl>(
@@ -168,10 +170,11 @@ internal fun getPaywallViewModel(
             options,
             MaterialTheme.colorScheme,
             isSystemInDarkTheme(),
+            shouldDisplayBlock = shouldDisplayBlock,
             preview = isInPreviewMode(),
         ),
     )
-    viewModel.updateOptions(options)
+    viewModel.updateOptions(options, shouldDisplayBlock)
     return viewModel
 }
 
