@@ -98,11 +98,7 @@ internal class PaywallViewModelImpl(
         updateState()
     }
 
-    fun updateOptions(options: PaywallOptions, shouldDisplayBlock: ((CustomerInfo) -> Boolean)?) {
-        if (this.shouldDisplayBlock != shouldDisplayBlock) {
-            // This is only used for closing the paywall upon a restore so no need to update the state here currently.
-            this.shouldDisplayBlock = shouldDisplayBlock
-        }
+    fun updateOptions(options: PaywallOptions) {
         if (this.options != options) {
             this.options = options
             updateState()
@@ -176,7 +172,7 @@ internal class PaywallViewModelImpl(
                 Logger.i("Restore purchases successful: $customerInfo")
                 listener?.onRestoreCompleted(customerInfo)
                 shouldDisplayBlock?.let {
-                    if (it(customerInfo)) {
+                    if (!it(customerInfo)) {
                         options.dismissRequest()
                     }
                 }

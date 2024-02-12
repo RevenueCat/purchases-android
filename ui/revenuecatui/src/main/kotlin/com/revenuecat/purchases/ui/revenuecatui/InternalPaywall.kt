@@ -174,7 +174,7 @@ internal fun getPaywallViewModel(
             preview = isInPreviewMode(),
         ),
     )
-    viewModel.updateOptions(options, shouldDisplayBlock)
+    viewModel.updateOptions(options)
     return viewModel
 }
 

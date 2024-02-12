@@ -131,7 +131,7 @@ class PaywallViewModelTest {
             shouldDisplayBlock = null,
         )
         coVerify(exactly = 1) { purchases.awaitOfferings() }
-        model.updateOptions(options, shouldDisplayBlock = null)
+        model.updateOptions(options)
         coVerify(exactly = 1) { purchases.awaitOfferings() }
     }
 
@@ -152,9 +152,9 @@ class PaywallViewModelTest {
             shouldDisplayBlock = null,
         )
         coVerify(exactly = 1) { purchases.awaitOfferings() }
-        model.updateOptions(options1, shouldDisplayBlock = null)
+        model.updateOptions(options1)
         coVerify(exactly = 1) { purchases.awaitOfferings() }
-        model.updateOptions(options2, shouldDisplayBlock = null)
+        model.updateOptions(options2)
         coVerify(exactly = 2) { purchases.awaitOfferings() }
     }
 
@@ -360,9 +360,9 @@ class PaywallViewModelTest {
     }
 
     @Test
-    fun `restorePurchases calls onDismiss if shouldDisplayBlock condition true`() {
+    fun `restorePurchases calls onDismiss if shouldDisplayBlock condition false`() {
         val model = create {
-            true
+            false
         }
 
         coEvery {
@@ -375,9 +375,9 @@ class PaywallViewModelTest {
     }
 
     @Test
-    fun `restorePurchases does not call onDismiss if shouldDisplayBlock condition false`() {
+    fun `restorePurchases does not call onDismiss if shouldDisplayBlock condition true`() {
         val model = create {
-            false
+            true
         }
 
         coEvery {
