@@ -17,10 +17,15 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.windowInsetsBottomHeight
+import androidx.compose.foundation.layout.windowInsetsTopHeight
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -97,6 +102,11 @@ internal fun Template2(
         Column(
             verticalArrangement = if (state.isInFullScreenMode) Arrangement.SpaceAround else Arrangement.Top,
         ) {
+            Spacer(
+                Modifier.windowInsetsTopHeight(
+                    WindowInsets.statusBars,
+                ),
+            )
             var packageSelectorVisible by remember {
                 mutableStateOf(state.templateConfiguration.mode != PaywallMode.FOOTER_CONDENSED)
             }
@@ -123,6 +133,11 @@ internal fun Template2(
                 viewModel = viewModel,
                 childModifier = childModifier,
                 allPlansTapped = { packageSelectorVisible = !packageSelectorVisible },
+            )
+            Spacer(
+                Modifier.windowInsetsBottomHeight(
+                    WindowInsets.systemBars,
+                ),
             )
         }
     }
