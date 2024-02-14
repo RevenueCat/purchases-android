@@ -8,6 +8,7 @@ import com.android.billingclient.api.ConsumeResponseListener
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchaseHistoryRecord
 import com.revenuecat.purchases.PostReceiptInitiationSource
+import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
@@ -62,7 +63,7 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
             sku,
             token,
             ProductType.INAPP,
-            "offering_a"
+            PresentedOfferingContext("offering_a"),
         )
 
         every {
@@ -117,7 +118,7 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
             sku,
             token,
             ProductType.INAPP,
-            "offering_a"
+            PresentedOfferingContext("offering_a"),
         )
 
         mockConsumeAsync(BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE.buildResult())
@@ -169,7 +170,7 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
             sku,
             token,
             ProductType.INAPP,
-            "offering_a"
+            PresentedOfferingContext("offering_a"),
         )
 
         every {
@@ -232,7 +233,7 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
             sku,
             token,
             ProductType.INAPP,
-            "offering_a"
+            PresentedOfferingContext("offering_a"),
         )
 
         every {
@@ -291,7 +292,7 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
             sku,
             token,
             ProductType.SUBS,
-            "offering_a",
+            PresentedOfferingContext("offering_a"),
             purchaseState = Purchase.PurchaseState.PENDING
         )
 
@@ -1183,7 +1184,7 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         productId: String,
         purchaseToken: String,
         productType: ProductType,
-        offeringIdentifier: String? = null,
+        presentedOfferingContext: PresentedOfferingContext? = null,
         purchaseState: Int = Purchase.PurchaseState.PURCHASED,
         acknowledged: Boolean = false
     ): StoreTransaction {
@@ -1194,7 +1195,7 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
             acknowledged = acknowledged
         )
 
-        return p.toStoreTransaction(productType, offeringIdentifier)
+        return p.toStoreTransaction(productType, presentedOfferingContext)
     }
 
     private fun getMockedPurchaseHistoryRecordWrapper(

@@ -65,7 +65,7 @@ class PostReceiptHelperTest {
     )
     private val testReceiptInfo = ReceiptInfo(
         productIDs = listOf("test-product-id-1", "test-product-id-2"),
-        offeringIdentifier = "test-offering-identifier",
+        presentedOfferingContext = PresentedOfferingContext(offeringIdentifier = "test-offering-identifier"),
         subscriptionOptionId = subscriptionOptionId,
         storeProduct = mockStoreProduct
     )
@@ -151,7 +151,7 @@ class PostReceiptHelperTest {
 
         val expectedReceiptInfo = ReceiptInfo(
             productIDs = mockStoreTransaction.productIds,
-            offeringIdentifier = mockStoreTransaction.presentedOfferingIdentifier,
+            presentedOfferingContext = mockStoreTransaction.presentedOfferingContext,
             subscriptionOptionId = mockStoreTransaction.subscriptionOptionId,
             storeProduct = mockStoreProduct
         )
@@ -737,10 +737,10 @@ class PostReceiptHelperTest {
     fun `postTransactionAndConsumeIfNeeded posts presentedOfferingIdentifier`() {
         mockPostReceiptSuccess()
 
-        val expectedPresentedOfferingIdentifier = "offering_a"
+        val expectedPresentedOfferingContext = PresentedOfferingContext("offering_a")
         val purchase = mockGooglePurchase.toStoreTransaction(
             ProductType.SUBS,
-            expectedPresentedOfferingIdentifier
+            expectedPresentedOfferingContext,
         )
 
         every { billing.consumeAndSave(
@@ -760,7 +760,7 @@ class PostReceiptHelperTest {
             onError = { _, _ -> fail("Should succeed") }
         )
         assertThat(postedReceiptInfoSlot.isCaptured).isTrue
-        assertThat(postedReceiptInfoSlot.captured.offeringIdentifier).isEqualTo(expectedPresentedOfferingIdentifier)
+        assertThat(postedReceiptInfoSlot.captured.presentedOfferingContext).isEqualTo(expectedPresentedOfferingContext)
     }
 
     @Test

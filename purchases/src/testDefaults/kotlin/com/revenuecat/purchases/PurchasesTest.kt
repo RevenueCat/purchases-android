@@ -194,7 +194,7 @@ internal class PurchasesTest : BasePurchasesTest() {
                 any(),
                 receiptInfo.storeProduct!!.defaultOption!!.purchasingData,
                 any(),
-                null,
+                PresentedOfferingContext(),
             )
         }
     }
@@ -219,7 +219,7 @@ internal class PurchasesTest : BasePurchasesTest() {
                 eq(appUserId),
                 packageToPurchase.product.purchasingData,
                 null,
-                STUB_OFFERING_IDENTIFIER,
+                PresentedOfferingContext(STUB_OFFERING_IDENTIFIER),
                 null,
             )
         }
@@ -256,7 +256,7 @@ internal class PurchasesTest : BasePurchasesTest() {
                         replaceProductInfo.oldPurchase.productIds.first() == "oldProductId" &&
                         replaceProductInfo.replacementMode == GoogleReplacementMode.CHARGE_PRORATED_PRICE
                 },
-                STUB_OFFERING_IDENTIFIER,
+                PresentedOfferingContext(STUB_OFFERING_IDENTIFIER),
                 null,
             )
         }
@@ -301,7 +301,7 @@ internal class PurchasesTest : BasePurchasesTest() {
                         replaceProductInfo.oldPurchase.productIds.first() == "oldProductId" &&
                         replaceProductInfo.replacementMode == GoogleReplacementMode.CHARGE_PRORATED_PRICE
                 },
-                STUB_OFFERING_IDENTIFIER,
+                PresentedOfferingContext(STUB_OFFERING_IDENTIFIER),
                 null,
             )
         }
@@ -1319,7 +1319,7 @@ internal class PurchasesTest : BasePurchasesTest() {
     private fun mockQueryingProductDetails(
         productId: String,
         type: ProductType,
-        offeringIdentifier: String?,
+        presentedOfferingContext: PresentedOfferingContext?,
         subscriptionOptionId: String? = this.subscriptionOptionId,
     ): ReceiptInfo {
         return if (type == ProductType.SUBS) {
@@ -1329,25 +1329,25 @@ internal class PurchasesTest : BasePurchasesTest() {
                 productDetails.subscriptionOfferDetails!!,
             )!!
 
-            mockQueryingProductDetails(storeProduct, offeringIdentifier, subscriptionOptionId)
+            mockQueryingProductDetails(storeProduct, presentedOfferingContext, subscriptionOptionId)
         } else {
             val productDetails = createMockOneTimeProductDetails(productId, 2.00)
             val storeProduct = productDetails.toInAppStoreProduct()!!
 
-            mockQueryingProductDetails(storeProduct, offeringIdentifier, null)
+            mockQueryingProductDetails(storeProduct, presentedOfferingContext, null)
         }
     }
 
     private fun mockQueryingProductDetails(
         storeProduct: StoreProduct,
-        offeringIdentifier: String?,
+        presentedOfferingContext: PresentedOfferingContext?,
         subscriptionOptionId: String? = this.subscriptionOptionId,
     ): ReceiptInfo {
         val productId = storeProduct.purchasingData.productId
 
         val receiptInfo = ReceiptInfo(
             productIDs = listOf(productId),
-            offeringIdentifier = offeringIdentifier,
+            presentedOfferingContext = presentedOfferingContext,
             storeProduct = storeProduct,
             subscriptionOptionId = if (storeProduct.type == ProductType.SUBS) subscriptionOptionId else null,
         )

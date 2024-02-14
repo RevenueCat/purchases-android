@@ -7,6 +7,7 @@ import com.amazon.device.iap.model.Product
 import com.amazon.device.iap.model.ProductType
 import com.amazon.device.iap.model.Receipt
 import com.amazon.device.iap.model.UserData
+import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.common.MICROS_MULTIPLIER
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
@@ -47,7 +48,7 @@ fun stubStoreProductForAmazon(
     type: com.revenuecat.purchases.ProductType = com.revenuecat.purchases.ProductType.SUBS,
     price: Price = Price("\$1.00", MICROS_MULTIPLIER * 1L, "USD"),
     period: Period = Period(1, Period.Unit.MONTH, "P1M"),
-    presentedOfferingId: String? = null
+    presentedOfferingContext: PresentedOfferingContext = PresentedOfferingContext(),
 ): StoreProduct = object : StoreProduct {
     override val id: String
         get() = productId
@@ -72,18 +73,23 @@ fun stubStoreProductForAmazon(
             productId = productId
         )
     override val presentedOfferingIdentifier: String?
-        get() = presentedOfferingId
+        get() = presentedOfferingContext.offeringIdentifier
+    override val presentedOfferingContext: PresentedOfferingContext
+        get() = presentedOfferingContext
     override val sku: String
         get() = productId
 
-    override fun copyWithOfferingId(offeringId: String): StoreProduct {
+    override fun copyWithPresentedOfferingContext(presentedOfferingContext: PresentedOfferingContext): StoreProduct {
         return stubStoreProductForAmazon(
             productId,
             type,
             price,
             period,
-            offeringId
+            presentedOfferingContext
         )
+    }
+    override fun copyWithOfferingId(offeringId: String): StoreProduct {
+        return copyWithPresentedOfferingContext(PresentedOfferingContext(offeringId))
     }
 
     override fun formattedPricePerMonth(locale: Locale): String? {

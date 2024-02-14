@@ -472,7 +472,7 @@ internal open class BasePurchasesTest {
         productId: String,
         purchaseToken: String,
         productType: ProductType,
-        offeringIdentifier: String? = null,
+        presentedOfferingContext: PresentedOfferingContext = PresentedOfferingContext(),
         purchaseState: Int = Purchase.PurchaseState.PURCHASED,
         acknowledged: Boolean = false,
         subscriptionOptionId: String? = this.subscriptionOptionId
@@ -487,7 +487,7 @@ internal open class BasePurchasesTest {
         return listOf(
             p.toStoreTransaction(
                 productType,
-                offeringIdentifier,
+                presentedOfferingContext,
                 if (productType == ProductType.SUBS) subscriptionOptionId else null
             )
         )

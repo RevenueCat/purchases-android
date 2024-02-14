@@ -31,19 +31,22 @@ class PurchaseParamsTest {
             offerings[STUB_OFFERING_IDENTIFIER]!!.monthly!!
         ).build()
 
-        assertThat(purchasePackageParams.presentedOfferingIdentifier).isEqualTo(STUB_OFFERING_IDENTIFIER)
+        assertThat(purchasePackageParams.presentedOfferingContext.offeringIdentifier).isEqualTo(STUB_OFFERING_IDENTIFIER)
     }
 
     @Test
     fun `Initializing with StoreProduct sets proper presentedOfferingIdentifier`() {
-        val storeProduct = stubStoreProduct("abc", presentedOfferingId = STUB_OFFERING_IDENTIFIER)
+        val storeProduct = stubStoreProduct(
+            productId = "abc",
+            presentedOfferingContext = PresentedOfferingContext(STUB_OFFERING_IDENTIFIER),
+        )
         val (_, offerings) = stubOfferings(storeProduct)
         val purchaseProductParams = PurchaseParams.Builder(
             mockk(),
             offerings[STUB_OFFERING_IDENTIFIER]!!.monthly!!.product
         ).build()
 
-        assertThat(purchaseProductParams.presentedOfferingIdentifier).isEqualTo(STUB_OFFERING_IDENTIFIER)
+        assertThat(purchaseProductParams.presentedOfferingContext.offeringIdentifier).isEqualTo(STUB_OFFERING_IDENTIFIER)
     }
 
     @Test
@@ -66,7 +69,10 @@ class PurchaseParamsTest {
 
     @Test
     fun `Initializing with SubscriptionOption sets proper presentedOfferingIdentifier`() {
-        val storeProduct = stubStoreProduct("abc", presentedOfferingId = STUB_OFFERING_IDENTIFIER)
+        val storeProduct = stubStoreProduct(
+            productId = "abc",
+            presentedOfferingContext = PresentedOfferingContext(STUB_OFFERING_IDENTIFIER),
+        )
         val (_, offerings) = stubOfferings(storeProduct)
         val defaultOption = offerings[STUB_OFFERING_IDENTIFIER]!!.monthly!!.product.defaultOption!!
         val purchaseProductParams = PurchaseParams.Builder(
@@ -74,7 +80,7 @@ class PurchaseParamsTest {
             defaultOption
         ).build()
 
-        assertThat(purchaseProductParams.presentedOfferingIdentifier).isEqualTo(STUB_OFFERING_IDENTIFIER)
+        assertThat(purchaseProductParams.presentedOfferingContext.offeringIdentifier).isEqualTo(STUB_OFFERING_IDENTIFIER)
     }
 
     @Test

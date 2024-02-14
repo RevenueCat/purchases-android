@@ -6,6 +6,7 @@ import com.android.billingclient.api.AcknowledgePurchaseResponseListener
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.PurchaseHistoryRecord
 import com.revenuecat.purchases.PostReceiptInitiationSource
+import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
@@ -1147,7 +1148,7 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
             acknowledged = acknowledged
         )
 
-        return p.toStoreTransaction(ProductType.SUBS, "offering_a")
+        return p.toStoreTransaction(ProductType.SUBS, PresentedOfferingContext("offering_a"))
     }
 
     private fun getMockedPurchaseHistoryRecordWrapper(): StoreTransaction {

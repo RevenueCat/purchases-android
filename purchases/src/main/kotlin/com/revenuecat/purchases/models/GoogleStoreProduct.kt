@@ -234,7 +234,7 @@ data class GoogleStoreProduct @JvmOverloads constructor(
         ReplaceWith("copyWithPresentedOfferingContext(presentedOfferingContext)"),
     )
     override fun copyWithOfferingId(offeringId: String): StoreProduct {
-        return copyWithPresentedOfferingContext(PresentedOfferingContext(offeringId))
+        return copyWithPresentedOfferingContext(presentedOfferingContext.copy(offeringIdentifier = offeringId))
     }
 
     /**

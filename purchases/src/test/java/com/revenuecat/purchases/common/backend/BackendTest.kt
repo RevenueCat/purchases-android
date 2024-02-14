@@ -3,6 +3,7 @@ package com.revenuecat.purchases.common.backend
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.PostReceiptInitiationSource
+import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
@@ -50,6 +51,7 @@ import io.mockk.unmockkObject
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Fail.fail
+import org.checkerframework.checker.optional.qual.Present
 import org.json.JSONArray
 import org.json.JSONObject
 import org.junit.After
@@ -137,7 +139,7 @@ class BackendTest {
     private val productIDs = listOf("product_id_0", "product_id_1")
     private val basicReceiptInfo = ReceiptInfo(
         productIDs,
-        offeringIdentifier = "offering_a"
+        presentedOfferingContext = PresentedOfferingContext("offering_a")
     )
     private val fetchToken = "fetch_token"
     private val initiationSource = PostReceiptInitiationSource.PURCHASE
@@ -858,14 +860,14 @@ class BackendTest {
     fun `given multiple post calls for same subscriber different price, both are triggered`() {
         val receiptInfo1 = ReceiptInfo(
             productIDs,
-            offeringIdentifier = "offering_a",
+            presentedOfferingContext = PresentedOfferingContext("offering_a"),
             storeProduct = storeProduct,
             subscriptionOptionId = "abc"
         )
 
         val receiptInfo2 = ReceiptInfo(
             productIDs,
-            offeringIdentifier = "offering_a",
+            presentedOfferingContext = PresentedOfferingContext("offering_a"),
             storeProduct = storeProduct,
             subscriptionOptionId = "ef"
         )
@@ -914,7 +916,7 @@ class BackendTest {
     fun `given multiple post calls for same subscriber different durations, both are triggered`() {
         val receiptInfo1 = ReceiptInfo(
             productIDs,
-            offeringIdentifier = "offering_a",
+            presentedOfferingContext = PresentedOfferingContext("offering_a"),
             storeProduct = storeProduct
         )
 
@@ -928,7 +930,7 @@ class BackendTest {
 
         val receiptInfo2 = ReceiptInfo(
             productIDs,
-            offeringIdentifier = "offering_a",
+            presentedOfferingContext = PresentedOfferingContext("offering_a"),
             storeProduct = storeProduct2
         )
 
@@ -991,7 +993,9 @@ class BackendTest {
 
         val receiptInfo2 = ReceiptInfo(
             basicReceiptInfo.productIDs,
-            basicReceiptInfo.offeringIdentifier + "a"
+            basicReceiptInfo.presentedOfferingContext?.copy(
+                offeringIdentifier = basicReceiptInfo.presentedOfferingContext.offeringIdentifier + "a"
+            )
         )
 
         mockPostReceiptResponseAndPost(
@@ -1024,7 +1028,7 @@ class BackendTest {
     fun `given multiple post calls for same subscriber same durations, only one is triggered`() {
         val receiptInfo = ReceiptInfo(
             productIDs,
-            offeringIdentifier = "offering_a",
+            presentedOfferingContext = PresentedOfferingContext("offering_a"),
             storeProduct = storeProduct
         )
 
@@ -2439,7 +2443,7 @@ class BackendTest {
             "app_user_id" to appUserID,
             "product_ids" to receiptInfo.productIDs,
             "is_restore" to isRestore,
-            "presented_offering_identifier" to receiptInfo.offeringIdentifier,
+            "presented_offering_identifier" to receiptInfo.presentedOfferingContext?.offeringIdentifier,
             "observer_mode" to observerMode,
             "price" to receiptInfo.price,
             "currency" to receiptInfo.currency,

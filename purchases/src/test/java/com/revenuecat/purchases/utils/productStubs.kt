@@ -5,6 +5,7 @@ import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
+import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.common.MICROS_MULTIPLIER
 import com.revenuecat.purchases.models.Period
@@ -52,7 +53,7 @@ fun stubStoreProduct(
     ),
     subscriptionOptions: List<SubscriptionOption>? = defaultOption?.let { listOf(defaultOption) } ?: emptyList(),
     price: Price = subscriptionOptions?.first()?.fullPricePhase!!.price,
-    presentedOfferingId: String? = null,
+    presentedOfferingContext: PresentedOfferingContext = PresentedOfferingContext(),
 ): StoreProduct = object : StoreProduct {
     override val id: String
         get() = productId
@@ -78,7 +79,7 @@ fun stubStoreProduct(
                             productId = productId,
                             duration = option.billingPeriod!!,
                             pricingPhases = option.pricingPhases,
-                            presentedOfferingId = presentedOfferingId,
+                            presentedOfferingContext = presentedOfferingContext,
                         )
                     },
                 )
@@ -92,7 +93,7 @@ fun stubStoreProduct(
                     productId = productId,
                     duration = it.billingPeriod!!,
                     pricingPhases = it.pricingPhases,
-                    presentedOfferingId = presentedOfferingId,
+                    presentedOfferingContext = presentedOfferingContext,
                 )
             }
         }
@@ -101,18 +102,20 @@ fun stubStoreProduct(
             productId = productId,
         )
     override val presentedOfferingIdentifier: String?
-        get() = presentedOfferingId
+        get() = presentedOfferingContext.offeringIdentifier
+    override val presentedOfferingContext: PresentedOfferingContext
+        get() = presentedOfferingContext
     override val sku: String
         get() = productId
 
-    override fun copyWithOfferingId(offeringId: String): StoreProduct {
+    override fun copyWithPresentedOfferingContext(presentedOfferingContext: PresentedOfferingContext): StoreProduct {
         val subscriptionOptionsWithOfferingIds = subscriptionOptions?.map {
             stubSubscriptionOption(
                 it.id,
                 productId,
                 period!!,
                 it.pricingPhases,
-                offeringId,
+                presentedOfferingContext,
             )
         }
 
@@ -122,7 +125,7 @@ fun stubStoreProduct(
                 productId,
                 period!!,
                 it.pricingPhases,
-                offeringId,
+                presentedOfferingContext,
             )
         }
         return stubStoreProduct(
@@ -130,15 +133,19 @@ fun stubStoreProduct(
             defaultOptionWithOfferingId,
             subscriptionOptionsWithOfferingIds,
             price,
-            offeringId,
+            presentedOfferingContext,
         )
+    }
+
+    override fun copyWithOfferingId(offeringId: String): StoreProduct {
+        return copyWithPresentedOfferingContext(PresentedOfferingContext(offeringId))
     }
 }
 
 @SuppressWarnings("EmptyFunctionBlock")
 fun stubINAPPStoreProduct(
     productId: String,
-    presentedOfferingId: String? = null,
+    presentedOfferingContext: PresentedOfferingContext = PresentedOfferingContext(),
 ): StoreProduct = object : StoreProduct {
     override val id: String
         get() = productId
@@ -163,11 +170,13 @@ fun stubINAPPStoreProduct(
             productId = productId,
         )
     override val presentedOfferingIdentifier: String?
-        get() = presentedOfferingId
+        get() = presentedOfferingContext.offeringIdentifier
+    override val presentedOfferingContext: PresentedOfferingContext
+        get() = presentedOfferingContext
     override val sku: String
         get() = productId
 
-    override fun copyWithOfferingId(offeringId: String): StoreProduct {
+    override fun copyWithPresentedOfferingContext(presentedOfferingContext: PresentedOfferingContext): StoreProduct {
         return object : StoreProduct {
             override val id: String
                 get() = productId
@@ -192,12 +201,19 @@ fun stubINAPPStoreProduct(
                     productId = productId,
                 )
             override val presentedOfferingIdentifier: String?
-                get() = offeringId
+                get() = presentedOfferingContext.offeringIdentifier
+            override val presentedOfferingContext: PresentedOfferingContext
+                get() = presentedOfferingContext
             override val sku: String
                 get() = productId
 
             override fun copyWithOfferingId(offeringId: String): StoreProduct = this
+            override fun copyWithPresentedOfferingContext(presentedOfferingContext: PresentedOfferingContext): StoreProduct = this
         }
+    }
+
+    override fun copyWithOfferingId(offeringId: String): StoreProduct {
+        return copyWithPresentedOfferingContext(PresentedOfferingContext(offeringId))
     }
 }
 
@@ -207,7 +223,7 @@ fun stubSubscriptionOption(
     productId: String,
     duration: Period = Period(1, Period.Unit.MONTH, "P1M"),
     pricingPhases: List<PricingPhase> = listOf(stubPricingPhase(billingPeriod = duration)),
-    presentedOfferingId: String? = null,
+    presentedOfferingContext: PresentedOfferingContext = PresentedOfferingContext(),
 ): SubscriptionOption = object : SubscriptionOption {
     override val id: String
         get() = id
@@ -216,7 +232,9 @@ fun stubSubscriptionOption(
     override val tags: List<String>
         get() = listOf("tag")
     override val presentedOfferingIdentifier: String?
-        get() = presentedOfferingId
+        get() = presentedOfferingContext.offeringIdentifier
+    override val presentedOfferingContext: PresentedOfferingContext
+        get() = presentedOfferingContext
     override val purchasingData: PurchasingData
         get() = StubPurchasingData(
             productId = productId,
