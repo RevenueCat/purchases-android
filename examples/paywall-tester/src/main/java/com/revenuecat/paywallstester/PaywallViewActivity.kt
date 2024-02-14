@@ -4,7 +4,6 @@ import android.os.Bundle
 import android.util.Log
 import android.view.WindowManager
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import com.revenuecat.paywallstester.databinding.ActivityPaywallViewBinding
 import com.revenuecat.purchases.CustomerInfo
@@ -18,12 +17,8 @@ class PaywallViewActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val windowInsetsController = ViewCompat.getWindowInsetsController(window.decorView)
-        windowInsetsController?.isAppearanceLightNavigationBars = false
-        windowInsetsController?.isAppearanceLightStatusBars = true
-
-        val window = window
         // For extending content behind the Navigation Bar as well
+        val window = window
         window.addFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS)
 
         WindowCompat.setDecorFitsSystemWindows(window, false)
