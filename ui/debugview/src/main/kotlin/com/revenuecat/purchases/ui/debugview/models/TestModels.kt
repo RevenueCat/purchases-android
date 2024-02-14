@@ -3,6 +3,7 @@ package com.revenuecat.purchases.ui.debugview.models
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
+import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
@@ -43,8 +44,10 @@ internal val testOffering: Offering
                 )
             override val tags: List<String>
                 get() = listOf("tag1", "tag2")
-            override val presentedOfferingIdentifier: String
-                get() = "offering_id"
+            override val presentedOfferingIdentifier: String?
+                get() = presentedOfferingContext.offeringIdentifier
+            override val presentedOfferingContext: PresentedOfferingContext
+                get() = PresentedOfferingContext("offering_id")
             override val purchasingData: PurchasingData
                 get() = purchasingData
         }
@@ -70,14 +73,22 @@ internal val testOffering: Offering
                 get() = subscriptionOption
             override val purchasingData: PurchasingData
                 get() = purchasingData
-            override val presentedOfferingIdentifier: String
-                get() = "offering_id"
+            override val presentedOfferingIdentifier: String?
+                get() = presentedOfferingContext.offeringIdentifier
+            override val presentedOfferingContext: PresentedOfferingContext
+                get() = PresentedOfferingContext("offering_id")
 
             @Deprecated("Use sku instead", ReplaceWith("id"))
             override val sku: String
                 get() = id
 
             override fun copyWithOfferingId(offeringId: String): StoreProduct {
+                error("Not implemented")
+            }
+
+            override fun copyWithPresentedOfferingContext(
+                presentedOfferingContext: PresentedOfferingContext,
+            ): StoreProduct {
                 error("Not implemented")
             }
         }

@@ -140,7 +140,7 @@ data class AmazonStoreProduct @JvmOverloads constructor(
         iconUrl: String,
         freeTrialPeriod: Period?,
         originalProductJSON: JSONObject,
-        presentedOfferingIdentifier: String? = null,
+        presentedOfferingIdentifier: String?,
     ) : this(
         id = id,
         type = type,

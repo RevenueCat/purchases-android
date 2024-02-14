@@ -141,7 +141,7 @@ data class GoogleStoreProduct @JvmOverloads constructor(
         subscriptionOptions: SubscriptionOptions?,
         defaultOption: SubscriptionOption?,
         productDetails: ProductDetails,
-        presentedOfferingIdentifier: String? = null,
+        presentedOfferingIdentifier: String?,
     ) : this(
         productId,
         basePlanId,

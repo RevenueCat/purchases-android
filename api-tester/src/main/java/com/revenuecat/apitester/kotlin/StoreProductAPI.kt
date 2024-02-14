@@ -1,6 +1,7 @@
 package com.revenuecat.apitester.kotlin
 
 import com.android.billingclient.api.ProductDetails
+import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.amazon.AmazonStoreProduct
 import com.revenuecat.purchases.amazon.amazonProduct
@@ -14,7 +15,7 @@ import com.revenuecat.purchases.models.googleProduct
 import org.json.JSONObject
 import java.util.Locale
 
-@Suppress("unused", "UNUSED_VARIABLE", "LongMethod")
+@Suppress("unused", "UNUSED_VARIABLE", "LongMethod", "DEPRECATION")
 private class StoreProductAPI {
     fun check(product: StoreProduct) {
         val locale = Locale.getDefault()
@@ -22,7 +23,7 @@ private class StoreProductAPI {
             val storeProductId: String = id
             val sku: String = sku
             val type: ProductType = type
-            val price: Price? = price
+            val price: Price = price
             val formattedPricePerMonth: String? = formattedPricePerMonth(locale)
             val formattedPricePerMonthNoLocale: String? = formattedPricePerMonth()
             val pricePerWeek: Price? = pricePerWeek(locale)
@@ -38,8 +39,11 @@ private class StoreProductAPI {
             val subscriptionOptions: SubscriptionOptions? = subscriptionOptions
             val defaultOption: SubscriptionOption? = defaultOption
             val presentedOfferingIdentifier: String? = presentedOfferingIdentifier
+            val presentedOfferingContext: PresentedOfferingContext = presentedOfferingContext
             val underlyingGoogleProduct: GoogleStoreProduct? = googleProduct
             val underlyingAmazonProduct: AmazonStoreProduct? = amazonProduct
+            val copiedProductWithOfferingId = copyWithOfferingId("offeringId")
+            val copiedProduct = copyWithPresentedOfferingContext(PresentedOfferingContext())
         }
     }
 
@@ -65,6 +69,21 @@ private class StoreProductAPI {
             googleStoreProduct.subscriptionOptions,
             googleStoreProduct.defaultOption,
             googleStoreProduct.productDetails,
+        )
+
+        val constructedGoogleStoreProductWithPresentedOfferingContext = GoogleStoreProduct(
+            googleStoreProduct.id,
+            null,
+            googleStoreProduct.type,
+            googleStoreProduct.price,
+            googleStoreProduct.name,
+            googleStoreProduct.title,
+            googleStoreProduct.description,
+            googleStoreProduct.period,
+            googleStoreProduct.subscriptionOptions,
+            googleStoreProduct.defaultOption,
+            googleStoreProduct.productDetails,
+            PresentedOfferingContext(),
         )
 
         val constructedGoogleStoreProductWithOfferingId = GoogleStoreProduct(
@@ -129,6 +148,22 @@ private class StoreProductAPI {
             amazonStoreProduct.iconUrl,
             amazonStoreProduct.freeTrialPeriod,
             amazonStoreProduct.originalProductJSON,
+        )
+
+        val constructedAmazonStoreProductWithContext = AmazonStoreProduct(
+            amazonStoreProduct.id,
+            amazonStoreProduct.type,
+            amazonStoreProduct.name,
+            amazonStoreProduct.title,
+            amazonStoreProduct.description,
+            amazonStoreProduct.period,
+            amazonStoreProduct.price,
+            amazonStoreProduct.subscriptionOptions,
+            amazonStoreProduct.defaultOption,
+            amazonStoreProduct.iconUrl,
+            amazonStoreProduct.freeTrialPeriod,
+            amazonStoreProduct.originalProductJSON,
+            PresentedOfferingContext(),
         )
 
         val constructedAmazonStoreProductWithOfferingId = AmazonStoreProduct(

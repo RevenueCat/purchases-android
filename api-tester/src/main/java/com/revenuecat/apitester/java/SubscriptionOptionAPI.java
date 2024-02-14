@@ -1,6 +1,7 @@
 package com.revenuecat.apitester.java;
 
 import com.android.billingclient.api.ProductDetails;
+import com.revenuecat.purchases.PresentedOfferingContext;
 import com.revenuecat.purchases.models.GoogleSubscriptionOption;
 import com.revenuecat.purchases.models.PricingPhase;
 import com.revenuecat.purchases.models.PurchasingData;
@@ -16,6 +17,7 @@ final class SubscriptionOptionAPI {
         List<String> tags = subscriptionOption.getTags();
         Boolean isBasePlan = subscriptionOption.isBasePlan();
         String presentedOfferingId = subscriptionOption.getPresentedOfferingIdentifier();
+        PresentedOfferingContext presentedOfferingContext = subscriptionOption.getPresentedOfferingContext();
         PurchasingData purchasingData = subscriptionOption.getPurchasingData();
         String id = subscriptionOption.getId();
         Boolean isPrepaid = subscriptionOption.isPrepaid();
@@ -36,8 +38,29 @@ final class SubscriptionOptionAPI {
                 googleSubscriptionOption.getPricingPhases(),
                 googleSubscriptionOption.getTags(),
                 productDetails,
+                offerToken
+        );
+
+        GoogleSubscriptionOption constructedGoogleSubOptionWithOfferingId = new GoogleSubscriptionOption(
+                productId,
+                basePlanId,
+                offerId,
+                googleSubscriptionOption.getPricingPhases(),
+                googleSubscriptionOption.getTags(),
+                productDetails,
                 offerToken,
                 googleSubscriptionOption.getPresentedOfferingIdentifier()
+        );
+
+        GoogleSubscriptionOption constructedGoogleSubOptionWithPresentedContext = new GoogleSubscriptionOption(
+                productId,
+                basePlanId,
+                offerId,
+                googleSubscriptionOption.getPricingPhases(),
+                googleSubscriptionOption.getTags(),
+                productDetails,
+                offerToken,
+                googleSubscriptionOption.getPresentedOfferingContext()
         );
     }
 

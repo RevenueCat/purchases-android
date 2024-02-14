@@ -1,5 +1,6 @@
 package com.revenuecat.apitester.java;
 
+import com.revenuecat.purchases.PresentedOfferingContext;
 import com.revenuecat.purchases.ProductType;
 import com.revenuecat.purchases.ProrationMode;
 import com.revenuecat.purchases.ReplacementMode;
@@ -25,6 +26,7 @@ final class StoreTransactionAPI {
         final String signature = transaction.getSignature();
         final JSONObject originalJson = transaction.getOriginalJson();
         final String presentedOfferingIdentifier = transaction.getPresentedOfferingIdentifier();
+        final PresentedOfferingContext presentedOfferingContext = transaction.getPresentedOfferingContext();
         final String su1 = transaction.getStoreUserID();
         final PurchaseType purchaseType = transaction.getPurchaseType();
         final String marketplace = transaction.getMarketplace();
@@ -33,6 +35,24 @@ final class StoreTransactionAPI {
         final ProrationMode prorationMode = transaction.getProrationMode();
 
         StoreTransaction constructedStoreTransaction = new StoreTransaction(
+                transaction.getOrderId(),
+                transaction.getProductIds(),
+                transaction.getType(),
+                transaction.getPurchaseTime(),
+                transaction.getPurchaseToken(),
+                transaction.getPurchaseState(),
+                transaction.isAutoRenewing(),
+                transaction.getSignature(),
+                transaction.getOriginalJson(),
+                transaction.getPresentedOfferingContext(),
+                transaction.getStoreUserID(),
+                transaction.getPurchaseType(),
+                transaction.getMarketplace(),
+                transaction.getSubscriptionOptionId(),
+                transaction.getReplacementMode()
+        );
+
+        StoreTransaction constructedStoreTransactionWithOfferingId = new StoreTransaction(
                 transaction.getOrderId(),
                 transaction.getProductIds(),
                 transaction.getType(),

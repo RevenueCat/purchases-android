@@ -1,5 +1,6 @@
 package com.revenuecat.apitester.kotlin
 
+import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.ProrationMode
 import com.revenuecat.purchases.ReplacementMode
@@ -8,7 +9,7 @@ import com.revenuecat.purchases.models.PurchaseType
 import com.revenuecat.purchases.models.StoreTransaction
 import org.json.JSONObject
 
-@Suppress("unused", "UNUSED_VARIABLE")
+@Suppress("unused", "UNUSED_VARIABLE", "LongMethod")
 private class StoreTransactionAPI {
     fun check(transaction: StoreTransaction) {
         with(transaction) {
@@ -23,6 +24,7 @@ private class StoreTransactionAPI {
             val signature: String? = signature
             val originalJson: JSONObject = originalJson
             val presentedOfferingIdentifier: String? = presentedOfferingIdentifier
+            val presentedOfferingContext: PresentedOfferingContext? = presentedOfferingContext
             val su1: String? = storeUserID
             val purchaseType: PurchaseType = purchaseType
             val subscriptionOptionId: String? = subscriptionOptionId
@@ -30,6 +32,24 @@ private class StoreTransactionAPI {
             val prorationMode: ProrationMode? = prorationMode
 
             val constructedStoreTransaction = StoreTransaction(
+                orderId,
+                productIds,
+                type,
+                purchaseTime,
+                purchaseToken,
+                purchaseState,
+                isAutoRenewing,
+                signature,
+                originalJson,
+                presentedOfferingContext,
+                storeUserID,
+                purchaseType,
+                marketplace,
+                subscriptionOptionId,
+                replacementMode,
+            )
+
+            val constructedStoreTransactionWithOfferingId = StoreTransaction(
                 orderId,
                 productIds,
                 type,

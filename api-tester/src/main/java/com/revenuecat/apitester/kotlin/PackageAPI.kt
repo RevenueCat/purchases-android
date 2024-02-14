@@ -2,6 +2,7 @@ package com.revenuecat.apitester.kotlin
 
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
+import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.models.StoreProduct
 
 @Suppress("unused", "UNUSED_VARIABLE")
@@ -12,6 +13,7 @@ private class PackageAPI {
             val packageType: PackageType = packageType
             val product: StoreProduct = product
             val offering: String = offering
+            val presentedOfferingContext: PresentedOfferingContext = presentedOfferingContext
         }
     }
 

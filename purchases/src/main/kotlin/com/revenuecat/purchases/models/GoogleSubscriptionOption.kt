@@ -48,21 +48,30 @@ data class GoogleSubscriptionOption @JvmOverloads constructor(
     val offerToken: String,
 
     /**
-     * The offering ID this `GoogleSubscriptionOption` was returned from.
-     *
-     * Null if not using RevenueCat offerings system, or if fetched directly via `Purchases.getProducts`
-     */
-    @Deprecated(
-        "Use presentedOfferingContext instead",
-        ReplaceWith("presentedOfferingContext.offeringIdentifier"),
-    )
-    override val presentedOfferingIdentifier: String? = null,
-
-    /**
      * The context from which this subscription option was obtained.
      */
     override val presentedOfferingContext: PresentedOfferingContext = PresentedOfferingContext(),
 ) : SubscriptionOption {
+
+    constructor(
+        productId: String,
+        basePlanId: String,
+        offerId: String?,
+        pricingPhases: List<PricingPhase>,
+        tags: List<String>,
+        productDetails: ProductDetails,
+        offerToken: String,
+        presentedOfferingId: String?,
+    ) : this(
+        productId,
+        basePlanId,
+        offerId,
+        pricingPhases,
+        tags,
+        productDetails,
+        offerToken,
+        PresentedOfferingContext(offeringIdentifier = presentedOfferingId),
+    )
 
     internal constructor(
         subscriptionOption: GoogleSubscriptionOption,
@@ -76,12 +85,23 @@ data class GoogleSubscriptionOption @JvmOverloads constructor(
             subscriptionOption.tags,
             subscriptionOption.productDetails,
             subscriptionOption.offerToken,
-            presentedOfferingContext.offeringIdentifier,
             presentedOfferingContext,
         )
 
     override val id: String
         get() = basePlanId + if (offerId.isNullOrBlank()) "" else ":$offerId"
+
+    /**
+     * The offering ID this `GoogleSubscriptionOption` was returned from.
+     *
+     * Null if not using RevenueCat offerings system, or if fetched directly via `Purchases.getProducts`
+     */
+    @Deprecated(
+        "Use presentedOfferingContext instead",
+        ReplaceWith("presentedOfferingContext.offeringIdentifier"),
+    )
+    override val presentedOfferingIdentifier: String?
+        get() = presentedOfferingContext.offeringIdentifier
 
     override val purchasingData: PurchasingData
         get() = GooglePurchasingData.Subscription(
