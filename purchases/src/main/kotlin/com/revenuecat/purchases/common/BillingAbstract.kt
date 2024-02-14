@@ -2,6 +2,7 @@ package com.revenuecat.purchases.common
 
 import android.app.Activity
 import com.revenuecat.purchases.PostReceiptInitiationSource
+import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCallback
@@ -76,7 +77,7 @@ internal abstract class BillingAbstract(
         appUserID: String,
         purchasingData: PurchasingData,
         replaceProductInfo: ReplaceProductInfo?,
-        presentedOfferingIdentifier: String?,
+        presentedOfferingContext: PresentedOfferingContext,
         isPersonalizedPrice: Boolean? = null,
     )
 

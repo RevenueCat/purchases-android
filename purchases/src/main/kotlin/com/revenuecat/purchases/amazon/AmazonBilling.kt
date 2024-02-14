@@ -13,6 +13,7 @@ import com.amazon.device.iap.model.Receipt
 import com.amazon.device.iap.model.UserData
 import com.amazon.device.iap.model.UserDataResponse
 import com.revenuecat.purchases.PostReceiptInitiationSource
+import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCallback
 import com.revenuecat.purchases.PurchasesErrorCode
@@ -52,7 +53,7 @@ import com.revenuecat.purchases.ProductType as RevenueCatProductType
 private const val TERM_SKU_JSON_KEY = "termSku"
 
 @SuppressWarnings("LongParameterList", "TooManyFunctions")
-internal class AmazonBilling constructor(
+internal class AmazonBilling(
     private val applicationContext: Context,
     private val amazonBackend: AmazonBackend,
     private val cache: AmazonCache,
@@ -244,7 +245,7 @@ internal class AmazonBilling constructor(
         appUserID: String,
         purchasingData: PurchasingData,
         replaceProductInfo: ReplaceProductInfo?,
-        presentedOfferingIdentifier: String?,
+        presentedOfferingContext: PresentedOfferingContext,
         isPersonalizedPrice: Boolean?,
     ) {
         val amazonPurchaseInfo = purchasingData as? AmazonPurchasingData.Product
@@ -275,9 +276,9 @@ internal class AmazonBilling constructor(
                     activity,
                     appUserID,
                     storeProduct,
-                    presentedOfferingIdentifier,
+                    presentedOfferingContext,
                     onSuccess = { receipt, userData ->
-                        handleReceipt(receipt, userData, storeProduct, presentedOfferingIdentifier)
+                        handleReceipt(receipt, userData, storeProduct, presentedOfferingContext)
                     },
                     onError = {
                         onPurchaseError(it)
@@ -354,7 +355,7 @@ internal class AmazonBilling constructor(
         }
         val amazonPurchaseWrapper = receipt.toStoreTransaction(
             productId = sku,
-            presentedOfferingIdentifier = null,
+            presentedOfferingContext = null,
             purchaseState = PurchaseState.UNSPECIFIED_STATE,
             userData,
         )
@@ -515,7 +516,7 @@ internal class AmazonBilling constructor(
         receipt: Receipt,
         userData: UserData,
         storeProduct: StoreProduct,
-        presentedOfferingIdentifier: String?,
+        presentedOfferingContext: PresentedOfferingContext,
     ) {
         if (receipt.productType != ProductType.SUBSCRIPTION) {
             /**
@@ -526,7 +527,7 @@ internal class AmazonBilling constructor(
              */
             val amazonPurchaseWrapper = receipt.toStoreTransaction(
                 productId = storeProduct.id,
-                presentedOfferingIdentifier = presentedOfferingIdentifier,
+                presentedOfferingContext = presentedOfferingContext,
                 purchaseState = PurchaseState.PURCHASED,
                 userData,
             )
@@ -541,7 +542,7 @@ internal class AmazonBilling constructor(
                 val termSku = response[TERM_SKU_JSON_KEY] as String
                 val amazonPurchaseWrapper = receipt.toStoreTransaction(
                     productId = termSku,
-                    presentedOfferingIdentifier = presentedOfferingIdentifier,
+                    presentedOfferingContext = presentedOfferingContext,
                     purchaseState = PurchaseState.PURCHASED,
                     userData,
                 )

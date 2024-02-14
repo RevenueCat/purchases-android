@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.models
 
+import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ProductType
 
 /**
@@ -54,12 +55,27 @@ data class TestStoreProduct(
             override val productType: ProductType
                 get() = type
         }
+
+    @Deprecated(
+        "Use presentedOfferingContext",
+        ReplaceWith("presentedOfferingContext.offeringIdentifier"),
+    )
     override val presentedOfferingIdentifier: String?
-        get() = null
+        get() = presentedOfferingContext.offeringIdentifier
+    override val presentedOfferingContext: PresentedOfferingContext
+        get() = PresentedOfferingContext()
     override val sku: String
         get() = id
 
+    @Deprecated(
+        "Use copyWithPresentedOfferingContext instead",
+        ReplaceWith("copyWithPresentedOfferingContext(PresentedOfferingContext(offeringId))"),
+    )
     override fun copyWithOfferingId(offeringId: String): StoreProduct {
+        return copyWithPresentedOfferingContext(PresentedOfferingContext(offeringId))
+    }
+
+    override fun copyWithPresentedOfferingContext(presentedOfferingContext: PresentedOfferingContext): StoreProduct {
         return this
     }
 
@@ -106,10 +122,15 @@ private class TestSubscriptionOption(
     override val pricingPhases: List<PricingPhase>,
     val basePlanId: String = "testBasePlanId",
     override val tags: List<String> = emptyList(),
-    override val presentedOfferingIdentifier: String? = "offering",
+    override val presentedOfferingContext: PresentedOfferingContext = PresentedOfferingContext(
+        offeringIdentifier = "offering",
+    ),
 ) : SubscriptionOption {
     override val id: String
         get() = if (pricingPhases.size == 1) basePlanId else "$basePlanId:testOfferId"
+
+    override val presentedOfferingIdentifier: String?
+        get() = presentedOfferingContext.offeringIdentifier
 
     override val purchasingData: PurchasingData
         get() = object : PurchasingData {

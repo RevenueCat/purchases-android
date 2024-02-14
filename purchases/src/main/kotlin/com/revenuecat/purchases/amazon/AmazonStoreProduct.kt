@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.amazon
 
+import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
@@ -8,7 +9,7 @@ import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.models.SubscriptionOptions
 import org.json.JSONObject
 
-data class AmazonStoreProduct(
+data class AmazonStoreProduct @JvmOverloads constructor(
 
     /**
      * The productId
@@ -76,11 +77,9 @@ data class AmazonStoreProduct(
     val originalProductJSON: JSONObject,
 
     /**
-     * The offering ID this `AmazonStoreProduct` was returned from.
-     *
-     * Null if not using RevenueCat offerings system, or if fetched directly via `Purchases.getProducts`
+     * The context from which this product was obtained.
      */
-    override val presentedOfferingIdentifier: String? = null,
+    override val presentedOfferingContext: PresentedOfferingContext = PresentedOfferingContext(),
 ) : StoreProduct {
 
     @Deprecated(
@@ -120,6 +119,44 @@ data class AmazonStoreProduct(
         presentedOfferingIdentifier = presentedOfferingIdentifier,
     )
 
+    @Deprecated(
+        "Replaced with constructor that takes a presentedOfferingContext",
+        ReplaceWith(
+            "AmazonStoreProduct(productId, type, name, title, description, period, price, " +
+                "subscriptionOptions, defaultOption, iconUrl, freeTrialPeriod, originalProductJSON, " +
+                "PresentedOfferingContext(presentedOfferingIdentifier))",
+        ),
+    )
+    constructor(
+        id: String,
+        type: ProductType,
+        name: String,
+        title: String,
+        description: String,
+        period: Period?,
+        price: Price,
+        subscriptionOptions: SubscriptionOptions?,
+        defaultOption: SubscriptionOption?,
+        iconUrl: String,
+        freeTrialPeriod: Period?,
+        originalProductJSON: JSONObject,
+        presentedOfferingIdentifier: String? = null,
+    ) : this(
+        id = id,
+        type = type,
+        name = name,
+        title = title,
+        description = description,
+        period = period,
+        price = price,
+        subscriptionOptions = subscriptionOptions,
+        defaultOption = defaultOption,
+        iconUrl = iconUrl,
+        freeTrialPeriod = freeTrialPeriod,
+        originalProductJSON = originalProductJSON,
+        presentedOfferingContext = PresentedOfferingContext(presentedOfferingIdentifier),
+    )
+
     /**
      * Contains only data that is required to make the purchase.
      */
@@ -134,11 +171,31 @@ data class AmazonStoreProduct(
         get() = id
 
     /**
+     * The offering ID this `AmazonStoreProduct` was returned from.
+     *
+     * Null if not using RevenueCat offerings system, or if fetched directly via `Purchases.getProducts`
+     */
+    @Deprecated(
+        "Use presentedOfferingContext instead",
+        ReplaceWith("presentedOfferingContext.offeringIdentifier"),
+    )
+    override val presentedOfferingIdentifier: String?
+        get() = presentedOfferingContext.offeringIdentifier
+
+    /**
      * For internal RevenueCat use.
      *
      * Creates a copy of this `AmazonStoreProduct` with the specified `offeringId` set.
      */
+    @Deprecated(
+        "Replaced with copyWithPresentedOfferingContext",
+        ReplaceWith("copyWithPresentedOfferingContext(PresentedOfferingContext(offeringId))"),
+    )
     override fun copyWithOfferingId(offeringId: String): StoreProduct {
+        return copyWithPresentedOfferingContext(PresentedOfferingContext(offeringId))
+    }
+
+    override fun copyWithPresentedOfferingContext(presentedOfferingContext: PresentedOfferingContext): StoreProduct {
         return AmazonStoreProduct(
             this.id,
             this.type,
@@ -152,7 +209,7 @@ data class AmazonStoreProduct(
             this.iconUrl,
             this.freeTrialPeriod,
             this.originalProductJSON,
-            offeringId,
+            presentedOfferingContext,
         )
     }
 
@@ -186,7 +243,7 @@ private data class ComparableData(
     val defaultOption: SubscriptionOption?,
     val iconUrl: String,
     val freeTrialPeriod: Period?,
-    val offeringId: String?,
+    val presentedOfferingContext: PresentedOfferingContext,
 ) {
     constructor(
         amazonStoreProduct: AmazonStoreProduct,
@@ -201,6 +258,6 @@ private data class ComparableData(
         defaultOption = amazonStoreProduct.defaultOption,
         iconUrl = amazonStoreProduct.iconUrl,
         freeTrialPeriod = amazonStoreProduct.freeTrialPeriod,
-        offeringId = amazonStoreProduct.presentedOfferingIdentifier,
+        presentedOfferingContext = amazonStoreProduct.presentedOfferingContext,
     )
 }

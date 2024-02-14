@@ -211,7 +211,7 @@ internal class Backend(
             "platform_product_ids" to receiptInfo.platformProductIds?.map { it.asMap },
             APP_USER_ID to appUserID,
             "is_restore" to isRestore,
-            "presented_offering_identifier" to receiptInfo.offeringIdentifier,
+            "presented_offering_identifier" to receiptInfo.presentedOfferingContext?.offeringIdentifier,
             "observer_mode" to observerMode,
             "price" to receiptInfo.price,
             "currency" to receiptInfo.currency,

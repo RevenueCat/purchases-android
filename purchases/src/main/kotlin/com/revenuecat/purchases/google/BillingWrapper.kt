@@ -21,6 +21,7 @@ import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchaseHistoryRecord
 import com.android.billingclient.api.PurchasesUpdatedListener
 import com.revenuecat.purchases.PostReceiptInitiationSource
+import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCallback
@@ -220,7 +221,7 @@ internal class BillingWrapper(
         appUserID: String,
         purchasingData: PurchasingData,
         replaceProductInfo: ReplaceProductInfo?,
-        presentedOfferingIdentifier: String?,
+        presentedOfferingContext: PresentedOfferingContext,
         isPersonalizedPrice: Boolean?,
     ) {
         val googlePurchasingData = purchasingData as? GooglePurchasingData
@@ -261,7 +262,7 @@ internal class BillingWrapper(
             val productId = googlePurchasingData.productId
             purchaseContext[productId] = PurchaseContext(
                 googlePurchasingData.productType,
-                presentedOfferingIdentifier,
+                presentedOfferingContext,
                 subscriptionOptionId,
                 replaceProductInfo?.replacementMode as? GoogleReplacementMode?,
             )
@@ -779,10 +780,7 @@ internal class BillingWrapper(
 
             getPurchaseType(purchase.purchaseToken) { type ->
                 completion(
-                    purchase.toStoreTransaction(
-                        type,
-                        context?.presentedOfferingId,
-                    ),
+                    purchase.toStoreTransaction(type),
                 )
             }
         }

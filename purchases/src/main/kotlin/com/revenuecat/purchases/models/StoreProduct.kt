@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.models
 
+import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.utils.pricePerMonth
 import com.revenuecat.purchases.utils.pricePerWeek
@@ -92,7 +93,16 @@ interface StoreProduct {
      *
      * Null if not using RevenueCat offerings system, or if fetched directly via `Purchases.getProducts`
      */
+    @Deprecated(
+        "Replaced with presentedOfferingContext",
+        ReplaceWith("presentedOfferingContext.offeringIdentifier"),
+    )
     val presentedOfferingIdentifier: String?
+
+    /**
+     * The context from which this product was obtained.
+     */
+    val presentedOfferingContext: PresentedOfferingContext
 
     /**
      * The sku of the StoreProduct
@@ -108,7 +118,18 @@ interface StoreProduct {
      *
      * Creates a copy of this `StoreProduct` with the specified `offeringId` set.
      */
+    @Deprecated(
+        "Replaced with copyWithPresentedOfferingContext",
+        ReplaceWith("copyWithPresentedOfferingContext(presentedOfferingContext)"),
+    )
     fun copyWithOfferingId(offeringId: String): StoreProduct
+
+    /**
+     * For internal RevenueCat use.
+     *
+     * Creates a copy of this `StoreProduct` with the specified `presentedOfferingContext` set.
+     */
+    fun copyWithPresentedOfferingContext(presentedOfferingContext: PresentedOfferingContext): StoreProduct
 
     /**
      * Null for INAPP products. The price of the [StoreProduct] in the given locale in a weekly recurrence.

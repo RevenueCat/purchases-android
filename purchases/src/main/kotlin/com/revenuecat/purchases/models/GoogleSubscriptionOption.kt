@@ -1,11 +1,12 @@
 package com.revenuecat.purchases.models
 
 import com.android.billingclient.api.ProductDetails
+import com.revenuecat.purchases.PresentedOfferingContext
 
 /**
  * Defines an option for purchasing a Google subscription
  */
-data class GoogleSubscriptionOption(
+data class GoogleSubscriptionOption @JvmOverloads constructor(
     /**
      * If this SubscriptionOption represents a base plan, this will be the basePlanId.
      * If it represents an offer, it will be basePlanId:offerId
@@ -51,10 +52,22 @@ data class GoogleSubscriptionOption(
      *
      * Null if not using RevenueCat offerings system, or if fetched directly via `Purchases.getProducts`
      */
+    @Deprecated(
+        "Use presentedOfferingContext instead",
+        ReplaceWith("presentedOfferingContext.offeringIdentifier"),
+    )
     override val presentedOfferingIdentifier: String? = null,
+
+    /**
+     * The context from which this subscription option was obtained.
+     */
+    override val presentedOfferingContext: PresentedOfferingContext = PresentedOfferingContext(),
 ) : SubscriptionOption {
 
-    internal constructor(subscriptionOption: GoogleSubscriptionOption, presentedOfferingIdentifier: String?) :
+    internal constructor(
+        subscriptionOption: GoogleSubscriptionOption,
+        presentedOfferingContext: PresentedOfferingContext,
+    ) :
         this(
             subscriptionOption.productId,
             subscriptionOption.basePlanId,
@@ -63,7 +76,8 @@ data class GoogleSubscriptionOption(
             subscriptionOption.tags,
             subscriptionOption.productDetails,
             subscriptionOption.offerToken,
-            presentedOfferingIdentifier,
+            presentedOfferingContext.offeringIdentifier,
+            presentedOfferingContext,
         )
 
     override val id: String

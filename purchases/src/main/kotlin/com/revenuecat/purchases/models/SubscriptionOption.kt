@@ -1,5 +1,7 @@
 package com.revenuecat.purchases.models
 
+import com.revenuecat.purchases.PresentedOfferingContext
+
 /**
  * A purchase-able entity for a subscription product.
  */
@@ -29,7 +31,16 @@ interface SubscriptionOption {
      *
      * Null if not using RevenueCat offerings system, or if fetched directly via `Purchases.getProducts`
      */
+    @Deprecated(
+        "Use presentedOfferingContext instead",
+        ReplaceWith("presentedOfferingContext.offeringIdentifier"),
+    )
     val presentedOfferingIdentifier: String?
+
+    /**
+     * The context from which this subscription option was obtained.
+     */
+    val presentedOfferingContext: PresentedOfferingContext
 
     /**
      * True if this SubscriptionOption represents a Google subscription base plan (rather than an offer).

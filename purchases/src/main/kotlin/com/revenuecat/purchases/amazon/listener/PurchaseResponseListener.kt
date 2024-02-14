@@ -8,6 +8,7 @@ import com.amazon.device.iap.model.PurchaseUpdatesResponse
 import com.amazon.device.iap.model.Receipt
 import com.amazon.device.iap.model.UserData
 import com.amazon.device.iap.model.UserDataResponse
+import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.models.StoreProduct
 
@@ -31,7 +32,7 @@ internal interface PurchaseResponseListener : PurchasingListener {
         activity: Activity,
         appUserID: String,
         storeProduct: StoreProduct,
-        presentedOfferingIdentifier: String?,
+        presentedOfferingContext: PresentedOfferingContext,
         onSuccess: (Receipt, UserData) -> Unit,
         onError: (PurchasesError) -> Unit,
     )
