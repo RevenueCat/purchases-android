@@ -137,7 +137,7 @@ internal fun Template4(
                 if (landscapeLayout) {
                     Spacer(
                         Modifier.windowInsetsTopHeight(
-                            WindowInsets.systemBars,
+                            WindowInsets.statusBars,
                         ),
                     )
                 }
