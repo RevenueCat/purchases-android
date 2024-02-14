@@ -23,8 +23,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
-import androidx.compose.foundation.layout.systemBars
-import androidx.compose.foundation.layout.windowInsetsBottomHeight
 import androidx.compose.foundation.layout.windowInsetsTopHeight
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -133,11 +131,6 @@ internal fun Template2(
                 viewModel = viewModel,
                 childModifier = childModifier,
                 allPlansTapped = { packageSelectorVisible = !packageSelectorVisible },
-            )
-            Spacer(
-                Modifier.windowInsetsBottomHeight(
-                    WindowInsets.systemBars,
-                ),
             )
         }
     }
