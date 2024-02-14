@@ -61,13 +61,14 @@ internal interface PaywallViewModel {
 }
 
 @OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class, ExperimentalPreviewRevenueCatPurchasesAPI::class)
-@Suppress("TooManyFunctions")
+@Suppress("TooManyFunctions", "LongParameterList")
 internal class PaywallViewModelImpl(
     override val resourceProvider: ResourceProvider,
     private val purchases: PurchasesType = PurchasesImpl(),
     private var options: PaywallOptions,
     colorScheme: ColorScheme,
     private var isDarkMode: Boolean,
+    private val shouldDisplayBlock: ((CustomerInfo) -> Boolean)?,
     preview: Boolean = false,
 ) : ViewModel(), PaywallViewModel {
     private val variableDataProvider = VariableDataProvider(resourceProvider, preview)
@@ -167,9 +168,18 @@ internal class PaywallViewModelImpl(
         viewModelScope.launch {
             try {
                 listener?.onRestoreStarted()
+
                 val customerInfo = purchases.awaitRestore()
+
                 Logger.i("Restore purchases successful: $customerInfo")
                 listener?.onRestoreCompleted(customerInfo)
+
+                shouldDisplayBlock?.let {
+                    if (!it(customerInfo)) {
+                        Logger.d("Dismissing paywall after restore since display condition has not been met")
+                        options.dismissRequest()
+                    }
+                }
             } catch (e: PurchasesException) {
                 Logger.e("Error restoring purchases: $e")
                 listener?.onRestoreError(e.error)
@@ -201,6 +211,7 @@ internal class PaywallViewModelImpl(
                     PurchaseParams.Builder(activity, packageToPurchase),
                 )
                 listener?.onPurchaseCompleted(purchaseResult.customerInfo, purchaseResult.storeTransaction)
+                Logger.d("Dismissing paywall after purchase")
                 options.dismissRequest()
             } catch (e: PurchasesException) {
                 if (e.code == PurchasesErrorCode.PurchaseCancelledError) {
