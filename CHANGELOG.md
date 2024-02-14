@@ -1,3 +1,7 @@
+## 7.5.2
+### RevenueCatUI
+* Paywalls: Call `PaywallDialog` dismiss handler after successful restore if needed (#1610) via Toni Rico (@tonidero)
+
 ## 7.5.1
 ### Bugfixes
 * Fix serialization proguard rules (#1606) via Cesar de la Vega (@vegaro)
