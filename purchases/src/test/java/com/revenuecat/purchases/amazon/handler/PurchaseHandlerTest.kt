@@ -110,7 +110,6 @@ class PurchaseHandlerTest {
             mockActivity,
             appUserID = "app_user_id",
             storeProduct = dummyStoreProduct(),
-            presentedOfferingContext = null,
             expectedOnSuccess,
             unexpectedOnError
         )
@@ -135,7 +134,6 @@ class PurchaseHandlerTest {
             mockActivity,
             appUserID = "app_user_id",
             storeProduct = dummyStoreProduct(),
-            presentedOfferingContext = null,
             unexpectedOnSuccess,
             expectedOnError
         )
@@ -159,7 +157,6 @@ class PurchaseHandlerTest {
             mockActivity,
             appUserID = "app_user_id",
             storeProduct = dummyStoreProduct(),
-            presentedOfferingContext = null,
             unexpectedOnSuccess,
             expectedOnError
         )
@@ -183,7 +180,6 @@ class PurchaseHandlerTest {
             mockActivity,
             appUserID = "app_user_id",
             storeProduct = dummyStoreProduct(),
-            presentedOfferingContext = null,
             unexpectedOnSuccess,
             expectedOnError
         )
@@ -207,7 +203,6 @@ class PurchaseHandlerTest {
             mockActivity,
             appUserID = "app_user_id",
             storeProduct = dummyStoreProduct(),
-            presentedOfferingContext = null,
             unexpectedOnSuccess,
             expectedOnError
         )
@@ -233,7 +228,6 @@ class PurchaseHandlerTest {
             mockActivity,
             appUserID = "app_user_id",
             storeProduct = dummyStoreProduct(),
-            presentedOfferingContext = null,
             onSuccess = { _, _ ->
                 receivedCount++
             },
@@ -279,7 +273,6 @@ class PurchaseHandlerTest {
             mockActivity,
             appUserID = "app_user_id",
             storeProduct = dummyStoreProduct(),
-            presentedOfferingContext = null,
             onSuccess = { _, _ -> throw expectedException },
             unexpectedOnError
         )
@@ -309,7 +302,6 @@ class PurchaseHandlerTest {
             mockActivity,
             appUserID = "app_user_id",
             storeProduct = dummyStoreProduct(),
-            presentedOfferingContext = null,
             expectedOnSuccess,
             unexpectedOnError
         )
@@ -336,7 +328,6 @@ class PurchaseHandlerTest {
             mockActivity,
             appUserID = "app_user_id",
             storeProduct = dummyStoreProduct(),
-            presentedOfferingContext = null,
             unexpectedOnSuccess,
             expectedOnError
         )

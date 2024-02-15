@@ -276,7 +276,6 @@ internal class AmazonBilling(
                     activity,
                     appUserID,
                     storeProduct,
-                    presentedOfferingContext,
                     onSuccess = { receipt, userData ->
                         handleReceipt(receipt, userData, storeProduct, presentedOfferingContext)
                     },
