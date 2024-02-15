@@ -38,7 +38,6 @@ internal class PurchaseHandler(
         activity: Activity,
         appUserID: String,
         storeProduct: StoreProduct,
-        presentedOfferingContext: PresentedOfferingContext?,
         onSuccess: (Receipt, UserData) -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {
