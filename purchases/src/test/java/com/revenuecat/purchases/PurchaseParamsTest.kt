@@ -31,7 +31,7 @@ class PurchaseParamsTest {
             offerings[STUB_OFFERING_IDENTIFIER]!!.monthly!!
         ).build()
 
-        assertThat(purchasePackageParams.presentedOfferingContext.offeringIdentifier).isEqualTo(STUB_OFFERING_IDENTIFIER)
+        assertThat(purchasePackageParams.presentedOfferingContext?.offeringIdentifier).isEqualTo(STUB_OFFERING_IDENTIFIER)
     }
 
     @Test
@@ -46,7 +46,7 @@ class PurchaseParamsTest {
             offerings[STUB_OFFERING_IDENTIFIER]!!.monthly!!.product
         ).build()
 
-        assertThat(purchaseProductParams.presentedOfferingContext.offeringIdentifier).isEqualTo(STUB_OFFERING_IDENTIFIER)
+        assertThat(purchaseProductParams.presentedOfferingContext?.offeringIdentifier).isEqualTo(STUB_OFFERING_IDENTIFIER)
     }
 
     @Test
@@ -80,7 +80,7 @@ class PurchaseParamsTest {
             defaultOption
         ).build()
 
-        assertThat(purchaseProductParams.presentedOfferingContext.offeringIdentifier).isEqualTo(STUB_OFFERING_IDENTIFIER)
+        assertThat(purchaseProductParams.presentedOfferingContext?.offeringIdentifier).isEqualTo(STUB_OFFERING_IDENTIFIER)
     }
 
     @Test

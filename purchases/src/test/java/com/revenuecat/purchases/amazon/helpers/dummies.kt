@@ -48,7 +48,7 @@ fun stubStoreProductForAmazon(
     type: com.revenuecat.purchases.ProductType = com.revenuecat.purchases.ProductType.SUBS,
     price: Price = Price("\$1.00", MICROS_MULTIPLIER * 1L, "USD"),
     period: Period = Period(1, Period.Unit.MONTH, "P1M"),
-    presentedOfferingContext: PresentedOfferingContext = PresentedOfferingContext(),
+    presentedOfferingContext: PresentedOfferingContext? = null,
 ): StoreProduct = object : StoreProduct {
     override val id: String
         get() = productId
@@ -73,13 +73,13 @@ fun stubStoreProductForAmazon(
             productId = productId
         )
     override val presentedOfferingIdentifier: String?
-        get() = presentedOfferingContext.offeringIdentifier
-    override val presentedOfferingContext: PresentedOfferingContext
+        get() = presentedOfferingContext?.offeringIdentifier
+    override val presentedOfferingContext: PresentedOfferingContext?
         get() = presentedOfferingContext
     override val sku: String
         get() = productId
 
-    override fun copyWithPresentedOfferingContext(presentedOfferingContext: PresentedOfferingContext): StoreProduct {
+    override fun copyWithPresentedOfferingContext(presentedOfferingContext: PresentedOfferingContext?): StoreProduct {
         return stubStoreProductForAmazon(
             productId,
             type,

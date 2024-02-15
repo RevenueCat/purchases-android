@@ -317,7 +317,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
                 eq(appUserId),
                 storeProduct.subscriptionOptions!!.first().purchasingData,
                 null,
-                PresentedOfferingContext(),
+                null,
                 any()
             )
         }
@@ -337,7 +337,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
                 eq(appUserId),
                 storeProduct.purchasingData,
                 null,
-                PresentedOfferingContext(),
+                null,
                 any()
             )
         }
@@ -829,7 +829,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
                 appUserId,
                 expectedDefaultSubscriptionOption.purchasingData,
                 null,
-                PresentedOfferingContext(),
+                null,
                 any()
             )
         }

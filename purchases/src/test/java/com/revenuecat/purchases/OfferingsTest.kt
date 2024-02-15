@@ -87,16 +87,16 @@ class OfferingsTest {
 
         val packageProduct = monthlyPackageToTest.product
         assertThat(packageProduct.presentedOfferingIdentifier).isEqualTo(expectedOfferingIdentifier)
-        assertThat(packageProduct.presentedOfferingContext.offeringIdentifier).isEqualTo(expectedOfferingIdentifier)
+        assertThat(packageProduct.presentedOfferingContext?.offeringIdentifier).isEqualTo(expectedOfferingIdentifier)
 
         val defaultOption = packageProduct.defaultOption!!
         assertThat(defaultOption.presentedOfferingIdentifier).isEqualTo(expectedOfferingIdentifier)
-        assertThat(defaultOption.presentedOfferingContext.offeringIdentifier).isEqualTo(expectedOfferingIdentifier)
+        assertThat(defaultOption.presentedOfferingContext?.offeringIdentifier).isEqualTo(expectedOfferingIdentifier)
 
         val allOptions = packageProduct.subscriptionOptions!!
         allOptions.forEach {
             assertThat(it.presentedOfferingIdentifier).isEqualTo(expectedOfferingIdentifier)
-            assertThat(it.presentedOfferingContext.offeringIdentifier).isEqualTo(expectedOfferingIdentifier)
+            assertThat(it.presentedOfferingContext?.offeringIdentifier).isEqualTo(expectedOfferingIdentifier)
         }
     }
 
@@ -119,7 +119,7 @@ class OfferingsTest {
 
         val packageProduct = inAppPackageToTest!!.product
         assertThat(packageProduct.presentedOfferingIdentifier).isEqualTo(expectedOfferingIdentifier)
-        assertThat(packageProduct.presentedOfferingContext.offeringIdentifier).isEqualTo(expectedOfferingIdentifier)
+        assertThat(packageProduct.presentedOfferingContext?.offeringIdentifier).isEqualTo(expectedOfferingIdentifier)
     }
 
     @Test

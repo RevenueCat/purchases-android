@@ -1,7 +1,6 @@
 package com.revenuecat.purchases.google
 
 import com.android.billingclient.api.ProductDetails
-import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.log
@@ -41,7 +40,7 @@ internal fun ProductDetails.toStoreProduct(
         subscriptionOptions = subscriptionOptions,
         defaultOption = subscriptionOptions?.defaultOffer,
         productDetails = this,
-        presentedOfferingContext = PresentedOfferingContext(),
+        presentedOfferingContext = null,
     )
 }
 

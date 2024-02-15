@@ -39,8 +39,11 @@ interface SubscriptionOption {
 
     /**
      * The context from which this subscription option was obtained.
+     *
+     * Null if not using RevenueCat offerings system, if fetched directly via `Purchases.getProducts`,
+     * or on restores/syncs.
      */
-    val presentedOfferingContext: PresentedOfferingContext
+    val presentedOfferingContext: PresentedOfferingContext?
 
     /**
      * True if this SubscriptionOption represents a Google subscription base plan (rather than an offer).

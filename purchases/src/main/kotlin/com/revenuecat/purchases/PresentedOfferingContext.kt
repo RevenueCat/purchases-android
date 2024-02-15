@@ -10,9 +10,6 @@ import kotlinx.parcelize.Parcelize
 data class PresentedOfferingContext(
     /**
      * The identifier of the offering used to obtain this object.
-     *
-     * Null if not using RevenueCat offerings system, if fetched directly via `Purchases.getProducts`,
-     * or on restores/syncs.
      */
-    val offeringIdentifier: String? = null,
+    val offeringIdentifier: String,
 ) : Parcelable

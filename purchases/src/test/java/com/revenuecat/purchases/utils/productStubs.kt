@@ -53,7 +53,7 @@ fun stubStoreProduct(
     ),
     subscriptionOptions: List<SubscriptionOption>? = defaultOption?.let { listOf(defaultOption) } ?: emptyList(),
     price: Price = subscriptionOptions?.first()?.fullPricePhase!!.price,
-    presentedOfferingContext: PresentedOfferingContext = PresentedOfferingContext(),
+    presentedOfferingContext: PresentedOfferingContext? = null,
 ): StoreProduct = object : StoreProduct {
     override val id: String
         get() = productId
@@ -102,13 +102,13 @@ fun stubStoreProduct(
             productId = productId,
         )
     override val presentedOfferingIdentifier: String?
-        get() = presentedOfferingContext.offeringIdentifier
-    override val presentedOfferingContext: PresentedOfferingContext
+        get() = presentedOfferingContext?.offeringIdentifier
+    override val presentedOfferingContext: PresentedOfferingContext?
         get() = presentedOfferingContext
     override val sku: String
         get() = productId
 
-    override fun copyWithPresentedOfferingContext(presentedOfferingContext: PresentedOfferingContext): StoreProduct {
+    override fun copyWithPresentedOfferingContext(presentedOfferingContext: PresentedOfferingContext?): StoreProduct {
         val subscriptionOptionsWithOfferingIds = subscriptionOptions?.map {
             stubSubscriptionOption(
                 it.id,
@@ -145,7 +145,7 @@ fun stubStoreProduct(
 @SuppressWarnings("EmptyFunctionBlock")
 fun stubINAPPStoreProduct(
     productId: String,
-    presentedOfferingContext: PresentedOfferingContext = PresentedOfferingContext(),
+    presentedOfferingContext: PresentedOfferingContext? = null,
 ): StoreProduct = object : StoreProduct {
     override val id: String
         get() = productId
@@ -170,13 +170,13 @@ fun stubINAPPStoreProduct(
             productId = productId,
         )
     override val presentedOfferingIdentifier: String?
-        get() = presentedOfferingContext.offeringIdentifier
-    override val presentedOfferingContext: PresentedOfferingContext
+        get() = presentedOfferingContext?.offeringIdentifier
+    override val presentedOfferingContext: PresentedOfferingContext?
         get() = presentedOfferingContext
     override val sku: String
         get() = productId
 
-    override fun copyWithPresentedOfferingContext(presentedOfferingContext: PresentedOfferingContext): StoreProduct {
+    override fun copyWithPresentedOfferingContext(presentedOfferingContext: PresentedOfferingContext?): StoreProduct {
         return object : StoreProduct {
             override val id: String
                 get() = productId
@@ -201,14 +201,14 @@ fun stubINAPPStoreProduct(
                     productId = productId,
                 )
             override val presentedOfferingIdentifier: String?
-                get() = presentedOfferingContext.offeringIdentifier
-            override val presentedOfferingContext: PresentedOfferingContext
+                get() = presentedOfferingContext?.offeringIdentifier
+            override val presentedOfferingContext: PresentedOfferingContext?
                 get() = presentedOfferingContext
             override val sku: String
                 get() = productId
 
             override fun copyWithOfferingId(offeringId: String): StoreProduct = this
-            override fun copyWithPresentedOfferingContext(presentedOfferingContext: PresentedOfferingContext): StoreProduct = this
+            override fun copyWithPresentedOfferingContext(presentedOfferingContext: PresentedOfferingContext?): StoreProduct = this
         }
     }
 
@@ -223,7 +223,7 @@ fun stubSubscriptionOption(
     productId: String,
     duration: Period = Period(1, Period.Unit.MONTH, "P1M"),
     pricingPhases: List<PricingPhase> = listOf(stubPricingPhase(billingPeriod = duration)),
-    presentedOfferingContext: PresentedOfferingContext = PresentedOfferingContext(),
+    presentedOfferingContext: PresentedOfferingContext? = null,
 ): SubscriptionOption = object : SubscriptionOption {
     override val id: String
         get() = id
@@ -232,8 +232,8 @@ fun stubSubscriptionOption(
     override val tags: List<String>
         get() = listOf("tag")
     override val presentedOfferingIdentifier: String?
-        get() = presentedOfferingContext.offeringIdentifier
-    override val presentedOfferingContext: PresentedOfferingContext
+        get() = presentedOfferingContext?.offeringIdentifier
+    override val presentedOfferingContext: PresentedOfferingContext?
         get() = presentedOfferingContext
     override val purchasingData: PurchasingData
         get() = StubPurchasingData(

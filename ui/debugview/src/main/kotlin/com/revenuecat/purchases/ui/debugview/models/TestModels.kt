@@ -74,8 +74,8 @@ internal val testOffering: Offering
             override val purchasingData: PurchasingData
                 get() = purchasingData
             override val presentedOfferingIdentifier: String?
-                get() = presentedOfferingContext.offeringIdentifier
-            override val presentedOfferingContext: PresentedOfferingContext
+                get() = presentedOfferingContext?.offeringIdentifier
+            override val presentedOfferingContext: PresentedOfferingContext?
                 get() = PresentedOfferingContext("offering_id")
 
             @Deprecated("Use sku instead", ReplaceWith("id"))
@@ -87,7 +87,7 @@ internal val testOffering: Offering
             }
 
             override fun copyWithPresentedOfferingContext(
-                presentedOfferingContext: PresentedOfferingContext,
+                presentedOfferingContext: PresentedOfferingContext?,
             ): StoreProduct {
                 error("Not implemented")
             }

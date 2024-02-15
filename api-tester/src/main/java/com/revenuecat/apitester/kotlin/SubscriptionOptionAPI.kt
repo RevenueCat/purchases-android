@@ -5,14 +5,14 @@ import com.revenuecat.purchases.models.GoogleSubscriptionOption
 import com.revenuecat.purchases.models.PricingPhase
 import com.revenuecat.purchases.models.SubscriptionOption
 
-@Suppress("unused", "UNUSED_VARIABLE", "RemoveExplicitTypeArguments")
+@Suppress("unused", "UNUSED_VARIABLE", "deprecation")
 private class SubscriptionOptionAPI {
     fun checkSubscriptionOption(subscriptionOption: SubscriptionOption) {
         val phases: List<PricingPhase> = subscriptionOption.pricingPhases
         val tags: List<String> = subscriptionOption.tags
         val isBasePlan: Boolean = subscriptionOption.isBasePlan
         val presentedOfferingId: String? = subscriptionOption.presentedOfferingIdentifier
-        val presentedOfferingContext: PresentedOfferingContext = subscriptionOption.presentedOfferingContext
+        val presentedOfferingContext: PresentedOfferingContext? = subscriptionOption.presentedOfferingContext
         val isPrepaid: Boolean = subscriptionOption.isPrepaid
     }
 
@@ -42,7 +42,7 @@ private class SubscriptionOptionAPI {
             googleSubscriptionOption.tags,
             productDetails,
             offerToken,
-            googleSubscriptionOption.presentedOfferingIdentifier,
+            "offeringId",
         )
 
         val subscriptionOptionWithOfferingContext = GoogleSubscriptionOption(
@@ -54,6 +54,17 @@ private class SubscriptionOptionAPI {
             productDetails,
             offerToken,
             googleSubscriptionOption.presentedOfferingContext,
+        )
+
+        val subscriptionOptionWithNullOfferingContext = GoogleSubscriptionOption(
+            productId,
+            basePlanId,
+            offerId,
+            googleSubscriptionOption.pricingPhases,
+            googleSubscriptionOption.tags,
+            productDetails,
+            offerToken,
+            null,
         )
     }
 }

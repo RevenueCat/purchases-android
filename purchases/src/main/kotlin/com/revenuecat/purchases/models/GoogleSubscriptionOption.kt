@@ -49,8 +49,11 @@ data class GoogleSubscriptionOption @JvmOverloads constructor(
 
     /**
      * The context from which this subscription option was obtained.
+     *
+     * Null if not using RevenueCat offerings system, if fetched directly via `Purchases.getProducts`,
+     * or on restores/syncs.
      */
-    override val presentedOfferingContext: PresentedOfferingContext = PresentedOfferingContext(),
+    override val presentedOfferingContext: PresentedOfferingContext? = null,
 ) : SubscriptionOption {
 
     constructor(
@@ -61,7 +64,7 @@ data class GoogleSubscriptionOption @JvmOverloads constructor(
         tags: List<String>,
         productDetails: ProductDetails,
         offerToken: String,
-        presentedOfferingId: String?,
+        presentedOfferingId: String,
     ) : this(
         productId,
         basePlanId,
@@ -75,7 +78,7 @@ data class GoogleSubscriptionOption @JvmOverloads constructor(
 
     internal constructor(
         subscriptionOption: GoogleSubscriptionOption,
-        presentedOfferingContext: PresentedOfferingContext,
+        presentedOfferingContext: PresentedOfferingContext?,
     ) :
         this(
             subscriptionOption.productId,
@@ -101,7 +104,7 @@ data class GoogleSubscriptionOption @JvmOverloads constructor(
         ReplaceWith("presentedOfferingContext.offeringIdentifier"),
     )
     override val presentedOfferingIdentifier: String?
-        get() = presentedOfferingContext.offeringIdentifier
+        get() = presentedOfferingContext?.offeringIdentifier
 
     override val purchasingData: PurchasingData
         get() = GooglePurchasingData.Subscription(

@@ -389,7 +389,7 @@ class BillingWrapperTest {
             appUserId,
             storeProduct.subscriptionOptions!!.first().purchasingData,
             upgradeInfo,
-            PresentedOfferingContext(),
+            null,
             isPersonalizedPrice
         )
     }
@@ -473,7 +473,7 @@ class BillingWrapperTest {
             appUserId,
             storeProduct.subscriptionOptions!!.first().purchasingData,
             replaceProductInfo,
-            PresentedOfferingContext(),
+            null,
             isPersonalizedPrice
         )
     }
@@ -532,7 +532,7 @@ class BillingWrapperTest {
             appUserId,
             storeProduct.purchasingData,
             null,
-            PresentedOfferingContext(),
+            null,
             isPersonalizedPrice
         )
     }
@@ -578,7 +578,7 @@ class BillingWrapperTest {
             appUserId,
             storeProduct.subscriptionOptions!!.first().purchasingData,
             upgradeInfo,
-            PresentedOfferingContext()
+            null
         )
 
         assertThat(tokenSlot.isCaptured).isTrue
@@ -624,7 +624,7 @@ class BillingWrapperTest {
             appUserId,
             storeProduct.purchasingData,
             null,
-            PresentedOfferingContext(),
+            null,
         )
 
         verify(exactly = 0) {
@@ -645,7 +645,7 @@ class BillingWrapperTest {
             appUserId,
             storeProduct.subscriptionOptions!!.first().purchasingData,
             null,
-            PresentedOfferingContext(),
+            null,
         )
 
         val expectedUserId = appUserId.sha256()
@@ -667,7 +667,7 @@ class BillingWrapperTest {
             appUserId,
             storeProduct.subscriptionOptions!!.first().purchasingData,
             mockReplaceSkuInfo(),
-            PresentedOfferingContext(),
+            null,
         )
 
         verify(exactly = 0) {
@@ -692,7 +692,7 @@ class BillingWrapperTest {
             appUserId,
             storeProduct.subscriptionOptions!!.first().purchasingData,
             mockReplaceSkuInfo(),
-            PresentedOfferingContext(),
+            null,
         )
 
         verify(exactly = 0) {
@@ -723,7 +723,7 @@ class BillingWrapperTest {
             appUserId,
             storeProduct.subscriptionOptions!!.first().purchasingData,
             mockReplaceSkuInfo(),
-            PresentedOfferingContext(),
+            null,
         )
 
         // ensure calls to startConnection - 1 happens in setup, 1 more here
@@ -766,9 +766,9 @@ class BillingWrapperTest {
             override val tags: List<String>
                 get() = emptyList()
             override val presentedOfferingIdentifier: String?
-                get() = presentedOfferingContext.offeringIdentifier
-            override val presentedOfferingContext: PresentedOfferingContext
-                get() = PresentedOfferingContext()
+                get() = presentedOfferingContext?.offeringIdentifier
+            override val presentedOfferingContext: PresentedOfferingContext?
+                get() = null
 
             override val purchasingData: PurchasingData
                 get() = object: PurchasingData {
@@ -784,7 +784,7 @@ class BillingWrapperTest {
             appUserId,
             nonGoogleSubscriptionOption.purchasingData,
             mockReplaceSkuInfo(),
-            PresentedOfferingContext(),
+            null,
         )
 
         verify(exactly = 0) {
@@ -830,18 +830,18 @@ class BillingWrapperTest {
                     override val tags: List<String>
                         get() = emptyList()
                     override val presentedOfferingIdentifier: String?
-                        get() = presentedOfferingContext.offeringIdentifier
-                    override val presentedOfferingContext: PresentedOfferingContext
-                        get() = PresentedOfferingContext()
+                        get() = presentedOfferingContext?.offeringIdentifier
+                    override val presentedOfferingContext: PresentedOfferingContext?
+                        get() = null
                     override val purchasingData: PurchasingData
                         get() = purchasingData
                 }
             override val purchasingData: PurchasingData
                 get() = purchasingData
             override val presentedOfferingIdentifier: String?
-                get() = presentedOfferingContext.offeringIdentifier
-            override val presentedOfferingContext: PresentedOfferingContext
-                get() = PresentedOfferingContext()
+                get() = presentedOfferingContext?.offeringIdentifier
+            override val presentedOfferingContext: PresentedOfferingContext?
+                get() = null
 
             @Deprecated("Replaced with id", replaceWith = ReplaceWith("id"))
             override val sku: String
@@ -851,7 +851,7 @@ class BillingWrapperTest {
                 return this // this is wrong, just doing for test
             }
 
-            override fun copyWithPresentedOfferingContext(presentedOfferingContext: PresentedOfferingContext): StoreProduct {
+            override fun copyWithPresentedOfferingContext(presentedOfferingContext: PresentedOfferingContext?): StoreProduct {
                 return this // this is wrong, just doing for test
             }
 
@@ -871,7 +871,7 @@ class BillingWrapperTest {
             appUserId,
             storeProduct.subscriptionOptions.first().purchasingData,
             mockReplaceSkuInfo(),
-            PresentedOfferingContext(),
+            null,
         )
 
         verify(exactly = 0) {

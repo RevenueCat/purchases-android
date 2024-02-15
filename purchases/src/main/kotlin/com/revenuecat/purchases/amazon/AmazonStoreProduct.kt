@@ -78,8 +78,10 @@ data class AmazonStoreProduct @JvmOverloads constructor(
 
     /**
      * The context from which this product was obtained.
+     *
+     * Null if not using RevenueCat offerings system, or if fetched directly via `Purchases.getProducts`
      */
-    override val presentedOfferingContext: PresentedOfferingContext = PresentedOfferingContext(),
+    override val presentedOfferingContext: PresentedOfferingContext? = null,
 ) : StoreProduct {
 
     @Deprecated(
@@ -116,7 +118,7 @@ data class AmazonStoreProduct @JvmOverloads constructor(
         iconUrl = iconUrl,
         freeTrialPeriod = freeTrialPeriod,
         originalProductJSON = originalProductJSON,
-        presentedOfferingIdentifier = presentedOfferingIdentifier,
+        presentedOfferingContext = presentedOfferingIdentifier?.let { PresentedOfferingContext(it) },
     )
 
     @Deprecated(
@@ -140,7 +142,7 @@ data class AmazonStoreProduct @JvmOverloads constructor(
         iconUrl: String,
         freeTrialPeriod: Period?,
         originalProductJSON: JSONObject,
-        presentedOfferingIdentifier: String?,
+        presentedOfferingIdentifier: String,
     ) : this(
         id = id,
         type = type,
@@ -180,7 +182,7 @@ data class AmazonStoreProduct @JvmOverloads constructor(
         ReplaceWith("presentedOfferingContext.offeringIdentifier"),
     )
     override val presentedOfferingIdentifier: String?
-        get() = presentedOfferingContext.offeringIdentifier
+        get() = presentedOfferingContext?.offeringIdentifier
 
     /**
      * For internal RevenueCat use.
@@ -192,10 +194,12 @@ data class AmazonStoreProduct @JvmOverloads constructor(
         ReplaceWith("copyWithPresentedOfferingContext(PresentedOfferingContext(offeringId))"),
     )
     override fun copyWithOfferingId(offeringId: String): StoreProduct {
-        return copyWithPresentedOfferingContext(PresentedOfferingContext(offeringId))
+        val newPresentedOfferingContext = presentedOfferingContext?.copy(offeringIdentifier = offeringId)
+            ?: PresentedOfferingContext(offeringId)
+        return copyWithPresentedOfferingContext(newPresentedOfferingContext)
     }
 
-    override fun copyWithPresentedOfferingContext(presentedOfferingContext: PresentedOfferingContext): StoreProduct {
+    override fun copyWithPresentedOfferingContext(presentedOfferingContext: PresentedOfferingContext?): StoreProduct {
         return AmazonStoreProduct(
             this.id,
             this.type,
@@ -243,7 +247,7 @@ private data class ComparableData(
     val defaultOption: SubscriptionOption?,
     val iconUrl: String,
     val freeTrialPeriod: Period?,
-    val presentedOfferingContext: PresentedOfferingContext,
+    val presentedOfferingContext: PresentedOfferingContext?,
 ) {
     constructor(
         amazonStoreProduct: AmazonStoreProduct,

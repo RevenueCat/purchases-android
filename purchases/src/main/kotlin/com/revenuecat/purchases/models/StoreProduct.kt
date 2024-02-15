@@ -101,8 +101,11 @@ interface StoreProduct {
 
     /**
      * The context from which this product was obtained.
+     *
+     * Null if not using RevenueCat offerings system, if fetched directly via `Purchases.getProducts`,
+     * or on restores/syncs.
      */
-    val presentedOfferingContext: PresentedOfferingContext
+    val presentedOfferingContext: PresentedOfferingContext?
 
     /**
      * The sku of the StoreProduct
@@ -129,7 +132,7 @@ interface StoreProduct {
      *
      * Creates a copy of this `StoreProduct` with the specified `presentedOfferingContext` set.
      */
-    fun copyWithPresentedOfferingContext(presentedOfferingContext: PresentedOfferingContext): StoreProduct
+    fun copyWithPresentedOfferingContext(presentedOfferingContext: PresentedOfferingContext?): StoreProduct
 
     /**
      * Null for INAPP products. The price of the [StoreProduct] in the given locale in a weekly recurrence.

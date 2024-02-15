@@ -221,7 +221,7 @@ internal class BillingWrapper(
         appUserID: String,
         purchasingData: PurchasingData,
         replaceProductInfo: ReplaceProductInfo?,
-        presentedOfferingContext: PresentedOfferingContext,
+        presentedOfferingContext: PresentedOfferingContext?,
         isPersonalizedPrice: Boolean?,
     ) {
         val googlePurchasingData = purchasingData as? GooglePurchasingData

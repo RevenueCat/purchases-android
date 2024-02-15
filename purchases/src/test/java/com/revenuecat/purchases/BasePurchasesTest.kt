@@ -472,7 +472,7 @@ internal open class BasePurchasesTest {
         productId: String,
         purchaseToken: String,
         productType: ProductType,
-        presentedOfferingContext: PresentedOfferingContext = PresentedOfferingContext(),
+        presentedOfferingContext: PresentedOfferingContext? = null,
         purchaseState: Int = Purchase.PurchaseState.PURCHASED,
         acknowledged: Boolean = false,
         subscriptionOptionId: String? = this.subscriptionOptionId

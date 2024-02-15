@@ -194,7 +194,7 @@ internal class PurchasesTest : BasePurchasesTest() {
                 any(),
                 receiptInfo.storeProduct!!.defaultOption!!.purchasingData,
                 any(),
-                PresentedOfferingContext(),
+                null,
             )
         }
     }

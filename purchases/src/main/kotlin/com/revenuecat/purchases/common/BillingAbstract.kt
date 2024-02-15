@@ -77,7 +77,7 @@ internal abstract class BillingAbstract(
         appUserID: String,
         purchasingData: PurchasingData,
         replaceProductInfo: ReplaceProductInfo?,
-        presentedOfferingContext: PresentedOfferingContext,
+        presentedOfferingContext: PresentedOfferingContext?,
         isPersonalizedPrice: Boolean? = null,
     )
 

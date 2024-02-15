@@ -21,7 +21,7 @@ data class PurchaseParams(val builder: Builder) {
     internal val activity: Activity
 
     @get:JvmSynthetic
-    internal val presentedOfferingContext: PresentedOfferingContext
+    internal val presentedOfferingContext: PresentedOfferingContext?
 
     init {
         this.isPersonalizedPrice = builder.isPersonalizedPrice
@@ -45,7 +45,7 @@ data class PurchaseParams(val builder: Builder) {
     open class Builder private constructor(
         @get:JvmSynthetic internal val activity: Activity,
         @get:JvmSynthetic internal val purchasingData: PurchasingData,
-        @get:JvmSynthetic internal val presentedOfferingContext: PresentedOfferingContext,
+        @get:JvmSynthetic internal val presentedOfferingContext: PresentedOfferingContext?,
         @get:JvmSynthetic internal val product: StoreProduct?,
     ) {
         constructor(activity: Activity, packageToPurchase: Package) :

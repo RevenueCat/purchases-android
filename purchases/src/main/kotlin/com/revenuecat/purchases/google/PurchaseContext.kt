@@ -6,7 +6,7 @@ import com.revenuecat.purchases.models.GoogleReplacementMode
 
 internal class PurchaseContext(
     val productType: ProductType,
-    val presentedOfferingContext: PresentedOfferingContext,
+    val presentedOfferingContext: PresentedOfferingContext?,
     val selectedSubscriptionOptionId: String?,
     val replacementMode: GoogleReplacementMode?,
 )

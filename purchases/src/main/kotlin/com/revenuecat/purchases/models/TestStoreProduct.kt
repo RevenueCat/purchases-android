@@ -61,9 +61,9 @@ data class TestStoreProduct(
         ReplaceWith("presentedOfferingContext.offeringIdentifier"),
     )
     override val presentedOfferingIdentifier: String?
-        get() = presentedOfferingContext.offeringIdentifier
-    override val presentedOfferingContext: PresentedOfferingContext
-        get() = PresentedOfferingContext()
+        get() = presentedOfferingContext?.offeringIdentifier
+    override val presentedOfferingContext: PresentedOfferingContext?
+        get() = null
     override val sku: String
         get() = id
 
@@ -75,7 +75,7 @@ data class TestStoreProduct(
         return copyWithPresentedOfferingContext(PresentedOfferingContext(offeringId))
     }
 
-    override fun copyWithPresentedOfferingContext(presentedOfferingContext: PresentedOfferingContext): StoreProduct {
+    override fun copyWithPresentedOfferingContext(presentedOfferingContext: PresentedOfferingContext?): StoreProduct {
         return this
     }
 

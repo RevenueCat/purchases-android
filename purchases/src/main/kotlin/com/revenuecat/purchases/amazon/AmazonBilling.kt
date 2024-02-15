@@ -245,7 +245,7 @@ internal class AmazonBilling(
         appUserID: String,
         purchasingData: PurchasingData,
         replaceProductInfo: ReplaceProductInfo?,
-        presentedOfferingContext: PresentedOfferingContext,
+        presentedOfferingContext: PresentedOfferingContext?,
         isPersonalizedPrice: Boolean?,
     ) {
         val amazonPurchaseInfo = purchasingData as? AmazonPurchasingData.Product
@@ -516,7 +516,7 @@ internal class AmazonBilling(
         receipt: Receipt,
         userData: UserData,
         storeProduct: StoreProduct,
-        presentedOfferingContext: PresentedOfferingContext,
+        presentedOfferingContext: PresentedOfferingContext?,
     ) {
         if (receipt.productType != ProductType.SUBSCRIPTION) {
             /**

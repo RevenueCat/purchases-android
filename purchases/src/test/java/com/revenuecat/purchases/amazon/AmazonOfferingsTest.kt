@@ -81,7 +81,7 @@ class AmazonOfferingsTest {
 
         val packageProduct = monthlyPackageToTest.product
         Assertions.assertThat(packageProduct.presentedOfferingIdentifier).isEqualTo(expectedOfferingIdentifier)
-        Assertions.assertThat(packageProduct.presentedOfferingContext.offeringIdentifier).isEqualTo(expectedOfferingIdentifier)
+        Assertions.assertThat(packageProduct.presentedOfferingContext?.offeringIdentifier).isEqualTo(expectedOfferingIdentifier)
 
         Assertions.assertThat(packageProduct.defaultOption).isNull()
         Assertions.assertThat(packageProduct.subscriptionOptions).isNull()
@@ -106,7 +106,7 @@ class AmazonOfferingsTest {
 
         val packageProduct = inAppPackageToTest!!.product
         Assertions.assertThat(packageProduct.presentedOfferingIdentifier).isEqualTo(expectedOfferingIdentifier)
-        Assertions.assertThat(packageProduct.presentedOfferingContext.offeringIdentifier).isEqualTo(expectedOfferingIdentifier)
+        Assertions.assertThat(packageProduct.presentedOfferingContext?.offeringIdentifier).isEqualTo(expectedOfferingIdentifier)
     }
 
     @Test
