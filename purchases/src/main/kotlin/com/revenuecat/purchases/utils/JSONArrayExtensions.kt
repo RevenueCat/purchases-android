@@ -19,3 +19,19 @@ internal fun <T> JSONArray.toList(): List<T>? {
 
     return list
 }
+
+internal fun <T> List<T?>.replaceJsonNullWithKotlinNull(): List<T?> {
+    @Suppress("UNCHECKED_CAST")
+    return this.map { item ->
+        when (item) {
+            is Map<*, *> ->
+                @Suppress("UNCHECKED_CAST")
+                (item as Map<T, T?>).replaceJsonNullWithKotlinNull()
+            is List<*> ->
+                @Suppress("UNCHECKED_CAST")
+                (item as List<T?>).replaceJsonNullWithKotlinNull()
+            JSONObject.NULL -> null
+            else -> item
+        }
+    } as List<T?>
+}

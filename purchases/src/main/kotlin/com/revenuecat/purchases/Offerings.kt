@@ -26,16 +26,23 @@ data class Offerings(
      */
     operator fun get(identifier: String) = getOffering(identifier)
 
-    fun getCurrentOffering(forPlacement: String): Offering? {
+    /**
+     * Retrieves an specific offering by a placement identifier.
+     * For more info see https://www.revenuecat.com/docs/tools/targeting
+     * @param placementId Placement identifier
+     */
+    fun getCurrentOfferingForPlacement(placementId: String): Offering? {
         val placement = this.placement ?: run {
             return null
         }
 
-        val offeringForPlacement = placement.offeringIdsByPlacement[forPlacement]?.let { getOffering(it) }
+        val offeringForPlacement = placement.offeringIdsByPlacement[placementId]?.let { getOffering(it) }
         val fallbackOffering = placement.fallbackOfferingId?.let { getOffering(it) }
 
-        val showNoOffering = placement.offeringIdsByPlacement.containsKey(forPlacement)
-        return offeringForPlacement ?: if (showNoOffering) null else fallbackOffering
+        val showNoOffering = placement.offeringIdsByPlacement.containsKey(placementId)
+        val offering = offeringForPlacement ?: if (showNoOffering) null else fallbackOffering
+
+        return offering?.withPlacement(placementId)
     }
 }
 
@@ -43,9 +50,14 @@ data class Offerings(
  * This class contains all the offerings by placement configured in RevenueCat dashboard.
  * For more info see https://www.revenuecat.com/docs/targeting
  * @property fallbackOfferingId The optional offering identifier to fallback on if the placement isn't found.
- * @property offeringIdsByPlacement Dictionary of all offering identifiers (or null) keyed by their placement identifier.
+ * @property offeringIdsByPlacement Dictionary of all offering identifiers keyed by their placement identifier.
  */
 data class Placements(
     val fallbackOfferingId: String?,
     val offeringIdsByPlacement: Map<String, String?>,
 )
+
+private fun Offering.withPlacement(placementId: String): Offering {
+    // TODO: Inject the placement id into the presented offering context
+    return this
+}
