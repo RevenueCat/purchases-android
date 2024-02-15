@@ -2443,6 +2443,7 @@ class BackendTest {
             "product_ids" to receiptInfo.productIDs,
             "is_restore" to isRestore,
             "presented_offering_identifier" to receiptInfo.presentedOfferingContext?.offeringIdentifier,
+            "presented_placement_identifier" to receiptInfo.presentedOfferingContext?.placementIdentifier,
             "observer_mode" to observerMode,
             "price" to receiptInfo.price,
             "currency" to receiptInfo.currency,
