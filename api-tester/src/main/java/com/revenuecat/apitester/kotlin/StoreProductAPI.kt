@@ -42,9 +42,9 @@ private class StoreProductAPI {
             val presentedOfferingContext: PresentedOfferingContext? = presentedOfferingContext
             val underlyingGoogleProduct: GoogleStoreProduct? = googleProduct
             val underlyingAmazonProduct: AmazonStoreProduct? = amazonProduct
-            val copiedProductWithOfferingId = copyWithOfferingId("offeringId")
-            val copiedProduct = copyWithPresentedOfferingContext(null)
-            val copiedProduct2 = copyWithPresentedOfferingContext(PresentedOfferingContext("offeringId"))
+            val copiedProductWithOfferingId: StoreProduct = copyWithOfferingId("offeringId")
+            val copiedProduct: StoreProduct = copyWithPresentedOfferingContext(null)
+            val copiedProduct2: StoreProduct = copyWithPresentedOfferingContext(PresentedOfferingContext("offeringId"))
         }
     }
 

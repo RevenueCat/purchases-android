@@ -284,6 +284,7 @@ class ReceiptToStoreTransactionTest {
     fun `presentedOfferingIdentifier is correct when is null`() {
         val receipt = dummyReceipt()
 
+        val expectedPresentedOfferingIdentifier: String? = null
         val expectedPresentedOfferingContext: PresentedOfferingContext? = null
         val storeTransaction: StoreTransaction = receipt.toStoreTransaction(
             productId = "sku",
@@ -295,7 +296,7 @@ class ReceiptToStoreTransactionTest {
             )
         )
 
-        assertThat(storeTransaction.presentedOfferingIdentifier).isEqualTo(null)
+        assertThat(storeTransaction.presentedOfferingIdentifier).isEqualTo(expectedPresentedOfferingIdentifier)
         assertThat(storeTransaction.presentedOfferingContext).isEqualTo(expectedPresentedOfferingContext)
     }
 
@@ -342,7 +343,7 @@ class ReceiptToStoreTransactionTest {
         val receipt = dummyReceipt()
         val storeTransaction = receipt.toStoreTransaction(
             productId = "sku",
-            presentedOfferingContext = presentedOfferingContext,
+            presentedOfferingContext = null,
             purchaseState = PurchaseState.PURCHASED,
             userData = dummyUserData(
                 storeUserId = "store_user_id",

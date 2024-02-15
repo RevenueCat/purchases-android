@@ -56,6 +56,13 @@ data class GoogleSubscriptionOption @JvmOverloads constructor(
     override val presentedOfferingContext: PresentedOfferingContext? = null,
 ) : SubscriptionOption {
 
+    @Deprecated(
+        "Use constructor with presentedOfferingContext instead",
+        ReplaceWith(
+            "GoogleSubscriptionOption(productId, basePlanId, offerId, pricingPhases, tags, " +
+                "productDetails, offerToken, PresentedOfferingContext(offeringIdentifier = presentedOfferingId))",
+        ),
+    )
     constructor(
         productId: String,
         basePlanId: String,
