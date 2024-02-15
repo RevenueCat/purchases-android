@@ -58,6 +58,26 @@ data class Placements(
 )
 
 private fun Offering.withPlacement(placementId: String): Offering {
-    // TODO: Inject the placement id into the presented offering context
-    return this
+    val updatedAvailablePackages = this.availablePackages.map {
+        val context = PresentedOfferingContext(
+            offeringIdentifier = it.presentedOfferingContext.offeringIdentifier,
+            placementIdentifier = placementId,
+        )
+        val product = it.product.copyWithPresentedOfferingContext(context)
+
+        Package(
+            identifier = it.identifier,
+            packageType = it.packageType,
+            product = product,
+            presentedOfferingContext = context,
+        )
+    }
+
+    return Offering(
+        identifier = this.identifier,
+        serverDescription = this.serverDescription,
+        metadata = this.metadata,
+        availablePackages = updatedAvailablePackages,
+        paywall = this.paywall,
+    )
 }
