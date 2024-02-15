@@ -54,14 +54,17 @@ internal fun Footer(
     childModifier: Modifier = Modifier,
     allPlansTapped: (() -> Unit)? = null,
 ) {
-    Footer(
-        mode = templateConfiguration.mode,
-        configuration = templateConfiguration.configuration,
-        colors = templateConfiguration.getCurrentColors(),
-        viewModel = viewModel,
-        childModifier = childModifier,
-        allPlansTapped = allPlansTapped,
-    )
+    Column {
+        Footer(
+            mode = templateConfiguration.mode,
+            configuration = templateConfiguration.configuration,
+            colors = templateConfiguration.getCurrentColors(),
+            viewModel = viewModel,
+            childModifier = childModifier,
+            allPlansTapped = allPlansTapped,
+        )
+        SystemBarsSpacer()
+    }
 }
 
 @Suppress("LongParameterList")
@@ -80,8 +83,7 @@ private fun Footer(
         modifier = Modifier
             .fillMaxWidth()
             .height(intrinsicSize = IntrinsicSize.Min)
-            .padding(horizontal = UIConstant.defaultHorizontalPadding)
-            .padding(bottom = UIConstant.defaultVerticalSpacing),
+            .padding(horizontal = UIConstant.defaultHorizontalPadding),
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically,
     ) {

@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.ui.revenuecatui.composables
 
 import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
@@ -16,12 +17,16 @@ fun BoxScope.CloseButton(
     onClick: () -> Unit,
 ) {
     if (shouldDisplayDismissButton) {
-        IconButton(
-            onClick = onClick,
-            modifier = Modifier.align(Alignment.TopStart),
-            enabled = actionInProgress.not(),
+        Column(
+            Modifier.align(Alignment.TopStart),
         ) {
-            Icon(painter = painterResource(id = R.drawable.close), contentDescription = null)
+            StatusBarSpacer()
+            IconButton(
+                onClick = onClick,
+                enabled = actionInProgress.not(),
+            ) {
+                Icon(painter = painterResource(id = R.drawable.close), contentDescription = null)
+            }
         }
     }
 }

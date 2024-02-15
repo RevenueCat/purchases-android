@@ -40,6 +40,7 @@ import com.revenuecat.purchases.ui.revenuecatui.composables.OfferDetails
 import com.revenuecat.purchases.ui.revenuecatui.composables.PaywallIcon
 import com.revenuecat.purchases.ui.revenuecatui.composables.PaywallIconName
 import com.revenuecat.purchases.ui.revenuecatui.composables.PurchaseButton
+import com.revenuecat.purchases.ui.revenuecatui.composables.StatusBarSpacer
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModel
 import com.revenuecat.purchases.ui.revenuecatui.data.isInFullScreenMode
@@ -88,6 +89,8 @@ private fun ColumnScope.PortraitContent(state: PaywallState.Loaded, viewModel: P
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(UIConstant.defaultVerticalSpacing, Alignment.Top),
         ) {
+            StatusBarSpacer()
+
             Icon(state)
             Title(state)
 

@@ -70,6 +70,7 @@ import com.revenuecat.purchases.ui.revenuecatui.composables.PaywallBackground
 import com.revenuecat.purchases.ui.revenuecatui.composables.PaywallIcon
 import com.revenuecat.purchases.ui.revenuecatui.composables.PaywallIconName
 import com.revenuecat.purchases.ui.revenuecatui.composables.PurchaseButton
+import com.revenuecat.purchases.ui.revenuecatui.composables.StatusBarSpacer
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModel
 import com.revenuecat.purchases.ui.revenuecatui.data.currentColors
@@ -131,6 +132,9 @@ internal fun Template4(
                     }
                     .background(state.currentColors.background),
             ) {
+                if (landscapeLayout) {
+                    StatusBarSpacer()
+                }
                 Template4MainContent(state, viewModel)
             }
         }
