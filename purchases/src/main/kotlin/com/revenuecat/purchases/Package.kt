@@ -19,7 +19,7 @@ data class Package(
     @Deprecated(
         "Use constructor with presentedOfferingContext instead",
         ReplaceWith(
-            "Package(identifier, packageType, product, offering, " +
+            "Package(identifier, packageType, product, " +
                 "PresentedOfferingContext(offeringIdentifier = offering))",
         ),
     )
