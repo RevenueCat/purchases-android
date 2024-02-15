@@ -2,10 +2,6 @@ package com.revenuecat.purchases.ui.revenuecatui.composables
 
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.statusBars
-import androidx.compose.foundation.layout.windowInsetsTopHeight
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
@@ -24,11 +20,7 @@ fun BoxScope.CloseButton(
         Column(
             Modifier.align(Alignment.TopStart),
         ) {
-            Spacer(
-                Modifier.windowInsetsTopHeight(
-                    WindowInsets.statusBars,
-                ),
-            )
+            StatusBarSpacer()
             IconButton(
                 onClick = onClick,
                 enabled = actionInProgress.not(),
