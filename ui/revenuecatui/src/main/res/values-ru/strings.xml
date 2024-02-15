@@ -1,21 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="OK">ХОРОШО</string>
+    <string name="OK">OK</string>
     <string name="all_plans">Все подписки</string>
     <string name="privacy">Конфиденциальность</string>
     <string name="privacy_policy">Политика конфиденциальности</string>
     <string name="restore">Восстановить</string>
     <string name="restore_purchases">Восстановить покупки</string>
     <string name="terms">Условия</string>
-    <string name="terms_and_conditions">Условия и положения</string>
-    <string name="annual">Ежегодный</string>
+    <string name="terms_and_conditions">Условия использования</string>
+    <string name="annual">Ежегодно</string>
     <string name="semester">6 месяцев</string>
     <string name="quarter">3 месяца</string>
     <string name="bimonthly">2 месяца</string>
     <string name="monthly">Ежемесячно</string>
     <string name="weekly">Еженедельно</string>
-    <string name="lifetime">Продолжительность жизни</string>
+    <string name="lifetime">Бессрочно</string>
     <string name="package_discount">Скидка %1$d%%</string>
-    <string name="continue_cta">Продолжать</string>
-    <string name="default_offer_details_with_intro_offer">Начните пробную версию {{ sub_offer_duration }}, затем {{ total_price_and_per_month }}.</string>
+    <string name="continue_cta">Продолжить</string>
+    <string name="default_offer_details_with_intro_offer">Начните пробную версию на {{ sub_offer_duration }}, затем {{ total_price_and_per_month }}.</string>
 </resources>
