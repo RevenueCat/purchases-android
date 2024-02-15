@@ -2,6 +2,7 @@ package com.revenuecat.purchases.ui.revenuecatui.extensions
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.Package
+import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.PricingPhase
@@ -52,7 +53,9 @@ class PackageExtensionsTest {
                     override val tags: List<String>
                         get() = listOf("tag_1")
                     override val presentedOfferingIdentifier: String?
-                        get() = "offering_id"
+                        get() = presentedOfferingContext.offeringIdentifier
+                    override val presentedOfferingContext: PresentedOfferingContext
+                        get() = PresentedOfferingContext("offering_id")
                     override val purchasingData: PurchasingData
                         get() = mockk()
                 }

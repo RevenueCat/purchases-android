@@ -302,7 +302,7 @@ class Purchases internal constructor(
         purchasesOrchestrator.startDeprecatedProductChange(
             activity,
             packageToPurchase.product.purchasingData,
-            packageToPurchase.offering,
+            packageToPurchase.presentedOfferingContext,
             upgradeInfo.oldSku,
             GoogleProrationMode.fromPlayBillingClientMode(upgradeInfo.prorationMode)?.asGoogleReplacementMode,
             callback,
@@ -333,7 +333,7 @@ class Purchases internal constructor(
         purchasesOrchestrator.startPurchase(
             activity,
             packageToPurchase.product.purchasingData,
-            packageToPurchase.offering,
+            packageToPurchase.presentedOfferingContext,
             null,
             listener,
         )

@@ -7,14 +7,41 @@ import com.revenuecat.purchases.models.StoreProduct
  * @property identifier Unique identifier for this package. Can be one a predefined package type or a custom one.
  * @property packageType Package type for the product. Will be one of [PackageType].
  * @property product [StoreProduct] assigned to this package.
- * @property offering offering this package was returned from.
+ * @property offering offering Id this package was returned from.
+ * @property presentedOfferingContext [PresentedOfferingContext] from which this package was obtained.
  */
 data class Package(
     val identifier: String,
     val packageType: PackageType,
     val product: StoreProduct,
-    val offering: String,
-)
+    val presentedOfferingContext: PresentedOfferingContext,
+) {
+    @Deprecated(
+        "Use constructor with presentedOfferingContext instead",
+        ReplaceWith(
+            "Package(identifier, packageType, product, " +
+                "PresentedOfferingContext(offeringIdentifier = offering))",
+        ),
+    )
+    constructor(
+        identifier: String,
+        packageType: PackageType,
+        product: StoreProduct,
+        offering: String,
+    ) : this(
+        identifier,
+        packageType,
+        product,
+        PresentedOfferingContext(offeringIdentifier = offering),
+    )
+
+    @Deprecated(
+        "Use presentedOfferingContext.offeringIdentifier instead",
+        ReplaceWith("presentedOfferingContext.offeringIdentifier"),
+    )
+    val offering: String
+        get() = presentedOfferingContext.offeringIdentifier ?: ""
+}
 
 /**
  *  Enumeration of all possible Package types.

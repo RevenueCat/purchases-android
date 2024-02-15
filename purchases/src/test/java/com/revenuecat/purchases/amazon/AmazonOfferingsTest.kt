@@ -9,6 +9,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.OfferingParserFactory
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
+import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.amazon.helpers.dummyAmazonProduct
 import com.revenuecat.purchases.amazon.helpers.stubStoreProductForAmazon
@@ -53,7 +54,7 @@ class AmazonOfferingsTest {
         val packageToTest = offeringsParser.createPackage(
             packageWithMonthlyProduct,
             storeProductMap,
-            "offering"
+            PresentedOfferingContext("offering"),
         )
         Assertions.assertThat(packageToTest).isNull()
     }
@@ -72,13 +73,15 @@ class AmazonOfferingsTest {
         val monthlyPackageToTest = offeringsParser.createPackage(
             packageWithMonthlyProduct,
             storeProductMap,
-            expectedOfferingIdentifier
+            PresentedOfferingContext(expectedOfferingIdentifier),
         )!!
 
         Assertions.assertThat(monthlyPackageToTest.offering).isEqualTo(expectedOfferingIdentifier)
+        Assertions.assertThat(monthlyPackageToTest.presentedOfferingContext.offeringIdentifier).isEqualTo(expectedOfferingIdentifier)
 
         val packageProduct = monthlyPackageToTest.product
         Assertions.assertThat(packageProduct.presentedOfferingIdentifier).isEqualTo(expectedOfferingIdentifier)
+        Assertions.assertThat(packageProduct.presentedOfferingContext?.offeringIdentifier).isEqualTo(expectedOfferingIdentifier)
 
         Assertions.assertThat(packageProduct.defaultOption).isNull()
         Assertions.assertThat(packageProduct.subscriptionOptions).isNull()
@@ -95,13 +98,15 @@ class AmazonOfferingsTest {
         val inAppPackageToTest = offeringsParser.createPackage(
             inAppPackageJson,
             products,
-            expectedOfferingIdentifier
+            PresentedOfferingContext(expectedOfferingIdentifier)
         )
 
         Assertions.assertThat(inAppPackageToTest!!.offering).isEqualTo(expectedOfferingIdentifier)
+        Assertions.assertThat(inAppPackageToTest!!.presentedOfferingContext.offeringIdentifier).isEqualTo(expectedOfferingIdentifier)
 
         val packageProduct = inAppPackageToTest!!.product
         Assertions.assertThat(packageProduct.presentedOfferingIdentifier).isEqualTo(expectedOfferingIdentifier)
+        Assertions.assertThat(packageProduct.presentedOfferingContext?.offeringIdentifier).isEqualTo(expectedOfferingIdentifier)
     }
 
     @Test
@@ -117,7 +122,7 @@ class AmazonOfferingsTest {
         val monthlyPackageToTest = offeringsParser.createPackage(
             monthlyPackageJSON,
             productsMap,
-            "offering"
+            PresentedOfferingContext("offering")
         )
         Assertions.assertThat(monthlyPackageToTest).isNotNull
         Assertions.assertThat(monthlyPackageToTest!!.product).usingRecursiveComparison()
@@ -129,7 +134,7 @@ class AmazonOfferingsTest {
             packageIdentifier = annualPackageID,
             productIdentifier = storeProductAnnual.id
         )
-        val annualPackageToTest = offeringsParser.createPackage(annualPackageJSON, productsMap, "offering")
+        val annualPackageToTest = offeringsParser.createPackage(annualPackageJSON, productsMap, PresentedOfferingContext("offering"))
         Assertions.assertThat(annualPackageToTest).isNotNull
         Assertions.assertThat(annualPackageToTest!!.product).usingRecursiveComparison()
             .isEqualTo(productsMap[storeProductAnnual.id]?.get(0))
@@ -146,7 +151,7 @@ class AmazonOfferingsTest {
         val inAppPackageToTest = offeringsParser.createPackage(
             inAppPackageJson,
             inAppProductMap,
-            "offering",
+            PresentedOfferingContext("offering"),
         )
         Assertions.assertThat(inAppPackageToTest).isNotNull
         Assertions.assertThat(inAppPackageToTest!!.product).isEqualTo(inAppProductMap[inAppProductIdentifier]?.get(0))

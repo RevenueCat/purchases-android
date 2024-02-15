@@ -40,7 +40,7 @@ internal fun ProductDetails.toStoreProduct(
         subscriptionOptions = subscriptionOptions,
         defaultOption = subscriptionOptions?.defaultOffer,
         productDetails = this,
-        presentedOfferingIdentifier = null,
+        presentedOfferingContext = null,
     )
 }
 

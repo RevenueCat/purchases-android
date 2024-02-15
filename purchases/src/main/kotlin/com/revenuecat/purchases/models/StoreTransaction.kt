@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.models
 
 import android.os.Parcelable
+import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.ProrationMode
 import com.revenuecat.purchases.ReplacementMode
@@ -70,9 +71,9 @@ data class StoreTransaction(
     val originalJson: JSONObject,
 
     /**
-     * Offering that was presented when making the purchase. Always null for restored purchases.
+     * Context of the offering that was presented when making the purchase.
      */
-    val presentedOfferingIdentifier: String?,
+    val presentedOfferingContext: PresentedOfferingContext?,
 
     /**
      * Amazon's store user id. Null for Google
@@ -104,6 +105,41 @@ data class StoreTransaction(
     val replacementMode: ReplacementMode?,
 ) : Parcelable {
 
+    @Deprecated("Use constructor with presentedOfferingContext instead")
+    constructor(
+        orderId: String?,
+        productIds: List<String>,
+        type: ProductType,
+        purchaseTime: Long,
+        purchaseToken: String,
+        purchaseState: PurchaseState,
+        isAutoRenewing: Boolean?,
+        signature: String?,
+        originalJson: JSONObject,
+        presentedOfferingIdentifier: String?,
+        storeUserID: String?,
+        purchaseType: PurchaseType,
+        marketplace: String?,
+        subscriptionOptionId: String?,
+        replacementMode: ReplacementMode?,
+    ) : this(
+        orderId,
+        productIds,
+        type,
+        purchaseTime,
+        purchaseToken,
+        purchaseState,
+        isAutoRenewing,
+        signature,
+        originalJson,
+        presentedOfferingIdentifier?.let { PresentedOfferingContext(it) },
+        storeUserID,
+        purchaseType,
+        marketplace,
+        subscriptionOptionId,
+        replacementMode,
+    )
+
     @Deprecated("prorationMode is deprecated, use constructor with replacementMode")
     constructor(
         orderId: String?,
@@ -131,7 +167,7 @@ data class StoreTransaction(
         isAutoRenewing,
         signature,
         originalJson,
-        presentedOfferingIdentifier,
+        presentedOfferingIdentifier?.let { PresentedOfferingContext(it) },
         storeUserID,
         purchaseType,
         marketplace,
@@ -150,6 +186,16 @@ data class StoreTransaction(
     )
     val prorationMode: ProrationMode?
         get() = (replacementMode as? GoogleReplacementMode)?.asGoogleProrationMode
+
+    /**
+     * Offering that was presented when making the purchase. Always null for restored purchases.
+     */
+    @Deprecated(
+        "Use presentedOfferingContext",
+        ReplaceWith("presentedOfferingContext.offeringIdentifier"),
+    )
+    val presentedOfferingIdentifier: String?
+        get() = presentedOfferingContext?.offeringIdentifier
 
     /**
      * Skus associated with the transaction
@@ -181,7 +227,7 @@ private data class ComparableData(
     val purchaseState: PurchaseState,
     val isAutoRenewing: Boolean?,
     val signature: String?,
-    val presentedOfferingIdentifier: String?,
+    val presentedOfferingContext: PresentedOfferingContext?,
     val storeUserID: String?,
     val purchaseType: PurchaseType,
     val marketplace: String?,
@@ -198,7 +244,7 @@ private data class ComparableData(
         purchaseState = storeTransaction.purchaseState,
         isAutoRenewing = storeTransaction.isAutoRenewing,
         signature = storeTransaction.signature,
-        presentedOfferingIdentifier = storeTransaction.presentedOfferingIdentifier,
+        presentedOfferingContext = storeTransaction.presentedOfferingContext,
         storeUserID = storeTransaction.storeUserID,
         purchaseType = storeTransaction.purchaseType,
         marketplace = storeTransaction.marketplace,

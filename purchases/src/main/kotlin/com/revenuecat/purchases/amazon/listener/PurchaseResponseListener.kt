@@ -31,7 +31,6 @@ internal interface PurchaseResponseListener : PurchasingListener {
         activity: Activity,
         appUserID: String,
         storeProduct: StoreProduct,
-        presentedOfferingIdentifier: String?,
         onSuccess: (Receipt, UserData) -> Unit,
         onError: (PurchasesError) -> Unit,
     )

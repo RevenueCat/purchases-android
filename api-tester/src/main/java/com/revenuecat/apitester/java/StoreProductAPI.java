@@ -1,6 +1,7 @@
 package com.revenuecat.apitester.java;
 
 import com.android.billingclient.api.ProductDetails;
+import com.revenuecat.purchases.PresentedOfferingContext;
 import com.revenuecat.purchases.ProductType;
 import com.revenuecat.purchases.amazon.AmazonStoreProduct;
 import com.revenuecat.purchases.amazon.AmazonStoreProductKt;
@@ -16,7 +17,7 @@ import org.json.JSONObject;
 
 import java.util.Locale;
 
-@SuppressWarnings({"unused"})
+@SuppressWarnings({"unused", "deprecation"})
 final class StoreProductAPI {
     static void check(final StoreProduct product) {
         final Locale locale = Locale.getDefault();
@@ -36,9 +37,13 @@ final class StoreProductAPI {
         SubscriptionOptions subscriptionOptions = product.getSubscriptionOptions();
         SubscriptionOption defaultOption = product.getDefaultOption();
         String presentedOfferingIdentifier = product.getPresentedOfferingIdentifier();
+        PresentedOfferingContext presentedOfferingContext = product.getPresentedOfferingContext();
 
         GoogleStoreProduct underlyingGoogleProduct = GoogleStoreProductKt.getGoogleProduct(product);
         AmazonStoreProduct underlyingAmazonProduct = AmazonStoreProductKt.getAmazonProduct(product);
+
+        final StoreProduct copyWithOfferingId = product.copyWithOfferingId("offeringId");
+        final StoreProduct copyWithContext = product.copyWithPresentedOfferingContext(new PresentedOfferingContext("offeringId"));
     }
 
     static void check(final ProductType type) {
@@ -85,12 +90,14 @@ final class StoreProductAPI {
                 null,
                 googleStoreProduct.getType(),
                 googleStoreProduct.getPrice(),
+                googleStoreProduct.getName(),
                 googleStoreProduct.getTitle(),
                 googleStoreProduct.getDescription(),
                 null,
                 null,
                 null,
                 googleStoreProduct.getProductDetails(),
+                null,
                 null
         );
 

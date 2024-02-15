@@ -2,6 +2,7 @@ package com.revenuecat.apitester.java;
 
 import com.revenuecat.purchases.Package;
 import com.revenuecat.purchases.PackageType;
+import com.revenuecat.purchases.PresentedOfferingContext;
 import com.revenuecat.purchases.models.StoreProduct;
 
 @SuppressWarnings({"unused"})
@@ -11,6 +12,7 @@ final class PackageAPI {
         final PackageType packageType = p.getPackageType();
         final StoreProduct product = p.getProduct();
         final String offering = p.getOffering();
+        final PresentedOfferingContext offeringContext = p.getPresentedOfferingContext();
     }
 
     static void check(final PackageType type) {

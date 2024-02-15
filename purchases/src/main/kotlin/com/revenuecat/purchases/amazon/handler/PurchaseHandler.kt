@@ -29,7 +29,6 @@ internal class PurchaseHandler(
 ) : PurchaseResponseListener {
 
     private val productTypes = mutableMapOf<String, ProductType>()
-    private val presentedOfferingsByProductIdentifier = mutableMapOf<String, String?>()
     private val purchaseCallbacks =
         mutableMapOf<RequestId, Pair<(Receipt, UserData) -> Unit, (PurchasesError) -> Unit>>()
 
@@ -38,13 +37,12 @@ internal class PurchaseHandler(
         activity: Activity,
         appUserID: String,
         storeProduct: StoreProduct,
-        presentedOfferingIdentifier: String?,
         onSuccess: (Receipt, UserData) -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {
         log(LogIntent.PURCHASE, PurchaseStrings.PURCHASING_PRODUCT.format(storeProduct.id))
 
-        startProxyActivity(mainHandler, activity, storeProduct, presentedOfferingIdentifier, onSuccess, onError)
+        startProxyActivity(mainHandler, activity, storeProduct, onSuccess, onError)
     }
 
     @SuppressWarnings("LongParameterList")
@@ -52,12 +50,11 @@ internal class PurchaseHandler(
         mainHandler: Handler,
         activity: Activity,
         storeProduct: StoreProduct,
-        presentedOfferingIdentifier: String?,
         onSuccess: (Receipt, UserData) -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {
         val resultReceiver =
-            createRequestIdResultReceiver(mainHandler, storeProduct, presentedOfferingIdentifier, onSuccess, onError)
+            createRequestIdResultReceiver(mainHandler, storeProduct, onSuccess, onError)
         val intent = ProxyAmazonBillingActivity.newStartIntent(
             activity,
             resultReceiver,
@@ -71,7 +68,6 @@ internal class PurchaseHandler(
     private fun createRequestIdResultReceiver(
         mainHandler: Handler,
         storeProduct: StoreProduct,
-        presentedOfferingIdentifier: String?,
         onSuccess: (Receipt, UserData) -> Unit,
         onError: (PurchasesError) -> Unit,
     ) = object : ResultReceiver(mainHandler) {
@@ -81,7 +77,6 @@ internal class PurchaseHandler(
                 if (requestId != null) {
                     purchaseCallbacks[requestId] = onSuccess to onError
                     productTypes[storeProduct.id] = storeProduct.type
-                    presentedOfferingsByProductIdentifier[storeProduct.id] = presentedOfferingIdentifier
                 } else {
                     errorLog("No RequestId coming from ProxyAmazonBillingActivity")
                 }

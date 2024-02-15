@@ -2,9 +2,10 @@ package com.revenuecat.apitester.kotlin
 
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
+import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.TestStoreProduct
 
-@Suppress("unused", "LongMethod")
+@Suppress("unused", "UNUSED_VARIABLE", "LongMethod", "DEPRECATION")
 private class TestStoreProductAPI {
     fun checkConstructor(price: Price, period: Period?) {
         TestStoreProduct(
@@ -73,5 +74,9 @@ private class TestStoreProductAPI {
             period = period,
             introPrice = price,
         )
+    }
+
+    fun checkTestStoreProductIsStoreProduct(testStoreProduct: TestStoreProduct) {
+        val storeProduct: StoreProduct = testStoreProduct
     }
 }

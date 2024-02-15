@@ -49,7 +49,7 @@ class ReceiptInfoTest {
 
         val receiptInfo = ReceiptInfo(
             productIDs = mockStoreTransaction.productIds,
-            offeringIdentifier = mockStoreTransaction.presentedOfferingIdentifier,
+            presentedOfferingContext = mockStoreTransaction.presentedOfferingContext,
             storeProduct = mockStoreProduct,
             subscriptionOptionId = mockStoreTransaction.subscriptionOptionId
         )
@@ -79,7 +79,7 @@ class ReceiptInfoTest {
 
         val receiptInfo = ReceiptInfo(
             productIDs = mockStoreTransaction.productIds,
-            offeringIdentifier = mockStoreTransaction.presentedOfferingIdentifier,
+            presentedOfferingContext = mockStoreTransaction.presentedOfferingContext,
             storeProduct = mockStoreProduct,
             subscriptionOptionId = mockStoreTransaction.subscriptionOptionId
         )

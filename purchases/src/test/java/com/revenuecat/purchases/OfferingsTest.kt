@@ -53,7 +53,7 @@ class OfferingsTest {
         val packageToTest = offeringsParser.createPackage(
             packageWithSingleMonthlyBasePlanJson,
             singleAnnualBasePlanProductAndInAppProduct,
-            "offering"
+            PresentedOfferingContext("offering")
         )
         assertThat(packageToTest).isNull()
     }
@@ -77,20 +77,26 @@ class OfferingsTest {
         val monthlyPackageToTest = offeringsParser.createPackage(
             monthlyPackageJSON,
             products,
-            expectedOfferingIdentifier
+            PresentedOfferingContext(expectedOfferingIdentifier)
         )!!
 
         assertThat(monthlyPackageToTest.offering).isEqualTo(expectedOfferingIdentifier)
+        assertThat(monthlyPackageToTest.presentedOfferingContext.offeringIdentifier).isEqualTo(
+            expectedOfferingIdentifier
+        )
 
         val packageProduct = monthlyPackageToTest.product
         assertThat(packageProduct.presentedOfferingIdentifier).isEqualTo(expectedOfferingIdentifier)
+        assertThat(packageProduct.presentedOfferingContext?.offeringIdentifier).isEqualTo(expectedOfferingIdentifier)
 
         val defaultOption = packageProduct.defaultOption!!
         assertThat(defaultOption.presentedOfferingIdentifier).isEqualTo(expectedOfferingIdentifier)
+        assertThat(defaultOption.presentedOfferingContext?.offeringIdentifier).isEqualTo(expectedOfferingIdentifier)
 
         val allOptions = packageProduct.subscriptionOptions!!
         allOptions.forEach {
             assertThat(it.presentedOfferingIdentifier).isEqualTo(expectedOfferingIdentifier)
+            assertThat(it.presentedOfferingContext?.offeringIdentifier).isEqualTo(expectedOfferingIdentifier)
         }
     }
 
@@ -105,13 +111,15 @@ class OfferingsTest {
         val inAppPackageToTest = offeringsParser.createPackage(
             inAppPackageJson,
             products,
-            expectedOfferingIdentifier
+            PresentedOfferingContext(expectedOfferingIdentifier),
         )
 
         assertThat(inAppPackageToTest!!.offering).isEqualTo(expectedOfferingIdentifier)
+        assertThat(inAppPackageToTest!!.presentedOfferingContext.offeringIdentifier).isEqualTo(expectedOfferingIdentifier)
 
         val packageProduct = inAppPackageToTest!!.product
         assertThat(packageProduct.presentedOfferingIdentifier).isEqualTo(expectedOfferingIdentifier)
+        assertThat(packageProduct.presentedOfferingContext?.offeringIdentifier).isEqualTo(expectedOfferingIdentifier)
     }
 
     @Test
@@ -133,7 +141,7 @@ class OfferingsTest {
         val monthlyPackageToTest = offeringsParser.createPackage(
             monthlyPackageJSON,
             products,
-            "offering"
+            PresentedOfferingContext("offering"),
         )
         assertThat(monthlyPackageToTest).isNotNull
         assertThat(monthlyPackageToTest!!.product).usingRecursiveComparison()
@@ -146,7 +154,7 @@ class OfferingsTest {
             productIdentifier = storeProductAnnual.id,
             basePlanId = storeProductAnnual.subscriptionOptions!!.basePlan!!.id
         )
-        val annualPackageToTest = offeringsParser.createPackage(annualPackageJSON, products, "offering")
+        val annualPackageToTest = offeringsParser.createPackage(annualPackageJSON, products, PresentedOfferingContext("offering"))
         assertThat(annualPackageToTest).isNotNull
         assertThat(annualPackageToTest!!.product).usingRecursiveComparison()
             .isEqualTo(products[productIdentifier]?.get(1))
@@ -168,7 +176,7 @@ class OfferingsTest {
         val inAppPackageToTest = offeringsParser.createPackage(
             inAppPackageJson,
             products,
-            "offering",
+            PresentedOfferingContext("offering"),
         )
         assertThat(inAppPackageToTest).isNotNull
         assertThat(inAppPackageToTest!!.product).usingRecursiveComparison()
@@ -196,7 +204,7 @@ class OfferingsTest {
         val annualPackageToTest = offeringsParser.createPackage(
             annualPackageJSON,
             products,
-            "offering",
+            PresentedOfferingContext("offering"),
         )
         assertThat(annualPackageToTest).isNull()
     }

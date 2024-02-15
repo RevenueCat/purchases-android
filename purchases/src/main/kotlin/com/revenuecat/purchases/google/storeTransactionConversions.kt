@@ -2,6 +2,7 @@ package com.revenuecat.purchases.google
 
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchaseHistoryRecord
+import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.PurchaseState
@@ -11,7 +12,7 @@ import org.json.JSONObject
 
 internal fun Purchase.toStoreTransaction(
     productType: ProductType,
-    presentedOfferingIdentifier: String? = null,
+    presentedOfferingContext: PresentedOfferingContext? = null,
     subscriptionOptionId: String? = null,
     replacementMode: GoogleReplacementMode? = null,
 ): StoreTransaction = StoreTransaction(
@@ -24,7 +25,7 @@ internal fun Purchase.toStoreTransaction(
     isAutoRenewing = this.isAutoRenewing,
     signature = this.signature,
     originalJson = JSONObject(this.originalJson),
-    presentedOfferingIdentifier = presentedOfferingIdentifier,
+    presentedOfferingContext = presentedOfferingContext,
     storeUserID = null,
     purchaseType = PurchaseType.GOOGLE_PURCHASE,
     marketplace = null,
@@ -35,7 +36,7 @@ internal fun Purchase.toStoreTransaction(
 internal fun Purchase.toStoreTransaction(purchaseContext: PurchaseContext): StoreTransaction =
     toStoreTransaction(
         purchaseContext.productType,
-        purchaseContext.presentedOfferingId,
+        purchaseContext.presentedOfferingContext,
         purchaseContext.selectedSubscriptionOptionId,
         purchaseContext.replacementMode,
     )
@@ -59,7 +60,7 @@ internal fun PurchaseHistoryRecord.toStoreTransaction(
         isAutoRenewing = null,
         signature = this.signature,
         originalJson = JSONObject(this.originalJson),
-        presentedOfferingIdentifier = null,
+        presentedOfferingContext = null,
         storeUserID = null,
         purchaseType = PurchaseType.GOOGLE_RESTORED_PURCHASE,
         marketplace = null,

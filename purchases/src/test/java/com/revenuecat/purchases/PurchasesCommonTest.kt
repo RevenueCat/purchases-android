@@ -358,7 +358,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
                 eq(appUserId),
                 packageToPurchase.product.defaultOption!!.purchasingData,
                 null,
-                STUB_OFFERING_IDENTIFIER,
+                PresentedOfferingContext(STUB_OFFERING_IDENTIFIER),
                 any()
             )
         }
@@ -382,7 +382,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
                 eq(appUserId),
                 storeProduct.subscriptionOptions!!.first().purchasingData,
                 null,
-                expectedOfferingIdentifier,
+                PresentedOfferingContext(expectedOfferingIdentifier),
                 any()
             )
         }
@@ -410,7 +410,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
                 eq(appUserId),
                 storeProduct.subscriptionOptions!!.first().purchasingData,
                 null,
-                expectedOfferingIdentifier,
+                PresentedOfferingContext(expectedOfferingIdentifier),
                 any()
             )
         }
@@ -437,7 +437,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
                 eq(appUserId),
                 storeProduct.subscriptionOptions!!.first().purchasingData,
                 null,
-                expectedOfferingIdentifier,
+                PresentedOfferingContext(expectedOfferingIdentifier),
                 any()
             )
         }
@@ -447,7 +447,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         val expectedOfferingIdentifier = STUB_OFFERING_IDENTIFIER
         val stubOtpProduct = stubINAPPStoreProduct(
             "tokens",
-            expectedOfferingIdentifier
+            PresentedOfferingContext(expectedOfferingIdentifier)
         )
 
         val (_, stubOTPOffering) = stubOTPOffering(stubOtpProduct)
@@ -465,7 +465,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
                 eq(appUserId),
                 packageToPurchase.product.purchasingData,
                 null,
-                expectedOfferingIdentifier,
+                PresentedOfferingContext(expectedOfferingIdentifier),
                 any()
             )
         }
@@ -476,7 +476,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         val expectedOfferingIdentifier = STUB_OFFERING_IDENTIFIER
         val stubOtpProduct = stubINAPPStoreProduct(
             "tokens",
-            expectedOfferingIdentifier
+            PresentedOfferingContext(expectedOfferingIdentifier),
         )
 
         val (_, stubOTPOffering) = stubOTPOffering(stubOtpProduct)
@@ -493,7 +493,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
                 eq(appUserId),
                 stubOtpProduct.purchasingData,
                 null,
-                expectedOfferingIdentifier,
+                PresentedOfferingContext(expectedOfferingIdentifier),
                 any()
             )
         }
@@ -518,7 +518,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
                 eq(appUserId),
                 storeProduct.defaultOption!!.purchasingData,
                 ReplaceProductInfo(oldPurchase, GoogleReplacementMode.WITHOUT_PRORATION),
-                STUB_OFFERING_IDENTIFIER,
+                PresentedOfferingContext(STUB_OFFERING_IDENTIFIER),
                 any()
             )
         }
@@ -530,7 +530,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         mockQueryingProductDetails(subProductId, ProductType.SUBS, null, subscriptionOptionId)
 
         val mockedInApps = getMockedPurchaseList(inAppProductId, inAppPurchaseToken, ProductType.INAPP)
-        val mockedSubs = getMockedPurchaseList(subProductId, subPurchaseToken, ProductType.SUBS, "offering_a")
+        val mockedSubs = getMockedPurchaseList(subProductId, subPurchaseToken, ProductType.SUBS, PresentedOfferingContext("offering_a"))
         val allPurchases = mockedInApps + mockedSubs
 
         allPurchases.forEach { transaction ->
@@ -866,7 +866,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
                 appUserId,
                 expectedDefaultSubscriptionOption.purchasingData,
                 null,
-                STUB_OFFERING_IDENTIFIER,
+                PresentedOfferingContext(STUB_OFFERING_IDENTIFIER),
                 any()
             )
         }
@@ -1006,7 +1006,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
                 eq(appUserId),
                 storeProduct.subscriptionOptions!!.first().purchasingData,
                 ReplaceProductInfo(oldPurchase, GoogleReplacementMode.WITHOUT_PRORATION),
-                STUB_OFFERING_IDENTIFIER,
+                PresentedOfferingContext(STUB_OFFERING_IDENTIFIER),
                 any()
             )
         }
@@ -1065,7 +1065,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
                 eq(appUserId),
                 storeProduct.subscriptionOptions!!.first().purchasingData,
                 ReplaceProductInfo(oldPurchase, GoogleReplacementMode.WITHOUT_PRORATION),
-                STUB_OFFERING_IDENTIFIER,
+                PresentedOfferingContext(STUB_OFFERING_IDENTIFIER),
                 any()
             )
         }
@@ -1085,7 +1085,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
             productId,
             purchaseToken,
             ProductType.INAPP,
-            "offering_a"
+            PresentedOfferingContext("offering_a"),
         )
 
         capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(transactions)
@@ -1184,7 +1184,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
                 eq(appUserId),
                 packageToPurchase.product.purchasingData,
                 null,
-                STUB_OFFERING_IDENTIFIER,
+                PresentedOfferingContext(STUB_OFFERING_IDENTIFIER),
                 null
             )
         }
@@ -1682,7 +1682,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
     private fun mockQueryingProductDetails(
         productId: String,
         type: ProductType,
-        offeringIdentifier: String?,
+        presentedOfferingContext: PresentedOfferingContext?,
         subscriptionOptionId: String? = this.subscriptionOptionId
     ): ReceiptInfo {
         return if (type == ProductType.SUBS) {
@@ -1692,25 +1692,25 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
                 productDetails.subscriptionOfferDetails!!
             )!!
 
-            mockQueryingProductDetails(storeProduct, offeringIdentifier, subscriptionOptionId)
+            mockQueryingProductDetails(storeProduct, presentedOfferingContext, subscriptionOptionId)
         } else {
             val productDetails = createMockOneTimeProductDetails(productId, 2.00)
             val storeProduct = productDetails.toInAppStoreProduct()!!
 
-            mockQueryingProductDetails(storeProduct, offeringIdentifier, null)
+            mockQueryingProductDetails(storeProduct, presentedOfferingContext, null)
         }
     }
 
     private fun mockQueryingProductDetails(
         storeProduct: StoreProduct,
-        offeringIdentifier: String?,
+        presentedOfferingContext: PresentedOfferingContext?,
         subscriptionOptionId: String? = this.subscriptionOptionId
     ): ReceiptInfo {
         val productId = storeProduct.purchasingData.productId
 
         val receiptInfo = ReceiptInfo(
             productIDs = listOf(productId),
-            offeringIdentifier = offeringIdentifier,
+            presentedOfferingContext = presentedOfferingContext,
             storeProduct = storeProduct,
             subscriptionOptionId = if (storeProduct.type == ProductType.SUBS) subscriptionOptionId else null
         )

@@ -523,7 +523,7 @@ class AmazonBillingTest {
             shouldTryToConsume = true,
             purchase = dummyReceipt().toStoreTransaction(
                 productId = "sku.monthly",
-                presentedOfferingIdentifier = null,
+                presentedOfferingContext = null,
                 purchaseState = PurchaseState.PENDING,
                 userData = dummyUserData(
                     storeUserId = "store_user_id",
@@ -555,7 +555,7 @@ class AmazonBillingTest {
             shouldTryToConsume = true,
             purchase = dummyReceipt.toStoreTransaction(
                 productId = "sku.monthly",
-                presentedOfferingIdentifier = null,
+                presentedOfferingContext = null,
                 purchaseState = PurchaseState.PURCHASED,
                 userData = dummyUserData(
                     storeUserId = "store_user_id",
@@ -591,7 +591,7 @@ class AmazonBillingTest {
             shouldTryToConsume = false,
             purchase = dummyReceipt.toStoreTransaction(
                 productId = "sku.monthly",
-                presentedOfferingIdentifier = null,
+                presentedOfferingContext = null,
                 purchaseState = PurchaseState.PURCHASED,
                 userData = dummyUserData(
                     storeUserId = "store_user_id",

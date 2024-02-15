@@ -1,10 +1,21 @@
 package com.revenuecat.purchases.models
 
 import com.android.billingclient.api.ProductDetails
+import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ProductType
 import java.util.Locale
 
-data class GoogleStoreProduct(
+data class GoogleStoreProduct
+@JvmOverloads
+@Deprecated(
+    "Replaced with constructor that takes a presentedOfferingContext",
+    ReplaceWith(
+        "GoogleStoreProduct(productId, basePlanId, type, price, name, title, description, " +
+            "period, subscriptionOptions, defaultOption, productDetails, " +
+            "PresentedOfferingContext(presentedOfferingIdentifier))",
+    ),
+)
+constructor(
 
     /**
      * The productId.
@@ -85,8 +96,48 @@ data class GoogleStoreProduct(
      *
      * Null if not using RevenueCat offerings system, or if fetched directly via `Purchases.getProducts`
      */
+    @Deprecated(
+        "Use presentedOfferingContext instead",
+        ReplaceWith("presentedOfferingContext.offeringIdentifier"),
+    )
     override val presentedOfferingIdentifier: String? = null,
+
+    /**
+     * The context from which this product was obtained.
+     *
+     * Null if not using RevenueCat offerings system, or if fetched directly via `Purchases.getProducts`
+     */
+    override val presentedOfferingContext: PresentedOfferingContext? = null,
 ) : StoreProduct {
+
+    internal constructor(
+        productId: String,
+        basePlanId: String?,
+        type: ProductType,
+        price: Price,
+        name: String,
+        title: String,
+        description: String,
+        period: Period?,
+        subscriptionOptions: SubscriptionOptions?,
+        defaultOption: SubscriptionOption?,
+        productDetails: ProductDetails,
+        presentedOfferingContext: PresentedOfferingContext? = null,
+    ) : this(
+        productId,
+        basePlanId,
+        type,
+        price,
+        name,
+        title,
+        description,
+        period,
+        subscriptionOptions,
+        defaultOption,
+        productDetails,
+        presentedOfferingContext?.offeringIdentifier,
+        presentedOfferingContext,
+    )
 
     @Deprecated(
         "Replaced with constructor that takes a name",
@@ -119,14 +170,14 @@ data class GoogleStoreProduct(
         subscriptionOptions,
         defaultOption,
         productDetails,
-        presentedOfferingIdentifier,
+        presentedOfferingIdentifier?.let { PresentedOfferingContext(it) },
     )
 
     private constructor(
         otherProduct: GoogleStoreProduct,
         defaultOption: SubscriptionOption?,
         subscriptionOptionsWithOfferingId: SubscriptionOptions?,
-        presentedOfferingIdentifier: String?,
+        presentedOfferingContext: PresentedOfferingContext?,
     ) :
         this(
             otherProduct.productId,
@@ -140,7 +191,7 @@ data class GoogleStoreProduct(
             subscriptionOptionsWithOfferingId,
             defaultOption,
             otherProduct.productDetails,
-            presentedOfferingIdentifier,
+            presentedOfferingContext,
         )
 
     /**
@@ -182,25 +233,41 @@ data class GoogleStoreProduct(
      * Creates a copy of this `GoogleStoreProduct` with the specified `offeringId` set on itself and its
      * `defaultOption`/`subscriptionOptions`.
      */
+    @Deprecated(
+        "Use copyWithPresentedOfferingContext instead",
+        ReplaceWith("copyWithPresentedOfferingContext(presentedOfferingContext)"),
+    )
     override fun copyWithOfferingId(offeringId: String): StoreProduct {
-        val subscriptionOptionsWithOfferingIds = subscriptionOptions?.mapNotNull {
+        val newPresentedOfferingContext = presentedOfferingContext?.copy(offeringIdentifier = offeringId)
+            ?: PresentedOfferingContext(offeringId)
+        return copyWithPresentedOfferingContext(newPresentedOfferingContext)
+    }
+
+    /**
+     * For internal RevenueCat use.
+     *
+     * Creates a copy of this `GoogleStoreProduct` with the specified `presentedOfferingContext` set on itself and its
+     * `defaultOption`/`subscriptionOptions`.
+     */
+    override fun copyWithPresentedOfferingContext(presentedOfferingContext: PresentedOfferingContext?): StoreProduct {
+        val subscriptionOptionsWithContext = subscriptionOptions?.mapNotNull {
             (it as? GoogleSubscriptionOption)?.let { googleOption ->
-                GoogleSubscriptionOption(googleOption, offeringId)
+                GoogleSubscriptionOption(googleOption, presentedOfferingContext)
             }
         }
 
         val defaultOptionWithOfferingId = (defaultOption as? GoogleSubscriptionOption)?.let {
             GoogleSubscriptionOption(
                 it,
-                offeringId,
+                presentedOfferingContext,
             )
         }
 
         return GoogleStoreProduct(
             this,
             defaultOptionWithOfferingId,
-            subscriptionOptionsWithOfferingIds?.let { SubscriptionOptions(it) },
-            offeringId,
+            subscriptionOptionsWithContext?.let { SubscriptionOptions(it) },
+            presentedOfferingContext,
         )
     }
 

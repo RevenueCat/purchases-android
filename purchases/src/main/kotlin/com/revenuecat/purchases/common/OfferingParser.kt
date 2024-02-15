@@ -5,6 +5,7 @@ import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
+import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.strings.OfferingStrings
@@ -56,11 +57,12 @@ internal abstract class OfferingParser {
         val offeringIdentifier = offeringJson.getString("identifier")
         val metadata = offeringJson.optJSONObject("metadata")?.toMap<Any>(deep = true) ?: emptyMap()
         val jsonPackages = offeringJson.getJSONArray("packages")
+        val presentedOfferingContext = PresentedOfferingContext(offeringIdentifier)
 
         val availablePackages = mutableListOf<Package>()
         for (i in 0 until jsonPackages.length()) {
             val packageJson = jsonPackages.getJSONObject(i)
-            createPackage(packageJson, productsById, offeringIdentifier)?.let {
+            createPackage(packageJson, productsById, presentedOfferingContext)?.let {
                 availablePackages.add(it)
             }
         }
@@ -94,14 +96,19 @@ internal abstract class OfferingParser {
     fun createPackage(
         packageJson: JSONObject,
         productsById: Map<String, List<StoreProduct>>,
-        offeringIdentifier: String,
+        presentedOfferingContext: PresentedOfferingContext,
     ): Package? {
         val packageIdentifier = packageJson.getString("identifier")
         val product = findMatchingProduct(productsById, packageJson)
 
         val packageType = packageIdentifier.toPackageType()
         return product?.let {
-            Package(packageIdentifier, packageType, product.copyWithOfferingId(offeringIdentifier), offeringIdentifier)
+            Package(
+                packageIdentifier,
+                packageType,
+                product.copyWithPresentedOfferingContext(presentedOfferingContext),
+                presentedOfferingContext,
+            )
         }
     }
 }

@@ -89,7 +89,7 @@ internal class PostReceiptHelper(
     ) {
         val receiptInfo = ReceiptInfo(
             productIDs = purchase.productIds,
-            offeringIdentifier = purchase.presentedOfferingIdentifier,
+            presentedOfferingContext = purchase.presentedOfferingContext,
             storeProduct = storeProduct,
             subscriptionOptionId = purchase.subscriptionOptionId,
             replacementMode = purchase.replacementMode,

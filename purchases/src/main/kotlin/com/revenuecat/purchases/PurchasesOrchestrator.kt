@@ -323,7 +323,7 @@ internal class PurchasesOrchestrator constructor(
                 startProductChange(
                     activity,
                     purchasingData,
-                    presentedOfferingIdentifier,
+                    presentedOfferingContext,
                     productId,
                     googleReplacementMode,
                     isPersonalizedPrice,
@@ -333,7 +333,7 @@ internal class PurchasesOrchestrator constructor(
                 startPurchase(
                     activity,
                     purchasingData,
-                    presentedOfferingIdentifier,
+                    presentedOfferingContext,
                     isPersonalizedPrice,
                     callback,
                 )
@@ -896,7 +896,7 @@ internal class PurchasesOrchestrator constructor(
     fun startPurchase(
         activity: Activity,
         purchasingData: PurchasingData,
-        presentedOfferingIdentifier: String?,
+        presentedOfferingContext: PresentedOfferingContext?,
         isPersonalizedPrice: Boolean?,
         listener: PurchaseCallback,
     ) {
@@ -904,8 +904,8 @@ internal class PurchasesOrchestrator constructor(
             LogIntent.PURCHASE,
             PurchaseStrings.PURCHASE_STARTED.format(
                 " $purchasingData ${
-                    presentedOfferingIdentifier?.let {
-                        PurchaseStrings.OFFERING + "$presentedOfferingIdentifier"
+                    presentedOfferingContext?.offeringIdentifier?.let {
+                        PurchaseStrings.OFFERING + "$it"
                     }
                 }",
             ),
@@ -930,7 +930,7 @@ internal class PurchasesOrchestrator constructor(
                 appUserID,
                 purchasingData,
                 null,
-                presentedOfferingIdentifier,
+                presentedOfferingContext,
                 isPersonalizedPrice,
             )
         } ?: listener.dispatch(PurchasesError(PurchasesErrorCode.OperationAlreadyInProgressError).also { errorLog(it) })
@@ -939,7 +939,7 @@ internal class PurchasesOrchestrator constructor(
     fun startProductChange(
         activity: Activity,
         purchasingData: PurchasingData,
-        offeringIdentifier: String?,
+        presentedOfferingContext: PresentedOfferingContext?,
         oldProductId: String,
         googleReplacementMode: GoogleReplacementMode,
         isPersonalizedPrice: Boolean?,
@@ -959,8 +959,8 @@ internal class PurchasesOrchestrator constructor(
             LogIntent.PURCHASE,
             PurchaseStrings.PRODUCT_CHANGE_STARTED.format(
                 " $purchasingData ${
-                    offeringIdentifier?.let {
-                        PurchaseStrings.OFFERING + "$offeringIdentifier"
+                    presentedOfferingContext?.offeringIdentifier?.let {
+                        PurchaseStrings.OFFERING + "$it"
                     }
                 } oldProductId: $oldProductId googleReplacementMode $googleReplacementMode",
 
@@ -988,7 +988,7 @@ internal class PurchasesOrchestrator constructor(
                 googleReplacementMode,
                 activity,
                 appUserID,
-                offeringIdentifier,
+                presentedOfferingContext,
                 isPersonalizedPrice,
                 purchaseCallback,
             )
@@ -1003,7 +1003,7 @@ internal class PurchasesOrchestrator constructor(
     fun startDeprecatedProductChange(
         activity: Activity,
         purchasingData: PurchasingData,
-        offeringIdentifier: String?,
+        presentedOfferingContext: PresentedOfferingContext?,
         oldProductId: String,
         googleReplacementMode: GoogleReplacementMode?,
         listener: ProductChangeCallback,
@@ -1023,8 +1023,8 @@ internal class PurchasesOrchestrator constructor(
             LogIntent.PURCHASE,
             PurchaseStrings.PRODUCT_CHANGE_STARTED.format(
                 " $purchasingData ${
-                    offeringIdentifier?.let {
-                        PurchaseStrings.OFFERING + "$offeringIdentifier"
+                    presentedOfferingContext?.offeringIdentifier?.let {
+                        PurchaseStrings.OFFERING + "$it"
                     }
                 } oldProductId: $oldProductId googleReplacementMode $googleReplacementMode",
 
@@ -1047,7 +1047,7 @@ internal class PurchasesOrchestrator constructor(
                 googleReplacementMode,
                 activity,
                 appUserID,
-                offeringIdentifier,
+                presentedOfferingContext,
                 null,
                 listener,
             )
@@ -1063,7 +1063,7 @@ internal class PurchasesOrchestrator constructor(
         googleReplacementMode: GoogleReplacementMode?,
         activity: Activity,
         appUserID: String,
-        presentedOfferingIdentifier: String?,
+        presentedOfferingContext: PresentedOfferingContext?,
         isPersonalizedPrice: Boolean?,
         listener: PurchaseErrorCallback,
     ) {
@@ -1099,7 +1099,7 @@ internal class PurchasesOrchestrator constructor(
                     appUserID,
                     purchasingData,
                     ReplaceProductInfo(purchaseRecord, googleReplacementMode),
-                    presentedOfferingIdentifier,
+                    presentedOfferingContext,
                     isPersonalizedPrice,
                 )
             },

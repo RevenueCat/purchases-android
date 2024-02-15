@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.common
 
+import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ReplacementMode
 import com.revenuecat.purchases.models.GoogleSubscriptionOption
 import com.revenuecat.purchases.models.PricingPhase
@@ -9,7 +10,7 @@ import com.revenuecat.purchases.models.SubscriptionOption
 @SuppressWarnings("LongParameterList")
 internal class ReceiptInfo(
     val productIDs: List<String>,
-    val offeringIdentifier: String? = null,
+    val presentedOfferingContext: PresentedOfferingContext? = null,
     val subscriptionOptionId: String? = null,
     val storeProduct: StoreProduct? = null,
 
@@ -32,7 +33,7 @@ internal class ReceiptInfo(
         other as ReceiptInfo
 
         if (productIDs != other.productIDs) return false
-        if (offeringIdentifier != other.offeringIdentifier) return false
+        if (presentedOfferingContext != other.presentedOfferingContext) return false
         if (storeProduct != other.storeProduct) return false
         if (price != other.price) return false
         if (currency != other.currency) return false
@@ -59,7 +60,7 @@ internal class ReceiptInfo(
 
     override fun hashCode(): Int {
         var result = productIDs.hashCode()
-        result = 31 * result + (offeringIdentifier?.hashCode() ?: 0)
+        result = 31 * result + (presentedOfferingContext?.hashCode() ?: 0)
         result = 31 * result + (storeProduct?.hashCode() ?: 0)
         result = 31 * result + (subscriptionOptionId?.hashCode() ?: 0)
         return result
@@ -68,7 +69,7 @@ internal class ReceiptInfo(
     override fun toString(): String {
         return "ReceiptInfo(" +
             "productIDs='${productIDs.joinToString()}', " +
-            "offeringIdentifier=$offeringIdentifier, " +
+            "presentedOfferingContext=$presentedOfferingContext, " +
             "storeProduct=$storeProduct, " +
             "subscriptionOptionId=$subscriptionOptionId, " +
             "pricingPhases=$pricingPhases, " +
