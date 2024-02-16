@@ -186,19 +186,19 @@ private class LoadingViewModel(
     private val _state = MutableStateFlow(state)
 
     override fun selectPackage(packageToSelect: TemplateConfiguration.PackageInfo) {
-        error("Not supported")
+        // no-op
     }
 
     override fun closePaywall() {
-        error("Not supported")
+        // no-op
     }
 
     override fun purchaseSelectedPackage(activity: Activity?) {
-        error("Can't purchase loading view model")
+        // no-op
     }
 
     override fun restorePurchases() {
-        error("Can't restore purchases")
+        // no-op
     }
 
     override fun clearActionError() = Unit
