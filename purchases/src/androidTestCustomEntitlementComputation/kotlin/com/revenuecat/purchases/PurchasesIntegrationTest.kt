@@ -113,7 +113,7 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
                         it.optionId == storeProduct.basePlanId
                 },
                 replaceProductInfo = null,
-                presentedOfferingIdentifier = null,
+                presentedOfferingContext = null,
                 isPersonalizedPrice = null,
             )
         }
