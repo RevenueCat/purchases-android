@@ -9,7 +9,7 @@ package com.revenuecat.purchases
 data class Offerings(
     val current: Offering?,
     val all: Map<String, Offering>,
-    val placement: Placements?,
+    val placements: Placements?,
 ) {
 
     /**
@@ -32,14 +32,14 @@ data class Offerings(
      * @param placementId Placement identifier
      */
     fun getCurrentOfferingForPlacement(placementId: String): Offering? {
-        val placement = this.placement ?: run {
+        val placements = this.placements ?: run {
             return null
         }
 
-        val offeringForPlacement = placement.offeringIdsByPlacement[placementId]?.let { getOffering(it) }
-        val fallbackOffering = placement.fallbackOfferingId?.let { getOffering(it) }
+        val offeringForPlacement = placements.offeringIdsByPlacement[placementId]?.let { getOffering(it) }
+        val fallbackOffering = placements.fallbackOfferingId?.let { getOffering(it) }
 
-        val showNoOffering = placement.offeringIdsByPlacement.containsKey(placementId)
+        val showNoOffering = placements.offeringIdsByPlacement.containsKey(placementId)
         val offering = offeringForPlacement ?: if (showNoOffering) null else fallbackOffering
 
         return offering?.withPlacement(placementId)

@@ -10,6 +10,7 @@ import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.strings.OfferingStrings
+import com.revenuecat.purchases.utils.getNullableString
 import com.revenuecat.purchases.utils.replaceJsonNullWithKotlinNull
 import com.revenuecat.purchases.utils.toMap
 import kotlinx.serialization.decodeFromString
@@ -52,11 +53,20 @@ internal abstract class OfferingParser {
         }
 
         val placements: Placements? = offeringsJson.optJSONObject("placements")?.let {
-            Placements(
-                it.optString("fallback_offering_id"),
-                it.optJSONObject("offering_ids_by_placement")
-                    ?.toMap<String?>()?.replaceJsonNullWithKotlinNull() ?: emptyMap(),
-            )
+            val fallbackOfferingId = it.getNullableString("fallback_offering_id")
+            val offeringIdsByPlacement = it.optJSONObject("offering_ids_by_placement")
+                ?.toMap<String?>()
+                ?.replaceJsonNullWithKotlinNull()
+
+            return@let offeringIdsByPlacement?.let {
+                Placements(
+                    fallbackOfferingId = fallbackOfferingId,
+                    offeringIdsByPlacement = offeringIdsByPlacement,
+                )
+            } ?: run {
+                errorLog(OfferingStrings.PLACEMENTS_EMPTY_ERROR)
+                null
+            }
         }
 
         return Offerings(offerings[currentOfferingID], offerings, placements)
