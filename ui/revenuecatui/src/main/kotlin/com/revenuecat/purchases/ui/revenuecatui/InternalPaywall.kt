@@ -42,6 +42,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.processed.PaywallTemplate
 import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
 import com.revenuecat.purchases.ui.revenuecatui.fonts.PaywallTheme
 import com.revenuecat.purchases.ui.revenuecatui.helpers.LocalActivity
+import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.isInPreviewMode
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.templates.Template1
@@ -82,7 +83,14 @@ internal fun InternalPaywall(
             enter = fadeIn(animationSpec = defaultAnimation()),
             exit = fadeOut(animationSpec = defaultAnimation()),
         ) {
-            LoadedPaywall(state = state as PaywallState.Loaded, viewModel = viewModel)
+            if (state is PaywallState.Loaded) {
+                LoadedPaywall(state = state, viewModel = viewModel)
+            } else {
+                Logger.e(
+                    "State is not loaded while transitioning animation. This may happen if state changes from " +
+                        "being loaded to a different state. This should not happen.",
+                )
+            }
         }
 
         when (state) {
