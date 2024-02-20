@@ -198,7 +198,9 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
                         duration = requireContext().resources.getInteger(R.integer.transition_duration).toLong()
                     }
 
-                    val directions = OverviewFragmentDirections.actionOverviewFragmentToOfferingFragment(offering.identifier)
+                    val directions = OverviewFragmentDirections.actionOverviewFragmentToOfferingFragment(
+                        offering.identifier,
+                    )
                     findNavController().navigate(directions)
                 } ?: run {
                     print("no offering")
