@@ -43,7 +43,7 @@ final class StoreProductAPI {
         AmazonStoreProduct underlyingAmazonProduct = AmazonStoreProductKt.getAmazonProduct(product);
 
         final StoreProduct copyWithOfferingId = product.copyWithOfferingId("offeringId");
-        final StoreProduct copyWithContext = product.copyWithPresentedOfferingContext(new PresentedOfferingContext("offeringId", null));
+        final StoreProduct copyWithContext = product.copyWithPresentedOfferingContext(new PresentedOfferingContext("offeringId", "placementId"));
     }
 
     static void check(final ProductType type) {
