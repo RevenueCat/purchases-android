@@ -213,7 +213,6 @@ private fun OfferingsListScreen(
                             Purchases.sharedInstance.getOfferingsWith {
                                 it.getCurrentOfferingForPlacement(placementId)?.let { offering ->
                                     showDialog.value = false
-//                                    placementOffering.value = offering
                                     tappedOnNavigateToOfferingByPlacement(placementId)
                                 } ?: run {
                                     noPlacementFoundMessage.value = "No offering found for placement '$placementId'"
