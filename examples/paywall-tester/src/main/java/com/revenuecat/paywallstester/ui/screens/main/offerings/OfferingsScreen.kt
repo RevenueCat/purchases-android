@@ -49,6 +49,7 @@ fun OfferingsScreen(
     tappedOnOffering: (Offering) -> Unit,
     tappedOnOfferingFooter: (Offering) -> Unit,
     tappedOnOfferingCondensedFooter: (Offering) -> Unit,
+    tappedOnOfferingByPlacement: (String) -> Unit,
     viewModel: OfferingsViewModel = viewModel<OfferingsViewModelImpl>(),
 ) {
     when (val state = viewModel.offeringsState.collectAsState().value) {
@@ -58,6 +59,7 @@ fun OfferingsScreen(
             tappedOnNavigateToOffering = tappedOnOffering,
             tappedOnNavigateToOfferingFooter = tappedOnOfferingFooter,
             tappedOnNavigateToOfferingCondensedFooter = tappedOnOfferingCondensedFooter,
+            tappedOnNavigateToOfferingByPlacement = tappedOnOfferingByPlacement,
         )
         OfferingsState.Loading -> LoadingOfferingsScreen()
     }
@@ -83,6 +85,7 @@ private fun LoadingOfferingsScreen() {
     }
 }
 
+@Suppress("LongMethod")
 @OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class)
 @Composable
 private fun OfferingsListScreen(
@@ -90,6 +93,7 @@ private fun OfferingsListScreen(
     tappedOnNavigateToOffering: (Offering) -> Unit,
     tappedOnNavigateToOfferingFooter: (Offering) -> Unit,
     tappedOnNavigateToOfferingCondensedFooter: (Offering) -> Unit,
+    tappedOnNavigateToOfferingByPlacement: (String) -> Unit,
 ) {
     var dropdownExpandedOffering by remember { mutableStateOf<Offering?>(null) }
     var displayPaywallDialogOffering by remember { mutableStateOf<Offering?>(null) }
@@ -178,23 +182,23 @@ private fun OfferingsListScreen(
                 noPlacementFoundMessage.value = null
                 placementIdentifier.value = ""
             },
-            properties = DialogProperties(usePlatformDefaultWidth = false)
+            properties = DialogProperties(usePlatformDefaultWidth = false),
         ) {
             Surface(
                 color = Color.White,
                 shape = MaterialTheme.shapes.medium,
-                modifier = Modifier.padding(16.dp)
+                modifier = Modifier.padding(16.dp),
             ) {
                 Column(
                     modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
                     Text("Please enter text and submit")
 
                     OutlinedTextField(
                         value = placementIdentifier.value,
                         onValueChange = { placementIdentifier.value = it },
-                        label = { Text("Enter placement identifier") }
+                        label = { Text("Enter placement identifier") },
                     )
 
                     noPlacementFoundMessage.value?.let {
@@ -209,13 +213,14 @@ private fun OfferingsListScreen(
                             Purchases.sharedInstance.getOfferingsWith {
                                 it.getCurrentOfferingForPlacement(placementId)?.let { offering ->
                                     showDialog.value = false
-                                    placementOffering.value = offering
+//                                    placementOffering.value = offering
+                                    tappedOnNavigateToOfferingByPlacement(placementId)
                                 } ?: run {
                                     noPlacementFoundMessage.value = "No offering found for placement '$placementId'"
                                 }
                             }
                         },
-                        modifier = Modifier.align(Alignment.End)
+                        modifier = Modifier.align(Alignment.End),
                     ) {
                         Text("Submit")
                     }
@@ -275,6 +280,7 @@ fun OfferingsScreenPreview() {
         tappedOnOffering = {},
         tappedOnOfferingFooter = {},
         tappedOnOfferingCondensedFooter = {},
+        tappedOnOfferingByPlacement = {},
         viewModel = object : OfferingsViewModel() {
             private val _offeringsState = MutableStateFlow<OfferingsState>(
                 OfferingsState.Loaded(

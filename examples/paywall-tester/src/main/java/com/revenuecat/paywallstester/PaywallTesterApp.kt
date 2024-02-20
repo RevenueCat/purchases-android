@@ -21,6 +21,7 @@ fun PaywallTesterApp(
     AppNavHost(navController = navController)
 }
 
+@Suppress("LongMethod")
 @Composable
 private fun AppNavHost(
     navController: NavHostController,
@@ -46,11 +47,23 @@ private fun AppNavHost(
                             .plus("?${PaywallScreenViewModel.FOOTER_CONDENSED_KEY}=true"),
                     )
                 },
+                navigateToPaywallByPlacementScreen = { placementId ->
+                    navController.navigate(
+                        AppScreen.PaywallByPlacement.route
+                            .plus("/$placementId"),
+                    )
+                },
             )
         }
         composable(
             route = AppScreen.Paywall.route.plus("/{${PaywallScreenViewModel.OFFERING_ID_KEY}}"),
             arguments = listOf(navArgument(PaywallScreenViewModel.OFFERING_ID_KEY) { type = NavType.StringType }),
+        ) {
+            PaywallScreen(dismissRequest = navController::popBackStack)
+        }
+        composable(
+            route = AppScreen.PaywallByPlacement.route.plus("/{${PaywallScreenViewModel.PLACEMENT_ID_KEY}}"),
+            arguments = listOf(navArgument(PaywallScreenViewModel.PLACEMENT_ID_KEY) { type = NavType.StringType }),
         ) {
             PaywallScreen(dismissRequest = navController::popBackStack)
         }
