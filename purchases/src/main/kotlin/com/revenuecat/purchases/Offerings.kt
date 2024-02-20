@@ -9,8 +9,12 @@ package com.revenuecat.purchases
 data class Offerings(
     val current: Offering?,
     val all: Map<String, Offering>,
-    val placements: Placements?,
 ) {
+    internal var placements: Placements? = null
+
+    internal constructor(current: Offering?, all: Map<String, Offering>, placements: Placements?) : this(current, all) {
+        this.placements = placements
+    }
 
     /**
      * Retrieves an specific offering by its identifier.
@@ -52,7 +56,7 @@ data class Offerings(
  * @property fallbackOfferingId The optional offering identifier to fallback on if the placement isn't found.
  * @property offeringIdsByPlacement Dictionary of all offering identifiers keyed by their placement identifier.
  */
-private data class Placements(
+internal data class Placements(
     val fallbackOfferingId: String?,
     val offeringIdsByPlacement: Map<String, String?>,
 )
