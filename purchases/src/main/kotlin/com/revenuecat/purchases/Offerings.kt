@@ -52,7 +52,7 @@ data class Offerings(
  * @property fallbackOfferingId The optional offering identifier to fallback on if the placement isn't found.
  * @property offeringIdsByPlacement Dictionary of all offering identifiers keyed by their placement identifier.
  */
-data class Placements(
+private data class Placements(
     val fallbackOfferingId: String?,
     val offeringIdsByPlacement: Map<String, String?>,
 )
