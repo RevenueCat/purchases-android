@@ -65,7 +65,6 @@ class PaywallViewModelTest {
             TestData.template1Offering.identifier to TestData.template1Offering,
             TestData.template2Offering.identifier to TestData.template2Offering
         ),
-        null,
     )
 
     @get:Rule
@@ -212,7 +211,6 @@ class PaywallViewModelTest {
         coEvery { purchases.awaitOfferings() } returns Offerings(
             null,
             mapOf(),
-            null,
         )
 
         val model = create(

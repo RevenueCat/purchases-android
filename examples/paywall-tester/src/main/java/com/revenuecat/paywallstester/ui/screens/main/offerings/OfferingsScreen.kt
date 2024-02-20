@@ -99,22 +99,9 @@ private fun OfferingsListScreen(
     var displayPaywallDialogOffering by remember { mutableStateOf<Offering?>(null) }
 
     val showDialog = remember { mutableStateOf(false) }
-    val placementIdentifier = remember { mutableStateOf("") }
-    val placementOffering = remember { mutableStateOf<Offering?>(null) }
-    val noPlacementFoundMessage = remember { mutableStateOf<String?>(null) }
 
     LazyColumn {
         item {
-            placementOffering.value?.let {
-                DisplayOfferingMenu(
-                    offering = it,
-                    tappedOnNavigateToOffering = tappedOnNavigateToOffering,
-                    tappedOnDisplayOfferingAsDialog = { displayPaywallDialogOffering = it },
-                    tappedOnDisplayOfferingAsFooter = tappedOnNavigateToOfferingFooter,
-                    tappedOnDisplayOfferingAsCondensedFooter = tappedOnNavigateToOfferingCondensedFooter,
-                    dismissed = { dropdownExpandedOffering = null },
-                )
-            }
             Box(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.fillMaxWidth()) {
                     Row(
@@ -176,53 +163,64 @@ private fun OfferingsListScreen(
     }
 
     if (showDialog.value) {
-        Dialog(
-            onDismissRequest = {
-                showDialog.value = false
-                noPlacementFoundMessage.value = null
-                placementIdentifier.value = ""
-            },
-            properties = DialogProperties(usePlatformDefaultWidth = false),
+        PlacementDialog(tappedOnNavigateToOfferingByPlacement = tappedOnNavigateToOfferingByPlacement)
+    }
+}
+
+@Composable
+private fun PlacementDialog(
+    tappedOnNavigateToOfferingByPlacement: (String) -> Unit,
+) {
+    val showDialog = remember { mutableStateOf(false) }
+    val placementIdentifier = remember { mutableStateOf("") }
+    val noPlacementFoundMessage = remember { mutableStateOf<String?>(null) }
+
+    Dialog(
+        onDismissRequest = {
+            showDialog.value = false
+            noPlacementFoundMessage.value = null
+            placementIdentifier.value = ""
+        },
+        properties = DialogProperties(usePlatformDefaultWidth = false),
+    ) {
+        Surface(
+            color = Color.White,
+            shape = MaterialTheme.shapes.medium,
+            modifier = Modifier.padding(16.dp),
         ) {
-            Surface(
-                color = Color.White,
-                shape = MaterialTheme.shapes.medium,
+            Column(
                 modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp),
-                ) {
-                    Text("Please enter text and submit")
+                Text("Please enter text and submit")
 
-                    OutlinedTextField(
-                        value = placementIdentifier.value,
-                        onValueChange = { placementIdentifier.value = it },
-                        label = { Text("Enter placement identifier") },
-                    )
+                OutlinedTextField(
+                    value = placementIdentifier.value,
+                    onValueChange = { placementIdentifier.value = it },
+                    label = { Text("Enter placement identifier") },
+                )
 
-                    noPlacementFoundMessage.value?.let {
-                        Text(it)
-                    }
+                noPlacementFoundMessage.value?.let {
+                    Text(it)
+                }
 
-                    // Submit Button
-                    Button(
-                        onClick = {
-                            val placementId = placementIdentifier.value
+                // Submit Button
+                Button(
+                    onClick = {
+                        val placementId = placementIdentifier.value
 
-                            Purchases.sharedInstance.getOfferingsWith {
-                                it.getCurrentOfferingForPlacement(placementId)?.let { offering ->
-                                    showDialog.value = false
-                                    tappedOnNavigateToOfferingByPlacement(placementId)
-                                } ?: run {
-                                    noPlacementFoundMessage.value = "No offering found for placement '$placementId'"
-                                }
+                        Purchases.sharedInstance.getOfferingsWith {
+                            it.getCurrentOfferingForPlacement(placementId)?.let { offering ->
+                                showDialog.value = false
+                                tappedOnNavigateToOfferingByPlacement(placementId)
+                            } ?: run {
+                                noPlacementFoundMessage.value = "No offering found for placement '$placementId'"
                             }
-                        },
-                        modifier = Modifier.align(Alignment.End),
-                    ) {
-                        Text("Submit")
-                    }
+                        }
+                    },
+                    modifier = Modifier.align(Alignment.End),
+                ) {
+                    Text("Submit")
                 }
             }
         }
@@ -286,7 +284,6 @@ fun OfferingsScreenPreview() {
                     Offerings(
                         current = null,
                         all = emptyMap(),
-                        null,
                     ),
                 ),
             )

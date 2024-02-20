@@ -6,15 +6,12 @@ package com.revenuecat.purchases
  * @property current Current offering configured in the RevenueCat dashboard.
  * @property all Dictionary of all Offerings [Offering] objects keyed by their identifier.
  */
-data class Offerings(
+data class Offerings internal constructor(
     val current: Offering?,
     val all: Map<String, Offering>,
+    internal val placements: Placements? = null,
 ) {
-    internal var placements: Placements? = null
-
-    internal constructor(current: Offering?, all: Map<String, Offering>, placements: Placements?) : this(current, all) {
-        this.placements = placements
-    }
+    constructor(current: Offering?, all: Map<String, Offering>) : this(current, all, null)
 
     /**
      * Retrieves an specific offering by its identifier.
