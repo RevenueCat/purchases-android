@@ -59,10 +59,7 @@ data class Placements(
 
 private fun Offering.withPlacement(placementId: String): Offering {
     val updatedAvailablePackages = this.availablePackages.map {
-        val context = PresentedOfferingContext(
-            offeringIdentifier = it.presentedOfferingContext.offeringIdentifier,
-            placementIdentifier = placementId,
-        )
+        val context = it.presentedOfferingContext.copy(placementIdentifier = placementId)
         val product = it.product.copyWithPresentedOfferingContext(context)
 
         Package(

@@ -7,7 +7,7 @@ import kotlinx.parcelize.Parcelize
  * Contains data about the context in which an offering was presented.
  */
 @Parcelize
-data class PresentedOfferingContext(
+internal data class PresentedOfferingContext(
     /**
      * The identifier of the offering used to obtain this object.
      */
