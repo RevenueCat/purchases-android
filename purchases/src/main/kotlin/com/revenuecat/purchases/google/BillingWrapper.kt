@@ -10,7 +10,6 @@ import android.content.Context
 import android.os.Handler
 import androidx.annotation.UiThread
 import androidx.annotation.VisibleForTesting
-import androidx.annotation.VisibleForTesting.PRIVATE
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingFlowParams
@@ -490,7 +489,7 @@ internal class BillingWrapper(
         )
     }
 
-    @VisibleForTesting(otherwise = PRIVATE)
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     internal fun getPurchaseType(purchaseToken: String, listener: (ProductType) -> Unit) {
         queryPurchaseType(BillingClient.ProductType.SUBS, purchaseToken, listener) { subFound ->
             if (subFound) {
