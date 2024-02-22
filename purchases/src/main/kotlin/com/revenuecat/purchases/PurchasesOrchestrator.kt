@@ -42,6 +42,7 @@ import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.interfaces.PurchaseErrorCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback
+import com.revenuecat.purchases.interfaces.SyncAttributesAndOfferingsCallback
 import com.revenuecat.purchases.interfaces.SyncPurchasesCallback
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import com.revenuecat.purchases.models.BillingFeature
@@ -214,6 +215,33 @@ internal class PurchasesOrchestrator constructor(
 
     // region Public Methods
 
+    fun syncAttributesAndOfferingsIfNeeded(
+        callback: SyncAttributesAndOfferingsCallback,
+    ) {
+        val currentTime = System.currentTimeMillis()
+        if (currentTime - lastSyncAttributesAndOfferingsTimestamp < lastSyncAttributesAndOfferingsTimeout) {
+            callback.onError(PurchasesError(code = PurchasesErrorCode.SyncingAttributesRateLimitReached))
+            return
+        }
+
+        lastSyncAttributesAndOfferingsTimestamp = currentTime
+
+        subscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(appUserID) {
+            getOfferings(
+                object : ReceiveOfferingsCallback {
+                    override fun onReceived(offerings: Offerings) {
+                        callback.onSuccess(offerings)
+                    }
+
+                    override fun onError(error: PurchasesError) {
+                        callback.onError(error)
+                    }
+                },
+                fetchCurrent = true,
+            )
+        }
+    }
+
     fun syncPurchases(
         listener: SyncPurchasesCallback? = null,
     ) {
@@ -283,12 +311,14 @@ internal class PurchasesOrchestrator constructor(
 
     fun getOfferings(
         listener: ReceiveOfferingsCallback,
+        fetchCurrent: Boolean = false,
     ) {
         offeringsManager.getOfferings(
             identityManager.currentAppUserID,
             state.appInBackground,
             { listener.onError(it) },
             { listener.onReceived(it) },
+            fetchCurrent,
         )
     }
 
@@ -1153,6 +1183,10 @@ internal class PurchasesOrchestrator constructor(
             }
 
         const val frameworkVersion = Config.frameworkVersion
+
+        private var lastSyncAttributesAndOfferingsTimestamp: Long = 0
+
+        const val lastSyncAttributesAndOfferingsTimeout = 60000
 
         var proxyURL: URL? = null
 

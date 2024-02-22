@@ -9,8 +9,8 @@ import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases_sample.databinding.OfferingCardBinding
 
 class OfferingCardAdapter(
-    private val offerings: List<Offering>,
-    private val currentOffering: Offering?,
+    private var offerings: List<Offering>,
+    private var currentOffering: Offering?,
     private val listener: OfferingCardAdapterListener,
 ) :
     RecyclerView.Adapter<OfferingCardAdapter.OfferingViewHolder>() {
@@ -18,6 +18,12 @@ class OfferingCardAdapter(
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): OfferingViewHolder {
         val binding = OfferingCardBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         return OfferingViewHolder(binding)
+    }
+
+    fun update(offerings: List<Offering>, currentOffering: Offering?) {
+        this.offerings = offerings
+        this.currentOffering = currentOffering
+        this.notifyDataSetChanged()
     }
 
     override fun getItemCount(): Int = offerings.size

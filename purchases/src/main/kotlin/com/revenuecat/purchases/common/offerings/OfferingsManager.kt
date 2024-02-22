@@ -26,9 +26,10 @@ internal class OfferingsManager(
         appInBackground: Boolean,
         onError: ((PurchasesError) -> Unit)? = null,
         onSuccess: ((Offerings) -> Unit)? = null,
+        fetchCurrent: Boolean = false,
     ) {
         val cachedOfferings = offeringsCache.cachedOfferings
-        if (cachedOfferings == null) {
+        if (cachedOfferings == null || fetchCurrent) {
             log(LogIntent.DEBUG, OfferingStrings.NO_CACHED_OFFERINGS_FETCHING_NETWORK)
             fetchAndCacheOfferings(appUserID, appInBackground, onError, onSuccess)
         } else {

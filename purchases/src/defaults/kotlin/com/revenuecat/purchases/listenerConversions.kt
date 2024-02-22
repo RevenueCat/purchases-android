@@ -3,6 +3,7 @@ package com.revenuecat.purchases
 import android.app.Activity
 import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.interfaces.ProductChangeCallback
+import com.revenuecat.purchases.interfaces.SyncAttributesAndOfferingsCallback
 import com.revenuecat.purchases.interfaces.SyncPurchasesCallback
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
@@ -40,6 +41,19 @@ internal fun syncPurchasesListener(
 ) = object : SyncPurchasesCallback {
     override fun onSuccess(customerInfo: CustomerInfo) {
         onSuccess(customerInfo)
+    }
+
+    override fun onError(error: PurchasesError) {
+        onError(error)
+    }
+}
+
+internal fun syncAttributesAndOfferingsListener(
+    onSuccess: (Offerings) -> Unit,
+    onError: (error: PurchasesError) -> Unit,
+) = object : SyncAttributesAndOfferingsCallback {
+    override fun onSuccess(offerings: Offerings) {
+        onSuccess(offerings)
     }
 
     override fun onError(error: PurchasesError) {
@@ -215,6 +229,28 @@ fun Purchases.syncPurchasesWith(
     onSuccess: (CustomerInfo) -> Unit,
 ) {
     syncPurchases(syncPurchasesListener(onSuccess, onError))
+}
+
+/**
+ * Syncs subscriber attributes and then fetches the configured offerings for this user. This method is intended to
+ * be called when using Targeting Rules with Custom Attributes. Any subscriber attributes should be set before
+ * calling this method to ensure the returned offerings are applied with the latest subscriber attributes.
+ *
+ * * This method is rate limited to once per minute.
+ *
+ * Refer to [the guide](https://www.revenuecat.com/docs/tools/targeting) for more targeting information
+ * For more offerings information, see [getOfferings]
+ *
+ * @param [onError] Called when there was an error syncing attributes or fetching offerings. Will return the first error
+ * found syncing the purchases.
+ * @param [onSuccess] Called when all attributes are synced and offerings are fetched.
+ */
+@Suppress("unused")
+fun Purchases.syncAttributesAndOfferingsIfNeededWith(
+    onError: (error: PurchasesError) -> Unit = ON_ERROR_STUB,
+    onSuccess: (Offerings) -> Unit,
+) {
+    syncAttributesAndOfferingsIfNeeded(syncAttributesAndOfferingsListener(onSuccess, onError))
 }
 
 // region Deprecated

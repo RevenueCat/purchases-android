@@ -63,6 +63,7 @@ internal fun errorLog(error: PurchasesError) {
         PurchasesErrorCode.CustomerInfoError,
         PurchasesErrorCode.SignatureVerificationError,
         PurchasesErrorCode.InvalidSubscriberAttributesError,
+        PurchasesErrorCode.SyncingAttributesRateLimitReached,
         -> log(LogIntent.RC_ERROR, error.toString())
         PurchasesErrorCode.PurchaseCancelledError,
         PurchasesErrorCode.StoreProblemError,

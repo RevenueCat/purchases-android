@@ -15,6 +15,7 @@ import androidx.navigation.fragment.FragmentNavigatorExtras
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.transition.MaterialElevationScale
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Offering
@@ -25,6 +26,7 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.getOfferingsWith
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
+import com.revenuecat.purchases.interfaces.SyncAttributesAndOfferingsCallback
 import com.revenuecat.purchases.logOutWith
 import com.revenuecat.purchases.models.GoogleStoreProduct
 import com.revenuecat.purchases.models.StoreProduct
@@ -86,18 +88,28 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
         Purchases.sharedInstance.getOfferingsWith(::showError, ::populateOfferings)
     }
 
+    private var adapter: OfferingCardAdapter? = null
+
     private fun populateOfferings(offerings: Offerings) {
         if (offerings.all.isEmpty()) {
             binding.offeringHeader.text = "No Offerings"
             return
         }
 
-        binding.overviewOfferingsRecycler.layoutManager = LinearLayoutManager(requireContext())
-        binding.overviewOfferingsRecycler.adapter = OfferingCardAdapter(
-            offerings.all.values.toList(),
-            offerings.current,
-            this,
-        )
+        val currentOffering = offerings.current
+        val allOfferings = offerings.all.values.toList().sortedBy {
+            it.identifier != currentOffering?.identifier
+        }
+
+        this.adapter?.update(allOfferings, currentOffering) ?: run {
+            this.adapter = OfferingCardAdapter(
+                allOfferings,
+                currentOffering,
+                this,
+            )
+            binding.overviewOfferingsRecycler.layoutManager = LinearLayoutManager(requireContext())
+            binding.overviewOfferingsRecycler.adapter = this.adapter
+        }
     }
 
     override fun onOfferingClicked(cardView: View, offering: Offering) {
@@ -202,6 +214,36 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
         val intent = Intent(Intent.ACTION_VIEW)
         intent.data = url
         startActivity(intent)
+    }
+
+    override fun setAttribute() {
+        val dialogView = layoutInflater.inflate(R.layout.dialog_set_attribute, null)
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle("Set Attribute")
+            .setView(dialogView)
+            .setPositiveButton("Save") { dialog, which ->
+                val textField1 = dialogView.findViewById<TextInputEditText>(R.id.textField1).text.toString()
+                val textField2 = dialogView.findViewById<TextInputEditText>(R.id.textField2).text.toString()
+
+                Purchases.sharedInstance.setAttributes(
+                    mapOf(textField1 to textField2),
+                )
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    override fun syncAttributes() {
+        Purchases.sharedInstance.syncAttributesAndOfferingsIfNeeded(object : SyncAttributesAndOfferingsCallback {
+            override fun onSuccess(offerings: Offerings) {
+                showToast("Synced attributes and offerings")
+                populateOfferings(offerings)
+            }
+
+            override fun onError(error: PurchasesError) {
+                showUserError(requireActivity(), error)
+            }
+        })
     }
 
     private fun navigateToLoginFragment() {
