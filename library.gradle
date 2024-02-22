@@ -5,7 +5,7 @@ android {
         minSdkVersion obtainMinSdkVersion()
         targetSdkVersion compileVersion
         versionCode 1
-        versionName "7.6.0"
+        versionName "7.7.0-SNAPSHOT"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles "consumer-rules.pro"
     }
