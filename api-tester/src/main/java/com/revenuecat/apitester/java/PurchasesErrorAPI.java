@@ -40,6 +40,7 @@ final class PurchasesErrorAPI {
             case EmptySubscriberAttributesError:
             case CustomerInfoError:
             case SignatureVerificationError:
+            case SyncingAttributesRateLimitReached:
         }
     }
 }

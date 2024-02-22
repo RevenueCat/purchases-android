@@ -149,6 +149,7 @@
                         </LinearLayout>
 
                         <LinearLayout
+                                android:id="@+id/customer_info_actions"
                                 android:orientation="horizontal"
                                 android:layout_gravity="center"
                                 android:layout_marginBottom="@dimen/padding_medium"
@@ -186,19 +187,19 @@
                                     app:layout_constraintStart_toEndOf="@+id/customer_info_logout_button"
                                     app:layout_constraintTop_toBottomOf="@+id/customer_info_details_container" />
 
-                        </LinearLayout>
+                            <ProgressBar
+                                    android:id="@+id/customer_info_restore_progress"
+                                    android:layout_width="0dp"
+                                    android:layout_height="0dp"
+                                    android:layout_margin="6dp"
+                                    android:elevation="2dp"
+                                    android:visibility="@{viewModel.isRestoring() ? View.VISIBLE : View.GONE}"
+                                    app:layout_constraintBottom_toBottomOf="@id/customer_info_restore_purchases_button"
+                                    app:layout_constraintEnd_toEndOf="@id/customer_info_restore_purchases_button"
+                                    app:layout_constraintStart_toStartOf="@+id/customer_info_restore_purchases_button"
+                                    app:layout_constraintTop_toTopOf="@id/customer_info_restore_purchases_button" />
 
-                        <ProgressBar
-                                android:id="@+id/customer_info_restore_progress"
-                                android:layout_width="0dp"
-                                android:layout_height="0dp"
-                                android:layout_margin="6dp"
-                                android:elevation="2dp"
-                                android:visibility="@{viewModel.isRestoring() ? View.VISIBLE : View.GONE}"
-                                app:layout_constraintBottom_toBottomOf="@id/customer_info_restore_purchases_button"
-                                app:layout_constraintEnd_toEndOf="@id/customer_info_restore_purchases_button"
-                                app:layout_constraintStart_toStartOf="@+id/customer_info_restore_purchases_button"
-                                app:layout_constraintTop_toTopOf="@id/customer_info_restore_purchases_button" />
+                        </LinearLayout>
 
                         <androidx.constraintlayout.widget.Barrier
                                 android:id="@+id/customer_info_card_barrier"

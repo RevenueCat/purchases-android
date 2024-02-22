@@ -40,6 +40,7 @@ private class PurchasesErrorAPI {
             PurchasesErrorCode.EmptySubscriberAttributesError,
             PurchasesErrorCode.CustomerInfoError,
             PurchasesErrorCode.SignatureVerificationError,
+            PurchasesErrorCode.SyncingAttributesRateLimitReached,
             -> {}
         }.exhaustive
     }
