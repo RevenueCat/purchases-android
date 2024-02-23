@@ -136,6 +136,8 @@ internal class PurchasesOrchestrator constructor(
             state = state.copy(allowSharingPlayStoreAccount = value)
         }
 
+    private var lastSyncAttributesAndOfferingsTimestamp: Long = 0
+
     init {
         identityManager.configure(backingFieldAppUserID)
 
@@ -1183,8 +1185,6 @@ internal class PurchasesOrchestrator constructor(
             }
 
         const val frameworkVersion = Config.frameworkVersion
-
-        private var lastSyncAttributesAndOfferingsTimestamp: Long = 0
 
         const val lastSyncAttributesAndOfferingsTimeout = 60000
 

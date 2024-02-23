@@ -312,7 +312,7 @@ internal class PurchasesCoroutinesTest : BasePurchasesTest() {
         var exception: Throwable? = null
         runCatching {
             result1 = purchases.awaitSyncAttributesAndOfferingsIfNeeded()
-            result1 = purchases.awaitSyncAttributesAndOfferingsIfNeeded()
+            result2 = purchases.awaitSyncAttributesAndOfferingsIfNeeded()
         }.onFailure {
             exception = it
         }
@@ -320,7 +320,7 @@ internal class PurchasesCoroutinesTest : BasePurchasesTest() {
         verify(exactly = 1) {
             mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(
                 currentAppUserID = any(),
-                completion = captureLambda(),
+                completion = any(),
             )
         }
 
@@ -329,7 +329,7 @@ internal class PurchasesCoroutinesTest : BasePurchasesTest() {
                 appUserID = any(),
                 appInBackground = any(),
                 onError = any(),
-                onSuccess = captureLambda(),
+                onSuccess = any(),
                 fetchCurrent = true
             )
         }
