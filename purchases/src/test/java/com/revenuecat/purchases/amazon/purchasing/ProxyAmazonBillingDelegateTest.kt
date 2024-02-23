@@ -6,6 +6,7 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.os.Bundle
 import android.os.ResultReceiver
+import androidx.core.content.ContextCompat
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.amazon.device.iap.model.RequestId
 import com.revenuecat.purchases.amazon.PurchasingServiceProvider
@@ -210,7 +211,13 @@ class ProxyAmazonBillingDelegateTest {
             mockPurchasingServiceProvider
         )
         every {
-            mockActivity.registerReceiver(capture(registeredBroadcastReceiverSlot), capture(intentFilterSlot))
+            mockActivity.registerReceiver(
+                capture(registeredBroadcastReceiverSlot),
+                capture(intentFilterSlot),
+                null,
+                null,
+                ContextCompat.RECEIVER_EXPORTED,
+            )
         } returns Intent()
         every {
             mockActivity.unregisterReceiver(capture(unregisteredBroadcastReceiverSlot))
