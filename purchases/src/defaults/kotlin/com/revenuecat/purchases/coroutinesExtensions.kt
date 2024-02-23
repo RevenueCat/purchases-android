@@ -113,7 +113,7 @@ suspend fun Purchases.awaitSyncPurchases(): CustomerInfo {
  */
 @JvmSynthetic
 @Throws(PurchasesException::class)
-suspend fun Purchases.syncAttributesAndOfferingsIfNeeded(): Offerings? {
+suspend fun Purchases.awaitSyncAttributesAndOfferingsIfNeeded(): Offerings? {
     return suspendCoroutine { continuation ->
         syncAttributesAndOfferingsIfNeededWith(
             onSuccess = continuation::resume,
