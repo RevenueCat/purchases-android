@@ -69,6 +69,6 @@ enum class PurchasesErrorCode(val code: Int, val description: String) {
     ),
     SyncingAttributesRateLimitReached(
         37,
-        "The rate limit was reach when attempting sync attributes and fetch offerings.",
+        "The rate limit was reach when attempting to sync attributes and fetch offerings.",
     ),
 }

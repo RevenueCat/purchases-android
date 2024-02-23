@@ -8,6 +8,7 @@ import com.revenuecat.purchases.CacheFetchPolicy;
 import com.revenuecat.purchases.CustomerInfo;
 import com.revenuecat.purchases.EntitlementVerificationMode;
 import com.revenuecat.purchases.LogLevel;
+import com.revenuecat.purchases.Offerings;
 import com.revenuecat.purchases.Purchases;
 import com.revenuecat.purchases.PurchasesConfiguration;
 import com.revenuecat.purchases.PurchasesError;
@@ -15,6 +16,7 @@ import com.revenuecat.purchases.Store;
 import com.revenuecat.purchases.amazon.AmazonConfiguration;
 import com.revenuecat.purchases.interfaces.LogInCallback;
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback;
+import com.revenuecat.purchases.interfaces.SyncAttributesAndOfferingsCallback;
 import com.revenuecat.purchases.interfaces.SyncPurchasesCallback;
 import com.revenuecat.purchases.models.BillingFeature;
 
@@ -56,7 +58,17 @@ final class PurchasesAPI {
             public void onError(@NonNull PurchasesError error) {
             }
         };
+        final SyncAttributesAndOfferingsCallback syncAttributesAndOfferingsCallback = new SyncAttributesAndOfferingsCallback() {
+            @Override
+            public void onError(@NonNull PurchasesError error) {
+            }
 
+            @Override
+            public void onSuccess(@NonNull Offerings offerings) {
+            }
+        };
+
+        purchases.syncAttributesAndOfferingsIfNeeded(syncAttributesAndOfferingsCallback);
         purchases.syncPurchases();
         purchases.syncPurchases(syncPurchasesCallback);
         purchases.logIn("", logInCallback);
