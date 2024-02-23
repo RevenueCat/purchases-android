@@ -15,6 +15,7 @@ import com.revenuecat.purchases.awaitCustomerInfo
 import com.revenuecat.purchases.awaitLogIn
 import com.revenuecat.purchases.awaitLogOut
 import com.revenuecat.purchases.awaitRestore
+import com.revenuecat.purchases.awaitSyncAttributesAndOfferingsIfNeeded
 import com.revenuecat.purchases.awaitSyncPurchases
 import com.revenuecat.purchases.data.LogInResult
 import com.revenuecat.purchases.getCustomerInfoWith
@@ -25,7 +26,6 @@ import com.revenuecat.purchases.interfaces.SyncPurchasesCallback
 import com.revenuecat.purchases.logInWith
 import com.revenuecat.purchases.logOutWith
 import com.revenuecat.purchases.models.BillingFeature
-import com.revenuecat.purchases.syncAttributesAndOfferingsIfNeeded
 import com.revenuecat.purchases.syncAttributesAndOfferingsIfNeededWith
 import com.revenuecat.purchases.syncPurchasesWith
 import java.util.concurrent.ExecutorService
@@ -127,7 +127,7 @@ private class PurchasesAPI {
         val customerInfo3: CustomerInfo = purchases.awaitLogOut()
         val customerInfo4: CustomerInfo = purchases.awaitRestore()
         val customerInfo5: CustomerInfo = purchases.awaitSyncPurchases()
-        var offerings: Offerings? = purchases.syncAttributesAndOfferingsIfNeeded()
+        var offerings: Offerings? = purchases.awaitSyncAttributesAndOfferingsIfNeeded()
     }
 
     fun check(purchases: Purchases, attributes: Map<String, String>) {
