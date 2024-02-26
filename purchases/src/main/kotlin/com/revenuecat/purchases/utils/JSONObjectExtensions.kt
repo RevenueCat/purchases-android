@@ -10,7 +10,11 @@ internal fun JSONObject.optDate(jsonKey: String): Date? = takeUnless { this.isNu
 
 internal fun JSONObject.getNullableString(name: String): String? = takeUnless { this.isNull(name) }?.getString(name)
 
+internal fun JSONObject.getNullableInt(name: String): Int? = takeUnless { this.isNull(name) }?.getInt(name)
+
 internal fun JSONObject.optNullableString(name: String): String? = takeIf { this.has(name) }?.getNullableString(name)
+
+internal fun JSONObject.optNullableInt(name: String): Int? = takeIf { this.has(name) }?.getNullableInt(name)
 
 internal fun <T> JSONObject.toMap(deep: Boolean = false): Map<String, T> {
     return this.keys().asSequence().map { jsonKey ->

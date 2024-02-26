@@ -37,4 +37,5 @@ internal object OfferingStrings {
         "https://rev.cat/how-to-configure-offerings.\nMore information: https://rev.cat/why-are-offerings-empty"
     const val ERROR_FETCHING_OFFERINGS_USING_DISK_CACHE = "Error fetching offerings. Using disk cache."
     const val PLACEMENTS_EMPTY_ERROR = "Error while fetching placements - no placements defined"
+    const val TARGETING_ERROR = "Error while parsing targeting - skipping"
 }

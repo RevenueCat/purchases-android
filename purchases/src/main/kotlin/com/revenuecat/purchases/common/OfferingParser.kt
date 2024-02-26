@@ -10,6 +10,8 @@ import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.strings.OfferingStrings
 import com.revenuecat.purchases.utils.getNullableString
+import com.revenuecat.purchases.utils.optNullableInt
+import com.revenuecat.purchases.utils.optNullableString
 import com.revenuecat.purchases.utils.replaceJsonNullWithKotlinNull
 import com.revenuecat.purchases.utils.toMap
 import com.revenuecat.purchases.withPresentedContext
@@ -53,10 +55,15 @@ internal abstract class OfferingParser {
         }
 
         val targeting: Offerings.Targeting? = offeringsJson.optJSONObject("targeting")?.let {
-            val revision = it.getInt("revision")
-            val ruleId = it.getString("rule_id")
+            val revision = it.optNullableInt("revision")
+            val ruleId = it.optNullableString("rule_id")
 
-            return@let Offerings.Targeting(revision, ruleId)
+            return@let if (revision != null && ruleId != null) {
+                Offerings.Targeting(revision, ruleId)
+            } else {
+                warnLog(OfferingStrings.TARGETING_ERROR)
+                null
+            }
         }
 
         val placements: Offerings.Placements? = offeringsJson.optJSONObject("placements")?.let {
