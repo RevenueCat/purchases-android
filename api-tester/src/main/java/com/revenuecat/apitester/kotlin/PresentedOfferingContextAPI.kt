@@ -22,3 +22,18 @@ private class PresentedOfferingContextAPI {
         val poc5 = PresentedOfferingContext(offeringId, placementId, targetingContext)
     }
 }
+
+@Suppress("unused", "UNUSED_VARIABLE")
+private class TargetingContextAPI {
+    fun check(targetingContext: PresentedOfferingContext.TargetingContext) {
+        val revision: Int = targetingContext.revision
+        val ruleId: String = targetingContext.ruleId
+    }
+
+    fun checkConstructor(
+        revision: Int,
+        ruleId: String,
+    ) {
+        val targetingContext = PresentedOfferingContext.TargetingContext(revision, ruleId)
+    }
+}
