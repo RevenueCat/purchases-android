@@ -47,11 +47,6 @@ private class StoreProductAPI {
             val copiedProduct2: StoreProduct = copyWithPresentedOfferingContext(
                 PresentedOfferingContext(
                     offeringIdentifier = "offeringId",
-                    placementIdentifier = "placementId",
-                    targetingContext = PresentedOfferingContext.TargetingContext(
-                        revision = 1,
-                        ruleId = "ruleId",
-                    ),
                 ),
             )
         }

@@ -44,14 +44,7 @@ final class StoreProductAPI {
 
         final StoreProduct copyWithOfferingId = product.copyWithOfferingId("offeringId");
         final StoreProduct copyWithContext = product.copyWithPresentedOfferingContext(
-                new PresentedOfferingContext(
-                        "offeringId",
-                        "placementId",
-                        new PresentedOfferingContext.TargetingContext(
-                                1,
-                                "ruleId"
-                        )
-                )
+                new PresentedOfferingContext("offeringId")
         );
     }
 

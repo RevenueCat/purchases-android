@@ -12,7 +12,6 @@ data class PresentedOfferingContext internal constructor(
      * The identifier of the offering used to obtain this object.
      */
     val offeringIdentifier: String,
-
     /**
      * The identifier of the placement used to obtain this object.
      */
