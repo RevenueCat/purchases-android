@@ -47,8 +47,11 @@ final class StoreProductAPI {
                 new PresentedOfferingContext(
                         "offeringId",
                         "placementId",
-                        1,
-                        "ruleId")
+                        new PresentedOfferingContext.TargetingContext(
+                                1,
+                                "ruleId"
+                        )
+                )
         );
     }
 

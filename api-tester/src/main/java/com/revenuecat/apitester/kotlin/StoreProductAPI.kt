@@ -48,8 +48,10 @@ private class StoreProductAPI {
                 PresentedOfferingContext(
                     offeringIdentifier = "offeringId",
                     placementIdentifier = "placementId",
-                    targetingRevision = 1,
-                    targetingRuleId = "ruleId",
+                    targetingContext = PresentedOfferingContext.TargetingContext(
+                        revision = 1,
+                        ruleId = "ruleId",
+                    ),
                 ),
             )
         }
