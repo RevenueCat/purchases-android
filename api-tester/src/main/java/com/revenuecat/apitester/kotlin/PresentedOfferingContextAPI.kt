@@ -7,16 +7,18 @@ private class PresentedOfferingContextAPI {
     fun check(presentedOfferingContext: PresentedOfferingContext) {
         val offeringIdentifier: String = presentedOfferingContext.offeringIdentifier
         val placementIdentifier: String? = presentedOfferingContext.placementIdentifier
-        val targetingRevision: Int? = presentedOfferingContext.targetingRevision
-        val targetingRuleId: String? = presentedOfferingContext.targetingRuleId
+        val targetingContext: PresentedOfferingContext.TargetingContext? = presentedOfferingContext.targetingContext
     }
 
-    fun checkConstructor(offeringId: String, placementId: String?, targetingRevision: Int?, targetingRuleId: String?) {
-        val presentedOfferingContext = PresentedOfferingContext(
-            offeringId,
-            placementId,
-            targetingRevision,
-            targetingRuleId,
-        )
+    fun checkConstructor(
+        offeringId: String,
+        placementId: String?,
+        targetingContext: PresentedOfferingContext.TargetingContext,
+    ) {
+        val poc1 = PresentedOfferingContext(offeringId)
+        val poc2 = PresentedOfferingContext(offeringId, placementId)
+        val poc3 = PresentedOfferingContext(offeringId, placementId, null)
+        val poc4 = PresentedOfferingContext(offeringId, null, targetingContext)
+        val poc5 = PresentedOfferingContext(offeringId, placementId, targetingContext)
     }
 }

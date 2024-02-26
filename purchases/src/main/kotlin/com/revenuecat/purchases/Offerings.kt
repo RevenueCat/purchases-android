@@ -46,43 +46,46 @@ data class Offerings internal constructor(
 
         return offering?.withPresentedContext(placementId = placementId, targeting = this.targeting)
     }
+
+    /**
+     * This class contains information about the targeting that presented the offering.
+     * @property revision The revision of the targeting that presented the offering.
+     * @property ruleId The rule id of the targeting that presented the offering.
+     */
+    internal data class Targeting(
+        val revision: Int,
+        val ruleId: String,
+    )
+
+    /**
+     * This class contains all the offerings by placement configured in RevenueCat dashboard.
+     * For more info see https://www.revenuecat.com/docs/targeting
+     * @property fallbackOfferingId The optional offering identifier to fallback on if the placement isn't found.
+     * @property offeringIdsByPlacement Dictionary of all offering identifiers keyed by their placement identifier.
+     */
+    internal data class Placements(
+        val fallbackOfferingId: String?,
+        val offeringIdsByPlacement: Map<String, String?>,
+    )
 }
 
-/**
- * This class contains information about the targeting that presented the offering.
- * @property revision The revision of the targeting that presented the offering.
- * @property ruleId The rule id of the targeting that presented the offering.
- */
-internal data class Targeting(
-    val revision: Int,
-    val ruleId: String,
-)
-
-/**
- * This class contains all the offerings by placement configured in RevenueCat dashboard.
- * For more info see https://www.revenuecat.com/docs/targeting
- * @property fallbackOfferingId The optional offering identifier to fallback on if the placement isn't found.
- * @property offeringIdsByPlacement Dictionary of all offering identifiers keyed by their placement identifier.
- */
-internal data class Placements(
-    val fallbackOfferingId: String?,
-    val offeringIdsByPlacement: Map<String, String?>,
-)
-
-internal fun Offering.withPresentedContext(placementId: String?, targeting: Targeting?): Offering {
+internal fun Offering.withPresentedContext(placementId: String?, targeting: Offerings.Targeting?): Offering {
     val updatedAvailablePackages = this.availablePackages.map {
-        val context = it.presentedOfferingContext.copy(
-            placementIdentifier = placementId,
-            targetingRevision = targeting?.revision,
-            targetingRuleId = targeting?.ruleId,
+        val oldContext = it.presentedOfferingContext
+
+        val newContext = oldContext.copy(
+            placementIdentifier = placementId ?: oldContext.placementIdentifier,
+            targetingContext = targeting?.let { targeting ->
+                PresentedOfferingContext.TargetingContext(targeting.revision, targeting.ruleId)
+            } ?: oldContext.targetingContext,
         )
-        val product = it.product.copyWithPresentedOfferingContext(context)
+        val product = it.product.copyWithPresentedOfferingContext(newContext)
 
         Package(
             identifier = it.identifier,
             packageType = it.packageType,
             product = product,
-            presentedOfferingContext = context,
+            presentedOfferingContext = newContext,
         )
     }
 

@@ -5,9 +5,7 @@ import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
-import com.revenuecat.purchases.Placements
 import com.revenuecat.purchases.PresentedOfferingContext
-import com.revenuecat.purchases.Targeting
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.strings.OfferingStrings
@@ -54,21 +52,21 @@ internal abstract class OfferingParser {
             }
         }
 
-        val targeting: Targeting? = offeringsJson.optJSONObject("targeting")?.let {
+        val targeting: Offerings.Targeting? = offeringsJson.optJSONObject("targeting")?.let {
             val revision = it.getInt("revision")
             val ruleId = it.getString("rule_id")
 
-            return@let Targeting(revision, ruleId)
+            return@let Offerings.Targeting(revision, ruleId)
         }
 
-        val placements: Placements? = offeringsJson.optJSONObject("placements")?.let {
+        val placements: Offerings.Placements? = offeringsJson.optJSONObject("placements")?.let {
             val fallbackOfferingId = it.getNullableString("fallback_offering_id")
             val offeringIdsByPlacement = it.optJSONObject("offering_ids_by_placement")
                 ?.toMap<String?>()
                 ?.replaceJsonNullWithKotlinNull()
 
             return@let offeringIdsByPlacement?.let {
-                Placements(
+                Offerings.Placements(
                     fallbackOfferingId = fallbackOfferingId,
                     offeringIdsByPlacement = offeringIdsByPlacement,
                 )

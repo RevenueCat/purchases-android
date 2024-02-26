@@ -1407,8 +1407,10 @@ class BackendTest {
             storeProduct = storeProduct,
             presentedOfferingContext = PresentedOfferingContext(
                 "offering_a",
-                targetingRevision = 1,
-                targetingRuleId = "abc123"
+                targetingContext = PresentedOfferingContext.TargetingContext(
+                    revision = 1,
+                    ruleId = "abc123",
+                ),
             ),
         )
 

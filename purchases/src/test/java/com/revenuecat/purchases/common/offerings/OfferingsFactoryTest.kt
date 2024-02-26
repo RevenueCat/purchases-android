@@ -94,6 +94,69 @@ class OfferingsFactoryTest {
             "'current_offering_id': '$STUB_OFFERING_IDENTIFIER'" +
             "}"
     )
+    private val oneOfferingWithPlacement = JSONObject(
+        "" +
+            "{" +
+            "'offerings': [" +
+            "{" +
+            "'identifier': '$STUB_OFFERING_IDENTIFIER', " +
+            "'description': 'This is the base offering', " +
+            "'packages': [" +
+            "{'identifier': '\$rc_monthly','platform_product_identifier': '$STUB_PRODUCT_IDENTIFIER'}" +
+            "]" +
+            "}" +
+            "]," +
+            "'current_offering_id': '$STUB_OFFERING_IDENTIFIER',\n" +
+            "'placements': {\n" +
+            "    \"fallback_offering_id\": \"standard\",\n" +
+            "    \"offering_ids_by_placement\": {\n" +
+            "        \"onboarding\": null,\n" +
+            "        \"gate\": \"big_feature\"\n" +
+            "    }\n" +
+            "}" +
+            "}"
+    )
+    private val oneOfferingWithPlacementWithNullFallback = JSONObject(
+        "" +
+            "{" +
+            "'offerings': [" +
+            "{" +
+            "'identifier': '$STUB_OFFERING_IDENTIFIER', " +
+            "'description': 'This is the base offering', " +
+            "'packages': [" +
+            "{'identifier': '\$rc_monthly','platform_product_identifier': '$STUB_PRODUCT_IDENTIFIER'}" +
+            "]" +
+            "}" +
+            "]," +
+            "'current_offering_id': '$STUB_OFFERING_IDENTIFIER',\n" +
+            "'placements': {\n" +
+            "    \"fallback_offering_id\": null,\n" +
+            "    \"offering_ids_by_placement\": {\n" +
+            "        \"onboarding\": null,\n" +
+            "        \"gate\": \"big_feature\"\n" +
+            "    }\n" +
+            "}" +
+            "}"
+    )
+    private val oneOfferingWithTargeting = JSONObject(
+        "" +
+            "{" +
+            "'offerings': [" +
+            "{" +
+            "'identifier': '$STUB_OFFERING_IDENTIFIER', " +
+            "'description': 'This is the base offering', " +
+            "'packages': [" +
+            "{'identifier': '\$rc_monthly','platform_product_identifier': '$STUB_PRODUCT_IDENTIFIER'}" +
+            "]" +
+            "}" +
+            "]," +
+            "'current_offering_id': '$STUB_OFFERING_IDENTIFIER',\n" +
+            "'targeting': {\n" +
+            "    \"revision\": 1,\n" +
+            "    \"rule_id\": \"abc123\"\n" +
+            "}" +
+            "}"
+    )
 
     private val oneOfferingResponse = JSONObject(ONE_OFFERINGS_RESPONSE)
     private val oneOfferingInAppProductResponse = JSONObject(ONE_OFFERINGS_INAPP_PRODUCT_RESPONSE)
@@ -233,6 +296,72 @@ class OfferingsFactoryTest {
         assertThat(offerings).isNotNull
         assertThat(offerings!!.current).isNotNull
         assertThat(offerings!!.current?.paywall).isNull()
+    }
+
+    @Test
+    fun `createOfferings with placement`() {
+        val productIds = listOf(productId)
+        mockStoreProduct(productIds, emptyList(), ProductType.SUBS)
+        mockStoreProduct(productIds, productIds, ProductType.INAPP)
+
+        var offerings: Offerings? = null
+        offeringsFactory.createOfferings(
+            offeringsJSON = oneOfferingWithPlacement,
+            onError = { fail("Error: $it") },
+            onSuccess = { offerings = it }
+        )
+
+        assertThat(offerings).isNotNull
+        assertThat(offerings!!.current).isNotNull
+        assertThat(offerings!!.placements).isNotNull
+        assertThat(offerings!!.placements!!.fallbackOfferingId).isEqualTo("standard")
+        assertThat(offerings!!.placements!!.offeringIdsByPlacement).isEqualTo(mapOf(
+            "onboarding" to null,
+            "gate" to "big_feature"
+        ))
+    }
+
+    @Test
+    fun `createOfferings with placement with null fallback`() {
+        val productIds = listOf(productId)
+        mockStoreProduct(productIds, emptyList(), ProductType.SUBS)
+        mockStoreProduct(productIds, productIds, ProductType.INAPP)
+
+        var offerings: Offerings? = null
+        offeringsFactory.createOfferings(
+            offeringsJSON = oneOfferingWithPlacementWithNullFallback,
+            onError = { fail("Error: $it") },
+            onSuccess = { offerings = it }
+        )
+
+        assertThat(offerings).isNotNull
+        assertThat(offerings!!.current).isNotNull
+        assertThat(offerings!!.placements).isNotNull
+        assertThat(offerings!!.placements!!.fallbackOfferingId).isNull()
+        assertThat(offerings!!.placements!!.offeringIdsByPlacement).isEqualTo(mapOf(
+            "onboarding" to null,
+            "gate" to "big_feature"
+        ))
+    }
+
+    @Test
+    fun `createOfferings with targeting`() {
+        val productIds = listOf(productId)
+        mockStoreProduct(productIds, emptyList(), ProductType.SUBS)
+        mockStoreProduct(productIds, productIds, ProductType.INAPP)
+
+        var offerings: Offerings? = null
+        offeringsFactory.createOfferings(
+            offeringsJSON = oneOfferingWithTargeting,
+            onError = { fail("Error: $it") },
+            onSuccess = { offerings = it }
+        )
+
+        assertThat(offerings).isNotNull
+        assertThat(offerings!!.current).isNotNull
+        assertThat(offerings!!.targeting).isNotNull
+        assertThat(offerings!!.targeting!!.revision).isEqualTo(1)
+        assertThat(offerings!!.targeting!!.ruleId).isEqualTo("abc123")
     }
 
     // region helpers
