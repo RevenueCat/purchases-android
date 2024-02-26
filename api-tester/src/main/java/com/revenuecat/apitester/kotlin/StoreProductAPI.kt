@@ -44,7 +44,14 @@ private class StoreProductAPI {
             val underlyingAmazonProduct: AmazonStoreProduct? = amazonProduct
             val copiedProductWithOfferingId: StoreProduct = copyWithOfferingId("offeringId")
             val copiedProduct: StoreProduct = copyWithPresentedOfferingContext(null)
-            val copiedProduct2: StoreProduct = copyWithPresentedOfferingContext(PresentedOfferingContext("offeringId"))
+            val copiedProduct2: StoreProduct = copyWithPresentedOfferingContext(
+                PresentedOfferingContext(
+                    offeringIdentifier = "offeringId",
+                    placementIdentifier = "placementId",
+                    targetingRevision = 1,
+                    targetingRuleId = "ruleId",
+                ),
+            )
         }
     }
 

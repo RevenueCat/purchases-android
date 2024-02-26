@@ -213,6 +213,13 @@ internal class Backend(
             "is_restore" to isRestore,
             "presented_offering_identifier" to receiptInfo.presentedOfferingContext?.offeringIdentifier,
             "presented_placement_identifier" to receiptInfo.presentedOfferingContext?.placementIdentifier,
+            "applied_targeting_rule" to receiptInfo.presentedOfferingContext?.let {
+                return@let if (it.targetingRevision != null && it.targetingRuleId != null) {
+                    mapOf("revision" to it.targetingRevision, "rule_id" to it.targetingRuleId)
+                } else {
+                    null
+                }
+            },
             "observer_mode" to observerMode,
             "price" to receiptInfo.price,
             "currency" to receiptInfo.currency,
