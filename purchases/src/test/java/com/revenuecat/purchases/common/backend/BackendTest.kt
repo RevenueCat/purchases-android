@@ -1400,6 +1400,39 @@ class BackendTest {
         assertThat(requestBodySlot.captured["presented_placement_identifier"]).isEqualTo("placement_a")
     }
 
+    @Test
+    fun `postReceipt passes applied targeting rule in body`() {
+        val receiptInfo = ReceiptInfo(
+            productIDs = productIDs,
+            storeProduct = storeProduct,
+            presentedOfferingContext = PresentedOfferingContext(
+                "offering_a",
+                targetingRevision = 1,
+                targetingRuleId = "abc123"
+            ),
+        )
+
+        val expectedStoreUserId = "id"
+
+        mockPostReceiptResponseAndPost(
+            backend,
+            responseCode = 200,
+            isRestore = false,
+            clientException = null,
+            resultBody = null,
+            observerMode = true,
+            receiptInfo = receiptInfo,
+            storeAppUserID = expectedStoreUserId,
+            initiationSource = initiationSource,
+        )
+
+        assertThat(requestBodySlot.isCaptured).isTrue
+        assertThat(requestBodySlot.captured["applied_targeting_rule"]).isEqualTo(mapOf(
+            "revision" to 1,
+            "rule_id" to "abc123",
+        ))
+    }
+
     // endregion
 
     // region getOfferings
