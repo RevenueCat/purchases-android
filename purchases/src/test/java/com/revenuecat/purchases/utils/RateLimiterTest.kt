@@ -7,13 +7,14 @@ import org.json.JSONObject
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
+import kotlin.time.Duration.Companion.seconds
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
 class RateLimiterTest {
     @Test
     fun `test allows correct number of accesses`() {
-        val rateLimiter = RateLimiter(5, 60000)
+        val rateLimiter = RateLimiter(5, 60.seconds)
 
         repeat(5) {
             assertThat(rateLimiter.shouldProceed()).isTrue()
@@ -22,7 +23,7 @@ class RateLimiterTest {
 
     @Test
     fun `test blocks access when limit exceeded`() {
-        val rateLimiter = RateLimiter(5, 60000)
+        val rateLimiter = RateLimiter(5, 60.seconds)
 
         repeat(5) {
             rateLimiter.shouldProceed()
@@ -33,7 +34,7 @@ class RateLimiterTest {
 
     @Test
     fun `test resets after rate limit period`() {
-        val rateLimiter = RateLimiter(1, 1)
+        val rateLimiter = RateLimiter(1, 1.seconds)
 
         assertThat(rateLimiter.shouldProceed()).isTrue()
         assertThat(rateLimiter.shouldProceed()).isFalse()

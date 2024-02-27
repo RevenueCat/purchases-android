@@ -18,6 +18,7 @@ internal object OfferingStrings {
     const val EXTRA_GET_BILLING_CONFIG_RESPONSE = "BillingClient getBillingConfigAsync has returned more than once, " +
         "with result: %s."
     const val NO_CACHED_OFFERINGS_FETCHING_NETWORK = "No cached Offerings, fetching from network"
+    const val FORCE_OFFERINGS_FETCHING_NETWORK = "Latest Offerings requested, fetching from network"
     const val OFFERINGS_STALE_UPDATING_IN_BACKGROUND = "Offerings cache is stale, updating from network in background"
     const val OFFERINGS_STALE_UPDATING_IN_FOREGROUND = "Offerings cache is stale, updating from network in foreground"
     const val OFFERINGS_START_UPDATE_FROM_NETWORK = "Start Offerings update from network."

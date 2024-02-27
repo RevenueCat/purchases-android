@@ -127,7 +127,7 @@ private class PurchasesAPI {
         val customerInfo3: CustomerInfo = purchases.awaitLogOut()
         val customerInfo4: CustomerInfo = purchases.awaitRestore()
         val customerInfo5: CustomerInfo = purchases.awaitSyncPurchases()
-        var offerings: Offerings? = purchases.awaitSyncAttributesAndOfferingsIfNeeded()
+        var offerings: Offerings = purchases.awaitSyncAttributesAndOfferingsIfNeeded()
     }
 
     fun check(purchases: Purchases, attributes: Map<String, String>) {

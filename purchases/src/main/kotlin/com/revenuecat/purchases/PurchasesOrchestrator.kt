@@ -68,6 +68,7 @@ import com.revenuecat.purchases.utils.RateLimiter
 import com.revenuecat.purchases.utils.isAndroidNOrNewer
 import java.net.URL
 import java.util.Collections
+import kotlin.time.Duration.Companion.seconds
 
 @Suppress("LongParameterList", "LargeClass", "TooManyFunctions")
 internal class PurchasesOrchestrator constructor(
@@ -137,6 +138,9 @@ internal class PurchasesOrchestrator constructor(
         @Synchronized set(value) {
             state = state.copy(allowSharingPlayStoreAccount = value)
         }
+
+    @SuppressWarnings("MagicNumber")
+    private val lastSyncAttributesAndOfferingsRateLimiter = RateLimiter(5, 60.seconds)
 
     init {
         identityManager.configure(backingFieldAppUserID)
@@ -234,8 +238,8 @@ internal class PurchasesOrchestrator constructor(
             log(
                 LogIntent.WARNING,
                 SyncAttributesAndOfferingsStrings.RATE_LIMIT_REACHED.format(
-                    lastSyncAttributesAndOfferingsRateLimiter.maxCalls,
-                    lastSyncAttributesAndOfferingsRateLimiter.periodSeconds,
+                    lastSyncAttributesAndOfferingsRateLimiter.maxCallsInPeriod,
+                    lastSyncAttributesAndOfferingsRateLimiter.periodSeconds.inWholeSeconds,
                 ),
             )
 
@@ -1189,8 +1193,6 @@ internal class PurchasesOrchestrator constructor(
             }
 
         const val frameworkVersion = Config.frameworkVersion
-
-        val lastSyncAttributesAndOfferingsRateLimiter = RateLimiter(5, 60_000)
 
         var proxyURL: URL? = null
 

@@ -1,13 +1,9 @@
 package com.revenuecat.purchases.utils
 
-internal class RateLimiter(val maxCalls: Int, val periodSeconds: Int) {
-    companion object {
-        const val MILLISECONDS_PER_SECOND = 1000
-    }
+import kotlin.time.Duration
 
-    private val maxCallInclusive: Int
-        get() = maxCalls + 1
-
+internal class RateLimiter(val maxCallsInPeriod: Int, val periodSeconds: Duration) {
+    private val maxCallInclusive = maxCallsInPeriod + 1
     private val callTimestamps: LongArray = LongArray(maxCallInclusive)
     private var index = 0
 
@@ -18,7 +14,7 @@ internal class RateLimiter(val maxCalls: Int, val periodSeconds: Int) {
         val oldestCall = callTimestamps[oldestCallIndex]
 
         // Check if the oldest call is outside the rate limiting period
-        if (oldestCall == 0L || (now - oldestCall) > (periodSeconds * MILLISECONDS_PER_SECOND)) {
+        if (oldestCall == 0L || (now - oldestCall) > periodSeconds.inWholeMilliseconds) {
             callTimestamps[index] = now
             index = oldestCallIndex
             return true

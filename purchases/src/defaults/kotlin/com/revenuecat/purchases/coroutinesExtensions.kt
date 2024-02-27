@@ -100,7 +100,7 @@ suspend fun Purchases.awaitSyncPurchases(): CustomerInfo {
  * be called when using Targeting Rules with Custom Attributes. Any subscriber attributes should be set before
  * calling this method to ensure the returned offerings are applied with the latest subscriber attributes.
  *
- * * This method is rate limited to once per minute.
+ * This method is rate limited to 5 calls per minute. It will log a warning and return offerings cache when reached.
  *
  * Refer to [the guide](https://www.revenuecat.com/docs/tools/targeting) for more targeting information
  * For more offerings information, see [getOfferings]
@@ -113,7 +113,7 @@ suspend fun Purchases.awaitSyncPurchases(): CustomerInfo {
  */
 @JvmSynthetic
 @Throws(PurchasesException::class)
-suspend fun Purchases.awaitSyncAttributesAndOfferingsIfNeeded(): Offerings? {
+suspend fun Purchases.awaitSyncAttributesAndOfferingsIfNeeded(): Offerings {
     return suspendCoroutine { continuation ->
         syncAttributesAndOfferingsIfNeededWith(
             onSuccess = continuation::resume,
