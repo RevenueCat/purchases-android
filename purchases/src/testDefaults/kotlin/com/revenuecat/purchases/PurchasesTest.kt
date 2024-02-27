@@ -637,46 +637,57 @@ internal class PurchasesTest : BasePurchasesTest() {
         assertThat(receivedOfferings).isEqualTo(mockOfferings)
     }
 
-//    @Test
-//    fun `syncing attributes and offerings calls error callback when called twice within 60 seconds`() {
-//        every {
-//            mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(any(), captureLambda())
-//        } answers {
-//            lambda<() -> Unit>().captured.invoke()
-//        }
-//
-//        every {
-//            mockOfferingsManager.getOfferings(any(), any(), any(), captureLambda(), true)
-//        } answers {
-//            lambda<(Offerings?) -> Unit>().captured.invoke(mockOfferings)
-//        }
-//
-//        var successCallCount = 0
-//        var receivedOfferings: Offerings? = null
-//        purchases.syncAttributesAndOfferingsIfNeededWith(
-//            { fail("Expected to succeed") },
-//            {
-//                successCallCount++
-//                receivedOfferings = it
-//            }
-//        )
-//
-//        assertThat(successCallCount).isEqualTo(1)
-//        assertThat(receivedOfferings).isEqualTo(mockOfferings)
-//
-//        var errorCallCount = 0
-//        var receivedError: PurchasesError? = null
-//        purchases.syncAttributesAndOfferingsIfNeededWith(
-//            {
-//                errorCallCount++
-//                receivedError = it
-//            },
-//            { fail("Expected to fail") }
-//        )
-//
-//        assertThat(errorCallCount).isEqualTo(1)
-//        assertThat(receivedError?.code).isEqualTo(PurchasesErrorCode.SyncingAttributesRateLimitReached)
-//    }
+    @Test
+    fun `syncing attributes and offerings calls error callback when called twice within 60 seconds`() {
+        every {
+            mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(any(), captureLambda())
+        } answers {
+            lambda<() -> Unit>().captured.invoke()
+        }
+
+        every {
+            mockOfferingsManager.getOfferings(any(), any(), any(), captureLambda(), any())
+        } answers {
+            lambda<(Offerings?) -> Unit>().captured.invoke(mockOfferings)
+        }
+
+        var successCallCount = 0
+        repeat(6) {
+            purchases.syncAttributesAndOfferingsIfNeededWith(
+                onError = { print("") },
+                onSuccess = { successCallCount++ }
+            )
+        }
+
+        verify(exactly = 5) {
+            mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(
+                currentAppUserID = any(),
+                completion = any(),
+            )
+        }
+
+        verify(exactly = 5) {
+            mockOfferingsManager.getOfferings(
+                appUserID = any(),
+                appInBackground = any(),
+                onError = any(),
+                onSuccess = any(),
+                fetchCurrent = true
+            )
+        }
+
+        verify(exactly = 1) {
+            mockOfferingsManager.getOfferings(
+                appUserID = any(),
+                appInBackground = any(),
+                onError = any(),
+                onSuccess = any(),
+                fetchCurrent = false
+            )
+        }
+
+        assertThat(successCallCount).isEqualTo(6)
+    }
 
     // endregion
 
