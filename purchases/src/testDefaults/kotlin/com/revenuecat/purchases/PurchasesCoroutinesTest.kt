@@ -292,54 +292,53 @@ internal class PurchasesCoroutinesTest : BasePurchasesTest() {
         assertThat(exception).isNull()
     }
 
-    @Test
-    fun `sync attributes and offerings if needed - SyncingAttributesRateLimitReached`() = runTest {
-        every {
-            mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(any(), captureLambda())
-        } answers {
-            lambda<() -> Unit>().captured.invoke()
-        }
-
-        every {
-            mockOfferingsManager.getOfferings(any(), any(), any(), captureLambda(), any())
-        } answers {
-            lambda<(Offerings?) -> Unit>().captured.invoke(mockOfferings)
-        }
-
-
-        var result1: Offerings? = null
-        var result2: Offerings? = null
-        var exception: Throwable? = null
-        runCatching {
-            result1 = purchases.awaitSyncAttributesAndOfferingsIfNeeded()
-            result2 = purchases.awaitSyncAttributesAndOfferingsIfNeeded()
-        }.onFailure {
-            exception = it
-        }
-
-        verify(exactly = 1) {
-            mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(
-                currentAppUserID = any(),
-                completion = any(),
-            )
-        }
-
-        verify(exactly = 1) {
-            mockOfferingsManager.getOfferings(
-                appUserID = any(),
-                appInBackground = any(),
-                onError = any(),
-                onSuccess = any(),
-                fetchCurrent = true
-            )
-        }
-
-        assertThat(result1).isNotNull
-        assertThat(result2).isNull()
-        assertThat(exception).isNotNull()
-        assertThat(exception).isInstanceOf(PurchasesException::class.java)
-        assertThat((exception as PurchasesException).code).isEqualTo(PurchasesErrorCode.SyncingAttributesRateLimitReached)
-    }
+//    @Test
+//    fun `sync attributes and offerings if needed - SyncingAttributesRateLimitReached`() = runTest {
+//        every {
+//            mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(any(), captureLambda())
+//        } answers {
+//            lambda<() -> Unit>().captured.invoke()
+//        }
+//
+//        every {
+//            mockOfferingsManager.getOfferings(any(), any(), any(), captureLambda(), any())
+//        } answers {
+//            lambda<(Offerings?) -> Unit>().captured.invoke(mockOfferings)
+//        }
+//
+//
+//        var result1: Offerings? = null
+//        var result2: Offerings? = null
+//        var exception: Throwable? = null
+//        runCatching {
+//            result1 = purchases.awaitSyncAttributesAndOfferingsIfNeeded()
+//            result2 = purchases.awaitSyncAttributesAndOfferingsIfNeeded()
+//        }.onFailure {
+//            exception = it
+//        }
+//
+//        verify(exactly = 1) {
+//            mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(
+//                currentAppUserID = any(),
+//                completion = any(),
+//            )
+//        }
+//
+//        verify(exactly = 1) {
+//            mockOfferingsManager.getOfferings(
+//                appUserID = any(),
+//                appInBackground = any(),
+//                onError = any(),
+//                onSuccess = any(),
+//                fetchCurrent = true
+//            )
+//        }
+//
+//        assertThat(result1).isNotNull
+//        assertThat(result2).isNull()
+//        assertThat(exception).isNotNull()
+//        assertThat(exception).isInstanceOf(PurchasesException::class.java)
+//    }
 
     // endregion
 

@@ -67,8 +67,4 @@ enum class PurchasesErrorCode(val code: Int, val description: String) {
         36,
         "Request failed signature verification. Please see https://rev.cat/trusted-entitlements for more info.",
     ),
-    SyncingAttributesRateLimitReached(
-        37,
-        "The rate limit was reach when attempting to sync attributes and fetch offerings.",
-    ),
 }
