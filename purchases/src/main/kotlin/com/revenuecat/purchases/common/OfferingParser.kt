@@ -5,14 +5,16 @@ import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
-import com.revenuecat.purchases.Placements
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.strings.OfferingStrings
 import com.revenuecat.purchases.utils.getNullableString
+import com.revenuecat.purchases.utils.optNullableInt
+import com.revenuecat.purchases.utils.optNullableString
 import com.revenuecat.purchases.utils.replaceJsonNullWithKotlinNull
 import com.revenuecat.purchases.utils.toMap
+import com.revenuecat.purchases.withPresentedContext
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import org.json.JSONObject
@@ -52,14 +54,26 @@ internal abstract class OfferingParser {
             }
         }
 
-        val placements: Placements? = offeringsJson.optJSONObject("placements")?.let {
+        val targeting: Offerings.Targeting? = offeringsJson.optJSONObject("targeting")?.let {
+            val revision = it.optNullableInt("revision")
+            val ruleId = it.optNullableString("rule_id")
+
+            return@let if (revision != null && ruleId != null) {
+                Offerings.Targeting(revision, ruleId)
+            } else {
+                warnLog(OfferingStrings.TARGETING_ERROR)
+                null
+            }
+        }
+
+        val placements: Offerings.Placements? = offeringsJson.optJSONObject("placements")?.let {
             val fallbackOfferingId = it.getNullableString("fallback_offering_id")
             val offeringIdsByPlacement = it.optJSONObject("offering_ids_by_placement")
                 ?.toMap<String?>()
                 ?.replaceJsonNullWithKotlinNull()
 
             return@let offeringIdsByPlacement?.let {
-                Placements(
+                Offerings.Placements(
                     fallbackOfferingId = fallbackOfferingId,
                     offeringIdsByPlacement = offeringIdsByPlacement,
                 )
@@ -70,7 +84,12 @@ internal abstract class OfferingParser {
             }
         }
 
-        return Offerings(offerings[currentOfferingID], offerings, placements)
+        return Offerings(
+            current = offerings[currentOfferingID]?.withPresentedContext(null, targeting),
+            all = offerings,
+            placements = placements,
+            targeting = targeting,
+        )
     }
 
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)

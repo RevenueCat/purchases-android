@@ -10,8 +10,9 @@ data class Offerings internal constructor(
     val current: Offering?,
     val all: Map<String, Offering>,
     internal val placements: Placements? = null,
+    internal val targeting: Targeting? = null,
 ) {
-    constructor(current: Offering?, all: Map<String, Offering>) : this(current, all, null)
+    constructor(current: Offering?, all: Map<String, Offering>) : this(current, all, null, null)
 
     /**
      * Retrieves an specific offering by its identifier.
@@ -43,31 +44,48 @@ data class Offerings internal constructor(
         val showNoOffering = placements.offeringIdsByPlacement.containsKey(placementId)
         val offering = offeringForPlacement ?: if (showNoOffering) null else fallbackOffering
 
-        return offering?.withPlacement(placementId)
+        return offering?.withPresentedContext(placementId = placementId, targeting = this.targeting)
     }
+
+    /**
+     * This class contains information about the targeting that presented the offering.
+     * @property revision The revision of the targeting that presented the offering.
+     * @property ruleId The rule id of the targeting that presented the offering.
+     */
+    internal data class Targeting(
+        val revision: Int,
+        val ruleId: String,
+    )
+
+    /**
+     * This class contains all the offerings by placement configured in RevenueCat dashboard.
+     * For more info see https://www.revenuecat.com/docs/targeting
+     * @property fallbackOfferingId The optional offering identifier to fallback on if the placement isn't found.
+     * @property offeringIdsByPlacement Dictionary of all offering identifiers keyed by their placement identifier.
+     */
+    internal data class Placements(
+        val fallbackOfferingId: String?,
+        val offeringIdsByPlacement: Map<String, String?>,
+    )
 }
 
-/**
- * This class contains all the offerings by placement configured in RevenueCat dashboard.
- * For more info see https://www.revenuecat.com/docs/targeting
- * @property fallbackOfferingId The optional offering identifier to fallback on if the placement isn't found.
- * @property offeringIdsByPlacement Dictionary of all offering identifiers keyed by their placement identifier.
- */
-internal data class Placements(
-    val fallbackOfferingId: String?,
-    val offeringIdsByPlacement: Map<String, String?>,
-)
-
-private fun Offering.withPlacement(placementId: String): Offering {
+internal fun Offering.withPresentedContext(placementId: String?, targeting: Offerings.Targeting?): Offering {
     val updatedAvailablePackages = this.availablePackages.map {
-        val context = it.presentedOfferingContext.copy(placementIdentifier = placementId)
-        val product = it.product.copyWithPresentedOfferingContext(context)
+        val oldContext = it.presentedOfferingContext
+
+        val newContext = oldContext.copy(
+            placementIdentifier = placementId ?: oldContext.placementIdentifier,
+            targetingContext = targeting?.let { targeting ->
+                PresentedOfferingContext.TargetingContext(targeting.revision, targeting.ruleId)
+            } ?: oldContext.targetingContext,
+        )
+        val product = it.product.copyWithPresentedOfferingContext(newContext)
 
         Package(
             identifier = it.identifier,
             packageType = it.packageType,
             product = product,
-            presentedOfferingContext = context,
+            presentedOfferingContext = newContext,
         )
     }
 

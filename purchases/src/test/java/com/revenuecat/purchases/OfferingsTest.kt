@@ -532,6 +532,27 @@ class OfferingsTest {
         assertThat(offerings.getCurrentOfferingForPlacement("does_not_exist_do_not_fall_back")).isNull()
     }
 
+    fun `createOfferings creates targeting object`() {
+        val storeProductMonthly = getStoreProduct(productIdentifier, monthlyPeriod, monthlyBasePlanId)
+        val storeProductAnnual = getStoreProduct(productIdentifier, annualPeriod, annualBasePlanId)
+
+        val targetingJSON = getTargetingJSON(1, "abc123")
+
+        val products = mapOf(productIdentifier to listOf(storeProductMonthly, storeProductAnnual))
+        val offeringsJson = getOfferingsJSON(targeting = targetingJSON)
+
+        val offerings = offeringsParser.createOfferings(offeringsJson, products)
+        assertThat(offerings).isNotNull
+        assertThat(offerings.all.size).isEqualTo(2)
+        assertThat(offerings.current!!.identifier).isEqualTo(offeringsJson.getString("current_offering_id"))
+        assertThat(offerings["offering_a"]).isNotNull
+        assertThat(offerings["offering_b"]).isNotNull
+
+        assertThat(offerings.targeting).isNotNull
+        assertThat(offerings.targeting!!.revision).isEqualTo(1)
+        assertThat(offerings.targeting.ruleId).isEqualTo("abc123")
+    }
+
     private fun testPackageType(packageType: PackageType) {
         var identifier = packageType.identifier
         if (identifier == null) {
@@ -608,6 +629,7 @@ class OfferingsTest {
                 )
             ),
         placements: JSONObject? = null,
+        targeting: JSONObject? = null,
     ): JSONObject {
         val offeringJsons = mutableListOf<JSONObject>()
         offeringPackagesById.forEach { (offeringId, packages) ->
@@ -626,6 +648,7 @@ class OfferingsTest {
             put("offerings", offeringsJsonArray)
             put("current_offering_id", currentOfferingId)
             placements?.let { put("placements", placements) }
+            targeting?.let { put("targeting", placements) }
         }
     }
 
@@ -640,6 +663,16 @@ class OfferingsTest {
                     put(key, value ?: JSONObject.NULL)
                 }
             })
+        }
+    }
+
+    private fun getTargetingJSON(
+        revision: Int,
+        ruleId: String,
+    ): JSONObject {
+        return JSONObject().apply {
+            put("revision", revision)
+            put("rule_id", ruleId)
         }
     }
 
