@@ -8,7 +8,7 @@ private class PresentedOfferingContextAPI {
         val offeringIdentifier: String = presentedOfferingContext.offeringIdentifier
     }
 
-    fun checkConstructor(offeringId: String) {
-        val presentedOfferingContext = PresentedOfferingContext(offeringId)
+    fun checkConstructor(offeringId: String, placementId: String?) {
+        val presentedOfferingContext = PresentedOfferingContext(offeringId, placementId)
     }
 }

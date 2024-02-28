@@ -1370,6 +1370,36 @@ class BackendTest {
         ))
     }
 
+    @Test
+    fun `postReceipt passes presented_placement_identifier in body`() {
+        val receiptInfo = ReceiptInfo(
+            productIDs = productIDs,
+            storeProduct = storeProduct,
+            presentedOfferingContext = PresentedOfferingContext(
+                "offering_a",
+                placementIdentifier = "placement_a"
+            ),
+        )
+
+        val expectedStoreUserId = "id"
+
+        mockPostReceiptResponseAndPost(
+            backend,
+            responseCode = 200,
+            isRestore = false,
+            clientException = null,
+            resultBody = null,
+            observerMode = true,
+            receiptInfo = receiptInfo,
+            storeAppUserID = expectedStoreUserId,
+            initiationSource = initiationSource,
+        )
+
+        assertThat(requestBodySlot.isCaptured).isTrue
+        assertThat(requestBodySlot.captured["presented_offering_identifier"]).isEqualTo("offering_a")
+        assertThat(requestBodySlot.captured["presented_placement_identifier"]).isEqualTo("placement_a")
+    }
+
     // endregion
 
     // region getOfferings
@@ -2443,6 +2473,7 @@ class BackendTest {
             "product_ids" to receiptInfo.productIDs,
             "is_restore" to isRestore,
             "presented_offering_identifier" to receiptInfo.presentedOfferingContext?.offeringIdentifier,
+            "presented_placement_identifier" to receiptInfo.presentedOfferingContext?.placementIdentifier,
             "observer_mode" to observerMode,
             "price" to receiptInfo.price,
             "currency" to receiptInfo.currency,

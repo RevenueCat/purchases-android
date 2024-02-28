@@ -27,6 +27,7 @@ fun MainScreen(
     navigateToPaywallScreen: (Offering?) -> Unit,
     navigateToPaywallFooterScreen: (Offering?) -> Unit,
     navigateToPaywallCondensedFooterScreen: (Offering?) -> Unit,
+    navigateToPaywallByPlacementScreen: (String) -> Unit,
     navController: NavHostController = rememberNavController(),
 ) {
     Scaffold(
@@ -37,6 +38,7 @@ fun MainScreen(
             navigateToPaywallScreen,
             navigateToPaywallFooterScreen,
             navigateToPaywallCondensedFooterScreen,
+            navigateToPaywallByPlacementScreen,
             Modifier.padding(it),
         )
     }
@@ -49,6 +51,7 @@ fun MainScreenPreview() {
         navigateToPaywallScreen = {},
         navigateToPaywallFooterScreen = {},
         navigateToPaywallCondensedFooterScreen = {},
+        navigateToPaywallByPlacementScreen = {},
     )
 }
 
@@ -58,12 +61,14 @@ private val bottomNavigationItems = listOf(
     Tab.Offerings,
 )
 
+@Suppress("LongParameterList")
 @Composable
 private fun MainNavHost(
     navController: NavHostController,
     navigateToPaywallScreen: (Offering?) -> Unit,
     navigateToPaywallFooterScreen: (Offering?) -> Unit,
     navigateToPaywallCondensedFooterScreen: (Offering?) -> Unit,
+    navigateToPaywallByPlacementScreen: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     NavHost(
@@ -82,6 +87,7 @@ private fun MainNavHost(
                 tappedOnOffering = { offering -> navigateToPaywallScreen(offering) },
                 tappedOnOfferingFooter = { offering -> navigateToPaywallFooterScreen(offering) },
                 tappedOnOfferingCondensedFooter = { offering -> navigateToPaywallCondensedFooterScreen(offering) },
+                tappedOnOfferingByPlacement = { placementId -> navigateToPaywallByPlacementScreen(placementId) },
             )
         }
     }

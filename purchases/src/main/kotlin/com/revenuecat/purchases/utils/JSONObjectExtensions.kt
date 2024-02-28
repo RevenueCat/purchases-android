@@ -12,8 +12,8 @@ internal fun JSONObject.getNullableString(name: String): String? = takeUnless { 
 
 internal fun JSONObject.optNullableString(name: String): String? = takeIf { this.has(name) }?.getNullableString(name)
 
-internal fun <T> JSONObject.toMap(deep: Boolean = false): Map<String, T>? {
-    return this.keys()?.asSequence()?.map { jsonKey ->
+internal fun <T> JSONObject.toMap(deep: Boolean = false): Map<String, T> {
+    return this.keys().asSequence().map { jsonKey ->
         if (deep) {
             val value = when (val rawValue = this[jsonKey]) {
                 is JSONObject -> rawValue.toMap<T>(deep = true)
@@ -27,5 +27,21 @@ internal fun <T> JSONObject.toMap(deep: Boolean = false): Map<String, T>? {
             @Suppress("UNCHECKED_CAST")
             jsonKey to this[jsonKey] as T
         }
-    }?.toMap()
+    }.toMap()
+}
+
+internal fun <K, V> Map<K, V?>.replaceJsonNullWithKotlinNull(): Map<K, V?> {
+    @Suppress("UNCHECKED_CAST")
+    return this.mapValues { (_, value) ->
+        when (value) {
+            is Map<*, *> ->
+                @Suppress("UNCHECKED_CAST")
+                (value as Map<K, V?>).replaceJsonNullWithKotlinNull()
+            is List<*> ->
+                @Suppress("UNCHECKED_CAST")
+                (value as List<V?>).replaceJsonNullWithKotlinNull()
+            JSONObject.NULL -> null
+            else -> value
+        }
+    } as Map<K, V?>
 }

@@ -10,8 +10,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.Divider
+import androidx.compose.material.MaterialTheme
+import androidx.compose.material.Surface
+import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -21,13 +25,18 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.revenuecat.paywallstester.MainActivity
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
+import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.getOfferingsWith
 import com.revenuecat.purchases.ui.revenuecatui.ExperimentalPreviewRevenueCatUIPurchasesAPI
 import com.revenuecat.purchases.ui.revenuecatui.PaywallDialog
 import com.revenuecat.purchases.ui.revenuecatui.PaywallDialogOptions
@@ -40,6 +49,7 @@ fun OfferingsScreen(
     tappedOnOffering: (Offering) -> Unit,
     tappedOnOfferingFooter: (Offering) -> Unit,
     tappedOnOfferingCondensedFooter: (Offering) -> Unit,
+    tappedOnOfferingByPlacement: (String) -> Unit,
     viewModel: OfferingsViewModel = viewModel<OfferingsViewModelImpl>(),
 ) {
     when (val state = viewModel.offeringsState.collectAsState().value) {
@@ -49,6 +59,7 @@ fun OfferingsScreen(
             tappedOnNavigateToOffering = tappedOnOffering,
             tappedOnNavigateToOfferingFooter = tappedOnOfferingFooter,
             tappedOnNavigateToOfferingCondensedFooter = tappedOnOfferingCondensedFooter,
+            tappedOnNavigateToOfferingByPlacement = tappedOnOfferingByPlacement,
         )
         OfferingsState.Loading -> LoadingOfferingsScreen()
     }
@@ -74,6 +85,7 @@ private fun LoadingOfferingsScreen() {
     }
 }
 
+@Suppress("LongMethod")
 @OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class)
 @Composable
 private fun OfferingsListScreen(
@@ -81,11 +93,31 @@ private fun OfferingsListScreen(
     tappedOnNavigateToOffering: (Offering) -> Unit,
     tappedOnNavigateToOfferingFooter: (Offering) -> Unit,
     tappedOnNavigateToOfferingCondensedFooter: (Offering) -> Unit,
+    tappedOnNavigateToOfferingByPlacement: (String) -> Unit,
 ) {
     var dropdownExpandedOffering by remember { mutableStateOf<Offering?>(null) }
     var displayPaywallDialogOffering by remember { mutableStateOf<Offering?>(null) }
 
+    val showDialog = remember { mutableStateOf(false) }
+
     LazyColumn {
+        item {
+            Box(modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Row(
+                        Modifier
+                            .fillMaxWidth()
+                            .clickable { showDialog.value = true }
+                            .padding(16.dp),
+                    ) {
+                        Column {
+                            Text("Get offering by placement")
+                        }
+                    }
+                    Divider()
+                }
+            }
+        }
         items(offeringsState.offerings.all.values.toList()) { offering ->
             Box(modifier = Modifier.fillMaxWidth()) {
                 if (offering == dropdownExpandedOffering) {
@@ -128,6 +160,70 @@ private fun OfferingsListScreen(
                 .setOffering(displayPaywallDialogOffering)
                 .build(),
         )
+    }
+
+    if (showDialog.value) {
+        PlacementDialog(tappedOnNavigateToOfferingByPlacement = tappedOnNavigateToOfferingByPlacement)
+    }
+}
+
+@Composable
+private fun PlacementDialog(
+    tappedOnNavigateToOfferingByPlacement: (String) -> Unit,
+) {
+    val showDialog = remember { mutableStateOf(false) }
+    val placementIdentifier = remember { mutableStateOf("") }
+    val noPlacementFoundMessage = remember { mutableStateOf<String?>(null) }
+
+    Dialog(
+        onDismissRequest = {
+            showDialog.value = false
+            noPlacementFoundMessage.value = null
+            placementIdentifier.value = ""
+        },
+        properties = DialogProperties(usePlatformDefaultWidth = false),
+    ) {
+        Surface(
+            color = Color.White,
+            shape = MaterialTheme.shapes.medium,
+            modifier = Modifier.padding(16.dp),
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                Text("Please enter text and submit")
+
+                OutlinedTextField(
+                    value = placementIdentifier.value,
+                    onValueChange = { placementIdentifier.value = it },
+                    label = { Text("Enter placement identifier") },
+                )
+
+                noPlacementFoundMessage.value?.let {
+                    Text(it)
+                }
+
+                // Submit Button
+                Button(
+                    onClick = {
+                        val placementId = placementIdentifier.value
+
+                        Purchases.sharedInstance.getOfferingsWith {
+                            it.getCurrentOfferingForPlacement(placementId)?.let { offering ->
+                                showDialog.value = false
+                                tappedOnNavigateToOfferingByPlacement(placementId)
+                            } ?: run {
+                                noPlacementFoundMessage.value = "No offering found for placement '$placementId'"
+                            }
+                        }
+                    },
+                    modifier = Modifier.align(Alignment.End),
+                ) {
+                    Text("Submit")
+                }
+            }
+        }
     }
 }
 
@@ -181,6 +277,7 @@ fun OfferingsScreenPreview() {
         tappedOnOffering = {},
         tappedOnOfferingFooter = {},
         tappedOnOfferingCondensedFooter = {},
+        tappedOnOfferingByPlacement = {},
         viewModel = object : OfferingsViewModel() {
             private val _offeringsState = MutableStateFlow<OfferingsState>(
                 OfferingsState.Loaded(

@@ -64,6 +64,10 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
             showPurchaseProductIdDialog()
         }
 
+        binding.findByPlacementButton.setOnClickListener {
+            showFindPlacementDialog()
+        }
+
         viewModel = OverviewViewModel(this)
         binding.lifecycleOwner = this
         binding.viewModel = viewModel
@@ -168,6 +172,40 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
                     }
                 },
             )
+        }
+        builder.setNegativeButton("Cancel") { dialog, which ->
+            dialog.cancel()
+        }
+        val dialog = builder.create()
+        dialog.show()
+    }
+
+    private fun showFindPlacementDialog() {
+        val builder = MaterialAlertDialogBuilder(requireContext())
+        builder.setTitle("Enter the Placement ID you want to get:")
+        val input = EditText(context)
+        input.inputType = InputType.TYPE_CLASS_TEXT
+        builder.setView(input)
+        builder.setPositiveButton("Find") { dialog, which ->
+            var placementId = input.text.toString()
+
+            Purchases.sharedInstance.getOfferingsWith {
+                it.getCurrentOfferingForPlacement(placementId)?.let { offering ->
+                    exitTransition = MaterialElevationScale(false).apply {
+                        duration = requireContext().resources.getInteger(R.integer.transition_duration).toLong()
+                    }
+                    reenterTransition = MaterialElevationScale(true).apply {
+                        duration = requireContext().resources.getInteger(R.integer.transition_duration).toLong()
+                    }
+
+                    val directions = OverviewFragmentDirections.actionOverviewFragmentToOfferingFragment(
+                        offering.identifier,
+                    )
+                    findNavController().navigate(directions)
+                } ?: run {
+                    print("no offering")
+                }
+            }
         }
         builder.setNegativeButton("Cancel") { dialog, which ->
             dialog.cancel()

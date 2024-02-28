@@ -11,6 +11,7 @@ private class OfferingsAPI {
             val all: Map<String, Offering> = all
             val o1: Offering? = getOffering("")
             val o2: Offering? = this[""]
+            val o3: Offering? = getCurrentOfferingForPlacement("")
         }
     }
 }

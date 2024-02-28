@@ -234,32 +234,61 @@
         </ScrollView>
 
         <LinearLayout
+                android:orientation="vertical"
+                android:layout_gravity="end|bottom"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content">
+            <LinearLayout
+                    android:orientation="horizontal"
+                    android:layout_gravity="end|bottom"
+                    android:layout_marginBottom="@dimen/padding_small"
+                    android:layout_marginEnd="@dimen/padding_large"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content">
+                <com.google.android.material.button.MaterialButton
+                        android:id="@+id/find_by_placement_button"
+                        android:text="@string/find_placement"
+                        android:layout_gravity="end|bottom"
+                        android:layout_marginEnd="@dimen/padding_small"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"/>
+            </LinearLayout>
+            <LinearLayout
+                    android:orientation="horizontal"
+                    android:layout_gravity="end|bottom"
+                    android:layout_marginBottom="@dimen/padding_small"
+                    android:layout_marginEnd="@dimen/padding_large"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content">
+                <com.google.android.material.button.MaterialButton
+                        android:id="@+id/purchase_product_id_button"
+                        android:text="@string/buy_product"
+                        android:layout_gravity="end|bottom"
+                        android:layout_marginEnd="@dimen/padding_small"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"/>
+            </LinearLayout>
+            <LinearLayout
                 android:orientation="horizontal"
                 android:layout_gravity="end|bottom"
                 android:layout_marginBottom="@dimen/padding_medium"
                 android:layout_marginEnd="@dimen/padding_large"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content">
-            <com.google.android.material.button.MaterialButton
-                    android:id="@+id/purchase_product_id_button"
-                    android:text="@string/buy_product"
-                    android:layout_gravity="end|bottom"
-                    android:layout_marginEnd="@dimen/padding_small"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"/>
-            <com.google.android.material.button.MaterialButton
-                    android:id="@+id/proxy_button"
-                    android:text="@string/proxy"
-                    android:layout_gravity="end|bottom"
-                    android:layout_marginEnd="@dimen/padding_small"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"/>
-            <com.google.android.material.button.MaterialButton
-                    android:id="@+id/logs_button"
-                    android:text="@string/logs"
-                    android:layout_gravity="end|bottom"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"/>
+                <com.google.android.material.button.MaterialButton
+                        android:id="@+id/proxy_button"
+                        android:text="@string/proxy"
+                        android:layout_gravity="end|bottom"
+                        android:layout_marginEnd="@dimen/padding_small"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"/>
+                <com.google.android.material.button.MaterialButton
+                        android:id="@+id/logs_button"
+                        android:text="@string/logs"
+                        android:layout_gravity="end|bottom"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"/>
+            </LinearLayout>
         </LinearLayout>
     </FrameLayout>
 

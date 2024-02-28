@@ -5,10 +5,13 @@ import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
+import com.revenuecat.purchases.Placements
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.strings.OfferingStrings
+import com.revenuecat.purchases.utils.getNullableString
+import com.revenuecat.purchases.utils.replaceJsonNullWithKotlinNull
 import com.revenuecat.purchases.utils.toMap
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
@@ -49,7 +52,25 @@ internal abstract class OfferingParser {
             }
         }
 
-        return Offerings(offerings[currentOfferingID], offerings)
+        val placements: Placements? = offeringsJson.optJSONObject("placements")?.let {
+            val fallbackOfferingId = it.getNullableString("fallback_offering_id")
+            val offeringIdsByPlacement = it.optJSONObject("offering_ids_by_placement")
+                ?.toMap<String?>()
+                ?.replaceJsonNullWithKotlinNull()
+
+            return@let offeringIdsByPlacement?.let {
+                Placements(
+                    fallbackOfferingId = fallbackOfferingId,
+                    offeringIdsByPlacement = offeringIdsByPlacement,
+                )
+            } ?: run {
+                // This shouldn't ever happen due to validations on the backend
+                errorLog(OfferingStrings.PLACEMENTS_EMPTY_ERROR)
+                null
+            }
+        }
+
+        return Offerings(offerings[currentOfferingID], offerings, placements)
     }
 
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)

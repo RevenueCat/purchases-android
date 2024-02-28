@@ -12,4 +12,11 @@ data class PresentedOfferingContext(
      * The identifier of the offering used to obtain this object.
      */
     val offeringIdentifier: String,
-) : Parcelable
+
+    /**
+     * The identifier of the placement used to obtain this object.
+     */
+    internal val placementIdentifier: String? = null,
+) : Parcelable {
+    constructor(offeringIdentifier: String) : this(offeringIdentifier, null)
+}

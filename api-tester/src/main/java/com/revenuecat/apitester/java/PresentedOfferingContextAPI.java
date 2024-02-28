@@ -8,7 +8,7 @@ final class PresentedOfferingContextAPI {
         final String offeringIdentifier = presentedOfferingContext.getOfferingIdentifier();
     }
 
-    static void checkConstructor(final String offeringIdentifier) {
-        final PresentedOfferingContext presentedOfferingContext = new PresentedOfferingContext(offeringIdentifier);
+    static void checkConstructor(final String offeringIdentifier, final String placementIdentifier) {
+        final PresentedOfferingContext presentedOfferingContext = new PresentedOfferingContext(offeringIdentifier, placementIdentifier);
     }
 }

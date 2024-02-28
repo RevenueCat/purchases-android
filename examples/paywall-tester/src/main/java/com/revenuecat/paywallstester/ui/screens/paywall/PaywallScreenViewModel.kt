@@ -23,6 +23,7 @@ interface PaywallScreenViewModel : PaywallListener {
     companion object {
         const val OFFERING_ID_KEY = "offering_id"
         const val FOOTER_CONDENSED_KEY = "footer_condensed"
+        const val PLACEMENT_ID_KEY = "placement_id"
     }
     val state: StateFlow<PaywallScreenState>
 
@@ -40,6 +41,7 @@ class PaywallScreenViewModelImpl(
 
     private val offeringId = savedStateHandle.get<String?>(PaywallScreenViewModel.OFFERING_ID_KEY)
     private val footerCondensed = savedStateHandle.get<Boolean?>(PaywallScreenViewModel.FOOTER_CONDENSED_KEY)
+    private val placementId = savedStateHandle.get<String?>(PaywallScreenViewModel.PLACEMENT_ID_KEY)
 
     init {
         updateOffering()
@@ -95,22 +97,41 @@ class PaywallScreenViewModelImpl(
 
     private fun updateOffering() {
         viewModelScope.launch {
-            try {
-                val offerings = Purchases.sharedInstance.awaitOfferings()
-                val offeringToLoad = offeringId?.let {
-                    offerings.all[it]
-                } ?: offerings.current
-                if (offeringToLoad == null) {
-                    _state.update {
-                        PaywallScreenState.Error("Could not find offering or current offering")
+            placementId?.let {
+                try {
+                    val offerings = Purchases.sharedInstance.awaitOfferings()
+                    val offeringToLoad = offerings.getCurrentOfferingForPlacement(it)
+
+                    if (offeringToLoad == null) {
+                        _state.update {
+                            PaywallScreenState.Error("Could not find offering for placement $it")
+                        }
+                    } else {
+                        _state.update {
+                            PaywallScreenState.Loaded(offeringToLoad, footerCondensed = footerCondensed ?: false)
+                        }
                     }
-                } else {
-                    _state.update {
-                        PaywallScreenState.Loaded(offeringToLoad, footerCondensed = footerCondensed ?: false)
-                    }
+                } catch (e: PurchasesException) {
+                    _state.update { PaywallScreenState.Error(e.toString()) }
                 }
-            } catch (e: PurchasesException) {
-                _state.update { PaywallScreenState.Error(e.toString()) }
+            } ?: run {
+                try {
+                    val offerings = Purchases.sharedInstance.awaitOfferings()
+                    val offeringToLoad = offeringId?.let {
+                        offerings.all[it]
+                    } ?: offerings.current
+                    if (offeringToLoad == null) {
+                        _state.update {
+                            PaywallScreenState.Error("Could not find offering or current offering")
+                        }
+                    } else {
+                        _state.update {
+                            PaywallScreenState.Loaded(offeringToLoad, footerCondensed = footerCondensed ?: false)
+                        }
+                    }
+                } catch (e: PurchasesException) {
+                    _state.update { PaywallScreenState.Error(e.toString()) }
+                }
             }
         }
     }

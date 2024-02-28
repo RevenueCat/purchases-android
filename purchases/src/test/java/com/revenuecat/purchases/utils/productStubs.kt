@@ -5,6 +5,7 @@ import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
+import com.revenuecat.purchases.Placements
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.common.MICROS_MULTIPLIER
@@ -286,6 +287,7 @@ fun stubOfferings(storeProduct: StoreProduct): Pair<StoreProduct, Offerings> {
     val offerings = Offerings(
         offering,
         mapOf(offering.identifier to offering),
+        null,
     )
     return Pair(storeProduct, offerings)
 }
@@ -307,6 +309,7 @@ fun stubOTPOffering(inAppProduct: StoreProduct): Pair<StoreProduct, Offerings> {
     val offerings = Offerings(
         offering,
         mapOf(offering.identifier to offering),
+        null,
     )
     return Pair(inAppProduct, offerings)
 }

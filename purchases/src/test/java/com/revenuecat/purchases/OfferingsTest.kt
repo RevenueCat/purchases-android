@@ -459,6 +459,79 @@ class OfferingsTest {
         assertThat(offering2YearlyPackages.size).isEqualTo(0)
     }
 
+    @Test
+    fun `createOfferings creates returns placement object with a fallback offering`() {
+        val storeProductMonthly = getStoreProduct(productIdentifier, monthlyPeriod, monthlyBasePlanId)
+        val storeProductAnnual = getStoreProduct(productIdentifier, annualPeriod, annualBasePlanId)
+
+        val placementsJSON = getPlacementsJSON(
+            fallbackOfferingId = "offering_b",
+            offeringIdsByPlacement = mapOf(
+                "onboarding_start" to "offering_a",
+                "onboarding_end" to null,
+            )
+        )
+
+        val products = mapOf(productIdentifier to listOf(storeProductMonthly, storeProductAnnual))
+        val offeringsJson = getOfferingsJSON(placements = placementsJSON)
+
+        val offerings = offeringsParser.createOfferings(offeringsJson, products)
+        assertThat(offerings).isNotNull
+        assertThat(offerings.all.size).isEqualTo(2)
+        assertThat(offerings.current!!.identifier).isEqualTo(offeringsJson.getString("current_offering_id"))
+        assertThat(offerings["offering_a"]).isNotNull
+        assertThat(offerings["offering_b"]).isNotNull
+
+        assertThat(offerings.placements).isNotNull
+        assertThat(offerings.placements!!.fallbackOfferingId).isEqualTo("offering_b")
+        assertThat(offerings.placements!!.offeringIdsByPlacement.containsKey("onboarding_start")).isTrue()
+        assertThat(offerings.placements!!.offeringIdsByPlacement.containsKey("onboarding_end")).isTrue()
+        assertThat(offerings.placements!!.offeringIdsByPlacement["onboarding_start"]).isEqualTo("offering_a")
+        assertThat(offerings.placements!!.offeringIdsByPlacement["onboarding_end"]).isNull()
+
+        assertThat(offerings.getCurrentOfferingForPlacement("onboarding_start")).isNotNull
+        assertThat(offerings.getCurrentOfferingForPlacement("onboarding_start")!!.identifier).isEqualTo("offering_a")
+        assertThat(offerings.getCurrentOfferingForPlacement("onboarding_end")).isNull()
+        assertThat(offerings.getCurrentOfferingForPlacement("does_not_exist_but_falls_back")).isNotNull
+        assertThat(offerings.getCurrentOfferingForPlacement("does_not_exist_but_falls_back")!!.identifier).isEqualTo("offering_b")
+    }
+
+    @Test
+    fun `createOfferings creates returns placement object with no fallback offering`() {
+        val storeProductMonthly = getStoreProduct(productIdentifier, monthlyPeriod, monthlyBasePlanId)
+        val storeProductAnnual = getStoreProduct(productIdentifier, annualPeriod, annualBasePlanId)
+
+        val placementsJSON = getPlacementsJSON(
+            fallbackOfferingId = null,
+            offeringIdsByPlacement = mapOf(
+                "onboarding_start" to "offering_a",
+                "onboarding_end" to null,
+            )
+        )
+
+        val products = mapOf(productIdentifier to listOf(storeProductMonthly, storeProductAnnual))
+        val offeringsJson = getOfferingsJSON(placements = placementsJSON)
+
+        val offerings = offeringsParser.createOfferings(offeringsJson, products)
+        assertThat(offerings).isNotNull
+        assertThat(offerings.all.size).isEqualTo(2)
+        assertThat(offerings.current!!.identifier).isEqualTo(offeringsJson.getString("current_offering_id"))
+        assertThat(offerings["offering_a"]).isNotNull
+        assertThat(offerings["offering_b"]).isNotNull
+
+        assertThat(offerings.placements).isNotNull
+        assertThat(offerings.placements!!.fallbackOfferingId).isNull()
+        assertThat(offerings.placements!!.offeringIdsByPlacement.containsKey("onboarding_start")).isTrue()
+        assertThat(offerings.placements!!.offeringIdsByPlacement.containsKey("onboarding_end")).isTrue()
+        assertThat(offerings.placements!!.offeringIdsByPlacement["onboarding_start"]).isEqualTo("offering_a")
+        assertThat(offerings.placements!!.offeringIdsByPlacement["onboarding_end"]).isNull()
+
+        assertThat(offerings.getCurrentOfferingForPlacement("onboarding_start")).isNotNull
+        assertThat(offerings.getCurrentOfferingForPlacement("onboarding_start")!!.identifier).isEqualTo("offering_a")
+        assertThat(offerings.getCurrentOfferingForPlacement("onboarding_end")).isNull()
+        assertThat(offerings.getCurrentOfferingForPlacement("does_not_exist_do_not_fall_back")).isNull()
+    }
+
     private fun testPackageType(packageType: PackageType) {
         var identifier = packageType.identifier
         if (identifier == null) {
@@ -533,7 +606,8 @@ class OfferingsTest {
                         monthlyBasePlanId
                     )
                 )
-            )
+            ),
+        placements: JSONObject? = null,
     ): JSONObject {
         val offeringJsons = mutableListOf<JSONObject>()
         offeringPackagesById.forEach { (offeringId, packages) ->
@@ -551,6 +625,21 @@ class OfferingsTest {
         return JSONObject().apply {
             put("offerings", offeringsJsonArray)
             put("current_offering_id", currentOfferingId)
+            placements?.let { put("placements", placements) }
+        }
+    }
+
+    private fun getPlacementsJSON(
+        fallbackOfferingId: String?,
+        offeringIdsByPlacement: Map<String, String?>,
+    ): JSONObject {
+        return JSONObject().apply {
+            put("fallback_offering_id", fallbackOfferingId ?: JSONObject.NULL)
+            put("offering_ids_by_placement", JSONObject().apply {
+                offeringIdsByPlacement.forEach { (key, value) ->
+                    put(key, value ?: JSONObject.NULL)
+                }
+            })
         }
     }
 
