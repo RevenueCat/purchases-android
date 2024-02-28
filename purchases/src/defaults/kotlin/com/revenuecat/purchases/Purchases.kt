@@ -15,6 +15,7 @@ import com.revenuecat.purchases.interfaces.ProductChangeCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback
+import com.revenuecat.purchases.interfaces.SyncAttributesAndOfferingsCallback
 import com.revenuecat.purchases.interfaces.SyncPurchasesCallback
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import com.revenuecat.purchases.models.BillingFeature
@@ -141,7 +142,26 @@ class Purchases internal constructor(
     }
 
     /**
-     * Fetch the configured offerings for this users. Offerings allows you to configure your in-app
+     * Syncs subscriber attributes and then fetches the configured offerings for this user. This method is intended to
+     * be called when using Targeting Rules with Custom Attributes. Any subscriber attributes should be set before
+     * calling this method to ensure the returned offerings are applied with the latest subscriber attributes.
+     *
+     * This method is rate limited to 5 calls per minute. It will log a warning and return offerings cache when reached.
+     *
+     * Refer to [the guide](https://www.revenuecat.com/docs/tools/targeting) for more targeting information
+     * For more offerings information, see [getOfferings]
+     *
+     * @param [listener] Called when subscriber attribute syncing is finished and offerings are available. Called
+     * immediately if rate limit is reached.
+     */
+    fun syncAttributesAndOfferingsIfNeeded(
+        callback: SyncAttributesAndOfferingsCallback,
+    ) {
+        purchasesOrchestrator.syncAttributesAndOfferingsIfNeeded(callback)
+    }
+
+    /**
+     * Fetch the configured offerings for this user. Offerings allows you to configure your in-app
      * products vis RevenueCat and greatly simplifies management. See
      * [the guide](https://docs.revenuecat.com/offerings) for more info.
      *

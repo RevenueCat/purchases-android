@@ -83,6 +83,7 @@ internal open class BasePurchasesTest {
     protected val appUserId = "fakeUserID"
     protected lateinit var purchases: Purchases
     protected val mockInfo = mockk<CustomerInfo>()
+    protected val mockOfferings = mockk<Offerings>()
     protected val mockActivity: Activity = mockk()
     protected val subscriptionOptionId = "mock-base-plan-id:mock-offer-id"
 

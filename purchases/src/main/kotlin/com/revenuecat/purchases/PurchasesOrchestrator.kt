@@ -42,6 +42,7 @@ import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.interfaces.PurchaseErrorCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback
+import com.revenuecat.purchases.interfaces.SyncAttributesAndOfferingsCallback
 import com.revenuecat.purchases.interfaces.SyncPurchasesCallback
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import com.revenuecat.purchases.models.BillingFeature
@@ -60,11 +61,14 @@ import com.revenuecat.purchases.strings.CustomerInfoStrings
 import com.revenuecat.purchases.strings.IdentityStrings
 import com.revenuecat.purchases.strings.PurchaseStrings
 import com.revenuecat.purchases.strings.RestoreStrings
+import com.revenuecat.purchases.strings.SyncAttributesAndOfferingsStrings
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.utils.CustomActivityLifecycleHandler
+import com.revenuecat.purchases.utils.RateLimiter
 import com.revenuecat.purchases.utils.isAndroidNOrNewer
 import java.net.URL
 import java.util.Collections
+import kotlin.time.Duration.Companion.seconds
 
 @Suppress("LongParameterList", "LargeClass", "TooManyFunctions")
 internal class PurchasesOrchestrator constructor(
@@ -134,6 +138,9 @@ internal class PurchasesOrchestrator constructor(
         @Synchronized set(value) {
             state = state.copy(allowSharingPlayStoreAccount = value)
         }
+
+    @SuppressWarnings("MagicNumber")
+    private val lastSyncAttributesAndOfferingsRateLimiter = RateLimiter(5, 60.seconds)
 
     init {
         identityManager.configure(backingFieldAppUserID)
@@ -214,6 +221,37 @@ internal class PurchasesOrchestrator constructor(
 
     // region Public Methods
 
+    fun syncAttributesAndOfferingsIfNeeded(
+        callback: SyncAttributesAndOfferingsCallback,
+    ) {
+        val receiveOfferingsCallback = object : ReceiveOfferingsCallback {
+            override fun onReceived(offerings: Offerings) {
+                callback.onSuccess(offerings)
+            }
+
+            override fun onError(error: PurchasesError) {
+                callback.onError(error)
+            }
+        }
+
+        if (!lastSyncAttributesAndOfferingsRateLimiter.shouldProceed()) {
+            log(
+                LogIntent.WARNING,
+                SyncAttributesAndOfferingsStrings.RATE_LIMIT_REACHED.format(
+                    lastSyncAttributesAndOfferingsRateLimiter.maxCallsInPeriod,
+                    lastSyncAttributesAndOfferingsRateLimiter.periodSeconds.inWholeSeconds,
+                ),
+            )
+
+            getOfferings(receiveOfferingsCallback)
+            return
+        }
+
+        subscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(appUserID) {
+            getOfferings(receiveOfferingsCallback, fetchCurrent = true)
+        }
+    }
+
     fun syncPurchases(
         listener: SyncPurchasesCallback? = null,
     ) {
@@ -283,12 +321,14 @@ internal class PurchasesOrchestrator constructor(
 
     fun getOfferings(
         listener: ReceiveOfferingsCallback,
+        fetchCurrent: Boolean = false,
     ) {
         offeringsManager.getOfferings(
             identityManager.currentAppUserID,
             state.appInBackground,
             { listener.onError(it) },
             { listener.onReceived(it) },
+            fetchCurrent,
         )
     }
 

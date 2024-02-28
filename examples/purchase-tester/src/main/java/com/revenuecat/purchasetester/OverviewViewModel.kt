@@ -95,6 +95,14 @@ class OverviewViewModel(private val interactionHandler: OverviewInteractionHandl
         }
     }
 
+    fun onSetAttributeClicked() {
+        interactionHandler.setAttribute()
+    }
+
+    fun onSyncAttributesClicked() {
+        interactionHandler.syncAttributes()
+    }
+
     private fun formatEntitlements(entitlementInfos: Collection<EntitlementInfo>): String {
         return entitlementInfos.joinToString(separator = "\n") { it.toBriefString() }
     }
@@ -106,4 +114,6 @@ interface OverviewInteractionHandler {
     fun toggleCard()
     fun copyToClipboard(text: String)
     fun launchURL(url: Uri)
+    fun setAttribute()
+    fun syncAttributes()
 }
