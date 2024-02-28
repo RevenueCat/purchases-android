@@ -358,10 +358,23 @@ class OfferingsFactoryTest {
         )
 
         assertThat(offerings).isNotNull
-        assertThat(offerings!!.current).isNotNull
         assertThat(offerings!!.targeting).isNotNull
         assertThat(offerings!!.targeting!!.revision).isEqualTo(1)
         assertThat(offerings!!.targeting!!.ruleId).isEqualTo("abc123")
+
+        assertThat(
+            offerings!!.current!!.availablePackages.first().presentedOfferingContext.targetingContext
+        ).isNotNull()
+        assertThat(
+            offerings!!.current!!.availablePackages.first().presentedOfferingContext.targetingContext!!.revision
+        ).isEqualTo(1)
+        assertThat(
+            offerings!!.current!!.availablePackages.first().presentedOfferingContext.targetingContext!!.ruleId
+        ).isEqualTo("abc123")
+
+        assertThat(
+            offerings!!.all.values.first().availablePackages.first().presentedOfferingContext.targetingContext
+        ).isNull()
     }
 
     // region helpers
