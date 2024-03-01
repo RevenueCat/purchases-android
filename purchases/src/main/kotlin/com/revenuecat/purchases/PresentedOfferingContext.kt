@@ -7,7 +7,7 @@ import kotlinx.parcelize.Parcelize
  * Contains data about the context in which an offering was presented.
  */
 @Parcelize
-data class PresentedOfferingContext internal constructor(
+data class PresentedOfferingContext @JvmOverloads constructor(
     /**
      * The identifier of the offering used to obtain this object.
      */
@@ -15,16 +15,16 @@ data class PresentedOfferingContext internal constructor(
     /**
      * The identifier of the placement used to obtain this object.
      */
-    internal val placementIdentifier: String? = null,
+    val placementIdentifier: String? = null,
     /**
      * The targeting context used to obtain this object.
      */
-    internal val targetingContext: TargetingContext? = null,
+    val targetingContext: TargetingContext? = null,
 ) : Parcelable {
     constructor(offeringIdentifier: String) : this(offeringIdentifier, null, null)
 
     @Parcelize
-    internal data class TargetingContext(
+    data class TargetingContext(
         /**
          * The revision of the targeting used to obtain this object.
          */

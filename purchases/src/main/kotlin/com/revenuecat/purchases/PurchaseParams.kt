@@ -21,7 +21,7 @@ data class PurchaseParams(val builder: Builder) {
     internal val activity: Activity
 
     @get:JvmSynthetic
-    internal val presentedOfferingContext: PresentedOfferingContext?
+    internal var presentedOfferingContext: PresentedOfferingContext?
 
     init {
         this.isPersonalizedPrice = builder.isPersonalizedPrice
@@ -45,7 +45,7 @@ data class PurchaseParams(val builder: Builder) {
     open class Builder private constructor(
         @get:JvmSynthetic internal val activity: Activity,
         @get:JvmSynthetic internal val purchasingData: PurchasingData,
-        @get:JvmSynthetic internal val presentedOfferingContext: PresentedOfferingContext?,
+        @get:JvmSynthetic internal var presentedOfferingContext: PresentedOfferingContext?,
         @get:JvmSynthetic internal val product: StoreProduct?,
     ) {
         constructor(activity: Activity, packageToPurchase: Package) :
@@ -89,6 +89,15 @@ data class PurchaseParams(val builder: Builder) {
         @set:JvmSynthetic
         @get:JvmSynthetic
         internal var googleReplacementMode: GoogleReplacementMode = GoogleReplacementMode.WITHOUT_PRORATION
+
+        /*
+         * Sets the data about the context in which an offering was presented.
+         *
+         * Default is set from the Package, StoreProduct, or SubscriptionOption used in the constructor.
+         */
+        fun presentedOfferingContext(presentedOfferingContext: PresentedOfferingContext) = apply {
+            this.presentedOfferingContext = presentedOfferingContext
+        }
 
         /*
          * Indicates personalized pricing on products available for purchase in the EU.
