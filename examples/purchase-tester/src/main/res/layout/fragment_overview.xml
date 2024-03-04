@@ -119,50 +119,87 @@
                                 bind:header="@{`All Entitlements: `}"
                                 bind:detail="@{viewModel.allEntitlements}"/>
 
-                        <com.google.android.material.button.MaterialButton
-                                android:id="@+id/customer_info_manage_button"
+                        <LinearLayout
+                                android:id="@+id/customer_info_subscriber_attribute_actions"
+                                android:orientation="horizontal"
+                                android:layout_gravity="center"
+                                android:layout_marginBottom="@dimen/padding_medium"
+                                android:layout_marginEnd="@dimen/padding_large"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:layout_margin="@dimen/padding_tiny"
-                                android:text="Manage"
-                                android:onClick="@{() -> viewModel.onManageClicked()}"
-                                android:visibility="@{viewModel.customerInfo.managementURL != null ? View.VISIBLE : View.GONE}"
                                 app:layout_constraintStart_toStartOf="parent"
-                                app:layout_constraintTop_toBottomOf="@+id/customer_info_details_container" />
+                                app:layout_constraintTop_toBottomOf="@+id/customer_info_details_container">
 
-                        <com.google.android.material.button.MaterialButton
-                                android:id="@+id/customer_info_logout_button"
+                            <com.google.android.material.button.MaterialButton
+                                    android:id="@+id/customer_info_set_attribute"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_margin="@dimen/padding_tiny"
+                                    android:onClick="@{() -> viewModel.onSetAttributeClicked()}"
+                                    android:text="Set Attr" />
+
+                            <com.google.android.material.button.MaterialButton
+                                    android:id="@+id/customer_info_sync_attributes"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_margin="@dimen/padding_tiny"
+                                    android:onClick="@{() -> viewModel.onSyncAttributesClicked()}"
+                                    android:text="Sync Attr / Fetch Offerings" />
+
+                        </LinearLayout>
+
+                        <LinearLayout
+                                android:id="@+id/customer_info_actions"
+                                android:orientation="horizontal"
+                                android:layout_gravity="center"
+                                android:layout_marginBottom="@dimen/padding_medium"
+                                android:layout_marginEnd="@dimen/padding_large"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:layout_margin="@dimen/padding_tiny"
-                                android:text="Logout"
-                                app:layout_constraintEnd_toStartOf="@+id/customer_info_restore_purchases_button"
-                                app:layout_constraintStart_toEndOf="@+id/customer_info_manage_button"
-                                app:layout_constraintTop_toBottomOf="@+id/customer_info_details_container" />
+                                app:layout_constraintStart_toStartOf="parent"
+                                app:layout_constraintTop_toBottomOf="@+id/customer_info_subscriber_attribute_actions">
 
-                        <com.google.android.material.button.MaterialButton
-                                android:id="@+id/customer_info_restore_purchases_button"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_margin="@dimen/padding_tiny"
-                                android:text="Restore"
-                                android:onClick="@{() -> viewModel.onRestoreClicked()}"
-                                android:enabled="@{!viewModel.isRestoring()}"
-                                app:layout_constraintEnd_toEndOf="parent"
-                                app:layout_constraintStart_toEndOf="@+id/customer_info_logout_button"
-                                app:layout_constraintTop_toBottomOf="@+id/customer_info_details_container" />
+                            <com.google.android.material.button.MaterialButton
+                                    android:id="@+id/customer_info_manage_button"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_margin="@dimen/padding_tiny"
+                                    android:text="Manage"
+                                    android:onClick="@{() -> viewModel.onManageClicked()}"
+                                    android:visibility="@{viewModel.customerInfo.managementURL != null ? View.VISIBLE : View.GONE}" />
 
-                        <ProgressBar
-                                android:id="@+id/customer_info_restore_progress"
-                                android:layout_width="0dp"
-                                android:layout_height="0dp"
-                                android:layout_margin="6dp"
-                                android:elevation="2dp"
-                                android:visibility="@{viewModel.isRestoring() ? View.VISIBLE : View.GONE}"
-                                app:layout_constraintBottom_toBottomOf="@id/customer_info_restore_purchases_button"
-                                app:layout_constraintEnd_toEndOf="@id/customer_info_restore_purchases_button"
-                                app:layout_constraintStart_toStartOf="@+id/customer_info_restore_purchases_button"
-                                app:layout_constraintTop_toTopOf="@id/customer_info_restore_purchases_button" />
+                            <com.google.android.material.button.MaterialButton
+                                    android:id="@+id/customer_info_logout_button"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_margin="@dimen/padding_tiny"
+                                    android:text="Logout" />
+
+                            <com.google.android.material.button.MaterialButton
+                                    android:id="@+id/customer_info_restore_purchases_button"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_margin="@dimen/padding_tiny"
+                                    android:text="Restore"
+                                    android:onClick="@{() -> viewModel.onRestoreClicked()}"
+                                    android:enabled="@{!viewModel.isRestoring()}"
+                                    app:layout_constraintEnd_toEndOf="parent"
+                                    app:layout_constraintStart_toEndOf="@+id/customer_info_logout_button"
+                                    app:layout_constraintTop_toBottomOf="@+id/customer_info_details_container" />
+
+                            <ProgressBar
+                                    android:id="@+id/customer_info_restore_progress"
+                                    android:layout_width="0dp"
+                                    android:layout_height="0dp"
+                                    android:layout_margin="6dp"
+                                    android:elevation="2dp"
+                                    android:visibility="@{viewModel.isRestoring() ? View.VISIBLE : View.GONE}"
+                                    app:layout_constraintBottom_toBottomOf="@id/customer_info_restore_purchases_button"
+                                    app:layout_constraintEnd_toEndOf="@id/customer_info_restore_purchases_button"
+                                    app:layout_constraintStart_toStartOf="@+id/customer_info_restore_purchases_button"
+                                    app:layout_constraintTop_toTopOf="@id/customer_info_restore_purchases_button" />
+
+                        </LinearLayout>
 
                         <androidx.constraintlayout.widget.Barrier
                                 android:id="@+id/customer_info_card_barrier"
@@ -234,32 +271,61 @@
         </ScrollView>
 
         <LinearLayout
+                android:orientation="vertical"
+                android:layout_gravity="end|bottom"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content">
+            <LinearLayout
+                    android:orientation="horizontal"
+                    android:layout_gravity="end|bottom"
+                    android:layout_marginBottom="@dimen/padding_small"
+                    android:layout_marginEnd="@dimen/padding_large"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content">
+                <com.google.android.material.button.MaterialButton
+                        android:id="@+id/find_by_placement_button"
+                        android:text="@string/find_placement"
+                        android:layout_gravity="end|bottom"
+                        android:layout_marginEnd="@dimen/padding_small"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"/>
+            </LinearLayout>
+            <LinearLayout
+                    android:orientation="horizontal"
+                    android:layout_gravity="end|bottom"
+                    android:layout_marginBottom="@dimen/padding_small"
+                    android:layout_marginEnd="@dimen/padding_large"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content">
+                <com.google.android.material.button.MaterialButton
+                        android:id="@+id/purchase_product_id_button"
+                        android:text="@string/buy_product"
+                        android:layout_gravity="end|bottom"
+                        android:layout_marginEnd="@dimen/padding_small"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"/>
+            </LinearLayout>
+            <LinearLayout
                 android:orientation="horizontal"
                 android:layout_gravity="end|bottom"
                 android:layout_marginBottom="@dimen/padding_medium"
                 android:layout_marginEnd="@dimen/padding_large"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content">
-            <com.google.android.material.button.MaterialButton
-                    android:id="@+id/purchase_product_id_button"
-                    android:text="@string/buy_product"
-                    android:layout_gravity="end|bottom"
-                    android:layout_marginEnd="@dimen/padding_small"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"/>
-            <com.google.android.material.button.MaterialButton
-                    android:id="@+id/proxy_button"
-                    android:text="@string/proxy"
-                    android:layout_gravity="end|bottom"
-                    android:layout_marginEnd="@dimen/padding_small"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"/>
-            <com.google.android.material.button.MaterialButton
-                    android:id="@+id/logs_button"
-                    android:text="@string/logs"
-                    android:layout_gravity="end|bottom"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"/>
+                <com.google.android.material.button.MaterialButton
+                        android:id="@+id/proxy_button"
+                        android:text="@string/proxy"
+                        android:layout_gravity="end|bottom"
+                        android:layout_marginEnd="@dimen/padding_small"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"/>
+                <com.google.android.material.button.MaterialButton
+                        android:id="@+id/logs_button"
+                        android:text="@string/logs"
+                        android:layout_gravity="end|bottom"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"/>
+            </LinearLayout>
         </LinearLayout>
     </FrameLayout>
 

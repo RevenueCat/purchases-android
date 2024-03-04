@@ -18,6 +18,7 @@ internal object OfferingStrings {
     const val EXTRA_GET_BILLING_CONFIG_RESPONSE = "BillingClient getBillingConfigAsync has returned more than once, " +
         "with result: %s."
     const val NO_CACHED_OFFERINGS_FETCHING_NETWORK = "No cached Offerings, fetching from network"
+    const val FORCE_OFFERINGS_FETCHING_NETWORK = "Latest Offerings requested, fetching from network"
     const val OFFERINGS_STALE_UPDATING_IN_BACKGROUND = "Offerings cache is stale, updating from network in background"
     const val OFFERINGS_STALE_UPDATING_IN_FOREGROUND = "Offerings cache is stale, updating from network in foreground"
     const val OFFERINGS_START_UPDATE_FROM_NETWORK = "Start Offerings update from network."
@@ -36,4 +37,6 @@ internal object OfferingStrings {
         "the RevenueCat dashboard or Play Store.\nTo configure products, follow the instructions in " +
         "https://rev.cat/how-to-configure-offerings.\nMore information: https://rev.cat/why-are-offerings-empty"
     const val ERROR_FETCHING_OFFERINGS_USING_DISK_CACHE = "Error fetching offerings. Using disk cache."
+    const val PLACEMENTS_EMPTY_ERROR = "Error while fetching placements - no placements defined"
+    const val TARGETING_ERROR = "Error while parsing targeting - skipping"
 }

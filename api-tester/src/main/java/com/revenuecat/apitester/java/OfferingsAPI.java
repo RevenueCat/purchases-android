@@ -12,5 +12,6 @@ final class OfferingsAPI {
         final Map<String, Offering> all = offerings.getAll();
         final Offering o1 = offerings.getOffering("");
         final Offering o2 = offerings.get("");
+        final Offering o3 = offerings.getCurrentOfferingForPlacement("");
     }
 }

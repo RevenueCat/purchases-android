@@ -9,6 +9,7 @@ import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.Assert
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
@@ -241,6 +242,104 @@ internal class PurchasesCoroutinesTest : BasePurchasesTest() {
         assertThat(exception).isNotNull
         assertThat(exception).isInstanceOf(PurchasesException::class.java)
         assertThat((exception as PurchasesException).code).isEqualTo(PurchasesErrorCode.CustomerInfoError)
+    }
+
+    // endregion
+
+    // region awaitSyncAttributesAndOfferingsIfNeeded
+
+    @Test
+    fun `sync attributes and offerings if needed - Success`() = runTest {
+        every {
+            mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(any(), captureLambda())
+        } answers {
+            lambda<() -> Unit>().captured.invoke()
+        }
+
+        every {
+            mockOfferingsManager.getOfferings(any(), any(), any(), captureLambda(), any())
+        } answers {
+            lambda<(Offerings?) -> Unit>().captured.invoke(mockOfferings)
+        }
+
+
+        var result: Offerings? = null
+        var exception: Throwable? = null
+        runCatching {
+            result = purchases.awaitSyncAttributesAndOfferingsIfNeeded()
+        }.onFailure {
+            exception = it
+        }
+
+        verify(exactly = 1) {
+            mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(
+                currentAppUserID = any(),
+                completion = captureLambda(),
+            )
+        }
+
+        verify(exactly = 1) {
+            mockOfferingsManager.getOfferings(
+                appUserID = any(),
+                appInBackground = any(),
+                onError = any(),
+                onSuccess = captureLambda(),
+                fetchCurrent = true
+            )
+        }
+
+        assertThat(result).isNotNull
+        assertThat(exception).isNull()
+    }
+
+    @Test
+    fun `sync attributes and offerings if needed - SyncingAttributesRateLimitReached`() = runTest {
+        every {
+            mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(any(), captureLambda())
+        } answers {
+            lambda<() -> Unit>().captured.invoke()
+        }
+
+        every {
+            mockOfferingsManager.getOfferings(any(), any(), any(), captureLambda(), any())
+        } answers {
+            lambda<(Offerings?) -> Unit>().captured.invoke(mockOfferings)
+        }
+
+
+        val result1 = purchases.awaitSyncAttributesAndOfferingsIfNeeded()
+        val result2 = purchases.awaitSyncAttributesAndOfferingsIfNeeded()
+        val result3 = purchases.awaitSyncAttributesAndOfferingsIfNeeded()
+        val result4 = purchases.awaitSyncAttributesAndOfferingsIfNeeded()
+        val result5 = purchases.awaitSyncAttributesAndOfferingsIfNeeded()
+        val result6 = purchases.awaitSyncAttributesAndOfferingsIfNeeded()
+
+        verify(exactly = 5) {
+            mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(
+                currentAppUserID = any(),
+                completion = any(),
+            )
+        }
+
+        verify(exactly = 5) {
+            mockOfferingsManager.getOfferings(
+                appUserID = any(),
+                appInBackground = any(),
+                onError = any(),
+                onSuccess = any(),
+                fetchCurrent = true
+            )
+        }
+
+        verify(exactly = 1) {
+            mockOfferingsManager.getOfferings(
+                appUserID = any(),
+                appInBackground = any(),
+                onError = any(),
+                onSuccess = any(),
+                fetchCurrent = false
+            )
+        }
     }
 
     // endregion

@@ -286,6 +286,7 @@ fun stubOfferings(storeProduct: StoreProduct): Pair<StoreProduct, Offerings> {
     val offerings = Offerings(
         offering,
         mapOf(offering.identifier to offering),
+        null,
     )
     return Pair(storeProduct, offerings)
 }
@@ -307,6 +308,7 @@ fun stubOTPOffering(inAppProduct: StoreProduct): Pair<StoreProduct, Offerings> {
     val offerings = Offerings(
         offering,
         mapOf(offering.identifier to offering),
+        null,
     )
     return Pair(inAppProduct, offerings)
 }
