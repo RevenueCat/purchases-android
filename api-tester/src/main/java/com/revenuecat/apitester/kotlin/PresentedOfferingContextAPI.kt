@@ -16,8 +16,7 @@ private class PresentedOfferingContextAPI {
         targetingContext: PresentedOfferingContext.TargetingContext?,
     ) {
         val poc1 = PresentedOfferingContext(offeringId)
-        val poc2 = PresentedOfferingContext(offeringId, placementId)
-        val poc3 = PresentedOfferingContext(offeringId, placementId, targetingContext)
+        val poc2 = PresentedOfferingContext(offeringId, placementId, targetingContext)
     }
 }
 

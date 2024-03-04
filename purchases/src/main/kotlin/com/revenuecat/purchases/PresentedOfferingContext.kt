@@ -15,11 +15,11 @@ data class PresentedOfferingContext @JvmOverloads constructor(
     /**
      * The identifier of the placement used to obtain this object.
      */
-    val placementIdentifier: String? = null,
+    val placementIdentifier: String?,
     /**
      * The targeting context used to obtain this object.
      */
-    val targetingContext: TargetingContext? = null,
+    val targetingContext: TargetingContext?,
 ) : Parcelable {
     constructor(offeringIdentifier: String) : this(offeringIdentifier, null, null)
 
