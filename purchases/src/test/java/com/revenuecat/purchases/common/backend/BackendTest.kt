@@ -1377,7 +1377,8 @@ class BackendTest {
             storeProduct = storeProduct,
             presentedOfferingContext = PresentedOfferingContext(
                 "offering_a",
-                placementIdentifier = "placement_a"
+                placementIdentifier = "placement_a",
+                targetingContext = null,
             ),
         )
 
@@ -1407,6 +1408,7 @@ class BackendTest {
             storeProduct = storeProduct,
             presentedOfferingContext = PresentedOfferingContext(
                 "offering_a",
+                placementIdentifier = null,
                 targetingContext = PresentedOfferingContext.TargetingContext(
                     revision = 1,
                     ruleId = "abc123",
