@@ -1,6 +1,7 @@
 package com.revenuecat.purchases
 
 import com.revenuecat.purchases.common.BillingAbstract
+import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.StoreTransaction
@@ -31,18 +32,19 @@ internal class PostTransactionWithProductDetailsHelper(
                     productType = transaction.type,
                     productIds = transaction.productIds.toSet(),
                     onReceive = { storeProducts ->
-                        val purchasedStoreProduct = if (transaction.type == ProductType.SUBS) {
-                            storeProducts.firstOrNull { product ->
-                                product.subscriptionOptions?.let { subscriptionOptions ->
-                                    subscriptionOptions.any { it.id == transaction.subscriptionOptionId }
-                                } ?: false
+                        val purchasedStoreProduct =
+                            if (transaction.type == ProductType.SUBS && transaction.marketplace == null) {
+                                storeProducts.firstOrNull { product ->
+                                    product.subscriptionOptions?.let { subscriptionOptions ->
+                                        subscriptionOptions.any { it.id == transaction.subscriptionOptionId }
+                                    } ?: false
+                                }
+                            } else {
+                                storeProducts.firstOrNull { product ->
+                                    product.id == transaction.productIds.firstOrNull()
+                                }
                             }
-                        } else {
-                            storeProducts.firstOrNull { product ->
-                                product.id == transaction.productIds.firstOrNull()
-                            }
-                        }
-
+                        debugLog("Purchased store product: $purchasedStoreProduct")
                         postReceiptHelper.postTransactionAndConsumeIfNeeded(
                             purchase = transaction,
                             storeProduct = purchasedStoreProduct,
