@@ -35,7 +35,8 @@ internal class PostTransactionWithProductDetailsHelper(
                         val purchasedStoreProduct =
                             // Amazon purchases don't have subscription options
                             // Amazon is the only store that has marketplace
-                            // We want Google restores to enter in this if, that's why we need to filter Amazon only
+                            // We want Google restores to enter in this if condition,
+                            // that's why we need to filter Amazon only
                             if (transaction.type == ProductType.SUBS && transaction.marketplace == null) {
                                 storeProducts.firstOrNull { product ->
                                     product.subscriptionOptions?.let { subscriptionOptions ->
@@ -47,7 +48,7 @@ internal class PostTransactionWithProductDetailsHelper(
                                     product.id == transaction.productIds.firstOrNull()
                                 }
                             }
-                        debugLog("Purchased store product: $purchasedStoreProduct")
+                        debugLog("Store product found for transaction: $purchasedStoreProduct")
                         postReceiptHelper.postTransactionAndConsumeIfNeeded(
                             purchase = transaction,
                             storeProduct = purchasedStoreProduct,
