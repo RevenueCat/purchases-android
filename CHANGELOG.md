@@ -427,6 +427,10 @@ Purchases.configure(
 ### Bugfixes
 * Add `awaitRestore` to customEntitlementComputation library (#1275) via Toni Rico (@tonidero)
 
+## 6.9.7
+### Bugfixes
+* Fix amazon zero price (#1634) via Cesar de la Vega (@vegaro)
+
 ## 6.9.6
 ### Bugfixes
 * Fix `DEFERRED` purchases when passing old product id in invalid format (#1593) via Toni Rico (@tonidero)
