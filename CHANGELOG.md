@@ -1,3 +1,7 @@
+## 7.7.1
+### Bugfixes
+* Fix amazon zero price (#1634) via Cesar de la Vega (@vegaro)
+
 ## 7.7.0
 ### New Features
 * Make `PresentedOfferingContext` public (#1630) via Josh Holtz (@joshdholtz)
