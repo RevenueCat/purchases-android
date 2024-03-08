@@ -1,3 +1,7 @@
+## 7.7.1
+### Bugfixes
+* Fix amazon zero price (#1634) via Cesar de la Vega (@vegaro)
+
 ## 7.7.0
 ### New Features
 * Make `PresentedOfferingContext` public (#1630) via Josh Holtz (@joshdholtz)
@@ -422,6 +426,10 @@ Purchases.configure(
 
 ### Bugfixes
 * Add `awaitRestore` to customEntitlementComputation library (#1275) via Toni Rico (@tonidero)
+
+## 6.9.7
+### Bugfixes
+* Fix amazon zero price (#1634) via Cesar de la Vega (@vegaro)
 
 ## 6.9.6
 ### Bugfixes
