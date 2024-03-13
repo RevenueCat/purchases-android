@@ -214,9 +214,7 @@ class ProxyAmazonBillingDelegateTest {
             mockActivity.registerReceiver(
                 capture(registeredBroadcastReceiverSlot),
                 capture(intentFilterSlot),
-                null,
-                null,
-                ContextCompat.RECEIVER_EXPORTED,
+                Context.RECEIVER_EXPORTED,
             )
         } returns Intent()
         every {
