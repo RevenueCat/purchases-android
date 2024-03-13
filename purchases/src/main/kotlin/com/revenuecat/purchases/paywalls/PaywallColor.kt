@@ -48,7 +48,7 @@ data class PaywallColor(
     }
 
     /**
-     * Creates a color from a Hex string: `#RRGGBB` or `#RRGGBBAA`.
+     * Creates a color from a Hex string: `#RRGGBB` or `#AARRGGBB`.
      */
     constructor(stringRepresentation: String) : this(
         stringRepresentation,
