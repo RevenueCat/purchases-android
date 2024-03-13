@@ -8,7 +8,6 @@ import android.os.Build
 import android.os.Bundle
 import android.os.ResultReceiver
 import androidx.annotation.VisibleForTesting
-import androidx.core.content.ContextCompat
 import com.amazon.device.iap.model.RequestId
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
