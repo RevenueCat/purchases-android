@@ -172,6 +172,12 @@ jobs:
       - android-dependencies
       - android/restore-build-cache
       - run:
+          name: Verify purchases-android SDK compatibility
+          command: ./gradlew :test-apps:testpurchasesandroidcompatibility:assembleDebug
+      - run:
+          name: Verify purchases-ui SDK compatibility
+          command: ./gradlew :test-apps:testpurchasesuiandroidcompatibility:assembleDebug
+      - run:
           name: Run Tests
           command: ./gradlew lint test
       - run:
