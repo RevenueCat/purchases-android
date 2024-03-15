@@ -17,6 +17,7 @@ android {
         missingDimensionStrategy("apis", "defaults")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        multiDexEnabled = true
     }
 
     buildTypes {
@@ -42,4 +43,6 @@ dependencies {
     implementation(platform(libs.kotlin.bom))
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
+    implementation(libs.androidx.multidex)
+
 }
