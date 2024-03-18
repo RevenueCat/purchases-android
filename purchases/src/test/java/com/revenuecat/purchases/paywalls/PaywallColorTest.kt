@@ -35,10 +35,10 @@ class PaywallColorTest {
     @Test
     fun `paywall color can be created from RGBA string`() {
         val stringRepresentation = "#FFAABB11"
+        val expectedColor = Color.argb("11".toInt(16), "FF".toInt(16), "AA".toInt(16), "BB".toInt(16))
         val paywallColor = PaywallColor(stringRepresentation)
-        val color = Color.valueOf(Color.parseColor(stringRepresentation))
 
         assertThat(stringRepresentation).isEqualTo(paywallColor.stringRepresentation)
-        assertThat(color).isEqualTo(paywallColor.underlyingColor)
+        assertThat(paywallColor.underlyingColor).isEqualTo(Color.valueOf(expectedColor))
     }
 }
