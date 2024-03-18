@@ -33,7 +33,7 @@ data class PaywallColor(
      * The color converted to a @ColorInt representation
      */
     @ColorInt
-    val colorInt: Int = Color.parseColor(stringRepresentation)
+    val colorInt: Int = parseRGBAColor(stringRepresentation)
 
     object Serializer : KSerializer<PaywallColor> {
         override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("PaywallColor", PrimitiveKind.STRING)
@@ -53,7 +53,7 @@ data class PaywallColor(
     constructor(stringRepresentation: String) : this(
         stringRepresentation,
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            Color.valueOf(Color.parseColor(stringRepresentation))
+            Color.valueOf(parseRGBAColor(stringRepresentation))
         } else {
             null
         },
@@ -67,4 +67,23 @@ data class PaywallColor(
             null
         },
     )
+
+    companion object {
+        private val rgbaColorRegex = Regex("^#([A-Fa-f0-9]{8})$")
+
+        @Suppress("MagicNumber")
+        @ColorInt
+        private fun parseRGBAColor(stringRepresentation: String): Int {
+            return if (stringRepresentation.matches(rgbaColorRegex)) {
+                val radix = 16
+                val r = stringRepresentation.substring(1, 3).toInt(radix)
+                val g = stringRepresentation.substring(3, 5).toInt(radix)
+                val b = stringRepresentation.substring(5, 7).toInt(radix)
+                val a = stringRepresentation.substring(7, 9).toInt(radix)
+                Color.argb(a, r, g, b)
+            } else {
+                Color.parseColor(stringRepresentation)
+            }
+        }
+    }
 }
