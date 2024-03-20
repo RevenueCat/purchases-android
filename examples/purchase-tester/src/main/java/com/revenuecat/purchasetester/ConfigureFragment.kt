@@ -44,6 +44,7 @@ class ConfigureFragment : Fragment() {
             android.R.layout.simple_spinner_item,
             EntitlementVerificationMode.values(),
         )
+        binding.verificationOptionsInput.setSelection(EntitlementVerificationMode.ENFORCED.ordinal)
         setupSupportedStoresRadioButtons()
 
         lifecycleScope.launch {
