@@ -65,6 +65,7 @@ import com.revenuecat.purchases.ui.revenuecatui.composables.PaywallIcon
 import com.revenuecat.purchases.ui.revenuecatui.composables.PaywallIconName
 import com.revenuecat.purchases.ui.revenuecatui.composables.PurchaseButton
 import com.revenuecat.purchases.ui.revenuecatui.composables.RemoteImage
+import com.revenuecat.purchases.ui.revenuecatui.composables.StatusBarSpacer
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModel
 import com.revenuecat.purchases.ui.revenuecatui.data.currentColors
@@ -121,8 +122,9 @@ private fun ColumnScope.Template5PortraitContent(
     viewModel: PaywallViewModel,
     packageSelectionVisible: Boolean,
 ) {
+    val headerUri = state.templateConfiguration.images.headerUri
     if (state.isInFullScreenMode) {
-        HeaderImage(state.templateConfiguration.images.headerUri)
+        HeaderImage(headerUri)
     }
 
     val scrollState = rememberScrollState()
@@ -138,6 +140,12 @@ private fun ColumnScope.Template5PortraitContent(
         verticalArrangement = Arrangement.spacedBy(UIConstant.defaultVerticalSpacing, Alignment.CenterVertically),
     ) {
         if (state.isInFullScreenMode) {
+            if (headerUri == null) {
+                if (!state.shouldDisplayDismissButton) {
+                    StatusBarSpacer()
+                }
+                Spacer(Modifier.height(UIConstant.iconButtonSize))
+            }
             Title(state)
 
             Spacer(Modifier.weight(1f))
