@@ -28,7 +28,10 @@ internal class DiagnosticsTracker(
         const val ETAG_HIT_KEY = "etag_hit"
         const val VERIFICATION_RESULT_KEY = "verification_result"
         const val RESPONSE_TIME_MILLIS_KEY = "response_time_millis"
+        const val RESPONSE_TIME_RANGE_KEY = "response_time_range"
         const val PRODUCT_TYPE_QUERIED_KEY = "product_type_queried"
+        const val BILLING_RESPONSE_CODE = "billing_response_code"
+        const val BILLING_DEBUG_MESSAGE = "billing_debug_message"
     }
 
     @Suppress("LongParameterList")
@@ -64,6 +67,7 @@ internal class DiagnosticsTracker(
                     RESPONSE_CODE_KEY to responseCode.toString(),
                     ETAG_HIT_KEY to eTagHit.toString(),
                     VERIFICATION_RESULT_KEY to verificationResult.name,
+                    RESPONSE_TIME_RANGE_KEY to responseTime.responseTimeRange().stringRepresentation,
                 ),
                 value = 1,
             ),
@@ -81,10 +85,21 @@ internal class DiagnosticsTracker(
                 name = DiagnosticsEventName.GOOGLE_QUERY_PRODUCT_DETAILS_REQUEST,
                 properties = mapOf(
                     PRODUCT_TYPE_QUERIED_KEY to productType,
-                    "billing_response_code" to billingResponseCode,
-                    "billing_debug_message" to billingDebugMessage,
+                    BILLING_RESPONSE_CODE to billingResponseCode,
+                    BILLING_DEBUG_MESSAGE to billingDebugMessage,
                     RESPONSE_TIME_MILLIS_KEY to responseTime.inWholeMilliseconds,
                 ),
+            ),
+        )
+        trackEvent(
+            DiagnosticsEntry.Counter(
+                name = DiagnosticsCounterName.GOOGLE_QUERY_PRODUCT_DETAILS_REQUEST,
+                tags = mapOf(
+                    PRODUCT_TYPE_QUERIED_KEY to productType,
+                    BILLING_RESPONSE_CODE to billingResponseCode.toString(),
+                    RESPONSE_TIME_RANGE_KEY to responseTime.responseTimeRange().stringRepresentation,
+                ),
+                value = 1,
             ),
         )
     }
@@ -100,10 +115,21 @@ internal class DiagnosticsTracker(
                 name = DiagnosticsEventName.GOOGLE_QUERY_PURCHASES_REQUEST,
                 properties = mapOf(
                     PRODUCT_TYPE_QUERIED_KEY to productType,
-                    "billing_response_code" to billingResponseCode,
-                    "billing_debug_message" to billingDebugMessage,
+                    BILLING_RESPONSE_CODE to billingResponseCode,
+                    BILLING_DEBUG_MESSAGE to billingDebugMessage,
                     RESPONSE_TIME_MILLIS_KEY to responseTime.inWholeMilliseconds,
                 ),
+            ),
+        )
+        trackEvent(
+            DiagnosticsEntry.Counter(
+                name = DiagnosticsCounterName.GOOGLE_QUERY_PURCHASES_REQUEST,
+                tags = mapOf(
+                    PRODUCT_TYPE_QUERIED_KEY to productType,
+                    BILLING_RESPONSE_CODE to billingResponseCode.toString(),
+                    RESPONSE_TIME_RANGE_KEY to responseTime.responseTimeRange().stringRepresentation,
+                ),
+                value = 1,
             ),
         )
     }
@@ -119,10 +145,21 @@ internal class DiagnosticsTracker(
                 name = DiagnosticsEventName.GOOGLE_QUERY_PURCHASE_HISTORY_REQUEST,
                 properties = mapOf(
                     PRODUCT_TYPE_QUERIED_KEY to productType,
-                    "billing_response_code" to billingResponseCode,
-                    "billing_debug_message" to billingDebugMessage,
+                    BILLING_RESPONSE_CODE to billingResponseCode,
+                    BILLING_DEBUG_MESSAGE to billingDebugMessage,
                     RESPONSE_TIME_MILLIS_KEY to responseTime.inWholeMilliseconds,
                 ),
+            ),
+        )
+        trackEvent(
+            DiagnosticsEntry.Counter(
+                name = DiagnosticsCounterName.GOOGLE_QUERY_PURCHASE_HISTORY_REQUEST,
+                tags = mapOf(
+                    PRODUCT_TYPE_QUERIED_KEY to productType,
+                    BILLING_RESPONSE_CODE to billingResponseCode.toString(),
+                    RESPONSE_TIME_RANGE_KEY to responseTime.responseTimeRange().stringRepresentation,
+                ),
+                value = 1,
             ),
         )
     }
@@ -132,10 +169,17 @@ internal class DiagnosticsTracker(
             name = DiagnosticsEventName.MAX_EVENTS_STORED_LIMIT_REACHED,
             properties = mapOf(),
         )
+        val counter = DiagnosticsEntry.Counter(
+            name = DiagnosticsCounterName.MAX_EVENTS_STORED_LIMIT_REACHED,
+            tags = mapOf(),
+            value = 1,
+        )
         if (useCurrentThread) {
             trackEventInCurrentThread(event)
+            trackEventInCurrentThread(counter)
         } else {
             trackEvent(event)
+            trackEvent(counter)
         }
     }
 
@@ -148,8 +192,8 @@ internal class DiagnosticsTracker(
             tags = mapOf(
                 "play_store_version" to (appConfig.playStoreVersionName ?: ""),
                 "play_services_version" to (appConfig.playServicesVersionName ?: ""),
-                "billing_response_code" to billingResponseCode.toString(),
-                "billing_debug_message" to billingDebugMessage,
+                BILLING_RESPONSE_CODE to billingResponseCode.toString(),
+                BILLING_DEBUG_MESSAGE to billingDebugMessage,
             ),
             value = 1,
         )

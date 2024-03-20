@@ -2,5 +2,9 @@ package com.revenuecat.purchases.common.diagnostics
 
 internal enum class DiagnosticsCounterName {
     HTTP_REQUEST_PERFORMED,
+    MAX_EVENTS_STORED_LIMIT_REACHED,
     PRODUCT_DETAILS_NOT_SUPPORTED,
+    GOOGLE_QUERY_PRODUCT_DETAILS_REQUEST,
+    GOOGLE_QUERY_PURCHASES_REQUEST,
+    GOOGLE_QUERY_PURCHASE_HISTORY_REQUEST,
 }
