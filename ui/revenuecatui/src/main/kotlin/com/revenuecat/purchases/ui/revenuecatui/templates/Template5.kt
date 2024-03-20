@@ -144,7 +144,7 @@ private fun ColumnScope.Template5PortraitContent(
                 if (!state.shouldDisplayDismissButton) {
                     StatusBarSpacer()
                 }
-                Spacer(Modifier.height(UIConstant.closeButtonSize))
+                Spacer(Modifier.height(UIConstant.iconButtonSize))
             }
             Title(state)
 

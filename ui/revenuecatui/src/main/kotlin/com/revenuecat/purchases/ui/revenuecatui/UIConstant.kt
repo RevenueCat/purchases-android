@@ -20,7 +20,7 @@ internal object UIConstant {
     // But lower than 1.0f
     const val halfWeight = 0.5f
 
-    val closeButtonSize = 24.dp
+    val iconButtonSize = 48.dp
 
     fun <T> defaultAnimation() = tween<T>(
         durationMillis = defaultAnimationDurationMillis,
