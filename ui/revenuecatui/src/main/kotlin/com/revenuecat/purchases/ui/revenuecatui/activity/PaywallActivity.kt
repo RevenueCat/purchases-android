@@ -46,6 +46,7 @@ internal class PaywallActivity : ComponentActivity(), PaywallListener {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             intent.getParcelableExtra(ARGS_EXTRA, PaywallActivityArgs::class.java)
         } else {
+            @Suppress("DEPRECATION")
             intent.getParcelableExtra(ARGS_EXTRA)
         }
     }
@@ -56,6 +57,7 @@ internal class PaywallActivity : ComponentActivity(), PaywallListener {
             val fonts = fontFamily?.fonts?.map { font ->
                 when (font) {
                     is PaywallFont.ResourceFont -> Font(font.resourceId, font.fontWeight, FontStyle(font.fontStyle))
+                    is PaywallFont.AssetFont -> Font(font.path, assets, font.fontWeight, FontStyle(font.fontStyle))
                     is PaywallFont.GoogleFont -> {
                         val googleFontProvider = font.fontProvider
                         val provider = googleFontProviders.getOrElse(googleFontProvider) {
