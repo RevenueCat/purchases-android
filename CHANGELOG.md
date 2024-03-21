@@ -1,3 +1,7 @@
+## 7.8.0
+### New Features
+* Create AssetFont (#1650) via Cesar de la Vega (@vegaro)
+
 ## 7.7.3
 ### RevenueCatUI
 * Add space to title in Template 5 (#1652) via Cesar de la Vega (@vegaro)
