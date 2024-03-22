@@ -179,6 +179,7 @@ internal class PurchasesFactory(
                 identityManager,
                 offlineEntitlementsManager,
                 appConfig = appConfig,
+                diagnosticsTracker = diagnosticsTracker,
             )
 
             val paywallPresentedCache = PaywallPresentedCache()

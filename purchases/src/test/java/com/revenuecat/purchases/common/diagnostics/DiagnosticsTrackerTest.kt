@@ -2,6 +2,8 @@ package com.revenuecat.purchases.common.diagnostics
 
 import android.content.Context
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.EntitlementInfos
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.AppConfig
@@ -171,7 +173,8 @@ class DiagnosticsTrackerTest {
             "successful" to "true",
             "response_code" to "200",
             "etag_hit" to "true",
-            "verification_result" to "NOT_REQUESTED"
+            "verification_result" to "NOT_REQUESTED",
+            "response_time_range" to "between_1000_and_2000_ms"
         )
         every { diagnosticsFileHelper.appendEvent(any()) } just Runs
         diagnosticsTracker.trackHttpRequestPerformed(
@@ -206,6 +209,20 @@ class DiagnosticsTrackerTest {
     }
 
     @Test
+    fun `trackMaxEventsStoredLimitReached tracks correct counter`() {
+        every { diagnosticsFileHelper.appendEvent(any()) } just Runs
+        diagnosticsTracker.trackMaxEventsStoredLimitReached()
+        verify(exactly = 1) {
+            diagnosticsFileHelper.appendEvent(match { event ->
+                event is DiagnosticsEntry.Counter &&
+                    event.name == DiagnosticsCounterName.MAX_EVENTS_STORED_LIMIT_REACHED &&
+                    event.tags == emptyMap<String, String>() &&
+                    event.value == 1
+            })
+        }
+    }
+
+    @Test
     fun `trackGoogleQueryProductDetailsRequest tracks correct event`() {
         val expectedProperties = mapOf(
             "product_type_queried" to "subs",
@@ -225,6 +242,29 @@ class DiagnosticsTrackerTest {
                 event is DiagnosticsEntry.Event &&
                     event.name == DiagnosticsEventName.GOOGLE_QUERY_PRODUCT_DETAILS_REQUEST &&
                     event.properties == expectedProperties
+            })
+        }
+    }
+
+    @Test
+    fun `trackGoogleQueryProductDetailsRequest tracks correct counter`() {
+        val expectedProperties = mapOf(
+            "product_type_queried" to "subs",
+            "billing_response_code" to "12",
+            "response_time_range" to "between_1000_and_2000_ms"
+        )
+        every { diagnosticsFileHelper.appendEvent(any()) } just Runs
+        diagnosticsTracker.trackGoogleQueryProductDetailsRequest(
+            productType = "subs",
+            billingResponseCode = 12,
+            billingDebugMessage = "test-debug-message",
+            responseTime = 1234L.milliseconds
+        )
+        verify(exactly = 1) {
+            diagnosticsFileHelper.appendEvent(match { event ->
+                event is DiagnosticsEntry.Counter &&
+                    event.name == DiagnosticsCounterName.GOOGLE_QUERY_PRODUCT_DETAILS_REQUEST &&
+                    event.tags == expectedProperties
             })
         }
     }
@@ -254,6 +294,30 @@ class DiagnosticsTrackerTest {
     }
 
     @Test
+    fun `trackGoogleQueryPurchasesRequest tracks correct counter`() {
+        val expectedProperties = mapOf(
+            "product_type_queried" to "subs",
+            "billing_response_code" to "12",
+            "response_time_range" to "between_1000_and_2000_ms"
+        )
+        every { diagnosticsFileHelper.appendEvent(any()) } just Runs
+        diagnosticsTracker.trackGoogleQueryPurchasesRequest(
+            productType = "subs",
+            billingResponseCode = 12,
+            billingDebugMessage = "test-debug-message",
+            responseTime = 1234L.milliseconds
+        )
+        verify(exactly = 1) {
+            diagnosticsFileHelper.appendEvent(match { event ->
+                event is DiagnosticsEntry.Counter &&
+                    event.name == DiagnosticsCounterName.GOOGLE_QUERY_PURCHASES_REQUEST &&
+                    event.tags == expectedProperties &&
+                    event.value == 1
+            })
+        }
+    }
+
+    @Test
     fun `trackGoogleQueryPurchaseHistoryRequest tracks correct event`() {
         val expectedProperties = mapOf(
             "product_type_queried" to "inapp",
@@ -278,6 +342,30 @@ class DiagnosticsTrackerTest {
     }
 
     @Test
+    fun `trackGoogleQueryPurchaseHistoryRequest tracks correct counter`() {
+        val expectedProperties = mapOf(
+            "product_type_queried" to "inapp",
+            "billing_response_code" to "-2",
+            "response_time_range" to "less_than_500_ms"
+        )
+        every { diagnosticsFileHelper.appendEvent(any()) } just Runs
+        diagnosticsTracker.trackGoogleQueryPurchaseHistoryRequest(
+            productType = "inapp",
+            billingResponseCode = -2,
+            billingDebugMessage = "test-debug-message",
+            responseTime = 123.milliseconds
+        )
+        verify(exactly = 1) {
+            diagnosticsFileHelper.appendEvent(match { event ->
+                event is DiagnosticsEntry.Counter &&
+                    event.name == DiagnosticsCounterName.GOOGLE_QUERY_PURCHASE_HISTORY_REQUEST &&
+                    event.tags == expectedProperties &&
+                    event.value == 1
+            })
+        }
+    }
+
+    @Test
     fun `trackFeatureNotSupported tracks correct event`() {
         val expectedProperties = mapOf(
             "play_store_version" to "123",
@@ -295,6 +383,45 @@ class DiagnosticsTrackerTest {
                 event is DiagnosticsEntry.Counter &&
                     event.name == DiagnosticsCounterName.PRODUCT_DETAILS_NOT_SUPPORTED &&
                     event.tags == expectedProperties
+            })
+        }
+    }
+
+    @Test
+    fun `trackCustomerInfoVerificationResultIfNeeded does not track when verification not requested`() {
+        val customerInfo = mockk<CustomerInfo>().apply {
+            every { entitlements } returns mockk<EntitlementInfos>().apply {
+                every { verification } returns VerificationResult.NOT_REQUESTED
+            }
+        }
+        diagnosticsTracker.trackCustomerInfoVerificationResultIfNeeded(
+            customerInfo = customerInfo,
+        )
+        verify(exactly = 0) {
+            diagnosticsFileHelper.appendEvent(any())
+        }
+    }
+
+    @Test
+    fun `trackCustomerInfoVerificationResultIfNeeded tracks when verification is failed`() {
+        val expectedProperties = mapOf(
+            "verification_result" to "FAILED",
+        )
+        every { diagnosticsFileHelper.appendEvent(any()) } just Runs
+        val customerInfo = mockk<CustomerInfo>().apply {
+            every { entitlements } returns mockk<EntitlementInfos>().apply {
+                every { verification } returns VerificationResult.FAILED
+            }
+        }
+        diagnosticsTracker.trackCustomerInfoVerificationResultIfNeeded(
+            customerInfo = customerInfo,
+        )
+        verify(exactly = 1) {
+            diagnosticsFileHelper.appendEvent(match { event ->
+                event is DiagnosticsEntry.Counter &&
+                    event.name == DiagnosticsCounterName.CUSTOMER_INFO_VERIFICATION_RESULT &&
+                    event.tags == expectedProperties &&
+                    event.value == 1
             })
         }
     }

@@ -3,6 +3,7 @@ package com.revenuecat.purchases
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.caching.DeviceCache
+import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
@@ -22,6 +23,7 @@ class CustomerInfoUpdateHandlerTest {
     private lateinit var identityManager: IdentityManager
     private lateinit var offlineEntitlementsManager: OfflineEntitlementsManager
     private lateinit var appConfig: AppConfig
+    private lateinit var diagnosticsTracker: DiagnosticsTracker
 
     private lateinit var customerInfoUpdateHandler: CustomerInfoUpdateHandler
 
@@ -34,18 +36,21 @@ class CustomerInfoUpdateHandlerTest {
         identityManager = mockk()
         offlineEntitlementsManager = mockk()
         appConfig = mockk()
+        diagnosticsTracker = mockk()
 
         every { identityManager.currentAppUserID } returns appUserId
         every { deviceCache.getCachedCustomerInfo(appUserId) } returns mockInfo
         every { deviceCache.cacheCustomerInfo(appUserId, mockInfo) } just Runs
         every { offlineEntitlementsManager.offlineCustomerInfo } returns null
         every { appConfig.customEntitlementComputation } returns false
+        every { diagnosticsTracker.trackCustomerInfoVerificationResultIfNeeded(any()) } just Runs
 
         customerInfoUpdateHandler = CustomerInfoUpdateHandler(
             deviceCache,
             identityManager,
             offlineEntitlementsManager,
             appConfig = appConfig,
+            diagnosticsTracker = diagnosticsTracker,
         )
     }
 
@@ -86,6 +91,14 @@ class CustomerInfoUpdateHandlerTest {
         customerInfoUpdateHandler.updatedCustomerInfoListener = listenerMock
 
         verify(exactly = 0) { listenerMock.onReceived(mockInfo) }
+    }
+
+    @Test
+    fun `setting listener tracks customer info verification result`() {
+        val listenerMock = mockk<UpdatedCustomerInfoListener>(relaxed = true)
+        customerInfoUpdateHandler.updatedCustomerInfoListener = listenerMock
+
+        verify(exactly = 1) { diagnosticsTracker.trackCustomerInfoVerificationResultIfNeeded(mockInfo) }
     }
 
     // endregion
@@ -164,6 +177,20 @@ class CustomerInfoUpdateHandlerTest {
 
         verify(exactly = 1) { listenerMock.onReceived(mockInfo) } // From setting the listener
         verify(exactly = 1) { listenerMock.onReceived(newCustomerInfo) }
+        verify(exactly = 1) { diagnosticsTracker.trackCustomerInfoVerificationResultIfNeeded(mockInfo) } // From setting the listener
+    }
+
+    @Test
+    fun `tracks customer info verification result if customer info different than previous one`() {
+        val listenerMock = mockk<UpdatedCustomerInfoListener>(relaxed = true)
+        customerInfoUpdateHandler.updatedCustomerInfoListener = listenerMock
+
+        val newCustomerInfo = mockk<CustomerInfo>()
+        every { deviceCache.cacheCustomerInfo(appUserId, newCustomerInfo) } just Runs
+
+        customerInfoUpdateHandler.notifyListeners(newCustomerInfo)
+
+        verify(exactly = 1) { diagnosticsTracker.trackCustomerInfoVerificationResultIfNeeded(newCustomerInfo) }
     }
 
     // endregion

@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.common.diagnostics
 
+import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Dispatcher
@@ -194,6 +195,23 @@ internal class DiagnosticsTracker(
                 "play_services_version" to (appConfig.playServicesVersionName ?: ""),
                 BILLING_RESPONSE_CODE to billingResponseCode.toString(),
                 BILLING_DEBUG_MESSAGE to billingDebugMessage,
+            ),
+            value = 1,
+        )
+        trackEvent(event)
+    }
+
+    fun trackCustomerInfoVerificationResultIfNeeded(
+        customerInfo: CustomerInfo,
+    ) {
+        val verificationResult = customerInfo.entitlements.verification
+        if (verificationResult == VerificationResult.NOT_REQUESTED) {
+            return
+        }
+        val event = DiagnosticsEntry.Counter(
+            name = DiagnosticsCounterName.CUSTOMER_INFO_VERIFICATION_RESULT,
+            tags = mapOf(
+                VERIFICATION_RESULT_KEY to verificationResult.name,
             ),
             value = 1,
         )
