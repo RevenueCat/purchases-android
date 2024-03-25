@@ -222,6 +222,8 @@ class DiagnosticsTrackerTest {
         }
     }
 
+    // region Google Billing
+
     @Test
     fun `trackGoogleQueryProductDetailsRequest tracks correct event`() {
         val expectedProperties = mapOf(
@@ -264,7 +266,8 @@ class DiagnosticsTrackerTest {
             diagnosticsFileHelper.appendEvent(match { event ->
                 event is DiagnosticsEntry.Counter &&
                     event.name == DiagnosticsCounterName.GOOGLE_QUERY_PRODUCT_DETAILS_REQUEST &&
-                    event.tags == expectedProperties
+                    event.tags == expectedProperties &&
+                    event.value == 1
             })
         }
     }
@@ -364,6 +367,54 @@ class DiagnosticsTrackerTest {
             })
         }
     }
+
+    // endregion
+
+    // region Amazon Billing
+
+    @Test
+    fun `trackAmazonQueryProductDetailsRequest tracks correct counter`() {
+        val expectedTags = mapOf(
+            "successful" to "true",
+            "response_time_range" to "between_1000_and_2000_ms",
+        )
+        every { diagnosticsFileHelper.appendEvent(any()) } just Runs
+        diagnosticsTracker.trackAmazonQueryProductDetailsRequest(
+            wasSuccessful = true,
+            responseTime = 1234L.milliseconds
+        )
+        verify(exactly = 1) {
+            diagnosticsFileHelper.appendEvent(match { event ->
+                event is DiagnosticsEntry.Counter &&
+                    event.name == DiagnosticsCounterName.AMAZON_QUERY_PRODUCT_DETAILS_REQUEST &&
+                    event.tags == expectedTags &&
+                    event.value == 1
+            })
+        }
+    }
+
+    @Test
+    fun `trackAmazonQueryPurchasesRequest tracks correct counter`() {
+        val expectedTags = mapOf(
+            "successful" to "true",
+            "response_time_range" to "between_1000_and_2000_ms",
+        )
+        every { diagnosticsFileHelper.appendEvent(any()) } just Runs
+        diagnosticsTracker.trackAmazonQueryPurchasesRequest(
+            wasSuccessful = true,
+            responseTime = 1234L.milliseconds
+        )
+        verify(exactly = 1) {
+            diagnosticsFileHelper.appendEvent(match { event ->
+                event is DiagnosticsEntry.Counter &&
+                    event.name == DiagnosticsCounterName.AMAZON_QUERY_PURCHASES_REQUEST &&
+                    event.tags == expectedTags &&
+                    event.value == 1
+            })
+        }
+    }
+
+    // endregion
 
     @Test
     fun `trackFeatureNotSupported tracks correct event`() {
