@@ -7,6 +7,9 @@ import com.amazon.device.iap.model.FulfillmentResult
 import com.amazon.device.iap.model.ProductType
 import com.amazon.device.iap.model.Receipt
 import com.amazon.device.iap.model.UserData
+import com.android.billingclient.api.BillingClient
+import com.android.billingclient.api.BillingResult
+import com.android.billingclient.api.ProductDetailsResponseListener
 import com.revenuecat.purchases.PostReceiptInitiationSource
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCallback
@@ -22,7 +25,10 @@ import com.revenuecat.purchases.amazon.helpers.dummyReceipt
 import com.revenuecat.purchases.amazon.helpers.dummyUserData
 import com.revenuecat.purchases.amazon.helpers.successfulRVSResponse
 import com.revenuecat.purchases.common.BillingAbstract
+import com.revenuecat.purchases.common.DateProvider
+import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.sha1
+import com.revenuecat.purchases.google.BillingWrapperTest
 import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
@@ -41,9 +47,15 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import java.util.Date
 import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.milliseconds
 
 @RunWith(AndroidJUnit4::class)
 class AmazonBillingTest {
+    private companion object {
+        const val timestamp0 = 1676379370000 // Tuesday, February 14, 2023 12:56:10.000 PM GMT
+        const val timestamp123 = 1676379370123 // Tuesday, February 14, 2023 12:56:10.123 PM GMT
+    }
+
     private val appUserID: String = "appUserID"
     private val countryCode = "JP"
     private lateinit var underTest: AmazonBilling
@@ -58,6 +70,8 @@ class AmazonBillingTest {
     private val mockAmazonBackend = mockk<AmazonBackend>()
     private val mockCache = mockk<AmazonCache>()
     private val mockContext = mockk<Context>()
+    private var mockDiagnosticsTracker: DiagnosticsTracker = mockk()
+    private var mockDateProvider: DateProvider = mockk()
 
     private val capturedCachedReceiptSkus = slot<Map<String, String>>()
 
@@ -73,11 +87,15 @@ class AmazonBillingTest {
             purchaseUpdatesHandler = mockPurchaseUpdatesHandler,
             userDataHandler = mockUserDataHandler,
             mainHandler = handler,
-            stateProvider = PurchasesStateCache(PurchasesState())
+            stateProvider = PurchasesStateCache(PurchasesState()),
+            diagnosticsTrackerIfEnabled = mockDiagnosticsTracker,
+            dateProvider = mockDateProvider,
         )
 
         mockSetupFunctions()
         setupRunnables()
+        mockDiagnosticsTracker()
+        every { mockDateProvider.now } returns Date(1676379370000) // Tuesday, February 14, 2023 12:56:10 PM GMT
 
         underTest.purchasesUpdatedListener = mockk()
     }
@@ -94,11 +112,14 @@ class AmazonBillingTest {
             purchaseHandler = mockPurchaseHandler,
             purchaseUpdatesHandler = mockPurchaseUpdatesHandler,
             userDataHandler = mockUserDataHandler,
-            stateProvider = PurchasesStateCache(PurchasesState())
+            stateProvider = PurchasesStateCache(PurchasesState()),
+            diagnosticsTrackerIfEnabled = mockDiagnosticsTracker,
         )
 
         mockSetupFunctions()
         setupRunnables()
+        mockDiagnosticsTracker()
+        every { mockDateProvider.now } returns Date(1676379370000) // Tuesday, February 14, 2023 12:56:10 PM GMT
 
         underTest.purchasesUpdatedListener = mockk()
     }
@@ -259,12 +280,12 @@ class AmazonBillingTest {
         val dummyReceiptExpired = dummyReceipt(
             receiptId = "expired_id",
             sku = "expired_sku",
-            cancelDate = Date().subtract(1.hours)
+            cancelDate = Date(timestamp0).subtract(1.hours)
         )
         val dummyReceiptNotExpired = dummyReceipt(
             receiptId = "not_expired_id",
             sku = "not_expired_sku",
-            cancelDate = Date().add(1.hours)
+            cancelDate = Date(timestamp0).add(1.hours)
         )
 
         val dummyUserData = dummyUserData()
@@ -1031,6 +1052,84 @@ class AmazonBillingTest {
         assertThat(error?.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
     }
 
+    // region diagnostics tracking
+
+    @Test
+    fun `queryPurchases tracks diagnostics call with correct parameters`() {
+        setup()
+        every { mockDateProvider.now } returnsMany listOf(Date(timestamp0), Date(timestamp123))
+
+        val expectedTermSku = "sub_sku.monthly"
+        val dummyReceipt = dummyReceipt(sku = "sub_sku")
+        val dummyUserData = dummyUserData()
+
+        mockQueryPurchases(listOf(dummyReceipt), dummyUserData)
+
+        mockEmptyCache()
+        mockGetAmazonReceiptData(dummyReceipt, dummyUserData, expectedTermSku)
+
+        var receivedPurchases: Map<String, StoreTransaction>? = null
+        underTest.queryPurchases(
+            appUserID,
+            onSuccess = {
+                receivedPurchases = it
+            },
+            onError = {
+                fail("Should be a success")
+            }
+        )
+        assertThat(receivedPurchases).isNotNull
+
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackAmazonQueryPurchasesRequest(
+                responseTime = 123.milliseconds,
+                wasSuccessful = true,
+            )
+        }
+    }
+
+    @Test
+    fun `queryProductDetailsAsync tracks diagnostics call with correct parameters`() {
+        setup()
+        every { mockDateProvider.now } returnsMany listOf(Date(timestamp0), Date(timestamp123))
+
+        underTest.startConnection()
+
+        val productIds = setOf("sku", "sku_2")
+        mockGetUserData()
+
+        val marketplaceSlot = slot<String>()
+        val storeProducts = listOfNotNull(dummyAmazonProduct().toStoreProduct(countryCode))
+
+        every {
+            mockProductDataHandler.getProductData(productIds, capture(marketplaceSlot), captureLambda(), any())
+        } answers {
+            lambda<(List<StoreProduct>) -> Unit>().captured.invoke(storeProducts)
+        }
+
+        var onReceiveCalled = false
+        underTest.queryProductDetailsAsync(
+            productType = com.revenuecat.purchases.ProductType.SUBS,
+            productIds = productIds,
+            onError = {
+                fail("should be a success")
+            },
+            onReceive = {
+                onReceiveCalled = true
+            },
+        )
+
+        assertThat(onReceiveCalled).isTrue()
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackAmazonQueryProductDetailsRequest(
+                responseTime = 123.milliseconds,
+                wasSuccessful = true,
+            )
+        }
+    }
+
+    // endregion
+
     private fun verifyBackendCalled(
         receipt: Receipt,
         dummyUserData: UserData,
@@ -1138,4 +1237,12 @@ class AmazonBillingTest {
         }
     }
 
+    private fun mockDiagnosticsTracker() {
+        every {
+            mockDiagnosticsTracker.trackAmazonQueryPurchasesRequest(any(), any())
+        } just Runs
+        every {
+            mockDiagnosticsTracker.trackAmazonQueryProductDetailsRequest(any(), any())
+        } just Runs
+    }
 }

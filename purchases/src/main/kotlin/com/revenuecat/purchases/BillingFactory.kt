@@ -37,6 +37,7 @@ internal object BillingFactory {
                     Handler(application.mainLooper),
                     backendHelper,
                     stateProvider,
+                    diagnosticsTrackerIfEnabled,
                 )
             } catch (e: NoClassDefFoundError) {
                 errorLog("Make sure purchases-amazon is added as dependency", e)
