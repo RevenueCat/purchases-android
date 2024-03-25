@@ -208,6 +208,11 @@ enum class Store {
      * For entitlements granted via Amazon store.
      */
     AMAZON,
+
+    /**
+     * For entitlements granted via RC Billing.
+     */
+    RC_BILLING,
 }
 
 /**

@@ -702,6 +702,31 @@ class EntitlementInfosTests {
         )
 
         verifyStore(Store.UNKNOWN_STORE)
+
+        stubResponse(
+            entitlements = JSONObject().apply {
+                put("pro_cat", JSONObject().apply {
+                    put("expires_date", "2200-07-26T23:50:40Z")
+                    put("product_identifier", "pro")
+                    put("product_plan_identifier", "monthly")
+                    put("purchase_date", "2019-07-26T23:45:40Z")
+                })
+            },
+            subscriptions = JSONObject().apply {
+                put("pro", JSONObject().apply {
+                    put("billing_issues_detected_at", JSONObject.NULL)
+                    put("expires_date", "2200-07-26T23:50:40Z")
+                    put("is_sandbox", false)
+                    put("original_purchase_date", "2019-07-26T23:30:41Z")
+                    put("period_type", "normal")
+                    put("purchase_date",  "2019-07-26T23:45:40Z")
+                    put("store", "rc_billing")
+                    put("unsubscribe_detected_at", JSONObject.NULL)
+                })
+            }
+        )
+
+        verifyStore(Store.RC_BILLING)
     }
 
     @Test
