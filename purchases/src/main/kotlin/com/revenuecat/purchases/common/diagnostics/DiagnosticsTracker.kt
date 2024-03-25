@@ -16,6 +16,7 @@ import kotlin.time.Duration
  * This class is the entry point for all diagnostics tracking. It contains all information for all events
  * sent and their properties. Use this class if you want to send a a diagnostics entry.
  */
+@Suppress("TooManyFunctions")
 internal class DiagnosticsTracker(
     private val appConfig: AppConfig,
     private val diagnosticsFileHelper: EventsFileHelper<DiagnosticsEntry>,
@@ -74,6 +75,8 @@ internal class DiagnosticsTracker(
             ),
         )
     }
+
+    // region Google
 
     fun trackGoogleQueryProductDetailsRequest(
         productType: String,
@@ -164,6 +167,44 @@ internal class DiagnosticsTracker(
             ),
         )
     }
+
+    // endregion
+
+    // region Amazon
+
+    fun trackAmazonQueryProductDetailsRequest(
+        responseTime: Duration,
+        wasSuccessful: Boolean,
+    ) {
+        trackEvent(
+            DiagnosticsEntry.Counter(
+                name = DiagnosticsCounterName.AMAZON_QUERY_PRODUCT_DETAILS_REQUEST,
+                tags = mapOf(
+                    SUCCESSFUL_KEY to wasSuccessful.toString(),
+                    RESPONSE_TIME_RANGE_KEY to responseTime.responseTimeRange().stringRepresentation,
+                ),
+                value = 1,
+            ),
+        )
+    }
+
+    fun trackAmazonQueryPurchasesRequest(
+        responseTime: Duration,
+        wasSuccessful: Boolean,
+    ) {
+        trackEvent(
+            DiagnosticsEntry.Counter(
+                name = DiagnosticsCounterName.AMAZON_QUERY_PURCHASES_REQUEST,
+                tags = mapOf(
+                    SUCCESSFUL_KEY to wasSuccessful.toString(),
+                    RESPONSE_TIME_RANGE_KEY to responseTime.responseTimeRange().stringRepresentation,
+                ),
+                value = 1,
+            ),
+        )
+    }
+
+    // endregion
 
     fun trackMaxEventsStoredLimitReached(useCurrentThread: Boolean = true) {
         val event = DiagnosticsEntry.Event(
