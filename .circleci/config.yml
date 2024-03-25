@@ -36,7 +36,7 @@ aliases:
     executor:
       name: android/android-machine
       resource-class: large
-      tag: 2023.11.1
+      tag: 2024.01.1
 
 version: 2.1
 orbs:
