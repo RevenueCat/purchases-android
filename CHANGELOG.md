@@ -1,3 +1,8 @@
+## 7.8.1
+### Other Changes
+* Update android executor to a non-deprecated tag (#1659) via Cesar de la Vega (@vegaro)
+* Add `RC_BILLING` store  (#1657) via Toni Rico (@tonidero)
+
 ## 7.8.0
 ### New Features
 * Create AssetFont (#1650) via Cesar de la Vega (@vegaro)
