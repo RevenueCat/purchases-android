@@ -5,6 +5,7 @@ import android.os.Looper
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.caching.DeviceCache
+import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
 import com.revenuecat.purchases.identity.IdentityManager
@@ -20,6 +21,7 @@ internal class CustomerInfoUpdateHandler(
     private val identityManager: IdentityManager,
     private val offlineEntitlementsManager: OfflineEntitlementsManager,
     private val appConfig: AppConfig,
+    private val diagnosticsTracker: DiagnosticsTracker?,
     private val handler: Handler = Handler(Looper.getMainLooper()),
 ) {
 
@@ -42,6 +44,9 @@ internal class CustomerInfoUpdateHandler(
     fun notifyListeners(customerInfo: CustomerInfo) {
         synchronized(this@CustomerInfoUpdateHandler) { updatedCustomerInfoListener to lastSentCustomerInfo }
             .let { (listener, lastSentCustomerInfo) ->
+                if (lastSentCustomerInfo != customerInfo) {
+                    diagnosticsTracker?.trackCustomerInfoVerificationResultIfNeeded(customerInfo)
+                }
                 if (listener != null && lastSentCustomerInfo != customerInfo) {
                     if (lastSentCustomerInfo != null) {
                         log(LogIntent.DEBUG, CustomerInfoStrings.CUSTOMERINFO_UPDATED_NOTIFYING_LISTENER)
