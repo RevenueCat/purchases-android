@@ -60,6 +60,7 @@ internal fun JSONObject.getStore(name: String) = when (getString(name)) {
     "promotional" -> Store.PROMOTIONAL
     "amazon" -> Store.AMAZON
     "rc_billing" -> Store.RC_BILLING
+    "external" -> Store.EXTERNAL
     else -> Store.UNKNOWN_STORE
 }
 

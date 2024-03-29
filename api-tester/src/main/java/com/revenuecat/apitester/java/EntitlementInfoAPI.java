@@ -70,6 +70,7 @@ final class EntitlementInfoAPI {
             case UNKNOWN_STORE:
             case AMAZON:
             case RC_BILLING:
+            case EXTERNAL:
         }
     }
 
