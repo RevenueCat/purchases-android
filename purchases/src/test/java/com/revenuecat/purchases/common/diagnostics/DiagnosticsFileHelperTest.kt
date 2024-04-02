@@ -15,14 +15,13 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import java.util.stream.Stream
-import kotlin.streams.toList
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
 class DiagnosticsFileHelperTest {
 
     private val testDiagnosticsEntry = DiagnosticsEntry(
-        name = DiagnosticsEventName.HTTP_REQUEST_PERFORMED,
+        name = DiagnosticsEntryName.HTTP_REQUEST_PERFORMED,
         properties = emptyMap()
     )
     private val diagnosticsFilePath = DiagnosticsFileHelper.DIAGNOSTICS_FILE_PATH

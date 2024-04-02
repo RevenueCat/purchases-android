@@ -34,12 +34,12 @@ import kotlin.time.Duration.Companion.milliseconds
 class DiagnosticsTrackerTest {
 
     private val testDiagnosticsEntry = DiagnosticsEntry(
-        name = DiagnosticsEventName.HTTP_REQUEST_PERFORMED,
+        name = DiagnosticsEntryName.HTTP_REQUEST_PERFORMED,
         properties = mapOf("test-key-1" to "test-value-1")
     )
 
     private val testAnonymizedEvent = DiagnosticsEntry(
-        name = DiagnosticsEventName.HTTP_REQUEST_PERFORMED,
+        name = DiagnosticsEntryName.HTTP_REQUEST_PERFORMED,
         properties = mapOf("test-key-1" to "test-anonymized-value-1")
     )
 
@@ -131,7 +131,7 @@ class DiagnosticsTrackerTest {
         )
         verify(exactly = 1) {
             diagnosticsFileHelper.appendEvent(match { event ->
-                event.name == DiagnosticsEventName.HTTP_REQUEST_PERFORMED && event.properties == expectedProperties
+                event.name == DiagnosticsEntryName.HTTP_REQUEST_PERFORMED && event.properties == expectedProperties
             })
         }
     }
@@ -157,7 +157,7 @@ class DiagnosticsTrackerTest {
         )
         verify(exactly = 1) {
             diagnosticsFileHelper.appendEvent(match { event ->
-                event.name == DiagnosticsEventName.HTTP_REQUEST_PERFORMED && event.properties == expectedProperties
+                event.name == DiagnosticsEntryName.HTTP_REQUEST_PERFORMED && event.properties == expectedProperties
             })
         }
     }
@@ -168,7 +168,7 @@ class DiagnosticsTrackerTest {
         diagnosticsTracker.trackMaxEventsStoredLimitReached()
         verify(exactly = 1) {
             diagnosticsFileHelper.appendEvent(match { event ->
-                event.name == DiagnosticsEventName.MAX_EVENTS_STORED_LIMIT_REACHED &&
+                event.name == DiagnosticsEntryName.MAX_EVENTS_STORED_LIMIT_REACHED &&
                     event.properties == emptyMap<String, Any>()
             })
         }
@@ -193,7 +193,7 @@ class DiagnosticsTrackerTest {
         )
         verify(exactly = 1) {
             diagnosticsFileHelper.appendEvent(match { event ->
-                event.name == DiagnosticsEventName.GOOGLE_QUERY_PRODUCT_DETAILS_REQUEST &&
+                event.name == DiagnosticsEntryName.GOOGLE_QUERY_PRODUCT_DETAILS_REQUEST &&
                     event.properties == expectedProperties
             })
         }
@@ -216,7 +216,7 @@ class DiagnosticsTrackerTest {
         )
         verify(exactly = 1) {
             diagnosticsFileHelper.appendEvent(match { event ->
-                event.name == DiagnosticsEventName.GOOGLE_QUERY_PURCHASES_REQUEST &&
+                event.name == DiagnosticsEntryName.GOOGLE_QUERY_PURCHASES_REQUEST &&
                     event.properties == expectedProperties
             })
         }
@@ -239,7 +239,7 @@ class DiagnosticsTrackerTest {
         )
         verify(exactly = 1) {
             diagnosticsFileHelper.appendEvent(match { event ->
-                event.name == DiagnosticsEventName.GOOGLE_QUERY_PURCHASE_HISTORY_REQUEST &&
+                event.name == DiagnosticsEntryName.GOOGLE_QUERY_PURCHASE_HISTORY_REQUEST &&
                     event.properties == expectedProperties
             })
         }
@@ -262,7 +262,7 @@ class DiagnosticsTrackerTest {
         )
         verify(exactly = 1) {
             diagnosticsFileHelper.appendEvent(match { event ->
-                event.name == DiagnosticsEventName.AMAZON_QUERY_PRODUCT_DETAILS_REQUEST &&
+                event.name == DiagnosticsEntryName.AMAZON_QUERY_PRODUCT_DETAILS_REQUEST &&
                     event.properties == expectedTags
             })
         }
@@ -281,7 +281,7 @@ class DiagnosticsTrackerTest {
         )
         verify(exactly = 1) {
             diagnosticsFileHelper.appendEvent(match { event ->
-                event.name == DiagnosticsEventName.AMAZON_QUERY_PURCHASES_REQUEST &&
+                event.name == DiagnosticsEntryName.AMAZON_QUERY_PURCHASES_REQUEST &&
                     event.properties == expectedTags
             })
         }
@@ -304,7 +304,7 @@ class DiagnosticsTrackerTest {
         )
         verify(exactly = 1) {
             diagnosticsFileHelper.appendEvent(match { event ->
-                event.name == DiagnosticsEventName.PRODUCT_DETAILS_NOT_SUPPORTED &&
+                event.name == DiagnosticsEntryName.PRODUCT_DETAILS_NOT_SUPPORTED &&
                     event.properties == expectedProperties
             })
         }
@@ -341,7 +341,7 @@ class DiagnosticsTrackerTest {
         )
         verify(exactly = 1) {
             diagnosticsFileHelper.appendEvent(match { event ->
-                event.name == DiagnosticsEventName.CUSTOMER_INFO_VERIFICATION_RESULT &&
+                event.name == DiagnosticsEntryName.CUSTOMER_INFO_VERIFICATION_RESULT &&
                     event.properties == expectedProperties
             })
         }

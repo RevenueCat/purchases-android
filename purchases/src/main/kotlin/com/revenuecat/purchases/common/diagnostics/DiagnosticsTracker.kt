@@ -47,7 +47,7 @@ internal class DiagnosticsTracker(
         val eTagHit = resultOrigin == HTTPResult.Origin.CACHE
         trackEvent(
             DiagnosticsEntry(
-                name = DiagnosticsEventName.HTTP_REQUEST_PERFORMED,
+                name = DiagnosticsEntryName.HTTP_REQUEST_PERFORMED,
                 properties = mapOf(
                     ENDPOINT_NAME_KEY to endpoint.name,
                     RESPONSE_TIME_MILLIS_KEY to responseTime.inWholeMilliseconds,
@@ -70,7 +70,7 @@ internal class DiagnosticsTracker(
     ) {
         trackEvent(
             DiagnosticsEntry(
-                name = DiagnosticsEventName.GOOGLE_QUERY_PRODUCT_DETAILS_REQUEST,
+                name = DiagnosticsEntryName.GOOGLE_QUERY_PRODUCT_DETAILS_REQUEST,
                 properties = mapOf(
                     PRODUCT_TYPE_QUERIED_KEY to productType,
                     BILLING_RESPONSE_CODE to billingResponseCode,
@@ -89,7 +89,7 @@ internal class DiagnosticsTracker(
     ) {
         trackEvent(
             DiagnosticsEntry(
-                name = DiagnosticsEventName.GOOGLE_QUERY_PURCHASES_REQUEST,
+                name = DiagnosticsEntryName.GOOGLE_QUERY_PURCHASES_REQUEST,
                 properties = mapOf(
                     PRODUCT_TYPE_QUERIED_KEY to productType,
                     BILLING_RESPONSE_CODE to billingResponseCode,
@@ -108,7 +108,7 @@ internal class DiagnosticsTracker(
     ) {
         trackEvent(
             DiagnosticsEntry(
-                name = DiagnosticsEventName.GOOGLE_QUERY_PURCHASE_HISTORY_REQUEST,
+                name = DiagnosticsEntryName.GOOGLE_QUERY_PURCHASE_HISTORY_REQUEST,
                 properties = mapOf(
                     PRODUCT_TYPE_QUERIED_KEY to productType,
                     BILLING_RESPONSE_CODE to billingResponseCode,
@@ -129,7 +129,7 @@ internal class DiagnosticsTracker(
     ) {
         trackEvent(
             DiagnosticsEntry(
-                name = DiagnosticsEventName.AMAZON_QUERY_PRODUCT_DETAILS_REQUEST,
+                name = DiagnosticsEntryName.AMAZON_QUERY_PRODUCT_DETAILS_REQUEST,
                 properties = mapOf(
                     SUCCESSFUL_KEY to wasSuccessful,
                     RESPONSE_TIME_MILLIS_KEY to responseTime.inWholeMilliseconds,
@@ -144,7 +144,7 @@ internal class DiagnosticsTracker(
     ) {
         trackEvent(
             DiagnosticsEntry(
-                name = DiagnosticsEventName.AMAZON_QUERY_PURCHASES_REQUEST,
+                name = DiagnosticsEntryName.AMAZON_QUERY_PURCHASES_REQUEST,
                 properties = mapOf(
                     SUCCESSFUL_KEY to wasSuccessful,
                     RESPONSE_TIME_MILLIS_KEY to responseTime.inWholeMilliseconds,
@@ -157,7 +157,7 @@ internal class DiagnosticsTracker(
 
     fun trackMaxEventsStoredLimitReached(useCurrentThread: Boolean = true) {
         val event = DiagnosticsEntry(
-            name = DiagnosticsEventName.MAX_EVENTS_STORED_LIMIT_REACHED,
+            name = DiagnosticsEntryName.MAX_EVENTS_STORED_LIMIT_REACHED,
             properties = mapOf(),
         )
         if (useCurrentThread) {
@@ -172,7 +172,7 @@ internal class DiagnosticsTracker(
         billingDebugMessage: String,
     ) {
         val event = DiagnosticsEntry(
-            name = DiagnosticsEventName.PRODUCT_DETAILS_NOT_SUPPORTED,
+            name = DiagnosticsEntryName.PRODUCT_DETAILS_NOT_SUPPORTED,
             properties = mapOf(
                 "play_store_version" to (appConfig.playStoreVersionName ?: ""),
                 "play_services_version" to (appConfig.playServicesVersionName ?: ""),
@@ -191,7 +191,7 @@ internal class DiagnosticsTracker(
             return
         }
         val event = DiagnosticsEntry(
-            name = DiagnosticsEventName.CUSTOMER_INFO_VERIFICATION_RESULT,
+            name = DiagnosticsEntryName.CUSTOMER_INFO_VERIFICATION_RESULT,
             properties = mapOf(
                 VERIFICATION_RESULT_KEY to verificationResult.name,
             ),
@@ -208,11 +208,11 @@ internal class DiagnosticsTracker(
     internal fun trackEventInCurrentThread(diagnosticsEntry: DiagnosticsEntry) {
         if (isAndroidNOrNewer()) {
             val anonymizedEvent = diagnosticsAnonymizer.anonymizeEntryIfNeeded(diagnosticsEntry)
-            verboseLog("Tracking diagnostics event: $anonymizedEvent")
+            verboseLog("Tracking diagnostics entry: $anonymizedEvent")
             try {
                 diagnosticsFileHelper.appendEvent(anonymizedEvent)
             } catch (e: IOException) {
-                verboseLog("Error tracking diagnostics event: $e")
+                verboseLog("Error tracking diagnostics entry: $e")
             }
         }
     }

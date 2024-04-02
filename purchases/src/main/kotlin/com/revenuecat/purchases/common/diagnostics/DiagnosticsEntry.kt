@@ -7,7 +7,7 @@ import org.json.JSONObject
 import java.util.Date
 
 internal data class DiagnosticsEntry(
-    val name: DiagnosticsEventName,
+    val name: DiagnosticsEntryName,
     val properties: Map<String, Any>,
     val dateProvider: DateProvider = DefaultDateProvider(),
     val dateTime: Date = dateProvider.now,

@@ -41,12 +41,12 @@ class DiagnosticsAnonymizerTest {
         val originalPropertiesMap = mapOf("key-1" to "value-1")
         val expectedPropertiesMap = mapOf("key-1" to "anonymized-value-1")
         val eventToAnonymize = DiagnosticsEntry(
-            name = DiagnosticsEventName.HTTP_REQUEST_PERFORMED,
+            name = DiagnosticsEntryName.HTTP_REQUEST_PERFORMED,
             properties = originalPropertiesMap,
             dateProvider = testDateProvider
         )
         val expectedEvent = DiagnosticsEntry(
-            name = DiagnosticsEventName.HTTP_REQUEST_PERFORMED,
+            name = DiagnosticsEntryName.HTTP_REQUEST_PERFORMED,
             properties = expectedPropertiesMap,
             dateProvider = testDateProvider,
             dateTime = testDate

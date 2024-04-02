@@ -1,6 +1,6 @@
 package com.revenuecat.purchases.common.diagnostics
 
-internal enum class DiagnosticsEventName {
+internal enum class DiagnosticsEntryName {
     HTTP_REQUEST_PERFORMED,
     MAX_EVENTS_STORED_LIMIT_REACHED,
     GOOGLE_QUERY_PRODUCT_DETAILS_REQUEST,
