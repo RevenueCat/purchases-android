@@ -40,12 +40,12 @@ class DiagnosticsAnonymizerTest {
     fun `anonymizeEntryIfNeeded anonymizes event properties`() {
         val originalPropertiesMap = mapOf("key-1" to "value-1")
         val expectedPropertiesMap = mapOf("key-1" to "anonymized-value-1")
-        val eventToAnonymize = DiagnosticsEntry.Event(
+        val eventToAnonymize = DiagnosticsEntry(
             name = DiagnosticsEventName.HTTP_REQUEST_PERFORMED,
             properties = originalPropertiesMap,
             dateProvider = testDateProvider
         )
-        val expectedEvent = DiagnosticsEntry.Event(
+        val expectedEvent = DiagnosticsEntry(
             name = DiagnosticsEventName.HTTP_REQUEST_PERFORMED,
             properties = expectedPropertiesMap,
             dateProvider = testDateProvider,
@@ -56,37 +56,5 @@ class DiagnosticsAnonymizerTest {
         } returns expectedPropertiesMap
         val anonymizedEvent = diagnosticsAnonymizer.anonymizeEntryIfNeeded(eventToAnonymize)
         assertThat(anonymizedEvent).isEqualTo(expectedEvent)
-    }
-
-    @Test
-    fun `anonymizeEntryIfNeeded anonymizes counter tags`() {
-        val originalPropertiesMap = mapOf("key-1" to "value-1")
-        val expectedPropertiesMap = mapOf("key-1" to "anonymized-value-1")
-        val counterToAnonymize = DiagnosticsEntry.Counter(
-            name = DiagnosticsCounterName.HTTP_REQUEST_PERFORMED,
-            tags = originalPropertiesMap,
-            value = 123
-        )
-        val expectedCounter = DiagnosticsEntry.Counter(
-            name = DiagnosticsCounterName.HTTP_REQUEST_PERFORMED,
-            tags = expectedPropertiesMap,
-            value = 123
-        )
-        every {
-            anonymizer.anonymizedStringMap(originalPropertiesMap)
-        } returns expectedPropertiesMap
-        val anonymizedCounter = diagnosticsAnonymizer.anonymizeEntryIfNeeded(counterToAnonymize)
-        assertThat(anonymizedCounter).isEqualTo(expectedCounter)
-    }
-
-    @Test
-    fun `anonymizeEntryIfNeeded does not anonymize histogram`() {
-        val histogramToAnonymize = DiagnosticsEntry.Histogram(
-            name = "metric-name",
-            tags = emptyMap(),
-            values = listOf(1.1)
-        )
-        val anonymizedHistogram = diagnosticsAnonymizer.anonymizeEntryIfNeeded(histogramToAnonymize)
-        assertThat(anonymizedHistogram).isEqualTo(histogramToAnonymize)
     }
 }

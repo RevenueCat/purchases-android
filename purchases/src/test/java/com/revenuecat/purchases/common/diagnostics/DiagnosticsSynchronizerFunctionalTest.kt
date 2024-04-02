@@ -75,7 +75,7 @@ class DiagnosticsSynchronizerFunctionalTest {
     }
 
     private fun createDiagnosticsEntry(): DiagnosticsEntry {
-        return DiagnosticsEntry.Event(
+        return DiagnosticsEntry(
             DiagnosticsEventName.GOOGLE_QUERY_PURCHASES_REQUEST,
             mapOf(
                 "test_key_1" to "test_value_1",

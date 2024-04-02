@@ -21,7 +21,7 @@ import kotlin.streams.toList
 @Config(manifest = Config.NONE)
 class DiagnosticsFileHelperTest {
 
-    private val testDiagnosticsEntry = DiagnosticsEntry.Event(
+    private val testDiagnosticsEntry = DiagnosticsEntry(
         name = DiagnosticsEventName.HTTP_REQUEST_PERFORMED,
         properties = emptyMap()
     )
