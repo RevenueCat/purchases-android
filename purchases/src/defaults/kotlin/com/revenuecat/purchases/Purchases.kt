@@ -741,6 +741,18 @@ class Purchases internal constructor(
         purchasesOrchestrator.getProductsOfTypes(productIds.toSet(), setOf(ProductType.INAPP), callback)
     }
 
+    /**
+     * Note: This method only works for the Amazon Appstore. There is no Google equivalent at this time.
+     * Calling from a Google-configured app will always return AmazonLWAConsentStatus.UNAVAILABLE.
+     *
+     * Get the Login with Amazon consent status for the current user. Used to implement Quick Subscribe.
+     *
+     * @param [onSuccess] Called when the consent status was successfully fetched.
+     * @param [onError] Called when there was an error fetching the consent status.
+     */
+    fun getAmazonLWAConsentStatus(onSuccess: (AmazonLWAConsentStatus) -> Unit, onError: PurchasesErrorCallback) {
+        purchasesOrchestrator.getAmazonLWAConsentStatus(onSuccess, onError)
+    }
     // endregion
 
     // region Static

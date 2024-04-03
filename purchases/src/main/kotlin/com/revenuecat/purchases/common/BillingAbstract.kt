@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.common
 
 import android.app.Activity
+import com.revenuecat.purchases.AmazonLWAConsentStatus
 import com.revenuecat.purchases.PostReceiptInitiationSource
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ProductType
@@ -119,6 +120,13 @@ internal abstract class BillingAbstract(
         onSuccess: (String) -> Unit,
         onError: PurchasesErrorCallback,
     )
+
+    open fun getAmazonLWAConsentStatus(
+        onSuccess: (AmazonLWAConsentStatus) -> Unit,
+        onError: PurchasesErrorCallback,
+    ) {
+        onSuccess(AmazonLWAConsentStatus.UNAVAILABLE)
+    }
 
     interface PurchasesUpdatedListener {
         fun onPurchasesUpdated(purchases: List<StoreTransaction>)
