@@ -7,12 +7,14 @@ pluginManagement {
 }
 
 include ':feature:amazon'
-include ':integration-tests'
 include ':purchases'
-include 'examples:purchase-tester'
-include ':api-tester'
-include 'ui:debugview'
 include ':ui:revenuecatui'
-include ':examples:paywall-tester'
-include ':test-apps:testpurchasesandroidcompatibility'
-include ':test-apps:testpurchasesuiandroidcompatibility'
+if (!System.env.JITPACK)
+    include ':sample'
+    include ':integration-tests'
+    include 'examples:purchase-tester'
+    include ':api-tester'
+    include 'ui:debugview'
+    include ':examples:paywall-tester'
+    include ':test-apps:testpurchasesandroidcompatibility'
+    include ':test-apps:testpurchasesuiandroidcompatibility'
