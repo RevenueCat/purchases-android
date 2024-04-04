@@ -13,7 +13,7 @@ import java.util.Date
 @Config(manifest = Config.NONE)
 class DiagnosticsEntryTest {
 
-    private val testDate = Date(1675954145L) // Thursday, February 9, 2023 2:49:05 PM GMT
+    private val testDate = Date(1675954145000L) // Thursday, February 9, 2023 2:49:05 PM GMT
 
     private lateinit var testDateProvider: DateProvider
 
@@ -37,7 +37,7 @@ class DiagnosticsEntryTest {
             "\"version\":1," +
             "\"name\":\"http_request_performed\"," +
             "\"properties\":{\"test-key-1\":\"test-value-1\",\"test-key-2\":123,\"test-key-3\":true}," +
-            "\"timestamp\":1675954145" +
+            "\"timestamp\":\"2023-02-09T14:49:05.000Z\"" +
             "}"
         assertThat(eventAsString).isEqualTo(expectedString)
     }

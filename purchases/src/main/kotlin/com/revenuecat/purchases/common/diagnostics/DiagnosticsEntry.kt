@@ -3,6 +3,7 @@ package com.revenuecat.purchases.common.diagnostics
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.DefaultDateProvider
 import com.revenuecat.purchases.utils.Event
+import com.revenuecat.purchases.utils.Iso8601Utils
 import org.json.JSONObject
 import java.util.Date
 
@@ -29,6 +30,6 @@ internal data class DiagnosticsEntry(
         put(VERSION_KEY, VERSION)
         put(NAME_KEY, name.name.lowercase())
         put(PROPERTIES_KEY, JSONObject(properties))
-        put(TIMESTAMP_KEY, dateTime.time)
+        put(TIMESTAMP_KEY, Iso8601Utils.format(dateTime))
     }
 }
