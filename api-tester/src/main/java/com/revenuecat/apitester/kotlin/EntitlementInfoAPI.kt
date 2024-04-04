@@ -95,6 +95,7 @@ private class EntitlementInfoAPI {
             Store.UNKNOWN_STORE,
             Store.AMAZON,
             Store.RC_BILLING,
+            Store.EXTERNAL,
             -> {}
         }.exhaustive
     }

@@ -213,6 +213,11 @@ enum class Store {
      * For entitlements granted via RC Billing.
      */
     RC_BILLING,
+
+    /**
+     * For entitlements granted via RevenueCat's External Purchases API.
+     */
+    EXTERNAL,
 }
 
 /**
