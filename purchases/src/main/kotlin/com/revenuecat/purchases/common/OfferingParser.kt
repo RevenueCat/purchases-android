@@ -78,8 +78,6 @@ internal abstract class OfferingParser {
                     offeringIdsByPlacement = offeringIdsByPlacement,
                 )
             } ?: run {
-                // This shouldn't ever happen due to validations on the backend
-                errorLog(OfferingStrings.PLACEMENTS_EMPTY_ERROR)
                 null
             }
         }
