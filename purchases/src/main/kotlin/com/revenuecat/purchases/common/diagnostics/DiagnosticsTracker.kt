@@ -30,7 +30,6 @@ internal class DiagnosticsTracker(
         const val ETAG_HIT_KEY = "etag_hit"
         const val VERIFICATION_RESULT_KEY = "verification_result"
         const val RESPONSE_TIME_MILLIS_KEY = "response_time_millis"
-        const val RESPONSE_TIME_RANGE_KEY = "response_time_range"
         const val PRODUCT_TYPE_QUERIED_KEY = "product_type_queried"
         const val BILLING_RESPONSE_CODE = "billing_response_code"
         const val BILLING_DEBUG_MESSAGE = "billing_debug_message"
@@ -47,8 +46,8 @@ internal class DiagnosticsTracker(
     ) {
         val eTagHit = resultOrigin == HTTPResult.Origin.CACHE
         trackEvent(
-            DiagnosticsEntry.Event(
-                name = DiagnosticsEventName.HTTP_REQUEST_PERFORMED,
+            DiagnosticsEntry(
+                name = DiagnosticsEntryName.HTTP_REQUEST_PERFORMED,
                 properties = mapOf(
                     ENDPOINT_NAME_KEY to endpoint.name,
                     RESPONSE_TIME_MILLIS_KEY to responseTime.inWholeMilliseconds,
@@ -57,21 +56,6 @@ internal class DiagnosticsTracker(
                     ETAG_HIT_KEY to eTagHit,
                     VERIFICATION_RESULT_KEY to verificationResult.name,
                 ),
-            ),
-        )
-        // We also send http requests as a counter to have more real-time data
-        trackEvent(
-            DiagnosticsEntry.Counter(
-                name = DiagnosticsCounterName.HTTP_REQUEST_PERFORMED,
-                tags = mapOf(
-                    ENDPOINT_NAME_KEY to endpoint.name,
-                    SUCCESSFUL_KEY to wasSuccessful.toString(),
-                    RESPONSE_CODE_KEY to responseCode.toString(),
-                    ETAG_HIT_KEY to eTagHit.toString(),
-                    VERIFICATION_RESULT_KEY to verificationResult.name,
-                    RESPONSE_TIME_RANGE_KEY to responseTime.responseTimeRange().stringRepresentation,
-                ),
-                value = 1,
             ),
         )
     }
@@ -85,25 +69,14 @@ internal class DiagnosticsTracker(
         responseTime: Duration,
     ) {
         trackEvent(
-            DiagnosticsEntry.Event(
-                name = DiagnosticsEventName.GOOGLE_QUERY_PRODUCT_DETAILS_REQUEST,
+            DiagnosticsEntry(
+                name = DiagnosticsEntryName.GOOGLE_QUERY_PRODUCT_DETAILS_REQUEST,
                 properties = mapOf(
                     PRODUCT_TYPE_QUERIED_KEY to productType,
                     BILLING_RESPONSE_CODE to billingResponseCode,
                     BILLING_DEBUG_MESSAGE to billingDebugMessage,
                     RESPONSE_TIME_MILLIS_KEY to responseTime.inWholeMilliseconds,
                 ),
-            ),
-        )
-        trackEvent(
-            DiagnosticsEntry.Counter(
-                name = DiagnosticsCounterName.GOOGLE_QUERY_PRODUCT_DETAILS_REQUEST,
-                tags = mapOf(
-                    PRODUCT_TYPE_QUERIED_KEY to productType,
-                    BILLING_RESPONSE_CODE to billingResponseCode.toString(),
-                    RESPONSE_TIME_RANGE_KEY to responseTime.responseTimeRange().stringRepresentation,
-                ),
-                value = 1,
             ),
         )
     }
@@ -115,25 +88,14 @@ internal class DiagnosticsTracker(
         responseTime: Duration,
     ) {
         trackEvent(
-            DiagnosticsEntry.Event(
-                name = DiagnosticsEventName.GOOGLE_QUERY_PURCHASES_REQUEST,
+            DiagnosticsEntry(
+                name = DiagnosticsEntryName.GOOGLE_QUERY_PURCHASES_REQUEST,
                 properties = mapOf(
                     PRODUCT_TYPE_QUERIED_KEY to productType,
                     BILLING_RESPONSE_CODE to billingResponseCode,
                     BILLING_DEBUG_MESSAGE to billingDebugMessage,
                     RESPONSE_TIME_MILLIS_KEY to responseTime.inWholeMilliseconds,
                 ),
-            ),
-        )
-        trackEvent(
-            DiagnosticsEntry.Counter(
-                name = DiagnosticsCounterName.GOOGLE_QUERY_PURCHASES_REQUEST,
-                tags = mapOf(
-                    PRODUCT_TYPE_QUERIED_KEY to productType,
-                    BILLING_RESPONSE_CODE to billingResponseCode.toString(),
-                    RESPONSE_TIME_RANGE_KEY to responseTime.responseTimeRange().stringRepresentation,
-                ),
-                value = 1,
             ),
         )
     }
@@ -145,25 +107,14 @@ internal class DiagnosticsTracker(
         responseTime: Duration,
     ) {
         trackEvent(
-            DiagnosticsEntry.Event(
-                name = DiagnosticsEventName.GOOGLE_QUERY_PURCHASE_HISTORY_REQUEST,
+            DiagnosticsEntry(
+                name = DiagnosticsEntryName.GOOGLE_QUERY_PURCHASE_HISTORY_REQUEST,
                 properties = mapOf(
                     PRODUCT_TYPE_QUERIED_KEY to productType,
                     BILLING_RESPONSE_CODE to billingResponseCode,
                     BILLING_DEBUG_MESSAGE to billingDebugMessage,
                     RESPONSE_TIME_MILLIS_KEY to responseTime.inWholeMilliseconds,
                 ),
-            ),
-        )
-        trackEvent(
-            DiagnosticsEntry.Counter(
-                name = DiagnosticsCounterName.GOOGLE_QUERY_PURCHASE_HISTORY_REQUEST,
-                tags = mapOf(
-                    PRODUCT_TYPE_QUERIED_KEY to productType,
-                    BILLING_RESPONSE_CODE to billingResponseCode.toString(),
-                    RESPONSE_TIME_RANGE_KEY to responseTime.responseTimeRange().stringRepresentation,
-                ),
-                value = 1,
             ),
         )
     }
@@ -177,13 +128,12 @@ internal class DiagnosticsTracker(
         wasSuccessful: Boolean,
     ) {
         trackEvent(
-            DiagnosticsEntry.Counter(
-                name = DiagnosticsCounterName.AMAZON_QUERY_PRODUCT_DETAILS_REQUEST,
-                tags = mapOf(
-                    SUCCESSFUL_KEY to wasSuccessful.toString(),
-                    RESPONSE_TIME_RANGE_KEY to responseTime.responseTimeRange().stringRepresentation,
+            DiagnosticsEntry(
+                name = DiagnosticsEntryName.AMAZON_QUERY_PRODUCT_DETAILS_REQUEST,
+                properties = mapOf(
+                    SUCCESSFUL_KEY to wasSuccessful,
+                    RESPONSE_TIME_MILLIS_KEY to responseTime.inWholeMilliseconds,
                 ),
-                value = 1,
             ),
         )
     }
@@ -193,13 +143,12 @@ internal class DiagnosticsTracker(
         wasSuccessful: Boolean,
     ) {
         trackEvent(
-            DiagnosticsEntry.Counter(
-                name = DiagnosticsCounterName.AMAZON_QUERY_PURCHASES_REQUEST,
-                tags = mapOf(
-                    SUCCESSFUL_KEY to wasSuccessful.toString(),
-                    RESPONSE_TIME_RANGE_KEY to responseTime.responseTimeRange().stringRepresentation,
+            DiagnosticsEntry(
+                name = DiagnosticsEntryName.AMAZON_QUERY_PURCHASES_REQUEST,
+                properties = mapOf(
+                    SUCCESSFUL_KEY to wasSuccessful,
+                    RESPONSE_TIME_MILLIS_KEY to responseTime.inWholeMilliseconds,
                 ),
-                value = 1,
             ),
         )
     }
@@ -207,21 +156,14 @@ internal class DiagnosticsTracker(
     // endregion
 
     fun trackMaxEventsStoredLimitReached(useCurrentThread: Boolean = true) {
-        val event = DiagnosticsEntry.Event(
-            name = DiagnosticsEventName.MAX_EVENTS_STORED_LIMIT_REACHED,
+        val event = DiagnosticsEntry(
+            name = DiagnosticsEntryName.MAX_EVENTS_STORED_LIMIT_REACHED,
             properties = mapOf(),
-        )
-        val counter = DiagnosticsEntry.Counter(
-            name = DiagnosticsCounterName.MAX_EVENTS_STORED_LIMIT_REACHED,
-            tags = mapOf(),
-            value = 1,
         )
         if (useCurrentThread) {
             trackEventInCurrentThread(event)
-            trackEventInCurrentThread(counter)
         } else {
             trackEvent(event)
-            trackEvent(counter)
         }
     }
 
@@ -229,15 +171,14 @@ internal class DiagnosticsTracker(
         billingResponseCode: Int,
         billingDebugMessage: String,
     ) {
-        val event = DiagnosticsEntry.Counter(
-            name = DiagnosticsCounterName.PRODUCT_DETAILS_NOT_SUPPORTED,
-            tags = mapOf(
+        val event = DiagnosticsEntry(
+            name = DiagnosticsEntryName.PRODUCT_DETAILS_NOT_SUPPORTED,
+            properties = mapOf(
                 "play_store_version" to (appConfig.playStoreVersionName ?: ""),
                 "play_services_version" to (appConfig.playServicesVersionName ?: ""),
-                BILLING_RESPONSE_CODE to billingResponseCode.toString(),
+                BILLING_RESPONSE_CODE to billingResponseCode,
                 BILLING_DEBUG_MESSAGE to billingDebugMessage,
             ),
-            value = 1,
         )
         trackEvent(event)
     }
@@ -249,12 +190,11 @@ internal class DiagnosticsTracker(
         if (verificationResult == VerificationResult.NOT_REQUESTED) {
             return
         }
-        val event = DiagnosticsEntry.Counter(
-            name = DiagnosticsCounterName.CUSTOMER_INFO_VERIFICATION_RESULT,
-            tags = mapOf(
+        val event = DiagnosticsEntry(
+            name = DiagnosticsEntryName.CUSTOMER_INFO_VERIFICATION_RESULT,
+            properties = mapOf(
                 VERIFICATION_RESULT_KEY to verificationResult.name,
             ),
-            value = 1,
         )
         trackEvent(event)
     }
@@ -268,11 +208,11 @@ internal class DiagnosticsTracker(
     internal fun trackEventInCurrentThread(diagnosticsEntry: DiagnosticsEntry) {
         if (isAndroidNOrNewer()) {
             val anonymizedEvent = diagnosticsAnonymizer.anonymizeEntryIfNeeded(diagnosticsEntry)
-            verboseLog("Tracking diagnostics event: $anonymizedEvent")
+            verboseLog("Tracking diagnostics entry: $anonymizedEvent")
             try {
                 diagnosticsFileHelper.appendEvent(anonymizedEvent)
             } catch (e: IOException) {
-                verboseLog("Error tracking diagnostics event: $e")
+                verboseLog("Error tracking diagnostics entry: $e")
             }
         }
     }
