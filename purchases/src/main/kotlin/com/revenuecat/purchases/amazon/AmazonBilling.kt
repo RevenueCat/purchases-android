@@ -33,7 +33,9 @@ import com.revenuecat.purchases.common.DefaultDateProvider
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.ReplaceProductInfo
 import com.revenuecat.purchases.common.StoreProductsCallback
+import com.revenuecat.purchases.common.between
 import com.revenuecat.purchases.common.caching.DeviceCache
+import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.sha1
@@ -47,7 +49,9 @@ import com.revenuecat.purchases.strings.PurchaseStrings
 import com.revenuecat.purchases.strings.RestoreStrings
 import org.json.JSONException
 import org.json.JSONObject
+import java.util.Date
 import java.util.concurrent.ConcurrentLinkedQueue
+import kotlin.time.Duration
 import com.revenuecat.purchases.ProductType as RevenueCatProductType
 
 private const val TERM_SKU_JSON_KEY = "termSku"
@@ -60,6 +64,7 @@ internal class AmazonBilling(
     private val observerMode: Boolean,
     private val mainHandler: Handler,
     stateProvider: PurchasesStateProvider,
+    private val diagnosticsTrackerIfEnabled: DiagnosticsTracker?,
     private val purchasingServiceProvider: PurchasingServiceProvider = DefaultPurchasingServiceProvider(),
     private val productDataHandler: ProductDataResponseListener =
         ProductDataHandler(purchasingServiceProvider, mainHandler),
@@ -85,6 +90,7 @@ internal class AmazonBilling(
         mainHandler: Handler,
         backendHelper: BackendHelper,
         stateProvider: PurchasesStateProvider,
+        diagnosticsTracker: DiagnosticsTracker?,
     ) : this(
         applicationContext,
         AmazonBackend(backendHelper),
@@ -92,6 +98,7 @@ internal class AmazonBilling(
         observerMode,
         mainHandler,
         stateProvider,
+        diagnosticsTracker,
     )
 
     private var connected = false
@@ -179,7 +186,19 @@ internal class AmazonBilling(
             if (connectionError == null) {
                 userDataHandler.getUserData(
                     onSuccess = { userData ->
-                        productDataHandler.getProductData(productIds, userData.marketplace, onReceive, onError)
+                        val requestStartTime = dateProvider.now
+                        productDataHandler.getProductData(
+                            productIds,
+                            userData.marketplace,
+                            {
+                                trackAmazonQueryProductDetailsRequestIfNeeded(wasSuccessful = true, requestStartTime)
+                                onReceive(it)
+                            },
+                            {
+                                trackAmazonQueryProductDetailsRequestIfNeeded(wasSuccessful = false, requestStartTime)
+                                onError(it)
+                            },
+                        )
                     },
                     onError,
                 )
@@ -411,8 +430,10 @@ internal class AmazonBilling(
     ) {
         executeRequestOnUIThread { connectionError ->
             if (connectionError == null) {
+                val requestStartTime = dateProvider.now
                 purchaseUpdatesHandler.queryPurchases(
                     onSuccess = onSuccess@{ receipts, userData ->
+                        trackAmazonQueryPurchasesRequestIfNeeded(wasSuccessful = true, requestStartTime)
                         val filteredReceipts = if (filterOnlyActivePurchases) {
                             // This filters out expired receipts according to the current date.
                             // Note that this is not calculating the expiration date of the purchase,
@@ -447,7 +468,10 @@ internal class AmazonBilling(
                             onSuccess(purchasesByHashedToken)
                         }
                     },
-                    onError,
+                    onError = {
+                        trackAmazonQueryPurchasesRequestIfNeeded(wasSuccessful = false, requestStartTime)
+                        onError(it)
+                    },
                 )
             } else {
                 onError(connectionError)
@@ -594,4 +618,26 @@ internal class AmazonBilling(
             mainHandler.post(runnable)
         }
     }
+
+    // region Events
+    private fun trackAmazonQueryProductDetailsRequestIfNeeded(
+        wasSuccessful: Boolean,
+        requestStartTime: Date,
+    ) {
+        diagnosticsTrackerIfEnabled?.trackAmazonQueryProductDetailsRequest(
+            responseTime = Duration.between(requestStartTime, dateProvider.now),
+            wasSuccessful,
+        )
+    }
+
+    private fun trackAmazonQueryPurchasesRequestIfNeeded(
+        wasSuccessful: Boolean,
+        requestStartTime: Date,
+    ) {
+        diagnosticsTrackerIfEnabled?.trackAmazonQueryPurchasesRequest(
+            responseTime = Duration.between(requestStartTime, dateProvider.now),
+            wasSuccessful,
+        )
+    }
+    // endregion
 }

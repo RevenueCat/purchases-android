@@ -2,6 +2,8 @@ package com.revenuecat.purchases.common.diagnostics
 
 import android.content.Context
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.EntitlementInfos
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.AppConfig
@@ -31,13 +33,13 @@ import kotlin.time.Duration.Companion.milliseconds
 @Config(manifest = Config.NONE)
 class DiagnosticsTrackerTest {
 
-    private val testDiagnosticsEntry = DiagnosticsEntry.Event(
-        name = DiagnosticsEventName.HTTP_REQUEST_PERFORMED,
+    private val testDiagnosticsEntry = DiagnosticsEntry(
+        name = DiagnosticsEntryName.HTTP_REQUEST_PERFORMED,
         properties = mapOf("test-key-1" to "test-value-1")
     )
 
-    private val testAnonymizedEvent = DiagnosticsEntry.Event(
-        name = DiagnosticsEventName.HTTP_REQUEST_PERFORMED,
+    private val testAnonymizedEvent = DiagnosticsEntry(
+        name = DiagnosticsEntryName.HTTP_REQUEST_PERFORMED,
         properties = mapOf("test-key-1" to "test-anonymized-value-1")
     )
 
@@ -129,9 +131,7 @@ class DiagnosticsTrackerTest {
         )
         verify(exactly = 1) {
             diagnosticsFileHelper.appendEvent(match { event ->
-                event is DiagnosticsEntry.Event &&
-                    event.name == DiagnosticsEventName.HTTP_REQUEST_PERFORMED &&
-                    event.properties == expectedProperties
+                event.name == DiagnosticsEntryName.HTTP_REQUEST_PERFORMED && event.properties == expectedProperties
             })
         }
     }
@@ -157,37 +157,7 @@ class DiagnosticsTrackerTest {
         )
         verify(exactly = 1) {
             diagnosticsFileHelper.appendEvent(match { event ->
-                event is DiagnosticsEntry.Event &&
-                    event.name == DiagnosticsEventName.HTTP_REQUEST_PERFORMED &&
-                    event.properties == expectedProperties
-            })
-        }
-    }
-
-    @Test
-    fun `trackHttpRequestPerformed tracks counter`() {
-        val expectedProperties = mapOf(
-            "endpoint_name" to "post_receipt",
-            "successful" to "true",
-            "response_code" to "200",
-            "etag_hit" to "true",
-            "verification_result" to "NOT_REQUESTED"
-        )
-        every { diagnosticsFileHelper.appendEvent(any()) } just Runs
-        diagnosticsTracker.trackHttpRequestPerformed(
-            Endpoint.PostReceipt,
-            1234L.milliseconds,
-            true,
-            200,
-            HTTPResult.Origin.CACHE,
-            VerificationResult.NOT_REQUESTED
-        )
-        verify(exactly = 1) {
-            diagnosticsFileHelper.appendEvent(match { event ->
-                event is DiagnosticsEntry.Counter &&
-                    event.name == DiagnosticsCounterName.HTTP_REQUEST_PERFORMED &&
-                    event.tags == expectedProperties &&
-                    event.value == 1
+                event.name == DiagnosticsEntryName.HTTP_REQUEST_PERFORMED && event.properties == expectedProperties
             })
         }
     }
@@ -198,12 +168,13 @@ class DiagnosticsTrackerTest {
         diagnosticsTracker.trackMaxEventsStoredLimitReached()
         verify(exactly = 1) {
             diagnosticsFileHelper.appendEvent(match { event ->
-                event is DiagnosticsEntry.Event &&
-                    event.name == DiagnosticsEventName.MAX_EVENTS_STORED_LIMIT_REACHED &&
+                event.name == DiagnosticsEntryName.MAX_EVENTS_STORED_LIMIT_REACHED &&
                     event.properties == emptyMap<String, Any>()
             })
         }
     }
+
+    // region Google Billing
 
     @Test
     fun `trackGoogleQueryProductDetailsRequest tracks correct event`() {
@@ -222,8 +193,7 @@ class DiagnosticsTrackerTest {
         )
         verify(exactly = 1) {
             diagnosticsFileHelper.appendEvent(match { event ->
-                event is DiagnosticsEntry.Event &&
-                    event.name == DiagnosticsEventName.GOOGLE_QUERY_PRODUCT_DETAILS_REQUEST &&
+                event.name == DiagnosticsEntryName.GOOGLE_QUERY_PRODUCT_DETAILS_REQUEST &&
                     event.properties == expectedProperties
             })
         }
@@ -246,8 +216,7 @@ class DiagnosticsTrackerTest {
         )
         verify(exactly = 1) {
             diagnosticsFileHelper.appendEvent(match { event ->
-                event is DiagnosticsEntry.Event &&
-                    event.name == DiagnosticsEventName.GOOGLE_QUERY_PURCHASES_REQUEST &&
+                event.name == DiagnosticsEntryName.GOOGLE_QUERY_PURCHASES_REQUEST &&
                     event.properties == expectedProperties
             })
         }
@@ -270,19 +239,62 @@ class DiagnosticsTrackerTest {
         )
         verify(exactly = 1) {
             diagnosticsFileHelper.appendEvent(match { event ->
-                event is DiagnosticsEntry.Event &&
-                    event.name == DiagnosticsEventName.GOOGLE_QUERY_PURCHASE_HISTORY_REQUEST &&
+                event.name == DiagnosticsEntryName.GOOGLE_QUERY_PURCHASE_HISTORY_REQUEST &&
                     event.properties == expectedProperties
             })
         }
     }
+
+    // endregion
+
+    // region Amazon Billing
+
+    @Test
+    fun `trackAmazonQueryProductDetailsRequest tracks correct event`() {
+        val expectedTags = mapOf(
+            "successful" to true,
+            "response_time_millis" to 1234L,
+        )
+        every { diagnosticsFileHelper.appendEvent(any()) } just Runs
+        diagnosticsTracker.trackAmazonQueryProductDetailsRequest(
+            wasSuccessful = true,
+            responseTime = 1234L.milliseconds
+        )
+        verify(exactly = 1) {
+            diagnosticsFileHelper.appendEvent(match { event ->
+                event.name == DiagnosticsEntryName.AMAZON_QUERY_PRODUCT_DETAILS_REQUEST &&
+                    event.properties == expectedTags
+            })
+        }
+    }
+
+    @Test
+    fun `trackAmazonQueryPurchasesRequest tracks correct event`() {
+        val expectedTags = mapOf(
+            "successful" to true,
+            "response_time_millis" to 1234L,
+        )
+        every { diagnosticsFileHelper.appendEvent(any()) } just Runs
+        diagnosticsTracker.trackAmazonQueryPurchasesRequest(
+            wasSuccessful = true,
+            responseTime = 1234L.milliseconds
+        )
+        verify(exactly = 1) {
+            diagnosticsFileHelper.appendEvent(match { event ->
+                event.name == DiagnosticsEntryName.AMAZON_QUERY_PURCHASES_REQUEST &&
+                    event.properties == expectedTags
+            })
+        }
+    }
+
+    // endregion
 
     @Test
     fun `trackFeatureNotSupported tracks correct event`() {
         val expectedProperties = mapOf(
             "play_store_version" to "123",
             "play_services_version" to "456",
-            "billing_response_code" to "-2",
+            "billing_response_code" to -2,
             "billing_debug_message" to "debug message",
         )
         every { diagnosticsFileHelper.appendEvent(any()) } just Runs
@@ -292,9 +304,45 @@ class DiagnosticsTrackerTest {
         )
         verify(exactly = 1) {
             diagnosticsFileHelper.appendEvent(match { event ->
-                event is DiagnosticsEntry.Counter &&
-                    event.name == DiagnosticsCounterName.PRODUCT_DETAILS_NOT_SUPPORTED &&
-                    event.tags == expectedProperties
+                event.name == DiagnosticsEntryName.PRODUCT_DETAILS_NOT_SUPPORTED &&
+                    event.properties == expectedProperties
+            })
+        }
+    }
+
+    @Test
+    fun `trackCustomerInfoVerificationResultIfNeeded does not track when verification not requested`() {
+        val customerInfo = mockk<CustomerInfo>().apply {
+            every { entitlements } returns mockk<EntitlementInfos>().apply {
+                every { verification } returns VerificationResult.NOT_REQUESTED
+            }
+        }
+        diagnosticsTracker.trackCustomerInfoVerificationResultIfNeeded(
+            customerInfo = customerInfo,
+        )
+        verify(exactly = 0) {
+            diagnosticsFileHelper.appendEvent(any())
+        }
+    }
+
+    @Test
+    fun `trackCustomerInfoVerificationResultIfNeeded tracks when verification is failed`() {
+        val expectedProperties = mapOf(
+            "verification_result" to "FAILED",
+        )
+        every { diagnosticsFileHelper.appendEvent(any()) } just Runs
+        val customerInfo = mockk<CustomerInfo>().apply {
+            every { entitlements } returns mockk<EntitlementInfos>().apply {
+                every { verification } returns VerificationResult.FAILED
+            }
+        }
+        diagnosticsTracker.trackCustomerInfoVerificationResultIfNeeded(
+            customerInfo = customerInfo,
+        )
+        verify(exactly = 1) {
+            diagnosticsFileHelper.appendEvent(match { event ->
+                event.name == DiagnosticsEntryName.CUSTOMER_INFO_VERIFICATION_RESULT &&
+                    event.properties == expectedProperties
             })
         }
     }

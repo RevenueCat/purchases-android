@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.common.diagnostics
 
+import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Dispatcher
@@ -15,6 +16,7 @@ import kotlin.time.Duration
  * This class is the entry point for all diagnostics tracking. It contains all information for all events
  * sent and their properties. Use this class if you want to send a a diagnostics entry.
  */
+@Suppress("TooManyFunctions")
 internal class DiagnosticsTracker(
     private val appConfig: AppConfig,
     private val diagnosticsFileHelper: EventsFileHelper<DiagnosticsEntry>,
@@ -29,6 +31,8 @@ internal class DiagnosticsTracker(
         const val VERIFICATION_RESULT_KEY = "verification_result"
         const val RESPONSE_TIME_MILLIS_KEY = "response_time_millis"
         const val PRODUCT_TYPE_QUERIED_KEY = "product_type_queried"
+        const val BILLING_RESPONSE_CODE = "billing_response_code"
+        const val BILLING_DEBUG_MESSAGE = "billing_debug_message"
     }
 
     @Suppress("LongParameterList")
@@ -42,8 +46,8 @@ internal class DiagnosticsTracker(
     ) {
         val eTagHit = resultOrigin == HTTPResult.Origin.CACHE
         trackEvent(
-            DiagnosticsEntry.Event(
-                name = DiagnosticsEventName.HTTP_REQUEST_PERFORMED,
+            DiagnosticsEntry(
+                name = DiagnosticsEntryName.HTTP_REQUEST_PERFORMED,
                 properties = mapOf(
                     ENDPOINT_NAME_KEY to endpoint.name,
                     RESPONSE_TIME_MILLIS_KEY to responseTime.inWholeMilliseconds,
@@ -54,21 +58,9 @@ internal class DiagnosticsTracker(
                 ),
             ),
         )
-        // We also send http requests as a counter to have more real-time data
-        trackEvent(
-            DiagnosticsEntry.Counter(
-                name = DiagnosticsCounterName.HTTP_REQUEST_PERFORMED,
-                tags = mapOf(
-                    ENDPOINT_NAME_KEY to endpoint.name,
-                    SUCCESSFUL_KEY to wasSuccessful.toString(),
-                    RESPONSE_CODE_KEY to responseCode.toString(),
-                    ETAG_HIT_KEY to eTagHit.toString(),
-                    VERIFICATION_RESULT_KEY to verificationResult.name,
-                ),
-                value = 1,
-            ),
-        )
     }
+
+    // region Google
 
     fun trackGoogleQueryProductDetailsRequest(
         productType: String,
@@ -77,12 +69,12 @@ internal class DiagnosticsTracker(
         responseTime: Duration,
     ) {
         trackEvent(
-            DiagnosticsEntry.Event(
-                name = DiagnosticsEventName.GOOGLE_QUERY_PRODUCT_DETAILS_REQUEST,
+            DiagnosticsEntry(
+                name = DiagnosticsEntryName.GOOGLE_QUERY_PRODUCT_DETAILS_REQUEST,
                 properties = mapOf(
                     PRODUCT_TYPE_QUERIED_KEY to productType,
-                    "billing_response_code" to billingResponseCode,
-                    "billing_debug_message" to billingDebugMessage,
+                    BILLING_RESPONSE_CODE to billingResponseCode,
+                    BILLING_DEBUG_MESSAGE to billingDebugMessage,
                     RESPONSE_TIME_MILLIS_KEY to responseTime.inWholeMilliseconds,
                 ),
             ),
@@ -96,12 +88,12 @@ internal class DiagnosticsTracker(
         responseTime: Duration,
     ) {
         trackEvent(
-            DiagnosticsEntry.Event(
-                name = DiagnosticsEventName.GOOGLE_QUERY_PURCHASES_REQUEST,
+            DiagnosticsEntry(
+                name = DiagnosticsEntryName.GOOGLE_QUERY_PURCHASES_REQUEST,
                 properties = mapOf(
                     PRODUCT_TYPE_QUERIED_KEY to productType,
-                    "billing_response_code" to billingResponseCode,
-                    "billing_debug_message" to billingDebugMessage,
+                    BILLING_RESPONSE_CODE to billingResponseCode,
+                    BILLING_DEBUG_MESSAGE to billingDebugMessage,
                     RESPONSE_TIME_MILLIS_KEY to responseTime.inWholeMilliseconds,
                 ),
             ),
@@ -115,21 +107,57 @@ internal class DiagnosticsTracker(
         responseTime: Duration,
     ) {
         trackEvent(
-            DiagnosticsEntry.Event(
-                name = DiagnosticsEventName.GOOGLE_QUERY_PURCHASE_HISTORY_REQUEST,
+            DiagnosticsEntry(
+                name = DiagnosticsEntryName.GOOGLE_QUERY_PURCHASE_HISTORY_REQUEST,
                 properties = mapOf(
                     PRODUCT_TYPE_QUERIED_KEY to productType,
-                    "billing_response_code" to billingResponseCode,
-                    "billing_debug_message" to billingDebugMessage,
+                    BILLING_RESPONSE_CODE to billingResponseCode,
+                    BILLING_DEBUG_MESSAGE to billingDebugMessage,
                     RESPONSE_TIME_MILLIS_KEY to responseTime.inWholeMilliseconds,
                 ),
             ),
         )
     }
 
+    // endregion
+
+    // region Amazon
+
+    fun trackAmazonQueryProductDetailsRequest(
+        responseTime: Duration,
+        wasSuccessful: Boolean,
+    ) {
+        trackEvent(
+            DiagnosticsEntry(
+                name = DiagnosticsEntryName.AMAZON_QUERY_PRODUCT_DETAILS_REQUEST,
+                properties = mapOf(
+                    SUCCESSFUL_KEY to wasSuccessful,
+                    RESPONSE_TIME_MILLIS_KEY to responseTime.inWholeMilliseconds,
+                ),
+            ),
+        )
+    }
+
+    fun trackAmazonQueryPurchasesRequest(
+        responseTime: Duration,
+        wasSuccessful: Boolean,
+    ) {
+        trackEvent(
+            DiagnosticsEntry(
+                name = DiagnosticsEntryName.AMAZON_QUERY_PURCHASES_REQUEST,
+                properties = mapOf(
+                    SUCCESSFUL_KEY to wasSuccessful,
+                    RESPONSE_TIME_MILLIS_KEY to responseTime.inWholeMilliseconds,
+                ),
+            ),
+        )
+    }
+
+    // endregion
+
     fun trackMaxEventsStoredLimitReached(useCurrentThread: Boolean = true) {
-        val event = DiagnosticsEntry.Event(
-            name = DiagnosticsEventName.MAX_EVENTS_STORED_LIMIT_REACHED,
+        val event = DiagnosticsEntry(
+            name = DiagnosticsEntryName.MAX_EVENTS_STORED_LIMIT_REACHED,
             properties = mapOf(),
         )
         if (useCurrentThread) {
@@ -143,15 +171,30 @@ internal class DiagnosticsTracker(
         billingResponseCode: Int,
         billingDebugMessage: String,
     ) {
-        val event = DiagnosticsEntry.Counter(
-            name = DiagnosticsCounterName.PRODUCT_DETAILS_NOT_SUPPORTED,
-            tags = mapOf(
+        val event = DiagnosticsEntry(
+            name = DiagnosticsEntryName.PRODUCT_DETAILS_NOT_SUPPORTED,
+            properties = mapOf(
                 "play_store_version" to (appConfig.playStoreVersionName ?: ""),
                 "play_services_version" to (appConfig.playServicesVersionName ?: ""),
-                "billing_response_code" to billingResponseCode.toString(),
-                "billing_debug_message" to billingDebugMessage,
+                BILLING_RESPONSE_CODE to billingResponseCode,
+                BILLING_DEBUG_MESSAGE to billingDebugMessage,
             ),
-            value = 1,
+        )
+        trackEvent(event)
+    }
+
+    fun trackCustomerInfoVerificationResultIfNeeded(
+        customerInfo: CustomerInfo,
+    ) {
+        val verificationResult = customerInfo.entitlements.verification
+        if (verificationResult == VerificationResult.NOT_REQUESTED) {
+            return
+        }
+        val event = DiagnosticsEntry(
+            name = DiagnosticsEntryName.CUSTOMER_INFO_VERIFICATION_RESULT,
+            properties = mapOf(
+                VERIFICATION_RESULT_KEY to verificationResult.name,
+            ),
         )
         trackEvent(event)
     }
@@ -165,11 +208,11 @@ internal class DiagnosticsTracker(
     internal fun trackEventInCurrentThread(diagnosticsEntry: DiagnosticsEntry) {
         if (isAndroidNOrNewer()) {
             val anonymizedEvent = diagnosticsAnonymizer.anonymizeEntryIfNeeded(diagnosticsEntry)
-            verboseLog("Tracking diagnostics event: $anonymizedEvent")
+            verboseLog("Tracking diagnostics entry: $anonymizedEvent")
             try {
                 diagnosticsFileHelper.appendEvent(anonymizedEvent)
             } catch (e: IOException) {
-                verboseLog("Error tracking diagnostics event: $e")
+                verboseLog("Error tracking diagnostics entry: $e")
             }
         }
     }
