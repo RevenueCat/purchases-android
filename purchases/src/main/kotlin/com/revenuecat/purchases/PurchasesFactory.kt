@@ -154,6 +154,7 @@ internal class PurchasesFactory(
             val offlineCustomerInfoCalculator = OfflineCustomerInfoCalculator(
                 PurchasedProductsFetcher(cache, billing),
                 appConfig,
+                diagnosticsTracker,
             )
 
             val offlineEntitlementsManager = OfflineEntitlementsManager(
@@ -161,6 +162,7 @@ internal class PurchasesFactory(
                 offlineCustomerInfoCalculator,
                 cache,
                 appConfig,
+                diagnosticsTracker,
             )
 
             val offeringsCache = OfferingsCache(cache)

@@ -13,6 +13,7 @@ import com.revenuecat.purchases.common.Constants
 import com.revenuecat.purchases.common.CustomerInfoFactory
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.DefaultDateProvider
+import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.responses.CustomerInfoResponseJsonKeys
 import com.revenuecat.purchases.common.responses.EntitlementsResponseJsonKeys
@@ -26,6 +27,7 @@ import java.util.Date
 internal class OfflineCustomerInfoCalculator(
     private val purchasedProductsFetcher: PurchasedProductsFetcher,
     private val appConfig: AppConfig,
+    private val diagnosticsTracker: DiagnosticsTracker?,
     private val dateProvider: DateProvider = DefaultDateProvider(),
 ) {
 
@@ -53,6 +55,7 @@ internal class OfflineCustomerInfoCalculator(
                         OfflineEntitlementsStrings.OFFLINE_ENTITLEMENTS_UNSUPPORTED_INAPP_PURCHASES,
                     )
                     errorLog(COMPUTING_OFFLINE_CUSTOMER_INFO_FAILED.format(error))
+                    diagnosticsTracker?.trackErrorEnteringOfflineEntitlementsMode(error)
                     onError(error)
                     return@queryActiveProducts
                 }
@@ -61,6 +64,7 @@ internal class OfflineCustomerInfoCalculator(
             },
             onError = { error ->
                 errorLog(COMPUTING_OFFLINE_CUSTOMER_INFO_FAILED.format(error))
+                diagnosticsTracker?.trackErrorEnteringOfflineEntitlementsMode(error)
                 onError(error)
             },
         )

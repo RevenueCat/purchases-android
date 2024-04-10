@@ -12,13 +12,18 @@ import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.ago
+import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.fromNow
 import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.strings.OfflineEntitlementsStrings
 import com.revenuecat.purchases.utils.add
 import com.revenuecat.purchases.utils.stubStoreTransactionFromPurchaseHistoryRecord
 import com.revenuecat.purchases.utils.subtract
+import io.mockk.Runs
 import io.mockk.every
+import io.mockk.just
 import io.mockk.mockk
+import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.json.JSONObject
 import org.junit.Before
@@ -40,6 +45,7 @@ class OfflineCustomerInfoCalculatorTest {
 
     private lateinit var purchasedProductsFetcher: PurchasedProductsFetcher
     private lateinit var appConfig: AppConfig
+    private lateinit var diagnosticsTracker: DiagnosticsTracker
 
     private lateinit var testDateProvider: DateProvider
 
@@ -51,6 +57,9 @@ class OfflineCustomerInfoCalculatorTest {
         appConfig = mockk<AppConfig>().apply {
             every { store } returns Store.PLAY_STORE
         }
+        diagnosticsTracker = mockk<DiagnosticsTracker>().apply {
+            every { trackErrorEnteringOfflineEntitlementsMode(any()) } just Runs
+        }
         testDateProvider = object : DateProvider {
             override val now: Date
                 get() = requestDate
@@ -58,6 +67,7 @@ class OfflineCustomerInfoCalculatorTest {
         offlineCustomerInfoCalculator = OfflineCustomerInfoCalculator(
             purchasedProductsFetcher,
             appConfig,
+            diagnosticsTracker,
             testDateProvider
         )
     }
@@ -442,6 +452,75 @@ class OfflineCustomerInfoCalculatorTest {
         )
         assertThat(receivedError).isNotNull
         assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
+    }
+
+    @Test
+    fun `when in app purchases found, error is tracked`() {
+        val productId = "test-product-id"
+        val storeTransaction = mockk<StoreTransaction>().apply {
+            every { type } returns ProductType.INAPP
+        }
+        val products = listOf(
+            PurchasedProduct(
+                productId,
+                null,
+                storeTransaction,
+                listOf("pro"),
+                null
+            )
+        )
+
+        every {
+            purchasedProductsFetcher.queryActiveProducts(
+                appUserID = appUserID,
+                onSuccess = captureLambda(),
+                onError = any()
+            )
+        } answers {
+            lambda<(List<PurchasedProduct>) -> Unit>().captured.invoke(products)
+        }
+
+        offlineCustomerInfoCalculator.computeOfflineCustomerInfo(
+            appUserID = appUserID,
+            onSuccess = { fail("Should've failed") },
+            onError = { }
+        )
+
+        val expectedError = PurchasesError(
+            PurchasesErrorCode.UnsupportedError,
+            OfflineEntitlementsStrings.OFFLINE_ENTITLEMENTS_UNSUPPORTED_INAPP_PURCHASES
+        )
+        verify(exactly = 1) {
+            diagnosticsTracker.trackErrorEnteringOfflineEntitlementsMode(match {
+                it.code == expectedError.code && it.underlyingErrorMessage == expectedError.underlyingErrorMessage
+            })
+        }
+    }
+
+    @Test
+    fun `when other errors, error is tracked`() {
+        every {
+            purchasedProductsFetcher.queryActiveProducts(
+                appUserID = appUserID,
+                onSuccess = any(),
+                onError = captureLambda()
+            )
+        } answers {
+            lambda<(PurchasesError) -> Unit>().captured.invoke(PurchasesError(PurchasesErrorCode.StoreProblemError))
+        }
+
+        offlineCustomerInfoCalculator.computeOfflineCustomerInfo(
+            appUserID = appUserID,
+            onSuccess = { fail("Should've failed") },
+            onError = { }
+        )
+
+        val expectedError = PurchasesError(PurchasesErrorCode.StoreProblemError)
+        verify(exactly = 1) {
+            diagnosticsTracker.trackErrorEnteringOfflineEntitlementsMode(match {
+                it.code == expectedError.code && it.underlyingErrorMessage == expectedError.underlyingErrorMessage
+            })
+        }
     }
 
     // region helpers

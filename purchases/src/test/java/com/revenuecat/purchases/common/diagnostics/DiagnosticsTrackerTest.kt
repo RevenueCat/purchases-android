@@ -4,6 +4,8 @@ import android.content.Context
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.EntitlementInfos
+import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.AppConfig
@@ -14,6 +16,7 @@ import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.playServicesVersionName
 import com.revenuecat.purchases.common.playStoreVersionName
+import com.revenuecat.purchases.strings.OfflineEntitlementsStrings
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
@@ -346,4 +349,63 @@ class DiagnosticsTrackerTest {
             })
         }
     }
+
+    // region Offline Entitlements
+
+    @Test
+    fun `trackEnteredOfflineEntitlementsMode tracks correct data`() {
+        val expectedProperties = mapOf<String, Any>()
+        every { diagnosticsFileHelper.appendEvent(any()) } just Runs
+        diagnosticsTracker.trackEnteredOfflineEntitlementsMode()
+        verify(exactly = 1) {
+            diagnosticsFileHelper.appendEvent(match { event ->
+                event.name == DiagnosticsEntryName.ENTERED_OFFLINE_ENTITLEMENTS_MODE &&
+                    event.properties == expectedProperties
+            })
+        }
+    }
+
+    @Test
+    fun `trackErrorEnteringOfflineEntitlementsMode tracks correct data for unknown error`() {
+        val expectedProperties = mapOf(
+            "offline_entitlement_error_reason" to "unknown",
+            "error_message" to "Unknown error.. Underlying error: test error message",
+        )
+        every { diagnosticsFileHelper.appendEvent(any()) } just Runs
+        diagnosticsTracker.trackErrorEnteringOfflineEntitlementsMode(
+            PurchasesError(
+                PurchasesErrorCode.UnknownError,
+                "test error message"
+            )
+        )
+        verify(exactly = 1) {
+            diagnosticsFileHelper.appendEvent(match { event ->
+                event.name == DiagnosticsEntryName.ERROR_ENTERING_OFFLINE_ENTITLEMENTS_MODE &&
+                    event.properties == expectedProperties
+            })
+        }
+    }
+
+    @Test
+    fun `trackErrorEnteringOfflineEntitlementsMode tracks correct data for one time purchase error`() {
+        val expectedProperties = mapOf(
+            "offline_entitlement_error_reason" to "one_time_purchase_found",
+            "error_message" to "There was a problem with the operation. Looks like we doesn't support that yet. Check the underlying error for more details.. Underlying error: Offline entitlements are not supported for active inapp purchases. Found active inapp purchases.",
+        )
+        every { diagnosticsFileHelper.appendEvent(any()) } just Runs
+        diagnosticsTracker.trackErrorEnteringOfflineEntitlementsMode(
+            PurchasesError(
+                PurchasesErrorCode.UnsupportedError,
+                underlyingErrorMessage = OfflineEntitlementsStrings.OFFLINE_ENTITLEMENTS_UNSUPPORTED_INAPP_PURCHASES,
+            )
+        )
+        verify(exactly = 1) {
+            diagnosticsFileHelper.appendEvent(match { event ->
+                event.name == DiagnosticsEntryName.ERROR_ENTERING_OFFLINE_ENTITLEMENTS_MODE &&
+                    event.properties == expectedProperties
+            })
+        }
+    }
+
+    // endregion
 }
