@@ -2,6 +2,7 @@ package com.revenuecat.purchasetester
 
 import android.graphics.Color
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -13,6 +14,7 @@ import androidx.navigation.fragment.navArgs
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.transition.MaterialContainerTransform
+import com.revenuecat.purchases.AmazonLWAConsentStatus
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PurchaseParams
@@ -22,6 +24,7 @@ import com.revenuecat.purchases.PurchasesTransactionException
 import com.revenuecat.purchases.awaitPurchase
 import com.revenuecat.purchases.getCustomerInfoWith
 import com.revenuecat.purchases.getOfferingsWith
+import com.revenuecat.purchases.interfaces.Callback
 import com.revenuecat.purchases.models.GooglePurchasingData
 import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.PurchasingData
@@ -58,6 +61,13 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
         Purchases.sharedInstance.getCustomerInfoWith {
             activeSubscriptions = it.activeSubscriptions
         }
+
+        Log.i("Consent Status", "checking")
+        Purchases.sharedInstance.getAmazonLWAConsentStatus({
+            Log.i("Consent Status", it.toString())
+        }, {
+            Log.e("Consent Status", it.toString())
+        })
 
         dataStoreUtils = DataStoreUtils(requireActivity().applicationContext.configurationDataStore)
         binding = FragmentOfferingBinding.inflate(inflater)
