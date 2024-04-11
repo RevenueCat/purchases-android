@@ -30,7 +30,7 @@ fun BoxScope.CloseButton(
                 Icon(
                     painter = painterResource(id = R.drawable.close),
                     contentDescription = null,
-                    tint = color ?: Color.Black
+                    tint = color ?: Color.Black,
                 )
             }
         }
