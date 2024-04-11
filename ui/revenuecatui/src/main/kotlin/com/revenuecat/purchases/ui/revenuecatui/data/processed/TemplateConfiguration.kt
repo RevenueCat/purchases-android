@@ -51,6 +51,7 @@ internal data class TemplateConfiguration(
         val accent1: Color,
         val accent2: Color,
         val accent3: Color,
+        val closeButton: Color?,
     )
 
     sealed class PackageConfiguration(open val default: PackageInfo, open val all: List<PackageInfo>) {

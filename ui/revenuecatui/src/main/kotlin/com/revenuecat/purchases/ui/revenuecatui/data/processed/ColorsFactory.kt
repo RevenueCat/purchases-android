@@ -18,6 +18,7 @@ internal object ColorsFactory {
         val accent1ColorInt = paywallDataColors.accent1?.colorInt ?: callToActionForegroundColorInt
         val accent2ColorInt = paywallDataColors.accent2?.colorInt ?: accent1ColorInt
         val accent3ColorInt = paywallDataColors.accent3?.colorInt ?: accent2ColorInt
+        val closeButtonInt = paywallDataColors.closeButton?.colorInt
         return TemplateConfiguration.Colors(
             background = Color(backgroundColorInt),
             text1 = Color(text1ColorInt),
@@ -29,6 +30,7 @@ internal object ColorsFactory {
             accent1 = Color(accent1ColorInt),
             accent2 = Color(accent2ColorInt),
             accent3 = Color(accent3ColorInt),
+            closeButton = closeButtonInt?.let { Color(it) },
         )
     }
 }

@@ -268,6 +268,12 @@ data class PaywallData(
              */
             @SerialName("accent_3")
             @Serializable(with = PaywallColor.Serializer::class) val accent3: PaywallColor? = null,
+
+            /**
+             * Close button accent color.
+             */
+            @SerialName("close_button")
+            @Serializable(with = PaywallColor.Serializer::class) val closeButton: PaywallColor? = null,
         )
     }
 

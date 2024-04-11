@@ -112,6 +112,7 @@ private fun LoadingPaywall(
         }
         CloseButton(
             shouldDisplayDismissButton = state.shouldDisplayDismissButton,
+            color = null,
             actionInProgress = viewModel.actionInProgress.value,
             onClick = onDismiss,
         )
