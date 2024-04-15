@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -30,7 +31,7 @@ fun BoxScope.CloseButton(
                 Icon(
                     painter = painterResource(id = R.drawable.close),
                     contentDescription = null,
-                    tint = color ?: Color.Black,
+                    tint = color ?: LocalContentColor.current,
                 )
             }
         }
