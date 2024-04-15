@@ -369,7 +369,7 @@ class DiagnosticsTrackerTest {
     fun `trackErrorEnteringOfflineEntitlementsMode tracks correct data for unknown error`() {
         val expectedProperties = mapOf(
             "offline_entitlement_error_reason" to "unknown",
-            "error_message" to "Unknown error.. Underlying error: test error message",
+            "error_message" to "Unknown error. Underlying error: test error message",
         )
         every { diagnosticsFileHelper.appendEvent(any()) } just Runs
         diagnosticsTracker.trackErrorEnteringOfflineEntitlementsMode(
@@ -390,7 +390,7 @@ class DiagnosticsTrackerTest {
     fun `trackErrorEnteringOfflineEntitlementsMode tracks correct data for one time purchase error`() {
         val expectedProperties = mapOf(
             "offline_entitlement_error_reason" to "one_time_purchase_found",
-            "error_message" to "There was a problem with the operation. Looks like we doesn't support that yet. Check the underlying error for more details.. Underlying error: Offline entitlements are not supported for active inapp purchases. Found active inapp purchases.",
+            "error_message" to "There was a problem with the operation. Looks like we don't support that yet. Check the underlying error for more details. Underlying error: Offline entitlements are not supported for one time purchases. Found one time purchases.",
         )
         every { diagnosticsFileHelper.appendEvent(any()) } just Runs
         diagnosticsTracker.trackErrorEnteringOfflineEntitlementsMode(

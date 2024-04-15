@@ -224,7 +224,7 @@ internal class DiagnosticsTracker(
             name = DiagnosticsEntryName.ERROR_ENTERING_OFFLINE_ENTITLEMENTS_MODE,
             properties = mapOf(
                 "offline_entitlement_error_reason" to reason,
-                "error_message" to "${error.message}. Underlying error: ${error.underlyingErrorMessage}",
+                "error_message" to "${error.message} Underlying error: ${error.underlyingErrorMessage}",
             ),
         )
         trackEvent(event)
