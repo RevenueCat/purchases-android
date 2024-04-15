@@ -37,6 +37,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModel
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModelFactory
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModelImpl
+import com.revenuecat.purchases.ui.revenuecatui.data.currentColors
 import com.revenuecat.purchases.ui.revenuecatui.data.isInFullScreenMode
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.PaywallTemplate
 import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
@@ -148,6 +149,7 @@ private fun LoadedPaywall(state: PaywallState.Loaded, viewModel: PaywallViewMode
         }
         CloseButton(
             shouldDisplayDismissButton = state.shouldDisplayDismissButton,
+            color = state.currentColors.closeButton,
             actionInProgress = viewModel.actionInProgress.value,
             onClick = viewModel::closePaywall,
         )

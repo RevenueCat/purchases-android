@@ -254,6 +254,7 @@ object SamplePaywalls {
                         callToActionForeground = PaywallColor("#FFFFFF"),
                         accent1 = PaywallColor("#F4E971"),
                         accent2 = PaywallColor("#121212"),
+                        closeButton = PaywallColor("#00FF00"),
                     ),
                     dark = PaywallData.Configuration.Colors(
                         background = PaywallColor("#272727"),
@@ -263,6 +264,7 @@ object SamplePaywalls {
                         callToActionForeground = PaywallColor("#000000"),
                         accent1 = PaywallColor("#F4E971"),
                         accent2 = PaywallColor("#4A4A4A"),
+                        closeButton = PaywallColor("#00FF00"),
                     ),
                 ),
                 termsOfServiceURL = tosURL,
