@@ -8,8 +8,7 @@ final class EntitlementVerificationModeAPI {
         switch (verificationMode) {
             case DISABLED:
             case INFORMATIONAL:
-            // Hidden ENFORCED mode during feature beta
-            // case ENFORCED:
+            case ENFORCED:
         }
     }
 }

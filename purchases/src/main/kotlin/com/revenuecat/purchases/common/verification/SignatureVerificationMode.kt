@@ -12,9 +12,8 @@ internal sealed class SignatureVerificationMode {
                 EntitlementVerificationMode.DISABLED -> Disabled
                 EntitlementVerificationMode.INFORMATIONAL ->
                     Informational(IntermediateSignatureHelper(rootVerifier ?: DefaultSignatureVerifier()))
-                // Hidden ENFORCED mode temporarily. Will be added back in the future.
-                // EntitlementVerificationMode.ENFORCED ->
-                //     Enforced(signatureVerifier ?: DefaultSignatureVerifier())
+                EntitlementVerificationMode.ENFORCED ->
+                    Enforced(IntermediateSignatureHelper(rootVerifier ?: DefaultSignatureVerifier()))
             }
         }
 
