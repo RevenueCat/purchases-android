@@ -3,6 +3,7 @@ package com.revenuecat.apitester.kotlin
 import android.content.Context
 import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.DangerousSettings
 import com.revenuecat.purchases.EntitlementVerificationMode
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.Offerings
@@ -159,7 +160,10 @@ private class PurchasesAPI {
 
     @Suppress("ForbiddenComment")
     fun checkConfiguration(
+        context: Context,
+        executorService: ExecutorService,
         purchasesConfiguration: PurchasesConfiguration,
+        dangerousSettings: DangerousSettings,
     ) {
         val features: List<BillingFeature> = ArrayList()
         val configured: Boolean = Purchases.isConfigured
@@ -167,6 +171,27 @@ private class PurchasesAPI {
         Purchases.configure(purchasesConfiguration)
 
         Purchases.debugLogsEnabled = true
+
+        val configuration: PurchasesConfiguration = PurchasesConfiguration.Builder(context, "")
+            .appUserID("")
+            .observerMode(true)
+            .observerMode(false)
+            .showInAppMessagesAutomatically(true)
+            .service(executorService)
+            .diagnosticsEnabled(true)
+            .entitlementVerificationMode(EntitlementVerificationMode.INFORMATIONAL)
+            .dangerousSettings(dangerousSettings)
+            .build()
+    }
+
+    fun checkDangerousSettings() {
+        val dangerousSettings: DangerousSettings = DangerousSettings()
+        val dangerousSettings2: DangerousSettings = DangerousSettings(autoSyncPurchases = false)
+        val dangerousSettings3: DangerousSettings = DangerousSettings(doNotConsumeIAP = true)
+        val dangerousSettings4: DangerousSettings = DangerousSettings(autoSyncPurchases = false, doNotConsumeIAP = true)
+
+        val doNotConsumeIAP: Boolean = dangerousSettings.doNotConsumeIAP
+        val autoSyncPurchases: Boolean = dangerousSettings.autoSyncPurchases
     }
 
     fun checkLogInResult(
@@ -177,7 +202,11 @@ private class PurchasesAPI {
         LogInResult(customerInfo, created)
     }
 
-    fun checkAmazonConfiguration(context: Context, executorService: ExecutorService) {
+    fun checkAmazonConfiguration(
+        context: Context,
+        executorService: ExecutorService,
+        dangerousSettings: DangerousSettings,
+    ) {
         val amazonConfiguration: PurchasesConfiguration = AmazonConfiguration.Builder(context, "")
             .appUserID("")
             .observerMode(true)
@@ -186,6 +215,7 @@ private class PurchasesAPI {
             .service(executorService)
             .diagnosticsEnabled(true)
             .entitlementVerificationMode(EntitlementVerificationMode.INFORMATIONAL)
+            .dangerousSettings(dangerousSettings)
             .build()
     }
 

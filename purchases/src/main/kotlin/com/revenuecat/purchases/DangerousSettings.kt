@@ -9,7 +9,7 @@ data class DangerousSettings internal constructor(
      * automatically, and you will have to call syncPurchases whenever a new purchase is completed in order to send it
      * to the RevenueCat's backend. Auto syncing of purchases is enabled by default.
      */
-    val autoSyncPurchases: Boolean = true,
+    val autoSyncPurchases: Boolean,
 
     /**
      * Do not consume IAP (In app products) after a successful purchase. This can be useful when using IAP as lifetime
@@ -18,10 +18,11 @@ data class DangerousSettings internal constructor(
      * synced with multiple users in different devices, unless they are logged in with the same user ID.
      * This does not affect Amazon. This is disabled by default.
      */
-    val doNotConsumeIAP: Boolean = false,
+    val doNotConsumeIAP: Boolean,
 
     internal val customEntitlementComputation: Boolean = false,
 ) {
+    @JvmOverloads
     constructor(autoSyncPurchases: Boolean = true, doNotConsumeIAP: Boolean = false) :
-        this(autoSyncPurchases, doNotConsumeIAP, false)
+        this(autoSyncPurchases, doNotConsumeIAP, customEntitlementComputation = false)
 }

@@ -6,6 +6,7 @@ import androidx.annotation.NonNull;
 
 import com.revenuecat.purchases.CacheFetchPolicy;
 import com.revenuecat.purchases.CustomerInfo;
+import com.revenuecat.purchases.DangerousSettings;
 import com.revenuecat.purchases.EntitlementVerificationMode;
 import com.revenuecat.purchases.LogLevel;
 import com.revenuecat.purchases.Offerings;
@@ -116,16 +117,38 @@ final class PurchasesAPI {
 
     static void checkConfiguration(final Context context,
                                    final ExecutorService executorService,
-                                   final PurchasesConfiguration purchasesConfiguration) {
+                                   final PurchasesConfiguration purchasesConfiguration,
+                                   final DangerousSettings dangerousSettings) {
         final boolean configured = Purchases.isConfigured();
 
         Purchases.configure(purchasesConfiguration);
 
         final boolean debugLogs = Purchases.getDebugLogsEnabled();
+
+        PurchasesConfiguration configuration = new PurchasesConfiguration.Builder(context, "")
+                .appUserID("")
+                .observerMode(true)
+                .observerMode(false)
+                .service(executorService)
+                .diagnosticsEnabled(true)
+                .entitlementVerificationMode(EntitlementVerificationMode.INFORMATIONAL)
+                .showInAppMessagesAutomatically(true)
+                .dangerousSettings(dangerousSettings)
+                .build();
+    }
+
+    static void checkDangerousSettings(Boolean autoSyncPurchases, Boolean doNotConsumeIAP) {
+        final DangerousSettings dangerousSettings = new DangerousSettings();
+        final DangerousSettings dangerousSettings1 = new DangerousSettings(autoSyncPurchases);
+        final DangerousSettings dangerousSettings2 = new DangerousSettings(autoSyncPurchases, doNotConsumeIAP);
+
+        final Boolean autoSyncPurchases1 = dangerousSettings.getAutoSyncPurchases();
+        final Boolean doNotConsumeIAP1 = dangerousSettings.getDoNotConsumeIAP();
     }
 
     static void checkAmazonConfiguration(final Context context,
-                                         final ExecutorService executorService) {
+                                         final ExecutorService executorService,
+                                         final DangerousSettings dangerousSettings) {
         PurchasesConfiguration amazonConfiguration = new AmazonConfiguration.Builder(context, "")
                 .appUserID("")
                 .observerMode(true)
@@ -134,6 +157,7 @@ final class PurchasesAPI {
                 .diagnosticsEnabled(true)
                 .entitlementVerificationMode(EntitlementVerificationMode.INFORMATIONAL)
                 .showInAppMessagesAutomatically(true)
+                .dangerousSettings(dangerousSettings)
                 .build();
     }
 }
