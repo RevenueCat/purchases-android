@@ -1,12 +1,15 @@
 package com.revenuecat.purchases.common.diagnostics
 
 import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.verboseLog
+import com.revenuecat.purchases.strings.OfflineEntitlementsStrings
 import com.revenuecat.purchases.utils.EventsFileHelper
 import com.revenuecat.purchases.utils.isAndroidNOrNewer
 import java.io.IOException
@@ -198,6 +201,36 @@ internal class DiagnosticsTracker(
         )
         trackEvent(event)
     }
+
+    // region Offline Entitlements
+
+    fun trackEnteredOfflineEntitlementsMode() {
+        val event = DiagnosticsEntry(
+            name = DiagnosticsEntryName.ENTERED_OFFLINE_ENTITLEMENTS_MODE,
+            properties = mapOf(),
+        )
+        trackEvent(event)
+    }
+
+    fun trackErrorEnteringOfflineEntitlementsMode(error: PurchasesError) {
+        val isOneTimePurchaseFoundError = error.code == PurchasesErrorCode.UnsupportedError &&
+            error.underlyingErrorMessage == OfflineEntitlementsStrings.OFFLINE_ENTITLEMENTS_UNSUPPORTED_INAPP_PURCHASES
+        val reason = if (isOneTimePurchaseFoundError) {
+            "one_time_purchase_found"
+        } else {
+            "unknown"
+        }
+        val event = DiagnosticsEntry(
+            name = DiagnosticsEntryName.ERROR_ENTERING_OFFLINE_ENTITLEMENTS_MODE,
+            properties = mapOf(
+                "offline_entitlement_error_reason" to reason,
+                "error_message" to "${error.message} Underlying error: ${error.underlyingErrorMessage}",
+            ),
+        )
+        trackEvent(event)
+    }
+
+    // endregion
 
     fun trackEvent(diagnosticsEntry: DiagnosticsEntry) {
         diagnosticsDispatcher.enqueue(command = {

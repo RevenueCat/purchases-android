@@ -12,7 +12,7 @@ internal object OfflineEntitlementsStrings {
     const val ALREADY_CALCULATING_OFFLINE_CUSTOMER_INFO = "Already calculating offline customer info for %s."
     const val ERROR_PARSING_PRODUCT_ENTITLEMENT_MAPPING = "Error parsing cached product entitlement mapping: %s"
     const val OFFLINE_ENTITLEMENTS_UNSUPPORTED_INAPP_PURCHASES = "Offline entitlements are not supported for " +
-        "active inapp purchases. Found active inapp purchases."
+        "one time purchases. Found one time purchases. See for more info: https://rev.cat/offline-entitlements"
     const val PRODUCT_ENTITLEMENT_MAPPING_REQUIRED = "Product entitlement mapping is required for offline " +
         "entitlements. Skipping offline customer info calculation."
 }

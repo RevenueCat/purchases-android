@@ -58,7 +58,7 @@ enum class PurchasesErrorCode(val code: Int, val description: String) {
     ConfigurationError(23, "There is an issue with your configuration. Check the underlying error for more details."),
     UnsupportedError(
         24,
-        "There was a problem with the operation. Looks like we doesn't support " +
+        "There was a problem with the operation. Looks like we don't support " +
             "that yet. Check the underlying error for more details.",
     ),
     EmptySubscriberAttributesError(25, "A request for subscriber attributes returned none."),

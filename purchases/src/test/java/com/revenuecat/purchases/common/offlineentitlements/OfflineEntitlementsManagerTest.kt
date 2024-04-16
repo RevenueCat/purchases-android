@@ -7,6 +7,7 @@ import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.caching.DeviceCache
+import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import io.mockk.CapturingSlot
 import io.mockk.Runs
 import io.mockk.every
@@ -35,6 +36,7 @@ class OfflineEntitlementsManagerTest {
     private lateinit var deviceCache: DeviceCache
     private lateinit var offlineEntitlementsCalculator: OfflineCustomerInfoCalculator
     private lateinit var appConfig: AppConfig
+    private lateinit var diagnosticsTracker: DiagnosticsTracker
 
     private lateinit var offlineEntitlementsManager: OfflineEntitlementsManager
 
@@ -47,6 +49,9 @@ class OfflineEntitlementsManagerTest {
         deviceCache = mockk()
         offlineEntitlementsCalculator = mockk()
         appConfig = mockk()
+        diagnosticsTracker = mockk<DiagnosticsTracker>().apply {
+            every { trackEnteredOfflineEntitlementsMode() } just Runs
+        }
 
         every {
             deviceCache.getCachedAppUserID()
@@ -71,7 +76,8 @@ class OfflineEntitlementsManagerTest {
             backend,
             offlineEntitlementsCalculator,
             deviceCache,
-            appConfig
+            appConfig,
+            diagnosticsTracker,
         )
     }
 
@@ -381,6 +387,28 @@ class OfflineEntitlementsManagerTest {
             onSuccess = any(),
             onError = any()
         ) }
+    }
+
+    @Test
+    fun `calculateAndCacheOfflineCustomerInfo tracks entering offline customer info mode when successful`() {
+        mockCalculateOfflineEntitlements(successCustomerInfo = mockk())
+        offlineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(
+            appUserID,
+            onSuccess = {},
+            onError = { fail("Should succeed") }
+        )
+        verify(exactly = 1) { diagnosticsTracker.trackEnteredOfflineEntitlementsMode() }
+    }
+
+    @Test
+    fun `calculateAndCacheOfflineCustomerInfo does not track entering offline customer info mode when error`() {
+        mockCalculateOfflineEntitlements(error = PurchasesError(PurchasesErrorCode.UnknownError))
+        offlineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(
+            appUserID,
+            onSuccess = { fail("Should error") },
+            onError = {}
+        )
+        verify(exactly = 0) { diagnosticsTracker.trackEnteredOfflineEntitlementsMode() }
     }
 
     // endregion

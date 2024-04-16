@@ -7,6 +7,7 @@ import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.debugLog
+import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.warnLog
 import com.revenuecat.purchases.strings.OfflineEntitlementsStrings
@@ -16,6 +17,7 @@ internal class OfflineEntitlementsManager(
     private val offlineCustomerInfoCalculator: OfflineCustomerInfoCalculator,
     private val deviceCache: DeviceCache,
     private val appConfig: AppConfig,
+    private val diagnosticsTracker: DiagnosticsTracker?,
 ) {
     // We cache the offline customer info in memory, so it's not persisted.
     val offlineCustomerInfo: CustomerInfo?
@@ -74,6 +76,7 @@ internal class OfflineEntitlementsManager(
             onSuccess = { customerInfo ->
                 synchronized(this@OfflineEntitlementsManager) {
                     warnLog(OfflineEntitlementsStrings.USING_OFFLINE_ENTITLEMENTS_CUSTOMER_INFO)
+                    diagnosticsTracker?.trackEnteredOfflineEntitlementsMode()
                     _offlineCustomerInfo = customerInfo
                     deviceCache.getCachedAppUserID()?.let { deviceCache.clearCustomerInfoCache(it) }
                     val callbacks = offlineCustomerInfoCallbackCache.remove(appUserId)
