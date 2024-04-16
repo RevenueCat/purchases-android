@@ -11,6 +11,7 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.revenuecat.purchases.DangerousSettings
 import com.revenuecat.purchases.EntitlementVerificationMode
 import com.revenuecat.purchases.LogLevel
 import com.revenuecat.purchases.Purchases
@@ -117,6 +118,7 @@ class ConfigureFragment : Fragment() {
         val entitlementVerificationMode = EntitlementVerificationMode.values()[verificationModeIndex]
         val useAmazonStore = binding.storeRadioGroup.checkedRadioButtonId == R.id.amazon_store_radio_id
         val useObserverMode = binding.observerModeCheckbox.isChecked
+        val doNotConsumeIAP = binding.doNotConsumeIapCheckbox.isChecked
 
         val application = (requireActivity().application as MainApplication)
 
@@ -133,6 +135,7 @@ class ConfigureFragment : Fragment() {
             .diagnosticsEnabled(true)
             .entitlementVerificationMode(entitlementVerificationMode)
             .observerMode(useObserverMode)
+            .dangerousSettings(DangerousSettings(doNotConsumeIAP = doNotConsumeIAP))
             .build()
         Purchases.configure(configuration)
 

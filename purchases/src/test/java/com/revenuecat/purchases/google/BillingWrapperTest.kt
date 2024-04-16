@@ -28,6 +28,7 @@ import com.revenuecat.purchases.PurchasesStateCache
 import com.revenuecat.purchases.assertDebugLog
 import com.revenuecat.purchases.assertErrorLog
 import com.revenuecat.purchases.assertVerboseLog
+import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.ReplaceProductInfo
@@ -92,6 +93,7 @@ class BillingWrapperTest {
     private var handler: Handler = mockk()
     private var mockDeviceCache: DeviceCache = mockk()
     private var mockDiagnosticsTracker: DiagnosticsTracker = mockk()
+    private var mockAppConfig: AppConfig = mockk()
     private var mockDateProvider: DateProvider = mockk()
 
     private var mockPurchasesListener: BillingAbstract.PurchasesUpdatedListener = mockk()
@@ -158,6 +160,7 @@ class BillingWrapperTest {
             mockDeviceCache,
             mockDiagnosticsTracker,
             purchasesStateProvider,
+            mockAppConfig,
             mockDateProvider
         )
         wrapper.purchasesUpdatedListener = mockPurchasesListener

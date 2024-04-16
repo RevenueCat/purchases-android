@@ -7,6 +7,7 @@ import com.revenuecat.purchases.PurchasesState
 import com.revenuecat.purchases.PurchasesStateCache
 import com.revenuecat.purchases.PurchasesStateProvider
 import com.revenuecat.purchases.Store
+import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.BackendHelper
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
@@ -23,6 +24,7 @@ class BillingFactoryAmazonTest {
         val mockBackendHelper = mockk<BackendHelper>(relaxed = true)
         val mockCache = mockk<DeviceCache>(relaxed = true)
         val mockDiagnosticsTracker = mockk<DiagnosticsTracker>(relaxed = true)
+        val mockAppConfig = mockk<AppConfig>(relaxed = true)
 
         BillingFactory.createBilling(
             Store.AMAZON,
@@ -31,7 +33,8 @@ class BillingFactoryAmazonTest {
             mockCache,
             observerMode = false,
             mockDiagnosticsTracker,
-            stateProvider = PurchasesStateCache(PurchasesState())
+            stateProvider = PurchasesStateCache(PurchasesState()),
+            appConfig = mockAppConfig,
         )
     }
 
@@ -40,6 +43,7 @@ class BillingFactoryAmazonTest {
         val mockApplication = mockk<Application>(relaxed = true)
         val mockBackendHelper = mockk<BackendHelper>(relaxed = true)
         val mockCache = mockk<DeviceCache>(relaxed = true)
+        val mockAppConfig = mockk<AppConfig>(relaxed = true)
 
         BillingFactory.createBilling(
             Store.AMAZON,
@@ -48,7 +52,8 @@ class BillingFactoryAmazonTest {
             mockCache,
             observerMode = false,
             diagnosticsTrackerIfEnabled = null,
-            stateProvider = PurchasesStateCache(PurchasesState())
+            stateProvider = PurchasesStateCache(PurchasesState()),
+            appConfig = mockAppConfig,
         )
     }
 }

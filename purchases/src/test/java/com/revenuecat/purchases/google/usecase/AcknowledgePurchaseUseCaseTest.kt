@@ -5,6 +5,7 @@ import com.android.billingclient.api.AcknowledgePurchaseParams
 import com.android.billingclient.api.AcknowledgePurchaseResponseListener
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.PurchaseHistoryRecord
+import com.revenuecat.purchases.DangerousSettings
 import com.revenuecat.purchases.PostReceiptInitiationSource
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ProductType
@@ -17,6 +18,7 @@ import com.revenuecat.purchases.utils.stubPurchaseHistoryRecord
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
+import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
 import org.assertj.core.api.Assertions
@@ -1138,6 +1140,35 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
     }
 
     // endregion retries
+
+    // region doNotConsumeIAP
+
+    @Test
+    fun `if doNotConsumeIAP is true, and purchase is subs, acknowledge normally`() {
+        val googlePurchaseWrapper = getMockedPurchaseWrapper()
+        val token = googlePurchaseWrapper.purchaseToken
+
+        every {
+            mockDeviceCache.addSuccessfullyPostedToken(token)
+        } just Runs
+
+        wrapper.consumeAndSave(
+            shouldTryToConsume = true,
+            purchase = googlePurchaseWrapper,
+            initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES
+        )
+
+        assertThat(capturedAcknowledgeResponseListener.isCaptured).isTrue
+        capturedAcknowledgeResponseListener.captured.onAcknowledgePurchaseResponse(
+            billingClientOKResult
+        )
+
+        assertThat(capturedAcknowledgePurchaseParams.isCaptured).isTrue
+        val capturedAcknowledgeParams = capturedAcknowledgePurchaseParams.captured
+        assertThat(capturedAcknowledgeParams.purchaseToken).isEqualTo(token)
+    }
+
+    // endregion doNotConsumeIAP
 
     private fun getMockedPurchaseWrapper(
         acknowledged: Boolean = false

@@ -7,6 +7,7 @@ import com.android.billingclient.api.ConsumeParams
 import com.android.billingclient.api.ConsumeResponseListener
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchaseHistoryRecord
+import com.revenuecat.purchases.DangerousSettings
 import com.revenuecat.purchases.PostReceiptInitiationSource
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ProductType
@@ -19,6 +20,7 @@ import com.revenuecat.purchases.utils.stubPurchaseHistoryRecord
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
+import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
 import org.assertj.core.api.Assertions
@@ -1179,6 +1181,42 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
     }
 
     // endregion retries
+
+    // region doNotConsumeIAP tests
+
+    @Test
+    fun `if doNotConsumeIAP is true, and purchase is in-app, don't consume`() {
+        val sku = "consumable"
+        val token = "token_consumable"
+        every { mockAppConfig.dangerousSettings } returns mockk<DangerousSettings>().apply {
+            every { doNotConsumeIAP } returns true
+        }
+        val googlePurchaseWrapper = getMockedPurchaseWrapper(
+            sku,
+            token,
+            ProductType.INAPP,
+            PresentedOfferingContext("offering_a"),
+        )
+
+        every {
+            mockDeviceCache.addSuccessfullyPostedToken(token)
+        } just Runs
+
+        wrapper.consumeAndSave(
+            shouldTryToConsume = true,
+            purchase = googlePurchaseWrapper,
+            initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
+        )
+
+        verify(exactly = 0) {
+            mockClient.consumeAsync(any(), any())
+        }
+        verify(exactly = 1) {
+            mockDeviceCache.addSuccessfullyPostedToken(token)
+        }
+    }
+
+    // endregion doNotConsumeIAP tests
 
     private fun getMockedPurchaseWrapper(
         productId: String,

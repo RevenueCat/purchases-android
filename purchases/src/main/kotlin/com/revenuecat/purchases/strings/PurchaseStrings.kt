@@ -7,6 +7,8 @@ internal object PurchaseStrings {
         "BillingClient is not connected yet."
     const val CONSUMING_PURCHASE = "Consuming purchase with token %s"
     const val CONSUMING_PURCHASE_ERROR = "Error consuming purchase. Will retry next queryPurchases. %s"
+    const val NOT_CONSUMING_PURCHASE_SETTING_ENABLED = "Not consuming IAP since doNotConsumeIAP dangerous setting" +
+        " is enabled."
     const val FOUND_EXISTING_PURCHASE = "Found existing purchase for SKU: %s"
     const val NO_EXISTING_PURCHASE = "Couldn't find existing purchase for SKU: %s"
     const val ERROR_FINDING_PURCHASE = "Error finding existing purchase for SKU: %s"

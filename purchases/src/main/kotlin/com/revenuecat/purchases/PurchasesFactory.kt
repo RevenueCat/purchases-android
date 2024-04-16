@@ -137,6 +137,7 @@ internal class PurchasesFactory(
                 observerMode,
                 diagnosticsTracker,
                 purchasesStateProvider,
+                appConfig,
             )
 
             val subscriberAttributesPoster = SubscriberAttributesPoster(backendHelper)

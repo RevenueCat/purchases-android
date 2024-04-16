@@ -11,7 +11,17 @@ data class DangerousSettings internal constructor(
      */
     val autoSyncPurchases: Boolean = true,
 
+    /**
+     * Do not consume IAP (In app products) after a successful purchase. This can be useful when using IAP as lifetime
+     * products and you don't want them to disappear from the Google query method. DO NOT use this if you allow
+     * purchasing the same IAP multiple times, like for currency/items. This also means that the purchase might be
+     * synced with multiple users in different devices, unless they are logged in with the same user ID.
+     * This does not affect Amazon. This is disabled by default.
+     */
+    val doNotConsumeIAP: Boolean = false,
+
     internal val customEntitlementComputation: Boolean = false,
 ) {
-    constructor(autoSyncPurchases: Boolean = true) : this(autoSyncPurchases, false)
+    constructor(autoSyncPurchases: Boolean = true, doNotConsumeIAP: Boolean = false) :
+        this(autoSyncPurchases, doNotConsumeIAP, false)
 }

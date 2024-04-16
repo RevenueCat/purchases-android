@@ -5,9 +5,11 @@ import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.PurchasesUpdatedListener
+import com.revenuecat.purchases.DangerousSettings
 import com.revenuecat.purchases.PurchasesState
 import com.revenuecat.purchases.PurchasesStateCache
 import com.revenuecat.purchases.PurchasesStateProvider
+import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.caching.DeviceCache
@@ -40,6 +42,11 @@ internal open class BaseBillingUseCaseTest {
     protected var mockClient: BillingClient = mockk()
     protected var mockDeviceCache: DeviceCache = mockk()
     protected var mockDiagnosticsTracker: DiagnosticsTracker = mockk()
+    protected var mockAppConfig: AppConfig = mockk<AppConfig>().apply {
+        every { dangerousSettings } returns mockk<DangerousSettings>().apply {
+            every { doNotConsumeIAP } returns false
+        }
+    }
     protected var mockDateProvider: DateProvider = mockk()
 
     protected val billingClientOKResult = BillingClient.BillingResponseCode.OK.buildResult()
@@ -85,6 +92,7 @@ internal open class BaseBillingUseCaseTest {
             mockDeviceCache,
             mockDiagnosticsTracker,
             purchasesStateProvider,
+            mockAppConfig,
             mockDateProvider
         )
         wrapper.purchasesUpdatedListener = mockPurchasesListener

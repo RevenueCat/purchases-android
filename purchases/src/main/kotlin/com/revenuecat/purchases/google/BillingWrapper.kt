@@ -26,6 +26,7 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCallback
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesStateProvider
+import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.DefaultDateProvider
@@ -37,6 +38,7 @@ import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.firstProductId
+import com.revenuecat.purchases.common.infoLog
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.sha256
 import com.revenuecat.purchases.common.toHumanReadableDescription
@@ -75,7 +77,7 @@ import kotlin.math.min
 private const val RECONNECT_TIMER_START_MILLISECONDS = 1L * 1000L
 private const val RECONNECT_TIMER_MAX_TIME_MILLISECONDS = 1000L * 60L * 15L // 15 minutes
 
-@Suppress("LargeClass", "TooManyFunctions")
+@Suppress("LargeClass", "TooManyFunctions", "LongParameterList")
 internal class BillingWrapper(
     private val clientFactory: ClientFactory,
     private val mainHandler: Handler,
@@ -83,6 +85,7 @@ internal class BillingWrapper(
     @Suppress("unused")
     private val diagnosticsTrackerIfEnabled: DiagnosticsTracker?,
     purchasesStateProvider: PurchasesStateProvider,
+    private val appConfig: AppConfig,
     private val dateProvider: DateProvider = DefaultDateProvider(),
 ) : BillingAbstract(purchasesStateProvider), PurchasesUpdatedListener, BillingClientStateListener {
 
@@ -347,6 +350,7 @@ internal class BillingWrapper(
         )
     }
 
+    @Suppress("ReturnCount")
     override fun consumeAndSave(
         shouldTryToConsume: Boolean,
         purchase: StoreTransaction,
@@ -365,6 +369,11 @@ internal class BillingWrapper(
         val originalGooglePurchase = purchase.originalGooglePurchase
         val alreadyAcknowledged = originalGooglePurchase?.isAcknowledged ?: false
         if (shouldTryToConsume && purchase.type == ProductType.INAPP) {
+            if (appConfig.dangerousSettings.doNotConsumeIAP) {
+                infoLog(PurchaseStrings.NOT_CONSUMING_PURCHASE_SETTING_ENABLED)
+                deviceCache.addSuccessfullyPostedToken(purchase.purchaseToken)
+                return
+            }
             consumePurchase(
                 purchase.purchaseToken,
                 initiationSource,

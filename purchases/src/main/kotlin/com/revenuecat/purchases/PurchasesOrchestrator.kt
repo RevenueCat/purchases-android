@@ -173,6 +173,9 @@ internal class PurchasesOrchestrator constructor(
         if (!appConfig.dangerousSettings.autoSyncPurchases) {
             log(LogIntent.WARNING, ConfigureStrings.AUTO_SYNC_PURCHASES_DISABLED)
         }
+        if (appConfig.dangerousSettings.doNotConsumeIAP) {
+            log(LogIntent.DEBUG, ConfigureStrings.DO_NOT_CONSUME_IAP_ENABLED)
+        }
 
         if (isAndroidNOrNewer()) {
             diagnosticsSynchronizer?.clearDiagnosticsFileIfTooBig()

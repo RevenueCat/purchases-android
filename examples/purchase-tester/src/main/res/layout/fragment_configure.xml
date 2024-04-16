@@ -153,11 +153,30 @@
                 android:layout_height="wrap_content"/>
 
         <androidx.appcompat.widget.AppCompatTextView
+                android:id="@+id/do_not_consume_iap_label"
+                android:text="@string/do_not_consume_iap"
+                android:textSize="15sp"
+                android:layout_marginTop="20dp"
+                app:layout_constraintTop_toBottomOf="@id/observer_mode_label"
+                app:layout_constraintStart_toStartOf="parent"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"/>
+
+        <CheckBox
+                android:id="@+id/do_not_consume_iap_checkbox"
+                app:layout_constraintTop_toTopOf="@id/do_not_consume_iap_label"
+                app:layout_constraintBottom_toBottomOf="@id/do_not_consume_iap_label"
+                app:layout_constraintEnd_toEndOf="parent"
+                android:orientation="horizontal"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"/>
+
+        <androidx.appcompat.widget.AppCompatTextView
                 android:id="@+id/google_unavailable_text_view"
                 android:text="@string/google_store_is_unavailable"
                 android:textAlignment="textEnd"
                 app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/observer_mode_checkbox"
+                app:layout_constraintTop_toBottomOf="@id/do_not_consume_iap_checkbox"
                 app:layout_constraintWidth_percent="0.7"
                 android:visibility="gone"
                 tools:visibility="visible"

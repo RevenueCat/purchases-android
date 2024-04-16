@@ -3,6 +3,7 @@ package com.revenuecat.purchases
 import android.app.Application
 import android.os.Handler
 import com.revenuecat.purchases.amazon.AmazonBilling
+import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.BackendHelper
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
@@ -20,6 +21,7 @@ internal object BillingFactory {
         observerMode: Boolean,
         diagnosticsTrackerIfEnabled: DiagnosticsTracker?,
         stateProvider: PurchasesStateProvider,
+        appConfig: AppConfig,
     ) = when (store) {
         Store.PLAY_STORE -> BillingWrapper(
             BillingWrapper.ClientFactory(application),
@@ -27,6 +29,7 @@ internal object BillingFactory {
             cache,
             diagnosticsTrackerIfEnabled,
             stateProvider,
+            appConfig,
         )
         Store.AMAZON -> {
             try {
