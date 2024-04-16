@@ -276,7 +276,13 @@ class Purchases internal constructor(
             }
             val configuration = PurchasesConfiguration.Builder(context, apiKey)
                 .appUserID(appUserID)
-                .dangerousSettings(DangerousSettings(customEntitlementComputation = true))
+                .dangerousSettings(
+                    DangerousSettings(
+                        autoSyncPurchases = true,
+                        doNotConsumeIAP = false,
+                        customEntitlementComputation = true,
+                    ),
+                )
                 .build()
             return PurchasesFactory().createPurchases(
                 configuration,

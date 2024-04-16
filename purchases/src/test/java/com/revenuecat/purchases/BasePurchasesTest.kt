@@ -381,6 +381,7 @@ internal open class BasePurchasesTest {
             store = Store.PLAY_STORE,
             dangerousSettings = DangerousSettings(
                 autoSyncPurchases = autoSync,
+                doNotConsumeIAP = false,
                 customEntitlementComputation = customEntitlementComputation,
             )
         )

@@ -91,7 +91,11 @@ internal abstract class BaseHTTPClientTest {
             platformInfo = platformInfo,
             proxyURL = proxyURL,
             store = store,
-            dangerousSettings = DangerousSettings(customEntitlementComputation = customEntitlementComputation),
+            dangerousSettings = DangerousSettings(
+                autoSyncPurchases = true,
+                doNotConsumeIAP = false,
+                customEntitlementComputation = customEntitlementComputation,
+            ),
             runningTests = true,
             forceServerErrors = forceServerErrors,
             forceSigningErrors = forceSigningErrors,

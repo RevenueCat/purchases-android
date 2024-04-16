@@ -233,7 +233,11 @@ class AppConfigTest {
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
             store = Store.PLAY_STORE,
-            dangerousSettings = DangerousSettings(customEntitlementComputation = true)
+            dangerousSettings = DangerousSettings(
+                autoSyncPurchases = true,
+                doNotConsumeIAP = false,
+                customEntitlementComputation = true,
+            ),
         )
         assertThat(appConfig.customEntitlementComputation).isTrue
         val appConfig2 = AppConfig(
@@ -243,7 +247,11 @@ class AppConfigTest {
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
             store = Store.PLAY_STORE,
-            dangerousSettings = DangerousSettings(customEntitlementComputation = false)
+            dangerousSettings = DangerousSettings(
+                autoSyncPurchases = true,
+                doNotConsumeIAP = false,
+                customEntitlementComputation = false,
+            ),
         )
         assertThat(appConfig2.customEntitlementComputation).isFalse
     }
