@@ -1,3 +1,9 @@
+## 7.9.0
+### New Features
+* Paywalls: Allow closed button color to be configured (#1674) via Josh Holtz (@joshdholtz)
+### Other Changes
+* Add offline entitlements diagnostics events (#1671) via Toni Rico (@tonidero)
+
 ## 7.8.2
 ### Dependency Updates
 * Bump fastlane from 2.219.0 to 2.220.0 (#1668) via dependabot[bot] (@dependabot[bot])
