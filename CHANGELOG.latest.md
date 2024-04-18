@@ -1,6 +1,4 @@
-### Dependency Updates
-* Bump fastlane from 2.219.0 to 2.220.0 (#1668) via dependabot[bot] (@dependabot[bot])
+### New Features
+* Paywalls: Allow closed button color to be configured (#1674) via Josh Holtz (@joshdholtz)
 ### Other Changes
-* Add store entry for External Purchases API (#1664) via Mark Villacampa (@MarkVillacampa)
-* Remove confusing placements error log (#1670) via Toni Rico (@tonidero)
-* Improve diagnostics data tracking (#1651) via Toni Rico (@tonidero)
+* Add offline entitlements diagnostics events (#1671) via Toni Rico (@tonidero)
