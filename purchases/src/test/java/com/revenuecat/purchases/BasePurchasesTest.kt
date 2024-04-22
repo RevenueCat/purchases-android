@@ -109,9 +109,6 @@ internal open class BasePurchasesTest {
             mockIdentityManager.configure(any())
         } just Runs
         every {
-            mockDiagnosticsSynchronizer.clearDiagnosticsFileIfTooBig()
-        } just Runs
-        every {
             mockDiagnosticsSynchronizer.syncDiagnosticsFileIfNeeded()
         } just Runs
         every {

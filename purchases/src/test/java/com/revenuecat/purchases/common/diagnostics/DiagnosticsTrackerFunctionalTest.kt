@@ -2,14 +2,14 @@ package com.revenuecat.purchases.common.diagnostics
 
 import android.content.Context
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.common.Anonymizer
 import com.revenuecat.purchases.common.FileHelper
 import com.revenuecat.purchases.common.SyncDispatcher
-import io.mockk.Runs
 import io.mockk.every
-import io.mockk.just
 import io.mockk.mockk
-import io.mockk.verify
 import org.junit.After
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -17,14 +17,13 @@ import java.io.File
 import kotlin.random.Random
 
 @RunWith(AndroidJUnit4::class)
-class DiagnosticsSynchronizerFunctionalTest {
+class DiagnosticsTrackerFunctionalTest {
 
     private val testFolder = "temp_test_folder"
 
     private lateinit var applicationContext: Context
-    private lateinit var diagnosticsTracker: DiagnosticsTracker
 
-    private lateinit var diagnosticsSynchronizer: DiagnosticsSynchronizer
+    private lateinit var diagnosticsTracker: DiagnosticsTracker
 
     @Before
     fun setup() {
@@ -36,16 +35,15 @@ class DiagnosticsSynchronizerFunctionalTest {
 
         applicationContext = mockk()
         every { applicationContext.filesDir } returns tempTestFolder
-        diagnosticsTracker = mockk()
-        every { diagnosticsTracker.trackMaxEventsStoredLimitReached() } just Runs
 
-        diagnosticsSynchronizer = DiagnosticsSynchronizer(
-            mockk(),
-            DiagnosticsFileHelper(FileHelper(applicationContext)),
-            diagnosticsTracker = diagnosticsTracker,
-            backend = mockk(),
+        val diagnosticsFileHelper = DiagnosticsFileHelper(FileHelper(applicationContext))
+
+        diagnosticsTracker = DiagnosticsTracker(
+            appConfig = mockk(),
+            diagnosticsFileHelper = diagnosticsFileHelper,
+            diagnosticsAnonymizer = DiagnosticsAnonymizer(Anonymizer()),
+            diagnosticsHelper = DiagnosticsHelper(applicationContext, diagnosticsFileHelper, lazy { mockk(relaxed = true) }),
             diagnosticsDispatcher = SyncDispatcher(),
-            sharedPreferences = lazy { mockk(relaxed = true) },
         )
     }
 
@@ -56,22 +54,22 @@ class DiagnosticsSynchronizerFunctionalTest {
     }
 
     @Test
-    fun `diagnostics synchronizer file is not cleared if not too big`() {
+    fun `diagnostics tracker file is not cleared if not too big when tracking files`() {
         createDiagnosticsFile(1000)
-        diagnosticsSynchronizer.clearDiagnosticsFileIfTooBig()
-        verify(exactly = 0) { diagnosticsTracker.trackMaxEventsStoredLimitReached() }
+        assertFalse(hasDiagnosticsFileBeenCleared())
     }
 
     @Test
     fun `diagnostics synchronizer file is cleared if too big`() {
         createDiagnosticsFile(3000)
-        diagnosticsSynchronizer.clearDiagnosticsFileIfTooBig()
-        verify(exactly = 1) { diagnosticsTracker.trackMaxEventsStoredLimitReached() }
+        assertTrue(hasDiagnosticsFileBeenCleared())
     }
 
     private fun createDiagnosticsFile(numberOfEvents: Int) {
-        val contents = (1..numberOfEvents).joinToString("\n") { createDiagnosticsEntry().toString() }
-        createTestFileWithContents(contents)
+        val event = createDiagnosticsEntry()
+        for (i in 0..numberOfEvents) {
+            diagnosticsTracker.trackEvent(event)
+        }
     }
 
     private fun createDiagnosticsEntry(): DiagnosticsEntry {
@@ -87,10 +85,9 @@ class DiagnosticsSynchronizerFunctionalTest {
         )
     }
 
-    private fun createTestFileWithContents(contents: String) {
+    private fun hasDiagnosticsFileBeenCleared(): Boolean {
         val file = File(testFolder, DiagnosticsFileHelper.DIAGNOSTICS_FILE_PATH)
-        file.parentFile?.mkdirs()
-        file.createNewFile()
-        file.writeText(contents)
+        if (!file.exists()) return true
+        return file.readText().contains(DiagnosticsEntryName.MAX_EVENTS_STORED_LIMIT_REACHED.name.lowercase())
     }
 }

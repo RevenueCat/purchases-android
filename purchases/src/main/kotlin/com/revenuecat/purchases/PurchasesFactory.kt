@@ -20,6 +20,7 @@ import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsAnonymizer
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsFileHelper
+import com.revenuecat.purchases.common.diagnostics.DiagnosticsHelper
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsSynchronizer
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.log
@@ -96,13 +97,16 @@ internal class PurchasesFactory(
             )
 
             var diagnosticsFileHelper: DiagnosticsFileHelper? = null
+            var diagnosticsHelper: DiagnosticsHelper? = null
             var diagnosticsTracker: DiagnosticsTracker? = null
             if (diagnosticsEnabled && isAndroidNOrNewer()) {
                 diagnosticsFileHelper = DiagnosticsFileHelper(FileHelper(context))
+                diagnosticsHelper = DiagnosticsHelper(context, diagnosticsFileHelper)
                 diagnosticsTracker = DiagnosticsTracker(
                     appConfig,
                     diagnosticsFileHelper,
                     DiagnosticsAnonymizer(Anonymizer()),
+                    diagnosticsHelper,
                     eventsDispatcher,
                 )
             } else if (diagnosticsEnabled) {
@@ -221,9 +225,14 @@ internal class PurchasesFactory(
             val offeringParser = OfferingParserFactory.createOfferingParser(store)
 
             var diagnosticsSynchronizer: DiagnosticsSynchronizer? = null
-            if (diagnosticsFileHelper != null && diagnosticsTracker != null && isAndroidNOrNewer()) {
+            @Suppress("ComplexCondition")
+            if (diagnosticsFileHelper != null &&
+                diagnosticsHelper != null &&
+                diagnosticsTracker != null &&
+                isAndroidNOrNewer()
+            ) {
                 diagnosticsSynchronizer = DiagnosticsSynchronizer(
-                    context,
+                    diagnosticsHelper,
                     diagnosticsFileHelper,
                     diagnosticsTracker,
                     backend,

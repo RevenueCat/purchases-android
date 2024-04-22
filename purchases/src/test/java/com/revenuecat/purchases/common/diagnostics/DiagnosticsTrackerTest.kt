@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.common.diagnostics
 
 import android.content.Context
+import android.content.SharedPreferences
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.EntitlementInfos
@@ -8,6 +9,7 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.VerificationResult
+import com.revenuecat.purchases.common.Anonymizer
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.PlatformInfo
@@ -24,6 +26,8 @@ import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.unmockkStatic
 import io.mockk.verify
+import io.mockk.verifyOrder
+import io.mockk.verifySequence
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
@@ -41,14 +45,10 @@ class DiagnosticsTrackerTest {
         properties = mapOf("test-key-1" to "test-value-1")
     )
 
-    private val testAnonymizedEvent = DiagnosticsEntry(
-        name = DiagnosticsEntryName.HTTP_REQUEST_PERFORMED,
-        properties = mapOf("test-key-1" to "test-anonymized-value-1")
-    )
-
     private lateinit var diagnosticsFileHelper: DiagnosticsFileHelper
-    private lateinit var diagnosticsAnonymizer: DiagnosticsAnonymizer
     private lateinit var dispatcher: Dispatcher
+    private lateinit var sharedPreferences: SharedPreferences
+    private lateinit var sharedPreferencesEditor: SharedPreferences.Editor
 
     private lateinit var diagnosticsTracker: DiagnosticsTracker
 
@@ -70,18 +70,20 @@ class DiagnosticsTrackerTest {
             proxyURL = null,
             store = Store.PLAY_STORE
         )
-        diagnosticsFileHelper = mockk()
-        diagnosticsAnonymizer = mockk()
+        diagnosticsFileHelper = mockk<DiagnosticsFileHelper>().apply {
+            every { isDiagnosticsFileTooBig() } returns false
+        }
         dispatcher = SyncDispatcher()
+
+        mockSharedPreferences()
 
         diagnosticsTracker = DiagnosticsTracker(
             appConfig,
             diagnosticsFileHelper,
-            diagnosticsAnonymizer,
+            DiagnosticsAnonymizer(Anonymizer()),
+            DiagnosticsHelper(mockk(), diagnosticsFileHelper, lazy { sharedPreferences }),
             dispatcher
         )
-
-        every { diagnosticsAnonymizer.anonymizeEntryIfNeeded(any()) } answers { firstArg() }
     }
 
     @After
@@ -91,16 +93,35 @@ class DiagnosticsTrackerTest {
 
     @Test
     fun `trackEvent performs correct calls`() {
-        every { diagnosticsFileHelper.appendEvent(testAnonymizedEvent) } just Runs
-        every { diagnosticsAnonymizer.anonymizeEntryIfNeeded(testDiagnosticsEntry) } returns testAnonymizedEvent
+        every { diagnosticsFileHelper.appendEvent(testDiagnosticsEntry) } just Runs
         diagnosticsTracker.trackEvent(testDiagnosticsEntry)
-        verify(exactly = 1) { diagnosticsFileHelper.appendEvent(testAnonymizedEvent) }
-        verify(exactly = 1) { diagnosticsAnonymizer.anonymizeEntryIfNeeded(testDiagnosticsEntry) }
+        verify(exactly = 1) { diagnosticsFileHelper.appendEvent(testDiagnosticsEntry) }
+        verify(exactly = 0) { diagnosticsFileHelper.deleteFile() }
+        verify(exactly = 0) { diagnosticsFileHelper.appendEvent(match {
+            it.name == DiagnosticsEntryName.MAX_EVENTS_STORED_LIMIT_REACHED
+        })}
+    }
+
+    @Test
+    fun `trackEvent clears diagnostics file if too big, then adds event`() {
+        every { diagnosticsFileHelper.deleteFile() } just Runs
+        every { diagnosticsFileHelper.appendEvent(any()) } just Runs
+        every { diagnosticsFileHelper.isDiagnosticsFileTooBig() }.returnsMany(true, false)
+        diagnosticsTracker.trackEvent(testDiagnosticsEntry)
+        verifySequence {
+            diagnosticsFileHelper.isDiagnosticsFileTooBig()
+            diagnosticsFileHelper.deleteFile()
+            diagnosticsFileHelper.appendEvent(match {
+                it.name == DiagnosticsEntryName.MAX_EVENTS_STORED_LIMIT_REACHED
+            })
+            diagnosticsFileHelper.appendEvent(match {
+                it == testDiagnosticsEntry
+            })
+        }
     }
 
     @Test
     fun `trackEvent handles IOException`() {
-        every { diagnosticsAnonymizer.anonymizeEntryIfNeeded(testDiagnosticsEntry) } returns testDiagnosticsEntry
         every { diagnosticsFileHelper.appendEvent(any()) } throws IOException()
         diagnosticsTracker.trackEvent(testDiagnosticsEntry)
     }
@@ -108,7 +129,6 @@ class DiagnosticsTrackerTest {
     @Test
     fun `trackEventInCurrentThread does not enqueue request`() {
         dispatcher.close()
-        every { diagnosticsAnonymizer.anonymizeEntryIfNeeded(testDiagnosticsEntry) } returns testDiagnosticsEntry
         every { diagnosticsFileHelper.appendEvent(any()) } throws IOException()
         diagnosticsTracker.trackEventInCurrentThread(testDiagnosticsEntry)
     }
@@ -408,4 +428,20 @@ class DiagnosticsTrackerTest {
     }
 
     // endregion
+
+    private fun mockSharedPreferences() {
+        sharedPreferences = mockk()
+        sharedPreferencesEditor = mockk()
+        every { sharedPreferences.edit() } returns sharedPreferencesEditor
+        every { sharedPreferencesEditor.apply() } just Runs
+        every {
+            sharedPreferencesEditor.remove(DiagnosticsHelper.CONSECUTIVE_FAILURES_COUNT_KEY)
+        } returns sharedPreferencesEditor
+        every {
+            sharedPreferencesEditor.putInt(DiagnosticsHelper.CONSECUTIVE_FAILURES_COUNT_KEY, any())
+        } returns sharedPreferencesEditor
+        every {
+            sharedPreferences.getInt(DiagnosticsHelper.CONSECUTIVE_FAILURES_COUNT_KEY, 0)
+        } returns 0
+    }
 }

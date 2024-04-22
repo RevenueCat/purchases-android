@@ -1,5 +1,7 @@
 package com.revenuecat.purchases.common.diagnostics
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
@@ -10,7 +12,6 @@ import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.verboseLog
 import com.revenuecat.purchases.strings.OfflineEntitlementsStrings
-import com.revenuecat.purchases.utils.EventsFileHelper
 import com.revenuecat.purchases.utils.isAndroidNOrNewer
 import java.io.IOException
 import kotlin.time.Duration
@@ -20,10 +21,12 @@ import kotlin.time.Duration
  * sent and their properties. Use this class if you want to send a a diagnostics entry.
  */
 @Suppress("TooManyFunctions")
+@RequiresApi(Build.VERSION_CODES.N)
 internal class DiagnosticsTracker(
     private val appConfig: AppConfig,
-    private val diagnosticsFileHelper: EventsFileHelper<DiagnosticsEntry>,
+    private val diagnosticsFileHelper: DiagnosticsFileHelper,
     private val diagnosticsAnonymizer: DiagnosticsAnonymizer,
+    private val diagnosticsHelper: DiagnosticsHelper,
     private val diagnosticsDispatcher: Dispatcher,
 ) {
     private companion object {
@@ -251,9 +254,9 @@ internal class DiagnosticsTracker(
     // endregion
 
     fun trackEvent(diagnosticsEntry: DiagnosticsEntry) {
-        diagnosticsDispatcher.enqueue(command = {
+        checkAndClearDiagnosticsFileIfTooBig {
             trackEventInCurrentThread(diagnosticsEntry)
-        })
+        }
     }
 
     internal fun trackEventInCurrentThread(diagnosticsEntry: DiagnosticsEntry) {
@@ -266,5 +269,20 @@ internal class DiagnosticsTracker(
                 verboseLog("Error tracking diagnostics entry: $e")
             }
         }
+    }
+
+    private fun checkAndClearDiagnosticsFileIfTooBig(completion: () -> Unit) {
+        enqueue {
+            if (diagnosticsFileHelper.isDiagnosticsFileTooBig()) {
+                verboseLog("Diagnostics file is too big. Deleting it.")
+                diagnosticsHelper.resetDiagnosticsStatus()
+                trackMaxEventsStoredLimitReached()
+            }
+            completion()
+        }
+    }
+
+    private fun enqueue(command: () -> Unit) {
+        diagnosticsDispatcher.enqueue(command = command)
     }
 }

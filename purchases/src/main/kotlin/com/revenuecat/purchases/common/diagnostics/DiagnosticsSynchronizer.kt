@@ -21,17 +21,13 @@ import java.util.stream.Collectors
  */
 @RequiresApi(Build.VERSION_CODES.N)
 internal class DiagnosticsSynchronizer(
-    context: Context,
+    private val diagnosticsHelper: DiagnosticsHelper,
     private val diagnosticsFileHelper: DiagnosticsFileHelper,
     private val diagnosticsTracker: DiagnosticsTracker,
     private val backend: Backend,
     private val diagnosticsDispatcher: Dispatcher,
-    private val sharedPreferences: Lazy<SharedPreferences> = lazy { initializeSharedPreferences(context) },
 ) {
     companion object {
-        @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
-        const val CONSECUTIVE_FAILURES_COUNT_KEY = "consecutive_failures_count"
-
         @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
         const val MAX_NUMBER_POST_RETRIES = 3
 
@@ -43,16 +39,6 @@ internal class DiagnosticsSynchronizer(
                 "com_revenuecat_purchases_${context.packageName}_preferences_diagnostics",
                 Context.MODE_PRIVATE,
             )
-    }
-
-    fun clearDiagnosticsFileIfTooBig() {
-        enqueue {
-            if (diagnosticsFileHelper.isDiagnosticsFileTooBig()) {
-                verboseLog("Diagnostics file is too big. Deleting it.")
-                diagnosticsTracker.trackMaxEventsStoredLimitReached()
-                resetDiagnosticsStatus()
-            }
-        }
     }
 
     fun syncDiagnosticsFileIfNeeded() {
@@ -68,7 +54,7 @@ internal class DiagnosticsSynchronizer(
                     diagnosticsList = diagnosticsList,
                     onSuccessHandler = {
                         verboseLog("Synced diagnostics file successfully.")
-                        clearConsecutiveNumberOfErrors()
+                        diagnosticsHelper.clearConsecutiveNumberOfErrors()
                         diagnosticsFileHelper.clear(diagnosticsCount)
                     },
                     onErrorHandler = { error, shouldRetry ->
@@ -77,13 +63,13 @@ internal class DiagnosticsSynchronizer(
                                 "Error syncing diagnostics file: $error. " +
                                     "Will retry the next time the SDK is initialized",
                             )
-                            if (increaseConsecutiveNumberOfErrors() >= MAX_NUMBER_POST_RETRIES) {
+                            if (diagnosticsHelper.increaseConsecutiveNumberOfErrors() >= MAX_NUMBER_POST_RETRIES) {
                                 verboseLog(
                                     "Error syncing diagnostics file: $error. " +
                                         "This was the final attempt ($MAX_NUMBER_POST_RETRIES). " +
                                         "Deleting diagnostics file without posting.",
                                 )
-                                resetDiagnosticsStatus()
+                                diagnosticsHelper.resetDiagnosticsStatus()
                                 diagnosticsTracker.trackMaxDiagnosticsSyncRetriesReached()
                             }
                         } else {
@@ -91,7 +77,7 @@ internal class DiagnosticsSynchronizer(
                                 "Error syncing diagnostics file: $error. " +
                                     "Deleting diagnostics file without retrying.",
                             )
-                            resetDiagnosticsStatus()
+                            diagnosticsHelper.resetDiagnosticsStatus()
                             diagnosticsTracker.trackClearingDiagnosticsAfterFailedSync()
                         }
                     },
@@ -99,7 +85,7 @@ internal class DiagnosticsSynchronizer(
             } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
                 verboseLog("Error syncing diagnostics file: $e")
                 try {
-                    resetDiagnosticsStatus()
+                    diagnosticsHelper.resetDiagnosticsStatus()
                 } catch (e: IOException) {
                     verboseLog("Error deleting diagnostics file: $e")
                 }
@@ -117,20 +103,5 @@ internal class DiagnosticsSynchronizer(
 
     private fun enqueue(command: () -> Unit) {
         diagnosticsDispatcher.enqueue(command = command)
-    }
-
-    private fun clearConsecutiveNumberOfErrors() {
-        sharedPreferences.value.edit().remove(CONSECUTIVE_FAILURES_COUNT_KEY).apply()
-    }
-
-    private fun increaseConsecutiveNumberOfErrors(): Int {
-        var count = sharedPreferences.value.getInt(CONSECUTIVE_FAILURES_COUNT_KEY, 0)
-        sharedPreferences.value.edit().putInt(CONSECUTIVE_FAILURES_COUNT_KEY, ++count).apply()
-        return count
-    }
-
-    private fun resetDiagnosticsStatus() {
-        clearConsecutiveNumberOfErrors()
-        diagnosticsFileHelper.deleteFile()
     }
 }
