@@ -84,6 +84,7 @@ internal class DiagnosticsSynchronizer(
                                         "Deleting diagnostics file without posting.",
                                 )
                                 resetDiagnosticsStatus()
+                                diagnosticsTracker.trackMaxDiagnosticsSyncRetriesReached()
                             }
                         } else {
                             verboseLog(
@@ -91,6 +92,7 @@ internal class DiagnosticsSynchronizer(
                                     "Deleting diagnostics file without retrying.",
                             )
                             resetDiagnosticsStatus()
+                            diagnosticsTracker.trackClearingDiagnosticsAfterFailedSync()
                         }
                     },
                 )
