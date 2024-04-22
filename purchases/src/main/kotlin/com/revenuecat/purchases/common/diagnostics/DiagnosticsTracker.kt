@@ -175,7 +175,7 @@ internal class DiagnosticsTracker(
             DiagnosticsEntry(
                 name = DiagnosticsEntryName.MAX_DIAGNOSTICS_SYNC_RETRIES_REACHED,
                 properties = mapOf(),
-            )
+            ),
         )
     }
 
@@ -184,7 +184,7 @@ internal class DiagnosticsTracker(
             DiagnosticsEntry(
                 name = DiagnosticsEntryName.CLEARING_DIAGNOSTICS_AFTER_FAILED_SYNC,
                 properties = mapOf(),
-            )
+            ),
         )
     }
 
