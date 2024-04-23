@@ -1,7 +1,6 @@
 package com.revenuecat.purchases.common.diagnostics
 
 import android.os.Build
-import androidx.annotation.RequiresApi
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
