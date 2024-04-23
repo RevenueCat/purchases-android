@@ -6,7 +6,6 @@ import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.annotation.VisibleForTesting
 
-@RequiresApi(Build.VERSION_CODES.N)
 internal class DiagnosticsHelper(
     context: Context,
     private val diagnosticsFileHelper: DiagnosticsFileHelper,
@@ -22,6 +21,8 @@ internal class DiagnosticsHelper(
                 Context.MODE_PRIVATE,
             )
     }
+
+    @RequiresApi(Build.VERSION_CODES.N)
     fun resetDiagnosticsStatus() {
         clearConsecutiveNumberOfErrors()
         diagnosticsFileHelper.deleteFile()

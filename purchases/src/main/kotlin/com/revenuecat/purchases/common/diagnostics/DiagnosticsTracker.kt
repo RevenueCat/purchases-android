@@ -8,6 +8,7 @@ import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Dispatcher
+import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.verboseLog
@@ -21,7 +22,6 @@ import kotlin.time.Duration
  * sent and their properties. Use this class if you want to send a a diagnostics entry.
  */
 @Suppress("TooManyFunctions")
-@RequiresApi(Build.VERSION_CODES.N)
 internal class DiagnosticsTracker(
     private val appConfig: AppConfig,
     private val diagnosticsFileHelper: DiagnosticsFileHelper,
@@ -273,10 +273,15 @@ internal class DiagnosticsTracker(
 
     private fun checkAndClearDiagnosticsFileIfTooBig(completion: () -> Unit) {
         enqueue {
-            if (diagnosticsFileHelper.isDiagnosticsFileTooBig()) {
-                verboseLog("Diagnostics file is too big. Deleting it.")
-                diagnosticsHelper.resetDiagnosticsStatus()
-                trackMaxEventsStoredLimitReached()
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                if (diagnosticsFileHelper.isDiagnosticsFileTooBig()) {
+                    verboseLog("Diagnostics file is too big. Deleting it.")
+                    diagnosticsHelper.resetDiagnosticsStatus()
+                    trackMaxEventsStoredLimitReached()
+                }
+            } else {
+                // This should never happen since we create this class only if diagnostics is supported
+                errorLog("Diagnostics only supported in Android 24+")
             }
             completion()
         }
