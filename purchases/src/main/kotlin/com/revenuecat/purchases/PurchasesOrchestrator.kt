@@ -68,6 +68,7 @@ import com.revenuecat.purchases.utils.RateLimiter
 import com.revenuecat.purchases.utils.isAndroidNOrNewer
 import java.net.URL
 import java.util.Collections
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.time.Duration.Companion.seconds
 
 @Suppress("LongParameterList", "LargeClass", "TooManyFunctions")
@@ -1221,10 +1222,20 @@ internal class PurchasesOrchestrator constructor(
                     // BillingClient 4 calls the listener functions in a thread instead of in main
                     // https://github.com/RevenueCat/purchases-android/issues/348
                     val mainHandler = Handler(context.mainLooper)
+                    val hasResponded = AtomicBoolean(false)
                     billingClient.startConnection(
                         object : BillingClientStateListener {
                             override fun onBillingSetupFinished(billingResult: BillingResult) {
                                 mainHandler.post {
+                                    if (hasResponded.getAndSet(true)) {
+                                        log(
+                                            LogIntent.GOOGLE_ERROR,
+                                            PurchaseStrings.EXTRA_CONNECTION_CANMAKEPAYMENTS.format(
+                                                billingResult.responseCode,
+                                            ),
+                                        )
+                                        return@post
+                                    }
                                     try {
                                         if (!billingResult.isSuccessful()) {
                                             callback.onReceived(false)
@@ -1240,6 +1251,11 @@ internal class PurchasesOrchestrator constructor(
 
                                         callback.onReceived(featureSupportedResultOk)
                                     } catch (e: IllegalArgumentException) {
+                                        log(
+                                            LogIntent.GOOGLE_ERROR,
+                                            PurchaseStrings.EXCEPTION_CANMAKEPAYMENTS.format(e.localizedMessage),
+                                        )
+
                                         // Play Services not available
                                         callback.onReceived(false)
                                     }
@@ -1251,8 +1267,19 @@ internal class PurchasesOrchestrator constructor(
                                     try {
                                         billingClient.endConnection()
                                     } catch (e: IllegalArgumentException) {
+                                        log(
+                                            LogIntent.GOOGLE_ERROR,
+                                            PurchaseStrings.EXCEPTION_CANMAKEPAYMENTS.format(e.localizedMessage),
+                                        )
                                     } finally {
-                                        callback.onReceived(false)
+                                        if (hasResponded.getAndSet(true)) {
+                                            log(
+                                                LogIntent.GOOGLE_ERROR,
+                                                PurchaseStrings.EXTRA_CALLBACK_CANMAKEPAYMENTS,
+                                            )
+                                        } else {
+                                            callback.onReceived(false)
+                                        }
                                     }
                                 }
                             }

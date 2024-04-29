@@ -43,4 +43,9 @@ internal object PurchaseStrings {
         "startProductChange."
     const val ENTITLEMENT_EXPIRED_OUTSIDE_GRACE_PERIOD = "Entitlement %s is no longer active (expired %s) " +
         "and it's outside grace period window (last updated %s)"
+    const val EXTRA_CONNECTION_CANMAKEPAYMENTS = "BillingClient has returned more than once when checking if " +
+        "device can make payments with result: %s."
+    const val EXTRA_CALLBACK_CANMAKEPAYMENTS = "Callback has already been called when checking if device can " +
+        "make payments."
+    const val EXCEPTION_CANMAKEPAYMENTS = "Exception received when checking if device can make payments: \n%s."
 }
