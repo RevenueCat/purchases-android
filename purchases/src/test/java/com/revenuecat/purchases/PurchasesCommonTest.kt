@@ -1567,31 +1567,6 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         return oldPurchase
     }
 
-    private fun setUpMockBillingClientBuilderAndListener(
-        mockLocalBillingClient: BillingClient
-    ): CapturingSlot<BillingClientStateListener> {
-        mockkStatic(BillingClient::class)
-        val mockBuilder = mockk<BillingClient.Builder>(relaxed = true)
-        every { BillingClient.newBuilder(any()) } returns mockBuilder
-        every { mockBuilder.setListener(any()) } returns mockBuilder
-        every { mockBuilder.enablePendingPurchases() } returns mockBuilder
-        every { mockBuilder.build() } returns mockLocalBillingClient
-        val listener = slot<BillingClientStateListener>()
-        every { mockLocalBillingClient.startConnection(capture(listener)) } just Runs
-        return listener
-    }
-
-    private fun mockHandlerPost() {
-        mockkConstructor(Handler::class)
-        val lst = slot<Runnable>()
-        every {
-            anyConstructed<Handler>().post(capture(lst))
-        } answers {
-            lst.captured.run()
-            true
-        }
-    }
-
     private fun mockGetStorefront() {
         every {
             mockBillingAbstract.getStorefront(

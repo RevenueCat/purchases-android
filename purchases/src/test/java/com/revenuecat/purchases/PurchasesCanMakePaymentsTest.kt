@@ -12,9 +12,7 @@ import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingResult
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.PlatformInfo
-import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.models.BillingFeature
-import com.revenuecat.purchases.models.StoreProduct
 import io.mockk.CapturingSlot
 import io.mockk.Runs
 import io.mockk.every
@@ -23,10 +21,13 @@ import io.mockk.mockk
 import io.mockk.mockkConstructor
 import io.mockk.mockkStatic
 import io.mockk.slot
+import io.mockk.unmockkAll
+import io.mockk.unmockkConstructor
 import io.mockk.unmockkStatic
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
+import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
@@ -34,9 +35,17 @@ import org.robolectric.annotation.Config
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
 internal class PurchasesCanMakePaymentsTest : BasePurchasesTest() {
+
+    @Before
+    fun setup() {
+        mockHandlerPost()
+        mockkStatic(BillingClient::class)
+    }
+
     @After
     fun removeMocks() {
         unmockkStatic(BillingClient::class)
+        unmockkConstructor(Handler::class)
     }
 
     // region canMakePayments
@@ -77,7 +86,7 @@ internal class PurchasesCanMakePaymentsTest : BasePurchasesTest() {
         val mockLocalBillingClient = mockk<BillingClient>(relaxed = true)
         val listener = setUpMockBillingClientBuilderAndListener(mockLocalBillingClient)
 
-        every { mockLocalBillingClient.endConnection() } throws mockk<IllegalArgumentException>()
+        every { mockLocalBillingClient.endConnection() } throws mockk<IllegalArgumentException>(relaxed = true)
         Purchases.canMakePayments(mockContext, listOf(BillingFeature.SUBSCRIPTIONS)) {
             receivedCanMakePayments = it
         }
@@ -93,7 +102,6 @@ internal class PurchasesCanMakePaymentsTest : BasePurchasesTest() {
             mockLocalBillingClient.isFeatureSupported(BillingClient.FeatureType.SUBSCRIPTIONS)
         } returns BillingClient.BillingResponseCode.FEATURE_NOT_SUPPORTED.buildResult()
 
-        mockkStatic(BillingClient::class)
         val mockBuilder = mockk<BillingClient.Builder>(relaxed = true)
         every { BillingClient.newBuilder(any()) } returns mockBuilder
         every { mockBuilder.setListener(any()) } returns mockBuilder
@@ -230,34 +238,6 @@ internal class PurchasesCanMakePaymentsTest : BasePurchasesTest() {
     // region Private Methods
     private fun Int.buildResult(): BillingResult {
         return BillingResult.newBuilder().setResponseCode(this).build()
-    }
-
-    private fun mockQueryingProductDetails(
-        storeProduct: StoreProduct,
-        presentedOfferingContext: PresentedOfferingContext?,
-        subscriptionOptionId: String? = this.subscriptionOptionId,
-    ): ReceiptInfo {
-        val productId = storeProduct.purchasingData.productId
-
-        val receiptInfo = ReceiptInfo(
-            productIDs = listOf(productId),
-            presentedOfferingContext = presentedOfferingContext,
-            storeProduct = storeProduct,
-            subscriptionOptionId = if (storeProduct.type == ProductType.SUBS) subscriptionOptionId else null
-        )
-
-        every {
-            mockBillingAbstract.queryProductDetailsAsync(
-                productType = storeProduct.type,
-                productIds = setOf(productId),
-                onReceive = captureLambda(),
-                onError = any(),
-            )
-        } answers {
-            lambda<(List<StoreProduct>) -> Unit>().captured.invoke(listOf(storeProduct))
-        }
-
-        return receiptInfo
     }
 
     private fun setUpMockBillingClientBuilderAndListener(
