@@ -21,7 +21,6 @@ import io.mockk.mockk
 import io.mockk.mockkConstructor
 import io.mockk.mockkStatic
 import io.mockk.slot
-import io.mockk.unmockkAll
 import io.mockk.unmockkConstructor
 import io.mockk.unmockkStatic
 import io.mockk.verify
@@ -231,6 +230,54 @@ internal class PurchasesCanMakePaymentsTest : BasePurchasesTest() {
 
         verify(exactly = 0) { mockLocalBillingClient.isFeatureSupported(any()) }
         verify(exactly = 1) { mockLocalBillingClient.endConnection() }
+    }
+
+    @Test
+    fun `when calling canMakePayments and billing service disconnects twice, callback is called only once`() {
+        var timesReceived = 0
+        val mockLocalBillingClient = mockk<BillingClient>(relaxed = true)
+
+        val listener = setUpMockBillingClientBuilderAndListener(mockLocalBillingClient)
+
+        Purchases.canMakePayments(mockContext, listOf()) {
+            timesReceived++
+        }
+        listener.captured.onBillingServiceDisconnected()
+        listener.captured.onBillingServiceDisconnected()
+        assertThat(timesReceived).isEqualTo(1)
+        verify(exactly = 2) { mockLocalBillingClient.endConnection() }
+    }
+
+    @Test
+    fun `canMakePayments only calls callback once if onBillingSetupFinished is called twice`() {
+        var timesReceived = 0
+        val mockLocalBillingClient = mockk<BillingClient>(relaxed = true)
+        val listener = setUpMockBillingClientBuilderAndListener(mockLocalBillingClient)
+
+        Purchases.canMakePayments(mockContext, listOf()) {
+            timesReceived++
+        }
+
+        listener.captured.onBillingSetupFinished(BillingClient.BillingResponseCode.OK.buildResult())
+        listener.captured.onBillingSetupFinished(BillingClient.BillingResponseCode.OK.buildResult())
+
+        assertThat(timesReceived).isOne()
+    }
+
+    @Test
+    fun `canMakePayments only calls callback once if onBillingServiceDisconnected after onBillingSetupFinished`() {
+        var timesReceived = 0
+        val mockLocalBillingClient = mockk<BillingClient>(relaxed = true)
+        val listener = setUpMockBillingClientBuilderAndListener(mockLocalBillingClient)
+
+        Purchases.canMakePayments(mockContext, listOf()) {
+            timesReceived++
+        }
+
+        listener.captured.onBillingServiceDisconnected()
+        listener.captured.onBillingSetupFinished(BillingClient.BillingResponseCode.OK.buildResult())
+
+        assertThat(timesReceived).isOne()
     }
 
     // endregion
