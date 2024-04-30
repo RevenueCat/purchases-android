@@ -51,48 +51,13 @@ class DiagnosticsSynchronizerTest {
         mockDiagnosticsFileHelper()
 
         diagnosticsSynchronizer = DiagnosticsSynchronizer(
-            mockk(),
+            DiagnosticsHelper(mockk(), diagnosticsFileHelper, lazy { sharedPreferences }),
             diagnosticsFileHelper,
             diagnosticsTracker,
             backend,
             dispatcher,
-            lazy { sharedPreferences }
         )
     }
-
-    // region clearDiagnosticsFileIfTooBig
-
-    @Test
-    fun `clearDiagnosticsFileIfTooBig does nothing if dianostics file not too big`() {
-        every { diagnosticsFileHelper.isDiagnosticsFileTooBig() } returns false
-
-        diagnosticsSynchronizer.clearDiagnosticsFileIfTooBig()
-
-        verify(exactly = 0) { diagnosticsTracker.trackMaxEventsStoredLimitReached() }
-        verify(exactly = 0) { diagnosticsFileHelper.deleteFile() }
-    }
-
-    @Test
-    fun `clearDiagnosticsFileIfTooBig tracks max events store limit reached if dianostics file too big`() {
-        every { diagnosticsFileHelper.isDiagnosticsFileTooBig() } returns true
-        every { diagnosticsTracker.trackMaxEventsStoredLimitReached() } just Runs
-
-        diagnosticsSynchronizer.clearDiagnosticsFileIfTooBig()
-
-        verify(exactly = 1) { diagnosticsTracker.trackMaxEventsStoredLimitReached() }
-    }
-
-    @Test
-    fun `clearDiagnosticsFileIfTooBig clears diagnostics file if dianostics file too big`() {
-        every { diagnosticsFileHelper.isDiagnosticsFileTooBig() } returns true
-        every { diagnosticsTracker.trackMaxEventsStoredLimitReached() } just Runs
-
-        diagnosticsSynchronizer.clearDiagnosticsFileIfTooBig()
-
-        verify(exactly = 1) { diagnosticsFileHelper.deleteFile() }
-    }
-
-    // endregion clearDiagnosticsFileIfTooBig
 
     // region syncDiagnosticsFileIfNeeded
 
@@ -131,7 +96,7 @@ class DiagnosticsSynchronizerTest {
 
         diagnosticsSynchronizer.syncDiagnosticsFileIfNeeded()
 
-        verify(exactly = 1) { sharedPreferencesEditor.remove(DiagnosticsSynchronizer.CONSECUTIVE_FAILURES_COUNT_KEY) }
+        verify(exactly = 1) { sharedPreferencesEditor.remove(DiagnosticsHelper.CONSECUTIVE_FAILURES_COUNT_KEY) }
     }
 
     @Test
@@ -142,10 +107,10 @@ class DiagnosticsSynchronizerTest {
         diagnosticsSynchronizer.syncDiagnosticsFileIfNeeded()
 
         verify(exactly = 1) {
-            sharedPreferencesEditor.putInt(DiagnosticsSynchronizer.CONSECUTIVE_FAILURES_COUNT_KEY, 1)
+            sharedPreferencesEditor.putInt(DiagnosticsHelper.CONSECUTIVE_FAILURES_COUNT_KEY, 1)
         }
         verify(exactly = 0) { diagnosticsFileHelper.deleteFile() }
-        verify(exactly = 0) { sharedPreferencesEditor.remove(DiagnosticsSynchronizer.CONSECUTIVE_FAILURES_COUNT_KEY) }
+        verify(exactly = 0) { sharedPreferencesEditor.remove(DiagnosticsHelper.CONSECUTIVE_FAILURES_COUNT_KEY) }
     }
 
     @Test
@@ -164,7 +129,7 @@ class DiagnosticsSynchronizerTest {
         val errorCallbackResponse = Pair(PurchasesError(PurchasesErrorCode.ConfigurationError), true)
         mockBackendResponse(testDiagnosticsEntryJSONs, errorReturn = errorCallbackResponse)
         every {
-            sharedPreferences.getInt(DiagnosticsSynchronizer.CONSECUTIVE_FAILURES_COUNT_KEY, 0)
+            sharedPreferences.getInt(DiagnosticsHelper.CONSECUTIVE_FAILURES_COUNT_KEY, 0)
         } returns DiagnosticsSynchronizer.MAX_NUMBER_POST_RETRIES - 1
 
         diagnosticsSynchronizer.syncDiagnosticsFileIfNeeded()
@@ -178,12 +143,12 @@ class DiagnosticsSynchronizerTest {
         val errorCallbackResponse = Pair(PurchasesError(PurchasesErrorCode.ConfigurationError), true)
         mockBackendResponse(testDiagnosticsEntryJSONs, errorReturn = errorCallbackResponse)
         every {
-            sharedPreferences.getInt(DiagnosticsSynchronizer.CONSECUTIVE_FAILURES_COUNT_KEY, 0)
+            sharedPreferences.getInt(DiagnosticsHelper.CONSECUTIVE_FAILURES_COUNT_KEY, 0)
         } returns DiagnosticsSynchronizer.MAX_NUMBER_POST_RETRIES - 1
 
         diagnosticsSynchronizer.syncDiagnosticsFileIfNeeded()
 
-        verify(exactly = 1) { sharedPreferencesEditor.remove(DiagnosticsSynchronizer.CONSECUTIVE_FAILURES_COUNT_KEY) }
+        verify(exactly = 1) { sharedPreferencesEditor.remove(DiagnosticsHelper.CONSECUTIVE_FAILURES_COUNT_KEY) }
     }
 
     @Test
@@ -192,7 +157,7 @@ class DiagnosticsSynchronizerTest {
         val errorCallbackResponse = Pair(PurchasesError(PurchasesErrorCode.ConfigurationError), true)
         mockBackendResponse(testDiagnosticsEntryJSONs, errorReturn = errorCallbackResponse)
         every {
-            sharedPreferences.getInt(DiagnosticsSynchronizer.CONSECUTIVE_FAILURES_COUNT_KEY, 0)
+            sharedPreferences.getInt(DiagnosticsHelper.CONSECUTIVE_FAILURES_COUNT_KEY, 0)
         } returns DiagnosticsSynchronizer.MAX_NUMBER_POST_RETRIES - 1
 
         diagnosticsSynchronizer.syncDiagnosticsFileIfNeeded()
@@ -219,7 +184,7 @@ class DiagnosticsSynchronizerTest {
 
         diagnosticsSynchronizer.syncDiagnosticsFileIfNeeded()
 
-        verify(exactly = 1) { sharedPreferencesEditor.remove(DiagnosticsSynchronizer.CONSECUTIVE_FAILURES_COUNT_KEY) }
+        verify(exactly = 1) { sharedPreferencesEditor.remove(DiagnosticsHelper.CONSECUTIVE_FAILURES_COUNT_KEY) }
     }
 
     @Test
@@ -251,7 +216,7 @@ class DiagnosticsSynchronizerTest {
     fun `syncDiagnosticsFileIfNeeded removes consecutive failures count if IOException happens`() {
         every { diagnosticsFileHelper.readFileAsJson(any()) } throws IOException()
         diagnosticsSynchronizer.syncDiagnosticsFileIfNeeded()
-        verify(exactly = 1) { sharedPreferencesEditor.remove(DiagnosticsSynchronizer.CONSECUTIVE_FAILURES_COUNT_KEY) }
+        verify(exactly = 1) { sharedPreferencesEditor.remove(DiagnosticsHelper.CONSECUTIVE_FAILURES_COUNT_KEY) }
     }
 
     @Test
@@ -269,13 +234,13 @@ class DiagnosticsSynchronizerTest {
         every { sharedPreferences.edit() } returns sharedPreferencesEditor
         every { sharedPreferencesEditor.apply() } just Runs
         every {
-            sharedPreferencesEditor.remove(DiagnosticsSynchronizer.CONSECUTIVE_FAILURES_COUNT_KEY)
+            sharedPreferencesEditor.remove(DiagnosticsHelper.CONSECUTIVE_FAILURES_COUNT_KEY)
         } returns sharedPreferencesEditor
         every {
-            sharedPreferencesEditor.putInt(DiagnosticsSynchronizer.CONSECUTIVE_FAILURES_COUNT_KEY, any())
+            sharedPreferencesEditor.putInt(DiagnosticsHelper.CONSECUTIVE_FAILURES_COUNT_KEY, any())
         } returns sharedPreferencesEditor
         every {
-            sharedPreferences.getInt(DiagnosticsSynchronizer.CONSECUTIVE_FAILURES_COUNT_KEY, 0)
+            sharedPreferences.getInt(DiagnosticsHelper.CONSECUTIVE_FAILURES_COUNT_KEY, 0)
         } returns 0
     }
 

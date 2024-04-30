@@ -1,16 +1,17 @@
 package com.revenuecat.purchases.common.diagnostics
 
+import android.os.Build
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Dispatcher
+import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.verboseLog
 import com.revenuecat.purchases.strings.OfflineEntitlementsStrings
-import com.revenuecat.purchases.utils.EventsFileHelper
 import com.revenuecat.purchases.utils.isAndroidNOrNewer
 import java.io.IOException
 import kotlin.time.Duration
@@ -22,8 +23,9 @@ import kotlin.time.Duration
 @Suppress("TooManyFunctions")
 internal class DiagnosticsTracker(
     private val appConfig: AppConfig,
-    private val diagnosticsFileHelper: EventsFileHelper<DiagnosticsEntry>,
+    private val diagnosticsFileHelper: DiagnosticsFileHelper,
     private val diagnosticsAnonymizer: DiagnosticsAnonymizer,
+    private val diagnosticsHelper: DiagnosticsHelper,
     private val diagnosticsDispatcher: Dispatcher,
 ) {
     private companion object {
@@ -251,9 +253,9 @@ internal class DiagnosticsTracker(
     // endregion
 
     fun trackEvent(diagnosticsEntry: DiagnosticsEntry) {
-        diagnosticsDispatcher.enqueue(command = {
+        checkAndClearDiagnosticsFileIfTooBig {
             trackEventInCurrentThread(diagnosticsEntry)
-        })
+        }
     }
 
     internal fun trackEventInCurrentThread(diagnosticsEntry: DiagnosticsEntry) {
@@ -266,5 +268,25 @@ internal class DiagnosticsTracker(
                 verboseLog("Error tracking diagnostics entry: $e")
             }
         }
+    }
+
+    private fun checkAndClearDiagnosticsFileIfTooBig(completion: () -> Unit) {
+        enqueue {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                if (diagnosticsFileHelper.isDiagnosticsFileTooBig()) {
+                    verboseLog("Diagnostics file is too big. Deleting it.")
+                    diagnosticsHelper.resetDiagnosticsStatus()
+                    trackMaxEventsStoredLimitReached()
+                }
+            } else {
+                // This should never happen since we create this class only if diagnostics is supported
+                errorLog("Diagnostics only supported in Android 24+")
+            }
+            completion()
+        }
+    }
+
+    private fun enqueue(command: () -> Unit) {
+        diagnosticsDispatcher.enqueue(command = command)
     }
 }

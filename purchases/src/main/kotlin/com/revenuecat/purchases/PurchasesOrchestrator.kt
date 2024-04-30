@@ -176,7 +176,6 @@ internal class PurchasesOrchestrator constructor(
         }
 
         if (isAndroidNOrNewer()) {
-            diagnosticsSynchronizer?.clearDiagnosticsFileIfTooBig()
             diagnosticsSynchronizer?.syncDiagnosticsFileIfNeeded()
         }
     }
