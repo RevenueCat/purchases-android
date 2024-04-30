@@ -53,6 +53,7 @@ class DiagnosticsSynchronizerTest {
         diagnosticsSynchronizer = DiagnosticsSynchronizer(
             DiagnosticsHelper(mockk(), diagnosticsFileHelper, lazy { sharedPreferences }),
             diagnosticsFileHelper,
+            diagnosticsTracker,
             backend,
             dispatcher,
         )
@@ -156,7 +157,7 @@ class DiagnosticsSynchronizerTest {
         val errorCallbackResponse = Pair(PurchasesError(PurchasesErrorCode.ConfigurationError), true)
         mockBackendResponse(testDiagnosticsEntryJSONs, errorReturn = errorCallbackResponse)
         every {
-            sharedPreferences.getInt(DiagnosticsSynchronizer.CONSECUTIVE_FAILURES_COUNT_KEY, 0)
+            sharedPreferences.getInt(DiagnosticsHelper.CONSECUTIVE_FAILURES_COUNT_KEY, 0)
         } returns DiagnosticsSynchronizer.MAX_NUMBER_POST_RETRIES - 1
 
         diagnosticsSynchronizer.syncDiagnosticsFileIfNeeded()
