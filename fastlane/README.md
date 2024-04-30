@@ -287,6 +287,14 @@ Trigger CircleCI job to generate snapshots for RevenueCatUI
 
 Updates purchases-android-snapshots-commit to point to latest commit on main
 
+### android trigger_bump
+
+```sh
+[bundle exec] fastlane android trigger_bump
+```
+
+Trigger bump
+
 ----
 
 This README.md is auto-generated and will be re-generated every time [_fastlane_](https://fastlane.tools) is run.
