@@ -170,6 +170,24 @@ internal class DiagnosticsTracker(
         }
     }
 
+    fun trackMaxDiagnosticsSyncRetriesReached() {
+        trackEvent(
+            DiagnosticsEntry(
+                name = DiagnosticsEntryName.MAX_DIAGNOSTICS_SYNC_RETRIES_REACHED,
+                properties = mapOf(),
+            ),
+        )
+    }
+
+    fun trackClearingDiagnosticsAfterFailedSync() {
+        trackEvent(
+            DiagnosticsEntry(
+                name = DiagnosticsEntryName.CLEARING_DIAGNOSTICS_AFTER_FAILED_SYNC,
+                properties = mapOf(),
+            ),
+        )
+    }
+
     fun trackProductDetailsNotSupported(
         billingResponseCode: Int,
         billingDebugMessage: String,

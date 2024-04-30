@@ -160,6 +160,7 @@ class DiagnosticsSynchronizerTest {
 
     @Test
     fun `syncDiagnosticsFileIfNeeded deletes file if backend request unsuccessful and last retry`() {
+        every { diagnosticsTracker.trackMaxDiagnosticsSyncRetriesReached() } just Runs
         val errorCallbackResponse = Pair(PurchasesError(PurchasesErrorCode.ConfigurationError), true)
         mockBackendResponse(testDiagnosticsEntryJSONs, errorReturn = errorCallbackResponse)
         every {
@@ -173,6 +174,7 @@ class DiagnosticsSynchronizerTest {
 
     @Test
     fun `syncDiagnosticsFileIfNeeded removes consecutive failures count if request unsuccessful and last retry`() {
+        every { diagnosticsTracker.trackMaxDiagnosticsSyncRetriesReached() } just Runs
         val errorCallbackResponse = Pair(PurchasesError(PurchasesErrorCode.ConfigurationError), true)
         mockBackendResponse(testDiagnosticsEntryJSONs, errorReturn = errorCallbackResponse)
         every {
@@ -185,7 +187,22 @@ class DiagnosticsSynchronizerTest {
     }
 
     @Test
+    fun `syncDiagnosticsFileIfNeeded tracks maxDiagnosticsSyncRetriesReached if request unsuccessful and last retry`() {
+        every { diagnosticsTracker.trackMaxDiagnosticsSyncRetriesReached() } just Runs
+        val errorCallbackResponse = Pair(PurchasesError(PurchasesErrorCode.ConfigurationError), true)
+        mockBackendResponse(testDiagnosticsEntryJSONs, errorReturn = errorCallbackResponse)
+        every {
+            sharedPreferences.getInt(DiagnosticsSynchronizer.CONSECUTIVE_FAILURES_COUNT_KEY, 0)
+        } returns DiagnosticsSynchronizer.MAX_NUMBER_POST_RETRIES - 1
+
+        diagnosticsSynchronizer.syncDiagnosticsFileIfNeeded()
+
+        verify(exactly = 1) { diagnosticsTracker.trackMaxDiagnosticsSyncRetriesReached() }
+    }
+
+    @Test
     fun `syncDiagnosticsFileIfNeeded removes file if should not retry`() {
+        every { diagnosticsTracker.trackClearingDiagnosticsAfterFailedSync() } just Runs
         val errorCallbackResponse = Pair(PurchasesError(PurchasesErrorCode.ConfigurationError), false)
         mockBackendResponse(testDiagnosticsEntryJSONs, errorReturn = errorCallbackResponse)
 
@@ -196,12 +213,24 @@ class DiagnosticsSynchronizerTest {
 
     @Test
     fun `syncDiagnosticsFileIfNeeded removes consecutive failures count if should not retry`() {
+        every { diagnosticsTracker.trackClearingDiagnosticsAfterFailedSync() } just Runs
         val errorCallbackResponse = Pair(PurchasesError(PurchasesErrorCode.ConfigurationError), false)
         mockBackendResponse(testDiagnosticsEntryJSONs, errorReturn = errorCallbackResponse)
 
         diagnosticsSynchronizer.syncDiagnosticsFileIfNeeded()
 
         verify(exactly = 1) { sharedPreferencesEditor.remove(DiagnosticsSynchronizer.CONSECUTIVE_FAILURES_COUNT_KEY) }
+    }
+
+    @Test
+    fun `syncDiagnosticsFileIfNeeded tracks clearingDiagnosticsAfterFailedSync if should not retry`() {
+        every { diagnosticsTracker.trackClearingDiagnosticsAfterFailedSync() } just Runs
+        val errorCallbackResponse = Pair(PurchasesError(PurchasesErrorCode.ConfigurationError), false)
+        mockBackendResponse(testDiagnosticsEntryJSONs, errorReturn = errorCallbackResponse)
+
+        diagnosticsSynchronizer.syncDiagnosticsFileIfNeeded()
+
+        verify(exactly = 1) { diagnosticsTracker.trackClearingDiagnosticsAfterFailedSync() }
     }
 
     @Test
