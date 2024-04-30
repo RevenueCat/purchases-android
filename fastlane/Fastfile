@@ -663,6 +663,11 @@ DESC
     end
   end
 
+  desc "Trigger bump"
+  lane :trigger_bump do
+    trigger_action_in_circle_ci(action: 'bump', repo_name: repo_name)
+  end
+
   private_lane :generate_snapshots do |options|
     require 'rest-client'
 
