@@ -8,9 +8,23 @@ object Responses {
     fun createFullCustomerResponse(
         oneMonthFreeTrialExpirationDate: Date? = Iso8601Utils.parse("2100-04-06T20:54:45.975000Z"),
         threeMonthFreeTrialExpirationDate: Date? = Iso8601Utils.parse("1990-08-30T02:40:36Z"),
+        productsInfo: Map<String, Boolean> = mapOf("lifetime_access" to false),
     ): String {
+        val productsInfoString = productsInfo
+            .takeIf { it.isNotEmpty() }
+            ?.entries
+            ?.joinToString(", ") { (productIdentifier, shouldConsume) ->
+                """
+                "$productIdentifier": {
+                  "should_consume": $shouldConsume
+                }
+            """.trimIndent()
+            }
+            ?.let { "\"purchased_products\": {$it}," }
+            ?: ""
         return """
                 {
+                  $productsInfoString
                   "request_date": "2019-08-16T10:30:42Z",
                   "request_date_ms": 1565951442879,
                   "subscriber": {

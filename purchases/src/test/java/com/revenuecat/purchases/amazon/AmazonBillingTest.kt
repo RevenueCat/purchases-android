@@ -541,7 +541,7 @@ class AmazonBillingTest {
     fun `If purchase state is pending, purchase is not fulfilled`() {
         setup()
         underTest.consumeAndSave(
-            shouldTryToConsume = true,
+            finishTransactions = true,
             purchase = dummyReceipt().toStoreTransaction(
                 productId = "sku.monthly",
                 presentedOfferingContext = null,
@@ -551,6 +551,7 @@ class AmazonBillingTest {
                     marketplace = "US"
                 ),
             ),
+            shouldConsume = true,
             initiationSource = PostReceiptInitiationSource.PURCHASE,
         )
 
@@ -573,7 +574,7 @@ class AmazonBillingTest {
         } just Runs
 
         underTest.consumeAndSave(
-            shouldTryToConsume = true,
+            finishTransactions = true,
             purchase = dummyReceipt.toStoreTransaction(
                 productId = "sku.monthly",
                 presentedOfferingContext = null,
@@ -583,6 +584,7 @@ class AmazonBillingTest {
                     marketplace = "US"
                 )
             ),
+            shouldConsume = true,
             initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
         )
 
@@ -596,7 +598,7 @@ class AmazonBillingTest {
     }
 
     @Test
-    fun `If purchase shouldn't be consumed, purchase is not fulfilled, but it is cached`() {
+    fun `Purchase is fulfilled and cached even if shouldConsume is false`() {
         setup()
         val dummyReceipt = dummyReceipt()
 
@@ -609,7 +611,7 @@ class AmazonBillingTest {
         } just Runs
 
         underTest.consumeAndSave(
-            shouldTryToConsume = false,
+            finishTransactions = true,
             purchase = dummyReceipt.toStoreTransaction(
                 productId = "sku.monthly",
                 presentedOfferingContext = null,
@@ -619,6 +621,44 @@ class AmazonBillingTest {
                     marketplace = "US"
                 )
             ),
+            shouldConsume = false,
+            initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
+        )
+
+        verify(exactly = 1) {
+            mockPurchasingServiceProvider.notifyFulfillment(dummyReceipt.receiptId, FulfillmentResult.FULFILLED)
+        }
+
+        verify(exactly = 1) {
+            mockCache.addSuccessfullyPostedToken(dummyReceipt.receiptId)
+        }
+    }
+
+    @Test
+    fun `If purchase shouldn't be finished, purchase is not fulfilled, but it is cached`() {
+        setup()
+        val dummyReceipt = dummyReceipt()
+
+        every {
+            mockPurchasingServiceProvider.notifyFulfillment(dummyReceipt.receiptId, FulfillmentResult.FULFILLED)
+        } just Runs
+
+        every {
+            mockCache.addSuccessfullyPostedToken(dummyReceipt.receiptId)
+        } just Runs
+
+        underTest.consumeAndSave(
+            finishTransactions = false,
+            purchase = dummyReceipt.toStoreTransaction(
+                productId = "sku.monthly",
+                presentedOfferingContext = null,
+                purchaseState = PurchaseState.PURCHASED,
+                userData = dummyUserData(
+                    storeUserId = "store_user_id",
+                    marketplace = "US"
+                )
+            ),
+            shouldConsume = true,
             initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
         )
 

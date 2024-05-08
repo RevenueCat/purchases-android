@@ -211,8 +211,9 @@ internal class AmazonBilling(
     // endregion
 
     override fun consumeAndSave(
-        shouldTryToConsume: Boolean,
+        finishTransactions: Boolean,
         purchase: StoreTransaction,
+        shouldConsume: Boolean,
         initiationSource: PostReceiptInitiationSource,
     ) {
         if (checkObserverMode() || purchase.type == RevenueCatProductType.UNKNOWN) return
@@ -220,7 +221,7 @@ internal class AmazonBilling(
         // PENDING purchases should not be fulfilled
         if (purchase.purchaseState == PurchaseState.PENDING) return
 
-        if (shouldTryToConsume) {
+        if (finishTransactions) {
             executeRequestOnUIThread { connectionError ->
                 if (connectionError == null) {
                     purchasingServiceProvider.notifyFulfillment(purchase.purchaseToken, FulfillmentResult.FULFILLED)

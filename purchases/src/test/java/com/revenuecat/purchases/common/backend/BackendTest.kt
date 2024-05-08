@@ -23,6 +23,7 @@ import com.revenuecat.purchases.common.createCustomerInfo
 import com.revenuecat.purchases.common.createResult
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
+import com.revenuecat.purchases.common.networking.PostReceiptResponse
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
 import com.revenuecat.purchases.common.offlineentitlements.ProductEntitlementMapping
 import com.revenuecat.purchases.common.offlineentitlements.createProductEntitlementMapping
@@ -159,9 +160,9 @@ class BackendTest {
         this@BackendTest.receivedCustomerInfo = info
     }
 
-    private val onReceivePostReceiptSuccessHandler: (CustomerInfo, JSONObject?) -> Unit =
-        { info, _ ->
-            this@BackendTest.receivedCustomerInfo = info
+    private val onReceivePostReceiptSuccessHandler: (PostReceiptResponse) -> Unit =
+        { postReceiptResponse ->
+            this@BackendTest.receivedCustomerInfo = postReceiptResponse.customerInfo
         }
 
     private val postReceiptErrorCallback: PostReceiptDataErrorCallback =
@@ -704,7 +705,7 @@ class BackendTest {
             receiptInfo = basicReceiptInfo,
             storeAppUserID = null,
             initiationSource = initiationSource,
-            onSuccess = { _, _ ->
+            onSuccess = { _ ->
                 lock.countDown()
             },
             onError = postReceiptErrorCallback
@@ -717,7 +718,7 @@ class BackendTest {
             receiptInfo = basicReceiptInfo,
             storeAppUserID = null,
             initiationSource = initiationSource,
-            onSuccess = { _, _ ->
+            onSuccess = { _ ->
                 lock.countDown()
             },
             onError = postReceiptErrorCallback
@@ -772,7 +773,7 @@ class BackendTest {
             receiptInfo = basicReceiptInfo,
             storeAppUserID = null,
             initiationSource = initiationSource,
-            onSuccess = { _, _ ->
+            onSuccess = { _ ->
                 mockResponse(
                     Endpoint.GetCustomerInfo(appUserID),
                     null,
@@ -880,7 +881,7 @@ class BackendTest {
             receiptInfo = receiptInfo1,
             storeAppUserID = null,
             initiationSource = initiationSource,
-            onSuccess = { _, _ ->
+            onSuccess = { _ ->
                 lock.countDown()
             },
             onError = postReceiptErrorCallback
@@ -893,7 +894,7 @@ class BackendTest {
             receiptInfo = receiptInfo2,
             storeAppUserID = null,
             initiationSource = initiationSource,
-            onSuccess = { _, _ ->
+            onSuccess = { _ ->
                 lock.countDown()
             },
             onError = postReceiptErrorCallback
@@ -942,7 +943,7 @@ class BackendTest {
             receiptInfo = receiptInfo1,
             storeAppUserID = null,
             initiationSource = initiationSource,
-            onSuccess = { _, _ ->
+            onSuccess = { _ ->
                 lock.countDown()
             },
             onError = postReceiptErrorCallback
@@ -955,7 +956,7 @@ class BackendTest {
             receiptInfo = receiptInfo2,
             storeAppUserID = null,
             initiationSource = initiationSource,
-            onSuccess = { _, _ ->
+            onSuccess = { _ ->
                 lock.countDown()
             },
             onError = postReceiptErrorCallback
@@ -984,7 +985,7 @@ class BackendTest {
             receiptInfo = basicReceiptInfo,
             storeAppUserID = null,
             initiationSource = initiationSource,
-            onSuccess = { _, _ ->
+            onSuccess = { _ ->
                 lock.countDown()
             },
             onError = postReceiptErrorCallback
@@ -1005,7 +1006,7 @@ class BackendTest {
             receiptInfo = receiptInfo2,
             storeAppUserID = null,
             initiationSource = initiationSource,
-            onSuccess = { _, _ ->
+            onSuccess = { _ ->
                 lock.countDown()
             },
             onError = postReceiptErrorCallback
@@ -1040,7 +1041,7 @@ class BackendTest {
             receiptInfo = receiptInfo,
             storeAppUserID = null,
             initiationSource = initiationSource,
-            onSuccess = { _, _ ->
+            onSuccess = { _ ->
                 lock.countDown()
             },
             onError = postReceiptErrorCallback
@@ -1054,7 +1055,7 @@ class BackendTest {
             receiptInfo = receiptInfo,
             storeAppUserID = null,
             initiationSource = initiationSource,
-            onSuccess = { _, _ ->
+            onSuccess = { _ ->
                 lock.countDown()
             },
             onError = postReceiptErrorCallback
@@ -1106,7 +1107,7 @@ class BackendTest {
             storeAppUserID = null,
             initiationSource = initiationSource,
             delayed = true,
-            onSuccess = { _, _ ->
+            onSuccess = { _ ->
                 lock.countDown()
             },
             onError = postReceiptErrorCallback
@@ -1120,7 +1121,7 @@ class BackendTest {
             initiationSource = initiationSource,
             delayed = true,
             storeAppUserID = "store_app_user_id",
-            onSuccess = { _, _ ->
+            onSuccess = { _ ->
                 lock.countDown()
             },
             onError = postReceiptErrorCallback
@@ -2459,7 +2460,7 @@ class BackendTest {
         delayed: Boolean = false,
         marketplace: String? = null,
         paywallPostReceiptData: PaywallPostReceiptData? = null,
-        onSuccess: (CustomerInfo, JSONObject?) -> Unit = onReceivePostReceiptSuccessHandler,
+        onSuccess: (PostReceiptResponse) -> Unit = onReceivePostReceiptSuccessHandler,
         onError: PostReceiptDataErrorCallback = postReceiptErrorCallback
     ): CustomerInfo {
         val info = mockPostReceiptResponse(

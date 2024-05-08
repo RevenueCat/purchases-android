@@ -348,8 +348,9 @@ internal class BillingWrapper(
     }
 
     override fun consumeAndSave(
-        shouldTryToConsume: Boolean,
+        finishTransactions: Boolean,
         purchase: StoreTransaction,
+        shouldConsume: Boolean,
         initiationSource: PostReceiptInitiationSource,
     ) {
         if (purchase.type == ProductType.UNKNOWN) {
@@ -364,13 +365,13 @@ internal class BillingWrapper(
 
         val originalGooglePurchase = purchase.originalGooglePurchase
         val alreadyAcknowledged = originalGooglePurchase?.isAcknowledged ?: false
-        if (shouldTryToConsume && purchase.type == ProductType.INAPP) {
+        if (finishTransactions && shouldConsume && purchase.type == ProductType.INAPP) {
             consumePurchase(
                 purchase.purchaseToken,
                 initiationSource,
                 onConsumed = deviceCache::addSuccessfullyPostedToken,
             )
-        } else if (shouldTryToConsume && !alreadyAcknowledged) {
+        } else if (finishTransactions && !alreadyAcknowledged) {
             acknowledge(
                 purchase.purchaseToken,
                 initiationSource,

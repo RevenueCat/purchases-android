@@ -13,7 +13,9 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
+import com.revenuecat.purchases.common.networking.PostReceiptResponse
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
+import com.revenuecat.purchases.common.networking.buildPostReceiptResponse
 import com.revenuecat.purchases.common.offlineentitlements.ProductEntitlementMapping
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import com.revenuecat.purchases.models.GoogleReplacementMode
@@ -44,7 +46,7 @@ internal typealias CallbackCacheKey = List<String>
 internal typealias OfferingsCallback = Pair<(JSONObject) -> Unit, (PurchasesError, isServerError: Boolean) -> Unit>
 
 /** @suppress */
-internal typealias PostReceiptDataSuccessCallback = (CustomerInfo, body: JSONObject) -> Unit
+internal typealias PostReceiptDataSuccessCallback = (PostReceiptResponse) -> Unit
 
 /** @suppress */
 internal typealias PostReceiptDataErrorCallback = (
@@ -256,7 +258,7 @@ internal class Backend(
                 }?.forEach { (onSuccess, onError) ->
                     try {
                         if (result.isSuccessful()) {
-                            onSuccess(CustomerInfoFactory.buildCustomerInfo(result), result.body)
+                            onSuccess(buildPostReceiptResponse(result))
                         } else {
                             val purchasesError = result.toPurchasesError().also { errorLog(it) }
                             val errorHandlingBehavior = determinePostReceiptErrorHandlingBehavior(

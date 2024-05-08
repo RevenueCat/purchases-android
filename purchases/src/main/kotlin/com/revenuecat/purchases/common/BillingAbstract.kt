@@ -57,8 +57,9 @@ internal abstract class BillingAbstract(
     )
 
     abstract fun consumeAndSave(
-        shouldTryToConsume: Boolean,
+        finishTransactions: Boolean,
         purchase: StoreTransaction,
+        shouldConsume: Boolean,
         initiationSource: PostReceiptInitiationSource,
     )
 

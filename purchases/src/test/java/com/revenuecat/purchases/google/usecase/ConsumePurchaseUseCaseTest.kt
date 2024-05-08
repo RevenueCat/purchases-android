@@ -71,8 +71,9 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         } just Runs
 
         wrapper.consumeAndSave(
-            shouldTryToConsume = true,
+            finishTransactions = true,
             purchase = googlePurchaseWrapper,
+            shouldConsume = true,
             initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
         )
 
@@ -98,8 +99,9 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         } just Runs
 
         wrapper.consumeAndSave(
-            shouldTryToConsume = true,
+            finishTransactions = true,
             purchase = historyRecordWrapper,
+            shouldConsume = true,
             initiationSource = PostReceiptInitiationSource.RESTORE,
         )
 
@@ -124,8 +126,9 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         mockConsumeAsync(BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE.buildResult())
 
         wrapper.consumeAndSave(
-            shouldTryToConsume = true,
+            finishTransactions = true,
             purchase = googlePurchaseWrapper,
+            shouldConsume = true,
             initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES
         )
 
@@ -150,8 +153,9 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         mockConsumeAsync(BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE.buildResult())
 
         wrapper.consumeAndSave(
-            shouldTryToConsume = true,
+            finishTransactions = true,
             purchase = historyRecordWrapper,
+            shouldConsume = true,
             initiationSource = PostReceiptInitiationSource.RESTORE
         )
 
@@ -178,8 +182,9 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         } just Runs
 
         wrapper.consumeAndSave(
-            shouldTryToConsume = true,
+            finishTransactions = true,
             purchase = googlePurchaseWrapper,
+            shouldConsume = true,
             initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES
         )
 
@@ -209,8 +214,9 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         } just Runs
 
         wrapper.consumeAndSave(
-            shouldTryToConsume = true,
+            finishTransactions = true,
             purchase = historyRecordWrapper,
+            shouldConsume = true,
             initiationSource = PostReceiptInitiationSource.RESTORE
         )
 
@@ -241,8 +247,9 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         } just Runs
 
         wrapper.consumeAndSave(
-            shouldTryToConsume = false,
+            finishTransactions = false,
             purchase = googlePurchaseWrapper,
+            shouldConsume = false,
             initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES
         )
 
@@ -270,8 +277,39 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         } just Runs
 
         wrapper.consumeAndSave(
-            shouldTryToConsume = false,
+            finishTransactions = false,
             purchase = historyRecordWrapper,
+            shouldConsume = false,
+            initiationSource = PostReceiptInitiationSource.RESTORE
+        )
+
+        verify(exactly = 0) {
+            mockClient.consumeAsync(any(), any())
+        }
+
+        verify(exactly = 1) {
+            mockDeviceCache.addSuccessfullyPostedToken(token)
+        }
+    }
+
+    @Test
+    fun `if it does not finish transactions, don't consume and save it in cache`() {
+        val sku = "consumable"
+        val token = "token_consumable"
+        val historyRecordWrapper = getMockedPurchaseHistoryRecordWrapper(
+            sku,
+            token,
+            ProductType.INAPP
+        )
+
+        every {
+            mockDeviceCache.addSuccessfullyPostedToken(token)
+        } just Runs
+
+        wrapper.consumeAndSave(
+            finishTransactions = false,
+            purchase = historyRecordWrapper,
+            shouldConsume = true,
             initiationSource = PostReceiptInitiationSource.RESTORE
         )
 
@@ -301,8 +339,9 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         } just Runs
 
         wrapper.consumeAndSave(
-            shouldTryToConsume = true,
+            finishTransactions = true,
             purchase = googlePurchaseWrapper,
+            shouldConsume = true,
             initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
         )
 

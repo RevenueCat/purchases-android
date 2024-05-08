@@ -7,6 +7,7 @@ import com.revenuecat.purchases.common.PostReceiptDataErrorCallback
 import com.revenuecat.purchases.common.PostReceiptErrorHandlingBehavior
 import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.caching.DeviceCache
+import com.revenuecat.purchases.common.networking.PostReceiptResponse
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
@@ -52,9 +53,9 @@ internal class PostReceiptHelper(
             storeUserID,
             marketplace,
             initiationSource,
-            onSuccess = {
+            onSuccess = { postReceiptResponse ->
                 deviceCache.addSuccessfullyPostedToken(purchaseToken)
-                onSuccess(it)
+                onSuccess(postReceiptResponse.customerInfo)
             },
             onError = { backendError, errorHandlingBehavior, _ ->
                 if (errorHandlingBehavior == PostReceiptErrorHandlingBehavior.SHOULD_BE_CONSUMED) {
@@ -102,13 +103,23 @@ internal class PostReceiptHelper(
             storeUserID = purchase.storeUserID,
             marketplace = purchase.marketplace,
             initiationSource = initiationSource,
-            onSuccess = { info ->
-                billing.consumeAndSave(finishTransactions, purchase, initiationSource)
-                onSuccess?.let { it(purchase, info) }
+            onSuccess = { postReceiptResponse ->
+                // Currently we only support a single token per postReceipt call but multiple product Ids.
+                // The backend would fail if given more than one product id (multiline purchases which are
+                // not supported) so it's safe to pickup the first one.
+                // We would need to refactor this if/when we support multiple tokens per call.
+                val shouldConsume = postReceiptResponse.productInfoByProductId
+                    ?.filterKeys { it in purchase.productIds }
+                    ?.values
+                    ?.firstOrNull()
+                    ?.shouldConsume
+                    ?: true
+                billing.consumeAndSave(finishTransactions, purchase, shouldConsume, initiationSource)
+                onSuccess?.let { it(purchase, postReceiptResponse.customerInfo) }
             },
             onError = { backendError, errorHandlingBehavior, _ ->
                 if (errorHandlingBehavior == PostReceiptErrorHandlingBehavior.SHOULD_BE_CONSUMED) {
-                    billing.consumeAndSave(finishTransactions, purchase, initiationSource)
+                    billing.consumeAndSave(finishTransactions, purchase, shouldConsume = true, initiationSource)
                 }
                 useOfflineEntitlementsCustomerInfoIfNeeded(
                     errorHandlingBehavior,
@@ -133,7 +144,7 @@ internal class PostReceiptHelper(
         storeUserID: String?,
         marketplace: String?,
         initiationSource: PostReceiptInitiationSource,
-        onSuccess: (CustomerInfo) -> Unit,
+        onSuccess: (PostReceiptResponse) -> Unit,
         onError: PostReceiptDataErrorCallback,
     ) {
         val presentedPaywall = paywallPresentedCache.getAndRemovePresentedEvent()
@@ -149,15 +160,15 @@ internal class PostReceiptHelper(
                 marketplace = marketplace,
                 initiationSource = initiationSource,
                 paywallPostReceiptData = presentedPaywall?.toPaywallPostReceiptData(),
-                onSuccess = { customerInfo, responseBody ->
+                onSuccess = { postReceiptResponse ->
                     offlineEntitlementsManager.resetOfflineCustomerInfoCache()
                     subscriberAttributesManager.markAsSynced(
                         appUserID,
                         unsyncedSubscriberAttributesByKey,
-                        responseBody.getAttributeErrors(),
+                        postReceiptResponse.body.getAttributeErrors(),
                     )
-                    customerInfoUpdateHandler.cacheAndNotifyListeners(customerInfo)
-                    onSuccess(customerInfo)
+                    customerInfoUpdateHandler.cacheAndNotifyListeners(postReceiptResponse.customerInfo)
+                    onSuccess(postReceiptResponse)
                 },
                 onError = { error, errorHandlingBehavior, responseBody ->
                     presentedPaywall?.let { paywallPresentedCache.cachePresentedPaywall(it) }
