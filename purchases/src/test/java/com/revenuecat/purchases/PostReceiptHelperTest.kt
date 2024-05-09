@@ -1482,6 +1482,114 @@ class PostReceiptHelperTest {
 
     // endregion paywall data
 
+    // region purchased products data
+
+    @Test
+    fun `postTransactionAndConsumeIfNeeded tries to consume products if product data indicates it should consume`() {
+        mockPostReceiptSuccess(
+            purchasedProductsInfo = mapOf("lifetime_product" to true)
+        )
+
+        postReceiptHelper.postTransactionAndConsumeIfNeeded(
+            purchase = mockStoreTransaction,
+            storeProduct = mockStoreProduct,
+            isRestore = false,
+            appUserID = appUserID,
+            initiationSource = initiationSource,
+            onSuccess = { _, _ -> },
+            onError = { _, _ -> fail("Should succeed") }
+        )
+
+        verify(exactly = 1) {
+            billing.consumeAndSave(
+                finishTransactions = true,
+                purchase = mockStoreTransaction,
+                shouldConsume = true,
+                initiationSource = initiationSource
+            )
+        }
+    }
+
+    @Test
+    fun `postTransactionAndConsumeIfNeeded does not try to consume products if product data indicates it should not consume`() {
+        mockPostReceiptSuccess(
+            purchasedProductsInfo = mapOf("lifetime_product" to false)
+        )
+
+        postReceiptHelper.postTransactionAndConsumeIfNeeded(
+            purchase = mockStoreTransaction,
+            storeProduct = mockStoreProduct,
+            isRestore = false,
+            appUserID = appUserID,
+            initiationSource = initiationSource,
+            onSuccess = { _, _ -> },
+            onError = { _, _ -> fail("Should succeed") }
+        )
+
+        verify(exactly = 1) {
+            billing.consumeAndSave(
+                finishTransactions = true,
+                purchase = mockStoreTransaction,
+                shouldConsume = false,
+                initiationSource = initiationSource
+            )
+        }
+    }
+
+    @Test
+    fun `postTransactionAndConsumeIfNeeded tries to consume products if product data not available`() {
+        mockPostReceiptSuccess(
+            purchasedProductsInfo = mapOf()
+        )
+
+        postReceiptHelper.postTransactionAndConsumeIfNeeded(
+            purchase = mockStoreTransaction,
+            storeProduct = mockStoreProduct,
+            isRestore = false,
+            appUserID = appUserID,
+            initiationSource = initiationSource,
+            onSuccess = { _, _ -> },
+            onError = { _, _ -> fail("Should succeed") }
+        )
+
+        verify(exactly = 1) {
+            billing.consumeAndSave(
+                finishTransactions = true,
+                purchase = mockStoreTransaction,
+                shouldConsume = true,
+                initiationSource = initiationSource
+            )
+        }
+    }
+
+    @Test
+    fun `postTransactionAndConsumeIfNeeded tries to consume products if product data product id does not match transactions`() {
+        mockPostReceiptSuccess(
+            purchasedProductsInfo = mapOf("other_product" to false)
+        )
+
+        postReceiptHelper.postTransactionAndConsumeIfNeeded(
+            purchase = mockStoreTransaction,
+            storeProduct = mockStoreProduct,
+            isRestore = false,
+            appUserID = appUserID,
+            initiationSource = initiationSource,
+            onSuccess = { _, _ -> },
+            onError = { _, _ -> fail("Should succeed") }
+        )
+
+        verify(exactly = 1) {
+            billing.consumeAndSave(
+                finishTransactions = true,
+                purchase = mockStoreTransaction,
+                shouldConsume = true,
+                initiationSource = initiationSource
+            )
+        }
+    }
+
+    // endregion purchased products data
+
     // region helpers
 
     private enum class PostType {

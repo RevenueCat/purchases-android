@@ -10,7 +10,7 @@ internal fun buildPostReceiptResponse(result: HTTPResult) = PostReceiptResponse(
     productInfoByProductId = result.body.optJSONObject("purchased_products")?.let {
         it.toMap<JSONObject>().mapValues { (_, value) ->
             PostReceiptProductInfo(
-                shouldConsume = value.optBoolean("should_consume"),
+                shouldConsume = value.takeIf { value.has("should_consume") }?.optBoolean("should_consume"),
             )
         }
     },
@@ -18,7 +18,7 @@ internal fun buildPostReceiptResponse(result: HTTPResult) = PostReceiptResponse(
 )
 
 internal data class PostReceiptProductInfo(
-    val shouldConsume: Boolean,
+    val shouldConsume: Boolean?,
 )
 
 internal data class PostReceiptResponse(
