@@ -58,7 +58,7 @@ internal class PostReceiptHelper(
                 onSuccess(postReceiptResponse.customerInfo)
             },
             onError = { backendError, errorHandlingBehavior, _ ->
-                if (errorHandlingBehavior == PostReceiptErrorHandlingBehavior.SHOULD_BE_CONSUMED) {
+                if (errorHandlingBehavior == PostReceiptErrorHandlingBehavior.SHOULD_BE_MARKED_SYNCED) {
                     deviceCache.addSuccessfullyPostedToken(purchaseToken)
                 }
                 useOfflineEntitlementsCustomerInfoIfNeeded(
@@ -118,7 +118,7 @@ internal class PostReceiptHelper(
                 onSuccess?.let { it(purchase, postReceiptResponse.customerInfo) }
             },
             onError = { backendError, errorHandlingBehavior, _ ->
-                if (errorHandlingBehavior == PostReceiptErrorHandlingBehavior.SHOULD_BE_CONSUMED) {
+                if (errorHandlingBehavior == PostReceiptErrorHandlingBehavior.SHOULD_BE_MARKED_SYNCED) {
                     billing.consumeAndSave(finishTransactions, purchase, shouldConsume = false, initiationSource)
                 }
                 useOfflineEntitlementsCustomerInfoIfNeeded(
@@ -172,7 +172,7 @@ internal class PostReceiptHelper(
                 },
                 onError = { error, errorHandlingBehavior, responseBody ->
                     presentedPaywall?.let { paywallPresentedCache.cachePresentedPaywall(it) }
-                    if (errorHandlingBehavior == PostReceiptErrorHandlingBehavior.SHOULD_BE_CONSUMED) {
+                    if (errorHandlingBehavior == PostReceiptErrorHandlingBehavior.SHOULD_BE_MARKED_SYNCED) {
                         subscriberAttributesManager.markAsSynced(
                             appUserID,
                             unsyncedSubscriberAttributesByKey,
