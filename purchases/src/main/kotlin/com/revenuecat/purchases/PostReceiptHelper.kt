@@ -119,7 +119,7 @@ internal class PostReceiptHelper(
             },
             onError = { backendError, errorHandlingBehavior, _ ->
                 if (errorHandlingBehavior == PostReceiptErrorHandlingBehavior.SHOULD_BE_CONSUMED) {
-                    billing.consumeAndSave(finishTransactions, purchase, shouldConsume = true, initiationSource)
+                    billing.consumeAndSave(finishTransactions, purchase, shouldConsume = false, initiationSource)
                 }
                 useOfflineEntitlementsCustomerInfoIfNeeded(
                     errorHandlingBehavior,

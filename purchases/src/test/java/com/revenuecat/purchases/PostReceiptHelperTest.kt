@@ -378,7 +378,7 @@ class PostReceiptHelperTest {
     }
 
     @Test
-    fun `postTransactionAndConsumeIfNeeded calls consume transaction with finish transactions flag true if not observer mode on error if finishable error`() {
+    fun `postTransactionAndConsumeIfNeeded calls consume transaction with finish transactions flag true and shouldConsume flag false if not observer mode on error if finishable error`() {
         every { appConfig.finishTransactions } returns true
         mockPostReceiptError(errorHandlingBehavior = PostReceiptErrorHandlingBehavior.SHOULD_BE_CONSUMED)
 
@@ -396,14 +396,14 @@ class PostReceiptHelperTest {
             billing.consumeAndSave(
                 finishTransactions = true,
                 purchase = mockStoreTransaction,
-                shouldConsume = true,
+                shouldConsume = false,
                 initiationSource = initiationSource
             )
         }
     }
 
     @Test
-    fun `postTransactionAndConsumeIfNeeded calls consume transaction with finish transactions flag false if observer mode on error if finishable error`() {
+    fun `postTransactionAndConsumeIfNeeded calls consume transaction with finish transactions flag false and shouldConsume flag false if observer mode on error if finishable error`() {
         every { appConfig.finishTransactions } returns false
         mockPostReceiptError(errorHandlingBehavior = PostReceiptErrorHandlingBehavior.SHOULD_BE_CONSUMED)
 
@@ -421,7 +421,7 @@ class PostReceiptHelperTest {
             billing.consumeAndSave(
                 finishTransactions = false,
                 purchase = mockStoreTransaction,
-                shouldConsume = true,
+                shouldConsume = false,
                 initiationSource = initiationSource,
             )
         }
@@ -1700,7 +1700,7 @@ class PostReceiptHelperTest {
                 every { billing.consumeAndSave(
                     finishTransactions = any(),
                     purchase = mockStoreTransaction,
-                    shouldConsume = true,
+                    shouldConsume = false,
                     initiationSource = initiationSource
                 ) } just Runs
             } else {
