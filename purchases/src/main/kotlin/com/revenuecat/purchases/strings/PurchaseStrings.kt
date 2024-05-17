@@ -8,7 +8,7 @@ internal object PurchaseStrings {
     const val CONSUMING_PURCHASE = "Consuming purchase with token %s"
     const val CONSUMING_PURCHASE_ERROR = "Error consuming purchase. Will retry next queryPurchases. %s"
     const val NOT_CONSUMING_IN_APP_PURCHASE_ACCORDING_TO_BACKEND = "Not consuming in-app purchase according to" +
-        " server configuration. This is expected for non-consumable products. User won't be able to purchase this" +
+        " server configuration. This is expected for non-consumable products. The user won't be able to purchase this" +
         " product again."
     const val FOUND_EXISTING_PURCHASE = "Found existing purchase for SKU: %s"
     const val NO_EXISTING_PURCHASE = "Couldn't find existing purchase for SKU: %s"
