@@ -75,7 +75,8 @@ internal open class BasePurchasesTest {
     protected var capturedPurchasesUpdatedListener = slot<BillingAbstract.PurchasesUpdatedListener>()
     protected var capturedBillingWrapperStateListener = slot<BillingAbstract.StateListener>()
     private val capturedConsumePurchaseWrapper = slot<StoreTransaction>()
-    private val capturedShouldTryToConsume = slot<Boolean>()
+    private val capturedFinishedTransactions = slot<Boolean>()
+    private val capturedShouldConsume = slot<Boolean>()
 
     protected lateinit var paywallPresentedCache: PaywallPresentedCache
 
@@ -147,8 +148,9 @@ internal open class BasePurchasesTest {
             } just Runs
             every {
                 consumeAndSave(
-                    capture(capturedShouldTryToConsume),
+                    capture(capturedFinishedTransactions),
                     capture(capturedConsumePurchaseWrapper),
+                    capture(capturedShouldConsume),
                     any(),
                 )
             } just Runs

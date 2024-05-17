@@ -11,6 +11,8 @@ import com.revenuecat.purchases.common.PostReceiptErrorHandlingBehavior
 import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.SubscriberAttributeError
 import com.revenuecat.purchases.common.caching.DeviceCache
+import com.revenuecat.purchases.common.networking.PostReceiptProductInfo
+import com.revenuecat.purchases.common.networking.PostReceiptResponse
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
 import com.revenuecat.purchases.google.toStoreTransaction
 import com.revenuecat.purchases.models.GoogleReplacementMode
@@ -50,7 +52,7 @@ class PostReceiptHelperTest {
     private val appUserID = "test-app-user-id"
     private val mockStoreProduct = stubStoreProduct("productId")
     private val mockGooglePurchase = stubGooglePurchase(
-        productIds = listOf("uno", "dos")
+        productIds = listOf("lifetime_product", "dos")
     )
     private val subscriptionOptionId = "mock-base-plan-id:mock-offer-id"
     private val postToken = "test-post-token"
@@ -251,9 +253,9 @@ class PostReceiptHelperTest {
     }
 
     @Test
-    fun `postTransactionAndConsumeIfNeeded calls consume transaction with consuming flag true if not observer mode on success`() {
-        val expectedShouldConsumeFlag = true
-        every { appConfig.finishTransactions } returns expectedShouldConsumeFlag
+    fun `postTransactionAndConsumeIfNeeded calls consume transaction with finish transactions flag true if not observer mode on success`() {
+        val expectedFinishTransactionsFlag = true
+        every { appConfig.finishTransactions } returns expectedFinishTransactionsFlag
 
         mockPostReceiptSuccess()
 
@@ -269,17 +271,18 @@ class PostReceiptHelperTest {
 
         verify(exactly = 1) {
             billing.consumeAndSave(
-                shouldTryToConsume = expectedShouldConsumeFlag,
+                finishTransactions = expectedFinishTransactionsFlag,
                 purchase = mockStoreTransaction,
+                shouldConsume = false,
                 initiationSource = initiationSource,
             )
         }
     }
 
     @Test
-    fun `postTransactionAndConsumeIfNeeded calls consume transaction with consuming flag false if observer mode on success`() {
-        val expectedShouldConsumeFlag = false
-        every { appConfig.finishTransactions } returns expectedShouldConsumeFlag
+    fun `postTransactionAndConsumeIfNeeded calls consume transaction with finish transactions flag false if observer mode on success`() {
+        val expectedFinishTransactionsFlag = false
+        every { appConfig.finishTransactions } returns expectedFinishTransactionsFlag
 
         mockPostReceiptSuccess()
 
@@ -295,8 +298,9 @@ class PostReceiptHelperTest {
 
         verify(exactly = 1) {
             billing.consumeAndSave(
-                shouldTryToConsume = expectedShouldConsumeFlag,
+                finishTransactions = expectedFinishTransactionsFlag,
                 purchase = mockStoreTransaction,
+                shouldConsume = false,
                 initiationSource = initiationSource,
             )
         }
@@ -374,7 +378,7 @@ class PostReceiptHelperTest {
     }
 
     @Test
-    fun `postTransactionAndConsumeIfNeeded calls consume transaction with consuming flag true if not observer mode on error if finishable error`() {
+    fun `postTransactionAndConsumeIfNeeded calls consume transaction with finish transactions flag true if not observer mode on error if finishable error`() {
         every { appConfig.finishTransactions } returns true
         mockPostReceiptError(errorHandlingBehavior = PostReceiptErrorHandlingBehavior.SHOULD_BE_CONSUMED)
 
@@ -390,15 +394,16 @@ class PostReceiptHelperTest {
 
         verify(exactly = 1) {
             billing.consumeAndSave(
-                shouldTryToConsume = true,
+                finishTransactions = true,
                 purchase = mockStoreTransaction,
+                shouldConsume = true,
                 initiationSource = initiationSource
             )
         }
     }
 
     @Test
-    fun `postTransactionAndConsumeIfNeeded calls consume transaction with consuming flag false if observer mode on error if finishable error`() {
+    fun `postTransactionAndConsumeIfNeeded calls consume transaction with finish transactions flag false if observer mode on error if finishable error`() {
         every { appConfig.finishTransactions } returns false
         mockPostReceiptError(errorHandlingBehavior = PostReceiptErrorHandlingBehavior.SHOULD_BE_CONSUMED)
 
@@ -414,8 +419,9 @@ class PostReceiptHelperTest {
 
         verify(exactly = 1) {
             billing.consumeAndSave(
-                shouldTryToConsume = false,
+                finishTransactions = false,
                 purchase = mockStoreTransaction,
+                shouldConsume = true,
                 initiationSource = initiationSource,
             )
         }
@@ -437,8 +443,9 @@ class PostReceiptHelperTest {
 
         verify(exactly = 0) {
             billing.consumeAndSave(
-                shouldTryToConsume = any(),
+                finishTransactions = any(),
                 purchase = any(),
+                shouldConsume = any(),
                 initiationSource = initiationSource
             )
         }
@@ -611,8 +618,9 @@ class PostReceiptHelperTest {
         )
 
         verify(exactly = 0) { billing.consumeAndSave(
-            shouldTryToConsume = any(),
+            finishTransactions = any(),
             purchase = any(),
+            shouldConsume = any(),
             initiationSource = initiationSource
         ) }
         verify(exactly = 0) { deviceCache.addSuccessfullyPostedToken(any()) }
@@ -730,7 +738,7 @@ class PostReceiptHelperTest {
             onError = { _, _ -> fail("Should succeed") }
         )
         assertThat(postedReceiptInfoSlot.isCaptured).isTrue
-        assertThat(postedReceiptInfoSlot.captured.productIDs).isEqualTo(listOf("uno", "dos"))
+        assertThat(postedReceiptInfoSlot.captured.productIDs).isEqualTo(listOf("lifetime_product", "dos"))
     }
 
     @Test
@@ -744,8 +752,9 @@ class PostReceiptHelperTest {
         )
 
         every { billing.consumeAndSave(
-            shouldTryToConsume = true,
+            finishTransactions = true,
             purchase = purchase,
+            shouldConsume = false,
             initiationSource = initiationSource
         )
         } just Runs
@@ -1161,8 +1170,9 @@ class PostReceiptHelperTest {
 
         verify(exactly = 0) {
             billing.consumeAndSave(
-                shouldTryToConsume = any(),
+                finishTransactions = any(),
                 purchase = any(),
+                shouldConsume = any(),
                 initiationSource = initiationSource
             )
         }
@@ -1189,8 +1199,9 @@ class PostReceiptHelperTest {
 
         verify(exactly = 0) {
             billing.consumeAndSave(
-                shouldTryToConsume = any(),
+                finishTransactions = any(),
                 purchase = any(),
+                shouldConsume = any(),
                 initiationSource = initiationSource
             )
         }
@@ -1367,8 +1378,9 @@ class PostReceiptHelperTest {
         )
 
         verify(exactly = 0) { billing.consumeAndSave(
-            shouldTryToConsume = any(),
+            finishTransactions = any(),
             purchase = any(),
+            shouldConsume = any(),
             initiationSource = initiationSource
         ) }
         verify(exactly = 0) { deviceCache.addSuccessfullyPostedToken(any()) }
@@ -1470,6 +1482,114 @@ class PostReceiptHelperTest {
 
     // endregion paywall data
 
+    // region purchased products data
+
+    @Test
+    fun `postTransactionAndConsumeIfNeeded tries to consume products if product data indicates it should consume`() {
+        mockPostReceiptSuccess(
+            purchasedProductsInfo = mapOf("lifetime_product" to true)
+        )
+
+        postReceiptHelper.postTransactionAndConsumeIfNeeded(
+            purchase = mockStoreTransaction,
+            storeProduct = mockStoreProduct,
+            isRestore = false,
+            appUserID = appUserID,
+            initiationSource = initiationSource,
+            onSuccess = { _, _ -> },
+            onError = { _, _ -> fail("Should succeed") }
+        )
+
+        verify(exactly = 1) {
+            billing.consumeAndSave(
+                finishTransactions = true,
+                purchase = mockStoreTransaction,
+                shouldConsume = true,
+                initiationSource = initiationSource
+            )
+        }
+    }
+
+    @Test
+    fun `postTransactionAndConsumeIfNeeded does not try to consume products if product data indicates it should not consume`() {
+        mockPostReceiptSuccess(
+            purchasedProductsInfo = mapOf("lifetime_product" to false)
+        )
+
+        postReceiptHelper.postTransactionAndConsumeIfNeeded(
+            purchase = mockStoreTransaction,
+            storeProduct = mockStoreProduct,
+            isRestore = false,
+            appUserID = appUserID,
+            initiationSource = initiationSource,
+            onSuccess = { _, _ -> },
+            onError = { _, _ -> fail("Should succeed") }
+        )
+
+        verify(exactly = 1) {
+            billing.consumeAndSave(
+                finishTransactions = true,
+                purchase = mockStoreTransaction,
+                shouldConsume = false,
+                initiationSource = initiationSource
+            )
+        }
+    }
+
+    @Test
+    fun `postTransactionAndConsumeIfNeeded tries to consume products if product data not available`() {
+        mockPostReceiptSuccess(
+            purchasedProductsInfo = mapOf()
+        )
+
+        postReceiptHelper.postTransactionAndConsumeIfNeeded(
+            purchase = mockStoreTransaction,
+            storeProduct = mockStoreProduct,
+            isRestore = false,
+            appUserID = appUserID,
+            initiationSource = initiationSource,
+            onSuccess = { _, _ -> },
+            onError = { _, _ -> fail("Should succeed") }
+        )
+
+        verify(exactly = 1) {
+            billing.consumeAndSave(
+                finishTransactions = true,
+                purchase = mockStoreTransaction,
+                shouldConsume = true,
+                initiationSource = initiationSource
+            )
+        }
+    }
+
+    @Test
+    fun `postTransactionAndConsumeIfNeeded tries to consume products if product data product id does not match transactions`() {
+        mockPostReceiptSuccess(
+            purchasedProductsInfo = mapOf("other_product" to false)
+        )
+
+        postReceiptHelper.postTransactionAndConsumeIfNeeded(
+            purchase = mockStoreTransaction,
+            storeProduct = mockStoreProduct,
+            isRestore = false,
+            appUserID = appUserID,
+            initiationSource = initiationSource,
+            onSuccess = { _, _ -> },
+            onError = { _, _ -> fail("Should succeed") }
+        )
+
+        verify(exactly = 1) {
+            billing.consumeAndSave(
+                finishTransactions = true,
+                purchase = mockStoreTransaction,
+                shouldConsume = true,
+                initiationSource = initiationSource
+            )
+        }
+    }
+
+    // endregion purchased products data
+
     // region helpers
 
     private enum class PostType {
@@ -1487,7 +1607,8 @@ class PostReceiptHelperTest {
 
     private fun mockPostReceiptSuccess(
         customerInfo: CustomerInfo = defaultCustomerInfo,
-        jsonBody: JSONObject = JSONObject(Responses.validFullPurchaserResponse),
+        purchasedProductsInfo: Map<String, Boolean> = mapOf("lifetime_product" to false),
+        jsonBody: JSONObject = JSONObject(Responses.createFullCustomerResponse(productsInfo = purchasedProductsInfo)),
         postType: PostType = PostType.TRANSACTION_AND_CONSUME,
         postReceiptInitiationSource: PostReceiptInitiationSource = initiationSource,
     ) {
@@ -1507,7 +1628,12 @@ class PostReceiptHelperTest {
                 onError = any()
             )
         } answers {
-            lambda<PostReceiptDataSuccessCallback>().captured.invoke(customerInfo, jsonBody)
+            val purchasedProductsById = purchasedProductsInfo.mapValues {
+                PostReceiptProductInfo(it.value)
+            }
+            lambda<PostReceiptDataSuccessCallback>().captured.invoke(
+                PostReceiptResponse(customerInfo, purchasedProductsById, jsonBody)
+            )
         }
 
         every { offlineEntitlementsManager.resetOfflineCustomerInfoCache() } just Runs
@@ -1515,8 +1641,9 @@ class PostReceiptHelperTest {
         every { customerInfoUpdateHandler.cacheAndNotifyListeners(any()) } just Runs
         if (postType == PostType.TRANSACTION_AND_CONSUME) {
             every { billing.consumeAndSave(
-                shouldTryToConsume = any(),
+                finishTransactions = any(),
                 purchase = mockStoreTransaction,
+                shouldConsume = any(),
                 initiationSource = initiationSource
             )
             } just Runs
@@ -1571,8 +1698,9 @@ class PostReceiptHelperTest {
             every { subscriberAttributesManager.markAsSynced(appUserID, any(), any()) } just Runs
             if (postType == PostType.TRANSACTION_AND_CONSUME) {
                 every { billing.consumeAndSave(
-                    shouldTryToConsume = any(),
+                    finishTransactions = any(),
                     purchase = mockStoreTransaction,
+                    shouldConsume = true,
                     initiationSource = initiationSource
                 ) } just Runs
             } else {

@@ -348,8 +348,9 @@ internal class BillingWrapper(
     }
 
     override fun consumeAndSave(
-        shouldTryToConsume: Boolean,
+        finishTransactions: Boolean,
         purchase: StoreTransaction,
+        shouldConsume: Boolean,
         initiationSource: PostReceiptInitiationSource,
     ) {
         if (purchase.type == ProductType.UNKNOWN) {
@@ -364,20 +365,33 @@ internal class BillingWrapper(
 
         val originalGooglePurchase = purchase.originalGooglePurchase
         val alreadyAcknowledged = originalGooglePurchase?.isAcknowledged ?: false
-        if (shouldTryToConsume && purchase.type == ProductType.INAPP) {
-            consumePurchase(
-                purchase.purchaseToken,
-                initiationSource,
-                onConsumed = deviceCache::addSuccessfullyPostedToken,
-            )
-        } else if (shouldTryToConsume && !alreadyAcknowledged) {
-            acknowledge(
-                purchase.purchaseToken,
-                initiationSource,
-                onAcknowledged = deviceCache::addSuccessfullyPostedToken,
-            )
+        val isInAppProduct = purchase.type == ProductType.INAPP
+        if (isInAppProduct) {
+            if (finishTransactions && shouldConsume) {
+                consumePurchase(
+                    purchase.purchaseToken,
+                    initiationSource,
+                    onConsumed = deviceCache::addSuccessfullyPostedToken,
+                )
+            } else {
+                if (finishTransactions) {
+                    log(
+                        LogIntent.PURCHASE,
+                        PurchaseStrings.NOT_CONSUMING_IN_APP_PURCHASE_ACCORDING_TO_BACKEND,
+                    )
+                }
+                deviceCache.addSuccessfullyPostedToken(purchase.purchaseToken)
+            }
         } else {
-            deviceCache.addSuccessfullyPostedToken(purchase.purchaseToken)
+            if (finishTransactions && !alreadyAcknowledged) {
+                acknowledge(
+                    purchase.purchaseToken,
+                    initiationSource,
+                    onAcknowledged = deviceCache::addSuccessfullyPostedToken,
+                )
+            } else {
+                deviceCache.addSuccessfullyPostedToken(purchase.purchaseToken)
+            }
         }
     }
 

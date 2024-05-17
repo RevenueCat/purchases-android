@@ -68,8 +68,9 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         } just Runs
 
         wrapper.consumeAndSave(
-            shouldTryToConsume = true,
+            finishTransactions = true,
             purchase = googlePurchaseWrapper,
+            shouldConsume = true,
             initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
         )
 
@@ -93,8 +94,9 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         } just Runs
 
         wrapper.consumeAndSave(
-            shouldTryToConsume = true,
+            finishTransactions = true,
             purchase = googlePurchaseWrapper,
+            shouldConsume = true,
             initiationSource = PostReceiptInitiationSource.PURCHASE,
         )
 
@@ -118,8 +120,9 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         } just Runs
 
         wrapper.consumeAndSave(
-            shouldTryToConsume = true,
+            finishTransactions = true,
             purchase = historyRecordWrapper,
+            shouldConsume = true,
             initiationSource = PostReceiptInitiationSource.RESTORE,
         )
 
@@ -139,8 +142,9 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         val token = googlePurchaseWrapper.purchaseToken
 
         wrapper.consumeAndSave(
-            shouldTryToConsume = true,
+            finishTransactions = true,
             purchase = googlePurchaseWrapper,
+            shouldConsume = true,
             initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
         )
 
@@ -160,8 +164,9 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         val token = historyRecordWrapper.purchaseToken
 
         wrapper.consumeAndSave(
-            shouldTryToConsume = true,
+            finishTransactions = true,
             purchase = historyRecordWrapper,
+            shouldConsume = true,
             initiationSource = PostReceiptInitiationSource.RESTORE
         )
 
@@ -185,8 +190,9 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         } just Runs
 
         wrapper.consumeAndSave(
-            shouldTryToConsume = true,
+            finishTransactions = true,
             purchase = googlePurchaseWrapper,
+            shouldConsume = true,
             initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES
         )
 
@@ -201,6 +207,33 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
     }
 
     @Test
+    fun `subscriptions are acknowledged even if shouldConsume is false`() {
+        val googlePurchaseWrapper = getMockedPurchaseWrapper()
+        val token = googlePurchaseWrapper.purchaseToken
+
+        every {
+            mockDeviceCache.addSuccessfullyPostedToken(token)
+        } just Runs
+
+        wrapper.consumeAndSave(
+            finishTransactions = true,
+            purchase = googlePurchaseWrapper,
+            shouldConsume = false,
+            initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES
+        )
+
+        assertThat(capturedAcknowledgeResponseListener.isCaptured).isTrue
+        capturedAcknowledgeResponseListener.captured.onAcknowledgePurchaseResponse(
+            billingClientOKResult
+        )
+
+        assertThat(capturedAcknowledgePurchaseParams.isCaptured).isTrue
+        val capturedAcknowledgeParams = capturedAcknowledgePurchaseParams.captured
+        assertThat(capturedAcknowledgeParams.purchaseToken).isEqualTo(token)
+    }
+
+
+    @Test
     fun `restored subscriptions are acknowledged`() {
         val historyRecordWrapper = getMockedPurchaseHistoryRecordWrapper()
         val token = historyRecordWrapper.purchaseToken
@@ -210,8 +243,9 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         } just Runs
 
         wrapper.consumeAndSave(
-            shouldTryToConsume = true,
+            finishTransactions = true,
             purchase = historyRecordWrapper,
+            shouldConsume = true,
             initiationSource = PostReceiptInitiationSource.RESTORE,
         )
 
@@ -226,7 +260,7 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
     }
 
     @Test
-    fun `if it shouldn't consume transactions, don't acknowledge and save it in cache`() {
+    fun `if it shouldn't finish transactions, don't acknowledge and save it in cache`() {
         val googlePurchaseWrapper = getMockedPurchaseWrapper()
         val token = googlePurchaseWrapper.purchaseToken
 
@@ -235,8 +269,9 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         } just Runs
 
         wrapper.consumeAndSave(
-            shouldTryToConsume = false,
+            finishTransactions = false,
             purchase = googlePurchaseWrapper,
+            shouldConsume = true,
             initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
         )
 
@@ -250,7 +285,7 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
     }
 
     @Test
-    fun `if it shouldn't consume restored transactions, don't acknowledge and save it in cache`() {
+    fun `if it shouldn't finish restored transactions, don't acknowledge and save it in cache`() {
         val historyRecordWrapper = getMockedPurchaseHistoryRecordWrapper()
         val token = historyRecordWrapper.purchaseToken
 
@@ -259,8 +294,9 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         } just Runs
 
         wrapper.consumeAndSave(
-            shouldTryToConsume = false,
+            finishTransactions = false,
             purchase = historyRecordWrapper,
+            shouldConsume = true,
             initiationSource = PostReceiptInitiationSource.RESTORE,
         )
 
@@ -283,8 +319,9 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         } just Runs
 
         wrapper.consumeAndSave(
-            shouldTryToConsume = true,
+            finishTransactions = true,
             purchase = googlePurchaseWrapper,
+            shouldConsume = true,
             initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
         )
 
@@ -296,8 +333,6 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
             mockDeviceCache.addSuccessfullyPostedToken(token)
         }
     }
-
-
 
     // region retries
 

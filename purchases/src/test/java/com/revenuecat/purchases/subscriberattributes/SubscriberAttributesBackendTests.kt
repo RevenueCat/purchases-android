@@ -17,6 +17,7 @@ import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.SubscriberAttributeError
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
+import com.revenuecat.purchases.common.networking.PostReceiptResponse
 import com.revenuecat.purchases.utils.Responses
 import com.revenuecat.purchases.utils.SyncDispatcher
 import io.mockk.every
@@ -83,10 +84,10 @@ class SubscriberAttributesPosterTests {
             receivedAttributeErrors = body.getAttributeErrors()
         }
 
-    private val expectedOnSuccessPostReceipt: (CustomerInfo, body: JSONObject?) -> Unit =
-        { info, body ->
-            receivedCustomerInfo = info
-            receivedAttributeErrors = body.getAttributeErrors()
+    private val expectedOnSuccessPostReceipt: (PostReceiptResponse) -> Unit =
+        { postReceiptResponse ->
+            receivedCustomerInfo = postReceiptResponse.customerInfo
+            receivedAttributeErrors = postReceiptResponse.body.getAttributeErrors()
         }
 
     private val expectedOnSuccess: () -> Unit =
@@ -104,8 +105,8 @@ class SubscriberAttributesPosterTests {
             fail("Shouldn't be success.")
         }
 
-    private val unexpectedOnSuccessPostReceipt: (CustomerInfo, body: JSONObject?) -> Unit =
-        { _, _ ->
+    private val unexpectedOnSuccessPostReceipt: (PostReceiptResponse) -> Unit =
+        { _ ->
             fail("Shouldn't be success.")
         }
 
