@@ -68,7 +68,7 @@ internal typealias PaywallEventsCallback = Pair<() -> Unit, (PurchasesError, Boo
 internal typealias ProductEntitlementCallback = Pair<(ProductEntitlementMapping) -> Unit, (PurchasesError) -> Unit>
 
 internal enum class PostReceiptErrorHandlingBehavior {
-    SHOULD_BE_CONSUMED,
+    SHOULD_BE_MARKED_SYNCED,
     SHOULD_USE_OFFLINE_ENTITLEMENTS_AND_NOT_CONSUME,
     SHOULD_NOT_CONSUME,
 }
@@ -592,7 +592,7 @@ internal class Backend(
     } else if (purchasesError.code == PurchasesErrorCode.UnsupportedError) {
         PostReceiptErrorHandlingBehavior.SHOULD_NOT_CONSUME
     } else {
-        PostReceiptErrorHandlingBehavior.SHOULD_BE_CONSUMED
+        PostReceiptErrorHandlingBehavior.SHOULD_BE_MARKED_SYNCED
     }
 
     @Synchronized

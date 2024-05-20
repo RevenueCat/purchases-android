@@ -332,7 +332,7 @@ class PostReceiptHelperTest {
     @Test
     fun `postTransactionAndConsumeIfNeeded marks unsynced attributes as synced on error if finishable error`() {
         mockUnsyncedSubscriberAttributes(unsyncedSubscriberAttributes)
-        mockPostReceiptError(errorHandlingBehavior = PostReceiptErrorHandlingBehavior.SHOULD_BE_CONSUMED)
+        mockPostReceiptError(errorHandlingBehavior = PostReceiptErrorHandlingBehavior.SHOULD_BE_MARKED_SYNCED)
 
         postReceiptHelper.postTransactionAndConsumeIfNeeded(
             purchase = mockStoreTransaction,
@@ -378,9 +378,9 @@ class PostReceiptHelperTest {
     }
 
     @Test
-    fun `postTransactionAndConsumeIfNeeded calls consume transaction with finish transactions flag true if not observer mode on error if finishable error`() {
+    fun `postTransactionAndConsumeIfNeeded calls consume transaction with finish transactions flag true and shouldConsume flag false if not observer mode on error if finishable error`() {
         every { appConfig.finishTransactions } returns true
-        mockPostReceiptError(errorHandlingBehavior = PostReceiptErrorHandlingBehavior.SHOULD_BE_CONSUMED)
+        mockPostReceiptError(errorHandlingBehavior = PostReceiptErrorHandlingBehavior.SHOULD_BE_MARKED_SYNCED)
 
         postReceiptHelper.postTransactionAndConsumeIfNeeded(
             purchase = mockStoreTransaction,
@@ -396,16 +396,16 @@ class PostReceiptHelperTest {
             billing.consumeAndSave(
                 finishTransactions = true,
                 purchase = mockStoreTransaction,
-                shouldConsume = true,
+                shouldConsume = false,
                 initiationSource = initiationSource
             )
         }
     }
 
     @Test
-    fun `postTransactionAndConsumeIfNeeded calls consume transaction with finish transactions flag false if observer mode on error if finishable error`() {
+    fun `postTransactionAndConsumeIfNeeded calls consume transaction with finish transactions flag false and shouldConsume flag false if observer mode on error if finishable error`() {
         every { appConfig.finishTransactions } returns false
-        mockPostReceiptError(errorHandlingBehavior = PostReceiptErrorHandlingBehavior.SHOULD_BE_CONSUMED)
+        mockPostReceiptError(errorHandlingBehavior = PostReceiptErrorHandlingBehavior.SHOULD_BE_MARKED_SYNCED)
 
         postReceiptHelper.postTransactionAndConsumeIfNeeded(
             purchase = mockStoreTransaction,
@@ -421,7 +421,7 @@ class PostReceiptHelperTest {
             billing.consumeAndSave(
                 finishTransactions = false,
                 purchase = mockStoreTransaction,
-                shouldConsume = true,
+                shouldConsume = false,
                 initiationSource = initiationSource,
             )
         }
@@ -1027,7 +1027,7 @@ class PostReceiptHelperTest {
     fun `postTokenWithoutConsuming marks unsynced attributes as synced on error if finishable error`() {
         mockUnsyncedSubscriberAttributes(unsyncedSubscriberAttributes)
         mockPostReceiptError(
-            errorHandlingBehavior = PostReceiptErrorHandlingBehavior.SHOULD_BE_CONSUMED,
+            errorHandlingBehavior = PostReceiptErrorHandlingBehavior.SHOULD_BE_MARKED_SYNCED,
             postType = PostType.TOKEN_WITHOUT_CONSUMING
         )
 
@@ -1084,7 +1084,7 @@ class PostReceiptHelperTest {
     @Test
     fun `postTokenWithoutConsuming adds sent token if finishable error`() {
         mockPostReceiptError(
-            errorHandlingBehavior = PostReceiptErrorHandlingBehavior.SHOULD_BE_CONSUMED,
+            errorHandlingBehavior = PostReceiptErrorHandlingBehavior.SHOULD_BE_MARKED_SYNCED,
             postType = PostType.TOKEN_WITHOUT_CONSUMING
         )
 
@@ -1233,7 +1233,7 @@ class PostReceiptHelperTest {
     @Test
     fun `postTokenWithoutConsuming does not calculate offline entitlements customer info if not server error`() {
         mockPostReceiptError(
-            errorHandlingBehavior = PostReceiptErrorHandlingBehavior.SHOULD_BE_CONSUMED,
+            errorHandlingBehavior = PostReceiptErrorHandlingBehavior.SHOULD_BE_MARKED_SYNCED,
             postType = PostType.TOKEN_WITHOUT_CONSUMING
         )
 
@@ -1674,7 +1674,7 @@ class PostReceiptHelperTest {
         } answers {
             val callback = lambda<PostReceiptDataErrorCallback>().captured
             when (errorHandlingBehavior) {
-                PostReceiptErrorHandlingBehavior.SHOULD_BE_CONSUMED -> callback.invokeWithFinishableError()
+                PostReceiptErrorHandlingBehavior.SHOULD_BE_MARKED_SYNCED -> callback.invokeWithFinishableError()
                 PostReceiptErrorHandlingBehavior.SHOULD_NOT_CONSUME -> callback.invokeWithNotFinishableError()
                 PostReceiptErrorHandlingBehavior.SHOULD_USE_OFFLINE_ENTITLEMENTS_AND_NOT_CONSUME -> callback.invokeWithServerError()
             }
@@ -1694,13 +1694,13 @@ class PostReceiptHelperTest {
                 PurchasesError(PurchasesErrorCode.UnknownError)
             )
         }
-        if (errorHandlingBehavior == PostReceiptErrorHandlingBehavior.SHOULD_BE_CONSUMED) {
+        if (errorHandlingBehavior == PostReceiptErrorHandlingBehavior.SHOULD_BE_MARKED_SYNCED) {
             every { subscriberAttributesManager.markAsSynced(appUserID, any(), any()) } just Runs
             if (postType == PostType.TRANSACTION_AND_CONSUME) {
                 every { billing.consumeAndSave(
                     finishTransactions = any(),
                     purchase = mockStoreTransaction,
-                    shouldConsume = true,
+                    shouldConsume = false,
                     initiationSource = initiationSource
                 ) } just Runs
             } else {
@@ -1719,7 +1719,7 @@ class PostReceiptHelperTest {
     private fun PostReceiptDataErrorCallback.invokeWithFinishableError() {
         invoke(
             PurchasesError(PurchasesErrorCode.InvalidCredentialsError),
-            PostReceiptErrorHandlingBehavior.SHOULD_BE_CONSUMED,
+            PostReceiptErrorHandlingBehavior.SHOULD_BE_MARKED_SYNCED,
             JSONObject(Responses.invalidCredentialsErrorResponse)
         )
     }

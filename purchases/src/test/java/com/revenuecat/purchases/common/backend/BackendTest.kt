@@ -1183,7 +1183,7 @@ class BackendTest {
         )
 
         assertThat(receivedPostReceiptErrorHandlingBehavior)
-            .isEqualTo(PostReceiptErrorHandlingBehavior.SHOULD_BE_CONSUMED)
+            .isEqualTo(PostReceiptErrorHandlingBehavior.SHOULD_BE_MARKED_SYNCED)
     }
 
     @Test
