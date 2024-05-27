@@ -5,6 +5,7 @@ plugins {
     alias libs.plugins.kotlin.serialization
     alias libs.plugins.kotlin.parcelize
     alias libs.plugins.paparazzi
+    alias libs.plugins.compose.compiler
 }
 
 
@@ -31,12 +32,6 @@ android {
         }
     }
 
-    buildFeatures {
-        compose true
-    }
-    composeOptions {
-        kotlinCompilerExtensionVersion '1.4.0-alpha02'
-    }
     packaging {
         resources {
             excludes += '/META-INF/{AL2.0,LGPL2.1}'

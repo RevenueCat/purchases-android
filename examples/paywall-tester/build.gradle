@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
+    alias libs.plugins.compose.compiler
 }
 
 apply from: "$rootProject.projectDir/base-application.gradle"
@@ -45,16 +46,10 @@ android {
         targetCompatibility JavaVersion.VERSION_1_8
     }
     kotlinOptions {
-        jvmTarget = '1.8'
-    }
-    buildFeatures {
-        compose true
+        jvmTarget = '19'
     }
     viewBinding {
         enabled = true
-    }
-    composeOptions {
-        kotlinCompilerExtensionVersion '1.4.0-alpha02'
     }
     packaging {
         resources {

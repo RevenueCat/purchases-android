@@ -1,6 +1,7 @@
 plugins {
     alias libs.plugins.android.application
     alias libs.plugins.kotlin.android
+    alias libs.plugins.compose.compiler
 }
 
 android {
@@ -49,11 +50,7 @@ android {
         jvmTarget = '1.8'
     }
     buildFeatures {
-        compose true
         buildConfig true
-    }
-    composeOptions {
-        kotlinCompilerExtensionVersion '1.4.0-alpha02'
     }
     packagingOptions {
         resources {
