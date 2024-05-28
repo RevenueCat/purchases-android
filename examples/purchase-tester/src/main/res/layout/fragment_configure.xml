@@ -134,8 +134,8 @@
         </RadioGroup>
 
         <androidx.appcompat.widget.AppCompatTextView
-                android:id="@+id/observer_mode_label"
-                android:text="Observer Mode"
+                android:id="@+id/finish_transactions_label"
+                android:text="Finish transactions"
                 android:textSize="15sp"
                 android:layout_marginTop="20dp"
                 app:layout_constraintTop_toBottomOf="@id/store_label"
@@ -144,10 +144,11 @@
                 android:layout_height="wrap_content"/>
 
         <CheckBox
-                android:id="@+id/observer_mode_checkbox"
-                app:layout_constraintTop_toTopOf="@id/observer_mode_label"
-                app:layout_constraintBottom_toBottomOf="@id/observer_mode_label"
+                android:id="@+id/finish_transactions_checkbox"
+                app:layout_constraintTop_toTopOf="@id/finish_transactions_label"
+                app:layout_constraintBottom_toBottomOf="@id/finish_transactions_label"
                 app:layout_constraintEnd_toEndOf="parent"
+                android:checked="true"
                 android:orientation="horizontal"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"/>
@@ -157,7 +158,7 @@
                 android:text="@string/google_store_is_unavailable"
                 android:textAlignment="textEnd"
                 app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/observer_mode_checkbox"
+                app:layout_constraintTop_toBottomOf="@id/finish_transactions_checkbox"
                 app:layout_constraintWidth_percent="0.7"
                 android:visibility="gone"
                 tools:visibility="visible"

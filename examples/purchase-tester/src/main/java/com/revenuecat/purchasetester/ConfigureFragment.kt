@@ -97,12 +97,12 @@ class ConfigureFragment : Fragment() {
         }
 
         binding.amazonStoreRadioId.setOnCheckedChangeListener { _, isChecked ->
-            // Disable observer mode options if Amazon
-            binding.observerModeCheckbox.isEnabled = !isChecked
+            // Disable finish transaction options if Amazon
+            binding.finishTransactionsCheckbox.isEnabled = !isChecked
 
-            // Toggle observer mode off only if Amazon is checked
+            // Toggle finish transactions on only if Amazon is checked
             if (isChecked) {
-                binding.observerModeCheckbox.isChecked = false
+                binding.finishTransactionsCheckbox.isChecked = true
             }
         }
 
@@ -116,7 +116,7 @@ class ConfigureFragment : Fragment() {
 
         val entitlementVerificationMode = EntitlementVerificationMode.values()[verificationModeIndex]
         val useAmazonStore = binding.storeRadioGroup.checkedRadioButtonId == R.id.amazon_store_radio_id
-        val useObserverMode = binding.observerModeCheckbox.isChecked
+        val finishTransactions = binding.finishTransactionsCheckbox.isChecked
 
         val application = (requireActivity().application as MainApplication)
 
@@ -132,11 +132,11 @@ class ConfigureFragment : Fragment() {
         val configuration = configurationBuilder
             .diagnosticsEnabled(true)
             .entitlementVerificationMode(entitlementVerificationMode)
-            .observerMode(useObserverMode)
+            .finishTransactions(finishTransactions)
             .build()
         Purchases.configure(configuration)
 
-        if (useObserverMode) {
+        if (!finishTransactions) {
             ObserverModeBillingClient.start(application, application.logHandler)
         }
 
