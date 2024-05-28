@@ -102,7 +102,8 @@ class Purchases internal constructor(
      *
      * @param [listener] Called when all purchases have been synced with the backend, either successfully or with
      * an error. If no purchases are present, the success function will be called.
-     * @warning This function should only be called if you're migrating to RevenueCat or in observer mode.
+     * @warning This function should only be called if you're migrating to RevenueCat or if you have instructed
+     * `Purchases` not to [finish transactions][finishTransactions].
      * @warning This function could take a relatively long time to execute, depending on the amount of purchases
      * the user has. Consider that when waiting for this operation to complete.
      */
@@ -114,8 +115,9 @@ class Purchases internal constructor(
     }
 
     /**
-     * This method will send a purchase to the RevenueCat backend. This function should only be called if you are
-     * in Amazon observer mode or performing a client side migration of your current users to RevenueCat.
+     * This method will send an Amazon purchase to the RevenueCat backend. This function should only be called if you
+     * have instructed `Purchases` not to [finish transactions][finishTransactions] or when performing a client side
+     * migration of your current users to RevenueCat.
      *
      * The receipt IDs are cached if successfully posted so they are not posted more than once.
      *
@@ -125,7 +127,40 @@ class Purchases internal constructor(
      * @param [isoCurrencyCode] Product's currency code in ISO 4217 format.
      * @param [price] Product's price.
      */
+    @Deprecated(
+        "ObserverMode is a confusing term.",
+        ReplaceWith("syncAmazonPurchase(productID, receiptID, amazonUserID, isoCurrencyCode, price)"),
+    )
     fun syncObserverModeAmazonPurchase(
+        productID: String,
+        receiptID: String,
+        amazonUserID: String,
+        isoCurrencyCode: String?,
+        price: Double?,
+    ) {
+        syncAmazonPurchase(
+            productID = productID,
+            receiptID = receiptID,
+            amazonUserID = amazonUserID,
+            isoCurrencyCode = isoCurrencyCode,
+            price = price,
+        )
+    }
+
+    /**
+     * This method will send an Amazon purchase to the RevenueCat backend. This function should only be called if you
+     * have instructed `Purchases` not to [finish transactions][finishTransactions] or when performing a client side
+     * migration of your current users to RevenueCat.
+     *
+     * The receipt IDs are cached if successfully posted so they are not posted more than once.
+     *
+     * @param [productID] Product ID associated to the purchase.
+     * @param [receiptID] ReceiptId that represents the Amazon purchase.
+     * @param [amazonUserID] Amazon's userID. This parameter will be ignored when syncing a Google purchase.
+     * @param [isoCurrencyCode] Product's currency code in ISO 4217 format.
+     * @param [price] Product's price.
+     */
+    fun syncAmazonPurchase(
         productID: String,
         receiptID: String,
         amazonUserID: String,
