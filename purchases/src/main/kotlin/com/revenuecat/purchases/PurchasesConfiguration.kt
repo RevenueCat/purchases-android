@@ -13,6 +13,7 @@ open class PurchasesConfiguration(builder: Builder) {
     val context: Context
     val apiKey: String
     val appUserID: String?
+    
     @Deprecated("ObserverMode is a confusing term.", ReplaceWith("!finishTransactions"))
     val observerMode: Boolean
         get() = !finishTransactions
