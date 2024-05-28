@@ -137,7 +137,7 @@ class ConfigureFragment : Fragment() {
         Purchases.configure(configuration)
 
         if (!finishTransactions) {
-            ObserverModeBillingClient.start(application, application.logHandler)
+            NotFinishingTransactionsBillingClient.start(application, application.logHandler)
         }
 
         // set attributes to store additional, structured information for a user in RevenueCat.
