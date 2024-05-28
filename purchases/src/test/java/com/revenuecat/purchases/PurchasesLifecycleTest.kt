@@ -152,11 +152,11 @@ internal class PurchasesLifecycleTest: BasePurchasesTest() {
     private fun resetShowInAppMessagesAutomatically(showInAppMessagesAutomatically: Boolean) {
         purchases.purchasesOrchestrator.appConfig = AppConfig(
             mockContext,
-            observerMode = false,
+            true,
             showInAppMessagesAutomatically = showInAppMessagesAutomatically,
-            PlatformInfo("", null),
+            platformInfo = PlatformInfo("", null),
             proxyURL = null,
-            Store.AMAZON
+            store = Store.AMAZON
         )
     }
 

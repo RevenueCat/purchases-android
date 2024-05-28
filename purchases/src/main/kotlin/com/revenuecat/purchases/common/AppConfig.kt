@@ -9,7 +9,7 @@ import java.net.URL
 @Suppress("LongParameterList")
 internal class AppConfig(
     context: Context,
-    observerMode: Boolean,
+    var finishTransactions: Boolean,
     val showInAppMessagesAutomatically: Boolean,
     val platformInfo: PlatformInfo,
     proxyURL: URL?,
@@ -35,7 +35,6 @@ internal class AppConfig(
     val languageTag: String = context.getLocale()?.toBCP47() ?: ""
     val versionName: String = context.versionName ?: ""
     val packageName: String = context.packageName
-    var finishTransactions: Boolean = !observerMode
     val baseURL: URL = proxyURL?.also {
         log(LogIntent.INFO, ConfigureStrings.CONFIGURING_PURCHASES_PROXY_URL_SET)
     } ?: URL("https://api.revenuecat.com/")

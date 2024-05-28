@@ -71,7 +71,7 @@ internal class PurchasesFactory(
             val application = context.getApplication()
             val appConfig = AppConfig(
                 context,
-                observerMode,
+                !observerMode,
                 showInAppMessagesAutomatically,
                 platformInfo,
                 proxyURL,

@@ -26,7 +26,6 @@ import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.unmockkStatic
 import io.mockk.verify
-import io.mockk.verifyOrder
 import io.mockk.verifySequence
 import org.junit.After
 import org.junit.Before
@@ -64,7 +63,7 @@ class DiagnosticsTrackerTest {
         }
         appConfig = AppConfig(
             context = context,
-            observerMode = true,
+            finishTransactions = false,
             showInAppMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,

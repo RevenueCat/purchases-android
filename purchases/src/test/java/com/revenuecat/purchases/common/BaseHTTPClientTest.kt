@@ -4,7 +4,6 @@ import android.content.Context
 import com.revenuecat.purchases.DangerousSettings
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.VerificationResult
-import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.networking.ETagManager
 import com.revenuecat.purchases.common.networking.Endpoint
@@ -86,7 +85,7 @@ internal abstract class BaseHTTPClientTest {
     ): AppConfig {
         return AppConfig(
             context = context,
-            observerMode = observerMode,
+            finishTransactions = !observerMode,
             showInAppMessagesAutomatically = showInAppMessagesAutomatically,
             platformInfo = platformInfo,
             proxyURL = proxyURL,
@@ -94,7 +93,7 @@ internal abstract class BaseHTTPClientTest {
             dangerousSettings = DangerousSettings(customEntitlementComputation = customEntitlementComputation),
             runningTests = true,
             forceServerErrors = forceServerErrors,
-            forceSigningErrors = forceSigningErrors,
+            forceSigningErrors = forceSigningErrors
         )
     }
 

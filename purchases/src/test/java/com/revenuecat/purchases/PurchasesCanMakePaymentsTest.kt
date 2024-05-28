@@ -115,7 +115,7 @@ internal class PurchasesCanMakePaymentsTest : BasePurchasesTest() {
     fun `canMakePayments returns true for Amazon configurations`() {
         purchases.purchasesOrchestrator.appConfig = AppConfig(
             mockContext,
-            false,
+            true,
             false,
             PlatformInfo("", null),
             null,

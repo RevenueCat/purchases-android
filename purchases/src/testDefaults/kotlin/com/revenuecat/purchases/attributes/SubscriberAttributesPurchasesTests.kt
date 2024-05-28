@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.attributes
 
 import android.app.Application
+import android.content.Context
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfoHelper
@@ -12,7 +13,6 @@ import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesOrchestrator
 import com.revenuecat.purchases.PurchasesState
 import com.revenuecat.purchases.PurchasesStateCache
-import com.revenuecat.purchases.PurchasesStateProvider
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
@@ -62,12 +62,12 @@ class SubscriberAttributesPurchasesTests {
         val cache: DeviceCache = mockk(relaxed = true)
 
         val appConfig = AppConfig(
-            context = mockk(relaxed = true),
-            observerMode = false,
+            context = mockk<Context>(relaxed = true),
+            finishTransactions = true,
             showInAppMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
-            store = Store.PLAY_STORE,
+            store = Store.PLAY_STORE
         )
         val identityManager = mockk<IdentityManager>(relaxed = true).apply {
             every { currentAppUserID } returns appUserId

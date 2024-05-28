@@ -373,7 +373,7 @@ internal open class BasePurchasesTest {
     ) {
         val appConfig = AppConfig(
             context = mockContext,
-            observerMode = false,
+            finishTransactions = true,
             showInAppMessagesAutomatically = showInAppMessagesAutomatically,
             platformInfo = PlatformInfo("native", "3.2.0"),
             proxyURL = null,
