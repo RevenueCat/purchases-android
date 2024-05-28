@@ -24,8 +24,8 @@ import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback;
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener;
 import com.revenuecat.purchases.models.BillingFeature;
 import com.revenuecat.purchases.models.GoogleProrationMode;
-import com.revenuecat.purchases.models.InAppMessageType;
 import com.revenuecat.purchases.models.GoogleReplacementMode;
+import com.revenuecat.purchases.models.InAppMessageType;
 import com.revenuecat.purchases.models.StoreProduct;
 import com.revenuecat.purchases.models.StoreTransaction;
 import com.revenuecat.purchases.models.SubscriptionOption;
@@ -146,6 +146,8 @@ final class PurchasesCommonAPI {
                 .appUserID("")
                 .observerMode(true)
                 .observerMode(false)
+                .finishTransactions(true)
+                .finishTransactions(false)
                 .service(executorService)
                 .diagnosticsEnabled(true)
                 .entitlementVerificationMode(EntitlementVerificationMode.INFORMATIONAL)

@@ -7,7 +7,6 @@ import androidx.annotation.NonNull;
 import com.revenuecat.purchases.CacheFetchPolicy;
 import com.revenuecat.purchases.CustomerInfo;
 import com.revenuecat.purchases.EntitlementVerificationMode;
-import com.revenuecat.purchases.LogLevel;
 import com.revenuecat.purchases.Offerings;
 import com.revenuecat.purchases.Purchases;
 import com.revenuecat.purchases.PurchasesConfiguration;
@@ -18,13 +17,9 @@ import com.revenuecat.purchases.interfaces.LogInCallback;
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback;
 import com.revenuecat.purchases.interfaces.SyncAttributesAndOfferingsCallback;
 import com.revenuecat.purchases.interfaces.SyncPurchasesCallback;
-import com.revenuecat.purchases.models.BillingFeature;
 
 import org.jetbrains.annotations.NotNull;
 
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 
@@ -130,6 +125,8 @@ final class PurchasesAPI {
                 .appUserID("")
                 .observerMode(true)
                 .observerMode(false)
+                .finishTransactions(true)
+                .finishTransactions(false)
                 .service(executorService)
                 .diagnosticsEnabled(true)
                 .entitlementVerificationMode(EntitlementVerificationMode.INFORMATIONAL)
