@@ -48,6 +48,20 @@ internal class PurchasesConfigureTest : BasePurchasesTest() {
     }
 
     @Test
+    fun `Setting finish transactions on propagates to appConfig`() {
+        val builder = PurchasesConfiguration.Builder(mockContext, "api").finishTransactions(true)
+        Purchases.configure(builder.build())
+        assertThat(Purchases.sharedInstance.purchasesOrchestrator.appConfig.finishTransactions).isTrue
+    }
+
+    @Test
+    fun `Setting finish transactions off propagates to appConfig`() {
+        val builder = PurchasesConfiguration.Builder(mockContext, "api").finishTransactions(false)
+        Purchases.configure(builder.build())
+        assertThat(Purchases.sharedInstance.purchasesOrchestrator.appConfig.finishTransactions).isFalse
+    }
+
+    @Test
     fun `Setting store in the configuration sets it on the Purchases instance`() {
         val builder = PurchasesConfiguration.Builder(mockContext, "api").store(Store.PLAY_STORE)
         Purchases.configure(builder.build())

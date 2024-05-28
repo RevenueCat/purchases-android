@@ -51,6 +51,14 @@ class PurchasesConfigurationTest {
     fun `PurchasesConfiguration sets observerMode correctly`() {
         val purchasesConfiguration = builder.observerMode(true).build()
         assertThat(purchasesConfiguration.observerMode).isTrue
+        assertThat(purchasesConfiguration.finishTransactions).isFalse
+    }
+
+    @Test
+    fun `PurchasesConfiguration sets finishTransactions correctly`() {
+        val purchasesConfiguration = builder.finishTransactions(true).build()
+        assertThat(purchasesConfiguration.finishTransactions).isTrue
+        assertThat(purchasesConfiguration.observerMode).isFalse
     }
 
     @Test
