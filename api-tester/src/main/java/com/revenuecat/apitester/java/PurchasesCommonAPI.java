@@ -23,7 +23,6 @@ import com.revenuecat.purchases.interfaces.PurchaseCallback;
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback;
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener;
 import com.revenuecat.purchases.models.BillingFeature;
-import com.revenuecat.purchases.models.GoogleProrationMode;
 import com.revenuecat.purchases.models.InAppMessageType;
 import com.revenuecat.purchases.models.GoogleReplacementMode;
 import com.revenuecat.purchases.models.StoreProduct;
@@ -93,14 +92,12 @@ final class PurchasesCommonAPI {
         };
         String oldProductId = "old";
         GoogleReplacementMode replacementMode = GoogleReplacementMode.WITH_TIME_PRORATION;
-        GoogleProrationMode prorationMode = GoogleProrationMode.IMMEDIATE_WITH_TIME_PRORATION;
         Boolean isPersonalizedPrice = true;
 
         PurchaseParams.Builder purchaseProductBuilder = new PurchaseParams.Builder(activity, storeProduct);
         purchaseProductBuilder
                 .oldProductId(oldProductId)
                 .googleReplacementMode(replacementMode)
-                .googleProrationMode(prorationMode)
                 .isPersonalizedPrice(isPersonalizedPrice);
         PurchaseParams purchaseProductParams = purchaseProductBuilder.build();
         purchases.purchase(purchaseProductParams, purchaseCallback);
@@ -109,7 +106,6 @@ final class PurchasesCommonAPI {
         purchaseOptionBuilder
                 .oldProductId(oldProductId)
                 .googleReplacementMode(replacementMode)
-                .googleProrationMode(prorationMode)
                 .isPersonalizedPrice(isPersonalizedPrice);
         PurchaseParams purchaseOptionParams = purchaseOptionBuilder.build();
         purchases.purchase(purchaseOptionParams, purchaseCallback);
@@ -118,7 +114,6 @@ final class PurchasesCommonAPI {
         purchasePackageBuilder
                 .oldProductId(oldProductId)
                 .googleReplacementMode(replacementMode)
-                .googleProrationMode(prorationMode)
                 .isPersonalizedPrice(isPersonalizedPrice);
         PurchaseParams purchasePackageParams = purchasePackageBuilder.build();
         purchases.purchase(purchasePackageParams, purchaseCallback);

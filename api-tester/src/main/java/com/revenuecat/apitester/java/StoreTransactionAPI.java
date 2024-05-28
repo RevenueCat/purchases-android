@@ -32,7 +32,6 @@ final class StoreTransactionAPI {
         final String marketplace = transaction.getMarketplace();
         final String subscriptionOptionId = transaction.getSubscriptionOptionId();
         final ReplacementMode replacementMode = transaction.getReplacementMode();
-        final ProrationMode prorationMode = transaction.getProrationMode();
 
         StoreTransaction constructedStoreTransaction = new StoreTransaction(
                 transaction.getOrderId(),

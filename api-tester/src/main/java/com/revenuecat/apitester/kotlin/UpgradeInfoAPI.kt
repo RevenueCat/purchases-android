@@ -1,6 +1,6 @@
 package com.revenuecat.apitester.kotlin
 
-import com.android.billingclient.api.BillingFlowParams.ProrationMode
+import com.android.billingclient.api.BillingFlowParams.SubscriptionUpdateParams.ReplacementMode
 import com.revenuecat.purchases.UpgradeInfo
 
 @Suppress("unused", "UNUSED_VARIABLE", "RemoveExplicitTypeArguments")
@@ -9,7 +9,7 @@ private class UpgradeInfoAPI {
         with(upgradeInfo) {
             val oldProductId: String = oldSku
 
-            @ProrationMode val prorationMode: Int? = prorationMode
+            @ReplacementMode val prorationMode: Int? = replacementMode
 
             val constructedUpgradeInfo =
                 UpgradeInfo(
