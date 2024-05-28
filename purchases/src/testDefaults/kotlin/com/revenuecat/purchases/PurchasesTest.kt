@@ -764,7 +764,7 @@ internal class PurchasesTest : BasePurchasesTest() {
             mockCache.getPreviouslySentHashedTokens()
         } returns setOf()
 
-        purchases.syncObserverModeAmazonPurchase(
+        purchases.syncAmazonPurchase(
             productID = skuParent,
             receiptID = purchaseToken,
             amazonUserID = amazonUserID,
@@ -821,7 +821,7 @@ internal class PurchasesTest : BasePurchasesTest() {
             }
         }
 
-        purchases.syncObserverModeAmazonPurchase(
+        purchases.syncAmazonPurchase(
             productID = skuParent,
             receiptID = purchaseToken,
             amazonUserID = amazonUserID,
@@ -852,7 +852,7 @@ internal class PurchasesTest : BasePurchasesTest() {
             mockCache.getPreviouslySentHashedTokens()
         } returns setOf(purchaseToken.sha1())
 
-        purchases.syncObserverModeAmazonPurchase(
+        purchases.syncAmazonPurchase(
             productID = skuParent,
             receiptID = purchaseToken,
             amazonUserID = amazonUserID,
@@ -902,7 +902,7 @@ internal class PurchasesTest : BasePurchasesTest() {
             mockCache.getPreviouslySentHashedTokens()
         } returns setOf()
 
-        purchases.syncObserverModeAmazonPurchase(
+        purchases.syncAmazonPurchase(
             productID = skuParent,
             receiptID = purchaseToken,
             amazonUserID = amazonUserID,
@@ -953,7 +953,7 @@ internal class PurchasesTest : BasePurchasesTest() {
             mockCache.getPreviouslySentHashedTokens()
         } returns setOf()
 
-        purchases.syncObserverModeAmazonPurchase(
+        purchases.syncAmazonPurchase(
             productID = skuParent,
             receiptID = purchaseToken,
             amazonUserID = amazonUserID,
@@ -1034,7 +1034,7 @@ internal class PurchasesTest : BasePurchasesTest() {
             mockCache.getPreviouslySentHashedTokens()
         } returns setOf()
 
-        purchases.syncObserverModeAmazonPurchase(
+        purchases.syncAmazonPurchase(
             productID = skuParent,
             receiptID = purchaseToken,
             amazonUserID = amazonUserID,
@@ -1093,7 +1093,7 @@ internal class PurchasesTest : BasePurchasesTest() {
             mockCache.getPreviouslySentHashedTokens()
         } returns setOf()
 
-        purchases.syncObserverModeAmazonPurchase(
+        purchases.syncAmazonPurchase(
             productID = skuParent,
             receiptID = purchaseToken,
             amazonUserID = amazonUserID,
