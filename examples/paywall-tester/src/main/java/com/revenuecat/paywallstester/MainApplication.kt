@@ -14,7 +14,7 @@ class MainApplication : Application() {
 
         Purchases.configure(
             PurchasesConfiguration.Builder(this, Constants.GOOGLE_API_KEY)
-                .observerMode(false)
+                .finishTransactions(true)
                 .appUserID(null)
                 .diagnosticsEnabled(true)
                 .build(),
