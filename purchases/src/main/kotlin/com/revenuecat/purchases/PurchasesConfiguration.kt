@@ -1,6 +1,7 @@
 package com.revenuecat.purchases
 
 import android.content.Context
+import com.revenuecat.purchases.PurchasesConfiguration.Builder
 import java.util.concurrent.ExecutorService
 
 /**
@@ -13,6 +14,8 @@ open class PurchasesConfiguration(builder: Builder) {
     val apiKey: String
     val appUserID: String?
     val observerMode: Boolean
+        get() = !finishTransactions
+    val finishTransactions: Boolean
     val showInAppMessagesAutomatically: Boolean
     val service: ExecutorService?
     val store: Store
@@ -24,7 +27,7 @@ open class PurchasesConfiguration(builder: Builder) {
         this.context = builder.context
         this.apiKey = builder.apiKey
         this.appUserID = builder.appUserID
-        this.observerMode = builder.observerMode
+        this.finishTransactions = builder.finishTransactions
         this.service = builder.service
         this.store = builder.store
         this.diagnosticsEnabled = builder.diagnosticsEnabled
@@ -33,6 +36,7 @@ open class PurchasesConfiguration(builder: Builder) {
         this.showInAppMessagesAutomatically = builder.showInAppMessagesAutomatically
     }
 
+    @SuppressWarnings("TooManyFunctions")
     open class Builder(
         @get:JvmSynthetic internal val context: Context,
         @get:JvmSynthetic internal val apiKey: String,
@@ -42,7 +46,7 @@ open class PurchasesConfiguration(builder: Builder) {
         internal var appUserID: String? = null
 
         @set:JvmSynthetic @get:JvmSynthetic
-        internal var observerMode: Boolean = false
+        internal var finishTransactions: Boolean = true
 
         @set:JvmSynthetic @get:JvmSynthetic
         internal var showInAppMessagesAutomatically: Boolean = true
@@ -85,8 +89,18 @@ open class PurchasesConfiguration(builder: Builder) {
          * want to use only RevenueCat's backend. Default is FALSE. If you are on Android and setting this to TRUE,
          * you will have to acknowledge the purchases yourself.
          */
+        @Deprecated("ObserverMode is a confusing term.", ReplaceWith("finishTransactions(!observerMode)"))
         fun observerMode(observerMode: Boolean) = apply {
-            this.observerMode = observerMode
+            this.finishTransactions = !observerMode
+        }
+
+        /**
+         * An optional boolean. Set this to FALSE if you have your own IAP implementation and
+         * want to use only RevenueCat's backend. Default is TRUE. If you are on Android and setting this to FALSE,
+         * you will have to acknowledge the purchases yourself.
+         */
+        fun finishTransactions(finishTransactions: Boolean) = apply {
+            this.finishTransactions = finishTransactions
         }
 
         /**
