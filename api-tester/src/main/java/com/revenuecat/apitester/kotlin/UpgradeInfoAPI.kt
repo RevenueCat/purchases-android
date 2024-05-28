@@ -14,7 +14,7 @@ private class UpgradeInfoAPI {
             val constructedUpgradeInfo =
                 UpgradeInfo(
                     oldSku,
-                    prorationMode,
+                    replacementMode,
                 )
 
             val constructedUpgradeInfoSkuOnly = UpgradeInfo(oldSku)
