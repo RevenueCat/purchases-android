@@ -9,7 +9,7 @@ private class UpgradeInfoAPI {
         with(upgradeInfo) {
             val oldProductId: String = oldSku
 
-            @ReplacementMode val prorationMode: Int? = replacementMode
+            @ReplacementMode val replacementMode: Int? = replacementMode
 
             val constructedUpgradeInfo =
                 UpgradeInfo(
