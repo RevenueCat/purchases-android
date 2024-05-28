@@ -182,6 +182,8 @@ private class PurchasesAPI {
             .appUserID("")
             .observerMode(true)
             .observerMode(false)
+            .finishTransactions(true)
+            .finishTransactions(false)
             .showInAppMessagesAutomatically(true)
             .service(executorService)
             .diagnosticsEnabled(true)
