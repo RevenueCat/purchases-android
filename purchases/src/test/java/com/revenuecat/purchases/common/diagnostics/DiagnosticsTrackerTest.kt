@@ -26,6 +26,7 @@ import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.unmockkStatic
 import io.mockk.verify
+import io.mockk.verifyOrder
 import io.mockk.verifySequence
 import org.junit.After
 import org.junit.Before

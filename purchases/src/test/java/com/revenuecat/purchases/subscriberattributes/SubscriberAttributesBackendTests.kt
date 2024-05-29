@@ -28,6 +28,7 @@ import io.mockk.unmockkObject
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
+import org.json.JSONObject
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
