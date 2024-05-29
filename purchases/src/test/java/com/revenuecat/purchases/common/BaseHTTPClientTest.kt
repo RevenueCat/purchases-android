@@ -74,7 +74,7 @@ internal abstract class BaseHTTPClientTest {
 
     protected fun createAppConfig(
         context: Context = createContext(),
-        observerMode: Boolean = false,
+        finishTransactions: Boolean = true,
         showInAppMessagesAutomatically: Boolean = false,
         platformInfo: PlatformInfo = expectedPlatformInfo,
         proxyURL: URL? = baseURL,
@@ -85,7 +85,7 @@ internal abstract class BaseHTTPClientTest {
     ): AppConfig {
         return AppConfig(
             context = context,
-            finishTransactions = !observerMode,
+            finishTransactions = finishTransactions,
             showInAppMessagesAutomatically = showInAppMessagesAutomatically,
             platformInfo = platformInfo,
             proxyURL = proxyURL,
