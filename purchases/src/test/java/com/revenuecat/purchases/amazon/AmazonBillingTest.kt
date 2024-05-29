@@ -96,7 +96,7 @@ class AmazonBillingTest {
         underTest.purchasesUpdatedListener = mockk()
     }
 
-    fun setupObserverMode() {
+    fun setupNotFinishingTransactions() {
         underTest = AmazonBilling(
             applicationContext = mockContext,
             amazonBackend = mockAmazonBackend,
@@ -889,8 +889,8 @@ class AmazonBillingTest {
     }
 
     @Test
-    fun `if observerMode, registerListener not called`() {
-        setupObserverMode()
+    fun `if not finishing transactions, registerListener not called`() {
+        setupNotFinishingTransactions()
         every {
             mockPurchasingServiceProvider.registerListener(mockContext, any())
         } just Runs
@@ -902,7 +902,7 @@ class AmazonBillingTest {
     }
 
     @Test
-    fun `if not observerMode, registerListener called`() {
+    fun `if not not finishing transactions, registerListener called`() {
         setup()
         every {
             mockPurchasingServiceProvider.registerListener(mockContext, any())
