@@ -25,7 +25,7 @@ kover = "0.7.0"
 mavenPublish = "0.22.0"
 multidex = "2.0.1"
 recyclerview = "1.2.1"
-amazon = "3.0.3"
+amazon = "3.0.5"
 espresso = "3.4.0"
 material = "1.6.0"
 # Note that version 18.0.1 adds the AD_ID permission to the SDK.
