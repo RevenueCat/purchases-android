@@ -371,23 +371,21 @@ internal class BillingWrapper(
                     initiationSource,
                     onConsumed = deviceCache::addSuccessfullyPostedToken,
                 )
-            } else if (finishTransactions) {
+            } else if (finishTransactions && !alreadyAcknowledged) {
                 log(LogIntent.PURCHASE, PurchaseStrings.NOT_CONSUMING_IN_APP_PURCHASE_ACCORDING_TO_BACKEND)
-                acknowledgeIfNeeded(
+                acknowledge(
                     purchase.purchaseToken,
                     initiationSource,
-                    alreadyAcknowledged,
                     onAcknowledged = deviceCache::addSuccessfullyPostedToken,
                 )
             } else {
                 deviceCache.addSuccessfullyPostedToken(purchase.purchaseToken)
             }
         } else {
-            if (finishTransactions) {
-                acknowledgeIfNeeded(
+            if (finishTransactions && !alreadyAcknowledged) {
+                acknowledge(
                     purchase.purchaseToken,
                     initiationSource,
-                    alreadyAcknowledged,
                     onAcknowledged = deviceCache::addSuccessfullyPostedToken,
                 )
             } else {
@@ -422,15 +420,11 @@ internal class BillingWrapper(
         ).run()
     }
 
-    internal fun acknowledgeIfNeeded(
+    internal fun acknowledge(
         token: String,
         initiationSource: PostReceiptInitiationSource,
-        alreadyAcknowledged: Boolean,
         onAcknowledged: (purchaseToken: String) -> Unit,
     ) {
-        if (alreadyAcknowledged) {
-            return
-        }
         log(LogIntent.PURCHASE, PurchaseStrings.ACKNOWLEDGING_PURCHASE.format(token))
         AcknowledgePurchaseUseCase(
             AcknowledgePurchaseUseCaseParams(

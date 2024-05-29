@@ -50,27 +50,13 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
     fun `Acknowledge works`() {
         val token = "token"
 
-        wrapper.acknowledgeIfNeeded(
+        wrapper.acknowledge(
             token,
-            alreadyAcknowledged = false,
             initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
         ) { }
 
         assertThat(capturedAcknowledgePurchaseParams.isCaptured).isTrue
         assertThat(capturedAcknowledgePurchaseParams.captured.purchaseToken).isEqualTo(token)
-    }
-
-    @Test
-    fun `Acknowledge skips if already acknowledged`() {
-        val token = "token"
-
-        wrapper.acknowledgeIfNeeded(
-            token,
-            alreadyAcknowledged = true,
-            initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
-        ) { }
-
-        assertThat(capturedAcknowledgePurchaseParams.isCaptured).isFalse()
     }
 
     @Test
