@@ -93,7 +93,7 @@ internal abstract class BaseHTTPClientTest {
             dangerousSettings = DangerousSettings(customEntitlementComputation = customEntitlementComputation),
             runningTests = true,
             forceServerErrors = forceServerErrors,
-            forceSigningErrors = forceSigningErrors
+            forceSigningErrors = forceSigningErrors,
         )
     }
 

@@ -193,18 +193,18 @@ class PostReceiptHelperTest {
 
         verify(exactly = 1) {
             backend.postReceiptData(
-                purchaseToken = any<String>(),
-                appUserID = any<String>(),
-                isRestore = any<Boolean>(),
-                finishTransactions = !any<Boolean>(),
+                purchaseToken = any(),
+                appUserID = any(),
+                isRestore = any(),
+                finishTransactions = any(),
                 subscriberAttributes = unsyncedSubscriberAttributes.toBackendMap(),
-                receiptInfo = any<ReceiptInfo>(),
-                storeAppUserID = any<String>(),
-                marketplace = any<String>(),
-                initiationSource = any<PostReceiptInitiationSource>(),
+                receiptInfo = any(),
+                storeAppUserID = any(),
+                marketplace = any(),
+                initiationSource = any(),
                 paywallPostReceiptData = null,
-                onSuccess = any<PostReceiptDataSuccessCallback>(),
-                onError = any<PostReceiptDataErrorCallback>()
+                onSuccess = any(),
+                onError = any()
             )
         }
     }

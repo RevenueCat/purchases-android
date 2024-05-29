@@ -62,7 +62,7 @@ class SubscriberAttributesPurchasesTests {
         val cache: DeviceCache = mockk(relaxed = true)
 
         val appConfig = AppConfig(
-            context = mockk<Context>(relaxed = true),
+            context = mockk(relaxed = true),
             finishTransactions = true,
             showInAppMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),

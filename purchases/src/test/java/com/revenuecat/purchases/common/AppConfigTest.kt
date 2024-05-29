@@ -125,7 +125,7 @@ class AppConfigTest {
     @Test
     fun `showInAppMessagesAutomatically is set correctly`() {
         val appConfig = AppConfig(
-            context = mockk<Context>(relaxed = true),
+            context = mockk(relaxed = true),
             finishTransactions = true,
             showInAppMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
@@ -134,7 +134,7 @@ class AppConfigTest {
         )
         assertThat(appConfig.showInAppMessagesAutomatically).isFalse
         val appConfig2 = AppConfig(
-            context = mockk<Context>(relaxed = true),
+            context = mockk(relaxed = true),
             finishTransactions = true,
             showInAppMessagesAutomatically = true,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
@@ -147,7 +147,7 @@ class AppConfigTest {
     @Test
     fun `finishTransactions is set correctly when observer mode is false`() {
         val appConfig = AppConfig(
-            context = mockk<Context>(relaxed = true),
+            context = mockk(relaxed = true),
             finishTransactions = true,
             showInAppMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
@@ -160,7 +160,7 @@ class AppConfigTest {
     @Test
     fun `finishTransactions is set correctly when observer mode is true`() {
         val appConfig = AppConfig(
-            context = mockk<Context>(relaxed = true),
+            context = mockk(relaxed = true),
             finishTransactions = false,
             showInAppMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
@@ -174,7 +174,7 @@ class AppConfigTest {
     fun `proxyURL is set as a baseURL`() {
         val expected = URL("https://a-proxy")
         val appConfig = AppConfig(
-            context = mockk<Context>(relaxed = true),
+            context = mockk(relaxed = true),
             finishTransactions = true,
             showInAppMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
@@ -188,7 +188,7 @@ class AppConfigTest {
     fun `default baseURL is correct`() {
         val expected = URL("https://api.revenuecat.com/")
         val appConfig = AppConfig(
-            context = mockk<Context>(relaxed = true),
+            context = mockk(relaxed = true),
             finishTransactions = true,
             showInAppMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
@@ -201,7 +201,7 @@ class AppConfigTest {
     @Test
     fun `default forceServerErrors is correct`() {
         val appConfig = AppConfig(
-            context = mockk<Context>(relaxed = true),
+            context = mockk(relaxed = true),
             finishTransactions = true,
             showInAppMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
@@ -214,7 +214,7 @@ class AppConfigTest {
     @Test
     fun `default forceSigningErrors is correct`() {
         val appConfig = AppConfig(
-            context = mockk<Context>(relaxed = true),
+            context = mockk(relaxed = true),
             finishTransactions = true,
             showInAppMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
@@ -227,7 +227,7 @@ class AppConfigTest {
     @Test
     fun `customEntitlementComputation matches version from dangerous settings`() {
         val appConfig = AppConfig(
-            context = mockk<Context>(relaxed = true),
+            context = mockk(relaxed = true),
             finishTransactions = true,
             showInAppMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
@@ -237,7 +237,7 @@ class AppConfigTest {
         )
         assertThat(appConfig.customEntitlementComputation).isTrue
         val appConfig2 = AppConfig(
-            context = mockk<Context>(relaxed = true),
+            context = mockk(relaxed = true),
             finishTransactions = true,
             showInAppMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
@@ -251,7 +251,7 @@ class AppConfigTest {
     @Test
     fun `Given two app configs with same data, both are equal`() {
         val x = AppConfig(
-            context = mockk<Context>(relaxed = true),
+            context = mockk(relaxed = true),
             finishTransactions = true,
             showInAppMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
@@ -259,7 +259,7 @@ class AppConfigTest {
             store = Store.PLAY_STORE
         )
         val y = AppConfig(
-            context = mockk<Context>(relaxed = true),
+            context = mockk(relaxed = true),
             finishTransactions = true,
             showInAppMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
@@ -273,7 +273,7 @@ class AppConfigTest {
     @Test
     fun `Given two app configs with different data, both are not equal`() {
         val x = AppConfig(
-            context = mockk<Context>(relaxed = true),
+            context = mockk(relaxed = true),
             finishTransactions = true,
             showInAppMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
@@ -281,7 +281,7 @@ class AppConfigTest {
             store = Store.PLAY_STORE
         )
         var y = AppConfig(
-            context = mockk<Context>(relaxed = true),
+            context = mockk(relaxed = true),
             finishTransactions = false,
             showInAppMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
@@ -292,7 +292,7 @@ class AppConfigTest {
         assertThat(x).isNotEqualTo(y)
 
         y = AppConfig(
-            context = mockk<Context>(relaxed = true),
+            context = mockk(relaxed = true),
             finishTransactions = true,
             showInAppMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.1.0"),
@@ -303,7 +303,7 @@ class AppConfigTest {
         assertThat(x).isNotEqualTo(y)
 
         y = AppConfig(
-            context = mockk<Context>(relaxed = true),
+            context = mockk(relaxed = true),
             finishTransactions = true,
             showInAppMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
@@ -314,7 +314,7 @@ class AppConfigTest {
         assertThat(x).isNotEqualTo(y)
 
         y = AppConfig(
-            context = mockk<Context>(relaxed = true),
+            context = mockk(relaxed = true),
             finishTransactions = true,
             showInAppMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
@@ -329,7 +329,7 @@ class AppConfigTest {
     @Test
     fun `Given two same app configs, their hashcodes are the same`() {
         val x = AppConfig(
-            context = mockk<Context>(relaxed = true),
+            context = mockk(relaxed = true),
             finishTransactions = true,
             showInAppMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
@@ -337,7 +337,7 @@ class AppConfigTest {
             store = Store.PLAY_STORE
         )
         val y = AppConfig(
-            context = mockk<Context>(relaxed = true),
+            context = mockk(relaxed = true),
             finishTransactions = true,
             showInAppMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
@@ -350,7 +350,7 @@ class AppConfigTest {
     @Test
     fun `toString works`() {
         val x = AppConfig(
-            context = mockk<Context>(relaxed = true),
+            context = mockk(relaxed = true),
             finishTransactions = true,
             showInAppMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
@@ -367,7 +367,6 @@ class AppConfigTest {
                 "packageName='', " +
                 "finishTransactions=true, " +
                 "showInAppMessagesAutomatically=false, " +
-                "baseURL=https://api.revenuecat.com/)"
-        )
+                "baseURL=https://api.revenuecat.com/)")
     }
 }
