@@ -1,13 +1,11 @@
 package com.revenuecat.purchases
 
-import android.app.Activity
 import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.interfaces.ProductChangeCallback
 import com.revenuecat.purchases.interfaces.SyncAttributesAndOfferingsCallback
 import com.revenuecat.purchases.interfaces.SyncPurchasesCallback
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
-import com.revenuecat.purchases.models.SubscriptionOption
 
 internal fun logInSuccessListener(
     onSuccess: (customerInfo: CustomerInfo, created: Boolean) -> Unit?,
@@ -59,46 +57,6 @@ internal fun syncAttributesAndOfferingsListener(
     override fun onError(error: PurchasesError) {
         onError(error)
     }
-}
-
-/**
- * Purchase product. If purchasing a subscription, it will choose the default [SubscriptionOption].
- * @param [activity] Current activity
- * @param [storeProduct] The storeProduct of the product you wish to purchase
- * @param [onSuccess] Will be called after the purchase has completed
- * @param [onError] Will be called if there was an error with the purchase
- */
-@Deprecated(
-    "Use purchase() and PurchaseParams.Builder instead",
-    ReplaceWith("purchase()"),
-)
-fun Purchases.purchaseProductWith(
-    activity: Activity,
-    storeProduct: StoreProduct,
-    onError: (error: PurchasesError, userCancelled: Boolean) -> Unit = ON_PURCHASE_ERROR_STUB,
-    onSuccess: (purchase: StoreTransaction, customerInfo: CustomerInfo) -> Unit,
-) {
-    purchaseProduct(activity, storeProduct, purchaseCompletedCallback(onSuccess, onError))
-}
-
-/**
- * Make a purchase. If purchasing a subscription, it will choose the default [SubscriptionOption].
- * @param [activity] Current activity
- * @param [packageToPurchase] The Package you wish to purchase
- * @param [onSuccess] Will be called after the purchase has completed
- * @param [onError] Will be called if there was an error with the purchase
- */
-@Deprecated(
-    "Use purchaseWith and PurchaseParams.Builder instead",
-    ReplaceWith("purchaseWith()"),
-)
-fun Purchases.purchasePackageWith(
-    activity: Activity,
-    packageToPurchase: Package,
-    onError: (error: PurchasesError, userCancelled: Boolean) -> Unit = ON_PURCHASE_ERROR_STUB,
-    onSuccess: (purchase: StoreTransaction, customerInfo: CustomerInfo) -> Unit,
-) {
-    purchasePackage(activity, packageToPurchase, purchaseCompletedCallback(onSuccess, onError))
 }
 
 /**
