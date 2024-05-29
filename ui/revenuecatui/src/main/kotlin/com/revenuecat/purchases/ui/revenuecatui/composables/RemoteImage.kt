@@ -14,9 +14,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextDirection.Companion.Content
 import coil.ImageLoader
 import coil.compose.AsyncImage
 import coil.compose.AsyncImagePainter
+import coil.compose.rememberAsyncImagePainter
 import coil.disk.DiskCache
 import coil.memory.MemoryCache
 import coil.request.CachePolicy
@@ -140,27 +142,51 @@ private fun AsyncImage(
     alpha: Float,
     onError: ((AsyncImagePainter.State.Error) -> Unit)? = null,
 ) {
-    AsyncImage(
+    AsyncImage2(
         model = imageRequest,
         contentDescription = contentDescription,
         imageLoader = imageLoader,
         modifier = modifier,
         contentScale = contentScale,
         alpha = alpha,
-        onState = {
-            when (it) {
-                is AsyncImagePainter.State.Error -> {
-                    val error = when (source) {
-                        is ImageSource.Local -> "Error loading local image: '${source.resource}'"
-                        is ImageSource.Remote -> "Error loading image from '${source.urlString}'"
-                    }
+//        onState = {
+//            when (it) {
+//                is AsyncImagePainter.State.Error -> {
+//                    val error = when (source) {
+//                        is ImageSource.Local -> "Error loading local image: '${source.resource}'"
+//                        is ImageSource.Remote -> "Error loading image from '${source.urlString}'"
+//                    }
+//
+//                    Logger.e(error, it.result.throwable)
+//                    onError?.invoke(it)
+//                }
+//                else -> {}
+//            }
+//        },
+    )
+}
 
-                    Logger.e(error, it.result.throwable)
-                    onError?.invoke(it)
-                }
-                else -> {}
-            }
-        },
+@Composable
+fun AsyncImage2(
+    model: Any?,
+    contentDescription: String?,
+    imageLoader: ImageLoader,
+    modifier: Modifier = Modifier,
+    contentScale: ContentScale = ContentScale.Fit,
+    alpha: Float = 1.0f,
+) {
+    // Create and execute the image request.
+    val painter = rememberAsyncImagePainter(
+        model
+    )
+
+    androidx.compose.foundation.Image(
+        painter = painter,
+//        imageLoader = imageLoader,
+        contentDescription = contentDescription,
+        contentScale = contentScale,
+        modifier = modifier,
+        alpha = alpha,
     )
 }
 
