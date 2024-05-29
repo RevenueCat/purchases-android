@@ -379,8 +379,16 @@ internal class BillingWrapper(
                         LogIntent.PURCHASE,
                         PurchaseStrings.NOT_CONSUMING_IN_APP_PURCHASE_ACCORDING_TO_BACKEND,
                     )
+                    if (!alreadyAcknowledged) {
+                        acknowledge(
+                            purchase.purchaseToken,
+                            initiationSource,
+                            onAcknowledged = deviceCache::addSuccessfullyPostedToken,
+                        )
+                    }
+                } else {
+                    deviceCache.addSuccessfullyPostedToken(purchase.purchaseToken)
                 }
-                deviceCache.addSuccessfullyPostedToken(purchase.purchaseToken)
             }
         } else {
             if (finishTransactions && !alreadyAcknowledged) {
