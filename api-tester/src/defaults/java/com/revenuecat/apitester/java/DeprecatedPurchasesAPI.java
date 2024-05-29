@@ -10,7 +10,6 @@ import com.revenuecat.purchases.CustomerInfo;
 import com.revenuecat.purchases.Package;
 import com.revenuecat.purchases.Purchases;
 import com.revenuecat.purchases.PurchasesError;
-import com.revenuecat.purchases.UpgradeInfo;
 import com.revenuecat.purchases.interfaces.ProductChangeCallback;
 import com.revenuecat.purchases.interfaces.PurchaseCallback;
 import com.revenuecat.purchases.models.StoreProduct;
@@ -24,8 +23,7 @@ final class DeprecatedPurchasesAPI {
                       final SkuDetails skuDetails,
                       final StoreProduct storeProduct,
                       final Package packageToPurchase,
-                      final SubscriptionOption subscriptionOption,
-                      final UpgradeInfo upgradeInfo) {
+                      final SubscriptionOption subscriptionOption) {
         final ProductChangeCallback purchaseChangeListener = new ProductChangeCallback() {
             @Override
             public void onCompleted(@Nullable StoreTransaction storeTransaction, @NonNull CustomerInfo customerInfo) {
@@ -47,10 +45,6 @@ final class DeprecatedPurchasesAPI {
 
         purchases.setAllowSharingPlayStoreAccount(true);
         Purchases.setDebugLogsEnabled(false);
-        purchases.purchaseProduct(activity, storeProduct, upgradeInfo, purchaseChangeListener);
-        purchases.purchaseProduct(activity, storeProduct, makePurchaseListener);
-        purchases.purchasePackage(activity, packageToPurchase, upgradeInfo, purchaseChangeListener);
-        purchases.purchasePackage(activity, packageToPurchase, makePurchaseListener);
     }
 
 }
