@@ -2479,7 +2479,7 @@ class BackendTest {
             purchaseToken = token,
             appUserID = appUserID,
             isRestore = isRestore,
-            observerMode = observerMode,
+            finishTransactions = !observerMode,
             subscriberAttributes = emptyMap(),
             receiptInfo = receiptInfo,
             storeAppUserID = storeAppUserID,

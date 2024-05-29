@@ -28,7 +28,6 @@ import io.mockk.unmockkObject
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
-import org.json.JSONObject
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
@@ -306,7 +305,7 @@ class SubscriberAttributesPosterTests {
             purchaseToken = fetchToken,
             appUserID = appUserID,
             isRestore = false,
-            observerMode = false,
+            finishTransactions = true,
             subscriberAttributes = mapOfSubscriberAttributes,
             receiptInfo = productInfo,
             storeAppUserID = null,
@@ -334,7 +333,7 @@ class SubscriberAttributesPosterTests {
             purchaseToken = fetchToken,
             appUserID = appUserID,
             isRestore = false,
-            observerMode = false,
+            finishTransactions = true,
             subscriberAttributes = mapOfSubscriberAttributes,
             receiptInfo = productInfo,
             storeAppUserID = null,
@@ -361,7 +360,7 @@ class SubscriberAttributesPosterTests {
             purchaseToken = fetchToken,
             appUserID = appUserID,
             isRestore = false,
-            observerMode = false,
+            finishTransactions = true,
             subscriberAttributes = emptyMap(),
             receiptInfo = productInfo,
             storeAppUserID = null,
@@ -391,7 +390,7 @@ class SubscriberAttributesPosterTests {
             purchaseToken = fetchToken,
             appUserID = appUserID,
             isRestore = false,
-            observerMode = false,
+            finishTransactions = true,
             subscriberAttributes = emptyMap(),
             receiptInfo = productInfo,
             storeAppUserID = null,
@@ -420,7 +419,7 @@ class SubscriberAttributesPosterTests {
             purchaseToken = fetchToken,
             appUserID = appUserID,
             isRestore = false,
-            observerMode = false,
+            finishTransactions = true,
             subscriberAttributes = emptyMap(),
             receiptInfo = productInfo,
             storeAppUserID = null,
@@ -449,7 +448,7 @@ class SubscriberAttributesPosterTests {
             purchaseToken = fetchToken,
             appUserID = appUserID,
             isRestore = false,
-            observerMode = false,
+            finishTransactions = true,
             subscriberAttributes = emptyMap(),
             receiptInfo = productInfo,
             storeAppUserID = null,
