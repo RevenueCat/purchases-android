@@ -50,10 +50,11 @@ internal fun PurchaseButton(
     viewModel: PaywallViewModel,
     childModifier: Modifier = Modifier,
     horizontalPadding: Dp = UIConstant.defaultHorizontalPadding,
+    colors: TemplateConfiguration.Colors = state.templateConfiguration.getCurrentColors(),
 ) {
     DisableTouchesComposable(shouldDisable = viewModel.actionInProgress.value) {
         PurchaseButton(
-            colors = state.templateConfiguration.getCurrentColors(),
+            colors = colors,
             packages = state.templateConfiguration.packages,
             selectedPackage = state.selectedPackage,
             viewModel = viewModel,

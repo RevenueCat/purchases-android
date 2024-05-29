@@ -25,6 +25,14 @@ internal object TemplateConfigurationFactory {
             headerUri = paywallData.getUriFromImage(sourceImages.header),
         )
 
+        val imagesByTier = paywallData.config.imagesByTier?.mapValues {
+            TemplateConfiguration.Images(
+                iconUri = paywallData.getUriFromImage(it.value.icon),
+                backgroundUri = paywallData.getUriFromImage(it.value.background),
+                headerUri = paywallData.getUriFromImage(it.value.header),
+            )
+        } ?: emptyMap()
+
         val createPackageResult =
             PackageConfigurationFactory.createPackageConfiguration(
                 variableDataProvider = variableDataProvider,
@@ -40,14 +48,37 @@ internal object TemplateConfigurationFactory {
         val packageConfiguration = createPackageResult.getOrElse {
             return Result.failure(it)
         }
+
+        val createPackageResultByTier = paywallData.config.tiers?.associate {
+            val config = PackageConfigurationFactory.createPackageConfiguration(
+                variableDataProvider = variableDataProvider,
+                availablePackages = availablePackages,
+                activelySubscribedProductIdentifiers = activelySubscribedProductIdentifiers,
+                nonSubscriptionProductIdentifiers = nonSubscriptionProductIdentifiers,
+                packageIdsInConfig = it.packages,
+                default = it.defaultPackage,
+                localization = localizedConfiguration,
+                configurationType = template.configurationType,
+                locale = locale,
+            )
+
+            it.id to config.getOrElse { packageTierThrowable ->
+                return Result.failure(packageTierThrowable)
+            }
+        } ?: emptyMap()
+
+
+
         return Result.success(
             TemplateConfiguration(
                 locale = locale,
                 template = template,
                 mode = mode,
                 packages = packageConfiguration,
+                packagesByTier = createPackageResultByTier,
                 configuration = paywallData.config,
                 images = images,
+                imagesByTier = imagesByTier,
             ),
         )
     }

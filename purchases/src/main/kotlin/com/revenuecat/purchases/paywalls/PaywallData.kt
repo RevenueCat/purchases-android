@@ -109,6 +109,9 @@ data class PaywallData(
         @SerialName("images")
         internal val legacyImages: Images? = null,
 
+        @SerialName("images_by_tier")
+        val imagesByTier: Map<String, Images>? = null,
+
         /**
          * Whether the background image will be blurred (in templates with one).
          */
@@ -137,12 +140,19 @@ data class PaywallData(
          * The set of colors used.
          */
         val colors: ColorInformation,
+
+        val colorsByTier: Map<String, ColorInformation>? = null,
+
+        val tiers: List<Tier>? = null,
     ) {
         constructor(
             packageIds: List<String>,
             defaultPackage: String? = null,
             images: Images,
+            imagesByTier: Map<String, Images>? = null,
             colors: ColorInformation,
+            colorsByTier: Map<String, ColorInformation>? = null,
+            tiers: List<Tier>? = null,
             blurredBackgroundImage: Boolean = false,
             displayRestorePurchases: Boolean = true,
             termsOfServiceURL: URL? = null,
@@ -150,7 +160,10 @@ data class PaywallData(
         ) : this(
             packageIds = packageIds,
             imagesWebp = images,
+            imagesByTier = imagesByTier,
             colors = colors,
+            colorsByTier = colorsByTier,
+            tiers = tiers,
             defaultPackage = defaultPackage,
             blurredBackgroundImage = blurredBackgroundImage,
             displayRestorePurchases = displayRestorePurchases,
@@ -193,6 +206,13 @@ data class PaywallData(
             internal val all: List<String>
                 get() = listOfNotNull(header, background, icon)
         }
+
+        @Serializable
+        data class Tier(
+            val id: String,
+            val packages: List<String>,
+            val defaultPackage: String,
+        )
 
         @Serializable
         data class ColorInformation(

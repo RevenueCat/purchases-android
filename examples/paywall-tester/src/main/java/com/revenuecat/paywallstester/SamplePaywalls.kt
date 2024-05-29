@@ -28,6 +28,7 @@ class SamplePaywallsLoader {
             SamplePaywalls.SampleTemplate.TEMPLATE_3 -> SamplePaywalls.template3()
             SamplePaywalls.SampleTemplate.TEMPLATE_4 -> SamplePaywalls.template4()
             SamplePaywalls.SampleTemplate.TEMPLATE_5 -> SamplePaywalls.template5()
+            SamplePaywalls.SampleTemplate.TEMPLATE_7 -> SamplePaywalls.template7()
             SamplePaywalls.SampleTemplate.UNRECOGNIZED_TEMPLATE -> SamplePaywalls.unrecognizedTemplate()
         }
     }
@@ -42,6 +43,7 @@ object SamplePaywalls {
         TEMPLATE_3("#3: Feature list"),
         TEMPLATE_4("#4: Horizontal packages"),
         TEMPLATE_5("#5: Minimalist with small banner"),
+        TEMPLATE_7("#7: Multi-tier"),
         UNRECOGNIZED_TEMPLATE("Default template"),
     }
 
@@ -372,6 +374,140 @@ object SamplePaywalls {
                         accent3 = PaywallColor(stringRepresentation = "#D1D1D1"),
                     ),
                 ),
+            ),
+            assetBaseURL = paywallAssetBaseURL,
+            localization = mapOf(
+                "en_US" to PaywallData.LocalizedConfiguration(
+                    title = "Spice Up Your Kitchen - Go Pro for Exclusive Benefits!",
+                    callToAction = "Continue",
+                    callToActionWithIntroOffer = "Start your Free Trial",
+                    offerDetails = "{{ total_price_and_per_month }}",
+                    offerDetailsWithIntroOffer = "Free for {{ sub_offer_duration }}, " +
+                        "then {{ total_price_and_per_month }}",
+                    offerName = "{{ sub_period }}",
+                    features = listOf(
+                        PaywallData.LocalizedConfiguration.Feature(
+                            title = "Unique gourmet recipes",
+                            iconID = "tick",
+                        ),
+                        PaywallData.LocalizedConfiguration.Feature(
+                            title = "Advanced nutritional recipes",
+                            iconID = "apple",
+                        ),
+                        PaywallData.LocalizedConfiguration.Feature(
+                            title = "Personalized support from our Chef",
+                            iconID = "warning",
+                        ),
+                        PaywallData.LocalizedConfiguration.Feature(
+                            title = "Unlimited receipt collections",
+                            iconID = "bookmark",
+                        ),
+                    ),
+                ),
+            ),
+        )
+    }
+
+    fun template7(): PaywallData {
+        return PaywallData(
+            templateName = "7",
+            config = PaywallData.Configuration(
+                packageIds = listOf(
+//                    PackageType.ANNUAL.identifier!!,
+//                    PackageType.MONTHLY.identifier!!,
+                ),
+                imagesByTier = mapOf(
+                    "basic" to PaywallData.Configuration.Images(
+                        header = "954459_1703109702.png",
+                    ),
+                    "standard" to PaywallData.Configuration.Images(
+                        header = "954459_1692992845.png",
+                    ),
+                    "premium" to PaywallData.Configuration.Images(
+                        header = "954459_1701267532.jpeg",
+                    ),
+                ),
+                tiers = listOf(
+                    PaywallData.Configuration.Tier(
+                        id = "basic",
+                        packages = listOf(
+                            PackageType.ANNUAL.identifier!!,
+                            PackageType.MONTHLY.identifier!!,
+                        ),
+                        defaultPackage = PackageType.MONTHLY.identifier!!,
+                    ),
+                    PaywallData.Configuration.Tier(
+                        id = "standard",
+                        packages = listOf(
+                            PackageType.TWO_MONTH.identifier!!,
+                            PackageType.SIX_MONTH.identifier!!,
+                        ),
+                        defaultPackage = PackageType.TWO_MONTH.identifier!!,
+                    ),
+                    PaywallData.Configuration.Tier(
+                        id = "premium",
+                        packages = listOf(
+                            PackageType.THREE_MONTH.identifier!!,
+                            PackageType.LIFETIME.identifier!!,
+                        ),
+                        defaultPackage = PackageType.SIX_MONTH.identifier!!,
+                    ),
+                ),
+                displayRestorePurchases = true,
+                termsOfServiceURL = URL("https://revenuecat.com/tos"),
+                privacyURL = URL("https://revenuecat.com/privacy"),
+
+                // TODO: Figure out how to make this optional
+                colors = PaywallData.Configuration.ColorInformation(
+                    light = PaywallData.Configuration.Colors(
+                        background = PaywallColor(stringRepresentation = "#FFFFFF"),
+                        text1 = PaywallColor(stringRepresentation = "#000000"),
+                        callToActionBackground = PaywallColor(stringRepresentation = "#45c186"),
+                        callToActionForeground = PaywallColor(stringRepresentation = "#ffffff"),
+                    ),
+                ),
+
+                colorsByTier = mapOf(
+                    "basic" to PaywallData.Configuration.ColorInformation(
+                        light = PaywallData.Configuration.Colors(
+                            background = PaywallColor(stringRepresentation = "#FFFFFF"),
+                            text1 = PaywallColor(stringRepresentation = "#000000"),
+                            text2 = PaywallColor(stringRepresentation = "#ffffff"),
+                            text3 = PaywallColor(stringRepresentation = "#30A0F8AA"),
+                            callToActionBackground = PaywallColor(stringRepresentation = "#3fc1f7"),
+                            callToActionForeground = PaywallColor(stringRepresentation = "#ffffff"),
+                            accent1 = PaywallColor(stringRepresentation = "#2d7fc1"),
+                            accent2 = PaywallColor(stringRepresentation = "#7676801F"),
+                            accent3 = PaywallColor(stringRepresentation = "#100031"),
+                        ),
+                    ),
+                    "standard" to PaywallData.Configuration.ColorInformation(
+                        light = PaywallData.Configuration.Colors(
+                            background = PaywallColor(stringRepresentation = "#FFFFFF"),
+                            text1 = PaywallColor(stringRepresentation = "#000000"),
+                            text2 = PaywallColor(stringRepresentation = "#ffffff"),
+                            text3 = PaywallColor(stringRepresentation = "#30A0F8AA"),
+                            callToActionBackground = PaywallColor(stringRepresentation = "#da4079"),
+                            callToActionForeground = PaywallColor(stringRepresentation = "#ffffff"),
+                            accent1 = PaywallColor(stringRepresentation = "#cd0654"),
+                            accent2 = PaywallColor(stringRepresentation = "#7676801F"),
+                            accent3 = PaywallColor(stringRepresentation = "#310217"),
+                        ),
+                    ),
+                    "premium" to PaywallData.Configuration.ColorInformation(
+                        light = PaywallData.Configuration.Colors(
+                            background = PaywallColor(stringRepresentation = "#FFFFFF"),
+                            text1 = PaywallColor(stringRepresentation = "#000000"),
+                            text2 = PaywallColor(stringRepresentation = "#ffffff"),
+                            text3 = PaywallColor(stringRepresentation = "#30A0F8AA"),
+                            callToActionBackground = PaywallColor(stringRepresentation = "#94d269"),
+                            callToActionForeground = PaywallColor(stringRepresentation = "#ffffff"),
+                            accent1 = PaywallColor(stringRepresentation = "#76c343"),
+                            accent2 = PaywallColor(stringRepresentation = "#7676801F"),
+                            accent3 = PaywallColor(stringRepresentation = "#213711"),
+                        ),
+                    ),
+                )
             ),
             assetBaseURL = paywallAssetBaseURL,
             localization = mapOf(

@@ -14,8 +14,10 @@ internal data class TemplateConfiguration(
     val template: PaywallTemplate,
     val mode: PaywallMode,
     val packages: PackageConfiguration,
+    val packagesByTier: Map<String, PackageConfiguration>,
     val configuration: PaywallData.Configuration,
     val images: Images,
+    val imagesByTier: Map<String, Images>,
     val locale: Locale,
 ) {
     private val darkModeColors = ColorsFactory.create(configuration.colors.dark ?: configuration.colors.light)
@@ -26,6 +28,26 @@ internal data class TemplateConfiguration(
     fun getCurrentColors(): Colors {
         return if (isSystemInDarkTheme()) darkModeColors else lightModeColors
     }
+
+    @Composable
+    @ReadOnlyComposable
+    fun getCurrentColorsForTier(tier: PaywallData.Configuration.Tier): Colors {
+        val colorByTier = configuration.colorsByTier?.get(tier.id)?.let {
+            if (isSystemInDarkTheme()) ColorsFactory.create(it.dark ?: it.light) else ColorsFactory.create(it.light)
+        }
+
+        return colorByTier ?: run {
+            // TODO: Add log that this is being used (maybe)
+            getCurrentColors()
+        }
+    }
+
+//    @Composable
+//    @ReadOnlyComposable
+//    fun getCurrentImagesForTier(tier: PaywallData.Configuration.Tier): Images {
+//
+//        return configuration.images
+//    }
 
     data class PackageInfo(
         val rcPackage: Package,

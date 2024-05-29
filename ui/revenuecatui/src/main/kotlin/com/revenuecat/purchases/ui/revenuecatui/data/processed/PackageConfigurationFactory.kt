@@ -28,7 +28,7 @@ internal object PackageConfigurationFactory {
                 Logger.d("Package with id $it not found. Ignoring.")
             }
             rcPackage
-        }.takeUnless { it.isEmpty() } ?: availablePackages
+        }.takeUnless { it.isEmpty() } ?: availablePackages // TODO: This is actually a little confusing when it comes to multi-tier paywalls
 
         if (filteredRCPackages.isEmpty()) {
             // This won't happen because availablePackages won't be empty. Offerings can't have empty available packages
