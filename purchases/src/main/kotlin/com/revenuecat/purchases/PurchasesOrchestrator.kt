@@ -263,7 +263,7 @@ internal class PurchasesOrchestrator constructor(
         )
     }
 
-    fun syncObserverModeAmazonPurchase(
+    fun syncAmazonPurchase(
         productID: String,
         receiptID: String,
         amazonUserID: String,

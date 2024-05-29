@@ -167,7 +167,7 @@ class Purchases internal constructor(
         isoCurrencyCode: String?,
         price: Double?,
     ) {
-        purchasesOrchestrator.syncObserverModeAmazonPurchase(
+        purchasesOrchestrator.syncAmazonPurchase(
             productID,
             receiptID,
             amazonUserID,
