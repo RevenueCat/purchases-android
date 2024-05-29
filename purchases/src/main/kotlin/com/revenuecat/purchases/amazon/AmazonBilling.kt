@@ -101,10 +101,11 @@ internal class AmazonBilling(
         diagnosticsTracker,
     )
 
+    private val finishTransactions = !observerMode
     private var connected = false
 
     override fun startConnection() {
-        if (checkObserverMode()) return
+        if (finishingTransactionsIsDisabled()) return
 
         purchasingServiceProvider.registerListener(applicationContext, this)
         connected = true
@@ -181,7 +182,7 @@ internal class AmazonBilling(
         onReceive: StoreProductsCallback,
         onError: PurchasesErrorCallback,
     ) {
-        if (checkObserverMode()) return
+        if (finishingTransactionsIsDisabled()) return
         executeRequestOnUIThread { connectionError ->
             if (connectionError == null) {
                 userDataHandler.getUserData(
@@ -216,7 +217,7 @@ internal class AmazonBilling(
         shouldConsume: Boolean,
         initiationSource: PostReceiptInitiationSource,
     ) {
-        if (checkObserverMode() || purchase.type == RevenueCatProductType.UNKNOWN) return
+        if (finishingTransactionsIsDisabled() || purchase.type == RevenueCatProductType.UNKNOWN) return
 
         // PENDING purchases should not be fulfilled
         if (purchase.purchaseState == PurchaseState.PENDING) return
@@ -283,7 +284,7 @@ internal class AmazonBilling(
         }
         val storeProduct = amazonPurchaseInfo.storeProduct
 
-        if (checkObserverMode()) return
+        if (finishingTransactionsIsDisabled()) return
 
         if (replaceProductInfo != null) {
             log(LogIntent.AMAZON_WARNING, AmazonStrings.PRODUCT_CHANGES_NOT_SUPPORTED)
@@ -316,7 +317,7 @@ internal class AmazonBilling(
         onSuccess: (Map<String, StoreTransaction>) -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {
-        if (checkObserverMode()) return
+        if (finishingTransactionsIsDisabled()) return
         queryPurchases(
             filterOnlyActivePurchases = true,
             onSuccess,
@@ -386,22 +387,22 @@ internal class AmazonBilling(
     // compile as long as all of the functions are implemented, otherwise it doesn't know which delegated
     // implementation to take
     override fun onUserDataResponse(response: UserDataResponse) {
-        if (checkObserverMode()) return
+        if (finishingTransactionsIsDisabled()) return
         userDataHandler.onUserDataResponse(response)
     }
 
     override fun onProductDataResponse(response: ProductDataResponse) {
-        if (checkObserverMode()) return
+        if (finishingTransactionsIsDisabled()) return
         productDataHandler.onProductDataResponse(response)
     }
 
     override fun onPurchaseResponse(response: PurchaseResponse) {
-        if (checkObserverMode()) return
+        if (finishingTransactionsIsDisabled()) return
         purchaseHandler.onPurchaseResponse(response)
     }
 
     override fun onPurchaseUpdatesResponse(response: PurchaseUpdatesResponse) {
-        if (checkObserverMode()) return
+        if (finishingTransactionsIsDisabled()) return
         purchaseUpdatesHandler.onPurchaseUpdatesResponse(response)
     }
 
@@ -580,9 +581,9 @@ internal class AmazonBilling(
         purchasesUpdatedListener?.onPurchasesFailedToUpdate(error)
     }
 
-    private fun checkObserverMode(): Boolean {
-        return if (observerMode) {
-            log(LogIntent.AMAZON_WARNING, AmazonStrings.WARNING_AMAZON_OBSERVER_MODE)
+    private fun finishingTransactionsIsDisabled(): Boolean {
+        return if (!finishTransactions) {
+            log(LogIntent.AMAZON_WARNING, AmazonStrings.WARNING_AMAZON_NOT_FINISHING_TRANSACTIONS)
             true
         } else {
             false

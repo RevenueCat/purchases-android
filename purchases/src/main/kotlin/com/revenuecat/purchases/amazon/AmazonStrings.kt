@@ -41,7 +41,7 @@ internal object AmazonStrings {
     const val PRODUCT_PRICE_MISSING = "Product %s is missing a price. This is common if you're trying to load a " +
         "product SKU instead of a subscription term SKU. Make sure you configure the subscription term SKUs " +
         "in the RevenueCat dashboard."
-    const val WARNING_AMAZON_OBSERVER_MODE =
+    const val WARNING_AMAZON_NOT_FINISHING_TRANSACTIONS =
         "Attempting to interact with Amazon App Store with an Amazon Purchases configuration set to not finish " +
             "transactions won't do anything. Please use syncAmazonPurchase to send purchases to RevenueCat instead."
     const val ERROR_TIMEOUT_GETTING_PRODUCT_DATA =
