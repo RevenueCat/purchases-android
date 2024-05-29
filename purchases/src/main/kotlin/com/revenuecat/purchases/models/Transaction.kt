@@ -21,6 +21,7 @@ data class Transaction(
     )
     val productId: String,
     val purchaseDate: Date,
+    var shouldConsume: Boolean
 ) : Parcelable {
 
     internal constructor(productId: String, jsonObject: JSONObject) : this(
@@ -29,5 +30,6 @@ data class Transaction(
         productIdentifier = productId,
         productId = productId,
         purchaseDate = jsonObject.getDate("purchase_date"),
+        shouldConsume = jsonObject.optBoolean("play_iap_should_consume", true),
     )
 }

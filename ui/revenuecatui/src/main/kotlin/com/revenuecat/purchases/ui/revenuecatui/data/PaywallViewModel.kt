@@ -154,6 +154,8 @@ internal class PaywallViewModelImpl(
             Logger.e("Activity is null, not initiating package purchase")
             return
         }
+
+        // JOSH: One section
         if (verifyNoActionInProgressOrStartAction()) {
             return
         }
@@ -161,6 +163,22 @@ internal class PaywallViewModelImpl(
             handlePackagePurchase(activity)
             finishAction()
         }
+
+        // JOSH: Another section
+//        when (val currentState = _state.value) {
+//            is PaywallState.Loaded -> {
+//                val selectedPackage = currentState.selectedPackage.value
+//                if (!selectedPackage.currentlySubscribed) {
+//                    purchasePackage(activity, selectedPackage.rcPackage)
+//                } else {
+//                    Logger.d("Ignoring purchase request for already purchased package")
+//                }
+//            }
+//
+//            else -> {
+//                Logger.e("Unexpected state trying to purchase package: $currentState")
+//            }
+//        }
     }
 
     @Suppress("NestedBlockDepth", "CyclomaticComplexMethod", "LongMethod")
@@ -389,6 +407,7 @@ internal class PaywallViewModelImpl(
                 variableDataProvider = variableDataProvider,
                 activelySubscribedProductIdentifiers = customerInfo.activeSubscriptions,
                 nonSubscriptionProductIdentifiers = customerInfo.nonSubscriptionTransactions
+                    .filter { !it.shouldConsume }
                     .map { it.productIdentifier }
                     .toSet(),
                 mode = mode,
