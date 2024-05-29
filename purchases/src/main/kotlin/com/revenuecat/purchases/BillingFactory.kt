@@ -33,7 +33,7 @@ internal object BillingFactory {
                 AmazonBilling(
                     application.applicationContext,
                     cache,
-                    observerMode,
+                    !observerMode,
                     Handler(application.mainLooper),
                     backendHelper,
                     stateProvider,

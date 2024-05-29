@@ -7,9 +7,6 @@ import com.amazon.device.iap.model.FulfillmentResult
 import com.amazon.device.iap.model.ProductType
 import com.amazon.device.iap.model.Receipt
 import com.amazon.device.iap.model.UserData
-import com.android.billingclient.api.BillingClient
-import com.android.billingclient.api.BillingResult
-import com.android.billingclient.api.ProductDetailsResponseListener
 import com.revenuecat.purchases.PostReceiptInitiationSource
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCallback
@@ -28,7 +25,6 @@ import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.sha1
-import com.revenuecat.purchases.google.BillingWrapperTest
 import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
@@ -80,7 +76,7 @@ class AmazonBillingTest {
             applicationContext = mockContext,
             amazonBackend = mockAmazonBackend,
             cache = mockCache,
-            observerMode = false,
+            finishTransactions = true,
             purchasingServiceProvider = mockPurchasingServiceProvider,
             productDataHandler = mockProductDataHandler,
             purchaseHandler = mockPurchaseHandler,
@@ -105,7 +101,7 @@ class AmazonBillingTest {
             applicationContext = mockContext,
             amazonBackend = mockAmazonBackend,
             cache = mockCache,
-            observerMode = true,
+            finishTransactions = false,
             mainHandler = handler,
             purchasingServiceProvider = mockPurchasingServiceProvider,
             productDataHandler = mockProductDataHandler,

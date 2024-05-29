@@ -61,7 +61,7 @@ internal class AmazonBilling(
     private val applicationContext: Context,
     private val amazonBackend: AmazonBackend,
     private val cache: AmazonCache,
-    private val observerMode: Boolean,
+    private val finishTransactions: Boolean,
     private val mainHandler: Handler,
     stateProvider: PurchasesStateProvider,
     private val diagnosticsTrackerIfEnabled: DiagnosticsTracker?,
@@ -86,7 +86,7 @@ internal class AmazonBilling(
     constructor(
         applicationContext: Context,
         cache: DeviceCache,
-        observerMode: Boolean,
+        finishTransactions: Boolean,
         mainHandler: Handler,
         backendHelper: BackendHelper,
         stateProvider: PurchasesStateProvider,
@@ -95,13 +95,12 @@ internal class AmazonBilling(
         applicationContext,
         AmazonBackend(backendHelper),
         AmazonCache(cache),
-        observerMode,
+        finishTransactions,
         mainHandler,
         stateProvider,
         diagnosticsTracker,
     )
 
-    private val finishTransactions = !observerMode
     private var connected = false
 
     override fun startConnection() {
