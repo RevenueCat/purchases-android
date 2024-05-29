@@ -114,7 +114,7 @@ internal class PurchasesTest : BasePurchasesTest() {
     // region purchasing
 
     @Test
-    fun `deprecated upgrade defaults ProrationMode to null if not passed`() {
+    fun `upgrade defaults ReplacementMode to WITHOUT_PRORATION if not passed`() {
         val productId = "gold"
         val oldSubId = "oldSubID"
         val receiptInfo = mockQueryingProductDetails(productId, ProductType.SUBS, null)
@@ -132,10 +132,12 @@ internal class PurchasesTest : BasePurchasesTest() {
             lambda<(StoreTransaction) -> Unit>().captured.invoke(oldTransaction)
         }
 
-        purchases.purchaseProductWith(
-            mockActivity,
-            receiptInfo.storeProduct!!,
-            UpgradeInfo(oldSubId),
+        purchases.purchaseWith(
+            PurchaseParams.Builder(
+                mockActivity,
+                receiptInfo.storeProduct!!,
+            ).oldProductId(oldSubId)
+                .build(),
             onError = { _, _ ->
             },
             onSuccess = { _, _ ->
@@ -144,7 +146,7 @@ internal class PurchasesTest : BasePurchasesTest() {
 
         val expectedReplaceProductInfo = ReplaceProductInfo(
             oldTransaction,
-            null,
+            GoogleReplacementMode.WITHOUT_PRORATION,
         )
         verify {
             mockBillingAbstract.makePurchaseAsync(
@@ -158,7 +160,7 @@ internal class PurchasesTest : BasePurchasesTest() {
     }
 
     @Test
-    fun `deprecated purchase does not set isPersonalizedPrice`() {
+    fun `purchase does not set isPersonalizedPrice`() {
         val productId = "gold"
         val oldSubId = "oldSubID"
         val receiptInfo = mockQueryingProductDetails(productId, ProductType.SUBS, null)
@@ -176,10 +178,12 @@ internal class PurchasesTest : BasePurchasesTest() {
             lambda<(StoreTransaction) -> Unit>().captured.invoke(oldTransaction)
         }
 
-        purchases.purchaseProductWith(
-            mockActivity,
-            receiptInfo.storeProduct!!,
-            UpgradeInfo(oldSubId),
+        purchases.purchaseWith(
+            PurchaseParams.Builder(
+                mockActivity,
+                receiptInfo.storeProduct!!,
+            ).oldProductId(oldSubId)
+                .build(),
             onError = { _, _ ->
             },
             onSuccess = { _, _ ->
@@ -198,13 +202,15 @@ internal class PurchasesTest : BasePurchasesTest() {
     }
 
     @Test
-    fun `isPersonalizedPrice defaults to null for deprecated purchase`() {
+    fun `isPersonalizedPrice defaults to null`() {
         val (_, offerings) = stubOfferings("onemonth_freetrial")
         val packageToPurchase = offerings[STUB_OFFERING_IDENTIFIER]!!.monthly!!
 
-        purchases.purchasePackage(
-            mockActivity,
-            packageToPurchase,
+        purchases.purchase(
+            PurchaseParams.Builder(
+                mockActivity,
+                packageToPurchase,
+            ).build(),
             object : PurchaseCallback {
                 override fun onCompleted(storeTransaction: StoreTransaction, customerInfo: CustomerInfo) {}
                 override fun onError(error: PurchasesError, userCancelled: Boolean) {}
