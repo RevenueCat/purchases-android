@@ -138,7 +138,7 @@ internal class PurchasesFactory(
                 application,
                 backendHelper,
                 cache,
-                observerMode,
+                !observerMode,
                 diagnosticsTracker,
                 purchasesStateProvider,
             )
