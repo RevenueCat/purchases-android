@@ -353,19 +353,17 @@ internal class BillingWrapper(
         shouldConsume: Boolean,
         initiationSource: PostReceiptInitiationSource,
     ) {
-        if (purchase.type == ProductType.UNKNOWN) {
-            // Would only get here if the purchase was triggered from outside of the app and there was
+        if (purchase.type == ProductType.UNKNOWN || purchase.purchaseState == PurchaseState.PENDING) {
+            // Product type will be unknown if the purchase was triggered from outside of the app and there was
             // an issue getting the purchase type
-            return
-        }
-        if (purchase.purchaseState == PurchaseState.PENDING) {
-            // PENDING purchases should not be fulfilled
+            // Exit early if purchase type is unknown or purchase is pending
             return
         }
 
         val originalGooglePurchase = purchase.originalGooglePurchase
         val alreadyAcknowledged = originalGooglePurchase?.isAcknowledged ?: false
         val isInAppProduct = purchase.type == ProductType.INAPP
+
         if (isInAppProduct) {
             if (finishTransactions && shouldConsume) {
                 consumePurchase(
@@ -373,13 +371,14 @@ internal class BillingWrapper(
                     initiationSource,
                     onConsumed = deviceCache::addSuccessfullyPostedToken,
                 )
+            } else if (finishTransactions && !alreadyAcknowledged) {
+                log(LogIntent.PURCHASE, PurchaseStrings.NOT_CONSUMING_IN_APP_PURCHASE_ACCORDING_TO_BACKEND)
+                acknowledge(
+                    purchase.purchaseToken,
+                    initiationSource,
+                    onAcknowledged = deviceCache::addSuccessfullyPostedToken,
+                )
             } else {
-                if (finishTransactions) {
-                    log(
-                        LogIntent.PURCHASE,
-                        PurchaseStrings.NOT_CONSUMING_IN_APP_PURCHASE_ACCORDING_TO_BACKEND,
-                    )
-                }
                 deviceCache.addSuccessfullyPostedToken(purchase.purchaseToken)
             }
         } else {
