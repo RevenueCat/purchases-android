@@ -19,7 +19,7 @@ import com.revenuecat.purchases.interfaces.SyncAttributesAndOfferingsCallback
 import com.revenuecat.purchases.interfaces.SyncPurchasesCallback
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import com.revenuecat.purchases.models.BillingFeature
-import com.revenuecat.purchases.models.GoogleProrationMode
+import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.InAppMessageType
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
@@ -312,7 +312,7 @@ class Purchases internal constructor(
             storeProduct.purchasingData,
             null,
             upgradeInfo.oldSku,
-            GoogleProrationMode.fromPlayBillingClientMode(upgradeInfo.prorationMode)?.asGoogleReplacementMode,
+            GoogleReplacementMode.fromPlayBillingClientMode(upgradeInfo.replacementMode),
             listener,
         )
     }
@@ -380,7 +380,7 @@ class Purchases internal constructor(
             packageToPurchase.product.purchasingData,
             packageToPurchase.presentedOfferingContext,
             upgradeInfo.oldSku,
-            GoogleProrationMode.fromPlayBillingClientMode(upgradeInfo.prorationMode)?.asGoogleReplacementMode,
+            GoogleReplacementMode.fromPlayBillingClientMode(upgradeInfo.replacementMode),
             callback,
         )
     }
