@@ -459,7 +459,7 @@ class BackendTest {
     }
 
     @Test
-    fun `postReceipt passes proration mode and pricing phases as maps in body`() {
+    fun `postReceipt passes replacement mode and pricing phases as maps in body`() {
         val subscriptionOption = storeProduct.subscriptionOptions!!.first()
         val receiptInfo = ReceiptInfo(
             productIDs = productIDs,
@@ -496,8 +496,9 @@ class BackendTest {
             )
         )
 
-        assertThat(requestBodySlot.captured.keys).contains("replacement_mode")
-        assertThat(requestBodySlot.captured["replacement_mode"]).isEqualTo("WITHOUT_PRORATION")
+        assertThat(requestBodySlot.captured.keys).contains("proration_mode")
+        // Backend expects the legacy proration mode values.
+        assertThat(requestBodySlot.captured["proration_mode"]).isEqualTo("IMMEDIATE_WITHOUT_PRORATION")
     }
 
     @Test
