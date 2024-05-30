@@ -659,16 +659,9 @@ workflows:
             - run-firebase-tests-purchases-load-shedder-integration-test
             - run-firebase-tests-purchases-custom-entitlement-computation-integration-test
           <<: *release-branches
-      - force-release-without-waiting-for-tests:
-          type: approval
-          <<: *release-branches
       - revenuecat/tag-current-branch:
           requires:
             - hold
-          <<: *release-branches
-      - revenuecat/tag-current-branch:
-          requires:
-            - force-release-without-waiting-for-tests
           <<: *release-branches
       - deploy: *release-tags
       - docs-deploy: *release-tags
