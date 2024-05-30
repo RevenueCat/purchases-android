@@ -2,7 +2,6 @@ package com.revenuecat.apitester.kotlin
 
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ProductType
-import com.revenuecat.purchases.ProrationMode
 import com.revenuecat.purchases.ReplacementMode
 import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.PurchaseType
@@ -29,7 +28,6 @@ private class StoreTransactionAPI {
             val purchaseType: PurchaseType = purchaseType
             val subscriptionOptionId: String? = subscriptionOptionId
             val replacementMode: ReplacementMode? = replacementMode
-            val prorationMode: ProrationMode? = prorationMode
 
             val constructedStoreTransaction = StoreTransaction(
                 orderId,
@@ -65,24 +63,6 @@ private class StoreTransactionAPI {
                 marketplace,
                 subscriptionOptionId,
                 replacementMode,
-            )
-
-            val deprecatedConstructedStoreTransaction = StoreTransaction(
-                orderId,
-                productIds,
-                type,
-                purchaseTime,
-                purchaseToken,
-                purchaseState,
-                isAutoRenewing,
-                signature,
-                originalJson,
-                presentedOfferingIdentifier,
-                storeUserID,
-                purchaseType,
-                marketplace,
-                subscriptionOptionId,
-                prorationMode,
             )
         }
     }

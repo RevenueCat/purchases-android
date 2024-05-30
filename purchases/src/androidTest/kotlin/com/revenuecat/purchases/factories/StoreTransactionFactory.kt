@@ -2,7 +2,7 @@ package com.revenuecat.purchases.factories
 
 import com.revenuecat.purchases.Constants
 import com.revenuecat.purchases.ProductType
-import com.revenuecat.purchases.ProrationMode
+import com.revenuecat.purchases.ReplacementMode
 import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.PurchaseType
 import com.revenuecat.purchases.models.StoreTransaction
@@ -25,7 +25,7 @@ object StoreTransactionFactory {
         purchaseType: PurchaseType = PurchaseType.GOOGLE_PURCHASE,
         marketplace: String? = null,
         subscriptionOptionId: String? = Constants.basePlanIdToPurchase,
-        prorationMode: ProrationMode? = null,
+        replacementMode: ReplacementMode? = null,
     ): StoreTransaction {
         return StoreTransaction(
             orderId,
@@ -42,7 +42,7 @@ object StoreTransactionFactory {
             purchaseType,
             marketplace,
             subscriptionOptionId,
-            prorationMode,
+            replacementMode,
         )
     }
 }

@@ -20,7 +20,7 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.UpgradeInfo
 import com.revenuecat.purchases.getCustomerInfoWith
 import com.revenuecat.purchases.getOfferingsWith
-import com.revenuecat.purchases.models.GoogleProrationMode
+import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.purchasePackageWith
@@ -132,10 +132,10 @@ class DeprecatedOfferingFragment : Fragment(), DeprecatedPackageCardAdapter.Pack
     private fun promptForUpgradeInfo(callback: (UpgradeInfo?) -> Unit) {
         showOldSubIdPicker { subId ->
             subId?.let {
-                showProrationModePicker { prorationMode, error ->
+                showReplacementModePicker { replacementMode, error ->
                     if (error == null) {
-                        prorationMode?.let {
-                            callback(UpgradeInfo(subId, prorationMode.playBillingClientMode))
+                        replacementMode?.let {
+                            callback(UpgradeInfo(subId, replacementMode.playBillingClientMode))
                         } ?: callback(UpgradeInfo(subId))
                     } else {
                         callback(null)
@@ -238,19 +238,19 @@ class DeprecatedOfferingFragment : Fragment(), DeprecatedPackageCardAdapter.Pack
             .show()
     }
 
-    private fun showProrationModePicker(callback: (GoogleProrationMode?, Error?) -> Unit) {
-        val prorationModeOptions = GoogleProrationMode.values()
-        var selectedProrationMode: GoogleProrationMode? = null
+    private fun showReplacementModePicker(callback: (GoogleReplacementMode?, Error?) -> Unit) {
+        val replacementModeOptions = GoogleReplacementMode.values()
+        var selectedReplacementMode: GoogleReplacementMode? = null
 
-        val prorationModeNames = prorationModeOptions.map { it.name }.toTypedArray()
+        val replacementModeNames = replacementModeOptions.map { it.name }.toTypedArray()
         MaterialAlertDialogBuilder(requireContext())
-            .setTitle("Choose ProrationMode")
-            .setSingleChoiceItems(prorationModeNames, -1) { _, selectedIndex ->
-                selectedProrationMode = prorationModeOptions.elementAt(selectedIndex)
+            .setTitle("Choose ReplacementMode")
+            .setSingleChoiceItems(replacementModeNames, -1) { _, selectedIndex ->
+                selectedReplacementMode = replacementModeOptions.elementAt(selectedIndex)
             }
             .setPositiveButton("Start purchase") { dialog, _ ->
                 dialog.dismiss()
-                callback(selectedProrationMode, null)
+                callback(selectedReplacementMode, null)
             }
             .setNegativeButton("Cancel purchase") { dialog, _ ->
                 dialog.dismiss()

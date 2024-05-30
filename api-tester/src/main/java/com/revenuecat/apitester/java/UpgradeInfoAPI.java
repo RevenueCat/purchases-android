@@ -6,11 +6,11 @@ import com.revenuecat.purchases.UpgradeInfo;
 final class UpgradeInfoAPI {
     static void check(final UpgradeInfo upgradeInfo) {
         final String oldProductId = upgradeInfo.getOldSku();
-        final Integer prorationMode = upgradeInfo.getProrationMode();
+        final Integer replacementMode = upgradeInfo.getReplacementMode();
 
         UpgradeInfo constructedUpgradeInfo = new UpgradeInfo(
                 upgradeInfo.getOldSku(),
-                upgradeInfo.getProrationMode()
+                upgradeInfo.getReplacementMode()
         );
 
         UpgradeInfo constructedUpgradeInfoNullProrationMode =

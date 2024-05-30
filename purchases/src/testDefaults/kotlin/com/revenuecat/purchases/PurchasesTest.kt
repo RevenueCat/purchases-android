@@ -18,7 +18,6 @@ import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
 import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
-import com.revenuecat.purchases.models.GoogleProrationMode
 import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
@@ -37,7 +36,6 @@ import io.mockk.verify
 import io.mockk.verifyAll
 import org.assertj.core.api.Assertions.assertThat
 import org.json.JSONObject
-import org.junit.Assert.assertEquals
 import org.junit.Assert.fail
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -259,16 +257,6 @@ internal class PurchasesTest : BasePurchasesTest() {
                 PresentedOfferingContext(STUB_OFFERING_IDENTIFIER),
                 null,
             )
-        }
-    }
-
-    @Test
-    fun `Converting between GoogleProrationMode and GoogleReplacementMode works`() {
-        GoogleProrationMode.values().forEach {
-            assertEquals(it.asGoogleReplacementMode.asGoogleProrationMode, it)
-        }
-        GoogleReplacementMode.values().forEach {
-            assertEquals(it.asGoogleProrationMode.asGoogleReplacementMode, it)
         }
     }
 
