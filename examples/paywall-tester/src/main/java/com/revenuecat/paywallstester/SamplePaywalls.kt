@@ -76,8 +76,28 @@ object SamplePaywalls {
         freeTrialPeriod = Period(value = 1, unit = Period.Unit.WEEK, iso8601 = "P1W"),
     )
 
-    private val sixMonthProduct = TestStoreProduct(
+    private val twoMonthProduct = TestStoreProduct(
+        id = "com.revenuecat.product_3",
+        name = "Two Months",
+        title = "Two Months (App name)",
+        price = Price(amountMicros = 34_990_000, currencyCode = "USD", formatted = "$14.99"),
+        description = "PRO Two Months",
+        period = Period(value = 2, unit = Period.Unit.MONTH, iso8601 = "P2M"),
+        freeTrialPeriod = null,
+    )
+
+    private val threeMonthProduct = TestStoreProduct(
         id = "com.revenuecat.product_4",
+        name = "Three Months",
+        title = "Three Months (App name)",
+        price = Price(amountMicros = 34_990_000, currencyCode = "USD", formatted = "$24.99"),
+        description = "PRO Three Months",
+        period = Period(value = 3, unit = Period.Unit.MONTH, iso8601 = "P3M"),
+        freeTrialPeriod = Period(value = 1, unit = Period.Unit.WEEK, iso8601 = "P1W"),
+    )
+
+    private val sixMonthProduct = TestStoreProduct(
+        id = "com.revenuecat.product_5",
         name = "Six Months",
         title = "Six Months (App name)",
         price = Price(amountMicros = 34_990_000, currencyCode = "USD", formatted = "$34.99"),
@@ -87,7 +107,7 @@ object SamplePaywalls {
     )
 
     private val annualProduct = TestStoreProduct(
-        id = "com.revenuecat.product_3",
+        id = "com.revenuecat.product_6",
         name = "Annual",
         title = "Annual (App name)",
         price = Price(amountMicros = 53_990_000, currencyCode = "USD", formatted = "$53.99"),
@@ -119,6 +139,20 @@ object SamplePaywalls {
         offeringIdentifier,
     )
 
+    private val twoMonthPackage = Package(
+        PackageType.TWO_MONTH.identifier!!,
+        PackageType.TWO_MONTH,
+        twoMonthProduct,
+        offeringIdentifier,
+    )
+
+    private val threeMonthPackage = Package(
+        PackageType.THREE_MONTH.identifier!!,
+        PackageType.THREE_MONTH,
+        threeMonthProduct,
+        offeringIdentifier,
+    )
+
     private val sixMonthPackage = Package(
         PackageType.SIX_MONTH.identifier!!,
         PackageType.SIX_MONTH,
@@ -143,6 +177,8 @@ object SamplePaywalls {
     val packages = listOf(
         weeklyPackage,
         monthlyPackage,
+        twoMonthPackage,
+        threeMonthPackage,
         sixMonthPackage,
         annualPackage,
         lifetimePackage,
@@ -434,7 +470,7 @@ object SamplePaywalls {
                             PackageType.ANNUAL.identifier!!,
                             PackageType.MONTHLY.identifier!!,
                         ),
-                        defaultPackage = PackageType.MONTHLY.identifier!!,
+                        defaultPackage = PackageType.ANNUAL.identifier!!,
                     ),
                     PaywallData.Configuration.Tier(
                         id = "standard",
@@ -442,7 +478,7 @@ object SamplePaywalls {
                             PackageType.TWO_MONTH.identifier!!,
                             PackageType.SIX_MONTH.identifier!!,
                         ),
-                        defaultPackage = PackageType.TWO_MONTH.identifier!!,
+                        defaultPackage = PackageType.SIX_MONTH.identifier!!,
                     ),
                     PaywallData.Configuration.Tier(
                         id = "premium",
@@ -512,33 +548,106 @@ object SamplePaywalls {
             assetBaseURL = paywallAssetBaseURL,
             localization = mapOf(
                 "en_US" to PaywallData.LocalizedConfiguration(
-                    title = "Spice Up Your Kitchen - Go Pro for Exclusive Benefits!",
-                    callToAction = "Continue",
-                    callToActionWithIntroOffer = "Start your Free Trial",
+                    title = "Get started with our Basic plan",
+                    callToAction = "{{ price_per_period }}",
+                    callToActionWithIntroOffer = "Start your {{ sub_offer_duration }} free trial",
                     offerDetails = "{{ total_price_and_per_month }}",
-                    offerDetailsWithIntroOffer = "Free for {{ sub_offer_duration }}, " +
-                        "then {{ total_price_and_per_month }}",
+                    offerDetailsWithIntroOffer = "Free for {{ sub_offer_duration }}, then {{ total_price_and_per_month }}",
                     offerName = "{{ sub_period }}",
                     features = listOf(
                         PaywallData.LocalizedConfiguration.Feature(
-                            title = "Unique gourmet recipes",
+                            title = "Access to 10 cinematic LUTs",
                             iconID = "tick",
                         ),
                         PaywallData.LocalizedConfiguration.Feature(
-                            title = "Advanced nutritional recipes",
-                            iconID = "apple",
+                            title = "Standard fonts",
+                            iconID = "tick",
                         ),
                         PaywallData.LocalizedConfiguration.Feature(
-                            title = "Personalized support from our Chef",
-                            iconID = "warning",
-                        ),
-                        PaywallData.LocalizedConfiguration.Feature(
-                            title = "Unlimited receipt collections",
-                            iconID = "bookmark",
+                            title = "2 templates",
+                            iconID = "tick",
                         ),
                     ),
+                    tierName = "Basic"
                 ),
             ),
+            localizationByTier = mapOf(
+                "basic" to mapOf(
+                    "en_US" to PaywallData.LocalizedConfiguration(
+                        title = "Get started with our Basic plan",
+                        callToAction = "{{ price_per_period }}",
+                        callToActionWithIntroOffer = "Start your {{ sub_offer_duration }} free trial",
+                        offerDetails = "{{ total_price_and_per_month }}",
+                        offerDetailsWithIntroOffer = "Free for {{ sub_offer_duration }}, then {{ total_price_and_per_month }}",
+                        offerName = "{{ sub_period }}",
+                        features = listOf(
+                            PaywallData.LocalizedConfiguration.Feature(
+                                title = "Access to 10 cinematic LUTs",
+                                iconID = "tick",
+                            ),
+                            PaywallData.LocalizedConfiguration.Feature(
+                                title = "Standard fonts",
+                                iconID = "tick",
+                            ),
+                            PaywallData.LocalizedConfiguration.Feature(
+                                title = "2 templates",
+                                iconID = "tick",
+                            ),
+                        ),
+                        tierName = "Basic"
+                    ),
+                ),
+                "standard" to mapOf(
+                    "en_US" to PaywallData.LocalizedConfiguration(
+                        title = "Get started with our Standard plan",
+                        callToAction = "{{ price_per_period }}",
+                        callToActionWithIntroOffer = "Start your {{ sub_offer_duration }} free trial",
+                        offerDetails = "{{ total_price_and_per_month }}",
+                        offerDetailsWithIntroOffer = "Free for {{ sub_offer_duration }}, then {{ total_price_and_per_month }}",
+                        offerName = "{{ sub_period }}",
+                        features = listOf(
+                            PaywallData.LocalizedConfiguration.Feature(
+                                title = "Access to 30 cinematic LUTs",
+                                iconID = "tick",
+                            ),
+                            PaywallData.LocalizedConfiguration.Feature(
+                                title = "Pro fonts and transition effects",
+                                iconID = "tick",
+                            ),
+                            PaywallData.LocalizedConfiguration.Feature(
+                                title = "10+ templates",
+                                iconID = "tick",
+                            ),
+                        ),
+                        tierName = "Standard"
+                    ),
+                ),
+                "premium" to mapOf(
+                    "en_US" to PaywallData.LocalizedConfiguration(
+                        title = "Master the art of video editing",
+                        callToAction = "{{ price_per_period }}",
+                        callToActionWithIntroOffer = "Start your {{ sub_offer_duration }} free trial",
+                        offerDetails = "{{ total_price_and_per_month }}",
+                        offerDetailsWithIntroOffer = "Free for {{ sub_offer_duration }}, then {{ total_price_and_per_month }}",
+                        offerName = "{{ sub_period }}",
+                        features = listOf(
+                            PaywallData.LocalizedConfiguration.Feature(
+                                title = "Access to all 150 of our cinematic LUTs",
+                                iconID = "tick",
+                            ),
+                            PaywallData.LocalizedConfiguration.Feature(
+                                title = "Custom design tools and transition effects",
+                                iconID = "tick",
+                            ),
+                            PaywallData.LocalizedConfiguration.Feature(
+                                title = "100+ exclusive templates",
+                                iconID = "tick",
+                            ),
+                        ),
+                        tierName = "Premium"
+                    ),
+                )
+            )
         )
     }
 

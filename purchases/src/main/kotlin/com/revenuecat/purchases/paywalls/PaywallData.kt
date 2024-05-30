@@ -4,6 +4,7 @@ import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.utils.convertToCorrectlyFormattedLocale
+import com.revenuecat.purchases.utils.filterNotNullValues
 import com.revenuecat.purchases.utils.getDefaultLocales
 import com.revenuecat.purchases.utils.serializers.OptionalURLSerializer
 import com.revenuecat.purchases.utils.serializers.URLSerializer
@@ -42,6 +43,7 @@ data class PaywallData(
      */
     val revision: Int = 0,
     @SerialName("localized_strings") internal val localization: Map<String, LocalizedConfiguration>,
+    @SerialName("localized_strings_by_tier") internal val localizationByTier: Map<String, Map<String, LocalizedConfiguration>> = emptyMap(),
 ) {
 
     /**
@@ -53,6 +55,36 @@ data class PaywallData(
         get() {
             return localizedConfiguration(locales = getDefaultLocales())
         }
+
+    val localizedConfigurationByTier: Pair<Locale, Map<String, LocalizedConfiguration>>
+        @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
+        get() {
+            return tierLocalizedConfiguration(locales = getDefaultLocales())
+        }
+
+    @VisibleForTesting
+    @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
+    fun tierLocalizedConfiguration(locales: List<Locale>): Pair<Locale, Map<String, LocalizedConfiguration>> {
+        for (locale in locales) {
+            val localeToCheck = locale.convertToCorrectlyFormattedLocale()
+            tierdConfigForLocale(localeToCheck).let { localizedConfiguration ->
+                return (localeToCheck to localizedConfiguration)
+            }
+        }
+
+        // TODO: Figure out how to fallback with multitier
+        return (Locale.CANADA to emptyMap())
+    }
+
+    @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
+    fun tierdConfigForLocale(requiredLocale: Locale): Map<String, LocalizedConfiguration> {
+        return localizationByTier.mapValues {
+            it.value[requiredLocale.toString()]
+                ?: it.value.entries.firstOrNull { (localeKey, _) ->
+                    requiredLocale.sharedLanguageCodeWith(localeKey.toLocale())
+                }?.value
+        }.filterNotNullValues()
+    }
 
     @VisibleForTesting
     @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
@@ -371,6 +403,10 @@ data class PaywallData(
          * An optional list of features that describe this paywall.
          */
         val features: List<Feature> = emptyList(),
+
+        @SerialName("tier_name")
+        @Serializable(with = EmptyStringToNullSerializer::class)
+        val tierName: String? = null
     ) {
         /**
          * An item to be showcased in a paywall.

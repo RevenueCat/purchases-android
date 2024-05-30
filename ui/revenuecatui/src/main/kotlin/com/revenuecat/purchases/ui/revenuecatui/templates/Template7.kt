@@ -34,7 +34,6 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -52,7 +51,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.ui.revenuecatui.ExperimentalPreviewRevenueCatUIPurchasesAPI
 import com.revenuecat.purchases.ui.revenuecatui.InternalPaywall
@@ -66,17 +64,15 @@ import com.revenuecat.purchases.ui.revenuecatui.composables.OfferDetails
 import com.revenuecat.purchases.ui.revenuecatui.composables.PaywallIcon
 import com.revenuecat.purchases.ui.revenuecatui.composables.PaywallIconName
 import com.revenuecat.purchases.ui.revenuecatui.composables.PillSwitcher
-import com.revenuecat.purchases.ui.revenuecatui.composables.PillSwitcherViewModel
-import com.revenuecat.purchases.ui.revenuecatui.composables.PillSwitcherViewModelFactory
 import com.revenuecat.purchases.ui.revenuecatui.composables.PurchaseButton
 import com.revenuecat.purchases.ui.revenuecatui.composables.RemoteImage
 import com.revenuecat.purchases.ui.revenuecatui.composables.StatusBarSpacer
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModel
 import com.revenuecat.purchases.ui.revenuecatui.data.isInFullScreenMode
+import com.revenuecat.purchases.ui.revenuecatui.data.processed.ProcessedLocalizedConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.localizedDiscount
-import com.revenuecat.purchases.ui.revenuecatui.data.selectedLocalization
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockViewModel
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
@@ -102,24 +98,13 @@ internal fun Template7(
         mutableStateOf(state.templateConfiguration.mode != PaywallMode.FOOTER_CONDENSED)
     }
 
-    val initialOptions = state.templateConfiguration.configuration.tiers ?: emptyList()
-    val defaultSelectedOption = initialOptions.first()
-
-    val pillSwitcherViewModel = viewModel<PillSwitcherViewModel>(
-        factory = PillSwitcherViewModelFactory(
-            initialOptions = initialOptions,
-            defaultSelectedOption = defaultSelectedOption,
-        ),
-    )
-
-    val selectedTier = pillSwitcherViewModel.selectedOption.collectAsState().value
-    val colorForTier = state.templateConfiguration.getCurrentColorsForTier(tier = selectedTier)
+    val colorForTier = state.templateConfiguration.getCurrentColorsForTier(tier = state.selectedTier.value)
 
     Column {
         if (state.shouldUseLandscapeLayout()) {
-            Template7LandscapeContent(state, viewModel, pillSwitcherViewModel)
+            Template7LandscapeContent(state, viewModel)
         } else {
-            Template7PortraitContent(state, viewModel, pillSwitcherViewModel, packageSelectorVisible)
+            Template7PortraitContent(state, viewModel, packageSelectorVisible)
         }
 
         PurchaseButton(state, viewModel, colors = colorForTier)
@@ -133,29 +118,19 @@ internal fun Template7(
     }
 }
 
-private fun packageInfosForTier(
-    allPackages: List<TemplateConfiguration.PackageInfo>,
-    tier: PaywallData.Configuration.Tier
-):  List<TemplateConfiguration.PackageInfo> {
-    return allPackages.filter { it.rcPackage.identifier == tier.id }
-}
-
 @Suppress("LongMethod")
 @Composable
 private fun ColumnScope.Template7PortraitContent(
     state: PaywallState.Loaded,
     viewModel: PaywallViewModel,
-    pillSwitcherViewModel: PillSwitcherViewModel,
     packageSelectionVisible: Boolean,
 ) {
-    val selectedTier = pillSwitcherViewModel.selectedOption.collectAsState().value
-
-    val headerUri = state.templateConfiguration.imagesByTier[selectedTier.id]?.headerUri
+    val headerUri = state.selectedImages.headerUri
     if (state.isInFullScreenMode && headerUri != null) {
         HeaderImage(headerUri)
     }
 
-    val colorForTier = state.templateConfiguration.getCurrentColorsForTier(tier = selectedTier)
+    val colorForTier = state.templateConfiguration.getCurrentColorsForTier(tier = state.selectedTier.value)
 
     val scrollState = rememberScrollState()
     Column(
@@ -176,26 +151,27 @@ private fun ColumnScope.Template7PortraitContent(
                 }
                 Spacer(Modifier.height(UIConstant.iconButtonSize))
             }
-            Title(state, selectedTier)
-
-            Spacer(Modifier.weight(1f))
+            Title(state, state.selectedTier.value)
 
             PillSwitcher(
-                viewModel = pillSwitcherViewModel,
+                options = state.templateConfiguration.configuration.tiers ?: emptyList(),
+                optionNames = state.templateConfiguration.configuration.tiers?.associate {
+                    it to (state.templateConfiguration.packagesByTier[it.id]?.default?.localization?.tierName ?: "") // TODO: This is also bad
+                } ?: emptyMap(),
+                selectedOption = state.selectedTier.value,
+                onOptionSelected = {
+                                   state.selectTier(it)
+                },
                 backgroundColor = colorForTier.accent1
             )
 
-            Spacer(Modifier.weight(1f))
-
-            Features(state, selectedTier)
-
-            Spacer(Modifier.weight(1f))
+            Features(state, state.selectedTier.value)
         }
 
         AnimatedPackages(
             state = state,
             viewModel = viewModel,
-            packages = state.templateConfiguration.packagesByTier[selectedTier.id]?.all ?: emptyList(), // TODO: Fix, this is bad
+            packages = state.templateConfiguration.packagesByTier[state.selectedTier.value.id]?.all ?: emptyList(), // TODO: Fix, this is bad
             colors = colorForTier
         )
 
@@ -218,13 +194,11 @@ private fun ColumnScope.Template7PortraitContent(
 private fun ColumnScope.Template7LandscapeContent(
     state: PaywallState.Loaded,
     viewModel: PaywallViewModel,
-    pillSwitcherViewModel: PillSwitcherViewModel,
 ) {
     val leftScrollState = rememberScrollState()
     val rightScrollState = rememberScrollState()
 
-    val selectedTier = pillSwitcherViewModel.selectedOption.collectAsState().value
-    val colorForTier = state.templateConfiguration.getCurrentColorsForTier(tier = selectedTier)
+    val colorForTier = state.templateConfiguration.getCurrentColorsForTier(tier = state.selectedTier.value)
 
     Row(
         horizontalArrangement = Arrangement.Absolute.SpaceEvenly,
@@ -247,11 +221,11 @@ private fun ColumnScope.Template7LandscapeContent(
         ) {
             Spacer(Modifier.weight(UIConstant.halfWeight))
 
-            Title(state, selectedTier)
+            Title(state, state.selectedTier.value)
 
             Spacer(Modifier.weight(UIConstant.halfWeight))
 
-            Features(state, selectedTier)
+            Features(state, state.selectedTier.value)
         }
 
         Column(
@@ -268,7 +242,14 @@ private fun ColumnScope.Template7LandscapeContent(
             Spacer(Modifier.weight(UIConstant.halfWeight))
 
             PillSwitcher(
-                viewModel = pillSwitcherViewModel,
+                options = state.templateConfiguration.configuration.tiers ?: emptyList(),
+                optionNames = state.templateConfiguration.configuration.tiers?.associate {
+                    it to (state.templateConfiguration.packagesByTier[it.id]?.default?.localization?.tierName ?: "") // TODO: This is also bad
+                } ?: emptyMap(),
+                selectedOption = state.selectedTier.value,
+                onOptionSelected = {
+                    state.selectTier(it)
+                },
                 backgroundColor = colorForTier.accent1
             )
 
@@ -277,7 +258,7 @@ private fun ColumnScope.Template7LandscapeContent(
             AnimatedPackages(
                 state = state,
                 viewModel = viewModel,
-                packages = state.templateConfiguration.packagesByTier[selectedTier.id]?.all ?: emptyList(), // TODO: Fix, this is bad
+                packages = state.templateConfiguration.packagesByTier[state.selectedTier.value.id]?.all ?: emptyList(), // TODO: Fix, this is bad
                 colors = colorForTier
             )
 
@@ -304,10 +285,10 @@ private fun ColumnScope.Title(
     selectedTier: PaywallData.Configuration.Tier,
 ) {
     Markdown(
-        style = MaterialTheme.typography.displaySmall,
+        style = MaterialTheme.typography.headlineMedium,
         fontWeight = FontWeight.Bold,
-        textAlign = TextAlign.Start,
-        text = state.selectedLocalization.title,
+        textAlign = TextAlign.Center,
+        text = state.selectedLocalizationForTier.title,
         color = state.templateConfiguration.getCurrentColorsForTier(tier = selectedTier).text1,
         modifier = Modifier
             .fillMaxWidth(),
@@ -321,7 +302,7 @@ private fun Features(
 ) {
     val colors = state.templateConfiguration.getCurrentColorsForTier(tier = selectedTier)
 
-    state.selectedLocalization.features.forEach { feature ->
+    state.selectedLocalizationForTier.features.forEach { feature ->
         Feature(
             feature = feature,
             colors = colors,
@@ -556,6 +537,13 @@ private fun RowScope.DiscountBanner(
         }
     }
 }
+
+// TODO: This is bad
+private val PaywallState.Loaded.selectedImages: TemplateConfiguration.Images
+    get() = selectedTier.value.let { templateConfiguration.imagesByTier[it.id] }!!
+
+internal val PaywallState.Loaded.selectedLocalizationForTier: ProcessedLocalizedConfiguration
+    get() = templateConfiguration.packagesByTier[selectedTier.value.id]!!.default.localization // TODO: This is wrong
 
 private val TemplateConfiguration.Colors.featureIcon: Color
     get() = this.text1

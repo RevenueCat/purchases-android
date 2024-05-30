@@ -30,51 +30,52 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.ResourceProvider
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
-class PillSwitcherViewModel(
-    initialOptions: List<PaywallData.Configuration.Tier>,
-    defaultSelectedOption: PaywallData.Configuration.Tier
-) : ViewModel() {
-    private val _options = MutableStateFlow(initialOptions)
-    val options: StateFlow<List<PaywallData.Configuration.Tier>> = _options
-
-    private val _selectedOption = MutableStateFlow(
-        if (defaultSelectedOption in initialOptions) defaultSelectedOption else initialOptions.firstOrNull() ?: PaywallData.Configuration.Tier("", emptyList(), "")
-    )
-    val selectedOption: StateFlow<PaywallData.Configuration.Tier> = _selectedOption
-
-    fun onOptionSelected(option: PaywallData.Configuration.Tier) {
-        _selectedOption.value = option
-    }
-
-    fun setOptions(newOptions: List<PaywallData.Configuration.Tier>) {
-        _options.value = newOptions
-        // Update the selected option if necessary to ensure it is within the new options
-        if (_selectedOption.value !in newOptions) {
-            _selectedOption.value = newOptions.firstOrNull() ?: PaywallData.Configuration.Tier("", emptyList(), "")
-        }
-    }
-}
-
-internal class PillSwitcherViewModelFactory(
-    private val initialOptions: List<PaywallData.Configuration.Tier>,
-    private val defaultSelectedOption: PaywallData.Configuration.Tier
-) : ViewModelProvider.NewInstanceFactory() {
-    @Suppress("UNCHECKED_CAST")
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        return PillSwitcherViewModel(
-            initialOptions = initialOptions,
-            defaultSelectedOption = defaultSelectedOption,
-        ) as T
-    }
-}
+//class PillSwitcherViewModel(
+//    initialOptions: List<PaywallData.Configuration.Tier>,
+//    defaultSelectedOption: PaywallData.Configuration.Tier
+//) : ViewModel() {
+//    private val _options = MutableStateFlow(initialOptions)
+//    val options: StateFlow<List<PaywallData.Configuration.Tier>> = _options
+//
+//    private val _selectedOption = MutableStateFlow(
+//        if (defaultSelectedOption in initialOptions) defaultSelectedOption else initialOptions.firstOrNull() ?: PaywallData.Configuration.Tier("", emptyList(), "")
+//    )
+//    val selectedOption: StateFlow<PaywallData.Configuration.Tier> = _selectedOption
+//
+//    fun onOptionSelected(option: PaywallData.Configuration.Tier) {
+//        _selectedOption.value = option
+//    }
+//
+//    fun setOptions(newOptions: List<PaywallData.Configuration.Tier>) {
+//        _options.value = newOptions
+//        // Update the selected option if necessary to ensure it is within the new options
+//        if (_selectedOption.value !in newOptions) {
+//            _selectedOption.value = newOptions.firstOrNull() ?: PaywallData.Configuration.Tier("", emptyList(), "")
+//        }
+//    }
+//}
+//
+//internal class PillSwitcherViewModelFactory(
+//    private val initialOptions: List<PaywallData.Configuration.Tier>,
+//    private val defaultSelectedOption: PaywallData.Configuration.Tier
+//) : ViewModelProvider.NewInstanceFactory() {
+//    @Suppress("UNCHECKED_CAST")
+//    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+//        return PillSwitcherViewModel(
+//            initialOptions = initialOptions,
+//            defaultSelectedOption = defaultSelectedOption,
+//        ) as T
+//    }
+//}
 
 @Composable
 fun PillSwitcher(
-    viewModel: PillSwitcherViewModel = viewModel(),
+    options: List<PaywallData.Configuration.Tier>,
+    optionNames: Map<PaywallData.Configuration.Tier, String>,
+    selectedOption: PaywallData.Configuration.Tier,
+    onOptionSelected: (PaywallData.Configuration.Tier) -> Unit,
     backgroundColor: Color,
 ) {
-    val options by viewModel.options.collectAsState()
-    val selectedOption by viewModel.selectedOption.collectAsState()
     val selectedIndex = options.indexOf(selectedOption)
     var totalWidthPx by remember { mutableStateOf(0) }
 
@@ -82,7 +83,7 @@ fun PillSwitcher(
 
     Box(
         Modifier
-            .padding(16.dp)
+            .padding(2.dp)
             .clip(RoundedCornerShape(50))
             .background(Color(0xFFF0F0F0))
             .height(40.dp)
@@ -118,11 +119,11 @@ fun PillSwitcher(
                             indication = null,
                             interactionSource = remember { MutableInteractionSource() }
                         ) {
-                            viewModel.onOptionSelected(option)
+                            onOptionSelected(option)
                         }
                 ) {
                     Text(
-                        text = option.id, // TODO: Needs to be localized version of tier name
+                        text = optionNames[option] ?: "", // TODO: this is also bad
                         fontSize = 16.sp,
                         textAlign = TextAlign.Center,
                         color = if (selectedOption == option) Color.White else Color.Black

@@ -49,7 +49,9 @@ internal object TemplateConfigurationFactory {
             return Result.failure(it)
         }
 
+        val (localeThingNotUsed, localizedConfigurationByTier) = paywallData.localizedConfigurationByTier
         val createPackageResultByTier = paywallData.config.tiers?.associate {
+
             val config = PackageConfigurationFactory.createPackageConfiguration(
                 variableDataProvider = variableDataProvider,
                 availablePackages = availablePackages,
@@ -57,7 +59,7 @@ internal object TemplateConfigurationFactory {
                 nonSubscriptionProductIdentifiers = nonSubscriptionProductIdentifiers,
                 packageIdsInConfig = it.packages,
                 default = it.defaultPackage,
-                localization = localizedConfiguration,
+                localization = localizedConfigurationByTier[it.id]!!, // TODO: Fix
                 configurationType = template.configurationType,
                 locale = locale,
             )
