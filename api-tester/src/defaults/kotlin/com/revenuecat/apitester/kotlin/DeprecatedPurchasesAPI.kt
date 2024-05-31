@@ -103,5 +103,8 @@ private class DeprecatedPurchasesAPI {
 
         Purchases.debugLogsEnabled = false
         val debugLogs: Boolean = Purchases.debugLogsEnabled
+
+        val finishTransactions: Boolean = purchases.finishTransactions
+        purchases.finishTransactions = true
     }
 }

@@ -14,10 +14,19 @@ open class PurchasesConfiguration(builder: Builder) {
     val apiKey: String
     val appUserID: String?
 
-    @Deprecated("ObserverMode is a confusing term.", ReplaceWith("!finishTransactions"))
+    @Deprecated(
+        "ObserverMode is a confusing term.",
+        ReplaceWith(
+            "purchasesAreCompletedBy == MY_APP",
+            "com.revenuecat.purchases.PurchasesAreCompletedBy.MY_APP",
+        ),
+    )
     val observerMode: Boolean
-        get() = !finishTransactions
-    val finishTransactions: Boolean
+        get() = when (purchasesAreCompletedBy) {
+            PurchasesAreCompletedBy.REVENUECAT -> false
+            PurchasesAreCompletedBy.MY_APP -> true
+        }
+    val purchasesAreCompletedBy: PurchasesAreCompletedBy
     val showInAppMessagesAutomatically: Boolean
     val service: ExecutorService?
     val store: Store
@@ -29,7 +38,7 @@ open class PurchasesConfiguration(builder: Builder) {
         this.context = builder.context
         this.apiKey = builder.apiKey
         this.appUserID = builder.appUserID
-        this.finishTransactions = builder.finishTransactions
+        this.purchasesAreCompletedBy = builder.purchasesAreCompletedBy
         this.service = builder.service
         this.store = builder.store
         this.diagnosticsEnabled = builder.diagnosticsEnabled
@@ -48,7 +57,7 @@ open class PurchasesConfiguration(builder: Builder) {
         internal var appUserID: String? = null
 
         @set:JvmSynthetic @get:JvmSynthetic
-        internal var finishTransactions: Boolean = true
+        internal var purchasesAreCompletedBy: PurchasesAreCompletedBy = PurchasesAreCompletedBy.REVENUECAT
 
         @set:JvmSynthetic @get:JvmSynthetic
         internal var showInAppMessagesAutomatically: Boolean = true
@@ -91,18 +100,36 @@ open class PurchasesConfiguration(builder: Builder) {
          * want to use only RevenueCat's backend. Default is FALSE. If you are on Android and setting this to TRUE,
          * you will have to acknowledge the purchases yourself.
          */
-        @Deprecated("ObserverMode is a confusing term.", ReplaceWith("finishTransactions(!observerMode)"))
+        @Deprecated(
+            "ObserverMode is a confusing term.",
+            ReplaceWith(
+                "purchasesAreCompletedBy(if (observerMode) MY_APP else REVENUECAT)",
+                "com.revenuecat.purchases.PurchasesAreCompletedBy.REVENUECAT",
+                "com.revenuecat.purchases.PurchasesAreCompletedBy.MY_APP",
+            ),
+        )
         fun observerMode(observerMode: Boolean) = apply {
-            this.finishTransactions = !observerMode
+            purchasesAreCompletedBy(
+                if (observerMode) {
+                    PurchasesAreCompletedBy.MY_APP
+                } else PurchasesAreCompletedBy.REVENUECAT,
+            )
         }
 
         /**
-         * An optional boolean. Set this to FALSE if you have your own IAP implementation and
-         * want to use only RevenueCat's backend. Default is TRUE. If you are on Android and setting this to FALSE,
-         * you will have to acknowledge the purchases yourself.
+         * An optional setting. Set this to [MY_APP][PurchasesAreCompletedBy.MY_APP] if you have your own IAP
+         * implementation and want to use only RevenueCat's backend. Default is
+         * [REVENUECAT][PurchasesAreCompletedBy.REVENUECAT]. If you are on Android and setting this to `MY_APP`, you
+         * will have to acknowledge the purchases yourself.
+         *
+         * **Note:** failing to acknowledge a purchase within 3 days will lead to Google Play automatically issuing a
+         * refund to the user.
+         *
+         * For more info, see [revenuecat.com](https://www.revenuecat.com/docs/migrating-to-revenuecat/finishing-transactions)
+         * and [developer.android.com](https://developer.android.com/google/play/billing/integrate#process).
          */
-        fun finishTransactions(finishTransactions: Boolean) = apply {
-            this.finishTransactions = finishTransactions
+        fun purchasesAreCompletedBy(purchasesAreCompletedBy: PurchasesAreCompletedBy) = apply {
+            this.purchasesAreCompletedBy = purchasesAreCompletedBy
         }
 
         /**

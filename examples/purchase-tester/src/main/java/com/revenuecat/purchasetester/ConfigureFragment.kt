@@ -7,6 +7,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
+import androidx.core.view.children
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
@@ -14,6 +15,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.revenuecat.purchases.EntitlementVerificationMode
 import com.revenuecat.purchases.LogLevel
 import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.PurchasesConfiguration
 import com.revenuecat.purchases.amazon.AmazonConfiguration
 import com.revenuecat.purchases_sample.BuildConfig
@@ -97,12 +99,15 @@ class ConfigureFragment : Fragment() {
         }
 
         binding.amazonStoreRadioId.setOnCheckedChangeListener { _, isChecked ->
-            // Disable finish transaction options if Amazon
-            binding.finishTransactionsCheckbox.isEnabled = !isChecked
+            // Disable PurchasesAreCompletedBy options if Amazon
+            with(binding.purchaseCompletionRadioGroup) {
+                isEnabled = !isChecked
+                children.forEach { it.isEnabled = !isChecked }
+            }
 
-            // Toggle finish transactions on only if Amazon is checked
+            // Check PurchasesAreCompletedBy.REVENUECAT if Amazon is checked
             if (isChecked) {
-                binding.finishTransactionsCheckbox.isChecked = true
+                binding.completedByRevenuecatRadioId.isChecked = true
             }
         }
 
@@ -116,7 +121,13 @@ class ConfigureFragment : Fragment() {
 
         val entitlementVerificationMode = EntitlementVerificationMode.values()[verificationModeIndex]
         val useAmazonStore = binding.storeRadioGroup.checkedRadioButtonId == R.id.amazon_store_radio_id
-        val finishTransactions = binding.finishTransactionsCheckbox.isChecked
+        val purchasesAreCompletedBy = when (binding.purchaseCompletionRadioGroup.checkedRadioButtonId) {
+            R.id.completed_by_revenuecat_radio_id -> PurchasesAreCompletedBy.REVENUECAT
+            R.id.completed_by_my_app_radio_id -> PurchasesAreCompletedBy.MY_APP
+            else -> error(
+                "Unexpected checkedRadioButtonId: ${binding.purchaseCompletionRadioGroup.checkedRadioButtonId}",
+            )
+        }
 
         val application = (requireActivity().application as MainApplication)
 
@@ -132,11 +143,11 @@ class ConfigureFragment : Fragment() {
         val configuration = configurationBuilder
             .diagnosticsEnabled(true)
             .entitlementVerificationMode(entitlementVerificationMode)
-            .finishTransactions(finishTransactions)
+            .purchasesAreCompletedBy(purchasesAreCompletedBy)
             .build()
         Purchases.configure(configuration)
 
-        if (!finishTransactions) {
+        if (purchasesAreCompletedBy == PurchasesAreCompletedBy.MY_APP) {
             ObserverModeBillingClient.start(application, application.logHandler)
         }
 

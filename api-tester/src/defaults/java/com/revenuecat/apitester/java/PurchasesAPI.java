@@ -9,6 +9,7 @@ import com.revenuecat.purchases.CustomerInfo;
 import com.revenuecat.purchases.EntitlementVerificationMode;
 import com.revenuecat.purchases.Offerings;
 import com.revenuecat.purchases.Purchases;
+import com.revenuecat.purchases.PurchasesAreCompletedBy;
 import com.revenuecat.purchases.PurchasesConfiguration;
 import com.revenuecat.purchases.PurchasesError;
 import com.revenuecat.purchases.Store;
@@ -125,8 +126,8 @@ final class PurchasesAPI {
                 .appUserID("")
                 .observerMode(true)
                 .observerMode(false)
-                .finishTransactions(true)
-                .finishTransactions(false)
+                .purchasesAreCompletedBy(PurchasesAreCompletedBy.REVENUECAT)
+                .purchasesAreCompletedBy(PurchasesAreCompletedBy.MY_APP)
                 .service(executorService)
                 .diagnosticsEnabled(true)
                 .entitlementVerificationMode(EntitlementVerificationMode.INFORMATIONAL)

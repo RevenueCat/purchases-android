@@ -2,6 +2,8 @@ package com.revenuecat.purchases
 
 import android.content.Context
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.PurchasesAreCompletedBy.MY_APP
+import com.revenuecat.purchases.PurchasesAreCompletedBy.REVENUECAT
 import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
@@ -32,7 +34,7 @@ class PurchasesConfigurationTest {
         assertThat(purchasesConfiguration.context).isEqualTo(context)
         assertThat(purchasesConfiguration.appUserID).isNull()
         assertThat(purchasesConfiguration.observerMode).isFalse
-        assertThat(purchasesConfiguration.finishTransactions).isTrue
+        assertThat(purchasesConfiguration.purchasesAreCompletedBy).isEqualTo(REVENUECAT)
         assertThat(purchasesConfiguration.service).isNull()
         assertThat(purchasesConfiguration.store).isEqualTo(Store.PLAY_STORE)
         assertThat(purchasesConfiguration.diagnosticsEnabled).isFalse
@@ -52,14 +54,14 @@ class PurchasesConfigurationTest {
     fun `PurchasesConfiguration sets observerMode correctly`() {
         val purchasesConfiguration = builder.observerMode(true).build()
         assertThat(purchasesConfiguration.observerMode).isTrue
-        assertThat(purchasesConfiguration.finishTransactions).isFalse
+        assertThat(purchasesConfiguration.purchasesAreCompletedBy).isEqualTo(MY_APP)
     }
 
     @Test
-    fun `PurchasesConfiguration sets finishTransactions correctly`() {
-        val purchasesConfiguration = builder.finishTransactions(true).build()
-        assertThat(purchasesConfiguration.finishTransactions).isTrue
-        assertThat(purchasesConfiguration.observerMode).isFalse
+    fun `PurchasesConfiguration sets purchasesAreCompletedBy correctly`() {
+        val purchasesConfiguration = builder.purchasesAreCompletedBy(MY_APP).build()
+        assertThat(purchasesConfiguration.purchasesAreCompletedBy).isEqualTo(MY_APP)
+        assertThat(purchasesConfiguration.observerMode).isTrue
     }
 
     @Test
