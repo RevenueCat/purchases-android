@@ -13,6 +13,7 @@ import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchaseParams
 import com.revenuecat.purchases.PurchaseResult
 import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.PurchasesConfiguration
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.Store
@@ -191,6 +192,8 @@ private class PurchasesCommonAPI {
             .appUserID("")
             .observerMode(true)
             .observerMode(false)
+            .purchasesAreCompletedBy(PurchasesAreCompletedBy.REVENUECAT)
+            .purchasesAreCompletedBy(PurchasesAreCompletedBy.MY_APP)
             .showInAppMessagesAutomatically(true)
             .service(executorService)
             .diagnosticsEnabled(true)

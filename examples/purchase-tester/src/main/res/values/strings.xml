@@ -8,6 +8,7 @@
     <string name="store">Store</string>
     <string name="google">Google</string>
     <string name="amazon">Amazon</string>
+    <string name="revenuecat">RevenueCat</string>
     <string name="continue_text">Continue</string>
     <string name="loving_cat">😻</string>
     <string name="logs">Logs</string>
@@ -21,4 +22,6 @@
     <string name="proxy">Proxy</string>
     <string name="buy_product">Buy Product</string>
     <string name="find_placement">Find Placement</string>
+    <string name="purchases_completed_by">Purchases are completed by</string>
+    <string name="my_app">My app</string>
 </resources>

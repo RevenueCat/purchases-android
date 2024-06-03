@@ -6,6 +6,8 @@
 package com.revenuecat.purchases
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.PurchasesAreCompletedBy.MY_APP
+import com.revenuecat.purchases.PurchasesAreCompletedBy.REVENUECAT
 import com.revenuecat.purchases.common.PlatformInfo
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
@@ -45,6 +47,20 @@ internal class PurchasesConfigureTest : BasePurchasesTest() {
         val builder = PurchasesConfiguration.Builder(mockContext, "api").observerMode(false)
         Purchases.configure(builder.build())
         assertThat(Purchases.sharedInstance.purchasesOrchestrator.appConfig.finishTransactions).isTrue
+    }
+
+    @Test
+    fun `Setting purchasesAreCompletedBy REVENUECAT propagates to appConfig`() {
+        val builder = PurchasesConfiguration.Builder(mockContext, "api").purchasesAreCompletedBy(REVENUECAT)
+        Purchases.configure(builder.build())
+        assertThat(Purchases.sharedInstance.purchasesOrchestrator.appConfig.finishTransactions).isTrue
+    }
+
+    @Test
+    fun `Setting purchasesAreCompletedBy MY_APP propagates to appConfig`() {
+        val builder = PurchasesConfiguration.Builder(mockContext, "api").purchasesAreCompletedBy(MY_APP)
+        Purchases.configure(builder.build())
+        assertThat(Purchases.sharedInstance.purchasesOrchestrator.appConfig.finishTransactions).isFalse
     }
 
     @Test

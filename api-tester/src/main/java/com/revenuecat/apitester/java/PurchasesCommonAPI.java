@@ -15,6 +15,7 @@ import com.revenuecat.purchases.Package;
 import com.revenuecat.purchases.ProductType;
 import com.revenuecat.purchases.PurchaseParams;
 import com.revenuecat.purchases.Purchases;
+import com.revenuecat.purchases.PurchasesAreCompletedBy;
 import com.revenuecat.purchases.PurchasesConfiguration;
 import com.revenuecat.purchases.PurchasesError;
 import com.revenuecat.purchases.Store;
@@ -24,8 +25,8 @@ import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback;
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener;
 import com.revenuecat.purchases.models.BillingFeature;
 import com.revenuecat.purchases.models.GoogleProrationMode;
-import com.revenuecat.purchases.models.InAppMessageType;
 import com.revenuecat.purchases.models.GoogleReplacementMode;
+import com.revenuecat.purchases.models.InAppMessageType;
 import com.revenuecat.purchases.models.StoreProduct;
 import com.revenuecat.purchases.models.StoreTransaction;
 import com.revenuecat.purchases.models.SubscriptionOption;
@@ -146,6 +147,8 @@ final class PurchasesCommonAPI {
                 .appUserID("")
                 .observerMode(true)
                 .observerMode(false)
+                .purchasesAreCompletedBy(PurchasesAreCompletedBy.REVENUECAT)
+                .purchasesAreCompletedBy(PurchasesAreCompletedBy.MY_APP)
                 .service(executorService)
                 .diagnosticsEnabled(true)
                 .entitlementVerificationMode(EntitlementVerificationMode.INFORMATIONAL)
