@@ -225,6 +225,7 @@ private fun ColumnScope.Template7PortraitContent(
 }
 
 @Composable
+@Suppress("LongMethod")
 private fun ColumnScope.Template7LandscapeContent(
     state: PaywallState.Loaded,
     viewModel: PaywallViewModel,

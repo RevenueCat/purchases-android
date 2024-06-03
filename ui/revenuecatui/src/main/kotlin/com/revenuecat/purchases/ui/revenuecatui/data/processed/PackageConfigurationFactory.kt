@@ -9,7 +9,7 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import java.util.Locale
 
 internal object PackageConfigurationFactory {
-    @Suppress("LongParameterList", "LongMethod")
+    @Suppress("LongParameterList", "LongMethod", "ReturnCount")
     fun createPackageConfiguration(
         variableDataProvider: VariableDataProvider,
         availablePackages: List<Package>,

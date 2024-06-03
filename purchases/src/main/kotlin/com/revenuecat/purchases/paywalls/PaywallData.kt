@@ -341,25 +341,29 @@ data class PaywallData(
              * Tier control background color.
              */
             @SerialName("tier_control_background")
-            @Serializable(with = PaywallColor.Serializer::class) val tierControlBackground: PaywallColor? = null,
+            @Serializable(with = PaywallColor.Serializer::class)
+            val tierControlBackground: PaywallColor? = null,
 
             /**
              * Tier control foreground color.
              */
             @SerialName("tier_control_foreground")
-            @Serializable(with = PaywallColor.Serializer::class) val tierControlForeground: PaywallColor? = null,
+            @Serializable(with = PaywallColor.Serializer::class)
+            val tierControlForeground: PaywallColor? = null,
 
             /**
              * Tier control selected background color.
              */
             @SerialName("tier_control_selected_background")
-            @Serializable(with = PaywallColor.Serializer::class) val tierControlSelectedBackground: PaywallColor? = null,
+            @Serializable(with = PaywallColor.Serializer::class)
+            val tierControlSelectedBackground: PaywallColor? = null,
 
             /**
              * Tier control selected foreground color.
              */
             @SerialName("tier_control_selected_foreground")
-            @Serializable(with = PaywallColor.Serializer::class) val tierControlSelectedForeground: PaywallColor? = null,
+            @Serializable(with = PaywallColor.Serializer::class)
+            val tierControlSelectedForeground: PaywallColor? = null,
         )
     }
 

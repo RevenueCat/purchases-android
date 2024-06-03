@@ -38,6 +38,7 @@ private object TierSwitcherUIConstants {
 }
 
 @Composable
+@Suppress("LongParameterList")
 internal fun TierSwitcher(
     tiers: List<TemplateConfiguration.TierInfo>,
     selectedTier: TemplateConfiguration.TierInfo,
@@ -71,7 +72,7 @@ internal fun TierSwitcher(
                 .offset(x = indicatorOffset)
                 .fillMaxHeight()
                 .width(optionWidth)
-                .clip(RoundedCornerShape(50))
+                .clip(RoundedCornerShape(TierSwitcherUIConstants.roundedCorner))
                 .background(accentColor),
         )
 

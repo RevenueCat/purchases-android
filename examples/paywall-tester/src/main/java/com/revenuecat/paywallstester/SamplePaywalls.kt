@@ -34,7 +34,7 @@ class SamplePaywallsLoader {
     }
 }
 
-@SuppressWarnings("LongMethod")
+@SuppressWarnings("LongMethod", "LargeClass")
 object SamplePaywalls {
 
     enum class SampleTemplate(val displayableName: String) {
