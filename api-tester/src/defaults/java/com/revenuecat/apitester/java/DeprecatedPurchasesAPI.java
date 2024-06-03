@@ -17,6 +17,8 @@ import com.revenuecat.purchases.models.StoreProduct;
 import com.revenuecat.purchases.models.StoreTransaction;
 import com.revenuecat.purchases.models.SubscriptionOption;
 
+import kotlin.Unit;
+
 @SuppressWarnings({"unused"})
 final class DeprecatedPurchasesAPI {
     static void check(final Purchases purchases,
@@ -51,6 +53,17 @@ final class DeprecatedPurchasesAPI {
         purchases.purchaseProduct(activity, storeProduct, makePurchaseListener);
         purchases.purchasePackage(activity, packageToPurchase, upgradeInfo, purchaseChangeListener);
         purchases.purchasePackage(activity, packageToPurchase, makePurchaseListener);
+
+        boolean finishTransactions = purchases.getFinishTransactions();
+        purchases.setFinishTransactions(true);
+
+        purchases.syncObserverModeAmazonPurchase(
+                storeProduct.getId(),
+                "receipt-id",
+                "amazon-user-id",
+                "EUR",
+                1.99
+        );
     }
 
 }

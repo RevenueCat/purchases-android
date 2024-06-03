@@ -134,7 +134,7 @@
         </RadioGroup>
 
         <androidx.appcompat.widget.AppCompatTextView
-                android:id="@+id/finish_transactions_label"
+                android:id="@+id/purchase_completion_label"
                 android:text="@string/purchases_completed_by"
                 android:textSize="15sp"
                 android:layout_marginTop="20dp"
@@ -145,8 +145,8 @@
 
         <RadioGroup
                 android:id="@+id/purchase_completion_radio_group"
-                app:layout_constraintTop_toTopOf="@id/finish_transactions_label"
-                app:layout_constraintBottom_toBottomOf="@id/finish_transactions_label"
+                app:layout_constraintTop_toTopOf="@id/purchase_completion_label"
+                app:layout_constraintBottom_toBottomOf="@id/purchase_completion_label"
                 app:layout_constraintEnd_toEndOf="parent"
                 android:orientation="horizontal"
                 android:layout_width="wrap_content"

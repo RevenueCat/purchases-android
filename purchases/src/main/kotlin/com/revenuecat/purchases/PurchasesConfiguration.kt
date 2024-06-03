@@ -119,8 +119,8 @@ open class PurchasesConfiguration(builder: Builder) {
         /**
          * An optional setting. Set this to [MY_APP][PurchasesAreCompletedBy.MY_APP] if you have your own IAP
          * implementation and want to use only RevenueCat's backend. Default is
-         * [REVENUECAT][PurchasesAreCompletedBy.REVENUECAT]. If you are on Android and setting this to `MY_APP`, you
-         * will have to acknowledge the purchases yourself.
+         * [REVENUECAT][PurchasesAreCompletedBy.REVENUECAT]. If you are on Android and setting this to
+         * [MY_APP][PurchasesAreCompletedBy.MY_APP], you will have to acknowledge the purchases yourself.
          *
          * **Note:** failing to acknowledge a purchase within 3 days will lead to Google Play automatically issuing a
          * refund to the user.
