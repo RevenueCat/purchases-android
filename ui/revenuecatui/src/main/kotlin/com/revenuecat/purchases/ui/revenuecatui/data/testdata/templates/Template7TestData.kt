@@ -3,7 +3,6 @@ package com.revenuecat.purchases.ui.revenuecatui.data.testdata.templates
 import com.revenuecat.purchases.PackageType
 import com.revenuecat.purchases.paywalls.PaywallColor
 import com.revenuecat.purchases.paywalls.PaywallData
-import com.revenuecat.purchases.ui.revenuecatui.data.processed.PaywallTemplate
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import java.net.URL
 

@@ -123,7 +123,7 @@ internal object PackageConfigurationFactory {
                         id = tier.id,
                         name = tierName,
                         defaultPackage = packageInfo.default,
-                        packages = packageInfo.all
+                        packages = packageInfo.all,
                     )
                 }
 

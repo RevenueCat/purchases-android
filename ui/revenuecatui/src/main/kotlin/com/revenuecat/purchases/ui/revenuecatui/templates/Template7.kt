@@ -63,10 +63,10 @@ import com.revenuecat.purchases.ui.revenuecatui.composables.Markdown
 import com.revenuecat.purchases.ui.revenuecatui.composables.OfferDetails
 import com.revenuecat.purchases.ui.revenuecatui.composables.PaywallIcon
 import com.revenuecat.purchases.ui.revenuecatui.composables.PaywallIconName
-import com.revenuecat.purchases.ui.revenuecatui.composables.TierSwitcher
 import com.revenuecat.purchases.ui.revenuecatui.composables.PurchaseButton
 import com.revenuecat.purchases.ui.revenuecatui.composables.RemoteImage
 import com.revenuecat.purchases.ui.revenuecatui.composables.StatusBarSpacer
+import com.revenuecat.purchases.ui.revenuecatui.composables.TierSwitcher
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModel
 import com.revenuecat.purchases.ui.revenuecatui.data.isInFullScreenMode
