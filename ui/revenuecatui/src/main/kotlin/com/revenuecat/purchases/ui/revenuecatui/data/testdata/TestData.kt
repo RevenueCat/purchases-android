@@ -164,6 +164,10 @@ internal object TestData {
         availablePackages = listOf(
             Packages.monthly,
             Packages.annual,
+            Packages.bimonthly,
+            Packages.quarterly,
+            Packages.semester,
+            Packages.lifetime,
         ),
         metadata = mapOf(),
         paywall = template7,
