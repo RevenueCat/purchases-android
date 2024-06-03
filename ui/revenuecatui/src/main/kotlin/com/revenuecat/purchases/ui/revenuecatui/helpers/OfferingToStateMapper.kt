@@ -90,19 +90,10 @@ internal fun Offering.toPaywallState(
         return PaywallState.Error(it.message ?: "Unknown error")
     }
 
-    templateConfiguration.packagesByTier
-
-    val selectedTier = templateConfiguration.configuration.tiers?.firstOrNull()
-
-    val selectedPackage = selectedTier?.let {
-        templateConfiguration.packagesByTier[it.id]?.default
-    } ?: templateConfiguration.packages.default
-
     return PaywallState.Loaded(
         offering = this,
         templateConfiguration = templateConfiguration,
-        selectedPackage = selectedPackage,
-        selectedTier = selectedTier ?: PaywallData.Configuration.Tier("", emptyList(), ""), // TODO: This feels bad
+        selectedPackage = templateConfiguration.packages.default,
         shouldDisplayDismissButton = shouldDisplayDismissButton,
     )
 }

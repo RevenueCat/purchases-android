@@ -43,7 +43,8 @@ data class PaywallData(
      */
     val revision: Int = 0,
     @SerialName("localized_strings") internal val localization: Map<String, LocalizedConfiguration>,
-    @SerialName("localized_strings_by_tier") internal val localizationByTier: Map<String, Map<String, LocalizedConfiguration>> = emptyMap(),
+    @SerialName("localized_strings_by_tier") internal val localizationByTier:
+    Map<String, Map<String, LocalizedConfiguration>> = emptyMap(),
 ) {
 
     /**
@@ -55,6 +56,29 @@ data class PaywallData(
         get() {
             return localizedConfiguration(locales = getDefaultLocales())
         }
+
+    @VisibleForTesting
+    @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
+    fun localizedConfiguration(locales: List<Locale>): Pair<Locale, LocalizedConfiguration> {
+        for (locale in locales) {
+            val localeToCheck = locale.convertToCorrectlyFormattedLocale()
+            configForLocale(localeToCheck)?.let { localizedConfiguration ->
+                return (localeToCheck to localizedConfiguration)
+            }
+        }
+
+        return fallbackLocalizedConfiguration
+    }
+
+    private val fallbackLocalizedConfiguration: Pair<Locale, LocalizedConfiguration>
+        @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
+        get() {
+            localization.entries.first().let { localization ->
+                return (localization.key.toLocale() to localization.value)
+            }
+        }
+
+    // TODO: These 3 methods below feel so messy and duplicative... please fix
 
     val localizedConfigurationByTier: Pair<Locale, Map<String, LocalizedConfiguration>>
         @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
@@ -85,27 +109,6 @@ data class PaywallData(
                 }?.value
         }.filterNotNullValues()
     }
-
-    @VisibleForTesting
-    @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
-    fun localizedConfiguration(locales: List<Locale>): Pair<Locale, LocalizedConfiguration> {
-        for (locale in locales) {
-            val localeToCheck = locale.convertToCorrectlyFormattedLocale()
-            configForLocale(localeToCheck)?.let { localizedConfiguration ->
-                return (localeToCheck to localizedConfiguration)
-            }
-        }
-
-        return fallbackLocalizedConfiguration
-    }
-
-    private val fallbackLocalizedConfiguration: Pair<Locale, LocalizedConfiguration>
-        @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
-        get() {
-            localization.entries.first().let { localization ->
-                return (localization.key.toLocale() to localization.value)
-            }
-        }
 
     /**
      * @note This allows searching by `Locale` with only language code and missing region (like `en`, `es`, etc).
@@ -406,7 +409,7 @@ data class PaywallData(
 
         @SerialName("tier_name")
         @Serializable(with = EmptyStringToNullSerializer::class)
-        val tierName: String? = null
+        val tierName: String? = null,
     ) {
         /**
          * An item to be showcased in a paywall.

@@ -20,6 +20,7 @@ internal object PackageConfigurationFactory {
         localization: PaywallData.LocalizedConfiguration,
         configurationType: PackageConfigurationType,
         locale: Locale,
+        paywallData: PaywallData,
     ): Result<TemplateConfiguration.PackageConfiguration> {
         val availablePackagesById = availablePackages.associateBy { it.identifier }
         val filteredRCPackages = packageIdsInConfig.mapNotNull {
@@ -28,7 +29,9 @@ internal object PackageConfigurationFactory {
                 Logger.d("Package with id $it not found. Ignoring.")
             }
             rcPackage
-        }.takeUnless { it.isEmpty() } ?: availablePackages // TODO: This is actually a little confusing when it comes to multi-tier paywalls
+        }.takeUnless {
+            it.isEmpty()
+        } ?: availablePackages // TODO: This is actually a little confusing when it comes to multi-tier paywalls
 
         if (filteredRCPackages.isEmpty()) {
             // This won't happen because availablePackages won't be empty. Offerings can't have empty available packages
@@ -60,25 +63,105 @@ internal object PackageConfigurationFactory {
             )
         }
 
-        val firstPackage = packageInfos.first()
-        val defaultPackage = packageInfos.firstOrNull { it.rcPackage.identifier == default } ?: firstPackage
+        return when (configurationType) {
+            PackageConfigurationType.SINGLE -> {
+                val firstPackage = packageInfos.first()
 
-        return Result.success(
-            when (configurationType) {
-                PackageConfigurationType.SINGLE -> {
+                Result.success(
                     TemplateConfiguration.PackageConfiguration.Single(
-                        packageInfo = firstPackage,
-                    )
-                }
-                PackageConfigurationType.MULTIPLE -> {
+                        singlePackage = firstPackage,
+                    ),
+                )
+            }
+            PackageConfigurationType.MULTIPLE -> {
+                val firstPackage = packageInfos.first()
+                val defaultPackage = packageInfos.firstOrNull { it.rcPackage.identifier == default } ?: firstPackage
+
+                Result.success(
                     TemplateConfiguration.PackageConfiguration.Multiple(
+                        TemplateConfiguration.PackageConfiguration.MultiPackage(
+                            first = firstPackage,
+                            default = defaultPackage,
+                            all = packageInfos,
+                        ),
+                    ),
+                )
+            }
+            PackageConfigurationType.MULTITIER -> {
+                val firstTier = paywallData.config.tiers?.firstOrNull()
+                    ?: return Result.failure(PackageConfigurationError("No tier found for $packageIdsInConfig"))
+
+                val (_, localizedConfigurationByTier) = paywallData.localizedConfigurationByTier
+
+                val all = paywallData.config.tiers?.associateWith { tier ->
+                    val localizationForTier = localizedConfigurationByTier[tier.id]
+                        ?: return Result.failure(PackageConfigurationError("No localization found for $tier.id"))
+
+                    val packageInfosForTier = reprocessPackagesForTiers(
+                        from = packageInfos,
+                        filter = tier.packages,
+                        localization = localizationForTier,
+                        variableDataProvider = variableDataProvider,
+                        locale = locale,
+                    )
+
+                    val firstPackage = packageInfosForTier.first()
+                    val defaultPackage = packageInfosForTier.firstOrNull { it.rcPackage.identifier == tier.defaultPackage } ?: firstPackage
+
+                    TemplateConfiguration.PackageConfiguration.MultiPackage(
                         first = firstPackage,
                         default = defaultPackage,
-                        all = packageInfos,
+                        all = packageInfosForTier,
                     )
-                }
-            },
-        )
+                } ?: emptyMap()
+
+                val localizationByTierId = paywallData.localizedConfigurationByTier.second
+
+                val tierNames = paywallData.config.tiers?.associateWith {
+                    localizationByTierId[it.id]!!.tierName!! // TODO: this is bad
+                } ?: emptyMap()
+
+                Result.success(
+                    TemplateConfiguration.PackageConfiguration.MultiTier(
+                        firstTier = firstTier,
+                        allTiers = all,
+                        tierNames = tierNames,
+                    ),
+                )
+            }
+        }
+    }
+
+    private fun reprocessPackagesForTiers(
+        from: List<TemplateConfiguration.PackageInfo>,
+        filter: List<String>,
+        localization: PaywallData.LocalizedConfiguration,
+        variableDataProvider: VariableDataProvider,
+        locale: Locale,
+    ): List<TemplateConfiguration.PackageInfo> {
+        val filtered = from.filter { filter.contains(it.rcPackage.identifier) }
+        val mostExpensivePricePerMonth = mostExpensivePricePerMonth(filtered.map { it.rcPackage })
+
+        return filtered
+            .map {
+                val discount = productDiscount(
+                    pricePerMonth = it.rcPackage.product.pricePerMonth(),
+                    mostExpensive = mostExpensivePricePerMonth,
+                )
+
+                TemplateConfiguration.PackageInfo(
+                    rcPackage = it.rcPackage,
+                    localization = ProcessedLocalizedConfiguration.create(
+                        variableDataProvider = variableDataProvider,
+                        context = VariableProcessor.PackageContext(discount),
+                        localizedConfiguration = localization,
+                        rcPackage = it.rcPackage,
+                        locale = locale,
+                    ),
+                    currentlySubscribed = it.currentlySubscribed,
+                    discountRelativeToMostExpensivePerMonth = discount,
+                )
+            }
     }
 
     private fun mostExpensivePricePerMonth(packages: List<Package>): Price? {

@@ -14,14 +14,15 @@ internal data class TemplateConfiguration(
     val template: PaywallTemplate,
     val mode: PaywallMode,
     val packages: PackageConfiguration,
-    val packagesByTier: Map<String, PackageConfiguration>,
+//    val packagesByTier: Map<String, PackageConfiguration>,
     val configuration: PaywallData.Configuration,
     val images: Images,
     val imagesByTier: Map<String, Images>,
+    val colors: PaywallData.Configuration.ColorInformation,
     val locale: Locale,
 ) {
-    private val darkModeColors = ColorsFactory.create(configuration.colors.dark ?: configuration.colors.light)
-    private val lightModeColors = ColorsFactory.create(configuration.colors.light)
+    private val darkModeColors = ColorsFactory.create(colors.dark ?: colors.light)
+    private val lightModeColors = ColorsFactory.create(colors.light)
 
     @Composable
     @ReadOnlyComposable
@@ -36,18 +37,8 @@ internal data class TemplateConfiguration(
             if (isSystemInDarkTheme()) ColorsFactory.create(it.dark ?: it.light) else ColorsFactory.create(it.light)
         }
 
-        return colorByTier ?: run {
-            // TODO: Add log that this is being used (maybe)
-            getCurrentColors()
-        }
+        return colorByTier ?: getCurrentColors()
     }
-
-//    @Composable
-//    @ReadOnlyComposable
-//    fun getCurrentImagesForTier(tier: PaywallData.Configuration.Tier): Images {
-//
-//        return configuration.images
-//    }
 
     data class PackageInfo(
         val rcPackage: Package,
@@ -76,12 +67,40 @@ internal data class TemplateConfiguration(
         val closeButton: Color?,
     )
 
-    sealed class PackageConfiguration(open val default: PackageInfo, open val all: List<PackageInfo>) {
-        data class Single(val packageInfo: PackageInfo) : PackageConfiguration(packageInfo, listOf(packageInfo))
-        data class Multiple(
+    sealed class PackageConfiguration {
+
+        abstract val all: List<PackageInfo>
+        abstract val default: PackageInfo
+
+        data class MultiPackage(
             val first: PackageInfo,
-            override val default: PackageInfo,
-            override val all: List<PackageInfo>,
-        ) : PackageConfiguration(default, all)
+            val default: PackageInfo,
+            val all: List<PackageInfo>,
+        )
+
+        data class Single(val singlePackage: PackageInfo) : PackageConfiguration() {
+            override val all: List<PackageInfo>
+                get() = listOf(singlePackage)
+            override val default: PackageInfo
+                get() = singlePackage
+        }
+
+        data class Multiple(val multiPackage: MultiPackage) : PackageConfiguration() {
+            override val all: List<PackageInfo>
+
+                get() = multiPackage.all
+            override val default: PackageInfo
+                get() = multiPackage.default
+        }
+        data class MultiTier(
+            val firstTier: PaywallData.Configuration.Tier,
+            val allTiers: Map<PaywallData.Configuration.Tier, MultiPackage>,
+            val tierNames: Map<PaywallData.Configuration.Tier, String>,
+        ) : PackageConfiguration() {
+            override val all: List<PackageInfo>
+                get() = allTiers.map { it.value.all }.flatten()
+            override val default: PackageInfo
+                get() = allTiers[firstTier]!!.default // TODO: This is bad
+        }
     }
 }

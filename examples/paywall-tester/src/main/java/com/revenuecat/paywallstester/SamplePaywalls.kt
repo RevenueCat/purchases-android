@@ -448,10 +448,7 @@ object SamplePaywalls {
         return PaywallData(
             templateName = "7",
             config = PaywallData.Configuration(
-                packageIds = listOf(
-//                    PackageType.ANNUAL.identifier!!,
-//                    PackageType.MONTHLY.identifier!!,
-                ),
+                packageIds = emptyList(), // TODO: Figure out if this is okay to just be empty
                 imagesByTier = mapOf(
                     "basic" to PaywallData.Configuration.Images(
                         header = "954459_1703109702.png",
@@ -493,7 +490,7 @@ object SamplePaywalls {
                 termsOfServiceURL = URL("https://revenuecat.com/tos"),
                 privacyURL = URL("https://revenuecat.com/privacy"),
 
-                // TODO: Figure out how to make this optional
+                // TODO: Figure out how to make this optional or empty
                 colors = PaywallData.Configuration.ColorInformation(
                     light = PaywallData.Configuration.Colors(
                         background = PaywallColor(stringRepresentation = "#FFFFFF"),
@@ -543,7 +540,7 @@ object SamplePaywalls {
                             accent3 = PaywallColor(stringRepresentation = "#213711"),
                         ),
                     ),
-                )
+                ),
             ),
             assetBaseURL = paywallAssetBaseURL,
             localization = mapOf(
@@ -568,7 +565,7 @@ object SamplePaywalls {
                             iconID = "tick",
                         ),
                     ),
-                    tierName = "Basic"
+                    tierName = "Basic",
                 ),
             ),
             localizationByTier = mapOf(
@@ -594,7 +591,7 @@ object SamplePaywalls {
                                 iconID = "tick",
                             ),
                         ),
-                        tierName = "Basic"
+                        tierName = "Basic",
                     ),
                 ),
                 "standard" to mapOf(
@@ -619,7 +616,7 @@ object SamplePaywalls {
                                 iconID = "tick",
                             ),
                         ),
-                        tierName = "Standard"
+                        tierName = "Standard",
                     ),
                 ),
                 "premium" to mapOf(
@@ -644,10 +641,10 @@ object SamplePaywalls {
                                 iconID = "tick",
                             ),
                         ),
-                        tierName = "Premium"
+                        tierName = "Premium",
                     ),
-                )
-            )
+                ),
+            ),
         )
     }
 

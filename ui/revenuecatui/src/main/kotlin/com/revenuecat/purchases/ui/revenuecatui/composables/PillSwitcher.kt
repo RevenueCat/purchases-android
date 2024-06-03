@@ -6,8 +6,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.ColorScheme
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -19,64 +17,17 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
-import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.paywalls.PaywallData
-import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
-import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModelImpl
-import com.revenuecat.purchases.ui.revenuecatui.helpers.ResourceProvider
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-
-//class PillSwitcherViewModel(
-//    initialOptions: List<PaywallData.Configuration.Tier>,
-//    defaultSelectedOption: PaywallData.Configuration.Tier
-//) : ViewModel() {
-//    private val _options = MutableStateFlow(initialOptions)
-//    val options: StateFlow<List<PaywallData.Configuration.Tier>> = _options
-//
-//    private val _selectedOption = MutableStateFlow(
-//        if (defaultSelectedOption in initialOptions) defaultSelectedOption else initialOptions.firstOrNull() ?: PaywallData.Configuration.Tier("", emptyList(), "")
-//    )
-//    val selectedOption: StateFlow<PaywallData.Configuration.Tier> = _selectedOption
-//
-//    fun onOptionSelected(option: PaywallData.Configuration.Tier) {
-//        _selectedOption.value = option
-//    }
-//
-//    fun setOptions(newOptions: List<PaywallData.Configuration.Tier>) {
-//        _options.value = newOptions
-//        // Update the selected option if necessary to ensure it is within the new options
-//        if (_selectedOption.value !in newOptions) {
-//            _selectedOption.value = newOptions.firstOrNull() ?: PaywallData.Configuration.Tier("", emptyList(), "")
-//        }
-//    }
-//}
-//
-//internal class PillSwitcherViewModelFactory(
-//    private val initialOptions: List<PaywallData.Configuration.Tier>,
-//    private val defaultSelectedOption: PaywallData.Configuration.Tier
-//) : ViewModelProvider.NewInstanceFactory() {
-//    @Suppress("UNCHECKED_CAST")
-//    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-//        return PillSwitcherViewModel(
-//            initialOptions = initialOptions,
-//            defaultSelectedOption = defaultSelectedOption,
-//        ) as T
-//    }
-//}
 
 @Composable
-fun PillSwitcher(
-    options: List<PaywallData.Configuration.Tier>,
-    optionNames: Map<PaywallData.Configuration.Tier, String>,
+internal fun PillSwitcher(
+    options: List<Pair<PaywallData.Configuration.Tier, String>>,
     selectedOption: PaywallData.Configuration.Tier,
     onOptionSelected: (PaywallData.Configuration.Tier) -> Unit,
     backgroundColor: Color,
 ) {
-    val selectedIndex = options.indexOf(selectedOption)
+    val values = options.map { it.first }
+    val selectedIndex = values.indexOf(selectedOption)
     var totalWidthPx by remember { mutableStateOf(0) }
 
     val density = LocalDensity.current
@@ -90,7 +41,7 @@ fun PillSwitcher(
             .fillMaxWidth()
             .onSizeChanged { size ->
                 totalWidthPx = size.width
-            }
+            },
     ) {
         val optionWidth = with(density) { (totalWidthPx / options.size).toDp() }
         val indicatorOffset by animateDpAsState(targetValue = optionWidth * selectedIndex)
@@ -101,13 +52,13 @@ fun PillSwitcher(
                 .fillMaxHeight()
                 .width(optionWidth)
                 .clip(RoundedCornerShape(50))
-                .background(backgroundColor)
+                .background(backgroundColor),
         )
 
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceEvenly,
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier.fillMaxSize(),
         ) {
             options.forEach { option ->
                 Box(
@@ -117,16 +68,16 @@ fun PillSwitcher(
                         .fillMaxHeight()
                         .clickable(
                             indication = null,
-                            interactionSource = remember { MutableInteractionSource() }
+                            interactionSource = remember { MutableInteractionSource() },
                         ) {
-                            onOptionSelected(option)
-                        }
+                            onOptionSelected(option.first)
+                        },
                 ) {
                     Text(
-                        text = optionNames[option] ?: "", // TODO: this is also bad
+                        text = option.second, // TODO: this is also bad
                         fontSize = 16.sp,
                         textAlign = TextAlign.Center,
-                        color = if (selectedOption == option) Color.White else Color.Black
+                        color = if (selectedOption == option.first) Color.White else Color.Black,
                     )
                 }
             }

@@ -94,17 +94,57 @@ internal fun Template7(
     state: PaywallState.Loaded,
     viewModel: PaywallViewModel,
 ) {
+    // TODO: Gracefully-ish fail this better
+    val packagesConfig = state.templateConfiguration.packages
+    if (packagesConfig !is TemplateConfiguration.PackageConfiguration.MultiTier) {
+        throw IllegalArgumentException("The configuration is not MultiTier")
+    }
+
+    // Now config is smart casted to PackageConfiguration.MultiTier
+    val firstTier = packagesConfig.firstTier
+    val allTiers = packagesConfig.allTiers
+    val tierNames = packagesConfig.tierNames.entries.map { (key, value) ->
+        Pair(key, value)
+    }
+
     var packageSelectorVisible by remember {
         mutableStateOf(state.templateConfiguration.mode != PaywallMode.FOOTER_CONDENSED)
     }
 
-    val colorForTier = state.templateConfiguration.getCurrentColorsForTier(tier = state.selectedTier.value)
+    var selectedTier by remember {
+        mutableStateOf(firstTier)
+    }
+
+    val colorForTier = state.templateConfiguration.getCurrentColorsForTier(tier = selectedTier)
 
     Column {
         if (state.shouldUseLandscapeLayout()) {
-            Template7LandscapeContent(state, viewModel)
+            Template7LandscapeContent(
+                state,
+                viewModel,
+                tierNames,
+                selectedTier,
+                allTiers[selectedTier]?.all ?: emptyList(),
+            ) {
+                selectedTier = it
+
+                val selectedPackage = allTiers[selectedTier]!!.default
+                state.selectPackage(selectedPackage)
+            }
         } else {
-            Template7PortraitContent(state, viewModel, packageSelectorVisible)
+            Template7PortraitContent(
+                state,
+                viewModel,
+                packageSelectorVisible,
+                tierNames,
+                selectedTier,
+                allTiers[selectedTier]?.all ?: emptyList(),
+            ) {
+                selectedTier = it
+
+                val selectedPackage = allTiers[selectedTier]!!.default
+                state.selectPackage(selectedPackage)
+            }
         }
 
         PurchaseButton(state, viewModel, colors = colorForTier)
@@ -124,13 +164,17 @@ private fun ColumnScope.Template7PortraitContent(
     state: PaywallState.Loaded,
     viewModel: PaywallViewModel,
     packageSelectionVisible: Boolean,
+    tierNames: List<Pair<PaywallData.Configuration.Tier, String>>,
+    selectedTier: PaywallData.Configuration.Tier,
+    selectedTierPackages: List<TemplateConfiguration.PackageInfo>,
+    onSelectTierChange: (PaywallData.Configuration.Tier) -> Unit,
 ) {
-    val headerUri = state.selectedImages.headerUri
+    val headerUri = state.templateConfiguration.imagesByTier[selectedTier.id]?.headerUri
     if (state.isInFullScreenMode && headerUri != null) {
         HeaderImage(headerUri)
     }
 
-    val colorForTier = state.templateConfiguration.getCurrentColorsForTier(tier = state.selectedTier.value)
+    val colorForTier = state.templateConfiguration.getCurrentColorsForTier(tier = selectedTier)
 
     val scrollState = rememberScrollState()
     Column(
@@ -151,28 +195,25 @@ private fun ColumnScope.Template7PortraitContent(
                 }
                 Spacer(Modifier.height(UIConstant.iconButtonSize))
             }
-            Title(state, state.selectedTier.value)
+            Title(state, selectedTier)
 
             PillSwitcher(
-                options = state.templateConfiguration.configuration.tiers ?: emptyList(),
-                optionNames = state.templateConfiguration.configuration.tiers?.associate {
-                    it to (state.templateConfiguration.packagesByTier[it.id]?.default?.localization?.tierName ?: "") // TODO: This is also bad
-                } ?: emptyMap(),
-                selectedOption = state.selectedTier.value,
+                options = tierNames,
+                selectedOption = selectedTier,
                 onOptionSelected = {
-                                   state.selectTier(it)
+                    onSelectTierChange(it)
                 },
-                backgroundColor = colorForTier.accent1
+                backgroundColor = colorForTier.accent1,
             )
 
-            Features(state, state.selectedTier.value)
+            Features(state, selectedTier)
         }
 
         AnimatedPackages(
             state = state,
             viewModel = viewModel,
-            packages = state.templateConfiguration.packagesByTier[state.selectedTier.value.id]?.all ?: emptyList(), // TODO: Fix, this is bad
-            colors = colorForTier
+            packages = selectedTierPackages,
+            colors = colorForTier,
         )
 
         if (state.isInFullScreenMode) {
@@ -194,11 +235,15 @@ private fun ColumnScope.Template7PortraitContent(
 private fun ColumnScope.Template7LandscapeContent(
     state: PaywallState.Loaded,
     viewModel: PaywallViewModel,
+    tierNames: List<Pair<PaywallData.Configuration.Tier, String>>,
+    selectedTier: PaywallData.Configuration.Tier,
+    selectedTierPackages: List<TemplateConfiguration.PackageInfo>,
+    onSelectTierChange: (PaywallData.Configuration.Tier) -> Unit,
 ) {
     val leftScrollState = rememberScrollState()
     val rightScrollState = rememberScrollState()
 
-    val colorForTier = state.templateConfiguration.getCurrentColorsForTier(tier = state.selectedTier.value)
+    val colorForTier = state.templateConfiguration.getCurrentColorsForTier(tier = selectedTier)
 
     Row(
         horizontalArrangement = Arrangement.Absolute.SpaceEvenly,
@@ -221,11 +266,11 @@ private fun ColumnScope.Template7LandscapeContent(
         ) {
             Spacer(Modifier.weight(UIConstant.halfWeight))
 
-            Title(state, state.selectedTier.value)
+            Title(state, selectedTier)
 
             Spacer(Modifier.weight(UIConstant.halfWeight))
 
-            Features(state, state.selectedTier.value)
+            Features(state, selectedTier)
         }
 
         Column(
@@ -242,15 +287,12 @@ private fun ColumnScope.Template7LandscapeContent(
             Spacer(Modifier.weight(UIConstant.halfWeight))
 
             PillSwitcher(
-                options = state.templateConfiguration.configuration.tiers ?: emptyList(),
-                optionNames = state.templateConfiguration.configuration.tiers?.associate {
-                    it to (state.templateConfiguration.packagesByTier[it.id]?.default?.localization?.tierName ?: "") // TODO: This is also bad
-                } ?: emptyMap(),
-                selectedOption = state.selectedTier.value,
+                options = tierNames,
+                selectedOption = selectedTier,
                 onOptionSelected = {
-                    state.selectTier(it)
+                    onSelectTierChange(it)
                 },
-                backgroundColor = colorForTier.accent1
+                backgroundColor = colorForTier.accent1,
             )
 
             Spacer(Modifier.weight(UIConstant.halfWeight))
@@ -258,8 +300,8 @@ private fun ColumnScope.Template7LandscapeContent(
             AnimatedPackages(
                 state = state,
                 viewModel = viewModel,
-                packages = state.templateConfiguration.packagesByTier[state.selectedTier.value.id]?.all ?: emptyList(), // TODO: Fix, this is bad
-                colors = colorForTier
+                packages = selectedTierPackages,
+                colors = colorForTier,
             )
 
             Spacer(Modifier.weight(UIConstant.halfWeight))
@@ -284,15 +326,22 @@ private fun ColumnScope.Title(
     state: PaywallState.Loaded,
     selectedTier: PaywallData.Configuration.Tier,
 ) {
+    val colorForTier = state.templateConfiguration.getCurrentColorsForTier(tier = selectedTier)
+    val localization = selectedLocalizationForTier(state, selectedTier)
+
     Markdown(
         style = MaterialTheme.typography.headlineMedium,
         fontWeight = FontWeight.Bold,
         textAlign = TextAlign.Center,
-        text = state.selectedLocalizationForTier.title,
-        color = state.templateConfiguration.getCurrentColorsForTier(tier = selectedTier).text1,
+        text = localization.title,
+        color = colorForTier.text1,
         modifier = Modifier
             .fillMaxWidth(),
     )
+}
+
+private fun selectedLocalizationForTier(state: PaywallState.Loaded, tier: PaywallData.Configuration.Tier): ProcessedLocalizedConfiguration {
+    return state.selectedPackage.value.localization
 }
 
 @Composable
@@ -300,12 +349,13 @@ private fun Features(
     state: PaywallState.Loaded,
     selectedTier: PaywallData.Configuration.Tier,
 ) {
-    val colors = state.templateConfiguration.getCurrentColorsForTier(tier = selectedTier)
+    val colorForTier = state.templateConfiguration.getCurrentColorsForTier(tier = selectedTier)
 
-    state.selectedLocalizationForTier.features.forEach { feature ->
+    val localization = selectedLocalizationForTier(state, selectedTier)
+    localization.features.forEach { feature ->
         Feature(
             feature = feature,
-            colors = colors,
+            colors = colorForTier,
         )
     }
 }
@@ -408,7 +458,7 @@ private fun ColumnScope.SelectPackageButton(
     state: PaywallState.Loaded,
     packageInfo: TemplateConfiguration.PackageInfo,
     viewModel: PaywallViewModel,
-    colors: TemplateConfiguration.Colors
+    colors: TemplateConfiguration.Colors,
 ) {
     val isSelected = packageInfo == state.selectedPackage.value
 
@@ -460,7 +510,7 @@ private fun ColumnScope.SelectPackageButton(
                     state = state,
                     resourceProvider = viewModel.resourceProvider,
                     packageInfo = packageInfo,
-                    colors = colors
+                    colors = colors,
                 )
             }
 
@@ -499,7 +549,7 @@ private fun RowScope.DiscountBanner(
     state: PaywallState.Loaded,
     resourceProvider: ResourceProvider,
     packageInfo: TemplateConfiguration.PackageInfo,
-    colors: TemplateConfiguration.Colors
+    colors: TemplateConfiguration.Colors,
 ) {
     val text = packageInfo.localizedDiscount(resourceProvider)?.uppercase() ?: return
 
@@ -539,11 +589,17 @@ private fun RowScope.DiscountBanner(
 }
 
 // TODO: This is bad
-private val PaywallState.Loaded.selectedImages: TemplateConfiguration.Images
-    get() = selectedTier.value.let { templateConfiguration.imagesByTier[it.id] }!!
-
-internal val PaywallState.Loaded.selectedLocalizationForTier: ProcessedLocalizedConfiguration
-    get() = templateConfiguration.packagesByTier[selectedTier.value.id]!!.default.localization // TODO: This is wrong
+// private val PaywallState.Loaded.selectedImages: TemplateConfiguration.Images
+//    get() = selectedTier.value!!.templateConfiguration.images // TODO: This feels bad
+//
+// internal val PaywallState.Loaded.selectedLocalizationForTier: ProcessedLocalizedConfiguration
+//    get() = selectedPackage.value.localization
+//
+// @Composable
+// @ReadOnlyComposable
+// internal fun PaywallState.Loaded.getCurrentColorsForTier(): TemplateConfiguration.Colors {
+//    return this.selectedTier.value!!.templateConfiguration.getCurrentColors()
+// }
 
 private val TemplateConfiguration.Colors.featureIcon: Color
     get() = this.text1
