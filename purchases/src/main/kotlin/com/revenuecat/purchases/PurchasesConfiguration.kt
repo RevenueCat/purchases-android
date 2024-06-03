@@ -15,7 +15,7 @@ open class PurchasesConfiguration(builder: Builder) {
     val appUserID: String?
 
     @Deprecated(
-        "ObserverMode is a confusing term.",
+        "observerMode is being deprecated in favor of purchasesAreCompletedBy.",
         ReplaceWith(
             "purchasesAreCompletedBy == MY_APP",
             "com.revenuecat.purchases.PurchasesAreCompletedBy.MY_APP",
@@ -101,7 +101,7 @@ open class PurchasesConfiguration(builder: Builder) {
          * you will have to acknowledge the purchases yourself.
          */
         @Deprecated(
-            "ObserverMode is a confusing term.",
+            "observerMode() is being deprecated in favor of purchasesAreCompletedBy().",
             ReplaceWith(
                 "purchasesAreCompletedBy(if (observerMode) MY_APP else REVENUECAT)",
                 "com.revenuecat.purchases.PurchasesAreCompletedBy.REVENUECAT",

@@ -121,13 +121,13 @@ final class PurchasesAPI {
     }
 
     static void checkAmazonConfiguration(final Context context,
-                                         final ExecutorService executorService) {
+                                         final ExecutorService executorService,
+                                         final PurchasesAreCompletedBy purchaseCompleter) {
         PurchasesConfiguration amazonConfiguration = new AmazonConfiguration.Builder(context, "")
                 .appUserID("")
                 .observerMode(true)
                 .observerMode(false)
-                .purchasesAreCompletedBy(PurchasesAreCompletedBy.REVENUECAT)
-                .purchasesAreCompletedBy(PurchasesAreCompletedBy.MY_APP)
+                .purchasesAreCompletedBy(purchaseCompleter)
                 .service(executorService)
                 .diagnosticsEnabled(true)
                 .entitlementVerificationMode(EntitlementVerificationMode.INFORMATIONAL)

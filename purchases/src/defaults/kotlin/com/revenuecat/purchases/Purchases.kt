@@ -149,7 +149,7 @@ class Purchases internal constructor(
      * @param [price] Product's price.
      */
     @Deprecated(
-        "ObserverMode is a confusing term.",
+        "syncObserverModeAmazonPurchase is being deprecated in favor of syncAmazonPurchase.",
         ReplaceWith("syncAmazonPurchase(productID, receiptID, amazonUserID, isoCurrencyCode, price)"),
     )
     fun syncObserverModeAmazonPurchase(

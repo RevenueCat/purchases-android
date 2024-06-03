@@ -178,13 +178,16 @@ private class PurchasesAPI {
         LogInResult(customerInfo, created)
     }
 
-    fun checkAmazonConfiguration(context: Context, executorService: ExecutorService) {
+    fun checkAmazonConfiguration(
+        context: Context,
+        executorService: ExecutorService,
+        purchaseCompleter: PurchasesAreCompletedBy,
+    ) {
         val amazonConfiguration: PurchasesConfiguration = AmazonConfiguration.Builder(context, "")
             .appUserID("")
             .observerMode(true)
             .observerMode(false)
-            .purchasesAreCompletedBy(PurchasesAreCompletedBy.REVENUECAT)
-            .purchasesAreCompletedBy(PurchasesAreCompletedBy.MY_APP)
+            .purchasesAreCompletedBy(purchaseCompleter)
             .showInAppMessagesAutomatically(true)
             .service(executorService)
             .diagnosticsEnabled(true)
