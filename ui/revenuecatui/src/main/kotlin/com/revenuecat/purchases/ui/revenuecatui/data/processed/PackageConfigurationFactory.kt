@@ -115,17 +115,22 @@ internal object PackageConfigurationFactory {
                     )
                 } ?: emptyMap()
 
-                val localizationByTierId = paywallData.localizedConfigurationByTier.second
+                val allTierInfos = all.entries.map { (tier, packageInfo) ->
+                    val tierName = packageInfo.default.localization.tierName
+                        ?: return Result.failure(PackageConfigurationError("No localied tier name found for $tier.id"))
 
-                val tierNames = paywallData.config.tiers?.associateWith {
-                    localizationByTierId[it.id]!!.tierName!! // TODO: this is bad
-                } ?: emptyMap()
+                    TemplateConfiguration.TierInfo(
+                        id = tier.id,
+                        name = tierName,
+                        defaultPackage = packageInfo.default,
+                        packages = packageInfo.all
+                    )
+                }
 
                 Result.success(
                     TemplateConfiguration.PackageConfiguration.MultiTier(
-                        firstTier = firstTier,
-                        allTiers = all,
-                        tierNames = tierNames,
+                        firstTier = allTierInfos.first(),
+                        allTiers = allTierInfos,
                     ),
                 )
             }

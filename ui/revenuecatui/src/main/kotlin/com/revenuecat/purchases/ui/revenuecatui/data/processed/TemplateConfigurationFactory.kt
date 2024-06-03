@@ -50,32 +50,12 @@ internal object TemplateConfigurationFactory {
             return Result.failure(it)
         }
 
-//        val (localeThingNotUsed, localizedConfigurationByTier) = paywallData.localizedConfigurationByTier
-//        val createPackageResultByTier = paywallData.config.tiers?.associate {
-//            val config = PackageConfigurationFactory.createPackageConfiguration(
-//                variableDataProvider = variableDataProvider,
-//                availablePackages = availablePackages,
-//                activelySubscribedProductIdentifiers = activelySubscribedProductIdentifiers,
-//                nonSubscriptionProductIdentifiers = nonSubscriptionProductIdentifiers,
-//                packageIdsInConfig = it.packages,
-//                default = it.defaultPackage,
-//                localization = localizedConfigurationByTier[it.id]!!, // TODO: Fix
-//                configurationType = template.configurationType,
-//                locale = locale,
-//            )
-//
-//            it.id to config.getOrElse { packageTierThrowable ->
-//                return Result.failure(packageTierThrowable)
-//            }
-//        } ?: emptyMap()
-
         return Result.success(
             TemplateConfiguration(
                 locale = locale,
                 template = template,
                 mode = mode,
                 packages = packageConfiguration,
-//                packagesByTier = createPackageResultByTier,
                 configuration = paywallData.config,
                 images = images,
                 imagesByTier = imagesByTier,
@@ -86,17 +66,5 @@ internal object TemplateConfigurationFactory {
 
     private fun PaywallData.getUriFromImage(image: String?): Uri? {
         return image?.let { Uri.parse(assetBaseURL.toString()).buildUpon().path(it).build() }
-    }
-}
-
-internal data class ProcessedTier(
-    val tierName: String,
-    val images: TemplateConfiguration.Images,
-    val colors: PaywallData.Configuration.ColorInformation,
-    val templateConfiguration: TemplateConfiguration,
-) {
-    companion object {
-        fun create() {
-        }
     }
 }

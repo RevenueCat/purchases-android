@@ -92,12 +92,19 @@ data class PaywallData(
         for (locale in locales) {
             val localeToCheck = locale.convertToCorrectlyFormattedLocale()
             tierdConfigForLocale(localeToCheck).let { localizedConfiguration ->
-                return (localeToCheck to localizedConfiguration)
+                if (localizedConfiguration.isNotEmpty()) {
+                    return (localeToCheck to localizedConfiguration)
+                }
             }
         }
 
-        // TODO: Figure out how to fallback with multitier
-        return (Locale.CANADA to emptyMap())
+        var locale = Locale.ENGLISH
+        val fallback = localizationByTier.entries.associate { (tierId, value) ->
+            locale = value.entries.first().key.toLocale()
+            tierId to value.entries.first().value
+        }
+
+        return Pair(locale, fallback)
     }
 
     @RequiresApi(Build.VERSION_CODES.LOLLIPOP)

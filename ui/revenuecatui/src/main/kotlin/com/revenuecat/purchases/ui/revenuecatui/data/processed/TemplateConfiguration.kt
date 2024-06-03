@@ -14,7 +14,6 @@ internal data class TemplateConfiguration(
     val template: PaywallTemplate,
     val mode: PaywallMode,
     val packages: PackageConfiguration,
-//    val packagesByTier: Map<String, PackageConfiguration>,
     val configuration: PaywallData.Configuration,
     val images: Images,
     val imagesByTier: Map<String, Images>,
@@ -32,7 +31,7 @@ internal data class TemplateConfiguration(
 
     @Composable
     @ReadOnlyComposable
-    fun getCurrentColorsForTier(tier: PaywallData.Configuration.Tier): Colors {
+    fun getCurrentColorsForTier(tier: TierInfo): Colors {
         val colorByTier = configuration.colorsByTier?.get(tier.id)?.let {
             if (isSystemInDarkTheme()) ColorsFactory.create(it.dark ?: it.light) else ColorsFactory.create(it.light)
         }
@@ -67,6 +66,13 @@ internal data class TemplateConfiguration(
         val closeButton: Color?,
     )
 
+    data class TierInfo(
+        val name: String,
+        val id: String,
+        val defaultPackage: PackageInfo,
+        val packages: List<PackageInfo>,
+    )
+
     sealed class PackageConfiguration {
 
         abstract val all: List<PackageInfo>
@@ -93,14 +99,13 @@ internal data class TemplateConfiguration(
                 get() = multiPackage.default
         }
         data class MultiTier(
-            val firstTier: PaywallData.Configuration.Tier,
-            val allTiers: Map<PaywallData.Configuration.Tier, MultiPackage>,
-            val tierNames: Map<PaywallData.Configuration.Tier, String>,
+            val firstTier: TierInfo,
+            val allTiers: List<TierInfo>,
         ) : PackageConfiguration() {
             override val all: List<PackageInfo>
-                get() = allTiers.map { it.value.all }.flatten()
+                get() = allTiers.map { it.packages }.flatten()
             override val default: PackageInfo
-                get() = allTiers[firstTier]!!.default // TODO: This is bad
+                get() = firstTier.defaultPackage
         }
     }
 }

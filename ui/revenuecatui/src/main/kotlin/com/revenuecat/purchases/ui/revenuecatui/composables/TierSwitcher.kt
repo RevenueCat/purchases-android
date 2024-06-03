@@ -17,17 +17,16 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.revenuecat.purchases.paywalls.PaywallData
+import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 
 @Composable
-internal fun PillSwitcher(
-    options: List<Pair<PaywallData.Configuration.Tier, String>>,
-    selectedOption: PaywallData.Configuration.Tier,
-    onOptionSelected: (PaywallData.Configuration.Tier) -> Unit,
+internal fun TierSwitcher(
+    tiers: List<TemplateConfiguration.TierInfo>,
+    selectedTier: TemplateConfiguration.TierInfo,
+    onTierSelected: (TemplateConfiguration.TierInfo) -> Unit,
     backgroundColor: Color,
 ) {
-    val values = options.map { it.first }
-    val selectedIndex = values.indexOf(selectedOption)
+    val selectedIndex = tiers.indexOf(selectedTier)
     var totalWidthPx by remember { mutableStateOf(0) }
 
     val density = LocalDensity.current
@@ -43,7 +42,7 @@ internal fun PillSwitcher(
                 totalWidthPx = size.width
             },
     ) {
-        val optionWidth = with(density) { (totalWidthPx / options.size).toDp() }
+        val optionWidth = with(density) { (totalWidthPx / tiers.size).toDp() }
         val indicatorOffset by animateDpAsState(targetValue = optionWidth * selectedIndex)
 
         Box(
@@ -60,7 +59,7 @@ internal fun PillSwitcher(
             horizontalArrangement = Arrangement.SpaceEvenly,
             modifier = Modifier.fillMaxSize(),
         ) {
-            options.forEach { option ->
+            tiers.forEach { tier ->
                 Box(
                     contentAlignment = Alignment.Center,
                     modifier = Modifier
@@ -70,14 +69,14 @@ internal fun PillSwitcher(
                             indication = null,
                             interactionSource = remember { MutableInteractionSource() },
                         ) {
-                            onOptionSelected(option.first)
+                            onTierSelected(tier)
                         },
                 ) {
                     Text(
-                        text = option.second, // TODO: this is also bad
+                        text = tier.name,
                         fontSize = 16.sp,
                         textAlign = TextAlign.Center,
-                        color = if (selectedOption == option.first) Color.White else Color.Black,
+                        color = if (selectedTier == tier) Color.White else Color.Black,
                     )
                 }
             }
