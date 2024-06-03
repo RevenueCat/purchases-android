@@ -23,7 +23,7 @@ class MainApplication : Application() {
         Initialize the RevenueCat Purchases SDK.
 
         - appUserID is nil, so an anonymous ID will be generated automatically by the Purchases SDK. Read more about Identifying Users here: https://docs.revenuecat.com/docs/user-ids
-        - purchasesAreCompletedBy is set to REVENUECAT, so Purchases will automatically handle finishing transactions. Read more about finishing transactions here: https://docs.revenuecat.com/docs/observer-mode
+        - purchasesAreCompletedBy is set to REVENUECAT, so Purchases will automatically handle finishing transactions. Read more about finishing transactions here: https://docs.revenuecat.com/docs/finishing-transactions
          */
         val builder = when (BuildConfig.STORE) {
             "amazon" -> AmazonConfiguration.Builder(this, Constants.AMAZON_API_KEY)
