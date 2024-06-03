@@ -64,6 +64,10 @@ internal data class TemplateConfiguration(
         val accent2: Color,
         val accent3: Color,
         val closeButton: Color?,
+        val tierControlBackground: Color?,
+        val tierControlForeground: Color?,
+        val tierControlSelectedBackground: Color?,
+        val tierControlSelectedForeground: Color?,
     )
 
     data class TierInfo(

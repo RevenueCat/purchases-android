@@ -149,7 +149,7 @@ internal fun Template7(
     }
 }
 
-@Suppress("LongMethod")
+@Suppress("LongMethod", "LongParameterList")
 @Composable
 private fun ColumnScope.Template7PortraitContent(
     state: PaywallState.Loaded,
@@ -193,7 +193,10 @@ private fun ColumnScope.Template7PortraitContent(
                 onTierSelected = {
                     onSelectTierChange(it)
                 },
-                backgroundColor = colorForTier.accent1,
+                backgroundColor = colorForTier.tierControlBackground!!,
+                accentColor = colorForTier.tierControlSelectedBackground!!,
+                textColor = colorForTier.tierControlForeground!!,
+                textSelectedColor = colorForTier.tierControlSelectedForeground!!, // TODO: Fix
             )
 
             Features(state, selectedTier)
@@ -281,7 +284,10 @@ private fun ColumnScope.Template7LandscapeContent(
                 onTierSelected = {
                     onSelectTierChange(it)
                 },
-                backgroundColor = colorForTier.accent1,
+                backgroundColor = colorForTier.tierControlBackground!!,
+                accentColor = colorForTier.tierControlSelectedBackground!!,
+                textColor = colorForTier.tierControlForeground!!,
+                textSelectedColor = colorForTier.tierControlSelectedForeground!!, // TODO: Fix
             )
 
             Spacer(Modifier.weight(UIConstant.halfWeight))

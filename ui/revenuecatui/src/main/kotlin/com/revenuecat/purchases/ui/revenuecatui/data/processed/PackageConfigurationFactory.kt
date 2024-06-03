@@ -9,7 +9,7 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import java.util.Locale
 
 internal object PackageConfigurationFactory {
-    @Suppress("LongParameterList")
+    @Suppress("LongParameterList", "LongMethod")
     fun createPackageConfiguration(
         variableDataProvider: VariableDataProvider,
         availablePackages: List<Package>,
@@ -106,7 +106,8 @@ internal object PackageConfigurationFactory {
                     )
 
                     val firstPackage = packageInfosForTier.first()
-                    val defaultPackage = packageInfosForTier.firstOrNull { it.rcPackage.identifier == tier.defaultPackage } ?: firstPackage
+                    val defaultPackage = packageInfosForTier
+                        .firstOrNull { it.rcPackage.identifier == tier.defaultPackage } ?: firstPackage
 
                     TemplateConfiguration.PackageConfiguration.MultiPackage(
                         first = firstPackage,

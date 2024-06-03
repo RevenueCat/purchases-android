@@ -74,6 +74,10 @@ internal val TestData.template7: PaywallData
                         accent1 = PaywallColor(stringRepresentation = "#2d7fc1"),
                         accent2 = PaywallColor(stringRepresentation = "#7676801F"),
                         accent3 = PaywallColor(stringRepresentation = "#100031"),
+                        tierControlBackground = PaywallColor(stringRepresentation = "#eeeef0"),
+                        tierControlForeground = PaywallColor(stringRepresentation = "#000000"),
+                        tierControlSelectedBackground = PaywallColor(stringRepresentation = "#2d7fc1"),
+                        tierControlSelectedForeground = PaywallColor(stringRepresentation = "#000000"),
                     ),
                 ),
                 "standard" to PaywallData.Configuration.ColorInformation(
@@ -87,6 +91,10 @@ internal val TestData.template7: PaywallData
                         accent1 = PaywallColor(stringRepresentation = "#cd0654"),
                         accent2 = PaywallColor(stringRepresentation = "#7676801F"),
                         accent3 = PaywallColor(stringRepresentation = "#310217"),
+                        tierControlBackground = PaywallColor(stringRepresentation = "#eeeef0"),
+                        tierControlForeground = PaywallColor(stringRepresentation = "#000000"),
+                        tierControlSelectedBackground = PaywallColor(stringRepresentation = "#cd0654"),
+                        tierControlSelectedForeground = PaywallColor(stringRepresentation = "#000000"),
                     ),
                 ),
                 "premium" to PaywallData.Configuration.ColorInformation(
@@ -100,6 +108,10 @@ internal val TestData.template7: PaywallData
                         accent1 = PaywallColor(stringRepresentation = "#76c343"),
                         accent2 = PaywallColor(stringRepresentation = "#7676801F"),
                         accent3 = PaywallColor(stringRepresentation = "#213711"),
+                        tierControlBackground = PaywallColor(stringRepresentation = "#eeeef0"),
+                        tierControlForeground = PaywallColor(stringRepresentation = "#000000"),
+                        tierControlSelectedBackground = PaywallColor(stringRepresentation = "#76c343"),
+                        tierControlSelectedForeground = PaywallColor(stringRepresentation = "#000000"),
                     ),
                 ),
             ),
@@ -137,7 +149,8 @@ internal val TestData.template7: PaywallData
                     callToAction = "{{ price_per_period }}",
                     callToActionWithIntroOffer = "Start your {{ sub_offer_duration }} free trial",
                     offerDetails = "{{ total_price_and_per_month }}",
-                    offerDetailsWithIntroOffer = "Free for {{ sub_offer_duration }}, then {{ total_price_and_per_month }}",
+                    offerDetailsWithIntroOffer = "Free for {{ sub_offer_duration }}," +
+                        " then {{ total_price_and_per_month }}",
                     offerName = "{{ sub_period }}",
                     features = listOf(
                         PaywallData.LocalizedConfiguration.Feature(
@@ -160,9 +173,11 @@ internal val TestData.template7: PaywallData
                 "en_US" to PaywallData.LocalizedConfiguration(
                     title = "Get started with our Standard plan",
                     callToAction = "{{ price_per_period }}",
-                    callToActionWithIntroOffer = "Start your {{ sub_offer_duration }} free trial",
+                    callToActionWithIntroOffer = "Start your {{ sub_offer_duration }}" +
+                        " free trial",
                     offerDetails = "{{ total_price_and_per_month }}",
-                    offerDetailsWithIntroOffer = "Free for {{ sub_offer_duration }}, then {{ total_price_and_per_month }}",
+                    offerDetailsWithIntroOffer = "Free for {{ sub_offer_duration }}," +
+                        " then {{ total_price_and_per_month }}",
                     offerName = "{{ sub_period }}",
                     features = listOf(
                         PaywallData.LocalizedConfiguration.Feature(
@@ -187,7 +202,8 @@ internal val TestData.template7: PaywallData
                     callToAction = "{{ price_per_period }}",
                     callToActionWithIntroOffer = "Start your {{ sub_offer_duration }} free trial",
                     offerDetails = "{{ total_price_and_per_month }}",
-                    offerDetailsWithIntroOffer = "Free for {{ sub_offer_duration }}, then {{ total_price_and_per_month }}",
+                    offerDetailsWithIntroOffer = "Free for {{ sub_offer_duration }}," +
+                        " then {{ total_price_and_per_month }}",
                     offerName = "{{ sub_period }}",
                     features = listOf(
                         PaywallData.LocalizedConfiguration.Feature(

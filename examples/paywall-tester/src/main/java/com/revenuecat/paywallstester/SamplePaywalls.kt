@@ -512,6 +512,10 @@ object SamplePaywalls {
                             accent1 = PaywallColor(stringRepresentation = "#2d7fc1"),
                             accent2 = PaywallColor(stringRepresentation = "#7676801F"),
                             accent3 = PaywallColor(stringRepresentation = "#100031"),
+                            tierControlBackground = PaywallColor(stringRepresentation = "#eeeef0"),
+                            tierControlForeground = PaywallColor(stringRepresentation = "#000000"),
+                            tierControlSelectedBackground = PaywallColor(stringRepresentation = "#2d7fc1"),
+                            tierControlSelectedForeground = PaywallColor(stringRepresentation = "#000000"),
                         ),
                     ),
                     "standard" to PaywallData.Configuration.ColorInformation(
@@ -525,6 +529,10 @@ object SamplePaywalls {
                             accent1 = PaywallColor(stringRepresentation = "#cd0654"),
                             accent2 = PaywallColor(stringRepresentation = "#7676801F"),
                             accent3 = PaywallColor(stringRepresentation = "#310217"),
+                            tierControlBackground = PaywallColor(stringRepresentation = "#eeeef0"),
+                            tierControlForeground = PaywallColor(stringRepresentation = "#000000"),
+                            tierControlSelectedBackground = PaywallColor(stringRepresentation = "#cd0654"),
+                            tierControlSelectedForeground = PaywallColor(stringRepresentation = "#000000"),
                         ),
                     ),
                     "premium" to PaywallData.Configuration.ColorInformation(
@@ -538,6 +546,10 @@ object SamplePaywalls {
                             accent1 = PaywallColor(stringRepresentation = "#76c343"),
                             accent2 = PaywallColor(stringRepresentation = "#7676801F"),
                             accent3 = PaywallColor(stringRepresentation = "#213711"),
+                            tierControlBackground = PaywallColor(stringRepresentation = "#eeeef0"),
+                            tierControlForeground = PaywallColor(stringRepresentation = "#000000"),
+                            tierControlSelectedBackground = PaywallColor(stringRepresentation = "#cd0654"),
+                            tierControlSelectedForeground = PaywallColor(stringRepresentation = "#000000"),
                         ),
                     ),
                 ),
@@ -549,7 +561,8 @@ object SamplePaywalls {
                     callToAction = "{{ price_per_period }}",
                     callToActionWithIntroOffer = "Start your {{ sub_offer_duration }} free trial",
                     offerDetails = "{{ total_price_and_per_month }}",
-                    offerDetailsWithIntroOffer = "Free for {{ sub_offer_duration }}, then {{ total_price_and_per_month }}",
+                    offerDetailsWithIntroOffer = "Free for {{ sub_offer_duration }}," +
+                        " then {{ total_price_and_per_month }}",
                     offerName = "{{ sub_period }}",
                     features = listOf(
                         PaywallData.LocalizedConfiguration.Feature(
@@ -575,7 +588,8 @@ object SamplePaywalls {
                         callToAction = "{{ price_per_period }}",
                         callToActionWithIntroOffer = "Start your {{ sub_offer_duration }} free trial",
                         offerDetails = "{{ total_price_and_per_month }}",
-                        offerDetailsWithIntroOffer = "Free for {{ sub_offer_duration }}, then {{ total_price_and_per_month }}",
+                        offerDetailsWithIntroOffer = "Free for {{ sub_offer_duration }}," +
+                            " then {{ total_price_and_per_month }}",
                         offerName = "{{ sub_period }}",
                         features = listOf(
                             PaywallData.LocalizedConfiguration.Feature(
@@ -600,7 +614,8 @@ object SamplePaywalls {
                         callToAction = "{{ price_per_period }}",
                         callToActionWithIntroOffer = "Start your {{ sub_offer_duration }} free trial",
                         offerDetails = "{{ total_price_and_per_month }}",
-                        offerDetailsWithIntroOffer = "Free for {{ sub_offer_duration }}, then {{ total_price_and_per_month }}",
+                        offerDetailsWithIntroOffer = "Free for {{ sub_offer_duration }}," +
+                            " then {{ total_price_and_per_month }}",
                         offerName = "{{ sub_period }}",
                         features = listOf(
                             PaywallData.LocalizedConfiguration.Feature(
@@ -625,7 +640,8 @@ object SamplePaywalls {
                         callToAction = "{{ price_per_period }}",
                         callToActionWithIntroOffer = "Start your {{ sub_offer_duration }} free trial",
                         offerDetails = "{{ total_price_and_per_month }}",
-                        offerDetailsWithIntroOffer = "Free for {{ sub_offer_duration }}, then {{ total_price_and_per_month }}",
+                        offerDetailsWithIntroOffer = "Free for {{ sub_offer_duration }}," +
+                            " then {{ total_price_and_per_month }}",
                         offerName = "{{ sub_period }}",
                         features = listOf(
                             PaywallData.LocalizedConfiguration.Feature(
