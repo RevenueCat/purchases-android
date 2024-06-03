@@ -15,7 +15,7 @@ enum class PurchasesAreCompletedBy {
      * **Note:** failing to acknowledge a purchase within 3 days will lead to Google Play automatically issuing a
      * refund to the user.
      *
-     * For more info, see [revenuecat.com](https://www.revenuecat.com/docs/migrating-to-revenuecat/finishing-transactions)
+     * For more info, see [revenuecat.com](https://docs.revenuecat.com/docs/observer-mode#option-2-client-side)
      * and [developer.android.com](https://developer.android.com/google/play/billing/integrate#process).
      */
     MY_APP,
