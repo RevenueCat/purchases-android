@@ -110,6 +110,7 @@ annotations/
 .project
 purchases/.classpath
 purchase-tester/.classpath
+.kotlin
 
 *.bck
 fastlane/report.xml
