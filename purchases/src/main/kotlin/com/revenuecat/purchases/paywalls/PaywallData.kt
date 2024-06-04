@@ -4,7 +4,6 @@ import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.utils.convertToCorrectlyFormattedLocale
-import com.revenuecat.purchases.utils.filterNotNullValues
 import com.revenuecat.purchases.utils.getDefaultLocales
 import com.revenuecat.purchases.utils.serializers.OptionalURLSerializer
 import com.revenuecat.purchases.utils.serializers.URLSerializer
@@ -130,8 +129,10 @@ data class PaywallData(
     data class Configuration(
         /**
          * The list of package identifiers this paywall will display.
+         *
+         * This defaults to an empty list for multi-tier configurations.
          */
-        @SerialName("packages") val packageIds: List<String> = emptyList(), // FIXME: Josh, is this okay
+        @SerialName("packages") val packageIds: List<String> = emptyList(),
 
         /**
          * The package to be selected by default.
@@ -172,13 +173,19 @@ data class PaywallData(
         val privacyURL: URL? = null,
 
         /**
-         * The set of colors used.
+         * The set of colors used for single-tier paywalls.
          */
         val colors: ColorInformation,
 
+        /**
+         * The set of colors used for multi-tier paywalls.
+         */
         @SerialName("colors_by_tier")
         val colorsByTier: Map<String, ColorInformation>? = null,
 
+        /**
+         * Tiers used for multi-tier paywalls.
+         */
         val tiers: List<Tier>? = null,
     ) {
         constructor(

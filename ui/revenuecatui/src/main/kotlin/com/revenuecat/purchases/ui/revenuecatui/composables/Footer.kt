@@ -52,13 +52,14 @@ internal fun Footer(
     templateConfiguration: TemplateConfiguration,
     viewModel: PaywallViewModel,
     childModifier: Modifier = Modifier,
+    colors: TemplateConfiguration.Colors = templateConfiguration.getCurrentColors(),
     allPlansTapped: (() -> Unit)? = null,
 ) {
     Column {
         Footer(
             mode = templateConfiguration.mode,
             configuration = templateConfiguration.configuration,
-            colors = templateConfiguration.getCurrentColors(),
+            colors = colors,
             viewModel = viewModel,
             childModifier = childModifier,
             allPlansTapped = allPlansTapped,

@@ -65,6 +65,7 @@ import com.revenuecat.purchases.ui.revenuecatui.composables.PaywallIcon
 import com.revenuecat.purchases.ui.revenuecatui.composables.PaywallIconName
 import com.revenuecat.purchases.ui.revenuecatui.composables.PurchaseButton
 import com.revenuecat.purchases.ui.revenuecatui.composables.RemoteImage
+import com.revenuecat.purchases.ui.revenuecatui.composables.SelectedTierView
 import com.revenuecat.purchases.ui.revenuecatui.composables.StatusBarSpacer
 import com.revenuecat.purchases.ui.revenuecatui.composables.TierSwitcher
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
@@ -114,7 +115,9 @@ internal fun Template7(
 
     val colorForTier = state.templateConfiguration.getCurrentColorsForTier(tier = selectedTier)
 
-    Column {
+    Column(
+        Modifier.background(colorForTier.background),
+    ) {
         if (state.shouldUseLandscapeLayout()) {
             Template7LandscapeContent(
                 state,
@@ -140,10 +143,10 @@ internal fun Template7(
 
         PurchaseButton(state, viewModel, colors = colorForTier)
 
-        // TODO: Add to footer
         Footer(
             templateConfiguration = state.templateConfiguration,
             viewModel = viewModel,
+            colors = colorForTier,
             allPlansTapped = { packageSelectorVisible = !packageSelectorVisible },
         )
     }
@@ -186,7 +189,9 @@ private fun ColumnScope.Template7PortraitContent(
                 Spacer(Modifier.height(UIConstant.iconButtonSize))
             }
             Title(state, selectedTier)
+        }
 
+        if (packageSelectionVisible) {
             TierSwitcher(
                 tiers = tiers,
                 selectedTier = selectedTier,
@@ -198,7 +203,15 @@ private fun ColumnScope.Template7PortraitContent(
                 foregroundColor = colorForTier.tierSwitcherForeground,
                 foregroundSelectedColor = colorForTier.tierSwitcherForegroundSelected,
             )
+        } else {
+            SelectedTierView(
+                selectedTier = selectedTier,
+                backgroundSelectedColor = colorForTier.tierSwitcherBackgroundSelected,
+                foregroundSelectedColor = colorForTier.tierSwitcherForegroundSelected,
+            )
+        }
 
+        if (state.isInFullScreenMode) {
             Features(state, selectedTier)
         }
 
@@ -207,6 +220,7 @@ private fun ColumnScope.Template7PortraitContent(
             viewModel = viewModel,
             packages = selectedTier.packages,
             colors = colorForTier,
+            packageSelectionVisible = packageSelectionVisible,
         )
 
         if (state.isInFullScreenMode) {
@@ -425,7 +439,10 @@ private fun AnimatedPackages(
             exit = fadeOut(animationSpec = tween(delayMillis = UIConstant.defaultAnimationDurationMillis)),
             label = "OfferDetailsVisibility",
         ) {
-            OfferDetails(state)
+            OfferDetails(
+                state = state,
+                colors = colors,
+            )
         }
 
         AnimatedVisibility(

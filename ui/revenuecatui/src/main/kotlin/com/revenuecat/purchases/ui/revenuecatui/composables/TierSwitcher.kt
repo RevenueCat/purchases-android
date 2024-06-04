@@ -35,6 +35,30 @@ import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfigura
 private object TierSwitcherUIConstants {
     const val roundedCorner = 50
     val height = 40.dp
+    val selectedTierPadding = 2.dp
+}
+
+@Composable
+@Suppress("LongParameterList")
+internal fun SelectedTierView(
+    selectedTier: TemplateConfiguration.TierInfo,
+    backgroundSelectedColor: Color,
+    foregroundSelectedColor: Color,
+) {
+    Box(
+        modifier = Modifier
+            .background(
+                color = backgroundSelectedColor,
+                shape = RoundedCornerShape(TierSwitcherUIConstants.roundedCorner),
+            )
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+    ) {
+        Text(
+            text = selectedTier.name,
+            color = foregroundSelectedColor, // Text color
+            style = MaterialTheme.typography.bodyMedium,
+        )
+    }
 }
 
 @Composable
@@ -55,7 +79,7 @@ internal fun TierSwitcher(
 
     Box(
         Modifier
-            .padding(2.dp)
+            .padding(TierSwitcherUIConstants.selectedTierPadding)
             .clip(RoundedCornerShape(TierSwitcherUIConstants.roundedCorner))
             .background(backgroundColor)
             .height(TierSwitcherUIConstants.height)
@@ -72,6 +96,7 @@ internal fun TierSwitcher(
                 .offset(x = indicatorOffset)
                 .fillMaxHeight()
                 .width(optionWidth)
+                .padding(2.dp)
                 .clip(RoundedCornerShape(TierSwitcherUIConstants.roundedCorner))
                 .background(backgroundSelectedColor),
         )

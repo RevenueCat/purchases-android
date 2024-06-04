@@ -32,7 +32,6 @@ internal object TemplateConfigurationFactory {
             )
         } ?: emptyMap()
 
-        val (locale, localizedConfiguration) = paywallData.localizedConfiguration
         val createPackageResult =
             PackageConfigurationFactory.createPackageConfiguration(
                 variableDataProvider = variableDataProvider,
@@ -41,18 +40,15 @@ internal object TemplateConfigurationFactory {
                 nonSubscriptionProductIdentifiers = nonSubscriptionProductIdentifiers,
                 packageIdsInConfig = paywallData.config.packageIds,
                 default = paywallData.config.defaultPackage,
-                localization = localizedConfiguration,
                 configurationType = template.configurationType,
-                locale = locale,
                 paywallData = paywallData,
             )
-        val packageConfiguration = createPackageResult.getOrElse {
+        val (locale, packageConfiguration) = createPackageResult.getOrElse {
             return Result.failure(it)
         }
 
         return Result.success(
             TemplateConfiguration(
-                locale = locale,
                 template = template,
                 mode = mode,
                 packages = packageConfiguration,
@@ -60,6 +56,7 @@ internal object TemplateConfigurationFactory {
                 images = images,
                 imagesByTier = imagesByTier,
                 colors = paywallData.config.colors,
+                locale = locale,
             ),
         )
     }

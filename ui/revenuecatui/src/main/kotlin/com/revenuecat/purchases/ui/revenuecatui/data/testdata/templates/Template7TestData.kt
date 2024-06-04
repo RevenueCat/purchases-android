@@ -52,7 +52,6 @@ internal val TestData.template7: PaywallData
             termsOfServiceURL = URL("https://revenuecat.com/tos"),
             privacyURL = URL("https://revenuecat.com/privacy"),
 
-            // TODO: Figure out how to make this optional or empty
             colors = PaywallData.Configuration.ColorInformation(
                 light = PaywallData.Configuration.Colors(
                     background = PaywallColor(stringRepresentation = "#FFFFFF"),
