@@ -71,7 +71,7 @@ internal class PurchasesFactory(
             val application = context.getApplication()
             val appConfig = AppConfig(
                 context,
-                finishTransactions,
+                purchasesAreCompletedBy,
                 showInAppMessagesAutomatically,
                 platformInfo,
                 proxyURL,
@@ -138,7 +138,7 @@ internal class PurchasesFactory(
                 application,
                 backendHelper,
                 cache,
-                finishTransactions,
+                purchasesAreCompletedBy.finishTransactions,
                 diagnosticsTracker,
                 purchasesStateProvider,
             )

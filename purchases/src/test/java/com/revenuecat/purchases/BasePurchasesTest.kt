@@ -11,6 +11,7 @@ import android.content.Context
 import androidx.lifecycle.ProcessLifecycleOwner
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchaseHistoryRecord
+import com.revenuecat.purchases.PurchasesAreCompletedBy.REVENUECAT
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BillingAbstract
@@ -373,7 +374,7 @@ internal open class BasePurchasesTest {
     ) {
         val appConfig = AppConfig(
             context = mockContext,
-            finishTransactions = true,
+            purchasesAreCompletedBy = REVENUECAT,
             showInAppMessagesAutomatically = showInAppMessagesAutomatically,
             platformInfo = PlatformInfo("native", "3.2.0"),
             proxyURL = null,

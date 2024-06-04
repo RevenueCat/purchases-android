@@ -9,6 +9,8 @@ import com.revenuecat.purchases.PostPendingTransactionsHelper
 import com.revenuecat.purchases.PostReceiptHelper
 import com.revenuecat.purchases.PostTransactionWithProductDetailsHelper
 import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.PurchasesAreCompletedBy
+import com.revenuecat.purchases.PurchasesAreCompletedBy.REVENUECAT
 import com.revenuecat.purchases.PurchasesOrchestrator
 import com.revenuecat.purchases.PurchasesState
 import com.revenuecat.purchases.PurchasesStateCache
@@ -63,7 +65,7 @@ class SubscriberAttributesPurchasesTests {
 
         val appConfig = AppConfig(
             context = mockk(relaxed = true),
-            finishTransactions = true,
+            purchasesAreCompletedBy = REVENUECAT,
             showInAppMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,

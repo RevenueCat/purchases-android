@@ -20,3 +20,12 @@ enum class PurchasesAreCompletedBy {
      */
     MY_APP,
 }
+
+/**
+ * Whether the Purchases SDK should finish transactions.
+ */
+internal val PurchasesAreCompletedBy.finishTransactions: Boolean
+    get() = when (this) {
+        PurchasesAreCompletedBy.REVENUECAT -> true
+        PurchasesAreCompletedBy.MY_APP -> false
+    }
