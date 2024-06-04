@@ -68,7 +68,19 @@ private fun PaywallData.validate(): Result<PaywallTemplate> {
             }
         }
         PackageConfigurationType.MULTITIER -> {
-            // TODO: add logic
+            val (_, localizedConfigurationByTier) = tieredLocalizedConfiguration
+
+            localizedConfigurationByTier.entries.forEach { (_, localizedConfiguration) ->
+                val invalidVariablesError = localizedConfiguration.validateVariables()
+                if (invalidVariablesError != null) {
+                    return Result.failure(invalidVariablesError)
+                }
+
+                val invalidIconsError = localizedConfiguration.validateIcons()
+                if (invalidIconsError != null) {
+                    return Result.failure(invalidIconsError)
+                }
+            }
         }
     }
 

@@ -55,12 +55,12 @@ data class PaywallData(
     val localizedConfiguration: Pair<Locale, LocalizedConfiguration>
         @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
         get() {
-            return localizedConfiguration(locales = getDefaultLocales())
+            return findLocalizedConfiguration(locales = getDefaultLocales())
         }
 
     @VisibleForTesting
     @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
-    fun localizedConfiguration(locales: List<Locale>): Pair<Locale, LocalizedConfiguration> {
+    fun findLocalizedConfiguration(locales: List<Locale>): Pair<Locale, LocalizedConfiguration> {
         for (locale in locales) {
             val localeToCheck = locale.convertToCorrectlyFormattedLocale()
             configForLocale(localeToCheck)?.let { localizedConfiguration ->
@@ -68,7 +68,10 @@ data class PaywallData(
             }
         }
 
-        return fallbackLocalizedConfiguration
+        // Fallback to first localization
+        localization.entries.first().let { localization ->
+            return (localization.key.toLocale() to localization.value)
+        }
     }
 
     /**
@@ -84,38 +87,29 @@ data class PaywallData(
             }?.value
     }
 
-    private val fallbackLocalizedConfiguration: Pair<Locale, LocalizedConfiguration>
+    val tieredLocalizedConfiguration: Pair<Locale, Map<String, LocalizedConfiguration>>
         @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
         get() {
-            localization.entries.first().let { localization ->
-                return (localization.key.toLocale() to localization.value)
-            }
-        }
-
-    // TODO: These 3 methods below feel so messy and duplicative... please fix
-
-    val localizedConfigurationByTier: Pair<Locale, Map<String, LocalizedConfiguration>>
-        @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
-        get() {
-            return tierLocalizedConfiguration(locales = getDefaultLocales())
+            return tieredConfigForLocales(locales = getDefaultLocales())
         }
 
     @VisibleForTesting
     @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
-    fun tierLocalizedConfiguration(locales: List<Locale>): Pair<Locale, Map<String, LocalizedConfiguration>> {
+    fun tieredConfigForLocales(locales: List<Locale>): Pair<Locale, Map<String, LocalizedConfiguration>> {
         for (locale in locales) {
             val localeToCheck = locale.convertToCorrectlyFormattedLocale()
-            tierdConfigForLocale(localeToCheck)?.let { localizedConfiguration ->
+            tieredConfigForLocale(localeToCheck)?.let { localizedConfiguration ->
                 return (localeToCheck to localizedConfiguration)
             }
         }
 
+        // Fallback to first localization
         val first = localizationByTier.entries.first()
         return Pair(first.key.toLocale(), first.value)
     }
 
     @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
-    fun tierdConfigForLocale(requiredLocale: Locale): Map<String, LocalizedConfiguration>? {
+    fun tieredConfigForLocale(requiredLocale: Locale): Map<String, LocalizedConfiguration>? {
         return localizationByTier[requiredLocale.toString()]
             ?: localizationByTier.entries.firstOrNull { (localeKey, _) ->
                 requiredLocale.sharedLanguageCodeWith(localeKey.toLocale())

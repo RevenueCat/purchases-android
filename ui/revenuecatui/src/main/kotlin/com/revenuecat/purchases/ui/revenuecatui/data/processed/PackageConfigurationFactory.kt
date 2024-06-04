@@ -87,14 +87,14 @@ internal object PackageConfigurationFactory {
                     return Result.failure(PackageConfigurationError("No tier found for $packageIdsInConfig"))
                 }
 
-                val (locale, localizedConfigurationByTier) = paywallData.localizedConfigurationByTier
+                val (locale, localizedConfigurationByTier) = paywallData.tieredLocalizedConfiguration
 
                 val all = tiers.associateWith { tier ->
                     val localizationForTier = localizedConfigurationByTier[tier.id]
                         ?: return Result.failure(PackageConfigurationError("No localization found for ${tier.id}"))
 
                     val packageInfosForTier = reprocessPackagesForTiers(
-                        from = filteredRCPackages,
+                        from = availablePackages,
                         filter = tier.packages,
                         localization = localizationForTier,
                         variableDataProvider = variableDataProvider,
