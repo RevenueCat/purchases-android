@@ -6,6 +6,7 @@ import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import com.revenuecat.purchases.ui.revenuecatui.composables.PaywallIconName
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
+import com.revenuecat.purchases.ui.revenuecatui.data.processed.PackageConfigurationType
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.PaywallTemplate
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfigurationFactory
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvider
@@ -50,18 +51,25 @@ internal fun Offering.validatedPaywall(
 
 @Suppress("ReturnCount")
 private fun PaywallData.validate(): Result<PaywallTemplate> {
-    val (_, localizedConfiguration) = localizedConfiguration
-
-    val invalidVariablesError = localizedConfiguration.validateVariables()
-    if (invalidVariablesError != null) {
-        return Result.failure(invalidVariablesError)
-    }
-
     val template = validateTemplate() ?: return Result.failure(PaywallValidationError.InvalidTemplate(templateName))
 
-    val invalidIconsError = localizedConfiguration.validateIcons()
-    if (invalidIconsError != null) {
-        return Result.failure(invalidIconsError)
+    when (template.configurationType) {
+        PackageConfigurationType.SINGLE, PackageConfigurationType.MULTIPLE -> {
+            val (_, localizedConfiguration) = localizedConfiguration
+
+            val invalidVariablesError = localizedConfiguration.validateVariables()
+            if (invalidVariablesError != null) {
+                return Result.failure(invalidVariablesError)
+            }
+
+            val invalidIconsError = localizedConfiguration.validateIcons()
+            if (invalidIconsError != null) {
+                return Result.failure(invalidIconsError)
+            }
+        }
+        PackageConfigurationType.MULTITIER -> {
+            // TODO: add logic
+        }
     }
 
     return Result.success(template)

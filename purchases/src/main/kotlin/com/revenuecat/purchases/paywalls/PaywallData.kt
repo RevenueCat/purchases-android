@@ -42,7 +42,9 @@ data class PaywallData(
      * The revision identifier for this paywall.
      */
     val revision: Int = 0,
+
     @SerialName("localized_strings") internal val localization: Map<String, LocalizedConfiguration>,
+
     @SerialName("localized_strings_by_tier") internal val localizationByTier:
     Map<String, Map<String, LocalizedConfiguration>> = emptyMap(),
 ) {
@@ -70,6 +72,19 @@ data class PaywallData(
         return fallbackLocalizedConfiguration
     }
 
+    /**
+     * @note This allows searching by `Locale` with only language code and missing region (like `en`, `es`, etc).
+     *
+     * @return [LocalizedConfiguration] for the given [Locale], if found.
+     */
+    @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
+    fun configForLocale(requiredLocale: Locale): LocalizedConfiguration? {
+        return localization[requiredLocale.toString()]
+            ?: localization.entries.firstOrNull { (localeKey, _) ->
+                requiredLocale.sharedLanguageCodeWith(localeKey.toLocale())
+            }?.value
+    }
+
     private val fallbackLocalizedConfiguration: Pair<Locale, LocalizedConfiguration>
         @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
         get() {
@@ -91,41 +106,19 @@ data class PaywallData(
     fun tierLocalizedConfiguration(locales: List<Locale>): Pair<Locale, Map<String, LocalizedConfiguration>> {
         for (locale in locales) {
             val localeToCheck = locale.convertToCorrectlyFormattedLocale()
-            tierdConfigForLocale(localeToCheck).let { localizedConfiguration ->
-                if (localizedConfiguration.isNotEmpty()) {
-                    return (localeToCheck to localizedConfiguration)
-                }
+            tierdConfigForLocale(localeToCheck)?.let { localizedConfiguration ->
+                return (localeToCheck to localizedConfiguration)
             }
         }
 
-        var locale = Locale.ENGLISH
-        val fallback = localizationByTier.entries.associate { (tierId, value) ->
-            locale = value.entries.first().key.toLocale()
-            tierId to value.entries.first().value
-        }
-
-        return Pair(locale, fallback)
+        val first = localizationByTier.entries.first()
+        return Pair(first.key.toLocale(), first.value)
     }
 
     @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
-    fun tierdConfigForLocale(requiredLocale: Locale): Map<String, LocalizedConfiguration> {
-        return localizationByTier.mapValues {
-            it.value[requiredLocale.toString()]
-                ?: it.value.entries.firstOrNull { (localeKey, _) ->
-                    requiredLocale.sharedLanguageCodeWith(localeKey.toLocale())
-                }?.value
-        }.filterNotNullValues()
-    }
-
-    /**
-     * @note This allows searching by `Locale` with only language code and missing region (like `en`, `es`, etc).
-     *
-     * @return [LocalizedConfiguration] for the given [Locale], if found.
-     */
-    @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
-    fun configForLocale(requiredLocale: Locale): LocalizedConfiguration? {
-        return localization[requiredLocale.toString()]
-            ?: localization.entries.firstOrNull { (localeKey, _) ->
+    fun tierdConfigForLocale(requiredLocale: Locale): Map<String, LocalizedConfiguration>? {
+        return localizationByTier[requiredLocale.toString()]
+            ?: localizationByTier.entries.firstOrNull { (localeKey, _) ->
                 requiredLocale.sharedLanguageCodeWith(localeKey.toLocale())
             }?.value
     }
@@ -138,7 +131,7 @@ data class PaywallData(
         /**
          * The list of package identifiers this paywall will display.
          */
-        @SerialName("packages") val packageIds: List<String>,
+        @SerialName("packages") val packageIds: List<String> = emptyList(), // FIXME: Josh, is this okay
 
         /**
          * The package to be selected by default.
@@ -183,6 +176,7 @@ data class PaywallData(
          */
         val colors: ColorInformation,
 
+        @SerialName("colors_by_tier")
         val colorsByTier: Map<String, ColorInformation>? = null,
 
         val tiers: List<Tier>? = null,
@@ -253,6 +247,7 @@ data class PaywallData(
         data class Tier(
             val id: String,
             val packages: List<String>,
+            @SerialName("default_package")
             val defaultPackage: String,
         )
 

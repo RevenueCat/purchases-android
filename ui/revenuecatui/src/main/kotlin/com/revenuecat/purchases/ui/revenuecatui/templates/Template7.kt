@@ -94,10 +94,10 @@ internal fun Template7(
     state: PaywallState.Loaded,
     viewModel: PaywallViewModel,
 ) {
-    // TODO: Gracefully-ish fail this better
     val packagesConfig = state.templateConfiguration.packages
-    if (packagesConfig !is TemplateConfiguration.PackageConfiguration.MultiTier) {
-        throw IllegalArgumentException("The configuration is not MultiTier")
+    require(packagesConfig is TemplateConfiguration.PackageConfiguration.MultiTier) {
+        // This should never happen
+        "The configuration is not MultiTier"
     }
 
     // Now config is smart casted to PackageConfiguration.MultiTier
@@ -193,10 +193,10 @@ private fun ColumnScope.Template7PortraitContent(
                 onTierSelected = {
                     onSelectTierChange(it)
                 },
-                backgroundColor = colorForTier.tierControlBackground!!,
-                accentColor = colorForTier.tierControlSelectedBackground!!,
-                textColor = colorForTier.tierControlForeground!!,
-                textSelectedColor = colorForTier.tierControlSelectedForeground!!, // TODO: Fix
+                backgroundColor = colorForTier.tierSwitcherBackground,
+                backgroundSelectedColor = colorForTier.tierSwitcherBackgroundSelected,
+                foregroundColor = colorForTier.tierSwitcherForeground,
+                foregroundSelectedColor = colorForTier.tierSwitcherForegroundSelected,
             )
 
             Features(state, selectedTier)
@@ -285,10 +285,10 @@ private fun ColumnScope.Template7LandscapeContent(
                 onTierSelected = {
                     onSelectTierChange(it)
                 },
-                backgroundColor = colorForTier.tierControlBackground!!,
-                accentColor = colorForTier.tierControlSelectedBackground!!,
-                textColor = colorForTier.tierControlForeground!!,
-                textSelectedColor = colorForTier.tierControlSelectedForeground!!, // TODO: Fix
+                backgroundColor = colorForTier.tierSwitcherBackground,
+                backgroundSelectedColor = colorForTier.tierSwitcherBackgroundSelected,
+                foregroundColor = colorForTier.tierSwitcherForeground,
+                foregroundSelectedColor = colorForTier.tierSwitcherForegroundSelected,
             )
 
             Spacer(Modifier.weight(UIConstant.halfWeight))
@@ -584,12 +584,24 @@ private fun RowScope.DiscountBanner(
     }
 }
 
+private val TemplateConfiguration.Colors.tierSwitcherBackground: Color
+    get() = this.tierControlBackground ?: this.accent1
+
+private val TemplateConfiguration.Colors.tierSwitcherBackgroundSelected: Color
+    get() = this.tierControlSelectedBackground ?: this.unselectedDiscountText
+
+private val TemplateConfiguration.Colors.tierSwitcherForeground: Color
+    get() = this.tierControlForeground ?: this.text1
+
+private val TemplateConfiguration.Colors.tierSwitcherForegroundSelected: Color
+    get() = this.tierControlSelectedForeground ?: this.text1
+
 private val TemplateConfiguration.Colors.featureIcon: Color
     get() = this.text1
 private val TemplateConfiguration.Colors.selectedOutline: Color
-    get() = this.accent3
-private val TemplateConfiguration.Colors.unselectedOutline: Color
     get() = this.accent2
+private val TemplateConfiguration.Colors.unselectedOutline: Color
+    get() = this.accent3
 private val TemplateConfiguration.Colors.selectedDiscountText: Color
     get() = this.text2
 private val TemplateConfiguration.Colors.unselectedDiscountText: Color

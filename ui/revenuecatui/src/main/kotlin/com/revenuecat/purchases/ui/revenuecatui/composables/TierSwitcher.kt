@@ -44,9 +44,9 @@ internal fun TierSwitcher(
     selectedTier: TemplateConfiguration.TierInfo,
     onTierSelected: (TemplateConfiguration.TierInfo) -> Unit,
     backgroundColor: Color,
-    accentColor: Color,
-    textColor: Color,
-    textSelectedColor: Color,
+    backgroundSelectedColor: Color,
+    foregroundColor: Color,
+    foregroundSelectedColor: Color,
 ) {
     val selectedIndex = tiers.indexOf(selectedTier)
     var totalWidthPx by remember { mutableStateOf(0) }
@@ -73,7 +73,7 @@ internal fun TierSwitcher(
                 .fillMaxHeight()
                 .width(optionWidth)
                 .clip(RoundedCornerShape(TierSwitcherUIConstants.roundedCorner))
-                .background(accentColor),
+                .background(backgroundSelectedColor),
         )
 
         Row(
@@ -98,7 +98,7 @@ internal fun TierSwitcher(
                         text = tier.name,
                         style = MaterialTheme.typography.bodyMedium,
                         textAlign = TextAlign.Center,
-                        color = if (selectedTier == tier) textSelectedColor else textColor,
+                        color = if (selectedTier == tier) foregroundSelectedColor else foregroundColor,
                     )
                 }
             }

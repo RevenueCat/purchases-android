@@ -31,7 +31,7 @@ internal object PackageConfigurationFactory {
             rcPackage
         }.takeUnless {
             it.isEmpty()
-        } ?: availablePackages // TODO: This is actually a little confusing when it comes to multi-tier paywalls
+        } ?: availablePackages
 
         if (filteredRCPackages.isEmpty()) {
             // This won't happen because availablePackages won't be empty. Offerings can't have empty available packages
@@ -95,17 +95,19 @@ internal object PackageConfigurationFactory {
 
                 val all = paywallData.config.tiers?.associateWith { tier ->
                     val localizationForTier = localizedConfigurationByTier[tier.id]
-                        ?: return Result.failure(PackageConfigurationError("No localization found for $tier.id"))
+                        ?: return Result.failure(PackageConfigurationError("No localization found for ${tier.id}"))
 
                     val packageInfosForTier = reprocessPackagesForTiers(
-                        from = packageInfos,
+                        from = availablePackages,
                         filter = tier.packages,
                         localization = localizationForTier,
                         variableDataProvider = variableDataProvider,
+                        activelySubscribedProductIdentifiers = activelySubscribedProductIdentifiers,
+                        nonSubscriptionProductIdentifiers = nonSubscriptionProductIdentifiers,
                         locale = locale,
                     )
 
-                    val firstPackage = packageInfosForTier.first()
+                    val firstPackage = packageInfosForTier.first() // FIXME: This crashes if no packages found
                     val defaultPackage = packageInfosForTier
                         .firstOrNull { it.rcPackage.identifier == tier.defaultPackage } ?: firstPackage
 
@@ -118,7 +120,7 @@ internal object PackageConfigurationFactory {
 
                 val allTierInfos = all.entries.map { (tier, packageInfo) ->
                     val tierName = packageInfo.default.localization.tierName
-                        ?: return Result.failure(PackageConfigurationError("No localied tier name found for $tier.id"))
+                        ?: return Result.failure(PackageConfigurationError("No localized tier name found for ${tier.id}"))
 
                     TemplateConfiguration.TierInfo(
                         id = tier.id,
@@ -139,32 +141,39 @@ internal object PackageConfigurationFactory {
     }
 
     private fun reprocessPackagesForTiers(
-        from: List<TemplateConfiguration.PackageInfo>,
+        from: List<Package>,
         filter: List<String>,
         localization: PaywallData.LocalizedConfiguration,
         variableDataProvider: VariableDataProvider,
+        activelySubscribedProductIdentifiers: Set<String>,
+        nonSubscriptionProductIdentifiers: Set<String>,
         locale: Locale,
     ): List<TemplateConfiguration.PackageInfo> {
-        val filtered = from.filter { filter.contains(it.rcPackage.identifier) }
-        val mostExpensivePricePerMonth = mostExpensivePricePerMonth(filtered.map { it.rcPackage })
+        val filtered = from.filter { filter.contains(it.identifier) }
+        val mostExpensivePricePerMonth = mostExpensivePricePerMonth(filtered.map { it })
 
         return filtered
             .map {
                 val discount = productDiscount(
-                    pricePerMonth = it.rcPackage.product.pricePerMonth(),
+                    pricePerMonth = it.product.pricePerMonth(),
                     mostExpensive = mostExpensivePricePerMonth,
                 )
 
+                val currentlySubscribed = it.currentlySubscribed(
+                    activelySubscribedProductIdentifiers,
+                    nonSubscriptionProductIdentifiers,
+                )
+
                 TemplateConfiguration.PackageInfo(
-                    rcPackage = it.rcPackage,
+                    rcPackage = it,
                     localization = ProcessedLocalizedConfiguration.create(
                         variableDataProvider = variableDataProvider,
                         context = VariableProcessor.PackageContext(discount),
                         localizedConfiguration = localization,
-                        rcPackage = it.rcPackage,
+                        rcPackage = it,
                         locale = locale,
                     ),
-                    currentlySubscribed = it.currentlySubscribed,
+                    currentlySubscribed = false, // FIXME: please
                     discountRelativeToMostExpensivePerMonth = discount,
                 )
             }

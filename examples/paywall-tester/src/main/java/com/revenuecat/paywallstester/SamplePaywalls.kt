@@ -448,7 +448,7 @@ object SamplePaywalls {
         return PaywallData(
             templateName = "7",
             config = PaywallData.Configuration(
-                packageIds = emptyList(), // TODO: Figure out if this is okay to just be empty
+                packageIds = emptyList(),
                 imagesByTier = mapOf(
                     "basic" to PaywallData.Configuration.Images(
                         header = "954459_1703109702.png",
@@ -582,8 +582,8 @@ object SamplePaywalls {
                 ),
             ),
             localizationByTier = mapOf(
-                "basic" to mapOf(
-                    "en_US" to PaywallData.LocalizedConfiguration(
+                "en_US" to mapOf(
+                    "basic" to PaywallData.LocalizedConfiguration(
                         title = "Get started with our Basic plan",
                         callToAction = "{{ price_per_period }}",
                         callToActionWithIntroOffer = "Start your {{ sub_offer_duration }} free trial",
@@ -607,9 +607,7 @@ object SamplePaywalls {
                         ),
                         tierName = "Basic",
                     ),
-                ),
-                "standard" to mapOf(
-                    "en_US" to PaywallData.LocalizedConfiguration(
+                    "standard" to PaywallData.LocalizedConfiguration(
                         title = "Get started with our Standard plan",
                         callToAction = "{{ price_per_period }}",
                         callToActionWithIntroOffer = "Start your {{ sub_offer_duration }} free trial",
@@ -633,9 +631,7 @@ object SamplePaywalls {
                         ),
                         tierName = "Standard",
                     ),
-                ),
-                "premium" to mapOf(
-                    "en_US" to PaywallData.LocalizedConfiguration(
+                    "premium" to PaywallData.LocalizedConfiguration(
                         title = "Master the art of video editing",
                         callToAction = "{{ price_per_period }}",
                         callToActionWithIntroOffer = "Start your {{ sub_offer_duration }} free trial",

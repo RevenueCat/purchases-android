@@ -16,7 +16,6 @@ internal object TemplateConfigurationFactory {
         nonSubscriptionProductIdentifiers: Set<String>,
         template: PaywallTemplate,
     ): Result<TemplateConfiguration> {
-        val (locale, localizedConfiguration) = paywallData.localizedConfiguration
         val sourceImages = paywallData.config.images
 
         val images = TemplateConfiguration.Images(
@@ -33,6 +32,7 @@ internal object TemplateConfigurationFactory {
             )
         } ?: emptyMap()
 
+        val (locale, localizedConfiguration) = paywallData.localizedConfiguration
         val createPackageResult =
             PackageConfigurationFactory.createPackageConfiguration(
                 variableDataProvider = variableDataProvider,
