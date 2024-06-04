@@ -579,10 +579,10 @@ internal class AmazonBilling(
     }
 
     private fun shouldFinishTransactions(): Boolean {
-        return if (!finishTransactions) {
-            log(LogIntent.AMAZON_WARNING, AmazonStrings.WARNING_AMAZON_NOT_FINISHING_TRANSACTIONS)
+        return if (finishTransactions) {
             true
         } else {
+            log(LogIntent.AMAZON_WARNING, AmazonStrings.WARNING_AMAZON_NOT_FINISHING_TRANSACTIONS)
             false
         }
     }
