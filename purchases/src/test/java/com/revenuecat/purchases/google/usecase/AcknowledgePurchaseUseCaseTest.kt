@@ -4,6 +4,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.billingclient.api.AcknowledgePurchaseParams
 import com.android.billingclient.api.AcknowledgePurchaseResponseListener
 import com.android.billingclient.api.BillingClient
+import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchaseHistoryRecord
 import com.revenuecat.purchases.PostReceiptInitiationSource
 import com.revenuecat.purchases.PresentedOfferingContext
@@ -232,6 +233,59 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         assertThat(capturedAcknowledgeParams.purchaseToken).isEqualTo(token)
     }
 
+    @Test
+    fun `non-consumables are acknowledged even if shouldConsume is false`() {
+        val googlePurchaseWrapper = getMockedPurchaseWrapper(
+            productId = "non-consumable",
+            productType = ProductType.INAPP,
+            acknowledged = false
+        )
+        val token = googlePurchaseWrapper.purchaseToken
+
+        every {
+            mockDeviceCache.addSuccessfullyPostedToken(token)
+        } just Runs
+
+        wrapper.consumeAndSave(
+            finishTransactions = true,
+            purchase = googlePurchaseWrapper,
+            shouldConsume = false,
+            initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES
+        )
+
+        assertThat(capturedAcknowledgeResponseListener.isCaptured).isTrue
+        capturedAcknowledgeResponseListener.captured.onAcknowledgePurchaseResponse(
+            billingClientOKResult
+        )
+
+        assertThat(capturedAcknowledgePurchaseParams.isCaptured).isTrue
+        val capturedAcknowledgeParams = capturedAcknowledgePurchaseParams.captured
+        assertThat(capturedAcknowledgeParams.purchaseToken).isEqualTo(token)
+    }
+
+    @Test
+    fun `non-consumables are not acknowledged if shouldConsume is false and they are already acknowledged`() {
+        val googlePurchaseWrapper = getMockedPurchaseWrapper(
+            productId = "non-consumable",
+            productType = ProductType.INAPP,
+            acknowledged = true
+        )
+        val token = googlePurchaseWrapper.purchaseToken
+
+        every {
+            mockDeviceCache.addSuccessfullyPostedToken(token)
+        } just Runs
+
+        wrapper.consumeAndSave(
+            finishTransactions = true,
+            purchase = googlePurchaseWrapper,
+            shouldConsume = false,
+            initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES
+        )
+
+        assertThat(capturedAcknowledgeResponseListener.isCaptured).isFalse
+        assertThat(capturedAcknowledgePurchaseParams.isCaptured).isFalse
+    }
 
     @Test
     fun `restored subscriptions are acknowledged`() {
@@ -1175,15 +1229,18 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
     // endregion retries
 
     private fun getMockedPurchaseWrapper(
+        productId: String = "sub",
+        productType: ProductType = ProductType.SUBS,
         acknowledged: Boolean = false
     ): StoreTransaction {
         val p = stubGooglePurchase(
-            productIds = listOf("sub"),
-            purchaseToken = "token_sub",
+            productIds = listOf(productId),
+            purchaseToken = "token",
+            purchaseState = Purchase.PurchaseState.PURCHASED,
             acknowledged = acknowledged
         )
 
-        return p.toStoreTransaction(ProductType.SUBS, PresentedOfferingContext("offering_a"))
+        return p.toStoreTransaction(productType, PresentedOfferingContext("offering_a"))
     }
 
     private fun getMockedPurchaseHistoryRecordWrapper(): StoreTransaction {

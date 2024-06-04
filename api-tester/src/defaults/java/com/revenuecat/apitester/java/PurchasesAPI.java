@@ -9,6 +9,7 @@ import com.revenuecat.purchases.CustomerInfo;
 import com.revenuecat.purchases.EntitlementVerificationMode;
 import com.revenuecat.purchases.Offerings;
 import com.revenuecat.purchases.Purchases;
+import com.revenuecat.purchases.PurchasesAreCompletedBy;
 import com.revenuecat.purchases.PurchasesConfiguration;
 import com.revenuecat.purchases.PurchasesError;
 import com.revenuecat.purchases.Store;
@@ -120,13 +121,13 @@ final class PurchasesAPI {
     }
 
     static void checkAmazonConfiguration(final Context context,
-                                         final ExecutorService executorService) {
+                                         final ExecutorService executorService,
+                                         final PurchasesAreCompletedBy purchaseCompleter) {
         PurchasesConfiguration amazonConfiguration = new AmazonConfiguration.Builder(context, "")
                 .appUserID("")
                 .observerMode(true)
                 .observerMode(false)
-                .finishTransactions(true)
-                .finishTransactions(false)
+                .purchasesAreCompletedBy(purchaseCompleter)
                 .service(executorService)
                 .diagnosticsEnabled(true)
                 .entitlementVerificationMode(EntitlementVerificationMode.INFORMATIONAL)

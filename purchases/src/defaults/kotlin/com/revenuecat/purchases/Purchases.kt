@@ -43,11 +43,32 @@ class Purchases internal constructor(
      * Default to TRUE, set this to FALSE if you are consuming and acknowledging transactions
      * outside of the Purchases SDK.
      */
+    @Deprecated(
+        "\"Finishing transactions\" is not a platform-agnostic term.",
+        ReplaceWith("purchasesAreCompletedBy"),
+    )
     var finishTransactions: Boolean
         @Synchronized get() = purchasesOrchestrator.finishTransactions
 
         @Synchronized set(value) {
             purchasesOrchestrator.finishTransactions = value
+        }
+
+    /**
+     * Default to TRUE, set this to FALSE if you are consuming and acknowledging transactions
+     * outside of the Purchases SDK.
+     */
+    var purchasesAreCompletedBy: PurchasesAreCompletedBy
+        @Synchronized get() =
+            if (purchasesOrchestrator.finishTransactions) {
+                PurchasesAreCompletedBy.REVENUECAT
+            } else PurchasesAreCompletedBy.MY_APP
+
+        @Synchronized set(value) {
+            purchasesOrchestrator.finishTransactions = when (value) {
+                PurchasesAreCompletedBy.REVENUECAT -> true
+                PurchasesAreCompletedBy.MY_APP -> false
+            }
         }
 
     /**
@@ -102,8 +123,8 @@ class Purchases internal constructor(
      *
      * @param [listener] Called when all purchases have been synced with the backend, either successfully or with
      * an error. If no purchases are present, the success function will be called.
-     * @warning This function should only be called if you're migrating to RevenueCat or if you have instructed
-     * `Purchases` not to [finish transactions][finishTransactions].
+     * @warning This function should only be called if you're migrating to RevenueCat or if you have set
+     * [purchasesAreCompletedBy] to [MY_APP][PurchasesAreCompletedBy.MY_APP].
      * @warning This function could take a relatively long time to execute, depending on the amount of purchases
      * the user has. Consider that when waiting for this operation to complete.
      */
@@ -116,7 +137,7 @@ class Purchases internal constructor(
 
     /**
      * This method will send an Amazon purchase to the RevenueCat backend. This function should only be called if you
-     * have instructed `Purchases` not to [finish transactions][finishTransactions] or when performing a client side
+     * have set [purchasesAreCompletedBy] to [MY_APP][PurchasesAreCompletedBy.MY_APP] or when performing a client side
      * migration of your current users to RevenueCat.
      *
      * The receipt IDs are cached if successfully posted so they are not posted more than once.
@@ -128,7 +149,7 @@ class Purchases internal constructor(
      * @param [price] Product's price.
      */
     @Deprecated(
-        "ObserverMode is a confusing term.",
+        "syncObserverModeAmazonPurchase is being deprecated in favor of syncAmazonPurchase.",
         ReplaceWith("syncAmazonPurchase(productID, receiptID, amazonUserID, isoCurrencyCode, price)"),
     )
     fun syncObserverModeAmazonPurchase(
@@ -149,7 +170,7 @@ class Purchases internal constructor(
 
     /**
      * This method will send an Amazon purchase to the RevenueCat backend. This function should only be called if you
-     * have instructed `Purchases` not to [finish transactions][finishTransactions] or when performing a client side
+     * have set [purchasesAreCompletedBy] to [MY_APP][PurchasesAreCompletedBy.MY_APP] or when performing a client side
      * migration of your current users to RevenueCat.
      *
      * The receipt IDs are cached if successfully posted so they are not posted more than once.

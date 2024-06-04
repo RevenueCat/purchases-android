@@ -103,5 +103,16 @@ private class DeprecatedPurchasesAPI {
 
         Purchases.debugLogsEnabled = false
         val debugLogs: Boolean = Purchases.debugLogsEnabled
+
+        val finishTransactions: Boolean = purchases.finishTransactions
+        purchases.finishTransactions = true
+
+        val unit: Unit = purchases.syncObserverModeAmazonPurchase(
+            productID = storeProduct.id,
+            receiptID = "receipt-id",
+            amazonUserID = "amazon-user-id",
+            isoCurrencyCode = "EUR",
+            price = 1.99,
+        )
     }
 }
