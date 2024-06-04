@@ -186,7 +186,7 @@ internal class Backend(
         purchaseToken: String,
         appUserID: String,
         isRestore: Boolean,
-        observerMode: Boolean,
+        finishTransactions: Boolean,
         subscriberAttributes: Map<String, Map<String, Any?>>,
         receiptInfo: ReceiptInfo,
         storeAppUserID: String?,
@@ -201,7 +201,7 @@ internal class Backend(
             purchaseToken,
             appUserID,
             isRestore.toString(),
-            observerMode.toString(),
+            finishTransactions.toString(),
             subscriberAttributes.toString(),
             receiptInfo.toString(),
             storeAppUserID,
@@ -218,7 +218,7 @@ internal class Backend(
             "applied_targeting_rule" to receiptInfo.presentedOfferingContext?.targetingContext?.let {
                 return@let mapOf("revision" to it.revision, "rule_id" to it.ruleId)
             },
-            "observer_mode" to observerMode,
+            "observer_mode" to !finishTransactions,
             "price" to receiptInfo.price,
             "currency" to receiptInfo.currency,
             "attributes" to subscriberAttributes.takeUnless { it.isEmpty() || appConfig.customEntitlementComputation },

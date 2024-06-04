@@ -61,7 +61,7 @@ internal class AmazonBilling(
     private val applicationContext: Context,
     private val amazonBackend: AmazonBackend,
     private val cache: AmazonCache,
-    private val observerMode: Boolean,
+    private val finishTransactions: Boolean,
     private val mainHandler: Handler,
     stateProvider: PurchasesStateProvider,
     private val diagnosticsTrackerIfEnabled: DiagnosticsTracker?,
@@ -81,12 +81,10 @@ internal class AmazonBilling(
     PurchaseUpdatesResponseListener by purchaseUpdatesHandler,
     UserDataResponseListener by userDataHandler {
 
-    // Used for constructing the class via Reflection. Make sure to update any call if updating this constructor
-    @Suppress("unused")
     constructor(
         applicationContext: Context,
         cache: DeviceCache,
-        observerMode: Boolean,
+        finishTransactions: Boolean,
         mainHandler: Handler,
         backendHelper: BackendHelper,
         stateProvider: PurchasesStateProvider,
@@ -95,7 +93,7 @@ internal class AmazonBilling(
         applicationContext,
         AmazonBackend(backendHelper),
         AmazonCache(cache),
-        observerMode,
+        finishTransactions,
         mainHandler,
         stateProvider,
         diagnosticsTracker,
@@ -104,7 +102,7 @@ internal class AmazonBilling(
     private var connected = false
 
     override fun startConnection() {
-        if (checkObserverMode()) return
+        if (!shouldFinishTransactions()) return
 
         purchasingServiceProvider.registerListener(applicationContext, this)
         connected = true
@@ -181,7 +179,7 @@ internal class AmazonBilling(
         onReceive: StoreProductsCallback,
         onError: PurchasesErrorCallback,
     ) {
-        if (checkObserverMode()) return
+        if (!shouldFinishTransactions()) return
         executeRequestOnUIThread { connectionError ->
             if (connectionError == null) {
                 userDataHandler.getUserData(
@@ -216,7 +214,7 @@ internal class AmazonBilling(
         shouldConsume: Boolean,
         initiationSource: PostReceiptInitiationSource,
     ) {
-        if (checkObserverMode() || purchase.type == RevenueCatProductType.UNKNOWN) return
+        if (!shouldFinishTransactions() || purchase.type == RevenueCatProductType.UNKNOWN) return
 
         // PENDING purchases should not be fulfilled
         if (purchase.purchaseState == PurchaseState.PENDING) return
@@ -283,7 +281,7 @@ internal class AmazonBilling(
         }
         val storeProduct = amazonPurchaseInfo.storeProduct
 
-        if (checkObserverMode()) return
+        if (!shouldFinishTransactions()) return
 
         if (replaceProductInfo != null) {
             log(LogIntent.AMAZON_WARNING, AmazonStrings.PRODUCT_CHANGES_NOT_SUPPORTED)
@@ -316,7 +314,7 @@ internal class AmazonBilling(
         onSuccess: (Map<String, StoreTransaction>) -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {
-        if (checkObserverMode()) return
+        if (!shouldFinishTransactions()) return
         queryPurchases(
             filterOnlyActivePurchases = true,
             onSuccess,
@@ -386,22 +384,22 @@ internal class AmazonBilling(
     // compile as long as all of the functions are implemented, otherwise it doesn't know which delegated
     // implementation to take
     override fun onUserDataResponse(response: UserDataResponse) {
-        if (checkObserverMode()) return
+        if (!shouldFinishTransactions()) return
         userDataHandler.onUserDataResponse(response)
     }
 
     override fun onProductDataResponse(response: ProductDataResponse) {
-        if (checkObserverMode()) return
+        if (!shouldFinishTransactions()) return
         productDataHandler.onProductDataResponse(response)
     }
 
     override fun onPurchaseResponse(response: PurchaseResponse) {
-        if (checkObserverMode()) return
+        if (!shouldFinishTransactions()) return
         purchaseHandler.onPurchaseResponse(response)
     }
 
     override fun onPurchaseUpdatesResponse(response: PurchaseUpdatesResponse) {
-        if (checkObserverMode()) return
+        if (!shouldFinishTransactions()) return
         purchaseUpdatesHandler.onPurchaseUpdatesResponse(response)
     }
 
@@ -580,11 +578,11 @@ internal class AmazonBilling(
         purchasesUpdatedListener?.onPurchasesFailedToUpdate(error)
     }
 
-    private fun checkObserverMode(): Boolean {
-        return if (observerMode) {
-            log(LogIntent.AMAZON_WARNING, AmazonStrings.WARNING_AMAZON_OBSERVER_MODE)
+    private fun shouldFinishTransactions(): Boolean {
+        return if (finishTransactions) {
             true
         } else {
+            log(LogIntent.AMAZON_WARNING, AmazonStrings.WARNING_AMAZON_NOT_FINISHING_TRANSACTIONS)
             false
         }
     }

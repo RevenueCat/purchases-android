@@ -2,14 +2,16 @@ package com.revenuecat.purchases.common
 
 import android.content.Context
 import com.revenuecat.purchases.DangerousSettings
+import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.Store
+import com.revenuecat.purchases.finishTransactions
 import com.revenuecat.purchases.strings.ConfigureStrings
 import java.net.URL
 
 @Suppress("LongParameterList")
 internal class AppConfig(
     context: Context,
-    observerMode: Boolean,
+    purchasesAreCompletedBy: PurchasesAreCompletedBy,
     val showInAppMessagesAutomatically: Boolean,
     val platformInfo: PlatformInfo,
     proxyURL: URL?,
@@ -35,7 +37,7 @@ internal class AppConfig(
     val languageTag: String = context.getLocale()?.toBCP47() ?: ""
     val versionName: String = context.versionName ?: ""
     val packageName: String = context.packageName
-    var finishTransactions: Boolean = !observerMode
+    var finishTransactions: Boolean = purchasesAreCompletedBy.finishTransactions
     val baseURL: URL = proxyURL?.also {
         log(LogIntent.INFO, ConfigureStrings.CONFIGURING_PURCHASES_PROXY_URL_SET)
     } ?: URL("https://api.revenuecat.com/")

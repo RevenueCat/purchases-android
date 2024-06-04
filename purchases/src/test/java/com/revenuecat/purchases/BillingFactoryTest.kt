@@ -24,7 +24,7 @@ class BillingFactoryTest {
             mockApplication,
             mockBackendHelper,
             mockCache,
-            observerMode = false,
+            finishTransactions = true,
             mockDiagnosticsTracker,
             PurchasesStateCache(PurchasesState())
         )
@@ -41,7 +41,7 @@ class BillingFactoryTest {
             mockApplication,
             mockBackendHelper,
             mockCache,
-            observerMode = false,
+            finishTransactions = true,
             diagnosticsTrackerIfEnabled = null,
             PurchasesStateCache(PurchasesState())
         )

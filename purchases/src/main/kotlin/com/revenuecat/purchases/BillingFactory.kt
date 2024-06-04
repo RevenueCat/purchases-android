@@ -17,7 +17,7 @@ internal object BillingFactory {
         application: Application,
         backendHelper: BackendHelper,
         cache: DeviceCache,
-        observerMode: Boolean,
+        finishTransactions: Boolean,
         diagnosticsTrackerIfEnabled: DiagnosticsTracker?,
         stateProvider: PurchasesStateProvider,
     ) = when (store) {
@@ -33,7 +33,7 @@ internal object BillingFactory {
                 AmazonBilling(
                     application.applicationContext,
                     cache,
-                    observerMode,
+                    finishTransactions,
                     Handler(application.mainLooper),
                     backendHelper,
                     stateProvider,
