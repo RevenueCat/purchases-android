@@ -567,11 +567,11 @@ workflows:
           <<: *release-branches
       - deploy: *release-tags
       - docs-deploy: *release-tags
-      - publish-purchase-tester-release:
-          requires:
-            - deploy
-            - docs-deploy
-          <<: *release-tags
+      # - publish-purchase-tester-release:
+      #     requires:
+      #       - deploy
+      #       - docs-deploy
+      #     <<: *release-tags
 
   snapshot-bump:
     when:
