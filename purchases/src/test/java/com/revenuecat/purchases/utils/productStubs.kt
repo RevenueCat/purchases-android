@@ -8,6 +8,7 @@ import com.revenuecat.purchases.PackageType
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.common.MICROS_MULTIPLIER
+import com.revenuecat.purchases.models.InstallmentsInfo
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.PricingPhase
@@ -224,6 +225,7 @@ fun stubSubscriptionOption(
     duration: Period = Period(1, Period.Unit.MONTH, "P1M"),
     pricingPhases: List<PricingPhase> = listOf(stubPricingPhase(billingPeriod = duration)),
     presentedOfferingContext: PresentedOfferingContext? = null,
+    installmentsInfo: InstallmentsInfo? = null,
 ): SubscriptionOption = object : SubscriptionOption {
     override val id: String
         get() = id
@@ -239,6 +241,8 @@ fun stubSubscriptionOption(
         get() = StubPurchasingData(
             productId = productId,
         )
+    override val installmentsInfo: InstallmentsInfo?
+        get() = installmentsInfo
 }
 
 fun stubFreeTrialPricingPhase(

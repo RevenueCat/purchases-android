@@ -36,6 +36,7 @@ import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.sha256
 import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.InAppMessageType
+import com.revenuecat.purchases.models.InstallmentsInfo
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.PricingPhase
@@ -47,10 +48,12 @@ import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.models.SubscriptionOptions
 import com.revenuecat.purchases.strings.BillingStrings
 import com.revenuecat.purchases.utils.createMockProductDetailsNoOffers
+import com.revenuecat.purchases.utils.mockInstallmentPlandetails
 import com.revenuecat.purchases.utils.mockOneTimePurchaseOfferDetails
 import com.revenuecat.purchases.utils.mockProductDetails
 import com.revenuecat.purchases.utils.mockQueryPurchaseHistory
 import com.revenuecat.purchases.utils.mockQueryPurchasesAsync
+import com.revenuecat.purchases.utils.mockSubscriptionOfferDetails
 import com.revenuecat.purchases.utils.stubGooglePurchase
 import com.revenuecat.purchases.utils.stubPurchaseHistoryRecord
 import com.revenuecat.purchases.utils.verifyQueryPurchaseHistoryCalledWithType
@@ -777,6 +780,9 @@ class BillingWrapperTest {
                     override val productType: ProductType
                         get() = ProductType.SUBS
                 }
+
+            override val installmentsInfo: InstallmentsInfo?
+                get() = null
         }
 
         wrapper.makePurchaseAsync(
@@ -835,6 +841,8 @@ class BillingWrapperTest {
                         get() = null
                     override val purchasingData: PurchasingData
                         get() = purchasingData
+                    override val installmentsInfo: InstallmentsInfo?
+                        get() = null
                 }
             override val purchasingData: PurchasingData
                 get() = purchasingData
@@ -1132,6 +1140,21 @@ class BillingWrapperTest {
 
         assertThat(slot.captured.size).isOne
         assertThat(slot.captured[0].subscriptionOptionId).isEqualTo(subscriptionOption.id)
+    }
+
+    @Test
+    fun `installment plan details are properly forwarded`() {
+        val productDetails = mockProductDetails(subscriptionOfferDetails = listOf(
+            mockSubscriptionOfferDetails(installmentDetails = mockInstallmentPlandetails())
+        ))
+        val storeProduct = productDetails.toStoreProduct(
+            productDetails.subscriptionOfferDetails!!
+        )!!
+        assertThat(storeProduct.subscriptionOptions?.size).isOne
+        val subscriptionOption = storeProduct.subscriptionOptions!!.first()
+        assertThat(subscriptionOption.installmentsInfo).isNotNull
+        assertThat(subscriptionOption.installmentsInfo?.commitmentPaymentsCount).isEqualTo(3)
+        assertThat(subscriptionOption.installmentsInfo?.renewalCommitmentPaymentsCount).isEqualTo(1)
     }
 
     @Test

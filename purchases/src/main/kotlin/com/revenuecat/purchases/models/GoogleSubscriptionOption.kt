@@ -54,6 +54,12 @@ data class GoogleSubscriptionOption @JvmOverloads constructor(
      * or on restores/syncs.
      */
     override val presentedOfferingContext: PresentedOfferingContext? = null,
+
+    /**
+     * For installment subscriptions, the details of the installment plan the customer commits to.
+     * Null for non-installment subscriptions.
+     */
+    override val installmentsInfo: GoogleInstallmentsInfo? = null,
 ) : SubscriptionOption {
 
     @Deprecated(
@@ -96,6 +102,7 @@ data class GoogleSubscriptionOption @JvmOverloads constructor(
             subscriptionOption.productDetails,
             subscriptionOption.offerToken,
             presentedOfferingContext,
+            subscriptionOption.installmentsInfo,
         )
 
     override val id: String
