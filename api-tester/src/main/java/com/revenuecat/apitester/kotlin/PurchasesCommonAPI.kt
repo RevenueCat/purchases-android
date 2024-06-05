@@ -190,6 +190,7 @@ private class PurchasesCommonAPI {
             .diagnosticsEnabled(true)
             .entitlementVerificationMode(EntitlementVerificationMode.INFORMATIONAL)
             .store(Store.PLAY_STORE)
+            .pendingTransactionsForPrepaidPlansEnabled(true)
             .build()
 
         val showInAppMessagesAutomatically: Boolean = build.showInAppMessagesAutomatically
