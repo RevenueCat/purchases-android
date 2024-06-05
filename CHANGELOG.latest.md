@@ -1,2 +1,2 @@
 ### Bugfixes
-* Fix amazon zero price (#1634) via Cesar de la Vega (@vegaro)
+* Stops collecting the ANDROID_ID (#1729) via JayShortway (@JayShortway)

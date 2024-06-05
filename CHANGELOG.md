@@ -1,3 +1,7 @@
+## 6.9.8
+### Bugfixes
+* Stops collecting the ANDROID_ID (#1729) via JayShortway (@JayShortway)
+
 ## 6.9.7
 ### Bugfixes
 * Fix amazon zero price (#1634) via Cesar de la Vega (@vegaro)
