@@ -14,6 +14,7 @@ internal data class ProcessedLocalizedConfiguration(
     val offerDetailsWithIntroOffer: String?,
     val offerDetailsWithMultipleIntroOffers: String?,
     val offerName: String?,
+    val offerBadge: String?,
     val features: List<PaywallData.LocalizedConfiguration.Feature> = emptyList(),
     val tierName: String?,
 ) {
@@ -35,16 +36,35 @@ internal data class ProcessedLocalizedConfiguration(
                 )
             }
             with(localizedConfiguration) {
+                val offerOverride = offerOverrides[rcPackage.identifier]
+
+                val offerBadge = offerOverride?.offerBadge ?: context.discountRelativeToMostExpensivePerMonth?.let {
+                    variableDataProvider.localizedRelativeDiscount(it)
+                }
+
                 return ProcessedLocalizedConfiguration(
                     title = title.processVariables(),
                     subtitle = subtitle?.processVariables(),
                     callToAction = callToAction.processVariables(),
                     callToActionWithIntroOffer = callToActionWithIntroOffer?.processVariables(),
                     callToActionWithMultipleIntroOffers = callToActionWithMultipleIntroOffers?.processVariables(),
-                    offerDetails = offerDetails?.processVariables(),
-                    offerDetailsWithIntroOffer = offerDetailsWithIntroOffer?.processVariables(),
-                    offerDetailsWithMultipleIntroOffers = offerDetailsWithMultipleIntroOffers?.processVariables(),
-                    offerName = offerName?.processVariables(),
+                    offerDetails = (
+                        offerOverride?.offerDetails
+                            ?: offerDetails
+                        )?.processVariables(),
+                    offerDetailsWithIntroOffer = (
+                        offerOverride?.offerDetailsWithIntroOffer
+                            ?: offerDetailsWithIntroOffer
+                        )?.processVariables(),
+                    offerDetailsWithMultipleIntroOffers = (
+                        offerOverride?.offerDetailsWithMultipleIntroOffers
+                            ?: offerDetailsWithMultipleIntroOffers
+                        )?.processVariables(),
+                    offerName = (
+                        offerOverride?.offerName
+                            ?: offerName
+                        )?.processVariables(),
+                    offerBadge = offerBadge,
                     features = features.map { feature ->
                         feature.copy(
                             title = feature.title.processVariables(),
