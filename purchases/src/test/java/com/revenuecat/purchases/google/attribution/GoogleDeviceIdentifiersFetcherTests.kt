@@ -56,8 +56,9 @@ class GoogleDeviceIdentifiersFetcherTests {
             assertThat(advertisingID).isNotNull()
             assertThat(advertisingID).isEqualTo("12345")
 
-            val androidID = identifiers[SubscriberAttributeKey.DeviceIdentifiers.AndroidID.backendKey]
-            assertThat(androidID).isEqualTo("androidid")
+            // Assert we don't collect the ANDROID_ID
+            assertThat(identifiers.containsKey("\$androidId")).isFalse()
+            assertThat(identifiers.containsValue("androidid")).isFalse()
 
             val ip = identifiers[SubscriberAttributeKey.DeviceIdentifiers.IP.backendKey]
             assertThat(ip).isEqualTo("true")
@@ -83,8 +84,9 @@ class GoogleDeviceIdentifiersFetcherTests {
             val advertisingID = identifiers[SubscriberAttributeKey.DeviceIdentifiers.GPSAdID.backendKey]
             assertThat(advertisingID).isNull()
 
-            val androidID = identifiers[SubscriberAttributeKey.DeviceIdentifiers.AndroidID.backendKey]
-            assertThat(androidID).isEqualTo("androidid")
+            // Assert we don't collect the ANDROID_ID
+            assertThat(identifiers.containsKey("\$androidId")).isFalse()
+            assertThat(identifiers.containsValue("androidid")).isFalse()
 
             val ip = identifiers[SubscriberAttributeKey.DeviceIdentifiers.IP.backendKey]
             assertThat(ip).isEqualTo("true")
@@ -110,8 +112,9 @@ class GoogleDeviceIdentifiersFetcherTests {
             val advertisingID = identifiers[SubscriberAttributeKey.DeviceIdentifiers.GPSAdID.backendKey]
             assertThat(advertisingID).isNull()
 
-            val androidID = identifiers[SubscriberAttributeKey.DeviceIdentifiers.AndroidID.backendKey]
-            assertThat(androidID).isEqualTo("androidid")
+            // Assert we don't collect the ANDROID_ID
+            assertThat(identifiers.containsKey("\$androidId")).isFalse()
+            assertThat(identifiers.containsValue("androidid")).isFalse()
 
             val ip = identifiers[SubscriberAttributeKey.DeviceIdentifiers.IP.backendKey]
             assertThat(ip).isEqualTo("true")
@@ -137,8 +140,9 @@ class GoogleDeviceIdentifiersFetcherTests {
             val advertisingID = identifiers[SubscriberAttributeKey.DeviceIdentifiers.GPSAdID.backendKey]
             assertThat(advertisingID).isNull()
 
-            val androidID = identifiers[SubscriberAttributeKey.DeviceIdentifiers.AndroidID.backendKey]
-            assertThat(androidID).isEqualTo("androidid")
+            // Assert we don't collect the ANDROID_ID
+            assertThat(identifiers.containsKey("\$androidId")).isFalse()
+            assertThat(identifiers.containsValue("androidid")).isFalse()
 
             val ip = identifiers[SubscriberAttributeKey.DeviceIdentifiers.IP.backendKey]
             assertThat(ip).isEqualTo("true")
@@ -163,8 +167,9 @@ class GoogleDeviceIdentifiersFetcherTests {
             val advertisingID = identifiers[SubscriberAttributeKey.DeviceIdentifiers.GPSAdID.backendKey]
             assertThat(advertisingID).isNull()
 
-            val androidID = identifiers[SubscriberAttributeKey.DeviceIdentifiers.AndroidID.backendKey]
-            assertThat(androidID).isEqualTo("androidid")
+            // Assert we don't collect the ANDROID_ID
+            assertThat(identifiers.containsKey("\$androidId")).isFalse()
+            assertThat(identifiers.containsValue("androidid")).isFalse()
 
             val ip = identifiers[SubscriberAttributeKey.DeviceIdentifiers.IP.backendKey]
             assertThat(ip).isEqualTo("true")
@@ -190,8 +195,9 @@ class GoogleDeviceIdentifiersFetcherTests {
             val advertisingID = identifiers[SubscriberAttributeKey.DeviceIdentifiers.GPSAdID.backendKey]
             assertThat(advertisingID).isNull()
 
-            val androidID = identifiers[SubscriberAttributeKey.DeviceIdentifiers.AndroidID.backendKey]
-            assertThat(androidID).isEqualTo("androidid")
+            // Assert we don't collect the ANDROID_ID
+            assertThat(identifiers.containsKey("\$androidId")).isFalse()
+            assertThat(identifiers.containsValue("androidid")).isFalse()
 
             val ip = identifiers[SubscriberAttributeKey.DeviceIdentifiers.IP.backendKey]
             assertThat(ip).isEqualTo("true")
@@ -217,8 +223,9 @@ class GoogleDeviceIdentifiersFetcherTests {
             val advertisingID = identifiers[SubscriberAttributeKey.DeviceIdentifiers.GPSAdID.backendKey]
             assertThat(advertisingID).isNull()
 
-            val androidID = identifiers[SubscriberAttributeKey.DeviceIdentifiers.AndroidID.backendKey]
-            assertThat(androidID).isEqualTo("androidid")
+            // Assert we don't collect the ANDROID_ID
+            assertThat(identifiers.containsKey("\$androidId")).isFalse()
+            assertThat(identifiers.containsValue("androidid")).isFalse()
 
             val ip = identifiers[SubscriberAttributeKey.DeviceIdentifiers.IP.backendKey]
             assertThat(ip).isEqualTo("true")
@@ -244,8 +251,9 @@ class GoogleDeviceIdentifiersFetcherTests {
             val advertisingID = identifiers[SubscriberAttributeKey.DeviceIdentifiers.GPSAdID.backendKey]
             assertThat(advertisingID).isNull()
 
-            val androidID = identifiers[SubscriberAttributeKey.DeviceIdentifiers.AndroidID.backendKey]
-            assertThat(androidID).isEqualTo("androidid")
+            // Assert we don't collect the ANDROID_ID
+            assertThat(identifiers.containsKey("\$androidId")).isFalse()
+            assertThat(identifiers.containsValue("androidid")).isFalse()
 
             val ip = identifiers[SubscriberAttributeKey.DeviceIdentifiers.IP.backendKey]
             assertThat(ip).isEqualTo("true")
