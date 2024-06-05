@@ -33,7 +33,6 @@ class SubscriberAttributesManagerTests {
     private val mockBackend: SubscriberAttributesPoster = mockk()
     private val mockDeviceIdentifiersFetcher: DeviceIdentifiersFetcher = mockk()
     private val appUserID: String = "appUserID"
-    private val androidID = "androidid"
     private lateinit var underTest: SubscriberAttributesManager
 
     @Before
@@ -686,17 +685,12 @@ class SubscriberAttributesManagerTests {
 
         val captured = capturingSlot.captured
         assertThat(captured).isNotNull
-        assertThat(captured.size).isEqualTo(3)
+        assertThat(captured.size).isEqualTo(2)
 
         val gpsAdIdSubscriberAttribute =
             captured[SubscriberAttributeKey.DeviceIdentifiers.GPSAdID.backendKey]
         assertThat(gpsAdIdSubscriberAttribute).isNotNull
         assertThat(gpsAdIdSubscriberAttribute!!.value).isEqualTo("12345")
-
-        val androidIDSubscriberAttribute =
-            captured[SubscriberAttributeKey.DeviceIdentifiers.AndroidID.backendKey]
-        assertThat(androidIDSubscriberAttribute).isNotNull
-        assertThat(androidIDSubscriberAttribute!!.value).isEqualTo("androidid")
 
         val ipSubscriberAttribute =
             captured[SubscriberAttributeKey.DeviceIdentifiers.IP.backendKey]
@@ -718,16 +712,11 @@ class SubscriberAttributesManagerTests {
 
         val captured = capturingSlot.captured
         assertThat(captured).isNotNull
-        assertThat(captured.size).isEqualTo(2)
+        assertThat(captured.size).isEqualTo(1)
 
         val gpsAdIdSubscriberAttribute =
             captured[SubscriberAttributeKey.DeviceIdentifiers.GPSAdID.backendKey]
         assertThat(gpsAdIdSubscriberAttribute).isNull()
-
-        val androidIDSubscriberAttribute =
-            captured[SubscriberAttributeKey.DeviceIdentifiers.AndroidID.backendKey]
-        assertThat(androidIDSubscriberAttribute).isNotNull
-        assertThat(androidIDSubscriberAttribute!!.value).isEqualTo("androidid")
     }
 
     @Test
@@ -749,17 +738,12 @@ class SubscriberAttributesManagerTests {
 
         val captured = capturingSlot.captured
         assertThat(captured).isNotNull
-        assertThat(captured.size).isEqualTo(4)
+        assertThat(captured.size).isEqualTo(3)
 
         val gpsAdIdSubscriberAttribute =
             captured[SubscriberAttributeKey.DeviceIdentifiers.GPSAdID.backendKey]
         assertThat(gpsAdIdSubscriberAttribute).isNotNull
         assertThat(gpsAdIdSubscriberAttribute!!.value).isEqualTo("12345")
-
-        val androidIDSubscriberAttribute =
-            captured[SubscriberAttributeKey.DeviceIdentifiers.AndroidID.backendKey]
-        assertThat(androidIDSubscriberAttribute).isNotNull
-        assertThat(androidIDSubscriberAttribute!!.value).isEqualTo("androidid")
 
         val ipSubscriberAttribute =
             captured[SubscriberAttributeKey.DeviceIdentifiers.IP.backendKey]
@@ -812,7 +796,6 @@ class SubscriberAttributesManagerTests {
             lambda<(Map<String, String>) -> Unit>().captured.also {
                 val deviceIdentifiers = mapOf(
                     SubscriberAttributeKey.DeviceIdentifiers.GPSAdID.backendKey to expectedAdID,
-                    SubscriberAttributeKey.DeviceIdentifiers.AndroidID.backendKey to androidID,
                     SubscriberAttributeKey.DeviceIdentifiers.IP.backendKey to "true"
                 ).filterNotNullValues()
                 it.invoke(deviceIdentifiers)

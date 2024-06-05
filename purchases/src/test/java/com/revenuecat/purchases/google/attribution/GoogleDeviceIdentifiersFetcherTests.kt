@@ -56,8 +56,7 @@ class GoogleDeviceIdentifiersFetcherTests {
             assertThat(advertisingID).isNotNull()
             assertThat(advertisingID).isEqualTo("12345")
 
-            val androidID = identifiers[SubscriberAttributeKey.DeviceIdentifiers.AndroidID.backendKey]
-            assertThat(androidID).isEqualTo("androidid")
+            assertContainsNoAndroidId(identifiers)
 
             val ip = identifiers[SubscriberAttributeKey.DeviceIdentifiers.IP.backendKey]
             assertThat(ip).isEqualTo("true")
@@ -83,8 +82,7 @@ class GoogleDeviceIdentifiersFetcherTests {
             val advertisingID = identifiers[SubscriberAttributeKey.DeviceIdentifiers.GPSAdID.backendKey]
             assertThat(advertisingID).isNull()
 
-            val androidID = identifiers[SubscriberAttributeKey.DeviceIdentifiers.AndroidID.backendKey]
-            assertThat(androidID).isEqualTo("androidid")
+            assertContainsNoAndroidId(identifiers)
 
             val ip = identifiers[SubscriberAttributeKey.DeviceIdentifiers.IP.backendKey]
             assertThat(ip).isEqualTo("true")
@@ -110,8 +108,7 @@ class GoogleDeviceIdentifiersFetcherTests {
             val advertisingID = identifiers[SubscriberAttributeKey.DeviceIdentifiers.GPSAdID.backendKey]
             assertThat(advertisingID).isNull()
 
-            val androidID = identifiers[SubscriberAttributeKey.DeviceIdentifiers.AndroidID.backendKey]
-            assertThat(androidID).isEqualTo("androidid")
+            assertContainsNoAndroidId(identifiers)
 
             val ip = identifiers[SubscriberAttributeKey.DeviceIdentifiers.IP.backendKey]
             assertThat(ip).isEqualTo("true")
@@ -137,8 +134,7 @@ class GoogleDeviceIdentifiersFetcherTests {
             val advertisingID = identifiers[SubscriberAttributeKey.DeviceIdentifiers.GPSAdID.backendKey]
             assertThat(advertisingID).isNull()
 
-            val androidID = identifiers[SubscriberAttributeKey.DeviceIdentifiers.AndroidID.backendKey]
-            assertThat(androidID).isEqualTo("androidid")
+            assertContainsNoAndroidId(identifiers)
 
             val ip = identifiers[SubscriberAttributeKey.DeviceIdentifiers.IP.backendKey]
             assertThat(ip).isEqualTo("true")
@@ -163,8 +159,7 @@ class GoogleDeviceIdentifiersFetcherTests {
             val advertisingID = identifiers[SubscriberAttributeKey.DeviceIdentifiers.GPSAdID.backendKey]
             assertThat(advertisingID).isNull()
 
-            val androidID = identifiers[SubscriberAttributeKey.DeviceIdentifiers.AndroidID.backendKey]
-            assertThat(androidID).isEqualTo("androidid")
+            assertContainsNoAndroidId(identifiers)
 
             val ip = identifiers[SubscriberAttributeKey.DeviceIdentifiers.IP.backendKey]
             assertThat(ip).isEqualTo("true")
@@ -190,8 +185,7 @@ class GoogleDeviceIdentifiersFetcherTests {
             val advertisingID = identifiers[SubscriberAttributeKey.DeviceIdentifiers.GPSAdID.backendKey]
             assertThat(advertisingID).isNull()
 
-            val androidID = identifiers[SubscriberAttributeKey.DeviceIdentifiers.AndroidID.backendKey]
-            assertThat(androidID).isEqualTo("androidid")
+            assertContainsNoAndroidId(identifiers)
 
             val ip = identifiers[SubscriberAttributeKey.DeviceIdentifiers.IP.backendKey]
             assertThat(ip).isEqualTo("true")
@@ -217,8 +211,7 @@ class GoogleDeviceIdentifiersFetcherTests {
             val advertisingID = identifiers[SubscriberAttributeKey.DeviceIdentifiers.GPSAdID.backendKey]
             assertThat(advertisingID).isNull()
 
-            val androidID = identifiers[SubscriberAttributeKey.DeviceIdentifiers.AndroidID.backendKey]
-            assertThat(androidID).isEqualTo("androidid")
+            assertContainsNoAndroidId(identifiers)
 
             val ip = identifiers[SubscriberAttributeKey.DeviceIdentifiers.IP.backendKey]
             assertThat(ip).isEqualTo("true")
@@ -253,5 +246,15 @@ class GoogleDeviceIdentifiersFetcherTests {
         every {
             Settings.Secure.getString(mockContext.contentResolver, Settings.Secure.ANDROID_ID)
         } returns expectedAndroidID
+    }
+
+    /**
+     * Assert that [identifiers] does not contain the [Settings.Secure.ANDROID_ID].
+     */
+    private fun assertContainsNoAndroidId(identifiers: Map<String, String>) {
+        // We used to use this key for the ANDROID_ID, both in the identifiers map and when sending it to the backend.
+        assertThat(identifiers.containsKey("\$androidId")).isFalse()
+        // This value is set by mockAdvertisingInfo().
+        assertThat(identifiers.containsValue("androidid")).isFalse()
     }
 }
