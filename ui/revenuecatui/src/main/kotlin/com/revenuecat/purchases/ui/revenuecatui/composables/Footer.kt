@@ -45,6 +45,8 @@ import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfigura
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockViewModel
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.templates.template2
+import com.revenuecat.purchases.ui.revenuecatui.extensions.openUriOrElse
+import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import java.net.URL
 
 @Composable
@@ -67,7 +69,7 @@ internal fun Footer(
     }
 }
 
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "LongMethod")
 @Composable
 private fun Footer(
     mode: PaywallMode,
@@ -124,7 +126,11 @@ private fun Footer(
                 childModifier = childModifier,
                 R.string.terms_and_conditions,
                 R.string.terms,
-            ) { uriHandler.openUri(it.toString()) }
+            ) {
+                uriHandler.openUriOrElse(it.toString()) {
+                    Logger.w("No browser installed. Terms and conditions could not be opened.")
+                }
+            }
 
             if (configuration.privacyURL != null) {
                 Separator(color = color)
@@ -137,7 +143,11 @@ private fun Footer(
                 childModifier = childModifier,
                 R.string.privacy_policy,
                 R.string.privacy,
-            ) { uriHandler.openUri(it.toString()) }
+            ) {
+                uriHandler.openUriOrElse(it.toString()) {
+                    Logger.w("No browser installed. Privacy policy could not be opened.")
+                }
+            }
         }
     }
 }
