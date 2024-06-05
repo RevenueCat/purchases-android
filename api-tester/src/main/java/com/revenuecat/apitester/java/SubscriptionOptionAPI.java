@@ -2,7 +2,9 @@ package com.revenuecat.apitester.java;
 
 import com.android.billingclient.api.ProductDetails;
 import com.revenuecat.purchases.PresentedOfferingContext;
+import com.revenuecat.purchases.models.GoogleInstallmentsInfo;
 import com.revenuecat.purchases.models.GoogleSubscriptionOption;
+import com.revenuecat.purchases.models.InstallmentsInfo;
 import com.revenuecat.purchases.models.PricingPhase;
 import com.revenuecat.purchases.models.PurchasingData;
 import com.revenuecat.purchases.models.SubscriptionOption;
@@ -21,6 +23,7 @@ final class SubscriptionOptionAPI {
         PurchasingData purchasingData = subscriptionOption.getPurchasingData();
         String id = subscriptionOption.getId();
         Boolean isPrepaid = subscriptionOption.isPrepaid();
+        InstallmentsInfo installmentsInfo = subscriptionOption.getInstallmentsInfo();
     }
 
     static void checkGoogleSubscriptionOption(GoogleSubscriptionOption googleSubscriptionOption) {
@@ -30,6 +33,7 @@ final class SubscriptionOptionAPI {
         String offerId = googleSubscriptionOption.getOfferId();
         String offerToken = googleSubscriptionOption.getOfferToken();
         ProductDetails productDetails = googleSubscriptionOption.getProductDetails();
+        GoogleInstallmentsInfo installmentsInfo = googleSubscriptionOption.getInstallmentsInfo();
 
         GoogleSubscriptionOption constructedGoogleSubOption = new GoogleSubscriptionOption(
                 productId,
@@ -61,6 +65,18 @@ final class SubscriptionOptionAPI {
                 productDetails,
                 offerToken,
                 googleSubscriptionOption.getPresentedOfferingContext()
+        );
+
+        GoogleSubscriptionOption constructedGoogleSubOptionWithInstallmentsInfo = new GoogleSubscriptionOption(
+                productId,
+                basePlanId,
+                offerId,
+                googleSubscriptionOption.getPricingPhases(),
+                googleSubscriptionOption.getTags(),
+                productDetails,
+                offerToken,
+                googleSubscriptionOption.getPresentedOfferingContext(),
+                installmentsInfo
         );
     }
 

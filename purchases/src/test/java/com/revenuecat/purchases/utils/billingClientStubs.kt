@@ -5,6 +5,7 @@ package com.revenuecat.purchases.utils
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.ProductDetails
+import com.android.billingclient.api.ProductDetails.InstallmentPlanDetails
 import com.android.billingclient.api.ProductDetails.OneTimePurchaseOfferDetails
 import com.android.billingclient.api.ProductDetails.PricingPhase
 import com.android.billingclient.api.ProductDetails.RecurrenceMode
@@ -63,6 +64,7 @@ fun mockSubscriptionOfferDetails(
     offerId: String = "mock-offer-id",
     basePlanId: String = "mock-base-plan-id",
     pricingPhases: List<PricingPhase> = listOf(mockPricingPhase()),
+    installmentDetails: ProductDetails.InstallmentPlanDetails? = null,
 ): SubscriptionOfferDetails = mockk<SubscriptionOfferDetails>().apply {
     every { offerTags } returns tags
     every { offerToken } returns token
@@ -70,6 +72,17 @@ fun mockSubscriptionOfferDetails(
     every { getBasePlanId() } returns basePlanId
     every { getPricingPhases() } returns mockk<ProductDetails.PricingPhases>().apply {
         every { pricingPhaseList } returns pricingPhases
+    }
+    every { installmentPlanDetails } returns installmentDetails
+}
+
+fun mockInstallmentPlandetails(
+    commitmentPaymentsCount: Int = 3,
+    subsequentCommitmentPaymentsCount: Int = 1,
+): InstallmentPlanDetails {
+    return mockk<InstallmentPlanDetails>().apply {
+        every { installmentPlanCommitmentPaymentsCount } returns commitmentPaymentsCount
+        every { subsequentInstallmentPlanCommitmentPaymentsCount } returns subsequentCommitmentPaymentsCount
     }
 }
 
