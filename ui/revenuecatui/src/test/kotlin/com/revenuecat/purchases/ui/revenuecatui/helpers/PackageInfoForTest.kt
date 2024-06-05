@@ -58,6 +58,7 @@ internal fun Package.getPackageInfoForTest(
         offerDetailsWithMultipleIntroOffers = null,
         offerName = periodName,
         features = emptyList(),
+        tierName = null,
     )
     return TemplateConfiguration.PackageInfo(
         rcPackage = this,
