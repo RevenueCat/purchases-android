@@ -32,7 +32,7 @@ class BillingFactoryAmazonTest {
             observerMode = false,
             mockDiagnosticsTracker,
             stateProvider = PurchasesStateCache(PurchasesState()),
-            pendingPrepaidSubscriptionsEnabled = true,
+            pendingTransactionsForPrepaidPlansEnabled = true,
         )
     }
 
@@ -50,7 +50,7 @@ class BillingFactoryAmazonTest {
             observerMode = false,
             diagnosticsTrackerIfEnabled = null,
             stateProvider = PurchasesStateCache(PurchasesState()),
-            pendingPrepaidSubscriptionsEnabled = true,
+            pendingTransactionsForPrepaidPlansEnabled = true,
         )
     }
 }

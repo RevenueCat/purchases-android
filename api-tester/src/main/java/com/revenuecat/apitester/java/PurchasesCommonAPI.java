@@ -146,7 +146,7 @@ final class PurchasesCommonAPI {
                 .entitlementVerificationMode(EntitlementVerificationMode.INFORMATIONAL)
                 .showInAppMessagesAutomatically(true)
                 .store(Store.APP_STORE)
-                .pendingPrepaidSubscriptionsEnabled(true)
+                .pendingTransactionsForPrepaidPlansEnabled(true)
                 .build();
 
         final Boolean showInAppMessagesAutomatically = build.getShowInAppMessagesAutomatically();

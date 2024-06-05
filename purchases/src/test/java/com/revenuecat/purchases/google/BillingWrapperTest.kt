@@ -1158,7 +1158,7 @@ class BillingWrapperTest {
         every {
             mockPendingParamsBuilder.build()
         } returns mockPendingParams
-        BillingWrapper.ClientFactory(context, pendingPrepaidSubscriptionsEnabled = true).buildClient(mockk())
+        BillingWrapper.ClientFactory(context, pendingTransactionsForPrepaidPlansEnabled = true).buildClient(mockk())
 
         verify(exactly = 1) {
             mockPendingParamsBuilder.enableOneTimeProducts()
@@ -1194,7 +1194,7 @@ class BillingWrapperTest {
         every {
             mockPendingParamsBuilder.build()
         } returns mockPendingParams
-        BillingWrapper.ClientFactory(context, pendingPrepaidSubscriptionsEnabled = false).buildClient(mockk())
+        BillingWrapper.ClientFactory(context, pendingTransactionsForPrepaidPlansEnabled = false).buildClient(mockk())
 
         verify(exactly = 1) {
             mockPendingParamsBuilder.enableOneTimeProducts()
