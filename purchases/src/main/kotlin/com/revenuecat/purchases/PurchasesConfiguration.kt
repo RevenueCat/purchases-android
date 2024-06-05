@@ -19,6 +19,7 @@ open class PurchasesConfiguration(builder: Builder) {
     val diagnosticsEnabled: Boolean
     val dangerousSettings: DangerousSettings
     val verificationMode: EntitlementVerificationMode
+    val pendingPrepaidSubscriptionsEnabled: Boolean
 
     init {
         this.context = builder.context
@@ -31,8 +32,10 @@ open class PurchasesConfiguration(builder: Builder) {
         this.verificationMode = builder.verificationMode
         this.dangerousSettings = builder.dangerousSettings
         this.showInAppMessagesAutomatically = builder.showInAppMessagesAutomatically
+        this.pendingPrepaidSubscriptionsEnabled = builder.pendingPrepaidSubscriptionsEnabled
     }
 
+    @Suppress("TooManyFunctions")
     open class Builder(
         @get:JvmSynthetic internal val context: Context,
         @get:JvmSynthetic internal val apiKey: String,
@@ -61,6 +64,9 @@ open class PurchasesConfiguration(builder: Builder) {
 
         @set:JvmSynthetic @get:JvmSynthetic
         internal var dangerousSettings: DangerousSettings = DangerousSettings()
+
+        @set:JvmSynthetic @get:JvmSynthetic
+        internal var pendingPrepaidSubscriptionsEnabled: Boolean = true
 
         /**
          * A unique id for identifying the user
@@ -171,6 +177,15 @@ open class PurchasesConfiguration(builder: Builder) {
          */
         fun dangerousSettings(dangerousSettings: DangerousSettings) = apply {
             this.dangerousSettings = dangerousSettings
+        }
+
+        /**
+         * Disable this setting if you don't want to allow pending purchases for prepaid subscriptions (only supported
+         * in Google Play). Note that entitlements are not granted until payment is done.
+         * Default is enabled.
+         */
+        fun pendingPrepaidSubscriptionsEnabled(pendingPrepaidSubscriptionsEnabled: Boolean) = apply {
+            this.pendingPrepaidSubscriptionsEnabled = pendingPrepaidSubscriptionsEnabled
         }
 
         /**

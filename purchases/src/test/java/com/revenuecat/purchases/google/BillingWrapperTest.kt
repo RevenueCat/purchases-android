@@ -1158,12 +1158,48 @@ class BillingWrapperTest {
         every {
             mockPendingParamsBuilder.build()
         } returns mockPendingParams
-        BillingWrapper.ClientFactory(context).buildClient(mockk())
+        BillingWrapper.ClientFactory(context, pendingPrepaidSubscriptionsEnabled = true).buildClient(mockk())
 
         verify(exactly = 1) {
             mockPendingParamsBuilder.enableOneTimeProducts()
         }
         verify(exactly = 1) {
+            mockPendingParamsBuilder.enablePrepaidPlans()
+        }
+        verify(exactly = 1) {
+            mockBuilder.enablePendingPurchases(mockPendingParams)
+        }
+    }
+
+    @Test
+    fun `Can disable pending prepaid subs`() {
+        val context = mockk<Context>()
+        mockkStatic(BillingClient::class)
+        mockkStatic(PendingPurchasesParams::class)
+        val mockBuilder = mockk<BillingClient.Builder>(relaxed = true)
+        every {
+            BillingClient.newBuilder(context)
+        } returns mockBuilder
+        val mockPendingParamsBuilder = mockk<PendingPurchasesParams.Builder>(relaxed = true)
+        val mockPendingParams = mockk<PendingPurchasesParams>()
+        every {
+            PendingPurchasesParams.newBuilder()
+        } returns mockPendingParamsBuilder
+        every {
+            mockPendingParamsBuilder.enableOneTimeProducts()
+        } returns mockPendingParamsBuilder
+        every {
+            mockPendingParamsBuilder.enablePrepaidPlans()
+        } returns mockPendingParamsBuilder
+        every {
+            mockPendingParamsBuilder.build()
+        } returns mockPendingParams
+        BillingWrapper.ClientFactory(context, pendingPrepaidSubscriptionsEnabled = false).buildClient(mockk())
+
+        verify(exactly = 1) {
+            mockPendingParamsBuilder.enableOneTimeProducts()
+        }
+        verify(exactly = 0) {
             mockPendingParamsBuilder.enablePrepaidPlans()
         }
         verify(exactly = 1) {
