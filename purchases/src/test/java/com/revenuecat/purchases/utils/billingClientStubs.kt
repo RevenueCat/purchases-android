@@ -78,11 +78,11 @@ fun mockSubscriptionOfferDetails(
 
 fun mockInstallmentPlandetails(
     commitmentPaymentsCount: Int = 3,
-    subsequentCommitmentPaymentsCount: Int = 1,
+    renewalCommitmentPaymentsCount: Int = 1,
 ): InstallmentPlanDetails {
     return mockk<InstallmentPlanDetails>().apply {
         every { installmentPlanCommitmentPaymentsCount } returns commitmentPaymentsCount
-        every { subsequentInstallmentPlanCommitmentPaymentsCount } returns subsequentCommitmentPaymentsCount
+        every { subsequentInstallmentPlanCommitmentPaymentsCount } returns renewalCommitmentPaymentsCount
     }
 }
 

@@ -10,7 +10,7 @@ interface InstallmentsInfo {
     val commitmentPaymentsCount: Int
 
     /**
-     * After the commitment payments are made, the number of payments the user commits to upon a renewal.
+     * After the commitment payments are complete, the number of payments the user commits to upon a renewal.
      */
-    val subsequentCommitmentPaymentsCount: Int
+    val renewalCommitmentPaymentsCount: Int
 }

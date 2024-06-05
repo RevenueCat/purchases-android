@@ -11,10 +11,10 @@ fun SubscriptionOption.toButtonString(isDefault: Boolean): String {
     }
     val installmentsString = installmentsInfo?.let { installmentsInfo ->
         val commitmentPaymentsCount = installmentsInfo.commitmentPaymentsCount
-        val subsequentCommitmentPaymentsCount = installmentsInfo.subsequentCommitmentPaymentsCount
+        val renewalCommitmentPaymentsCount = installmentsInfo.renewalCommitmentPaymentsCount
         "\nInstallmentsInfo = [" +
             "\n\tCommitment: $commitmentPaymentsCount," +
-            "\n\tSubsequent: $subsequentCommitmentPaymentsCount" +
+            "\n\tRenewal: $renewalCommitmentPaymentsCount" +
             "\n]"
     }
     return "${if (isDefault) "DEFAULT\n" else ""} " +

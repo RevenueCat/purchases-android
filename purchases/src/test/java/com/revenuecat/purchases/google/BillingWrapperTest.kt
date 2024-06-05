@@ -1154,7 +1154,7 @@ class BillingWrapperTest {
         val subscriptionOption = storeProduct.subscriptionOptions!!.first()
         assertThat(subscriptionOption.installmentsInfo).isNotNull
         assertThat(subscriptionOption.installmentsInfo?.commitmentPaymentsCount).isEqualTo(3)
-        assertThat(subscriptionOption.installmentsInfo?.subsequentCommitmentPaymentsCount).isEqualTo(1)
+        assertThat(subscriptionOption.installmentsInfo?.renewalCommitmentPaymentsCount).isEqualTo(1)
     }
 
     @Test

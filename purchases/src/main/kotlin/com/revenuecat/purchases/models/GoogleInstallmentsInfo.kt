@@ -11,5 +11,5 @@ data class GoogleInstallmentsInfo(
     /**
      * After the commitment payments are made, the number of payments the user commits to upon a renewal.
      */
-    override val subsequentCommitmentPaymentsCount: Int,
+    override val renewalCommitmentPaymentsCount: Int,
 ) : InstallmentsInfo

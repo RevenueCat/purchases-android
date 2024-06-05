@@ -7,17 +7,17 @@ import com.revenuecat.purchases.models.InstallmentsInfo;
 final class InstallmentsInfoAPI {
     static void check(final InstallmentsInfo installmentsInfo) {
         int commitmentPaymentsCount = installmentsInfo.getCommitmentPaymentsCount();
-        int subsequentCommitmentPaymentsCount = installmentsInfo.getSubsequentCommitmentPaymentsCount();
+        int renewalCommitmentPaymentsCount = installmentsInfo.getRenewalCommitmentPaymentsCount();
     }
 
     static void checkGoogleInstallmentsInfo(final GoogleInstallmentsInfo googleInstallmentsInfo) {
         check(googleInstallmentsInfo);
         int commitmentPaymentsCount = googleInstallmentsInfo.getCommitmentPaymentsCount();
-        int subsequentCommitmentPaymentsCount = googleInstallmentsInfo.getSubsequentCommitmentPaymentsCount();
+        int renewalCommitmentPaymentsCount = googleInstallmentsInfo.getRenewalCommitmentPaymentsCount();
 
         GoogleInstallmentsInfo constructedGoogleInstallmentsInfo = new GoogleInstallmentsInfo(
                 commitmentPaymentsCount,
-                subsequentCommitmentPaymentsCount
+                renewalCommitmentPaymentsCount
         );
     }
 }

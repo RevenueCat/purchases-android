@@ -7,17 +7,17 @@ import com.revenuecat.purchases.models.InstallmentsInfo
 private class InstallmentsInfoAPI {
     fun checkInstallmentsInfo(installmentsInfo: InstallmentsInfo) {
         val commitmentPaymentsCount: Int = installmentsInfo.commitmentPaymentsCount
-        val subsequentCommitmentPaymentsCount: Int = installmentsInfo.subsequentCommitmentPaymentsCount
+        val renewalCommitmentPaymentsCount: Int = installmentsInfo.renewalCommitmentPaymentsCount
     }
 
     fun checkGoogleInstallmentsInfo(googleInstallmentsInfo: GoogleInstallmentsInfo) {
         checkInstallmentsInfo(googleInstallmentsInfo)
         val commitmentPaymentsCount: Int = googleInstallmentsInfo.commitmentPaymentsCount
-        val subsequentCommitmentPaymentsCount: Int = googleInstallmentsInfo.subsequentCommitmentPaymentsCount
+        val renewalCommitmentPaymentsCount: Int = googleInstallmentsInfo.renewalCommitmentPaymentsCount
 
         val newGoogleInstallmentsInfo = GoogleInstallmentsInfo(
             commitmentPaymentsCount,
-            subsequentCommitmentPaymentsCount,
+            renewalCommitmentPaymentsCount,
         )
     }
 }
