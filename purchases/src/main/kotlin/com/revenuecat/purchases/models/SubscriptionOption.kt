@@ -93,4 +93,11 @@ interface SubscriptionOption {
         }
 
     val purchasingData: PurchasingData
+
+    /**
+     * For installment subscriptions, the details of the installment plan the customer commits to.
+     * Null for non-installment subscriptions.
+     * Installment plans are only available for Google Play subscriptions.
+     */
+    val installmentsInfo: InstallmentsInfo?
 }

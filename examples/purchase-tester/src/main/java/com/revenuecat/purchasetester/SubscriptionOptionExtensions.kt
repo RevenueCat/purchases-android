@@ -9,5 +9,16 @@ fun SubscriptionOption.toButtonString(isDefault: Boolean): String {
         val cycles = pricingPhase.billingCycleCount
         "\t[$formatted, $iso, $cycles cycles]"
     }
-    return "${if (isDefault) "DEFAULT\n" else ""} PricingPhases = [\n$pricingPhasesString\n],\nTags = $tags"
+    val installmentsString = installmentsInfo?.let { installmentsInfo ->
+        val commitmentPaymentsCount = installmentsInfo.commitmentPaymentsCount
+        val renewalCommitmentPaymentsCount = installmentsInfo.renewalCommitmentPaymentsCount
+        "\nInstallmentsInfo = [" +
+            "\n\tCommitment: $commitmentPaymentsCount," +
+            "\n\tRenewal: $renewalCommitmentPaymentsCount" +
+            "\n]"
+    }
+    return "${if (isDefault) "DEFAULT\n" else ""} " +
+        "PricingPhases = [\n$pricingPhasesString\n],\n" +
+        "Tags = $tags" +
+        if (installmentsString != null) ",$installmentsString" else ""
 }

@@ -1,7 +1,6 @@
 package com.revenuecat.purchases
 
 import android.app.Activity
-import com.revenuecat.purchases.models.GoogleProrationMode
 import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreProduct
@@ -121,20 +120,6 @@ data class PurchaseParams(val builder: Builder) {
          */
         fun oldProductId(oldProductId: String) = apply {
             this.oldProductId = oldProductId
-        }
-
-        /*
-         * The [GoogleProrationMode] to use when upgrading the given oldProductId. Defaults to
-         * [GoogleProrationMode.IMMEDIATE_WITHOUT_PRORATION].
-         *
-         * Only applied for Play Store product changes. Ignored for Amazon Appstore purchases.
-         */
-        @Deprecated(
-            "Use googleReplacementMode()",
-            ReplaceWith("googleReplacementMode()"),
-        )
-        fun googleProrationMode(googleProrationMode: GoogleProrationMode) = apply {
-            this.googleReplacementMode = googleProrationMode.asGoogleReplacementMode
         }
 
         /*

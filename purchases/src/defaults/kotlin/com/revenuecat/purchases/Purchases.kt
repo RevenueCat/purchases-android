@@ -11,7 +11,6 @@ import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.interfaces.Callback
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
 import com.revenuecat.purchases.interfaces.LogInCallback
-import com.revenuecat.purchases.interfaces.ProductChangeCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback
@@ -19,7 +18,6 @@ import com.revenuecat.purchases.interfaces.SyncAttributesAndOfferingsCallback
 import com.revenuecat.purchases.interfaces.SyncPurchasesCallback
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import com.revenuecat.purchases.models.BillingFeature
-import com.revenuecat.purchases.models.GoogleProrationMode
 import com.revenuecat.purchases.models.InAppMessageType
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
@@ -280,44 +278,6 @@ class Purchases internal constructor(
     }
 
     /**
-     * Purchases [storeProduct].
-     * If [storeProduct] represents a subscription, upgrades from the subscription specified by
-     * [upgradeInfo.oldSku] and chooses [storeProduct]'s default [SubscriptionOption].
-     *
-     * The default [SubscriptionOption] logic:
-     *   - Filters out offers with "rc-ignore-offer" tag
-     *   - Uses [SubscriptionOption] WITH longest free trial or cheapest first phase
-     *   - Falls back to use base plan
-     *
-     * If [storeProduct] represents a non-subscription, [upgradeInfo] will be ignored.
-     *
-     * @param [activity] Current activity
-     * @param [storeProduct] The StoreProduct of the product you wish to purchase
-     * @param [upgradeInfo] The upgradeInfo you wish to upgrade from, containing the oldSku and the optional
-     * prorationMode. Amazon Appstore doesn't support changing products so upgradeInfo is ignored for Amazon purchases.
-     * @param [listener] The PurchaseCallback that will be called when purchase completes.
-     */
-    @Deprecated(
-        "Use purchase() and PurchaseParams.Builder instead",
-        ReplaceWith("purchase()"),
-    )
-    fun purchaseProduct(
-        activity: Activity,
-        storeProduct: StoreProduct,
-        upgradeInfo: UpgradeInfo,
-        listener: ProductChangeCallback,
-    ) {
-        purchasesOrchestrator.startDeprecatedProductChange(
-            activity,
-            storeProduct.purchasingData,
-            null,
-            upgradeInfo.oldSku,
-            GoogleProrationMode.fromPlayBillingClientMode(upgradeInfo.prorationMode)?.asGoogleReplacementMode,
-            listener,
-        )
-    }
-
-    /**
      * Purchases a [StoreProduct]. If purchasing a subscription, it will choose the default [SubscriptionOption].
      *
      * The default [SubscriptionOption] logic:
@@ -343,44 +303,6 @@ class Purchases internal constructor(
             storeProduct.purchasingData,
             null,
             null,
-            callback,
-        )
-    }
-
-    /**
-     * Purchases a [Package].
-     * If [packageToPurchase] represents a subscription, upgrades from the subscription specified by [upgradeInfo]'s
-     * [oldProductId]and chooses the default [SubscriptionOption] from [packageToPurchase].
-     *
-     * The default [SubscriptionOption] logic:
-     *   - Filters out offers with "rc-ignore-offer" tag
-     *   - Uses [SubscriptionOption] WITH longest free trial or cheapest first phase
-     *   - Falls back to use base plan
-     *
-     * If [packageToPurchase] represents a non-subscription, [upgradeInfo] will be ignored.
-     *
-     * @param [activity] Current activity
-     * @param [packageToPurchase] The Package you wish to purchase
-     * @param [upgradeInfo] The upgradeInfo you wish to upgrade from, containing the oldProductId and the optional
-     * prorationMode. Amazon Appstore doesn't support changing products so upgradeInfo is ignored for Amazon purchases.
-     * @param [callback] The listener that will be called when purchase completes.
-     */
-    @Deprecated(
-        "Use purchase() and PurchaseParams.Builder instead",
-        ReplaceWith("purchase()"),
-    )
-    fun purchasePackage(
-        activity: Activity,
-        packageToPurchase: Package,
-        upgradeInfo: UpgradeInfo,
-        callback: ProductChangeCallback,
-    ) {
-        purchasesOrchestrator.startDeprecatedProductChange(
-            activity,
-            packageToPurchase.product.purchasingData,
-            packageToPurchase.presentedOfferingContext,
-            upgradeInfo.oldSku,
-            GoogleProrationMode.fromPlayBillingClientMode(upgradeInfo.prorationMode)?.asGoogleReplacementMode,
             callback,
         )
     }
