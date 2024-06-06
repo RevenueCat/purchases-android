@@ -202,15 +202,13 @@ internal class PurchasesTest : BasePurchasesTest() {
     }
 
     @Test
-    fun `isPersonalizedPrice defaults to null`() {
+    fun `isPersonalizedPrice defaults to null for deprecated purchase`() {
         val (_, offerings) = stubOfferings("onemonth_freetrial")
         val packageToPurchase = offerings[STUB_OFFERING_IDENTIFIER]!!.monthly!!
 
-        purchases.purchase(
-            PurchaseParams.Builder(
-                mockActivity,
-                packageToPurchase,
-            ).build(),
+        purchases.purchasePackage(
+            mockActivity,
+            packageToPurchase,
             object : PurchaseCallback {
                 override fun onCompleted(storeTransaction: StoreTransaction, customerInfo: CustomerInfo) {}
                 override fun onError(error: PurchasesError, userCancelled: Boolean) {}
