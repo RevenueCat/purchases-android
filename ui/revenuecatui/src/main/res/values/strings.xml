@@ -18,6 +18,5 @@
     <string name="monthly">Monthly</string>
     <string name="weekly">Weekly</string>
     <string name="lifetime">Lifetime</string>
-    <string name="no_browser_cannot_open_terms">No browser installed. Terms and conditions could not be opened.</string>
-    <string name="no_browser_cannot_open_privacy">"No browser installed. Privacy policy could not be opened."</string>
+    <string name="no_browser_cannot_open_link">No browser installed. Link could not be opened.</string>
 </resources>

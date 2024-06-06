@@ -2,8 +2,10 @@ package com.revenuecat.purchases.ui.revenuecatui
 
 import android.app.Application
 import android.content.ActivityNotFoundException
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.ActivityInfo
 import android.net.Uri
 import androidx.activity.ComponentActivity
@@ -11,11 +13,13 @@ import androidx.annotation.StringRes
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.test.core.app.ApplicationProvider
 import androidx.test.core.app.ApplicationProvider.getApplicationContext
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockViewModel
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatExceptionOfType
+import org.assertj.core.api.Assertions.assertThatNoException
 import org.junit.Assert
 import org.junit.Before
 import org.junit.Rule
@@ -25,6 +29,7 @@ import org.junit.runner.Description
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
+import org.robolectric.shadows.ShadowPackageManager
 import org.robolectric.shadows.ShadowToast
 
 @OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class)
@@ -66,7 +71,7 @@ class FooterLinksNoBrowserTest {
             .performClick()
 
         // Assert
-        val expectedToast = getString(R.string.no_browser_cannot_open_terms)
+        val expectedToast = getString(R.string.no_browser_cannot_open_link)
         assertThat(ShadowToast.shownToastCount()).isEqualTo(1)
         assertThat(ShadowToast.showedToast(expectedToast)).isTrue()
     }
@@ -83,9 +88,41 @@ class FooterLinksNoBrowserTest {
             .performClick()
 
         // Assert
-        val expectedToast = getString(R.string.no_browser_cannot_open_privacy)
+        val expectedToast = getString(R.string.no_browser_cannot_open_link)
         assertThat(ShadowToast.shownToastCount()).isEqualTo(1)
         assertThat(ShadowToast.showedToast(expectedToast)).isTrue()
+    }
+
+    @Test
+    fun `Clicking Terms with a browser should not show a toast`() {
+        // Arrange
+        installBrowser()
+        assertBrowser()
+        setUpUI()
+
+        // Act
+        composeTestRule
+            .onNodeWithText("Terms and conditions")
+            .performClick()
+
+        // Assert
+        assertThat(ShadowToast.shownToastCount()).isEqualTo(0)
+    }
+
+    @Test
+    fun `Clicking Privacy with a browser should not show a toast`() {
+        // Arrange
+        installBrowser()
+        assertBrowser()
+        setUpUI()
+
+        // Act
+        composeTestRule
+            .onNodeWithText("Privacy policy")
+            .performClick()
+
+        // Assert
+        assertThat(ShadowToast.shownToastCount()).isEqualTo(0)
     }
 
     private fun setUpUI() {
@@ -107,8 +144,37 @@ class FooterLinksNoBrowserTest {
             .isThrownBy { composeTestRule.activity.startActivity(implicitBrowserIntent) }
     }
 
+    /**
+     * Asserts that our environment has a browser installed.
+     */
+    private fun assertBrowser() {
+        val implicitBrowserIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://www.google.com/"))
+
+        assertThatNoException()
+            .isThrownBy { composeTestRule.activity.startActivity(implicitBrowserIntent) }
+    }
+
     private fun getString(@StringRes resId: Int) =
         composeTestRule.activity.getString(resId)
+
+    private fun installBrowser() {
+        shadowOf(getApplicationContext<Context>().packageManager).addBrowser()
+    }
+
+    private fun ShadowPackageManager.addBrowser() {
+        val activityInfo = ActivityInfo().apply {
+            name = "browser"
+            packageName = "com.browser"
+        }
+        val componentName = ComponentName(activityInfo.packageName, activityInfo.name)
+        val intentFilter = IntentFilter(Intent.ACTION_VIEW)
+            .apply { addDataScheme("https") }
+            .apply { addDataScheme("http") }
+            .apply { addCategory(Intent.CATEGORY_DEFAULT) }
+
+        addOrUpdateActivity(activityInfo)
+        addIntentFilterForActivity(componentName, intentFilter)
+    }
 }
 
 /**
@@ -121,5 +187,4 @@ internal class IntentResolvingActivity : ComponentActivity() {
         if (intent.resolveActivity(packageManager) != null) super.startActivity(intent)
         else throw ActivityNotFoundException("No Activity to handle Intent: $intent")
     }
-
 }

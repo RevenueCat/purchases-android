@@ -130,9 +130,11 @@ private fun Footer(
                 R.string.terms_and_conditions,
                 R.string.terms,
             ) {
-                val msg = context.getString(R.string.no_browser_cannot_open_terms)
-                Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
-                uriHandler.openUriOrElse(it.toString()) { Logger.w(msg) }
+                uriHandler.openUriOrElse(it.toString()) {
+                    val msg = context.getString(R.string.no_browser_cannot_open_link)
+                    Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                    Logger.w(msg)
+                }
             }
 
             if (configuration.privacyURL != null) {
@@ -147,9 +149,11 @@ private fun Footer(
                 R.string.privacy_policy,
                 R.string.privacy,
             ) {
-                val msg = context.getString(R.string.no_browser_cannot_open_privacy)
-                Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
-                uriHandler.openUriOrElse(it.toString()) { Logger.w(msg) }
+                uriHandler.openUriOrElse(it.toString()) {
+                    val msg = context.getString(R.string.no_browser_cannot_open_link)
+                    Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                    Logger.w(msg)
+                }
             }
         }
     }
