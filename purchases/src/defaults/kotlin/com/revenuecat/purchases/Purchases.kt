@@ -222,6 +222,66 @@ class Purchases internal constructor(
     }
 
     /**
+     * Purchases a [StoreProduct]. If purchasing a subscription, it will choose the default [SubscriptionOption].
+     *
+     * The default [SubscriptionOption] logic:
+     *   - Filters out offers with "rc-ignore-offer" tag
+     *   - Uses [SubscriptionOption] WITH longest free trial or cheapest first phase
+     *   - Falls back to use base plan
+     *
+     * @param [activity] Current activity
+     * @param [storeProduct] The StoreProduct of the product you wish to purchase
+     * @param [callback] The PurchaseCallback that will be called when purchase completes.
+     */
+    @Deprecated(
+        "Use purchase() and PurchaseParams.Builder instead",
+        ReplaceWith("purchase()"),
+    )
+    fun purchaseProduct(
+        activity: Activity,
+        storeProduct: StoreProduct,
+        callback: PurchaseCallback,
+    ) {
+        purchasesOrchestrator.startPurchase(
+            activity,
+            storeProduct.purchasingData,
+            null,
+            null,
+            callback,
+        )
+    }
+
+    /**
+     * Purchase a [Package]. If purchasing a subscription, it will choose the default [SubscriptionOption].
+     *
+     * The default [SubscriptionOption] logic:
+     *   - Filters out offers with "rc-ignore-offer" tag
+     *   - Uses [SubscriptionOption] WITH longest free trial or cheapest first phase
+     *   - Falls back to use base plan
+     *
+     * @param [activity] Current activity
+     * @param [packageToPurchase] The Package you wish to purchase
+     * @param [listener] The listener that will be called when purchase completes.
+     */
+    @Deprecated(
+        "Use purchase() and PurchaseParams.Builder instead",
+        ReplaceWith("purchase()"),
+    )
+    fun purchasePackage(
+        activity: Activity,
+        packageToPurchase: Package,
+        listener: PurchaseCallback,
+    ) {
+        purchasesOrchestrator.startPurchase(
+            activity,
+            packageToPurchase.product.purchasingData,
+            packageToPurchase.presentedOfferingContext,
+            null,
+            listener,
+        )
+    }
+
+    /**
      * Restores purchases made with the current Play Store account for the current user.
      * This method will post all purchases associated with the current Play Store account to
      * RevenueCat and become associated with the current `appUserID`. If the receipt token is being
