@@ -5,7 +5,7 @@ with BillingClient 5 which brought an entire new subscription model which result
 
 Aside from that, we've also updated Kotlin to 1.8.22.
 
-The only modification at the API level involves removing `UpgradeInfo`, `ProrationMode` and related functions which was deprecated previously in V7 of our SDK but now has been removed completely since it depended on `ProrationMode` from the Billing Client which has been completely removed by Google.
+The only modification at the API level involves removing `UpgradeInfo` and `ProrationMode`. Related functions that were deprecated previously in V7 of our SDK have now been removed completely since they depended on classes not available anymore in billing client 7.0.0.
 
 If your app supports upgrading/downgrading, you need to migrate to use the `purchase(PurchaseParams)` method. The `PurchaseParams` parameter has accessors to set the `oldSku` and `replacementMode` which will allow you to handle upgrades and downgrades.
 
