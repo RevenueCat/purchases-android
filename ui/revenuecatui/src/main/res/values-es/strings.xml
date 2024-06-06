@@ -18,4 +18,5 @@
     <string name="monthly">Mensual</string>
     <string name="weekly">Semanalmente</string>
     <string name="lifetime">Toda la vida</string>
+    <string name="no_browser_cannot_open_link">No hay navegador instalado. No se pudo abrir el enlace.</string>
 </resources>
