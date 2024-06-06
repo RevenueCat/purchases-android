@@ -18,4 +18,5 @@
     <string name="package_discount">%1$d%% indirim</string>
     <string name="continue_cta">Devam et</string>
     <string name="default_offer_details_with_intro_offer">{{ sub_offer_duration }} denemenizi başlatın, ardından {{ total_price_and_per_month }}.</string>
+    <string name="no_browser_cannot_open_link">Yüklü bir tarayıcı yok. Bağlantı açılamadı.</string>
 </resources>
