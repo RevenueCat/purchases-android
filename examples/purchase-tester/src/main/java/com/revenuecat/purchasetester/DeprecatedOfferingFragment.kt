@@ -10,17 +10,14 @@ import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.transition.MaterialContainerTransform
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
-import com.revenuecat.purchases.UpgradeInfo
 import com.revenuecat.purchases.getCustomerInfoWith
 import com.revenuecat.purchases.getOfferingsWith
-import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.purchasePackageWith
@@ -49,12 +46,6 @@ class DeprecatedOfferingFragment : Fragment(), DeprecatedPackageCardAdapter.Pack
         { storeTransaction, _ ->
             toggleLoadingIndicator(false)
             handleSuccessfulPurchase(storeTransaction.orderId)
-        }
-
-    private val successfulUpgradeCallback: (purchase: StoreTransaction?, customerInfo: CustomerInfo) -> Unit =
-        { storeTransaction, _ ->
-            toggleLoadingIndicator(false)
-            handleSuccessfulPurchase(storeTransaction?.orderId)
         }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -96,74 +87,30 @@ class DeprecatedOfferingFragment : Fragment(), DeprecatedPackageCardAdapter.Pack
     override fun onPurchasePackageClicked(
         cardView: View,
         currentPackage: Package,
-        isUpgrade: Boolean,
     ) {
         toggleLoadingIndicator(true)
 
-        if (isUpgrade) {
-            promptForUpgradeInfo { upgradeInfo ->
-                upgradeInfo?.let {
-                    startPurchasePackage(currentPackage, upgradeInfo)
-                }
-            }
-        } else {
-            startPurchasePackage(currentPackage, null)
-        }
+        startPurchasePackage(currentPackage)
     }
 
     override fun onPurchaseProductClicked(
         cardView: View,
         currentProduct: StoreProduct,
-        isUpgrade: Boolean,
     ) {
         toggleLoadingIndicator(true)
 
-        if (isUpgrade) {
-            promptForUpgradeInfo { upgradeInfo ->
-                upgradeInfo?.let {
-                    startPurchaseProduct(currentProduct, upgradeInfo)
-                }
-            }
-        } else {
-            startPurchaseProduct(currentProduct, null)
-        }
-    }
-
-    private fun promptForUpgradeInfo(callback: (UpgradeInfo?) -> Unit) {
-        showOldSubIdPicker { subId ->
-            subId?.let {
-                showReplacementModePicker { replacementMode, error ->
-                    if (error == null) {
-                        replacementMode?.let {
-                            callback(UpgradeInfo(subId, replacementMode.playBillingClientMode))
-                        } ?: callback(UpgradeInfo(subId))
-                    } else {
-                        callback(null)
-                    }
-                }
-            } ?: callback(null)
-        }
+        startPurchaseProduct(currentProduct)
     }
 
     private fun startPurchaseProduct(
         currentProduct: StoreProduct,
-        upgradeInfo: UpgradeInfo?,
     ) {
-        when {
-            upgradeInfo == null -> Purchases.sharedInstance.purchaseProductWith(
-                requireActivity(),
-                currentProduct,
-                purchaseErrorCallback,
-                successfulPurchaseCallback,
-            )
-            upgradeInfo != null -> Purchases.sharedInstance.purchaseProductWith(
-                requireActivity(),
-                currentProduct,
-                upgradeInfo,
-                purchaseErrorCallback,
-                successfulUpgradeCallback,
-            )
-        }
+        Purchases.sharedInstance.purchaseProductWith(
+            requireActivity(),
+            currentProduct,
+            purchaseErrorCallback,
+            successfulPurchaseCallback,
+        )
     }
 
     private fun handleSuccessfulPurchase(orderId: String?) {
@@ -179,88 +126,16 @@ class DeprecatedOfferingFragment : Fragment(), DeprecatedPackageCardAdapter.Pack
 
     private fun startPurchasePackage(
         currentPackage: Package,
-        upgradeInfo: UpgradeInfo?,
     ) {
-        when {
-            upgradeInfo == null -> Purchases.sharedInstance.purchasePackageWith(
-                requireActivity(),
-                currentPackage,
-                purchaseErrorCallback,
-                successfulPurchaseCallback,
-            )
-            upgradeInfo != null -> Purchases.sharedInstance.purchasePackageWith(
-                requireActivity(),
-                currentPackage,
-                upgradeInfo,
-                purchaseErrorCallback,
-                successfulUpgradeCallback,
-            )
-        }
+        Purchases.sharedInstance.purchasePackageWith(
+            requireActivity(),
+            currentPackage,
+            purchaseErrorCallback,
+            successfulPurchaseCallback,
+        )
     }
 
     private fun toggleLoadingIndicator(isLoading: Boolean) {
         binding.purchaseProgress.visibility = if (isLoading) View.VISIBLE else View.GONE
-    }
-
-    private fun showOldSubIdPicker(callback: (String?) -> Unit) {
-        // Removes base plan id to get the sub id
-        val activeSubIds = activeSubscriptions.map { it.split(":").first() }
-        if (activeSubIds.isEmpty()) {
-            Toast.makeText(
-                requireContext(),
-                "Cannot upgrade without an existing active subscription.",
-                Toast.LENGTH_LONG,
-            ).show()
-            toggleLoadingIndicator(false)
-            callback(null)
-            return
-        }
-
-        var selectedUpgradeSubId: String = activeSubIds[0]
-        MaterialAlertDialogBuilder(requireContext())
-            .setTitle("Choose which active sub to switch from")
-            .setSingleChoiceItems(activeSubIds.toTypedArray(), 0) { _, which ->
-                selectedUpgradeSubId = activeSubIds[which]
-            }
-            .setPositiveButton("Continue") { dialog, _ ->
-                dialog.dismiss()
-                callback(selectedUpgradeSubId)
-            }
-            .setNegativeButton("Cancel purchase") { dialog, _ ->
-                dialog.dismiss()
-                toggleLoadingIndicator(false)
-                callback(null)
-            }
-            .setOnDismissListener {
-                toggleLoadingIndicator(false)
-                callback(null)
-            }
-            .show()
-    }
-
-    private fun showReplacementModePicker(callback: (GoogleReplacementMode?, Error?) -> Unit) {
-        val replacementModeOptions = GoogleReplacementMode.values()
-        var selectedReplacementMode: GoogleReplacementMode? = null
-
-        val replacementModeNames = replacementModeOptions.map { it.name }.toTypedArray()
-        MaterialAlertDialogBuilder(requireContext())
-            .setTitle("Choose ReplacementMode")
-            .setSingleChoiceItems(replacementModeNames, -1) { _, selectedIndex ->
-                selectedReplacementMode = replacementModeOptions.elementAt(selectedIndex)
-            }
-            .setPositiveButton("Start purchase") { dialog, _ ->
-                dialog.dismiss()
-                callback(selectedReplacementMode, null)
-            }
-            .setNegativeButton("Cancel purchase") { dialog, _ ->
-                dialog.dismiss()
-                toggleLoadingIndicator(false)
-                callback(null, Error("Purchase cancelled"))
-            }
-            .setOnDismissListener {
-                toggleLoadingIndicator(false)
-                callback(null, Error("Selection dismissed"))
-            }
-            .show()
     }
 }
