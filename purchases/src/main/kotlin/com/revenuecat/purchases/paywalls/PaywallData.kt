@@ -246,10 +246,21 @@ data class PaywallData(
 
         @Serializable
         data class Tier(
+            /**
+             * RevenueCat generated id to match tiers with localizations.
+             */
             val id: String,
-            val packages: List<String>,
+
+            /**
+             * The list of package identifiers this tier will display.
+             */
+            val packageIds: List<String>,
+
+            /**
+             * The package to be selected by default.
+             */
             @SerialName("default_package")
-            val defaultPackage: String,
+            val defaultPackageId: String,
         )
 
         @Serializable

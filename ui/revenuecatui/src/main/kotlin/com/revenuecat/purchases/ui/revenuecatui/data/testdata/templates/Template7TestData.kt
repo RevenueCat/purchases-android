@@ -25,27 +25,27 @@ internal val TestData.template7: PaywallData
             tiers = listOf(
                 PaywallData.Configuration.Tier(
                     id = "basic",
-                    packages = listOf(
+                    packageIds = listOf(
                         PackageType.ANNUAL.identifier!!,
                         PackageType.MONTHLY.identifier!!,
                     ),
-                    defaultPackage = PackageType.ANNUAL.identifier!!,
+                    defaultPackageId = PackageType.ANNUAL.identifier!!,
                 ),
                 PaywallData.Configuration.Tier(
                     id = "standard",
-                    packages = listOf(
+                    packageIds = listOf(
                         PackageType.TWO_MONTH.identifier!!,
                         PackageType.SIX_MONTH.identifier!!,
                     ),
-                    defaultPackage = PackageType.SIX_MONTH.identifier!!,
+                    defaultPackageId = PackageType.SIX_MONTH.identifier!!,
                 ),
                 PaywallData.Configuration.Tier(
                     id = "premium",
-                    packages = listOf(
+                    packageIds = listOf(
                         PackageType.THREE_MONTH.identifier!!,
                         PackageType.LIFETIME.identifier!!,
                     ),
-                    defaultPackage = PackageType.SIX_MONTH.identifier!!,
+                    defaultPackageId = PackageType.SIX_MONTH.identifier!!,
                 ),
             ),
             displayRestorePurchases = true,

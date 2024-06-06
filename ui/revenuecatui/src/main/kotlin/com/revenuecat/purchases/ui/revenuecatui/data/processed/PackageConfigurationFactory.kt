@@ -95,7 +95,7 @@ internal object PackageConfigurationFactory {
 
                     val packageInfosForTier = reprocessPackagesForTiers(
                         from = availablePackages,
-                        filter = tier.packages,
+                        filter = tier.packageIds,
                         localization = localizationForTier,
                         variableDataProvider = variableDataProvider,
                         activelySubscribedProductIdentifiers = activelySubscribedProductIdentifiers,
@@ -106,7 +106,7 @@ internal object PackageConfigurationFactory {
                     val firstPackage = packageInfosForTier.firstOrNull()
                         ?: return Result.failure(PackageConfigurationError("No packages found for tier ${tier.id}"))
                     val defaultPackage = packageInfosForTier
-                        .firstOrNull { it.rcPackage.identifier == tier.defaultPackage } ?: firstPackage
+                        .firstOrNull { it.rcPackage.identifier == tier.defaultPackageId } ?: firstPackage
 
                     TemplateConfiguration.PackageConfiguration.MultiPackage(
                         first = firstPackage,
