@@ -44,6 +44,12 @@ android {
         resources.excludes.add("META-INF/LICENSE.md")
         resources.excludes.add("META-INF/LICENSE-notice.md")
     }
+
+    testOptions {
+        unitTests {
+            includeAndroidResources = true
+        }
+    }
 }
 
 dependencies {
@@ -76,6 +82,8 @@ dependencies {
     testImplementation libs.bundles.test
     testImplementation libs.coroutines.test
     testImplementation libs.kotlinx.serialization.json
+    testImplementation libs.androidx.test.compose
+    testImplementation libs.hamcrest.core
 
     androidTestImplementation libs.assertJ
     androidTestImplementation libs.mockk.android
