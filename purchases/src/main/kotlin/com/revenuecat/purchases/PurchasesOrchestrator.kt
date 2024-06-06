@@ -83,7 +83,7 @@ internal class PurchasesOrchestrator constructor(
     var appConfig: AppConfig,
     private val customerInfoHelper: CustomerInfoHelper,
     private val customerInfoUpdateHandler: CustomerInfoUpdateHandler,
-    diagnosticsSynchronizer: DiagnosticsSynchronizer?,
+    private val diagnosticsSynchronizer: DiagnosticsSynchronizer?,
     @get:VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     val offlineEntitlementsManager: OfflineEntitlementsManager,
     private val postReceiptHelper: PostReceiptHelper,
@@ -174,10 +174,6 @@ internal class PurchasesOrchestrator constructor(
         if (!appConfig.dangerousSettings.autoSyncPurchases) {
             log(LogIntent.WARNING, ConfigureStrings.AUTO_SYNC_PURCHASES_DISABLED)
         }
-
-        if (isAndroidNOrNewer()) {
-            diagnosticsSynchronizer?.syncDiagnosticsFileIfNeeded()
-        }
     }
 
     /** @suppress */
@@ -211,6 +207,9 @@ internal class PurchasesOrchestrator constructor(
         synchronizeSubscriberAttributesIfNeeded()
         offlineEntitlementsManager.updateProductEntitlementMappingCacheIfStale()
         flushPaywallEvents()
+        if (firstTimeInForeground && isAndroidNOrNewer()) {
+            diagnosticsSynchronizer?.syncDiagnosticsFileIfNeeded()
+        }
     }
 
     override fun onActivityStarted(activity: Activity) {
