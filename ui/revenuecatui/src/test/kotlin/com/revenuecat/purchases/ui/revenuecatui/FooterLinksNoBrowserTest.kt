@@ -7,12 +7,14 @@ import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.net.Uri
 import androidx.activity.ComponentActivity
+import androidx.annotation.StringRes
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.core.app.ApplicationProvider.getApplicationContext
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockViewModel
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
+import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatExceptionOfType
 import org.junit.Assert
 import org.junit.Before
@@ -23,6 +25,7 @@ import org.junit.runner.Description
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
+import org.robolectric.shadows.ShadowToast
 
 @OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class)
 @RunWith(RobolectricTestRunner::class)
@@ -52,27 +55,37 @@ class FooterLinksNoBrowserTest {
     }
 
     @Test
-    fun `Clicking Terms without a browser should not crash`() {
+    fun `Clicking Terms without a browser should not crash and show a toast`() {
         // Arrange
         assertNoBrowser()
         setUpUI()
 
-        // Act, Assert
+        // Act
         composeTestRule
             .onNodeWithText("Terms and conditions")
             .performClick()
+
+        // Assert
+        val expectedToast = getString(R.string.no_browser_cannot_open_terms)
+        assertThat(ShadowToast.shownToastCount()).isEqualTo(1)
+        assertThat(ShadowToast.showedToast(expectedToast)).isTrue()
     }
 
     @Test
-    fun `Clicking Privacy without a browser should not crash`() {
+    fun `Clicking Privacy without a browser should not crash and show a toast`() {
         // Arrange
         assertNoBrowser()
         setUpUI()
 
-        // Act, Assert
+        // Act
         composeTestRule
             .onNodeWithText("Privacy policy")
             .performClick()
+
+        // Assert
+        val expectedToast = getString(R.string.no_browser_cannot_open_privacy)
+        assertThat(ShadowToast.shownToastCount()).isEqualTo(1)
+        assertThat(ShadowToast.showedToast(expectedToast)).isTrue()
     }
 
     private fun setUpUI() {
@@ -93,6 +106,9 @@ class FooterLinksNoBrowserTest {
         assertThatExceptionOfType(ActivityNotFoundException::class.java)
             .isThrownBy { composeTestRule.activity.startActivity(implicitBrowserIntent) }
     }
+
+    private fun getString(@StringRes resId: Int) =
+        composeTestRule.activity.getString(resId)
 }
 
 /**

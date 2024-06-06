@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.composables
 
+import android.widget.Toast
 import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -25,6 +26,7 @@ import androidx.compose.ui.Alignment.Companion.CenterHorizontally
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -79,6 +81,7 @@ private fun Footer(
     childModifier: Modifier = Modifier,
     allPlansTapped: (() -> Unit)? = null,
 ) {
+    val context = LocalContext.current
     val uriHandler = LocalUriHandler.current
 
     Row(
@@ -127,9 +130,9 @@ private fun Footer(
                 R.string.terms_and_conditions,
                 R.string.terms,
             ) {
-                uriHandler.openUriOrElse(it.toString()) {
-                    Logger.w("No browser installed. Terms and conditions could not be opened.")
-                }
+                val msg = context.getString(R.string.no_browser_cannot_open_terms)
+                Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                uriHandler.openUriOrElse(it.toString()) { Logger.w(msg) }
             }
 
             if (configuration.privacyURL != null) {
@@ -144,9 +147,9 @@ private fun Footer(
                 R.string.privacy_policy,
                 R.string.privacy,
             ) {
-                uriHandler.openUriOrElse(it.toString()) {
-                    Logger.w("No browser installed. Privacy policy could not be opened.")
-                }
+                val msg = context.getString(R.string.no_browser_cannot_open_privacy)
+                Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                uriHandler.openUriOrElse(it.toString()) { Logger.w(msg) }
             }
         }
     }
