@@ -1,3 +1,10 @@
+## 8.0.0-beta.1
+### Breaking Changes
+* Support BC7 (#1737) via Toni Rico (@tonidero)
+### Other Changes
+* Add V8 Migration guide (#1738) via Toni Rico (@tonidero)
+* Bump kotlin to 1.8 (#1726)
+
 ## 7.11.1
 ### Behavior Changes
 * Stops collecting the ANDROID_ID. (#1729) via JayShortway (@JayShortway)
