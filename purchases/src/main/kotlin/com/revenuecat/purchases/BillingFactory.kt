@@ -20,10 +20,9 @@ internal object BillingFactory {
         observerMode: Boolean,
         diagnosticsTrackerIfEnabled: DiagnosticsTracker?,
         stateProvider: PurchasesStateProvider,
-        pendingTransactionsForPrepaidPlansEnabled: Boolean,
     ) = when (store) {
         Store.PLAY_STORE -> BillingWrapper(
-            BillingWrapper.ClientFactory(application, pendingTransactionsForPrepaidPlansEnabled),
+            BillingWrapper.ClientFactory(application),
             Handler(application.mainLooper),
             cache,
             diagnosticsTrackerIfEnabled,

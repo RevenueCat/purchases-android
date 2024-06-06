@@ -26,8 +26,7 @@ class BillingFactoryTest {
             mockCache,
             observerMode = false,
             mockDiagnosticsTracker,
-            PurchasesStateCache(PurchasesState()),
-            pendingTransactionsForPrepaidPlansEnabled = true,
+            PurchasesStateCache(PurchasesState())
         )
     }
 
@@ -44,8 +43,7 @@ class BillingFactoryTest {
             mockCache,
             observerMode = false,
             diagnosticsTrackerIfEnabled = null,
-            PurchasesStateCache(PurchasesState()),
-            pendingTransactionsForPrepaidPlansEnabled = true,
+            PurchasesStateCache(PurchasesState())
         )
     }
 }

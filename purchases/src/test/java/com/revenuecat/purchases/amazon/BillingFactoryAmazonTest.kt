@@ -31,8 +31,7 @@ class BillingFactoryAmazonTest {
             mockCache,
             observerMode = false,
             mockDiagnosticsTracker,
-            stateProvider = PurchasesStateCache(PurchasesState()),
-            pendingTransactionsForPrepaidPlansEnabled = true,
+            stateProvider = PurchasesStateCache(PurchasesState())
         )
     }
 
@@ -49,8 +48,7 @@ class BillingFactoryAmazonTest {
             mockCache,
             observerMode = false,
             diagnosticsTrackerIfEnabled = null,
-            stateProvider = PurchasesStateCache(PurchasesState()),
-            pendingTransactionsForPrepaidPlansEnabled = true,
+            stateProvider = PurchasesStateCache(PurchasesState())
         )
     }
 }

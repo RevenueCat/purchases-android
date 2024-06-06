@@ -16,7 +16,6 @@ import com.android.billingclient.api.BillingFlowParams
 import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.InAppMessageParams
 import com.android.billingclient.api.InAppMessageResult
-import com.android.billingclient.api.PendingPurchasesParams
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchaseHistoryRecord
 import com.android.billingclient.api.PurchasesUpdatedListener
@@ -107,17 +106,10 @@ internal class BillingWrapper(
     val appInBackground: Boolean
         get() = purchasesStateProvider.purchasesState.appInBackground
 
-    class ClientFactory(
-        private val context: Context,
-        private val pendingTransactionsForPrepaidPlansEnabled: Boolean,
-    ) {
+    class ClientFactory(private val context: Context) {
         @UiThread
         fun buildClient(listener: com.android.billingclient.api.PurchasesUpdatedListener): BillingClient {
-            val pendingPurchaseParams = PendingPurchasesParams.newBuilder()
-                .enableOneTimeProducts()
-                .apply { if (pendingTransactionsForPrepaidPlansEnabled) enablePrepaidPlans() }
-                .build()
-            return BillingClient.newBuilder(context).enablePendingPurchases(pendingPurchaseParams).setListener(listener)
+            return BillingClient.newBuilder(context).enablePendingPurchases().setListener(listener)
                 .build()
         }
     }
