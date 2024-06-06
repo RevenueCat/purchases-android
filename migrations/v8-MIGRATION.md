@@ -41,7 +41,7 @@ RevenueCat SDK v8 bumps minimum Android SDK version from Android 4.4 (API level 
 
 ### Observer Mode
 
-Observer mode is still supported in v8. Other than updating the SDK version, there are no changes required. Just make sure the version you're using is also BC7.
+Observer mode is still supported in v8. Other than updating the SDK version, there are no changes required. Just make sure the version of the billing client is also version 7.0.0.
 
 ### Reporting undocumented issues:
 
