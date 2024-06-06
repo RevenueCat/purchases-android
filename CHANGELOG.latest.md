@@ -1,4 +1,4 @@
-### Bugfixes
+### Behavior Changes
 * Stops collecting the ANDROID_ID. (#1729) via JayShortway (@JayShortway)
 ### Dependency Updates
 * Bump fastlane-plugin-revenuecat_internal from `8ec0072` to `5f55466` (#1722) via dependabot[bot] (@dependabot[bot])
