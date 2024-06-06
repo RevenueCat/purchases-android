@@ -55,12 +55,12 @@ data class PaywallData(
     val localizedConfiguration: Pair<Locale, LocalizedConfiguration>
         @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
         get() {
-            return findLocalizedConfiguration(locales = getDefaultLocales())
+            return localizedConfiguration(locales = getDefaultLocales())
         }
 
     @VisibleForTesting
     @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
-    fun findLocalizedConfiguration(locales: List<Locale>): Pair<Locale, LocalizedConfiguration> {
+    fun localizedConfiguration(locales: List<Locale>): Pair<Locale, LocalizedConfiguration> {
         for (locale in locales) {
             val localeToCheck = locale.convertToCorrectlyFormattedLocale()
             configForLocale(localeToCheck)?.let { localizedConfiguration ->

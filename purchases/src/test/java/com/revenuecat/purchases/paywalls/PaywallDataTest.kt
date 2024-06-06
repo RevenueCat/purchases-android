@@ -153,7 +153,7 @@ class PaywallDataTest {
     fun `localized configuration finds locale with different region`() {
         val paywall: PaywallData = decode(PAYWALLDATA_SAMPLE1)
 
-        val configuration = paywall.findLocalizedConfiguration(
+        val configuration = paywall.localizedConfiguration(
             locales = listOf(
                 Locale("en", "IN")
             )
