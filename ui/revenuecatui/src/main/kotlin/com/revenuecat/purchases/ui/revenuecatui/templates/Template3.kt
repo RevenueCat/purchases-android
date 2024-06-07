@@ -28,7 +28,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.paywalls.PaywallData
-import com.revenuecat.purchases.ui.revenuecatui.ExperimentalPreviewRevenueCatUIPurchasesAPI
 import com.revenuecat.purchases.ui.revenuecatui.InternalPaywall
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
@@ -237,7 +236,6 @@ private fun Feature(
     }
 }
 
-@OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class)
 @Preview(locale = "en-rUS", showBackground = true, group = "full_screen", name = "Portrait")
 @Preview(
     locale = "en-rUS",
@@ -258,7 +256,6 @@ private fun Template3Preview() {
     )
 }
 
-@OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class)
 @Preview(showBackground = true, group = "footer")
 @Composable
 private fun Template3FooterPreview() {
@@ -268,7 +265,6 @@ private fun Template3FooterPreview() {
     )
 }
 
-@OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class)
 @Preview(showBackground = true, group = "condensed")
 @Composable
 private fun Template3CondensedFooterPreview() {

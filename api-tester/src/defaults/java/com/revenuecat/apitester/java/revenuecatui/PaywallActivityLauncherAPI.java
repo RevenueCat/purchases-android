@@ -13,7 +13,6 @@ import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResultHandler;
 import com.revenuecat.purchases.ui.revenuecatui.fonts.ParcelizableFontProvider;
 
 @SuppressWarnings({"unused"})
-@ExperimentalPreviewRevenueCatUIPurchasesAPI
 final class PaywallActivityLauncherAPI {
 
     static void check(

@@ -23,6 +23,8 @@ val purchaseConfig = PurchaseConfiguration.Builder(applicationContext, apiKey)
 Purchases.configure(purchaseConfig)
 ```
 
+We have decided to remove the experimental flag from Paywalls. It's not required anymore to add `@OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class)` to your paywall code. 
+
 ## Updated Code References
 
 This migration guide has detailed class, property, and method changes.

@@ -23,7 +23,6 @@ internal sealed class OfferingSelection {
         }
 }
 
-@ExperimentalPreviewRevenueCatUIPurchasesAPI
 data class PaywallOptions internal constructor(
     internal val offeringSelection: OfferingSelection,
     internal val shouldDisplayDismissButton: Boolean,

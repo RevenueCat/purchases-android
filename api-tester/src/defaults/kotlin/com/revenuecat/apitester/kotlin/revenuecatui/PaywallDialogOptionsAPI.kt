@@ -2,13 +2,11 @@ package com.revenuecat.apitester.kotlin.revenuecatui
 
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Offering
-import com.revenuecat.purchases.ui.revenuecatui.ExperimentalPreviewRevenueCatUIPurchasesAPI
 import com.revenuecat.purchases.ui.revenuecatui.PaywallDialogOptions
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider
 
 @Suppress("unused", "UNUSED_VARIABLE", "LongParameterList")
-@OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class)
 private class PaywallDialogOptionsAPI {
     fun check(
         requiredEntitlementIdentifier: String?,

@@ -31,7 +31,6 @@ private object UIDialogConstants {
  * This dialog will be shown as a full screen dialog in compact devices and a normal dialog otherwise.
  * @param paywallDialogOptions The options to configure the PaywallDialog and what to do on dismissal.
  */
-@ExperimentalPreviewRevenueCatUIPurchasesAPI
 @Composable
 fun PaywallDialog(
     paywallDialogOptions: PaywallDialogOptions,
@@ -69,7 +68,6 @@ fun PaywallDialog(
     }
 }
 
-@OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class)
 @Composable
 private fun DialogScaffold(paywallOptions: PaywallOptions) {
     Scaffold(

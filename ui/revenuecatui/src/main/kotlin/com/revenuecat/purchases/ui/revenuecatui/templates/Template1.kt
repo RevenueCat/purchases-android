@@ -38,7 +38,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
-import com.revenuecat.purchases.ui.revenuecatui.ExperimentalPreviewRevenueCatUIPurchasesAPI
 import com.revenuecat.purchases.ui.revenuecatui.InternalPaywall
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
@@ -198,7 +197,6 @@ private object Template1UIConstants {
     const val circleScaleLanscape = 8.0f
 }
 
-@OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class)
 @Preview(showBackground = true, group = "full_screen")
 @Preview(
     showBackground = true,
@@ -217,7 +215,6 @@ private fun Template1PaywallPreview() {
     )
 }
 
-@OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class)
 @Preview(showBackground = true, group = "footer")
 @Composable
 private fun Template1FooterPaywallPreview() {
@@ -227,7 +224,6 @@ private fun Template1FooterPaywallPreview() {
     )
 }
 
-@OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class)
 @Preview(showBackground = true, group = "condensed")
 @Composable
 private fun Template1CondensedFooterPaywallPreview() {
