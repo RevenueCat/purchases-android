@@ -8,6 +8,7 @@
 
 #### Breaking changes
 - Increase min Sdk to 21. This was increased in BC7
+- Increase min kotlin version to 1.7.0
 - Remove `UpgradeInfo`
 - Remove all `purchasePackage` and `purchaseProduct` methods using `UpgradeInfo`. If you want to perform upgrades/downgrades, please migrate to use the `purchase(PurchaseParams)` method, which has options to perform that operation.
 
