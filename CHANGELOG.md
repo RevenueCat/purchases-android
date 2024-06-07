@@ -347,6 +347,7 @@ implementation 'com.revenuecat.purchases:purchases-ui:7.1.0'
 ```
 3. Display a paywall:
 ```kotlin
+@OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class)
 @Composable
 private fun LockedScreen() {
     YourContent()
@@ -358,6 +359,11 @@ private fun LockedScreen() {
     )
 }
 ```
+
+> **Note**
+> Android paywalls is currently behind an experimental flag: `ExperimentalPreviewRevenueCatUIPurchasesAPI`.
+> It is safe to release app updates with it. We guarantee that paywalls will continue to work and any changes will always be backwards compatible.
+> They are stable, but migration steps may be required in the future. We'll do our best to minimize any changes you have to make.
 
 You can find more information in [our documentation](https://rev.cat/paywalls).
 
