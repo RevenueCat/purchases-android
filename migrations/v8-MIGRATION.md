@@ -1,29 +1,40 @@
 # V8 API Migration Guide
 
-This latest release updates the SDK to use BillingClient 7. This version of BillingClient brings little change compared
-with BillingClient 5 which brought an entire new subscription model which resulted in large changes across the entire SDK. It did, however, increase the minSdk to 21 (Android 5.0) and removed the `ProrationMode` enum.
+This latest release updates the SDK to use BillingClient 7. This version increased the minSdk to 21 (Android 5.0) and removed the `ProrationMode` enum. Additionally, it added support for [installment plans](https://developer.android.com/google/play/billing/subscriptions#installments) and [pending prepaid plans](https://developer.android.com/google/play/billing/subscriptions#pending).
 
-Aside from that, we've also updated Kotlin to 1.8.22.
+Additionally, we've also updated Kotlin which means we now require Kotlin 1.7.0+. If you were using an older version of Kotlin, you will need to update it.
 
 The only modification at the API level involves removing `UpgradeInfo` and `ProrationMode`. Related functions that were deprecated previously in V7 of our SDK have now been removed completely since they depended on classes not available anymore in billing client 7.0.0.
 
 If your app supports upgrading/downgrading, you need to migrate to use the `purchase(PurchaseParams)` method. The `PurchaseParams` parameter has accessors to set the `oldSku` and `replacementMode` which will allow you to handle upgrades and downgrades.
 
+If you want to use Google's installment plans, you don't need to do anything! You can access the installment plan details from the SDK by using the `SubscriptionOption.installmentsInfo` property, like this:
+```kotlin
+val offerings = purchases.awaitOfferings()
+// This provides the number of installments the customer commits to, and the number of installments they commit to upon a renewal.
+val installmentsInfo = offerings.current?.monthly?.product?.defaultOption?.installmentsInfo
+```
+
+If you want to use Google's pending prepaid plans, you can enable it when configuring the SDK by using the `PurchaseConfiguration.Builder.pendingTransactionsForPrepaidPlansEnabled` function.
+```kotlin
+val purchaseConfig = PurchaseConfiguration.Builder(applicationContext, apiKey)
+    .pendingTransactionsForPrepaidPlansEnabled(true)
+    .build()
+Purchases.configure(purchaseConfig)
+```
+
 ## Updated Code References
 
 This migration guide has detailed class, property, and method changes.
 
-See [Android Native - 5.x to 6.x Migration](https://www.revenuecat.com/docs/android-native-5x-to-6x-migration) for a
-more thorough explanation of the new Google subscription model announced with BillingClient 5 and how to take advantage of it.
-
 ### Class/interface changes
 
-| New                                                              |
-|------------------------------------------------------------------|
-| `InstallmentsInfo`                                               |
-| `GoogleInstallmentsInfo`                                         |
+| New                                                               |
+|-------------------------------------------------------------------|
+| `InstallmentsInfo`                                                |
+| `GoogleInstallmentsInfo`                                          |
 | `PurchaseConfiguration.pendingTransactionsForPrepaidPlansEnabled` |
-| `SubscriptionOption.installmentsInfo`                            |
+| `SubscriptionOption.installmentsInfo`                             |
 
 | Removed                                                               |
 |-----------------------------------------------------------------------|

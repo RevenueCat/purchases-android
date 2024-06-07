@@ -145,6 +145,7 @@ class ConfigureFragment : Fragment() {
             .diagnosticsEnabled(true)
             .entitlementVerificationMode(entitlementVerificationMode)
             .purchasesAreCompletedBy(purchasesAreCompletedBy)
+            .pendingTransactionsForPrepaidPlansEnabled(true)
             .build()
         Purchases.configure(configuration)
 
