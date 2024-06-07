@@ -1,11 +1,8 @@
 package com.revenuecat.purchases.ui.revenuecatui.fonts
 
-import com.revenuecat.purchases.ui.revenuecatui.ExperimentalPreviewRevenueCatUIPurchasesAPI
-
 /**
  * Text styles for which the fonts can be overridden in the paywall.
  */
-@ExperimentalPreviewRevenueCatUIPurchasesAPI
 enum class TypographyType {
     DISPLAY_LARGE,
     DISPLAY_MEDIUM,

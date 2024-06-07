@@ -56,7 +56,6 @@ import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.revenuecat.purchases.ui.revenuecatui.ExperimentalPreviewRevenueCatUIPurchasesAPI
 import com.revenuecat.purchases.ui.revenuecatui.InternalPaywall
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
@@ -447,7 +446,6 @@ private fun CheckmarkBox(
     }
 }
 
-@OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class)
 @Preview(showBackground = true, locale = "en-rUS", group = "full_screen")
 @Preview(
     showBackground = true,
@@ -468,7 +466,6 @@ private fun Template4PaywallPreview() {
     )
 }
 
-@OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class)
 @Preview(showBackground = true, locale = "en-rUS", group = "footer")
 @Preview(showBackground = true, device = Devices.NEXUS_7, group = "footer")
 @Preview(showBackground = true, device = Devices.NEXUS_10, group = "footer")
@@ -480,7 +477,6 @@ private fun Template4PaywallFooterPreview() {
     )
 }
 
-@OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class)
 @Preview(showBackground = true, locale = "en-rUS", group = "condensed")
 @Preview(showBackground = true, device = Devices.NEXUS_7, group = "condensed")
 @Preview(showBackground = true, device = Devices.NEXUS_10, group = "condensed")

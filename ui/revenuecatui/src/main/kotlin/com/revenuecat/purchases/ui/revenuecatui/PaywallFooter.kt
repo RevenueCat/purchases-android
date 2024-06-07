@@ -25,7 +25,6 @@ import androidx.compose.ui.tooling.preview.Preview
  * add that padding to your own content. This padding corresponds to the height of the rounded corner area of
  * the paywall.
  */
-@ExperimentalPreviewRevenueCatUIPurchasesAPI
 @Composable
 fun PaywallFooter(
     options: PaywallOptions,
@@ -65,7 +64,6 @@ fun PaywallFooter(
 }
 
 @Suppress("MagicNumber")
-@ExperimentalPreviewRevenueCatUIPurchasesAPI
 @Preview(showBackground = true)
 @Composable
 private fun PaywallFooterPreview() {
@@ -87,7 +85,6 @@ private fun PaywallFooterPreview() {
 }
 
 @Suppress("MagicNumber")
-@ExperimentalPreviewRevenueCatUIPurchasesAPI
 @Preview(showBackground = true)
 @Composable
 private fun PaywallFooterNoContentPreview() {

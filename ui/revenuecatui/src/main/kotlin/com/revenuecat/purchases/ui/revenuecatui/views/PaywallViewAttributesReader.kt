@@ -4,13 +4,11 @@ import android.content.Context
 import android.util.AttributeSet
 import androidx.compose.ui.text.font.FontFamily
 import androidx.core.content.res.ResourcesCompat
-import com.revenuecat.purchases.ui.revenuecatui.ExperimentalPreviewRevenueCatUIPurchasesAPI
 import com.revenuecat.purchases.ui.revenuecatui.R
 import com.revenuecat.purchases.ui.revenuecatui.fonts.CustomFontProvider
 import com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 
-@OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class)
 internal class PaywallViewAttributesReader {
     companion object {
         internal const val DEFAULT_CONDENSED = false

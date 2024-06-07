@@ -13,7 +13,6 @@ import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult;
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResultHandler;
 
 @SuppressWarnings({"unused"})
-@ExperimentalPreviewRevenueCatUIPurchasesAPI
 final class PaywallResultAPI {
 
     static void checkResultHandler(
