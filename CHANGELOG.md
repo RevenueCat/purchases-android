@@ -1,4 +1,6 @@
 ## 8.0.0
+For a full migration guide check [v8-MIGRATION.md](migrations/v8-MIGRATION.md)
+
 ### Breaking Changes
 * Support BC7 (#1737) via Toni Rico (@tonidero)
 
@@ -11,8 +13,6 @@
 - Increase min kotlin version to 1.7.0
 - Remove `UpgradeInfo`
 - Remove all `purchasePackage` and `purchaseProduct` methods using `UpgradeInfo`. If you want to perform upgrades/downgrades, please migrate to use the `purchase(PurchaseParams)` method, which has options to perform that operation.
-
-For a full migration guide check [v8-MIGRATION.md](migrations/v8-MIGRATION.md)
 
 ### Other Changes
 * Bump kotlin to 1.8 (#1726)
