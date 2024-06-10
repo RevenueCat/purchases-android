@@ -522,7 +522,8 @@ internal class QueryPurchasesUseCaseTest : BaseBillingUseCaseTest() {
         ).run()
 
         assertThat(timesRetried).isEqualTo(5)
-        assertThat(capturedDelays.last()).isCloseTo(RETRY_TIMER_MAX_TIME_MILLISECONDS_FOREGROUND, Offset.offset(1000L))
+        assertThat(capturedDelays.last())
+            .isCloseTo(RETRY_TIMER_SERVICE_UNAVAILABLE_MAX_TIME_FOREGROUND.inWholeMilliseconds, Offset.offset(1000L))
         assertThat(receivedError).isNotNull
         assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
     }
@@ -567,7 +568,7 @@ internal class QueryPurchasesUseCaseTest : BaseBillingUseCaseTest() {
         ).run()
 
         assertThat(capturedDelays.size).isEqualTo(13)
-        assertThat(capturedDelays.last()).isCloseTo(RETRY_TIMER_MAX_TIME_MILLISECONDS, Offset.offset(1000L))
+        assertThat(capturedDelays.last()).isCloseTo(RETRY_TIMER_MAX_TIME.inWholeMilliseconds, Offset.offset(1000L))
         assertThat(receivedError).isNotNull
         assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
     }
