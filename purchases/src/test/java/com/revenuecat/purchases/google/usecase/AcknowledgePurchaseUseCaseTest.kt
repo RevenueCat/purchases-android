@@ -865,7 +865,7 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
     }
 
     @Test
-    fun `If service returns SERVICE_UNAVAILABLE, don't retry and error if user in session for restores`() {
+    fun `If service returns SERVICE_UNAVAILABLE, retry with backoff a few times then error if user in session for restores`() {
         val slot = slot<AcknowledgePurchaseResponseListener>()
         val acknowledgeStubbing = every {
             mockClient.acknowledgePurchase(
@@ -875,6 +875,7 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         }
         var receivedError: PurchasesError? = null
         var timesRetried = 0
+        val capturedDelays = mutableListOf<Long>()
         val useCase = AcknowledgePurchaseUseCase(
             AcknowledgePurchaseUseCaseParams(
                 "purchaseToken",
@@ -891,7 +892,8 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
                 timesRetried++
                 it.invoke(mockClient)
             },
-            executeRequestOnUIThread = { _, request ->
+            executeRequestOnUIThread = { delay, request ->
+                capturedDelays.add(delay)
                 acknowledgeStubbing answers {
                     slot.captured.onAcknowledgePurchaseResponse(
                         BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE.buildResult(),
@@ -904,7 +906,8 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
 
         useCase.run()
 
-        assertThat(timesRetried).isEqualTo(1)
+        assertThat(timesRetried).isEqualTo(4)
+        assertThat(capturedDelays.last()).isCloseTo(RETRY_TIMER_MAX_TIME_MILLISECONDS_FOREGROUND, Offset.offset(1000L))
         assertThat(receivedError).isNotNull
         assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
     }
@@ -956,7 +959,7 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
     }
 
     @Test
-    fun `If service returns SERVICE_UNAVAILABLE, don't retry and error if user in session for purchases`() {
+    fun `If service returns SERVICE_UNAVAILABLE, retries with backoff a few times then error if user in session for purchases`() {
         val slot = slot<AcknowledgePurchaseResponseListener>()
         val acknowledgeStubbing = every {
             mockClient.acknowledgePurchase(
@@ -966,6 +969,7 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         }
         var receivedError: PurchasesError? = null
         var timesRetried = 0
+        val capturedDelays = mutableListOf<Long>()
         val useCase = AcknowledgePurchaseUseCase(
             AcknowledgePurchaseUseCaseParams(
                 "purchaseToken",
@@ -982,7 +986,8 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
                 timesRetried++
                 it.invoke(mockClient)
             },
-            executeRequestOnUIThread = { _, request ->
+            executeRequestOnUIThread = { delay, request ->
+                capturedDelays.add(delay)
                 acknowledgeStubbing answers {
                     slot.captured.onAcknowledgePurchaseResponse(
                         BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE.buildResult(),
@@ -995,7 +1000,8 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
 
         useCase.run()
 
-        assertThat(timesRetried).isEqualTo(1)
+        assertThat(timesRetried).isEqualTo(4)
+        assertThat(capturedDelays.last()).isCloseTo(RETRY_TIMER_MAX_TIME_MILLISECONDS_FOREGROUND, Offset.offset(1000L))
         assertThat(receivedError).isNotNull
         assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
     }
@@ -1047,7 +1053,7 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
     }
 
     @Test
-    fun `If SERVICE_UNAVAILABLE, error if user in session acking unsynced active purchases`() {
+    fun `If SERVICE_UNAVAILABLE, retries with backoff a few times then error if user in session acking unsynced active purchases`() {
         val slot = slot<AcknowledgePurchaseResponseListener>()
         val acknowledgeStubbing = every {
             mockClient.acknowledgePurchase(
@@ -1057,6 +1063,7 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         }
         var receivedError: PurchasesError? = null
         var timesRetried = 0
+        val capturedDelays = mutableListOf<Long>()
         val useCase = AcknowledgePurchaseUseCase(
             AcknowledgePurchaseUseCaseParams(
                 "purchaseToken",
@@ -1073,7 +1080,8 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
                 timesRetried++
                 it.invoke(mockClient)
             },
-            executeRequestOnUIThread = { _, request ->
+            executeRequestOnUIThread = { delay, request ->
+                capturedDelays.add(delay)
                 acknowledgeStubbing answers {
                     slot.captured.onAcknowledgePurchaseResponse(
                         BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE.buildResult(),
@@ -1086,7 +1094,8 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
 
         useCase.run()
 
-        assertThat(timesRetried).isEqualTo(1)
+        assertThat(timesRetried).isEqualTo(4)
+        assertThat(capturedDelays.last()).isCloseTo(RETRY_TIMER_MAX_TIME_MILLISECONDS_FOREGROUND, Offset.offset(1000L))
         assertThat(receivedError).isNotNull
         assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
     }

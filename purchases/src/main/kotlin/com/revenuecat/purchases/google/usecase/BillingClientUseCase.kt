@@ -20,6 +20,7 @@ internal typealias ExecuteRequestOnUIThreadFunction = (delayInMillis: Long, onEr
 private const val MAX_RETRIES_DEFAULT = 3
 private const val RETRY_TIMER_START_MILLISECONDS = 878L // So it gets close to 15 minutes in last retry
 internal const val RETRY_TIMER_MAX_TIME_MILLISECONDS = 1000L * 60L * 15L // 15 minutes
+internal const val RETRY_TIMER_MAX_TIME_MILLISECONDS_FOREGROUND = 1000L * 4L // 4 seconds
 
 internal interface UseCaseParams {
     val appInBackground: Boolean
@@ -130,7 +131,12 @@ internal abstract class BillingClientUseCase<T>(
         billingResult: BillingResult,
     ) {
         log(LogIntent.GOOGLE_WARNING, BillingStrings.BILLING_SERVICE_UNAVAILABLE.format(useCaseParams.appInBackground))
-        if (retryBackoffMilliseconds < RETRY_TIMER_MAX_TIME_MILLISECONDS) {
+        val maxBackoff = if (useCaseParams.appInBackground) {
+            RETRY_TIMER_MAX_TIME_MILLISECONDS
+        } else {
+            RETRY_TIMER_MAX_TIME_MILLISECONDS_FOREGROUND
+        }
+        if (retryBackoffMilliseconds < maxBackoff) {
             retryWithBackoff()
         } else {
             onError(billingResult)

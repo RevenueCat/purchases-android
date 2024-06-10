@@ -481,7 +481,7 @@ internal class QueryPurchasesUseCaseTest : BaseBillingUseCaseTest() {
     }
 
     @Test
-    fun `If service returns SERVICE_UNAVAILABLE, don't retry and error if user in session`() {
+    fun `If service returns SERVICE_UNAVAILABLE, retry with backoff a few times then error if user in session`() {
         val slot = slot<PurchasesResponseListener>()
         val queryPurchasesStubbing = every {
             mockClient.queryPurchasesAsync(
@@ -491,6 +491,7 @@ internal class QueryPurchasesUseCaseTest : BaseBillingUseCaseTest() {
         }
         var receivedError: PurchasesError? = null
         var timesRetried = 0
+        val capturedDelays = mutableListOf<Long>()
         QueryPurchasesUseCase(
             QueryPurchasesUseCaseParams(
                 mockDateProvider,
@@ -507,7 +508,8 @@ internal class QueryPurchasesUseCaseTest : BaseBillingUseCaseTest() {
                 timesRetried++
                 it.invoke(mockClient)
             },
-            executeRequestOnUIThread = { _, request ->
+            executeRequestOnUIThread = { delay, request ->
+                capturedDelays.add(delay)
                 queryPurchasesStubbing answers {
                     slot.captured.onQueryPurchasesResponse(
                         BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE.buildResult(),
@@ -519,7 +521,8 @@ internal class QueryPurchasesUseCaseTest : BaseBillingUseCaseTest() {
             },
         ).run()
 
-        assertThat(timesRetried).isEqualTo(2)
+        assertThat(timesRetried).isEqualTo(5)
+        assertThat(capturedDelays.last()).isCloseTo(RETRY_TIMER_MAX_TIME_MILLISECONDS_FOREGROUND, Offset.offset(1000L))
         assertThat(receivedError).isNotNull
         assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
     }
