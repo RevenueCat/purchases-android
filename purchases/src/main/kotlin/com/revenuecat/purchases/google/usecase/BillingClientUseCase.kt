@@ -72,7 +72,7 @@ internal abstract class BillingClientUseCase<T>(
             }
 
             BillingResponse.ServiceUnavailable -> {
-                backoffOrErrorIfUseInSession(onError, billingResult)
+                backoffOrErrorIfManyRetries(onError, billingResult)
             }
 
             BillingResponse.NetworkError,
@@ -125,19 +125,14 @@ internal abstract class BillingClientUseCase<T>(
         }
     }
 
-    private fun backoffOrErrorIfUseInSession(
+    private fun backoffOrErrorIfManyRetries(
         onError: (BillingResult) -> Unit,
         billingResult: BillingResult,
     ) {
-        if (useCaseParams.appInBackground) {
-            log(LogIntent.GOOGLE_WARNING, BillingStrings.BILLING_SERVICE_UNAVAILABLE_BACKGROUND)
-            if (retryBackoffMilliseconds < RETRY_TIMER_MAX_TIME_MILLISECONDS) {
-                retryWithBackoff()
-            } else {
-                onError(billingResult)
-            }
+        log(LogIntent.GOOGLE_WARNING, BillingStrings.BILLING_SERVICE_UNAVAILABLE.format(useCaseParams.appInBackground))
+        if (retryBackoffMilliseconds < RETRY_TIMER_MAX_TIME_MILLISECONDS) {
+            retryWithBackoff()
         } else {
-            log(LogIntent.GOOGLE_ERROR, BillingStrings.BILLING_SERVICE_UNAVAILABLE_FOREGROUND)
             onError(billingResult)
         }
     }
