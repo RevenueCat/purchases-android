@@ -76,7 +76,7 @@ internal abstract class BillingClientUseCase<T>(
             }
 
             BillingResponse.ServiceUnavailable -> {
-                backoffOrErrorIfManyRetries(onError, billingResult)
+                backoffOrErrorIfServiceUnavailable(onError, billingResult)
             }
 
             BillingResponse.NetworkError,
@@ -129,7 +129,7 @@ internal abstract class BillingClientUseCase<T>(
         }
     }
 
-    private fun backoffOrErrorIfManyRetries(
+    private fun backoffOrErrorIfServiceUnavailable(
         onError: (BillingResult) -> Unit,
         billingResult: BillingResult,
     ) {
