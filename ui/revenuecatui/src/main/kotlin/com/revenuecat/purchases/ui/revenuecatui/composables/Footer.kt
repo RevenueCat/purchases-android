@@ -71,7 +71,7 @@ internal fun Footer(
     }
 }
 
-@Suppress("LongParameterList", "LongMethod")
+@Suppress("LongParameterList", "LongMethod", "CyclomaticComplexMethod")
 @Composable
 private fun Footer(
     mode: PaywallMode,
@@ -83,18 +83,31 @@ private fun Footer(
 ) {
     val context = LocalContext.current
     val uriHandler = LocalUriHandler.current
-
+    val shouldDisplayAllPlansButton = mode == PaywallMode.FOOTER_CONDENSED && allPlansTapped != null
+    val anyButtonDisplayed = shouldDisplayAllPlansButton ||
+        configuration.displayRestorePurchases ||
+        configuration.termsOfServiceURL != null ||
+        configuration.privacyURL != null
+    val bottomMargin = if (anyButtonDisplayed) {
+        0.dp
+    } else {
+        UIConstant.defaultVerticalSpacing * 2
+    }
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .height(intrinsicSize = IntrinsicSize.Min)
-            .padding(horizontal = UIConstant.defaultHorizontalPadding),
+            .padding(
+                start = UIConstant.defaultHorizontalPadding,
+                end = UIConstant.defaultHorizontalPadding,
+                bottom = bottomMargin,
+            ),
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically,
     ) {
         val color = colors.text1
 
-        if (mode == PaywallMode.FOOTER_CONDENSED && allPlansTapped != null) {
+        if (shouldDisplayAllPlansButton && allPlansTapped != null) {
             Button(
                 color = color,
                 childModifier = childModifier,
