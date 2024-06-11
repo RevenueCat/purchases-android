@@ -32,7 +32,6 @@ import org.robolectric.Shadows.shadowOf
 import org.robolectric.shadows.ShadowPackageManager
 import org.robolectric.shadows.ShadowToast
 
-@OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class)
 @RunWith(RobolectricTestRunner::class)
 class FooterLinksNoBrowserTest {
 

@@ -82,54 +82,6 @@ fun Purchases.purchaseProductWith(
 }
 
 /**
- * Make a purchase upgrading from a previous sku. If purchasing a subscription, it will choose the
- * default [SubscriptionOption].
- * @param [activity] Current activity
- * @param [storeProduct] The storeProduct of the product you wish to purchase
- * @param [upgradeInfo] The upgradeInfo you wish to upgrade from, containing the oldSku and the optional prorationMode.
- * Amazon Appstore doesn't support changing products so upgradeInfo is ignored for Amazon purchases.
- * @param [onSuccess] Will be called after the purchase has completed
- * @param [onError] Will be called if there was an error with the purchase
- */
-@Deprecated(
-    "Use purchaseWith and PurchaseParams.Builder instead",
-    ReplaceWith("purchaseWith()"),
-)
-fun Purchases.purchaseProductWith(
-    activity: Activity,
-    storeProduct: StoreProduct,
-    upgradeInfo: UpgradeInfo,
-    onError: (error: PurchasesError, userCancelled: Boolean) -> Unit = ON_PURCHASE_ERROR_STUB,
-    onSuccess: (purchase: StoreTransaction?, customerInfo: CustomerInfo) -> Unit,
-) {
-    purchaseProduct(activity, storeProduct, upgradeInfo, productChangeCompletedListener(onSuccess, onError))
-}
-
-/**
- * Make a purchase upgrading from a previous sku. If purchasing a subscription, it will choose the
- * default [SubscriptionOption].
- * @param [activity] Current activity
- * @param [packageToPurchase] The Package you wish to purchase
- * @param [upgradeInfo] The upgradeInfo you wish to upgrade from, containing the oldSku and the optional prorationMode.
- * Amazon Appstore doesn't support changing products so upgradeInfo is ignored for Amazon purchases.
- * @param [onSuccess] Will be called after the purchase has completed
- * @param [onError] Will be called if there was an error with the purchase
- */
-@Deprecated(
-    "Use purchaseWith and PurchaseParams.Builder instead",
-    ReplaceWith("purchaseWith()"),
-)
-fun Purchases.purchasePackageWith(
-    activity: Activity,
-    packageToPurchase: Package,
-    upgradeInfo: UpgradeInfo,
-    onError: (error: PurchasesError, userCancelled: Boolean) -> Unit = ON_PURCHASE_ERROR_STUB,
-    onSuccess: (purchase: StoreTransaction?, customerInfo: CustomerInfo) -> Unit,
-) {
-    purchasePackage(activity, packageToPurchase, upgradeInfo, productChangeCompletedListener(onSuccess, onError))
-}
-
-/**
  * Make a purchase. If purchasing a subscription, it will choose the default [SubscriptionOption].
  * @param [activity] Current activity
  * @param [packageToPurchase] The Package you wish to purchase

@@ -41,6 +41,7 @@ class PurchasesConfigurationTest {
         assertThat(purchasesConfiguration.verificationMode).isEqualTo(EntitlementVerificationMode.DISABLED)
         assertThat(purchasesConfiguration.dangerousSettings).isEqualTo(DangerousSettings(autoSyncPurchases = true))
         assertThat(purchasesConfiguration.showInAppMessagesAutomatically).isTrue
+        assertThat(purchasesConfiguration.pendingTransactionsForPrepaidPlansEnabled).isFalse
     }
 
     @Test
@@ -95,6 +96,12 @@ class PurchasesConfigurationTest {
             EntitlementVerificationMode.INFORMATIONAL
         ).build()
         assertThat(purchasesConfiguration.verificationMode).isEqualTo(EntitlementVerificationMode.INFORMATIONAL)
+    }
+
+    @Test
+    fun `PurchasesConfiguration sets pending prepaid support enabled correctly`() {
+        val purchasesConfiguration = builder.pendingTransactionsForPrepaidPlansEnabled(true).build()
+        assertThat(purchasesConfiguration.pendingTransactionsForPrepaidPlansEnabled).isTrue
     }
 
     @Test

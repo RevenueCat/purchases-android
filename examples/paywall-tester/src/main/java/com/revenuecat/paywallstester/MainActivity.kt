@@ -11,12 +11,10 @@ import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import com.revenuecat.paywallstester.ui.theme.PaywallTesterAndroidTheme
 import com.revenuecat.purchases.Offering
-import com.revenuecat.purchases.ui.revenuecatui.ExperimentalPreviewRevenueCatUIPurchasesAPI
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivityLauncher
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResultHandler
 
-@OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class)
 class MainActivity : ComponentActivity(), PaywallResultHandler {
     private lateinit var paywallActivityLauncher: PaywallActivityLauncher
 

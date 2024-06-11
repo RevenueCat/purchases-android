@@ -4,11 +4,9 @@ import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.models.StoreTransaction
-import com.revenuecat.purchases.ui.revenuecatui.ExperimentalPreviewRevenueCatUIPurchasesAPI
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 
 @Suppress("unused", "UNUSED_VARIABLE", "EmptyFunctionBlock")
-@OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class)
 private class PaywallListenerAPI {
     fun check() {
         val listener = object : PaywallListener {
