@@ -1,7 +1,5 @@
 package com.revenuecat.purchases.utils
 
-import android.os.Build
-import androidx.annotation.RequiresApi
 import androidx.core.os.LocaleListCompat
 import com.revenuecat.purchases.common.errorLog
 import java.util.Locale
