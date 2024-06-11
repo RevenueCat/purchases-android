@@ -34,7 +34,7 @@ internal class AppConfig(
         get() = runningTests && field
 
     val enableOfflineEntitlements = true
-    val languageTag: String = context.getLocale()?.toBCP47() ?: ""
+    val languageTag: String = context.getLocale()?.toLanguageTag() ?: ""
     val versionName: String = context.versionName ?: ""
     val packageName: String = context.packageName
     var finishTransactions: Boolean = purchasesAreCompletedBy.finishTransactions
