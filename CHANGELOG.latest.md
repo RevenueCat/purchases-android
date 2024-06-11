@@ -1,12 +1,17 @@
-### Behavior Changes
-* Stops collecting the ANDROID_ID. (#1729) via JayShortway (@JayShortway)
-### Dependency Updates
-* Bump fastlane-plugin-revenuecat_internal from `8ec0072` to `5f55466` (#1722) via dependabot[bot] (@dependabot[bot])
+For a full migration guide check [v8-MIGRATION.md](migrations/v8-MIGRATION.md)
+
+### Breaking Changes
+* Support BC7 (#1737) via Toni Rico (@tonidero)
+
+#### New APIs:
+- `SubscriptionOption.installmentInfo` which contains information about installment plans you might want to display in your paywall.
+- `PurchasesConfiguration.pendingTransactionsForPrepaidPlansEnabled` allows to enable pending prepaid subscriptions.
+
+#### Breaking changes
+- Increase min Sdk to 21. This was increased in BC7
+- Increase min kotlin version to 1.7.0
+- Remove `UpgradeInfo`
+- Remove all `purchasePackage` and `purchaseProduct` methods using `UpgradeInfo`. If you want to perform upgrades/downgrades, please migrate to use the `purchase(PurchaseParams)` method, which has options to perform that operation.
+
 ### Other Changes
-* Diagnostics: sync only on first activity foregrounded (#1728) via Toni Rico (@tonidero)
-* Adds 6.9.8 to the changelog. (#1731) via JayShortway (@JayShortway)
-* Remove internal ObserverMode mentions (#1710) via JayShortway (@JayShortway)
-* Deprecate observerMode in favor of purchasesAreCompletedBy (#1708) via JayShortway (@JayShortway)
-* Set INFORMATIONAL trusted entitlements mode as the default in the purchase tester app (#1716) via Toni Rico (@tonidero)
-* Remove `force-release-without-waiting-for-tests` job (#1719) via Cesar de la Vega (@vegaro)
-* Fix purchase tester offerings not reloading (#1715) via Toni Rico (@tonidero)
+* Bump kotlin to 1.8 (#1726)
