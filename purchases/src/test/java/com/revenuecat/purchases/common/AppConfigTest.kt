@@ -3,7 +3,6 @@ package com.revenuecat.purchases.common
 import android.content.Context
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.DangerousSettings
-import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.PurchasesAreCompletedBy.MY_APP
 import com.revenuecat.purchases.PurchasesAreCompletedBy.REVENUECAT
 import com.revenuecat.purchases.Store
@@ -29,9 +28,8 @@ class AppConfigTest {
     fun `languageTag is created successfully`() {
         val expected = "en-US"
         val mockContext = mockk<Context>(relaxed = true)
-        mockkStatic("com.revenuecat.purchases.common.UtilsKt")
         every {
-            mockContext.getLocale()?.toBCP47()
+            mockContext.getLocale()?.toLanguageTag()
         } returns expected
         val appConfig = AppConfig(
             context = mockContext,
@@ -48,9 +46,8 @@ class AppConfigTest {
     fun `languageTag defaults to empty string`() {
         val expected = ""
         val mockContext = mockk<Context>(relaxed = true)
-        mockkStatic("com.revenuecat.purchases.common.UtilsKt")
         every {
-            mockContext.getLocale()?.toBCP47()
+            mockContext.getLocale()?.toLanguageTag()
         } returns null
         val appConfig = AppConfig(
             context = mockContext,
@@ -347,7 +344,7 @@ class AppConfigTest {
             proxyURL = null,
             store = Store.PLAY_STORE
         )
-        assertThat(x.hashCode() == y.hashCode())
+        assertThat(x.hashCode()).isEqualTo(y.hashCode())
     }
 
     @Test
