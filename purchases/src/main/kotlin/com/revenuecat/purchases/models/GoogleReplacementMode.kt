@@ -56,6 +56,9 @@ enum class GoogleReplacementMode(
      * On May 1st, Samwise is charged $36 for his new subscription tier and another $36 on May 1 of each year following.
      */
     CHARGE_PRORATED_PRICE(BillingFlowParams.SubscriptionUpdateParams.ReplacementMode.CHARGE_PRORATED_PRICE),
+
+    // WIP: ADD DOCS
+    DEFERRED(BillingFlowParams.SubscriptionUpdateParams.ReplacementMode.DEFERRED),
     ;
 
     override fun describeContents(): Int {

@@ -10,6 +10,7 @@ private class GoogleReplacementModeAPI {
             GoogleReplacementMode.WITH_TIME_PRORATION,
             GoogleReplacementMode.CHARGE_FULL_PRICE,
             GoogleReplacementMode.CHARGE_PRORATED_PRICE,
+            GoogleReplacementMode.DEFERRED,
             -> {}
         }.exhaustive
     }

@@ -669,6 +669,7 @@ private enum class LegacyProrationMode {
     IMMEDIATE_WITH_TIME_PRORATION,
     IMMEDIATE_AND_CHARGE_FULL_PRICE,
     IMMEDIATE_AND_CHARGE_PRORATED_PRICE,
+    DEFERRED,
 }
 
 private val GoogleReplacementMode.asLegacyProrationMode: LegacyProrationMode
@@ -677,4 +678,5 @@ private val GoogleReplacementMode.asLegacyProrationMode: LegacyProrationMode
         GoogleReplacementMode.WITH_TIME_PRORATION -> LegacyProrationMode.IMMEDIATE_WITH_TIME_PRORATION
         GoogleReplacementMode.CHARGE_FULL_PRICE -> LegacyProrationMode.IMMEDIATE_AND_CHARGE_FULL_PRICE
         GoogleReplacementMode.CHARGE_PRORATED_PRICE -> LegacyProrationMode.IMMEDIATE_AND_CHARGE_PRORATED_PRICE
+        GoogleReplacementMode.DEFERRED -> LegacyProrationMode.DEFERRED
     }
