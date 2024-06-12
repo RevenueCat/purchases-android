@@ -111,6 +111,22 @@ internal object TestData {
         serverDescription = "",
     )
 
+    val template1OfferingNoFooter = Offering(
+        identifier = "Template1",
+        availablePackages = listOf(
+            Packages.monthly,
+        ),
+        metadata = mapOf(),
+        paywall = template1.copy(
+            config = template1.config.copy(
+                displayRestorePurchases = false,
+                termsOfServiceURL = null,
+                privacyURL = null,
+            ),
+        ),
+        serverDescription = "",
+    )
+
     val template2Offering = Offering(
         identifier = "Template2",
         availablePackages = listOf(

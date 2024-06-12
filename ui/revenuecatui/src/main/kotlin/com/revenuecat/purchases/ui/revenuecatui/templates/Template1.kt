@@ -215,6 +215,15 @@ private fun Template1PaywallPreview() {
     )
 }
 
+@Preview(showBackground = true, group = "full_screen")
+@Composable
+private fun Template1NoFooterPaywallPreview() {
+    InternalPaywall(
+        options = PaywallOptions.Builder(dismissRequest = {}).build(),
+        viewModel = MockViewModel(offering = TestData.template1OfferingNoFooter),
+    )
+}
+
 @Preview(showBackground = true, group = "footer")
 @Composable
 private fun Template1FooterPaywallPreview() {
