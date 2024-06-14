@@ -7,19 +7,23 @@ import com.revenuecat.purchases.PurchasesErrorCallback
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.log
+import com.revenuecat.purchases.common.min
 import com.revenuecat.purchases.google.BillingResponse
 import com.revenuecat.purchases.google.billingResponseToPurchasesError
 import com.revenuecat.purchases.google.toHumanReadableDescription
 import com.revenuecat.purchases.strings.BillingStrings
 import java.io.PrintWriter
 import java.io.StringWriter
-import kotlin.math.min
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Duration.Companion.seconds
 
 internal typealias ExecuteRequestOnUIThreadFunction = (delayInMillis: Long, onError: (PurchasesError?) -> Unit) -> Unit
 
 private const val MAX_RETRIES_DEFAULT = 3
-private const val RETRY_TIMER_START_MILLISECONDS = 878L // So it gets close to 15 minutes in last retry
-internal const val RETRY_TIMER_MAX_TIME_MILLISECONDS = 1000L * 60L * 15L // 15 minutes
+private val RETRY_TIMER_START = 878.milliseconds // So it gets close to 15 minutes in last retry
+internal val RETRY_TIMER_MAX_TIME = 15.minutes
+internal val RETRY_TIMER_SERVICE_UNAVAILABLE_MAX_TIME_FOREGROUND = 4.seconds
 
 internal interface UseCaseParams {
     val appInBackground: Boolean
@@ -37,7 +41,7 @@ internal abstract class BillingClientUseCase<T>(
 
     private val maxRetries: Int = MAX_RETRIES_DEFAULT
     private var retryAttempt: Int = 0
-    private var retryBackoffMilliseconds = RETRY_TIMER_START_MILLISECONDS
+    private var retryBackoff = RETRY_TIMER_START
 
     fun run(
         delayMilliseconds: Long = 0,
@@ -62,7 +66,7 @@ internal abstract class BillingClientUseCase<T>(
     ) {
         when (BillingResponse.fromCode(billingResult.responseCode)) {
             BillingResponse.OK -> {
-                retryBackoffMilliseconds = RETRY_TIMER_START_MILLISECONDS
+                retryBackoff = RETRY_TIMER_START
                 onSuccess(response)
             }
 
@@ -72,7 +76,7 @@ internal abstract class BillingClientUseCase<T>(
             }
 
             BillingResponse.ServiceUnavailable -> {
-                backoffOrErrorIfUseInSession(onError, billingResult)
+                backoffOrErrorIfServiceUnavailable(onError, billingResult)
             }
 
             BillingResponse.NetworkError,
@@ -115,7 +119,7 @@ internal abstract class BillingClientUseCase<T>(
         onError: (BillingResult) -> Unit,
         billingResult: BillingResult,
     ) {
-        if (backoffForNetworkErrors && retryBackoffMilliseconds < RETRY_TIMER_MAX_TIME_MILLISECONDS) {
+        if (backoffForNetworkErrors && retryBackoff < RETRY_TIMER_MAX_TIME) {
             retryWithBackoff()
         } else if (!backoffForNetworkErrors && retryAttempt < maxRetries) {
             retryAttempt++
@@ -125,30 +129,30 @@ internal abstract class BillingClientUseCase<T>(
         }
     }
 
-    private fun backoffOrErrorIfUseInSession(
+    private fun backoffOrErrorIfServiceUnavailable(
         onError: (BillingResult) -> Unit,
         billingResult: BillingResult,
     ) {
-        if (useCaseParams.appInBackground) {
-            log(LogIntent.GOOGLE_WARNING, BillingStrings.BILLING_SERVICE_UNAVAILABLE_BACKGROUND)
-            if (retryBackoffMilliseconds < RETRY_TIMER_MAX_TIME_MILLISECONDS) {
-                retryWithBackoff()
-            } else {
-                onError(billingResult)
-            }
+        log(LogIntent.GOOGLE_WARNING, BillingStrings.BILLING_SERVICE_UNAVAILABLE.format(useCaseParams.appInBackground))
+        val maxBackoff = if (useCaseParams.appInBackground) {
+            RETRY_TIMER_MAX_TIME
         } else {
-            log(LogIntent.GOOGLE_ERROR, BillingStrings.BILLING_SERVICE_UNAVAILABLE_FOREGROUND)
+            RETRY_TIMER_SERVICE_UNAVAILABLE_MAX_TIME_FOREGROUND
+        }
+        if (retryBackoff < maxBackoff) {
+            retryWithBackoff()
+        } else {
             onError(billingResult)
         }
     }
 
     private fun retryWithBackoff() {
-        retryBackoffMilliseconds.let { currentDelayMilliseconds ->
-            retryBackoffMilliseconds = min(
-                retryBackoffMilliseconds * 2,
-                RETRY_TIMER_MAX_TIME_MILLISECONDS,
+        retryBackoff.let { currentDelay ->
+            retryBackoff = min(
+                retryBackoff * 2,
+                RETRY_TIMER_MAX_TIME,
             )
-            run(currentDelayMilliseconds)
+            run(currentDelay.inWholeMilliseconds)
         }
     }
 }

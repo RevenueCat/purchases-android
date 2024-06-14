@@ -15,7 +15,7 @@ open class PurchasesConfiguration(builder: Builder) {
     val appUserID: String?
 
     @Deprecated(
-        "ObserverMode is a confusing term.",
+        "observerMode is being deprecated in favor of purchasesAreCompletedBy.",
         ReplaceWith(
             "purchasesAreCompletedBy == MY_APP",
             "com.revenuecat.purchases.PurchasesAreCompletedBy.MY_APP",
@@ -33,6 +33,7 @@ open class PurchasesConfiguration(builder: Builder) {
     val diagnosticsEnabled: Boolean
     val dangerousSettings: DangerousSettings
     val verificationMode: EntitlementVerificationMode
+    val pendingTransactionsForPrepaidPlansEnabled: Boolean
 
     init {
         this.context = builder.context
@@ -45,6 +46,7 @@ open class PurchasesConfiguration(builder: Builder) {
         this.verificationMode = builder.verificationMode
         this.dangerousSettings = builder.dangerousSettings
         this.showInAppMessagesAutomatically = builder.showInAppMessagesAutomatically
+        this.pendingTransactionsForPrepaidPlansEnabled = builder.pendingTransactionsForPrepaidPlansEnabled
     }
 
     @SuppressWarnings("TooManyFunctions")
@@ -77,6 +79,9 @@ open class PurchasesConfiguration(builder: Builder) {
         @set:JvmSynthetic @get:JvmSynthetic
         internal var dangerousSettings: DangerousSettings = DangerousSettings()
 
+        @set:JvmSynthetic @get:JvmSynthetic
+        internal var pendingTransactionsForPrepaidPlansEnabled: Boolean = false
+
         /**
          * A unique id for identifying the user
          */
@@ -101,7 +106,7 @@ open class PurchasesConfiguration(builder: Builder) {
          * you will have to acknowledge the purchases yourself.
          */
         @Deprecated(
-            "ObserverMode is a confusing term.",
+            "observerMode() is being deprecated in favor of purchasesAreCompletedBy().",
             ReplaceWith(
                 "purchasesAreCompletedBy(if (observerMode) MY_APP else REVENUECAT)",
                 "com.revenuecat.purchases.PurchasesAreCompletedBy.REVENUECAT",
@@ -119,8 +124,8 @@ open class PurchasesConfiguration(builder: Builder) {
         /**
          * An optional setting. Set this to [MY_APP][PurchasesAreCompletedBy.MY_APP] if you have your own IAP
          * implementation and want to use only RevenueCat's backend. Default is
-         * [REVENUECAT][PurchasesAreCompletedBy.REVENUECAT]. If you are on Android and setting this to `MY_APP`, you
-         * will have to acknowledge the purchases yourself.
+         * [REVENUECAT][PurchasesAreCompletedBy.REVENUECAT]. If you are on Android and setting this to
+         * [MY_APP][PurchasesAreCompletedBy.MY_APP], you will have to acknowledge the purchases yourself.
          *
          * **Note:** failing to acknowledge a purchase within 3 days will lead to Google Play automatically issuing a
          * refund to the user.
@@ -214,6 +219,15 @@ open class PurchasesConfiguration(builder: Builder) {
          */
         fun dangerousSettings(dangerousSettings: DangerousSettings) = apply {
             this.dangerousSettings = dangerousSettings
+        }
+
+        /**
+         * Enable this setting if you want to allow pending purchases for prepaid subscriptions (only supported
+         * in Google Play). Note that entitlements are not granted until payment is done.
+         * Default is disabled.
+         */
+        fun pendingTransactionsForPrepaidPlansEnabled(pendingTransactionsForPrepaidPlansEnabled: Boolean) = apply {
+            this.pendingTransactionsForPrepaidPlansEnabled = pendingTransactionsForPrepaidPlansEnabled
         }
 
         /**

@@ -17,12 +17,13 @@ internal object BillingFactory {
         application: Application,
         backendHelper: BackendHelper,
         cache: DeviceCache,
-        observerMode: Boolean,
+        finishTransactions: Boolean,
         diagnosticsTrackerIfEnabled: DiagnosticsTracker?,
         stateProvider: PurchasesStateProvider,
+        pendingTransactionsForPrepaidPlansEnabled: Boolean,
     ) = when (store) {
         Store.PLAY_STORE -> BillingWrapper(
-            BillingWrapper.ClientFactory(application),
+            BillingWrapper.ClientFactory(application, pendingTransactionsForPrepaidPlansEnabled),
             Handler(application.mainLooper),
             cache,
             diagnosticsTrackerIfEnabled,
@@ -33,7 +34,7 @@ internal object BillingFactory {
                 AmazonBilling(
                     application.applicationContext,
                     cache,
-                    observerMode,
+                    finishTransactions,
                     Handler(application.mainLooper),
                     backendHelper,
                     stateProvider,

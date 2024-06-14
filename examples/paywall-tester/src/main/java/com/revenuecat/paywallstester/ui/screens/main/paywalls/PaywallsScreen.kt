@@ -29,7 +29,6 @@ import com.revenuecat.paywallstester.SamplePaywallsLoader
 import com.revenuecat.paywallstester.ui.screens.paywallfooter.SamplePaywall
 import com.revenuecat.paywallstester.ui.theme.bundledLobsterTwoFontFamily
 import com.revenuecat.purchases.Offering
-import com.revenuecat.purchases.ui.revenuecatui.ExperimentalPreviewRevenueCatUIPurchasesAPI
 import com.revenuecat.purchases.ui.revenuecatui.PaywallDialog
 import com.revenuecat.purchases.ui.revenuecatui.PaywallDialogOptions
 import com.revenuecat.purchases.ui.revenuecatui.PaywallFooter
@@ -37,7 +36,6 @@ import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.fonts.CustomFontProvider
 import com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider
 
-@OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class)
 @Composable
 fun PaywallsScreen(
     samplePaywallsLoader: SamplePaywallsLoader = SamplePaywallsLoader(),
@@ -99,7 +97,6 @@ fun PaywallsScreen(
     }
 }
 
-@OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class)
 @Composable
 private fun FullScreenDialog(currentState: DisplayPaywallState.FullScreen, onDismiss: () -> Unit) {
     PaywallDialog(
@@ -111,7 +108,6 @@ private fun FullScreenDialog(currentState: DisplayPaywallState.FullScreen, onDis
     )
 }
 
-@OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class)
 @Composable
 private fun FooterDialog(currentState: DisplayPaywallState.Footer, onDismiss: () -> Unit) {
     Dialog(
@@ -133,7 +129,6 @@ private fun FooterDialog(currentState: DisplayPaywallState.Footer, onDismiss: ()
     }
 }
 
-@OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class)
 private sealed class DisplayPaywallState {
     object None : DisplayPaywallState()
     data class FullScreen

@@ -46,6 +46,7 @@ class ConfigureFragment : Fragment() {
             android.R.layout.simple_spinner_item,
             EntitlementVerificationMode.values(),
         )
+        binding.verificationOptionsInput.setSelection(EntitlementVerificationMode.INFORMATIONAL.ordinal)
         setupSupportedStoresRadioButtons()
 
         lifecycleScope.launch {
@@ -144,11 +145,12 @@ class ConfigureFragment : Fragment() {
             .diagnosticsEnabled(true)
             .entitlementVerificationMode(entitlementVerificationMode)
             .purchasesAreCompletedBy(purchasesAreCompletedBy)
+            .pendingTransactionsForPrepaidPlansEnabled(true)
             .build()
         Purchases.configure(configuration)
 
         if (purchasesAreCompletedBy == PurchasesAreCompletedBy.MY_APP) {
-            ObserverModeBillingClient.start(application, application.logHandler)
+            NotFinishingTransactionsBillingClient.start(application, application.logHandler)
         }
 
         // set attributes to store additional, structured information for a user in RevenueCat.

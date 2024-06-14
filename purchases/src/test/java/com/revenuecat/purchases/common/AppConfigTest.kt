@@ -3,6 +3,8 @@ package com.revenuecat.purchases.common
 import android.content.Context
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.DangerousSettings
+import com.revenuecat.purchases.PurchasesAreCompletedBy.MY_APP
+import com.revenuecat.purchases.PurchasesAreCompletedBy.REVENUECAT
 import com.revenuecat.purchases.Store
 import io.mockk.every
 import io.mockk.mockk
@@ -26,13 +28,12 @@ class AppConfigTest {
     fun `languageTag is created successfully`() {
         val expected = "en-US"
         val mockContext = mockk<Context>(relaxed = true)
-        mockkStatic("com.revenuecat.purchases.common.UtilsKt")
         every {
-            mockContext.getLocale()?.toBCP47()
+            mockContext.getLocale()?.toLanguageTag()
         } returns expected
         val appConfig = AppConfig(
             context = mockContext,
-            observerMode = false,
+            purchasesAreCompletedBy = REVENUECAT,
             showInAppMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
@@ -45,13 +46,12 @@ class AppConfigTest {
     fun `languageTag defaults to empty string`() {
         val expected = ""
         val mockContext = mockk<Context>(relaxed = true)
-        mockkStatic("com.revenuecat.purchases.common.UtilsKt")
         every {
-            mockContext.getLocale()?.toBCP47()
+            mockContext.getLocale()?.toLanguageTag()
         } returns null
         val appConfig = AppConfig(
             context = mockContext,
-            observerMode = false,
+            purchasesAreCompletedBy = REVENUECAT,
             showInAppMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
@@ -72,7 +72,7 @@ class AppConfigTest {
 
         val appConfig = AppConfig(
             context = mockContext,
-            observerMode = false,
+            purchasesAreCompletedBy = REVENUECAT,
             showInAppMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
@@ -92,7 +92,7 @@ class AppConfigTest {
         }
         val appConfig = AppConfig(
             context = mockContext,
-            observerMode = false,
+            purchasesAreCompletedBy = REVENUECAT,
             showInAppMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
@@ -113,7 +113,7 @@ class AppConfigTest {
 
         val appConfig = AppConfig(
             context = mockContext,
-            observerMode = false,
+            purchasesAreCompletedBy = REVENUECAT,
             showInAppMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
@@ -126,7 +126,7 @@ class AppConfigTest {
     fun `showInAppMessagesAutomatically is set correctly`() {
         val appConfig = AppConfig(
             context = mockk(relaxed = true),
-            observerMode = false,
+            purchasesAreCompletedBy = REVENUECAT,
             showInAppMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
@@ -135,7 +135,7 @@ class AppConfigTest {
         assertThat(appConfig.showInAppMessagesAutomatically).isFalse
         val appConfig2 = AppConfig(
             context = mockk(relaxed = true),
-            observerMode = false,
+            purchasesAreCompletedBy = REVENUECAT,
             showInAppMessagesAutomatically = true,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
@@ -148,7 +148,7 @@ class AppConfigTest {
     fun `finishTransactions is set correctly when observer mode is false`() {
         val appConfig = AppConfig(
             context = mockk(relaxed = true),
-            observerMode = false,
+            purchasesAreCompletedBy = REVENUECAT,
             showInAppMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
@@ -161,7 +161,7 @@ class AppConfigTest {
     fun `finishTransactions is set correctly when observer mode is true`() {
         val appConfig = AppConfig(
             context = mockk(relaxed = true),
-            observerMode = true,
+            purchasesAreCompletedBy = MY_APP,
             showInAppMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
@@ -175,7 +175,7 @@ class AppConfigTest {
         val expected = URL("https://a-proxy")
         val appConfig = AppConfig(
             context = mockk(relaxed = true),
-            observerMode = false,
+            purchasesAreCompletedBy = REVENUECAT,
             showInAppMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = expected,
@@ -189,7 +189,7 @@ class AppConfigTest {
         val expected = URL("https://api.revenuecat.com/")
         val appConfig = AppConfig(
             context = mockk(relaxed = true),
-            observerMode = false,
+            purchasesAreCompletedBy = REVENUECAT,
             showInAppMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
@@ -202,7 +202,7 @@ class AppConfigTest {
     fun `default forceServerErrors is correct`() {
         val appConfig = AppConfig(
             context = mockk(relaxed = true),
-            observerMode = false,
+            purchasesAreCompletedBy = REVENUECAT,
             showInAppMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
@@ -215,7 +215,7 @@ class AppConfigTest {
     fun `default forceSigningErrors is correct`() {
         val appConfig = AppConfig(
             context = mockk(relaxed = true),
-            observerMode = false,
+            purchasesAreCompletedBy = REVENUECAT,
             showInAppMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
@@ -228,7 +228,7 @@ class AppConfigTest {
     fun `customEntitlementComputation matches version from dangerous settings`() {
         val appConfig = AppConfig(
             context = mockk(relaxed = true),
-            observerMode = false,
+            purchasesAreCompletedBy = REVENUECAT,
             showInAppMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
@@ -238,7 +238,7 @@ class AppConfigTest {
         assertThat(appConfig.customEntitlementComputation).isTrue
         val appConfig2 = AppConfig(
             context = mockk(relaxed = true),
-            observerMode = false,
+            purchasesAreCompletedBy = REVENUECAT,
             showInAppMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
@@ -252,7 +252,7 @@ class AppConfigTest {
     fun `Given two app configs with same data, both are equal`() {
         val x = AppConfig(
             context = mockk(relaxed = true),
-            observerMode = false,
+            purchasesAreCompletedBy = REVENUECAT,
             showInAppMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
@@ -260,7 +260,7 @@ class AppConfigTest {
         )
         val y = AppConfig(
             context = mockk(relaxed = true),
-            observerMode = false,
+            purchasesAreCompletedBy = REVENUECAT,
             showInAppMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
@@ -274,7 +274,7 @@ class AppConfigTest {
     fun `Given two app configs with different data, both are not equal`() {
         val x = AppConfig(
             context = mockk(relaxed = true),
-            observerMode = false,
+            purchasesAreCompletedBy = REVENUECAT,
             showInAppMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
@@ -282,7 +282,7 @@ class AppConfigTest {
         )
         var y = AppConfig(
             context = mockk(relaxed = true),
-            observerMode = true,
+            purchasesAreCompletedBy = MY_APP,
             showInAppMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
@@ -293,7 +293,7 @@ class AppConfigTest {
 
         y = AppConfig(
             context = mockk(relaxed = true),
-            observerMode = false,
+            purchasesAreCompletedBy = REVENUECAT,
             showInAppMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.1.0"),
             proxyURL = null,
@@ -304,7 +304,7 @@ class AppConfigTest {
 
         y = AppConfig(
             context = mockk(relaxed = true),
-            observerMode = false,
+            purchasesAreCompletedBy = REVENUECAT,
             showInAppMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = URL("https://a.com"),
@@ -315,7 +315,7 @@ class AppConfigTest {
 
         y = AppConfig(
             context = mockk(relaxed = true),
-            observerMode = false,
+            purchasesAreCompletedBy = REVENUECAT,
             showInAppMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
@@ -330,7 +330,7 @@ class AppConfigTest {
     fun `Given two same app configs, their hashcodes are the same`() {
         val x = AppConfig(
             context = mockk(relaxed = true),
-            observerMode = false,
+            purchasesAreCompletedBy = REVENUECAT,
             showInAppMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
@@ -338,20 +338,20 @@ class AppConfigTest {
         )
         val y = AppConfig(
             context = mockk(relaxed = true),
-            observerMode = false,
+            purchasesAreCompletedBy = REVENUECAT,
             showInAppMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
             store = Store.PLAY_STORE
         )
-        assertThat(x.hashCode() == y.hashCode())
+        assertThat(x.hashCode()).isEqualTo(y.hashCode())
     }
 
     @Test
     fun `toString works`() {
         val x = AppConfig(
             context = mockk(relaxed = true),
-            observerMode = false,
+            purchasesAreCompletedBy = REVENUECAT,
             showInAppMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,

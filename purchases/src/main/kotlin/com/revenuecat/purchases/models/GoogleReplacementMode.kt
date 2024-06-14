@@ -58,17 +58,6 @@ enum class GoogleReplacementMode(
     CHARGE_PRORATED_PRICE(BillingFlowParams.SubscriptionUpdateParams.ReplacementMode.CHARGE_PRORATED_PRICE),
     ;
 
-    /**
-     * For internal use only :)
-     */
-    internal val asGoogleProrationMode: GoogleProrationMode
-        get() = when (this) {
-            GoogleReplacementMode.WITHOUT_PRORATION -> GoogleProrationMode.IMMEDIATE_WITHOUT_PRORATION
-            GoogleReplacementMode.WITH_TIME_PRORATION -> GoogleProrationMode.IMMEDIATE_WITH_TIME_PRORATION
-            GoogleReplacementMode.CHARGE_FULL_PRICE -> GoogleProrationMode.IMMEDIATE_AND_CHARGE_FULL_PRICE
-            GoogleReplacementMode.CHARGE_PRORATED_PRICE -> GoogleProrationMode.IMMEDIATE_AND_CHARGE_PRORATED_PRICE
-        }
-
     override fun describeContents(): Int {
         return 0
     }

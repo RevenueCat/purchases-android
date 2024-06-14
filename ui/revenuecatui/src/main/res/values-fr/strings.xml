@@ -18,4 +18,5 @@
     <string name="package_discount">%1$d%% de réduction</string>
     <string name="continue_cta">Continuer</string>
     <string name="default_offer_details_with_intro_offer">Démarrez votre essai de {{ sub_offer_duration }}, puis de {{ total_price_and_per_month }}.</string>
+    <string name="no_browser_cannot_open_link">Aucun navigateur installé. Le lien n\'a pas pu être ouvert.</string>
 </resources>

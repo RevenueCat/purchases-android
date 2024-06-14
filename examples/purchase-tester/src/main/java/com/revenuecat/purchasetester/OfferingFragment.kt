@@ -100,7 +100,7 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
         if (Purchases.sharedInstance.finishTransactions) {
             startPurchase(isUpgrade, isPersonalizedPrice, PurchaseParams.Builder(requireActivity(), currentPackage))
         } else {
-            startObserverModePurchase(currentPackage.product.purchasingData)
+            startPurchaseWithoutFinishingTransaction(currentPackage.product.purchasingData)
         }
     }
 
@@ -113,7 +113,7 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
         if (Purchases.sharedInstance.finishTransactions) {
             startPurchase(isUpgrade, isPersonalizedPrice, PurchaseParams.Builder(requireActivity(), currentProduct))
         } else {
-            startObserverModePurchase(currentProduct.purchasingData)
+            startPurchaseWithoutFinishingTransaction(currentProduct.purchasingData)
         }
     }
 
@@ -126,7 +126,7 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
         if (Purchases.sharedInstance.finishTransactions) {
             startPurchase(isUpgrade, isPersonalizedPrice, PurchaseParams.Builder(requireActivity(), subscriptionOption))
         } else {
-            startObserverModePurchase(subscriptionOption.purchasingData)
+            startPurchaseWithoutFinishingTransaction(subscriptionOption.purchasingData)
         }
     }
 
@@ -181,10 +181,10 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
         }
     }
 
-    private fun startObserverModePurchase(purchasingData: PurchasingData) {
+    private fun startPurchaseWithoutFinishingTransaction(purchasingData: PurchasingData) {
         when (purchasingData) {
             is GooglePurchasingData.Subscription -> {
-                ObserverModeBillingClient.purchase(
+                NotFinishingTransactionsBillingClient.purchase(
                     requireActivity(),
                     purchasingData.productDetails,
                     purchasingData.token,
@@ -193,7 +193,7 @@ class OfferingFragment : Fragment(), PackageCardAdapter.PackageCardAdapterListen
             }
 
             is GooglePurchasingData.InAppProduct -> {
-                ObserverModeBillingClient.purchase(
+                NotFinishingTransactionsBillingClient.purchase(
                     requireActivity(),
                     purchasingData.productDetails,
                     null,

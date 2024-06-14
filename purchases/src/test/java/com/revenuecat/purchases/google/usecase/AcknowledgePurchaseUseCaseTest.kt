@@ -4,6 +4,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.billingclient.api.AcknowledgePurchaseParams
 import com.android.billingclient.api.AcknowledgePurchaseResponseListener
 import com.android.billingclient.api.BillingClient
+import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchaseHistoryRecord
 import com.revenuecat.purchases.PostReceiptInitiationSource
 import com.revenuecat.purchases.PresentedOfferingContext
@@ -232,6 +233,59 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         assertThat(capturedAcknowledgeParams.purchaseToken).isEqualTo(token)
     }
 
+    @Test
+    fun `non-consumables are acknowledged even if shouldConsume is false`() {
+        val googlePurchaseWrapper = getMockedPurchaseWrapper(
+            productId = "non-consumable",
+            productType = ProductType.INAPP,
+            acknowledged = false
+        )
+        val token = googlePurchaseWrapper.purchaseToken
+
+        every {
+            mockDeviceCache.addSuccessfullyPostedToken(token)
+        } just Runs
+
+        wrapper.consumeAndSave(
+            finishTransactions = true,
+            purchase = googlePurchaseWrapper,
+            shouldConsume = false,
+            initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES
+        )
+
+        assertThat(capturedAcknowledgeResponseListener.isCaptured).isTrue
+        capturedAcknowledgeResponseListener.captured.onAcknowledgePurchaseResponse(
+            billingClientOKResult
+        )
+
+        assertThat(capturedAcknowledgePurchaseParams.isCaptured).isTrue
+        val capturedAcknowledgeParams = capturedAcknowledgePurchaseParams.captured
+        assertThat(capturedAcknowledgeParams.purchaseToken).isEqualTo(token)
+    }
+
+    @Test
+    fun `non-consumables are not acknowledged if shouldConsume is false and they are already acknowledged`() {
+        val googlePurchaseWrapper = getMockedPurchaseWrapper(
+            productId = "non-consumable",
+            productType = ProductType.INAPP,
+            acknowledged = true
+        )
+        val token = googlePurchaseWrapper.purchaseToken
+
+        every {
+            mockDeviceCache.addSuccessfullyPostedToken(token)
+        } just Runs
+
+        wrapper.consumeAndSave(
+            finishTransactions = true,
+            purchase = googlePurchaseWrapper,
+            shouldConsume = false,
+            initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES
+        )
+
+        assertThat(capturedAcknowledgeResponseListener.isCaptured).isFalse
+        assertThat(capturedAcknowledgePurchaseParams.isCaptured).isFalse
+    }
 
     @Test
     fun `restored subscriptions are acknowledged`() {
@@ -533,7 +587,7 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         useCase.run()
 
         assertThat(capturedDelays.size).isEqualTo(12)
-        assertThat(capturedDelays.last()).isCloseTo(RETRY_TIMER_MAX_TIME_MILLISECONDS, Offset.offset(1000L))
+        assertThat(capturedDelays.last()).isCloseTo(RETRY_TIMER_MAX_TIME.inWholeMilliseconds, Offset.offset(1000L))
         assertThat(receivedError).isNotNull
         assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.NetworkError)
     }
@@ -669,7 +723,7 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         useCase.run()
 
         assertThat(capturedDelays.size).isEqualTo(12)
-        assertThat(capturedDelays.last()).isCloseTo(RETRY_TIMER_MAX_TIME_MILLISECONDS, Offset.offset(1000L))
+        assertThat(capturedDelays.last()).isCloseTo(RETRY_TIMER_MAX_TIME.inWholeMilliseconds, Offset.offset(1000L))
         assertThat(receivedError).isNotNull
         assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
     }
@@ -805,13 +859,13 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         useCase.run()
 
         assertThat(capturedDelays.size).isEqualTo(12)
-        assertThat(capturedDelays.last()).isCloseTo(RETRY_TIMER_MAX_TIME_MILLISECONDS, Offset.offset(1000L))
+        assertThat(capturedDelays.last()).isCloseTo(RETRY_TIMER_MAX_TIME.inWholeMilliseconds, Offset.offset(1000L))
         assertThat(receivedError).isNotNull
         assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
     }
 
     @Test
-    fun `If service returns SERVICE_UNAVAILABLE, don't retry and error if user in session for restores`() {
+    fun `If service returns SERVICE_UNAVAILABLE, retry with backoff a few times then error if user in session for restores`() {
         val slot = slot<AcknowledgePurchaseResponseListener>()
         val acknowledgeStubbing = every {
             mockClient.acknowledgePurchase(
@@ -821,6 +875,7 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         }
         var receivedError: PurchasesError? = null
         var timesRetried = 0
+        val capturedDelays = mutableListOf<Long>()
         val useCase = AcknowledgePurchaseUseCase(
             AcknowledgePurchaseUseCaseParams(
                 "purchaseToken",
@@ -837,7 +892,8 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
                 timesRetried++
                 it.invoke(mockClient)
             },
-            executeRequestOnUIThread = { _, request ->
+            executeRequestOnUIThread = { delay, request ->
+                capturedDelays.add(delay)
                 acknowledgeStubbing answers {
                     slot.captured.onAcknowledgePurchaseResponse(
                         BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE.buildResult(),
@@ -850,7 +906,9 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
 
         useCase.run()
 
-        assertThat(timesRetried).isEqualTo(1)
+        assertThat(timesRetried).isEqualTo(4)
+        assertThat(capturedDelays.last())
+            .isCloseTo(RETRY_TIMER_SERVICE_UNAVAILABLE_MAX_TIME_FOREGROUND.inWholeMilliseconds, Offset.offset(1000L))
         assertThat(receivedError).isNotNull
         assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
     }
@@ -896,13 +954,13 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         useCase.run()
 
         assertThat(capturedDelays.size).isEqualTo(12)
-        assertThat(capturedDelays.last()).isCloseTo(RETRY_TIMER_MAX_TIME_MILLISECONDS, Offset.offset(1000L))
+        assertThat(capturedDelays.last()).isCloseTo(RETRY_TIMER_MAX_TIME.inWholeMilliseconds, Offset.offset(1000L))
         assertThat(receivedError).isNotNull
         assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
     }
 
     @Test
-    fun `If service returns SERVICE_UNAVAILABLE, don't retry and error if user in session for purchases`() {
+    fun `If service returns SERVICE_UNAVAILABLE, retries with backoff a few times then error if user in session for purchases`() {
         val slot = slot<AcknowledgePurchaseResponseListener>()
         val acknowledgeStubbing = every {
             mockClient.acknowledgePurchase(
@@ -912,6 +970,7 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         }
         var receivedError: PurchasesError? = null
         var timesRetried = 0
+        val capturedDelays = mutableListOf<Long>()
         val useCase = AcknowledgePurchaseUseCase(
             AcknowledgePurchaseUseCaseParams(
                 "purchaseToken",
@@ -928,7 +987,8 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
                 timesRetried++
                 it.invoke(mockClient)
             },
-            executeRequestOnUIThread = { _, request ->
+            executeRequestOnUIThread = { delay, request ->
+                capturedDelays.add(delay)
                 acknowledgeStubbing answers {
                     slot.captured.onAcknowledgePurchaseResponse(
                         BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE.buildResult(),
@@ -941,7 +1001,9 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
 
         useCase.run()
 
-        assertThat(timesRetried).isEqualTo(1)
+        assertThat(timesRetried).isEqualTo(4)
+        assertThat(capturedDelays.last())
+            .isCloseTo(RETRY_TIMER_SERVICE_UNAVAILABLE_MAX_TIME_FOREGROUND.inWholeMilliseconds, Offset.offset(1000L))
         assertThat(receivedError).isNotNull
         assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
     }
@@ -987,13 +1049,13 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         useCase.run()
 
         assertThat(capturedDelays.size).isEqualTo(12)
-        assertThat(capturedDelays.last()).isCloseTo(RETRY_TIMER_MAX_TIME_MILLISECONDS, Offset.offset(1000L))
+        assertThat(capturedDelays.last()).isCloseTo(RETRY_TIMER_MAX_TIME.inWholeMilliseconds, Offset.offset(1000L))
         assertThat(receivedError).isNotNull
         assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
     }
 
     @Test
-    fun `If SERVICE_UNAVAILABLE, error if user in session acking unsynced active purchases`() {
+    fun `If SERVICE_UNAVAILABLE, retries with backoff a few times then error if user in session acking unsynced active purchases`() {
         val slot = slot<AcknowledgePurchaseResponseListener>()
         val acknowledgeStubbing = every {
             mockClient.acknowledgePurchase(
@@ -1003,6 +1065,7 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         }
         var receivedError: PurchasesError? = null
         var timesRetried = 0
+        val capturedDelays = mutableListOf<Long>()
         val useCase = AcknowledgePurchaseUseCase(
             AcknowledgePurchaseUseCaseParams(
                 "purchaseToken",
@@ -1019,7 +1082,8 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
                 timesRetried++
                 it.invoke(mockClient)
             },
-            executeRequestOnUIThread = { _, request ->
+            executeRequestOnUIThread = { delay, request ->
+                capturedDelays.add(delay)
                 acknowledgeStubbing answers {
                     slot.captured.onAcknowledgePurchaseResponse(
                         BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE.buildResult(),
@@ -1032,7 +1096,9 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
 
         useCase.run()
 
-        assertThat(timesRetried).isEqualTo(1)
+        assertThat(timesRetried).isEqualTo(4)
+        assertThat(capturedDelays.last())
+            .isCloseTo(RETRY_TIMER_SERVICE_UNAVAILABLE_MAX_TIME_FOREGROUND.inWholeMilliseconds, Offset.offset(1000L))
         assertThat(receivedError).isNotNull
         assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
     }
@@ -1175,15 +1241,18 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
     // endregion retries
 
     private fun getMockedPurchaseWrapper(
+        productId: String = "sub",
+        productType: ProductType = ProductType.SUBS,
         acknowledged: Boolean = false
     ): StoreTransaction {
         val p = stubGooglePurchase(
-            productIds = listOf("sub"),
-            purchaseToken = "token_sub",
+            productIds = listOf(productId),
+            purchaseToken = "token",
+            purchaseState = Purchase.PurchaseState.PURCHASED,
             acknowledged = acknowledged
         )
 
-        return p.toStoreTransaction(ProductType.SUBS, PresentedOfferingContext("offering_a"))
+        return p.toStoreTransaction(productType, PresentedOfferingContext("offering_a"))
     }
 
     private fun getMockedPurchaseHistoryRecordWrapper(): StoreTransaction {

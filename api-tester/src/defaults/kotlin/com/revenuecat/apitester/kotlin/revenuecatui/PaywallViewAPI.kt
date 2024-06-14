@@ -4,13 +4,11 @@ import android.content.Context
 import android.util.AttributeSet
 import androidx.compose.ui.platform.AbstractComposeView
 import com.revenuecat.purchases.Offering
-import com.revenuecat.purchases.ui.revenuecatui.ExperimentalPreviewRevenueCatUIPurchasesAPI
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider
 import com.revenuecat.purchases.ui.revenuecatui.views.PaywallView
 
 @Suppress("unused", "UNUSED_VARIABLE")
-@OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class)
 private class PaywallViewAPI {
 
     fun checkType(context: Context) {

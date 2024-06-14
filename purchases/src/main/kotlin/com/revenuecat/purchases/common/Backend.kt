@@ -186,7 +186,7 @@ internal class Backend(
         purchaseToken: String,
         appUserID: String,
         isRestore: Boolean,
-        observerMode: Boolean,
+        finishTransactions: Boolean,
         subscriberAttributes: Map<String, Map<String, Any?>>,
         receiptInfo: ReceiptInfo,
         storeAppUserID: String?,
@@ -201,7 +201,7 @@ internal class Backend(
             purchaseToken,
             appUserID,
             isRestore.toString(),
-            observerMode.toString(),
+            finishTransactions.toString(),
             subscriberAttributes.toString(),
             receiptInfo.toString(),
             storeAppUserID,
@@ -218,14 +218,14 @@ internal class Backend(
             "applied_targeting_rule" to receiptInfo.presentedOfferingContext?.targetingContext?.let {
                 return@let mapOf("revision" to it.revision, "rule_id" to it.ruleId)
             },
-            "observer_mode" to observerMode,
+            "observer_mode" to !finishTransactions,
             "price" to receiptInfo.price,
             "currency" to receiptInfo.currency,
             "attributes" to subscriberAttributes.takeUnless { it.isEmpty() || appConfig.customEntitlementComputation },
             "normal_duration" to receiptInfo.duration,
             "store_user_id" to storeAppUserID,
             "pricing_phases" to receiptInfo.pricingPhases?.map { it.toMap() },
-            "proration_mode" to (receiptInfo.replacementMode as? GoogleReplacementMode)?.asGoogleProrationMode?.name,
+            "proration_mode" to (receiptInfo.replacementMode as? GoogleReplacementMode)?.asLegacyProrationMode?.name,
             "initiation_source" to initiationSource.postReceiptFieldValue,
             "paywall" to paywallPostReceiptData?.toMap(),
         ).filterNotNullValues()
@@ -660,3 +660,21 @@ internal fun PricingPhase.toMap(): Map<String, Any?> {
         "priceCurrencyCode" to this.price.currencyCode,
     )
 }
+
+/**
+ * [GoogleReplacementMode] used to be `GoogleProrationMode`. The backend still expects these values, hence this enum.
+ */
+private enum class LegacyProrationMode {
+    IMMEDIATE_WITHOUT_PRORATION,
+    IMMEDIATE_WITH_TIME_PRORATION,
+    IMMEDIATE_AND_CHARGE_FULL_PRICE,
+    IMMEDIATE_AND_CHARGE_PRORATED_PRICE,
+}
+
+private val GoogleReplacementMode.asLegacyProrationMode: LegacyProrationMode
+    get() = when (this) {
+        GoogleReplacementMode.WITHOUT_PRORATION -> LegacyProrationMode.IMMEDIATE_WITHOUT_PRORATION
+        GoogleReplacementMode.WITH_TIME_PRORATION -> LegacyProrationMode.IMMEDIATE_WITH_TIME_PRORATION
+        GoogleReplacementMode.CHARGE_FULL_PRICE -> LegacyProrationMode.IMMEDIATE_AND_CHARGE_FULL_PRICE
+        GoogleReplacementMode.CHARGE_PRORATED_PRICE -> LegacyProrationMode.IMMEDIATE_AND_CHARGE_PRORATED_PRICE
+    }

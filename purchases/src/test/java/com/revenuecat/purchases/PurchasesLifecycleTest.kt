@@ -152,7 +152,7 @@ internal class PurchasesLifecycleTest: BasePurchasesTest() {
     private fun resetShowInAppMessagesAutomatically(showInAppMessagesAutomatically: Boolean) {
         purchases.purchasesOrchestrator.appConfig = AppConfig(
             mockContext,
-            observerMode = false,
+            PurchasesAreCompletedBy.REVENUECAT,
             showInAppMessagesAutomatically = showInAppMessagesAutomatically,
             PlatformInfo("", null),
             proxyURL = null,

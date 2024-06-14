@@ -5,7 +5,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.BillingFactory
 import com.revenuecat.purchases.PurchasesState
 import com.revenuecat.purchases.PurchasesStateCache
-import com.revenuecat.purchases.PurchasesStateProvider
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.common.BackendHelper
 import com.revenuecat.purchases.common.caching.DeviceCache
@@ -29,9 +28,10 @@ class BillingFactoryAmazonTest {
             mockApplication,
             mockBackendHelper,
             mockCache,
-            observerMode = false,
+            finishTransactions = true,
             mockDiagnosticsTracker,
-            stateProvider = PurchasesStateCache(PurchasesState())
+            stateProvider = PurchasesStateCache(PurchasesState()),
+            pendingTransactionsForPrepaidPlansEnabled = true,
         )
     }
 
@@ -46,9 +46,10 @@ class BillingFactoryAmazonTest {
             mockApplication,
             mockBackendHelper,
             mockCache,
-            observerMode = false,
+            finishTransactions = true,
             diagnosticsTrackerIfEnabled = null,
-            stateProvider = PurchasesStateCache(PurchasesState())
+            stateProvider = PurchasesStateCache(PurchasesState()),
+            pendingTransactionsForPrepaidPlansEnabled = true,
         )
     }
 }

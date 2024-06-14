@@ -426,7 +426,7 @@ class BackendTest {
             isRestore = false,
             clientException = null,
             resultBody = null,
-            observerMode = false,
+            finishTransactions = true,
             receiptInfo = basicReceiptInfo,
             storeAppUserID = null,
             initiationSource = initiationSource,
@@ -441,7 +441,7 @@ class BackendTest {
         mockPostReceiptResponseAndPost(
             backend,
             isRestore = false,
-            observerMode = false,
+            finishTransactions = true,
             receiptInfo = basicReceiptInfo,
             storeAppUserID = null,
             initiationSource = initiationSource,
@@ -459,7 +459,7 @@ class BackendTest {
     }
 
     @Test
-    fun `postReceipt passes proration mode and pricing phases as maps in body`() {
+    fun `postReceipt passes replacement mode and pricing phases as maps in body`() {
         val subscriptionOption = storeProduct.subscriptionOptions!!.first()
         val receiptInfo = ReceiptInfo(
             productIDs = productIDs,
@@ -471,7 +471,7 @@ class BackendTest {
         mockPostReceiptResponseAndPost(
             backend,
             isRestore = false,
-            observerMode = false,
+            finishTransactions = true,
             receiptInfo = receiptInfo,
             storeAppUserID = null,
             initiationSource = initiationSource,
@@ -497,6 +497,7 @@ class BackendTest {
         )
 
         assertThat(requestBodySlot.captured.keys).contains("proration_mode")
+        // Backend expects the legacy proration mode values.
         assertThat(requestBodySlot.captured["proration_mode"]).isEqualTo("IMMEDIATE_WITHOUT_PRORATION")
     }
 
@@ -549,7 +550,7 @@ class BackendTest {
         mockPostReceiptResponseAndPost(
             backend,
             isRestore = false,
-            observerMode = false,
+            finishTransactions = true,
             receiptInfo = receiptInfo,
             storeAppUserID = null,
             initiationSource = initiationSource,
@@ -594,7 +595,7 @@ class BackendTest {
         mockPostReceiptResponseAndPost(
             backend,
             isRestore = false,
-            observerMode = false,
+            finishTransactions = true,
             receiptInfo = receiptInfo,
             storeAppUserID = null,
             initiationSource = initiationSource,
@@ -619,7 +620,7 @@ class BackendTest {
             isRestore = false,
             clientException = null,
             resultBody = null,
-            observerMode = true,
+            finishTransactions = false,
             receiptInfo = receiptInfo,
             storeAppUserID = null,
             initiationSource = initiationSource,
@@ -645,7 +646,7 @@ class BackendTest {
             isRestore = false,
             clientException = null,
             resultBody = null,
-            observerMode = true,
+            finishTransactions = false,
             receiptInfo = receiptInfo,
             storeAppUserID = expectedStoreUserId,
             initiationSource = initiationSource,
@@ -664,7 +665,7 @@ class BackendTest {
             isRestore = false,
             clientException = null,
             resultBody = null,
-            observerMode = true,
+            finishTransactions = false,
             receiptInfo = ReceiptInfo(productIDs = productIDs, storeProduct = storeProduct),
             storeAppUserID = null,
             initiationSource = initiationSource,
@@ -683,7 +684,7 @@ class BackendTest {
             isRestore = false,
             clientException = null,
             resultBody = null,
-            observerMode = false,
+            finishTransactions = true,
             receiptInfo = basicReceiptInfo,
             storeAppUserID = null,
             initiationSource = initiationSource,
@@ -700,7 +701,7 @@ class BackendTest {
         mockPostReceiptResponseAndPost(
             asyncBackend,
             isRestore = false,
-            observerMode = false,
+            finishTransactions = true,
             delayed = true,
             receiptInfo = basicReceiptInfo,
             storeAppUserID = null,
@@ -713,7 +714,7 @@ class BackendTest {
         mockPostReceiptResponseAndPost(
             asyncBackend,
             isRestore = false,
-            observerMode = false,
+            finishTransactions = true,
             delayed = true,
             receiptInfo = basicReceiptInfo,
             storeAppUserID = null,
@@ -769,7 +770,7 @@ class BackendTest {
             asyncBackend,
             delayed = true,
             isRestore = false,
-            observerMode = false,
+            finishTransactions = true,
             receiptInfo = basicReceiptInfo,
             storeAppUserID = null,
             initiationSource = initiationSource,
@@ -818,14 +819,14 @@ class BackendTest {
     }
 
     @Test
-    fun postReceiptObserverMode() {
+    fun postReceiptNotFinishingTransactions() {
         val info = mockPostReceiptResponseAndPost(
             backend,
             responseCode = 200,
             isRestore = false,
             clientException = null,
             resultBody = null,
-            observerMode = true,
+            finishTransactions = false,
             receiptInfo = ReceiptInfo(productIDs),
             storeAppUserID = null,
             initiationSource = initiationSource,
@@ -843,7 +844,7 @@ class BackendTest {
             isRestore = false,
             clientException = null,
             resultBody = null,
-            observerMode = true,
+            finishTransactions = false,
             receiptInfo = ReceiptInfo(
                 productIDs,
                 storeProduct = storeProduct
@@ -877,7 +878,7 @@ class BackendTest {
             asyncBackend,
             delayed = true,
             isRestore = false,
-            observerMode = false,
+            finishTransactions = true,
             receiptInfo = receiptInfo1,
             storeAppUserID = null,
             initiationSource = initiationSource,
@@ -890,7 +891,7 @@ class BackendTest {
             asyncBackend,
             delayed = true,
             isRestore = false,
-            observerMode = false,
+            finishTransactions = true,
             receiptInfo = receiptInfo2,
             storeAppUserID = null,
             initiationSource = initiationSource,
@@ -939,7 +940,7 @@ class BackendTest {
             asyncBackend,
             delayed = true,
             isRestore = false,
-            observerMode = false,
+            finishTransactions = true,
             receiptInfo = receiptInfo1,
             storeAppUserID = null,
             initiationSource = initiationSource,
@@ -952,7 +953,7 @@ class BackendTest {
             asyncBackend,
             delayed = true,
             isRestore = false,
-            observerMode = false,
+            finishTransactions = true,
             receiptInfo = receiptInfo2,
             storeAppUserID = null,
             initiationSource = initiationSource,
@@ -981,7 +982,7 @@ class BackendTest {
             asyncBackend,
             delayed = true,
             isRestore = false,
-            observerMode = false,
+            finishTransactions = true,
             receiptInfo = basicReceiptInfo,
             storeAppUserID = null,
             initiationSource = initiationSource,
@@ -1002,7 +1003,7 @@ class BackendTest {
             asyncBackend,
             delayed = true,
             isRestore = false,
-            observerMode = false,
+            finishTransactions = true,
             receiptInfo = receiptInfo2,
             storeAppUserID = null,
             initiationSource = initiationSource,
@@ -1037,7 +1038,7 @@ class BackendTest {
             asyncBackend,
             delayed = true,
             isRestore = false,
-            observerMode = false,
+            finishTransactions = true,
             receiptInfo = receiptInfo,
             storeAppUserID = null,
             initiationSource = initiationSource,
@@ -1051,7 +1052,7 @@ class BackendTest {
             asyncBackend,
             delayed = true,
             isRestore = false,
-            observerMode = false,
+            finishTransactions = true,
             receiptInfo = receiptInfo,
             storeAppUserID = null,
             initiationSource = initiationSource,
@@ -1081,7 +1082,7 @@ class BackendTest {
             isRestore = false,
             clientException = null,
             resultBody = null,
-            observerMode = true,
+            finishTransactions = false,
             receiptInfo = ReceiptInfo(
                 productIDs,
                 storeProduct = storeProduct
@@ -1102,7 +1103,7 @@ class BackendTest {
         mockPostReceiptResponseAndPost(
             asyncBackend,
             isRestore = false,
-            observerMode = false,
+            finishTransactions = true,
             receiptInfo = receiptInfo,
             storeAppUserID = null,
             initiationSource = initiationSource,
@@ -1116,7 +1117,7 @@ class BackendTest {
         mockPostReceiptResponseAndPost(
             asyncBackend,
             isRestore = false,
-            observerMode = false,
+            finishTransactions = true,
             receiptInfo = receiptInfo,
             initiationSource = initiationSource,
             delayed = true,
@@ -1150,7 +1151,7 @@ class BackendTest {
                 {"code":7662,
                 "message":"The product IDs list provided is not an array or does not contain only a single element."
                 }""".trimIndent(),
-            observerMode = false,
+            finishTransactions = true,
             receiptInfo = ReceiptInfo(productIDs),
             storeAppUserID = null,
             initiationSource = initiationSource,
@@ -1176,7 +1177,7 @@ class BackendTest {
                 {"code":7226,
                 "message":"Backend bad request."
                 }""".trimIndent(),
-            observerMode = false,
+            finishTransactions = true,
             receiptInfo = ReceiptInfo(productIDs),
             storeAppUserID = null,
             initiationSource = initiationSource,
@@ -1197,7 +1198,7 @@ class BackendTest {
                 {"code":7662,
                 "message":"The product IDs list provided is not an array or does not contain only a single element."
                 }""".trimIndent(),
-            observerMode = false,
+            finishTransactions = true,
             receiptInfo = ReceiptInfo(productIDs),
             storeAppUserID = null,
             initiationSource = initiationSource,
@@ -1218,7 +1219,7 @@ class BackendTest {
                 {"code":7662,
                 "message":"The product IDs list provided is not an array or does not contain only a single element."
                 }""".trimIndent(),
-            observerMode = false,
+            finishTransactions = true,
             receiptInfo = ReceiptInfo(productIDs),
             storeAppUserID = null,
             initiationSource = initiationSource,
@@ -1236,7 +1237,7 @@ class BackendTest {
             isRestore = false,
             clientException = null,
             resultBody = null,
-            observerMode = true,
+            finishTransactions = false,
             receiptInfo = ReceiptInfo(
                 productIDs,
                 storeProduct = storeProduct
@@ -1258,7 +1259,7 @@ class BackendTest {
             isRestore = false,
             clientException = null,
             resultBody = null,
-            observerMode = true,
+            finishTransactions = false,
             receiptInfo = ReceiptInfo(
                 productIDs,
                 storeProduct = storeProduct
@@ -1281,7 +1282,7 @@ class BackendTest {
             isRestore = false,
             clientException = null,
             resultBody = null,
-            observerMode = true,
+            finishTransactions = false,
             receiptInfo = ReceiptInfo(
                 productIDs,
                 storeProduct = storeProduct
@@ -1306,7 +1307,7 @@ class BackendTest {
             isRestore = false,
             clientException = null,
             resultBody = null,
-            observerMode = true,
+            finishTransactions = false,
             receiptInfo = ReceiptInfo(
                 productIDs,
                 storeProduct = storeProduct
@@ -1345,7 +1346,7 @@ class BackendTest {
             isRestore = false,
             clientException = null,
             resultBody = null,
-            observerMode = true,
+            finishTransactions = false,
             receiptInfo = receiptInfo,
             storeAppUserID = expectedStoreUserId,
             initiationSource = initiationSource,
@@ -1391,7 +1392,7 @@ class BackendTest {
             isRestore = false,
             clientException = null,
             resultBody = null,
-            observerMode = true,
+            finishTransactions = false,
             receiptInfo = receiptInfo,
             storeAppUserID = expectedStoreUserId,
             initiationSource = initiationSource,
@@ -1425,7 +1426,7 @@ class BackendTest {
             isRestore = false,
             clientException = null,
             resultBody = null,
-            observerMode = true,
+            finishTransactions = false,
             receiptInfo = receiptInfo,
             storeAppUserID = expectedStoreUserId,
             initiationSource = initiationSource,
@@ -2453,7 +2454,7 @@ class BackendTest {
         isRestore: Boolean,
         clientException: Exception? = null,
         resultBody: String? = null,
-        observerMode: Boolean,
+        finishTransactions: Boolean,
         receiptInfo: ReceiptInfo,
         storeAppUserID: String?,
         initiationSource: PostReceiptInitiationSource,
@@ -2468,7 +2469,7 @@ class BackendTest {
             responseCode = responseCode,
             clientException = clientException,
             resultBody = resultBody,
-            observerMode = observerMode,
+            finishTransactions = finishTransactions,
             receiptInfo = receiptInfo,
             storeAppUserID = storeAppUserID,
             paywallPostReceiptData = paywallPostReceiptData,
@@ -2479,7 +2480,7 @@ class BackendTest {
             purchaseToken = token,
             appUserID = appUserID,
             isRestore = isRestore,
-            observerMode = observerMode,
+            finishTransactions = finishTransactions,
             subscriberAttributes = emptyMap(),
             receiptInfo = receiptInfo,
             storeAppUserID = storeAppUserID,
@@ -2500,7 +2501,7 @@ class BackendTest {
         clientException: Exception?,
         resultBody: String?,
         delayed: Boolean = false,
-        observerMode: Boolean,
+        finishTransactions: Boolean,
         receiptInfo: ReceiptInfo,
         storeAppUserID: String?,
         paywallPostReceiptData: PaywallPostReceiptData? = null,
@@ -2512,7 +2513,7 @@ class BackendTest {
             "is_restore" to isRestore,
             "presented_offering_identifier" to receiptInfo.presentedOfferingContext?.offeringIdentifier,
             "presented_placement_identifier" to receiptInfo.presentedOfferingContext?.placementIdentifier,
-            "observer_mode" to observerMode,
+            "observer_mode" to !finishTransactions,
             "price" to receiptInfo.price,
             "currency" to receiptInfo.currency,
             "normal_duration" to receiptInfo.duration,

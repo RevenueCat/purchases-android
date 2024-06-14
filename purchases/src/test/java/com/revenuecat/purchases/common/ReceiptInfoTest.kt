@@ -12,8 +12,8 @@ import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.PurchaseType
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.utils.stubGooglePurchase
-import com.revenuecat.purchases.utils.stubSubscriptionOption
 import com.revenuecat.purchases.utils.stubStoreProduct
+import com.revenuecat.purchases.utils.stubSubscriptionOption
 import org.assertj.core.api.Assertions.assertThat
 import org.json.JSONObject
 import org.junit.Test
@@ -123,7 +123,7 @@ class ReceiptInfoTest {
             purchaseType = PurchaseType.GOOGLE_PURCHASE,
             marketplace = null,
             subscriptionOptionId = subscriptionOptionId,
-            prorationMode = null
+            replacementMode = null
         )
     }
 }

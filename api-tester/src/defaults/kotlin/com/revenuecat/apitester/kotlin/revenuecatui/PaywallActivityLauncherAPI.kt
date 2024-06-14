@@ -5,14 +5,12 @@ import androidx.activity.result.ActivityResultCaller
 import androidx.fragment.app.Fragment
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Offering
-import com.revenuecat.purchases.ui.revenuecatui.ExperimentalPreviewRevenueCatUIPurchasesAPI
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivityLauncher
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallDisplayCallback
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResultHandler
 import com.revenuecat.purchases.ui.revenuecatui.fonts.ParcelizableFontProvider
 
 @Suppress("unused", "UNUSED_VARIABLE", "LongParameterList", "LongMethod")
-@OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class)
 private class PaywallActivityLauncherAPI {
     fun check(
         componentActivity: ComponentActivity,

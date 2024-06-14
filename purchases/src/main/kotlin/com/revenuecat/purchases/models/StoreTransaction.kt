@@ -3,7 +3,6 @@ package com.revenuecat.purchases.models
 import android.os.Parcelable
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ProductType
-import com.revenuecat.purchases.ProrationMode
 import com.revenuecat.purchases.ReplacementMode
 import com.revenuecat.purchases.utils.JSONObjectParceler
 import kotlinx.parcelize.IgnoredOnParcel
@@ -139,53 +138,6 @@ data class StoreTransaction(
         subscriptionOptionId,
         replacementMode,
     )
-
-    @Deprecated("prorationMode is deprecated, use constructor with replacementMode")
-    constructor(
-        orderId: String?,
-        productIds: List<String>,
-        type: ProductType,
-        purchaseTime: Long,
-        purchaseToken: String,
-        purchaseState: PurchaseState,
-        isAutoRenewing: Boolean?,
-        signature: String?,
-        originalJson: JSONObject,
-        presentedOfferingIdentifier: String?,
-        storeUserID: String?,
-        purchaseType: PurchaseType,
-        marketplace: String?,
-        subscriptionOptionId: String?,
-        prorationMode: ProrationMode?,
-    ) : this(
-        orderId,
-        productIds,
-        type,
-        purchaseTime,
-        purchaseToken,
-        purchaseState,
-        isAutoRenewing,
-        signature,
-        originalJson,
-        presentedOfferingIdentifier?.let { PresentedOfferingContext(it) },
-        storeUserID,
-        purchaseType,
-        marketplace,
-        subscriptionOptionId,
-        (prorationMode as? GoogleProrationMode)?.asGoogleReplacementMode,
-    )
-
-    /**
-     * The prorationMode used to perform the upgrade/downgrade of this purchase.
-     * Null if it was not an upgrade/downgrade or if the purchase was restored.
-     * This is not available for Amazon purchases.
-     */
-    @Deprecated(
-        "Use replacementMode",
-        ReplaceWith("replacementMode()"),
-    )
-    val prorationMode: ProrationMode?
-        get() = (replacementMode as? GoogleReplacementMode)?.asGoogleProrationMode
 
     /**
      * Offering that was presented when making the purchase. Always null for restored purchases.
