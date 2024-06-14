@@ -145,11 +145,10 @@ internal val TestData.template7: PaywallData
             "en_US" to mapOf(
                 "basic" to PaywallData.LocalizedConfiguration(
                     title = "Get started with our Basic plan",
-                    callToAction = "{{ price_per_period }}",
+                    callToAction = "Subscribe for {{ price_per_period }}",
                     callToActionWithIntroOffer = "Start your {{ sub_offer_duration }} free trial",
                     offerDetails = "{{ total_price_and_per_month }}",
-                    offerDetailsWithIntroOffer = "Free for {{ sub_offer_duration }}," +
-                        " then {{ total_price_and_per_month }}",
+                    offerDetailsWithIntroOffer = "{{ total_price_and_per_month }} after {{ sub_offer_duration }} trial",
                     offerName = "{{ sub_period }}",
                     features = listOf(
                         PaywallData.LocalizedConfiguration.Feature(
@@ -169,12 +168,10 @@ internal val TestData.template7: PaywallData
                 ),
                 "standard" to PaywallData.LocalizedConfiguration(
                     title = "Get started with our Standard plan",
-                    callToAction = "{{ price_per_period }}",
-                    callToActionWithIntroOffer = "Start your {{ sub_offer_duration }}" +
-                        " free trial",
+                    callToAction = "Subscribe for {{ price_per_period }}",
+                    callToActionWithIntroOffer = "Start your {{ sub_offer_duration }} free trial",
                     offerDetails = "{{ total_price_and_per_month }}",
-                    offerDetailsWithIntroOffer = "Free for {{ sub_offer_duration }}," +
-                        " then {{ total_price_and_per_month }}",
+                    offerDetailsWithIntroOffer = "{{ total_price_and_per_month }} after {{ sub_offer_duration }} trial",
                     offerName = "{{ sub_period }}",
                     features = listOf(
                         PaywallData.LocalizedConfiguration.Feature(
@@ -194,11 +191,10 @@ internal val TestData.template7: PaywallData
                 ),
                 "premium" to PaywallData.LocalizedConfiguration(
                     title = "Master the art of video editing",
-                    callToAction = "{{ price_per_period }}",
+                    callToAction = "Subscribe for {{ price_per_period }}",
                     callToActionWithIntroOffer = "Start your {{ sub_offer_duration }} free trial",
                     offerDetails = "{{ total_price_and_per_month }}",
-                    offerDetailsWithIntroOffer = "Free for {{ sub_offer_duration }}," +
-                        " then {{ total_price_and_per_month }}",
+                    offerDetailsWithIntroOffer = "{{ total_price_and_per_month }} after {{ sub_offer_duration }} trial",
                     offerName = "{{ sub_period }}",
                     features = listOf(
                         PaywallData.LocalizedConfiguration.Feature(
