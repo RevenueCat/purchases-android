@@ -83,13 +83,11 @@ data class PaywallData(
     }
 
     val tieredLocalizedConfiguration: Pair<Locale, Map<String, LocalizedConfiguration>>
-        @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
         get() {
             return tieredConfigForLocales(locales = getDefaultLocales())
         }
 
     @VisibleForTesting
-    @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     fun tieredConfigForLocales(locales: List<Locale>): Pair<Locale, Map<String, LocalizedConfiguration>> {
         for (locale in locales) {
             val localeToCheck = locale.convertToCorrectlyFormattedLocale()
@@ -103,7 +101,6 @@ data class PaywallData(
         return Pair(first.key.toLocale(), first.value)
     }
 
-    @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     fun tieredConfigForLocale(requiredLocale: Locale): Map<String, LocalizedConfiguration>? {
         return localizationByTier[requiredLocale.toString()]
             ?: localizationByTier.entries.firstOrNull { (localeKey, _) ->
