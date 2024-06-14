@@ -153,7 +153,7 @@ internal class PostReceiptHelper(
                 purchaseToken = purchaseToken,
                 appUserID = appUserID,
                 isRestore = isRestore,
-                observerMode = !finishTransactions,
+                finishTransactions = finishTransactions,
                 subscriberAttributes = unsyncedSubscriberAttributesByKey.toBackendMap(),
                 receiptInfo = receiptInfo,
                 storeAppUserID = storeUserID,

@@ -90,11 +90,6 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
     }
 
     @Test
-    fun `diagnostics is synced if needed on constructor`() {
-        verify(exactly = 1) { mockDiagnosticsSynchronizer.syncDiagnosticsFileIfNeeded() }
-    }
-
-    @Test
     fun `when setting up, and passing a appUserID, user is identified`() {
         assertThat(purchases.appUserID).isEqualTo(appUserId)
     }
@@ -1292,6 +1287,25 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         verify(exactly = 1) {
             mockCache.isCustomerInfoCacheStale(appInBackground = false, appUserID = appUserId)
         }
+    }
+
+    @Test
+    fun `diagnostics is synced on app foregrounded`() {
+        verify(exactly = 0) { mockDiagnosticsSynchronizer.syncDiagnosticsFileIfNeeded() }
+        mockOfferingsManagerAppForeground()
+        Purchases.sharedInstance.purchasesOrchestrator.onAppForegrounded()
+        verify(exactly = 1) { mockDiagnosticsSynchronizer.syncDiagnosticsFileIfNeeded() }
+    }
+
+    @Test
+    fun `diagnostics is synced only on first app foregrounded`() {
+        verify(exactly = 0) { mockDiagnosticsSynchronizer.syncDiagnosticsFileIfNeeded() }
+        mockOfferingsManagerAppForeground()
+        Purchases.sharedInstance.purchasesOrchestrator.onAppForegrounded()
+        verify(exactly = 1) { mockDiagnosticsSynchronizer.syncDiagnosticsFileIfNeeded() }
+        Purchases.sharedInstance.purchasesOrchestrator.onAppForegrounded()
+        Purchases.sharedInstance.purchasesOrchestrator.onAppForegrounded()
+        verify(exactly = 1) { mockDiagnosticsSynchronizer.syncDiagnosticsFileIfNeeded() }
     }
 
     // endregion

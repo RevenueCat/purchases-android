@@ -1,8 +1,6 @@
 package com.revenuecat.purchases.google.attribution
 
-import android.annotation.SuppressLint
 import android.app.Application
-import android.provider.Settings
 import com.google.android.gms.ads.identifier.AdvertisingIdClient
 import com.google.android.gms.common.GooglePlayServicesNotAvailableException
 import com.google.android.gms.common.GooglePlayServicesRepairableException
@@ -28,19 +26,13 @@ internal class GoogleDeviceIdentifiersFetcher(
     ) {
         dispatcher.enqueue({
             val advertisingID: String? = getAdvertisingID(applicationContext)
-            val androidID = getAndroidID(applicationContext)
             val deviceIdentifiers = mapOf(
                 SubscriberAttributeKey.DeviceIdentifiers.GPSAdID.backendKey to advertisingID,
-                SubscriberAttributeKey.DeviceIdentifiers.AndroidID.backendKey to androidID,
                 SubscriberAttributeKey.DeviceIdentifiers.IP.backendKey to "true",
             ).filterNotNullValues()
             completion(deviceIdentifiers)
         })
     }
-
-    @SuppressLint("HardwareIds")
-    private fun getAndroidID(applicationContext: Application) =
-        Settings.Secure.getString(applicationContext.contentResolver, Settings.Secure.ANDROID_ID)
 
     private fun getAdvertisingID(applicationContext: Application): String? {
         var advertisingID: String? = null

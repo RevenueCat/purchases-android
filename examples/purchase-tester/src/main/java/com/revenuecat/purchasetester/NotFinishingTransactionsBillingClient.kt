@@ -11,7 +11,7 @@ import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.PurchasesUpdatedListener
 import com.revenuecat.purchases.Purchases
 
-object ObserverModeBillingClient : PurchasesUpdatedListener, BillingClientStateListener {
+object NotFinishingTransactionsBillingClient : PurchasesUpdatedListener, BillingClientStateListener {
     private lateinit var billingClient: BillingClient
     private lateinit var testerLogHandler: TesterLogHandler
 
@@ -50,15 +50,15 @@ object ObserverModeBillingClient : PurchasesUpdatedListener, BillingClientStateL
     }
 
     override fun onBillingSetupFinished(billingResult: BillingResult) {
-        testerLogHandler.d("[ObserverModeBillingClient]", "Called onBillingSetupFinished")
+        testerLogHandler.d("[NotFinishingTransactionsBillingClient]", "Called onBillingSetupFinished")
     }
     override fun onBillingServiceDisconnected() {
-        testerLogHandler.d("[ObserverModeBillingClient]", "Called onBillingServiceDisconnected")
+        testerLogHandler.d("[NotFinishingTransactionsBillingClient]", "Called onBillingServiceDisconnected")
     }
 
     override fun onPurchasesUpdated(billingResult: BillingResult, purchases: MutableList<Purchase>?) {
         testerLogHandler.d(
-            "[ObserverModeBillingClient]",
+            "[NotFinishingTransactionsBillingClient]",
             "Called onPurchasesUpdated with status ${billingResult.responseCode}",
         )
         if (billingResult.responseCode == BillingClient.BillingResponseCode.OK && purchases != null) {

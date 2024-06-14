@@ -18,4 +18,5 @@
     <string name="package_discount">%1$d%% הנחה</string>
     <string name="continue_cta">לְהַמשִׁיך</string>
     <string name="default_offer_details_with_intro_offer">התחל את תקופת הניסיון של {{ sub_offer_duration }} ולאחר מכן {{ total_price_and_per_month }}.</string>
+    <string name="no_browser_cannot_open_link">אין דפדפן מותקן. לא ניתן לפתוח את הקישור.</string>
 </resources>

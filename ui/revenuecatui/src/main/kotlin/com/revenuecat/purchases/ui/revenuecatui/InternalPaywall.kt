@@ -53,7 +53,6 @@ import com.revenuecat.purchases.ui.revenuecatui.templates.Template4
 import com.revenuecat.purchases.ui.revenuecatui.templates.Template5
 import com.revenuecat.purchases.ui.revenuecatui.templates.Template7
 
-@OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class)
 @Composable
 internal fun InternalPaywall(
     options: PaywallOptions,
@@ -169,7 +168,6 @@ private fun TemplatePaywall(state: PaywallState.Loaded, viewModel: PaywallViewMo
     }
 }
 
-@ExperimentalPreviewRevenueCatUIPurchasesAPI
 @Composable
 internal fun getPaywallViewModel(
     options: PaywallOptions,

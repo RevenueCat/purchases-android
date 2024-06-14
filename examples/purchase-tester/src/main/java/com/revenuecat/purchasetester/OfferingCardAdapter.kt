@@ -20,12 +20,6 @@ class OfferingCardAdapter(
         return OfferingViewHolder(binding)
     }
 
-    fun update(offerings: List<Offering>, currentOffering: Offering?) {
-        this.offerings = offerings
-        this.currentOffering = currentOffering
-        this.notifyDataSetChanged()
-    }
-
     override fun getItemCount(): Int = offerings.size
 
     override fun onBindViewHolder(holder: OfferingViewHolder, position: Int) {

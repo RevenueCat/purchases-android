@@ -3,6 +3,7 @@ package com.revenuecat.purchasetester
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.view.isVisible
 import androidx.recyclerview.widget.RecyclerView
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
@@ -38,12 +39,13 @@ class DeprecatedPackageCardAdapter(
             binding.currentPackage = currentPackage
             binding.isSubscription = product.type == ProductType.SUBS
             binding.isActive = activeSubscriptions.contains(product.id)
+            // Upgrades are no longer possible with deprecated methods.
+            binding.isUpgradeCheckbox.isVisible = false
 
             binding.packageBuyButton.setOnClickListener {
                 listener.onPurchasePackageClicked(
                     binding.root,
                     currentPackage,
-                    binding.isUpgradeCheckbox.isChecked,
                 )
             }
 
@@ -53,7 +55,6 @@ class DeprecatedPackageCardAdapter(
                 listener.onPurchaseProductClicked(
                     binding.root,
                     product,
-                    binding.isUpgradeCheckbox.isChecked,
                 )
             }
             binding.productBuyButton.text = "Buy product (deprecated)"
@@ -82,12 +83,10 @@ class DeprecatedPackageCardAdapter(
         fun onPurchasePackageClicked(
             cardView: View,
             currentPackage: Package,
-            isUpgrade: Boolean,
         )
         fun onPurchaseProductClicked(
             cardView: View,
             currentProduct: StoreProduct,
-            isUpgrade: Boolean,
         )
     }
 }

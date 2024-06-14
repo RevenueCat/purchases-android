@@ -1,6 +1,17 @@
-### Bugfixes
-* Checks if callback has already been called in `canMakePayments` (#1690) via Cesar de la Vega (@vegaro)
-* `Paywalls`: Update Norwegian "restore" localization (#1688) via Josh Holtz (@joshdholtz)
+For a full migration guide check [v8-MIGRATION.md](migrations/v8-MIGRATION.md)
+
+### Breaking Changes
+* Support BC7 (#1737) via Toni Rico (@tonidero)
+
+#### New APIs:
+- `SubscriptionOption.installmentInfo` which contains information about installment plans you might want to display in your paywall.
+- `PurchasesConfiguration.pendingTransactionsForPrepaidPlansEnabled` allows to enable pending prepaid subscriptions.
+
+#### Breaking changes
+- Increase min Sdk to 21. This was increased in BC7
+- Increase min kotlin version to 1.7.0
+- Remove `UpgradeInfo`
+- Remove all `purchasePackage` and `purchaseProduct` methods using `UpgradeInfo`. If you want to perform upgrades/downgrades, please migrate to use the `purchase(PurchaseParams)` method, which has options to perform that operation.
+
 ### Other Changes
-* Make clearing diagnostics file happen during tracking (#1685) via Toni Rico (@tonidero)
-* Add new diagnostics events for diagnostics (#1684) via Toni Rico (@tonidero)
+* Bump kotlin to 1.8 (#1726)

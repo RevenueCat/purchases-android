@@ -12,7 +12,6 @@ import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.models.StoreTransaction
-import com.revenuecat.purchases.ui.revenuecatui.ExperimentalPreviewRevenueCatUIPurchasesAPI
 import com.revenuecat.purchases.ui.revenuecatui.OfferingSelection
 import com.revenuecat.purchases.ui.revenuecatui.PaywallFooter
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
@@ -23,7 +22,6 @@ import com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider
 /**
  * View that wraps the [PaywallFooter] Composable to display the Paywall Footer through XML layouts and the View system.
  */
-@ExperimentalPreviewRevenueCatUIPurchasesAPI
 open class PaywallFooterView : FrameLayout {
 
     constructor(context: Context, attrs: AttributeSet?) : super(context, attrs) {

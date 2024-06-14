@@ -1,7 +1,9 @@
 package com.revenuecat.apitester.kotlin
 
 import com.revenuecat.purchases.PresentedOfferingContext
+import com.revenuecat.purchases.models.GoogleInstallmentsInfo
 import com.revenuecat.purchases.models.GoogleSubscriptionOption
+import com.revenuecat.purchases.models.InstallmentsInfo
 import com.revenuecat.purchases.models.PricingPhase
 import com.revenuecat.purchases.models.SubscriptionOption
 
@@ -14,6 +16,7 @@ private class SubscriptionOptionAPI {
         val presentedOfferingId: String? = subscriptionOption.presentedOfferingIdentifier
         val presentedOfferingContext: PresentedOfferingContext? = subscriptionOption.presentedOfferingContext
         val isPrepaid: Boolean = subscriptionOption.isPrepaid
+        val installmentsInfo: InstallmentsInfo? = subscriptionOption.installmentsInfo
     }
 
     fun checkGoogleSubscriptionOption(googleSubscriptionOption: GoogleSubscriptionOption) {
@@ -23,6 +26,7 @@ private class SubscriptionOptionAPI {
         val offerId = googleSubscriptionOption.offerId
         val offerToken = googleSubscriptionOption.offerToken
         val productDetails = googleSubscriptionOption.productDetails
+        val installmentsInfo: GoogleInstallmentsInfo? = googleSubscriptionOption.installmentsInfo
 
         val subscriptionOption = GoogleSubscriptionOption(
             productId,
@@ -65,6 +69,18 @@ private class SubscriptionOptionAPI {
             productDetails,
             offerToken,
             null,
+        )
+
+        val subscriptionOptionWithInstallmentsInfo = GoogleSubscriptionOption(
+            productId,
+            basePlanId,
+            offerId,
+            googleSubscriptionOption.pricingPhases,
+            googleSubscriptionOption.tags,
+            productDetails,
+            offerToken,
+            presentedOfferingContext = null,
+            installmentsInfo,
         )
     }
 }

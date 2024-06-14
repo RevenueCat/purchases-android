@@ -37,7 +37,6 @@ import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.getOfferingsWith
-import com.revenuecat.purchases.ui.revenuecatui.ExperimentalPreviewRevenueCatUIPurchasesAPI
 import com.revenuecat.purchases.ui.revenuecatui.PaywallDialog
 import com.revenuecat.purchases.ui.revenuecatui.PaywallDialogOptions
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -86,7 +85,6 @@ private fun LoadingOfferingsScreen() {
 }
 
 @Suppress("LongMethod")
-@OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class)
 @Composable
 private fun OfferingsListScreen(
     offeringsState: OfferingsState.Loaded,

@@ -7,6 +7,7 @@ import com.revenuecat.purchases.EntitlementVerificationMode
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.PurchasesConfiguration
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.Store
@@ -67,8 +68,8 @@ private class PurchasesAPI {
         purchases.getCustomerInfo(receiveCustomerInfoCallback)
         purchases.getCustomerInfo(CacheFetchPolicy.CACHED_OR_FETCHED, receiveCustomerInfoCallback)
 
-        val finishTransactions: Boolean = purchases.finishTransactions
-        purchases.finishTransactions = true
+        val purchasesAreCompletedBy: PurchasesAreCompletedBy = purchases.purchasesAreCompletedBy
+        purchases.purchasesAreCompletedBy = PurchasesAreCompletedBy.REVENUECAT
 
         val anonymous: Boolean = purchases.isAnonymous
 
@@ -177,11 +178,16 @@ private class PurchasesAPI {
         LogInResult(customerInfo, created)
     }
 
-    fun checkAmazonConfiguration(context: Context, executorService: ExecutorService) {
+    fun checkAmazonConfiguration(
+        context: Context,
+        executorService: ExecutorService,
+        purchaseCompleter: PurchasesAreCompletedBy,
+    ) {
         val amazonConfiguration: PurchasesConfiguration = AmazonConfiguration.Builder(context, "")
             .appUserID("")
             .observerMode(true)
             .observerMode(false)
+            .purchasesAreCompletedBy(purchaseCompleter)
             .showInAppMessagesAutomatically(true)
             .service(executorService)
             .diagnosticsEnabled(true)

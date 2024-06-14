@@ -277,6 +277,7 @@ class Purchases internal constructor(
             val configuration = PurchasesConfiguration.Builder(context, apiKey)
                 .appUserID(appUserID)
                 .dangerousSettings(DangerousSettings(customEntitlementComputation = true))
+                .pendingTransactionsForPrepaidPlansEnabled(true)
                 .build()
             return PurchasesFactory().createPurchases(
                 configuration,

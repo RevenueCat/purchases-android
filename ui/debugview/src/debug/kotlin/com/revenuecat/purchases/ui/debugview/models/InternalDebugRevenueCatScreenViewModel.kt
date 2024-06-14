@@ -120,8 +120,8 @@ internal class InternalDebugRevenueCatScreenViewModel(
         } else {
             "Not configured"
         }
-        val observerMode = if (Purchases.isConfigured) {
-            "${!Purchases.sharedInstance.finishTransactions}"
+        val purchasesAreCompletedBy = if (Purchases.isConfigured) {
+            Purchases.sharedInstance.purchasesAreCompletedBy.name
         } else {
             "Not configured"
         }
@@ -131,7 +131,7 @@ internal class InternalDebugRevenueCatScreenViewModel(
                 SettingState.Text("SDK version", Purchases.frameworkVersion),
                 SettingState.Text("Is configured", "${Purchases.isConfigured}"),
                 SettingState.Text("Store", storeName),
-                SettingState.Text("Observer mode", observerMode),
+                SettingState.Text("Purchases are completed by", purchasesAreCompletedBy),
             ),
         )
     }

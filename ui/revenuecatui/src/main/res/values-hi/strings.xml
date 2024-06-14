@@ -18,4 +18,5 @@
     <string name="package_discount">%1$d%% छूट</string>
     <string name="continue_cta">जारी रखना</string>
     <string name="default_offer_details_with_intro_offer">अपना {{sub_offer_duration }} परीक्षण शुरू करें, फिर {{ total_price_and_per_month }}।</string>
+    <string name="no_browser_cannot_open_link">ब्राउज़र स्थापित नहीं है। लिंक नहीं खोला जा सका।</string>
 </resources>

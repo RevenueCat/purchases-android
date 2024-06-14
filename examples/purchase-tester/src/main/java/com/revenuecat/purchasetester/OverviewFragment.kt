@@ -92,8 +92,6 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
         Purchases.sharedInstance.getOfferingsWith(::showError, ::populateOfferings)
     }
 
-    private var adapter: OfferingCardAdapter? = null
-
     private fun populateOfferings(offerings: Offerings) {
         if (offerings.all.isEmpty()) {
             binding.offeringHeader.text = "No Offerings"
@@ -105,15 +103,13 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
             it.identifier != currentOffering?.identifier
         }
 
-        this.adapter?.update(allOfferings, currentOffering) ?: run {
-            this.adapter = OfferingCardAdapter(
-                allOfferings,
-                currentOffering,
-                this,
-            )
-            binding.overviewOfferingsRecycler.layoutManager = LinearLayoutManager(requireContext())
-            binding.overviewOfferingsRecycler.adapter = this.adapter
-        }
+        val adapter = OfferingCardAdapter(
+            allOfferings,
+            currentOffering,
+            this,
+        )
+        binding.overviewOfferingsRecycler.layoutManager = LinearLayoutManager(requireContext())
+        binding.overviewOfferingsRecycler.adapter = adapter
     }
 
     override fun onOfferingClicked(cardView: View, offering: Offering) {

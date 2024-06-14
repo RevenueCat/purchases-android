@@ -17,7 +17,6 @@ data class TemplateTestConfig(val testConfig: TestConfig, val offering: Offering
     }
 }
 
-@OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class)
 @RunWith(Parameterized::class)
 class TemplateSnapshotTest(private val testConfig: TemplateTestConfig): BasePaparazziTest(testConfig.testConfig) {
 

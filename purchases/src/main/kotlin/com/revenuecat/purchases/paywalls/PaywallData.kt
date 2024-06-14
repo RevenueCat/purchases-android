@@ -1,7 +1,5 @@
 package com.revenuecat.purchases.paywalls
 
-import android.os.Build
-import androidx.annotation.RequiresApi
 import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.utils.convertToCorrectlyFormattedLocale
 import com.revenuecat.purchases.utils.getDefaultLocales
@@ -53,13 +51,11 @@ data class PaywallData(
      * and the available locales for this paywall.
      */
     val localizedConfiguration: Pair<Locale, LocalizedConfiguration>
-        @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
         get() {
             return localizedConfiguration(locales = getDefaultLocales())
         }
 
     @VisibleForTesting
-    @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     fun localizedConfiguration(locales: List<Locale>): Pair<Locale, LocalizedConfiguration> {
         for (locale in locales) {
             val localeToCheck = locale.convertToCorrectlyFormattedLocale()
@@ -79,7 +75,6 @@ data class PaywallData(
      *
      * @return [LocalizedConfiguration] for the given [Locale], if found.
      */
-    @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     fun configForLocale(requiredLocale: Locale): LocalizedConfiguration? {
         return localization[requiredLocale.toString()]
             ?: localization.entries.firstOrNull { (localeKey, _) ->

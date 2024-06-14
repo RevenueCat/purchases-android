@@ -10,7 +10,6 @@ import com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider;
 import com.revenuecat.purchases.ui.revenuecatui.views.PaywallFooterView;
 
 @SuppressWarnings({"unused"})
-@ExperimentalPreviewRevenueCatUIPurchasesAPI
 final class PaywallFooterViewAPI {
 
     static void checkConstructors(Context context,

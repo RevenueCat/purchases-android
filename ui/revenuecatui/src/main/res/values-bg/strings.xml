@@ -18,4 +18,5 @@
     <string name="package_discount">%1$d%% намаление</string>
     <string name="continue_cta">продължи</string>
     <string name="default_offer_details_with_intro_offer">Започнете своя пробен период от {{ sub_offer_duration }}, след което {{ total_price_and_per_month }}.</string>
+    <string name="no_browser_cannot_open_link">Няма инсталиран браузър. Връзката не може да бъде отворена.</string>
 </resources>

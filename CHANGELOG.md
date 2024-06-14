@@ -1,3 +1,52 @@
+## 8.0.0
+For a full migration guide check [v8-MIGRATION.md](migrations/v8-MIGRATION.md)
+
+### Breaking Changes
+* Support BC7 (#1737) via Toni Rico (@tonidero)
+
+#### New APIs:
+- `SubscriptionOption.installmentInfo` which contains information about installment plans you might want to display in your paywall.
+- `PurchasesConfiguration.pendingTransactionsForPrepaidPlansEnabled` allows to enable pending prepaid subscriptions.
+
+#### Breaking changes
+- Increase min Sdk to 21. This was increased in BC7
+- Increase min kotlin version to 1.7.0
+- Remove `UpgradeInfo`
+- Remove all `purchasePackage` and `purchaseProduct` methods using `UpgradeInfo`. If you want to perform upgrades/downgrades, please migrate to use the `purchase(PurchaseParams)` method, which has options to perform that operation.
+
+### Other Changes
+* Bump kotlin to 1.8 (#1726)
+
+## 7.11.1
+### Behavior Changes
+* Stops collecting the ANDROID_ID. (#1729) via JayShortway (@JayShortway)
+### Dependency Updates
+* Bump fastlane-plugin-revenuecat_internal from `8ec0072` to `5f55466` (#1722) via dependabot[bot] (@dependabot[bot])
+### Other Changes
+* Diagnostics: sync only on first activity foregrounded (#1728) via Toni Rico (@tonidero)
+* Adds 6.9.8 to the changelog. (#1731) via JayShortway (@JayShortway)
+* Remove internal ObserverMode mentions (#1710) via JayShortway (@JayShortway)
+* Deprecate observerMode in favor of purchasesAreCompletedBy (#1708) via JayShortway (@JayShortway)
+* Set INFORMATIONAL trusted entitlements mode as the default in the purchase tester app (#1716) via Toni Rico (@tonidero)
+* Remove `force-release-without-waiting-for-tests` job (#1719) via Cesar de la Vega (@vegaro)
+* Fix purchase tester offerings not reloading (#1715) via Toni Rico (@tonidero)
+
+## 7.11.0
+### New Features
+* Support non consumable products (#1697) via Toni Rico (@tonidero)
+### Bugfixes
+* Fix non-consumables not getting acknowledged (#1709) via Cesar de la Vega (@vegaro)
+* Fix bad copy in log message (#1702) via Andy Boedo (@aboedo)
+### Dependency Updates
+* Bump amazon SDK version to 3.0.5 (#1713) via Mark Villacampa (@MarkVillacampa)
+* Bump rexml from 3.2.6 to 3.2.8 (#1701) via dependabot[bot] (@dependabot[bot])
+* Bump fastlane-plugin-revenuecat_internal from `dd5e21f` to `8ec0072` (#1696) via dependabot[bot] (@dependabot[bot])
+### Other Changes
+* Fix offline integration tests (#1704) via Toni Rico (@tonidero)
+* Do not consume IAPs when backend returns 4xx errors (#1699) via Toni Rico (@tonidero)
+* Update fastlane plugin and fix docs index path (#1695) via Toni Rico (@tonidero)
+* Add trigger_bump lane (#1692) via Cesar de la Vega (@vegaro)
+
 ## 7.10.1
 ### Bugfixes
 * Checks if callback has already been called in `canMakePayments` (#1690) via Cesar de la Vega (@vegaro)
@@ -480,6 +529,10 @@ Purchases.configure(
 
 ### Bugfixes
 * Add `awaitRestore` to customEntitlementComputation library (#1275) via Toni Rico (@tonidero)
+
+## 6.9.8
+### Bugfixes
+* Stops collecting the ANDROID_ID (#1729) via JayShortway (@JayShortway)
 
 ## 6.9.7
 ### Bugfixes

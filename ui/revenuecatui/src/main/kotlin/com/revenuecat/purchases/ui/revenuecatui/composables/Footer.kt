@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.composables
 
+import android.widget.Toast
 import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -25,6 +26,7 @@ import androidx.compose.ui.Alignment.Companion.CenterHorizontally
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -45,6 +47,8 @@ import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfigura
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockViewModel
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.templates.template2
+import com.revenuecat.purchases.ui.revenuecatui.extensions.openUriOrElse
+import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import java.net.URL
 
 @Composable
@@ -68,7 +72,7 @@ internal fun Footer(
     }
 }
 
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "LongMethod", "CyclomaticComplexMethod")
 @Composable
 private fun Footer(
     mode: PaywallMode,
@@ -78,19 +82,33 @@ private fun Footer(
     childModifier: Modifier = Modifier,
     allPlansTapped: (() -> Unit)? = null,
 ) {
+    val context = LocalContext.current
     val uriHandler = LocalUriHandler.current
-
+    val shouldDisplayAllPlansButton = mode == PaywallMode.FOOTER_CONDENSED && allPlansTapped != null
+    val anyButtonDisplayed = shouldDisplayAllPlansButton ||
+        configuration.displayRestorePurchases ||
+        configuration.termsOfServiceURL != null ||
+        configuration.privacyURL != null
+    val bottomMargin = if (anyButtonDisplayed) {
+        0.dp
+    } else {
+        UIConstant.defaultVerticalSpacing * 2
+    }
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .height(intrinsicSize = IntrinsicSize.Min)
-            .padding(horizontal = UIConstant.defaultHorizontalPadding),
+            .padding(
+                start = UIConstant.defaultHorizontalPadding,
+                end = UIConstant.defaultHorizontalPadding,
+                bottom = bottomMargin,
+            ),
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically,
     ) {
         val color = colors.text1
 
-        if (mode == PaywallMode.FOOTER_CONDENSED && allPlansTapped != null) {
+        if (shouldDisplayAllPlansButton && allPlansTapped != null) {
             Button(
                 color = color,
                 childModifier = childModifier,
@@ -125,7 +143,13 @@ private fun Footer(
                 childModifier = childModifier,
                 R.string.terms_and_conditions,
                 R.string.terms,
-            ) { uriHandler.openUri(it.toString()) }
+            ) {
+                uriHandler.openUriOrElse(it.toString()) {
+                    val msg = context.getString(R.string.no_browser_cannot_open_link)
+                    Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                    Logger.w(msg)
+                }
+            }
 
             if (configuration.privacyURL != null) {
                 Separator(color = color)
@@ -138,7 +162,13 @@ private fun Footer(
                 childModifier = childModifier,
                 R.string.privacy_policy,
                 R.string.privacy,
-            ) { uriHandler.openUri(it.toString()) }
+            ) {
+                uriHandler.openUriOrElse(it.toString()) {
+                    val msg = context.getString(R.string.no_browser_cannot_open_link)
+                    Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                    Logger.w(msg)
+                }
+            }
         }
     }
 }

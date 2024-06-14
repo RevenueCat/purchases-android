@@ -3,13 +3,11 @@ package com.revenuecat.purchases.ui.revenuecatui.activity
 import android.os.Parcelable
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.PurchasesError
-import com.revenuecat.purchases.ui.revenuecatui.ExperimentalPreviewRevenueCatUIPurchasesAPI
 import kotlinx.parcelize.Parcelize
 
 /**
  * Result of the paywall activity.
  */
-@ExperimentalPreviewRevenueCatUIPurchasesAPI
 sealed class PaywallResult : Parcelable {
     /**
      * The user cancelled the paywall without purchasing.

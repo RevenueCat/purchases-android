@@ -18,4 +18,5 @@
     <string name="package_discount">Diskon %1$d%%</string>
     <string name="continue_cta">Melanjutkan</string>
     <string name="default_offer_details_with_intro_offer">Mulai uji coba {{ sub_offer_duration }} Anda, lalu {{ total_price_and_per_month }}.</string>
+    <string name="no_browser_cannot_open_link">Tidak ada browser yang terpasang. Tautan tidak bisa dibuka.</string>
 </resources>

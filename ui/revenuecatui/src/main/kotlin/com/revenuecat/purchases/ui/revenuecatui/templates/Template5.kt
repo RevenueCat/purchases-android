@@ -52,7 +52,6 @@ import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.paywalls.PaywallData
-import com.revenuecat.purchases.ui.revenuecatui.ExperimentalPreviewRevenueCatUIPurchasesAPI
 import com.revenuecat.purchases.ui.revenuecatui.InternalPaywall
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
@@ -502,7 +501,6 @@ private val TemplateConfiguration.Colors.selectedDiscountText: Color
 private val TemplateConfiguration.Colors.unselectedDiscountText: Color
     get() = this.text3
 
-@OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class)
 @Preview(showBackground = true, locale = "en-rUS", group = "full_screen")
 @Preview(
     showBackground = true,
@@ -524,7 +522,6 @@ private fun Template5PaywallPreview() {
     )
 }
 
-@OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class)
 @Preview(showBackground = true, locale = "en-rUS", group = "footer")
 @Preview(showBackground = true, locale = "es-rES", group = "footer")
 @Composable
@@ -535,7 +532,6 @@ private fun Template5PaywallFooterPreview() {
     )
 }
 
-@OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class)
 @Preview(showBackground = true, locale = "en-rUS", group = "condensed")
 @Preview(showBackground = true, locale = "es-rES", group = "condensed")
 @Composable

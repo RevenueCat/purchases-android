@@ -125,6 +125,7 @@ private class TestSubscriptionOption(
     override val presentedOfferingContext: PresentedOfferingContext = PresentedOfferingContext(
         offeringIdentifier = "offering",
     ),
+    override val installmentsInfo: InstallmentsInfo? = null,
 ) : SubscriptionOption {
     override val id: String
         get() = if (pricingPhases.size == 1) basePlanId else "$basePlanId:testOfferId"

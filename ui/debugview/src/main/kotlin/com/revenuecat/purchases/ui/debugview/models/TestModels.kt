@@ -5,6 +5,7 @@ import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ProductType
+import com.revenuecat.purchases.models.InstallmentsInfo
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.PricingPhase
@@ -50,6 +51,8 @@ internal val testOffering: Offering
                 get() = PresentedOfferingContext("offering_id")
             override val purchasingData: PurchasingData
                 get() = purchasingData
+            override val installmentsInfo: InstallmentsInfo?
+                get() = null
         }
         val subscriptionOptions = SubscriptionOptions(listOf(subscriptionOption))
         val storeProduct = object : StoreProduct {

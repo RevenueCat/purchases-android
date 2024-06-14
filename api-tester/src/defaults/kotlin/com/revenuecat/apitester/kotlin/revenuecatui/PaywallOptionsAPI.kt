@@ -1,13 +1,11 @@
 package com.revenuecat.apitester.kotlin.revenuecatui
 
 import com.revenuecat.purchases.Offering
-import com.revenuecat.purchases.ui.revenuecatui.ExperimentalPreviewRevenueCatUIPurchasesAPI
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider
 
 @Suppress("unused", "UNUSED_VARIABLE")
-@OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class)
 private class PaywallOptionsAPI {
     fun check(offering: Offering?, listener: PaywallListener?, fontProvider: FontProvider?) {
         val options: PaywallOptions = PaywallOptions.Builder(dismissRequest = {})

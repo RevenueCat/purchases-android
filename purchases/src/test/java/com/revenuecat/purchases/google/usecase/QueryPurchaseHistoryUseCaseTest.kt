@@ -453,7 +453,7 @@ internal class QueryPurchaseHistoryUseCaseTest: BaseBillingUseCaseTest() {
     }
 
     @Test
-    fun `If service returns SERVICE_UNAVAILABLE, don't retry and error if user in session`() {
+    fun `If service returns SERVICE_UNAVAILABLE, retry with backoff a few times then error if user in session`() {
         val slot = slot<PurchaseHistoryResponseListener>()
         val queryPurchaseHistoryStubbing = every {
             mockClient.queryPurchaseHistoryAsync(
@@ -463,6 +463,7 @@ internal class QueryPurchaseHistoryUseCaseTest: BaseBillingUseCaseTest() {
         }
         var receivedError: PurchasesError? = null
         var timesRetried = 0
+        val capturedDelays = mutableListOf<Long>()
         val useCase = QueryPurchaseHistoryUseCase(
             QueryPurchaseHistoryUseCaseParams(
                 mockDateProvider,
@@ -480,7 +481,8 @@ internal class QueryPurchaseHistoryUseCaseTest: BaseBillingUseCaseTest() {
                 timesRetried++
                 it.invoke(mockClient)
             },
-            executeRequestOnUIThread = { _, request ->
+            executeRequestOnUIThread = { delay, request ->
+                capturedDelays.add(delay)
                 queryPurchaseHistoryStubbing answers {
                     slot.captured.onPurchaseHistoryResponse(
                         BillingClient.BillingResponseCode.SERVICE_UNAVAILABLE.buildResult(),
@@ -494,7 +496,9 @@ internal class QueryPurchaseHistoryUseCaseTest: BaseBillingUseCaseTest() {
 
         useCase.run()
 
-        assertThat(timesRetried).isEqualTo(1)
+        assertThat(timesRetried).isEqualTo(4)
+        assertThat(capturedDelays.last())
+            .isCloseTo(RETRY_TIMER_SERVICE_UNAVAILABLE_MAX_TIME_FOREGROUND.inWholeMilliseconds, Offset.offset(1000L))
         assertThat(receivedError).isNotNull
         assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
     }
@@ -542,7 +546,7 @@ internal class QueryPurchaseHistoryUseCaseTest: BaseBillingUseCaseTest() {
         useCase.run()
 
         assertThat(capturedDelays.size).isEqualTo(12)
-        assertThat(capturedDelays.last()).isCloseTo(RETRY_TIMER_MAX_TIME_MILLISECONDS, Offset.offset(1000L))
+        assertThat(capturedDelays.last()).isCloseTo(RETRY_TIMER_MAX_TIME.inWholeMilliseconds, Offset.offset(1000L))
         assertThat(receivedError).isNotNull
         assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
     }

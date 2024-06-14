@@ -2,11 +2,9 @@ package com.revenuecat.purchases.ui.revenuecatui.extensions
 
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle
-import com.revenuecat.purchases.ui.revenuecatui.ExperimentalPreviewRevenueCatUIPurchasesAPI
 import com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider
 import com.revenuecat.purchases.ui.revenuecatui.fonts.TypographyType
 
-@OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class)
 fun Typography.copyWithFontProvider(fontProvider: FontProvider): Typography {
     with(this) {
         return copy(
@@ -29,7 +27,6 @@ fun Typography.copyWithFontProvider(fontProvider: FontProvider): Typography {
     }
 }
 
-@OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class)
 private fun TextStyle.modifyFontIfNeeded(typographyType: TypographyType, fontProvider: FontProvider): TextStyle {
     val font = fontProvider.getFont(typographyType)
     return if (font == null) {

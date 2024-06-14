@@ -2,6 +2,8 @@ package com.revenuecat.purchases.common
 
 import android.content.Context
 import com.revenuecat.purchases.DangerousSettings
+import com.revenuecat.purchases.PurchasesAreCompletedBy
+import com.revenuecat.purchases.PurchasesAreCompletedBy.REVENUECAT
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.caching.DeviceCache
@@ -75,7 +77,7 @@ internal abstract class BaseHTTPClientTest {
 
     protected fun createAppConfig(
         context: Context = createContext(),
-        observerMode: Boolean = false,
+        purchasesAreCompletedBy: PurchasesAreCompletedBy = REVENUECAT,
         showInAppMessagesAutomatically: Boolean = false,
         platformInfo: PlatformInfo = expectedPlatformInfo,
         proxyURL: URL? = baseURL,
@@ -86,7 +88,7 @@ internal abstract class BaseHTTPClientTest {
     ): AppConfig {
         return AppConfig(
             context = context,
-            observerMode = observerMode,
+            purchasesAreCompletedBy = purchasesAreCompletedBy,
             showInAppMessagesAutomatically = showInAppMessagesAutomatically,
             platformInfo = platformInfo,
             proxyURL = proxyURL,
