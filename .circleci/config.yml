@@ -27,7 +27,7 @@ aliases:
     executor:
       name: android/android-docker
       resource-class: large
-      tag: 2023.11.1
+      tag: 2024.04.1
     environment:
       JVM_OPTS: -Xmx6g
       GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.workers.max=2"
@@ -36,13 +36,13 @@ aliases:
     executor:
       name: android/android-machine
       resource-class: large
-      tag: 2024.01.1
+      tag: 2024.04.1
 
 version: 2.1
 orbs:
-  android: circleci/android@2.3.0
+  android: circleci/android@2.5.0
   gcp-cli: circleci/gcp-cli@2.1.0
-  revenuecat: revenuecat/sdks-common-config@2.2.0
+  revenuecat: revenuecat/sdks-common-config@3.0.0
   codecov: codecov/codecov@3.2.4
 
 parameters:
