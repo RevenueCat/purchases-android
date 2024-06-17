@@ -246,6 +246,7 @@ data class PaywallData(
             /**
              * The list of package identifiers this tier will display.
              */
+            @SerialName("packages")
             val packageIds: List<String>,
 
             /**

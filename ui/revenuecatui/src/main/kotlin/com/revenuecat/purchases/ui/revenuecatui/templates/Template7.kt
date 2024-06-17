@@ -101,7 +101,6 @@ internal fun Template7(
         "The configuration is not MultiTier"
     }
 
-    // Now config is smart casted to PackageConfiguration.MultiTier
     val firstTier = packagesConfig.firstTier
     val allTiers = packagesConfig.allTiers
 
@@ -614,7 +613,7 @@ private val TemplateConfiguration.Colors.tierSwitcherForegroundSelected: Color
     get() = this.tierControlSelectedForeground ?: this.text1
 
 private val TemplateConfiguration.Colors.featureIcon: Color
-    get() = this.text1
+    get() = this.accent1
 private val TemplateConfiguration.Colors.selectedOutline: Color
     get() = this.accent2
 private val TemplateConfiguration.Colors.unselectedOutline: Color

@@ -34,6 +34,7 @@ internal class MultiTierTemplateConfigurationFactoryTest {
                 TestData.Packages.monthly,
                 TestData.Packages.bimonthly,
                 TestData.Packages.quarterly,
+                TestData.Packages.semester,
                 TestData.Packages.annual,
                 TestData.Packages.lifetime,
             ),
@@ -117,37 +118,37 @@ internal class MultiTierTemplateConfigurationFactoryTest {
             currentlySubscribed = true,
             paywallData = TestData.template7,
             features = basicFeatures,
-            tierName = "Basic"
+            tierId = "basic"
         )
         val bimonthlyPackage = TestData.Packages.bimonthly.getPackageInfoForTest(
             currentlySubscribed = false,
             paywallData = TestData.template7,
             features = standardFeatures,
-            tierName = "Standard"
+            tierId = "standard"
         )
         val quarterlyPackage = TestData.Packages.quarterly.getPackageInfoForTest(
             currentlySubscribed = false,
             paywallData = TestData.template7,
             features = premiumFeatures,
-            tierName = "Premium"
+            tierId = "premium"
         )
         val semesterPackage = TestData.Packages.semester.getPackageInfoForTest(
             currentlySubscribed = false,
             paywallData = TestData.template7,
             features = standardFeatures,
-            tierName = "Standard"
+            tierId = "standard"
         )
         val annualPackage = TestData.Packages.annual.getPackageInfoForTest(
             currentlySubscribed = false,
             paywallData = TestData.template7,
             features = basicFeatures,
-            tierName = "Basic"
+            tierId = "basic"
         )
         val lifetime = TestData.Packages.lifetime.getPackageInfoForTest(
             currentlySubscribed = true,
             paywallData = TestData.template7,
             features = premiumFeatures,
-            tierName = "Premium"
+            tierId = "premium"
         )
 
         TemplateConfiguration.PackageConfiguration.MultiPackage(
@@ -171,7 +172,7 @@ internal class MultiTierTemplateConfigurationFactoryTest {
         val standardTier = TemplateConfiguration.TierInfo(
             name = "Standard",
             id = "standard",
-            defaultPackage = annualPackage,
+            defaultPackage = semesterPackage,
             packages = listOf(
                 bimonthlyPackage,
                 semesterPackage,
@@ -180,7 +181,7 @@ internal class MultiTierTemplateConfigurationFactoryTest {
         val premiumTier = TemplateConfiguration.TierInfo(
             name = "Premium",
             id = "premium",
-            defaultPackage = annualPackage,
+            defaultPackage = quarterlyPackage,
             packages = listOf(
                 quarterlyPackage,
                 lifetime,
@@ -193,8 +194,8 @@ internal class MultiTierTemplateConfigurationFactoryTest {
         )
 
         assertThat(packageConfiguration.firstTier).isEqualTo(expectedConfiguration.firstTier)
-//        assertThat(packageConfiguration.default).isEqualTo(expectedConfiguration.default)
-//        assertThat(packageConfiguration.all).containsExactly(*expectedConfiguration.all.toTypedArray())
+        assertThat(packageConfiguration.default).isEqualTo(expectedConfiguration.default)
+        assertThat(packageConfiguration.all).containsExactly(*expectedConfiguration.all.toTypedArray())
     }
 
     @Test

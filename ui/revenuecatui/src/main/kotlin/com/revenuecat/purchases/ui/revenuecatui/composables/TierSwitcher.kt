@@ -55,7 +55,7 @@ internal fun SelectedTierView(
     ) {
         Text(
             text = selectedTier.name,
-            color = foregroundSelectedColor, // Text color
+            color = foregroundSelectedColor,
             style = MaterialTheme.typography.bodyMedium,
         )
     }

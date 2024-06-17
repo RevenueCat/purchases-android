@@ -16,7 +16,7 @@ internal sealed class PaywallValidationError : Throwable() {
                 val joinedUnrecognizedVariables = this.unrecognizedVariables.joinToString()
                 PaywallValidationErrorStrings.INVALID_VARIABLES.format(joinedUnrecognizedVariables)
             }
-            MissingPaywall -> PaywallValidationErrorStrings.MISSING_PAYWALL.format(offering.identifier)
+            is MissingPaywall -> PaywallValidationErrorStrings.MISSING_PAYWALL.format(offering.identifier)
         }
     }
 

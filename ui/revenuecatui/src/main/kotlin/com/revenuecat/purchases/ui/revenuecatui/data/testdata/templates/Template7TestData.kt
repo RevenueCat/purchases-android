@@ -45,7 +45,7 @@ internal val TestData.template7: PaywallData
                         PackageType.THREE_MONTH.identifier!!,
                         PackageType.LIFETIME.identifier!!,
                     ),
-                    defaultPackageId = PackageType.SIX_MONTH.identifier!!,
+                    defaultPackageId = PackageType.THREE_MONTH.identifier!!,
                 ),
             ),
             displayRestorePurchases = true,

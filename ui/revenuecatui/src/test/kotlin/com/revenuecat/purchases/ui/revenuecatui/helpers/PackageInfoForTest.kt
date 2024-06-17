@@ -13,15 +13,17 @@ internal fun Package.getPackageInfoForTest(
     currentlySubscribed: Boolean = false,
     paywallData: PaywallData = TestData.template2,
     features: List<PaywallData.LocalizedConfiguration.Feature> = emptyList(),
-    tierName: String? = null,
+    tierId: String? = null,
 ): TemplateConfiguration.PackageInfo {
-    val localizedConfiguration = paywallData.configForLocale(Locale.US)!!
+    val localizedConfiguration = tierId?.let { paywallData.tieredConfigForLocale(Locale.US)!![it] }
+        ?: paywallData.configForLocale(Locale.US)!!
+
     val periodName = when(packageType) {
         PackageType.ANNUAL -> "Annual"
         PackageType.MONTHLY -> "Monthly"
-        PackageType.TWO_MONTH -> "Two Months"
-        PackageType.THREE_MONTH -> "Three Months"
-        PackageType.SIX_MONTH -> "Six Months"
+        PackageType.TWO_MONTH -> "2 month"
+        PackageType.THREE_MONTH -> "3 month"
+        PackageType.SIX_MONTH -> "6 month"
         PackageType.WEEKLY -> "Weekly"
         PackageType.LIFETIME -> "Lifetime"
         PackageType.CUSTOM -> "Customer"
@@ -30,9 +32,9 @@ internal fun Package.getPackageInfoForTest(
     val callToAction = when(packageType) {
         PackageType.ANNUAL -> "Subscribe for $67.99/yr"
         PackageType.MONTHLY -> "Subscribe for $7.99/mth"
-        PackageType.TWO_MONTH -> "Subscribe for"
-        PackageType.THREE_MONTH -> "Subscribe for"
-        PackageType.SIX_MONTH -> "Subscriber for"
+        PackageType.TWO_MONTH -> "Subscribe for $15.99/2 mths"
+        PackageType.THREE_MONTH -> "Subscribe for $23.99/3 mths"
+        PackageType.SIX_MONTH -> "Subscribe for $39.99/6 mths"
         PackageType.WEEKLY -> "Subscribe for $1.99/wk"
         PackageType.LIFETIME -> "Subscribe for $1,000"
         else -> error("Unknown package type $packageType")
@@ -40,8 +42,8 @@ internal fun Package.getPackageInfoForTest(
     val callToActionWithIntroOffer = when(packageType) {
         PackageType.ANNUAL -> "Start your 1 month free trial"
         PackageType.MONTHLY -> "Start your  free trial"
-        PackageType.TWO_MONTH -> "Start your  free trial"
-        PackageType.THREE_MONTH -> "Start your  free trial"
+        PackageType.TWO_MONTH -> "Start your 1 month free trial"
+        PackageType.THREE_MONTH -> "Start your 2 weeks free trial"
         PackageType.SIX_MONTH -> "Start your  free trial"
         PackageType.WEEKLY -> "Start your  free trial"
         PackageType.LIFETIME -> "Start your  free trial"
@@ -50,9 +52,9 @@ internal fun Package.getPackageInfoForTest(
     val offerDetails = when(packageType) {
         PackageType.ANNUAL -> "$67.99/yr ($5.67/mth)"
         PackageType.MONTHLY -> "$7.99/mth"
-        PackageType.TWO_MONTH -> "/mth"
-        PackageType.THREE_MONTH -> "/mth"
-        PackageType.SIX_MONTH -> "/mth"
+        PackageType.TWO_MONTH -> "$15.99/2 mths ($8.00/mth)"
+        PackageType.THREE_MONTH -> "$23.99/3 mths ($8.00/mth)"
+        PackageType.SIX_MONTH -> "$39.99/6 mths ($6.67/mth)"
         PackageType.WEEKLY -> "$1.99/wk ($7.96/mth)"
         PackageType.LIFETIME -> "$1,000"
         else -> error("Unknown package type $packageType")
@@ -60,9 +62,9 @@ internal fun Package.getPackageInfoForTest(
     val offerDetailsWithIntroOffer = when(packageType) {
         PackageType.ANNUAL -> "$67.99/yr ($5.67/mth) after 1 month trial"
         PackageType.MONTHLY -> "$7.99/mth after  trial"
-        PackageType.TWO_MONTH -> "/mth"
-        PackageType.THREE_MONTH -> "/mth"
-        PackageType.SIX_MONTH -> "/mth"
+        PackageType.TWO_MONTH -> "$15.99/2 mths ($8.00/mth) after 1 month trial"
+        PackageType.THREE_MONTH -> "$23.99/3 mths ($8.00/mth) after 2 weeks trial"
+        PackageType.SIX_MONTH -> "$39.99/6 mths ($6.67/mth) after  trial"
         PackageType.WEEKLY -> "$1.99/wk ($7.96/mth) after  trial"
         PackageType.LIFETIME -> "$1,000 after  trial"
         else -> error("Unknown package type $packageType")
@@ -72,7 +74,7 @@ internal fun Package.getPackageInfoForTest(
         PackageType.MONTHLY -> null
         PackageType.TWO_MONTH -> null
         PackageType.THREE_MONTH -> null
-        PackageType.SIX_MONTH -> null
+        PackageType.SIX_MONTH -> 0.16635397123202
         PackageType.WEEKLY -> null
         PackageType.LIFETIME -> null
         else -> error("Unknown package type $packageType")
@@ -88,7 +90,7 @@ internal fun Package.getPackageInfoForTest(
         offerDetailsWithMultipleIntroOffers = null,
         offerName = periodName,
         features = features,
-        tierName = tierName,
+        tierName = localizedConfiguration.tierName,
     )
     return TemplateConfiguration.PackageInfo(
         rcPackage = this,
