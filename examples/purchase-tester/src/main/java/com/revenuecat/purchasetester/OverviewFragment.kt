@@ -4,6 +4,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.text.InputType
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -23,6 +24,7 @@ import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.PurchaseParams
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.getAmazonLWAConsentStatus
 import com.revenuecat.purchases.getOfferingsWith
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
@@ -90,6 +92,12 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
         viewModel.retrieveCustomerInfo()
 
         Purchases.sharedInstance.getOfferingsWith(::showError, ::populateOfferings)
+
+        Purchases.sharedInstance.getAmazonLWAConsentStatus({
+            Log.i("PurchaseTester", "AmazonLWAConsentStatus Success: $it")
+        }, {
+            Log.e("PurchaseTester", "AmazonLWAConsentStatus Error: $it")
+        })
     }
 
     private fun populateOfferings(offerings: Offerings) {
