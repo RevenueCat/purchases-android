@@ -82,13 +82,13 @@ dependencies {
     implementation libs.tink
     implementation libs.playServices.ads.identifier
 
-//    compileOnly libs.amazon.appstore.sdk
+    compileOnly libs.amazon.appstore.sdk
     compileOnly libs.coil.compose
 
     testImplementation libs.bundles.test
     testImplementation libs.billing
     testImplementation libs.coroutines.test
-//    testImplementation libs.amazon.appstore.sdk
+    testImplementation libs.amazon.appstore.sdk
     testImplementation libs.okhttp.mockwebserver
     testImplementation libs.playServices.ads.identifier
     testImplementation libs.testJUnitParams
