@@ -363,7 +363,10 @@ internal class AmazonBilling(
         }
     }
 
-    override fun getAmazonLWAConsentStatus(onSuccess: (AmazonLWAConsentStatus) -> Unit, onError: PurchasesErrorCallback) {
+    override fun getAmazonLWAConsentStatus(
+        onSuccess: (AmazonLWAConsentStatus) -> Unit,
+        onError: PurchasesErrorCallback,
+    ) {
         executeRequestOnUIThread { connectionError ->
             if (connectionError == null) {
                 userDataHandler.getUserData(
@@ -377,10 +380,12 @@ internal class AmazonBilling(
                             )
                             return@getUserData
                         }
-                        onSuccess(when (lwaConsentStatus) {
-                            LWAConsentStatus.CONSENTED -> AmazonLWAConsentStatus.CONSENTED
-                            LWAConsentStatus.UNAVAILABLE -> AmazonLWAConsentStatus.UNAVAILABLE
-                        })
+                        onSuccess(
+                            when (lwaConsentStatus) {
+                                LWAConsentStatus.CONSENTED -> AmazonLWAConsentStatus.CONSENTED
+                                LWAConsentStatus.UNAVAILABLE -> AmazonLWAConsentStatus.UNAVAILABLE
+                            },
+                        )
                     },
                     onError = { error ->
                         errorLog(BillingStrings.BILLING_AMAZON_ERROR_LWA_CONSENT_STATUS.format(error))

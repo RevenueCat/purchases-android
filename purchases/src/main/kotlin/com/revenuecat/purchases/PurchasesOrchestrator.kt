@@ -322,7 +322,7 @@ internal class PurchasesOrchestrator constructor(
     fun getAmazonLWAConsentStatus(callback: GetAmazonLWAConsentStatusCallback) {
         billing.getAmazonLWAConsentStatus(
             onSuccess = { callback.onSuccess(it) },
-            onError = { callback.onError(it) }
+            onError = { callback.onError(it) },
         )
     }
 

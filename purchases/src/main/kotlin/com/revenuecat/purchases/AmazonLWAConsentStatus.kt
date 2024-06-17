@@ -12,5 +12,5 @@ enum class AmazonLWAConsentStatus {
     /**
      * Customer hasn't provided consent or the consent has expired.
      */
-    UNAVAILABLE
+    UNAVAILABLE,
 }

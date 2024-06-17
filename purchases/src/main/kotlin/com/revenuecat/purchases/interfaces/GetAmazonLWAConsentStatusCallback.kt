@@ -1,7 +1,6 @@
 package com.revenuecat.purchases.interfaces
 
 import com.revenuecat.purchases.AmazonLWAConsentStatus
-import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.PurchasesError
 
 /**
