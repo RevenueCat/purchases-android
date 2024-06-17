@@ -35,6 +35,7 @@ import com.revenuecat.purchases.common.warnLog
 import com.revenuecat.purchases.google.isSuccessful
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.interfaces.Callback
+import com.revenuecat.purchases.interfaces.GetAmazonLWAConsentStatusCallback
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
 import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.interfaces.ProductChangeCallback
@@ -318,11 +319,11 @@ internal class PurchasesOrchestrator constructor(
         )
     }
 
-    fun getAmazonLWAConsentStatus(
-        onSuccess: (AmazonLWAConsentStatus) -> Unit,
-        onError: PurchasesErrorCallback,
-    ) {
-        billing.getAmazonLWAConsentStatus(onSuccess, onError)
+    fun getAmazonLWAConsentStatus(callback: GetAmazonLWAConsentStatusCallback) {
+        billing.getAmazonLWAConsentStatus(
+            onSuccess = { callback.onSuccess(it) },
+            onError = { callback.onError(it) }
+        )
     }
 
     fun getOfferings(
