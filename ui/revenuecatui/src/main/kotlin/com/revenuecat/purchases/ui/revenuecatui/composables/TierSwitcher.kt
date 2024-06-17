@@ -96,7 +96,7 @@ internal fun TierSwitcher(
                 .offset(x = indicatorOffset)
                 .fillMaxHeight()
                 .width(optionWidth)
-                .padding(2.dp)
+                .padding(TierSwitcherUIConstants.selectedTierPadding)
                 .clip(RoundedCornerShape(TierSwitcherUIConstants.roundedCorner))
                 .background(backgroundSelectedColor),
         )

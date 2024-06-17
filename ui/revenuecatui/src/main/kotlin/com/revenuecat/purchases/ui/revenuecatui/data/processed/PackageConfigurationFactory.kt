@@ -38,108 +38,154 @@ internal object PackageConfigurationFactory {
 
         return when (configurationType) {
             PackageConfigurationType.SINGLE -> {
-                val (locale, packageInfos) = makePackageInfo(
-                    packages = filteredRCPackages,
-                    variableDataProvider = variableDataProvider,
-                    activelySubscribedProductIdentifiers = activelySubscribedProductIdentifiers,
-                    nonSubscriptionProductIdentifiers = nonSubscriptionProductIdentifiers,
-                    paywallData = paywallData,
-                )
-
-                val firstPackage = packageInfos.first()
-
-                Result.success(
-                    Pair(
-                        locale,
-                        TemplateConfiguration.PackageConfiguration.Single(
-                            singlePackage = firstPackage,
-                        ),
-                    ),
+                makeSinglePackageConfiguration(
+                    filteredRCPackages,
+                    variableDataProvider,
+                    activelySubscribedProductIdentifiers,
+                    nonSubscriptionProductIdentifiers,
+                    paywallData,
                 )
             }
             PackageConfigurationType.MULTIPLE -> {
-                val (locale, packageInfos) = makePackageInfo(
-                    packages = filteredRCPackages,
-                    variableDataProvider = variableDataProvider,
-                    activelySubscribedProductIdentifiers = activelySubscribedProductIdentifiers,
-                    nonSubscriptionProductIdentifiers = nonSubscriptionProductIdentifiers,
-                    paywallData = paywallData,
-                )
-
-                val firstPackage = packageInfos.first()
-                val defaultPackage = packageInfos.firstOrNull { it.rcPackage.identifier == default } ?: firstPackage
-
-                Result.success(
-                    Pair(
-                        locale,
-                        TemplateConfiguration.PackageConfiguration.Multiple(
-                            TemplateConfiguration.PackageConfiguration.MultiPackage(
-                                first = firstPackage,
-                                default = defaultPackage,
-                                all = packageInfos,
-                            ),
-                        ),
-                    ),
+                makeMultiplePackageConfiguration(
+                    filteredRCPackages,
+                    variableDataProvider,
+                    activelySubscribedProductIdentifiers,
+                    nonSubscriptionProductIdentifiers,
+                    paywallData,
+                    default,
                 )
             }
-            PackageConfigurationType.MULTITIER -> { this
-                val tiers = paywallData.config.tiers ?: run {
-                    return Result.failure(PackageConfigurationError("No tier found for $packageIdsInConfig"))
-                }
-
-                val (locale, localizedConfigurationByTier) = paywallData.tieredLocalizedConfiguration
-
-                val all = tiers.associateWith { tier ->
-                    val localizationForTier = localizedConfigurationByTier[tier.id]
-                        ?: return Result.failure(PackageConfigurationError("No localization found for ${tier.id}"))
-
-                    val packageInfosForTier = reprocessPackagesForTiers(
-                        from = availablePackages,
-                        filter = tier.packageIds,
-                        localization = localizationForTier,
-                        variableDataProvider = variableDataProvider,
-                        activelySubscribedProductIdentifiers = activelySubscribedProductIdentifiers,
-                        nonSubscriptionProductIdentifiers = nonSubscriptionProductIdentifiers,
-                        locale = locale,
-                    )
-
-                    val firstPackage = packageInfosForTier.firstOrNull()
-                        ?: return Result.failure(PackageConfigurationError("No packages found for tier ${tier.id}"))
-                    val defaultPackage = packageInfosForTier
-                        .firstOrNull { it.rcPackage.identifier == tier.defaultPackageId } ?: firstPackage
-
-                    TemplateConfiguration.PackageConfiguration.MultiPackage(
-                        first = firstPackage,
-                        default = defaultPackage,
-                        all = packageInfosForTier,
-                    )
-                }
-
-                val allTierInfos = all.entries.map { (tier, packageInfo) ->
-                    val tierName = packageInfo.default.localization.tierName
-                        ?: return Result.failure(
-                            PackageConfigurationError("No localized tier name found for ${tier.id}"),
-                        )
-
-                    TemplateConfiguration.TierInfo(
-                        id = tier.id,
-                        name = tierName,
-                        defaultPackage = packageInfo.default,
-                        packages = packageInfo.all,
-                    )
-                }
-
-                Result.success(
-                    Pair(
-                        locale,
-                        TemplateConfiguration.PackageConfiguration.MultiTier(
-                            firstTier = allTierInfos.first(),
-                            allTiers = allTierInfos,
-                        ),
-                    ),
+            PackageConfigurationType.MULTITIER -> {
+                makeMultiTierPackageConfiguration(
+                    paywallData,
+                    packageIdsInConfig,
+                    availablePackages,
+                    variableDataProvider,
+                    activelySubscribedProductIdentifiers,
+                    nonSubscriptionProductIdentifiers,
                 )
             }
         }
+    }
+
+    @Suppress("LongParameterList", "ReturnCount")
+    private fun makeMultiTierPackageConfiguration(
+        paywallData: PaywallData,
+        packageIdsInConfig: List<String>,
+        availablePackages: List<Package>,
+        variableDataProvider: VariableDataProvider,
+        activelySubscribedProductIdentifiers: Set<String>,
+        nonSubscriptionProductIdentifiers: Set<String>,
+    ): Result<Pair<Locale, TemplateConfiguration.PackageConfiguration.MultiTier>> {
+        val tiers = paywallData.config.tiers ?: run {
+            return Result.failure(PackageConfigurationError("No tier found for $packageIdsInConfig"))
+        }
+
+        val (locale, localizedConfigurationByTier) = paywallData.tieredLocalizedConfiguration
+
+        val all = tiers.associateWith { tier ->
+            val localizationForTier = localizedConfigurationByTier[tier.id]
+                ?: return Result.failure(PackageConfigurationError("No localization found for ${tier.id}"))
+
+            val packageInfosForTier = reprocessPackagesForTiers(
+                from = availablePackages,
+                filter = tier.packageIds,
+                localization = localizationForTier,
+                variableDataProvider = variableDataProvider,
+                activelySubscribedProductIdentifiers = activelySubscribedProductIdentifiers,
+                nonSubscriptionProductIdentifiers = nonSubscriptionProductIdentifiers,
+                locale = locale,
+            )
+
+            val firstPackage = packageInfosForTier.firstOrNull()
+                ?: return Result.failure(PackageConfigurationError("No packages found for tier ${tier.id}"))
+            val defaultPackage = packageInfosForTier
+                .firstOrNull { it.rcPackage.identifier == tier.defaultPackageId } ?: firstPackage
+
+            TemplateConfiguration.PackageConfiguration.MultiPackage(
+                first = firstPackage,
+                default = defaultPackage,
+                all = packageInfosForTier,
+            )
+        }
+
+        val allTierInfos = all.entries.map { (tier, packageInfo) ->
+            val tierName = packageInfo.default.localization.tierName
+                ?: return Result.failure(
+                    PackageConfigurationError("No localized tier name found for ${tier.id}"),
+                )
+
+            TemplateConfiguration.TierInfo(
+                id = tier.id,
+                name = tierName,
+                defaultPackage = packageInfo.default,
+                packages = packageInfo.all,
+            )
+        }
+
+        return Result.success(
+            locale to TemplateConfiguration.PackageConfiguration.MultiTier(
+                firstTier = allTierInfos.first(),
+                allTiers = allTierInfos,
+            ),
+        )
+    }
+
+    @Suppress("LongParameterList")
+    private fun makeMultiplePackageConfiguration(
+        filteredRCPackages: List<Package>,
+        variableDataProvider: VariableDataProvider,
+        activelySubscribedProductIdentifiers: Set<String>,
+        nonSubscriptionProductIdentifiers: Set<String>,
+        paywallData: PaywallData,
+        default: String?,
+    ): Result<Pair<Locale, TemplateConfiguration.PackageConfiguration.Multiple>> {
+        val (locale, packageInfos) = makePackageInfo(
+            packages = filteredRCPackages,
+            variableDataProvider = variableDataProvider,
+            activelySubscribedProductIdentifiers = activelySubscribedProductIdentifiers,
+            nonSubscriptionProductIdentifiers = nonSubscriptionProductIdentifiers,
+            paywallData = paywallData,
+        )
+
+        val firstPackage = packageInfos.first()
+        val defaultPackage = packageInfos.firstOrNull { it.rcPackage.identifier == default } ?: firstPackage
+
+        return Result.success(
+            locale to TemplateConfiguration.PackageConfiguration.Multiple(
+                TemplateConfiguration.PackageConfiguration.MultiPackage(
+                    first = firstPackage,
+                    default = defaultPackage,
+                    all = packageInfos,
+                ),
+            ),
+        )
+    }
+
+    @Suppress("LongParameterList")
+    private fun makeSinglePackageConfiguration(
+        filteredRCPackages: List<Package>,
+        variableDataProvider: VariableDataProvider,
+        activelySubscribedProductIdentifiers: Set<String>,
+        nonSubscriptionProductIdentifiers: Set<String>,
+        paywallData: PaywallData,
+    ): Result<Pair<Locale, TemplateConfiguration.PackageConfiguration.Single>> {
+        val (locale, packageInfos) = makePackageInfo(
+            packages = filteredRCPackages,
+            variableDataProvider = variableDataProvider,
+            activelySubscribedProductIdentifiers = activelySubscribedProductIdentifiers,
+            nonSubscriptionProductIdentifiers = nonSubscriptionProductIdentifiers,
+            paywallData = paywallData,
+        )
+
+        val firstPackage = packageInfos.first()
+
+        return Result.success(
+            locale to TemplateConfiguration.PackageConfiguration.Single(
+                singlePackage = firstPackage,
+            ),
+        )
     }
 
     private fun makePackageInfo(
@@ -176,7 +222,7 @@ internal object PackageConfigurationFactory {
             )
         }
 
-        return Pair(locale, packageInfos)
+        return locale to packageInfos
     }
 
     @Suppress("LongParameterList")
