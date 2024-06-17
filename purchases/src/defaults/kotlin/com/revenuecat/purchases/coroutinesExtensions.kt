@@ -121,3 +121,25 @@ suspend fun Purchases.awaitSyncAttributesAndOfferingsIfNeeded(): Offerings {
         )
     }
 }
+
+/**
+ * Note: This method only works for the Amazon Appstore. There is no Google equivalent at this time.
+ * Calling from a Google-configured app will always return AmazonLWAConsentStatus.UNAVAILABLE.
+ *
+ * Get the Login with Amazon consent status for the current user. Used to implement Quick Subscribe.
+ *
+ * Coroutine friendly version of [Purchases.getAmazonLWAConsentStatus].
+ *
+ * @throws [PurchasesException] with the first [PurchasesError] if there's an error getting the consent status
+ * @returns The AmazonLWAConsentStatus for the current user.
+ */
+@JvmSynthetic
+@Throws(PurchasesException::class)
+suspend fun Purchases.getAmazonLWAConsentStatus(): AmazonLWAConsentStatus {
+    return suspendCoroutine { continuation ->
+        getAmazonLWAConsentStatus(
+            onSuccess = continuation::resume,
+            onError = { continuation.resumeWithException(PurchasesException(it)) },
+        )
+    }
+}
