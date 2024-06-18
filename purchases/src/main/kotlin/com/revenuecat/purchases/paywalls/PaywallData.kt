@@ -100,7 +100,8 @@ data class PaywallData(
         return Pair(first.key.toLocale(), first.value)
     }
 
-    private fun tieredConfigForLocale(requiredLocale: Locale): Map<String, LocalizedConfiguration>? {
+    @VisibleForTesting
+    fun tieredConfigForLocale(requiredLocale: Locale): Map<String, LocalizedConfiguration>? {
         return localizationByTier[requiredLocale.toString()]
             ?: localizationByTier.entries.firstOrNull { (localeKey, _) ->
                 requiredLocale.sharedLanguageCodeWith(localeKey.toLocale())
