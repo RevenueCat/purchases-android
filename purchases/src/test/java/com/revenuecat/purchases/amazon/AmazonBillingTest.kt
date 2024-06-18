@@ -3,13 +3,13 @@ package com.revenuecat.purchases.amazon
 import android.content.Context
 import android.os.Handler
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.amazon.device.iap.PurchasingService
 import com.amazon.device.iap.model.FulfillmentResult
 import com.amazon.device.iap.model.ProductType
 import com.amazon.device.iap.model.Receipt
+import com.amazon.device.iap.model.RequestId
 import com.amazon.device.iap.model.UserData
-import com.android.billingclient.api.BillingClient
-import com.android.billingclient.api.BillingResult
-import com.android.billingclient.api.ProductDetailsResponseListener
+import com.amazon.device.iap.model.UserDataRequest
 import com.revenuecat.purchases.AmazonLWAConsentStatus
 import com.revenuecat.purchases.PostReceiptInitiationSource
 import com.revenuecat.purchases.PurchasesError
@@ -29,7 +29,6 @@ import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.sha1
-import com.revenuecat.purchases.google.BillingWrapperTest
 import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
@@ -39,6 +38,7 @@ import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
+import io.mockk.mockkStatic
 import io.mockk.slot
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
@@ -324,7 +324,6 @@ class AmazonBillingTest {
             PurchaseState.UNSPECIFIED_STATE
         )
     }
-
 
     @Test
     fun `When querying purchases, consumables don't need to fetch receipt data`() {
@@ -1115,6 +1114,31 @@ class AmazonBillingTest {
             onError = { fail("Should be success") }
         )
         assertThat(consent).isEqualTo(AmazonLWAConsentStatus.CONSENTED)
+    }
+
+    @Test
+    fun `calling getUserData() in DefaultPurchasingServiceProvider sets LWA flag in builder`() {
+        setup()
+
+        mockkStatic(UserDataRequest::class)
+        mockkStatic(PurchasingService::class)
+
+        val mockBuilder = mockk<UserDataRequest.Builder>(relaxed = true)
+        every {
+            UserDataRequest.newBuilder()
+        } returns mockBuilder
+
+        val fetchLWAConsentStatusSlot = slot<Boolean>()
+        every {
+            mockBuilder.setFetchLWAConsentStatus(capture(fetchLWAConsentStatusSlot))
+        } returns mockBuilder
+
+        every {
+            PurchasingService.getUserData(any())
+        } returns mockk<RequestId>()
+
+        DefaultPurchasingServiceProvider().getUserData()
+        assertThat(fetchLWAConsentStatusSlot.captured).isTrue()
     }
 
     // region diagnostics tracking
