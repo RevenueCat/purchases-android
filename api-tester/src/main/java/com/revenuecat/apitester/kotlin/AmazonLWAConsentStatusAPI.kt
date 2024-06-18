@@ -7,7 +7,7 @@ private class AmazonLWAConsentStatusAPI {
     fun check(status: AmazonLWAConsentStatus) {
         when (status) {
             AmazonLWAConsentStatus.CONSENTED,
-            AmazonLWAConsentStatus.UNAVAILABLE
+            AmazonLWAConsentStatus.UNAVAILABLE,
             -> {
             }
         }.exhaustive
