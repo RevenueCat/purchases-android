@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.composables
 
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -13,7 +14,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -30,12 +30,15 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.revenuecat.purchases.ui.revenuecatui.UIConstant
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 
 private object TierSwitcherUIConstants {
     const val roundedCorner = 50
     val height = 40.dp
     val selectedTierPadding = 2.dp
+    val tierHorizontalPadding = 16.dp
+    val tierVerticalPadding = 8.dp
 }
 
 @Composable
@@ -51,7 +54,10 @@ internal fun SelectedTierView(
                 color = backgroundSelectedColor,
                 shape = RoundedCornerShape(TierSwitcherUIConstants.roundedCorner),
             )
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .padding(
+                horizontal = TierSwitcherUIConstants.tierHorizontalPadding,
+                vertical = TierSwitcherUIConstants.tierVerticalPadding,
+            ),
     ) {
         Text(
             text = selectedTier.name,
@@ -62,7 +68,7 @@ internal fun SelectedTierView(
 }
 
 @Composable
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "LongMethod")
 internal fun TierSwitcher(
     tiers: List<TemplateConfiguration.TierInfo>,
     selectedTier: TemplateConfiguration.TierInfo,
@@ -77,11 +83,32 @@ internal fun TierSwitcher(
 
     val density = LocalDensity.current
 
+    val backgroundColorState by animateColorAsState(
+        targetValue = backgroundColor,
+        animationSpec = UIConstant.defaultColorAnimation,
+        label = "backgroundColor",
+    )
+    val backgroundSelectedColorState by animateColorAsState(
+        targetValue = backgroundSelectedColor,
+        animationSpec = UIConstant.defaultColorAnimation,
+        label = "backgroundSelectedColor",
+    )
+    val foregroundColorState by animateColorAsState(
+        targetValue = foregroundColor,
+        animationSpec = UIConstant.defaultColorAnimation,
+        label = "foregroundColor",
+    )
+    val foregroundSelectedColorState by animateColorAsState(
+        targetValue = foregroundSelectedColor,
+        animationSpec = UIConstant.defaultColorAnimation,
+        label = "foregroundSelectedColor",
+    )
+
     Box(
         Modifier
             .padding(TierSwitcherUIConstants.selectedTierPadding)
             .clip(RoundedCornerShape(TierSwitcherUIConstants.roundedCorner))
-            .background(backgroundColor)
+            .background(backgroundColorState)
             .height(TierSwitcherUIConstants.height)
             .fillMaxWidth()
             .onSizeChanged { size ->
@@ -95,10 +122,10 @@ internal fun TierSwitcher(
             Modifier
                 .offset(x = indicatorOffset)
                 .fillMaxHeight()
-                .width(optionWidth)
+                .fillMaxWidth(1f / tiers.size)
                 .padding(TierSwitcherUIConstants.selectedTierPadding)
                 .clip(RoundedCornerShape(TierSwitcherUIConstants.roundedCorner))
-                .background(backgroundSelectedColor),
+                .background(backgroundSelectedColorState),
         )
 
         Row(
@@ -123,7 +150,7 @@ internal fun TierSwitcher(
                         text = tier.name,
                         style = MaterialTheme.typography.bodyMedium,
                         textAlign = TextAlign.Center,
-                        color = if (selectedTier == tier) foregroundSelectedColor else foregroundColor,
+                        color = if (selectedTier == tier) foregroundSelectedColorState else foregroundColorState,
                     )
                 }
             }

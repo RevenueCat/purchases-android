@@ -78,9 +78,9 @@ internal object PackageConfigurationFactory {
         activelySubscribedProductIdentifiers: Set<String>,
         nonSubscriptionProductIdentifiers: Set<String>,
     ): Result<Pair<Locale, TemplateConfiguration.PackageConfiguration.MultiTier>> {
-        val tiers = paywallData.config.tiers ?: run {
-            return Result.failure(PackageConfigurationError("No tier found for $packageIdsInConfig"))
-        }
+        val tiers = paywallData.config.tiers ?: return Result.failure(
+            PackageConfigurationError("No tier found for $packageIdsInConfig"),
+        )
 
         val (locale, localizedConfigurationByTier) = paywallData.tieredLocalizedConfiguration
 

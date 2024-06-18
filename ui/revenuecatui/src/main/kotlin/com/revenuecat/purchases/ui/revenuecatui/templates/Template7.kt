@@ -3,7 +3,9 @@
 package com.revenuecat.purchases.ui.revenuecatui.templates
 
 import android.net.Uri
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -151,6 +153,7 @@ internal fun Template7(
     }
 }
 
+@OptIn(ExperimentalAnimationApi::class)
 @Suppress("LongMethod", "LongParameterList")
 @Composable
 private fun ColumnScope.Template7PortraitContent(
@@ -211,7 +214,25 @@ private fun ColumnScope.Template7PortraitContent(
         }
 
         if (state.isInFullScreenMode) {
-            Features(state, selectedTier)
+            AnimatedContent(
+                targetState = selectedTier,
+                label = "features portrait",
+            ) {
+                Column(
+                    modifier = Modifier
+                        .padding(
+                            horizontal = UIConstant.defaultHorizontalPadding,
+                            vertical = UIConstant.defaultVerticalSpacing,
+                        ),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(
+                        UIConstant.defaultVerticalSpacing,
+                        Alignment.CenterVertically,
+                    ),
+                ) {
+                    Features(state, it)
+                }
+            }
         }
 
         AnimatedPackages(

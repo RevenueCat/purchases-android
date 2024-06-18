@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.ui.revenuecatui.composables
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -90,6 +91,21 @@ private fun PurchaseButton(
             label = "PurchaseButton.label",
         )
 
+        val primaryCTAColor by animateColorAsState(
+            targetValue = colors.callToActionBackground,
+            animationSpec = UIConstant.defaultColorAnimation,
+            label = "primaryCTAColor",
+        )
+        // Assigning a targetValue of callToActionBackground to make the non-null happy
+        // but will only use this state if is non-null callToActionSecondaryBackground
+        // so a solid color is drawn and not a gradient
+        val secondaryCTAColorState by animateColorAsState(
+            targetValue = colors.callToActionSecondaryBackground ?: colors.callToActionBackground,
+            animationSpec = UIConstant.defaultColorAnimation,
+            label = "secondaryCTAColor",
+        )
+        val secondaryCTAColor = colors.callToActionSecondaryBackground?.let { secondaryCTAColorState }
+
         Button(
             modifier = childModifier
                 .fillMaxWidth()
@@ -105,7 +121,7 @@ private fun PurchaseButton(
                     )
                 }
                 .background(
-                    brush = buttonBrush(colors),
+                    brush = buttonBrush(primaryCTAColor, secondaryCTAColor),
                     shape = ButtonDefaults.shape,
                 ),
             onClick = { viewModel.purchaseSelectedPackage(activity) },
@@ -153,15 +169,15 @@ private fun PurchaseButton(
 
 @ReadOnlyComposable
 @Composable
-private fun buttonBrush(colors: TemplateConfiguration.Colors): Brush {
-    return colors.callToActionSecondaryBackground?.let { secondaryColor ->
+private fun buttonBrush(primaryColor: Color, secondaryColor: Color?): Brush {
+    return secondaryColor?.let {
         Brush.verticalGradient(
             listOf(
-                colors.callToActionBackground,
-                secondaryColor,
+                primaryColor,
+                it,
             ),
         )
-    } ?: SolidColor(colors.callToActionBackground)
+    } ?: SolidColor(primaryColor)
 }
 
 @Composable

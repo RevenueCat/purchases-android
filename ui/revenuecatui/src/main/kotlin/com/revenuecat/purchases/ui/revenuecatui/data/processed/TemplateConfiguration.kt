@@ -97,7 +97,6 @@ internal data class TemplateConfiguration(
 
         data class Multiple(val multiPackage: MultiPackage) : PackageConfiguration() {
             override val all: List<PackageInfo>
-
                 get() = multiPackage.all
             override val default: PackageInfo
                 get() = multiPackage.default
