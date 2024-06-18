@@ -25,7 +25,7 @@ import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.PurchaseParams
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
-import com.revenuecat.purchases.getAmazonLWAConsentStatus
+import com.revenuecat.purchases.getAmazonLWAConsentStatusWith
 import com.revenuecat.purchases.getOfferingsWith
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
@@ -103,7 +103,7 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
         lifecycleScope.launch {
             dataStoreUtils.getSdkConfig().onEach { sdkConfiguration ->
                 if (sdkConfiguration.useAmazon) {
-                    Purchases.sharedInstance.getAmazonLWAConsentStatus({
+                    Purchases.sharedInstance.getAmazonLWAConsentStatusWith({
                         Log.i("PurchaseTester", "AmazonLWAConsentStatus Success: $it")
                     }, {
                         Log.e("PurchaseTester", "AmazonLWAConsentStatus Error: $it")
