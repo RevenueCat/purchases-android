@@ -21,6 +21,7 @@ import com.revenuecat.purchases.awaitSyncAttributesAndOfferingsIfNeeded
 import com.revenuecat.purchases.awaitSyncPurchases
 import com.revenuecat.purchases.data.LogInResult
 import com.revenuecat.purchases.getAmazonLWAConsentStatus
+import com.revenuecat.purchases.getAmazonLWAConsentStatusWith
 import com.revenuecat.purchases.getCustomerInfoWith
 import com.revenuecat.purchases.interfaces.GetAmazonLWAConsentStatusCallback
 import com.revenuecat.purchases.interfaces.LogInCallback
@@ -123,7 +124,7 @@ private class PurchasesAPI {
             onError = { _: PurchasesError -> },
             onSuccess = { _: Offerings -> },
         )
-        purchases.getAmazonLWAConsentStatus(
+        purchases.getAmazonLWAConsentStatusWith(
             onError = { _: PurchasesError -> },
             onSuccess = { _: AmazonLWAConsentStatus -> },
         )

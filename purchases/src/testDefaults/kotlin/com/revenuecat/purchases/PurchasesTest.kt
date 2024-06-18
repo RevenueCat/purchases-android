@@ -1397,7 +1397,7 @@ internal class PurchasesTest : BasePurchasesTest() {
 
         var exception: PurchasesError? = null
         var onErrorCalled = false
-        purchases.getAmazonLWAConsentStatus(
+        purchases.getAmazonLWAConsentStatusWith(
             onSuccess = {
                 assertThat(it).isEqualTo(AmazonLWAConsentStatus.CONSENTED)
             },
@@ -1425,7 +1425,7 @@ internal class PurchasesTest : BasePurchasesTest() {
 
         var exception: PurchasesError? = null
         var onErrorCalled = false
-        purchases.getAmazonLWAConsentStatus(
+        purchases.getAmazonLWAConsentStatusWith(
             onSuccess = {
                 fail("should be an error")
             },

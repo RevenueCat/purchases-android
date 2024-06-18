@@ -229,13 +229,13 @@ fun Purchases.syncAttributesAndOfferingsIfNeededWith(
  * For more information, check the documentation:
  * https://developer.amazon.com/docs/in-app-purchasing/iap-quicksubscribe.html
  *
- * @param [onSuccess] Called when the consent status was successfully fetched.
  * @param [onError] Called when there was an error fetching the consent status.
+ * @param [onSuccess] Called when the consent status was successfully fetched.
  */
 @Suppress("unused")
-fun Purchases.getAmazonLWAConsentStatus(
-    onSuccess: (AmazonLWAConsentStatus) -> Unit,
+fun Purchases.getAmazonLWAConsentStatusWith(
     onError: (error: PurchasesError) -> Unit = ON_ERROR_STUB,
+    onSuccess: (AmazonLWAConsentStatus) -> Unit,
 ) {
     getAmazonLWAConsentStatus(getAmazonLWAConsentStatusListener(onSuccess, onError))
 }

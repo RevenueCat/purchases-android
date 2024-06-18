@@ -141,7 +141,7 @@ suspend fun Purchases.awaitSyncAttributesAndOfferingsIfNeeded(): Offerings {
 @Throws(PurchasesException::class)
 suspend fun Purchases.getAmazonLWAConsentStatus(): AmazonLWAConsentStatus {
     return suspendCoroutine { continuation ->
-        getAmazonLWAConsentStatus(
+        getAmazonLWAConsentStatusWith(
             onSuccess = continuation::resume,
             onError = { continuation.resumeWithException(PurchasesException(it)) },
         )
