@@ -141,7 +141,7 @@ private class PurchasesAPI {
         val customerInfo4: CustomerInfo = purchases.awaitRestore()
         val customerInfo5: CustomerInfo = purchases.awaitSyncPurchases()
         var offerings: Offerings = purchases.awaitSyncAttributesAndOfferingsIfNeeded()
-        var consentStatus = purchases.getAmazonLWAConsentStatus()
+        var consentStatus: AmazonLWAConsentStatus = purchases.getAmazonLWAConsentStatus()
     }
 
     fun check(purchases: Purchases, attributes: Map<String, String>) {
