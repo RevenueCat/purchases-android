@@ -10,6 +10,7 @@ import com.amazon.device.iap.model.UserData
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.ProductDetailsResponseListener
+import com.revenuecat.purchases.AmazonLWAConsentStatus
 import com.revenuecat.purchases.PostReceiptInitiationSource
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCallback
@@ -1090,6 +1091,30 @@ class AmazonBillingTest {
             onError = { error = it },
         )
         assertThat(error?.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
+    }
+
+    @Test
+    fun `querying getAmazonLWAConsentStatus returns error`() {
+        setup()
+        mockGetUserDataError()
+        var error: PurchasesError? = null
+        underTest.getAmazonLWAConsentStatus(
+            onSuccess = { fail("Should be a error") },
+            onError = { error = it },
+        )
+        assertThat(error?.code).isEqualTo(PurchasesErrorCode.StoreProblemError)
+    }
+
+    @Test
+    fun `querying getAmazonLWAConsentStatus returns success`() {
+        setup()
+        mockGetUserData()
+        var consent: AmazonLWAConsentStatus? = null
+        underTest.getAmazonLWAConsentStatus(
+            onSuccess = { consent = it },
+            onError = { fail("Should be success") }
+        )
+        assertThat(consent).isEqualTo(AmazonLWAConsentStatus.CONSENTED)
     }
 
     // region diagnostics tracking
