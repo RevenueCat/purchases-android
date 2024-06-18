@@ -12,6 +12,7 @@ import android.widget.EditText
 import android.widget.Toast
 import androidx.core.view.doOnPreDraw
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.FragmentNavigatorExtras
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -35,14 +36,20 @@ import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases_sample.R
 import com.revenuecat.purchases_sample.databinding.FragmentOverviewBinding
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.launch
 
 @SuppressWarnings("TooManyFunctions")
 class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterListener, OverviewInteractionHandler {
 
     private lateinit var viewModel: OverviewViewModel
     private lateinit var binding: FragmentOverviewBinding
+    private lateinit var dataStoreUtils: DataStoreUtils
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
+        dataStoreUtils = DataStoreUtils(requireActivity().applicationContext.configurationDataStore)
+
         binding = FragmentOverviewBinding.inflate(inflater)
 
         binding.customerInfoLogoutButton.setOnClickListener {
@@ -93,11 +100,17 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
 
         Purchases.sharedInstance.getOfferingsWith(::showError, ::populateOfferings)
 
-        Purchases.sharedInstance.getAmazonLWAConsentStatus({
-            Log.i("PurchaseTester", "AmazonLWAConsentStatus Success: $it")
-        }, {
-            Log.e("PurchaseTester", "AmazonLWAConsentStatus Error: $it")
-        })
+        lifecycleScope.launch {
+            dataStoreUtils.getSdkConfig().onEach { sdkConfiguration ->
+                if (sdkConfiguration.useAmazon) {
+                    Purchases.sharedInstance.getAmazonLWAConsentStatus({
+                        Log.i("PurchaseTester", "AmazonLWAConsentStatus Success: $it")
+                    }, {
+                        Log.e("PurchaseTester", "AmazonLWAConsentStatus Error: $it")
+                    })
+                }
+            }.collect()
+        }
     }
 
     private fun populateOfferings(offerings: Offerings) {
