@@ -4,6 +4,7 @@ import android.content.Context;
 
 import androidx.annotation.NonNull;
 
+import com.revenuecat.purchases.AmazonLWAConsentStatus;
 import com.revenuecat.purchases.CacheFetchPolicy;
 import com.revenuecat.purchases.CustomerInfo;
 import com.revenuecat.purchases.EntitlementVerificationMode;
@@ -14,6 +15,7 @@ import com.revenuecat.purchases.PurchasesConfiguration;
 import com.revenuecat.purchases.PurchasesError;
 import com.revenuecat.purchases.Store;
 import com.revenuecat.purchases.amazon.AmazonConfiguration;
+import com.revenuecat.purchases.interfaces.GetAmazonLWAConsentStatusCallback;
 import com.revenuecat.purchases.interfaces.LogInCallback;
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback;
 import com.revenuecat.purchases.interfaces.SyncAttributesAndOfferingsCallback;
@@ -64,6 +66,16 @@ final class PurchasesAPI {
             }
         };
 
+        final GetAmazonLWAConsentStatusCallback getAmazonLWAContentStatusCallback = new GetAmazonLWAConsentStatusCallback() {
+            @Override
+            public void onError(@NonNull PurchasesError error) {
+            }
+
+            @Override
+            public void onSuccess(@NonNull AmazonLWAConsentStatus contentStatus) {
+            }
+        };
+
         purchases.syncAttributesAndOfferingsIfNeeded(syncAttributesAndOfferingsCallback);
         purchases.syncPurchases();
         purchases.syncPurchases(syncPurchasesCallback);
@@ -72,6 +84,7 @@ final class PurchasesAPI {
         purchases.logOut(receiveCustomerInfoListener);
         purchases.getCustomerInfo(receiveCustomerInfoListener);
         purchases.getCustomerInfo(CacheFetchPolicy.CACHED_OR_FETCHED, receiveCustomerInfoListener);
+        purchases.getAmazonLWAConsentStatus(getAmazonLWAContentStatusCallback);
 
         purchases.restorePurchases(receiveCustomerInfoListener);
         purchases.invalidateCustomerInfoCache();

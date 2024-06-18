@@ -9,6 +9,7 @@ import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.infoLog
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.interfaces.Callback
+import com.revenuecat.purchases.interfaces.GetAmazonLWAConsentStatusCallback
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
 import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
@@ -741,6 +742,21 @@ class Purchases internal constructor(
         purchasesOrchestrator.getProductsOfTypes(productIds.toSet(), setOf(ProductType.INAPP), callback)
     }
 
+    /**
+     * Note: This method only works for the Amazon Appstore. There is no Google equivalent at this time.
+     * Calling from a Google-configured app will always return AmazonLWAConsentStatus.UNAVAILABLE.
+     *
+     * Get the Login with Amazon consent status for the current user. Used to implement one-click
+     * account creation using Quick Subscribe.
+     *
+     * For more information, check the documentation:
+     * https://developer.amazon.com/docs/in-app-purchasing/iap-quicksubscribe.html
+     *
+     * @param [callback] Response callback
+     */
+    fun getAmazonLWAConsentStatus(callback: GetAmazonLWAConsentStatusCallback) {
+        purchasesOrchestrator.getAmazonLWAConsentStatus(callback)
+    }
     // endregion
 
     // region Static

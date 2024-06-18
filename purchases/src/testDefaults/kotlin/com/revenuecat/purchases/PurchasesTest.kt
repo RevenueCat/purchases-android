@@ -1380,6 +1380,64 @@ internal class PurchasesTest : BasePurchasesTest() {
         assertThat(Purchases.sharedInstance.store).isEqualTo(Store.PLAY_STORE)
     }
 
+    // region getAmazonLWAConsentStatus
+
+    @Test
+    fun `getAmazonLWAConsentStatus returns success`() {
+        every {
+            mockBillingAbstract.getAmazonLWAConsentStatus(
+                onSuccess = captureLambda(),
+                onError = any()
+            )
+        } answers {
+            lambda<(AmazonLWAConsentStatus) -> Unit>().captured.also {
+                it.invoke(AmazonLWAConsentStatus.CONSENTED)
+            }
+        }
+
+        var exception: PurchasesError? = null
+        var onErrorCalled = false
+        purchases.getAmazonLWAConsentStatusWith(
+            onSuccess = {
+                assertThat(it).isEqualTo(AmazonLWAConsentStatus.CONSENTED)
+            },
+            onError = {
+                fail("should be success")
+            }
+        )
+        assertThat(onErrorCalled).isFalse()
+        assertThat(exception).isNull()
+    }
+
+    @Test
+    fun `getAmazonLWAConsentStatus returns error`() {
+        val error = PurchasesError(PurchasesErrorCode.StoreProblemError, "Store Problem Error")
+        every {
+            mockBillingAbstract.getAmazonLWAConsentStatus(
+                onSuccess = any(),
+                onError = captureLambda()
+            )
+        } answers {
+            lambda<(PurchasesError) -> Unit>().captured.also {
+                it.invoke(error)
+            }
+        }
+
+        var exception: PurchasesError? = null
+        var onErrorCalled = false
+        purchases.getAmazonLWAConsentStatusWith(
+            onSuccess = {
+                fail("should be an error")
+            },
+            onError = {
+                onErrorCalled = true
+                exception = it
+            }
+        )
+        assertThat(onErrorCalled).isTrue()
+        assertThat(exception).isEqualTo(error)
+    }
+
     // region Private Methods
 
     private fun getMockedPurchaseHistoryList(

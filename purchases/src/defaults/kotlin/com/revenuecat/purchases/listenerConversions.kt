@@ -1,6 +1,7 @@
 package com.revenuecat.purchases
 
 import android.app.Activity
+import com.revenuecat.purchases.interfaces.GetAmazonLWAConsentStatusCallback
 import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.interfaces.ProductChangeCallback
 import com.revenuecat.purchases.interfaces.SyncAttributesAndOfferingsCallback
@@ -54,6 +55,19 @@ internal fun syncAttributesAndOfferingsListener(
 ) = object : SyncAttributesAndOfferingsCallback {
     override fun onSuccess(offerings: Offerings) {
         onSuccess(offerings)
+    }
+
+    override fun onError(error: PurchasesError) {
+        onError(error)
+    }
+}
+
+internal fun getAmazonLWAConsentStatusListener(
+    onSuccess: (AmazonLWAConsentStatus) -> Unit,
+    onError: (error: PurchasesError) -> Unit,
+) = object : GetAmazonLWAConsentStatusCallback {
+    override fun onSuccess(consentStatus: AmazonLWAConsentStatus) {
+        onSuccess(consentStatus)
     }
 
     override fun onError(error: PurchasesError) {
@@ -203,6 +217,27 @@ fun Purchases.syncAttributesAndOfferingsIfNeededWith(
     onSuccess: (Offerings) -> Unit,
 ) {
     syncAttributesAndOfferingsIfNeeded(syncAttributesAndOfferingsListener(onSuccess, onError))
+}
+
+/**
+ * Note: This method only works for the Amazon Appstore. There is no Google equivalent at this time.
+ * Calling from a Google-configured app will always return AmazonLWAConsentStatus.UNAVAILABLE.
+ *
+ * Get the Login with Amazon consent status for the current user. Used to implement one-click
+ * account creation using Quick Subscribe.
+ *
+ * For more information, check the documentation:
+ * https://developer.amazon.com/docs/in-app-purchasing/iap-quicksubscribe.html
+ *
+ * @param [onError] Called when there was an error fetching the consent status.
+ * @param [onSuccess] Called when the consent status was successfully fetched.
+ */
+@Suppress("unused")
+fun Purchases.getAmazonLWAConsentStatusWith(
+    onError: (error: PurchasesError) -> Unit = ON_ERROR_STUB,
+    onSuccess: (AmazonLWAConsentStatus) -> Unit,
+) {
+    getAmazonLWAConsentStatus(getAmazonLWAConsentStatusListener(onSuccess, onError))
 }
 
 // region Deprecated

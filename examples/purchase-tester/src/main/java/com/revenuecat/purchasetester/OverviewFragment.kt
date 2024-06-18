@@ -4,6 +4,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.text.InputType
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -11,6 +12,7 @@ import android.widget.EditText
 import android.widget.Toast
 import androidx.core.view.doOnPreDraw
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.FragmentNavigatorExtras
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -23,6 +25,7 @@ import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.PurchaseParams
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.getAmazonLWAConsentStatusWith
 import com.revenuecat.purchases.getOfferingsWith
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
@@ -33,14 +36,20 @@ import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases_sample.R
 import com.revenuecat.purchases_sample.databinding.FragmentOverviewBinding
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.launch
 
 @SuppressWarnings("TooManyFunctions")
 class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterListener, OverviewInteractionHandler {
 
     private lateinit var viewModel: OverviewViewModel
     private lateinit var binding: FragmentOverviewBinding
+    private lateinit var dataStoreUtils: DataStoreUtils
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
+        dataStoreUtils = DataStoreUtils(requireActivity().applicationContext.configurationDataStore)
+
         binding = FragmentOverviewBinding.inflate(inflater)
 
         binding.customerInfoLogoutButton.setOnClickListener {
@@ -90,6 +99,18 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
         viewModel.retrieveCustomerInfo()
 
         Purchases.sharedInstance.getOfferingsWith(::showError, ::populateOfferings)
+
+        lifecycleScope.launch {
+            dataStoreUtils.getSdkConfig().onEach { sdkConfiguration ->
+                if (sdkConfiguration.useAmazon) {
+                    Purchases.sharedInstance.getAmazonLWAConsentStatusWith({
+                        Log.i("PurchaseTester", "AmazonLWAConsentStatus Success: $it")
+                    }, {
+                        Log.e("PurchaseTester", "AmazonLWAConsentStatus Error: $it")
+                    })
+                }
+            }.collect()
+        }
     }
 
     private fun populateOfferings(offerings: Offerings) {

@@ -3,10 +3,12 @@ package com.revenuecat.purchases.amazon.helpers
 import com.amazon.device.iap.internal.model.ProductBuilder
 import com.amazon.device.iap.internal.model.ReceiptBuilder
 import com.amazon.device.iap.internal.model.UserDataBuilder
+import com.amazon.device.iap.model.LWAConsentStatus
 import com.amazon.device.iap.model.Product
 import com.amazon.device.iap.model.ProductType
 import com.amazon.device.iap.model.Receipt
 import com.amazon.device.iap.model.UserData
+import com.revenuecat.purchases.AmazonLWAConsentStatus
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.common.MICROS_MULTIPLIER
 import com.revenuecat.purchases.models.Period
@@ -123,8 +125,10 @@ fun dummyReceipt(
 
 fun dummyUserData(
     marketplace: String = "US",
-    storeUserId: String = "user_id"
+    storeUserId: String = "user_id",
+    lwaConsentStatus: String = "CONSENTED"
 ): UserData = UserDataBuilder()
     .setUserId(storeUserId)
     .setMarketplace(marketplace)
+    .setLWAConsentStatus(lwaConsentStatus)
     .build()

@@ -5,6 +5,7 @@ import android.content.Context
 import android.os.Handler
 import android.os.Looper
 import com.amazon.device.iap.model.FulfillmentResult
+import com.amazon.device.iap.model.LWAConsentStatus
 import com.amazon.device.iap.model.ProductDataResponse
 import com.amazon.device.iap.model.ProductType
 import com.amazon.device.iap.model.PurchaseResponse
@@ -12,6 +13,7 @@ import com.amazon.device.iap.model.PurchaseUpdatesResponse
 import com.amazon.device.iap.model.Receipt
 import com.amazon.device.iap.model.UserData
 import com.amazon.device.iap.model.UserDataResponse
+import com.revenuecat.purchases.AmazonLWAConsentStatus
 import com.revenuecat.purchases.PostReceiptInitiationSource
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.PurchasesError
@@ -356,6 +358,42 @@ internal class AmazonBilling(
                 )
             } else {
                 errorLog(BillingStrings.BILLING_CONNECTION_ERROR_STORE_COUNTRY.format(connectionError))
+                onError(connectionError)
+            }
+        }
+    }
+
+    override fun getAmazonLWAConsentStatus(
+        onSuccess: (AmazonLWAConsentStatus) -> Unit,
+        onError: PurchasesErrorCallback,
+    ) {
+        executeRequestOnUIThread { connectionError ->
+            if (connectionError == null) {
+                userDataHandler.getUserData(
+                    onSuccess = { userData ->
+                        val lwaConsentStatus = userData.lwaConsentStatus ?: run {
+                            onError(
+                                PurchasesError(
+                                    PurchasesErrorCode.StoreProblemError,
+                                    AmazonStrings.ERROR_USER_DATA_LWA_CONSENT_STATUS_NULL_STORE_PROBLEM,
+                                ),
+                            )
+                            return@getUserData
+                        }
+                        onSuccess(
+                            when (lwaConsentStatus) {
+                                LWAConsentStatus.CONSENTED -> AmazonLWAConsentStatus.CONSENTED
+                                LWAConsentStatus.UNAVAILABLE -> AmazonLWAConsentStatus.UNAVAILABLE
+                            },
+                        )
+                    },
+                    onError = { error ->
+                        errorLog(BillingStrings.BILLING_AMAZON_ERROR_LWA_CONSENT_STATUS.format(error))
+                        onError(error)
+                    },
+                )
+            } else {
+                errorLog(BillingStrings.BILLING_CONNECTION_ERROR_LWA_CONSENT_STATUS.format(connectionError))
                 onError(connectionError)
             }
         }

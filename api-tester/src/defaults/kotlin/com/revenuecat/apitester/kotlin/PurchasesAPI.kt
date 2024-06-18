@@ -1,6 +1,7 @@
 package com.revenuecat.apitester.kotlin
 
 import android.content.Context
+import com.revenuecat.purchases.AmazonLWAConsentStatus
 import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.EntitlementVerificationMode
@@ -19,7 +20,10 @@ import com.revenuecat.purchases.awaitRestore
 import com.revenuecat.purchases.awaitSyncAttributesAndOfferingsIfNeeded
 import com.revenuecat.purchases.awaitSyncPurchases
 import com.revenuecat.purchases.data.LogInResult
+import com.revenuecat.purchases.getAmazonLWAConsentStatus
+import com.revenuecat.purchases.getAmazonLWAConsentStatusWith
 import com.revenuecat.purchases.getCustomerInfoWith
+import com.revenuecat.purchases.interfaces.GetAmazonLWAConsentStatusCallback
 import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.SyncAttributesAndOfferingsCallback
@@ -53,8 +57,13 @@ private class PurchasesAPI {
             override fun onSuccess(offerings: Offerings) {}
             override fun onError(error: PurchasesError) {}
         }
+        val getAmazonLWAConsentStatusCallback = object : GetAmazonLWAConsentStatusCallback {
+            override fun onSuccess(status: AmazonLWAConsentStatus) {}
+            override fun onError(error: PurchasesError) {}
+        }
 
         purchases.syncAttributesAndOfferingsIfNeeded(syncAttributesAndOfferingsCallback)
+        purchases.getAmazonLWAConsentStatus(getAmazonLWAConsentStatusCallback)
 
         purchases.syncPurchases()
         purchases.syncPurchases(syncPurchasesCallback)
@@ -115,6 +124,10 @@ private class PurchasesAPI {
             onError = { _: PurchasesError -> },
             onSuccess = { _: Offerings -> },
         )
+        purchases.getAmazonLWAConsentStatusWith(
+            onError = { _: PurchasesError -> },
+            onSuccess = { _: AmazonLWAConsentStatus -> },
+        )
     }
 
     suspend fun checkCoroutines(
@@ -129,6 +142,7 @@ private class PurchasesAPI {
         val customerInfo4: CustomerInfo = purchases.awaitRestore()
         val customerInfo5: CustomerInfo = purchases.awaitSyncPurchases()
         var offerings: Offerings = purchases.awaitSyncAttributesAndOfferingsIfNeeded()
+        var consentStatus: AmazonLWAConsentStatus = purchases.getAmazonLWAConsentStatus()
     }
 
     fun check(purchases: Purchases, attributes: Map<String, String>) {

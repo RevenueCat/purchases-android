@@ -444,6 +444,61 @@ internal class PurchasesCoroutinesTest : BasePurchasesTest() {
         assertThat(exception).isInstanceOf(PurchasesException::class.java)
         assertThat((exception as PurchasesException).code).isEqualTo(PurchasesErrorCode.CustomerInfoError)
     }
+    
+    // endregion
+
+    // region awaitGetAmazonLWAConsentStatus
+
+    @Test
+    fun `getAmazonLWAConsentStatus - success`() = runTest {
+        every {
+            mockBillingAbstract.getAmazonLWAConsentStatus(
+                onSuccess = captureLambda(),
+                onError = any()
+            )
+        } answers {
+            lambda<(AmazonLWAConsentStatus) -> Unit>().captured.also {
+                it.invoke(AmazonLWAConsentStatus.CONSENTED)
+            }
+        }
+
+        var result: AmazonLWAConsentStatus? = null
+        var exception: Throwable? = null
+        runCatching {
+            result = purchases.getAmazonLWAConsentStatus()
+        }.onFailure {
+            exception = it
+        }
+        assertThat(result).isEqualTo(AmazonLWAConsentStatus.CONSENTED)
+        assertThat(exception).isNull()
+    }
+
+    @Test
+    fun `getAmazonLWAConsentStatus - Error`() = runTest {
+        val error = PurchasesError(PurchasesErrorCode.StoreProblemError, "Store Problem Error")
+        every {
+            mockBillingAbstract.getAmazonLWAConsentStatus(
+                onSuccess = any(),
+                onError = captureLambda()
+            )
+        } answers {
+            lambda<(PurchasesError) -> Unit>().captured.also {
+                it.invoke(error)
+            }
+        }
+
+        var result: AmazonLWAConsentStatus? = null
+        var exception: Throwable? = null
+        runCatching {
+            result = purchases.getAmazonLWAConsentStatus()
+        }.onFailure {
+            exception = it
+        }
+        assertThat(result).isNull()
+        assertThat(exception).isNotNull
+        assertThat(exception).isInstanceOf(PurchasesException::class.java)
+        assertThat((exception as PurchasesException).code).isEqualTo(PurchasesErrorCode.StoreProblemError)
+    }
 
     // endregion
 
