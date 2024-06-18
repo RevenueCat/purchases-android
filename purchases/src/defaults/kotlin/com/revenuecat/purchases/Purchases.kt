@@ -746,7 +746,11 @@ class Purchases internal constructor(
      * Note: This method only works for the Amazon Appstore. There is no Google equivalent at this time.
      * Calling from a Google-configured app will always return AmazonLWAConsentStatus.UNAVAILABLE.
      *
-     * Get the Login with Amazon consent status for the current user. Used to implement Quick Subscribe.
+     * Get the Login with Amazon consent status for the current user. Used to implement one-click
+     * account creation using Quick Subscribe.
+     *
+     * For more information, check the documentation:
+     * https://developer.amazon.com/docs/in-app-purchasing/iap-quicksubscribe.html
      *
      * @param [callback] Response callback
      */

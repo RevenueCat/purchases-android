@@ -223,15 +223,19 @@ fun Purchases.syncAttributesAndOfferingsIfNeededWith(
  * Note: This method only works for the Amazon Appstore. There is no Google equivalent at this time.
  * Calling from a Google-configured app will always return AmazonLWAConsentStatus.UNAVAILABLE.
  *
- * Get the Login with Amazon consent status for the current user. Used to implement Quick Subscribe.
+ * Get the Login with Amazon consent status for the current user. Used to implement one-click
+ * account creation using Quick Subscribe.
+ *
+ * For more information, check the documentation:
+ * https://developer.amazon.com/docs/in-app-purchasing/iap-quicksubscribe.html
  *
  * @param [onSuccess] Called when the consent status was successfully fetched.
  * @param [onError] Called when there was an error fetching the consent status.
  */
 @Suppress("unused")
 fun Purchases.getAmazonLWAConsentStatus(
-    onError: (error: PurchasesError) -> Unit = ON_ERROR_STUB,
     onSuccess: (AmazonLWAConsentStatus) -> Unit,
+    onError: (error: PurchasesError) -> Unit = ON_ERROR_STUB,
 ) {
     getAmazonLWAConsentStatus(getAmazonLWAConsentStatusListener(onSuccess, onError))
 }
