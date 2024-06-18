@@ -35,6 +35,7 @@ import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.utils.add
 import com.revenuecat.purchases.utils.subtract
 import io.mockk.Runs
+import io.mockk.clearAllMocks
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
@@ -44,6 +45,7 @@ import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
 import org.json.JSONObject
+import org.junit.After
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.util.Date
@@ -123,6 +125,11 @@ class AmazonBillingTest {
         every { mockDateProvider.now } returns Date(1676379370000) // Tuesday, February 14, 2023 12:56:10 PM GMT
 
         underTest.purchasesUpdatedListener = mockk()
+    }
+
+    @After
+    fun tearDown() {
+        clearAllMocks()
     }
 
     @Test
