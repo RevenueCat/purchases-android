@@ -153,7 +153,6 @@ internal fun Template7(
     }
 }
 
-@OptIn(ExperimentalAnimationApi::class)
 @Suppress("LongMethod", "LongParameterList")
 @Composable
 private fun ColumnScope.Template7PortraitContent(
@@ -214,25 +213,7 @@ private fun ColumnScope.Template7PortraitContent(
         }
 
         if (state.isInFullScreenMode) {
-            AnimatedContent(
-                targetState = selectedTier,
-                label = "features portrait",
-            ) {
-                Column(
-                    modifier = Modifier
-                        .padding(
-                            horizontal = UIConstant.defaultHorizontalPadding,
-                            vertical = UIConstant.defaultVerticalSpacing,
-                        ),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(
-                        UIConstant.defaultVerticalSpacing,
-                        Alignment.CenterVertically,
-                    ),
-                ) {
-                    Features(state, it)
-                }
-            }
+            Features(state, selectedTier)
         }
 
         AnimatedPackages(
@@ -374,6 +355,7 @@ private fun selectedLocalizationForTier(tier: TemplateConfiguration.TierInfo): P
     return tier.defaultPackage.localization
 }
 
+@OptIn(ExperimentalAnimationApi::class)
 @Composable
 private fun Features(
     state: PaywallState.Loaded,
@@ -382,11 +364,25 @@ private fun Features(
     val colorForTier = state.templateConfiguration.getCurrentColorsForTier(tier = selectedTier)
 
     val localization = selectedLocalizationForTier(selectedTier)
-    localization.features.forEach { feature ->
-        Feature(
-            feature = feature,
-            colors = colorForTier,
-        )
+
+    AnimatedContent(
+        targetState = selectedTier,
+        label = "features portrait",
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(
+                UIConstant.defaultVerticalSpacing,
+                Alignment.CenterVertically,
+            ),
+        ) {
+            localization.features.forEach { feature ->
+                Feature(
+                    feature = feature,
+                    colors = colorForTier,
+                )
+            }
+        }
     }
 }
 
