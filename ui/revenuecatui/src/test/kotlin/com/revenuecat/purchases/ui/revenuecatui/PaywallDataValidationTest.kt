@@ -152,6 +152,86 @@ class PaywallDataValidationTest {
         )
     }
 
+    @Test
+    fun `Missing color tier in multi-tier config generate default paywall`() {
+        val originalOffering = TestData.template7Offering
+
+        val paywall = originalOffering.paywall!!.let { originalPaywall ->
+            val originalConfig = originalPaywall.config
+
+            val colorsByTier = originalConfig.colorsByTier!!.toMutableMap()
+            colorsByTier.remove("basic")
+
+            val config = originalConfig.copy(colorsByTier = colorsByTier)
+            originalPaywall.copy(config = config)
+        }
+
+        val offering = originalOffering.copy(paywall = paywall)
+        val paywallValidationResult = getPaywallValidationResult(offering)
+        verifyPackages(paywallValidationResult.displayablePaywall, originalOffering.paywall!!)
+        compareWithDefaultTemplate(
+            paywallValidationResult.displayablePaywall,
+            // Skipping because there are none but they will show in the paywall from createPackageConfiguration
+            skipPackageIds = true,
+        )
+        assertThat(paywallValidationResult.error).isEqualTo(
+            PaywallValidationError.MissingTierConfigurations(setOf("basic"))
+        )
+    }
+
+    @Test
+    fun `Missing image tier in multi-tier config generate default paywall`() {
+        val originalOffering = TestData.template7Offering
+
+        val paywall = originalOffering.paywall!!.let { originalPaywall ->
+            val originalConfig = originalPaywall.config
+
+            val imagesByTier = originalConfig.imagesByTier!!.toMutableMap()
+            imagesByTier.remove("basic")
+
+            val config = originalConfig.copy(imagesByTier = imagesByTier)
+            originalPaywall.copy(config = config)
+        }
+
+        val offering = originalOffering.copy(paywall = paywall)
+        val paywallValidationResult = getPaywallValidationResult(offering)
+        verifyPackages(paywallValidationResult.displayablePaywall, originalOffering.paywall!!)
+        compareWithDefaultTemplate(
+            paywallValidationResult.displayablePaywall,
+            // Skipping because there are none but they will show in the paywall from createPackageConfiguration
+            skipPackageIds = true,
+        )
+        assertThat(paywallValidationResult.error).isEqualTo(
+            PaywallValidationError.MissingTierConfigurations(setOf("basic"))
+        )
+    }
+
+    @Test
+    fun `Missing localization tier in multi-tier config generate default paywall`() {
+        val originalOffering = TestData.template7Offering
+
+        val paywall = originalOffering.paywall!!.let { originalPaywall ->
+            val (locale, originalTierLocalizationConfiguration) = originalPaywall.tieredLocalizedConfiguration
+
+            val tierLocalizationConfiguration = originalTierLocalizationConfiguration.toMutableMap()
+            tierLocalizationConfiguration.remove("basic")
+
+            originalPaywall.copy(localizationByTier = mapOf(locale.toString() to tierLocalizationConfiguration))
+        }
+
+        val offering = originalOffering.copy(paywall = paywall)
+        val paywallValidationResult = getPaywallValidationResult(offering)
+        verifyPackages(paywallValidationResult.displayablePaywall, originalOffering.paywall!!)
+        compareWithDefaultTemplate(
+            paywallValidationResult.displayablePaywall,
+            // Skipping because there are none but they will show in the paywall from createPackageConfiguration
+            skipPackageIds = true,
+        )
+        assertThat(paywallValidationResult.error).isEqualTo(
+            PaywallValidationError.MissingTierConfigurations(setOf("basic"))
+        )
+    }
+
     private fun getPaywallValidationResult(offering: Offering) = offering.validatedPaywall(
         currentColorScheme = TestData.Constants.currentColorScheme,
         resourceProvider = MockResourceProvider()
