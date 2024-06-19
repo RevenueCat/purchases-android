@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.google.usecase
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.android.billingclient.api.AcknowledgePurchaseResponseListener
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.ConsumeParams
@@ -14,6 +15,7 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.google.toStoreTransaction
 import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.strings.PurchaseStrings
 import com.revenuecat.purchases.utils.stubGooglePurchase
 import com.revenuecat.purchases.utils.stubPurchaseHistoryRecord
 import io.mockk.Runs
@@ -356,6 +358,53 @@ internal class ConsumePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         verify(exactly = 0) {
             mockDeviceCache.addSuccessfullyPostedToken(token)
         }
+    }
+
+    @Test
+    fun `ITEM_NOT_OWNED when restoring  has special error message`() {
+        val slot = slot<ConsumeResponseListener>()
+        val consumeStubbing = every {
+            mockClient.consumeAsync(
+                any(),
+                capture(slot),
+            )
+        }
+        var receivedError: PurchasesError? = null
+        var timesRetried = 0
+        val useCase = ConsumePurchaseUseCase(
+            ConsumePurchaseUseCaseParams(
+                "purchaseToken",
+                PostReceiptInitiationSource.RESTORE,
+                appInBackground = false,
+            ),
+            { _ ->
+                Assertions.fail("shouldn't be success")
+            },
+            { error ->
+                receivedError = error
+            },
+            withConnectedClient = {
+                timesRetried++
+                it.invoke(mockClient)
+            },
+            executeRequestOnUIThread = { _, request ->
+                consumeStubbing answers {
+                    slot.captured.onConsumeResponse(
+                        BillingClient.BillingResponseCode.ITEM_NOT_OWNED.buildResult(),
+                        "purchaseToken"
+                    )
+                }
+
+                request(null)
+            },
+        )
+
+        useCase.run()
+
+        assertThat(timesRetried).isEqualTo(1)
+        assertThat(receivedError).isNotNull
+        assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.PurchaseNotAllowedError)
+        assertThat(receivedError!!.underlyingErrorMessage).isEqualTo(PurchaseStrings.CONSUMING_PURCHASE_ERROR_RESTORE)
     }
 
     // region retries

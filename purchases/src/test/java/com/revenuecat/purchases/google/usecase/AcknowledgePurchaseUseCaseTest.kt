@@ -13,6 +13,7 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.google.toStoreTransaction
 import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.strings.PurchaseStrings
 import com.revenuecat.purchases.utils.stubGooglePurchase
 import com.revenuecat.purchases.utils.stubPurchaseHistoryRecord
 import io.mockk.Runs
@@ -386,6 +387,52 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
         verify(exactly = 1) {
             mockDeviceCache.addSuccessfullyPostedToken(token)
         }
+    }
+
+    @Test
+    fun `ITEM_NOT_OWNED when restoring has special error message`() {
+        val slot = slot<AcknowledgePurchaseResponseListener>()
+        val acknowledgeStubbing = every {
+            mockClient.acknowledgePurchase(
+                any(),
+                capture(slot),
+            )
+        }
+        var receivedError: PurchasesError? = null
+        var timesRetried = 0
+        val useCase = AcknowledgePurchaseUseCase(
+            AcknowledgePurchaseUseCaseParams(
+                "purchaseToken",
+                PostReceiptInitiationSource.RESTORE,
+                appInBackground = false,
+            ),
+            { _ ->
+                Assertions.fail("shouldn't be success")
+            },
+            { error ->
+                receivedError = error
+            },
+            withConnectedClient = {
+                timesRetried++
+                it.invoke(mockClient)
+            },
+            executeRequestOnUIThread = { _, request ->
+                acknowledgeStubbing answers {
+                    slot.captured.onAcknowledgePurchaseResponse(
+                        BillingClient.BillingResponseCode.ITEM_NOT_OWNED.buildResult(),
+                    )
+                }
+
+                request(null)
+            },
+        )
+
+        useCase.run()
+
+        assertThat(timesRetried).isEqualTo(1)
+        assertThat(receivedError).isNotNull
+        assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.PurchaseNotAllowedError)
+        assertThat(receivedError!!.underlyingErrorMessage).isEqualTo(PurchaseStrings.ACKNOWLEDGING_PURCHASE_ERROR_RESTORE)
     }
 
     // region retries
