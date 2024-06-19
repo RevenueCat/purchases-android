@@ -44,19 +44,20 @@ internal class AcknowledgePurchaseUseCase(
                 processResult(
                     billingResult,
                     useCaseParams.purchaseToken,
-                    onError = {
+                    onError = { errorBillingResult ->
                         val underlyingErrorMessage: String
-                        if (it.responseCode == BillingClient.BillingResponseCode.ITEM_NOT_OWNED &&
+                        if (errorBillingResult.responseCode == BillingClient.BillingResponseCode.ITEM_NOT_OWNED &&
                             useCaseParams.initiationSource == PostReceiptInitiationSource.RESTORE
                         ) {
                             underlyingErrorMessage = PurchaseStrings.ACKNOWLEDGING_PURCHASE_ERROR_RESTORE
                             log(LogIntent.GOOGLE_WARNING, underlyingErrorMessage)
                         } else {
-                            underlyingErrorMessage = "$errorMessage - ${billingResult.toHumanReadableDescription()}"
+                            underlyingErrorMessage =
+                                "$errorMessage - ${errorBillingResult.toHumanReadableDescription()}"
                             log(LogIntent.GOOGLE_ERROR, underlyingErrorMessage)
                         }
                         onError(
-                            billingResult.responseCode.billingResponseToPurchasesError(underlyingErrorMessage),
+                            errorBillingResult.responseCode.billingResponseToPurchasesError(underlyingErrorMessage),
                         )
                     },
                 )
