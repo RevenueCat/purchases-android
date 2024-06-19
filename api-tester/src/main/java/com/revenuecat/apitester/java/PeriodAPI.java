@@ -5,6 +5,7 @@ import com.revenuecat.purchases.models.Period;
 @SuppressWarnings({"unused", "SpellCheckingInspection"})
 final class PeriodAPI {
     static void check(final Period period) {
+        Period newPeriod = Period.Factory.create("P1M");
         int val = period.getValue();
         Period.Unit unit = period.getUnit();
         String iso8601 = period.getIso8601();
