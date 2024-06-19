@@ -53,6 +53,22 @@ class PeriodTest {
     }
 
     @Test
+    fun `create period creates expected period class for multiple different units`() {
+        val period = Period.create("P12W6D")
+        assertThat(period.value).isEqualTo(90)
+        assertThat(period.unit).isEqualTo(Period.Unit.DAY)
+        assertThat(period.iso8601).isEqualTo("P12W6D")
+    }
+
+    @Test
+    fun `create period creates expected period class for multiple different units with min unit months`() {
+        val period = Period.create("P2Y6M")
+        assertThat(period.value).isEqualTo(30)
+        assertThat(period.unit).isEqualTo(Period.Unit.MONTH)
+        assertThat(period.iso8601).isEqualTo("P2Y6M")
+    }
+
+    @Test
     fun `valueInMonths is correct for days`() {
         val period = Period.create("P3D")
         assertThat(period.valueInMonths).isCloseTo(0.1, MAX_OFFSET)
