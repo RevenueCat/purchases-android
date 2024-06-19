@@ -3,6 +3,16 @@ package com.revenuecat.purchases.models
 import android.os.Parcelable
 import com.revenuecat.purchases.common.errorLog
 import kotlinx.parcelize.Parcelize
+import kotlin.math.roundToInt
+
+private object PeriodConstants {
+    const val DAYS_PER_WEEK = 7.0
+    const val DAYS_PER_MONTH = 30.0
+    const val DAYS_PER_YEAR = 365.0
+    const val WEEKS_PER_YEAR = DAYS_PER_YEAR / DAYS_PER_WEEK
+    const val MONTHS_PER_YEAR = 12.0
+    const val WEEKS_PER_MONTH = DAYS_PER_YEAR / MONTHS_PER_YEAR / DAYS_PER_WEEK
+}
 
 /**
  * Represents subscription or [PricingPhase] billing period
@@ -28,13 +38,13 @@ data class Period(
 ) : Parcelable {
 
     companion object Factory {
-        private const val DAYS_PER_WEEK = 7.0
-        private const val DAYS_PER_MONTH = 30.0
-        private const val DAYS_PER_YEAR = 365.0
-        private const val WEEKS_PER_YEAR = DAYS_PER_YEAR / DAYS_PER_WEEK
-        private const val MONTHS_PER_YEAR = 12.0
-        private const val WEEKS_PER_MONTH = DAYS_PER_YEAR / MONTHS_PER_YEAR / DAYS_PER_WEEK
-
+        /**
+         * Creates a [Period] object from an ISO 8601 string. Supports both ISO 8601-1 and ISO 8601-2 formats.
+         * You shouldn't normally need to call this method directly since `Period` objects are created by the SDK.
+         * This can be useful in some cases for testing purposes.
+         *
+         * @param iso8601 The ISO 8601 string to parse
+         */
         fun create(iso8601: String): Period {
             val pair = iso8601.toPeriod()
             return Period(pair.first, pair.second, iso8601)
@@ -55,10 +65,10 @@ data class Period(
      */
     internal val valueInWeeks: Double
         get() = when (unit) {
-            Unit.DAY -> value / DAYS_PER_WEEK
+            Unit.DAY -> value / PeriodConstants.DAYS_PER_WEEK
             Unit.WEEK -> value.toDouble()
-            Unit.MONTH -> value.toDouble() * WEEKS_PER_MONTH
-            Unit.YEAR -> value * WEEKS_PER_YEAR
+            Unit.MONTH -> value.toDouble() * PeriodConstants.WEEKS_PER_MONTH
+            Unit.YEAR -> value * PeriodConstants.WEEKS_PER_YEAR
             Unit.UNKNOWN -> {
                 errorLog("Unknown period unit trying to get value in months: $unit")
                 0.0
@@ -70,10 +80,10 @@ data class Period(
      */
     val valueInMonths: Double
         get() = when (unit) {
-            Unit.DAY -> value / DAYS_PER_MONTH
-            Unit.WEEK -> value / WEEKS_PER_MONTH
+            Unit.DAY -> value / PeriodConstants.DAYS_PER_MONTH
+            Unit.WEEK -> value / PeriodConstants.WEEKS_PER_MONTH
             Unit.MONTH -> value.toDouble()
-            Unit.YEAR -> value * MONTHS_PER_YEAR
+            Unit.YEAR -> value * PeriodConstants.MONTHS_PER_YEAR
             Unit.UNKNOWN -> {
                 errorLog("Unknown period unit trying to get value in months: $unit")
                 0.0
@@ -85,9 +95,9 @@ data class Period(
      */
     internal val valueInYears: Double
         get() = when (unit) {
-            Unit.DAY -> value / DAYS_PER_YEAR
-            Unit.WEEK -> value / WEEKS_PER_YEAR
-            Unit.MONTH -> value / MONTHS_PER_YEAR
+            Unit.DAY -> value / PeriodConstants.DAYS_PER_YEAR
+            Unit.WEEK -> value / PeriodConstants.WEEKS_PER_YEAR
+            Unit.MONTH -> value / PeriodConstants.MONTHS_PER_YEAR
             Unit.YEAR -> value.toDouble()
             Unit.UNKNOWN -> {
                 errorLog("Unknown period unit trying to get value in months: $unit")
@@ -115,17 +125,29 @@ private fun String.toPeriod(): Pair<Int, Period.Unit> {
         val weekInt = toInt(week)
         val dayInt = toInt(day)
 
-        return if (yearInt > 0) {
-            Pair(yearInt, Period.Unit.YEAR)
-        } else if (monthInt > 0) {
-            Pair(monthInt, Period.Unit.MONTH)
-        } else if (weekInt > 0) {
-            Pair(weekInt, Period.Unit.WEEK)
-        } else if (dayInt > 0) {
-            Pair(dayInt, Period.Unit.DAY)
-        } else {
-            Pair(0, Period.Unit.UNKNOWN)
+        val smallerUnit = when {
+            dayInt > 0 -> Period.Unit.DAY
+            weekInt > 0 -> Period.Unit.WEEK
+            monthInt > 0 -> Period.Unit.MONTH
+            yearInt > 0 -> Period.Unit.YEAR
+            else -> Period.Unit.UNKNOWN
         }
+
+        val value = when (smallerUnit) {
+            Period.Unit.YEAR -> yearInt.toDouble()
+            Period.Unit.MONTH -> (yearInt * PeriodConstants.MONTHS_PER_YEAR) +
+                monthInt
+            Period.Unit.WEEK -> (yearInt * PeriodConstants.WEEKS_PER_YEAR) +
+                (monthInt * PeriodConstants.WEEKS_PER_MONTH) +
+                weekInt
+            Period.Unit.DAY -> (yearInt * PeriodConstants.DAYS_PER_YEAR) +
+                (monthInt * PeriodConstants.DAYS_PER_MONTH) +
+                (weekInt * PeriodConstants.DAYS_PER_WEEK) +
+                dayInt
+            Period.Unit.UNKNOWN -> 0.0
+        }
+
+        return Pair(value.roundToInt(), smallerUnit)
     }
 
     return Pair(0, Period.Unit.UNKNOWN)

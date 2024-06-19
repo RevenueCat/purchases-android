@@ -5,6 +5,7 @@ import com.revenuecat.purchases.models.Period
 @Suppress("unused", "UNUSED_VARIABLE")
 private class PeriodAPI {
     fun check(period: Period) {
+        val newPeriod = Period.create("P1Y")
         with(period) {
             val value: Int = value
             val unit: Period.Unit = unit
