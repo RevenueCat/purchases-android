@@ -32,6 +32,13 @@ class PaywallDataValidationTest {
     }
 
     @Test
+    fun `Validate a valid multi-tier paywall`() {
+        val offering = TestData.template7Offering
+        val paywallValidationResult = getPaywallValidationResult(offering)
+        assertThat(paywallValidationResult.error).isNull()
+    }
+
+    @Test
     fun `Unrecognized template name generates default paywall`() {
         val templateName = "unrecognized_template"
         val originalOffering = TestData.template2Offering
@@ -121,6 +128,30 @@ class PaywallDataValidationTest {
         )
     }
 
+    @Test
+    fun `No tiers in multi-tier config generate default paywall`() {
+        val originalOffering = TestData.template7Offering
+
+        val paywall = originalOffering.paywall!!.let { originalPaywall ->
+            val originalConfig = originalPaywall.config
+
+            val config = originalConfig.copy(tiers = emptyList())
+            originalPaywall.copy(config = config)
+        }
+
+        val offering = originalOffering.copy(paywall = paywall)
+        val paywallValidationResult = getPaywallValidationResult(offering)
+        verifyPackages(paywallValidationResult.displayablePaywall, originalOffering.paywall!!)
+        compareWithDefaultTemplate(
+            paywallValidationResult.displayablePaywall,
+            // Skipping because there are none but they will show in the paywall from createPackageConfiguration
+            skipPackageIds = true,
+        )
+        assertThat(paywallValidationResult.error).isEqualTo(
+            PaywallValidationError.MissingTiers
+        )
+    }
+
     private fun getPaywallValidationResult(offering: Offering) = offering.validatedPaywall(
         currentColorScheme = TestData.Constants.currentColorScheme,
         resourceProvider = MockResourceProvider()
@@ -130,7 +161,10 @@ class PaywallDataValidationTest {
         assertThat(actual.config.packageIds).isEqualTo(expectation.config.packageIds)
     }
 
-    private fun compareWithDefaultTemplate(displayablePaywall: PaywallData) {
+    private fun compareWithDefaultTemplate(
+        displayablePaywall: PaywallData,
+        skipPackageIds: Boolean = false
+    ) {
         val json = File(javaClass.classLoader!!.getResource("default_template.json").file).readText()
         val defaultPaywall: PaywallData = Json.decodeFromString(json)
 
@@ -146,7 +180,11 @@ class PaywallDataValidationTest {
             assertThat(config.images.background).isEqualTo(defaultConfig.images.background)
             assertThat(config.images.header).isEqualTo(defaultConfig.images.header)
             assertThat(config.images.icon).isEqualTo(defaultConfig.images.icon)
-            assertThat(config.packageIds).containsExactly(*defaultConfig.packageIds.toTypedArray())
+
+            if (!skipPackageIds) {
+                assertThat(config.packageIds).containsExactly(*defaultConfig.packageIds.toTypedArray())
+            }
+
             assertThat(config.defaultPackage).isEqualTo(defaultConfig.defaultPackage)
             assertThat(config.termsOfServiceURL).isEqualTo(defaultConfig.termsOfServiceURL)
             assertThat(config.privacyURL).isEqualTo(defaultConfig.privacyURL)

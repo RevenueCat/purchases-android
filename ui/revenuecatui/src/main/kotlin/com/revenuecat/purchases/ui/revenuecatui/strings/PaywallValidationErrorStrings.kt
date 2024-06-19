@@ -7,4 +7,6 @@ internal object PaywallValidationErrorStrings {
         "The unrecognized variables are: %s"
     const val INVALID_TEMPLATE_NAME = "Template name is not recognized: %s"
     const val INVALID_ICONS = "One or more icons were not recognized: %s"
+    const val MISSING_TIERS = "Displaying default template because paywall tiers are missing for offering '%s'."
+    const val MISSING_TIER_CONFIGURATIONS = "There are required tier configurations missing for: '%s'."
 }

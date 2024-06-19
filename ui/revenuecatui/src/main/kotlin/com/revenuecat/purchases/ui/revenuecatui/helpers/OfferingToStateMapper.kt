@@ -57,34 +57,74 @@ private fun PaywallData.validate(): Result<PaywallTemplate> {
         PackageConfigurationType.SINGLE, PackageConfigurationType.MULTIPLE -> {
             val (_, localizedConfiguration) = localizedConfiguration
 
-            val invalidVariablesError = localizedConfiguration.validateVariables()
-            if (invalidVariablesError != null) {
-                return Result.failure(invalidVariablesError)
-            }
-
-            val invalidIconsError = localizedConfiguration.validateIcons()
-            if (invalidIconsError != null) {
-                return Result.failure(invalidIconsError)
+            val error = localizedConfiguration.validate()
+            if (error != null) {
+                return Result.failure(error)
             }
         }
         PackageConfigurationType.MULTITIER -> {
+            // Step 1: Validate tiers in config is not empty
+            val tiers = config.tiers ?: emptyList()
+            if (tiers.isEmpty()) {
+                return Result.failure(PaywallValidationError.MissingTiers)
+            }
+
+            // Step 2: Validate all tiers is in colors and images
+            val tierIds = tiers.map { it.id }.toSet()
+            tierIds.getMissingElements(config.colorsByTier?.keys)?.let {
+                return Result.failure(
+                    PaywallValidationError.MissingTierConfigurations(it),
+                )
+            }
+            tierIds.getMissingElements(config.imagesByTier?.keys)?.let {
+                return Result.failure(
+                    PaywallValidationError.MissingTierConfigurations(it),
+                )
+            }
+
+            // Step 3: Validate all tiers are in localizations
             val (_, localizedConfigurationByTier) = tieredLocalizedConfiguration
+            tierIds.getMissingElements(localizedConfigurationByTier.keys)?.let {
+                return Result.failure(
+                    PaywallValidationError.MissingTierConfigurations(it),
+                )
+            }
 
+            // Step 4: Validate all localizations
             localizedConfigurationByTier.entries.forEach { (_, localizedConfiguration) ->
-                val invalidVariablesError = localizedConfiguration.validateVariables()
-                if (invalidVariablesError != null) {
-                    return Result.failure(invalidVariablesError)
-                }
-
-                val invalidIconsError = localizedConfiguration.validateIcons()
-                if (invalidIconsError != null) {
-                    return Result.failure(invalidIconsError)
+                val error = localizedConfiguration.validate()
+                if (error != null) {
+                    return Result.failure(error)
                 }
             }
         }
     }
 
     return Result.success(template)
+}
+
+private fun <T> Set<T>.getMissingElements(set: Set<T>?): Set<T>? {
+    val missingElements = this - (set ?: emptySet()).toSet()
+    return if (missingElements.isNotEmpty()) {
+        missingElements
+    } else {
+        null
+    }
+}
+
+@Suppress("ReturnCount")
+private fun PaywallData.LocalizedConfiguration.validate(): PaywallValidationError? {
+    val invalidVariablesError = this.validateVariables()
+    if (invalidVariablesError != null) {
+        return invalidVariablesError
+    }
+
+    val invalidIconsError = this.validateIcons()
+    if (invalidIconsError != null) {
+        return invalidIconsError
+    }
+
+    return null
 }
 
 @Suppress("ReturnCount", "TooGenericExceptionCaught", "LongParameterList")
