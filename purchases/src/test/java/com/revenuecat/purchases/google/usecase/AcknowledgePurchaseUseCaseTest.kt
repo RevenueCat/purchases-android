@@ -390,7 +390,7 @@ internal class AcknowledgePurchaseUseCaseTest : BaseBillingUseCaseTest() {
     }
 
     @Test
-    fun `ITEM_NOT_OWNED when restoring  has special error message`() {
+    fun `ITEM_NOT_OWNED when restoring has special error message`() {
         val slot = slot<AcknowledgePurchaseResponseListener>()
         val acknowledgeStubbing = every {
             mockClient.acknowledgePurchase(

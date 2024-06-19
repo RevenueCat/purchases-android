@@ -415,13 +415,8 @@ internal class BillingWrapper(
                 appInBackground,
             ),
             onReceive = onConsumed,
-            onError = { error ->
+            onError = { _ ->
                 // TODO-retry: if ITEM_NOT_OWNED queryPurchasesAsync
-                log(
-                    LogIntent.GOOGLE_ERROR,
-                    PurchaseStrings.CONSUMING_PURCHASE_ERROR
-                        .format(error.underlyingErrorMessage),
-                )
             },
             ::withConnectedClient,
             ::executeRequestOnUIThread,
@@ -441,13 +436,8 @@ internal class BillingWrapper(
                 appInBackground,
             ),
             onReceive = onAcknowledged,
-            { error ->
+            { _ ->
                 // TODO-retry: if ITEM_NOT_OWNED queryPurchasesAsync
-                log(
-                    LogIntent.GOOGLE_ERROR,
-                    PurchaseStrings.ACKNOWLEDGING_PURCHASE_ERROR
-                        .format(error.underlyingErrorMessage),
-                )
             },
             ::withConnectedClient,
             ::executeRequestOnUIThread,

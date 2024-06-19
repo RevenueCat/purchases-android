@@ -5,7 +5,6 @@ import com.android.billingclient.api.BillingClient
 import com.revenuecat.purchases.PostReceiptInitiationSource
 import com.revenuecat.purchases.PurchasesErrorCallback
 import com.revenuecat.purchases.common.LogIntent
-import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.google.billingResponseToPurchasesError
 import com.revenuecat.purchases.google.toHumanReadableDescription
@@ -57,9 +56,7 @@ internal class AcknowledgePurchaseUseCase(
                             log(LogIntent.GOOGLE_ERROR, underlyingErrorMessage)
                         }
                         onError(
-                            billingResult.responseCode.billingResponseToPurchasesError(
-                                underlyingErrorMessage,
-                            ).also { errorLog(it) },
+                            billingResult.responseCode.billingResponseToPurchasesError(underlyingErrorMessage),
                         )
                     },
                 )

@@ -4,11 +4,13 @@ internal object PurchaseStrings {
     const val ACKNOWLEDGING_PURCHASE = "Acknowledging purchase with token %s"
     const val ACKNOWLEDGING_PURCHASE_ERROR = "Error acknowledging purchase. Will retry next queryPurchases. %s"
     const val ACKNOWLEDGING_PURCHASE_ERROR_RESTORE = "Couldn't acknowledge purchase after restoring it, this most " +
-        "likely means the subscription has expired already or the product has already been consumed."
+        "likely means the subscription has expired already or the product has already been acknowledged."
     const val BILLING_CLIENT_NOT_CONNECTED = "Skipping updating pending purchase queue since " +
         "BillingClient is not connected yet."
     const val CONSUMING_PURCHASE = "Consuming purchase with token %s"
     const val CONSUMING_PURCHASE_ERROR = "Error consuming purchase. Will retry next queryPurchases. %s"
+    const val CONSUMING_PURCHASE_ERROR_RESTORE = "Couldn't consume purchase after restoring it, this most likely " +
+        "means the product has already been consumed."
     const val NOT_CONSUMING_IN_APP_PURCHASE_ACCORDING_TO_BACKEND = "Not consuming in-app purchase according to" +
         " server configuration. This is expected for non-consumable products. The user won't be able to purchase this" +
         " product again."
