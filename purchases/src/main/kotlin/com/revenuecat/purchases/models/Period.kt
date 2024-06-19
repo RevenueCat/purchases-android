@@ -38,6 +38,13 @@ data class Period(
 ) : Parcelable {
 
     companion object Factory {
+        /**
+         * Creates a [Period] object from an ISO 8601 string. Supports both ISO 8601-1 and ISO 8601-2 formats.
+         * You shouldn't normally need to call this method directly since `Period` objects are created by the SDK.
+         * This can be useful in some cases for testing purposes.
+         *
+         * @param iso8601 The ISO 8601 string to parse
+         */
         fun create(iso8601: String): Period {
             val pair = iso8601.toPeriod()
             return Period(pair.first, pair.second, iso8601)
