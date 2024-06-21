@@ -149,6 +149,17 @@ open class BasePurchasesIntegrationTest {
         } answers {
             callbackSlot.captured.invoke(activePurchases)
         }
+
+        val queryAllPurchasesSlot = slot<(List<StoreTransaction>) -> Unit>()
+        every {
+            mockBillingAbstract.queryAllPurchases(
+                testUserId,
+                onReceivePurchaseHistory = capture(queryAllPurchasesSlot),
+                onReceivePurchaseHistoryError = any(),
+            )
+        } answers {
+            queryAllPurchasesSlot.captured.invoke(activePurchases.values.toList())
+        }
     }
 
     protected fun runTestActivityLifecycleScope(
