@@ -19,6 +19,7 @@ import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.purchaseWith
 import com.revenuecat.purchases.resetSingleton
+import com.revenuecat.purchases.restorePurchasesWith
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
 import org.junit.Before
@@ -300,7 +301,7 @@ class OfflineEntitlementsWithInitialRequestsCompletedAndNoInitialPurchasesIntegr
     }
 
     @Test
-    fun recoversFromOfflineEntitlementsModeIfGetCustomerInfoSucceeds() {
+    fun recoversFromOfflineEntitlementsModeIfRestoreSucceeds() {
         val storeProduct = StoreProductFactory.createGoogleStoreProduct()
 
         ensureBlockFinishes { latch ->
@@ -319,14 +320,12 @@ class OfflineEntitlementsWithInitialRequestsCompletedAndNoInitialPurchasesIntegr
 
                     Purchases.sharedInstance.forceServerErrors = false
 
-                    Purchases.sharedInstance.getCustomerInfoWith(
-                        CacheFetchPolicy.FETCH_CURRENT,
+                    Purchases.sharedInstance.restorePurchasesWith(
                         onError = {
                             fail("Expected success but got error: $it")
                         },
-                        onSuccess = { customerInfo2 ->
-                            // This is because the token we are using is not a real token to be used in the backend
-                            assertThat(customerInfo2.entitlements.active.keys).containsExactlyInAnyOrderElementsOf(
+                        onSuccess = {
+                            assertThat(it.entitlements.active.keys).containsExactlyInAnyOrderElementsOf(
                                 entitlementsToVerify,
                             )
                             assertAcknowledgePurchaseDidHappen()
