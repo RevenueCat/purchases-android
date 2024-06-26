@@ -1,3 +1,9 @@
+## 8.1.1
+### Dependency Updates
+* Bump fastlane from 2.221.0 to 2.221.1 (#1758) via dependabot[bot] (@dependabot[bot])
+### Other Changes
+* Adds .aiexclude (#1762) via JayShortway (@JayShortway)
+
 ## 8.1.0
 ### New Features
 * `Amazon`: Add getAmazonLWAConsentStatus method to support Quick Subscribe (#1666) via Mark Villacampa (@MarkVillacampa)
