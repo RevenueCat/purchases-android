@@ -1012,7 +1012,10 @@ internal class PurchasesOrchestrator constructor(
             }
 
             if (!state.purchaseCallbacksByProductId.containsKey(purchasingData.productId)) {
-                val productId = purchasingData.productId
+                val productId =
+                    if (googleReplacementMode == GoogleReplacementMode.DEFERRED) {
+                        oldProductId
+                    } else purchasingData.productId
                 val mapOfProductIdToListener = mapOf(productId to purchaseCallback)
                 state = state.copy(
                     purchaseCallbacksByProductId = state.purchaseCallbacksByProductId + mapOfProductIdToListener,
