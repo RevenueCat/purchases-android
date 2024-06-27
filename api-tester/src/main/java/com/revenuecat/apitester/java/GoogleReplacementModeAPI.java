@@ -10,6 +10,7 @@ final class GoogleReplacementModeAPI {
             case WITH_TIME_PRORATION:
             case CHARGE_FULL_PRICE:
             case CHARGE_PRORATED_PRICE:
+            case DEFERRED:
         }
     }
 }
