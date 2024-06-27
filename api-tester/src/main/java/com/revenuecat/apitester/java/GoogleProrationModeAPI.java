@@ -10,6 +10,7 @@ final class GoogleProrationModeAPI {
             case IMMEDIATE_WITH_TIME_PRORATION:
             case IMMEDIATE_AND_CHARGE_FULL_PRICE:
             case IMMEDIATE_AND_CHARGE_PRORATED_PRICE:
+            case DEFERRED:
         }
     }
 }

@@ -10,6 +10,7 @@ private class GoogleProrationModeAPI {
             GoogleProrationMode.IMMEDIATE_WITH_TIME_PRORATION,
             GoogleProrationMode.IMMEDIATE_AND_CHARGE_FULL_PRICE,
             GoogleProrationMode.IMMEDIATE_AND_CHARGE_PRORATED_PRICE,
+            GoogleProrationMode.DEFERRED,
             -> {}
         }.exhaustive
     }

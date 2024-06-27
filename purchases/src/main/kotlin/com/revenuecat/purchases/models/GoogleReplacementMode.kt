@@ -56,6 +56,14 @@ enum class GoogleReplacementMode(
      * On May 1st, Samwise is charged $36 for his new subscription tier and another $36 on May 1 of each year following.
      */
     CHARGE_PRORATED_PRICE(BillingFlowParams.SubscriptionUpdateParams.ReplacementMode.CHARGE_PRORATED_PRICE),
+
+    /**
+     * Replacement takes effect when the old plan expires, and the new price will be charged at the same time.
+     *
+     * Example: Samwise's Tier 1 subscription continues until it expires on April 30. On May 1st, the
+     * Tier 2 subscription takes effect, and Samwise is charged $36 for his new subscription tier.
+     */
+    DEFERRED(BillingFlowParams.SubscriptionUpdateParams.ReplacementMode.DEFERRED),
     ;
 
     /**
@@ -67,6 +75,7 @@ enum class GoogleReplacementMode(
             GoogleReplacementMode.WITH_TIME_PRORATION -> GoogleProrationMode.IMMEDIATE_WITH_TIME_PRORATION
             GoogleReplacementMode.CHARGE_FULL_PRICE -> GoogleProrationMode.IMMEDIATE_AND_CHARGE_FULL_PRICE
             GoogleReplacementMode.CHARGE_PRORATED_PRICE -> GoogleProrationMode.IMMEDIATE_AND_CHARGE_PRORATED_PRICE
+            GoogleReplacementMode.DEFERRED -> GoogleProrationMode.DEFERRED
         }
 
     override fun describeContents(): Int {
