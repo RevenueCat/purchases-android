@@ -28,6 +28,7 @@ data class PaywallOptions internal constructor(
     internal val shouldDisplayDismissButton: Boolean,
     val fontProvider: FontProvider?,
     val listener: PaywallListener?,
+    val myAppPurchaseLogic: MyAppPurchaseLogic?,
     internal val mode: PaywallMode,
     val dismissRequest: () -> Unit,
 ) {
@@ -37,6 +38,7 @@ data class PaywallOptions internal constructor(
         shouldDisplayDismissButton = builder.shouldDisplayDismissButton,
         fontProvider = builder.fontProvider,
         listener = builder.listener,
+        myAppPurchaseLogic = builder.myAppPurchaseLogic,
         mode = builder.mode,
         dismissRequest = builder.dismissRequest,
     )
