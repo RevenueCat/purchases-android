@@ -48,6 +48,7 @@ data class PaywallOptions internal constructor(
         internal var shouldDisplayDismissButton: Boolean = false
         internal var fontProvider: FontProvider? = null
         internal var listener: PaywallListener? = null
+        internal var myAppPurchaseLogic: MyAppPurchaseLogic? = null
         internal var mode: PaywallMode = PaywallMode.default
 
         fun setOffering(offering: Offering?) = apply {
@@ -74,6 +75,10 @@ data class PaywallOptions internal constructor(
 
         fun setListener(listener: PaywallListener?) = apply {
             this.listener = listener
+        }
+
+        fun setMyAppPurchaseLogic(myAppPurchaseLogic: MyAppPurchaseLogic?) = apply {
+            this.myAppPurchaseLogic = myAppPurchaseLogic
         }
 
         internal fun setMode(mode: PaywallMode) = apply {

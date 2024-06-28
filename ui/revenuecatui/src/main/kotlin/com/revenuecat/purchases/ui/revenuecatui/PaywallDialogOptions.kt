@@ -34,6 +34,7 @@ data class PaywallDialogOptions internal constructor(
             .setShouldDisplayDismissButton(shouldDisplayDismissButton)
             .setFontProvider(fontProvider)
             .setListener(listener)
+            .setMyAppPurchaseLogic(myAppPurchaseLogic)
             .build()
     }
 
