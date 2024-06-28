@@ -12,6 +12,7 @@ data class PaywallDialogOptions internal constructor(
     val shouldDisplayDismissButton: Boolean,
     val fontProvider: FontProvider?,
     val listener: PaywallListener?,
+    val myAppPurchaseLogic: MyAppPurchaseLogic?
 ) {
 
     constructor(builder: Builder) : this(
@@ -21,6 +22,7 @@ data class PaywallDialogOptions internal constructor(
         shouldDisplayDismissButton = builder.shouldDisplayDismissButton,
         fontProvider = builder.fontProvider,
         listener = builder.listener,
+        myAppPurchaseLogic = builder.myAppPurchaseLogic
     )
 
     internal fun toPaywallOptions(dismissRequest: () -> Unit): PaywallOptions {
@@ -42,6 +44,7 @@ data class PaywallDialogOptions internal constructor(
         internal var shouldDisplayDismissButton: Boolean = true
         internal var fontProvider: FontProvider? = null
         internal var listener: PaywallListener? = null
+        internal var myAppPurchaseLogic: MyAppPurchaseLogic? = null
 
         /**
          * Allows to configure whether to display the paywall dialog depending on operations on the CustomerInfo
