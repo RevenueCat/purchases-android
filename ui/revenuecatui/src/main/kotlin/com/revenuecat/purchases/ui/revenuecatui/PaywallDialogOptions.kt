@@ -86,6 +86,10 @@ data class PaywallDialogOptions internal constructor(
             this.listener = listener
         }
 
+        fun setMyAppPurchasesLogic(myAppPurchaseLogic: MyAppPurchaseLogic?) = apply {
+            this.myAppPurchaseLogic = myAppPurchaseLogic
+        }
+
         fun build(): PaywallDialogOptions {
             return PaywallDialogOptions(this)
         }

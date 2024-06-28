@@ -29,6 +29,7 @@ import com.revenuecat.paywallstester.SamplePaywallsLoader
 import com.revenuecat.paywallstester.ui.screens.paywallfooter.SamplePaywall
 import com.revenuecat.paywallstester.ui.theme.bundledLobsterTwoFontFamily
 import com.revenuecat.purchases.Offering
+import com.revenuecat.purchases.ui.revenuecatui.MyAppPurchaseLogic
 import com.revenuecat.purchases.ui.revenuecatui.PaywallDialog
 import com.revenuecat.purchases.ui.revenuecatui.PaywallDialogOptions
 import com.revenuecat.purchases.ui.revenuecatui.PaywallFooter
@@ -53,7 +54,13 @@ fun PaywallsScreen(
                 )
                 ButtonWithEmoji(
                     onClick = {
-                        displayPaywallState = DisplayPaywallState.FullScreen(offering)
+                        displayPaywallState = DisplayPaywallState.FullScreen(
+                            offering,
+                            myAppPurchaseLogic = MyAppPurchaseLogic(
+                                performPurchase = { println("Hello from performPurchase!") },
+                                performRestore = { println("Hello from performRestore!") }
+                            )
+                        )
                     },
                     emoji = "\uD83D\uDCF1",
                     label = "Full screen",
@@ -104,6 +111,7 @@ private fun FullScreenDialog(currentState: DisplayPaywallState.FullScreen, onDis
             .setDismissRequest(onDismiss)
             .setOffering(currentState.offering)
             .setFontProvider(currentState.fontProvider)
+            .setMyAppPurchasesLogic(currentState.myAppPurchaseLogic)
             .build(),
     )
 }
@@ -135,9 +143,11 @@ private sealed class DisplayPaywallState {
     constructor(
         val offering: Offering? = null,
         val fontProvider: FontProvider? = null,
+        var myAppPurchaseLogic: MyAppPurchaseLogic? = null
     ) : DisplayPaywallState()
     data class Footer(
         val offering: Offering? = null,
+        var myAppPurchaseLogic: MyAppPurchaseLogic? = null,
         val condensed: Boolean = false,
     ) : DisplayPaywallState()
 }
