@@ -303,12 +303,13 @@ class BillingWrapperTest {
         } returns billingClientOKResult
 
         val storeProduct = createStoreProductWithoutOffers()
+        val purchasingData = storeProduct.subscriptionOptions!!.first().purchasingData
 
         billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
         wrapper.makePurchaseAsync(
             mockActivity,
             appUserId,
-            storeProduct.subscriptionOptions!!.first().purchasingData,
+            purchasingData,
             mockReplaceSkuInfo(),
             PresentedOfferingContext("offering_a"),
         )
@@ -319,6 +320,50 @@ class BillingWrapperTest {
                 any()
             )
         }
+
+        assertThat(wrapper.purchaseContext.size).isEqualTo(1)
+        val purchaseContext = wrapper.purchaseContext[purchasingData.productId]
+        assertThat(purchaseContext).isNotNull
+        assertThat(purchaseContext?.productType).isEqualTo(ProductType.SUBS)
+        assertThat(purchaseContext?.presentedOfferingContext).isEqualTo(PresentedOfferingContext("offering_a"))
+        assertThat(purchaseContext?.selectedSubscriptionOptionId).isEqualTo(storeProduct.subscriptionOptions!!.first().id)
+        assertThat(purchaseContext?.replacementMode).isEqualTo(GoogleReplacementMode.CHARGE_FULL_PRICE)
+    }
+
+    @Test
+    fun `making a deferred purchase uses previous product id cached context`() {
+        every {
+            mockClient.launchBillingFlow(any(), any())
+        } returns billingClientOKResult
+
+        val storeProduct = createStoreProductWithoutOffers()
+        val purchasingData = storeProduct.subscriptionOptions!!.first().purchasingData
+        val oldPurchase = mockPurchaseHistoryRecordWrapper()
+        val replaceInfo = ReplaceProductInfo(oldPurchase, GoogleReplacementMode.DEFERRED)
+
+        billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
+        wrapper.makePurchaseAsync(
+            mockActivity,
+            appUserId,
+            purchasingData,
+            replaceInfo,
+            PresentedOfferingContext("offering_a"),
+        )
+
+        verify {
+            mockClient.launchBillingFlow(
+                eq(mockActivity),
+                any()
+            )
+        }
+
+        assertThat(wrapper.purchaseContext.size).isEqualTo(1)
+        val purchaseContext = wrapper.purchaseContext[oldPurchase.productIds.first()]
+        assertThat(purchaseContext).isNotNull
+        assertThat(purchaseContext?.productType).isEqualTo(ProductType.SUBS)
+        assertThat(purchaseContext?.presentedOfferingContext).isEqualTo(PresentedOfferingContext("offering_a"))
+        assertThat(purchaseContext?.selectedSubscriptionOptionId).isEqualTo(storeProduct.subscriptionOptions!!.first().id)
+        assertThat(purchaseContext?.replacementMode).isEqualTo(GoogleReplacementMode.DEFERRED)
     }
 
     @Test
