@@ -91,7 +91,8 @@ internal class BillingWrapper(
     @Volatile
     var billingClient: BillingClient? = null
 
-    private val purchaseContext = mutableMapOf<String, PurchaseContext>()
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    internal val purchaseContext = mutableMapOf<String, PurchaseContext>()
 
     private val serviceRequests =
         ConcurrentLinkedQueue<Pair<(connectionError: PurchasesError?) -> Unit, Long?>>()
@@ -258,7 +259,12 @@ internal class BillingWrapper(
         }
 
         synchronized(this@BillingWrapper) {
-            val productId = googlePurchasingData.productId
+            // When using DEFERRED proration mode, callback needs to be associated with the *old* product we are
+            // switching from, because the transaction we receive on successful purchase is for the old product.
+            val productId =
+                if (replaceProductInfo?.replacementMode == GoogleReplacementMode.DEFERRED) {
+                    replaceProductInfo.oldPurchase.productIds.first()
+                } else googlePurchasingData.productId
             purchaseContext[productId] = PurchaseContext(
                 googlePurchasingData.productType,
                 presentedOfferingContext,
