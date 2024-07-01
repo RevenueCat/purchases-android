@@ -110,4 +110,11 @@ class PurchasesConfigurationTest {
         val purchasesConfiguration = builder.dangerousSettings(dangerousSettings).build()
         assertThat(purchasesConfiguration.dangerousSettings).isEqualTo(dangerousSettings)
     }
+
+    @Test
+    fun `PurchasesConfiguration trimmedApiKey has correct value`() {
+        val purchasesConfiguration = PurchasesConfiguration.Builder(context, "  test-api-key  ").build()
+        assertThat(purchasesConfiguration.apiKey).isEqualTo("  test-api-key  ")
+        assertThat(purchasesConfiguration.trimmedApiKey).isEqualTo("test-api-key")
+    }
 }

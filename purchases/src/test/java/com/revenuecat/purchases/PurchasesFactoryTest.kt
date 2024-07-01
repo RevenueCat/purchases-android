@@ -89,11 +89,9 @@ class PurchasesFactoryTest {
     }
 
     private fun createConfiguration(testApiKey: String = "fakeApiKey"): PurchasesConfiguration {
-        return mockk<PurchasesConfiguration>().apply {
-            every { context } returns contextMock
-            every { apiKey } returns testApiKey
-            every { appUserID } returns "appUserID"
-            every { store } returns Store.PLAY_STORE
-        }
+        return PurchasesConfiguration.Builder(contextMock, testApiKey)
+            .appUserID("appUserID")
+            .store(Store.PLAY_STORE)
+            .build()
     }
 }
