@@ -72,6 +72,9 @@ internal fun Package.getPackageInfoForTest(
     val offerBadge = when(packageType) {
         PackageType.ANNUAL -> "29% off"
         PackageType.MONTHLY -> null
+        PackageType.TWO_MONTH -> null
+        PackageType.THREE_MONTH -> null
+        PackageType.SIX_MONTH -> "17% off"
         PackageType.WEEKLY -> null
         PackageType.LIFETIME -> null
         else -> error("Unknown package type $packageType")

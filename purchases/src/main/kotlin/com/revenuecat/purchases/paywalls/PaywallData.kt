@@ -495,19 +495,22 @@ data class PaywallData(
              *
              */
             @SerialName("offer_details_with_intro_offer")
-            val offerDetailsWithIntroOffer: String?,
+            @Serializable(with = EmptyStringToNullSerializer::class)
+            val offerDetailsWithIntroOffer: String? = null,
 
             /**
              *
              */
             @SerialName("offer_details_with_multiple_intro_offers")
-            val offerDetailsWithMultipleIntroOffers: String?,
+            @Serializable(with = EmptyStringToNullSerializer::class)
+            val offerDetailsWithMultipleIntroOffers: String? = null,
 
             /**
              *
              */
             @SerialName("offer_badge")
-            val offerBadge: String?,
+            @Serializable(with = EmptyStringToNullSerializer::class)
+            val offerBadge: String? = null,
         )
     }
 }
