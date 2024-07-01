@@ -67,7 +67,7 @@ enum class GoogleProrationMode(
      * Example: Samwise's Tier 1 subscription continues until it expires on April 30. On May 1st, the
      * Tier 2 subscription takes effect, and Samwise is charged $36 for his new subscription tier.
      */
-    DEFERRED(BillingFlowParams.ProrationMode.DEFERRED)
+    DEFERRED(BillingFlowParams.ProrationMode.DEFERRED),
     ;
 
     /**
