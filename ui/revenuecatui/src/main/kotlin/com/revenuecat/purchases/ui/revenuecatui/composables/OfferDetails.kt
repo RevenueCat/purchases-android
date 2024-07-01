@@ -11,6 +11,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import com.revenuecat.purchases.ui.revenuecatui.UIConstant
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
+import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.selectedLocalization
 import com.revenuecat.purchases.ui.revenuecatui.extensions.introEligibility
 
@@ -19,8 +20,11 @@ import com.revenuecat.purchases.ui.revenuecatui.extensions.introEligibility
  * multiple packages, each package needs its own offer details so we won't use this composable.
  */
 @Composable
-internal fun OfferDetails(state: PaywallState.Loaded) {
-    OfferDetails(state = state, color = state.templateConfiguration.getCurrentColors().text1)
+internal fun OfferDetails(
+    state: PaywallState.Loaded,
+    colors: TemplateConfiguration.Colors = state.templateConfiguration.getCurrentColors(),
+) {
+    OfferDetails(state = state, color = colors.text1)
 }
 
 /**

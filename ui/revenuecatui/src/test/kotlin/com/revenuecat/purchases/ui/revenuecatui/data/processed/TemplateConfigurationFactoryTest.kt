@@ -72,16 +72,18 @@ internal class TemplateConfigurationFactoryTest {
         val lifetime = TestData.Packages.lifetime.getPackageInfoForTest(currentlySubscribed = true)
 
         val expectedConfiguration = TemplateConfiguration.PackageConfiguration.Multiple(
-            first = annualPackage,
-            default = monthlyPackage,
-            all = listOf(
-                annualPackage,
-                monthlyPackage,
-                lifetime
-            ),
+            TemplateConfiguration.PackageConfiguration.MultiPackage(
+                first = annualPackage,
+                default = monthlyPackage,
+                all = listOf(
+                    annualPackage,
+                    monthlyPackage,
+                    lifetime
+                ),
+            )
         )
 
-        assertThat(packageConfiguration.first).isEqualTo(expectedConfiguration.first)
+        assertThat(packageConfiguration.multiPackage.first).isEqualTo(expectedConfiguration.multiPackage.first)
         assertThat(packageConfiguration.default).isEqualTo(expectedConfiguration.default)
         assertThat(packageConfiguration.all).containsExactly(*expectedConfiguration.all.toTypedArray())
     }

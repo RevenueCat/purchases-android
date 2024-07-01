@@ -15,6 +15,7 @@ internal data class ProcessedLocalizedConfiguration(
     val offerDetailsWithMultipleIntroOffers: String?,
     val offerName: String?,
     val features: List<PaywallData.LocalizedConfiguration.Feature> = emptyList(),
+    val tierName: String?,
 ) {
     companion object {
         fun create(
@@ -50,6 +51,7 @@ internal data class ProcessedLocalizedConfiguration(
                             content = feature.content?.processVariables(),
                         )
                     },
+                    tierName = tierName,
                 )
             }
         }

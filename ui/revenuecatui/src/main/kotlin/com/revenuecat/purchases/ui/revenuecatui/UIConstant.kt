@@ -1,7 +1,10 @@
 package com.revenuecat.purchases.ui.revenuecatui
 
+import androidx.compose.animation.core.AnimationSpec
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.tween
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 
 internal object UIConstant {
@@ -11,6 +14,8 @@ internal object UIConstant {
     val defaultCornerRadius = 20.dp
     val defaultPackageCornerRadius = 16.dp
     val defaultPackageBorderWidth = 1.5.dp
+
+    val defaultColorAnimation: AnimationSpec<Color> = tween(durationMillis = 300, easing = LinearEasing)
 
     const val purchaseInProgressButtonOpacity = 0.4f
 

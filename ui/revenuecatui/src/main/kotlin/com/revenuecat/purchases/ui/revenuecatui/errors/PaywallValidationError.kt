@@ -16,7 +16,14 @@ internal sealed class PaywallValidationError : Throwable() {
                 val joinedUnrecognizedVariables = this.unrecognizedVariables.joinToString()
                 PaywallValidationErrorStrings.INVALID_VARIABLES.format(joinedUnrecognizedVariables)
             }
-            MissingPaywall -> PaywallValidationErrorStrings.MISSING_PAYWALL.format(offering.identifier)
+            is MissingPaywall -> PaywallValidationErrorStrings.MISSING_PAYWALL.format(offering.identifier)
+            is MissingTiers -> {
+                PaywallValidationErrorStrings.MISSING_TIERS.format(offering.identifier)
+            }
+            is MissingTierConfigurations -> {
+                val joinedTierIds = this.tierIds.joinToString()
+                PaywallValidationErrorStrings.MISSING_TIER_CONFIGURATIONS.format(joinedTierIds)
+            }
         }
     }
 
@@ -24,4 +31,6 @@ internal sealed class PaywallValidationError : Throwable() {
     data class InvalidTemplate(val templateName: String) : PaywallValidationError()
     data class InvalidVariables(val unrecognizedVariables: Set<String>) : PaywallValidationError()
     data class InvalidIcons(val invalidIcons: Set<String>) : PaywallValidationError()
+    object MissingTiers : PaywallValidationError()
+    data class MissingTierConfigurations(val tierIds: Set<String>) : PaywallValidationError()
 }
