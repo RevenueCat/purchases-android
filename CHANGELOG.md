@@ -32,6 +32,13 @@ For a full migration guide check [v8-MIGRATION.md](migrations/v8-MIGRATION.md)
 ### Other Changes
 * Bump kotlin to 1.8 (#1726)
 
+## 7.12.0
+### New features
+* Add `DEFERRED` replacement mode (#1751) via Toni Rico (@tonidero)
+### Bugfixes
+* Call callbacks on DEFERRED purchases (#1764) via Toni Rico (@tonidero)
+* Use correct product context with DEFERRED purchases (#1766) via Toni Rico (@tonidero)
+
 ## 7.11.1
 ### Behavior Changes
 * Stops collecting the ANDROID_ID. (#1729) via JayShortway (@JayShortway)
