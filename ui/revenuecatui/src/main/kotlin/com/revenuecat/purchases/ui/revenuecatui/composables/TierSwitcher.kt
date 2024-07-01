@@ -8,10 +8,10 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -35,8 +35,10 @@ import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfigura
 
 private object TierSwitcherUIConstants {
     const val roundedCorner = 50
-    val height = 40.dp
+    val minimumHeight = 40.dp
     val selectedTierPadding = 2.dp
+    val tierTextPaddingHorizontal = 10.dp
+    val tierTextPaddingVertical = 4.dp
     val tierHorizontalPadding = 16.dp
     val tierVerticalPadding = 8.dp
 }
@@ -80,6 +82,7 @@ internal fun TierSwitcher(
 ) {
     val selectedIndex = tiers.indexOf(selectedTier)
     var totalWidthPx by remember { mutableStateOf(0) }
+    var totalHeightPx by remember { mutableStateOf(0) }
 
     val density = LocalDensity.current
 
@@ -106,13 +109,13 @@ internal fun TierSwitcher(
 
     Box(
         Modifier
-            .padding(TierSwitcherUIConstants.selectedTierPadding)
             .clip(RoundedCornerShape(TierSwitcherUIConstants.roundedCorner))
             .background(backgroundColorState)
-            .height(TierSwitcherUIConstants.height)
             .fillMaxWidth()
+            .heightIn(min = TierSwitcherUIConstants.minimumHeight)
             .onSizeChanged { size ->
                 totalWidthPx = size.width
+                totalHeightPx = size.height
             },
     ) {
         val optionWidth = with(density) { (totalWidthPx / tiers.size).toDp() }
@@ -121,8 +124,8 @@ internal fun TierSwitcher(
         Box(
             Modifier
                 .offset(x = indicatorOffset)
-                .fillMaxHeight()
                 .fillMaxWidth(1f / tiers.size)
+                .height(with(density) { totalHeightPx.toDp() }) // fillMaxHeight() wasn't working
                 .padding(TierSwitcherUIConstants.selectedTierPadding)
                 .clip(RoundedCornerShape(TierSwitcherUIConstants.roundedCorner))
                 .background(backgroundSelectedColorState),
@@ -138,7 +141,7 @@ internal fun TierSwitcher(
                     contentAlignment = Alignment.Center,
                     modifier = Modifier
                         .weight(1f)
-                        .fillMaxHeight()
+                        .height(with(density) { totalHeightPx.toDp() }) // fillMaxHeight() wasn't working
                         .clickable(
                             indication = null,
                             interactionSource = remember { MutableInteractionSource() },
@@ -150,6 +153,11 @@ internal fun TierSwitcher(
                         text = tier.name,
                         style = MaterialTheme.typography.bodyMedium,
                         textAlign = TextAlign.Center,
+                        modifier = Modifier
+                            .padding(
+                                horizontal = TierSwitcherUIConstants.tierTextPaddingHorizontal,
+                                vertical = TierSwitcherUIConstants.tierTextPaddingVertical,
+                            ),
                         color = if (selectedTier == tier) foregroundSelectedColorState else foregroundColorState,
                     )
                 }

@@ -103,7 +103,7 @@ internal fun Template7(
         "The configuration is not MultiTier"
     }
 
-    val firstTier = packagesConfig.firstTier
+    val firstTier = packagesConfig.defaultTier
     val allTiers = packagesConfig.allTiers
 
     var packageSelectorVisible by remember {

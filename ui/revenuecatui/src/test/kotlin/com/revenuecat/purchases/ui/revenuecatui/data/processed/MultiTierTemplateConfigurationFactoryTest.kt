@@ -189,11 +189,11 @@ internal class MultiTierTemplateConfigurationFactoryTest {
         )
 
         val expectedConfiguration = TemplateConfiguration.PackageConfiguration.MultiTier(
-            firstTier = basicTier,
+            defaultTier = basicTier,
             allTiers = listOf(basicTier, standardTier, premiumTier)
         )
 
-        assertThat(packageConfiguration.firstTier).isEqualTo(expectedConfiguration.firstTier)
+        assertThat(packageConfiguration.defaultTier).isEqualTo(expectedConfiguration.defaultTier)
         assertThat(packageConfiguration.default).isEqualTo(expectedConfiguration.default)
         assertThat(packageConfiguration.all).containsExactly(*expectedConfiguration.all.toTypedArray())
     }

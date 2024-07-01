@@ -244,7 +244,7 @@ private fun ColumnScope.Title(
     state: PaywallState.Loaded,
 ) {
     Markdown(
-        style = MaterialTheme.typography.displaySmall,
+        style = MaterialTheme.typography.headlineMedium,
         fontWeight = FontWeight.Bold,
         textAlign = TextAlign.Start,
         text = state.selectedLocalization.title,

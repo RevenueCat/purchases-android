@@ -102,13 +102,13 @@ internal data class TemplateConfiguration(
                 get() = multiPackage.default
         }
         data class MultiTier(
-            val firstTier: TierInfo,
+            val defaultTier: TierInfo,
             val allTiers: List<TierInfo>,
         ) : PackageConfiguration() {
             override val all: List<PackageInfo>
                 get() = allTiers.map { it.packages }.flatten()
             override val default: PackageInfo
-                get() = firstTier.defaultPackage
+                get() = defaultTier.defaultPackage
         }
     }
 }

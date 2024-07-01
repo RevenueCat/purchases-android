@@ -124,9 +124,13 @@ internal object PackageConfigurationFactory {
             )
         }
 
+        val defaultTierInfo = paywallData.config.defaultTier?.let { tierId ->
+            allTierInfos.firstOrNull { it.id == tierId }
+        } ?: allTierInfos.first()
+
         return Result.success(
             locale to TemplateConfiguration.PackageConfiguration.MultiTier(
-                firstTier = allTierInfos.first(),
+                defaultTier = defaultTierInfo,
                 allTiers = allTierInfos,
             ),
         )

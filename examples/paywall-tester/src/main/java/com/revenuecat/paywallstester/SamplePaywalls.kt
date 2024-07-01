@@ -486,6 +486,7 @@ object SamplePaywalls {
                         defaultPackageId = PackageType.SIX_MONTH.identifier!!,
                     ),
                 ),
+                defaultTier = "standard",
                 displayRestorePurchases = true,
                 termsOfServiceURL = URL("https://revenuecat.com/tos"),
                 privacyURL = URL("https://revenuecat.com/privacy"),

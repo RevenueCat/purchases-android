@@ -173,6 +173,12 @@ data class PaywallData(
          * Tiers used for multi-tier paywalls.
          */
         val tiers: List<Tier>? = null,
+
+        /**
+         * The tier to be selected by default.
+         */
+        @SerialName("default_tier")
+        val defaultTier: String? = null,
     ) {
         constructor(
             packageIds: List<String>,
