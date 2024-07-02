@@ -16,6 +16,8 @@ import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.Config
 import com.revenuecat.purchases.common.Constants
+import com.revenuecat.purchases.common.Delay
+import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.ReceiptInfo
@@ -97,6 +99,7 @@ internal class PurchasesOrchestrator(
     private val purchasesStateCache: PurchasesStateCache,
     // This is nullable due to: https://github.com/RevenueCat/purchases-flutter/issues/408
     private val mainHandler: Handler? = Handler(Looper.getMainLooper()),
+    private val dispatcher: Dispatcher,
 ) : LifecycleDelegate, CustomActivityLifecycleHandler {
 
     internal var state: PurchasesState
@@ -194,22 +197,24 @@ internal class PurchasesOrchestrator(
             state = state.copy(appInBackground = false, firstTimeInForeground = false)
         }
         log(LogIntent.DEBUG, ConfigureStrings.APP_FOREGROUNDED)
-        if (shouldRefreshCustomerInfo(firstTimeInForeground)) {
-            log(LogIntent.DEBUG, CustomerInfoStrings.CUSTOMERINFO_STALE_UPDATING_FOREGROUND)
-            customerInfoHelper.retrieveCustomerInfo(
-                identityManager.currentAppUserID,
-                fetchPolicy = CacheFetchPolicy.FETCH_CURRENT,
-                appInBackground = false,
-                allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
-            )
-        }
-        offeringsManager.onAppForeground(identityManager.currentAppUserID)
-        postPendingTransactionsHelper.syncPendingPurchaseQueue(allowSharingPlayStoreAccount)
-        synchronizeSubscriberAttributesIfNeeded()
-        offlineEntitlementsManager.updateProductEntitlementMappingCacheIfStale()
-        flushPaywallEvents()
-        if (firstTimeInForeground && isAndroidNOrNewer()) {
-            diagnosticsSynchronizer?.syncDiagnosticsFileIfNeeded()
+        enqueue {
+            if (shouldRefreshCustomerInfo(firstTimeInForeground)) {
+                log(LogIntent.DEBUG, CustomerInfoStrings.CUSTOMERINFO_STALE_UPDATING_FOREGROUND)
+                customerInfoHelper.retrieveCustomerInfo(
+                    identityManager.currentAppUserID,
+                    fetchPolicy = CacheFetchPolicy.FETCH_CURRENT,
+                    appInBackground = false,
+                    allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
+                )
+            }
+            offeringsManager.onAppForeground(identityManager.currentAppUserID)
+            postPendingTransactionsHelper.syncPendingPurchaseQueue(allowSharingPlayStoreAccount)
+            synchronizeSubscriberAttributesIfNeeded()
+            offlineEntitlementsManager.updateProductEntitlementMappingCacheIfStale()
+            flushPaywallEvents()
+            if (firstTimeInForeground && isAndroidNOrNewer()) {
+                diagnosticsSynchronizer?.syncDiagnosticsFileIfNeeded()
+            }
         }
     }
 
@@ -775,6 +780,10 @@ internal class PurchasesOrchestrator(
     //endregion
 
     // region Private Methods
+    @Synchronized
+    private fun enqueue(command: () -> Unit) {
+        dispatcher.enqueue({ command() }, Delay.NONE)
+    }
 
     private fun shouldRefreshCustomerInfo(firstTimeInForeground: Boolean): Boolean {
         return !appConfig.customEntitlementComputation &&
