@@ -128,7 +128,7 @@ internal val TestData.template7CustomPackages: PaywallData
                             offerDetails = "DETAIL OVERRIDE {{ total_price_and_per_month }}",
                             offerBadge = "BADGE OVERRIDE {{ sub_relative_discount }}",
                         ),
-                    )
+                    ),
                 ),
                 "premium" to PaywallData.LocalizedConfiguration(
                     title = "Master the art of video editing",

@@ -40,9 +40,10 @@ internal data class ProcessedLocalizedConfiguration(
 
                 // Defaults the badge to relative discount if not specified to match
                 // with pre-existing behavior of this feature
-                val offerBadge = offerOverride?.offerBadge?.processVariables() ?: context.discountRelativeToMostExpensivePerMonth?.let {
-                    variableDataProvider.localizedRelativeDiscount(it)
-                }
+                val offerBadge = offerOverride?.offerBadge?.processVariables()
+                    ?: context.discountRelativeToMostExpensivePerMonth?.let {
+                        variableDataProvider.localizedRelativeDiscount(it)
+                    }
 
                 return ProcessedLocalizedConfiguration(
                     title = title.processVariables(),

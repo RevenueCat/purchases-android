@@ -141,7 +141,7 @@ internal fun TierSwitcher(
                     totalHeightRowDp = with(density) { it.height.toDp() }
                 }
                 .height(IntrinsicSize.Max)
-                .heightIn(min = TierSwitcherUIConstants.minimumHeight)
+                .heightIn(min = TierSwitcherUIConstants.minimumHeight),
         ) {
             tiers.forEach { tier ->
                 Box(
