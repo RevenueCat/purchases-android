@@ -451,6 +451,9 @@ data class PaywallData(
         @SerialName("tier_name")
         @Serializable(with = EmptyStringToNullSerializer::class)
         val tierName: String? = null,
+
+        @SerialName("offer_overrides")
+        val offerOverrides: Map<String, OfferOverride> = emptyMap(),
     ) {
         /**
          * An item to be showcased in a paywall.
@@ -472,6 +475,42 @@ data class PaywallData(
              * This must be an icon identifier known by `RevenueCatUI`.
              */
             @SerialName("icon_id") val iconID: String? = null,
+        )
+
+        @Serializable
+        data class OfferOverride(
+            /**
+             *
+             */
+            @SerialName("offer_name")
+            val offerName: String,
+
+            /**
+             *
+             */
+            @SerialName("offer_details")
+            val offerDetails: String,
+
+            /**
+             *
+             */
+            @SerialName("offer_details_with_intro_offer")
+            @Serializable(with = EmptyStringToNullSerializer::class)
+            val offerDetailsWithIntroOffer: String? = null,
+
+            /**
+             *
+             */
+            @SerialName("offer_details_with_multiple_intro_offers")
+            @Serializable(with = EmptyStringToNullSerializer::class)
+            val offerDetailsWithMultipleIntroOffers: String? = null,
+
+            /**
+             *
+             */
+            @SerialName("offer_badge")
+            @Serializable(with = EmptyStringToNullSerializer::class)
+            val offerBadge: String? = null,
         )
     }
 }

@@ -69,6 +69,16 @@ internal fun Package.getPackageInfoForTest(
         PackageType.LIFETIME -> "$1,000 after  trial"
         else -> error("Unknown package type $packageType")
     }
+    val offerBadge = when(packageType) {
+        PackageType.ANNUAL -> "29% off"
+        PackageType.MONTHLY -> null
+        PackageType.TWO_MONTH -> null
+        PackageType.THREE_MONTH -> null
+        PackageType.SIX_MONTH -> "17% off"
+        PackageType.WEEKLY -> null
+        PackageType.LIFETIME -> null
+        else -> error("Unknown package type $packageType")
+    }
     val discountRelativeToMostExpensivePerMonth = when(packageType) {
         PackageType.ANNUAL -> 0.29088448060075095
         PackageType.MONTHLY -> null
@@ -89,6 +99,7 @@ internal fun Package.getPackageInfoForTest(
         offerDetailsWithIntroOffer = offerDetailsWithIntroOffer,
         offerDetailsWithMultipleIntroOffers = null,
         offerName = periodName,
+        offerBadge = offerBadge,
         features = features,
         tierName = localizedConfiguration.tierName,
     )
