@@ -95,6 +95,10 @@ internal class PurchasesFactory(
                 createEventsExecutor(),
                 runningIntegrationTests = runningIntegrationTests,
             )
+            val identityManagerDispatcher = Dispatcher(
+                createDefaultExecutor(),
+                runningIntegrationTests = runningIntegrationTests,
+            )
 
             var diagnosticsFileHelper: DiagnosticsFileHelper? = null
             var diagnosticsHelper: DiagnosticsHelper? = null
@@ -179,6 +183,7 @@ internal class PurchasesFactory(
                 offeringsCache,
                 backend,
                 offlineEntitlementsManager,
+                identityManagerDispatcher,
             )
 
             val customerInfoUpdateHandler = CustomerInfoUpdateHandler(
