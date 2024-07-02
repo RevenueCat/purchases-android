@@ -73,7 +73,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.time.Duration.Companion.seconds
 
 @Suppress("LongParameterList", "LargeClass", "TooManyFunctions")
-internal class PurchasesOrchestrator constructor(
+internal class PurchasesOrchestrator(
     private val application: Application,
     backingFieldAppUserID: String?,
     private val backend: Backend,
@@ -145,7 +145,16 @@ internal class PurchasesOrchestrator constructor(
     private val lastSyncAttributesAndOfferingsRateLimiter = RateLimiter(5, 60.seconds)
 
     init {
-        identityManager.configure(backingFieldAppUserID)
+        identityManager.configure(backingFieldAppUserID) {
+            billing.startConnectionOnMainThread()
+
+            dispatch {
+                // This needs to happen after the billing client listeners have been set. This is because
+                // we perform operations with the billing client in the lifecycle observer methods.
+                ProcessLifecycleOwner.get().lifecycle.addObserver(lifecycleHandler)
+                application.registerActivityLifecycleCallbacks(this)
+            }
+        }
 
         billing.stateListener = object : BillingAbstract.StateListener {
             override fun onConnected() {
@@ -163,14 +172,6 @@ internal class PurchasesOrchestrator constructor(
             }
         }
         billing.purchasesUpdatedListener = getPurchasesUpdatedListener()
-        billing.startConnectionOnMainThread()
-
-        dispatch {
-            // This needs to happen after the billing client listeners have been set. This is because
-            // we perform operations with the billing client in the lifecycle observer methods.
-            ProcessLifecycleOwner.get().lifecycle.addObserver(lifecycleHandler)
-            application.registerActivityLifecycleCallbacks(this)
-        }
 
         if (!appConfig.dangerousSettings.autoSyncPurchases) {
             log(LogIntent.WARNING, ConfigureStrings.AUTO_SYNC_PURCHASES_DISABLED)
