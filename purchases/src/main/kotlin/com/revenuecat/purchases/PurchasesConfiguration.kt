@@ -14,6 +14,9 @@ open class PurchasesConfiguration(builder: Builder) {
     val apiKey: String
     val appUserID: String?
 
+    internal val trimmedApiKey: String
+        get() = apiKey.trim()
+
     @Deprecated(
         "observerMode is being deprecated in favor of purchasesAreCompletedBy.",
         ReplaceWith(
