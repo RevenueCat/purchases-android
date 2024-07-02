@@ -5,6 +5,7 @@
 
 package com.revenuecat.purchases.subscriberattributes.caching
 
+import android.content.SharedPreferences
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.log
@@ -76,12 +77,15 @@ internal class SubscriberAttributesCache(
     }
 
     @Synchronized
-    fun cleanUpSubscriberAttributeCache(currentAppUserID: String) {
-        migrateSubscriberAttributesIfNeeded()
-        deleteSyncedSubscriberAttributesForOtherUsers(currentAppUserID)
+    fun cleanUpSubscriberAttributeCache(
+        currentAppUserID: String,
+        cacheEditor: SharedPreferences.Editor,
+    ) {
+        migrateSubscriberAttributesIfNeeded(cacheEditor)
+        deleteSyncedSubscriberAttributesForOtherUsers(currentAppUserID, cacheEditor)
     }
 
-    internal fun DeviceCache.putAttributes(
+    private fun DeviceCache.putAttributes(
         updatedSubscriberAttributesForAll: SubscriberAttributesPerAppUserIDMap,
     ) {
         return deviceCache.putString(
@@ -91,7 +95,10 @@ internal class SubscriberAttributesCache(
     }
 
     @Synchronized
-    private fun deleteSyncedSubscriberAttributesForOtherUsers(currentAppUserID: String) {
+    private fun deleteSyncedSubscriberAttributesForOtherUsers(
+        currentAppUserID: String,
+        cacheEditor: SharedPreferences.Editor,
+    ) {
         log(LogIntent.DEBUG, AttributionStrings.DELETING_ATTRIBUTES_OTHER_USERS.format(currentAppUserID))
 
         val allStoredSubscriberAttributes = getAllStoredSubscriberAttributes()
@@ -105,7 +112,10 @@ internal class SubscriberAttributesCache(
                 }
             }.toMap().filterValues { it.isNotEmpty() }
 
-        deviceCache.putAttributes(filteredMap)
+        cacheEditor.putString(
+            subscriberAttributesCacheKey,
+            filteredMap.toJSONObject().toString(),
+        )
     }
 
     private fun SubscriberAttributeMap.filterUnsynced(appUserID: AppUserID): SubscriberAttributeMap =

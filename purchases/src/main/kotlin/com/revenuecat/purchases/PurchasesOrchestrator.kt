@@ -73,7 +73,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.time.Duration.Companion.seconds
 
 @Suppress("LongParameterList", "LargeClass", "TooManyFunctions")
-internal class PurchasesOrchestrator constructor(
+internal class PurchasesOrchestrator(
     private val application: Application,
     backingFieldAppUserID: String?,
     private val backend: Backend,
