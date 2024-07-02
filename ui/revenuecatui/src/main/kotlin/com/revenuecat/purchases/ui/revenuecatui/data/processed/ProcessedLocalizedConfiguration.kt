@@ -38,7 +38,9 @@ internal data class ProcessedLocalizedConfiguration(
             with(localizedConfiguration) {
                 val offerOverride = offerOverrides[rcPackage.identifier]
 
-                val offerBadge = offerOverride?.offerBadge ?: context.discountRelativeToMostExpensivePerMonth?.let {
+                // Defaults the badge to relative discount if not specified to match
+                // with pre-existing behavior of this feature
+                val offerBadge = offerOverride?.offerBadge?.processVariables() ?: context.discountRelativeToMostExpensivePerMonth?.let {
                     variableDataProvider.localizedRelativeDiscount(it)
                 }
 
