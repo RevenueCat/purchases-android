@@ -64,7 +64,7 @@ private class PurchasesCommonAPI {
         purchases.getProducts(productIds, productsResponseCallback)
         purchases.getProducts(productIds, ProductType.SUBS, productsResponseCallback)
 
-        purchases.restorePurchases(receiveCustomerInfoCallback)
+        purchases.restorePurchases(receiveCustomerInfoCallback, null)
 
         val appUserID: String = purchases.appUserID
 
@@ -152,6 +152,7 @@ private class PurchasesCommonAPI {
         purchases.restorePurchasesWith(
             onError = { _: PurchasesError -> },
             onSuccess = { _: CustomerInfo -> },
+            myAppPurchaseLogic = null
         )
     }
 

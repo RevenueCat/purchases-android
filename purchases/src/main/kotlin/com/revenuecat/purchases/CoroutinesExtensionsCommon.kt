@@ -1,5 +1,6 @@
 package com.revenuecat.purchases
 
+import com.revenuecat.purchases.models.MyAppPurchaseLogic
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 import kotlin.coroutines.resume
@@ -112,11 +113,12 @@ suspend fun Purchases.awaitGetProducts(
  */
 @JvmSynthetic
 @Throws(PurchasesTransactionException::class)
-suspend fun Purchases.awaitRestore(): CustomerInfo {
+suspend fun Purchases.awaitRestore(myAppPurchaseLogic: MyAppPurchaseLogic?): CustomerInfo {
     return suspendCoroutine { continuation ->
         restorePurchasesWith(
             onSuccess = { continuation.resume(it) },
             onError = { continuation.resumeWithException(PurchasesException(it)) },
+            myAppPurchaseLogic = myAppPurchaseLogic
         )
     }
 }

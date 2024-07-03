@@ -21,6 +21,7 @@ import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import com.revenuecat.purchases.models.BillingFeature
 import com.revenuecat.purchases.models.InAppMessageType
 import com.revenuecat.purchases.models.StoreProduct
+import com.revenuecat.purchases.models.MyAppPurchaseLogic
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
 import com.revenuecat.purchases.strings.BillingStrings
 import com.revenuecat.purchases.strings.ConfigureStrings
@@ -352,8 +353,9 @@ class Purchases internal constructor(
      */
     fun restorePurchases(
         callback: ReceiveCustomerInfoCallback,
+        myAppPurchaseLogic: MyAppPurchaseLogic?
     ) {
-        purchasesOrchestrator.restorePurchases(callback)
+        purchasesOrchestrator.restorePurchases(callback, myAppPurchaseLogic)
     }
 
     /**

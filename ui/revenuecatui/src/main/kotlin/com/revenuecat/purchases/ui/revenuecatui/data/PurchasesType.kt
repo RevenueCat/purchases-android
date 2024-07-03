@@ -12,6 +12,7 @@ import com.revenuecat.purchases.awaitOfferings
 import com.revenuecat.purchases.awaitPurchase
 import com.revenuecat.purchases.awaitRestore
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
+import com.revenuecat.purchases.models.MyAppPurchaseLogic
 
 /**
  * Abstraction over [Purchases] that can be mocked.
@@ -20,7 +21,7 @@ import com.revenuecat.purchases.paywalls.events.PaywallEvent
 internal interface PurchasesType {
     suspend fun awaitPurchase(purchaseParams: PurchaseParams.Builder): PurchaseResult
 
-    suspend fun awaitRestore(): CustomerInfo
+    suspend fun awaitRestore(myAppPurchaseLogic: MyAppPurchaseLogic?): CustomerInfo
 
     suspend fun awaitOfferings(): Offerings
 
@@ -37,8 +38,8 @@ internal class PurchasesImpl(private val purchases: Purchases = Purchases.shared
         return purchases.awaitPurchase(purchaseParams.build())
     }
 
-    override suspend fun awaitRestore(): CustomerInfo {
-        return purchases.awaitRestore()
+    override suspend fun awaitRestore(myAppPurchaseLogic: MyAppPurchaseLogic?): CustomerInfo {
+        return purchases.awaitRestore(myAppPurchaseLogic)
     }
 
     override suspend fun awaitOfferings(): Offerings {

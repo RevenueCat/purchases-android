@@ -392,6 +392,7 @@ internal class PurchasesOrchestrator constructor(
 
     fun restorePurchases(
         callback: ReceiveCustomerInfoCallback,
+        myAppPurchaseLogic: MyAppPurchaseLogic?// = null
     ) {
         log(LogIntent.DEBUG, RestoreStrings.RESTORING_PURCHASE)
         if (!allowSharingPlayStoreAccount) {
@@ -400,45 +401,50 @@ internal class PurchasesOrchestrator constructor(
 
         val appUserID = identityManager.currentAppUserID
 
-        billing.queryAllPurchases(
-            appUserID,
-            onReceivePurchaseHistory = { allPurchases ->
-                if (allPurchases.isEmpty()) {
-                    getCustomerInfo(callback)
-                } else {
-                    allPurchases.sortedBy { it.purchaseTime }.let { sortedByTime ->
-                        sortedByTime.forEach { purchase ->
-                            postReceiptHelper.postTransactionAndConsumeIfNeeded(
-                                purchase = purchase,
-                                storeProduct = null,
-                                isRestore = true,
-                                appUserID = appUserID,
-                                initiationSource = PostReceiptInitiationSource.RESTORE,
-                                onSuccess = { _, info ->
-                                    log(LogIntent.DEBUG, RestoreStrings.PURCHASE_RESTORED.format(purchase))
-                                    if (sortedByTime.last() == purchase) {
-                                        dispatch { callback.onReceived(info) }
-                                    }
-                                },
-                                onError = { _, error ->
-                                    log(
-                                        LogIntent.RC_ERROR,
-                                        RestoreStrings.RESTORING_PURCHASE_ERROR
-                                            .format(purchase, error),
-                                    )
-                                    if (sortedByTime.last() == purchase) {
-                                        dispatch { callback.onError(error) }
-                                    }
-                                },
-                            )
+        if (finishTransactions) {
+            billing.queryAllPurchases(
+                appUserID,
+                onReceivePurchaseHistory = { allPurchases ->
+                    if (allPurchases.isEmpty()) {
+                        getCustomerInfo(callback)
+                    } else {
+                        allPurchases.sortedBy { it.purchaseTime }.let { sortedByTime ->
+                            sortedByTime.forEach { purchase ->
+                                postReceiptHelper.postTransactionAndConsumeIfNeeded(
+                                    purchase = purchase,
+                                    storeProduct = null,
+                                    isRestore = true,
+                                    appUserID = appUserID,
+                                    initiationSource = PostReceiptInitiationSource.RESTORE,
+                                    onSuccess = { _, info ->
+                                        log(LogIntent.DEBUG, RestoreStrings.PURCHASE_RESTORED.format(purchase))
+                                        if (sortedByTime.last() == purchase) {
+                                            dispatch { callback.onReceived(info) }
+                                        }
+                                    },
+                                    onError = { _, error ->
+                                        log(
+                                            LogIntent.RC_ERROR,
+                                            RestoreStrings.RESTORING_PURCHASE_ERROR
+                                                .format(purchase, error),
+                                        )
+                                        if (sortedByTime.last() == purchase) {
+                                            dispatch { callback.onError(error) }
+                                        }
+                                    },
+                                )
+                            }
                         }
                     }
-                }
-            },
-            onReceivePurchaseHistoryError = { error ->
-                dispatch { callback.onError(error) }
-            },
-        )
+                },
+                onReceivePurchaseHistoryError = { error ->
+                    dispatch { callback.onError(error) }
+                },
+            )
+        } else {
+            // CALL CUSTOMER CODE
+            myAppPurchaseLogic?.performRestore?.invoke()
+        }
     }
 
     fun logIn(

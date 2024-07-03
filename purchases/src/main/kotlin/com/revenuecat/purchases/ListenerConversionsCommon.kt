@@ -4,6 +4,7 @@ import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback
+import com.revenuecat.purchases.models.MyAppPurchaseLogic
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
 
@@ -138,6 +139,7 @@ fun Purchases.getProductsWith(
 fun Purchases.restorePurchasesWith(
     onError: (error: PurchasesError) -> Unit = ON_ERROR_STUB,
     onSuccess: (customerInfo: CustomerInfo) -> Unit,
+    myAppPurchaseLogic: MyAppPurchaseLogic?
 ) {
-    restorePurchases(receiveCustomerInfoCallback(onSuccess, onError))
+    restorePurchases(receiveCustomerInfoCallback(onSuccess, onError), myAppPurchaseLogic)
 }

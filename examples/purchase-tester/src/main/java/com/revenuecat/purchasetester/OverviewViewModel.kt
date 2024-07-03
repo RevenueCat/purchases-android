@@ -67,7 +67,7 @@ class OverviewViewModel(private val interactionHandler: OverviewInteractionHandl
         }, onError = {
             interactionHandler.displayError(it)
             isRestoring.value = false
-        })
+        }, myAppPurchaseLogic = null)
     }
 
     fun onCardClicked() = interactionHandler.toggleCard()

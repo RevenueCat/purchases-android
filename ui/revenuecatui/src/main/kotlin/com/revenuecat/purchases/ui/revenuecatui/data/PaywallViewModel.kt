@@ -174,7 +174,7 @@ internal class PaywallViewModelImpl(
             try {
                 listener?.onRestoreStarted()
 
-                val customerInfo = purchases.awaitRestore()
+                val customerInfo = purchases.awaitRestore(myAppPurchaseLogic)
 
                 Logger.i("Restore purchases successful: $customerInfo")
                 listener?.onRestoreCompleted(customerInfo)
