@@ -83,8 +83,6 @@ internal fun TierSwitcher(
 ) {
     val selectedIndex = tiers.indexOf(selectedTier)
     var totalWidthPx by remember { mutableStateOf(0) }
-//    var totalHeightPx by remember { mutableStateOf(0) }
-
     var totalHeightRowDp by remember { mutableStateOf(40.dp) }
 
     val density = LocalDensity.current
@@ -137,7 +135,6 @@ internal fun TierSwitcher(
             horizontalArrangement = Arrangement.SpaceEvenly,
             modifier = Modifier
                 .onSizeChanged {
-//                    totalHeightRowPx = it.height
                     totalHeightRowDp = with(density) { it.height.toDp() }
                 }
                 .height(IntrinsicSize.Max)
