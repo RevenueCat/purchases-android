@@ -392,7 +392,7 @@ internal class PurchasesOrchestrator constructor(
 
     fun restorePurchases(
         callback: ReceiveCustomerInfoCallback,
-        myAppPurchaseLogic: MyAppPurchaseLogic?// = null
+        myAppPurchaseLogic: MyAppPurchaseLogic?
     ) {
         log(LogIntent.DEBUG, RestoreStrings.RESTORING_PURCHASE)
         if (!allowSharingPlayStoreAccount) {
@@ -443,6 +443,7 @@ internal class PurchasesOrchestrator constructor(
             )
         } else {
             // CALL CUSTOMER CODE
+            // unsure why the second `?` is needed.
             myAppPurchaseLogic?.performRestore?.invoke()
         }
     }
@@ -992,6 +993,7 @@ internal class PurchasesOrchestrator constructor(
                 )
             } else {
                 println("HERE WE CALL INTO CUSTOMER CODE")
+                // unsure why the second ? is needed
                 myAppPurchaseLogic?.performPurchase?.invoke()
                 println("DONE CALL INTO CUSTOMER CODE")
             }
