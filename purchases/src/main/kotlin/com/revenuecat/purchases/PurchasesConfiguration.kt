@@ -37,7 +37,7 @@ open class PurchasesConfiguration(builder: Builder) {
 
     init {
         this.context = builder.context
-        this.apiKey = builder.apiKey
+        this.apiKey = builder.apiKey.trim()
         this.appUserID = builder.appUserID
         this.purchasesAreCompletedBy = builder.purchasesAreCompletedBy
         this.service = builder.service
