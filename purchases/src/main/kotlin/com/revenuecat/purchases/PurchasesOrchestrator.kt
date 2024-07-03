@@ -49,6 +49,7 @@ import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import com.revenuecat.purchases.models.BillingFeature
 import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.InAppMessageType
+import com.revenuecat.purchases.models.MyAppPurchaseLogic
 import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
@@ -377,19 +378,14 @@ internal class PurchasesOrchestrator constructor(
                     callback,
                 )
             } ?: run {
-                if (false && finishTransactions) {
-                    startPurchase(
-                        activity,
-                        purchasingData,
-                        presentedOfferingContext,
-                        isPersonalizedPrice,
-                        callback,
-                    )
-                } else {
-                    println("HERE WE CALL INTO CUSTOMER CODE")
-                    purchaseParams.myAppPurchaseLogic?.performPurchase?.invoke()
-                    println("DONE CALL INTO CUSTOMER CODE")
-                }
+                startPurchase(
+                    activity,
+                    purchasingData,
+                    presentedOfferingContext,
+                    isPersonalizedPrice,
+                    callback,
+                    myAppPurchaseLogic
+                )
             }
         }
     }
@@ -952,6 +948,7 @@ internal class PurchasesOrchestrator constructor(
         presentedOfferingContext: PresentedOfferingContext?,
         isPersonalizedPrice: Boolean?,
         listener: PurchaseCallback,
+        myAppPurchaseLogic: MyAppPurchaseLogic? = null
     ) {
         log(
             LogIntent.PURCHASE,
@@ -978,14 +975,20 @@ internal class PurchasesOrchestrator constructor(
         }
 
         userPurchasing?.let { appUserID ->
-            billing.makePurchaseAsync(
-                activity,
-                appUserID,
-                purchasingData,
-                null,
-                presentedOfferingContext,
-                isPersonalizedPrice,
-            )
+            if (finishTransactions) {
+                billing.makePurchaseAsync(
+                    activity,
+                    appUserID,
+                    purchasingData,
+                    null,
+                    presentedOfferingContext,
+                    isPersonalizedPrice,
+                )
+            } else {
+                println("HERE WE CALL INTO CUSTOMER CODE")
+                myAppPurchaseLogic?.performPurchase?.invoke()
+                println("DONE CALL INTO CUSTOMER CODE")
+            }
         } ?: listener.dispatch(PurchasesError(PurchasesErrorCode.OperationAlreadyInProgressError).also { errorLog(it) })
     }
 
