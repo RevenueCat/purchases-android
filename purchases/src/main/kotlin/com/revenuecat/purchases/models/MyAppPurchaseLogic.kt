@@ -1,6 +1,4 @@
-package com.revenuecat.purchases.ui.revenuecatui
-
-import androidx.compose.runtime.Composable
+package com.revenuecat.purchases.models
 
 class MyAppPurchaseLogic(
     val performPurchase: (() -> Unit)? = null,
