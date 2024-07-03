@@ -780,7 +780,6 @@ internal class PurchasesOrchestrator(
     //endregion
 
     // region Private Methods
-    @Synchronized
     private fun enqueue(command: () -> Unit) {
         dispatcher.enqueue({ command() }, Delay.NONE)
     }
