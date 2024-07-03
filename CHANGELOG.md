@@ -1,3 +1,9 @@
+## 8.2.1
+### Bugfixes
+* Use trimmed API key (#1768) via Toni Rico (@tonidero)
+### Other Changes
+* Add 7.12.0 to CHANGELOG (#1769) via Toni Rico (@tonidero)
+
 ## 8.2.0
 ### New Features
 * Add `DEFERRED` replacement mode (#1751) via Toni Rico (@tonidero)
