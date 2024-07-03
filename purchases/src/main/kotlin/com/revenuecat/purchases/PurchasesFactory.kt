@@ -116,12 +116,12 @@ internal class PurchasesFactory(
             val signatureVerificationMode = SignatureVerificationMode.fromEntitlementVerificationMode(
                 verificationMode,
             )
-            val signingManager = SigningManager(signatureVerificationMode, appConfig, trimmedApiKey)
+            val signingManager = SigningManager(signatureVerificationMode, appConfig, apiKey)
 
-            val cache = DeviceCache(prefs, trimmedApiKey)
+            val cache = DeviceCache(prefs, apiKey)
 
             val httpClient = HTTPClient(appConfig, eTagManager, diagnosticsTracker, signingManager, cache)
-            val backendHelper = BackendHelper(trimmedApiKey, backendDispatcher, appConfig, httpClient)
+            val backendHelper = BackendHelper(apiKey, backendDispatcher, appConfig, httpClient)
             val backend = Backend(
                 appConfig,
                 backendDispatcher,
@@ -324,11 +324,11 @@ internal class PurchasesFactory(
                 "Purchases requires INTERNET permission."
             }
 
-            require(trimmedApiKey.isNotBlank()) { "API key must be set. Get this from the RevenueCat web app" }
+            require(apiKey.isNotBlank()) { "API key must be set. Get this from the RevenueCat web app" }
 
             require(context.applicationContext is Application) { "Needs an application context." }
 
-            apiKeyValidator.validateAndLog(trimmedApiKey, store)
+            apiKeyValidator.validateAndLog(apiKey, store)
         }
     }
 

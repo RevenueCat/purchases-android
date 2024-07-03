@@ -112,9 +112,8 @@ class PurchasesConfigurationTest {
     }
 
     @Test
-    fun `PurchasesConfiguration trimmedApiKey has correct value`() {
+    fun `PurchasesConfiguration trims api key`() {
         val purchasesConfiguration = PurchasesConfiguration.Builder(context, "  test-api-key  ").build()
-        assertThat(purchasesConfiguration.apiKey).isEqualTo("  test-api-key  ")
-        assertThat(purchasesConfiguration.trimmedApiKey).isEqualTo("test-api-key")
+        assertThat(purchasesConfiguration.apiKey).isEqualTo("test-api-key")
     }
 }
