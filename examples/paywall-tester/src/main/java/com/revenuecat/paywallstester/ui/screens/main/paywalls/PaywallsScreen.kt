@@ -46,6 +46,10 @@ fun PaywallsScreen(
     LazyColumn {
         items(SamplePaywalls.SampleTemplate.values()) { template ->
             val offering = samplePaywallsLoader.offeringForTemplate(template)
+            val myAppPurchaseLogic = MyAppPurchaseLogic(
+                performPurchase = { println("Hello from performPurchase!") },
+                performRestore = { println("Hello from performRestore!") }
+            )
             Column(modifier = Modifier.fillMaxWidth()) {
                 Text(
                     text = template.displayableName,
@@ -56,10 +60,7 @@ fun PaywallsScreen(
                     onClick = {
                         displayPaywallState = DisplayPaywallState.FullScreen(
                             offering,
-                            myAppPurchaseLogic = MyAppPurchaseLogic(
-                                performPurchase = { println("Hello from performPurchase!") },
-                                performRestore = { println("Hello from performRestore!") }
-                            )
+                            myAppPurchaseLogic = myAppPurchaseLogic
                         )
                     },
                     emoji = "\uD83D\uDCF1",
@@ -67,14 +68,18 @@ fun PaywallsScreen(
                 )
                 ButtonWithEmoji(
                     onClick = {
-                        displayPaywallState = DisplayPaywallState.Footer(offering, condensed = false)
+                        displayPaywallState = DisplayPaywallState.Footer(offering,
+                            condensed = false,
+                            myAppPurchaseLogic = myAppPurchaseLogic)
                     },
                     emoji = "\uD83D\uDD3D",
                     label = "Footer",
                 )
                 ButtonWithEmoji(
                     onClick = {
-                        displayPaywallState = DisplayPaywallState.Footer(offering, condensed = true)
+                        displayPaywallState = DisplayPaywallState.Footer(offering,
+                            condensed = true,
+                            myAppPurchaseLogic = myAppPurchaseLogic)
                     },
                     emoji = "\uD83D\uDDDC️",
                     label = "Condenser footer",
@@ -84,6 +89,7 @@ fun PaywallsScreen(
                         displayPaywallState = DisplayPaywallState.FullScreen(
                             offering,
                             CustomFontProvider(bundledLobsterTwoFontFamily),
+                            myAppPurchaseLogic = myAppPurchaseLogic
                         )
                     },
                     emoji = "\uD83C\uDD70️",
@@ -111,7 +117,7 @@ private fun FullScreenDialog(currentState: DisplayPaywallState.FullScreen, onDis
             .setDismissRequest(onDismiss)
             .setOffering(currentState.offering)
             .setFontProvider(currentState.fontProvider)
-            .setMyAppPurchasesLogic(currentState.myAppPurchaseLogic)
+            .setMyAppPurchaseLogic(currentState.myAppPurchaseLogic)
             .build(),
     )
 }
@@ -127,6 +133,7 @@ private fun FooterDialog(currentState: DisplayPaywallState.Footer, onDismiss: ()
                 PaywallFooter(
                     options = PaywallOptions.Builder(dismissRequest = onDismiss)
                         .setOffering(currentState.offering)
+                        .setMyAppPurchaseLogic(currentState.myAppPurchaseLogic)
                         .build(),
                     condensed = currentState.condensed,
                 ) { footerPadding ->
@@ -147,8 +154,8 @@ private sealed class DisplayPaywallState {
     ) : DisplayPaywallState()
     data class Footer(
         val offering: Offering? = null,
-        var myAppPurchaseLogic: MyAppPurchaseLogic? = null,
         val condensed: Boolean = false,
+        var myAppPurchaseLogic: MyAppPurchaseLogic? = null
     ) : DisplayPaywallState()
 }
 
