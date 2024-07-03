@@ -377,13 +377,19 @@ internal class PurchasesOrchestrator constructor(
                     callback,
                 )
             } ?: run {
-                startPurchase(
-                    activity,
-                    purchasingData,
-                    presentedOfferingContext,
-                    isPersonalizedPrice,
-                    callback,
-                )
+                if (false && finishTransactions) {
+                    startPurchase(
+                        activity,
+                        purchasingData,
+                        presentedOfferingContext,
+                        isPersonalizedPrice,
+                        callback,
+                    )
+                } else {
+                    println("HERE WE CALL INTO CUSTOMER CODE")
+                    purchaseParams.myAppPurchaseLogic?.performPurchase?.invoke()
+                    println("DONE CALL INTO CUSTOMER CODE")
+                }
             }
         }
     }

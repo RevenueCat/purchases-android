@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.ui.revenuecatui
 
 import com.revenuecat.purchases.Offering
+import com.revenuecat.purchases.models.MyAppPurchaseLogic
 import com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider
 
 internal sealed class OfferingSelection {

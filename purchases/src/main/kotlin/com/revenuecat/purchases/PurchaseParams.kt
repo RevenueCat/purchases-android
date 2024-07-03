@@ -6,12 +6,14 @@ import com.revenuecat.purchases.models.PurchasingData
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.models.TestStoreProduct
+import com.revenuecat.purchases.models.MyAppPurchaseLogic
 
 data class PurchaseParams(val builder: Builder) {
 
     val isPersonalizedPrice: Boolean?
     val oldProductId: String?
     val googleReplacementMode: GoogleReplacementMode
+    val myAppPurchaseLogic: MyAppPurchaseLogic?
 
     @get:JvmSynthetic
     internal val purchasingData: PurchasingData
@@ -29,6 +31,7 @@ data class PurchaseParams(val builder: Builder) {
         this.purchasingData = builder.purchasingData
         this.activity = builder.activity
         this.presentedOfferingContext = builder.presentedOfferingContext
+        this.myAppPurchaseLogic = builder.myAppPurchaseLogic
     }
 
     /**
@@ -46,17 +49,19 @@ data class PurchaseParams(val builder: Builder) {
         @get:JvmSynthetic internal val purchasingData: PurchasingData,
         @get:JvmSynthetic internal var presentedOfferingContext: PresentedOfferingContext?,
         @get:JvmSynthetic internal val product: StoreProduct?,
+        @get:JvmSynthetic internal val myAppPurchaseLogic: MyAppPurchaseLogic?
     ) {
-        constructor(activity: Activity, packageToPurchase: Package) :
+        constructor(activity: Activity, packageToPurchase: Package, myAppPurchaseLogic: MyAppPurchaseLogic? = null) :
             this(
                 activity,
                 packageToPurchase.product.purchasingData,
                 packageToPurchase.presentedOfferingContext,
                 packageToPurchase.product,
+                myAppPurchaseLogic
             )
 
         constructor(activity: Activity, storeProduct: StoreProduct) :
-            this(activity, storeProduct.purchasingData, storeProduct.presentedOfferingContext, storeProduct)
+            this(activity, storeProduct.purchasingData, storeProduct.presentedOfferingContext, storeProduct, null)
 
         private fun ensureNoTestProduct(storeProduct: StoreProduct) {
             if (storeProduct is TestStoreProduct) {
@@ -75,6 +80,7 @@ data class PurchaseParams(val builder: Builder) {
                 subscriptionOption.purchasingData,
                 subscriptionOption.presentedOfferingContext,
                 product = null,
+                myAppPurchaseLogic = null
             )
 
         @set:JvmSynthetic
@@ -134,7 +140,7 @@ data class PurchaseParams(val builder: Builder) {
 
         open fun build(): PurchaseParams {
             product?.let {
-                ensureNoTestProduct(it)
+                // ensureNoTestProduct(it)
             }
 
             return PurchaseParams(this)

@@ -111,7 +111,7 @@ final class PurchasesCommonAPI {
         PurchaseParams purchaseOptionParams = purchaseOptionBuilder.build();
         purchases.purchase(purchaseOptionParams, purchaseCallback);
 
-        PurchaseParams.Builder purchasePackageBuilder = new PurchaseParams.Builder(activity, packageToPurchase);
+        PurchaseParams.Builder purchasePackageBuilder = new PurchaseParams.Builder(activity, packageToPurchase, null);
         purchasePackageBuilder
                 .oldProductId(oldProductId)
                 .googleReplacementMode(replacementMode)

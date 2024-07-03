@@ -20,7 +20,7 @@ import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
 import com.revenuecat.purchases.paywalls.events.PaywallEventType
 import com.revenuecat.purchases.ui.revenuecatui.ExperimentalPreviewRevenueCatUIPurchasesAPI
-import com.revenuecat.purchases.ui.revenuecatui.MyAppPurchaseLogic
+import com.revenuecat.purchases.models.MyAppPurchaseLogic
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
@@ -213,15 +213,14 @@ internal class PaywallViewModelImpl(
             try {
                 listener?.onPurchaseStarted(packageToPurchase)
 
-
-                val customPurchaseHandler = myAppPurchaseLogic?.performPurchase
-
-                customPurchaseHandler?.invoke() ?: run {
+//                val customPurchaseHandler = myAppPurchaseLogic?.performPurchase
+//
+//                customPurchaseHandler?.invoke() ?: run {
                     val purchaseResult = purchases.awaitPurchase(
-                        PurchaseParams.Builder(activity, packageToPurchase),
+                        PurchaseParams.Builder(activity, packageToPurchase, myAppPurchaseLogic),
                     )
                     listener?.onPurchaseCompleted(purchaseResult.customerInfo, purchaseResult.storeTransaction)
-                }
+//                }
 
                 Logger.d("Dismissing paywall after purchase")
                 options.dismissRequest()
