@@ -176,15 +176,29 @@ internal class PaywallViewModelImpl(
             try {
                 listener?.onRestoreStarted()
 
-                val customerInfo = purchases.awaitRestore()
+                val customRestoreHandler = myAppPurchaseLogic?.performRestore
 
-                Logger.i("Restore purchases successful: $customerInfo")
-                listener?.onRestoreCompleted(customerInfo)
+                when (purchases.purchasesAreCompletedBy) {
+                    PurchasesAreCompletedBy.MY_APP -> {
+                        customRestoreHandler?.invoke() ?: throw IllegalStateException("customRestoreHandler is null but required for MY_APP")
+                    }
+                    PurchasesAreCompletedBy.REVENUECAT -> {
+                        if (customRestoreHandler != null) {
+                            Logger.e("customRestoreHandler should be null when purchases are completed by REVENUECAT")
+                        }
+                        val customerInfo = purchases.awaitRestore()
+                        Logger.i("Restore purchases successful: $customerInfo")
+                        listener?.onRestoreCompleted(customerInfo)
 
-                shouldDisplayBlock?.let {
-                    if (!it(customerInfo)) {
-                        Logger.d("Dismissing paywall after restore since display condition has not been met")
-                        options.dismissRequest()
+                        shouldDisplayBlock?.let {
+                            if (!it(customerInfo)) {
+                                Logger.d("Dismissing paywall after restore since display condition has not been met")
+                                options.dismissRequest()
+                            }
+                        }
+                    }
+                    else -> {
+                        Logger.e("Unsupported purchase completion type: ${purchases.purchasesAreCompletedBy}")
                     }
                 }
             } catch (e: PurchasesException) {
