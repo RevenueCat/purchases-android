@@ -6,12 +6,14 @@ with BillingClient 5 which brought an entire new subscription model which result
 The only modification at the API level involves replacing "ProrationMode" with "ReplacementMode". The specific replacement
 modes remain unchanged.
 
-If your app doesn't currently use DEFERRED replacement modes, then you should be safe to upgrade to this version without
-changes in behavior.
+~~If your app doesn't currently use DEFERRED replacement modes, then you should be safe to upgrade to this version without
+changes in behavior.~~
 
-If your app supports product changes using [DEFERRED replacement mode](https://www.revenuecat.com/docs/managing-subscriptions#google-play),
+~~If your app supports product changes using [DEFERRED replacement mode](https://www.revenuecat.com/docs/managing-subscriptions#google-play),
 then you can either stick with the previous major version until support for DEFERRED is re-introduced in this major version,
-or you can remove DEFERRED replacement options from your app.
+or you can remove DEFERRED replacement options from your app.~~
+
+UPDATE: DEFERRED replacement mode has been added back in version 7.12.0 and 8.2.0 of the Android SDK.
 
 ## Updated Code References
 
@@ -33,9 +35,9 @@ more thorough explanation of the new Google subscription model announced with Bi
 | `ProrationMode`       | `ReplacementMode`       |
 | `GoogleProrationMode` | `GoogleReplacementMode` |
 
-| Temporarily removed      |
-|--------------------------|
-| `ProrationMode.DEFERRED` |
+| Temporarily removed                             |
+|-------------------------------------------------|
+| `ProrationMode.DEFERRED` (added back in 7.12.0) |
 
 ### Bumped minimum Android SDK version
 
