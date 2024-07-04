@@ -14,9 +14,11 @@ import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PurchaseParams
 import com.revenuecat.purchases.PurchaseResult
+import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
+import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
 import com.revenuecat.purchases.paywalls.events.PaywallEventType
 import com.revenuecat.purchases.ui.revenuecatui.ExperimentalPreviewRevenueCatUIPurchasesAPI
@@ -208,19 +210,26 @@ internal class PaywallViewModelImpl(
 
     private fun purchasePackage(activity: Activity, packageToPurchase: Package) {
         if (verifyNoActionInProgressOrStartAction()) { return }
-
         viewModelScope.launch {
             try {
                 listener?.onPurchaseStarted(packageToPurchase)
 
-
                 val customPurchaseHandler = myAppPurchaseLogic?.performPurchase
 
-                customPurchaseHandler?.invoke() ?: run {
-                    val purchaseResult = purchases.awaitPurchase(
-                        PurchaseParams.Builder(activity, packageToPurchase),
-                    )
-                    listener?.onPurchaseCompleted(purchaseResult.customerInfo, purchaseResult.storeTransaction)
+                when (purchases.purchasesAreCompletedBy) {
+                    PurchasesAreCompletedBy.MY_APP -> {
+                        customPurchaseHandler?.invoke() ?: throw IllegalStateException("myAppPurchaseLogic?.performPurchase is null but required for MY_APP")
+                    }
+                    PurchasesAreCompletedBy.REVENUECAT -> {
+                        if (customPurchaseHandler != null) {
+                            Logger.e("customPurchaseHandler expected to be null when purchases are completed by REVENUECAT")
+                        }
+                        val purchaseResult = purchases.awaitPurchase(PurchaseParams.Builder(activity, packageToPurchase))
+                        listener?.onPurchaseCompleted(purchaseResult.customerInfo, purchaseResult.storeTransaction)
+                    }
+                    else -> {
+                        Logger.e("Unsupported purchase completion type: ${purchases.purchasesAreCompletedBy}")
+                    }
                 }
 
                 Logger.d("Dismissing paywall after purchase")

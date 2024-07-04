@@ -7,6 +7,7 @@ import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.PurchaseParams
 import com.revenuecat.purchases.PurchaseResult
 import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.awaitCustomerInfo
 import com.revenuecat.purchases.awaitOfferings
 import com.revenuecat.purchases.awaitPurchase
@@ -29,6 +30,9 @@ internal interface PurchasesType {
     ): CustomerInfo
 
     fun track(event: PaywallEvent)
+
+    val purchasesAreCompletedBy: PurchasesAreCompletedBy
+
 }
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
@@ -52,4 +56,7 @@ internal class PurchasesImpl(private val purchases: Purchases = Purchases.shared
     override fun track(event: PaywallEvent) {
         purchases.track(event)
     }
+
+    override val purchasesAreCompletedBy: PurchasesAreCompletedBy
+        get() = purchases.purchasesAreCompletedBy
 }
