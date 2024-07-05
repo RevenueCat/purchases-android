@@ -83,7 +83,7 @@ internal fun TierSwitcher(
 ) {
     val selectedIndex = tiers.indexOf(selectedTier)
     var totalWidthPx by remember { mutableStateOf(0) }
-    var totalHeightRowDp by remember { mutableStateOf(40.dp) }
+    var totalHeightRowDp by remember { mutableStateOf(40.dp) } // Defaults height for snapshot test
 
     val density = LocalDensity.current
 
