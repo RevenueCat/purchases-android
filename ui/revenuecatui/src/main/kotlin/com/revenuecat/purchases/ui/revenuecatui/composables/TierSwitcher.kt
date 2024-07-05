@@ -7,8 +7,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -82,7 +83,7 @@ internal fun TierSwitcher(
 ) {
     val selectedIndex = tiers.indexOf(selectedTier)
     var totalWidthPx by remember { mutableStateOf(0) }
-    var totalHeightPx by remember { mutableStateOf(0) }
+    var totalHeightRowDp by remember { mutableStateOf(40.dp) }
 
     val density = LocalDensity.current
 
@@ -112,10 +113,8 @@ internal fun TierSwitcher(
             .clip(RoundedCornerShape(TierSwitcherUIConstants.roundedCorner))
             .background(backgroundColorState)
             .fillMaxWidth()
-            .heightIn(min = TierSwitcherUIConstants.minimumHeight)
             .onSizeChanged { size ->
                 totalWidthPx = size.width
-                totalHeightPx = size.height
             },
     ) {
         val optionWidth = with(density) { (totalWidthPx / tiers.size).toDp() }
@@ -125,7 +124,7 @@ internal fun TierSwitcher(
             Modifier
                 .offset(x = indicatorOffset)
                 .fillMaxWidth(1f / tiers.size)
-                .height(with(density) { totalHeightPx.toDp() }) // fillMaxHeight() wasn't working
+                .height(totalHeightRowDp) // match height of row
                 .padding(TierSwitcherUIConstants.selectedTierPadding)
                 .clip(RoundedCornerShape(TierSwitcherUIConstants.roundedCorner))
                 .background(backgroundSelectedColorState),
@@ -134,14 +133,19 @@ internal fun TierSwitcher(
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceEvenly,
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .onSizeChanged {
+                    totalHeightRowDp = with(density) { it.height.toDp() }
+                }
+                .height(IntrinsicSize.Max)
+                .heightIn(min = TierSwitcherUIConstants.minimumHeight),
         ) {
             tiers.forEach { tier ->
                 Box(
                     contentAlignment = Alignment.Center,
                     modifier = Modifier
                         .weight(1f)
-                        .height(with(density) { totalHeightPx.toDp() }) // fillMaxHeight() wasn't working
+                        .fillMaxHeight()
                         .clickable(
                             indication = null,
                             interactionSource = remember { MutableInteractionSource() },

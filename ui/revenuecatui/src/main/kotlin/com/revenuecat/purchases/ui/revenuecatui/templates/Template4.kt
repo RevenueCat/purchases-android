@@ -279,7 +279,7 @@ private fun SelectPackageButton(
 
     val discountText = packageInfo.localizedDiscount(viewModel.resourceProvider)
 
-    if (packageInfo.discountRelativeToMostExpensivePerMonth != null) {
+    if (packageInfo.localization.offerBadge != null) {
         columnModifier = columnModifier.background(mainColor)
     }
 

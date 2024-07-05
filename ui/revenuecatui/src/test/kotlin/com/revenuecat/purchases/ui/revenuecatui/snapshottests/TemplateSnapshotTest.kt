@@ -27,6 +27,8 @@ class TemplateSnapshotTest(private val testConfig: TemplateTestConfig): BasePapa
             TestData.template3Offering,
             TestData.template4Offering,
             TestData.template5Offering,
+            TestData.template7Offering,
+            TestData.template7CustomPackageOffering,
         )
 
         @JvmStatic

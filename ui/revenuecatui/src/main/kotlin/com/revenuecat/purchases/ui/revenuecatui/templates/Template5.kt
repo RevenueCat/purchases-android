@@ -70,7 +70,6 @@ import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModel
 import com.revenuecat.purchases.ui.revenuecatui.data.currentColors
 import com.revenuecat.purchases.ui.revenuecatui.data.isInFullScreenMode
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
-import com.revenuecat.purchases.ui.revenuecatui.data.processed.localizedDiscount
 import com.revenuecat.purchases.ui.revenuecatui.data.selectedLocalization
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockViewModel
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
@@ -78,7 +77,6 @@ import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
 import com.revenuecat.purchases.ui.revenuecatui.extensions.introEligibility
 import com.revenuecat.purchases.ui.revenuecatui.extensions.packageButtonActionInProgressOpacityAnimation
 import com.revenuecat.purchases.ui.revenuecatui.extensions.packageButtonColorAnimation
-import com.revenuecat.purchases.ui.revenuecatui.helpers.ResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.helpers.shouldUseLandscapeLayout
 
 private object Template5UIConstants {
@@ -412,7 +410,7 @@ private fun ColumnScope.SelectPackageButton(
                     modifier = Modifier.weight(1f, fill = true),
                 )
 
-                DiscountBanner(state = state, resourceProvider = viewModel.resourceProvider, packageInfo = packageInfo)
+                DiscountBanner(state = state, packageInfo = packageInfo)
             }
 
             IntroEligibilityStateView(
@@ -448,10 +446,9 @@ private fun CheckmarkBox(isSelected: Boolean, colors: TemplateConfiguration.Colo
 @Composable
 private fun RowScope.DiscountBanner(
     state: PaywallState.Loaded,
-    resourceProvider: ResourceProvider,
     packageInfo: TemplateConfiguration.PackageInfo,
 ) {
-    val text = packageInfo.localizedDiscount(resourceProvider)?.uppercase() ?: return
+    val text = packageInfo.localization.offerBadge?.uppercase() ?: return
 
     val colors = state.currentColors
 
