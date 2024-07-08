@@ -179,6 +179,7 @@ internal class PurchasesFactory(
                 offeringsCache,
                 backend,
                 offlineEntitlementsManager,
+                dispatcher,
             )
 
             val customerInfoUpdateHandler = CustomerInfoUpdateHandler(
@@ -285,6 +286,7 @@ internal class PurchasesFactory(
                 createPaywallEventsManager(application, identityManager, eventsDispatcher, backend),
                 paywallPresentedCache,
                 purchasesStateProvider,
+                dispatcher = dispatcher,
             )
 
             return Purchases(purchasesOrchestrator)

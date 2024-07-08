@@ -105,6 +105,7 @@ class SubscriberAttributesPurchasesTests {
             paywallEventsManager = null,
             paywallPresentedCache = PaywallPresentedCache(),
             purchasesStateCache = PurchasesStateCache(PurchasesState()),
+            dispatcher = SyncDispatcher(),
         )
 
         underTest = Purchases(purchasesOrchestrator)

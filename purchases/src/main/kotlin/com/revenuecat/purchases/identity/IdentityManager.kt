@@ -1,10 +1,13 @@
 package com.revenuecat.purchases.identity
 
+import android.content.SharedPreferences
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.Backend
+import com.revenuecat.purchases.common.Delay
+import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.debugLog
@@ -20,7 +23,7 @@ import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttribute
 import java.util.Locale
 import java.util.UUID
 
-@Suppress("TooManyFunctions")
+@Suppress("TooManyFunctions", "LongParameterList")
 internal class IdentityManager(
     private val deviceCache: DeviceCache,
     private val subscriberAttributesCache: SubscriberAttributesCache,
@@ -28,6 +31,7 @@ internal class IdentityManager(
     private val offeringsCache: OfferingsCache,
     private val backend: Backend,
     private val offlineEntitlementsManager: OfflineEntitlementsManager,
+    private val dispatcher: Dispatcher,
 ) {
 
     val currentAppUserID: String
@@ -38,7 +42,9 @@ internal class IdentityManager(
     // region Public functions
 
     @Synchronized
-    fun configure(appUserID: String?) {
+    fun configure(
+        appUserID: String?,
+    ) {
         if (appUserID?.isBlank() == true) {
             log(LogIntent.WARNING, IdentityStrings.EMPTY_APP_USER_ID_WILL_BECOME_ANONYMOUS)
         }
@@ -49,10 +55,16 @@ internal class IdentityManager(
             ?: deviceCache.getLegacyCachedAppUserID()
             ?: generateRandomID()
         log(LogIntent.USER, IdentityStrings.IDENTIFYING_APP_USER_ID.format(appUserIDToUse))
-        deviceCache.cacheAppUserID(appUserIDToUse)
-        subscriberAttributesCache.cleanUpSubscriberAttributeCache(appUserIDToUse)
-        deviceCache.cleanupOldAttributionData()
-        invalidateCustomerInfoAndETagCacheIfNeeded(appUserIDToUse)
+
+        val cacheEditor = deviceCache.startEditing()
+        deviceCache.cacheAppUserID(appUserIDToUse, cacheEditor)
+        subscriberAttributesCache.cleanUpSubscriberAttributeCache(appUserIDToUse, cacheEditor)
+        invalidateCustomerInfoAndETagCacheIfNeeded(appUserIDToUse, cacheEditor)
+        cacheEditor.apply()
+
+        enqueue {
+            deviceCache.cleanupOldAttributionData()
+        }
     }
 
     fun logIn(
@@ -135,11 +147,17 @@ internal class IdentityManager(
         }
     }
 
-    private fun invalidateCustomerInfoAndETagCacheIfNeeded(appUserID: String) {
+    private fun invalidateCustomerInfoAndETagCacheIfNeeded(
+        appUserID: String,
+        cacheEditor: SharedPreferences.Editor,
+    ) {
+        if (backend.verificationMode == SignatureVerificationMode.Disabled) {
+            return
+        }
         val cachedCustomerInfo = deviceCache.getCachedCustomerInfo(appUserID)
         if (shouldInvalidateCustomerInfoAndETagCache(cachedCustomerInfo)) {
             infoLog(IdentityStrings.INVALIDATING_CACHED_CUSTOMER_INFO)
-            deviceCache.clearCustomerInfoCache(appUserID)
+            deviceCache.clearCustomerInfoCache(appUserID, cacheEditor)
             backend.clearCaches()
         }
     }
@@ -170,6 +188,11 @@ internal class IdentityManager(
         offlineEntitlementsManager.resetOfflineCustomerInfoCache()
         deviceCache.cacheAppUserID(newUserID)
         backend.clearCaches()
+    }
+
+    @Synchronized
+    private fun enqueue(command: () -> Unit) {
+        dispatcher.enqueue({ command() }, Delay.NONE)
     }
 
     // endregion

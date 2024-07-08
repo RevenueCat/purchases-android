@@ -1,19 +1,21 @@
 package com.revenuecat.purchases.subscriberattributes.caching
 
+import android.content.SharedPreferences
 import com.revenuecat.purchases.subscriberattributes.buildLegacySubscriberAttributes
 
 @Synchronized
-internal fun SubscriberAttributesCache.migrateSubscriberAttributesIfNeeded() {
+internal fun SubscriberAttributesCache.migrateSubscriberAttributesIfNeeded(cacheEditor: SharedPreferences.Editor) {
     getAllLegacyStoredSubscriberAttributes()
         .takeIf { it.isNotEmpty() }
         ?.let { legacySubscriberAttributes ->
-            migrateSubscriberAttributes(legacySubscriberAttributes)
+            migrateSubscriberAttributes(legacySubscriberAttributes, cacheEditor)
         }
 }
 
 @Synchronized
 internal fun SubscriberAttributesCache.migrateSubscriberAttributes(
     legacySubscriberAttributesForAppUserID: SubscriberAttributesPerAppUserIDMap,
+    cacheEditor: SharedPreferences.Editor,
 ) {
     val storedSubscriberAttributesForAll: SubscriberAttributesPerAppUserIDMap =
         getAllStoredSubscriberAttributes()
@@ -25,10 +27,13 @@ internal fun SubscriberAttributesCache.migrateSubscriberAttributes(
         val current: SubscriberAttributeMap = storedSubscriberAttributesForAll[appUserID] ?: emptyMap()
         val updated: SubscriberAttributeMap = legacy + current
         updatedStoredSubscriberAttributesForAll[appUserID] = updated
-        deviceCache.remove(legacySubscriberAttributesCacheKey(appUserID))
+        cacheEditor.remove(legacySubscriberAttributesCacheKey(appUserID))
     }
 
-    deviceCache.putAttributes(updatedStoredSubscriberAttributesForAll)
+    cacheEditor.putString(
+        subscriberAttributesCacheKey,
+        updatedStoredSubscriberAttributesForAll.toJSONObject().toString(),
+    )
 }
 
 internal fun SubscriberAttributesCache.legacySubscriberAttributesCacheKey(appUserID: String) =
@@ -39,12 +44,12 @@ internal fun SubscriberAttributesCache.getAllLegacyStoredSubscriberAttributes():
     val legacySubscriberAttributesCacheKeyPrefix = legacySubscriberAttributesCacheKey("")
     val allSubscriberAttributesKeys = deviceCache.findKeysThatStartWith(legacySubscriberAttributesCacheKeyPrefix)
 
-    return allSubscriberAttributesKeys.map { preferencesKey ->
+    return allSubscriberAttributesKeys.associate { preferencesKey ->
         val appUserIDFromKey: AppUserID =
             preferencesKey.split(legacySubscriberAttributesCacheKeyPrefix)[1]
         val subscriberAttributeMap: SubscriberAttributeMap =
             deviceCache.getJSONObjectOrNull(preferencesKey)
                 ?.buildLegacySubscriberAttributes() ?: emptyMap()
         appUserIDFromKey to subscriberAttributeMap
-    }.toMap()
+    }
 }
