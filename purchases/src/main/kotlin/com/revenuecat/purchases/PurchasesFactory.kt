@@ -286,7 +286,7 @@ internal class PurchasesFactory(
                 createPaywallEventsManager(application, identityManager, eventsDispatcher, backend),
                 paywallPresentedCache,
                 purchasesStateProvider,
-                dispatcher,
+                dispatcher = dispatcher,
             )
 
             return Purchases(purchasesOrchestrator)

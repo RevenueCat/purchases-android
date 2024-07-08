@@ -78,7 +78,7 @@ internal class OfflineEntitlementsManager(
                     warnLog(OfflineEntitlementsStrings.USING_OFFLINE_ENTITLEMENTS_CUSTOMER_INFO)
                     diagnosticsTracker?.trackEnteredOfflineEntitlementsMode()
                     _offlineCustomerInfo = customerInfo
-                    deviceCache.getCachedAppUserID()?.let { deviceCache.clearCustomerInfoCache(it, cacheEditor) }
+                    deviceCache.getCachedAppUserID()?.let { deviceCache.clearCustomerInfoCache(it) }
                     val callbacks = offlineCustomerInfoCallbackCache.remove(appUserId)
                     callbacks?.forEach { (onSuccess, _) ->
                         onSuccess(customerInfo)
