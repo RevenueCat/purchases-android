@@ -4,7 +4,6 @@ import android.content.Context;
 import android.util.AttributeSet;
 
 import com.revenuecat.purchases.Offering;
-import com.revenuecat.purchases.ui.revenuecatui.ExperimentalPreviewRevenueCatUIPurchasesAPI;
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener;
 import com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider;
 import com.revenuecat.purchases.ui.revenuecatui.views.PaywallFooterView;

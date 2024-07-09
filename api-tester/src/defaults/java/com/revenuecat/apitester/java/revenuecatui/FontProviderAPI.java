@@ -2,10 +2,10 @@ package com.revenuecat.apitester.java.revenuecatui;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.annotation.OptIn;
 import androidx.compose.ui.text.font.FontFamily;
 import androidx.compose.ui.text.font.FontWeight;
 import androidx.compose.ui.text.googlefonts.GoogleFont;
+
 import com.revenuecat.purchases.ui.revenuecatui.fonts.CustomFontProvider;
 import com.revenuecat.purchases.ui.revenuecatui.fonts.CustomParcelizableFontProvider;
 import com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider;
