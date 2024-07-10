@@ -1,9 +1,7 @@
-### New Features
-* Add `DEFERRED` replacement mode (#1751) via Toni Rico (@tonidero)
 ### Bugfixes
-* Use correct product context with `DEFERRED` purchases (#1766) via Toni Rico (@tonidero)
-* Call callbacks on `DEFERRED` purchases (#1764) via Toni Rico (@tonidero)
-### Dependency Updates
-* Bump fastlane from 2.221.0 to 2.221.1 (#1758) via dependabot[bot] (@dependabot[bot])
+* Attempt to fix ANRs by moving some tasks during configure to background (#1772) via Cesar de la Vega (@vegaro)
+* Use trimmed API key (#1768) via Toni Rico (@tonidero)
 ### Other Changes
-* Adds .aiexclude (#1762) via JayShortway (@JayShortway)
+* Remove leftovers `ExperimentalPreviewRevenueCatUIPurchasesAPI` (#1778) via Cesar de la Vega (@vegaro)
+* Update migration docs adding back support for `DEFERRED` upgrades (#1774) via Toni Rico (@tonidero)
+* Add 7.12.0 to CHANGELOG (#1769) via Toni Rico (@tonidero)
