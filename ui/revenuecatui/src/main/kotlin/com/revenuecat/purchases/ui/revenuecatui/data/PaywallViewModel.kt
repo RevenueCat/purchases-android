@@ -18,7 +18,6 @@ import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
 import com.revenuecat.purchases.paywalls.events.PaywallEventType
-import com.revenuecat.purchases.ui.revenuecatui.ExperimentalPreviewRevenueCatUIPurchasesAPI
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
@@ -60,7 +59,7 @@ internal interface PaywallViewModel {
     fun clearActionError()
 }
 
-@OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class, ExperimentalPreviewRevenueCatPurchasesAPI::class)
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Suppress("TooManyFunctions", "LongParameterList")
 internal class PaywallViewModelImpl(
     override val resourceProvider: ResourceProvider,

@@ -1,7 +1,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.snapshottests
 
 import com.revenuecat.purchases.Offering
-import com.revenuecat.purchases.ui.revenuecatui.ExperimentalPreviewRevenueCatUIPurchasesAPI
 import com.revenuecat.purchases.ui.revenuecatui.InternalPaywall
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions

@@ -1,14 +1,11 @@
 package com.revenuecat.apitester.java.revenuecatui;
 
-import android.os.Parcel;
 import android.os.Parcelable;
 
 import androidx.activity.result.ActivityResultCallback;
-import androidx.annotation.NonNull;
 
 import com.revenuecat.purchases.CustomerInfo;
 import com.revenuecat.purchases.PurchasesError;
-import com.revenuecat.purchases.ui.revenuecatui.ExperimentalPreviewRevenueCatUIPurchasesAPI;
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult;
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResultHandler;
 

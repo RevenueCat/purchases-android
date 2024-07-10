@@ -6,7 +6,6 @@ import androidx.activity.result.ActivityResultCaller;
 import androidx.fragment.app.Fragment;
 
 import com.revenuecat.purchases.Offering;
-import com.revenuecat.purchases.ui.revenuecatui.ExperimentalPreviewRevenueCatUIPurchasesAPI;
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivityLauncher;
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallDisplayCallback;
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResultHandler;
