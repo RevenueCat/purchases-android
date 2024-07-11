@@ -190,24 +190,26 @@ private fun ColumnScope.Template7PortraitContent(
             Title(state, selectedTier)
         }
 
-        if (packageSelectionVisible) {
-            TierSwitcher(
-                tiers = tiers,
-                selectedTier = selectedTier,
-                onTierSelected = {
-                    onSelectTierChange(it)
-                },
-                backgroundColor = colorForTier.tierSwitcherBackground,
-                backgroundSelectedColor = colorForTier.tierSwitcherBackgroundSelected,
-                foregroundColor = colorForTier.tierSwitcherForeground,
-                foregroundSelectedColor = colorForTier.tierSwitcherForegroundSelected,
-            )
-        } else {
-            SelectedTierView(
-                selectedTier = selectedTier,
-                backgroundSelectedColor = colorForTier.tierSwitcherBackgroundSelected,
-                foregroundSelectedColor = colorForTier.tierSwitcherForegroundSelected,
-            )
+        if (tiers.size > 1) {
+            if (packageSelectionVisible) {
+                TierSwitcher(
+                    tiers = tiers,
+                    selectedTier = selectedTier,
+                    onTierSelected = {
+                        onSelectTierChange(it)
+                    },
+                    backgroundColor = colorForTier.tierSwitcherBackground,
+                    backgroundSelectedColor = colorForTier.tierSwitcherBackgroundSelected,
+                    foregroundColor = colorForTier.tierSwitcherForeground,
+                    foregroundSelectedColor = colorForTier.tierSwitcherForegroundSelected,
+                )
+            } else {
+                SelectedTierView(
+                    selectedTier = selectedTier,
+                    backgroundSelectedColor = colorForTier.tierSwitcherBackgroundSelected,
+                    foregroundSelectedColor = colorForTier.tierSwitcherForegroundSelected,
+                )
+            }
         }
 
         if (state.isInFullScreenMode) {
@@ -292,19 +294,21 @@ private fun ColumnScope.Template7LandscapeContent(
         ) {
             Spacer(Modifier.weight(UIConstant.halfWeight))
 
-            TierSwitcher(
-                tiers = tiers,
-                selectedTier = selectedTier,
-                onTierSelected = {
-                    onSelectTierChange(it)
-                },
-                backgroundColor = colorForTier.tierSwitcherBackground,
-                backgroundSelectedColor = colorForTier.tierSwitcherBackgroundSelected,
-                foregroundColor = colorForTier.tierSwitcherForeground,
-                foregroundSelectedColor = colorForTier.tierSwitcherForegroundSelected,
-            )
+            if (tiers.size > 1) {
+                TierSwitcher(
+                    tiers = tiers,
+                    selectedTier = selectedTier,
+                    onTierSelected = {
+                        onSelectTierChange(it)
+                    },
+                    backgroundColor = colorForTier.tierSwitcherBackground,
+                    backgroundSelectedColor = colorForTier.tierSwitcherBackgroundSelected,
+                    foregroundColor = colorForTier.tierSwitcherForeground,
+                    foregroundSelectedColor = colorForTier.tierSwitcherForegroundSelected,
+                )
 
-            Spacer(Modifier.weight(UIConstant.halfWeight))
+                Spacer(Modifier.weight(UIConstant.halfWeight))
+            }
 
             AnimatedPackages(
                 state = state,
