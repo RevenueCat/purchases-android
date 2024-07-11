@@ -320,6 +320,7 @@ platform :android do
           --app ../purchases/test_artifacts/#{app_name}-app.apk \
           --test ../purchases/test_artifacts/#{app_name}-test.apk \
           --timeout 2m \
+          --device model=panther,version=33,locale=en,orientation=portrait \
           --results-bucket cloud-test-#{google_project_id}"
 
     dir_path = File.join(Dir.home, 'gsutil')

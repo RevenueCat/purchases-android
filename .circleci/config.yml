@@ -115,6 +115,7 @@ commands:
             gcloud firebase test android run --type instrumentation \
               --app <<parameters.app_apk_path>> \
               --test <<parameters.test_apk_path>> \
+              --device model=panther,version=33,locale=en,orientation=portrait \
               --timeout 2m \
               --results-bucket cloud-test-${GOOGLE_PROJECT_ID}
       - run:
@@ -237,7 +238,7 @@ jobs:
           command: sudo pip install awscli
       - run:
           name: Deploy to S3
-          command: aws s3 sync ~/project/docs/8.3.0-SNAPSHOT s3://purchases-docs/android/8.3.0-SNAPSHOT --delete
+          command: aws s3 sync ~/project/docs/8.2.1 s3://purchases-docs/android/8.2.1 --delete
       - run:
           name: Update index.html
           command: aws s3 cp ~/project/docs/index.html s3://purchases-docs/android/index.html
