@@ -33,7 +33,6 @@ import com.revenuecat.purchases.paywalls.PaywallPresentedCache
 import com.revenuecat.purchases.paywalls.events.PaywallEventsManager
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.utils.STUB_PRODUCT_IDENTIFIER
-import com.revenuecat.purchases.utils.SyncDispatcher
 import com.revenuecat.purchases.utils.createMockOneTimeProductDetails
 import com.revenuecat.purchases.utils.stubGooglePurchase
 import com.revenuecat.purchases.utils.stubPurchaseHistoryRecord
@@ -407,7 +406,6 @@ internal open class BasePurchasesTest {
             paywallEventsManager = mockPaywallEventsManager,
             paywallPresentedCache = paywallPresentedCache,
             purchasesStateCache = purchasesStateProvider,
-            dispatcher = SyncDispatcher(),
         )
         purchases = Purchases(purchasesOrchestrator)
         Purchases.sharedInstance = purchases

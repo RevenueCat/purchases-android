@@ -336,7 +336,7 @@ class SubscriberAttributesDeviceCacheTests {
 
         mockNotEmptyCache(expectedAttributes)
 
-        underTest.cleanUpSubscriberAttributeCache(appUserID, mockEditor)
+        underTest.cleanUpSubscriberAttributeCache(appUserID)
 
         verify(exactly = 0) { mockEditor.remove(any()) }
         assertCapturedEqualsExpected(mapOf(appUserID to expectedAttributes))
@@ -368,7 +368,7 @@ class SubscriberAttributesDeviceCacheTests {
             userThree to createMapOfUnsyncedAttributes()
         )
         mockNotEmptyCacheMultipleUsers(cacheContents)
-        underTest.cleanUpSubscriberAttributeCache(appUserID, mockEditor)
+        underTest.cleanUpSubscriberAttributeCache(appUserID)
 
         verify(exactly = 1) {
             mockEditor.remove(underTest.legacySubscriberAttributesCacheKey(userOne))
@@ -417,7 +417,7 @@ class SubscriberAttributesDeviceCacheTests {
         )
         mockNotEmptyCacheMultipleUsers(cacheContents)
 
-        underTest.cleanUpSubscriberAttributeCache(appUserID, mockEditor)
+        underTest.cleanUpSubscriberAttributeCache(appUserID)
 
         verify(exactly = 1) {
             mockEditor.remove(underTest.legacySubscriberAttributesCacheKey(userOne))
@@ -458,7 +458,7 @@ class SubscriberAttributesDeviceCacheTests {
         )
         mockEmptyLegacyCache()
         mockNotEmptyCacheMultipleUsers(cacheContents)
-        underTest.cleanUpSubscriberAttributeCache(appUserID, mockEditor)
+        underTest.cleanUpSubscriberAttributeCache(appUserID)
         assertCapturedEqualsExpected(
             mapOf(
                 appUserID to expectedAttributes
