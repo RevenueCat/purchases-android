@@ -5,6 +5,7 @@ import android.preference.PreferenceManager
 import androidx.lifecycle.lifecycleScope
 import androidx.test.ext.junit.rules.activityScenarioRule
 import com.revenuecat.purchases.common.BillingAbstract
+import com.revenuecat.purchases.helpers.RetryRule
 import com.revenuecat.purchases.models.StoreTransaction
 import io.mockk.every
 import io.mockk.mockk
@@ -39,6 +40,9 @@ open class BasePurchasesIntegrationTest {
 
     @get:Rule
     var activityScenarioRule = activityScenarioRule<MainActivity>()
+
+    @get:Rule
+    val retryRule = RetryRule(3)
 
     protected open val initialActivePurchasesToUse: Map<String, StoreTransaction> = emptyMap()
     protected open val initialForceServerErrors: Boolean = false
