@@ -582,6 +582,10 @@ private fun RowScope.DiscountBanner(
 ) {
     val text = packageInfo.localization.offerBadge?.uppercase() ?: return
 
+    if (text.isBlank()) {
+        return
+    }
+
     val backgroundColor = state.packageButtonColorAnimation(
         packageInfo = packageInfo,
         selectedColor = colors.selectedOutline,
