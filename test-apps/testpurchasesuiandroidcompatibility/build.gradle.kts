@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.emerge)
 }
 
 android {
@@ -48,9 +49,15 @@ android {
     }
 }
 
+emerge {
+    apiToken.set(System.getenv("EMERGE_API_TOKEN"))
+}
+
 dependencies {
     implementation(project(":purchases"))
     implementation(project(":ui:revenuecatui"))
+
+    androidTestImplementation(libs.emerge.snapshots)
 
     implementation(platform(libs.kotlin.bom))
     implementation(libs.androidx.core)
