@@ -84,9 +84,11 @@ internal object PackageConfigurationFactory {
 
         val (locale, localizedConfigurationByTier) = paywallData.tieredLocalizedConfiguration
 
-        val all = tiers.associateWith { tier ->
+        val all = tiers.associate { tier ->
             val localizationForTier = localizedConfigurationByTier[tier.id]
                 ?: return Result.failure(PackageConfigurationError("No localization found for ${tier.id}"))
+
+            val tierName = localizationForTier.tierName ?: ""
 
             val packageInfosForTier = reprocessPackagesForTiers(
                 from = availablePackages,
@@ -99,16 +101,20 @@ internal object PackageConfigurationFactory {
             )
 
             val firstPackage = packageInfosForTier.firstOrNull()
-                ?: return Result.failure(PackageConfigurationError("No packages found for tier ${tier.id}"))
+                ?: run {
+                    // Filter out tiers that don't have any products
+                    Logger.e("Tier $tierName has no available products and will be removed from the paywall.")
+                    return@associate tier to null
+                }
             val defaultPackage = packageInfosForTier
                 .firstOrNull { it.rcPackage.identifier == tier.defaultPackageId } ?: firstPackage
 
-            TemplateConfiguration.PackageConfiguration.MultiPackage(
+            tier to TemplateConfiguration.PackageConfiguration.MultiPackage(
                 first = firstPackage,
                 default = defaultPackage,
                 all = packageInfosForTier,
             )
-        }
+        }.filterNotNullValues()
 
         val allTierInfos = all.entries.map { (tier, packageInfo) ->
             val tierName = packageInfo.default.localization.tierName
@@ -135,6 +141,10 @@ internal object PackageConfigurationFactory {
             ),
         )
     }
+
+    @Suppress("UNCHECKED_CAST")
+    private fun <K, V> Map<K, V?>.filterNotNullValues(): Map<K, V> =
+        filterValues { it != null } as Map<K, V>
 
     @Suppress("LongParameterList")
     private fun makeMultiplePackageConfiguration(
