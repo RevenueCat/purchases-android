@@ -19,6 +19,10 @@ internal object ColorsFactory {
         val accent2ColorInt = paywallDataColors.accent2?.colorInt ?: accent1ColorInt
         val accent3ColorInt = paywallDataColors.accent3?.colorInt ?: accent2ColorInt
         val closeButtonInt = paywallDataColors.closeButton?.colorInt
+        val tierControlBackgroundInt = paywallDataColors.tierControlBackground?.colorInt
+        val tierControlForegroundInt = paywallDataColors.tierControlForeground?.colorInt
+        val tierControlSelectedBackgroundInt = paywallDataColors.tierControlSelectedBackground?.colorInt
+        val tierControlSelectedForegroundInt = paywallDataColors.tierControlSelectedForeground?.colorInt
         return TemplateConfiguration.Colors(
             background = Color(backgroundColorInt),
             text1 = Color(text1ColorInt),
@@ -31,6 +35,10 @@ internal object ColorsFactory {
             accent2 = Color(accent2ColorInt),
             accent3 = Color(accent3ColorInt),
             closeButton = closeButtonInt?.let { Color(it) },
+            tierControlBackground = tierControlBackgroundInt?.let { Color(it) },
+            tierControlForeground = tierControlForegroundInt?.let { Color(it) },
+            tierControlSelectedBackground = tierControlSelectedBackgroundInt?.let { Color(it) },
+            tierControlSelectedForeground = tierControlSelectedForegroundInt?.let { Color(it) },
         )
     }
 }

@@ -31,7 +31,12 @@ internal sealed class PaywallState {
             selectedPackage: TemplateConfiguration.PackageInfo,
             shouldDisplayDismissButton: Boolean,
         ) :
-            this(offering, templateConfiguration, mutableStateOf(selectedPackage), shouldDisplayDismissButton)
+            this(
+                offering,
+                templateConfiguration,
+                mutableStateOf(selectedPackage),
+                shouldDisplayDismissButton,
+            )
 
         fun selectPackage(packageInfo: TemplateConfiguration.PackageInfo) {
             selectedPackage.value = packageInfo

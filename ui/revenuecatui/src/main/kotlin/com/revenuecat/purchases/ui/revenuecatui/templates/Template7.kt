@@ -3,7 +3,9 @@
 package com.revenuecat.purchases.ui.revenuecatui.templates
 
 import android.net.Uri
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -52,6 +54,7 @@ import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.paywalls.PaywallData
+import com.revenuecat.purchases.ui.revenuecatui.ExperimentalPreviewRevenueCatUIPurchasesAPI
 import com.revenuecat.purchases.ui.revenuecatui.InternalPaywall
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
@@ -64,13 +67,14 @@ import com.revenuecat.purchases.ui.revenuecatui.composables.PaywallIcon
 import com.revenuecat.purchases.ui.revenuecatui.composables.PaywallIconName
 import com.revenuecat.purchases.ui.revenuecatui.composables.PurchaseButton
 import com.revenuecat.purchases.ui.revenuecatui.composables.RemoteImage
+import com.revenuecat.purchases.ui.revenuecatui.composables.SelectedTierView
 import com.revenuecat.purchases.ui.revenuecatui.composables.StatusBarSpacer
+import com.revenuecat.purchases.ui.revenuecatui.composables.TierSwitcher
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModel
-import com.revenuecat.purchases.ui.revenuecatui.data.currentColors
 import com.revenuecat.purchases.ui.revenuecatui.data.isInFullScreenMode
+import com.revenuecat.purchases.ui.revenuecatui.data.processed.ProcessedLocalizedConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
-import com.revenuecat.purchases.ui.revenuecatui.data.selectedLocalization
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockViewModel
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
@@ -79,7 +83,7 @@ import com.revenuecat.purchases.ui.revenuecatui.extensions.packageButtonActionIn
 import com.revenuecat.purchases.ui.revenuecatui.extensions.packageButtonColorAnimation
 import com.revenuecat.purchases.ui.revenuecatui.helpers.shouldUseLandscapeLayout
 
-private object Template5UIConstants {
+private object Template7UIConstants {
     val featureIconSize = 25.dp
     val checkmarkSize = 18.dp
     val discountPadding = 8.dp
@@ -87,42 +91,82 @@ private object Template5UIConstants {
 }
 
 @Composable
-internal fun Template5(
+internal fun Template7(
     state: PaywallState.Loaded,
     viewModel: PaywallViewModel,
 ) {
+    val packagesConfig = state.templateConfiguration.packages
+    require(packagesConfig is TemplateConfiguration.PackageConfiguration.MultiTier) {
+        // This should never happen
+        "The configuration is not MultiTier"
+    }
+
+    val firstTier = packagesConfig.defaultTier
+    val allTiers = packagesConfig.allTiers
+
     var packageSelectorVisible by remember {
         mutableStateOf(state.templateConfiguration.mode != PaywallMode.FOOTER_CONDENSED)
     }
 
-    Column {
+    var selectedTier by remember {
+        mutableStateOf(firstTier)
+    }
+
+    val colorForTier = state.templateConfiguration.getCurrentColorsForTier(tier = selectedTier)
+
+    Column(
+        Modifier.background(colorForTier.background),
+    ) {
         if (state.shouldUseLandscapeLayout()) {
-            Template5LandscapeContent(state, viewModel)
+            Template7LandscapeContent(
+                state,
+                viewModel,
+                allTiers,
+                selectedTier,
+            ) {
+                selectedTier = it
+                state.selectPackage(selectedTier.defaultPackage)
+            }
         } else {
-            Template5PortraitContent(state, viewModel, packageSelectorVisible)
+            Template7PortraitContent(
+                state,
+                viewModel,
+                packageSelectorVisible,
+                allTiers,
+                selectedTier,
+            ) {
+                selectedTier = it
+                state.selectPackage(selectedTier.defaultPackage)
+            }
         }
 
-        PurchaseButton(state, viewModel)
+        PurchaseButton(state, viewModel, colors = colorForTier)
 
         Footer(
             templateConfiguration = state.templateConfiguration,
             viewModel = viewModel,
+            colors = colorForTier,
             allPlansTapped = { packageSelectorVisible = !packageSelectorVisible },
         )
     }
 }
 
-@Suppress("LongMethod")
+@Suppress("LongMethod", "LongParameterList")
 @Composable
-private fun ColumnScope.Template5PortraitContent(
+private fun ColumnScope.Template7PortraitContent(
     state: PaywallState.Loaded,
     viewModel: PaywallViewModel,
     packageSelectionVisible: Boolean,
+    tiers: List<TemplateConfiguration.TierInfo>,
+    selectedTier: TemplateConfiguration.TierInfo,
+    onSelectTierChange: (TemplateConfiguration.TierInfo) -> Unit,
 ) {
-    val headerUri = state.templateConfiguration.images.headerUri
-    if (state.isInFullScreenMode) {
+    val headerUri = state.templateConfiguration.imagesByTier[selectedTier.id]?.headerUri
+    if (state.isInFullScreenMode && headerUri != null) {
         HeaderImage(headerUri)
     }
+
+    val colorForTier = state.templateConfiguration.getCurrentColorsForTier(tier = selectedTier)
 
     val scrollState = rememberScrollState()
     Column(
@@ -143,16 +187,42 @@ private fun ColumnScope.Template5PortraitContent(
                 }
                 Spacer(Modifier.height(UIConstant.iconButtonSize))
             }
-            Title(state)
-
-            Spacer(Modifier.weight(1f))
-
-            Features(state)
-
-            Spacer(Modifier.weight(1f))
+            Title(state, selectedTier)
         }
 
-        AnimatedPackages(state, viewModel, packageSelectionVisible)
+        if (tiers.size > 1) {
+            if (packageSelectionVisible) {
+                TierSwitcher(
+                    tiers = tiers,
+                    selectedTier = selectedTier,
+                    onTierSelected = {
+                        onSelectTierChange(it)
+                    },
+                    backgroundColor = colorForTier.tierSwitcherBackground,
+                    backgroundSelectedColor = colorForTier.tierSwitcherBackgroundSelected,
+                    foregroundColor = colorForTier.tierSwitcherForeground,
+                    foregroundSelectedColor = colorForTier.tierSwitcherForegroundSelected,
+                )
+            } else {
+                SelectedTierView(
+                    selectedTier = selectedTier,
+                    backgroundSelectedColor = colorForTier.tierSwitcherBackgroundSelected,
+                    foregroundSelectedColor = colorForTier.tierSwitcherForegroundSelected,
+                )
+            }
+        }
+
+        if (state.isInFullScreenMode) {
+            Features(state, selectedTier)
+        }
+
+        AnimatedPackages(
+            state = state,
+            viewModel = viewModel,
+            packages = selectedTier.packages,
+            colors = colorForTier,
+            packageSelectionVisible = packageSelectionVisible,
+        )
 
         if (state.isInFullScreenMode) {
             Spacer(Modifier.weight(1f))
@@ -163,19 +233,25 @@ private fun ColumnScope.Template5PortraitContent(
         visible = packageSelectionVisible,
         enter = fadeIn(animationSpec = UIConstant.defaultAnimation()),
         exit = fadeOut(animationSpec = UIConstant.defaultAnimation()),
-        label = "Template5.packageSpacing",
+        label = "Template7.packageSpacing",
     ) {
         Spacer(modifier = Modifier.height(UIConstant.defaultVerticalSpacing))
     }
 }
 
 @Composable
-private fun ColumnScope.Template5LandscapeContent(
+@Suppress("LongMethod")
+private fun ColumnScope.Template7LandscapeContent(
     state: PaywallState.Loaded,
     viewModel: PaywallViewModel,
+    tiers: List<TemplateConfiguration.TierInfo>,
+    selectedTier: TemplateConfiguration.TierInfo,
+    onSelectTierChange: (TemplateConfiguration.TierInfo) -> Unit,
 ) {
     val leftScrollState = rememberScrollState()
     val rightScrollState = rememberScrollState()
+
+    val colorForTier = state.templateConfiguration.getCurrentColorsForTier(tier = selectedTier)
 
     Row(
         horizontalArrangement = Arrangement.Absolute.SpaceEvenly,
@@ -198,11 +274,11 @@ private fun ColumnScope.Template5LandscapeContent(
         ) {
             Spacer(Modifier.weight(UIConstant.halfWeight))
 
-            Title(state)
+            Title(state, selectedTier)
 
             Spacer(Modifier.weight(UIConstant.halfWeight))
 
-            Features(state)
+            Features(state, selectedTier)
         }
 
         Column(
@@ -218,7 +294,28 @@ private fun ColumnScope.Template5LandscapeContent(
         ) {
             Spacer(Modifier.weight(UIConstant.halfWeight))
 
-            AnimatedPackages(state, viewModel)
+            if (tiers.size > 1) {
+                TierSwitcher(
+                    tiers = tiers,
+                    selectedTier = selectedTier,
+                    onTierSelected = {
+                        onSelectTierChange(it)
+                    },
+                    backgroundColor = colorForTier.tierSwitcherBackground,
+                    backgroundSelectedColor = colorForTier.tierSwitcherBackgroundSelected,
+                    foregroundColor = colorForTier.tierSwitcherForeground,
+                    foregroundSelectedColor = colorForTier.tierSwitcherForegroundSelected,
+                )
+
+                Spacer(Modifier.weight(UIConstant.halfWeight))
+            }
+
+            AnimatedPackages(
+                state = state,
+                viewModel = viewModel,
+                packages = selectedTier.packages,
+                colors = colorForTier,
+            )
 
             Spacer(Modifier.weight(UIConstant.halfWeight))
         }
@@ -231,7 +328,7 @@ private fun HeaderImage(uri: Uri?) {
         RemoteImage(
             urlString = uri.toString(),
             modifier = Modifier
-                .aspectRatio(ratio = Template5UIConstants.headerAspectRatio),
+                .aspectRatio(ratio = Template7UIConstants.headerAspectRatio),
             contentScale = ContentScale.Crop,
         )
     }
@@ -240,29 +337,54 @@ private fun HeaderImage(uri: Uri?) {
 @Composable
 private fun ColumnScope.Title(
     state: PaywallState.Loaded,
+    selectedTier: TemplateConfiguration.TierInfo,
 ) {
+    val colorForTier = state.templateConfiguration.getCurrentColorsForTier(tier = selectedTier)
+    val localization = selectedLocalizationForTier(selectedTier)
+
     Markdown(
         style = MaterialTheme.typography.headlineMedium,
         fontWeight = FontWeight.Bold,
-        textAlign = TextAlign.Start,
-        text = state.selectedLocalization.title,
-        color = state.templateConfiguration.getCurrentColors().text1,
+        textAlign = TextAlign.Center,
+        text = localization.title,
+        color = colorForTier.text1,
         modifier = Modifier
             .fillMaxWidth(),
     )
 }
 
+private fun selectedLocalizationForTier(tier: TemplateConfiguration.TierInfo): ProcessedLocalizedConfiguration {
+    return tier.defaultPackage.localization
+}
+
+@OptIn(ExperimentalAnimationApi::class)
 @Composable
 private fun Features(
     state: PaywallState.Loaded,
+    selectedTier: TemplateConfiguration.TierInfo,
 ) {
-    val colors = state.templateConfiguration.getCurrentColors()
+    val colorForTier = state.templateConfiguration.getCurrentColorsForTier(tier = selectedTier)
 
-    state.selectedLocalization.features.forEach { feature ->
-        Feature(
-            feature = feature,
-            colors = colors,
-        )
+    val localization = selectedLocalizationForTier(selectedTier)
+
+    AnimatedContent(
+        targetState = selectedTier,
+        label = "features portrait",
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(
+                UIConstant.defaultVerticalSpacing,
+                Alignment.CenterVertically,
+            ),
+        ) {
+            localization.features.forEach { feature ->
+                Feature(
+                    feature = feature,
+                    colors = colorForTier,
+                )
+            }
+        }
     }
 }
 
@@ -279,7 +401,7 @@ private fun Feature(
     ) {
         Box(
             modifier = Modifier
-                .size(Template5UIConstants.featureIconSize),
+                .size(Template7UIConstants.featureIconSize),
         ) {
             feature.iconID
                 ?.let { PaywallIconName.fromValue(it) }
@@ -320,6 +442,8 @@ private fun AnimatedPackages(
     state: PaywallState.Loaded,
     viewModel: PaywallViewModel,
     packageSelectionVisible: Boolean = true,
+    packages: List<TemplateConfiguration.PackageInfo>,
+    colors: TemplateConfiguration.Colors,
 ) {
     val packagesContentAlignment = if (state.isInFullScreenMode) {
         Alignment.TopStart
@@ -333,7 +457,10 @@ private fun AnimatedPackages(
             exit = fadeOut(animationSpec = tween(delayMillis = UIConstant.defaultAnimationDurationMillis)),
             label = "OfferDetailsVisibility",
         ) {
-            OfferDetails(state)
+            OfferDetails(
+                state = state,
+                colors = colors,
+            )
         }
 
         AnimatedVisibility(
@@ -348,8 +475,8 @@ private fun AnimatedPackages(
                     Alignment.CenterVertically,
                 ),
             ) {
-                state.templateConfiguration.packages.all.forEach { packageInfo ->
-                    SelectPackageButton(state, packageInfo, viewModel)
+                packages.forEach { packageInfo ->
+                    SelectPackageButton(state, packageInfo, viewModel, colors)
                 }
             }
         }
@@ -362,8 +489,8 @@ private fun ColumnScope.SelectPackageButton(
     state: PaywallState.Loaded,
     packageInfo: TemplateConfiguration.PackageInfo,
     viewModel: PaywallViewModel,
+    colors: TemplateConfiguration.Colors,
 ) {
-    val colors = state.currentColors
     val isSelected = packageInfo == state.selectedPackage.value
 
     val buttonAlpha = viewModel.packageButtonActionInProgressOpacityAnimation()
@@ -410,7 +537,11 @@ private fun ColumnScope.SelectPackageButton(
                     modifier = Modifier.weight(1f, fill = true),
                 )
 
-                DiscountBanner(state = state, packageInfo = packageInfo)
+                DiscountBanner(
+                    state = state,
+                    packageInfo = packageInfo,
+                    colors = colors,
+                )
             }
 
             IntroEligibilityStateView(
@@ -430,7 +561,7 @@ private fun ColumnScope.SelectPackageButton(
 private fun CheckmarkBox(isSelected: Boolean, colors: TemplateConfiguration.Colors) {
     Box(
         modifier = Modifier
-            .size(Template5UIConstants.checkmarkSize)
+            .size(Template7UIConstants.checkmarkSize)
             .clip(CircleShape)
             .background(if (isSelected) colors.background else colors.unselectedOutline),
     ) {
@@ -447,14 +578,13 @@ private fun CheckmarkBox(isSelected: Boolean, colors: TemplateConfiguration.Colo
 private fun RowScope.DiscountBanner(
     state: PaywallState.Loaded,
     packageInfo: TemplateConfiguration.PackageInfo,
+    colors: TemplateConfiguration.Colors,
 ) {
     val text = packageInfo.localization.offerBadge?.uppercase() ?: return
 
     if (text.isBlank()) {
         return
     }
-
-    val colors = state.currentColors
 
     val backgroundColor = state.packageButtonColorAnimation(
         packageInfo = packageInfo,
@@ -471,8 +601,8 @@ private fun RowScope.DiscountBanner(
         modifier = Modifier
             .align(Alignment.Top)
             .offset(
-                x = UIConstant.defaultHorizontalPadding - Template5UIConstants.discountPadding,
-                y = -UIConstant.defaultVerticalSpacing + Template5UIConstants.discountPadding,
+                x = UIConstant.defaultHorizontalPadding - Template7UIConstants.discountPadding,
+                y = -UIConstant.defaultVerticalSpacing + Template7UIConstants.discountPadding,
             ),
     ) {
         Box(
@@ -491,6 +621,18 @@ private fun RowScope.DiscountBanner(
     }
 }
 
+private val TemplateConfiguration.Colors.tierSwitcherBackground: Color
+    get() = this.tierControlBackground ?: this.accent1
+
+private val TemplateConfiguration.Colors.tierSwitcherBackgroundSelected: Color
+    get() = this.tierControlSelectedBackground ?: this.unselectedDiscountText
+
+private val TemplateConfiguration.Colors.tierSwitcherForeground: Color
+    get() = this.tierControlForeground ?: this.text1
+
+private val TemplateConfiguration.Colors.tierSwitcherForegroundSelected: Color
+    get() = this.tierControlSelectedForeground ?: this.text1
+
 private val TemplateConfiguration.Colors.featureIcon: Color
     get() = this.accent1
 private val TemplateConfiguration.Colors.selectedOutline: Color
@@ -502,10 +644,11 @@ private val TemplateConfiguration.Colors.selectedDiscountText: Color
 private val TemplateConfiguration.Colors.unselectedDiscountText: Color
     get() = this.text3
 
+@OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class)
 @Preview(showBackground = true, locale = "en-rUS", group = "full_screen")
 @Preview(
     showBackground = true,
-    locale = "en-rUS",
+    locale = "en-rES",
     group = "full_screen",
     name = "Landscape",
     widthDp = 720,
@@ -516,29 +659,31 @@ private val TemplateConfiguration.Colors.unselectedDiscountText: Color
 @Preview(showBackground = true, device = Devices.NEXUS_7, group = "full_screen")
 @Preview(showBackground = true, device = Devices.NEXUS_10, group = "full_screen")
 @Composable
-private fun Template5PaywallPreview() {
+private fun Template7PaywallPreview() {
     InternalPaywall(
         options = PaywallOptions.Builder(dismissRequest = {}).build(),
-        viewModel = MockViewModel(offering = TestData.template5Offering),
+        viewModel = MockViewModel(offering = TestData.template7Offering),
     )
 }
 
+@OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class)
 @Preview(showBackground = true, locale = "en-rUS", group = "footer")
 @Preview(showBackground = true, locale = "es-rES", group = "footer")
 @Composable
-private fun Template5PaywallFooterPreview() {
+private fun Template7PaywallFooterPreview() {
     InternalPaywall(
         options = PaywallOptions.Builder(dismissRequest = {}).build(),
-        viewModel = MockViewModel(mode = PaywallMode.FOOTER, offering = TestData.template5Offering),
+        viewModel = MockViewModel(mode = PaywallMode.FOOTER, offering = TestData.template7Offering),
     )
 }
 
+@OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class)
 @Preview(showBackground = true, locale = "en-rUS", group = "condensed")
 @Preview(showBackground = true, locale = "es-rES", group = "condensed")
 @Composable
-private fun Template5PaywallFooterCondensedPreview() {
+private fun Template7PaywallFooterCondensedPreview() {
     InternalPaywall(
         options = PaywallOptions.Builder(dismissRequest = {}).build(),
-        viewModel = MockViewModel(mode = PaywallMode.FOOTER_CONDENSED, offering = TestData.template5Offering),
+        viewModel = MockViewModel(mode = PaywallMode.FOOTER_CONDENSED, offering = TestData.template7Offering),
     )
 }

@@ -16,15 +16,27 @@ internal data class TemplateConfiguration(
     val packages: PackageConfiguration,
     val configuration: PaywallData.Configuration,
     val images: Images,
+    val imagesByTier: Map<String, Images>,
+    val colors: PaywallData.Configuration.ColorInformation,
     val locale: Locale,
 ) {
-    private val darkModeColors = ColorsFactory.create(configuration.colors.dark ?: configuration.colors.light)
-    private val lightModeColors = ColorsFactory.create(configuration.colors.light)
+    private val darkModeColors = ColorsFactory.create(colors.dark ?: colors.light)
+    private val lightModeColors = ColorsFactory.create(colors.light)
 
     @Composable
     @ReadOnlyComposable
     fun getCurrentColors(): Colors {
         return if (isSystemInDarkTheme()) darkModeColors else lightModeColors
+    }
+
+    @Composable
+    @ReadOnlyComposable
+    fun getCurrentColorsForTier(tier: TierInfo): Colors {
+        val colorByTier = configuration.colorsByTier?.get(tier.id)?.let {
+            if (isSystemInDarkTheme()) ColorsFactory.create(it.dark ?: it.light) else ColorsFactory.create(it.light)
+        }
+
+        return colorByTier ?: getCurrentColors()
     }
 
     data class PackageInfo(
@@ -52,14 +64,51 @@ internal data class TemplateConfiguration(
         val accent2: Color,
         val accent3: Color,
         val closeButton: Color?,
+        val tierControlBackground: Color?,
+        val tierControlForeground: Color?,
+        val tierControlSelectedBackground: Color?,
+        val tierControlSelectedForeground: Color?,
     )
 
-    sealed class PackageConfiguration(open val default: PackageInfo, open val all: List<PackageInfo>) {
-        data class Single(val packageInfo: PackageInfo) : PackageConfiguration(packageInfo, listOf(packageInfo))
-        data class Multiple(
+    data class TierInfo(
+        val name: String,
+        val id: String,
+        val defaultPackage: PackageInfo,
+        val packages: List<PackageInfo>,
+    )
+
+    sealed class PackageConfiguration {
+
+        abstract val all: List<PackageInfo>
+        abstract val default: PackageInfo
+
+        data class MultiPackage(
             val first: PackageInfo,
-            override val default: PackageInfo,
-            override val all: List<PackageInfo>,
-        ) : PackageConfiguration(default, all)
+            val default: PackageInfo,
+            val all: List<PackageInfo>,
+        )
+
+        data class Single(val singlePackage: PackageInfo) : PackageConfiguration() {
+            override val all: List<PackageInfo>
+                get() = listOf(singlePackage)
+            override val default: PackageInfo
+                get() = singlePackage
+        }
+
+        data class Multiple(val multiPackage: MultiPackage) : PackageConfiguration() {
+            override val all: List<PackageInfo>
+                get() = multiPackage.all
+            override val default: PackageInfo
+                get() = multiPackage.default
+        }
+        data class MultiTier(
+            val defaultTier: TierInfo,
+            val allTiers: List<TierInfo>,
+        ) : PackageConfiguration() {
+            override val all: List<PackageInfo>
+                get() = allTiers.map { it.packages }.flatten()
+            override val default: PackageInfo
+                get() = defaultTier.defaultPackage
+        }
     }
 }
