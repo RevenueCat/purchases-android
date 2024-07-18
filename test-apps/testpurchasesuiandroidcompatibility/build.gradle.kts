@@ -50,7 +50,20 @@ android {
 }
 
 emerge {
+    // TODO: RevenueCat to set from CircleCi variables
     apiToken.set(System.getenv("EMERGE_API_TOKEN"))
+
+    vcs {
+        // TODO: RevenueCat to set from CircleCi variables
+        sha.set("")
+        // TODO: RevenueCat to set from CircleCi variables
+        // Should skip setting for main branch uploads
+        baseSha.set("")
+        gitHub {
+            repoName.set("purchases-android")
+            repoOwner.set("RevenueCat")
+        }
+    }
 }
 
 dependencies {
