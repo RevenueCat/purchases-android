@@ -1,3 +1,7 @@
+## 8.3.0
+### RevenueCatUI
+* Added new paywall template to support multiple tiered subscriptions (#1720) via Josh Holtz (@joshdholtz)
+
 ## 8.2.1
 ### Bugfixes
 * Attempt to fix ANRs by moving some tasks during configure to background (#1772) via Cesar de la Vega (@vegaro)
