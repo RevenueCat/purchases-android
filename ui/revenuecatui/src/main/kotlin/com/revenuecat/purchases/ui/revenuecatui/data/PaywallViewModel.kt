@@ -181,11 +181,17 @@ internal class PaywallViewModelImpl(
                 when (purchases.purchasesAreCompletedBy) {
                     PurchasesAreCompletedBy.MY_APP -> {
                         val customerInfo = purchases.awaitCustomerInfo()
-                        customRestoreHandler?.invoke(customerInfo) ?: throw IllegalStateException("customRestoreHandler is null but required for MY_APP")
+                        customRestoreHandler?.invoke(customerInfo)
+                            ?: throw IllegalStateException(
+                                "myAppPurchaseLogic is null, but is required when " +
+                                "purchases.purchasesAreCompletedBy is .MY_APP."
+                            )
                     }
                     PurchasesAreCompletedBy.REVENUECAT -> {
                         if (customRestoreHandler != null) {
-                            Logger.e("customRestoreHandler should be null when purchases are completed by REVENUECAT")
+                            Logger.e("myAppPurchaseLogic expected be null when " +
+                                     "purchases.purchasesAreCompletedBy is .REVENUECAT.\n" +
+                                     "myAppPurchaseLogic.performRestore will not be executed.")
                         }
                         val customerInfo = purchases.awaitRestore()
                         Logger.i("Restore purchases successful: $customerInfo")
@@ -234,11 +240,19 @@ internal class PaywallViewModelImpl(
                 when (purchases.purchasesAreCompletedBy) {
                     PurchasesAreCompletedBy.MY_APP -> {
                         val customerInfo = purchases.awaitCustomerInfo()
-                        customPurchaseHandler?.invoke(customerInfo) ?: throw IllegalStateException("myAppPurchaseLogic?.performPurchase is null but required for MY_APP")
+                        customPurchaseHandler?.invoke(customerInfo)
+                            ?: throw IllegalStateException(
+                                "myAppPurchaseLogic is null, but is required when " +
+                                "purchases.purchasesAreCompletedBy is .MY_APP."
+                            )
                     }
                     PurchasesAreCompletedBy.REVENUECAT -> {
                         if (customPurchaseHandler != null) {
-                            Logger.e("customPurchaseHandler expected to be null when purchases are completed by REVENUECAT")
+                            Logger.e(
+                                "myAppPurchaseLogic expected to be null " +
+                                "when purchases.purchasesAreCompletedBy is .REVENUECAT. \n" +
+                                "myAppPurchaseLogic.performPurchase will not be executed."
+                            )
                         }
                         val purchaseResult = purchases.awaitPurchase(PurchaseParams.Builder(activity, packageToPurchase))
                         listener?.onPurchaseCompleted(purchaseResult.customerInfo, purchaseResult.storeTransaction)
