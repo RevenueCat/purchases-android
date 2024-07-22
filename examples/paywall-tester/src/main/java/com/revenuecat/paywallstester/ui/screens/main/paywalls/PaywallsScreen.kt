@@ -47,8 +47,14 @@ fun PaywallsScreen(
         items(SamplePaywalls.SampleTemplate.values()) { template ->
             val offering = samplePaywallsLoader.offeringForTemplate(template)
             val myAppPurchaseLogic = MyAppPurchaseLogic(
-                performPurchase = { println("Hello from performPurchase!") },
-                performRestore = { println("Hello from performRestore!") }
+                performPurchase = { customerInfo ->
+                    println("Hello from performPurchase!")
+                    println("Original app user ID is ${customerInfo.originalAppUserId}")
+                },
+                performRestore = { customerInfo ->
+                    println("Hello from performRestore!")
+                    println("Original app user ID is ${customerInfo.originalAppUserId}")
+                }
             )
             Column(modifier = Modifier.fillMaxWidth()) {
                 Text(

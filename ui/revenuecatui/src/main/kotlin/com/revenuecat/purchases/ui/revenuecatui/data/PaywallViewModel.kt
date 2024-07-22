@@ -180,7 +180,8 @@ internal class PaywallViewModelImpl(
 
                 when (purchases.purchasesAreCompletedBy) {
                     PurchasesAreCompletedBy.MY_APP -> {
-                        customRestoreHandler?.invoke() ?: throw IllegalStateException("customRestoreHandler is null but required for MY_APP")
+                        val customerInfo = purchases.awaitCustomerInfo()
+                        customRestoreHandler?.invoke(customerInfo) ?: throw IllegalStateException("customRestoreHandler is null but required for MY_APP")
                     }
                     PurchasesAreCompletedBy.REVENUECAT -> {
                         if (customRestoreHandler != null) {
@@ -232,7 +233,8 @@ internal class PaywallViewModelImpl(
 
                 when (purchases.purchasesAreCompletedBy) {
                     PurchasesAreCompletedBy.MY_APP -> {
-                        customPurchaseHandler?.invoke() ?: throw IllegalStateException("myAppPurchaseLogic?.performPurchase is null but required for MY_APP")
+                        val customerInfo = purchases.awaitCustomerInfo()
+                        customPurchaseHandler?.invoke(customerInfo) ?: throw IllegalStateException("myAppPurchaseLogic?.performPurchase is null but required for MY_APP")
                     }
                     PurchasesAreCompletedBy.REVENUECAT -> {
                         if (customPurchaseHandler != null) {
