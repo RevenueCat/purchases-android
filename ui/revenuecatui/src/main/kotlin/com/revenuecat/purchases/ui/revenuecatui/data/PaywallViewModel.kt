@@ -247,7 +247,7 @@ internal class PaywallViewModelImpl(
                 when (purchases.purchasesAreCompletedBy) {
                     PurchasesAreCompletedBy.MY_APP -> {
                         val customerInfo = purchases.awaitCustomerInfo()
-                        customPurchaseHandler?.invoke(customerInfo)
+                        customPurchaseHandler?.invoke(activity, packageToPurchase)
                             ?: throw IllegalStateException(
                                 "myAppPurchaseLogic is null, but is required when " +
                                 "purchases.purchasesAreCompletedBy is .MY_APP."

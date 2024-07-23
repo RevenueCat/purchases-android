@@ -116,7 +116,7 @@ class PaywallViewModelTest {
 
         var restoreCalled = false
         val myAppPurchaseLogic = MyAppPurchaseLogic(
-            performPurchase = { customerInfo ->
+            performPurchase = { _, _ ->
             },
             performRestore = { customerInfo ->
                 restoreCalled = true
@@ -127,6 +127,26 @@ class PaywallViewModelTest {
         model.awaitRestorePurchases()
 
         assertThat(restoreCalled).isTrue
+    }
+
+    @Test
+    fun `Calls custom purchase logic when using my app`() = runTest {
+        // MyAppPurchaseLogic
+        every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.MY_APP
+
+        var purchaseCalled = false
+        val myAppPurchaseLogic = MyAppPurchaseLogic(
+            performPurchase = { _, _ ->
+                purchaseCalled = true
+            },
+            performRestore = { customerInfo ->
+            }
+        )
+        val model = create(customPurchaseLogic = myAppPurchaseLogic)
+
+        model.purchaseSelectedPackage(activity)
+
+        assertThat(purchaseCalled).isTrue
     }
 
     @Test
