@@ -202,6 +202,10 @@ private class LoadingViewModel(
         // no-op
     }
 
+    suspend override fun awaitRestorePurchases() {
+        // no-op
+    }
+
     override fun clearActionError() = Unit
 }
 

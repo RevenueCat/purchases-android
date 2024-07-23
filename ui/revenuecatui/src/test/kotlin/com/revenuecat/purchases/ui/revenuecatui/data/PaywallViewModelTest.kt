@@ -10,6 +10,7 @@ import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PurchaseResult
+import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
@@ -18,6 +19,7 @@ import com.revenuecat.purchases.models.Transaction
 import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.paywalls.events.PaywallEventType
 import com.revenuecat.purchases.ui.revenuecatui.ExperimentalPreviewRevenueCatUIPurchasesAPI
+import com.revenuecat.purchases.ui.revenuecatui.MyAppPurchaseLogic
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
@@ -36,6 +38,7 @@ import io.mockk.verify
 import io.mockk.verifyOrder
 import junit.framework.TestCase.fail
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Before
@@ -70,7 +73,7 @@ class PaywallViewModelTest {
     @get:Rule
     var instantExecutorRule = InstantTaskExecutorRule()
 
-    @Before
+    @Before //james
     fun setUp() {
         purchases = mockk()
         customerInfo = mockk()
@@ -98,6 +101,32 @@ class PaywallViewModelTest {
     @After
     internal fun tearDown() {
         clearAllMocks()
+    }
+    @Test
+    fun `Purchases will complete purchases using my app`() {
+        every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.MY_APP
+
+        assert(purchases.purchasesAreCompletedBy == PurchasesAreCompletedBy.MY_APP)
+    }
+
+    @Test
+    fun `Calls custom restore logic when using my app`() = runTest {
+        // MyAppPurchaseLogic
+        every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.MY_APP
+
+        var restoreCalled = false
+        val myAppPurchaseLogic = MyAppPurchaseLogic(
+            performPurchase = { customerInfo ->
+            },
+            performRestore = { customerInfo ->
+                restoreCalled = true
+            }
+        )
+        val model = create(customPurchaseLogic = myAppPurchaseLogic)
+
+        model.awaitRestorePurchases()
+
+        assertThat(restoreCalled).isTrue
     }
 
     @Test
@@ -569,7 +598,8 @@ class PaywallViewModelTest {
         offering: Offering? = null,
         activeSubscriptions: Set<String> = setOf(),
         nonSubscriptionTransactionProductIdentifiers: Set<String> = setOf(),
-        shouldDisplayBlock: ((CustomerInfo) -> Boolean)? = null,
+        customPurchaseLogic: MyAppPurchaseLogic? = null,
+        shouldDisplayBlock: ((CustomerInfo) -> Boolean)? = null
     ): PaywallViewModelImpl {
         mockActiveSubscriptions(activeSubscriptions)
         mockNonSubscriptionTransactions(nonSubscriptionTransactionProductIdentifiers)
@@ -580,6 +610,7 @@ class PaywallViewModelTest {
             PaywallOptions.Builder(dismissRequest = { dismissInvoked = true })
                 .setListener(listener)
                 .setOffering(offering)
+                .setMyAppPurchaseLogic(customPurchaseLogic)
                 .build(),
             TestData.Constants.currentColorScheme,
             isDarkMode = false,

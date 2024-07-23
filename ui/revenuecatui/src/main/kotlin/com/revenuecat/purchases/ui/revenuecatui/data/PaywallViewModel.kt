@@ -61,6 +61,8 @@ internal interface PaywallViewModel {
 
     fun restorePurchases()
 
+    suspend fun awaitRestorePurchases()
+
     fun clearActionError()
 }
 
@@ -169,52 +171,57 @@ internal class PaywallViewModelImpl(
         }
     }
 
-    override fun restorePurchases() {
+    override suspend fun awaitRestorePurchases() {
         if (verifyNoActionInProgressOrStartAction()) { return }
+        try {
+            listener?.onRestoreStarted()
 
-        viewModelScope.launch {
-            try {
-                listener?.onRestoreStarted()
+            val customRestoreHandler = myAppPurchaseLogic?.performRestore
 
-                val customRestoreHandler = myAppPurchaseLogic?.performRestore
-
-                when (purchases.purchasesAreCompletedBy) {
-                    PurchasesAreCompletedBy.MY_APP -> {
-                        val customerInfo = purchases.awaitCustomerInfo()
-                        customRestoreHandler?.invoke(customerInfo)
-                            ?: throw IllegalStateException(
-                                "myAppPurchaseLogic is null, but is required when " +
+            when (purchases.purchasesAreCompletedBy) {
+                PurchasesAreCompletedBy.MY_APP -> {
+                    val customerInfo = purchases.awaitCustomerInfo()
+                    customRestoreHandler?.invoke(customerInfo)
+                        ?: throw IllegalStateException(
+                            "myAppPurchaseLogic is null, but is required when " +
                                 "purchases.purchasesAreCompletedBy is .MY_APP."
-                            )
+                        )
+                    listener?.onRestoreCompleted(customerInfo)
+                }
+                PurchasesAreCompletedBy.REVENUECAT -> {
+                    if (customRestoreHandler != null) {
+                        Logger.e("myAppPurchaseLogic expected be null when " +
+                            "purchases.purchasesAreCompletedBy is .REVENUECAT.\n" +
+                            "myAppPurchaseLogic.performRestore will not be executed.")
                     }
-                    PurchasesAreCompletedBy.REVENUECAT -> {
-                        if (customRestoreHandler != null) {
-                            Logger.e("myAppPurchaseLogic expected be null when " +
-                                     "purchases.purchasesAreCompletedBy is .REVENUECAT.\n" +
-                                     "myAppPurchaseLogic.performRestore will not be executed.")
-                        }
-                        val customerInfo = purchases.awaitRestore()
-                        Logger.i("Restore purchases successful: $customerInfo")
-                        listener?.onRestoreCompleted(customerInfo)
+                    val customerInfo = purchases.awaitRestore()
+                    Logger.i("Restore purchases successful: $customerInfo")
+                    listener?.onRestoreCompleted(customerInfo)
 
-                        shouldDisplayBlock?.let {
-                            if (!it(customerInfo)) {
-                                Logger.d("Dismissing paywall after restore since display condition has not been met")
-                                options.dismissRequest()
-                            }
+                    shouldDisplayBlock?.let {
+                        if (!it(customerInfo)) {
+                            Logger.d("Dismissing paywall after restore since display condition has not been met")
+                            options.dismissRequest()
                         }
-                    }
-                    else -> {
-                        Logger.e("Unsupported purchase completion type: ${purchases.purchasesAreCompletedBy}")
                     }
                 }
-            } catch (e: PurchasesException) {
-                Logger.e("Error restoring purchases: $e")
-                listener?.onRestoreError(e.error)
-                _actionError.value = e.error
+                else -> {
+                    Logger.e("Unsupported purchase completion type: ${purchases.purchasesAreCompletedBy}")
+                }
             }
+        } catch (e: PurchasesException) {
+            Logger.e("Error restoring purchases: $e")
+            listener?.onRestoreError(e.error)
+            _actionError.value = e.error
+        }
 
-            finishAction()
+        finishAction()
+    }
+
+    override fun restorePurchases() {
+        if (verifyNoActionInProgressOrStartAction()) { return }
+        viewModelScope.launch {
+            awaitRestorePurchases()
         }
     }
 
