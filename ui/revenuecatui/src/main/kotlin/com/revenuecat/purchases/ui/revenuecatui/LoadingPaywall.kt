@@ -198,6 +198,10 @@ private class LoadingViewModel(
         // no-op
     }
 
+    override suspend fun awaitPurchaseSelectedPackage(activity: Activity?) {
+        // no-op
+    }
+
     override fun restorePurchases() {
         // no-op
     }

@@ -59,6 +59,8 @@ internal interface PaywallViewModel {
      */
     fun purchaseSelectedPackage(activity: Activity?)
 
+    suspend fun awaitPurchaseSelectedPackage(activity: Activity?)
+
     fun restorePurchases()
 
     suspend fun awaitRestorePurchases()
@@ -155,20 +157,17 @@ internal class PaywallViewModelImpl(
             Logger.e("Activity is null, not initiating package purchase")
             return
         }
-        when (val currentState = _state.value) {
-            is PaywallState.Loaded -> {
-                val selectedPackage = currentState.selectedPackage.value
-                if (!selectedPackage.currentlySubscribed) {
-                    purchasePackage(activity, selectedPackage.rcPackage)
-                } else {
-                    Logger.d("Ignoring purchase request for already subscribed package")
-                }
-            }
-
-            else -> {
-                Logger.e("Unexpected state trying to purchase package: $currentState")
-            }
+        viewModelScope.launch {
+            handlePackagePurchase(activity)
         }
+    }
+
+    override suspend fun awaitPurchaseSelectedPackage(activity: Activity?) {
+        if (activity == null) {
+            Logger.e("Activity is null, not initiating package purchase")
+            return
+        }
+        handlePackagePurchase(activity)
     }
 
     override suspend fun awaitRestorePurchases() {
@@ -236,55 +235,71 @@ internal class PaywallViewModelImpl(
         }
     }
 
-    private fun purchasePackage(activity: Activity, packageToPurchase: Package) {
-        if (verifyNoActionInProgressOrStartAction()) { return }
-        viewModelScope.launch {
-            try {
-                listener?.onPurchaseStarted(packageToPurchase)
-
-                val customPurchaseHandler = myAppPurchaseLogic?.performPurchase
-
-                when (purchases.purchasesAreCompletedBy) {
-                    PurchasesAreCompletedBy.MY_APP -> {
-                        val customerInfo = purchases.awaitCustomerInfo()
-                        customPurchaseHandler?.invoke(activity, packageToPurchase)
-                            ?: throw IllegalStateException(
-                                "myAppPurchaseLogic is null, but is required when " +
-                                "purchases.purchasesAreCompletedBy is .MY_APP."
-                            )
-                    }
-                    PurchasesAreCompletedBy.REVENUECAT -> {
-                        if (customPurchaseHandler != null) {
-                            Logger.e(
-                                "myAppPurchaseLogic expected to be null " +
-                                "when purchases.purchasesAreCompletedBy is .REVENUECAT. \n" +
-                                "myAppPurchaseLogic.performPurchase will not be executed."
-                            )
-                        }
-                        val purchaseResult = purchases.awaitPurchase(
-                            PurchaseParams.Builder(activity, packageToPurchase)
-                        )
-                        listener?.onPurchaseCompleted(purchaseResult.customerInfo, purchaseResult.storeTransaction)
-                    }
-                    else -> {
-                        Logger.e("Unsupported purchase completion type: ${purchases.purchasesAreCompletedBy}")
-                    }
-                }
-
-                Logger.d("Dismissing paywall after purchase")
-                options.dismissRequest()
-            } catch (e: PurchasesException) {
-                if (e.code == PurchasesErrorCode.PurchaseCancelledError) {
-                    trackPaywallCancel()
-                    listener?.onPurchaseCancelled()
+    private suspend fun handlePackagePurchase(activity: Activity) {
+        when (val currentState = _state.value) {
+            is PaywallState.Loaded -> {
+                val selectedPackage = currentState.selectedPackage.value
+                if (!selectedPackage.currentlySubscribed) {
+                    performPurchase(activity, selectedPackage.rcPackage)
                 } else {
-                    listener?.onPurchaseError(e.error)
-                    _actionError.value = e.error
+                    Logger.d("Ignoring purchase request for already subscribed package")
                 }
             }
 
-            finishAction()
+            else -> {
+                Logger.e("Unexpected state trying to purchase package: $currentState")
+            }
         }
+    }
+
+
+
+    private suspend fun performPurchase(activity: Activity, packageToPurchase: Package) {
+        try {
+            listener?.onPurchaseStarted(packageToPurchase)
+
+            val customPurchaseHandler = myAppPurchaseLogic?.performPurchase
+
+            when (purchases.purchasesAreCompletedBy) {
+                PurchasesAreCompletedBy.MY_APP -> {
+                    val customerInfo = purchases.awaitCustomerInfo()
+                    customPurchaseHandler?.invoke(activity, packageToPurchase)
+                        ?: throw IllegalStateException(
+                            "myAppPurchaseLogic is null, but is required when " +
+                            "purchases.purchasesAreCompletedBy is .MY_APP."
+                        )
+                }
+                PurchasesAreCompletedBy.REVENUECAT -> {
+                    if (customPurchaseHandler != null) {
+                        Logger.e(
+                            "myAppPurchaseLogic expected to be null " +
+                            "when purchases.purchasesAreCompletedBy is .REVENUECAT. \n" +
+                            "myAppPurchaseLogic.performPurchase will not be executed."
+                        )
+                    }
+                    val purchaseResult = purchases.awaitPurchase(
+                        PurchaseParams.Builder(activity, packageToPurchase)
+                    )
+                    listener?.onPurchaseCompleted(purchaseResult.customerInfo, purchaseResult.storeTransaction)
+                }
+                else -> {
+                    Logger.e("Unsupported purchase completion type: ${purchases.purchasesAreCompletedBy}")
+                }
+            }
+
+            Logger.d("Dismissing paywall after purchase")
+            options.dismissRequest()
+        } catch (e: PurchasesException) {
+            if (e.code == PurchasesErrorCode.PurchaseCancelledError) {
+                trackPaywallCancel()
+                listener?.onPurchaseCancelled()
+            } else {
+                listener?.onPurchaseError(e.error)
+                _actionError.value = e.error
+            }
+        }
+
+        finishAction()
     }
 
     private fun updateState() {
