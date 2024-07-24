@@ -78,7 +78,7 @@ fun PaywallsScreen(
                             offering,
                             condensed = false,
                             myAppPurchaseLogic = myAppPurchaseLogic,
-                            )
+                        )
                     },
                     emoji = "\uD83D\uDD3D",
                     label = "Footer",
@@ -89,7 +89,7 @@ fun PaywallsScreen(
                             offering,
                             condensed = true,
                             myAppPurchaseLogic = myAppPurchaseLogic,
-                            )
+                        )
                     },
                     emoji = "\uD83D\uDDDC️",
                     label = "Condenser footer",
