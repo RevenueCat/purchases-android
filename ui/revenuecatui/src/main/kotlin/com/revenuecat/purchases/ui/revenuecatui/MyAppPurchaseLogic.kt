@@ -6,5 +6,5 @@ import com.revenuecat.purchases.Package
 
 class MyAppPurchaseLogic(
     val performPurchase: suspend ((Activity, Package) -> Unit),
-    val performRestore: suspend ((CustomerInfo) -> Unit)
+    val performRestore: suspend ((CustomerInfo) -> Unit),
 )
