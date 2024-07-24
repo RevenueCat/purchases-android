@@ -76,18 +76,21 @@ class PaywallViewModelTest {
     @Before //james
     fun setUp() {
         purchases = mockk()
-        customerInfo = mockk(relaxed = true)
+        customerInfo = mockk()
 
         activity = mockk()
         context = mockk()
 
-        listener = mockk(relaxed = true)
+        listener = mockk()
 
         dismissInvoked = false
 
         coEvery { purchases.awaitOfferings() } returns offerings
         coEvery { purchases.awaitCustomerInfo(any()) } returns customerInfo
         every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.REVENUECAT
+
+        every { customerInfo.activeSubscriptions } returns setOf()
+        every { customerInfo.nonSubscriptionTransactions } returns listOf()
 
         every { purchases.track(any()) } just Runs
 
@@ -97,6 +100,7 @@ class PaywallViewModelTest {
         every { listener.onRestoreStarted() } just runs
         every { listener.onRestoreCompleted(any()) } just runs
         every { listener.onRestoreError(any()) } just runs
+        every { listener.onPurchaseCancelled() } just runs
     }
 
     @After
