@@ -426,7 +426,6 @@ internal class MockViewModel(
     }
 
     override suspend fun awaitRestorePurchases() {
-        restorePurchasesCallCount++
         if (allowsPurchases) {
             awaitSimulateActionInProgress()
         } else {
