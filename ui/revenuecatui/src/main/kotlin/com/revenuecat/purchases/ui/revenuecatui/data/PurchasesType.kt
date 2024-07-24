@@ -32,7 +32,6 @@ internal interface PurchasesType {
     fun track(event: PaywallEvent)
 
     val purchasesAreCompletedBy: PurchasesAreCompletedBy
-
 }
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)

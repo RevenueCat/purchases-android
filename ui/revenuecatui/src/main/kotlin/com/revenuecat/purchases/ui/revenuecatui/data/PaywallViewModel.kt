@@ -180,16 +180,18 @@ internal class PaywallViewModelImpl(
                     val customerInfo = purchases.awaitCustomerInfo()
                     customRestoreHandler?.invoke(customerInfo)
                         ?: throw IllegalStateException(
-                                "myAppPurchaseLogic is null, but is required when " +
+                            "myAppPurchaseLogic is null, but is required when " +
                                 "purchases.purchasesAreCompletedBy is .MY_APP."
                         )
                     listener?.onRestoreCompleted(customerInfo)
                 }
                 PurchasesAreCompletedBy.REVENUECAT -> {
                     if (customRestoreHandler != null) {
-                        Logger.e("myAppPurchaseLogic expected be null when " +
-                            "purchases.purchasesAreCompletedBy is .REVENUECAT.\n" +
-                            "myAppPurchaseLogic.performRestore will not be executed.")
+                        Logger.e(
+                                "myAppPurchaseLogic expected be null when " +
+                                "purchases.purchasesAreCompletedBy is .REVENUECAT.\n" +
+                                "myAppPurchaseLogic.performRestore will not be executed."
+                        )
                     }
                     val customerInfo = purchases.awaitRestore()
                     Logger.i("Restore purchases successful: $customerInfo")
@@ -260,8 +262,8 @@ internal class PaywallViewModelImpl(
                     val customerInfo = purchases.awaitCustomerInfo()
                     customPurchaseHandler?.invoke(activity, packageToPurchase)
                         ?: throw IllegalStateException(
-                                "myAppPurchaseLogic is null, but is required when " +
-                                "purchases.purchasesAreCompletedBy is .MY_APP."
+                            "myAppPurchaseLogic is null, but is required when " +
+                            "purchases.purchasesAreCompletedBy is .MY_APP."
                         )
                 }
                 PurchasesAreCompletedBy.REVENUECAT -> {
