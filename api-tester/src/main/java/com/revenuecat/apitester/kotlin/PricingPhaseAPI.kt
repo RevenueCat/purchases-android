@@ -14,8 +14,14 @@ private class PricingPhaseAPI {
         val recurrenceMode: RecurrenceMode = pricingPhase.recurrenceMode
         val billingCycleCount: Int? = pricingPhase.billingCycleCount
         val price: Price = pricingPhase.price
-        val pricePerMonth: String = pricingPhase.formattedPriceInMonths(locale)
-        val pricePerMonthNoLocale: String = pricingPhase.formattedPriceInMonths()
+        val pricePerMonthString: String = pricingPhase.formattedPriceInMonths(locale)
+        val pricePerMonthStringNoLocale: String = pricingPhase.formattedPriceInMonths()
+        val pricePerWeek = pricingPhase.pricePerWeek(locale)
+        val pricePerMonth = pricingPhase.pricePerMonth(locale)
+        val pricePerYear = pricingPhase.pricePerYear(locale)
+        val pricePerWeekNoLocale = pricingPhase.pricePerWeek()
+        val pricePerMonthNoLocale = pricingPhase.pricePerMonth()
+        val pricePerYearNoLocale = pricingPhase.pricePerYear()
 
         val offerPaymentMode: OfferPaymentMode? = pricingPhase.offerPaymentMode
     }
