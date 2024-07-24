@@ -118,7 +118,11 @@ class PaywallViewModelTest {
 
         coEvery { myAppPurchaseLogic.performRestore(any()) } just runs
 
-        val model = create(customPurchaseLogic = myAppPurchaseLogic)
+        val model = create(
+            customPurchaseLogic = myAppPurchaseLogic,
+            activeSubscriptions = setOf(TestData.Packages.monthly.product.id),
+            nonSubscriptionTransactionProductIdentifiers = setOf(TestData.Packages.lifetime.product.id)
+        )
 
         model.awaitRestorePurchases()
 
