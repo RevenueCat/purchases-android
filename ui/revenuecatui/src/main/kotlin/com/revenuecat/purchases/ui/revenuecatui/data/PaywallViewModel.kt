@@ -188,7 +188,7 @@ internal class PaywallViewModelImpl(
                 PurchasesAreCompletedBy.REVENUECAT -> {
                     if (customRestoreHandler != null) {
                         Logger.e(
-                                "myAppPurchaseLogic expected be null when " +
+                            "myAppPurchaseLogic expected be null when " +
                                 "purchases.purchasesAreCompletedBy is .REVENUECAT.\n" +
                                 "myAppPurchaseLogic.performRestore will not be executed."
                         )
@@ -263,13 +263,13 @@ internal class PaywallViewModelImpl(
                     customPurchaseHandler?.invoke(activity, packageToPurchase)
                         ?: throw IllegalStateException(
                             "myAppPurchaseLogic is null, but is required when " +
-                            "purchases.purchasesAreCompletedBy is .MY_APP."
+                                "purchases.purchasesAreCompletedBy is .MY_APP."
                         )
                 }
                 PurchasesAreCompletedBy.REVENUECAT -> {
                     if (customPurchaseHandler != null) {
                         Logger.e(
-                                "myAppPurchaseLogic expected to be null " +
+                            "myAppPurchaseLogic expected to be null " +
                                 "when purchases.purchasesAreCompletedBy is .REVENUECAT. \n" +
                                 "myAppPurchaseLogic.performPurchase will not be executed."
                         )
