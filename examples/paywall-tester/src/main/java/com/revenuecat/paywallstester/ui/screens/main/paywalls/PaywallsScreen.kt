@@ -37,6 +37,7 @@ import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.fonts.CustomFontProvider
 import com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider
 
+@Suppress("LongMethod")
 @Composable
 fun PaywallsScreen(
     samplePaywallsLoader: SamplePaywallsLoader = SamplePaywallsLoader(),
@@ -53,7 +54,7 @@ fun PaywallsScreen(
                 performRestore = { customerInfo ->
                     println("Hello from performRestore!")
                     println("Original app user ID is ${customerInfo.originalAppUserId}")
-                }
+                },
             )
             Column(modifier = Modifier.fillMaxWidth()) {
                 Text(
@@ -65,7 +66,7 @@ fun PaywallsScreen(
                     onClick = {
                         displayPaywallState = DisplayPaywallState.FullScreen(
                             offering,
-                            myAppPurchaseLogic = myAppPurchaseLogic
+                            myAppPurchaseLogic = myAppPurchaseLogic,
                         )
                     },
                     emoji = "\uD83D\uDCF1",
@@ -73,18 +74,22 @@ fun PaywallsScreen(
                 )
                 ButtonWithEmoji(
                     onClick = {
-                        displayPaywallState = DisplayPaywallState.Footer(offering,
+                        displayPaywallState = DisplayPaywallState.Footer(
+                            offering,
                             condensed = false,
-                            myAppPurchaseLogic = myAppPurchaseLogic)
+                            myAppPurchaseLogic = myAppPurchaseLogic,
+                            )
                     },
                     emoji = "\uD83D\uDD3D",
                     label = "Footer",
                 )
                 ButtonWithEmoji(
                     onClick = {
-                        displayPaywallState = DisplayPaywallState.Footer(offering,
+                        displayPaywallState = DisplayPaywallState.Footer(
+                            offering,
                             condensed = true,
-                            myAppPurchaseLogic = myAppPurchaseLogic)
+                            myAppPurchaseLogic = myAppPurchaseLogic,
+                            )
                     },
                     emoji = "\uD83D\uDDDC️",
                     label = "Condenser footer",
@@ -94,7 +99,7 @@ fun PaywallsScreen(
                         displayPaywallState = DisplayPaywallState.FullScreen(
                             offering,
                             CustomFontProvider(bundledLobsterTwoFontFamily),
-                            myAppPurchaseLogic = myAppPurchaseLogic
+                            myAppPurchaseLogic = myAppPurchaseLogic,
                         )
                     },
                     emoji = "\uD83C\uDD70️",
@@ -155,12 +160,12 @@ private sealed class DisplayPaywallState {
     constructor(
         val offering: Offering? = null,
         val fontProvider: FontProvider? = null,
-        var myAppPurchaseLogic: MyAppPurchaseLogic? = null
+        var myAppPurchaseLogic: MyAppPurchaseLogic? = null,
     ) : DisplayPaywallState()
     data class Footer(
         val offering: Offering? = null,
         val condensed: Boolean = false,
-        var myAppPurchaseLogic: MyAppPurchaseLogic? = null
+        var myAppPurchaseLogic: MyAppPurchaseLogic? = null,
     ) : DisplayPaywallState()
 }
 
