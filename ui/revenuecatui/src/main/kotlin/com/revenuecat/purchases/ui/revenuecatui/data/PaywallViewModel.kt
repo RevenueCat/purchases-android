@@ -218,7 +218,6 @@ internal class PaywallViewModelImpl(
     }
 
     override fun restorePurchases() {
-        if (verifyNoActionInProgressOrStartAction()) { return }
         viewModelScope.launch {
             awaitRestorePurchases()
         }
