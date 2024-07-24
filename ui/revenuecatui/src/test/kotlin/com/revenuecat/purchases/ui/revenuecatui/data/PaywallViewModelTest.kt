@@ -139,7 +139,8 @@ class PaywallViewModelTest {
         coEvery { myAppPurchaseLogic.performPurchase(any(), any()) } just runs
 
         val model = create(
-            customPurchaseLogic = myAppPurchaseLogic
+            customPurchaseLogic = myAppPurchaseLogic,
+            activeSubscriptions = setOf(TestData.Packages.weekly.product.id)
         )
 
         model.awaitPurchaseSelectedPackage(activity)
