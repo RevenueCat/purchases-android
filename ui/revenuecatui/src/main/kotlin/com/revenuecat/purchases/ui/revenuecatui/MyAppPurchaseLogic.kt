@@ -5,6 +5,6 @@ import com.revenuecat.purchases.Package
 import androidx.compose.runtime.Composable
 
 class MyAppPurchaseLogic(
-    val performPurchase: ((Activity, Package) -> Unit),
-    val performRestore: ((CustomerInfo) -> Unit)
+    val performPurchase: suspend ((Activity, Package) -> Unit),
+    val performRestore: suspend ((CustomerInfo) -> Unit)
 )
