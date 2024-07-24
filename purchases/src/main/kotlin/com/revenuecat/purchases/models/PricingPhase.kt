@@ -2,6 +2,8 @@ package com.revenuecat.purchases.models
 
 import android.os.Parcelable
 import com.revenuecat.purchases.utils.pricePerMonth
+import com.revenuecat.purchases.utils.pricePerWeek
+import com.revenuecat.purchases.utils.pricePerYear
 import kotlinx.parcelize.Parcelize
 import java.util.Locale
 
@@ -55,13 +57,49 @@ data class PricingPhase(
         }
 
     /**
+     * Gives the price of the [PricingPhase] in the given locale in a weekly recurrence. This means that for example,
+     * if the period is monthly, the price will be divided by 4. It uses a currency formatter to format the price in
+     * the given locale. Note that this value may be an approximation.
+     * @param locale Locale to use for formatting the price. Default is the system default locale.
+     */
+    @JvmOverloads
+    fun pricePerWeek(locale: Locale = Locale.getDefault()): Price =
+        price.pricePerWeek(billingPeriod, locale)
+
+    /**
      * Gives the price of the [PricingPhase] in the given locale in a monthly recurrence. This means that for example,
      * if the period is annual, the price will be divided by 12. It uses a currency formatter to format the price in
      * the given locale. Note that this value may be an approximation.
      * @param locale Locale to use for formatting the price. Default is the system default locale.
      */
     @JvmOverloads
+    fun pricePerMonth(locale: Locale = Locale.getDefault()): Price =
+        price.pricePerMonth(billingPeriod, locale)
+
+    /**
+     * Gives the price of the [PricingPhase] in the given locale in a yearly recurrence. This means that for example,
+     * if the period is monthly, the price will be multiplied by 12. It uses a currency formatter to format the price in
+     * the given locale. Note that this value may be an approximation.
+     * @param locale Locale to use for formatting the price. Default is the system default locale.
+     */
+    @JvmOverloads
+    fun pricePerYear(locale: Locale = Locale.getDefault()): Price =
+        price.pricePerYear(billingPeriod, locale)
+
+    /**
+     * Gives the price of the [PricingPhase] in the given locale in a monthly recurrence. This means that for example,
+     * if the period is annual, the price will be divided by 12. It uses a currency formatter to format the price in
+     * the given locale. Note that this value may be an approximation.
+     *
+     * This is equivalent to:
+     * ```kotlin
+     * pricePerMonth(locale).formatted
+     * ```
+     *
+     * @param locale Locale to use for formatting the price. Default is the system default locale.
+     */
+    @JvmOverloads
     fun formattedPriceInMonths(locale: Locale = Locale.getDefault()): String {
-        return price.pricePerMonth(billingPeriod, locale).formatted
+        return pricePerMonth(locale).formatted
     }
 }
