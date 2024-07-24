@@ -76,12 +76,12 @@ class PaywallViewModelTest {
     @Before //james
     fun setUp() {
         purchases = mockk()
-        customerInfo = mockk()
+        customerInfo = mockk(relaxed = true)
 
         activity = mockk()
         context = mockk()
 
-        listener = mockk()
+        listener = mockk(relaxed = true)
 
         dismissInvoked = false
 
@@ -131,7 +131,6 @@ class PaywallViewModelTest {
 
     @Test
     fun `Calls custom purchase logic when purchasesAreCompletedBy == MY_APP`() = runTest {
-        // Arrange
         every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.MY_APP
 
         val myAppPurchaseLogic = mockk<MyAppPurchaseLogic>(relaxed = true)
