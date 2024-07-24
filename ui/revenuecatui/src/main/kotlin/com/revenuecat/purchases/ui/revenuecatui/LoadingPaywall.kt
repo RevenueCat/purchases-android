@@ -206,7 +206,7 @@ private class LoadingViewModel(
         // no-op
     }
 
-    suspend override fun awaitRestorePurchases() {
+    override suspend fun awaitRestorePurchases() {
         // no-op
     }
 
