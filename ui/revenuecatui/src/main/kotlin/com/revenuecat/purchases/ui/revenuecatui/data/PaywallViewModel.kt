@@ -181,7 +181,7 @@ internal class PaywallViewModelImpl(
                     customRestoreHandler?.invoke(customerInfo)
                         ?: throw IllegalStateException(
                             "myAppPurchaseLogic is null, but is required when " +
-                                "purchases.purchasesAreCompletedBy is .MY_APP."
+                                "purchases.purchasesAreCompletedBy is .MY_APP.",
                         )
                     listener?.onRestoreCompleted(customerInfo)
                 }
@@ -190,7 +190,7 @@ internal class PaywallViewModelImpl(
                         Logger.e(
                             "myAppPurchaseLogic expected be null when " +
                                 "purchases.purchasesAreCompletedBy is .REVENUECAT.\n" +
-                                "myAppPurchaseLogic.performRestore will not be executed."
+                                "myAppPurchaseLogic.performRestore will not be executed.",
                         )
                     }
                     val customerInfo = purchases.awaitRestore()
@@ -263,7 +263,7 @@ internal class PaywallViewModelImpl(
                     customPurchaseHandler?.invoke(activity, packageToPurchase)
                         ?: throw IllegalStateException(
                             "myAppPurchaseLogic is null, but is required when " +
-                                "purchases.purchasesAreCompletedBy is .MY_APP."
+                                "purchases.purchasesAreCompletedBy is .MY_APP.",
                         )
                 }
                 PurchasesAreCompletedBy.REVENUECAT -> {
@@ -271,7 +271,7 @@ internal class PaywallViewModelImpl(
                         Logger.e(
                             "myAppPurchaseLogic expected to be null " +
                                 "when purchases.purchasesAreCompletedBy is .REVENUECAT. \n" +
-                                "myAppPurchaseLogic.performPurchase will not be executed."
+                                "myAppPurchaseLogic.performPurchase will not be executed.",
                         )
                     }
                     val purchaseResult = purchases.awaitPurchase(
