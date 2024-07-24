@@ -168,6 +168,7 @@ internal class PaywallViewModelImpl(
         handlePackagePurchase(activity)
     }
 
+    @Suppress("NestedBlockDepth")
     override suspend fun awaitRestorePurchases() {
         if (verifyNoActionInProgressOrStartAction()) { return }
         try {
@@ -251,7 +252,6 @@ internal class PaywallViewModelImpl(
         }
     }
 
-    @Suppress("NestedBlockDepth")
     private suspend fun performPurchase(activity: Activity, packageToPurchase: Package) {
         try {
             listener?.onPurchaseStarted(packageToPurchase)
