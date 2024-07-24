@@ -111,7 +111,7 @@ class PaywallViewModelTest {
     }
 
     @Test
-    fun `Calls custom restore logic when using my app`() = runTest {
+    fun `Calls custom restore logic when purchasesAreCompletedBy == MY_APP`() = runTest {
         every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.MY_APP
 
         val myAppPurchaseLogic = mockk<MyAppPurchaseLogic>(relaxed = true)
@@ -130,23 +130,21 @@ class PaywallViewModelTest {
     }
 
     @Test
-    fun `Calls custom purchase logic when using my app`() = runTest {
-        // MyAppPurchaseLogic
+    fun `Calls custom purchase logic when purchasesAreCompletedBy == MY_APP`() = runTest {
+        // Arrange
         every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.MY_APP
 
-        var purchaseCalled = false
-        val myAppPurchaseLogic = MyAppPurchaseLogic(
-            performPurchase = { _, _ ->
-                purchaseCalled = true
-            },
-            performRestore = { customerInfo ->
-            }
+        val myAppPurchaseLogic = mockk<MyAppPurchaseLogic>(relaxed = true)
+
+        coEvery { myAppPurchaseLogic.performPurchase(any(), any()) } just runs
+
+        val model = create(
+            customPurchaseLogic = myAppPurchaseLogic
         )
-        val model = create(customPurchaseLogic = myAppPurchaseLogic)
 
-        model.purchaseSelectedPackage(activity)
+        model.awaitPurchaseSelectedPackage(activity)
 
-        assertThat(purchaseCalled).isTrue
+        coVerify { myAppPurchaseLogic.performPurchase(any(), any()) }
     }
 
     @Test
