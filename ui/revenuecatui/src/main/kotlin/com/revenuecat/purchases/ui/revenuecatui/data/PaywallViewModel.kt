@@ -251,6 +251,7 @@ internal class PaywallViewModelImpl(
         }
     }
 
+    @Suppress("NestedBlockDepth")
     private suspend fun performPurchase(activity: Activity, packageToPurchase: Package) {
         try {
             listener?.onPurchaseStarted(packageToPurchase)
@@ -275,7 +276,7 @@ internal class PaywallViewModelImpl(
                         )
                     }
                     val purchaseResult = purchases.awaitPurchase(
-                        PurchaseParams.Builder(activity, packageToPurchase)
+                        PurchaseParams.Builder(activity, packageToPurchase),
                     )
                     listener?.onPurchaseCompleted(purchaseResult.customerInfo, purchaseResult.storeTransaction)
                 }
