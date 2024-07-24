@@ -261,7 +261,9 @@ internal class PaywallViewModelImpl(
                                 "myAppPurchaseLogic.performPurchase will not be executed."
                             )
                         }
-                        val purchaseResult = purchases.awaitPurchase(PurchaseParams.Builder(activity, packageToPurchase))
+                        val purchaseResult = purchases.awaitPurchase(
+                            PurchaseParams.Builder(activity, packageToPurchase)
+                        )
                         listener?.onPurchaseCompleted(purchaseResult.customerInfo, purchaseResult.storeTransaction)
                     }
                     else -> {
