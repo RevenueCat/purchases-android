@@ -348,9 +348,9 @@ jobs:
       - android/save-gradle-cache
       - android/save-build-cache
       - run:
-            name: Publish aab
-            command: |
-              bundle exec fastlane android publish_purchase_tester aab_path:'examples/purchase-tester/build/outputs/bundle/release/purchase-tester-release.aab'
+          name: Publish aab
+          command: |
+            bundle exec fastlane android publish_purchase_tester aab_path:'examples/purchase-tester/build/outputs/bundle/release/purchase-tester-release.aab'
 
   publish-paywall-tester-release:
     <<: *android-executor
@@ -380,9 +380,9 @@ jobs:
       - android/save-gradle-cache
       - android/save-build-cache
       - run:
-            name: Publish aab
-            command: |
-              bundle exec fastlane android publish_paywall_tester aab_path:'examples/paywall-tester/build/outputs/bundle/release/paywall-tester-release.aab'
+          name: Publish aab
+          command: |
+            bundle exec fastlane android publish_paywall_tester aab_path:'examples/paywall-tester/build/outputs/bundle/release/paywall-tester-release.aab'
 
   integration-tests-build:
     <<: *android-executor
