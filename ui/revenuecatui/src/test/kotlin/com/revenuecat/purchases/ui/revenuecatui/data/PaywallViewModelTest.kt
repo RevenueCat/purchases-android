@@ -182,6 +182,32 @@ class PaywallViewModelTest {
     }
 
     @Test
+    fun `Calls error listener when purchasesAreCompletedBy == MY_APP`() = runTest {
+        every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.MY_APP
+
+        val myAppPurchaseLogic = mockk<MyAppPurchaseLogic>(relaxed = true)
+        val notAllowedError = PurchasesError(PurchasesErrorCode.PurchaseNotAllowedError)
+
+        coEvery { myAppPurchaseLogic.performPurchase(any(), any()) } returns MyAppPurchaseResult.Error(notAllowedError)
+
+        val model = create(
+            customPurchaseLogic = myAppPurchaseLogic,
+            activeSubscriptions = setOf(TestData.Packages.weekly.product.id)
+        )
+
+        model.awaitPurchaseSelectedPackage(activity)
+
+        coVerify { myAppPurchaseLogic.performPurchase(any(), any()) }
+
+        verifyOrder {
+            listener.onPurchaseStarted(any())
+            listener.onPurchaseError(notAllowedError)
+        }
+
+        assertThat(model.actionInProgress.value).isFalse
+    }
+
+    @Test
     fun `Cannot create PaywallViewModel when purchasesAreCompletedBy == MY_APP without custom purchase logic`() {
         every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.MY_APP
 
