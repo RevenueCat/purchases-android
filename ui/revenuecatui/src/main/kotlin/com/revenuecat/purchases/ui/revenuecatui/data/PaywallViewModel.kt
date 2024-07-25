@@ -190,7 +190,7 @@ internal class PaywallViewModelImpl(
                 }
                 PurchasesAreCompletedBy.REVENUECAT -> {
                     if (customRestoreHandler != null) {
-                        Logger.e(
+                        Logger.w(
                             "myAppPurchaseLogic expected be null when " +
                                 "purchases.purchasesAreCompletedBy is .REVENUECAT.\n" +
                                 "myAppPurchaseLogic.performRestore will not be executed.",
