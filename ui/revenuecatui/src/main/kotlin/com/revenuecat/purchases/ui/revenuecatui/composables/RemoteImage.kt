@@ -93,7 +93,7 @@ private fun Image(
 
     var useCache by remember { mutableStateOf(true) }
     val applicationContext = LocalContext.current.applicationContext
-    val imageLoader = remember(applicationContext, useCache) {
+    val imageLoader = remember(useCache) {
         applicationContext.getRevenueCatUIImageLoader(readCache = useCache)
     }
 
