@@ -21,6 +21,7 @@ import com.revenuecat.purchases.paywalls.events.PaywallEvent
 import com.revenuecat.purchases.paywalls.events.PaywallEventType
 import com.revenuecat.purchases.ui.revenuecatui.ExperimentalPreviewRevenueCatUIPurchasesAPI
 import com.revenuecat.purchases.ui.revenuecatui.MyAppPurchaseLogic
+import com.revenuecat.purchases.ui.revenuecatui.MyAppPurchaseResult
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
@@ -261,8 +262,7 @@ internal class PaywallViewModelImpl(
 
             when (purchases.purchasesAreCompletedBy) {
                 PurchasesAreCompletedBy.MY_APP -> {
-                    val customerInfo = purchases.awaitCustomerInfo()
-                    customPurchaseHandler?.invoke(activity, packageToPurchase)
+                    val result = customPurchaseHandler?.invoke(activity, packageToPurchase)
                         ?: run {
                             val errorCode = PurchasesErrorCode.ConfigurationError
                             val underlyingErrorMessage = "myAppPurchaseLogic is null, but is required when " +
@@ -271,7 +271,19 @@ internal class PaywallViewModelImpl(
                             val purchasesException = PurchasesException(purchasesError)
                             throw purchasesException
                         }
-                    // TODO: call a new `onPurchaseCompleted` handler? Skip this?
+                    when (result) {
+                        is MyAppPurchaseResult.Success -> {
+                            // TODO: call a new `onPurchaseCompleted` handler? Skip this?
+                        }
+                        is MyAppPurchaseResult.Cancellation -> {
+                            trackPaywallCancel()
+                            listener?.onPurchaseCancelled()
+                        }
+                        is MyAppPurchaseResult.Error -> {
+                            val purchasesException = PurchasesException(result.error)
+                            throw purchasesException
+                        }
+                    }
                 }
                 PurchasesAreCompletedBy.REVENUECAT -> {
                     if (customPurchaseHandler != null) {

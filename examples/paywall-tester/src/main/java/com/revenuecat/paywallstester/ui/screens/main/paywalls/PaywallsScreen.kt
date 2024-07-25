@@ -30,6 +30,7 @@ import com.revenuecat.paywallstester.ui.screens.paywallfooter.SamplePaywall
 import com.revenuecat.paywallstester.ui.theme.bundledLobsterTwoFontFamily
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.ui.revenuecatui.MyAppPurchaseLogic
+import com.revenuecat.purchases.ui.revenuecatui.MyAppPurchaseResult
 import com.revenuecat.purchases.ui.revenuecatui.PaywallDialog
 import com.revenuecat.purchases.ui.revenuecatui.PaywallDialogOptions
 import com.revenuecat.purchases.ui.revenuecatui.PaywallFooter
@@ -49,7 +50,7 @@ fun PaywallsScreen(
             val offering = samplePaywallsLoader.offeringForTemplate(template)
             val myAppPurchaseLogic = MyAppPurchaseLogic(
                 performPurchase = { _, _ ->
-                    println("Hello from performPurchase!")
+                    MyAppPurchaseResult.Success
                 },
                 performRestore = { customerInfo ->
                     println("Hello from performRestore!")

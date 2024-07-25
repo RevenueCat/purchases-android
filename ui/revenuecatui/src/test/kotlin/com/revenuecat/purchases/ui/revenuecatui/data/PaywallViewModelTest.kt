@@ -20,6 +20,7 @@ import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.paywalls.events.PaywallEventType
 import com.revenuecat.purchases.ui.revenuecatui.ExperimentalPreviewRevenueCatUIPurchasesAPI
 import com.revenuecat.purchases.ui.revenuecatui.MyAppPurchaseLogic
+import com.revenuecat.purchases.ui.revenuecatui.MyAppPurchaseResult
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
@@ -140,7 +141,7 @@ class PaywallViewModelTest {
 
         val myAppPurchaseLogic = mockk<MyAppPurchaseLogic>(relaxed = true)
 
-        coEvery { myAppPurchaseLogic.performPurchase(any(), any()) } just runs
+        coEvery { myAppPurchaseLogic.performPurchase(any(), any()) } returns MyAppPurchaseResult.Success
 
         val model = create(
             customPurchaseLogic = myAppPurchaseLogic,
