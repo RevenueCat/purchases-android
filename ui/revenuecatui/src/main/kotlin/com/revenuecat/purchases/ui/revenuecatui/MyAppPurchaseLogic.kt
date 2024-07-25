@@ -13,5 +13,5 @@ sealed class MyAppPurchaseResult {
 
 class MyAppPurchaseLogic(
     val performPurchase: suspend ((Activity, Package) -> MyAppPurchaseResult),
-    val performRestore: suspend ((CustomerInfo) -> Unit),
+    val performRestore: suspend ((CustomerInfo) -> MyAppPurchaseResult),
 )

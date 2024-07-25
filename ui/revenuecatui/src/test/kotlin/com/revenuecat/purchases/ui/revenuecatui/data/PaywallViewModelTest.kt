@@ -115,7 +115,7 @@ class PaywallViewModelTest {
 
         val myAppPurchaseLogic = mockk<MyAppPurchaseLogic>(relaxed = true)
 
-        coEvery { myAppPurchaseLogic.performRestore(any()) } just runs
+        coEvery { myAppPurchaseLogic.performRestore(any()) } returns MyAppPurchaseResult.Success
 
         val model = create(
             customPurchaseLogic = myAppPurchaseLogic,
