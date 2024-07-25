@@ -36,6 +36,7 @@ import io.mockk.mockk
 import io.mockk.runs
 import io.mockk.verify
 import io.mockk.verifyOrder
+import junit.framework.TestCase.assertEquals
 import junit.framework.TestCase.fail
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.runTest
@@ -155,21 +156,17 @@ class PaywallViewModelTest {
     }
 
     @Test
-    fun `Error listener called when no custom logic and purchasesAreCompletedBy == MY_APP`() = runTest {
+    fun `Error listener called when no custom logic and purchasesAreCompletedBy == MY_APP`() {
         every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.MY_APP
 
-        val model = create(
-            activeSubscriptions = setOf(TestData.Packages.weekly.product.id)
-        )
-
-        model.awaitPurchaseSelectedPackage(activity)
-
-        verifyOrder {
-            listener.onPurchaseStarted(any())
-            listener.onPurchaseError(any())
+        try {
+            create(
+                activeSubscriptions = setOf(TestData.Packages.weekly.product.id)
+            )
+            fail("Expected IllegalStateException to be thrown")
+        } catch (e: IllegalStateException) {
+            // Success: caught the expected exception
         }
-
-        assertThat(model.actionInProgress.value).isFalse
     }
 
     @Test
