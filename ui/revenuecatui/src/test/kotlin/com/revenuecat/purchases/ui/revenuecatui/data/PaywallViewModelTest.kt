@@ -156,7 +156,7 @@ class PaywallViewModelTest {
     }
 
     @Test
-    fun `Error listener called when no custom logic and purchasesAreCompletedBy == MY_APP`() {
+    fun `Cannot create PaywallViewModel when purchasesAreCompletedBy == MY_APP without custom purchase logic`() {
         every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.MY_APP
 
         try {
