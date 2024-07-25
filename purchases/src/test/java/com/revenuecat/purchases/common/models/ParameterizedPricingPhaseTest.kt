@@ -99,10 +99,22 @@ class ParameterizedPricingPhaseTest(
         val actualWeekly = phase.pricePerWeek(Locale.US)
         val actualMonthly = phase.pricePerMonth(Locale.US)
         val actualYearly = phase.pricePerYear(Locale.US)
+        val actualWeeklyNoLocale = phase.pricePerWeek()
+        val actualMonthlyNoLocale = phase.pricePerMonth()
+        val actualYearlyNoLocale = phase.pricePerYear()
+        val actualMonthlyFormatted = phase.formattedPriceInMonths(Locale.US)
+        val actualMonthlyFormattedNoLocale = phase.formattedPriceInMonths()
 
         // Assert
         assertThat(actualWeekly).isEqualTo(expected.weekly)
         assertThat(actualMonthly).isEqualTo(expected.monthly)
         assertThat(actualYearly).isEqualTo(expected.yearly)
+        assertThat(actualWeeklyNoLocale.amountMicros).isEqualTo(expected.weekly.amountMicros)
+        assertThat(actualMonthlyNoLocale.amountMicros).isEqualTo(expected.monthly.amountMicros)
+        assertThat(actualYearlyNoLocale.amountMicros).isEqualTo(expected.yearly.amountMicros)
+        assertThat(actualMonthlyFormatted).isEqualTo(expected.monthly.formatted)
+        // Hard to test anything else if the locale is not deterministic, besides formatting exactly like the
+        // implementation does.
+        assertThat(actualMonthlyFormattedNoLocale).isNotBlank()
     }
 }
