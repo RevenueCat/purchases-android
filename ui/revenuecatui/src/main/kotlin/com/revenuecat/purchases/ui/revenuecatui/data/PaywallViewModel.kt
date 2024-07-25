@@ -8,6 +8,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.core.os.LocaleListCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.android.billingclient.api.Purchase
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.Offering
@@ -22,6 +23,7 @@ import com.revenuecat.purchases.paywalls.events.PaywallEventType
 import com.revenuecat.purchases.ui.revenuecatui.ExperimentalPreviewRevenueCatUIPurchasesAPI
 import com.revenuecat.purchases.ui.revenuecatui.MyAppPurchaseLogic
 import com.revenuecat.purchases.ui.revenuecatui.MyAppPurchaseResult
+import com.revenuecat.purchases.ui.revenuecatui.MyAppRestoreResult
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
@@ -187,16 +189,10 @@ internal class PaywallViewModelImpl(
                                 "purchases.purchasesAreCompletedBy is .MY_APP.",
                         )
                     when (result) {
-                        is MyAppPurchaseResult.Success -> {
+                        is MyAppRestoreResult.Success -> {
                             listener?.onRestoreCompleted(customerInfo)
                         }
-                        is MyAppPurchaseResult.Cancellation -> {
-                            val purchasesException = PurchasesException(
-                                PurchasesError(PurchasesErrorCode.PurchaseCancelledError)
-                            )
-                            throw purchasesException
-                        }
-                        is MyAppPurchaseResult.Error -> {
+                        is MyAppRestoreResult.Error -> {
                             val purchasesException = PurchasesException(result.error)
                             throw purchasesException
                         }
@@ -288,7 +284,9 @@ internal class PaywallViewModelImpl(
                         }
                     when (result) {
                         is MyAppPurchaseResult.Success -> {
-                            // TODO: call a new `onPurchaseCompleted` handler? Skip this?
+                            val storeTransaction = result.purchase?.toStoreTransaction() ?: return
+                            val customerInfo = purchases.awaitCustomerInfo()
+                            listener?.onPurchaseCompleted(customerInfo, storeTransaction)
                         }
                         is MyAppPurchaseResult.Cancellation -> {
                             trackPaywallCancel()

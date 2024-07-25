@@ -31,6 +31,7 @@ import com.revenuecat.paywallstester.ui.theme.bundledLobsterTwoFontFamily
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.ui.revenuecatui.MyAppPurchaseLogic
 import com.revenuecat.purchases.ui.revenuecatui.MyAppPurchaseResult
+import com.revenuecat.purchases.ui.revenuecatui.MyAppRestoreResult
 import com.revenuecat.purchases.ui.revenuecatui.PaywallDialog
 import com.revenuecat.purchases.ui.revenuecatui.PaywallDialogOptions
 import com.revenuecat.purchases.ui.revenuecatui.PaywallFooter
@@ -51,12 +52,12 @@ fun PaywallsScreen(
             val myAppPurchaseLogic = MyAppPurchaseLogic(
                 performPurchase = { _, _ ->
                     println("Hello from performPurchase!")
-                    MyAppPurchaseResult.Success
+                    MyAppPurchaseResult.Success()
                 },
                 performRestore = { customerInfo ->
                     println("Hello from performRestore!")
                     println("Original app user ID is ${customerInfo.originalAppUserId}")
-                    MyAppPurchaseResult.Success
+                    MyAppRestoreResult.Success
                 },
             )
             Column(modifier = Modifier.fillMaxWidth()) {

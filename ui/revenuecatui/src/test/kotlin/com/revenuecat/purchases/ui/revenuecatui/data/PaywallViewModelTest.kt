@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.Context
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.android.billingclient.api.Purchase
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.Offering
@@ -19,8 +20,10 @@ import com.revenuecat.purchases.models.Transaction
 import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.paywalls.events.PaywallEventType
 import com.revenuecat.purchases.ui.revenuecatui.ExperimentalPreviewRevenueCatUIPurchasesAPI
+import com.revenuecat.purchases.ui.revenuecatui.MyAppPurchase
 import com.revenuecat.purchases.ui.revenuecatui.MyAppPurchaseLogic
 import com.revenuecat.purchases.ui.revenuecatui.MyAppPurchaseResult
+import com.revenuecat.purchases.ui.revenuecatui.MyAppRestoreResult
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
@@ -41,6 +44,7 @@ import junit.framework.TestCase.fail
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
+import org.json.JSONArray
 import org.junit.After
 import org.junit.Before
 import org.junit.Rule
@@ -115,7 +119,7 @@ class PaywallViewModelTest {
 
         val myAppPurchaseLogic = mockk<MyAppPurchaseLogic>(relaxed = true)
 
-        coEvery { myAppPurchaseLogic.performRestore(any()) } returns MyAppPurchaseResult.Success
+        coEvery { myAppPurchaseLogic.performRestore(any()) } returns MyAppRestoreResult.Success
 
         val model = create(
             customPurchaseLogic = myAppPurchaseLogic,
@@ -140,7 +144,7 @@ class PaywallViewModelTest {
 
         val myAppPurchaseLogic = mockk<MyAppPurchaseLogic>(relaxed = true)
 
-        coEvery { myAppPurchaseLogic.performRestore(any()) } returns MyAppPurchaseResult.Error(notAllowedError)
+        coEvery { myAppPurchaseLogic.performRestore(any()) } returns MyAppRestoreResult.Error(notAllowedError)
 
         val model = create(
             customPurchaseLogic = myAppPurchaseLogic,
@@ -160,37 +164,15 @@ class PaywallViewModelTest {
     }
 
     @Test
-    fun `Calls restore cancelled error listener when purchasesAreCompletedBy == MY_APP`() = runTest {
-        every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.MY_APP
-
-        val myAppPurchaseLogic = mockk<MyAppPurchaseLogic>(relaxed = true)
-
-        coEvery { myAppPurchaseLogic.performRestore(any()) } returns MyAppPurchaseResult.Cancellation
-
-        val model = create(
-            customPurchaseLogic = myAppPurchaseLogic,
-            activeSubscriptions = setOf(TestData.Packages.weekly.product.id)
-        )
-
-        model.awaitRestorePurchases()
-
-        coVerify { myAppPurchaseLogic.performRestore(customerInfo) }
-
-        verifyOrder {
-            listener.onRestoreStarted()
-            listener.onRestoreError(any())
-        }
-
-        assertThat(model.actionInProgress.value).isFalse
-    }
-
-    @Test
     fun `Calls custom purchase logic when purchasesAreCompletedBy == MY_APP`() = runTest {
         every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.MY_APP
 
         val myAppPurchaseLogic = mockk<MyAppPurchaseLogic>(relaxed = true)
 
-        coEvery { myAppPurchaseLogic.performPurchase(any(), any()) } returns MyAppPurchaseResult.Success
+        val purchase = stubGooglePurchase()
+        val myAppPurchase = MyAppPurchase(purchase)
+
+        coEvery { myAppPurchaseLogic.performPurchase(any(), any()) } returns MyAppPurchaseResult.Success(myAppPurchase)
 
         val model = create(
             customPurchaseLogic = myAppPurchaseLogic,
@@ -200,6 +182,11 @@ class PaywallViewModelTest {
         model.awaitPurchaseSelectedPackage(activity)
 
         coVerify { myAppPurchaseLogic.performPurchase(any(), any()) }
+
+        verifyOrder {
+            listener.onPurchaseStarted(any())
+            listener.onPurchaseCompleted(customerInfo, any())
+        }
 
         assertThat(model.actionInProgress.value).isFalse
         assertThat(dismissInvoked).isTrue
@@ -828,4 +815,29 @@ class PaywallViewModelTest {
             offerings
         }
     }
+
+    // copied from out-of-module billingClientStubs.kt
+    private fun stubGooglePurchase(
+        productIds: List<String> = listOf("com.revenuecat.lifetime"),
+        purchaseTime: Long = System.currentTimeMillis(),
+        purchaseToken: String = "abcdefghijipehfnbbnldmai.AO-J1OxqriTepvB7suzlIhxqPIveA0IHtX9amMedK0KK9CsO0S3Zk5H6gdwvV" +
+            "7HzZIJeTzqkY4okyVk8XKTmK1WZKAKSNTKop4dgwSmFnLWsCxYbahUmADg",
+        signature: String = "signature${System.currentTimeMillis()}",
+        purchaseState: Int = Purchase.PurchaseState.PURCHASED,
+        acknowledged: Boolean = true,
+        orderId: String = "GPA.3372-4150-8203-17209",
+    ): Purchase = Purchase(
+        """
+    {
+        "orderId": "$orderId",
+        "packageName":"com.revenuecat.purchases_sample",
+        "productIds":${JSONArray(productIds)},
+        "purchaseTime":$purchaseTime,
+        "purchaseState":${if (purchaseState == 2) 4 else 1},
+        "purchaseToken":"$purchaseToken",
+        "acknowledged":$acknowledged
+    }
+    """.trimIndent(),
+        signature,
+    )
 }
