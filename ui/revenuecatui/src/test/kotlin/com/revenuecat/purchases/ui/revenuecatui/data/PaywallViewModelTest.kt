@@ -78,7 +78,7 @@ class PaywallViewModelTest {
     @get:Rule
     var instantExecutorRule = InstantTaskExecutorRule()
 
-    @Before //james
+    @Before
     fun setUp() {
         purchases = mockk()
         customerInfo = mockk()
