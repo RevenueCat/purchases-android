@@ -181,12 +181,27 @@ internal class PaywallViewModelImpl(
             when (purchases.purchasesAreCompletedBy) {
                 PurchasesAreCompletedBy.MY_APP -> {
                     val customerInfo = purchases.awaitCustomerInfo()
-                    customRestoreHandler?.invoke(customerInfo)
+                    val result = customRestoreHandler?.invoke(customerInfo)
                         ?: throw IllegalStateException(
                             "myAppPurchaseLogic is null, but is required when " +
                                 "purchases.purchasesAreCompletedBy is .MY_APP.",
                         )
-                    listener?.onRestoreCompleted(customerInfo)
+                    when (result) {
+                        is MyAppPurchaseResult.Success -> {
+                            listener?.onRestoreCompleted(customerInfo)
+                        }
+                        is MyAppPurchaseResult.Cancellation -> {
+                            val purchasesException = PurchasesException(
+                                PurchasesError(PurchasesErrorCode.PurchaseCancelledError)
+                            )
+                            throw purchasesException
+                        }
+                        is MyAppPurchaseResult.Error -> {
+                            val purchasesException = PurchasesException(result.error)
+                            throw purchasesException
+                        }
+                    }
+
                 }
                 PurchasesAreCompletedBy.REVENUECAT -> {
                     if (customRestoreHandler != null) {
