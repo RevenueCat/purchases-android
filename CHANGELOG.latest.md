@@ -1,2 +1,5 @@
 ### RevenueCatUI
-* Added new paywall template to support multiple tiered subscriptions (#1720) via Josh Holtz (@joshdholtz)
+* [Paywalls] Fix `RemoteImage` flicker on activity changes (#1791) via Toni Rico (@tonidero)
+### Dependency Updates
+* Bump fastlane-plugin-revenuecat_internal from `5f55466` to `d5f0742` (#1787) via dependabot[bot] (@dependabot[bot])
+* Updates Gradle (8.9), AGP (8.5.1) and maven.publish (0.28.0) (#1783) via JayShortway (@JayShortway)
