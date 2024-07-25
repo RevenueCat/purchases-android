@@ -184,8 +184,8 @@ jobs:
       - run:
           name: Consolidate artifacts
           command: |
-            mkdir -p build/test-results/
-            find . -type f -regex ".*/build/test-results/.*xml" -exec cp --parents {} build/test-results/ \;
+              mkdir -p build/test-results/
+              find . -type f -regex ".*/build/test-results/.*xml" -exec cp --parents {} build/test-results/ \;
       - run:
           name: Kover HTML
           command: ./gradlew purchases:koverHtmlReportDefaultsRelease
@@ -720,7 +720,7 @@ workflows:
     when:
       equal: [ paywall_tester_release, << pipeline.parameters.action >> ]
     jobs:
-      - publish-paywall-tester-release
+        - publish-paywall-tester-release
 
   record-revenuecatui-snapshots:
     when:
