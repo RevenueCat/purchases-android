@@ -98,6 +98,10 @@ data class PricingPhase(
      *
      * @param locale Locale to use for formatting the price. Default is the system default locale.
      */
+    @Deprecated(
+        message = "pricePerMonth() provides more price info",
+        replaceWith = ReplaceWith("pricePerMonth(locale).formatted"),
+    )
     @JvmOverloads
     fun formattedPriceInMonths(locale: Locale = Locale.getDefault()): String {
         return pricePerMonth(locale).formatted

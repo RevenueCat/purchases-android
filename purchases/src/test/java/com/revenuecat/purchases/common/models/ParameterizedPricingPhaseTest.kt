@@ -85,6 +85,7 @@ class ParameterizedPricingPhaseTest(
         )
     }
 
+    @Suppress("DEPRECATION")
     @Test
     fun `should correctly calculate periodic prices for billing period`() {
         // Arrange
