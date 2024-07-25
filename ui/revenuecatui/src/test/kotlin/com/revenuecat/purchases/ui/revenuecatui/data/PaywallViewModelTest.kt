@@ -125,12 +125,63 @@ class PaywallViewModelTest {
 
         model.awaitRestorePurchases()
 
-        coVerify { myAppPurchaseLogic.performRestore(any()) }
+        coVerify { myAppPurchaseLogic.performRestore(customerInfo) }
 
         verifyOrder {
             listener.onRestoreStarted()
             listener.onRestoreCompleted(customerInfo)
         }
+    }
+
+    @Test
+    fun `Calls restore error listener when purchasesAreCompletedBy == MY_APP`() = runTest {
+        every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.MY_APP
+        val notAllowedError = PurchasesError(PurchasesErrorCode.PurchaseNotAllowedError)
+
+        val myAppPurchaseLogic = mockk<MyAppPurchaseLogic>(relaxed = true)
+
+        coEvery { myAppPurchaseLogic.performRestore(any()) } returns MyAppPurchaseResult.Error(notAllowedError)
+
+        val model = create(
+            customPurchaseLogic = myAppPurchaseLogic,
+            activeSubscriptions = setOf(TestData.Packages.weekly.product.id)
+        )
+
+        model.awaitRestorePurchases()
+
+        coVerify { myAppPurchaseLogic.performRestore(customerInfo) }
+
+        verifyOrder {
+            listener.onRestoreStarted()
+            listener.onRestoreError(notAllowedError)
+        }
+
+        assertThat(model.actionInProgress.value).isFalse
+    }
+
+    @Test
+    fun `Calls restore cancelled error listener when purchasesAreCompletedBy == MY_APP`() = runTest {
+        every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.MY_APP
+
+        val myAppPurchaseLogic = mockk<MyAppPurchaseLogic>(relaxed = true)
+
+        coEvery { myAppPurchaseLogic.performRestore(any()) } returns MyAppPurchaseResult.Cancellation
+
+        val model = create(
+            customPurchaseLogic = myAppPurchaseLogic,
+            activeSubscriptions = setOf(TestData.Packages.weekly.product.id)
+        )
+
+        model.awaitRestorePurchases()
+
+        coVerify { myAppPurchaseLogic.performRestore(customerInfo) }
+
+        verifyOrder {
+            listener.onRestoreStarted()
+            listener.onRestoreError(any())
+        }
+
+        assertThat(model.actionInProgress.value).isFalse
     }
 
     @Test
