@@ -153,6 +153,23 @@ class PaywallViewModelTest {
         assertThat(model.actionInProgress.value).isFalse
         assertThat(dismissInvoked).isTrue
     }
+
+    @Test
+    fun `Error listener called when no custom logic and purchasesAreCompletedBy == MY_APP`() = runTest {
+        every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.MY_APP
+
+        val model = create(
+            activeSubscriptions = setOf(TestData.Packages.weekly.product.id)
+        )
+
+        model.awaitPurchaseSelectedPackage(activity)
+
+        verifyOrder {
+            listener.onPurchaseStarted(any())
+            listener.onPurchaseError(any())
+        }
+
+        assertThat(model.actionInProgress.value).isFalse
     }
 
     @Test
