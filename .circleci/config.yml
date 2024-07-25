@@ -167,6 +167,9 @@ jobs:
     <<: *android-executor
     shell: /bin/bash --login -o pipefail
     steps:
+      - run:
+          name: Check rsync
+          command: which rsync
       - checkout
       - install-sdkman
       - android/accept-licenses
@@ -194,8 +197,7 @@ jobs:
           name: Consolidate artifacts
           command: |
             mkdir -p build/reports/
-            find . -type d -path "*/build/reports" -exec \
-              rsync -avR --exclude='build/reports/paparazzi' --prune-empty-dirs {} build/reports/ \;
+            find . -type d -path "*/build/reports" -exec rsync -avR --exclude='build/reports/paparazzi' --prune-empty-dirs {} build/reports/ \;
       - store_artifacts:
           path: build/reports
       - run:
