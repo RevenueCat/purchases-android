@@ -262,10 +262,15 @@ internal class PaywallViewModelImpl(
                 PurchasesAreCompletedBy.MY_APP -> {
                     val customerInfo = purchases.awaitCustomerInfo()
                     customPurchaseHandler?.invoke(activity, packageToPurchase)
-                        ?: throw IllegalStateException(
-                            "myAppPurchaseLogic is null, but is required when " +
-                                "purchases.purchasesAreCompletedBy is .MY_APP.",
-                        )
+                        ?: run {
+                            val errorCode = PurchasesErrorCode.ConfigurationError
+                            val underlyingErrorMessage = "myAppPurchaseLogic is null, but is required when " +
+                                "purchases.purchasesAreCompletedBy is .MY_APP."
+                            val purchasesError = PurchasesError(errorCode, underlyingErrorMessage)
+                            val purchasesException = PurchasesException(purchasesError)
+                            throw purchasesException
+                        }
+                    // TODO: call a new `onPurchaseCompleted` handler? Skip this?
                 }
                 PurchasesAreCompletedBy.REVENUECAT -> {
                     if (customPurchaseHandler != null) {
