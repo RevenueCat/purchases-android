@@ -126,6 +126,11 @@ class PaywallViewModelTest {
         model.awaitRestorePurchases()
 
         coVerify { myAppPurchaseLogic.performRestore(any()) }
+
+        verifyOrder {
+            listener.onRestoreStarted()
+            listener.onRestoreCompleted(customerInfo)
+        }
     }
 
     @Test
