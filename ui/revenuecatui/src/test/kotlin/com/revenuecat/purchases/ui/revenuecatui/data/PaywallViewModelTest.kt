@@ -156,7 +156,7 @@ class PaywallViewModelTest {
     }
 
     @Test
-    fun `Calls cancel listener when purchasesAreCompletedBy == MY_APP`() = runTest {
+    fun `Calls purchase cancel listener when purchasesAreCompletedBy == MY_APP`() = runTest {
         every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.MY_APP
 
         val myAppPurchaseLogic = mockk<MyAppPurchaseLogic>(relaxed = true)
@@ -182,7 +182,7 @@ class PaywallViewModelTest {
     }
 
     @Test
-    fun `Calls error listener when purchasesAreCompletedBy == MY_APP`() = runTest {
+    fun `Calls purchase error listener when purchasesAreCompletedBy == MY_APP`() = runTest {
         every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.MY_APP
 
         val myAppPurchaseLogic = mockk<MyAppPurchaseLogic>(relaxed = true)
