@@ -37,7 +37,6 @@ import io.mockk.mockk
 import io.mockk.runs
 import io.mockk.verify
 import io.mockk.verifyOrder
-import junit.framework.TestCase.assertEquals
 import junit.framework.TestCase.fail
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.runTest
@@ -151,6 +150,32 @@ class PaywallViewModelTest {
         model.awaitPurchaseSelectedPackage(activity)
 
         coVerify { myAppPurchaseLogic.performPurchase(any(), any()) }
+
+        assertThat(model.actionInProgress.value).isFalse
+        assertThat(dismissInvoked).isTrue
+    }
+
+    @Test
+    fun `Calls cancel listener when purchasesAreCompletedBy == MY_APP`() = runTest {
+        every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.MY_APP
+
+        val myAppPurchaseLogic = mockk<MyAppPurchaseLogic>(relaxed = true)
+
+        coEvery { myAppPurchaseLogic.performPurchase(any(), any()) } returns MyAppPurchaseResult.Cancellation
+
+        val model = create(
+            customPurchaseLogic = myAppPurchaseLogic,
+            activeSubscriptions = setOf(TestData.Packages.weekly.product.id)
+        )
+
+        model.awaitPurchaseSelectedPackage(activity)
+
+        coVerify { myAppPurchaseLogic.performPurchase(any(), any()) }
+
+        verifyOrder {
+            listener.onPurchaseStarted(any())
+            listener.onPurchaseCancelled()
+        }
 
         assertThat(model.actionInProgress.value).isFalse
         assertThat(dismissInvoked).isTrue
