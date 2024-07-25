@@ -8,7 +8,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.core.os.LocaleListCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.android.billingclient.api.Purchase
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.Offering
@@ -333,7 +332,9 @@ internal class PaywallViewModelImpl(
 
     private fun validateState() {
         if (purchases.purchasesAreCompletedBy == PurchasesAreCompletedBy.MY_APP && options.myAppPurchaseLogic == null) {
-            throw IllegalStateException("myAppPurchaseLogic is null, but is required when purchases.purchasesAreCompletedBy is .MY_APP.")
+            throw IllegalStateException(
+                "myAppPurchaseLogic is null, but is required when purchases.purchasesAreCompletedBy is .MY_APP.",
+            )
         }
     }
     private fun updateState() {

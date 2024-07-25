@@ -13,7 +13,6 @@ import com.revenuecat.purchases.models.PurchaseType
 import com.revenuecat.purchases.models.StoreTransaction
 import org.json.JSONObject
 
-
 /**
  * Represents a purchase made in the application.
  *
@@ -28,7 +27,7 @@ class MyAppPurchase(
     private val productType: ProductType = ProductType.UNKNOWN,
     private val presentedOfferingContext: PresentedOfferingContext? = null,
     private val subscriptionOptionId: String? = null,
-    private val replacementMode: GoogleReplacementMode? = null
+    private val replacementMode: GoogleReplacementMode? = null,
 ) {
     /**
      * Converts the [MyAppPurchase] instance to a [StoreTransaction] object.
