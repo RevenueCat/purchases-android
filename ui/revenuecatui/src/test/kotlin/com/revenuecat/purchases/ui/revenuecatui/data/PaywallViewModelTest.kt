@@ -149,6 +149,10 @@ class PaywallViewModelTest {
         model.awaitPurchaseSelectedPackage(activity)
 
         coVerify { myAppPurchaseLogic.performPurchase(any(), any()) }
+
+        assertThat(model.actionInProgress.value).isFalse
+        assertThat(dismissInvoked).isTrue
+    }
     }
 
     @Test
