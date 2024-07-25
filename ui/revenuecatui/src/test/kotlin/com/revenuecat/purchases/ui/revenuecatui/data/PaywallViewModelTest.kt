@@ -108,12 +108,6 @@ class PaywallViewModelTest {
     internal fun tearDown() {
         clearAllMocks()
     }
-    @Test
-    fun `Purchases will complete purchases using my app`() {
-        every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.MY_APP
-
-        assert(purchases.purchasesAreCompletedBy == PurchasesAreCompletedBy.MY_APP)
-    }
 
     @Test
     fun `Calls custom restore logic when purchasesAreCompletedBy == MY_APP`() = runTest {
