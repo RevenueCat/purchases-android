@@ -196,7 +196,6 @@ internal class PaywallViewModelImpl(
                             throw purchasesException
                         }
                     }
-
                 }
                 PurchasesAreCompletedBy.REVENUECAT -> {
                     if (customRestoreHandler != null) {
@@ -264,6 +263,7 @@ internal class PaywallViewModelImpl(
         }
     }
 
+    @Suppress("LongMethod")
     private suspend fun performPurchase(activity: Activity, packageToPurchase: Package) {
         try {
             listener?.onPurchaseStarted(packageToPurchase)
@@ -332,8 +332,8 @@ internal class PaywallViewModelImpl(
 
     private fun validateState() {
         if (purchases.purchasesAreCompletedBy == PurchasesAreCompletedBy.MY_APP && options.myAppPurchaseLogic == null) {
-            throw IllegalStateException(
-                "myAppPurchaseLogic is null, but is required when purchases.purchasesAreCompletedBy is .MY_APP.",
+            error(
+                "myAppPurchaseLogic is null, but is required when purchases.purchasesAreCompletedBy is .MY_APP."
             )
         }
     }
