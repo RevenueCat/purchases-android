@@ -181,13 +181,12 @@ internal class PaywallViewModelImpl(
 
             when (purchases.purchasesAreCompletedBy) {
                 PurchasesAreCompletedBy.MY_APP -> {
+                    checkNotNull(customRestoreHandler) {
+                        "myAppPurchaseLogic must not be null when purchases.purchasesAreCompletedBy " +
+                            "is PurchasesAreCompletedBy.MY_APP"
+                    }
                     val customerInfo = purchases.awaitCustomerInfo()
-                    val result = customRestoreHandler?.invoke(customerInfo)
-                        ?: throw IllegalStateException(
-                            "myAppPurchaseLogic is null, but is required when " +
-                                "purchases.purchasesAreCompletedBy is .MY_APP.",
-                        )
-                    when (result) {
+                    when (val result = customRestoreHandler.invoke(customerInfo)) {
                         is MyAppRestoreResult.Success -> {
                             listener?.onRestoreCompleted(customerInfo)
                         }
@@ -272,16 +271,11 @@ internal class PaywallViewModelImpl(
 
             when (purchases.purchasesAreCompletedBy) {
                 PurchasesAreCompletedBy.MY_APP -> {
-                    val result = customPurchaseHandler?.invoke(activity, packageToPurchase)
-                        ?: run {
-                            val errorCode = PurchasesErrorCode.ConfigurationError
-                            val underlyingErrorMessage = "myAppPurchaseLogic is null, but is required when " +
-                                "purchases.purchasesAreCompletedBy is .MY_APP."
-                            val purchasesError = PurchasesError(errorCode, underlyingErrorMessage)
-                            val purchasesException = PurchasesException(purchasesError)
-                            throw purchasesException
-                        }
-                    when (result) {
+                    checkNotNull(customPurchaseHandler) {
+                        "myAppPurchaseLogic must not be null when purchases.purchasesAreCompletedBy " +
+                            "is PurchasesAreCompletedBy.MY_APP"
+                    }
+                    when (val result = customPurchaseHandler.invoke(activity, packageToPurchase)) {
                         is MyAppPurchaseResult.Success -> {
                             val storeTransaction = result.purchase?.toStoreTransaction() ?: return
                             val customerInfo = purchases.awaitCustomerInfo()
