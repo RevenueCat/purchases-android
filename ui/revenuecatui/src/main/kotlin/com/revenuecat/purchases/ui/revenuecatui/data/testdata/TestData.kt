@@ -416,7 +416,7 @@ internal class MockViewModel(
 
     override suspend fun awaitPurchaseSelectedPackage(activity: Activity?) {
         if (allowsPurchases) {
-            simulateActionInProgress()
+            awaitSimulateActionInProgress()
         } else {
             unsupportedMethod("Can't purchase mock view model")
         }
