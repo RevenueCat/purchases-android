@@ -14,6 +14,62 @@ import com.revenuecat.purchases.models.StoreTransaction
 import org.json.JSONObject
 
 /**
+ * Code for handling in-app purchases and restorations directly by the application rather than by RevenueCat.
+ * These methods are called by a RevenueCat Paywall only when `Purchases.purchasesAreCompletedBy` is `MY_APP`.
+ *
+ * @property performPurchase Performs an in-app purchase.
+ * @property performRestore Perform a purchase restore for the given customer.
+ */
+class MyAppPurchaseLogic(
+    val performPurchase: suspend ((Activity, Package) -> MyAppPurchaseResult),
+    val performRestore: suspend ((CustomerInfo) -> MyAppRestoreResult),
+)
+
+
+/**
+ * Represents the result of a purchase attempt made by custom app-based code (not RevenueCat).
+ */
+sealed class MyAppPurchaseResult {
+    /**
+     * Indicates a successful purchase.
+     *
+     * @property purchase The purchase details if available. This object is only used to call the
+     * `PaywallListener` `onPurchaseCompleted` callback. If this callback is not needed, it does not need to be
+     * provided, and the callback will not be called.
+     */
+    data class Success(val purchase: MyAppPurchase? = null) : MyAppPurchaseResult()
+
+    /**
+     * Indicates the purchase was cancelled.
+     */
+    object Cancellation : MyAppPurchaseResult()
+
+    /**
+     * Indicates an error occurred during the purchase attempt.
+     *
+     * @property error Details of the error that occurred.
+     */
+    data class Error(val error: PurchasesError) : MyAppPurchaseResult()
+}
+
+/**
+ * Represents the result of a restore purchases attempt.
+ */
+sealed class MyAppRestoreResult {
+    /**
+     * Indicates a successful restore operation.
+     */
+    object Success : MyAppRestoreResult()
+
+    /**
+     * Indicates an error occurred during the restore attempt.
+     *
+     * @property error Details of the error that occurred.
+     */
+    data class Error(val error: PurchasesError) : MyAppRestoreResult()
+}
+
+/**
  * Represents a purchase made in the application.
  *
  * @property purchase The actual purchase object from the store.
@@ -62,56 +118,3 @@ class MyAppPurchase(
     }
 }
 
-/**
- * Represents the result of a purchase attempt made by custom app-based code (not RevenueCat).
- */
-sealed class MyAppPurchaseResult {
-    /**
-     * Indicates a successful purchase.
-     *
-     * @property purchase The purchase details if available. This object is only used to call the
-     * `PaywallListener` `onPurchaseCompleted` callback. If `purchase` is null, the callback will not be called.
-     */
-    data class Success(val purchase: MyAppPurchase? = null) : MyAppPurchaseResult()
-
-    /**
-     * Indicates the purchase was cancelled.
-     */
-    object Cancellation : MyAppPurchaseResult()
-
-    /**
-     * Indicates an error occurred during the purchase attempt.
-     *
-     * @property error Details of the error that occurred.
-     */
-    data class Error(val error: PurchasesError) : MyAppPurchaseResult()
-}
-
-/**
- * Represents the result of a restore purchases attempt.
- */
-sealed class MyAppRestoreResult {
-    /**
-     * Indicates a successful restore operation.
-     */
-    object Success : MyAppRestoreResult()
-
-    /**
-     * Indicates an error occurred during the restore attempt.
-     *
-     * @property error Details of the error that occurred.
-     */
-    data class Error(val error: PurchasesError) : MyAppRestoreResult()
-}
-
-/**
- * Logic for handling purchases and restorations by the application rather than by RevenueCat.
- * These methods are called by a RevenueCat Paywall only when `Purchases.purchasesAreCompletedBy` is `MY_APP`.
- *
- * @property performPurchase A suspend function to perform a purchase.
- * @property performRestore A suspend function to perform a restore operation.
- */
-class MyAppPurchaseLogic(
-    val performPurchase: suspend ((Activity, Package) -> MyAppPurchaseResult),
-    val performRestore: suspend ((CustomerInfo) -> MyAppRestoreResult),
-)
