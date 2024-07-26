@@ -16,8 +16,14 @@ final class PricingPhaseAPI {
         RecurrenceMode recurrenceMode = pricingPhase.getRecurrenceMode();
         Integer billingCycleCount = pricingPhase.getBillingCycleCount();
         Price price = pricingPhase.getPrice();
-        String pricePerMonth = pricingPhase.formattedPriceInMonths(locale);
-        String pricePerMonthNoLocale = pricingPhase.formattedPriceInMonths();
+        String pricePerMonthString = pricingPhase.formattedPriceInMonths(locale);
+        String pricePerMonthStringNoLocale = pricingPhase.formattedPriceInMonths();
+        Price pricePerWeek = pricingPhase.pricePerWeek(locale);
+        Price pricePerMonth = pricingPhase.pricePerMonth(locale);
+        Price pricePerYear = pricingPhase.pricePerYear(locale);
+        Price pricePerWeekNoLocale = pricingPhase.pricePerWeek();
+        Price pricePerMonthNoLocale = pricingPhase.pricePerMonth();
+        Price pricePerYearNoLocale = pricingPhase.pricePerYear();
 
         OfferPaymentMode offerPaymentMode = pricingPhase.getOfferPaymentMode();
     }
