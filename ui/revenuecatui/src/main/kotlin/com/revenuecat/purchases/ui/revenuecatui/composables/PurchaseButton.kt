@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.ui.revenuecatui.composables
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -50,10 +51,11 @@ internal fun PurchaseButton(
     viewModel: PaywallViewModel,
     childModifier: Modifier = Modifier,
     horizontalPadding: Dp = UIConstant.defaultHorizontalPadding,
+    colors: TemplateConfiguration.Colors = state.templateConfiguration.getCurrentColors(),
 ) {
     DisableTouchesComposable(shouldDisable = viewModel.actionInProgress.value) {
         PurchaseButton(
-            colors = state.templateConfiguration.getCurrentColors(),
+            colors = colors,
             packages = state.templateConfiguration.packages,
             selectedPackage = state.selectedPackage,
             viewModel = viewModel,
@@ -89,6 +91,21 @@ private fun PurchaseButton(
             label = "PurchaseButton.label",
         )
 
+        val primaryCTAColor by animateColorAsState(
+            targetValue = colors.callToActionBackground,
+            animationSpec = UIConstant.defaultColorAnimation,
+            label = "primaryCTAColor",
+        )
+        // Assigning a targetValue of callToActionBackground to make the non-null happy
+        // but will only use this state if is non-null callToActionSecondaryBackground
+        // so a solid color is drawn and not a gradient
+        val secondaryCTAColorState by animateColorAsState(
+            targetValue = colors.callToActionSecondaryBackground ?: colors.callToActionBackground,
+            animationSpec = UIConstant.defaultColorAnimation,
+            label = "secondaryCTAColor",
+        )
+        val secondaryCTAColor = colors.callToActionSecondaryBackground?.let { secondaryCTAColorState }
+
         Button(
             modifier = childModifier
                 .fillMaxWidth()
@@ -104,7 +121,7 @@ private fun PurchaseButton(
                     )
                 }
                 .background(
-                    brush = buttonBrush(colors),
+                    brush = buttonBrush(primaryCTAColor, secondaryCTAColor),
                     shape = ButtonDefaults.shape,
                 ),
             onClick = { viewModel.purchaseSelectedPackage(activity) },
@@ -120,7 +137,6 @@ private fun PurchaseButton(
                 ConsistentPackageContentView(
                     packages = packages.all,
                     selected = selectedPackage.value,
-                    shouldAnimate = packages.hasDifferentCallToActionText(),
                 ) {
                     val localization = it.localization
                     IntroEligibilityStateView(
@@ -152,15 +168,15 @@ private fun PurchaseButton(
 
 @ReadOnlyComposable
 @Composable
-private fun buttonBrush(colors: TemplateConfiguration.Colors): Brush {
-    return colors.callToActionSecondaryBackground?.let { secondaryColor ->
+private fun buttonBrush(primaryColor: Color, secondaryColor: Color?): Brush {
+    return secondaryColor?.let {
         Brush.verticalGradient(
             listOf(
-                colors.callToActionBackground,
-                secondaryColor,
+                primaryColor,
+                it,
             ),
         )
-    } ?: SolidColor(colors.callToActionBackground)
+    } ?: SolidColor(primaryColor)
 }
 
 @Composable
@@ -191,30 +207,4 @@ private fun PurchaseButtonPreview() {
             viewModel = viewModel,
         )
     }
-}
-
-// This checks whether any of the packages has a different call to action text than the others.
-private fun TemplateConfiguration.PackageConfiguration.hasDifferentCallToActionText(): Boolean {
-    val firstText = with(all.first()) {
-        introEligibilityText(
-            introEligibility,
-            localization.callToAction,
-            localization.callToActionWithIntroOffer,
-            localization.callToActionWithMultipleIntroOffers,
-        )
-    }
-
-    // We skip the first element since it will always be true.
-    all.drop(1).forEach {
-        if (firstText != introEligibilityText(
-                it.introEligibility,
-                it.localization.callToAction,
-                it.localization.callToActionWithIntroOffer,
-                it.localization.callToActionWithMultipleIntroOffers,
-            )
-        ) {
-            return true
-        }
-    }
-    return false
 }

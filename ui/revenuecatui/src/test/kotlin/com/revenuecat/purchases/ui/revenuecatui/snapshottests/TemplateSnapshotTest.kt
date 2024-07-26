@@ -1,7 +1,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.snapshottests
 
 import com.revenuecat.purchases.Offering
-import com.revenuecat.purchases.ui.revenuecatui.ExperimentalPreviewRevenueCatUIPurchasesAPI
 import com.revenuecat.purchases.ui.revenuecatui.InternalPaywall
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
@@ -27,6 +26,8 @@ class TemplateSnapshotTest(private val testConfig: TemplateTestConfig): BasePapa
             TestData.template3Offering,
             TestData.template4Offering,
             TestData.template5Offering,
+            TestData.template7Offering,
+            TestData.template7CustomPackageOffering,
         )
 
         @JvmStatic

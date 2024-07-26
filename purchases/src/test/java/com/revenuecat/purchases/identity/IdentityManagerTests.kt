@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.identity
 
+import android.content.SharedPreferences.Editor
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.EntitlementInfos
@@ -14,6 +15,7 @@ import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsMa
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesCache
+import com.revenuecat.purchases.utils.SyncDispatcher
 import io.mockk.CapturingSlot
 import io.mockk.Runs
 import io.mockk.every
@@ -40,21 +42,30 @@ class IdentityManagerTests {
     private lateinit var mockBackend: Backend
     private lateinit var mockOfflineEntitlementsManager: OfflineEntitlementsManager
     private lateinit var identityManager: IdentityManager
+    private lateinit var mockEditor: Editor
     private val stubAnonymousID = "\$RCAnonymousID:ff68f26e432648369a713849a9f93b58"
 
     @Before
     fun setup() {
         cachedAppUserIDSlot = slot()
+        mockEditor = mockk<Editor>().apply {
+            every { apply() } just Runs
+        }
         mockDeviceCache = mockk<DeviceCache>().apply {
             every { cacheAppUserID(capture(cachedAppUserIDSlot)) } answers {
                 every { mockDeviceCache.getCachedAppUserID() } returns cachedAppUserIDSlot.captured
             }
+            every { cacheAppUserID(capture(cachedAppUserIDSlot), mockEditor) } answers {
+                every { mockDeviceCache.getCachedAppUserID() } returns cachedAppUserIDSlot.captured
+                mockEditor
+            }
             every { cleanupOldAttributionData() } just Runs
             every { getCachedCustomerInfo(any()) } returns null
+            every { startEditing() } returns mockEditor
         }
         mockSubscriberAttributesCache = mockk<SubscriberAttributesCache>().apply {
             every {
-                cleanUpSubscriberAttributeCache(capture(cachedAppUserIDSlot))
+                cleanUpSubscriberAttributeCache(capture(cachedAppUserIDSlot), mockEditor)
             } just Runs
         }
         mockSubscriberAttributesManager = mockk()
@@ -62,7 +73,9 @@ class IdentityManagerTests {
             every { clearCache() } just Runs
         }
 
-        mockBackend = mockk()
+        mockBackend = mockk<Backend>().apply {
+            every { verificationMode } returns SignatureVerificationMode.Disabled
+        }
         mockOfflineEntitlementsManager = mockk<OfflineEntitlementsManager>().apply {
             every { resetOfflineCustomerInfoCache() } just Runs
         }
@@ -94,7 +107,7 @@ class IdentityManagerTests {
     fun testConfigureSavesTheIDInTheCache() {
         every { mockDeviceCache.getCachedAppUserID() } returns null
         every { mockDeviceCache.getLegacyCachedAppUserID() } returns null
-        every { mockSubscriberAttributesCache.cleanUpSubscriberAttributeCache("cesar") } just Runs
+        every { mockSubscriberAttributesCache.cleanUpSubscriberAttributeCache("cesar", any()) } just Runs
         identityManager.configure("cesar")
         assertCorrectlyIdentified("cesar")
     }
@@ -425,7 +438,7 @@ class IdentityManagerTests {
         every { mockDeviceCache.getCachedAppUserID() } returns null
         every { mockDeviceCache.getLegacyCachedAppUserID() } returns "an_old_random"
         every { mockDeviceCache.clearCachesForAppUserID("an_old_random") } just Runs
-        every { mockSubscriberAttributesCache.cleanUpSubscriberAttributeCache("an_old_random") } just Runs
+        every { mockSubscriberAttributesCache.cleanUpSubscriberAttributeCache("an_old_random", any()) } just Runs
         identityManager.configure(null)
         assertCorrectlyIdentifiedWithAnonymous(oldID = "an_old_random")
     }
@@ -435,7 +448,7 @@ class IdentityManagerTests {
         every { mockDeviceCache.getCachedAppUserID() } returns null
         every { mockDeviceCache.getLegacyCachedAppUserID() } returns "an_old_random"
         every { mockDeviceCache.clearCachesForAppUserID("an_old_random") } just Runs
-        every { mockSubscriberAttributesCache.cleanUpSubscriberAttributeCache("cesar") } just Runs
+        every { mockSubscriberAttributesCache.cleanUpSubscriberAttributeCache("cesar", any()) } just Runs
         identityManager.configure("cesar")
         assertCorrectlyIdentified("cesar")
     }
@@ -452,7 +465,7 @@ class IdentityManagerTests {
         mockCleanCaches()
         identityManager.configure("cesar")
         verify {
-            mockSubscriberAttributesCache.cleanUpSubscriberAttributeCache("cesar")
+            mockSubscriberAttributesCache.cleanUpSubscriberAttributeCache("cesar", any())
         }
     }
 
@@ -462,7 +475,7 @@ class IdentityManagerTests {
         identityManager.configure(null)
         assertThat(cachedAppUserIDSlot.captured).isNotNull
         verify {
-            mockSubscriberAttributesCache.cleanUpSubscriberAttributeCache(cachedAppUserIDSlot.captured)
+            mockSubscriberAttributesCache.cleanUpSubscriberAttributeCache(cachedAppUserIDSlot.captured, any())
         }
     }
 
@@ -471,7 +484,7 @@ class IdentityManagerTests {
         mockCleanCaches()
         identityManager.configure("cesar")
         verify {
-            mockSubscriberAttributesCache.cleanUpSubscriberAttributeCache("cesar")
+            mockSubscriberAttributesCache.cleanUpSubscriberAttributeCache("cesar", any())
         }
     }
 
@@ -481,7 +494,7 @@ class IdentityManagerTests {
         identityManager.configure(null)
         assertThat(cachedAppUserIDSlot.captured).isNotNull
         verify {
-            mockSubscriberAttributesCache.cleanUpSubscriberAttributeCache(cachedAppUserIDSlot.captured)
+            mockSubscriberAttributesCache.cleanUpSubscriberAttributeCache(cachedAppUserIDSlot.captured, any())
         }
     }
 
@@ -510,7 +523,7 @@ class IdentityManagerTests {
         )
         identityManager.configure(userId)
         verify(exactly = 1) {
-            mockDeviceCache.clearCustomerInfoCache(userId)
+            mockDeviceCache.clearCustomerInfoCache(userId, mockEditor)
         }
         verify(exactly = 1) {
             mockBackend.clearCaches()
@@ -528,7 +541,7 @@ class IdentityManagerTests {
         )
         identityManager.configure(userId)
         verify(exactly = 1) {
-            mockDeviceCache.clearCustomerInfoCache(userId)
+            mockDeviceCache.clearCustomerInfoCache(userId, mockEditor)
         }
         verify(exactly = 1) {
             mockBackend.clearCaches()
@@ -633,7 +646,7 @@ class IdentityManagerTests {
         }
         every { mockDeviceCache.getCachedCustomerInfo(userId) } returns mockCustomerInfo
         if (shouldClearCustomerInfoAndETagCaches) {
-            every { mockDeviceCache.clearCustomerInfoCache(userId) } just Runs
+            every { mockDeviceCache.clearCustomerInfoCache(userId, mockEditor) } just Runs
             every { mockBackend.clearCaches() } just Runs
         }
         every { mockBackend.verificationMode } returns verificationMode
@@ -645,7 +658,7 @@ class IdentityManagerTests {
         every { mockDeviceCache.getLegacyCachedAppUserID() } returns null
         every { mockDeviceCache.clearCachesForAppUserID(identifiedUserID) } just Runs
         every { mockSubscriberAttributesCache.clearSubscriberAttributesIfSyncedForSubscriber(identifiedUserID) } just Runs
-        every { mockSubscriberAttributesCache.cleanUpSubscriberAttributeCache(identifiedUserID) } just Runs
+        every { mockSubscriberAttributesCache.cleanUpSubscriberAttributeCache(identifiedUserID, any()) } just Runs
         every { mockBackend.clearCaches() } just Runs
     }
 
@@ -714,7 +727,8 @@ class IdentityManagerTests {
             subscriberAttributesManager,
             offeringsCache,
             backend,
-            offlineEntitlementsManager
+            offlineEntitlementsManager,
+            SyncDispatcher()
         )
     }
 

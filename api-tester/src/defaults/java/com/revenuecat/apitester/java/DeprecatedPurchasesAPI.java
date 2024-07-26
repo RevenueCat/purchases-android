@@ -16,8 +16,6 @@ import com.revenuecat.purchases.models.StoreProduct;
 import com.revenuecat.purchases.models.StoreTransaction;
 import com.revenuecat.purchases.models.SubscriptionOption;
 
-import kotlin.Unit;
-
 @SuppressWarnings({"unused"})
 final class DeprecatedPurchasesAPI {
     static void check(final Purchases purchases,

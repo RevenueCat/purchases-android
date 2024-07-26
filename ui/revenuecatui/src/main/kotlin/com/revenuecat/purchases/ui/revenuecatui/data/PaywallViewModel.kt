@@ -68,7 +68,7 @@ internal interface PaywallViewModel {
     fun clearActionError()
 }
 
-@OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class, ExperimentalPreviewRevenueCatPurchasesAPI::class)
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Suppress("TooManyFunctions", "LongParameterList")
 internal class PaywallViewModelImpl(
     override val resourceProvider: ResourceProvider,

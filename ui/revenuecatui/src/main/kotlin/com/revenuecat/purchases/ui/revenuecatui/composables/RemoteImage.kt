@@ -6,7 +6,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -93,7 +92,10 @@ private fun Image(
     }
 
     var useCache by remember { mutableStateOf(true) }
-    val imageLoader = LocalContext.current.getRevenueCatUIImageLoader(readCache = useCache)
+    val applicationContext = LocalContext.current.applicationContext
+    val imageLoader = remember(useCache) {
+        applicationContext.getRevenueCatUIImageLoader(readCache = useCache)
+    }
 
     val imageRequest = ImageRequest.Builder(LocalContext.current)
         .data(source.data)
@@ -181,8 +183,6 @@ private const val PAYWALL_IMAGE_CACHE_FOLDER = "revenuecatui_cache"
  *
  * @param readCache: set to false to ignore cache for reading, but allow overwriting with updated image.
  */
-@Composable
-@ReadOnlyComposable
 private fun Context.getRevenueCatUIImageLoader(readCache: Boolean): ImageLoader {
     val cachePolicy = if (readCache) CachePolicy.ENABLED else CachePolicy.WRITE_ONLY
 

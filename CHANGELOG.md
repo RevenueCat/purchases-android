@@ -1,3 +1,34 @@
+## 8.3.1
+### RevenueCatUI
+* [Paywalls] Fix `RemoteImage` flicker on activity changes (#1791) via Toni Rico (@tonidero)
+### Dependency Updates
+* Bump fastlane-plugin-revenuecat_internal from `5f55466` to `d5f0742` (#1787) via dependabot[bot] (@dependabot[bot])
+* Updates Gradle (8.9), AGP (8.5.1) and maven.publish (0.28.0) (#1783) via JayShortway (@JayShortway)
+
+## 8.3.0
+### RevenueCatUI
+* Added new paywall template to support multiple tiered subscriptions (#1720) via Josh Holtz (@joshdholtz)
+
+## 8.2.1
+### Bugfixes
+* Attempt to fix ANRs by moving some tasks during configure to background (#1772) via Cesar de la Vega (@vegaro)
+* Use trimmed API key (#1768) via Toni Rico (@tonidero)
+### Other Changes
+* Remove leftovers `ExperimentalPreviewRevenueCatUIPurchasesAPI` (#1778) via Cesar de la Vega (@vegaro)
+* Update migration docs adding back support for `DEFERRED` upgrades (#1774) via Toni Rico (@tonidero)
+* Add 7.12.0 to CHANGELOG (#1769) via Toni Rico (@tonidero)
+
+## 8.2.0
+### New Features
+* Add `DEFERRED` replacement mode (#1751) via Toni Rico (@tonidero)
+### Bugfixes
+* Use correct product context with `DEFERRED` purchases (#1766) via Toni Rico (@tonidero)
+* Call callbacks on `DEFERRED` purchases (#1764) via Toni Rico (@tonidero)
+### Dependency Updates
+* Bump fastlane from 2.221.0 to 2.221.1 (#1758) via dependabot[bot] (@dependabot[bot])
+### Other Changes
+* Adds .aiexclude (#1762) via JayShortway (@JayShortway)
+
 ## 8.1.0
 ### New Features
 * `Amazon`: Add getAmazonLWAConsentStatus method to support Quick Subscribe (#1666) via Mark Villacampa (@MarkVillacampa)
@@ -31,6 +62,13 @@ For a full migration guide check [v8-MIGRATION.md](migrations/v8-MIGRATION.md)
 
 ### Other Changes
 * Bump kotlin to 1.8 (#1726)
+
+## 7.12.0
+### New features
+* Add `DEFERRED` replacement mode (#1751) via Toni Rico (@tonidero)
+### Bugfixes
+* Call callbacks on DEFERRED purchases (#1764) via Toni Rico (@tonidero)
+* Use correct product context with DEFERRED purchases (#1766) via Toni Rico (@tonidero)
 
 ## 7.11.1
 ### Behavior Changes

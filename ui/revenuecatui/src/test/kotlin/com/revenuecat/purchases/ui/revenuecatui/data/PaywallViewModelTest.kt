@@ -53,7 +53,7 @@ import org.junit.runner.RunWith
 import java.util.Date
 import java.util.UUID
 
-@OptIn(ExperimentalPreviewRevenueCatUIPurchasesAPI::class, ExperimentalPreviewRevenueCatPurchasesAPI::class)
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @RunWith(AndroidJUnit4::class)
 class PaywallViewModelTest {
     private val defaultOffering = TestData.template2Offering

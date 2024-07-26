@@ -64,6 +64,10 @@ internal open class DeviceCache(
 
     private val offeringsResponseCacheKey: String by lazy { "$apiKeyPrefix.offeringsResponse" }
 
+    fun startEditing(): SharedPreferences.Editor {
+        return preferences.edit()
+    }
+
     // region app user id
 
     @Synchronized
@@ -74,7 +78,15 @@ internal open class DeviceCache(
 
     @Synchronized
     fun cacheAppUserID(appUserID: String) {
-        preferences.edit().putString(appUserIDCacheKey, appUserID).apply()
+        cacheAppUserID(appUserID, preferences.edit()).apply()
+    }
+
+    @Synchronized
+    fun cacheAppUserID(
+        appUserID: String,
+        cacheEditor: SharedPreferences.Editor,
+    ): SharedPreferences.Editor {
+        return cacheEditor.putString(appUserIDCacheKey, appUserID)
     }
 
     @Synchronized
@@ -168,9 +180,17 @@ internal open class DeviceCache(
     @Synchronized
     fun clearCustomerInfoCache(appUserID: String) {
         val editor = preferences.edit()
+        clearCustomerInfoCache(appUserID, editor)
+        editor.apply()
+    }
+
+    @Synchronized
+    fun clearCustomerInfoCache(
+        appUserID: String,
+        editor: SharedPreferences.Editor,
+    ) {
         editor.clearCustomerInfoCacheTimestamp(appUserID)
         editor.remove(customerInfoCacheKey(appUserID))
-        editor.apply()
     }
 
     @Synchronized

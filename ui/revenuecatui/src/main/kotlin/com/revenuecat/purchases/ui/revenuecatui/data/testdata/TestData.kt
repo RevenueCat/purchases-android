@@ -28,6 +28,8 @@ import com.revenuecat.purchases.ui.revenuecatui.data.testdata.templates.template
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.templates.template3
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.templates.template4
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.templates.template5
+import com.revenuecat.purchases.ui.revenuecatui.data.testdata.templates.template7
+import com.revenuecat.purchases.ui.revenuecatui.data.testdata.templates.template7CustomPackages
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toPaywallState
 import kotlinx.coroutines.delay
@@ -171,6 +173,36 @@ internal object TestData {
         ),
         metadata = mapOf(),
         paywall = template5,
+        serverDescription = "",
+    )
+
+    val template7Offering = Offering(
+        identifier = "Template7",
+        availablePackages = listOf(
+            Packages.monthly,
+            Packages.annual,
+            Packages.bimonthly,
+            Packages.quarterly,
+            Packages.semester,
+            Packages.lifetime,
+        ),
+        metadata = mapOf(),
+        paywall = template7,
+        serverDescription = "",
+    )
+
+    val template7CustomPackageOffering = Offering(
+        identifier = "Template7CustomPackage",
+        availablePackages = listOf(
+            Packages.monthly,
+            Packages.annual,
+            Packages.bimonthly,
+            Packages.quarterly,
+            Packages.semester,
+            Packages.lifetime,
+        ),
+        metadata = mapOf(),
+        paywall = template7CustomPackages,
         serverDescription = "",
     )
 

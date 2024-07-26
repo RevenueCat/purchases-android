@@ -16,7 +16,6 @@ internal object TemplateConfigurationFactory {
         nonSubscriptionProductIdentifiers: Set<String>,
         template: PaywallTemplate,
     ): Result<TemplateConfiguration> {
-        val (locale, localizedConfiguration) = paywallData.localizedConfiguration
         val sourceImages = paywallData.config.images
 
         val images = TemplateConfiguration.Images(
@@ -24,6 +23,14 @@ internal object TemplateConfigurationFactory {
             backgroundUri = paywallData.getUriFromImage(sourceImages.background),
             headerUri = paywallData.getUriFromImage(sourceImages.header),
         )
+
+        val imagesByTier = paywallData.config.imagesByTier?.mapValues {
+            TemplateConfiguration.Images(
+                iconUri = paywallData.getUriFromImage(it.value.icon),
+                backgroundUri = paywallData.getUriFromImage(it.value.background),
+                headerUri = paywallData.getUriFromImage(it.value.header),
+            )
+        } ?: emptyMap()
 
         val createPackageResult =
             PackageConfigurationFactory.createPackageConfiguration(
@@ -33,21 +40,23 @@ internal object TemplateConfigurationFactory {
                 nonSubscriptionProductIdentifiers = nonSubscriptionProductIdentifiers,
                 packageIdsInConfig = paywallData.config.packageIds,
                 default = paywallData.config.defaultPackage,
-                localization = localizedConfiguration,
                 configurationType = template.configurationType,
-                locale = locale,
+                paywallData = paywallData,
             )
-        val packageConfiguration = createPackageResult.getOrElse {
+        val (locale, packageConfiguration) = createPackageResult.getOrElse {
             return Result.failure(it)
         }
+
         return Result.success(
             TemplateConfiguration(
-                locale = locale,
                 template = template,
                 mode = mode,
                 packages = packageConfiguration,
                 configuration = paywallData.config,
                 images = images,
+                imagesByTier = imagesByTier,
+                colors = paywallData.config.colors,
+                locale = locale,
             ),
         )
     }
