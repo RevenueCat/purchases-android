@@ -24,7 +24,6 @@ import kotlin.time.Duration
 internal class DiagnosticsTracker(
     private val appConfig: AppConfig,
     private val diagnosticsFileHelper: DiagnosticsFileHelper,
-    private val diagnosticsAnonymizer: DiagnosticsAnonymizer,
     private val diagnosticsHelper: DiagnosticsHelper,
     private val diagnosticsDispatcher: Dispatcher,
 ) {
@@ -260,10 +259,9 @@ internal class DiagnosticsTracker(
 
     internal fun trackEventInCurrentThread(diagnosticsEntry: DiagnosticsEntry) {
         if (isAndroidNOrNewer()) {
-            val anonymizedEvent = diagnosticsAnonymizer.anonymizeEntryIfNeeded(diagnosticsEntry)
-            verboseLog("Tracking diagnostics entry: $anonymizedEvent")
+            verboseLog("Tracking diagnostics entry: $diagnosticsEntry")
             try {
-                diagnosticsFileHelper.appendEvent(anonymizedEvent)
+                diagnosticsFileHelper.appendEvent(diagnosticsEntry)
             } catch (e: IOException) {
                 verboseLog("Error tracking diagnostics entry: $e")
             }
