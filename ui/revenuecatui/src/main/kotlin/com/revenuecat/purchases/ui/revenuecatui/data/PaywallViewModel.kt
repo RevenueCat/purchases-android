@@ -333,7 +333,7 @@ internal class PaywallViewModelImpl(
     private fun validateState() {
         if (purchases.purchasesAreCompletedBy == PurchasesAreCompletedBy.MY_APP && options.myAppPurchaseLogic == null) {
             error(
-                "myAppPurchaseLogic is null, but is required when purchases.purchasesAreCompletedBy is .MY_APP."
+                "myAppPurchaseLogic is null, but is required when purchases.purchasesAreCompletedBy is .MY_APP.",
             )
         }
     }
