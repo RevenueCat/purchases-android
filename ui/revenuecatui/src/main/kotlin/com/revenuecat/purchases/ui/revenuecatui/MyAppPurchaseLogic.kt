@@ -25,7 +25,6 @@ class MyAppPurchaseLogic(
     val performRestore: suspend ((CustomerInfo) -> MyAppRestoreResult),
 )
 
-
 /**
  * Represents the result of a purchase attempt made by custom app-based code (not RevenueCat).
  */
@@ -117,4 +116,3 @@ class MyAppPurchase(
         }
     }
 }
-
