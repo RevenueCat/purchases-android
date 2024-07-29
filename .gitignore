@@ -130,3 +130,6 @@ vendor/
 
 # Snapshots repo folder
 purchases-android-snapshots
+
+# Make sure we share the same Detekt IntelliJ plugin settings
+!.idea/detekt.xml
