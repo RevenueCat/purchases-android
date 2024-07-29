@@ -157,7 +157,7 @@ open class PurchasesConfiguration(builder: Builder) {
         /**
          * Enabling diagnostics will send some performance and debugging information from the SDK to our servers.
          * Examples of this information include response times, cache hits or error codes.
-         * This information will be anonymized so it can't be traced back to the end-user.
+         * No personal identifiable information will be collected.
          * The default value is false.
          *
          * Diagnostics is only available in Android API 24+
