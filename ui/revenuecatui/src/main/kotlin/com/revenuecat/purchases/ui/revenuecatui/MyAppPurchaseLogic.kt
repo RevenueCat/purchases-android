@@ -28,7 +28,7 @@ class MyAppPurchaseLogic(
 /**
  * Represents the result of a purchase attempt made by custom app-based code (not RevenueCat).
  */
-sealed class MyAppPurchaseResult {
+sealed interface MyAppPurchaseResult {
     /**
      * Indicates a successful purchase.
      *
@@ -36,36 +36,36 @@ sealed class MyAppPurchaseResult {
      * `PaywallListener` `onPurchaseCompleted` callback. If this callback is not needed, it does not need to be
      * provided, and the callback will not be called.
      */
-    data class Success(val purchase: MyAppPurchase? = null) : MyAppPurchaseResult()
+    data class Success(val purchase: MyAppPurchase? = null) : MyAppPurchaseResult
 
     /**
      * Indicates the purchase was cancelled.
      */
-    object Cancellation : MyAppPurchaseResult()
+    object Cancellation : MyAppPurchaseResult
 
     /**
      * Indicates an error occurred during the purchase attempt.
      *
      * @property error Details of the error that occurred.
      */
-    data class Error(val error: PurchasesError) : MyAppPurchaseResult()
+    data class Error(val error: PurchasesError) : MyAppPurchaseResult
 }
 
 /**
  * Represents the result of a restore purchases attempt.
  */
-sealed class MyAppRestoreResult {
+sealed interface MyAppRestoreResult {
     /**
      * Indicates a successful restore operation.
      */
-    object Success : MyAppRestoreResult()
+    object Success : MyAppRestoreResult
 
     /**
      * Indicates an error occurred during the restore attempt.
      *
      * @property error Details of the error that occurred.
      */
-    data class Error(val error: PurchasesError) : MyAppRestoreResult()
+    data class Error(val error: PurchasesError) : MyAppRestoreResult
 }
 
 /**
