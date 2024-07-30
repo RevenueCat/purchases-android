@@ -44,6 +44,7 @@ import junit.framework.TestCase.fail
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType
 import org.json.JSONArray
 import org.junit.After
 import org.junit.Before
