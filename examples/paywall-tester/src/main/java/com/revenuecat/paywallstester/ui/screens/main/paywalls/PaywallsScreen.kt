@@ -1,5 +1,6 @@
 package com.revenuecat.paywallstester.ui.screens.main.paywalls
 
+import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -51,12 +52,11 @@ fun PaywallsScreen(
             val offering = samplePaywallsLoader.offeringForTemplate(template)
             val myAppPurchaseLogic = MyAppPurchaseLogic(
                 performPurchase = { _, _ ->
-                    println("Hello from performPurchase!")
+                    Log.d("RevenueCatUI","Hello from performPurchase!")
                     MyAppPurchaseResult.Success()
                 },
                 performRestore = { customerInfo ->
-                    println("Hello from performRestore!")
-                    println("Original app user ID is ${customerInfo.originalAppUserId}")
+                    Log.d("RevenueCatUI", "Hello from performRestore!")
                     MyAppRestoreResult.Success
                 },
             )
