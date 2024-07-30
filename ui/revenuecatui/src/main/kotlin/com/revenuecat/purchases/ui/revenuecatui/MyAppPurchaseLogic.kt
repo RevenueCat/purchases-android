@@ -79,35 +79,12 @@ sealed interface MyAppRestoreResult {
  */
 class MyAppPurchase(
     val purchase: Purchase,
-    private val productType: ProductType = ProductType.UNKNOWN,
-    private val presentedOfferingContext: PresentedOfferingContext? = null,
-    private val subscriptionOptionId: String? = null,
-    private val replacementMode: GoogleReplacementMode? = null,
+    internal val productType: ProductType = ProductType.UNKNOWN,
+    internal val presentedOfferingContext: PresentedOfferingContext? = null,
+    internal val subscriptionOptionId: String? = null,
+    internal val replacementMode: GoogleReplacementMode? = null,
 ) {
-    /**
-     * Converts the [MyAppPurchase] instance to a [StoreTransaction] object.
-     *
-     * @return A [StoreTransaction] representing the purchase.
-     */
-    fun toStoreTransaction(): StoreTransaction = StoreTransaction(
-        orderId = purchase.orderId,
-        productIds = purchase.products,
-        type = productType,
-        purchaseTime = purchase.purchaseTime,
-        purchaseToken = purchase.purchaseToken,
-        purchaseState = purchase.purchaseState.toRevenueCatPurchaseState(),
-        isAutoRenewing = purchase.isAutoRenewing,
-        signature = purchase.signature,
-        originalJson = JSONObject(purchase.originalJson),
-        presentedOfferingContext = presentedOfferingContext,
-        storeUserID = null,
-        purchaseType = PurchaseType.GOOGLE_PURCHASE,
-        marketplace = null,
-        subscriptionOptionId = subscriptionOptionId,
-        replacementMode = replacementMode,
-    )
-
-    private fun Int.toRevenueCatPurchaseState(): PurchaseState {
+    internal fun Int.toRevenueCatPurchaseState(): PurchaseState {
         return when (this) {
             Purchase.PurchaseState.UNSPECIFIED_STATE -> PurchaseState.UNSPECIFIED_STATE
             Purchase.PurchaseState.PURCHASED -> PurchaseState.PURCHASED
@@ -116,3 +93,26 @@ class MyAppPurchase(
         }
     }
 }
+
+/**
+ * Converts the [MyAppPurchase] instance to a [StoreTransaction] object.
+ *
+ * @return A [StoreTransaction] representing the purchase.
+ */
+internal fun MyAppPurchase.toStoreTransaction(): StoreTransaction = StoreTransaction(
+    orderId = purchase.orderId,
+    productIds = purchase.products,
+    type = productType,
+    purchaseTime = purchase.purchaseTime,
+    purchaseToken = purchase.purchaseToken,
+    purchaseState = purchase.purchaseState.toRevenueCatPurchaseState(),
+    isAutoRenewing = purchase.isAutoRenewing,
+    signature = purchase.signature,
+    originalJson = JSONObject(purchase.originalJson),
+    presentedOfferingContext = presentedOfferingContext,
+    storeUserID = null,
+    purchaseType = PurchaseType.GOOGLE_PURCHASE,
+    marketplace = null,
+    subscriptionOptionId = subscriptionOptionId,
+    replacementMode = replacementMode,
+)
