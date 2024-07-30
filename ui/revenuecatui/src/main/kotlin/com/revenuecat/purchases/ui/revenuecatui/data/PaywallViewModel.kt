@@ -185,7 +185,7 @@ internal class PaywallViewModelImpl(
                             "is PurchasesAreCompletedBy.MY_APP"
                     }
                     val customerInfo = purchases.awaitCustomerInfo()
-                    when (val result = customRestoreHandler.invoke(customerInfo)) {
+                    when (val result = customRestoreHandler(customerInfo)) {
                         is MyAppRestoreResult.Success -> {
                             listener?.onRestoreCompleted(customerInfo)
                         }
