@@ -248,13 +248,10 @@ class PaywallViewModelTest {
     fun `Cannot create PaywallViewModel when purchasesAreCompletedBy == MY_APP without custom purchase logic`() {
         every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.MY_APP
 
-        try {
+        assertThatExceptionOfType(IllegalStateException::class.java).isThrownBy {
             create(
                 activeSubscriptions = setOf(TestData.Packages.weekly.product.id)
             )
-            fail("Expected IllegalStateException to be thrown")
-        } catch (e: IllegalStateException) {
-            // Success: caught the expected exception
         }
     }
 
