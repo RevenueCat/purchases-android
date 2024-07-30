@@ -47,19 +47,20 @@ fun PaywallsScreen(
 ) {
     var displayPaywallState by remember { mutableStateOf<DisplayPaywallState>(DisplayPaywallState.None) }
 
+    val myAppPurchaseLogic = MyAppPurchaseLogic(
+        performPurchase = { _, _ ->
+            Log.d("RevenueCatUI","Hello from performPurchase!")
+            MyAppPurchaseResult.Success()
+        },
+        performRestore = { customerInfo ->
+            Log.d("RevenueCatUI", "Hello from performRestore!")
+            MyAppRestoreResult.Success
+        },
+    )
+
     LazyColumn {
         items(SamplePaywalls.SampleTemplate.values()) { template ->
             val offering = samplePaywallsLoader.offeringForTemplate(template)
-            val myAppPurchaseLogic = MyAppPurchaseLogic(
-                performPurchase = { _, _ ->
-                    Log.d("RevenueCatUI","Hello from performPurchase!")
-                    MyAppPurchaseResult.Success()
-                },
-                performRestore = { customerInfo ->
-                    Log.d("RevenueCatUI", "Hello from performRestore!")
-                    MyAppRestoreResult.Success
-                },
-            )
             Column(modifier = Modifier.fillMaxWidth()) {
                 Text(
                     text = template.displayableName,
