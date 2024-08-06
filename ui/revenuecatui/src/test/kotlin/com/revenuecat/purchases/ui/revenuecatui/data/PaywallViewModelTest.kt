@@ -4,12 +4,14 @@ import android.app.Activity
 import android.content.Context
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.android.billingclient.api.Purchase
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PurchaseResult
+import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
@@ -17,6 +19,11 @@ import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.Transaction
 import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.paywalls.events.PaywallEventType
+import com.revenuecat.purchases.ui.revenuecatui.ExperimentalPreviewRevenueCatUIPurchasesAPI
+import com.revenuecat.purchases.ui.revenuecatui.MyAppPurchase
+import com.revenuecat.purchases.ui.revenuecatui.MyAppPurchaseLogic
+import com.revenuecat.purchases.ui.revenuecatui.MyAppPurchaseResult
+import com.revenuecat.purchases.ui.revenuecatui.MyAppRestoreResult
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
@@ -35,7 +42,10 @@ import io.mockk.verify
 import io.mockk.verifyOrder
 import junit.framework.TestCase.fail
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType
+import org.json.JSONArray
 import org.junit.After
 import org.junit.Before
 import org.junit.Rule
@@ -83,6 +93,10 @@ class PaywallViewModelTest {
 
         coEvery { purchases.awaitOfferings() } returns offerings
         coEvery { purchases.awaitCustomerInfo(any()) } returns customerInfo
+        every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.REVENUECAT
+
+        every { customerInfo.activeSubscriptions } returns setOf()
+        every { customerInfo.nonSubscriptionTransactions } returns listOf()
 
         every { purchases.track(any()) } just Runs
 
@@ -92,11 +106,154 @@ class PaywallViewModelTest {
         every { listener.onRestoreStarted() } just runs
         every { listener.onRestoreCompleted(any()) } just runs
         every { listener.onRestoreError(any()) } just runs
+        every { listener.onPurchaseCancelled() } just runs
     }
 
     @After
     internal fun tearDown() {
         clearAllMocks()
+    }
+
+    @Test
+    fun `Calls custom restore logic when purchasesAreCompletedBy == MY_APP`() = runTest {
+        every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.MY_APP
+
+        val myAppPurchaseLogic = mockk<MyAppPurchaseLogic>(relaxed = true)
+
+        coEvery { myAppPurchaseLogic.performRestore(any()) } returns MyAppRestoreResult.Success
+
+        val model = create(
+            customPurchaseLogic = myAppPurchaseLogic,
+            activeSubscriptions = setOf(TestData.Packages.monthly.product.id),
+            nonSubscriptionTransactionProductIdentifiers = setOf(TestData.Packages.lifetime.product.id)
+        )
+
+        model.awaitRestorePurchases()
+
+        coVerify { myAppPurchaseLogic.performRestore(customerInfo) }
+
+        verifyOrder {
+            listener.onRestoreStarted()
+            listener.onRestoreCompleted(customerInfo)
+        }
+    }
+
+    @Test
+    fun `Calls restore error listener when purchasesAreCompletedBy == MY_APP`() = runTest {
+        every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.MY_APP
+        val notAllowedError = PurchasesError(PurchasesErrorCode.PurchaseNotAllowedError)
+
+        val myAppPurchaseLogic = mockk<MyAppPurchaseLogic>(relaxed = true)
+
+        coEvery { myAppPurchaseLogic.performRestore(any()) } returns MyAppRestoreResult.Error(notAllowedError)
+
+        val model = create(
+            customPurchaseLogic = myAppPurchaseLogic,
+            activeSubscriptions = setOf(TestData.Packages.weekly.product.id)
+        )
+
+        model.awaitRestorePurchases()
+
+        coVerify { myAppPurchaseLogic.performRestore(customerInfo) }
+
+        verifyOrder {
+            listener.onRestoreStarted()
+            listener.onRestoreError(notAllowedError)
+        }
+
+        assertThat(model.actionInProgress.value).isFalse
+    }
+
+    @Test
+    fun `Calls custom purchase logic when purchasesAreCompletedBy == MY_APP`() = runTest {
+        every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.MY_APP
+
+        val myAppPurchaseLogic = mockk<MyAppPurchaseLogic>(relaxed = true)
+
+        val purchase = stubGooglePurchase()
+        val myAppPurchase = MyAppPurchase(purchase)
+
+        coEvery { myAppPurchaseLogic.performPurchase(any(), any()) } returns MyAppPurchaseResult.Success(myAppPurchase)
+
+        val model = create(
+            customPurchaseLogic = myAppPurchaseLogic,
+            activeSubscriptions = setOf(TestData.Packages.weekly.product.id)
+        )
+
+        model.awaitPurchaseSelectedPackage(activity)
+
+        coVerify { myAppPurchaseLogic.performPurchase(any(), any()) }
+
+        verifyOrder {
+            listener.onPurchaseStarted(any())
+            listener.onPurchaseCompleted(customerInfo, any())
+        }
+
+        assertThat(model.actionInProgress.value).isFalse
+        assertThat(dismissInvoked).isTrue
+    }
+
+    @Test
+    fun `Calls purchase cancel listener when purchasesAreCompletedBy == MY_APP`() = runTest {
+        every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.MY_APP
+
+        val myAppPurchaseLogic = mockk<MyAppPurchaseLogic>(relaxed = true)
+
+        coEvery { myAppPurchaseLogic.performPurchase(any(), any()) } returns MyAppPurchaseResult.Cancellation
+
+        val model = create(
+            customPurchaseLogic = myAppPurchaseLogic,
+            activeSubscriptions = setOf(TestData.Packages.weekly.product.id)
+        )
+
+        model.awaitPurchaseSelectedPackage(activity)
+
+        coVerify { myAppPurchaseLogic.performPurchase(any(), any()) }
+
+        verifyOrder {
+            listener.onPurchaseStarted(any())
+            listener.onPurchaseCancelled()
+        }
+
+        assertThat(model.actionInProgress.value).isFalse
+        assertThat(dismissInvoked).isTrue
+    }
+
+    @Test
+    fun `Calls purchase error listener when purchasesAreCompletedBy == MY_APP`() = runTest {
+        every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.MY_APP
+
+        val myAppPurchaseLogic = mockk<MyAppPurchaseLogic>(relaxed = true)
+        val notAllowedError = PurchasesError(PurchasesErrorCode.PurchaseNotAllowedError)
+
+        coEvery { myAppPurchaseLogic.performPurchase(any(), any()) } returns MyAppPurchaseResult.Error(notAllowedError)
+
+        val model = create(
+            customPurchaseLogic = myAppPurchaseLogic,
+            activeSubscriptions = setOf(TestData.Packages.weekly.product.id)
+        )
+
+        model.awaitPurchaseSelectedPackage(activity)
+
+        coVerify { myAppPurchaseLogic.performPurchase(any(), any()) }
+
+        verifyOrder {
+            listener.onPurchaseStarted(any())
+            listener.onPurchaseError(notAllowedError)
+        }
+
+        assertThat(model.actionInProgress.value).isFalse
+    }
+
+    @Test
+    fun `Cannot create PaywallViewModel when purchasesAreCompletedBy == MY_APP without custom purchase logic`() {
+        every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.MY_APP
+
+        assertThatExceptionOfType(IllegalStateException::class.java).isThrownBy {
+            create(
+                activeSubscriptions = setOf(TestData.Packages.weekly.product.id)
+            )
+        }
     }
 
     @Test
@@ -568,7 +725,8 @@ class PaywallViewModelTest {
         offering: Offering? = null,
         activeSubscriptions: Set<String> = setOf(),
         nonSubscriptionTransactionProductIdentifiers: Set<String> = setOf(),
-        shouldDisplayBlock: ((CustomerInfo) -> Boolean)? = null,
+        customPurchaseLogic: MyAppPurchaseLogic? = null,
+        shouldDisplayBlock: ((CustomerInfo) -> Boolean)? = null
     ): PaywallViewModelImpl {
         mockActiveSubscriptions(activeSubscriptions)
         mockNonSubscriptionTransactions(nonSubscriptionTransactionProductIdentifiers)
@@ -579,6 +737,7 @@ class PaywallViewModelTest {
             PaywallOptions.Builder(dismissRequest = { dismissInvoked = true })
                 .setListener(listener)
                 .setOffering(offering)
+                .setMyAppPurchaseLogic(customPurchaseLogic)
                 .build(),
             TestData.Constants.currentColorScheme,
             isDarkMode = false,
@@ -654,4 +813,29 @@ class PaywallViewModelTest {
             offerings
         }
     }
+
+    // copied from out-of-module billingClientStubs.kt
+    private fun stubGooglePurchase(
+        productIds: List<String> = listOf("com.revenuecat.lifetime"),
+        purchaseTime: Long = System.currentTimeMillis(),
+        purchaseToken: String = "abcdefghijipehfnbbnldmai.AO-J1OxqriTepvB7suzlIhxqPIveA0IHtX9amMedK0KK9CsO0S3Zk5H6gdwvV" +
+            "7HzZIJeTzqkY4okyVk8XKTmK1WZKAKSNTKop4dgwSmFnLWsCxYbahUmADg",
+        signature: String = "signature${System.currentTimeMillis()}",
+        purchaseState: Int = Purchase.PurchaseState.PURCHASED,
+        acknowledged: Boolean = true,
+        orderId: String = "GPA.3372-4150-8203-17209",
+    ): Purchase = Purchase(
+        """
+    {
+        "orderId": "$orderId",
+        "packageName":"com.revenuecat.purchases_sample",
+        "productIds":${JSONArray(productIds)},
+        "purchaseTime":$purchaseTime,
+        "purchaseState":${if (purchaseState == 2) 4 else 1},
+        "purchaseToken":"$purchaseToken",
+        "acknowledged":$acknowledged
+    }
+    """.trimIndent(),
+        signature,
+    )
 }

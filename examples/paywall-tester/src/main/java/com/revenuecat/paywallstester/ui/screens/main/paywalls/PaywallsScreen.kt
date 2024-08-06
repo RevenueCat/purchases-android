@@ -1,5 +1,6 @@
 package com.revenuecat.paywallstester.ui.screens.main.paywalls
 
+import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -29,6 +30,9 @@ import com.revenuecat.paywallstester.SamplePaywallsLoader
 import com.revenuecat.paywallstester.ui.screens.paywallfooter.SamplePaywall
 import com.revenuecat.paywallstester.ui.theme.bundledLobsterTwoFontFamily
 import com.revenuecat.purchases.Offering
+import com.revenuecat.purchases.ui.revenuecatui.MyAppPurchaseLogic
+import com.revenuecat.purchases.ui.revenuecatui.MyAppPurchaseResult
+import com.revenuecat.purchases.ui.revenuecatui.MyAppRestoreResult
 import com.revenuecat.purchases.ui.revenuecatui.PaywallDialog
 import com.revenuecat.purchases.ui.revenuecatui.PaywallDialogOptions
 import com.revenuecat.purchases.ui.revenuecatui.PaywallFooter
@@ -36,11 +40,25 @@ import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.fonts.CustomFontProvider
 import com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider
 
+@Suppress("LongMethod")
 @Composable
 fun PaywallsScreen(
     samplePaywallsLoader: SamplePaywallsLoader = SamplePaywallsLoader(),
 ) {
     var displayPaywallState by remember { mutableStateOf<DisplayPaywallState>(DisplayPaywallState.None) }
+
+    val myAppPurchaseLogic = remember {
+        MyAppPurchaseLogic(
+            performPurchase = { _, _ ->
+                Log.d("RevenueCatUI", "Hello from performPurchase!")
+                MyAppPurchaseResult.Success()
+            },
+            performRestore = { customerInfo ->
+                Log.d("RevenueCatUI", "Hello from performRestore!")
+                MyAppRestoreResult.Success
+            }
+        )
+    }
 
     LazyColumn {
         items(SamplePaywalls.SampleTemplate.values()) { template ->
@@ -53,21 +71,32 @@ fun PaywallsScreen(
                 )
                 ButtonWithEmoji(
                     onClick = {
-                        displayPaywallState = DisplayPaywallState.FullScreen(offering)
+                        displayPaywallState = DisplayPaywallState.FullScreen(
+                            offering,
+                            myAppPurchaseLogic = myAppPurchaseLogic,
+                        )
                     },
                     emoji = "\uD83D\uDCF1",
                     label = "Full screen",
                 )
                 ButtonWithEmoji(
                     onClick = {
-                        displayPaywallState = DisplayPaywallState.Footer(offering, condensed = false)
+                        displayPaywallState = DisplayPaywallState.Footer(
+                            offering,
+                            condensed = false,
+                            myAppPurchaseLogic = myAppPurchaseLogic,
+                        )
                     },
                     emoji = "\uD83D\uDD3D",
                     label = "Footer",
                 )
                 ButtonWithEmoji(
                     onClick = {
-                        displayPaywallState = DisplayPaywallState.Footer(offering, condensed = true)
+                        displayPaywallState = DisplayPaywallState.Footer(
+                            offering,
+                            condensed = true,
+                            myAppPurchaseLogic = myAppPurchaseLogic,
+                        )
                     },
                     emoji = "\uD83D\uDDDC️",
                     label = "Condenser footer",
@@ -77,6 +106,7 @@ fun PaywallsScreen(
                         displayPaywallState = DisplayPaywallState.FullScreen(
                             offering,
                             CustomFontProvider(bundledLobsterTwoFontFamily),
+                            myAppPurchaseLogic = myAppPurchaseLogic,
                         )
                     },
                     emoji = "\uD83C\uDD70️",
@@ -104,6 +134,7 @@ private fun FullScreenDialog(currentState: DisplayPaywallState.FullScreen, onDis
             .setDismissRequest(onDismiss)
             .setOffering(currentState.offering)
             .setFontProvider(currentState.fontProvider)
+            .setMyAppPurchaseLogic(currentState.myAppPurchaseLogic)
             .build(),
     )
 }
@@ -119,6 +150,7 @@ private fun FooterDialog(currentState: DisplayPaywallState.Footer, onDismiss: ()
                 PaywallFooter(
                     options = PaywallOptions.Builder(dismissRequest = onDismiss)
                         .setOffering(currentState.offering)
+                        .setMyAppPurchaseLogic(currentState.myAppPurchaseLogic)
                         .build(),
                     condensed = currentState.condensed,
                 ) { footerPadding ->
@@ -135,10 +167,12 @@ private sealed class DisplayPaywallState {
     constructor(
         val offering: Offering? = null,
         val fontProvider: FontProvider? = null,
+        var myAppPurchaseLogic: MyAppPurchaseLogic? = null,
     ) : DisplayPaywallState()
     data class Footer(
         val offering: Offering? = null,
         val condensed: Boolean = false,
+        var myAppPurchaseLogic: MyAppPurchaseLogic? = null,
     ) : DisplayPaywallState()
 }
 

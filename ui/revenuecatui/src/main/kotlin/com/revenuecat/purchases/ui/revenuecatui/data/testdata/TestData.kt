@@ -446,12 +446,28 @@ internal class MockViewModel(
         }
     }
 
+    override suspend fun awaitPurchaseSelectedPackage(activity: Activity?) {
+        if (allowsPurchases) {
+            awaitSimulateActionInProgress()
+        } else {
+            unsupportedMethod("Can't purchase mock view model")
+        }
+    }
+
     var restorePurchasesCallCount = 0
         private set
     override fun restorePurchases() {
         restorePurchasesCallCount++
         if (allowsPurchases) {
             simulateActionInProgress()
+        } else {
+            unsupportedMethod("Can't restore purchases")
+        }
+    }
+
+    override suspend fun awaitRestorePurchases() {
+        if (allowsPurchases) {
+            awaitSimulateActionInProgress()
         } else {
             unsupportedMethod("Can't restore purchases")
         }
@@ -466,10 +482,14 @@ internal class MockViewModel(
 
     private fun simulateActionInProgress() {
         viewModelScope.launch {
-            _actionInProgress.value = true
-            delay(fakePurchaseDelayMillis)
-            _actionInProgress.value = false
+            awaitSimulateActionInProgress()
         }
+    }
+
+    private suspend fun awaitSimulateActionInProgress() {
+        _actionInProgress.value = true
+        delay(fakePurchaseDelayMillis)
+        _actionInProgress.value = false
     }
 
     private fun unsupportedMethod(errorMessage: String = "Not supported") {
