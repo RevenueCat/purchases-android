@@ -65,6 +65,11 @@ platform :android do
     gradle(task: "ui:debugview:recordPaparazziDebug")
   end
 
+  desc "Emerge snapshot tests"
+  lane :emerge_purchases_ui_snapshot_tests do
+    gradle(task: ":test-apps:testpurchasesuiandroidcompatibility:emergeUploadSnapshotBundleDebug")
+  end
+
   desc "Replaces version numbers, updates changelog and creates PR"
   lane :bump do |options|
     bump_version_update_changelog_create_pr(
