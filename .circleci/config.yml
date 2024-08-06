@@ -182,11 +182,6 @@ jobs:
           name: Run Tests
           command: ./gradlew lint test
       - run:
-          name: Consolidate artifacts
-          command: |
-              mkdir -p build/test-results/
-              find . -type f -regex ".*/build/test-results/.*xml" -exec cp --parents {} build/test-results/ \;
-      - run:
           name: Kover HTML
           command: ./gradlew purchases:koverHtmlReportDefaultsRelease
       - run:
@@ -195,6 +190,11 @@ jobs:
       - codecov/upload:
           file: purchases/build/reports/kover/reportDefaultsRelease.xml
       - android/save-build-cache
+      - run:
+          name: Consolidate artifacts
+          command: |
+            mkdir -p build/reports/
+            find . -type f -path "*/build/reports/*" | grep -v 'paparazzi' | xargs -I {} cp --parents {} build/reports/
       - store_artifacts:
           path: build/reports
       - run:
