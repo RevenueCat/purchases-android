@@ -7,10 +7,37 @@ import com.revenuecat.purchases.utils.serializers.OptionalURLSerializer
 import com.revenuecat.purchases.utils.serializers.URLSerializer
 import com.revenuecat.purchases.utils.sharedLanguageCodeWith
 import com.revenuecat.purchases.utils.toLocale
+import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.descriptors.PrimitiveKind
+import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
+import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
+import kotlinx.serialization.json.JsonDecoder
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import java.net.URL
 import java.util.Locale
+
+object GoogleListSerializer : KSerializer<List<String>> {
+    override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("GoogleList", PrimitiveKind.STRING)
+
+    override fun serialize(encoder: Encoder, value: List<String>) {
+        throw UnsupportedOperationException("Serialization is not supported")
+    }
+
+    override fun deserialize(decoder: Decoder): List<String> {
+        val jsonDecoder = decoder as? JsonDecoder
+            ?: throw IllegalStateException("This serializer can be used only with JSON format")
+        val jsonElement = jsonDecoder.decodeJsonElement().jsonObject
+        val googleList = jsonElement["google"]?.jsonArray
+            ?: throw IllegalStateException("Expected 'google' key in JSON object")
+        return googleList.map { it.jsonPrimitive.content }
+    }
+}
 
 /**
  * Represents the data required to display a paywall using the `RevenueCatUI` library.
@@ -44,6 +71,10 @@ data class PaywallData(
 
     @SerialName("localized_strings_by_tier") internal val localizationByTier:
     Map<String, Map<String, LocalizedConfiguration>> = emptyMap(),
+
+    @SerialName("zero_decimal_place_countries")
+    @Serializable(with = GoogleListSerializer::class)
+    val zeroDecimalPlaceCountries: List<String>
 ) {
 
     /**

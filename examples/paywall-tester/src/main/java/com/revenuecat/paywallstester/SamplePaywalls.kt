@@ -221,6 +221,7 @@ object SamplePaywalls {
                         "then {{ sub_price_per_month }} per month",
                 ),
             ),
+            zeroDecimalPlaceCountries = listOf("PH", "KZ", "TW", "MX", "TH"),
         )
     }
 
@@ -275,6 +276,7 @@ object SamplePaywalls {
                     offerName = "{{ sub_period }}",
                 ),
             ),
+            zeroDecimalPlaceCountries = listOf("PH", "KZ", "TW", "MX", "TH"),
         )
     }
 
@@ -338,6 +340,7 @@ object SamplePaywalls {
                     ),
                 ),
             ),
+            zeroDecimalPlaceCountries = listOf("PH", "KZ", "TW", "MX", "TH"),
         )
     }
 
@@ -379,6 +382,7 @@ object SamplePaywalls {
                     offerName = "{{ sub_duration_in_months }}",
                 ),
             ),
+            zeroDecimalPlaceCountries = listOf("PH", "KZ", "TW", "MX", "TH"),
         )
     }
 
@@ -441,6 +445,7 @@ object SamplePaywalls {
                     ),
                 ),
             ),
+            zeroDecimalPlaceCountries = listOf("PH", "KZ", "TW", "MX", "TH"),
         )
     }
 
@@ -667,6 +672,7 @@ object SamplePaywalls {
                     ),
                 ),
             ),
+            zeroDecimalPlaceCountries = listOf("PH", "KZ", "TW", "MX", "TH"),
         )
     }
 
@@ -678,6 +684,7 @@ object SamplePaywalls {
             localization = mapOf(
                 "en_US" to template4().localizedConfiguration.second,
             ),
+            zeroDecimalPlaceCountries = listOf("PH", "KZ", "TW", "MX", "TH"),
         )
     }
 }
