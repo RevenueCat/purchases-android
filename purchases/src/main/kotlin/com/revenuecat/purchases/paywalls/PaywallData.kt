@@ -34,8 +34,7 @@ object GoogleListSerializer : KSerializer<List<String>> {
             ?: throw IllegalStateException("This serializer can be used only with JSON format")
         val jsonElement = jsonDecoder.decodeJsonElement().jsonObject
         val googleList = jsonElement["google"]?.jsonArray
-            ?: throw IllegalStateException("Expected 'google' key in JSON object")
-        return googleList.map { it.jsonPrimitive.content }
+        return googleList?.map { it.jsonPrimitive.content } ?: emptyList()
     }
 }
 
