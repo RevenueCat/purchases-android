@@ -214,4 +214,5 @@ internal val TestData.template7: PaywallData
                 ),
             ),
         ),
+        zeroDecimalPlaceCountries = listOf("PH", "KZ", "TW", "MX", "TH"),
     )
