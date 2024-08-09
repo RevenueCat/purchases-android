@@ -469,14 +469,30 @@ class VariableProcessorTest {
     // region price_rounding
 
     @Test
-    fun round() {
+    fun `round prices`() {
         every { context.showZeroDecimalPlacePrices }.returns(true)
         expectVariablesResult("{{ price }}", "$68")
+
+        expectVariablesResult("{{ total_price_and_per_month_full }}", "$68/year ($5.67/month)", rcPackage = TestData.Packages.annual)
+        expectVariablesResult("{{ total_price_and_per_month_full }}", "$8/month", rcPackage = TestData.Packages.monthly)
+        expectVariablesResult("{{ total_price_and_per_month_full }}", "$1/week ($6.47/month)", rcPackage = TestData.Packages.weekly)
+        expectVariablesResult("{{ total_price_and_per_month_full }}", "$1,000", rcPackage = TestData.Packages.lifetime)
+        expectVariablesResult("{{ total_price_and_per_month_full }}", "$24/3 months ($8/month)", rcPackage = TestData.Packages.quarterly)
+
+        expectVariablesResult("{{ price_per_period }}", "$24/3 mths", rcPackage = TestData.Packages.quarterly)
     }
 
     @Test
-    fun `do not round`() {
+    fun `do not round prices`() {
         expectVariablesResult(originalText = "{{ price }}", expectedText = "$67.99")
+
+        expectVariablesResult("{{ total_price_and_per_month_full }}", "$67.99/year ($5.67/month)", rcPackage = TestData.Packages.annual)
+        expectVariablesResult("{{ total_price_and_per_month_full }}", "$7.99/month", rcPackage = TestData.Packages.monthly)
+        expectVariablesResult("{{ total_price_and_per_month_full }}", "$1.49/week ($6.47/month)", rcPackage = TestData.Packages.weekly)
+        expectVariablesResult("{{ total_price_and_per_month_full }}", "$1,000", rcPackage = TestData.Packages.lifetime)
+        expectVariablesResult("{{ total_price_and_per_month_full }}", "$23.99/3 months ($8.00/month)", rcPackage = TestData.Packages.quarterly)
+
+        expectVariablesResult("{{ price_per_period }}", "$23.99/3 mths", rcPackage = TestData.Packages.quarterly)
     }
 
     // endregion
