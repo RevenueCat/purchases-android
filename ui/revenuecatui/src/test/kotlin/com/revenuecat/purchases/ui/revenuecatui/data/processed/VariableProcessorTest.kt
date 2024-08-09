@@ -32,6 +32,8 @@ class VariableProcessorTest {
         variableDataProvider = VariableDataProvider(resourceProvider)
         context = mockk()
         rcPackage = TestData.Packages.annual
+
+        every { context.showZeroDecimalPlacePrices }.returns(false)
     }
 
     @Test
@@ -460,6 +462,21 @@ class VariableProcessorTest {
     fun `process variables processes sub_relative_discount`() {
         every { context.discountRelativeToMostExpensivePerMonth }.returns(0.1)
         expectVariablesResult("{{ sub_relative_discount }}", "10% off")
+    }
+
+    // endregion
+
+    // region price_rounding
+
+    @Test
+    fun round() {
+        every { context.showZeroDecimalPlacePrices }.returns(true)
+        expectVariablesResult("{{ price }}", "$68")
+    }
+
+    @Test
+    fun `do not round`() {
+        expectVariablesResult(originalText = "{{ price }}", expectedText = "$67.99")
     }
 
     // endregion
