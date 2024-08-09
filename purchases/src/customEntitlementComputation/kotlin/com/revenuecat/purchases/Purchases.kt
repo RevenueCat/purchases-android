@@ -40,6 +40,9 @@ class Purchases internal constructor(
     val appUserID: String
         @Synchronized get() = purchasesOrchestrator.appUserID
 
+    val storefrontCountryCode: String?
+        @Synchronized get() = purchasesOrchestrator.storeFrontCountryCode
+
     /**
      * The listener is responsible for handling changes to customer information.
      * Make sure [removeUpdatedCustomerInfoListener] is called when the listener needs to be destroyed.

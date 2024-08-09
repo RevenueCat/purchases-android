@@ -2,6 +2,7 @@ package com.revenuecat.purchases.ui.revenuecatui.data.processed
 
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
+import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.ui.revenuecatui.errors.PackageConfigurationError
@@ -222,6 +223,11 @@ internal object PackageConfigurationFactory {
                 it.product.pricePerMonth(),
                 mostExpensivePricePerMonth,
             )
+
+            val shouldRound = paywallData.zeroDecimalPlaceCountries.contains(
+                Purchases.sharedInstance.storefrontCountryCode
+            )
+
             TemplateConfiguration.PackageInfo(
                 rcPackage = it,
                 localization = ProcessedLocalizedConfiguration.create(

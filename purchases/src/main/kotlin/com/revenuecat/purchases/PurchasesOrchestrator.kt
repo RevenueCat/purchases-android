@@ -147,7 +147,7 @@ internal class PurchasesOrchestrator(
     @SuppressWarnings("MagicNumber")
     private val lastSyncAttributesAndOfferingsRateLimiter = RateLimiter(5, 60.seconds)
 
-    var storeFrontCountryCode: String? = null
+    var storefrontCountryCode: String? = null
         private set
 
     init {
@@ -160,7 +160,7 @@ internal class PurchasesOrchestrator(
                 )
                 billing.getStorefront(
                     onSuccess = { countryCode ->
-                        storeFrontCountryCode = countryCode
+                        storefrontCountryCode = countryCode
                         debugLog(BillingStrings.BILLING_COUNTRY_CODE.format(countryCode))
                     },
                     onError = { error ->
