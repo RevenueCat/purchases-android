@@ -473,7 +473,6 @@ class VariableProcessorTest {
         every { context.showZeroDecimalPlacePrices }.returns(true)
 
         expectVariablesResult("{{ sub_price_per_month }}", "5,67 US$", esLocale)
-
         expectVariablesResult("{{ total_price_and_per_month }}", "68 €/a (5,67 €/m.)", esLocale, TestData.Packages.annualEuros)
 
         expectVariablesResult("{{ price }}", "$68")
@@ -490,6 +489,9 @@ class VariableProcessorTest {
     @Test
     fun `do not round prices`() {
         expectVariablesResult(originalText = "{{ price }}", expectedText = "$67.99")
+
+        expectVariablesResult("{{ sub_price_per_month }}", "5,67 US$", esLocale)
+        expectVariablesResult("{{ total_price_and_per_month }}", "67,99 €/a (5,67 €/m.)", esLocale, TestData.Packages.annualEuros)
 
         expectVariablesResult("{{ total_price_and_per_month_full }}", "$67.99/year ($5.67/month)", rcPackage = TestData.Packages.annual)
         expectVariablesResult("{{ total_price_and_per_month_full }}", "$7.99/month", rcPackage = TestData.Packages.monthly)
