@@ -10,7 +10,10 @@ internal object VariableProcessor {
     /**
      * Information necessary for computing variables.
      */
-    data class PackageContext(val discountRelativeToMostExpensivePerMonth: Double?)
+    data class PackageContext(
+        val discountRelativeToMostExpensivePerMonth: Double?,
+        val showZeroDecimalPlacePrices: Boolean = false,
+    )
 
     /**
      * Returns a set of invalid variables in the String
@@ -85,16 +88,18 @@ internal object VariableProcessor {
         locale: Locale,
     ): String? = when (variableName) {
         VariableName.APP_NAME -> variableDataProvider.applicationName
-        VariableName.PRICE -> variableDataProvider.localizedPrice(rcPackage)
-        VariableName.PRICE_PER_PERIOD -> variableDataProvider.localizedPricePerPeriod(rcPackage, locale)
-        VariableName.PRICE_PER_PERIOD_FULL -> variableDataProvider.localizedPricePerPeriodFull(rcPackage, locale)
+        VariableName.PRICE -> variableDataProvider.localizedPrice(rcPackage, context.showZeroDecimalPlacePrices)
+        VariableName.PRICE_PER_PERIOD -> variableDataProvider.localizedPricePerPeriod(rcPackage, locale, context.showZeroDecimalPlacePrices)
+        VariableName.PRICE_PER_PERIOD_FULL -> variableDataProvider.localizedPricePerPeriodFull(rcPackage, locale, context.showZeroDecimalPlacePrices)
         VariableName.TOTAL_PRICE_AND_PER_MONTH -> variableDataProvider.localizedPriceAndPerMonth(
             rcPackage,
             locale,
+            context.showZeroDecimalPlacePrices
         )
         VariableName.TOTAL_PRICE_AND_PER_MONTH_FULL -> variableDataProvider.localizedPriceAndPerMonthFull(
             rcPackage,
             locale,
+            context.showZeroDecimalPlacePrices
         )
 
         VariableName.PRODUCT_NAME -> variableDataProvider.productName(rcPackage)
@@ -104,10 +109,12 @@ internal object VariableProcessor {
         VariableName.SUB_PRICE_PER_WEEK -> variableDataProvider.localizedPricePerWeek(
             rcPackage,
             locale,
+            context.showZeroDecimalPlacePrices
         )
         VariableName.SUB_PRICE_PER_MONTH -> variableDataProvider.localizedPricePerMonth(
             rcPackage,
             locale,
+            context.showZeroDecimalPlacePrices
         )
 
         VariableName.SUB_DURATION -> variableDataProvider.subscriptionDuration(rcPackage, locale)

@@ -25,16 +25,19 @@ internal class VariableDataProvider(
         } else {
             "Application Name"
         }
-
-    fun localizedPrice(rcPackage: Package): String {
+    //james
+    fun localizedPrice(rcPackage: Package, showZeroDecimalPlacePrices: Boolean): String {
+        // always round if rounding on
         return rcPackage.product.price.formatted
     }
 
-    fun localizedPricePerWeek(rcPackage: Package, locale: Locale): String? {
+    fun localizedPricePerWeek(rcPackage: Package, locale: Locale, showZeroDecimalPlacePrices: Boolean): String? {
+        // round if rounding on and 99 or 00
         return rcPackage.product.pricePerWeek(locale)?.formatted
     }
 
-    fun localizedPricePerMonth(rcPackage: Package, locale: Locale): String? {
+    fun localizedPricePerMonth(rcPackage: Package, locale: Locale, showZeroDecimalPlacePrices: Boolean): String? {
+        // round if rounding on and 99 or 00
         return rcPackage.product.pricePerMonth(locale)?.formatted
     }
 
@@ -95,39 +98,39 @@ internal class VariableDataProvider(
         return getSecondIntroOfferToApply(rcPackage)?.billingPeriod?.localizedPeriod(locale)
     }
 
-    fun localizedPricePerPeriod(rcPackage: Package, locale: Locale): String {
-        val localizedPrice = localizedPrice(rcPackage)
+    fun localizedPricePerPeriod(rcPackage: Package, locale: Locale, showZeroDecimalPlacePrices: Boolean): String {
+        val localizedPrice = localizedPrice(rcPackage, showZeroDecimalPlacePrices)
         return rcPackage.product.period?.let { period ->
             val formattedPeriod = period.localizedAbbreviatedPeriod(locale)
             "$localizedPrice/$formattedPeriod"
         } ?: localizedPrice
     }
 
-    fun localizedPricePerPeriodFull(rcPackage: Package, locale: Locale): String {
-        val localizedPrice = localizedPrice(rcPackage)
+    fun localizedPricePerPeriodFull(rcPackage: Package, locale: Locale, showZeroDecimalPlacePrices: Boolean): String {
+        val localizedPrice = localizedPrice(rcPackage, showZeroDecimalPlacePrices)
         return rcPackage.product.period?.let { period ->
             val formattedPeriod = period.localizedUnitPeriod(locale)
             "$localizedPrice/$formattedPeriod"
         } ?: localizedPrice
     }
 
-    fun localizedPriceAndPerMonth(rcPackage: Package, locale: Locale): String {
+    fun localizedPriceAndPerMonth(rcPackage: Package, locale: Locale, showZeroDecimalPlacePrices: Boolean): String {
         if (!rcPackage.isSubscription || rcPackage.isMonthly) {
-            return localizedPricePerPeriod(rcPackage, locale)
+            return localizedPricePerPeriod(rcPackage, locale, showZeroDecimalPlacePrices)
         }
         val unit = Period(1, Period.Unit.MONTH, "P1M").localizedAbbreviatedPeriod(locale)
-        val pricePerPeriod = localizedPricePerPeriod(rcPackage, locale)
-        val pricePerMonth = localizedPricePerMonth(rcPackage, locale)
+        val pricePerPeriod = localizedPricePerPeriod(rcPackage, locale, showZeroDecimalPlacePrices)
+        val pricePerMonth = localizedPricePerMonth(rcPackage, locale, showZeroDecimalPlacePrices)
         return "$pricePerPeriod ($pricePerMonth/$unit)"
     }
 
-    fun localizedPriceAndPerMonthFull(rcPackage: Package, locale: Locale): String {
+    fun localizedPriceAndPerMonthFull(rcPackage: Package, locale: Locale, showZeroDecimalPlacePrices: Boolean): String {
         if (!rcPackage.isSubscription || rcPackage.isMonthly) {
-            return localizedPricePerPeriodFull(rcPackage, locale)
+            return localizedPricePerPeriodFull(rcPackage, locale, showZeroDecimalPlacePrices)
         }
         val unit = Period(1, Period.Unit.MONTH, "P1M").localizedUnitPeriod(locale)
-        val pricePerPeriod = localizedPricePerPeriodFull(rcPackage, locale)
-        val pricePerMonth = localizedPricePerMonth(rcPackage, locale)
+        val pricePerPeriod = localizedPricePerPeriodFull(rcPackage, locale, showZeroDecimalPlacePrices)
+        val pricePerMonth = localizedPricePerMonth(rcPackage, locale, showZeroDecimalPlacePrices)
         return "$pricePerPeriod ($pricePerMonth/$unit)"
     }
 
