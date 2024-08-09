@@ -232,7 +232,7 @@ internal object PackageConfigurationFactory {
                 rcPackage = it,
                 localization = ProcessedLocalizedConfiguration.create(
                     variableDataProvider = variableDataProvider,
-                    context = VariableProcessor.PackageContext(discountRelativeToMostExpensivePerMonth),
+                    context = VariableProcessor.PackageContext(discountRelativeToMostExpensivePerMonth, shouldRound),
                     localizedConfiguration = localization,
                     rcPackage = it,
                     locale = locale,
