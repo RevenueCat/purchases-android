@@ -13,6 +13,7 @@ import com.revenuecat.purchases.ui.revenuecatui.extensions.localizedUnitPeriod
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ResourceProvider
 import java.text.NumberFormat
 import java.text.ParseException
+import java.util.Currency
 import java.util.Locale
 import kotlin.math.roundToInt
 
@@ -28,18 +29,19 @@ internal class VariableDataProvider(
             "Application Name"
         }
 
-    private fun priceEndsIn99or00Cents(priceString: String, locale: Locale): Boolean {
+    private fun priceEndsIn99or00Cents(priceString: String, locale: Locale, currencyCode: String): Boolean {
         val formatter = NumberFormat.getCurrencyInstance(locale)
-
+        formatter.currency = Currency.getInstance(currencyCode)
         val price = formatter.parse(priceString)?.toDouble() ?: return false
 
         val roundedCents = (price * 100).toInt() % 100
         return roundedCents == 99 || roundedCents == 0
     }
 
-    private fun roundCurrencyPrice(priceString: String, locale: Locale): String {
+    private fun roundCurrencyPrice(priceString: String, locale: Locale, currencyCode: String): String {
         val currencyFormat = NumberFormat.getCurrencyInstance(locale)
         currencyFormat.maximumFractionDigits = 0
+        currencyFormat.currency = Currency.getInstance(currencyCode)
 
         return try {
             val parsedNumber = currencyFormat.parse(priceString) ?: return priceString
@@ -55,7 +57,8 @@ internal class VariableDataProvider(
     fun localizedPrice(rcPackage: Package, locale: Locale, showZeroDecimalPlacePrices: Boolean): String {
         // always round if rounding on
         return if (showZeroDecimalPlacePrices) {
-            roundCurrencyPrice(rcPackage.product.price.formatted, locale)
+            val currencyCode = rcPackage.product.price.currencyCode
+            roundCurrencyPrice(rcPackage.product.price.formatted, locale, currencyCode)
         } else {
             rcPackage.product.price.formatted
         }
@@ -64,9 +67,9 @@ internal class VariableDataProvider(
     fun localizedPricePerWeek(rcPackage: Package, locale: Locale, showZeroDecimalPlacePrices: Boolean): String? {
         // round if rounding on and price ends in 99 or 00
         val priceString = rcPackage.product.pricePerWeek(locale)?.formatted ?: return null
-
-        return if (showZeroDecimalPlacePrices && priceEndsIn99or00Cents(priceString, locale)) {
-            roundCurrencyPrice(priceString, locale)
+        val currencyCode = rcPackage.product.price.currencyCode
+        return if (showZeroDecimalPlacePrices && priceEndsIn99or00Cents(priceString, locale, currencyCode)) {
+            roundCurrencyPrice(priceString, locale, currencyCode)
         } else {
             priceString
         }
@@ -75,9 +78,9 @@ internal class VariableDataProvider(
     fun localizedPricePerMonth(rcPackage: Package, locale: Locale, showZeroDecimalPlacePrices: Boolean): String? {
         // round if rounding on and price ends in 99 or 00
         val priceString = rcPackage.product.pricePerMonth(locale)?.formatted ?: return null
-
-        return if (showZeroDecimalPlacePrices && priceEndsIn99or00Cents(priceString, locale)) {
-            roundCurrencyPrice(priceString, locale)
+        val currencyCode = rcPackage.product.price.currencyCode
+        return if (showZeroDecimalPlacePrices && priceEndsIn99or00Cents(priceString, locale, currencyCode)) {
+            roundCurrencyPrice(priceString, locale, currencyCode)
         } else {
             priceString
         }
@@ -88,7 +91,8 @@ internal class VariableDataProvider(
         val priceString = getFirstIntroOfferToApply(rcPackage)?.price?.formatted ?: return null
 
         return if (showZeroDecimalPlacePrices) {
-            roundCurrencyPrice(priceString, locale)
+            val currencyCode = rcPackage.product.price.currencyCode
+            roundCurrencyPrice(priceString, locale, currencyCode)
         } else {
             priceString
         }
@@ -99,7 +103,8 @@ internal class VariableDataProvider(
         val priceString = getSecondIntroOfferToApply(rcPackage)?.price?.formatted ?: return null
 
         return if (showZeroDecimalPlacePrices) {
-            roundCurrencyPrice(priceString, locale)
+            val currencyCode = rcPackage.product.price.currencyCode
+            roundCurrencyPrice(priceString, locale, currencyCode)
         } else {
             priceString
         }

@@ -247,6 +247,21 @@ internal object TestData {
                 freeTrialPeriod = Period(value = 1, unit = Period.Unit.MONTH, iso8601 = "P1M"),
             ),
         )
+
+        val annualEuros = Package(
+            packageType = PackageType.ANNUAL,
+            identifier = PackageType.ANNUAL.identifier!!,
+            offering = "offering",
+            product = TestStoreProduct(
+                id = "com.revenuecat.annual_product",
+                name = "Annual",
+                title = "Annual (App name)",
+                price = Price(amountMicros = 67_990_000, currencyCode = "EUR", formatted = "67,99 €"),
+                description = "Annual",
+                period = Period(value = 1, unit = Period.Unit.YEAR, iso8601 = "P1Y"),
+                freeTrialPeriod = Period(value = 1, unit = Period.Unit.MONTH, iso8601 = "P1M"),
+            ),
+        )
         val lifetime = Package(
             packageType = PackageType.LIFETIME,
             identifier = PackageType.LIFETIME.identifier!!,
