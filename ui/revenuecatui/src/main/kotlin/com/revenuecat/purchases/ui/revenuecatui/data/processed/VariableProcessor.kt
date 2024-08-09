@@ -88,7 +88,7 @@ internal object VariableProcessor {
         locale: Locale,
     ): String? = when (variableName) {
         VariableName.APP_NAME -> variableDataProvider.applicationName
-        VariableName.PRICE -> variableDataProvider.localizedPrice(rcPackage, context.showZeroDecimalPlacePrices)
+        VariableName.PRICE -> variableDataProvider.localizedPrice(rcPackage, locale, context.showZeroDecimalPlacePrices)
         VariableName.PRICE_PER_PERIOD -> variableDataProvider.localizedPricePerPeriod(rcPackage, locale, context.showZeroDecimalPlacePrices)
         VariableName.PRICE_PER_PERIOD_FULL -> variableDataProvider.localizedPricePerPeriodFull(rcPackage, locale, context.showZeroDecimalPlacePrices)
         VariableName.TOTAL_PRICE_AND_PER_MONTH -> variableDataProvider.localizedPriceAndPerMonth(
@@ -121,8 +121,16 @@ internal object VariableProcessor {
         VariableName.SUB_DURATION_IN_MONTHS -> variableDataProvider.subscriptionDurationInMonths(rcPackage, locale)
         VariableName.SUB_OFFER_DURATION -> variableDataProvider.firstIntroductoryOfferDuration(rcPackage, locale)
         VariableName.SUB_OFFER_DURATION_2 -> variableDataProvider.secondIntroductoryOfferDuration(rcPackage, locale)
-        VariableName.SUB_OFFER_PRICE -> variableDataProvider.localizedFirstIntroductoryOfferPrice(rcPackage)
-        VariableName.SUB_OFFER_PRICE_2 -> variableDataProvider.localizedSecondIntroductoryOfferPrice(rcPackage)
+        VariableName.SUB_OFFER_PRICE -> variableDataProvider.localizedFirstIntroductoryOfferPrice(
+            rcPackage,
+            locale,
+            context.showZeroDecimalPlacePrices
+        )
+        VariableName.SUB_OFFER_PRICE_2 -> variableDataProvider.localizedSecondIntroductoryOfferPrice(
+            rcPackage,
+            locale,
+            context.showZeroDecimalPlacePrices
+        )
         VariableName.SUB_RELATIVE_DISCOUNT -> variableDataProvider.localizedRelativeDiscount(
             context.discountRelativeToMostExpensivePerMonth,
         )

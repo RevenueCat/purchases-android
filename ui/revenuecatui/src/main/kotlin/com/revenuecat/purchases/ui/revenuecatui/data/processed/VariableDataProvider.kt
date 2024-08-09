@@ -11,6 +11,8 @@ import com.revenuecat.purchases.ui.revenuecatui.extensions.localizedAbbreviatedP
 import com.revenuecat.purchases.ui.revenuecatui.extensions.localizedPeriod
 import com.revenuecat.purchases.ui.revenuecatui.extensions.localizedUnitPeriod
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ResourceProvider
+import java.text.NumberFormat
+import java.text.ParseException
 import java.util.Locale
 import kotlin.math.roundToInt
 
@@ -25,28 +27,82 @@ internal class VariableDataProvider(
         } else {
             "Application Name"
         }
-    //james
-    fun localizedPrice(rcPackage: Package, showZeroDecimalPlacePrices: Boolean): String {
+
+    private fun priceEndsIn99or00Cents(priceString: String, locale: Locale): Boolean {
+        val formatter = NumberFormat.getCurrencyInstance(locale)
+
+        val price = formatter.parse(priceString)?.toDouble() ?: return false
+
+        val roundedCents = (price * 100).toInt() % 100
+        return roundedCents == 99 || roundedCents == 0
+    }
+
+    private fun roundCurrencyPrice(priceString: String, locale: Locale): String {
+        val currencyFormat = NumberFormat.getCurrencyInstance(locale)
+        currencyFormat.maximumFractionDigits = 0
+
+        return try {
+            val parsedNumber = currencyFormat.parse(priceString) ?: return priceString
+            val roundedNumber = Math.round(parsedNumber.toDouble())
+            val roundedString = currencyFormat.format(roundedNumber)
+
+            return roundedString
+        } catch (e: ParseException) {
+            priceString
+        }
+    }
+
+    fun localizedPrice(rcPackage: Package, locale: Locale, showZeroDecimalPlacePrices: Boolean): String {
         // always round if rounding on
-        return rcPackage.product.price.formatted
+        return if (showZeroDecimalPlacePrices) {
+            roundCurrencyPrice(rcPackage.product.price.formatted, locale)
+        } else {
+            rcPackage.product.price.formatted
+        }
     }
 
     fun localizedPricePerWeek(rcPackage: Package, locale: Locale, showZeroDecimalPlacePrices: Boolean): String? {
-        // round if rounding on and 99 or 00
-        return rcPackage.product.pricePerWeek(locale)?.formatted
+        // round if rounding on and price ends in 99 or 00
+        val priceString = rcPackage.product.pricePerWeek(locale)?.formatted ?: return null
+
+        return if (showZeroDecimalPlacePrices && priceEndsIn99or00Cents(priceString, locale)) {
+            roundCurrencyPrice(priceString, locale)
+        } else {
+            priceString
+        }
     }
 
     fun localizedPricePerMonth(rcPackage: Package, locale: Locale, showZeroDecimalPlacePrices: Boolean): String? {
-        // round if rounding on and 99 or 00
-        return rcPackage.product.pricePerMonth(locale)?.formatted
+        // round if rounding on and price ends in 99 or 00
+        val priceString = rcPackage.product.pricePerMonth(locale)?.formatted ?: return null
+
+        return if (showZeroDecimalPlacePrices && priceEndsIn99or00Cents(priceString, locale)) {
+            roundCurrencyPrice(priceString, locale)
+        } else {
+            priceString
+        }
     }
 
-    fun localizedFirstIntroductoryOfferPrice(rcPackage: Package): String? {
-        return getFirstIntroOfferToApply(rcPackage)?.price?.formatted
+    fun localizedFirstIntroductoryOfferPrice(rcPackage: Package, locale: Locale, showZeroDecimalPlacePrices: Boolean): String? {
+        // always round if rounding on
+        val priceString = getFirstIntroOfferToApply(rcPackage)?.price?.formatted ?: return null
+
+        return if (showZeroDecimalPlacePrices) {
+            roundCurrencyPrice(priceString, locale)
+        } else {
+            priceString
+        }
     }
 
-    fun localizedSecondIntroductoryOfferPrice(rcPackage: Package): String? {
-        return getSecondIntroOfferToApply(rcPackage)?.price?.formatted
+    fun localizedSecondIntroductoryOfferPrice(rcPackage: Package, locale: Locale, showZeroDecimalPlacePrices: Boolean): String? {
+        // always round if rounding on
+        val priceString = getSecondIntroOfferToApply(rcPackage)?.price?.formatted ?: return null
+
+        return if (showZeroDecimalPlacePrices) {
+            roundCurrencyPrice(priceString, locale)
+        } else {
+            priceString
+        }
     }
 
     fun productName(rcPackage: Package): String {
@@ -99,7 +155,7 @@ internal class VariableDataProvider(
     }
 
     fun localizedPricePerPeriod(rcPackage: Package, locale: Locale, showZeroDecimalPlacePrices: Boolean): String {
-        val localizedPrice = localizedPrice(rcPackage, showZeroDecimalPlacePrices)
+        val localizedPrice = localizedPrice(rcPackage, locale, showZeroDecimalPlacePrices)
         return rcPackage.product.period?.let { period ->
             val formattedPeriod = period.localizedAbbreviatedPeriod(locale)
             "$localizedPrice/$formattedPeriod"
@@ -107,7 +163,7 @@ internal class VariableDataProvider(
     }
 
     fun localizedPricePerPeriodFull(rcPackage: Package, locale: Locale, showZeroDecimalPlacePrices: Boolean): String {
-        val localizedPrice = localizedPrice(rcPackage, showZeroDecimalPlacePrices)
+        val localizedPrice = localizedPrice(rcPackage, locale, showZeroDecimalPlacePrices)
         return rcPackage.product.period?.let { period ->
             val formattedPeriod = period.localizedUnitPeriod(locale)
             "$localizedPrice/$formattedPeriod"
