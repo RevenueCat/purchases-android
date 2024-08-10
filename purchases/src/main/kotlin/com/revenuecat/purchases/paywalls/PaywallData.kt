@@ -31,7 +31,7 @@ object GoogleListSerializer : KSerializer<List<String>> {
 
     override fun deserialize(decoder: Decoder): List<String> {
         val jsonDecoder = decoder as? JsonDecoder
-            ?: throw IllegalStateException("This serializer can be used only with JSON format")
+            ?: error("This serializer can be used only with JSON format")
         val jsonElement = jsonDecoder.decodeJsonElement().jsonObject
         val googleList = jsonElement["google"]?.jsonArray
         return googleList?.map { it.jsonPrimitive.content } ?: emptyList()
@@ -73,7 +73,7 @@ data class PaywallData(
 
     @SerialName("zero_decimal_place_countries")
     @Serializable(with = GoogleListSerializer::class)
-    val zeroDecimalPlaceCountries: List<String> = emptyList()
+    val zeroDecimalPlaceCountries: List<String> = emptyList(),
 ) {
 
     /**

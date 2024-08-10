@@ -88,9 +88,21 @@ internal object VariableProcessor {
         locale: Locale,
     ): String? = when (variableName) {
         VariableName.APP_NAME -> variableDataProvider.applicationName
-        VariableName.PRICE -> variableDataProvider.localizedPrice(rcPackage, locale, context.showZeroDecimalPlacePrices)
-        VariableName.PRICE_PER_PERIOD -> variableDataProvider.localizedPricePerPeriod(rcPackage, locale, context.showZeroDecimalPlacePrices)
-        VariableName.PRICE_PER_PERIOD_FULL -> variableDataProvider.localizedPricePerPeriodFull(rcPackage, locale, context.showZeroDecimalPlacePrices)
+        VariableName.PRICE -> variableDataProvider.localizedPrice(
+            rcPackage,
+            locale,
+            context.showZeroDecimalPlacePrices,
+        )
+        VariableName.PRICE_PER_PERIOD -> variableDataProvider.localizedPricePerPeriod(
+            rcPackage,
+            locale,
+            context.showZeroDecimalPlacePrices,
+        )
+        VariableName.PRICE_PER_PERIOD_FULL -> variableDataProvider.localizedPricePerPeriodFull(
+            rcPackage,
+            locale,
+            context.showZeroDecimalPlacePrices,
+        )
         VariableName.TOTAL_PRICE_AND_PER_MONTH -> variableDataProvider.localizedPriceAndPerMonth(
             rcPackage,
             locale,

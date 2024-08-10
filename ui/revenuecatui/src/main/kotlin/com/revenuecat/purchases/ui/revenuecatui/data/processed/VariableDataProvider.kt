@@ -64,7 +64,7 @@ internal class VariableDataProvider(
     fun localizedFirstIntroductoryOfferPrice(
         rcPackage: Package,
         locale: Locale,
-        showZeroDecimalPlacePrices: Boolean
+        showZeroDecimalPlacePrices: Boolean,
     ): String? {
         // always round if rounding on
         val firstIntroPrice = getFirstIntroOfferToApply(rcPackage)?.price ?: return null
@@ -76,9 +76,10 @@ internal class VariableDataProvider(
         }
     }
 
-    fun localizedSecondIntroductoryOfferPrice(rcPackage: Package,
+    fun localizedSecondIntroductoryOfferPrice(
+        rcPackage: Package,
         locale: Locale,
-        showZeroDecimalPlacePrices: Boolean
+        showZeroDecimalPlacePrices: Boolean,
     ): String? {
         // always round if rounding on
         val secondIntroPrice = getSecondIntroOfferToApply(rcPackage)?.price ?: return null
