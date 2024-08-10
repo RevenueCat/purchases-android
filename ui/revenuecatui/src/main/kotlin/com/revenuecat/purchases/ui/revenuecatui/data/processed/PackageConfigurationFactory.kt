@@ -226,7 +226,7 @@ internal object PackageConfigurationFactory {
 
             val shouldRound = if (Purchases.isConfigured) {
                 paywallData.zeroDecimalPlaceCountries.contains(
-                    Purchases.sharedInstance.storefrontCountryCode
+                    Purchases.sharedInstance.storefrontCountryCode,
                 )
             } else {
                 false

@@ -94,12 +94,12 @@ internal object VariableProcessor {
         VariableName.TOTAL_PRICE_AND_PER_MONTH -> variableDataProvider.localizedPriceAndPerMonth(
             rcPackage,
             locale,
-            context.showZeroDecimalPlacePrices
+            context.showZeroDecimalPlacePrices,
         )
         VariableName.TOTAL_PRICE_AND_PER_MONTH_FULL -> variableDataProvider.localizedPriceAndPerMonthFull(
             rcPackage,
             locale,
-            context.showZeroDecimalPlacePrices
+            context.showZeroDecimalPlacePrices,
         )
 
         VariableName.PRODUCT_NAME -> variableDataProvider.productName(rcPackage)
@@ -109,12 +109,12 @@ internal object VariableProcessor {
         VariableName.SUB_PRICE_PER_WEEK -> variableDataProvider.localizedPricePerWeek(
             rcPackage,
             locale,
-            context.showZeroDecimalPlacePrices
+            context.showZeroDecimalPlacePrices,
         )
         VariableName.SUB_PRICE_PER_MONTH -> variableDataProvider.localizedPricePerMonth(
             rcPackage,
             locale,
-            context.showZeroDecimalPlacePrices
+            context.showZeroDecimalPlacePrices,
         )
 
         VariableName.SUB_DURATION -> variableDataProvider.subscriptionDuration(rcPackage, locale)
@@ -124,12 +124,12 @@ internal object VariableProcessor {
         VariableName.SUB_OFFER_PRICE -> variableDataProvider.localizedFirstIntroductoryOfferPrice(
             rcPackage,
             locale,
-            context.showZeroDecimalPlacePrices
+            context.showZeroDecimalPlacePrices,
         )
         VariableName.SUB_OFFER_PRICE_2 -> variableDataProvider.localizedSecondIntroductoryOfferPrice(
             rcPackage,
             locale,
-            context.showZeroDecimalPlacePrices
+            context.showZeroDecimalPlacePrices,
         )
         VariableName.SUB_RELATIVE_DISCOUNT -> variableDataProvider.localizedRelativeDiscount(
             context.discountRelativeToMostExpensivePerMonth,

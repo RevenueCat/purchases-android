@@ -58,7 +58,7 @@ internal fun PaywallData.Companion.createDefaultForIdentifiers(
         ),
         assetBaseURL = PaywallData.defaultTemplateBaseURL,
         revision = PaywallData.revisionID,
-        zeroDecimalPlaceCountries = PaywallData.zeroDecimalPlaceCountries
+        zeroDecimalPlaceCountries = PaywallData.zeroDecimalPlaceCountries,
     )
 }
 

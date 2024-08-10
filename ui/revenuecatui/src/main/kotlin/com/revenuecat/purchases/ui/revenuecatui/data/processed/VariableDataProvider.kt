@@ -2,7 +2,6 @@ package com.revenuecat.purchases.ui.revenuecatui.data.processed
 
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
-import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.PricingPhase
@@ -13,9 +12,7 @@ import com.revenuecat.purchases.ui.revenuecatui.extensions.localizedAbbreviatedP
 import com.revenuecat.purchases.ui.revenuecatui.extensions.localizedPeriod
 import com.revenuecat.purchases.ui.revenuecatui.extensions.localizedUnitPeriod
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ResourceProvider
-import com.revenuecat.purchases.utils.getDefaultLocales
 import java.text.NumberFormat
-import java.text.ParseException
 import java.util.Currency
 import java.util.Locale
 import kotlin.math.roundToInt
@@ -64,7 +61,11 @@ internal class VariableDataProvider(
         }
     }
 
-    fun localizedFirstIntroductoryOfferPrice(rcPackage: Package, locale: Locale, showZeroDecimalPlacePrices: Boolean): String? {
+    fun localizedFirstIntroductoryOfferPrice(
+        rcPackage: Package,
+        locale: Locale,
+        showZeroDecimalPlacePrices: Boolean
+    ): String? {
         // always round if rounding on
         val firstIntroPrice = getFirstIntroOfferToApply(rcPackage)?.price ?: return null
 
@@ -75,7 +76,10 @@ internal class VariableDataProvider(
         }
     }
 
-    fun localizedSecondIntroductoryOfferPrice(rcPackage: Package, locale: Locale, showZeroDecimalPlacePrices: Boolean): String? {
+    fun localizedSecondIntroductoryOfferPrice(rcPackage: Package,
+        locale: Locale,
+        showZeroDecimalPlacePrices: Boolean
+    ): String? {
         // always round if rounding on
         val secondIntroPrice = getSecondIntroOfferToApply(rcPackage)?.price ?: return null
 
@@ -220,6 +224,7 @@ private fun Period.normalizedMonths(): Period {
 
 // Price extensions
 
+@SuppressWarnings("MagicNumber")
 private fun Price.endsIn99or00Cents(): Boolean {
     val normalPrice = amountMicros / MICRO_MULTIPLIER
     val roundedCents = (normalPrice * 100).toInt() % 100
