@@ -41,7 +41,7 @@ class Purchases internal constructor(
         @Synchronized get() = purchasesOrchestrator.appUserID
 
     val storefrontCountryCode: String?
-        @Synchronized get() = purchasesOrchestrator.storeFrontCountryCode
+        @Synchronized get() = purchasesOrchestrator.storefrontCountryCode
 
     /**
      * The listener is responsible for handling changes to customer information.
