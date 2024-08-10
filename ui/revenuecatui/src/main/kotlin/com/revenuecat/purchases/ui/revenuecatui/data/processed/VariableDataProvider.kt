@@ -13,6 +13,7 @@ import com.revenuecat.purchases.ui.revenuecatui.extensions.localizedAbbreviatedP
 import com.revenuecat.purchases.ui.revenuecatui.extensions.localizedPeriod
 import com.revenuecat.purchases.ui.revenuecatui.extensions.localizedUnitPeriod
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ResourceProvider
+import com.revenuecat.purchases.utils.getDefaultLocales
 import java.text.NumberFormat
 import java.text.ParseException
 import java.util.Currency
@@ -31,14 +32,8 @@ internal class VariableDataProvider(
             "Application Name"
         }
 
-    private fun paywallLocale(deviceLocal: Locale): Locale {
-        val storeCountryCode = Purchases.sharedInstance.storefrontCountryCode
-        if( storeCountryCode == null ) {
-            return deviceLocal
-        }
-        val storeLocale = Locale(deviceLocal.language, storeCountryCode)
-        return storeLocale
-    }
+    private val deviceLocale: Locale
+        get() = getDefaultLocales().first()
 
     private fun priceEndsIn99or00Cents(price: Price): Boolean {
         val normalPrice = price.amountMicros.toDouble() / 1_000_000
@@ -46,20 +41,14 @@ internal class VariableDataProvider(
         return roundedCents == 99 || roundedCents == 0
     }
 
-    private fun roundCurrencyPrice(price: Price, deviceLocale: Locale): String {
-        val storeCountryCode = Purchases.sharedInstance.storefrontCountryCode
-        if( storeCountryCode == null ) {
-            return "ERROR!"
-        }
-        val storeLocale = Locale(deviceLocale.language, storeCountryCode)
-        val currencyFormat = NumberFormat.getCurrencyInstance(storeLocale)
+    private fun roundCurrencyPrice(price: Price, locale: Locale): String {
+        val currencyFormat = NumberFormat.getCurrencyInstance(locale)
 
         currencyFormat.maximumFractionDigits = 0
-        currencyFormat.currency = Currency.getInstance(price.currencyCode)
 
         return try {
-            val price = price.amountMicros.toDouble() / 1_000_000
-            val roundedNumber = Math.round(price.toDouble())
+            val normalPrice = price.amountMicros.toDouble() / 1_000_000
+            val roundedNumber = Math.round(normalPrice.toDouble())
             val roundedString = currencyFormat.format(roundedNumber)
 
             return roundedString
@@ -71,7 +60,7 @@ internal class VariableDataProvider(
     fun localizedPrice(rcPackage: Package, locale: Locale, showZeroDecimalPlacePrices: Boolean): String {
         // always round if rounding on
         return if (showZeroDecimalPlacePrices) {
-              roundCurrencyPrice(rcPackage.product.price, locale)
+              roundCurrencyPrice(rcPackage.product.price, deviceLocale)
         } else {
             rcPackage.product.price.formatted
         }
@@ -79,10 +68,10 @@ internal class VariableDataProvider(
 
     fun localizedPricePerWeek(rcPackage: Package, locale: Locale, showZeroDecimalPlacePrices: Boolean): String? {
         // round if rounding on and price ends in 99 or 00
-        val pricePerWeek = rcPackage.product.pricePerWeek(paywallLocale(locale)) ?: return null
+        val pricePerWeek = rcPackage.product.pricePerWeek(deviceLocale) ?: return null
 
         return if (showZeroDecimalPlacePrices && priceEndsIn99or00Cents(pricePerWeek)) {
-            roundCurrencyPrice(rcPackage.product.price, locale)
+            roundCurrencyPrice(rcPackage.product.price, deviceLocale)
         } else {
             pricePerWeek.formatted
         }
@@ -90,9 +79,9 @@ internal class VariableDataProvider(
 
     fun localizedPricePerMonth(rcPackage: Package, locale: Locale, showZeroDecimalPlacePrices: Boolean): String? {
         // round if rounding on and price ends in 99 or 00
-        val pricePerMonth = rcPackage.product.pricePerMonth(paywallLocale(locale)) ?: return null
+        val pricePerMonth = rcPackage.product.pricePerMonth(deviceLocale) ?: return null
         return if (showZeroDecimalPlacePrices && priceEndsIn99or00Cents(pricePerMonth)) {
-            roundCurrencyPrice(rcPackage.product.price, locale)
+            roundCurrencyPrice(rcPackage.product.price, deviceLocale)
         } else {
             pricePerMonth.formatted
         }
@@ -103,7 +92,7 @@ internal class VariableDataProvider(
         val priceString = getFirstIntroOfferToApply(rcPackage)?.price?.formatted ?: return null
 
         return if (showZeroDecimalPlacePrices) {
-            roundCurrencyPrice(rcPackage.product.price, locale)
+            roundCurrencyPrice(rcPackage.product.price, deviceLocale)
         } else {
             priceString
         }
@@ -114,7 +103,7 @@ internal class VariableDataProvider(
         val priceString = getSecondIntroOfferToApply(rcPackage)?.price?.formatted ?: return null
 
         return if (showZeroDecimalPlacePrices) {
-            roundCurrencyPrice(rcPackage.product.price, locale)
+            roundCurrencyPrice(rcPackage.product.price, deviceLocale)
         } else {
             priceString
         }
