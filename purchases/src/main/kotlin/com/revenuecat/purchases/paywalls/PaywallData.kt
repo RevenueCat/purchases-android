@@ -73,7 +73,7 @@ data class PaywallData(
 
     @SerialName("zero_decimal_place_countries")
     @Serializable(with = GoogleListSerializer::class)
-    val zeroDecimalPlaceCountries: List<String>
+    val zeroDecimalPlaceCountries: List<String> = emptyList()
 ) {
 
     /**
