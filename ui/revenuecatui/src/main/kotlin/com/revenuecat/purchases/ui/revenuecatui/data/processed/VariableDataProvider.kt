@@ -46,16 +46,12 @@ internal class VariableDataProvider(
 
         Currency.getInstance(price.currencyCode)
         currencyFormat.maximumFractionDigits = 0
+        
+        val normalPrice = price.amountMicros.toDouble() / 1_000_000
+        val roundedNumber = Math.round(normalPrice)
+        val roundedString = currencyFormat.format(roundedNumber)
 
-        return try {
-            val normalPrice = price.amountMicros.toDouble() / 1_000_000
-            val roundedNumber = Math.round(normalPrice.toDouble())
-            val roundedString = currencyFormat.format(roundedNumber)
-
-            return roundedString
-        } catch (e: ParseException) {
-            return "ERROR 2!"
-        }
+        return roundedString
     }
 
     fun localizedPrice(rcPackage: Package, locale: Locale, showZeroDecimalPlacePrices: Boolean): String {
