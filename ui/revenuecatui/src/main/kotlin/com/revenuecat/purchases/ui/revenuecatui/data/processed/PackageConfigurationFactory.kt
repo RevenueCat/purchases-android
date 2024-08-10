@@ -224,9 +224,13 @@ internal object PackageConfigurationFactory {
                 mostExpensivePricePerMonth,
             )
 
-            val shouldRound = paywallData.zeroDecimalPlaceCountries.contains(
-                Purchases.sharedInstance.storefrontCountryCode
-            )
+            val shouldRound = if (Purchases.isConfigured) {
+                paywallData.zeroDecimalPlaceCountries.contains(
+                    Purchases.sharedInstance.storefrontCountryCode
+                )
+            } else {
+                false
+            }
 
             TemplateConfiguration.PackageInfo(
                 rcPackage = it,
