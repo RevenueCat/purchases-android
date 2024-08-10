@@ -20,6 +20,8 @@ import java.util.Currency
 import java.util.Locale
 import kotlin.math.roundToInt
 
+private const val MICRO_MULTIPLIER = 1_000_000.0
+
 @Suppress("UnusedParameter", "FunctionOnlyReturningConstant", "TooManyFunctions")
 internal class VariableDataProvider(
     private val resourceProvider: ResourceProvider,
@@ -36,7 +38,7 @@ internal class VariableDataProvider(
 //        get() = getDefaultLocales().first()
 
     private fun priceEndsIn99or00Cents(price: Price): Boolean {
-        val normalPrice = price.amountMicros.toDouble() / 1_000_000
+        val normalPrice = price.amountMicros.toDouble() / MICRO_MULTIPLIER
         val roundedCents = (normalPrice * 100).toInt() % 100
         return roundedCents == 99 || roundedCents == 0
     }
@@ -46,8 +48,8 @@ internal class VariableDataProvider(
 
         Currency.getInstance(price.currencyCode)
         currencyFormat.maximumFractionDigits = 0
-        
-        val normalPrice = price.amountMicros.toDouble() / 1_000_000
+
+        val normalPrice = price.amountMicros.toDouble() / MICRO_MULTIPLIER
         val roundedNumber = Math.round(normalPrice)
         val roundedString = currencyFormat.format(roundedNumber)
 
