@@ -87,6 +87,10 @@ class OfferingsFactoryTest {
             "        }\n" +
             "    },\n" +
             "    \"asset_base_url\": \"https://rc-paywalls.s3.amazonaws.com\",\n" +
+            "    \"zero_decimal_place_countries\": {\n" +
+            "        \"apple\": [\"TWA\", \"THA\", \"PHL\", \"MEX\", \"KAZ\"],\n" +
+            "        \"google\": [\"PH\", \"KZ\", \"TW\", \"MX\", \"TH\"]\n" +
+            "    },\n" +
             "    \"revision\": 7\n" +
             "}" +
             "}" +
