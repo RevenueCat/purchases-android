@@ -237,10 +237,10 @@ private fun Price.endsIn99or00Cents(): Boolean {
  * For example $3.
  */
 private fun Price.getRoundedFormatted(locale: Locale = Locale.getDefault()): String {
-    val currency = Currency.getInstance(currencyCode)
-    val numberFormat = NumberFormat.getCurrencyInstance(locale)
-    numberFormat.currency = currency
-    numberFormat.maximumFractionDigits = 0
+    val numberFormat = NumberFormat.getCurrencyInstance(locale).apply {
+        currency = Currency.getInstance(currencyCode)
+        maximumFractionDigits = 0
+    }
     val amount = amountMicros / MICRO_MULTIPLIER
     return numberFormat.format(amount)
 }
