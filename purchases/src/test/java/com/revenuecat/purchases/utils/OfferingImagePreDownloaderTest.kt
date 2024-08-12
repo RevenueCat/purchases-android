@@ -88,7 +88,7 @@ class OfferingImagePreDownloaderTest {
                 assetBaseURL = URL("https://www.revenuecat.com/"),
                 revision = 0,
                 localization = mockk(),
-                zeroDecimalPlaceCountries = listOf("PH", "KZ", "TW", "MX", "TH"),
+                zeroDecimalPlaceCountries = TestData.Constants.zeroDecimalPlaceCountries,
             )
         }
     }

@@ -50,6 +50,8 @@ internal object TestData {
 
         val assetBaseURL = URL("https://assets.pawwalls.com")
 
+        val zeroDecimalPlaceCountries = listOf("PH", "KZ", "TW", "MX", "TH")
+
         val localization = PaywallData.LocalizedConfiguration(
             title = "Call to action for _better_ conversion.",
             subtitle = "Lorem ipsum is simply dummy text of the ~printing and~ typesetting industry.",
