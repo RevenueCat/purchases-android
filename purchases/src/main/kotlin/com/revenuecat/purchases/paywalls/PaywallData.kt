@@ -3,6 +3,7 @@ package com.revenuecat.purchases.paywalls
 import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.utils.convertToCorrectlyFormattedLocale
 import com.revenuecat.purchases.utils.getDefaultLocales
+import com.revenuecat.purchases.utils.serializers.GoogleListSerializer
 import com.revenuecat.purchases.utils.serializers.OptionalURLSerializer
 import com.revenuecat.purchases.utils.serializers.URLSerializer
 import com.revenuecat.purchases.utils.sharedLanguageCodeWith
@@ -21,22 +22,6 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import java.net.URL
 import java.util.Locale
-
-object GoogleListSerializer : KSerializer<List<String>> {
-    override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("GoogleList", PrimitiveKind.STRING)
-
-    override fun serialize(encoder: Encoder, value: List<String>) {
-        throw UnsupportedOperationException("Serialization is not supported")
-    }
-
-    override fun deserialize(decoder: Decoder): List<String> {
-        val jsonDecoder = decoder as? JsonDecoder
-            ?: error("This serializer can be used only with JSON format")
-        val jsonElement = jsonDecoder.decodeJsonElement().jsonObject
-        val googleList = jsonElement["google"]?.jsonArray
-        return googleList?.map { it.jsonPrimitive.content } ?: emptyList()
-    }
-}
 
 /**
  * Represents the data required to display a paywall using the `RevenueCatUI` library.
