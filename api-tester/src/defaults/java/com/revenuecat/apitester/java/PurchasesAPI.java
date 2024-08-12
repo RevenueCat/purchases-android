@@ -98,6 +98,8 @@ final class PurchasesAPI {
         purchases.onAppForegrounded();
 
         final Store store = purchases.getStore();
+
+        final String storefrontCountryCode = purchases.storefrontCountryCode
     }
 
     static void check(final Purchases purchases, final Map<String, String> attributes) {
