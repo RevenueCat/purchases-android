@@ -29,6 +29,8 @@ internal interface PurchasesType {
     ): CustomerInfo
 
     fun track(event: PaywallEvent)
+
+    val storefrontCountryCode: String?
 }
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
@@ -52,4 +54,7 @@ internal class PurchasesImpl(private val purchases: Purchases = Purchases.shared
     override fun track(event: PaywallEvent) {
         purchases.track(event)
     }
+
+    override val storefrontCountryCode: String?
+        get() = purchases.storefrontCountryCode
 }

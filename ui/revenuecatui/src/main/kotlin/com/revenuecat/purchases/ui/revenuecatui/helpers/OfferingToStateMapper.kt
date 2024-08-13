@@ -136,6 +136,7 @@ internal fun Offering.toPaywallState(
     validatedPaywallData: PaywallData,
     template: PaywallTemplate,
     shouldDisplayDismissButton: Boolean,
+    storefrontCountryCode: String?,
 ): PaywallState {
     val createTemplateConfigurationResult = TemplateConfigurationFactory.create(
         variableDataProvider = variableDataProvider,
@@ -145,6 +146,7 @@ internal fun Offering.toPaywallState(
         activelySubscribedProductIdentifiers = activelySubscribedProductIdentifiers,
         nonSubscriptionProductIdentifiers = nonSubscriptionProductIdentifiers,
         template,
+        storefrontCountryCode = storefrontCountryCode,
     )
     val templateConfiguration = createTemplateConfigurationResult.getOrElse {
         return PaywallState.Error(it.message ?: "Unknown error")
