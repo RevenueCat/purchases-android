@@ -345,6 +345,47 @@ internal object TestData {
                 period = Period(value = 6, unit = Period.Unit.MONTH, iso8601 = "P6M"),
             ),
         )
+        val annualTaiwan = Package(
+            packageType = PackageType.ANNUAL,
+            identifier = PackageType.ANNUAL.identifier!!,
+            offering = "offering",
+            product = TestStoreProduct(
+                id = "com.revenuecat.annual_product",
+                name = "Annual",
+                title = "Annual (App name)",
+                price = Price(amountMicros = 67_000_000, currencyCode = "TWD", formatted = "NT$67.00"),
+                description = "Annual",
+                period = Period(value = 1, unit = Period.Unit.YEAR, iso8601 = "P1Y"),
+                freeTrialPeriod = Period(value = 1, unit = Period.Unit.MONTH, iso8601 = "P1M"),
+            ),
+        )
+        val monthlyMexico = Package(
+            packageType = PackageType.MONTHLY,
+            identifier = PackageType.MONTHLY.identifier!!,
+            offering = "offering",
+            product = TestStoreProduct(
+                id = "com.revenuecat.monthly_product",
+                name = "Monthly",
+                title = "Monthly (App name)",
+                price = Price(amountMicros = 8_000_000, currencyCode = "MXN", formatted = "$8.00"),
+                description = "Monthly",
+                period = Period(value = 1, unit = Period.Unit.MONTH, iso8601 = "P1M"),
+            ),
+        )
+        val quarterlyThailand = Package(
+            packageType = PackageType.THREE_MONTH,
+            identifier = PackageType.THREE_MONTH.identifier!!,
+            offering = "offering",
+            product = TestStoreProduct(
+                id = "com.revenuecat.quarterly_product",
+                name = "3 month",
+                title = "3 month (App name)",
+                price = Price(amountMicros = 24_000_000, currencyCode = "THB", formatted = "THB24.00"),
+                description = "3 month",
+                period = Period(value = 3, unit = Period.Unit.MONTH, iso8601 = "P3M"),
+                introPrice = Price(amountMicros = 4_000_000, currencyCode = "THB", formatted = "THB4.00"),
+            ),
+        )
     }
 }
 
