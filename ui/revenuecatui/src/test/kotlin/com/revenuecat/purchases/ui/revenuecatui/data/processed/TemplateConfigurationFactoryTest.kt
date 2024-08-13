@@ -41,6 +41,7 @@ internal class TemplateConfigurationFactoryTest {
                 TestData.Packages.lifetime.product.id
             ),
             template = PaywallTemplate.TEMPLATE_2,
+            storefrontCountryCode = "US",
         )
         template2Configuration = result.getOrNull()!!
     }
