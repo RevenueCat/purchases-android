@@ -213,6 +213,7 @@ internal object PackageConfigurationFactory {
         )
     }
 
+    @Suppress("LongParameterList")
     private fun makePackageInfo(
         packages: List<Package>,
         variableDataProvider: VariableDataProvider,
