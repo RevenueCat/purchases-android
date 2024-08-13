@@ -84,6 +84,7 @@ class PaywallViewModelTest {
         coEvery { purchases.awaitOfferings() } returns offerings
         coEvery { purchases.awaitCustomerInfo(any()) } returns customerInfo
 
+        every { purchases.storefrontCountryCode } returns "US"
         every { purchases.track(any()) } just Runs
 
         every { listener.onPurchaseStarted(any()) } just runs
