@@ -474,6 +474,8 @@ class VariableProcessorTest {
 
         expectVariablesResult("{{ price }}", "$68")
 
+        expectVariablesResult("{{ price_per_period }}", "$68/yr", rcPackage = TestData.Packages.annual)
+
         // nominal and calculated prices
         expectVariablesResult("{{ total_price_and_per_month_full }}", "$68/year ($5.67/month)", rcPackage = TestData.Packages.annual)
         expectVariablesResult("{{ total_price_and_per_month_full }}", "$8/month", rcPackage = TestData.Packages.monthly)
