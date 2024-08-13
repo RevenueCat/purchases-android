@@ -22,6 +22,8 @@ class OfferingImagePreDownloaderTest {
 
     private lateinit var preDownloader: OfferingImagePreDownloader
 
+    private val zeroDecimalPlaceCountries = listOf("PH", "KZ", "TW", "MX", "TH")
+
     @Before
     fun setUp() {
         coilImageDownloader = mockk<CoilImageDownloader>().apply {
@@ -88,7 +90,7 @@ class OfferingImagePreDownloaderTest {
                 assetBaseURL = URL("https://www.revenuecat.com/"),
                 revision = 0,
                 localization = mockk(),
-                zeroDecimalPlaceCountries = TestData.Constants.zeroDecimalPlaceCountries,
+                zeroDecimalPlaceCountries = zeroDecimalPlaceCountries,
             )
         }
     }
