@@ -186,7 +186,7 @@ internal class PaywallViewModelImpl(
                     val customerInfo = purchases.awaitCustomerInfo()
                     when (val result = customRestoreHandler(customerInfo)) {
                         is MyAppRestoreResult.Success -> {
-                            //TODO: Sync Purchases
+                            purchases.syncPurchases()
                         }
                         is MyAppRestoreResult.Error -> {
                             val purchasesException = PurchasesException(result.error)
@@ -275,7 +275,7 @@ internal class PaywallViewModelImpl(
                     }
                     when (val result = customPurchaseHandler.invoke(activity, packageToPurchase)) {
                         is MyAppPurchaseResult.Success -> {
-                            //TODO: Sync Purchases
+                            purchases.syncPurchases()
                         }
                         is MyAppPurchaseResult.Cancellation -> {
                             trackPaywallCancel()

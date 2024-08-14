@@ -12,6 +12,7 @@ import com.revenuecat.purchases.awaitCustomerInfo
 import com.revenuecat.purchases.awaitOfferings
 import com.revenuecat.purchases.awaitPurchase
 import com.revenuecat.purchases.awaitRestore
+import com.revenuecat.purchases.interfaces.SyncPurchasesCallback
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
 
 /**
@@ -32,6 +33,8 @@ internal interface PurchasesType {
     fun track(event: PaywallEvent)
 
     val purchasesAreCompletedBy: PurchasesAreCompletedBy
+
+    fun syncPurchases()
 }
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
@@ -54,6 +57,10 @@ internal class PurchasesImpl(private val purchases: Purchases = Purchases.shared
 
     override fun track(event: PaywallEvent) {
         purchases.track(event)
+    }
+
+    override fun syncPurchases() {
+        purchases.syncPurchases()
     }
 
     override val purchasesAreCompletedBy: PurchasesAreCompletedBy
