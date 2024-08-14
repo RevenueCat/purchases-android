@@ -12,18 +12,34 @@ import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.PurchaseType
 import com.revenuecat.purchases.models.StoreTransaction
 import org.json.JSONObject
+import kotlin.coroutines.resume
+import kotlin.coroutines.suspendCoroutine
 
-/**
- * Code for handling in-app purchases and restorations directly by the application rather than by RevenueCat.
- * These methods are called by a RevenueCat Paywall only when `Purchases.purchasesAreCompletedBy` is `MY_APP`.
- *
- * @property performPurchase Performs an in-app purchase.
- * @property performRestore Perform a purchase restore for the given customer.
- */
-class MyAppPurchaseLogic(
-    val performPurchase: suspend ((Activity, Package) -> MyAppPurchaseResult),
-    val performRestore: suspend ((CustomerInfo) -> MyAppRestoreResult),
-)
+interface MyAppPurchaseLogic {
+    suspend fun performPurchase(activity: Activity, rcPackage: Package): MyAppPurchaseResult
+    suspend fun performRestore(customerInfo: CustomerInfo): MyAppRestoreResult
+}
+
+abstract class MyAppPurchaseLogicCompletion : MyAppPurchaseLogic {
+
+    abstract fun performPurchase(activity: Activity, rcPackage: Package, completion: (MyAppPurchaseResult) -> Unit)
+
+    abstract fun performRestore(completion: (MyAppRestoreResult) -> Unit)
+
+    final override suspend fun performPurchase(activity: Activity, rcPackage: Package): MyAppPurchaseResult =
+        suspendCoroutine { continuation ->
+            performPurchase(activity, rcPackage) { result ->
+                continuation.resume(result)
+            }
+        }
+
+    final override suspend fun performRestore(customerInfo: CustomerInfo): MyAppRestoreResult =
+        suspendCoroutine { continuation ->
+            performRestore { result ->
+                continuation.resume(result)
+            }
+        }
+}
 
 /**
  * Represents the result of a purchase attempt made by custom app-based code (not RevenueCat).

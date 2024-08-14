@@ -1,5 +1,6 @@
 package com.revenuecat.paywallstester.ui.screens.main.paywalls
 
+import android.app.Activity
 import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -29,6 +30,7 @@ import com.revenuecat.paywallstester.SamplePaywalls
 import com.revenuecat.paywallstester.SamplePaywallsLoader
 import com.revenuecat.paywallstester.ui.screens.paywallfooter.SamplePaywall
 import com.revenuecat.paywallstester.ui.theme.bundledLobsterTwoFontFamily
+import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.ui.revenuecatui.MyAppPurchaseLogic
 import com.revenuecat.purchases.ui.revenuecatui.MyAppPurchaseResult
@@ -40,6 +42,22 @@ import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.fonts.CustomFontProvider
 import com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider
 
+class TesterAppPurchaseLogic: MyAppPurchaseLogic {
+
+    override suspend fun performPurchase(
+        activity: Activity,
+        rcPackage: com.revenuecat.purchases.Package,
+    ): MyAppPurchaseResult {
+        Log.d("RevenueCatUI", "Hello from performPurchase!")
+        return MyAppPurchaseResult.Success()
+    }
+
+    override suspend fun performRestore(customerInfo: CustomerInfo): MyAppRestoreResult {
+        Log.d("RevenueCatUI", "Hello from performRestore!")
+        return MyAppRestoreResult.Success
+    }
+}
+
 @Suppress("LongMethod")
 @Composable
 fun PaywallsScreen(
@@ -48,16 +66,7 @@ fun PaywallsScreen(
     var displayPaywallState by remember { mutableStateOf<DisplayPaywallState>(DisplayPaywallState.None) }
 
     val myAppPurchaseLogic = remember {
-        MyAppPurchaseLogic(
-            performPurchase = { _, _ ->
-                Log.d("RevenueCatUI", "Hello from performPurchase!")
-                MyAppPurchaseResult.Success()
-            },
-            performRestore = { customerInfo ->
-                Log.d("RevenueCatUI", "Hello from performRestore!")
-                MyAppRestoreResult.Success
-            }
-        )
+        TesterAppPurchaseLogic()
     }
 
     LazyColumn {

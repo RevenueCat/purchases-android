@@ -176,7 +176,7 @@ internal class PaywallViewModelImpl(
         try {
             listener?.onRestoreStarted()
 
-            val customRestoreHandler = myAppPurchaseLogic?.performRestore
+            val customRestoreHandler = myAppPurchaseLogic?.let { it::performRestore }
 
             when (purchases.purchasesAreCompletedBy) {
                 PurchasesAreCompletedBy.MY_APP -> {
@@ -266,7 +266,7 @@ internal class PaywallViewModelImpl(
         try {
             listener?.onPurchaseStarted(packageToPurchase)
 
-            val customPurchaseHandler = myAppPurchaseLogic?.performPurchase
+            val customPurchaseHandler = myAppPurchaseLogic?.let { it::performPurchase }
 
             when (purchases.purchasesAreCompletedBy) {
                 PurchasesAreCompletedBy.MY_APP -> {
