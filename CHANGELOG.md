@@ -1,3 +1,10 @@
+## 8.4.1
+### Dependency Updates
+* Bump fastlane-plugin-revenuecat_internal from `d5f0742` to `4c4b8ce` (#1807) via dependabot[bot] (@dependabot[bot])
+* Bump danger from 9.4.3 to 9.5.0 (#1802) via dependabot[bot] (@dependabot[bot])
+### Other Changes
+* Publish paywall tester on each release (#1803) via Toni Rico (@tonidero)
+
 ## 8.4.0
 ### New Features
 * Adds pricePerPeriod functions to PricingPhase (#1789) via JayShortway (@JayShortway)
