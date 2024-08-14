@@ -52,7 +52,7 @@ sealed interface MyAppPurchaseResult {
      * `PaywallListener` `onPurchaseCompleted` callback. If this callback is not needed, it does not need to be
      * provided, and the callback will not be called.
      */
-    data class Success(val purchase: MyAppPurchase? = null) : MyAppPurchaseResult
+    object Success : MyAppPurchaseResult
 
     /**
      * Indicates the purchase was cancelled.
@@ -84,51 +84,3 @@ sealed interface MyAppRestoreResult {
     data class Error(val error: PurchasesError) : MyAppRestoreResult
 }
 
-/**
- * Represents a purchase made in the application.
- *
- * @property purchase The actual purchase object from the store.
- * @property productType The type of product being purchased. Defaults to [ProductType.UNKNOWN].
- * @property presentedOfferingContext Context of the offering presented to the user, if applicable.
- * @property subscriptionOptionId The subscription option ID from Google, if applicable.
- * @property replacementMode The replacement mode for Google subscriptions, if applicable.
- */
-class MyAppPurchase(
-    val purchase: Purchase,
-    internal val productType: ProductType = ProductType.UNKNOWN,
-    internal val presentedOfferingContext: PresentedOfferingContext? = null,
-    internal val subscriptionOptionId: String? = null,
-    internal val replacementMode: GoogleReplacementMode? = null,
-) {
-    internal fun Int.toRevenueCatPurchaseState(): PurchaseState {
-        return when (this) {
-            Purchase.PurchaseState.UNSPECIFIED_STATE -> PurchaseState.UNSPECIFIED_STATE
-            Purchase.PurchaseState.PURCHASED -> PurchaseState.PURCHASED
-            Purchase.PurchaseState.PENDING -> PurchaseState.PENDING
-            else -> PurchaseState.UNSPECIFIED_STATE
-        }
-    }
-}
-
-/**
- * Converts the [MyAppPurchase] instance to a [StoreTransaction] object.
- *
- * @return A [StoreTransaction] representing the purchase.
- */
-internal fun MyAppPurchase.toStoreTransaction(): StoreTransaction = StoreTransaction(
-    orderId = purchase.orderId,
-    productIds = purchase.products,
-    type = productType,
-    purchaseTime = purchase.purchaseTime,
-    purchaseToken = purchase.purchaseToken,
-    purchaseState = purchase.purchaseState.toRevenueCatPurchaseState(),
-    isAutoRenewing = purchase.isAutoRenewing,
-    signature = purchase.signature,
-    originalJson = JSONObject(purchase.originalJson),
-    presentedOfferingContext = presentedOfferingContext,
-    storeUserID = null,
-    purchaseType = PurchaseType.GOOGLE_PURCHASE,
-    marketplace = null,
-    subscriptionOptionId = subscriptionOptionId,
-    replacementMode = replacementMode,
-)

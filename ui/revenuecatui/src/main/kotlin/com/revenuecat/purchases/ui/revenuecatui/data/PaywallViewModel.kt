@@ -31,7 +31,6 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.ResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toPaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.validatedPaywall
 import com.revenuecat.purchases.ui.revenuecatui.strings.PaywallValidationErrorStrings
-import com.revenuecat.purchases.ui.revenuecatui.toStoreTransaction
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -187,7 +186,7 @@ internal class PaywallViewModelImpl(
                     val customerInfo = purchases.awaitCustomerInfo()
                     when (val result = customRestoreHandler(customerInfo)) {
                         is MyAppRestoreResult.Success -> {
-                            listener?.onRestoreCompleted(customerInfo)
+                            //TODO: Sync Purchases
                         }
                         is MyAppRestoreResult.Error -> {
                             val purchasesException = PurchasesException(result.error)
@@ -276,13 +275,10 @@ internal class PaywallViewModelImpl(
                     }
                     when (val result = customPurchaseHandler.invoke(activity, packageToPurchase)) {
                         is MyAppPurchaseResult.Success -> {
-                            val storeTransaction = result.purchase?.toStoreTransaction() ?: return
-                            val customerInfo = purchases.awaitCustomerInfo()
-                            listener?.onPurchaseCompleted(customerInfo, storeTransaction)
+                            //TODO: Sync Purchases
                         }
                         is MyAppPurchaseResult.Cancellation -> {
                             trackPaywallCancel()
-                            listener?.onPurchaseCancelled()
                         }
                         is MyAppPurchaseResult.Error -> {
                             val purchasesException = PurchasesException(result.error)

@@ -51,7 +51,7 @@ class TesterAppPurchaseLogicSuspend: MyAppPurchaseLogic {
         rcPackage: com.revenuecat.purchases.Package,
     ): MyAppPurchaseResult {
         Log.d("RevenueCatUI", "Hello from performPurchase suspend!")
-        return MyAppPurchaseResult.Success()
+        return MyAppPurchaseResult.Success
     }
 
     override suspend fun performRestore(customerInfo: CustomerInfo): MyAppRestoreResult {
@@ -64,7 +64,7 @@ class TesterAppPurchaseLogicSuspend: MyAppPurchaseLogic {
 class TestAppPurchaseLogicCallbacks: MyAppPurchaseLogicCompletion() {
     override fun performPurchase(activity: Activity, rcPackage: Package, completion: (MyAppPurchaseResult) -> Unit) {
         Log.d("RevenueCatUI", "Hello from performPurchase callback!")
-        completion(MyAppPurchaseResult.Success())
+        completion(MyAppPurchaseResult.Success)
     }
 
     override fun performRestore(completion: (MyAppRestoreResult) -> Unit) {
