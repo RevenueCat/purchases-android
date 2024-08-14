@@ -32,7 +32,9 @@ import com.revenuecat.paywallstester.ui.screens.paywallfooter.SamplePaywall
 import com.revenuecat.paywallstester.ui.theme.bundledLobsterTwoFontFamily
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Offering
+import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.ui.revenuecatui.MyAppPurchaseLogic
+import com.revenuecat.purchases.ui.revenuecatui.MyAppPurchaseLogicCompletion
 import com.revenuecat.purchases.ui.revenuecatui.MyAppPurchaseResult
 import com.revenuecat.purchases.ui.revenuecatui.MyAppRestoreResult
 import com.revenuecat.purchases.ui.revenuecatui.PaywallDialog
@@ -42,19 +44,33 @@ import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.fonts.CustomFontProvider
 import com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider
 
-class TesterAppPurchaseLogic: MyAppPurchaseLogic {
+class TesterAppPurchaseLogicSuspend: MyAppPurchaseLogic {
 
     override suspend fun performPurchase(
         activity: Activity,
         rcPackage: com.revenuecat.purchases.Package,
     ): MyAppPurchaseResult {
-        Log.d("RevenueCatUI", "Hello from performPurchase!")
+        Log.d("RevenueCatUI", "Hello from performPurchase suspend!")
         return MyAppPurchaseResult.Success()
     }
 
     override suspend fun performRestore(customerInfo: CustomerInfo): MyAppRestoreResult {
-        Log.d("RevenueCatUI", "Hello from performRestore!")
+        Log.d("RevenueCatUI", "Hello from performRestore suspend!")
         return MyAppRestoreResult.Success
+    }
+
+}
+
+class TestAppPurchaseLogicCallbacks: MyAppPurchaseLogicCompletion() {
+    override fun performPurchase(activity: Activity, rcPackage: Package, completion: (MyAppPurchaseResult) -> Unit) {
+        Log.d("RevenueCatUI", "Hello from performPurchase callback!")
+        completion(MyAppPurchaseResult.Success())
+    }
+
+    override fun performRestore(completion: (MyAppRestoreResult) -> Unit) {
+        Log.d("RevenueCatUI", "Hello from performRestore callback!")
+
+        completion(MyAppRestoreResult.Success)
     }
 }
 
@@ -66,7 +82,8 @@ fun PaywallsScreen(
     var displayPaywallState by remember { mutableStateOf<DisplayPaywallState>(DisplayPaywallState.None) }
 
     val myAppPurchaseLogic = remember {
-        TesterAppPurchaseLogic()
+//        TesterAppPurchaseLogicSuspend()
+        TestAppPurchaseLogicCallbacks()
     }
 
     LazyColumn {
