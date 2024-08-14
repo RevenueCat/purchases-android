@@ -19,8 +19,6 @@ import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.Transaction
 import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.paywalls.events.PaywallEventType
-import com.revenuecat.purchases.ui.revenuecatui.ExperimentalPreviewRevenueCatUIPurchasesAPI
-import com.revenuecat.purchases.ui.revenuecatui.MyAppPurchase
 import com.revenuecat.purchases.ui.revenuecatui.MyAppPurchaseLogic
 import com.revenuecat.purchases.ui.revenuecatui.MyAppPurchaseResult
 import com.revenuecat.purchases.ui.revenuecatui.MyAppRestoreResult
@@ -171,9 +169,8 @@ class PaywallViewModelTest {
         val myAppPurchaseLogic = mockk<MyAppPurchaseLogic>(relaxed = true)
 
         val purchase = stubGooglePurchase()
-        val myAppPurchase = MyAppPurchase(purchase)
 
-        coEvery { myAppPurchaseLogic.performPurchase(any(), any()) } returns MyAppPurchaseResult.Success(myAppPurchase)
+        coEvery { myAppPurchaseLogic.performPurchase(any(), any()) } returns MyAppPurchaseResult.Success
 
         val model = create(
             customPurchaseLogic = myAppPurchaseLogic,
