@@ -86,6 +86,8 @@ private class PurchasesAPI {
         purchases.onAppForegrounded()
 
         val store: Store = purchases.store
+
+        val countryCode = purchases.storefrontCountryCode
     }
 
     @Suppress("LongMethod", "LongParameterList")

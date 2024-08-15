@@ -64,4 +64,5 @@ internal val TestData.template5: PaywallData
             ),
         ),
         assetBaseURL = TestData.Constants.assetBaseURL,
+        zeroDecimalPlaceCountries = TestData.Constants.zeroDecimalPlaceCountries,
     )

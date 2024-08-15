@@ -20,6 +20,9 @@ class VariableProcessorTest {
 
     private val usLocale = Locale.US
     private val esLocale = Locale("es", "ES")
+    private val twLocale = Locale.TAIWAN
+    private val mxLocale = Locale("es", "MX")
+    private val thLocale = Locale("th", "TH")
 
     private lateinit var resourceProvider: ResourceProvider
     private lateinit var variableDataProvider: VariableDataProvider
@@ -32,6 +35,8 @@ class VariableProcessorTest {
         variableDataProvider = VariableDataProvider(resourceProvider)
         context = mockk()
         rcPackage = TestData.Packages.annual
+
+        every { context.showZeroDecimalPlacePrices }.returns(false)
     }
 
     @Test
@@ -460,6 +465,69 @@ class VariableProcessorTest {
     fun `process variables processes sub_relative_discount`() {
         every { context.discountRelativeToMostExpensivePerMonth }.returns(0.1)
         expectVariablesResult("{{ sub_relative_discount }}", "10% off")
+    }
+
+    // endregion
+
+    // region price_rounding
+
+    @Test
+    fun `round prices`() {
+        every { context.showZeroDecimalPlacePrices }.returns(true)
+
+        // prices that don't end with .00
+        expectVariablesResult("{{ price }}", "$67.99")
+
+        expectVariablesResult("{{ total_price_and_per_month_full }}", "$7.99/month", rcPackage = TestData.Packages.monthly)
+        expectVariablesResult("{{ total_price_and_per_month_full }}", "$7.99/mes", mxLocale, rcPackage = TestData.Packages.monthly)
+
+        expectVariablesResult("{{ total_price_and_per_month_full }}", "$1.49/week ($6.47/month)", rcPackage = TestData.Packages.weekly)
+
+        expectVariablesResult("{{ sub_offer_price }}", "$3.99", rcPackage = TestData.Packages.bimonthly)
+        expectVariablesResult("{{ sub_offer_price_2 }}", "$3.99", rcPackage = TestData.Packages.quarterly)
+
+        // prices that end with .00
+        expectVariablesResult("{{ price }}", "NT$67", rcPackage = TestData.Packages.annualTaiwan)
+        expectVariablesResult("{{ price }}", "$67", twLocale, rcPackage = TestData.Packages.annualTaiwan)
+
+        expectVariablesResult("{{ total_price_and_per_month_full }}", "MX$8/month", rcPackage = TestData.Packages.monthlyMexico)
+        expectVariablesResult("{{ total_price_and_per_month_full }}", "$8/mes", mxLocale, rcPackage = TestData.Packages.monthlyMexico)
+
+
+        expectVariablesResult("{{ price_per_period }}", "THB24/3 mths", rcPackage = TestData.Packages.quarterlyThailand)
+        expectVariablesResult("{{ price_per_period }}", "฿24/3 เดือน", thLocale, rcPackage = TestData.Packages.quarterlyThailand)
+
+        expectVariablesResult("{{ sub_offer_price }}", "THB4", rcPackage = TestData.Packages.quarterlyThailand)
+        expectVariablesResult("{{ sub_offer_price }}", "฿4", thLocale, rcPackage = TestData.Packages.quarterlyThailand)
+
+    }
+
+    @Test
+    fun `do not round prices`() {
+        // prices that don't end with .00
+        expectVariablesResult("{{ price }}", "$67.99")
+
+        expectVariablesResult("{{ total_price_and_per_month_full }}", "$7.99/month", rcPackage = TestData.Packages.monthly)
+        expectVariablesResult("{{ total_price_and_per_month_full }}", "$7.99/mes", mxLocale, rcPackage = TestData.Packages.monthly)
+
+        expectVariablesResult("{{ total_price_and_per_month_full }}", "$1.49/week ($6.47/month)", rcPackage = TestData.Packages.weekly)
+
+        expectVariablesResult("{{ sub_offer_price }}", "$3.99", rcPackage = TestData.Packages.bimonthly)
+        expectVariablesResult("{{ sub_offer_price_2 }}", "$3.99", rcPackage = TestData.Packages.quarterly)
+
+        // prices that end with .00
+        expectVariablesResult("{{ price }}", "NT$67.00", rcPackage = TestData.Packages.annualTaiwan)
+        expectVariablesResult("{{ price }}", "NT$67.00", twLocale, rcPackage = TestData.Packages.annualTaiwan)
+
+        expectVariablesResult("{{ total_price_and_per_month_full }}", "$8.00/month", rcPackage = TestData.Packages.monthlyMexico)
+        expectVariablesResult("{{ total_price_and_per_month_full }}", "$8.00/mes", mxLocale, rcPackage = TestData.Packages.monthlyMexico)
+
+
+        expectVariablesResult("{{ price_per_period }}", "THB24.00/3 mths", rcPackage = TestData.Packages.quarterlyThailand)
+        expectVariablesResult("{{ price_per_period }}", "THB24.00/3 เดือน", thLocale, rcPackage = TestData.Packages.quarterlyThailand)
+
+        expectVariablesResult("{{ sub_offer_price }}", "THB4.00", rcPackage = TestData.Packages.quarterlyThailand)
+        expectVariablesResult("{{ sub_offer_price }}", "THB4.00", thLocale, rcPackage = TestData.Packages.quarterlyThailand)
     }
 
     // endregion

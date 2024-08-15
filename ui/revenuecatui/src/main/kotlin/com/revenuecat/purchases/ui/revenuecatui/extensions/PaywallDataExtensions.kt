@@ -58,6 +58,7 @@ internal fun PaywallData.Companion.createDefaultForIdentifiers(
         ),
         assetBaseURL = PaywallData.defaultTemplateBaseURL,
         revision = PaywallData.revisionID,
+        zeroDecimalPlaceCountries = PaywallData.zeroDecimalPlaceCountries,
     )
 }
 
@@ -78,6 +79,9 @@ internal val PaywallData.Companion.defaultBackgroundPlaceholder: String
 
 private val PaywallData.Companion.revisionID: Int
     get() = -1
+
+private val PaywallData.Companion.zeroDecimalPlaceCountries: List<String>
+    get() = emptyList()
 
 private fun PaywallData.Companion.defaultLocalization(
     resourceProvider: ResourceProvider,

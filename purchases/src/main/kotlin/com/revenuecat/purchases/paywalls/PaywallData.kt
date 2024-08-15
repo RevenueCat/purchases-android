@@ -3,6 +3,7 @@ package com.revenuecat.purchases.paywalls
 import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.utils.convertToCorrectlyFormattedLocale
 import com.revenuecat.purchases.utils.getDefaultLocales
+import com.revenuecat.purchases.utils.serializers.GoogleListSerializer
 import com.revenuecat.purchases.utils.serializers.OptionalURLSerializer
 import com.revenuecat.purchases.utils.serializers.URLSerializer
 import com.revenuecat.purchases.utils.sharedLanguageCodeWith
@@ -44,6 +45,10 @@ data class PaywallData(
 
     @SerialName("localized_strings_by_tier") internal val localizationByTier:
     Map<String, Map<String, LocalizedConfiguration>> = emptyMap(),
+
+    @SerialName("zero_decimal_place_countries")
+    @Serializable(with = GoogleListSerializer::class)
+    val zeroDecimalPlaceCountries: List<String> = emptyList(),
 ) {
 
     /**

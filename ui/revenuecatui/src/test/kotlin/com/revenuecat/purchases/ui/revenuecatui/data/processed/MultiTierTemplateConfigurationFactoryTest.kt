@@ -45,6 +45,7 @@ internal class MultiTierTemplateConfigurationFactoryTest {
                 TestData.Packages.lifetime.product.id
             ),
             template = PaywallTemplate.TEMPLATE_7,
+            storefrontCountryCode = "US",
         )
         template7Configuration = result.getOrNull()!!
     }

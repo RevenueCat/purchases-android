@@ -155,4 +155,5 @@ internal val TestData.template7CustomPackages: PaywallData
                 ),
             ),
         ),
+        zeroDecimalPlaceCountries = TestData.Constants.zeroDecimalPlaceCountries,
     )

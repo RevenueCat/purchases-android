@@ -73,6 +73,7 @@ internal fun LoadingPaywall(
         validatedPaywallData = paywallData,
         template = LoadingPaywallConstants.template,
         shouldDisplayDismissButton = shouldDisplayDismissButton,
+        null,
     )
 
     when (state) {
