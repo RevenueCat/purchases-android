@@ -173,7 +173,7 @@ internal class PaywallViewModelImpl(
     override suspend fun awaitRestorePurchases() {
         if (verifyNoActionInProgressOrStartAction()) { return }
         try {
-            listener?.onRestoreStarted()
+
 
             val customRestoreHandler = myAppPurchaseLogic?.let { it::performRestore }
 
@@ -189,12 +189,12 @@ internal class PaywallViewModelImpl(
                             purchases.syncPurchases()
                         }
                         is MyAppRestoreResult.Error -> {
-                            val purchasesException = PurchasesException(result.error)
-                            throw purchasesException
+                            result.error?.let { _actionError.value = it }
                         }
                     }
                 }
                 PurchasesAreCompletedBy.REVENUECAT -> {
+                    listener?.onRestoreStarted()
                     if (customRestoreHandler != null) {
                         Logger.w(
                             "myAppPurchaseLogic expected be null when " +

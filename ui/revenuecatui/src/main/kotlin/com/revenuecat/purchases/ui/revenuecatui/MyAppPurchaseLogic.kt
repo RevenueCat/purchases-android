@@ -81,6 +81,6 @@ sealed interface MyAppRestoreResult {
      *
      * @property error Details of the error that occurred.
      */
-    data class Error(val error: PurchasesError) : MyAppRestoreResult
+    data class Error(val error: PurchasesError?) : MyAppRestoreResult
 }
 
