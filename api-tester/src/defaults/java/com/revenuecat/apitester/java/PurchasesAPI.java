@@ -99,7 +99,7 @@ final class PurchasesAPI {
 
         final Store store = purchases.getStore();
 
-        final String storefrontCountryCode = purchases.storefrontCountryCode();
+        final String storefrontCountryCode = purchases.getStorefrontCountryCode();
     }
 
     static void check(final Purchases purchases, final Map<String, String> attributes) {
