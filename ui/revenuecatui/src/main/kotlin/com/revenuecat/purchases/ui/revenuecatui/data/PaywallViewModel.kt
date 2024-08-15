@@ -169,11 +169,16 @@ internal class PaywallViewModelImpl(
         handlePackagePurchase(activity)
     }
 
+    override fun restorePurchases() {
+        viewModelScope.launch {
+            awaitRestorePurchases()
+        }
+    }
+
     @Suppress("NestedBlockDepth")
     override suspend fun awaitRestorePurchases() {
         if (verifyNoActionInProgressOrStartAction()) { return }
         try {
-
 
             val customRestoreHandler = myAppPurchaseLogic?.let { it::performRestore }
 
@@ -224,12 +229,6 @@ internal class PaywallViewModelImpl(
         }
 
         finishAction()
-    }
-
-    override fun restorePurchases() {
-        viewModelScope.launch {
-            awaitRestorePurchases()
-        }
     }
 
     override fun clearActionError() {
