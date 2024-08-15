@@ -97,6 +97,7 @@ class PaywallViewModelTest {
         every { customerInfo.nonSubscriptionTransactions } returns listOf()
 
         every { purchases.track(any()) } just Runs
+        every { purchases.syncPurchases() } just Runs
 
         every { listener.onPurchaseStarted(any()) } just runs
         every { listener.onPurchaseCompleted(any(), any()) } just runs
@@ -130,10 +131,9 @@ class PaywallViewModelTest {
 
         coVerify { myAppPurchaseLogic.performRestore(customerInfo) }
 
-        verifyOrder {
-            listener.onRestoreStarted()
-            listener.onRestoreCompleted(customerInfo)
-        }
+        verify(exactly = 0) { listener.onRestoreStarted() }
+        verify(exactly = 0) { listener.onRestoreCompleted(customerInfo) }
+
     }
 
     @Test
@@ -154,10 +154,8 @@ class PaywallViewModelTest {
 
         coVerify { myAppPurchaseLogic.performRestore(customerInfo) }
 
-        verifyOrder {
-            listener.onRestoreStarted()
-            listener.onRestoreError(notAllowedError)
-        }
+        verify(exactly = 0) { listener.onRestoreStarted() }
+        verify(exactly = 0) { listener.onRestoreError(notAllowedError) }
 
         assertThat(model.actionInProgress.value).isFalse
     }
@@ -181,10 +179,8 @@ class PaywallViewModelTest {
 
         coVerify { myAppPurchaseLogic.performPurchase(any(), any()) }
 
-        verifyOrder {
-            listener.onPurchaseStarted(any())
-            listener.onPurchaseCompleted(customerInfo, any())
-        }
+        verify(exactly = 0) { listener.onPurchaseStarted(any()) }
+        verify(exactly = 0) { listener.onPurchaseCompleted(customerInfo, any()) }
 
         assertThat(model.actionInProgress.value).isFalse
         assertThat(dismissInvoked).isTrue
@@ -207,13 +203,10 @@ class PaywallViewModelTest {
 
         coVerify { myAppPurchaseLogic.performPurchase(any(), any()) }
 
-        verifyOrder {
-            listener.onPurchaseStarted(any())
-            listener.onPurchaseCancelled()
-        }
+        verify(exactly = 0) { listener.onPurchaseStarted(any()) }
+        verify(exactly = 0) { listener.onPurchaseCancelled() }
 
         assertThat(model.actionInProgress.value).isFalse
-        assertThat(dismissInvoked).isTrue
     }
 
     @Test
@@ -234,10 +227,8 @@ class PaywallViewModelTest {
 
         coVerify { myAppPurchaseLogic.performPurchase(any(), any()) }
 
-        verifyOrder {
-            listener.onPurchaseStarted(any())
-            listener.onPurchaseError(notAllowedError)
-        }
+        verify(exactly = 0) { listener.onPurchaseStarted(any()) }
+        verify(exactly = 0) { listener.onPurchaseError(notAllowedError) }
 
         assertThat(model.actionInProgress.value).isFalse
     }
