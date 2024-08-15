@@ -189,7 +189,7 @@ internal class PaywallViewModelImpl(
                             purchases.syncPurchases()
                         }
                         is MyAppRestoreResult.Error -> {
-                            result.error?.let { _actionError.value = it }
+                            result.errorDetails?.let { _actionError.value = it }
                         }
                     }
                 }
@@ -263,7 +263,7 @@ internal class PaywallViewModelImpl(
     @Suppress("LongMethod")
     private suspend fun performPurchase(activity: Activity, packageToPurchase: Package) {
         try {
-            listener?.onPurchaseStarted(packageToPurchase)
+
 
             val customPurchaseHandler = myAppPurchaseLogic?.let { it::performPurchase }
 
@@ -276,17 +276,19 @@ internal class PaywallViewModelImpl(
                     when (val result = customPurchaseHandler.invoke(activity, packageToPurchase)) {
                         is MyAppPurchaseResult.Success -> {
                             purchases.syncPurchases()
+                            Logger.d("Dismissing paywall after purchase")
+                            options.dismissRequest()
                         }
                         is MyAppPurchaseResult.Cancellation -> {
                             trackPaywallCancel()
                         }
                         is MyAppPurchaseResult.Error -> {
-                            val purchasesException = PurchasesException(result.error)
-                            throw purchasesException
+                            result.errorDetails?.let { _actionError.value = it }
                         }
                     }
                 }
                 PurchasesAreCompletedBy.REVENUECAT -> {
+                    listener?.onPurchaseStarted(packageToPurchase)
                     if (customPurchaseHandler != null) {
                         Logger.e(
                             "myAppPurchaseLogic expected to be null " +
@@ -298,14 +300,13 @@ internal class PaywallViewModelImpl(
                         PurchaseParams.Builder(activity, packageToPurchase),
                     )
                     listener?.onPurchaseCompleted(purchaseResult.customerInfo, purchaseResult.storeTransaction)
+                    Logger.d("Dismissing paywall after purchase")
+                    options.dismissRequest()
                 }
                 else -> {
                     Logger.e("Unsupported purchase completion type: ${purchases.purchasesAreCompletedBy}")
                 }
             }
-
-            Logger.d("Dismissing paywall after purchase")
-            options.dismissRequest()
         } catch (e: PurchasesException) {
             if (e.code == PurchasesErrorCode.PurchaseCancelledError) {
                 trackPaywallCancel()

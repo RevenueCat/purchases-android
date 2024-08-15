@@ -62,9 +62,9 @@ sealed interface MyAppPurchaseResult {
     /**
      * Indicates an error occurred during the purchase attempt.
      *
-     * @property error Details of the error that occurred.
+     * @property error Details of the error that occurred. If provided, an error dialog will be shown to the user.
      */
-    data class Error(val error: PurchasesError) : MyAppPurchaseResult
+    data class Error(val errorDetails: PurchasesError? = null) : MyAppPurchaseResult
 }
 
 /**
@@ -79,8 +79,8 @@ sealed interface MyAppRestoreResult {
     /**
      * Indicates an error occurred during the restore attempt.
      *
-     * @property error Details of the error that occurred.
+     * @property error Details of the error that occurred. If provided an error dialog will be shown to the user.
      */
-    data class Error(val error: PurchasesError?) : MyAppRestoreResult
+    data class Error(val errorDetails: PurchasesError? = null) : MyAppRestoreResult
 }
 
