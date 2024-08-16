@@ -158,7 +158,7 @@ internal class PaywallViewModelImpl(
         }
     }
 
-    @Suppress("NestedBlockDepth", "CyclomaticComplexMethod")
+    @Suppress("NestedBlockDepth", "CyclomaticComplexMethod", "LongMethod")
     override fun restorePurchases() {
         if (verifyNoActionInProgressOrStartAction()) {
             return
