@@ -70,6 +70,7 @@ open class TestAppPurchaseLogicCallbacks: MyAppPurchaseLogicCompletion() {
     }
 }
 
+// TODO: API tests for new interface/class
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @RunWith(AndroidJUnit4::class)
@@ -133,6 +134,7 @@ class PaywallViewModelTest {
     }
 
     // completion handler
+
 
     @Test
     fun `Custom completion handler restore purchases logic success triggers syncPurchases`() = runTest {
@@ -227,7 +229,7 @@ class PaywallViewModelTest {
         coVerify { logic.performPurchaseWithCompletion(any(), any(), any()) }
         verify(exactly = 0) { purchases.syncPurchases() }
         verify(exactly = 0) { listener.onPurchaseStarted(any()) }
-        verify(exactly = 0) { listener.onPurchaseCompleted(customerInfo, any()) }
+        verify(exactly = 0) { listener.onPurchaseCancelled() }
     }
 
     @Test
@@ -251,7 +253,7 @@ class PaywallViewModelTest {
         coVerify { logic.performPurchaseWithCompletion(any(), any(), any()) }
         verify(exactly = 0) { purchases.syncPurchases() }
         verify(exactly = 0) { listener.onPurchaseStarted(any()) }
-        verify(exactly = 0) { listener.onPurchaseCompleted(customerInfo, any()) }
+        verify(exactly = 0) { listener.onPurchaseError(any()) }
     }
 
     @Test
@@ -371,7 +373,7 @@ class PaywallViewModelTest {
 
         verify(exactly = 0) { purchases.syncPurchases() }
         verify(exactly = 0) { listener.onPurchaseStarted(any()) }
-        verify(exactly = 0) { listener.onPurchaseError(notAllowedError) }
+        verify(exactly = 0) { listener.onPurchaseError(any()) }
 
         assertThat(model.actionInProgress.value).isFalse
     }
