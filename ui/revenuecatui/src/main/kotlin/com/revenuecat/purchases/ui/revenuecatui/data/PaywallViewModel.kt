@@ -180,8 +180,10 @@ internal class PaywallViewModelImpl(
 
                                 shouldDisplayBlock?.let {
                                     if (!it(customerInfo)) {
-                                        Logger.d("Dismissing paywall after restore since display " +
-                                            "condition has not been met")
+                                        Logger.d(
+                                            "Dismissing paywall after restore since display " +
+                                                "condition has not been met",
+                                        )
                                         options.dismissRequest()
                                     }
                                 }
