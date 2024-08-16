@@ -155,9 +155,10 @@ class PaywallViewModelTest {
         model.awaitRestorePurchases()
 
         coVerify { logic.performRestoreWithCompletion(any()) }
-        verify { purchases.syncPurchases() }
-        verify(exactly = 0) { listener.onRestoreStarted() }
-        verify(exactly = 0) { listener.onRestoreCompleted(customerInfo) }
+        coVerify(inverse = true) { logic.performPurchaseWithCompletion(any(), any(), any()) }
+        coVerify { purchases.syncPurchases() }
+        coVerify(exactly = 0) { listener.onRestoreStarted() }
+        coVerify(exactly = 0) { listener.onRestoreCompleted(customerInfo) }
     }
 
     @Test
@@ -179,9 +180,10 @@ class PaywallViewModelTest {
         model.awaitRestorePurchases()
 
         coVerify { logic.performRestoreWithCompletion(any()) }
-        verify(exactly = 0) { purchases.syncPurchases() }
-        verify(exactly = 0) { listener.onRestoreStarted() }
-        verify(exactly = 0) { listener.onRestoreCompleted(customerInfo) }
+        coVerify(inverse = true) { logic.performPurchaseWithCompletion(any(), any(), any()) }
+        coVerify(exactly = 0) { purchases.syncPurchases() }
+        coVerify(exactly = 0) { listener.onRestoreStarted() }
+        coVerify(exactly = 0) { listener.onRestoreCompleted(customerInfo) }
     }
 
     @Test
@@ -203,9 +205,10 @@ class PaywallViewModelTest {
         model.awaitPurchaseSelectedPackage(activity)
 
         coVerify { logic.performPurchaseWithCompletion(any(), any(), any()) }
-        verify { purchases.syncPurchases() }
-        verify(exactly = 0) { listener.onPurchaseStarted(any()) }
-        verify(exactly = 0) { listener.onPurchaseCompleted(customerInfo, any()) }
+        coVerify(inverse = true) { logic.performRestoreWithCompletion(any()) }
+        coVerify { purchases.syncPurchases() }
+        coVerify(exactly = 0) { listener.onPurchaseStarted(any()) }
+        coVerify(exactly = 0) { listener.onPurchaseCompleted(customerInfo, any()) }
     }
 
     @Test
@@ -227,9 +230,10 @@ class PaywallViewModelTest {
         model.awaitPurchaseSelectedPackage(activity)
 
         coVerify { logic.performPurchaseWithCompletion(any(), any(), any()) }
-        verify(exactly = 0) { purchases.syncPurchases() }
-        verify(exactly = 0) { listener.onPurchaseStarted(any()) }
-        verify(exactly = 0) { listener.onPurchaseCancelled() }
+        coVerify(inverse = true) { logic.performRestoreWithCompletion(any()) }
+        coVerify(exactly = 0) { purchases.syncPurchases() }
+        coVerify(exactly = 0) { listener.onPurchaseStarted(any()) }
+        coVerify(exactly = 0) { listener.onPurchaseCancelled() }
     }
 
     @Test
@@ -251,9 +255,10 @@ class PaywallViewModelTest {
         model.awaitPurchaseSelectedPackage(activity)
 
         coVerify { logic.performPurchaseWithCompletion(any(), any(), any()) }
-        verify(exactly = 0) { purchases.syncPurchases() }
-        verify(exactly = 0) { listener.onPurchaseStarted(any()) }
-        verify(exactly = 0) { listener.onPurchaseError(any()) }
+        coVerify(inverse = true) { logic.performRestoreWithCompletion(any()) }
+        coVerify(exactly = 0) { purchases.syncPurchases() }
+        coVerify(exactly = 0) { listener.onPurchaseStarted(any()) }
+        coVerify(exactly = 0) { listener.onPurchaseError(any()) }
     }
 
     @Test
@@ -271,10 +276,10 @@ class PaywallViewModelTest {
         model.restorePurchases()
 
         coVerify { myAppPurchaseLogic.performRestore(customerInfo) }
-
-        verify { purchases.syncPurchases() }
-        verify(exactly = 0) { listener.onRestoreStarted() }
-        verify(exactly = 0) { listener.onRestoreCompleted(customerInfo) }
+        coVerify(inverse = true) { myAppPurchaseLogic.performPurchase(any(), any()) }
+        coVerify { purchases.syncPurchases() }
+        coVerify(exactly = 0) { listener.onRestoreStarted() }
+        coVerify(exactly = 0) { listener.onRestoreCompleted(customerInfo) }
 
     }
 
@@ -294,10 +299,10 @@ class PaywallViewModelTest {
         model.awaitRestorePurchases()
 
         coVerify { myAppPurchaseLogic.performRestore(customerInfo) }
-
-        verify(exactly = 0) { purchases.syncPurchases() }
-        verify(exactly = 0) { listener.onRestoreStarted() }
-        verify(exactly = 0) { listener.onRestoreError(notAllowedError) }
+        coVerify(inverse = true) { myAppPurchaseLogic.performPurchase(any(), any()) }
+        coVerify(exactly = 0) { purchases.syncPurchases() }
+        coVerify(exactly = 0) { listener.onRestoreStarted() }
+        coVerify(exactly = 0) { listener.onRestoreError(notAllowedError) }
 
         assertThat(model.actionInProgress.value).isFalse
     }
@@ -317,10 +322,10 @@ class PaywallViewModelTest {
         model.awaitPurchaseSelectedPackage(activity)
 
         coVerify { myAppPurchaseLogic.performPurchase(any(), any()) }
-
-        verify { purchases.syncPurchases() }
-        verify(exactly = 0) { listener.onPurchaseStarted(any()) }
-        verify(exactly = 0) { listener.onPurchaseCompleted(customerInfo, any()) }
+        coVerify(inverse = true) { myAppPurchaseLogic.performRestore(any()) }
+        coVerify { purchases.syncPurchases() }
+        coVerify(exactly = 0) { listener.onPurchaseStarted(any()) }
+        coVerify(exactly = 0) { listener.onPurchaseCompleted(customerInfo, any()) }
 
         assertThat(model.actionInProgress.value).isFalse
         assertThat(dismissInvoked).isTrue
@@ -341,10 +346,10 @@ class PaywallViewModelTest {
         model.awaitPurchaseSelectedPackage(activity)
 
         coVerify { myAppPurchaseLogic.performPurchase(any(), any()) }
-
-        verify(exactly = 0) { purchases.syncPurchases() }
-        verify(exactly = 0) { listener.onPurchaseStarted(any()) }
-        verify(exactly = 0) { listener.onPurchaseCancelled() }
+        coVerify(inverse = true) { myAppPurchaseLogic.performRestore(any()) }
+        coVerify(exactly = 0) { purchases.syncPurchases() }
+        coVerify(exactly = 0) { listener.onPurchaseStarted(any()) }
+        coVerify(exactly = 0) { listener.onPurchaseCancelled() }
 
         assertThat(model.actionInProgress.value).isFalse
     }
@@ -365,10 +370,10 @@ class PaywallViewModelTest {
         model.awaitPurchaseSelectedPackage(activity)
 
         coVerify { myAppPurchaseLogic.performPurchase(any(), any()) }
-
-        verify(exactly = 0) { purchases.syncPurchases() }
-        verify(exactly = 0) { listener.onPurchaseStarted(any()) }
-        verify(exactly = 0) { listener.onPurchaseError(any()) }
+        coVerify(inverse = true) { myAppPurchaseLogic.performRestore(any()) }
+        coVerify(exactly = 0) { purchases.syncPurchases() }
+        coVerify(exactly = 0) { listener.onPurchaseStarted(any()) }
+        coVerify(exactly = 0) { listener.onPurchaseError(any()) }
 
         assertThat(model.actionInProgress.value).isFalse
     }
