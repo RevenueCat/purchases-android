@@ -303,7 +303,7 @@ class PaywallViewModelTest {
     }
 
     @Test
-    fun `Custom suspend purchase logic triggers syncPurchases`() = runTest {
+    fun `Custom suspend purchase logic success triggers syncPurchases`() = runTest {
         every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.MY_APP
 
         val myAppPurchaseLogic = mockk<MyAppPurchaseLogic>(relaxed = true)
