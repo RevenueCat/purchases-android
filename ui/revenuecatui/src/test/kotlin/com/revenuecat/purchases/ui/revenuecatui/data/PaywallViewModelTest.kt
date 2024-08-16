@@ -120,7 +120,7 @@ class PaywallViewModelTest {
         clearAllMocks()
     }
 
-    // Completion Handler Tests
+    // Completion Handler Callback Tests
 
     @Test
     fun `Custom completion handler restore purchases logic success triggers syncPurchases`() = runTest {
@@ -255,7 +255,7 @@ class PaywallViewModelTest {
         coVerify(exactly = 0) { listener.onPurchaseError(any()) }
     }
 
-    // Suspend custom logic
+    // Suspend (co-routine) Tests
 
     @Test
     fun `Custom suspend restore purchases logic success triggers syncPurchases`() = runTest {

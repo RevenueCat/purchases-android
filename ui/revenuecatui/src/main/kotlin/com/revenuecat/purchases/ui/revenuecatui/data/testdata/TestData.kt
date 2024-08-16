@@ -446,28 +446,12 @@ internal class MockViewModel(
         }
     }
 
-    override suspend fun awaitPurchaseSelectedPackage(activity: Activity?) {
-        if (allowsPurchases) {
-            awaitSimulateActionInProgress()
-        } else {
-            unsupportedMethod("Can't purchase mock view model")
-        }
-    }
-
     var restorePurchasesCallCount = 0
         private set
     override fun restorePurchases() {
         restorePurchasesCallCount++
         if (allowsPurchases) {
             simulateActionInProgress()
-        } else {
-            unsupportedMethod("Can't restore purchases")
-        }
-    }
-
-    override suspend fun awaitRestorePurchases() {
-        if (allowsPurchases) {
-            awaitSimulateActionInProgress()
         } else {
             unsupportedMethod("Can't restore purchases")
         }
