@@ -69,6 +69,35 @@ open class TestAppPurchaseLogicCallbacks: MyAppPurchaseLogicCompletion() {
     }
 }
 
+class TestSuspendLogic(
+    private val customPurchaseCalled: MutableStateFlow<Boolean>? = null,
+    private val customRestoreCalled: MutableStateFlow<Boolean>? = null,
+    private val purchaseResult: MyAppPurchaseResult? = null,
+    private val restoreResult: MyAppRestoreResult? = null
+) : MyAppPurchaseLogic {
+
+    override suspend fun performPurchase(activity: Activity, rcPackage: Package): MyAppPurchaseResult {
+        val purchaseFlow = customPurchaseCalled
+            ?: throw IllegalArgumentException("customPurchaseCalled cannot be null")
+        val result = purchaseResult
+            ?: throw IllegalArgumentException("purchaseResult cannot be null")
+
+        purchaseFlow.value = true
+        return result
+    }
+
+    override suspend fun performRestore(customerInfo: CustomerInfo): MyAppRestoreResult {
+        val restoreFlow = customRestoreCalled
+            ?: throw IllegalArgumentException("customRestoreCalled cannot be null")
+        val result = restoreResult
+            ?: throw IllegalArgumentException("restoreResult cannot be null")
+
+        restoreFlow.value = true
+        return result
+    }
+}
+
+
 // TODO: API tests for new interface/class
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
@@ -311,19 +340,12 @@ class PaywallViewModelTest {
 
         val customPurchaseCalled = MutableStateFlow(false)
 
-        class TestClass(private val customPurchaseCalled: MutableStateFlow<Boolean>) : MyAppPurchaseLogic {
-
-            override suspend fun performPurchase(activity: Activity, rcPackage: Package): MyAppPurchaseResult {
-                customPurchaseCalled.value = true
-                return MyAppPurchaseResult.Success
-            }
-
-            override suspend fun performRestore(customerInfo: CustomerInfo): MyAppRestoreResult {
-                return MyAppRestoreResult.Success
-            }
-        }
-
-        val myAppPurchaseLogic = TestClass(customPurchaseCalled)
+        val myAppPurchaseLogic = TestSuspendLogic(
+            customPurchaseCalled,
+            null,
+            MyAppPurchaseResult.Success,
+            null
+        )
 
         val model = create(
             customPurchaseLogic = myAppPurchaseLogic,
