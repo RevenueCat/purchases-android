@@ -60,13 +60,10 @@ import java.util.UUID
 open class TestAppPurchaseLogicCallbacks: MyAppPurchaseLogicCompletion() {
     override fun performPurchaseWithCompletion(activity: Activity, rcPackage: Package, completion: (MyAppPurchaseResult) -> Unit) {
         completion(MyAppPurchaseResult.Success)
-        //TODO: call fatal error
     }
 
     override fun performRestoreWithCompletion(completion: (MyAppRestoreResult) -> Unit) {
-        println("hello from restore")
         completion(MyAppRestoreResult.Success)
-        // TODO: call fatal error
     }
 }
 
