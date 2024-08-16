@@ -60,11 +60,13 @@ import java.util.UUID
 open class TestAppPurchaseLogicCallbacks: MyAppPurchaseLogicCompletion() {
     override fun performPurchaseWithCompletion(activity: Activity, rcPackage: Package, completion: (MyAppPurchaseResult) -> Unit) {
         completion(MyAppPurchaseResult.Success)
+        //TODO: call fatal error
     }
 
     override fun performRestoreWithCompletion(completion: (MyAppRestoreResult) -> Unit) {
         println("hello from restore")
         completion(MyAppRestoreResult.Success)
+        // TODO: call fatal error
     }
 }
 
@@ -130,80 +132,92 @@ class PaywallViewModelTest {
         clearAllMocks()
     }
 
-    @Test
-    fun `please work`() = runTest {
-        val logic = TestAppPurchaseLogicCallbacks()
-
-        every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.MY_APP
-
-        val model = create(
-            customPurchaseLogic = logic,
-            activeSubscriptions = setOf(TestData.Packages.monthly.product.id),
-            nonSubscriptionTransactionProductIdentifiers = setOf(TestData.Packages.lifetime.product.id)
-        )
-
-        model.awaitRestorePurchases()
-
-        println("hi")
-
-    }
+    // completion handler
 
     @Test
-    fun `please work 2`() = runTest {
-        val logic = TestAppPurchaseLogicCallbacks()
-
-        every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.MY_APP
-
-        val model = create(
-            customPurchaseLogic = logic,
-            activeSubscriptions = setOf(TestData.Packages.monthly.product.id),
-            nonSubscriptionTransactionProductIdentifiers = setOf(TestData.Packages.lifetime.product.id)
-        )
-
-        model.awaitRestorePurchases()
-
-        println("hi")
-
-        verify(exactly = 0) { listener.onRestoreStarted() }
-        verify(exactly = 0) { listener.onRestoreCompleted(customerInfo) }
-
-    }
-
-    @Test
-    fun `please work 3`() = runTest {
+    fun `Custom completion handler restore purchases logic success triggers syncPurchases`() = runTest {
         val logic = spyk<TestAppPurchaseLogicCallbacks>()
         every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.MY_APP
 
-        // Use a slot to capture the completion callback for performRestoreWithCompletion
         val completionSlot = slot<(MyAppRestoreResult) -> Unit>()
 
-        // Mock performRestoreWithCompletion in the spy
         coEvery { logic.performRestoreWithCompletion(capture(completionSlot)) } answers {
             // Simulate calling the callback with a result
             completionSlot.captured(MyAppRestoreResult.Success)
         }
 
-        // Run the test in a coroutine context
-        runBlocking {
-            // Call performRestore, which should internally call performRestoreWithCompletion
-            val model = create(
-                customPurchaseLogic = logic,
-                activeSubscriptions = setOf(TestData.Packages.monthly.product.id),
-                nonSubscriptionTransactionProductIdentifiers = setOf(TestData.Packages.lifetime.product.id)
-            )
+        val model = create(
+            customPurchaseLogic = logic,
+        )
 
-            model.awaitRestorePurchases()
+        model.awaitRestorePurchases()
 
-            // Verify that performRestoreWithCompletion was indeed called
-            coVerify { logic.performRestoreWithCompletion(any()) }
-            verify { purchases.syncPurchases() }
+        coVerify { logic.performRestoreWithCompletion(any()) }
+        verify { purchases.syncPurchases() }
+        verify(exactly = 0) { listener.onRestoreStarted() }
+        verify(exactly = 0) { listener.onRestoreCompleted(customerInfo) }
+    }
 
+    @Test
+    fun `Custom completion handler restore purchases logic error does not trigger syncPurchases`() = runTest {
+        val logic = spyk<TestAppPurchaseLogicCallbacks>()
+        every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.MY_APP
+
+        val completionSlot = slot<(MyAppRestoreResult) -> Unit>()
+
+        coEvery { logic.performRestoreWithCompletion(capture(completionSlot)) } answers {
+            // Simulate calling the callback with a result
+            completionSlot.captured(MyAppRestoreResult.Error())
         }
+
+        val model = create(
+            customPurchaseLogic = logic,
+        )
+
+        model.awaitRestorePurchases()
+
+        coVerify { logic.performRestoreWithCompletion(any()) }
+        verify(exactly = 0) { purchases.syncPurchases() }
+        verify(exactly = 0) { listener.onRestoreStarted() }
+        verify(exactly = 0) { listener.onRestoreCompleted(customerInfo) }
+    }
+
+    @Test
+    fun `Custom completion handler purchase success logic triggers syncPurchases`() = runTest {
+        val logic = spyk<TestAppPurchaseLogicCallbacks>()
+        every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.MY_APP
+
+        val completionSlot = slot<(MyAppPurchaseResult) -> Unit>()
+
+        coEvery { logic.performPurchaseWithCompletion(any(), any(), capture(completionSlot)) } answers {
+            // Simulate calling the callback with a result
+            completionSlot.captured(MyAppPurchaseResult.Success)
+        }
+
+        val model = create(
+            customPurchaseLogic = logic,
+        )
+
+        model.awaitPurchaseSelectedPackage(activity)
+
+        coVerify { logic.performPurchaseWithCompletion(any(), any(), any()) }
+        verify { purchases.syncPurchases() }
+        verify(exactly = 0) { listener.onPurchaseStarted(any()) }
+        verify(exactly = 0) { listener.onPurchaseCompleted(customerInfo, any()) }
+    }
+
+    @Test
+    fun `Custom completion handler purchase logic cancelled doesn't trigger syncPurchases`() = runTest {
 
     }
 
     @Test
-    fun `Calls custom restore logic when purchasesAreCompletedBy == MY_APP`() = runTest {
+    fun `Custom completion handler purchase logic error doesn't trigger syncPurchases`() = runTest {
+
+    }
+
+    @Test
+    fun `Custom suspend restore purchases success logic triggers syncPurchases`() = runTest {
         every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.MY_APP
 
         val myAppPurchaseLogic = mockk<MyAppPurchaseLogic>(relaxed = true)
@@ -216,17 +230,18 @@ class PaywallViewModelTest {
             nonSubscriptionTransactionProductIdentifiers = setOf(TestData.Packages.lifetime.product.id)
         )
 
-        model.awaitRestorePurchases()
+        model.awaitPurchaseSelectedPackage(activity)
 
         coVerify { myAppPurchaseLogic.performRestore(customerInfo) }
 
+        verify { purchases.syncPurchases() }
         verify(exactly = 0) { listener.onRestoreStarted() }
         verify(exactly = 0) { listener.onRestoreCompleted(customerInfo) }
 
     }
 
     @Test
-    fun `Calls restore error listener when purchasesAreCompletedBy == MY_APP`() = runTest {
+    fun `Custom suspend restore purchases logic error does not trigger syncPurchases`() = runTest {
         every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.MY_APP
         val notAllowedError = PurchasesError(PurchasesErrorCode.PurchaseNotAllowedError)
 
@@ -243,6 +258,7 @@ class PaywallViewModelTest {
 
         coVerify { myAppPurchaseLogic.performRestore(customerInfo) }
 
+        verify(exactly = 0) { purchases.syncPurchases() }
         verify(exactly = 0) { listener.onRestoreStarted() }
         verify(exactly = 0) { listener.onRestoreError(notAllowedError) }
 
@@ -250,24 +266,22 @@ class PaywallViewModelTest {
     }
 
     @Test
-    fun `Calls custom purchase logic when purchasesAreCompletedBy == MY_APP`() = runTest {
+    fun `Custom suspend purchase logic triggers syncPurchases`() = runTest {
         every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.MY_APP
 
         val myAppPurchaseLogic = mockk<MyAppPurchaseLogic>(relaxed = true)
-
-        val purchase = stubGooglePurchase()
 
         coEvery { myAppPurchaseLogic.performPurchase(any(), any()) } returns MyAppPurchaseResult.Success
 
         val model = create(
             customPurchaseLogic = myAppPurchaseLogic,
-            activeSubscriptions = setOf(TestData.Packages.weekly.product.id)
         )
 
         model.awaitPurchaseSelectedPackage(activity)
 
         coVerify { myAppPurchaseLogic.performPurchase(any(), any()) }
 
+        verify { purchases.syncPurchases() }
         verify(exactly = 0) { listener.onPurchaseStarted(any()) }
         verify(exactly = 0) { listener.onPurchaseCompleted(customerInfo, any()) }
 
@@ -276,7 +290,7 @@ class PaywallViewModelTest {
     }
 
     @Test
-    fun `Calls purchase cancel listener when purchasesAreCompletedBy == MY_APP`() = runTest {
+    fun `Custom suspend purchase logic cancelled doesn't trigger syncPurchases`() = runTest {
         every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.MY_APP
 
         val myAppPurchaseLogic = mockk<MyAppPurchaseLogic>(relaxed = true)
@@ -292,6 +306,7 @@ class PaywallViewModelTest {
 
         coVerify { myAppPurchaseLogic.performPurchase(any(), any()) }
 
+        verify(exactly = 0) { purchases.syncPurchases() }
         verify(exactly = 0) { listener.onPurchaseStarted(any()) }
         verify(exactly = 0) { listener.onPurchaseCancelled() }
 
@@ -299,7 +314,7 @@ class PaywallViewModelTest {
     }
 
     @Test
-    fun `Calls purchase error listener when purchasesAreCompletedBy == MY_APP`() = runTest {
+    fun `Custom suspend purchase logic error doesn't trigger syncPurchases`() = runTest {
         every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.MY_APP
 
         val myAppPurchaseLogic = mockk<MyAppPurchaseLogic>(relaxed = true)
@@ -316,6 +331,7 @@ class PaywallViewModelTest {
 
         coVerify { myAppPurchaseLogic.performPurchase(any(), any()) }
 
+        verify(exactly = 0) { purchases.syncPurchases() }
         verify(exactly = 0) { listener.onPurchaseStarted(any()) }
         verify(exactly = 0) { listener.onPurchaseError(notAllowedError) }
 
