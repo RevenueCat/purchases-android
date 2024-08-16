@@ -179,7 +179,6 @@ internal class PaywallViewModelImpl(
     override suspend fun awaitRestorePurchases() {
         if (verifyNoActionInProgressOrStartAction()) { return }
         try {
-
             val customRestoreHandler = myAppPurchaseLogic?.let { it::performRestore }
 
             when (purchases.purchasesAreCompletedBy) {
@@ -259,11 +258,9 @@ internal class PaywallViewModelImpl(
         }
     }
 
-    @Suppress("LongMethod")
+    @Suppress("LongMethod", "NestedBlockDepth")
     private suspend fun performPurchase(activity: Activity, packageToPurchase: Package) {
         try {
-
-
             val customPurchaseHandler = myAppPurchaseLogic?.let { it::performPurchase }
 
             when (purchases.purchasesAreCompletedBy) {

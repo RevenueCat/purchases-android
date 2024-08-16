@@ -44,7 +44,7 @@ import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.fonts.CustomFontProvider
 import com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider
 
-class TesterAppPurchaseLogicSuspend: MyAppPurchaseLogic {
+class TesterAppPurchaseLogicSuspend : MyAppPurchaseLogic {
 
     override suspend fun performPurchase(
         activity: Activity,
@@ -58,10 +58,9 @@ class TesterAppPurchaseLogicSuspend: MyAppPurchaseLogic {
         Log.d("RevenueCatUI", "Hello from performRestore suspend!")
         return MyAppRestoreResult.Success
     }
-
 }
 
-class TestAppPurchaseLogicCallbacks: MyAppPurchaseLogicCompletion() {
+class TestAppPurchaseLogicCallbacks : MyAppPurchaseLogicCompletion() {
     override fun performPurchaseWithCompletion(activity: Activity, rcPackage: Package, completion: (MyAppPurchaseResult) -> Unit) {
         Log.d("RevenueCatUI", "Hello from performPurchase callback!")
         completion(MyAppPurchaseResult.Success)

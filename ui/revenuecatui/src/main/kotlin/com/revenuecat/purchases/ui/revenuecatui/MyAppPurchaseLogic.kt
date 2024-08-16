@@ -32,7 +32,6 @@ interface MyAppPurchaseLogic {
      * @return A `MyAppRestoreResult` object containing the outcome of the restoration process.
      */
     suspend fun performRestore(customerInfo: CustomerInfo): MyAppRestoreResult
-
 }
 
 /**
@@ -52,7 +51,11 @@ abstract class MyAppPurchaseLogicCompletion : MyAppPurchaseLogic {
      * @param completion A callback function that receives a `MyAppPurchaseResult` object containing the outcome of the
      * purchase operation.
      */
-    abstract fun performPurchaseWithCompletion(activity: Activity, rcPackage: Package, completion: (MyAppPurchaseResult) -> Unit)
+    abstract fun performPurchaseWithCompletion(
+        activity: Activity,
+        rcPackage: Package,
+        completion: (MyAppPurchaseResult) -> Unit,
+    )
 
     /**
      * Restores previously completed purchases for the given customer with a completion callback.
