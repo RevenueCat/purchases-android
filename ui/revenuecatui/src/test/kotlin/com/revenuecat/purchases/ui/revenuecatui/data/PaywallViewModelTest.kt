@@ -20,6 +20,7 @@ import com.revenuecat.purchases.models.Transaction
 import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.paywalls.events.PaywallEventType
 import com.revenuecat.purchases.ui.revenuecatui.MyAppPurchaseLogic
+import com.revenuecat.purchases.ui.revenuecatui.MyAppPurchaseLogicCompletion
 import com.revenuecat.purchases.ui.revenuecatui.MyAppPurchaseResult
 import com.revenuecat.purchases.ui.revenuecatui.MyAppRestoreResult
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
@@ -36,10 +37,13 @@ import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.runs
+import io.mockk.slot
+import io.mockk.spyk
 import io.mockk.verify
 import io.mockk.verifyOrder
 import junit.framework.TestCase.fail
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType
@@ -51,6 +55,19 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import java.util.Date
 import java.util.UUID
+
+
+open class TestAppPurchaseLogicCallbacks: MyAppPurchaseLogicCompletion() {
+    override fun performPurchaseWithCompletion(activity: Activity, rcPackage: Package, completion: (MyAppPurchaseResult) -> Unit) {
+        completion(MyAppPurchaseResult.Success)
+    }
+
+    override fun performRestoreWithCompletion(completion: (MyAppRestoreResult) -> Unit) {
+        println("hello from restore")
+        completion(MyAppRestoreResult.Success)
+    }
+}
+
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @RunWith(AndroidJUnit4::class)
@@ -111,6 +128,77 @@ class PaywallViewModelTest {
     @After
     internal fun tearDown() {
         clearAllMocks()
+    }
+
+    @Test
+    fun `please work`() = runTest {
+        val logic = TestAppPurchaseLogicCallbacks()
+
+        every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.MY_APP
+
+        val model = create(
+            customPurchaseLogic = logic,
+            activeSubscriptions = setOf(TestData.Packages.monthly.product.id),
+            nonSubscriptionTransactionProductIdentifiers = setOf(TestData.Packages.lifetime.product.id)
+        )
+
+        model.awaitRestorePurchases()
+
+        println("hi")
+
+    }
+
+    @Test
+    fun `please work 2`() = runTest {
+        val logic = TestAppPurchaseLogicCallbacks()
+
+        every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.MY_APP
+
+        val model = create(
+            customPurchaseLogic = logic,
+            activeSubscriptions = setOf(TestData.Packages.monthly.product.id),
+            nonSubscriptionTransactionProductIdentifiers = setOf(TestData.Packages.lifetime.product.id)
+        )
+
+        model.awaitRestorePurchases()
+
+        println("hi")
+
+        verify(exactly = 0) { listener.onRestoreStarted() }
+        verify(exactly = 0) { listener.onRestoreCompleted(customerInfo) }
+
+    }
+
+    @Test
+    fun `please work 3`() = runTest {
+        val logic = spyk<TestAppPurchaseLogicCallbacks>()
+        every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.MY_APP
+
+        // Use a slot to capture the completion callback for performRestoreWithCompletion
+        val completionSlot = slot<(MyAppRestoreResult) -> Unit>()
+
+        // Mock performRestoreWithCompletion in the spy
+        coEvery { logic.performRestoreWithCompletion(capture(completionSlot)) } answers {
+            // Simulate calling the callback with a result
+            completionSlot.captured(MyAppRestoreResult.Success)
+        }
+
+        // Run the test in a coroutine context
+        runBlocking {
+            // Call performRestore, which should internally call performRestoreWithCompletion
+            val model = create(
+                customPurchaseLogic = logic,
+                activeSubscriptions = setOf(TestData.Packages.monthly.product.id),
+                nonSubscriptionTransactionProductIdentifiers = setOf(TestData.Packages.lifetime.product.id)
+            )
+
+            model.awaitRestorePurchases()
+
+            // Verify that performRestoreWithCompletion was indeed called
+            coVerify { logic.performRestoreWithCompletion(any()) }
+
+        }
+
     }
 
     @Test

@@ -22,20 +22,20 @@ interface MyAppPurchaseLogic {
 
 abstract class MyAppPurchaseLogicCompletion : MyAppPurchaseLogic {
 
-    abstract fun performPurchase(activity: Activity, rcPackage: Package, completion: (MyAppPurchaseResult) -> Unit)
+    abstract fun performPurchaseWithCompletion(activity: Activity, rcPackage: Package, completion: (MyAppPurchaseResult) -> Unit)
 
-    abstract fun performRestore(completion: (MyAppRestoreResult) -> Unit)
+    abstract fun performRestoreWithCompletion(completion: (MyAppRestoreResult) -> Unit)
 
     final override suspend fun performPurchase(activity: Activity, rcPackage: Package): MyAppPurchaseResult =
         suspendCoroutine { continuation ->
-            performPurchase(activity, rcPackage) { result ->
+            performPurchaseWithCompletion(activity, rcPackage) { result ->
                 continuation.resume(result)
             }
         }
 
     final override suspend fun performRestore(customerInfo: CustomerInfo): MyAppRestoreResult =
         suspendCoroutine { continuation ->
-            performRestore { result ->
+            performRestoreWithCompletion { result ->
                 continuation.resume(result)
             }
         }
