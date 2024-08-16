@@ -68,7 +68,7 @@ abstract class MyAppPurchaseLogicCompletion : MyAppPurchaseLogic {
 
     /**
      * Restores previously completed purchases for the given customer with a completion callback.
-     * 
+     *
      * If restoration is successful, `syncPurchases` will automatically be called by RevenueCat to update our
      * database. However, if you are using Amazon's store, you must call `syncAmazonPurchase` in your code.
      *

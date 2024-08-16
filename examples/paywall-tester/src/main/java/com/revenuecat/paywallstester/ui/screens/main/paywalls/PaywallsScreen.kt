@@ -50,12 +50,12 @@ class TesterAppPurchaseLogicSuspend : MyAppPurchaseLogic {
         activity: Activity,
         rcPackage: com.revenuecat.purchases.Package,
     ): MyAppPurchaseResult {
-        Log.d("RevenueCatUI", "Hello from performPurchase suspend!")
+        Log.d("RevenueCatUI", "Custom purchase code in performPurchase was called.")
         return MyAppPurchaseResult.Success
     }
 
     override suspend fun performRestore(customerInfo: CustomerInfo): MyAppRestoreResult {
-        Log.d("RevenueCatUI", "Hello from performRestore suspend!")
+        Log.d("RevenueCatUI", "Custom restore code in performRestore was called.")
         return MyAppRestoreResult.Success
     }
 }
@@ -66,12 +66,12 @@ class TestAppPurchaseLogicCallbacks : MyAppPurchaseLogicCompletion() {
         rcPackage: Package,
         completion: (MyAppPurchaseResult) -> Unit,
     ) {
-        Log.d("RevenueCatUI", "Hello from performPurchase callback!")
+        Log.d("RevenueCatUI", "Custom purchase code in performPurchaseWithCompletion was called.")
         completion(MyAppPurchaseResult.Success)
     }
 
     override fun performRestoreWithCompletion(completion: (MyAppRestoreResult) -> Unit) {
-        Log.d("RevenueCatUI", "Hello from performRestore callback!")
+        Log.d("RevenueCatUI", "Custom restore code in performRestoreWithCompletion was called.")
         completion(MyAppRestoreResult.Success)
     }
 }
