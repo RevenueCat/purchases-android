@@ -1,4 +1,5 @@
 package com.revenuecat.purchases.ui.revenuecatui.data
+
 import android.app.Activity
 import androidx.compose.material3.ColorScheme
 import androidx.compose.runtime.MutableState
