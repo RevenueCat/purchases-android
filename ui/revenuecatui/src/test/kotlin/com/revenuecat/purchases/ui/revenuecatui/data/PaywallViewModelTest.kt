@@ -43,6 +43,8 @@ import io.mockk.verify
 import io.mockk.verifyOrder
 import junit.framework.TestCase.fail
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
@@ -130,8 +132,7 @@ class PaywallViewModelTest {
         clearAllMocks()
     }
 
-    // completion handler
-
+    // Completion Handler Tests
 
     @Test
     fun `Custom completion handler restore purchases logic success triggers syncPurchases`() = runTest {
@@ -149,7 +150,7 @@ class PaywallViewModelTest {
             customPurchaseLogic = logic,
         )
 
-        model.awaitRestorePurchases()
+        model.restorePurchases()
 
         coVerify(exactly = 1)  { logic.performRestoreWithCompletion(any()) }
         coVerify(inverse = true) { logic.performPurchaseWithCompletion(any(), any(), any()) }
@@ -308,18 +309,30 @@ class PaywallViewModelTest {
     fun `Custom suspend purchase logic success triggers syncPurchases`() = runTest {
         every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.MY_APP
 
-        val myAppPurchaseLogic = mockk<MyAppPurchaseLogic>(relaxed = true)
+        val customPurchaseCalled = MutableStateFlow(false)
 
-        coEvery { myAppPurchaseLogic.performPurchase(any(), any()) } returns MyAppPurchaseResult.Success
+        class TestClass(private val customPurchaseCalled: MutableStateFlow<Boolean>) : MyAppPurchaseLogic {
+
+            override suspend fun performPurchase(activity: Activity, rcPackage: Package): MyAppPurchaseResult {
+                customPurchaseCalled.value = true
+                return MyAppPurchaseResult.Success
+            }
+
+            override suspend fun performRestore(customerInfo: CustomerInfo): MyAppRestoreResult {
+                return MyAppRestoreResult.Success
+            }
+        }
+
+        val myAppPurchaseLogic = TestClass(customPurchaseCalled)
 
         val model = create(
             customPurchaseLogic = myAppPurchaseLogic,
         )
 
-        model.awaitPurchaseSelectedPackage(activity)
+        model.purchaseSelectedPackage(activity)
 
-        coVerify(exactly = 1)  { myAppPurchaseLogic.performPurchase(any(), any()) }
-        coVerify(inverse = true) { myAppPurchaseLogic.performRestore(any()) }
+        customPurchaseCalled.first { it }
+
         coVerify(exactly = 1)  { purchases.syncPurchases() }
         coVerify(exactly = 0) { listener.onPurchaseStarted(any()) }
         coVerify(exactly = 0) { listener.onPurchaseCompleted(customerInfo, any()) }
