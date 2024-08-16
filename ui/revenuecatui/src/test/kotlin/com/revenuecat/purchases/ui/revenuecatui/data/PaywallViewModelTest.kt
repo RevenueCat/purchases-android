@@ -196,6 +196,7 @@ class PaywallViewModelTest {
 
             // Verify that performRestoreWithCompletion was indeed called
             coVerify { logic.performRestoreWithCompletion(any()) }
+            verify { purchases.syncPurchases() }
 
         }
 
