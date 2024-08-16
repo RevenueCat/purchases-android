@@ -1,31 +1,71 @@
 package com.revenuecat.purchases.ui.revenuecatui
 
 import android.app.Activity
-import com.android.billingclient.api.Purchase
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Package
-import com.revenuecat.purchases.PresentedOfferingContext
-import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
-import com.revenuecat.purchases.models.GoogleReplacementMode
-import com.revenuecat.purchases.models.PurchaseState
-import com.revenuecat.purchases.models.PurchaseType
-import com.revenuecat.purchases.models.StoreTransaction
-import org.json.JSONObject
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
+/**
+ * Interface for handling in-app purchases and restorations directly by the application rather than by RevenueCat.
+ * These suspend methods are called by a RevenueCat Paywall in order to execute you app's custom purchase/restore code.
+ * These functions are only called when `Purchases.purchasesAreCompletedBy` is set to `MY_APP`.
+ *
+ * If you prefer to implement custom purchase and restore logic with completion handlers, please implement
+ * `MyAppPurchaseLogicCompletion`.
+ */
 interface MyAppPurchaseLogic {
+    /**
+     * Performs an in-app purchase for the specified package.
+     *
+     * @param activity The current Android `Activity` triggering the purchase.
+     * @param rcPackage The package representing the in-app product that the user intends to purchase.
+     * @return A `MyAppPurchaseResult` object containing the outcome of the purchase operation.
+     */
     suspend fun performPurchase(activity: Activity, rcPackage: Package): MyAppPurchaseResult
+
+    /**
+     * Restores previously completed purchases for the given customer.
+     *
+     * @param customerInfo An object containing information about the customer.
+     * @return A `MyAppRestoreResult` object containing the outcome of the restoration process.
+     */
     suspend fun performRestore(customerInfo: CustomerInfo): MyAppRestoreResult
+
 }
 
+/**
+ * Abstract class extending `MyAppPurchaseLogic`, providing methods for handling in-app purchases and restorations
+ * with completion callbacks rather than co-routines.
+ *
+ * If you prefer to implement custom purchase and restore logic with coroutines, please implement
+ * `MyAppPurchaseLogic` directly.
+ */
 abstract class MyAppPurchaseLogicCompletion : MyAppPurchaseLogic {
 
+    /**
+     * Performs an in-app purchase for the specified package with a completion callback.
+     *
+     * @param activity The current Android `Activity` triggering the purchase.
+     * @param rcPackage The package representing the in-app product that the user intends to purchase.
+     * @param completion A callback function that receives a `MyAppPurchaseResult` object containing the outcome of the
+     * purchase operation.
+     */
     abstract fun performPurchaseWithCompletion(activity: Activity, rcPackage: Package, completion: (MyAppPurchaseResult) -> Unit)
 
+    /**
+     * Restores previously completed purchases for the given customer with a completion callback.
+     *
+     * @param completion A callback function that receives a `MyAppRestoreResult` object containing the outcome of the
+     * restoration process.
+     */
     abstract fun performRestoreWithCompletion(completion: (MyAppRestoreResult) -> Unit)
 
+    /**
+     * This method is called by RevenueCat, which in turn calls `performPurchaseWithCompletion` where your app's
+     * custom purchase logic is performed.
+     */
     final override suspend fun performPurchase(activity: Activity, rcPackage: Package): MyAppPurchaseResult =
         suspendCoroutine { continuation ->
             performPurchaseWithCompletion(activity, rcPackage) { result ->
@@ -33,6 +73,10 @@ abstract class MyAppPurchaseLogicCompletion : MyAppPurchaseLogic {
             }
         }
 
+    /**
+     * This method is called by RevenueCat, which in turn calls `performRestoreWithCompletion` where your app's
+     * custom purchase logic is performed.
+     */
     final override suspend fun performRestore(customerInfo: CustomerInfo): MyAppRestoreResult =
         suspendCoroutine { continuation ->
             performRestoreWithCompletion { result ->
