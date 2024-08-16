@@ -34,6 +34,8 @@ internal interface PurchasesType {
     val purchasesAreCompletedBy: PurchasesAreCompletedBy
 
     fun syncPurchases()
+
+    val storefrontCountryCode: String?
 }
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
@@ -64,4 +66,7 @@ internal class PurchasesImpl(private val purchases: Purchases = Purchases.shared
 
     override val purchasesAreCompletedBy: PurchasesAreCompletedBy
         get() = purchases.purchasesAreCompletedBy
+
+    override val storefrontCountryCode: String?
+        get() = purchases.storefrontCountryCode
 }

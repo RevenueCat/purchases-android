@@ -342,6 +342,7 @@ internal class PaywallViewModelImpl(
                         currentOffering,
                         purchases.awaitCustomerInfo(),
                         _colorScheme.value,
+                        purchases.storefrontCountryCode,
                     )
                 }
             } catch (e: PurchasesException) {
@@ -360,6 +361,7 @@ internal class PaywallViewModelImpl(
         offering: Offering,
         customerInfo: CustomerInfo,
         colorScheme: ColorScheme,
+        storefrontCountryCode: String?,
     ): PaywallState {
         if (offering.availablePackages.isEmpty()) {
             return PaywallState.Error("No packages available")
@@ -384,6 +386,7 @@ internal class PaywallViewModelImpl(
             validatedPaywallData = displayablePaywall,
             template = template,
             shouldDisplayDismissButton = options.shouldDisplayDismissButton,
+            storefrontCountryCode = storefrontCountryCode,
         )
     }
 

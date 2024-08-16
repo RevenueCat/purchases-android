@@ -15,6 +15,7 @@ internal object TemplateConfigurationFactory {
         activelySubscribedProductIdentifiers: Set<String>,
         nonSubscriptionProductIdentifiers: Set<String>,
         template: PaywallTemplate,
+        storefrontCountryCode: String?,
     ): Result<TemplateConfiguration> {
         val sourceImages = paywallData.config.images
 
@@ -42,6 +43,7 @@ internal object TemplateConfigurationFactory {
                 default = paywallData.config.defaultPackage,
                 configurationType = template.configurationType,
                 paywallData = paywallData,
+                storefrontCountryCode = storefrontCountryCode,
             )
         val (locale, packageConfiguration) = createPackageResult.getOrElse {
             return Result.failure(it)

@@ -238,7 +238,7 @@ jobs:
           command: sudo pip install awscli
       - run:
           name: Deploy to S3
-          command: aws s3 sync ~/project/docs/8.4.0-SNAPSHOT s3://purchases-docs/android/8.4.0-SNAPSHOT --delete
+          command: aws s3 sync ~/project/docs/8.5.0-SNAPSHOT s3://purchases-docs/android/8.5.0-SNAPSHOT --delete
       - run:
           name: Update index.html
           command: aws s3 cp ~/project/docs/index.html s3://purchases-docs/android/index.html
@@ -671,6 +671,11 @@ workflows:
             - deploy
             - docs-deploy
           <<: *release-tags
+      - publish-paywall-tester-release:
+          requires:
+              - deploy
+              - docs-deploy
+          <<: *release-tags
 
   snapshot-bump:
     when:
@@ -702,19 +707,6 @@ workflows:
       equal: [ bump, << pipeline.parameters.action >> ]
     jobs:
       - revenuecat/automatic-bump
-
-  nightly-deploy:
-    when:
-      and:
-        - equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
-        - equal: [ "nightly-deploy", << pipeline.schedule.name >> ]
-    jobs:
-      - publish-paywall-tester-release:
-          filters:
-            tags:
-              ignore: /.*/
-            branches:
-              only: paywalls
 
   manual-paywall-tester-release:
     when:

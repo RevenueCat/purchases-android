@@ -2,7 +2,6 @@ package com.revenuecat.purchases.common.diagnostics
 
 import android.content.Context
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.revenuecat.purchases.common.Anonymizer
 import com.revenuecat.purchases.common.FileHelper
 import com.revenuecat.purchases.common.SyncDispatcher
 import io.mockk.every
@@ -41,7 +40,6 @@ class DiagnosticsTrackerFunctionalTest {
         diagnosticsTracker = DiagnosticsTracker(
             appConfig = mockk(),
             diagnosticsFileHelper = diagnosticsFileHelper,
-            diagnosticsAnonymizer = DiagnosticsAnonymizer(Anonymizer()),
             diagnosticsHelper = DiagnosticsHelper(applicationContext, diagnosticsFileHelper, lazy { mockk(relaxed = true) }),
             diagnosticsDispatcher = SyncDispatcher(),
         )

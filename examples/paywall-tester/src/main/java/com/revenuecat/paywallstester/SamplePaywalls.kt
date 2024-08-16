@@ -49,6 +49,8 @@ object SamplePaywalls {
 
     const val offeringIdentifier = "offering"
 
+    private val zeroDecimalPlaceCountries = listOf("PH", "KZ", "TW", "MX", "TH")
+
     private val tosURL = URL("https://revenuecat.com/tos")
     private val images = PaywallData.Configuration.Images(
         header = "9a17e0a7_1689854430..jpeg",
@@ -221,6 +223,7 @@ object SamplePaywalls {
                         "then {{ sub_price_per_month }} per month",
                 ),
             ),
+            zeroDecimalPlaceCountries = zeroDecimalPlaceCountries,
         )
     }
 
@@ -275,6 +278,7 @@ object SamplePaywalls {
                     offerName = "{{ sub_period }}",
                 ),
             ),
+            zeroDecimalPlaceCountries = zeroDecimalPlaceCountries,
         )
     }
 
@@ -338,6 +342,7 @@ object SamplePaywalls {
                     ),
                 ),
             ),
+            zeroDecimalPlaceCountries = zeroDecimalPlaceCountries,
         )
     }
 
@@ -379,6 +384,7 @@ object SamplePaywalls {
                     offerName = "{{ sub_duration_in_months }}",
                 ),
             ),
+            zeroDecimalPlaceCountries = zeroDecimalPlaceCountries,
         )
     }
 
@@ -441,6 +447,7 @@ object SamplePaywalls {
                     ),
                 ),
             ),
+            zeroDecimalPlaceCountries = zeroDecimalPlaceCountries,
         )
     }
 
@@ -667,6 +674,7 @@ object SamplePaywalls {
                     ),
                 ),
             ),
+            zeroDecimalPlaceCountries = zeroDecimalPlaceCountries,
         )
     }
 
@@ -678,6 +686,7 @@ object SamplePaywalls {
             localization = mapOf(
                 "en_US" to template4().localizedConfiguration.second,
             ),
+            zeroDecimalPlaceCountries = zeroDecimalPlaceCountries,
         )
     }
 }

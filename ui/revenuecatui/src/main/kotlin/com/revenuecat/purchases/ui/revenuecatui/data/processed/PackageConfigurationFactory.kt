@@ -19,6 +19,7 @@ internal object PackageConfigurationFactory {
         default: String?,
         configurationType: PackageConfigurationType,
         paywallData: PaywallData,
+        storefrontCountryCode: String?,
     ): Result<Pair<Locale, TemplateConfiguration.PackageConfiguration>> {
         val availablePackagesById = availablePackages.associateBy { it.identifier }
         val filteredRCPackages = packageIdsInConfig.mapNotNull {
@@ -44,6 +45,7 @@ internal object PackageConfigurationFactory {
                     activelySubscribedProductIdentifiers,
                     nonSubscriptionProductIdentifiers,
                     paywallData,
+                    storefrontCountryCode,
                 )
             }
             PackageConfigurationType.MULTIPLE -> {
@@ -54,6 +56,7 @@ internal object PackageConfigurationFactory {
                     nonSubscriptionProductIdentifiers,
                     paywallData,
                     default,
+                    storefrontCountryCode,
                 )
             }
             PackageConfigurationType.MULTITIER -> {
@@ -64,6 +67,7 @@ internal object PackageConfigurationFactory {
                     variableDataProvider,
                     activelySubscribedProductIdentifiers,
                     nonSubscriptionProductIdentifiers,
+                    storefrontCountryCode,
                 )
             }
         }
@@ -77,6 +81,7 @@ internal object PackageConfigurationFactory {
         variableDataProvider: VariableDataProvider,
         activelySubscribedProductIdentifiers: Set<String>,
         nonSubscriptionProductIdentifiers: Set<String>,
+        storefrontCountryCode: String?,
     ): Result<Pair<Locale, TemplateConfiguration.PackageConfiguration.MultiTier>> {
         val tiers = paywallData.config.tiers ?: return Result.failure(
             PackageConfigurationError("No tier found for $packageIdsInConfig"),
@@ -98,6 +103,8 @@ internal object PackageConfigurationFactory {
                 activelySubscribedProductIdentifiers = activelySubscribedProductIdentifiers,
                 nonSubscriptionProductIdentifiers = nonSubscriptionProductIdentifiers,
                 locale = locale,
+                storefrontCountryCode = storefrontCountryCode,
+                zeroDecimalPlaceCountries = paywallData.zeroDecimalPlaceCountries,
             )
 
             val firstPackage = packageInfosForTier.firstOrNull()
@@ -154,6 +161,7 @@ internal object PackageConfigurationFactory {
         nonSubscriptionProductIdentifiers: Set<String>,
         paywallData: PaywallData,
         default: String?,
+        storefrontCountryCode: String?,
     ): Result<Pair<Locale, TemplateConfiguration.PackageConfiguration.Multiple>> {
         val (locale, packageInfos) = makePackageInfo(
             packages = filteredRCPackages,
@@ -161,6 +169,7 @@ internal object PackageConfigurationFactory {
             activelySubscribedProductIdentifiers = activelySubscribedProductIdentifiers,
             nonSubscriptionProductIdentifiers = nonSubscriptionProductIdentifiers,
             paywallData = paywallData,
+            storefrontCountryCode = storefrontCountryCode,
         )
 
         val firstPackage = packageInfos.first()
@@ -184,6 +193,7 @@ internal object PackageConfigurationFactory {
         activelySubscribedProductIdentifiers: Set<String>,
         nonSubscriptionProductIdentifiers: Set<String>,
         paywallData: PaywallData,
+        storefrontCountryCode: String?,
     ): Result<Pair<Locale, TemplateConfiguration.PackageConfiguration.Single>> {
         val (locale, packageInfos) = makePackageInfo(
             packages = filteredRCPackages,
@@ -191,6 +201,7 @@ internal object PackageConfigurationFactory {
             activelySubscribedProductIdentifiers = activelySubscribedProductIdentifiers,
             nonSubscriptionProductIdentifiers = nonSubscriptionProductIdentifiers,
             paywallData = paywallData,
+            storefrontCountryCode = storefrontCountryCode,
         )
 
         val firstPackage = packageInfos.first()
@@ -202,12 +213,14 @@ internal object PackageConfigurationFactory {
         )
     }
 
+    @Suppress("LongParameterList")
     private fun makePackageInfo(
         packages: List<Package>,
         variableDataProvider: VariableDataProvider,
         activelySubscribedProductIdentifiers: Set<String>,
         nonSubscriptionProductIdentifiers: Set<String>,
         paywallData: PaywallData,
+        storefrontCountryCode: String?,
     ): Pair<Locale, List<TemplateConfiguration.PackageInfo>> {
         val mostExpensivePricePerMonth = mostExpensivePricePerMonth(packages)
 
@@ -222,11 +235,20 @@ internal object PackageConfigurationFactory {
                 it.product.pricePerMonth(),
                 mostExpensivePricePerMonth,
             )
+
+            val shouldRound = if (storefrontCountryCode != null) {
+                paywallData.zeroDecimalPlaceCountries.contains(
+                    storefrontCountryCode,
+                )
+            } else {
+                false
+            }
+
             TemplateConfiguration.PackageInfo(
                 rcPackage = it,
                 localization = ProcessedLocalizedConfiguration.create(
                     variableDataProvider = variableDataProvider,
-                    context = VariableProcessor.PackageContext(discountRelativeToMostExpensivePerMonth),
+                    context = VariableProcessor.PackageContext(discountRelativeToMostExpensivePerMonth, shouldRound),
                     localizedConfiguration = localization,
                     rcPackage = it,
                     locale = locale,
@@ -248,6 +270,8 @@ internal object PackageConfigurationFactory {
         activelySubscribedProductIdentifiers: Set<String>,
         nonSubscriptionProductIdentifiers: Set<String>,
         locale: Locale,
+        storefrontCountryCode: String?,
+        zeroDecimalPlaceCountries: List<String>,
     ): List<TemplateConfiguration.PackageInfo> {
         val filtered = from.filter { filter.contains(it.identifier) }
         val mostExpensivePricePerMonth = mostExpensivePricePerMonth(filtered.map { it })
@@ -264,11 +288,19 @@ internal object PackageConfigurationFactory {
                     nonSubscriptionProductIdentifiers,
                 )
 
+                val shouldRound = if (storefrontCountryCode != null) {
+                    zeroDecimalPlaceCountries.contains(
+                        storefrontCountryCode,
+                    )
+                } else {
+                    false
+                }
+
                 TemplateConfiguration.PackageInfo(
                     rcPackage = it,
                     localization = ProcessedLocalizedConfiguration.create(
                         variableDataProvider = variableDataProvider,
-                        context = VariableProcessor.PackageContext(discount),
+                        context = VariableProcessor.PackageContext(discount, shouldRound),
                         localizedConfiguration = localization,
                         rcPackage = it,
                         locale = locale,

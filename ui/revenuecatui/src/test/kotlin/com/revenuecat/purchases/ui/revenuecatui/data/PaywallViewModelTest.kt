@@ -102,6 +102,7 @@ class PaywallViewModelTest {
         every { customerInfo.activeSubscriptions } returns setOf()
         every { customerInfo.nonSubscriptionTransactions } returns listOf()
 
+        every { purchases.storefrontCountryCode } returns "US"
         every { purchases.track(any()) } just Runs
         every { purchases.syncPurchases() } just Runs
 

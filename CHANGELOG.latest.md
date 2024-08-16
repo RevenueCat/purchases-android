@@ -1,5 +1,9 @@
-### RevenueCatUI
-* [Paywalls] Fix `RemoteImage` flicker on activity changes (#1791) via Toni Rico (@tonidero)
+### New Features
+* Adds pricePerPeriod functions to PricingPhase (#1789) via JayShortway (@JayShortway)
 ### Dependency Updates
-* Bump fastlane-plugin-revenuecat_internal from `5f55466` to `d5f0742` (#1787) via dependabot[bot] (@dependabot[bot])
-* Updates Gradle (8.9), AGP (8.5.1) and maven.publish (0.28.0) (#1783) via JayShortway (@JayShortway)
+* Bump rexml from 3.2.9 to 3.3.2 (#1788) via dependabot[bot] (@dependabot[bot])
+* Bump fastlane from 2.221.1 to 2.222.0 (#1797) via dependabot[bot] (@dependabot[bot])
+### Other Changes
+* Adds the baseline file to the Detekt IntelliJ plugin settings. (#1798) via JayShortway (@JayShortway)
+* Adds the Detekt IntelliJ plugin settings to version control. (#1796) via JayShortway (@JayShortway)
+* Diagnostics: Remove unused anonymizer (#1795) via Toni Rico (@tonidero)

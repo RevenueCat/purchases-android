@@ -5,13 +5,11 @@ import android.content.SharedPreferences
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.EntitlementInfos
-import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.PurchasesAreCompletedBy.MY_APP
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.VerificationResult
-import com.revenuecat.purchases.common.Anonymizer
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.PlatformInfo
@@ -28,7 +26,6 @@ import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.unmockkStatic
 import io.mockk.verify
-import io.mockk.verifyOrder
 import io.mockk.verifySequence
 import org.junit.After
 import org.junit.Before
@@ -82,7 +79,6 @@ class DiagnosticsTrackerTest {
         diagnosticsTracker = DiagnosticsTracker(
             appConfig,
             diagnosticsFileHelper,
-            DiagnosticsAnonymizer(Anonymizer()),
             DiagnosticsHelper(mockk(), diagnosticsFileHelper, lazy { sharedPreferences }),
             dispatcher
         )

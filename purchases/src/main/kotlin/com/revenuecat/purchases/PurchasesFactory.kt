@@ -6,7 +6,6 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.preference.PreferenceManager
 import androidx.annotation.VisibleForTesting
-import com.revenuecat.purchases.common.Anonymizer
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BackendHelper
@@ -18,7 +17,6 @@ import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.debugLog
-import com.revenuecat.purchases.common.diagnostics.DiagnosticsAnonymizer
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsFileHelper
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsHelper
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsSynchronizer
@@ -105,7 +103,6 @@ internal class PurchasesFactory(
                 diagnosticsTracker = DiagnosticsTracker(
                     appConfig,
                     diagnosticsFileHelper,
-                    DiagnosticsAnonymizer(Anonymizer()),
                     diagnosticsHelper,
                     eventsDispatcher,
                 )
