@@ -266,8 +266,6 @@ class PaywallViewModelTest {
 
         val model = create(
             customPurchaseLogic = myAppPurchaseLogic,
-            activeSubscriptions = setOf(TestData.Packages.monthly.product.id),
-            nonSubscriptionTransactionProductIdentifiers = setOf(TestData.Packages.lifetime.product.id)
         )
 
         model.restorePurchases()
@@ -291,7 +289,6 @@ class PaywallViewModelTest {
 
         val model = create(
             customPurchaseLogic = myAppPurchaseLogic,
-            activeSubscriptions = setOf(TestData.Packages.weekly.product.id)
         )
 
         model.awaitRestorePurchases()
@@ -339,7 +336,6 @@ class PaywallViewModelTest {
 
         val model = create(
             customPurchaseLogic = myAppPurchaseLogic,
-            activeSubscriptions = setOf(TestData.Packages.weekly.product.id)
         )
 
         model.awaitPurchaseSelectedPackage(activity)
@@ -364,7 +360,6 @@ class PaywallViewModelTest {
 
         val model = create(
             customPurchaseLogic = myAppPurchaseLogic,
-            activeSubscriptions = setOf(TestData.Packages.weekly.product.id)
         )
 
         model.awaitPurchaseSelectedPackage(activity)
