@@ -19,6 +19,9 @@ interface MyAppPurchaseLogic {
     /**
      * Performs an in-app purchase for the specified package.
      *
+     * If a purchase is successful, `syncPurchases` will automatically be called by RevenueCat to update our
+     * database. However, if you are using Amazon's store, you must call `syncAmazonPurchase` in your code.
+     *
      * @param activity The current Android `Activity` triggering the purchase.
      * @param rcPackage The package representing the in-app product that the user intends to purchase.
      * @return A `MyAppPurchaseResult` object containing the outcome of the purchase operation.
@@ -27,6 +30,9 @@ interface MyAppPurchaseLogic {
 
     /**
      * Restores previously completed purchases for the given customer.
+     *
+     * If restoration is successful, `syncPurchases` will automatically be called by RevenueCat to update our
+     * database. However, if you are using Amazon's store, you must call `syncAmazonPurchase` in your code.
      *
      * @param customerInfo An object containing information about the customer.
      * @return A `MyAppRestoreResult` object containing the outcome of the restoration process.
@@ -46,6 +52,9 @@ abstract class MyAppPurchaseLogicCompletion : MyAppPurchaseLogic {
     /**
      * Performs an in-app purchase for the specified package with a completion callback.
      *
+     * If a purchase is successful, `syncPurchases` will automatically be called by RevenueCat to update our
+     * database. However, if you are using Amazon's store, you must call `syncAmazonPurchase` in your code.
+     *
      * @param activity The current Android `Activity` triggering the purchase.
      * @param rcPackage The package representing the in-app product that the user intends to purchase.
      * @param completion A callback function that receives a `MyAppPurchaseResult` object containing the outcome of the
@@ -59,6 +68,9 @@ abstract class MyAppPurchaseLogicCompletion : MyAppPurchaseLogic {
 
     /**
      * Restores previously completed purchases for the given customer with a completion callback.
+     * 
+     * If restoration is successful, `syncPurchases` will automatically be called by RevenueCat to update our
+     * database. However, if you are using Amazon's store, you must call `syncAmazonPurchase` in your code.
      *
      * @param completion A callback function that receives a `MyAppRestoreResult` object containing the outcome of the
      * restoration process.
