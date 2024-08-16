@@ -61,7 +61,11 @@ class TesterAppPurchaseLogicSuspend : MyAppPurchaseLogic {
 }
 
 class TestAppPurchaseLogicCallbacks : MyAppPurchaseLogicCompletion() {
-    override fun performPurchaseWithCompletion(activity: Activity, rcPackage: Package, completion: (MyAppPurchaseResult) -> Unit) {
+    override fun performPurchaseWithCompletion(
+        activity: Activity,
+        rcPackage: Package,
+        completion: (MyAppPurchaseResult) -> Unit,
+    ) {
         Log.d("RevenueCatUI", "Hello from performPurchase callback!")
         completion(MyAppPurchaseResult.Success)
     }

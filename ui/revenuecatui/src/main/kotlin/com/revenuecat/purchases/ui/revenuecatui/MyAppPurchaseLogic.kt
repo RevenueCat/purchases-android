@@ -130,4 +130,3 @@ sealed interface MyAppRestoreResult {
      */
     data class Error(val errorDetails: PurchasesError? = null) : MyAppRestoreResult
 }
-
