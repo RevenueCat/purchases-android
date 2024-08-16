@@ -208,12 +208,50 @@ class PaywallViewModelTest {
 
     @Test
     fun `Custom completion handler purchase logic cancelled doesn't trigger syncPurchases`() = runTest {
+        val logic = spyk<TestAppPurchaseLogicCallbacks>()
+        every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.MY_APP
 
+        val completionSlot = slot<(MyAppPurchaseResult) -> Unit>()
+
+        coEvery { logic.performPurchaseWithCompletion(any(), any(), capture(completionSlot)) } answers {
+            // Simulate calling the callback with a result
+            completionSlot.captured(MyAppPurchaseResult.Cancellation)
+        }
+
+        val model = create(
+            customPurchaseLogic = logic,
+        )
+
+        model.awaitPurchaseSelectedPackage(activity)
+
+        coVerify { logic.performPurchaseWithCompletion(any(), any(), any()) }
+        verify(exactly = 0) { purchases.syncPurchases() }
+        verify(exactly = 0) { listener.onPurchaseStarted(any()) }
+        verify(exactly = 0) { listener.onPurchaseCompleted(customerInfo, any()) }
     }
 
     @Test
     fun `Custom completion handler purchase logic error doesn't trigger syncPurchases`() = runTest {
+        val logic = spyk<TestAppPurchaseLogicCallbacks>()
+        every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.MY_APP
 
+        val completionSlot = slot<(MyAppPurchaseResult) -> Unit>()
+
+        coEvery { logic.performPurchaseWithCompletion(any(), any(), capture(completionSlot)) } answers {
+            // Simulate calling the callback with a result
+            completionSlot.captured(MyAppPurchaseResult.Error())
+        }
+
+        val model = create(
+            customPurchaseLogic = logic,
+        )
+
+        model.awaitPurchaseSelectedPackage(activity)
+
+        coVerify { logic.performPurchaseWithCompletion(any(), any(), any()) }
+        verify(exactly = 0) { purchases.syncPurchases() }
+        verify(exactly = 0) { listener.onPurchaseStarted(any()) }
+        verify(exactly = 0) { listener.onPurchaseCompleted(customerInfo, any()) }
     }
 
     @Test
@@ -230,7 +268,7 @@ class PaywallViewModelTest {
             nonSubscriptionTransactionProductIdentifiers = setOf(TestData.Packages.lifetime.product.id)
         )
 
-        model.awaitPurchaseSelectedPackage(activity)
+        model.restorePurchases()
 
         coVerify { myAppPurchaseLogic.performRestore(customerInfo) }
 
