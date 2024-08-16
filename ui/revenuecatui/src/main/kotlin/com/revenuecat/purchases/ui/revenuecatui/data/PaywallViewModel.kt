@@ -191,6 +191,13 @@ internal class PaywallViewModelImpl(
                     when (val result = customRestoreHandler(customerInfo)) {
                         is MyAppRestoreResult.Success -> {
                             purchases.syncPurchases()
+
+                            shouldDisplayBlock?.let {
+                                if (!it(customerInfo)) {
+                                    Logger.d("Dismissing paywall after restore since display condition has not been met")
+                                    options.dismissRequest()
+                                }
+                            }
                         }
                         is MyAppRestoreResult.Error -> {
                             result.errorDetails?.let { _actionError.value = it }
