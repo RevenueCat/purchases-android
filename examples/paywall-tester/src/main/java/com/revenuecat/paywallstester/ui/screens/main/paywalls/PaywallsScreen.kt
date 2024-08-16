@@ -72,7 +72,6 @@ class TestAppPurchaseLogicCallbacks : MyAppPurchaseLogicCompletion() {
 
     override fun performRestoreWithCompletion(completion: (MyAppRestoreResult) -> Unit) {
         Log.d("RevenueCatUI", "Hello from performRestore callback!")
-
         completion(MyAppRestoreResult.Success)
     }
 }
@@ -84,9 +83,14 @@ fun PaywallsScreen(
 ) {
     var displayPaywallState by remember { mutableStateOf<DisplayPaywallState>(DisplayPaywallState.None) }
 
+    val useCallbackPurchaseLogic = true
+
     val myAppPurchaseLogic = remember {
-//        TesterAppPurchaseLogicSuspend()
-        TestAppPurchaseLogicCallbacks()
+        if (useCallbackPurchaseLogic) {
+            TestAppPurchaseLogicCallbacks()
+        } else {
+            TesterAppPurchaseLogicSuspend()
+        }
     }
 
     LazyColumn {
