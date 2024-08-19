@@ -18,8 +18,7 @@ private class MyAppPurchaseLogicAPI {
         activity: Activity,
         rcPackage: Package,
         customerInfo: CustomerInfo,
-    )
-    {
+    ) {
         val suspendLogicPurchase: MyAppPurchaseResult = mySuspendLogic.performPurchase(activity, rcPackage)
         val suspendLogicRestore: MyAppRestoreResult = mySuspendLogic.performRestore(customerInfo)
     }

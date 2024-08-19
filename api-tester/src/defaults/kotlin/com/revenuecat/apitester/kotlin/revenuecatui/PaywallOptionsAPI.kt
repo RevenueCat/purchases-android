@@ -14,8 +14,7 @@ private class PaywallOptionsAPI {
         listener: PaywallListener?,
         fontProvider: FontProvider?,
         myAppPurchaseLogic: MyAppPurchaseLogic?,
-    )
-    {
+    ) {
         val options: PaywallOptions = PaywallOptions.Builder(dismissRequest = {})
             .setOffering(offering)
             .setListener(listener)
