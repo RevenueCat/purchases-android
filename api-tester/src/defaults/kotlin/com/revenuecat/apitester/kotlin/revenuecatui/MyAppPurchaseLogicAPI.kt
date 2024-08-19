@@ -12,7 +12,9 @@ import com.revenuecat.purchases.ui.revenuecatui.MyAppRestoreResult
 
 @Suppress("unused", "UNUSED_VARIABLE")
 private class MyAppPurchaseLogicAPI {
-    suspend fun check(mySuspendLogic: MyAppPurchaseLogic,
+
+    suspend fun check(
+        mySuspendLogic: MyAppPurchaseLogic,
         activity: Activity,
         rcPackage: Package,
         customerInfo: CustomerInfo,
@@ -20,7 +22,6 @@ private class MyAppPurchaseLogicAPI {
     {
         val suspendLogicPurchase: MyAppPurchaseResult = mySuspendLogic.performPurchase(activity, rcPackage)
         val suspendLogicRestore: MyAppRestoreResult = mySuspendLogic.performRestore(customerInfo)
-
     }
 }
 
@@ -45,17 +46,18 @@ private class MyAppPurchaseLogicWithCallbackAPI : MyAppPurchaseLogicWithCallback
     }
 
     @Suppress("unused")
-    fun check(activity: Activity,
+    fun check(
+        activity: Activity,
         rcPackage: Package,
         customerInfo: CustomerInfo,
-        ) {
+    ) {
         performPurchaseWithCompletion(
             activity,
             rcPackage,
         ) { result: MyAppPurchaseResult -> }
 
         performRestoreWithCompletion(
-            customerInfo
+            customerInfo,
         ) { result: MyAppRestoreResult -> }
     }
 }

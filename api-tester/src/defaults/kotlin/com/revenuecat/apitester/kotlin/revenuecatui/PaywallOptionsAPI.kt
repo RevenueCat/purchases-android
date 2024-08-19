@@ -8,11 +8,13 @@ import com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider
 
 @Suppress("unused", "UNUSED_VARIABLE")
 private class PaywallOptionsAPI {
-    suspend fun check(offering: Offering?,
+
+    suspend fun check(
+        offering: Offering?,
         listener: PaywallListener?,
         fontProvider: FontProvider?,
         myAppPurchaseLogic: MyAppPurchaseLogic?,
-        )
+    )
     {
         val options: PaywallOptions = PaywallOptions.Builder(dismissRequest = {})
             .setOffering(offering)
