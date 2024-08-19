@@ -980,7 +980,10 @@ class PaywallViewModelTest {
             completion(result)
         }
 
-        override fun performRestoreWithCompletion(completion: (MyAppRestoreResult) -> Unit) {
+        override fun performRestoreWithCompletion(
+            customerInfo: CustomerInfo,
+            completion: (MyAppRestoreResult) -> Unit
+        ) {
             val restoreFlow = customRestoreCalled
                 ?: throw IllegalArgumentException("customRestoreCalled cannot be null")
             val result = restoreResult
