@@ -101,8 +101,8 @@ internal class PaywallViewModelImpl(
     private var paywallPresentationData: PaywallEvent.Data? = null
 
     init {
-        validateState()
         updateState()
+        validateState()
     }
 
     fun updateOptions(options: PaywallOptions) {
@@ -317,8 +317,9 @@ internal class PaywallViewModelImpl(
 
     private fun validateState() {
         if (purchases.purchasesAreCompletedBy == PurchasesAreCompletedBy.MY_APP && options.myAppPurchaseLogic == null) {
-            error(
-                "myAppPurchaseLogic is null, but is required when purchases.purchasesAreCompletedBy is .MY_APP.",
+            _state.value = PaywallState.Error(
+                "myAppPurchaseLogic is null, but is required when purchases.purchasesAreCompletedBy is " +
+                    ".MY_APP. App purchases will not be successful.",
             )
         }
     }
