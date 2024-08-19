@@ -49,6 +49,11 @@ data class PaywallData(
     @SerialName("zero_decimal_place_countries")
     @Serializable(with = GoogleListSerializer::class)
     val zeroDecimalPlaceCountries: List<String> = emptyList(),
+
+    /**
+     * The default locale to be used on a paywall if the preferred languages aren't found.
+     */
+    @SerialName("default_locale") val defaultLocale: String? = null,
 ) {
 
     /**
@@ -61,11 +66,21 @@ data class PaywallData(
         }
 
     @VisibleForTesting
+    @Suppress("ReturnCount")
     fun localizedConfiguration(locales: List<Locale>): Pair<Locale, LocalizedConfiguration> {
         for (locale in locales) {
             val localeToCheck = locale.convertToCorrectlyFormattedLocale()
             configForLocale(localeToCheck)?.let { localizedConfiguration ->
                 return (localeToCheck to localizedConfiguration)
+            }
+        }
+
+        // Try finding default local
+        defaultLocale?.let { defaultLocale ->
+            localization.entries.firstOrNull { localization ->
+                localization.key.toLocale() == defaultLocale.toLocale()
+            }?.let { localization ->
+                return (localization.key.toLocale() to localization.value)
             }
         }
 
@@ -92,6 +107,7 @@ data class PaywallData(
             return tieredConfigForLocales(locales = getDefaultLocales())
         }
 
+    @Suppress("ReturnCount")
     private fun tieredConfigForLocales(locales: List<Locale>): Pair<Locale, Map<String, LocalizedConfiguration>> {
         for (locale in locales) {
             val localeToCheck = locale.convertToCorrectlyFormattedLocale()
@@ -100,9 +116,18 @@ data class PaywallData(
             }
         }
 
+        // Try finding default locale
+        defaultLocale?.let { defaultLocale ->
+            localizationByTier.entries.firstOrNull { localization ->
+                localization.key.toLocale() == defaultLocale.toLocale()
+            }?.let { localization ->
+                return (localization.key.toLocale() to localization.value)
+            }
+        }
+
         // Fallback to first localization
         val first = localizationByTier.entries.first()
-        return Pair(first.key.toLocale(), first.value)
+        return (first.key.toLocale() to first.value)
     }
 
     @VisibleForTesting
