@@ -46,32 +46,37 @@ import com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider
 
 class TesterAppPurchaseLogicSuspend : MyAppPurchaseLogic {
 
+    companion object { private const val TAG = "PaywallTester" }
+
     override suspend fun performPurchase(
         activity: Activity,
         rcPackage: com.revenuecat.purchases.Package,
     ): MyAppPurchaseResult {
-        Log.d("RevenueCatUI", "Custom purchase code in performPurchase was called.")
+        Log.d(TAG, "Custom purchase code in performPurchase was called.")
         return MyAppPurchaseResult.Success
     }
 
     override suspend fun performRestore(customerInfo: CustomerInfo): MyAppRestoreResult {
-        Log.d("RevenueCatUI", "Custom restore code in performRestore was called.")
+        Log.d(TAG, "Custom restore code in performRestore was called.")
         return MyAppRestoreResult.Success
     }
 }
 
 class TestAppPurchaseLogicCallbacks : MyAppPurchaseLogicCompletion() {
+
+    companion object { private const val TAG = "PaywallTester" }
+
     override fun performPurchaseWithCompletion(
         activity: Activity,
         rcPackage: Package,
         completion: (MyAppPurchaseResult) -> Unit,
     ) {
-        Log.d("RevenueCatUI", "Custom purchase code in performPurchaseWithCompletion was called.")
+        Log.d(TAG, "Custom purchase code in performPurchaseWithCompletion was called.")
         completion(MyAppPurchaseResult.Success)
     }
 
     override fun performRestoreWithCompletion(completion: (MyAppRestoreResult) -> Unit) {
-        Log.d("RevenueCatUI", "Custom restore code in performRestoreWithCompletion was called.")
+        Log.d(TAG, "Custom restore code in performRestoreWithCompletion was called.")
         completion(MyAppRestoreResult.Success)
     }
 }
