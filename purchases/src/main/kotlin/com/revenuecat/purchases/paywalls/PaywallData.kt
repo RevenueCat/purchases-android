@@ -116,7 +116,7 @@ data class PaywallData(
             }
         }
 
-        // Try finding default local
+        // Try finding default locale
         defaultLocale?.let { defaultLocale ->
             localizationByTier.entries.firstOrNull { localization ->
                 localization.key.toLocale() == defaultLocale.toLocale()
