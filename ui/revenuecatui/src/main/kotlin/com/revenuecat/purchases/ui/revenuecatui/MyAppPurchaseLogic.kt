@@ -72,10 +72,11 @@ abstract class MyAppPurchaseLogicWithCallback : MyAppPurchaseLogic {
      * If restoration is successful, `syncPurchases` will automatically be called by RevenueCat to update our
      * database. However, if you are using Amazon's store, you must call `syncAmazonPurchase` in your code.
      *
+     * @param customerInfo An object containing information about the customer.
      * @param completion A callback function that receives a `MyAppRestoreResult` object containing the outcome of the
      * restoration process.
      */
-    abstract fun performRestoreWithCompletion(completion: (MyAppRestoreResult) -> Unit)
+    abstract fun performRestoreWithCompletion(customerInfo: CustomerInfo, completion: (MyAppRestoreResult) -> Unit)
 
     /**
      * This method is called by RevenueCat, which in turn calls `performPurchaseWithCompletion` where your app's
@@ -94,7 +95,7 @@ abstract class MyAppPurchaseLogicWithCallback : MyAppPurchaseLogic {
      */
     final override suspend fun performRestore(customerInfo: CustomerInfo): MyAppRestoreResult =
         suspendCoroutine { continuation ->
-            performRestoreWithCompletion { result ->
+            performRestoreWithCompletion(customerInfo) { result ->
                 continuation.resume(result)
             }
         }

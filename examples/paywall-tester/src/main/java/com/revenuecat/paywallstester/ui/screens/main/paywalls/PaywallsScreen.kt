@@ -84,7 +84,7 @@ private class TestAppPurchaseLogicCallbacks : MyAppPurchaseLogicWithCallback() {
         completion(MyAppPurchaseResult.Success)
     }
 
-    override fun performRestoreWithCompletion(completion: (MyAppRestoreResult) -> Unit) {
+    override fun performRestoreWithCompletion(customerInfo: CustomerInfo, completion: (MyAppRestoreResult) -> Unit) {
         // Implement your app's custom restore logic here.
         // If you are using Google Play, RevenueCat will automatically call `purchases.syncPurchases()` if
         // you return `.Success`. If you are using Amazon, you must call `purchases.syncAmazonPurchase()`.
