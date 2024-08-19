@@ -82,6 +82,9 @@ class PaywallView : AbstractComposeView {
 
     /**
      * Sets a [PaywallListener] to receive callbacks from the Paywall.
+     * 
+     * @note The listener callbacks will **not** be called when the app is handling purchase and restore logic itself,
+     * ie when Purchases has been configured with purchasesAreCompletedBy as PurchasesAreCompletedBy.MY_APP.
      */
     fun setPaywallListener(listener: PaywallListener?) {
         this.listener = listener
