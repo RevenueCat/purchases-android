@@ -13,7 +13,7 @@ import kotlin.coroutines.suspendCoroutine
  * These functions are only called when `Purchases.purchasesAreCompletedBy` is set to `MY_APP`.
  *
  * If you prefer to implement custom purchase and restore logic with completion handlers, please implement
- * `MyAppPurchaseLogicCompletion`.
+ * `MyAppPurchaseLogicWithCallback`.
  */
 interface MyAppPurchaseLogic {
     /**
@@ -47,7 +47,7 @@ interface MyAppPurchaseLogic {
  * If you prefer to implement custom purchase and restore logic with coroutines, please implement
  * `MyAppPurchaseLogic` directly.
  */
-abstract class MyAppPurchaseLogicCompletion : MyAppPurchaseLogic {
+abstract class MyAppPurchaseLogicWithCallback : MyAppPurchaseLogic {
 
     /**
      * Performs an in-app purchase for the specified package with a completion callback.

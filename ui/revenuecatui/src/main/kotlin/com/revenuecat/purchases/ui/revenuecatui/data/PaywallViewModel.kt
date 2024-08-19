@@ -251,7 +251,6 @@ internal class PaywallViewModelImpl(
                     Logger.d("Ignoring purchase request for already subscribed package")
                 }
             }
-
             else -> {
                 Logger.e("Unexpected state trying to purchase package: $currentState")
             }

@@ -34,7 +34,7 @@ import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.ui.revenuecatui.MyAppPurchaseLogic
-import com.revenuecat.purchases.ui.revenuecatui.MyAppPurchaseLogicCompletion
+import com.revenuecat.purchases.ui.revenuecatui.MyAppPurchaseLogicWithCallback
 import com.revenuecat.purchases.ui.revenuecatui.MyAppPurchaseResult
 import com.revenuecat.purchases.ui.revenuecatui.MyAppRestoreResult
 import com.revenuecat.purchases.ui.revenuecatui.PaywallDialog
@@ -68,7 +68,7 @@ class TesterAppPurchaseLogicSuspend : MyAppPurchaseLogic {
     }
 }
 
-class TestAppPurchaseLogicCallbacks : MyAppPurchaseLogicCompletion() {
+class TestAppPurchaseLogicCallbacks : MyAppPurchaseLogicWithCallback() {
 
     companion object { private const val TAG = "PaywallTester" }
 

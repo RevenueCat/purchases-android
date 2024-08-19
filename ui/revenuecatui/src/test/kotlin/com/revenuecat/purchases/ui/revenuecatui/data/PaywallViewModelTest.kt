@@ -4,7 +4,6 @@ import android.app.Activity
 import android.content.Context
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.android.billingclient.api.Purchase
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.Offering
@@ -20,7 +19,7 @@ import com.revenuecat.purchases.models.Transaction
 import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.paywalls.events.PaywallEventType
 import com.revenuecat.purchases.ui.revenuecatui.MyAppPurchaseLogic
-import com.revenuecat.purchases.ui.revenuecatui.MyAppPurchaseLogicCompletion
+import com.revenuecat.purchases.ui.revenuecatui.MyAppPurchaseLogicWithCallback
 import com.revenuecat.purchases.ui.revenuecatui.MyAppPurchaseResult
 import com.revenuecat.purchases.ui.revenuecatui.MyAppRestoreResult
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
@@ -37,19 +36,15 @@ import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.runs
-import io.mockk.slot
-import io.mockk.spyk
 import io.mockk.verify
 import io.mockk.verifyOrder
 import junit.framework.TestCase.fail
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType
-import org.json.JSONArray
 import org.junit.After
 import org.junit.Before
 import org.junit.Rule
@@ -970,7 +965,7 @@ class PaywallViewModelTest {
         private val customRestoreCalled: MutableStateFlow<Boolean>? = null,
         private val purchaseResult: MyAppPurchaseResult? = null,
         private val restoreResult: MyAppRestoreResult? = null
-    ) :  MyAppPurchaseLogicCompletion() {
+    ) :  MyAppPurchaseLogicWithCallback() {
 
         override fun performPurchaseWithCompletion(activity: Activity,
             rcPackage: Package,
