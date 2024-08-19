@@ -107,9 +107,6 @@ sealed interface MyAppPurchaseResult {
     /**
      * Indicates a successful purchase.
      *
-     * @property purchase The purchase details if available. This object is only used to call the
-     * `PaywallListener` `onPurchaseCompleted` callback. If this callback is not needed, it does not need to be
-     * provided, and the callback will not be called.
      */
     object Success : MyAppPurchaseResult
 
