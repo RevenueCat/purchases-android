@@ -44,7 +44,7 @@ import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.fonts.CustomFontProvider
 import com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider
 
-class TesterAppPurchaseLogicSuspend : MyAppPurchaseLogic {
+private class TestAppPurchaseLogicSuspend : MyAppPurchaseLogic {
 
     companion object { private const val TAG = "PaywallTester" }
 
@@ -68,7 +68,7 @@ class TesterAppPurchaseLogicSuspend : MyAppPurchaseLogic {
     }
 }
 
-class TestAppPurchaseLogicCallbacks : MyAppPurchaseLogicWithCallback() {
+private class TestAppPurchaseLogicCallbacks : MyAppPurchaseLogicWithCallback() {
 
     companion object { private const val TAG = "PaywallTester" }
 
@@ -108,7 +108,7 @@ fun PaywallsScreen(
         if (useCallbackPurchaseLogic) {
             TestAppPurchaseLogicCallbacks()
         } else {
-            TesterAppPurchaseLogicSuspend()
+            TestAppPurchaseLogicSuspend()
         }
     }
 
