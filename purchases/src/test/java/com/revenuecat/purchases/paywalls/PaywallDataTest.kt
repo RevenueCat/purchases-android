@@ -16,6 +16,7 @@ import java.util.*
 private const val PAYWALLDATA_SAMPLE1 = "paywalldata-sample1.json"
 private const val PAYWALLDATA_CHINESE = "paywalldata-chinese.json"
 private const val PAYWALLDATA_MISSING_CURRENT_LOCALE = "paywalldata-missing_current_locale.json"
+private const val PAYWALLDATA_DEFAULT_LOCALE_WITH_MISSING_CURRENT_LOCALE = "paywalldata-default-locale-with-missing_current_locale.json"
 private const val PAYWALLDATA_EMPTY_IMAGES = "paywalldata-empty-images.json"
 
 @RunWith(AndroidJUnit4::class)
@@ -147,6 +148,15 @@ class PaywallDataTest {
         val localization = paywall.localizedConfiguration.second
         assertThat(localization.callToAction).isEqualTo("Comprar")
         assertThat(localization.title).isEqualTo("Tienda")
+    }
+
+    @Test
+    fun `if current locale is missing it loads default locale`() {
+        val paywall: PaywallData = decode(PAYWALLDATA_DEFAULT_LOCALE_WITH_MISSING_CURRENT_LOCALE)
+
+        val localization = paywall.localizedConfiguration.second
+        assertThat(localization.callToAction).isEqualTo("Kup")
+        assertThat(localization.title).isEqualTo("Sklep")
     }
 
     @Test
