@@ -52,11 +52,17 @@ class TesterAppPurchaseLogicSuspend : MyAppPurchaseLogic {
         activity: Activity,
         rcPackage: com.revenuecat.purchases.Package,
     ): MyAppPurchaseResult {
+        // Implement your app's custom purchase logic here.
+        // If you are using Google Play, RevenueCat will automatically call `purchases.syncPurchases()` if
+        // you return `.Success`. If you are using Amazon, you must call `purchases.syncAmazonPurchase()`.
         Log.d(TAG, "Custom purchase code in performPurchase was called.")
         return MyAppPurchaseResult.Success
     }
 
     override suspend fun performRestore(customerInfo: CustomerInfo): MyAppRestoreResult {
+        // Implement your app's custom restore logic here.
+        // If you are using Google Play, RevenueCat will automatically call `purchases.syncPurchases()` if
+        // you return `.Success`. If you are using Amazon, you must call `purchases.syncAmazonPurchase()`.
         Log.d(TAG, "Custom restore code in performRestore was called.")
         return MyAppRestoreResult.Success
     }
@@ -71,11 +77,17 @@ class TestAppPurchaseLogicCallbacks : MyAppPurchaseLogicCompletion() {
         rcPackage: Package,
         completion: (MyAppPurchaseResult) -> Unit,
     ) {
+        // Implement your app's custom purchase logic here.
+        // If you are using Google Play, RevenueCat will automatically call `purchases.syncPurchases()` if
+        // you return `.Success`. If you are using Amazon, you must call `purchases.syncAmazonPurchase()`.
         Log.d(TAG, "Custom purchase code in performPurchaseWithCompletion was called.")
         completion(MyAppPurchaseResult.Success)
     }
 
     override fun performRestoreWithCompletion(completion: (MyAppRestoreResult) -> Unit) {
+        // Implement your app's custom restore logic here.
+        // If you are using Google Play, RevenueCat will automatically call `purchases.syncPurchases()` if
+        // you return `.Success`. If you are using Amazon, you must call `purchases.syncAmazonPurchase()`.
         Log.d(TAG, "Custom restore code in performRestoreWithCompletion was called.")
         completion(MyAppRestoreResult.Success)
     }
@@ -88,6 +100,8 @@ fun PaywallsScreen(
 ) {
     var displayPaywallState by remember { mutableStateOf<DisplayPaywallState>(DisplayPaywallState.None) }
 
+    // This should be part of a view model so it survives activity recreations.
+    // Temporarily holding this here for this test app.
     val useCallbackPurchaseLogic = true
 
     val myAppPurchaseLogic = remember {
