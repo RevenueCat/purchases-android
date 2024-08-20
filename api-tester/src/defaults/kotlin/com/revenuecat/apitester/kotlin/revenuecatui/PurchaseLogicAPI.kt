@@ -7,8 +7,7 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogic
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicWithCallback
-import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicPurchaseResult
-import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicRestoreResult
+import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult
 
 @Suppress("unused", "UNUSED_VARIABLE")
 private class PurchaseLogicAPI {
@@ -19,8 +18,8 @@ private class PurchaseLogicAPI {
         rcPackage: Package,
         customerInfo: CustomerInfo,
     ) {
-        val suspendLogicPurchase: PurchaseLogicPurchaseResult = mySuspendLogic.performPurchase(activity, rcPackage)
-        val suspendLogicRestore: PurchaseLogicRestoreResult = mySuspendLogic.performRestore(customerInfo)
+        val suspendLogicPurchase: PurchaseLogicResult = mySuspendLogic.performPurchase(activity, rcPackage)
+        val suspendLogicRestore: PurchaseLogicResult = mySuspendLogic.performRestore(customerInfo)
     }
 }
 
@@ -30,17 +29,18 @@ private class PurchaseLogicWithCallbackAPI : PurchaseLogicWithCallback() {
     override fun performPurchaseWithCompletion(
         activity: Activity,
         rcPackage: Package,
-        completion: (PurchaseLogicPurchaseResult) -> Unit,
+        completion: (PurchaseLogicResult) -> Unit,
     ) {
-        val success = PurchaseLogicPurchaseResult.Success
-        val cancelled = PurchaseLogicPurchaseResult.Cancellation
-        val failed = PurchaseLogicPurchaseResult.Error(PurchasesError(PurchasesErrorCode.StoreProblemError))
+        val success = PurchaseLogicResult.Success
+        val cancelled = PurchaseLogicResult.Cancellation
+        val failed = PurchaseLogicResult.Error(PurchasesError(PurchasesErrorCode.StoreProblemError))
         completion(success)
     }
 
-    override fun performRestoreWithCompletion(customerInfo: CustomerInfo, completion: (PurchaseLogicRestoreResult) -> Unit) {
-        val success = PurchaseLogicRestoreResult.Success
-        val failed = PurchaseLogicRestoreResult.Error(PurchasesError(PurchasesErrorCode.StoreProblemError))
+    override fun performRestoreWithCompletion(customerInfo: CustomerInfo, completion: (PurchaseLogicResult) -> Unit) {
+        val success = PurchaseLogicResult.Success
+        val cancelled = PurchaseLogicResult.Cancellation
+        val failed = PurchaseLogicResult.Error(PurchasesError(PurchasesErrorCode.StoreProblemError))
         completion(failed)
     }
 
@@ -53,10 +53,10 @@ private class PurchaseLogicWithCallbackAPI : PurchaseLogicWithCallback() {
         performPurchaseWithCompletion(
             activity,
             rcPackage,
-        ) { result: PurchaseLogicPurchaseResult -> }
+        ) { result: PurchaseLogicResult -> }
 
         performRestoreWithCompletion(
             customerInfo,
-        ) { result: PurchaseLogicRestoreResult -> }
+        ) { result: PurchaseLogicResult -> }
     }
 }

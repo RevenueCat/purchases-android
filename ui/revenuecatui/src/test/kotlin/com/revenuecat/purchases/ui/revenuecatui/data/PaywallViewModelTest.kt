@@ -20,8 +20,7 @@ import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.paywalls.events.PaywallEventType
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogic
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicWithCallback
-import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicPurchaseResult
-import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicRestoreResult
+import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
@@ -126,7 +125,7 @@ class PaywallViewModelTest {
             null,
             customRestoreCalled,
             null,
-            PurchaseLogicRestoreResult.Success
+            PurchaseLogicResult.Success
         )
 
         val model = create(
@@ -152,7 +151,7 @@ class PaywallViewModelTest {
             null,
             customRestoreCalled,
             null,
-            PurchaseLogicRestoreResult.Error()
+            PurchaseLogicResult.Error()
         )
 
         val model = create(
@@ -177,7 +176,7 @@ class PaywallViewModelTest {
         val myAppPurchaseLogic = TestAppPurchaseLogicWithCallbacks(
             customPurchaseCalled,
             null,
-            PurchaseLogicPurchaseResult.Success,
+            PurchaseLogicResult.Success,
             null,
         )
 
@@ -206,7 +205,7 @@ class PaywallViewModelTest {
         val myAppPurchaseLogic = TestAppPurchaseLogicWithCallbacks(
             customPurchaseCalled,
             null,
-            PurchaseLogicPurchaseResult.Cancellation,
+            PurchaseLogicResult.Cancellation,
             null,
         )
 
@@ -232,7 +231,7 @@ class PaywallViewModelTest {
         val myAppPurchaseLogic = TestAppPurchaseLogicWithCallbacks(
             customPurchaseCalled,
             null,
-            PurchaseLogicPurchaseResult.Error(),
+            PurchaseLogicResult.Error(),
             null,
         )
 
@@ -261,7 +260,7 @@ class PaywallViewModelTest {
             null,
             customRestoreCalled,
             null,
-            PurchaseLogicRestoreResult.Success
+            PurchaseLogicResult.Success
         )
 
         val model = create(
@@ -287,7 +286,7 @@ class PaywallViewModelTest {
             null,
             customRestoreCalled,
             null,
-            PurchaseLogicRestoreResult.Error()
+            PurchaseLogicResult.Error()
         )
 
         val model = create(
@@ -314,7 +313,7 @@ class PaywallViewModelTest {
         val myAppPurchaseLogic = TestAppPurchaseLogicWithSuspend(
             customPurchaseCalled,
             null,
-            PurchaseLogicPurchaseResult.Success,
+            PurchaseLogicResult.Success,
             null
         )
 
@@ -343,7 +342,7 @@ class PaywallViewModelTest {
         val myAppPurchaseLogic = TestAppPurchaseLogicWithSuspend(
             customPurchaseCalled,
             null,
-            PurchaseLogicPurchaseResult.Cancellation,
+            PurchaseLogicResult.Cancellation,
             null
         )
 
@@ -371,7 +370,7 @@ class PaywallViewModelTest {
         val myAppPurchaseLogic = TestAppPurchaseLogicWithSuspend(
             customPurchaseCalled,
             null,
-            PurchaseLogicPurchaseResult.Error(),
+            PurchaseLogicResult.Error(),
             null
         )
 
@@ -951,13 +950,13 @@ class PaywallViewModelTest {
     private class TestAppPurchaseLogicWithCallbacks(
         private val customPurchaseCalled: MutableStateFlow<Boolean>? = null,
         private val customRestoreCalled: MutableStateFlow<Boolean>? = null,
-        private val purchaseResult: PurchaseLogicPurchaseResult? = null,
-        private val restoreResult: PurchaseLogicRestoreResult? = null
+        private val purchaseResult: PurchaseLogicResult? = null,
+        private val restoreResult: PurchaseLogicResult? = null
     ) :  PurchaseLogicWithCallback() {
 
         override fun performPurchaseWithCompletion(activity: Activity,
             rcPackage: Package,
-            completion: (PurchaseLogicPurchaseResult) -> Unit
+            completion: (PurchaseLogicResult) -> Unit
         ) {
             val purchaseFlow = customPurchaseCalled
                 ?: throw IllegalArgumentException("customPurchaseCalled cannot be null")
@@ -970,7 +969,7 @@ class PaywallViewModelTest {
 
         override fun performRestoreWithCompletion(
             customerInfo: CustomerInfo,
-            completion: (PurchaseLogicRestoreResult) -> Unit
+            completion: (PurchaseLogicResult) -> Unit
         ) {
             val restoreFlow = customRestoreCalled
                 ?: throw IllegalArgumentException("customRestoreCalled cannot be null")
@@ -986,11 +985,11 @@ class PaywallViewModelTest {
     private class TestAppPurchaseLogicWithSuspend(
         private val customPurchaseCalled: MutableStateFlow<Boolean>? = null,
         private val customRestoreCalled: MutableStateFlow<Boolean>? = null,
-        private val purchaseResult: PurchaseLogicPurchaseResult? = null,
-        private val restoreResult: PurchaseLogicRestoreResult? = null
+        private val purchaseResult: PurchaseLogicResult? = null,
+        private val restoreResult: PurchaseLogicResult? = null
     ) : PurchaseLogic {
 
-        override suspend fun performPurchase(activity: Activity, rcPackage: Package): PurchaseLogicPurchaseResult {
+        override suspend fun performPurchase(activity: Activity, rcPackage: Package): PurchaseLogicResult {
             val purchaseFlow = customPurchaseCalled
                 ?: throw IllegalArgumentException("customPurchaseCalled cannot be null")
             val result = purchaseResult
@@ -1000,7 +999,7 @@ class PaywallViewModelTest {
             return result
         }
 
-        override suspend fun performRestore(customerInfo: CustomerInfo): PurchaseLogicRestoreResult {
+        override suspend fun performRestore(customerInfo: CustomerInfo): PurchaseLogicResult {
             val restoreFlow = customRestoreCalled
                 ?: throw IllegalArgumentException("customRestoreCalled cannot be null")
             val result = restoreResult

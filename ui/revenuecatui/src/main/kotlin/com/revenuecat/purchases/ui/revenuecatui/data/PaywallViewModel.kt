@@ -20,8 +20,7 @@ import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
 import com.revenuecat.purchases.paywalls.events.PaywallEventType
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogic
-import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicPurchaseResult
-import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicRestoreResult
+import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
@@ -175,7 +174,7 @@ internal class PaywallViewModelImpl(
                         }
                         val customerInfo = purchases.awaitCustomerInfo()
                         when (val result = customRestoreHandler(customerInfo)) {
-                            is PurchaseLogicRestoreResult.Success -> {
+                            is PurchaseLogicResult.Success -> {
                                 purchases.syncPurchases()
 
                                 shouldDisplayBlock?.let {
@@ -188,8 +187,10 @@ internal class PaywallViewModelImpl(
                                     }
                                 }
                             }
-
-                            is PurchaseLogicRestoreResult.Error -> {
+                            is PurchaseLogicResult.Cancellation -> {
+                                // silently ignore
+                            }
+                            is PurchaseLogicResult.Error -> {
                                 result.errorDetails?.let { _actionError.value = it }
                             }
                         }
@@ -269,15 +270,15 @@ internal class PaywallViewModelImpl(
                             "is PurchasesAreCompletedBy.MY_APP"
                     }
                     when (val result = customPurchaseHandler.invoke(activity, packageToPurchase)) {
-                        is PurchaseLogicPurchaseResult.Success -> {
+                        is PurchaseLogicResult.Success -> {
                             purchases.syncPurchases()
                             Logger.d("Dismissing paywall after purchase")
                             options.dismissRequest()
                         }
-                        is PurchaseLogicPurchaseResult.Cancellation -> {
+                        is PurchaseLogicResult.Cancellation -> {
                             trackPaywallCancel()
                         }
-                        is PurchaseLogicPurchaseResult.Error -> {
+                        is PurchaseLogicResult.Error -> {
                             result.errorDetails?.let { _actionError.value = it }
                         }
                     }

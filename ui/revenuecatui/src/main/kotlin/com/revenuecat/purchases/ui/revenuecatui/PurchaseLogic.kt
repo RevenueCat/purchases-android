@@ -24,9 +24,9 @@ interface PurchaseLogic {
      *
      * @param activity The current Android `Activity` triggering the purchase.
      * @param rcPackage The package representing the in-app product that the user intends to purchase.
-     * @return A `PurchaseLogicPurchaseResult` object containing the outcome of the purchase operation.
+     * @return A `PurchaseLogicResult` object containing the outcome of the purchase operation.
      */
-    suspend fun performPurchase(activity: Activity, rcPackage: Package): PurchaseLogicPurchaseResult
+    suspend fun performPurchase(activity: Activity, rcPackage: Package): PurchaseLogicResult
 
     /**
      * Restores previously completed purchases for the given customer.
@@ -35,9 +35,9 @@ interface PurchaseLogic {
      * database. However, if you are using Amazon's store, you must call `syncAmazonPurchase` in your code.
      *
      * @param customerInfo An object containing information about the customer.
-     * @return A `PurchaseLogicRestoreResult` object containing the outcome of the restoration process.
+     * @return A `PurchaseLogicResult` object containing the outcome of the restoration process.
      */
-    suspend fun performRestore(customerInfo: CustomerInfo): PurchaseLogicRestoreResult
+    suspend fun performRestore(customerInfo: CustomerInfo): PurchaseLogicResult
 }
 
 /**
@@ -57,13 +57,13 @@ abstract class PurchaseLogicWithCallback : PurchaseLogic {
      *
      * @param activity The current Android `Activity` triggering the purchase.
      * @param rcPackage The package representing the in-app product that the user intends to purchase.
-     * @param completion A callback function that receives a `PurchaseLogicPurchaseResult` object containing the outcome
+     * @param completion A callback function that receives a `PurchaseLogicResult` object containing the outcome
      * of the purchase operation.
      */
     abstract fun performPurchaseWithCompletion(
         activity: Activity,
         rcPackage: Package,
-        completion: (PurchaseLogicPurchaseResult) -> Unit,
+        completion: (PurchaseLogicResult) -> Unit,
     )
 
     /**
@@ -73,16 +73,16 @@ abstract class PurchaseLogicWithCallback : PurchaseLogic {
      * database. However, if you are using Amazon's store, you must call `syncAmazonPurchase` in your code.
      *
      * @param customerInfo An object containing information about the customer.
-     * @param completion A callback function that receives a `PurchaseLogicRestoreResult` object containing the outcome
+     * @param completion A callback function that receives a `PurchaseLogicResult` object containing the outcome
      * of the restoration process.
      */
-    abstract fun performRestoreWithCompletion(customerInfo: CustomerInfo, completion: (PurchaseLogicRestoreResult) -> Unit)
+    abstract fun performRestoreWithCompletion(customerInfo: CustomerInfo, completion: (PurchaseLogicResult) -> Unit)
 
     /**
      * This method is called by RevenueCat, which in turn calls `performPurchaseWithCompletion` where your app's
      * custom purchase logic is performed.
      */
-    final override suspend fun performPurchase(activity: Activity, rcPackage: Package): PurchaseLogicPurchaseResult =
+    final override suspend fun performPurchase(activity: Activity, rcPackage: Package): PurchaseLogicResult =
         suspendCoroutine { continuation ->
             performPurchaseWithCompletion(activity, rcPackage) { result ->
                 continuation.resume(result)
@@ -93,7 +93,7 @@ abstract class PurchaseLogicWithCallback : PurchaseLogic {
      * This method is called by RevenueCat, which in turn calls `performRestoreWithCompletion` where your app's
      * custom purchase logic is performed.
      */
-    final override suspend fun performRestore(customerInfo: CustomerInfo): PurchaseLogicRestoreResult =
+    final override suspend fun performRestore(customerInfo: CustomerInfo): PurchaseLogicResult =
         suspendCoroutine { continuation ->
             performRestoreWithCompletion(customerInfo) { result ->
                 continuation.resume(result)
@@ -104,39 +104,23 @@ abstract class PurchaseLogicWithCallback : PurchaseLogic {
 /**
  * Represents the result of a purchase attempt made by custom app-based code (not RevenueCat).
  */
-sealed interface PurchaseLogicPurchaseResult {
+sealed interface PurchaseLogicResult {
     /**
-     * Indicates a successful purchase.
+     * Indicates a successful purchase or restore.
      *
      */
-    object Success : PurchaseLogicPurchaseResult
+    object Success : PurchaseLogicResult
 
     /**
-     * Indicates the purchase was cancelled.
+     * Indicates the purchase or restore was cancelled.
      */
-    object Cancellation : PurchaseLogicPurchaseResult
+    object Cancellation : PurchaseLogicResult
 
     /**
-     * Indicates an error occurred during the purchase attempt.
+     * Indicates an error occurred during the purchase ore restore attempt.
      *
      * @property error Details of the error that occurred. If provided, an error dialog will be shown to the user.
      */
-    data class Error(val errorDetails: PurchasesError? = null) : PurchaseLogicPurchaseResult
-}
-
-/**
- * Represents the result of a restore purchases attempt.
- */
-sealed interface PurchaseLogicRestoreResult {
-    /**
-     * Indicates a successful restore operation.
-     */
-    object Success : PurchaseLogicRestoreResult
-
-    /**
-     * Indicates an error occurred during the restore attempt.
-     *
-     * @property error Details of the error that occurred. If provided an error dialog will be shown to the user.
-     */
-    data class Error(val errorDetails: PurchasesError? = null) : PurchaseLogicRestoreResult
+    data class Error(val errorDetails: PurchasesError? = null) :
+        PurchaseLogicResult
 }

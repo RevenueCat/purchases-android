@@ -33,10 +33,11 @@ import com.revenuecat.paywallstester.ui.theme.bundledLobsterTwoFontFamily
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
+import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogic
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicWithCallback
-import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicPurchaseResult
-import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicRestoreResult
+import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult
 import com.revenuecat.purchases.ui.revenuecatui.PaywallDialog
 import com.revenuecat.purchases.ui.revenuecatui.PaywallDialogOptions
 import com.revenuecat.purchases.ui.revenuecatui.PaywallFooter
@@ -51,20 +52,20 @@ private class TestAppPurchaseLogicSuspend : PurchaseLogic {
     override suspend fun performPurchase(
         activity: Activity,
         rcPackage: com.revenuecat.purchases.Package,
-    ): PurchaseLogicPurchaseResult {
+    ): PurchaseLogicResult {
         // Implement your app's custom purchase logic here.
         // If you are using Google Play, RevenueCat will automatically call `purchases.syncPurchases()` if
         // you return `.Success`. If you are using Amazon, you must call `purchases.syncAmazonPurchase()`.
         Log.d(TAG, "Custom purchase code in performPurchase was called.")
-        return PurchaseLogicPurchaseResult.Success
+        return PurchaseLogicResult.Success
     }
 
-    override suspend fun performRestore(customerInfo: CustomerInfo): PurchaseLogicRestoreResult {
+    override suspend fun performRestore(customerInfo: CustomerInfo): PurchaseLogicResult {
         // Implement your app's custom restore logic here.
         // If you are using Google Play, RevenueCat will automatically call `purchases.syncPurchases()` if
         // you return `.Success`. If you are using Amazon, you must call `purchases.syncAmazonPurchase()`.
         Log.d(TAG, "Custom restore code in performRestore was called.")
-        return PurchaseLogicRestoreResult.Success
+        return PurchaseLogicResult.Error(PurchasesError(PurchasesErrorCode.PurchaseCancelledError))
     }
 }
 
@@ -75,21 +76,21 @@ private class TestAppPurchaseLogicCallbacks : PurchaseLogicWithCallback() {
     override fun performPurchaseWithCompletion(
         activity: Activity,
         rcPackage: Package,
-        completion: (PurchaseLogicPurchaseResult) -> Unit,
+        completion: (PurchaseLogicResult) -> Unit,
     ) {
         // Implement your app's custom purchase logic here.
         // If you are using Google Play, RevenueCat will automatically call `purchases.syncPurchases()` if
         // you return `.Success`. If you are using Amazon, you must call `purchases.syncAmazonPurchase()`.
         Log.d(TAG, "Custom purchase code in performPurchaseWithCompletion was called.")
-        completion(PurchaseLogicPurchaseResult.Success)
+        completion(PurchaseLogicResult.Success)
     }
 
-    override fun performRestoreWithCompletion(customerInfo: CustomerInfo, completion: (PurchaseLogicRestoreResult) -> Unit) {
+    override fun performRestoreWithCompletion(customerInfo: CustomerInfo, completion: (PurchaseLogicResult) -> Unit) {
         // Implement your app's custom restore logic here.
         // If you are using Google Play, RevenueCat will automatically call `purchases.syncPurchases()` if
         // you return `.Success`. If you are using Amazon, you must call `purchases.syncAmazonPurchase()`.
         Log.d(TAG, "Custom restore code in performRestoreWithCompletion was called.")
-        completion(PurchaseLogicRestoreResult.Success)
+        completion(PurchaseLogicResult.Success)
     }
 }
 
