@@ -117,7 +117,7 @@ sealed interface PurchaseLogicResult {
     object Cancellation : PurchaseLogicResult
 
     /**
-     * Indicates an error occurred during the purchase ore restore attempt.
+     * Indicates an error occurred during the purchase or restore attempt.
      *
      * @property error Details of the error that occurred. If provided, an error dialog will be shown to the user.
      */
