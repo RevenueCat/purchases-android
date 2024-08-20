@@ -1,7 +1,7 @@
 package com.revenuecat.apitester.kotlin.revenuecatui
 
 import com.revenuecat.purchases.Offering
-import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogic
+import com.revenuecat.purchases.ui.revenuecatui.MyAppPurchaseLogic
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider
@@ -13,18 +13,18 @@ private class PaywallOptionsAPI {
         offering: Offering?,
         listener: PaywallListener?,
         fontProvider: FontProvider?,
-        purchaseLogic: PurchaseLogic?,
+        myAppPurchaseLogic: MyAppPurchaseLogic?,
     ) {
         val options: PaywallOptions = PaywallOptions.Builder(dismissRequest = {})
             .setOffering(offering)
             .setListener(listener)
             .setShouldDisplayDismissButton(true)
             .setFontProvider(fontProvider)
-            .setPurchaseLogic(purchaseLogic)
+            .setMyAppPurchaseLogic(myAppPurchaseLogic)
             .build()
         val listener2: PaywallListener? = options.listener
         val fontProvider2: FontProvider? = options.fontProvider
         val dismissRequest: () -> Unit = options.dismissRequest
-        val purchaseLogic2: PurchaseLogic? = options.purchaseLogic
+        val myAppPurchaseLogic2: MyAppPurchaseLogic? = options.myAppPurchaseLogic
     }
 }
