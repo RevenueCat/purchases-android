@@ -1,9 +1,9 @@
 package com.revenuecat.apitester.kotlin.revenuecatui
 
 import com.revenuecat.purchases.Offering
-import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogic
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
+import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogic
 import com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider
 
 @Suppress("unused", "UNUSED_VARIABLE")
