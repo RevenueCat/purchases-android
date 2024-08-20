@@ -33,10 +33,10 @@ import com.revenuecat.paywallstester.ui.theme.bundledLobsterTwoFontFamily
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
-import com.revenuecat.purchases.ui.revenuecatui.MyAppPurchaseLogic
-import com.revenuecat.purchases.ui.revenuecatui.MyAppPurchaseLogicWithCallback
-import com.revenuecat.purchases.ui.revenuecatui.MyAppPurchaseResult
-import com.revenuecat.purchases.ui.revenuecatui.MyAppRestoreResult
+import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogic
+import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicWithCallback
+import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicPurchaseResult
+import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicRestoreResult
 import com.revenuecat.purchases.ui.revenuecatui.PaywallDialog
 import com.revenuecat.purchases.ui.revenuecatui.PaywallDialogOptions
 import com.revenuecat.purchases.ui.revenuecatui.PaywallFooter
@@ -44,52 +44,52 @@ import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.fonts.CustomFontProvider
 import com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider
 
-private class TestAppPurchaseLogicSuspend : MyAppPurchaseLogic {
+private class TestAppPurchaseLogicSuspend : PurchaseLogic {
 
     companion object { private const val TAG = "PaywallTester" }
 
     override suspend fun performPurchase(
         activity: Activity,
         rcPackage: com.revenuecat.purchases.Package,
-    ): MyAppPurchaseResult {
+    ): PurchaseLogicPurchaseResult {
         // Implement your app's custom purchase logic here.
         // If you are using Google Play, RevenueCat will automatically call `purchases.syncPurchases()` if
         // you return `.Success`. If you are using Amazon, you must call `purchases.syncAmazonPurchase()`.
         Log.d(TAG, "Custom purchase code in performPurchase was called.")
-        return MyAppPurchaseResult.Success
+        return PurchaseLogicPurchaseResult.Success
     }
 
-    override suspend fun performRestore(customerInfo: CustomerInfo): MyAppRestoreResult {
+    override suspend fun performRestore(customerInfo: CustomerInfo): PurchaseLogicRestoreResult {
         // Implement your app's custom restore logic here.
         // If you are using Google Play, RevenueCat will automatically call `purchases.syncPurchases()` if
         // you return `.Success`. If you are using Amazon, you must call `purchases.syncAmazonPurchase()`.
         Log.d(TAG, "Custom restore code in performRestore was called.")
-        return MyAppRestoreResult.Success
+        return PurchaseLogicRestoreResult.Success
     }
 }
 
-private class TestAppPurchaseLogicCallbacks : MyAppPurchaseLogicWithCallback() {
+private class TestAppPurchaseLogicCallbacks : PurchaseLogicWithCallback() {
 
     companion object { private const val TAG = "PaywallTester" }
 
     override fun performPurchaseWithCompletion(
         activity: Activity,
         rcPackage: Package,
-        completion: (MyAppPurchaseResult) -> Unit,
+        completion: (PurchaseLogicPurchaseResult) -> Unit,
     ) {
         // Implement your app's custom purchase logic here.
         // If you are using Google Play, RevenueCat will automatically call `purchases.syncPurchases()` if
         // you return `.Success`. If you are using Amazon, you must call `purchases.syncAmazonPurchase()`.
         Log.d(TAG, "Custom purchase code in performPurchaseWithCompletion was called.")
-        completion(MyAppPurchaseResult.Success)
+        completion(PurchaseLogicPurchaseResult.Success)
     }
 
-    override fun performRestoreWithCompletion(customerInfo: CustomerInfo, completion: (MyAppRestoreResult) -> Unit) {
+    override fun performRestoreWithCompletion(customerInfo: CustomerInfo, completion: (PurchaseLogicRestoreResult) -> Unit) {
         // Implement your app's custom restore logic here.
         // If you are using Google Play, RevenueCat will automatically call `purchases.syncPurchases()` if
         // you return `.Success`. If you are using Amazon, you must call `purchases.syncAmazonPurchase()`.
         Log.d(TAG, "Custom restore code in performRestoreWithCompletion was called.")
-        completion(MyAppRestoreResult.Success)
+        completion(PurchaseLogicRestoreResult.Success)
     }
 }
 
@@ -125,7 +125,7 @@ fun PaywallsScreen(
                     onClick = {
                         displayPaywallState = DisplayPaywallState.FullScreen(
                             offering,
-                            myAppPurchaseLogic = myAppPurchaseLogic,
+                            purchaseLogic = myAppPurchaseLogic,
                         )
                     },
                     emoji = "\uD83D\uDCF1",
@@ -136,7 +136,7 @@ fun PaywallsScreen(
                         displayPaywallState = DisplayPaywallState.Footer(
                             offering,
                             condensed = false,
-                            myAppPurchaseLogic = myAppPurchaseLogic,
+                            purchaseLogic = myAppPurchaseLogic,
                         )
                     },
                     emoji = "\uD83D\uDD3D",
@@ -147,7 +147,7 @@ fun PaywallsScreen(
                         displayPaywallState = DisplayPaywallState.Footer(
                             offering,
                             condensed = true,
-                            myAppPurchaseLogic = myAppPurchaseLogic,
+                            purchaseLogic = myAppPurchaseLogic,
                         )
                     },
                     emoji = "\uD83D\uDDDC️",
@@ -158,7 +158,7 @@ fun PaywallsScreen(
                         displayPaywallState = DisplayPaywallState.FullScreen(
                             offering,
                             CustomFontProvider(bundledLobsterTwoFontFamily),
-                            myAppPurchaseLogic = myAppPurchaseLogic,
+                            purchaseLogic = myAppPurchaseLogic,
                         )
                     },
                     emoji = "\uD83C\uDD70️",
@@ -186,7 +186,7 @@ private fun FullScreenDialog(currentState: DisplayPaywallState.FullScreen, onDis
             .setDismissRequest(onDismiss)
             .setOffering(currentState.offering)
             .setFontProvider(currentState.fontProvider)
-            .setMyAppPurchaseLogic(currentState.myAppPurchaseLogic)
+            .AppPurchaseLogic(currentState.purchaseLogic)
             .build(),
     )
 }
@@ -202,7 +202,7 @@ private fun FooterDialog(currentState: DisplayPaywallState.Footer, onDismiss: ()
                 PaywallFooter(
                     options = PaywallOptions.Builder(dismissRequest = onDismiss)
                         .setOffering(currentState.offering)
-                        .setMyAppPurchaseLogic(currentState.myAppPurchaseLogic)
+                        .setPurchaseLogic(currentState.purchaseLogic)
                         .build(),
                     condensed = currentState.condensed,
                 ) { footerPadding ->
@@ -219,12 +219,12 @@ private sealed class DisplayPaywallState {
     constructor(
         val offering: Offering? = null,
         val fontProvider: FontProvider? = null,
-        var myAppPurchaseLogic: MyAppPurchaseLogic? = null,
+        var purchaseLogic: PurchaseLogic? = null,
     ) : DisplayPaywallState()
     data class Footer(
         val offering: Offering? = null,
         val condensed: Boolean = false,
-        var myAppPurchaseLogic: MyAppPurchaseLogic? = null,
+        var purchaseLogic: PurchaseLogic? = null,
     ) : DisplayPaywallState()
 }
 

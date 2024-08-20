@@ -12,7 +12,7 @@ data class PaywallDialogOptions internal constructor(
     val shouldDisplayDismissButton: Boolean,
     val fontProvider: FontProvider?,
     val listener: PaywallListener?,
-    val myAppPurchaseLogic: MyAppPurchaseLogic?,
+    val purchaseLogic: PurchaseLogic?,
 ) {
 
     constructor(builder: Builder) : this(
@@ -22,7 +22,7 @@ data class PaywallDialogOptions internal constructor(
         shouldDisplayDismissButton = builder.shouldDisplayDismissButton,
         fontProvider = builder.fontProvider,
         listener = builder.listener,
-        myAppPurchaseLogic = builder.myAppPurchaseLogic,
+        purchaseLogic = builder.purchaseLogic,
     )
 
     internal fun toPaywallOptions(dismissRequest: () -> Unit): PaywallOptions {
@@ -34,7 +34,7 @@ data class PaywallDialogOptions internal constructor(
             .setShouldDisplayDismissButton(shouldDisplayDismissButton)
             .setFontProvider(fontProvider)
             .setListener(listener)
-            .setMyAppPurchaseLogic(myAppPurchaseLogic)
+            .setPurchaseLogic(purchaseLogic)
             .build()
     }
 
@@ -45,7 +45,7 @@ data class PaywallDialogOptions internal constructor(
         internal var shouldDisplayDismissButton: Boolean = true
         internal var fontProvider: FontProvider? = null
         internal var listener: PaywallListener? = null
-        internal var myAppPurchaseLogic: MyAppPurchaseLogic? = null
+        internal var purchaseLogic: PurchaseLogic? = null
 
         /**
          * Allows to configure whether to display the paywall dialog depending on operations on the CustomerInfo
@@ -86,8 +86,8 @@ data class PaywallDialogOptions internal constructor(
             this.listener = listener
         }
 
-        fun setMyAppPurchaseLogic(myAppPurchaseLogic: MyAppPurchaseLogic?) = apply {
-            this.myAppPurchaseLogic = myAppPurchaseLogic
+        fun AppPurchaseLogic(purchaseLogic: PurchaseLogic?) = apply {
+            this.purchaseLogic = purchaseLogic
         }
 
         fun build(): PaywallDialogOptions {

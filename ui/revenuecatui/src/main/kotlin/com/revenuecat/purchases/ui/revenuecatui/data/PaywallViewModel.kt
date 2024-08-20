@@ -19,9 +19,9 @@ import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
 import com.revenuecat.purchases.paywalls.events.PaywallEventType
-import com.revenuecat.purchases.ui.revenuecatui.MyAppPurchaseLogic
-import com.revenuecat.purchases.ui.revenuecatui.MyAppPurchaseResult
-import com.revenuecat.purchases.ui.revenuecatui.MyAppRestoreResult
+import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogic
+import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicPurchaseResult
+import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicRestoreResult
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
@@ -95,8 +95,8 @@ internal class PaywallViewModelImpl(
     private val mode: PaywallMode
         get() = options.mode
 
-    private val myAppPurchaseLogic: MyAppPurchaseLogic?
-        get() = options.myAppPurchaseLogic
+    private val purchaseLogic: PurchaseLogic?
+        get() = options.purchaseLogic
 
     private var paywallPresentationData: PaywallEvent.Data? = null
 
@@ -165,7 +165,7 @@ internal class PaywallViewModelImpl(
         }
         viewModelScope.launch {
             try {
-                val customRestoreHandler = myAppPurchaseLogic?.let { it::performRestore }
+                val customRestoreHandler = purchaseLogic?.let { it::performRestore }
 
                 when (purchases.purchasesAreCompletedBy) {
                     PurchasesAreCompletedBy.MY_APP -> {
@@ -175,7 +175,7 @@ internal class PaywallViewModelImpl(
                         }
                         val customerInfo = purchases.awaitCustomerInfo()
                         when (val result = customRestoreHandler(customerInfo)) {
-                            is MyAppRestoreResult.Success -> {
+                            is PurchaseLogicRestoreResult.Success -> {
                                 purchases.syncPurchases()
 
                                 shouldDisplayBlock?.let {
@@ -189,7 +189,7 @@ internal class PaywallViewModelImpl(
                                 }
                             }
 
-                            is MyAppRestoreResult.Error -> {
+                            is PurchaseLogicRestoreResult.Error -> {
                                 result.errorDetails?.let { _actionError.value = it }
                             }
                         }
@@ -260,7 +260,7 @@ internal class PaywallViewModelImpl(
     @Suppress("LongMethod", "NestedBlockDepth")
     private suspend fun performPurchase(activity: Activity, packageToPurchase: Package) {
         try {
-            val customPurchaseHandler = myAppPurchaseLogic?.let { it::performPurchase }
+            val customPurchaseHandler = purchaseLogic?.let { it::performPurchase }
 
             when (purchases.purchasesAreCompletedBy) {
                 PurchasesAreCompletedBy.MY_APP -> {
@@ -269,15 +269,15 @@ internal class PaywallViewModelImpl(
                             "is PurchasesAreCompletedBy.MY_APP"
                     }
                     when (val result = customPurchaseHandler.invoke(activity, packageToPurchase)) {
-                        is MyAppPurchaseResult.Success -> {
+                        is PurchaseLogicPurchaseResult.Success -> {
                             purchases.syncPurchases()
                             Logger.d("Dismissing paywall after purchase")
                             options.dismissRequest()
                         }
-                        is MyAppPurchaseResult.Cancellation -> {
+                        is PurchaseLogicPurchaseResult.Cancellation -> {
                             trackPaywallCancel()
                         }
-                        is MyAppPurchaseResult.Error -> {
+                        is PurchaseLogicPurchaseResult.Error -> {
                             result.errorDetails?.let { _actionError.value = it }
                         }
                     }
@@ -316,7 +316,7 @@ internal class PaywallViewModelImpl(
     }
 
     private fun validateState() {
-        if (purchases.purchasesAreCompletedBy == PurchasesAreCompletedBy.MY_APP && options.myAppPurchaseLogic == null) {
+        if (purchases.purchasesAreCompletedBy == PurchasesAreCompletedBy.MY_APP && options.purchaseLogic == null) {
             _state.value = PaywallState.Error(
                 "myAppPurchaseLogic is null, but is required when purchases.purchasesAreCompletedBy is " +
                     ".MY_APP. App purchases will not be successful.",
