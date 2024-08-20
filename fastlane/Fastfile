@@ -1,4 +1,4 @@
-# This file contains the fastlane.tools configuration
+x# This file contains the fastlane.tools configuration
 # You can find the documentation at https://docs.fastlane.tools
 #
 # For a list of all available actions, check out
@@ -175,6 +175,7 @@ platform :android do
             --app ../purchases/test_artifacts/loadShedderIntegrationTest-app.apk \
             --test ../purchases/test_artifacts/loadShedderIntegrationTest-test.apk \
             --timeout 2m \
+            --device model=panther,version=33,locale=en,orientation=portrait \
             --results-bucket cloud-test-#{google_project_id}"
 
       dir_path = File.join(Dir.home, 'gsutil')
