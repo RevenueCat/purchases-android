@@ -107,7 +107,6 @@ abstract class PurchaseLogicWithCallback : PurchaseLogic {
 sealed interface PurchaseLogicResult {
     /**
      * Indicates a successful purchase or restore.
-     *
      */
     object Success : PurchaseLogicResult
 

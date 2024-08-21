@@ -187,7 +187,7 @@ private fun FullScreenDialog(currentState: DisplayPaywallState.FullScreen, onDis
             .setDismissRequest(onDismiss)
             .setOffering(currentState.offering)
             .setFontProvider(currentState.fontProvider)
-            .AppPurchaseLogic(currentState.purchaseLogic)
+            .setCustomPurchaseLogic(currentState.purchaseLogic)
             .build(),
     )
 }
