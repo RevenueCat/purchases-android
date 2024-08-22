@@ -468,7 +468,7 @@ DESC
       # Application Id
       if new_application_id.to_s.size > 0
         application_id = "com.revenuecat.purchases_sample"
-        sh("find ../#{project_dir}/app -name 'build.gradle' -type f -exec sed -i '' 's/#{application_id}/#{new_application_id}/' {} \\;")
+        sh("find ../#{project_dir}/app -name 'build.gradle.kts' -type f -exec sed -i '' 's/#{application_id}/#{new_application_id}/' {} \\;")
       end
 
       # Amazon pem
