@@ -6,5 +6,5 @@ import com.revenuecat.purchases.api.BuildConfig
 internal object Config {
     var logLevel = LogLevel.debugLogsEnabled(BuildConfig.DEBUG)
 
-    const val frameworkVersion = "8.5.0"
+    const val frameworkVersion = "8.6.0-SNAPSHOT"
 }
