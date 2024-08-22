@@ -1,6 +1,6 @@
 ## 8.5.1
 ### Dependency Updates
-* Update `compose-bom` to latest version (#1817) via Toni Rico (@tonidero)
+* Update `compose-bom` to 2024.08.00 (#1817) via Toni Rico (@tonidero)
 
 ## 8.5.0
 ### New Features
