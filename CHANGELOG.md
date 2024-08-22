@@ -1,3 +1,9 @@
+## 8.6.0
+### New Features
+* Update `compose-bom` to 2024.08.00 (#1817) via Toni Rico (@tonidero)
+### Other Changes
+* Update debug view snapshot tests (#1819) via Toni Rico (@tonidero)
+
 ## 8.5.0
 ### New Features
 * [Paywalls] Add default locale (#1809) via Josh Holtz (@joshdholtz)

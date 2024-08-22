@@ -1,5 +1,4 @@
 ### New Features
-* [Paywalls] Add default locale (#1809) via Josh Holtz (@joshdholtz)
-* [Paywalls] Support to round+truncate prices displayed on paywalls for backend-specified countries (#1806) via James Borthwick (@jamesrb1)
+* Update `compose-bom` to 2024.08.00 (#1817) via Toni Rico (@tonidero)
 ### Other Changes
-* Publish paywall tester on each release (#1803) via Toni Rico (@tonidero)
+* Update debug view snapshot tests (#1819) via Toni Rico (@tonidero)
