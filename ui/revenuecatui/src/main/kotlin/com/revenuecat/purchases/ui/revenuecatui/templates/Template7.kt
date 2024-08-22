@@ -5,7 +5,6 @@ package com.revenuecat.purchases.ui.revenuecatui.templates
 import android.net.Uri
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -357,7 +356,6 @@ private fun selectedLocalizationForTier(tier: TemplateConfiguration.TierInfo): P
     return tier.defaultPackage.localization
 }
 
-@OptIn(ExperimentalAnimationApi::class)
 @Composable
 private fun Features(
     state: PaywallState.Loaded,
@@ -368,7 +366,7 @@ private fun Features(
     val localization = selectedLocalizationForTier(selectedTier)
 
     AnimatedContent(
-        targetState = selectedTier,
+        targetState = localization,
         label = "features portrait",
     ) {
         Column(
@@ -378,7 +376,7 @@ private fun Features(
                 Alignment.CenterVertically,
             ),
         ) {
-            localization.features.forEach { feature ->
+            it.features.forEach { feature ->
                 Feature(
                     feature = feature,
                     colors = colorForTier,
