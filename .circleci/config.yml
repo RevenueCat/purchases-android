@@ -633,7 +633,7 @@ workflows:
       - run-backend-integration-tests
       - verify-revenuecatui-snapshots
       - run-revenuecatui-ui-tests
-      - verify_debug_view_snapshot_tests: *release-branches
+      - verify_debug_view_snapshot_tests
       - integration-tests-build: *release-branches
       - purchases-integration-tests-build: *release-branches
       - run-firebase-tests-purchases-custom-entitlement-computation-integration-test:
