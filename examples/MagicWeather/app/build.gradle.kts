@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    val compileVersion: Int by rootProject.extra
+    val compileVersion = 34
     compileSdk = compileVersion
 
     defaultConfig {
