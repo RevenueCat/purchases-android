@@ -2,9 +2,20 @@
 <SmellBaseline>
   <ManuallySuppressedIssues/>
   <CurrentIssues>
+    <ID>ComposableNaming:PaywallAPI.kt$PaywallAPI$check</ID>
+    <ID>ComposableNaming:PaywallAPI.kt$PaywallAPI$checkDialog</ID>
+    <ID>ComposableNaming:PaywallAPI.kt$PaywallAPI$checkFooter</ID>
+    <ID>ComposableParamOrder:AdaptiveComposable.kt$AdaptiveComposable</ID>
+    <ID>ComposableParamOrder:IntroEligibilityStateView.kt$IntroEligibilityStateView</ID>
+    <ID>ComposableParamOrder:PaywallIcon.kt$PaywallIcon</ID>
+    <ID>ComposableParamOrder:PaywallSuccessView.kt$DefaultMarketingContent</ID>
+    <ID>ComposableParamOrder:RemoteImage.kt$AsyncImage</ID>
+    <ID>ComposableParamOrder:RemoteImage.kt$Image</ID>
+    <ID>ComposableParamOrder:SettingOffering.kt$SettingOffering</ID>
+    <ID>ComposableParamOrder:Template7.kt$AnimatedPackages</ID>
+    <ID>CompositionLocalAllowlist:HelperFunctions.kt$LocalActivity</ID>
     <ID>CyclomaticComplexMethod:EntitlementInfo.kt$EntitlementInfo$override fun equals(other: Any?): Boolean</ID>
     <ID>DestructuringDeclarationWithTooManyEntries:Period.kt$val (year, month, week, day) = periodResult.destructured</ID>
-    <ID>EmptyCatchBlock:PurchasesOrchestrator.kt$PurchasesOrchestrator.Companion.&lt;no name provided>${ }</ID>
     <ID>Filename:backendHelpers.kt$com.revenuecat.purchases.subscriberattributes.backendHelpers.kt</ID>
     <ID>Filename:billingClientParamBuilders.kt$com.revenuecat.purchases.google.billingClientParamBuilders.kt</ID>
     <ID>Filename:billingResultExtensions.kt$com.revenuecat.purchases.google.billingResultExtensions.kt</ID>
@@ -42,22 +53,201 @@
     <ID>MagicNumber:SampleWeatherData.kt$SampleWeatherData.Companion$91</ID>
     <ID>MagicNumber:storeProductConversions.kt$3</ID>
     <ID>MaxLineLength:Constants.kt$Constants$/* The entitlement ID from the RevenueCat dashboard that is activated upon successful in-app purchase for the duration of the purchase. Modify this property to reflect your app's entitlement identifier. */</ID>
+    <ID>ModifierComposed:Placeholder.kt$placeholder</ID>
+    <ID>ModifierMissing:AppInfoScreen.kt$AppInfoScreen</ID>
+    <ID>ModifierMissing:CloseButton.kt$CloseButton</ID>
+    <ID>ModifierMissing:CustomerInfoDetailScreen.kt$CustomerInfoDetailScreen</ID>
+    <ID>ModifierMissing:CustomerInfoEventList.kt$CustomerInfoEventsList</ID>
+    <ID>ModifierMissing:CustomerInfoEventList.kt$CustomerInfoEventsListItem</ID>
+    <ID>ModifierMissing:DisableTouchesComposable.kt$DisableTouchesComposable</ID>
+    <ID>ModifierMissing:ExplanationScreen.kt$ExplanationScreen</ID>
+    <ID>ModifierMissing:InsetSpacers.kt$StatusBarSpacer</ID>
+    <ID>ModifierMissing:InsetSpacers.kt$SystemBarsSpacer</ID>
+    <ID>ModifierMissing:MainScreen.kt$MainScreen</ID>
+    <ID>ModifierMissing:MainScreen.kt$MainScreenNavigation</ID>
+    <ID>ModifierMissing:PaywallFooter.kt$PaywallFooter</ID>
+    <ID>ModifierMissing:PaywallFooterScreen.kt$PaywallFooterScreen</ID>
+    <ID>ModifierMissing:PaywallScreen.kt$PaywallScreen</ID>
+    <ID>ModifierMissing:PaywallsScreen.kt$PaywallsScreen</ID>
+    <ID>ModifierMissing:WeatherScreen.kt$WeatherScreen</ID>
+    <ID>ModifierNaming:Footer.kt$childModifier</ID>
+    <ID>ModifierNaming:IconImage.kt$childModifier</ID>
+    <ID>ModifierNaming:PurchaseButton.kt$childModifier</ID>
+    <ID>ModifierNaming:Template2.kt$childModifier</ID>
+    <ID>ModifierNotUsedAtRoot:Markdown.kt$modifier</ID>
+    <ID>ModifierNotUsedAtRoot:Markdown.kt$modifier = modifier</ID>
+    <ID>ModifierNotUsedAtRoot:Markdown.kt$overriddenStyle</ID>
+    <ID>ModifierNotUsedAtRoot:PaywallScreen.kt$modifier = modifier.padding(padding)</ID>
+    <ID>ModifierNotUsedAtRoot:PaywallSuccessView.kt$modifier</ID>
+    <ID>ModifierNotUsedAtRoot:PaywallSuccessView.kt$modifier = modifier</ID>
+    <ID>ModifierNotUsedAtRoot:PaywallSuccessView.kt$modifier = modifier .fillMaxWidth() .weight(1f)</ID>
+    <ID>ModifierNotUsedAtRoot:PaywallSuccessView.kt$modifier = modifier .fillMaxWidth() .weight(1f, true) .padding(32.dp)</ID>
+    <ID>ModifierNotUsedAtRoot:PaywallSuccessView.kt$modifier = modifier.clip(RoundedCornerShape(10.dp)).weight(2f, true)</ID>
+    <ID>ModifierNotUsedAtRoot:PaywallSuccessView.kt$modifier = modifier.fillMaxSize()</ID>
+    <ID>ModifierNotUsedAtRoot:PaywallSuccessView.kt$modifier = modifier.padding(16.dp)</ID>
+    <ID>ModifierNotUsedAtRoot:PaywallSuccessView.kt$modifier = modifier.padding(8.dp)</ID>
+    <ID>ModifierNotUsedAtRoot:Template4.kt$modifier = modifier .alpha(buttonAlpha) // Trick to prevent white line around the button border .padding(with(LocalDensity.current) { 1.toDp() }) .semantics { selected = isSelected // Append discount discountText?.let { text = AnnotatedString(it) } } .fillMaxHeight()</ID>
+    <ID>ModifierNotUsedAtRoot:UserScreen.kt$modifier = modifier .fillMaxWidth() .padding(horizontal = 32.dp, vertical = 8.dp)</ID>
+    <ID>ModifierNotUsedAtRoot:UserScreen.kt$modifier = modifier .fillMaxWidth() .weight(1f, true) .padding(horizontal = 32.dp)</ID>
+    <ID>ModifierNotUsedAtRoot:UserScreen.kt$modifier = modifier.padding(16.dp)</ID>
+    <ID>ModifierNotUsedAtRoot:UserScreen.kt$modifier = modifier.padding(8.dp)</ID>
+    <ID>ModifierReused:Markdown.kt$Box( modifier = modifier .drawBehind { drawLine( color = color, strokeWidth = 2f, start = Offset(12.dp.value, 0f), end = Offset(12.dp.value, size.height), ) } .padding(start = 16.dp, top = 4.dp, bottom = 4.dp), ) { val text = buildAnnotatedString { pushStyle( MaterialTheme.typography.bodyLarge.toSpanStyle() .plus(SpanStyle(fontStyle = FontStyle.Italic)), ) appendMarkdownChildren(blockQuote, color, allowLinks) pop() } Text(text, modifier) }</ID>
+    <ID>ModifierReused:Markdown.kt$Box(modifier = modifier) { val styledText = buildAnnotatedString { pushStyle( style .copy(fontWeight = fontWeight) .toSpanStyle(), ) appendMarkdownChildren(paragraph as Node, color, allowLinks) pop() } MarkdownText(styledText, color, style, fontWeight, textAlign, allowLinks, modifier) }</ID>
+    <ID>ModifierReused:Markdown.kt$Box(modifier = modifier.padding(bottom = padding)) { val text = buildAnnotatedString { appendMarkdownChildren(heading, color, allowLinks) } MarkdownText(text, color, overriddenStyle, fontWeight, textAlign, allowLinks, modifier) }</ID>
+    <ID>ModifierReused:Markdown.kt$Box(modifier = modifier.padding(start = 8.dp, bottom = padding)) { Text( text = fencedCodeBlock.literal, style = TextStyle(fontFamily = FontFamily.Monospace), modifier = modifier, ) }</ID>
+    <ID>ModifierReused:Markdown.kt$Column(modifier = modifier.padding(start = start, bottom = bottom)) { var listItem = listBlock.firstChild while (listItem != null) { var child = listItem.firstChild while (child != null) { when (child) { is BulletList -> MDBulletList(child, color, style, fontWeight, textAlign, allowLinks, modifier) is OrderedList -> MDOrderedList(child, color, style, fontWeight, textAlign, allowLinks, modifier) else -> item(child) } child = child.next } listItem = listItem.next } }</ID>
+    <ID>ModifierReused:Markdown.kt$MDBulletList(child, color, style, fontWeight, textAlign, allowLinks, modifier)</ID>
+    <ID>ModifierReused:Markdown.kt$MDListItems( bulletList, color = color, style = style, fontWeight = fontWeight, textAlign = textAlign, allowLinks = allowLinks, modifier = modifier, ) { val text = buildAnnotatedString { pushStyle(MaterialTheme.typography.bodyLarge.toSpanStyle()) append("$marker ") appendMarkdownChildren(it, color, allowLinks) pop() } MarkdownText(text, color, style, fontWeight, textAlign, allowLinks, modifier) }</ID>
+    <ID>ModifierReused:Markdown.kt$MDListItems( orderedList, color = color, style = style, fontWeight = fontWeight, textAlign = textAlign, allowLinks = allowLinks, modifier = modifier, ) { val text = buildAnnotatedString { pushStyle(style.toSpanStyle()) append("${number++}$delimiter ") appendMarkdownChildren(it, color, allowLinks) pop() } MarkdownText(text, color, style, fontWeight, textAlign, allowLinks, modifier) }</ID>
+    <ID>ModifierReused:Markdown.kt$MDOrderedList(child, color, style, fontWeight, textAlign, allowLinks, modifier)</ID>
+    <ID>ModifierReused:Markdown.kt$MarkdownText(styledText, color, style, fontWeight, textAlign, allowLinks, modifier)</ID>
+    <ID>ModifierReused:Markdown.kt$MarkdownText(text, color, overriddenStyle, fontWeight, textAlign, allowLinks, modifier)</ID>
+    <ID>ModifierReused:Markdown.kt$MarkdownText(text, color, style, fontWeight, textAlign, allowLinks, modifier)</ID>
+    <ID>ModifierReused:Markdown.kt$Text( text = fencedCodeBlock.literal, style = TextStyle(fontFamily = FontFamily.Monospace), modifier = modifier, )</ID>
+    <ID>ModifierReused:Markdown.kt$Text(text, modifier)</ID>
+    <ID>ModifierReused:PaywallSuccessView.kt$Box( modifier = modifier .fillMaxWidth() .weight(1f), ) { Column( modifier = modifier.fillMaxSize(), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally, ) { Text( text = state.title, modifier = modifier, textAlign = TextAlign.Center, style = MaterialTheme.typography.h5, ) Text( text = state.subtitle, modifier = modifier, textAlign = TextAlign.Center, style = MaterialTheme.typography.subtitle1, ) } }</ID>
+    <ID>ModifierReused:PaywallSuccessView.kt$Box( modifier = modifier .fillMaxWidth() .weight(1f, true) .padding(32.dp), contentAlignment = Alignment.Center, ) { DefaultMarketingContent(state = uiState) }</ID>
+    <ID>ModifierReused:PaywallSuccessView.kt$Column( modifier = modifier.fillMaxSize(), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally, ) { Text( text = state.title, modifier = modifier, textAlign = TextAlign.Center, style = MaterialTheme.typography.h5, ) Text( text = state.subtitle, modifier = modifier, textAlign = TextAlign.Center, style = MaterialTheme.typography.subtitle1, ) }</ID>
+    <ID>ModifierReused:PaywallSuccessView.kt$Column( modifier = modifier.fillMaxSize().padding(horizontal = 32.dp), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally, ) { if (marketingContent == null) { Box( modifier = modifier .fillMaxWidth() .weight(1f, true) .padding(32.dp), contentAlignment = Alignment.Center, ) { DefaultMarketingContent(state = uiState) } } else { marketingContent() } Spacer(modifier = modifier.padding(8.dp)) uiState.offering.availablePackages .sortedBy { it.product.period?.unit } .forEach { packageToDisplay -> PackageButton(packageToDisplay, modifier) { activity, packageToPurchase -> viewModel.purchasePackage( activity, packageToPurchase, purchaseListener, ) } } Spacer(modifier = modifier.padding(16.dp)) }</ID>
+    <ID>ModifierReused:PaywallSuccessView.kt$Image( painter = painterResource(id = state.imageResource), modifier = modifier.clip(RoundedCornerShape(10.dp)).weight(2f, true), alignment = Alignment.Center, contentDescription = null, )</ID>
+    <ID>ModifierReused:PaywallSuccessView.kt$PackageButton(packageToDisplay, modifier) { activity, packageToPurchase -> viewModel.purchasePackage( activity, packageToPurchase, purchaseListener, ) }</ID>
+    <ID>ModifierReused:PaywallSuccessView.kt$Spacer(modifier = modifier.padding(16.dp))</ID>
+    <ID>ModifierReused:PaywallSuccessView.kt$Spacer(modifier = modifier.padding(8.dp))</ID>
+    <ID>ModifierReused:PaywallSuccessView.kt$Text( text = state.subtitle, modifier = modifier, textAlign = TextAlign.Center, style = MaterialTheme.typography.subtitle1, )</ID>
+    <ID>ModifierReused:PaywallSuccessView.kt$Text( text = state.title, modifier = modifier, textAlign = TextAlign.Center, style = MaterialTheme.typography.h5, )</ID>
+    <ID>ModifierReused:Template2.kt$AnimatedPackages( state, packageSelectionVisible, landscapeLayout = true, viewModel, childModifier, )</ID>
+    <ID>ModifierReused:Template2.kt$IconImage(state, childModifier)</ID>
+    <ID>ModifierReused:Template2.kt$PurchaseButton(state, viewModel, childModifier)</ID>
+    <ID>ModifierReused:Template2.kt$PurchaseButton(state, viewModel, childModifier, horizontalPadding = 0.dp)</ID>
+    <ID>ModifierReused:Template2.kt$Subtitle(state, childModifier)</ID>
+    <ID>ModifierReused:Template2.kt$Subtitle(state, childModifier, TextAlign.Start)</ID>
+    <ID>ModifierReused:Template2.kt$Template2PortraitContent(state, viewModel, packageSelectorVisible, childModifier)</ID>
+    <ID>ModifierReused:Template2.kt$Title(state, childModifier)</ID>
+    <ID>ModifierReused:Template2.kt$Title(state, childModifier, TextAlign.Start)</ID>
+    <ID>ModifierReused:Template4.kt$Button( modifier = modifier .alpha(buttonAlpha) // Trick to prevent white line around the button border .padding(with(LocalDensity.current) { 1.toDp() }) .semantics { selected = isSelected // Append discount discountText?.let { text = AnnotatedString(it) } } .fillMaxHeight(), onClick = { viewModel.selectPackage(packageInfo) }, colors = ButtonDefaults.buttonColors(containerColor = colors.background), shape = RoundedCornerShape(UIConstant.defaultCornerRadius), contentPadding = PaddingValues( vertical = UIConstant.defaultVerticalSpacing, horizontal = UIConstant.defaultHorizontalPadding, ), ) { SelectPackageButtonContent(packageInfo, colors) }</ID>
+    <ID>ModifierReused:Template4.kt$Column( modifier = columnModifier .semantics(mergeDescendants = true) {}, horizontalAlignment = Alignment.CenterHorizontally, ) { DiscountRelativeToMostExpensivePerMonth(colors = colors, text = discountText, selected = isSelected) Box( modifier = Modifier // Apply the border to the box instead of the button to avoid the border showing // a white line around .border( width = UIConstant.defaultPackageBorderWidth, color = mainColor, shape = RoundedCornerShape(UIConstant.defaultCornerRadius), ), ) { Button( modifier = modifier .alpha(buttonAlpha) // Trick to prevent white line around the button border .padding(with(LocalDensity.current) { 1.toDp() }) .semantics { selected = isSelected // Append discount discountText?.let { text = AnnotatedString(it) } } .fillMaxHeight(), onClick = { viewModel.selectPackage(packageInfo) }, colors = ButtonDefaults.buttonColors(containerColor = colors.background), shape = RoundedCornerShape(UIConstant.defaultCornerRadius), contentPadding = PaddingValues( vertical = UIConstant.defaultVerticalSpacing, horizontal = UIConstant.defaultHorizontalPadding, ), ) { SelectPackageButtonContent(packageInfo, colors) } CheckmarkBox( isSelected = isSelected, colors = state.currentColors, modifier = Modifier .align(Alignment.TopEnd) .padding(Template4UIConstants.checkmarkPadding), ) } }</ID>
+    <ID>ModifierReused:UserScreen.kt$Box( modifier = modifier .fillMaxWidth() .weight(1f, true) .padding(horizontal = 32.dp), contentAlignment = Alignment.Center, ) { UserInfo(uiState) }</ID>
+    <ID>ModifierReused:UserScreen.kt$Button( modifier = modifier .fillMaxWidth() .padding(horizontal = 32.dp, vertical = 8.dp), onClick = { viewModel.initiateLogIn() }, ) { Text(text = "Login") }</ID>
+    <ID>ModifierReused:UserScreen.kt$Button( modifier = modifier .fillMaxWidth() .padding(horizontal = 32.dp, vertical = 8.dp), onClick = { viewModel.restorePurchases() }, ) { Text(text = "Restore purchases") }</ID>
+    <ID>ModifierReused:UserScreen.kt$Column( modifier = modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center, ) { Box( modifier = modifier .fillMaxWidth() .weight(1f, true) .padding(horizontal = 32.dp), contentAlignment = Alignment.Center, ) { UserInfo(uiState) } Spacer(modifier = modifier.padding(8.dp)) Button( modifier = modifier .fillMaxWidth() .padding(horizontal = 32.dp, vertical = 8.dp), onClick = { viewModel.initiateLogIn() }, ) { Text(text = "Login") } Button( modifier = modifier .fillMaxWidth() .padding(horizontal = 32.dp, vertical = 8.dp), onClick = { viewModel.restorePurchases() }, ) { Text(text = "Restore purchases") } Spacer(modifier = modifier.padding(16.dp)) }</ID>
+    <ID>ModifierReused:UserScreen.kt$Spacer(modifier = modifier.padding(16.dp))</ID>
+    <ID>ModifierReused:UserScreen.kt$Spacer(modifier = modifier.padding(8.dp))</ID>
+    <ID>ModifierWithoutDefault:Footer.kt$childModifier</ID>
+    <ID>ModifierWithoutDefault:Markdown.kt$modifier</ID>
+    <ID>ModifierWithoutDefault:RemoteImage.kt$modifier</ID>
+    <ID>ModifierWithoutDefault:Template2.kt$childModifier</ID>
+    <ID>MultiLineIfElse:BillingWrapper.kt$BillingWrapper$googlePurchasingData.productId</ID>
+    <ID>MultiLineIfElse:ConfigureFragment.kt$ConfigureFragment$PurchasesConfiguration.Builder(application, apiKey)</ID>
+    <ID>MultiLineIfElse:ConfigureFragment.kt$ConfigureFragment$R.id.google_store_radio_id</ID>
+    <ID>MultiLineIfElse:CustomerInfoHelper.kt$CustomerInfoHelper$CustomerInfoStrings.CUSTOMERINFO_STALE_UPDATING_FOREGROUND</ID>
+    <ID>MultiLineIfElse:DeviceCache.kt$DeviceCache$VerificationResult.NOT_REQUESTED.name</ID>
+    <ID>MultiLineIfElse:OfferingsManager.kt$OfferingsManager$OfferingStrings.OFFERINGS_STALE_UPDATING_IN_FOREGROUND</ID>
+    <ID>MultiLineIfElse:Purchases.kt$Purchases$PurchasesAreCompletedBy.MY_APP</ID>
+    <ID>MultiLineIfElse:PurchasesConfiguration.kt$PurchasesConfiguration.Builder$PurchasesAreCompletedBy.REVENUECAT</ID>
+    <ID>MultiLineIfElse:PurchasesOrchestrator.kt$PurchasesOrchestrator$purchasingData.productId</ID>
+    <ID>MultiLineIfElse:SampleWeatherData.kt$SampleWeatherData$it.toString()</ID>
+    <ID>MultiLineIfElse:SubscriberAttributesManager.kt$SubscriberAttributesManager.ObtainDeviceIdentifiersObservable$listeners.add { completion() }</ID>
+    <ID>MutableStateAutoboxing:AdaptiveComposable.kt$mutableStateOf(0)</ID>
+    <ID>MutableStateAutoboxing:Placeholder.kt$mutableStateOf(0f)</ID>
+    <ID>MutableStateAutoboxing:TierSwitcher.kt$mutableStateOf(0)</ID>
+    <ID>MutableStateParam:PurchaseButton.kt$selectedPackage</ID>
     <ID>NoWildcardImports:PaywallFragment.kt$import com.revenuecat.purchases.*</ID>
     <ID>NoWildcardImports:UserFragment.kt$import com.revenuecat.purchases.*</ID>
+    <ID>ParameterNaming:AppInfoScreen.kt$onDismissed</ID>
+    <ID>ParameterNaming:CustomerInfoEventList.kt$onEventClicked</ID>
+    <ID>ParameterNaming:DebugRevenueCatBottomSheet.kt$onPurchaseCompleted</ID>
+    <ID>ParameterNaming:DebugRevenueCatBottomSheet.kt$onPurchaseErrored</ID>
+    <ID>ParameterNaming:DebugRevenueCatScreen.kt$onPurchaseCompleted</ID>
+    <ID>ParameterNaming:DebugRevenueCatScreen.kt$onPurchaseErrored</ID>
+    <ID>ParameterNaming:InternalDebugRevenueCatBottomSheet.kt$onPurchaseCompleted</ID>
+    <ID>ParameterNaming:InternalDebugRevenueCatBottomSheet.kt$onPurchaseErrored</ID>
+    <ID>ParameterNaming:InternalDebugRevenueCatScreen.kt$onPurchaseCompleted</ID>
+    <ID>ParameterNaming:InternalDebugRevenueCatScreen.kt$onPurchaseErrored</ID>
+    <ID>ParameterNaming:MainScreen.kt$onPurchaseClicked</ID>
+    <ID>ParameterNaming:PaywallSuccessView.kt$onPurchaseClicked</ID>
+    <ID>ParameterNaming:PurchasesDebugViewAPI.kt$PurchasesDebugViewAPI$onPurchaseCompleted</ID>
+    <ID>ParameterNaming:PurchasesDebugViewAPI.kt$PurchasesDebugViewAPI$onPurchaseErrored</ID>
+    <ID>ParameterNaming:TierSwitcher.kt$onTierSelected</ID>
+    <ID>PreviewPublic:AppInfoScreen.kt$AppInfoScreenPreview</ID>
+    <ID>PreviewPublic:CustomEntitlementComputationApp.kt$CustomEntitlementComputationAppPreview</ID>
+    <ID>PreviewPublic:ExplanationScreen.kt$ExplanationScreenPreview</ID>
+    <ID>PreviewPublic:MainActivity.kt$GreetingPreview</ID>
+    <ID>PreviewPublic:MainScreen.kt$MainScreenPreview</ID>
+    <ID>PreviewPublic:OfferingsScreen.kt$OfferingsScreenPreview</ID>
+    <ID>PreviewPublic:PaywallErrorView.kt$PaywallErrorViewPreview</ID>
+    <ID>PreviewPublic:PaywallLoadingView.kt$PaywallLoadingViewPreview</ID>
+    <ID>PreviewPublic:PaywallsScreen.kt$PaywallsScreenPreview</ID>
+    <ID>PreviewPublic:WeatherApp.kt$WeatherAppPreview</ID>
     <ID>SwallowedException:DeviceCache.kt$DeviceCache$e: ClassCastException</ID>
     <ID>SwallowedException:DeviceCache.kt$DeviceCache$e: JSONException</ID>
     <ID>SwallowedException:DeviceCache.kt$DeviceCache$e: NullPointerException</ID>
-    <ID>SwallowedException:PurchasesOrchestrator.kt$PurchasesOrchestrator.Companion.&lt;no name provided>$e: IllegalArgumentException</ID>
     <ID>SwallowedException:utils.kt$e: PackageManager.NameNotFoundException</ID>
     <ID>ThrowingExceptionsWithoutMessageOrCause:BillingWrapper.kt$BillingWrapper$Throwable()</ID>
     <ID>TooGenericExceptionCaught:DeviceCache.kt$DeviceCache$e: NullPointerException</ID>
     <ID>TooGenericExceptionThrown:HTTPClient.kt$HTTPClient$throw RuntimeException(e)</ID>
-    <ID>TooManyFunctions:AmazonBilling.kt$AmazonBilling : BillingAbstractProductDataResponseListenerPurchaseResponseListenerPurchaseUpdatesResponseListenerUserDataResponseListener</ID>
     <ID>TooManyFunctions:HTTPClient.kt$HTTPClient</ID>
     <ID>TooManyFunctions:Purchases.kt$Purchases : LifecycleDelegate</ID>
     <ID>TooManyFunctions:SubscriberAttributesCache.kt$SubscriberAttributesCache</ID>
     <ID>TooManyFunctions:listenerConversions.kt$com.revenuecat.purchases.listenerConversions.kt</ID>
     <ID>UnusedParameter:SampleWeatherData.kt$SampleWeatherData.Companion$environment: Environment</ID>
+    <ID>ViewModelForwarding:AppInfoScreen.kt$LoginDialog(viewModel) { showLogInDialog = false }</ID>
+    <ID>ViewModelForwarding:Footer.kt$Footer( mode = templateConfiguration.mode, configuration = templateConfiguration.configuration, colors = colors, viewModel = viewModel, childModifier = childModifier, allPlansTapped = allPlansTapped, )</ID>
+    <ID>ViewModelForwarding:InternalPaywall.kt$LoadedPaywall(state = state, viewModel = viewModel)</ID>
+    <ID>ViewModelForwarding:InternalPaywall.kt$Template1(state = state, viewModel = viewModel)</ID>
+    <ID>ViewModelForwarding:InternalPaywall.kt$Template2(state = state, viewModel = viewModel)</ID>
+    <ID>ViewModelForwarding:InternalPaywall.kt$Template3(state = state, viewModel = viewModel)</ID>
+    <ID>ViewModelForwarding:InternalPaywall.kt$Template4(state = state, viewModel = viewModel)</ID>
+    <ID>ViewModelForwarding:InternalPaywall.kt$Template5(state = state, viewModel = viewModel)</ID>
+    <ID>ViewModelForwarding:InternalPaywall.kt$Template7(state = state, viewModel = viewModel)</ID>
+    <ID>ViewModelForwarding:InternalPaywall.kt$TemplatePaywall(state = state, viewModel = viewModel)</ID>
+    <ID>ViewModelForwarding:LoadingPaywall.kt$Template2( state = state, viewModel = viewModel, childModifier = Modifier .placeholder( visible = true, shape = RoundedCornerShape(UIConstant.defaultPackageCornerRadius), highlight = Fade( highlightColor = LoadingPaywallConstants.placeholderColor, animationSpec = PlaceholderDefaults.fadeAnimationSpec, ), color = LoadingPaywallConstants.placeholderColor, ), )</ID>
+    <ID>ViewModelForwarding:MainScreen.kt$SwitchUserDialog(viewModel)</ID>
+    <ID>ViewModelForwarding:PaywallFooterScreen.kt$PurchaseAlertDialog(viewModel, it)</ID>
+    <ID>ViewModelForwarding:PaywallScreen.kt$PurchaseAlertDialog(viewModel, it)</ID>
+    <ID>ViewModelForwarding:PurchaseButton.kt$PurchaseButton( colors = colors, packages = state.templateConfiguration.packages, selectedPackage = state.selectedPackage, viewModel = viewModel, horizontalPadding = horizontalPadding, childModifier = childModifier, )</ID>
+    <ID>ViewModelForwarding:SettingGroup.kt$SettingOffering( settingState, activity = activity, screenViewModel = viewModel, )</ID>
+    <ID>ViewModelForwarding:SettingOffering.kt$SettingPackage(rcPackage, activity, screenViewModel)</ID>
+    <ID>ViewModelForwarding:SettingOffering.kt$SettingSubscriptionOption( activity = activity, screenViewModel = screenViewModel, subscriptionOption = subscriptionOption, isDefaultOption = subscriptionOption == rcPackage.product.defaultOption, )</ID>
+    <ID>ViewModelForwarding:Template1.kt$Footer(templateConfiguration = state.templateConfiguration, viewModel = viewModel)</ID>
+    <ID>ViewModelForwarding:Template1.kt$PurchaseButton(state, viewModel)</ID>
+    <ID>ViewModelForwarding:Template2.kt$AnimatedPackages( state, packageSelectionVisible, landscapeLayout = false, viewModel, childModifier, )</ID>
+    <ID>ViewModelForwarding:Template2.kt$AnimatedPackages( state, packageSelectionVisible, landscapeLayout = true, viewModel, childModifier, )</ID>
+    <ID>ViewModelForwarding:Template2.kt$Footer( templateConfiguration = state.templateConfiguration, viewModel = viewModel, childModifier = childModifier, allPlansTapped = { packageSelectorVisible = !packageSelectorVisible }, )</ID>
+    <ID>ViewModelForwarding:Template2.kt$PurchaseButton(state, viewModel, childModifier)</ID>
+    <ID>ViewModelForwarding:Template2.kt$PurchaseButton(state, viewModel, childModifier, horizontalPadding = 0.dp)</ID>
+    <ID>ViewModelForwarding:Template2.kt$SelectPackageButton(state, packageInfo, viewModel, childModifier)</ID>
+    <ID>ViewModelForwarding:Template2.kt$Template2LandscapeContent(state, viewModel, packageSelectorVisible, childModifier)</ID>
+    <ID>ViewModelForwarding:Template2.kt$Template2PortraitContent(state, viewModel, packageSelectorVisible, childModifier)</ID>
+    <ID>ViewModelForwarding:Template3.kt$Footer(templateConfiguration = state.templateConfiguration, viewModel = viewModel)</ID>
+    <ID>ViewModelForwarding:Template3.kt$LandscapeContent(state, viewModel)</ID>
+    <ID>ViewModelForwarding:Template3.kt$PortraitContent(state, viewModel)</ID>
+    <ID>ViewModelForwarding:Template3.kt$PurchaseButton(state, viewModel)</ID>
+    <ID>ViewModelForwarding:Template3.kt$PurchaseButton(state, viewModel, horizontalPadding = 0.dp)</ID>
+    <ID>ViewModelForwarding:Template4.kt$Footer( templateConfiguration = state.templateConfiguration, viewModel = viewModel, allPlansTapped = { packageSelectorVisible = !packageSelectorVisible }, )</ID>
+    <ID>ViewModelForwarding:Template4.kt$Packages(state, viewModel)</ID>
+    <ID>ViewModelForwarding:Template4.kt$PurchaseButton(state, viewModel)</ID>
+    <ID>ViewModelForwarding:Template4.kt$SelectPackageButton( state, packageInfo, viewModel, Modifier.width(packageWidth), )</ID>
+    <ID>ViewModelForwarding:Template4.kt$Template4MainContent(state, viewModel)</ID>
+    <ID>ViewModelForwarding:Template5.kt$AnimatedPackages(state, viewModel)</ID>
+    <ID>ViewModelForwarding:Template5.kt$AnimatedPackages(state, viewModel, packageSelectionVisible)</ID>
+    <ID>ViewModelForwarding:Template5.kt$Footer( templateConfiguration = state.templateConfiguration, viewModel = viewModel, allPlansTapped = { packageSelectorVisible = !packageSelectorVisible }, )</ID>
+    <ID>ViewModelForwarding:Template5.kt$PurchaseButton(state, viewModel)</ID>
+    <ID>ViewModelForwarding:Template5.kt$SelectPackageButton(state, packageInfo, viewModel)</ID>
+    <ID>ViewModelForwarding:Template5.kt$Template5LandscapeContent(state, viewModel)</ID>
+    <ID>ViewModelForwarding:Template5.kt$Template5PortraitContent(state, viewModel, packageSelectorVisible)</ID>
+    <ID>ViewModelForwarding:Template7.kt$AnimatedPackages( state = state, viewModel = viewModel, packages = selectedTier.packages, colors = colorForTier, )</ID>
+    <ID>ViewModelForwarding:Template7.kt$AnimatedPackages( state = state, viewModel = viewModel, packages = selectedTier.packages, colors = colorForTier, packageSelectionVisible = packageSelectionVisible, )</ID>
+    <ID>ViewModelForwarding:Template7.kt$Footer( templateConfiguration = state.templateConfiguration, viewModel = viewModel, colors = colorForTier, allPlansTapped = { packageSelectorVisible = !packageSelectorVisible }, )</ID>
+    <ID>ViewModelForwarding:Template7.kt$PurchaseButton(state, viewModel, colors = colorForTier)</ID>
+    <ID>ViewModelForwarding:Template7.kt$SelectPackageButton(state, packageInfo, viewModel, colors)</ID>
+    <ID>ViewModelForwarding:Template7.kt$Template7LandscapeContent( state, viewModel, allTiers, selectedTier, ) { selectedTier = it state.selectPackage(selectedTier.defaultPackage) }</ID>
+    <ID>ViewModelForwarding:Template7.kt$Template7PortraitContent( state, viewModel, packageSelectorVisible, allTiers, selectedTier, ) { selectedTier = it state.selectPackage(selectedTier.defaultPackage) }</ID>
+    <ID>ViewModelForwarding:UserScreen.kt$LoginDialog(viewModel)</ID>
+    <ID>ViewModelInjection:InternalPaywall.kt$viewModel</ID>
+    <ID>ViewModelInjection:MainScreen.kt$viewModel</ID>
+    <ID>ViewModelInjection:PaywallScreen.kt$viewModel</ID>
+    <ID>ViewModelInjection:PaywallSuccessView.kt$viewModel</ID>
+    <ID>ViewModelInjection:WeatherScreen.kt$viewModel</ID>
     <ID>WildcardImport:PaywallFragment.kt$import com.revenuecat.purchases.*</ID>
     <ID>WildcardImport:UserFragment.kt$import com.revenuecat.purchases.*</ID>
   </CurrentIssues>
