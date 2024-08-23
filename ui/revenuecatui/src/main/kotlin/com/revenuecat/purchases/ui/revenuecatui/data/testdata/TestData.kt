@@ -525,10 +525,14 @@ internal class MockViewModel(
 
     private fun simulateActionInProgress() {
         viewModelScope.launch {
-            _actionInProgress.value = true
-            delay(fakePurchaseDelayMillis)
-            _actionInProgress.value = false
+            awaitSimulateActionInProgress()
         }
+    }
+
+    private suspend fun awaitSimulateActionInProgress() {
+        _actionInProgress.value = true
+        delay(fakePurchaseDelayMillis)
+        _actionInProgress.value = false
     }
 
     private fun unsupportedMethod(errorMessage: String = "Not supported") {

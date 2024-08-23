@@ -10,6 +10,7 @@ import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PurchaseResult
+import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
@@ -17,6 +18,9 @@ import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.Transaction
 import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.paywalls.events.PaywallEventType
+import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogic
+import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicWithCallback
+import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
@@ -35,6 +39,9 @@ import io.mockk.verify
 import io.mockk.verifyOrder
 import junit.framework.TestCase.fail
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Before
@@ -83,9 +90,14 @@ class PaywallViewModelTest {
 
         coEvery { purchases.awaitOfferings() } returns offerings
         coEvery { purchases.awaitCustomerInfo(any()) } returns customerInfo
+        every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.REVENUECAT
+
+        every { customerInfo.activeSubscriptions } returns setOf()
+        every { customerInfo.nonSubscriptionTransactions } returns listOf()
 
         every { purchases.storefrontCountryCode } returns "US"
         every { purchases.track(any()) } just Runs
+        every { purchases.syncPurchases() } just Runs
 
         every { listener.onPurchaseStarted(any()) } just runs
         every { listener.onPurchaseCompleted(any(), any()) } just runs
@@ -93,11 +105,288 @@ class PaywallViewModelTest {
         every { listener.onRestoreStarted() } just runs
         every { listener.onRestoreCompleted(any()) } just runs
         every { listener.onRestoreError(any()) } just runs
+        every { listener.onPurchaseCancelled() } just runs
     }
 
     @After
     internal fun tearDown() {
         clearAllMocks()
+    }
+
+    // Completion Handler Callback Tests
+
+    @Test
+    fun `Custom completion handler restore purchases logic success triggers syncPurchases`() = runTest {
+        every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.MY_APP
+
+        val customRestoreCalled = MutableStateFlow(false)
+
+        val myAppPurchaseLogic = TestAppPurchaseLogicWithCallbacks(
+            null,
+            customRestoreCalled,
+            null,
+            PurchaseLogicResult.Success
+        )
+
+        val model = create(
+            customPurchaseLogic = myAppPurchaseLogic,
+        )
+
+        model.restorePurchases()
+
+        customRestoreCalled.first { it }
+
+        coVerify(exactly = 1) { purchases.syncPurchases() }
+        coVerify(exactly = 0) { listener.onRestoreStarted() }
+        coVerify(exactly = 0) { listener.onRestoreCompleted(customerInfo) }
+    }
+
+    @Test
+    fun `Custom completion handler restore purchases logic error does not trigger syncPurchases`() = runTest {
+        every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.MY_APP
+
+        val customRestoreCalled = MutableStateFlow(false)
+
+        val myAppPurchaseLogic = TestAppPurchaseLogicWithCallbacks(
+            null,
+            customRestoreCalled,
+            null,
+            PurchaseLogicResult.Error()
+        )
+
+        val model = create(
+            customPurchaseLogic = myAppPurchaseLogic,
+        )
+
+        model.restorePurchases()
+
+        customRestoreCalled.first { it }
+
+        coVerify(exactly = 0) { purchases.syncPurchases() }
+        coVerify(exactly = 0) { listener.onRestoreStarted() }
+        coVerify(exactly = 0) { listener.onRestoreCompleted(customerInfo) }
+    }
+
+    @Test
+    fun `Custom completion handler purchase logic success triggers syncPurchases`() = runTest {
+        every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.MY_APP
+
+        val customPurchaseCalled = MutableStateFlow(false)
+
+        val myAppPurchaseLogic = TestAppPurchaseLogicWithCallbacks(
+            customPurchaseCalled,
+            null,
+            PurchaseLogicResult.Success,
+            null,
+        )
+
+        val model = create(
+            customPurchaseLogic = myAppPurchaseLogic,
+        )
+
+        model.purchaseSelectedPackage(activity)
+
+        customPurchaseCalled.first { it }
+
+        coVerify(exactly = 1)  { purchases.syncPurchases() }
+        coVerify(exactly = 0) { listener.onPurchaseStarted(any()) }
+        coVerify(exactly = 0) { listener.onPurchaseCompleted(customerInfo, any()) }
+
+        assertThat(model.actionInProgress.value).isFalse
+        assertThat(dismissInvoked).isTrue
+    }
+
+    @Test
+    fun `Custom completion handler purchase logic cancelled doesn't trigger syncPurchases`() = runTest {
+        every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.MY_APP
+
+        val customPurchaseCalled = MutableStateFlow(false)
+
+        val myAppPurchaseLogic = TestAppPurchaseLogicWithCallbacks(
+            customPurchaseCalled,
+            null,
+            PurchaseLogicResult.Cancellation,
+            null,
+        )
+
+        val model = create(
+            customPurchaseLogic = myAppPurchaseLogic,
+        )
+
+        model.purchaseSelectedPackage(activity)
+
+        customPurchaseCalled.first { it }
+
+        coVerify(exactly = 0) { purchases.syncPurchases() }
+        coVerify(exactly = 0) { listener.onPurchaseStarted(any()) }
+        coVerify(exactly = 0) { listener.onPurchaseCancelled() }
+    }
+
+    @Test
+    fun `Custom completion handler purchase logic error doesn't trigger syncPurchases`() = runTest {
+        every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.MY_APP
+
+        val customPurchaseCalled = MutableStateFlow(false)
+
+        val myAppPurchaseLogic = TestAppPurchaseLogicWithCallbacks(
+            customPurchaseCalled,
+            null,
+            PurchaseLogicResult.Error(),
+            null,
+        )
+
+        val model = create(
+            customPurchaseLogic = myAppPurchaseLogic,
+        )
+
+        model.purchaseSelectedPackage(activity)
+
+        customPurchaseCalled.first { it }
+
+        coVerify(exactly = 0) { purchases.syncPurchases() }
+        coVerify(exactly = 0) { listener.onPurchaseStarted(any()) }
+        coVerify(exactly = 0) { listener.onPurchaseError(any()) }
+    }
+
+    // Suspend (co-routine) Tests
+
+    @Test
+    fun `Custom suspend restore purchases logic success triggers syncPurchases`() = runTest {
+        every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.MY_APP
+
+        val customRestoreCalled = MutableStateFlow(false)
+
+        val myAppPurchaseLogic = TestAppPurchaseLogicWithSuspend(
+            null,
+            customRestoreCalled,
+            null,
+            PurchaseLogicResult.Success
+        )
+
+        val model = create(
+            customPurchaseLogic = myAppPurchaseLogic,
+        )
+
+        model.restorePurchases()
+
+        customRestoreCalled.first { it }
+
+        coVerify(exactly = 1) { purchases.syncPurchases() }
+        coVerify(exactly = 0) { listener.onRestoreStarted() }
+        coVerify(exactly = 0) { listener.onRestoreCompleted(customerInfo) }
+
+    }
+
+    @Test
+    fun `Custom suspend restore purchases logic error does not trigger syncPurchases`() = runTest {
+        every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.MY_APP
+        val customRestoreCalled = MutableStateFlow(false)
+
+        val myAppPurchaseLogic = TestAppPurchaseLogicWithSuspend(
+            null,
+            customRestoreCalled,
+            null,
+            PurchaseLogicResult.Error()
+        )
+
+        val model = create(
+            customPurchaseLogic = myAppPurchaseLogic,
+        )
+
+        model.restorePurchases()
+
+        customRestoreCalled.first { it }
+
+        coVerify(exactly = 0) { purchases.syncPurchases() }
+        coVerify(exactly = 0) { listener.onRestoreStarted() }
+        coVerify(exactly = 0) { listener.onRestoreError(any()) }
+
+        assertThat(model.actionInProgress.value).isFalse
+    }
+
+    @Test
+    fun `Custom suspend purchase logic success triggers syncPurchases`() = runTest {
+        every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.MY_APP
+
+        val customPurchaseCalled = MutableStateFlow(false)
+
+        val myAppPurchaseLogic = TestAppPurchaseLogicWithSuspend(
+            customPurchaseCalled,
+            null,
+            PurchaseLogicResult.Success,
+            null
+        )
+
+        val model = create(
+            customPurchaseLogic = myAppPurchaseLogic,
+        )
+
+        model.purchaseSelectedPackage(activity)
+
+        customPurchaseCalled.first { it }
+
+        coVerify(exactly = 1)  { purchases.syncPurchases() }
+        coVerify(exactly = 0) { listener.onPurchaseStarted(any()) }
+        coVerify(exactly = 0) { listener.onPurchaseCompleted(customerInfo, any()) }
+
+        assertThat(model.actionInProgress.value).isFalse
+        assertThat(dismissInvoked).isTrue
+    }
+
+    @Test
+    fun `Custom suspend purchase logic cancelled doesn't trigger syncPurchases`() = runTest {
+        every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.MY_APP
+
+        val customPurchaseCalled = MutableStateFlow(false)
+
+        val myAppPurchaseLogic = TestAppPurchaseLogicWithSuspend(
+            customPurchaseCalled,
+            null,
+            PurchaseLogicResult.Cancellation,
+            null
+        )
+
+        val model = create(
+            customPurchaseLogic = myAppPurchaseLogic,
+        )
+
+        model.purchaseSelectedPackage(activity)
+
+        customPurchaseCalled.first { it }
+
+        coVerify(exactly = 0) { purchases.syncPurchases() }
+        coVerify(exactly = 0) { listener.onPurchaseStarted(any()) }
+        coVerify(exactly = 0) { listener.onPurchaseCancelled() }
+
+        assertThat(model.actionInProgress.value).isFalse
+    }
+
+    @Test
+    fun `Custom suspend purchase logic error doesn't trigger syncPurchases`() = runTest {
+        every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.MY_APP
+
+        val customPurchaseCalled = MutableStateFlow(false)
+
+        val myAppPurchaseLogic = TestAppPurchaseLogicWithSuspend(
+            customPurchaseCalled,
+            null,
+            PurchaseLogicResult.Error(),
+            null
+        )
+
+        val model = create(
+            customPurchaseLogic = myAppPurchaseLogic,
+        )
+
+        model.purchaseSelectedPackage(activity)
+
+        customPurchaseCalled.first { it }
+
+        coVerify(exactly = 0) { purchases.syncPurchases() }
+        coVerify(exactly = 0) { listener.onPurchaseStarted(any()) }
+        coVerify(exactly = 0) { listener.onPurchaseError(any()) }
+
+        assertThat(model.actionInProgress.value).isFalse
     }
 
     @Test
@@ -569,7 +858,8 @@ class PaywallViewModelTest {
         offering: Offering? = null,
         activeSubscriptions: Set<String> = setOf(),
         nonSubscriptionTransactionProductIdentifiers: Set<String> = setOf(),
-        shouldDisplayBlock: ((CustomerInfo) -> Boolean)? = null,
+        customPurchaseLogic: PurchaseLogic? = null,
+        shouldDisplayBlock: ((CustomerInfo) -> Boolean)? = null
     ): PaywallViewModelImpl {
         mockActiveSubscriptions(activeSubscriptions)
         mockNonSubscriptionTransactions(nonSubscriptionTransactionProductIdentifiers)
@@ -580,6 +870,7 @@ class PaywallViewModelTest {
             PaywallOptions.Builder(dismissRequest = { dismissInvoked = true })
                 .setListener(listener)
                 .setOffering(offering)
+                .setPurchaseLogic(customPurchaseLogic)
                 .build(),
             TestData.Constants.currentColorScheme,
             isDarkMode = false,
@@ -653,6 +944,69 @@ class PaywallViewModelTest {
             // Delay response to verify initial state
             delay(100)
             offerings
+        }
+    }
+
+    private class TestAppPurchaseLogicWithCallbacks(
+        private val customPurchaseCalled: MutableStateFlow<Boolean>? = null,
+        private val customRestoreCalled: MutableStateFlow<Boolean>? = null,
+        private val purchaseResult: PurchaseLogicResult? = null,
+        private val restoreResult: PurchaseLogicResult? = null
+    ) :  PurchaseLogicWithCallback() {
+
+        override fun performPurchaseWithCompletion(activity: Activity,
+            rcPackage: Package,
+            completion: (PurchaseLogicResult) -> Unit
+        ) {
+            val purchaseFlow = customPurchaseCalled
+                ?: throw IllegalArgumentException("customPurchaseCalled cannot be null")
+            val result = purchaseResult
+                ?: throw IllegalArgumentException("purchaseResult cannot be null")
+
+            purchaseFlow.value = true
+            completion(result)
+        }
+
+        override fun performRestoreWithCompletion(
+            customerInfo: CustomerInfo,
+            completion: (PurchaseLogicResult) -> Unit
+        ) {
+            val restoreFlow = customRestoreCalled
+                ?: throw IllegalArgumentException("customRestoreCalled cannot be null")
+            val result = restoreResult
+                ?: throw IllegalArgumentException("restoreResult cannot be null")
+
+            restoreFlow.value = true
+
+            completion(result)
+        }
+    }
+
+    private class TestAppPurchaseLogicWithSuspend(
+        private val customPurchaseCalled: MutableStateFlow<Boolean>? = null,
+        private val customRestoreCalled: MutableStateFlow<Boolean>? = null,
+        private val purchaseResult: PurchaseLogicResult? = null,
+        private val restoreResult: PurchaseLogicResult? = null
+    ) : PurchaseLogic {
+
+        override suspend fun performPurchase(activity: Activity, rcPackage: Package): PurchaseLogicResult {
+            val purchaseFlow = customPurchaseCalled
+                ?: throw IllegalArgumentException("customPurchaseCalled cannot be null")
+            val result = purchaseResult
+                ?: throw IllegalArgumentException("purchaseResult cannot be null")
+
+            purchaseFlow.value = true
+            return result
+        }
+
+        override suspend fun performRestore(customerInfo: CustomerInfo): PurchaseLogicResult {
+            val restoreFlow = customRestoreCalled
+                ?: throw IllegalArgumentException("customRestoreCalled cannot be null")
+            val result = restoreResult
+                ?: throw IllegalArgumentException("restoreResult cannot be null")
+
+            restoreFlow.value = true
+            return result
         }
     }
 }
