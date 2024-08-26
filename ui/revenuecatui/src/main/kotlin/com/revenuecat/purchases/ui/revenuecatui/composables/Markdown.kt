@@ -3,8 +3,10 @@
 package com.revenuecat.purchases.ui.revenuecatui.composables
 
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -16,6 +18,7 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
@@ -69,7 +72,12 @@ internal fun Markdown(
 ) {
     val root = parser.parse(text) as Document
 
-    Column {
+    val density = LocalDensity.current
+    val paragraphPadding = with(density) { style.lineHeight.toDp() }
+
+    Column(
+        verticalArrangement = Arrangement.spacedBy(paragraphPadding),
+    ) {
         MDDocument(root, color, style, fontWeight, textAlign, allowLinks, modifier)
     }
 }
@@ -375,6 +383,7 @@ private fun MarkdownText(
         fontWeight = fontWeight,
         textAlign = textAlign,
         modifier = modifier
+            .fillMaxWidth()
             .conditional(allowLinks) {
                 pointerInput(Unit) {
                     detectTapGestures { offset ->
