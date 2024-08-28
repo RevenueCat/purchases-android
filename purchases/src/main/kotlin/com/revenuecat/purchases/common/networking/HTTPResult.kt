@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.common.networking
 
 import com.revenuecat.purchases.VerificationResult
+import com.revenuecat.purchases.common.isSuccessful
 import org.json.JSONObject
 import java.util.Date
 
@@ -50,6 +51,15 @@ internal data class HTTPResult(
     }
 
     val body: JSONObject = payload.takeIf { it.isNotBlank() }?.let { JSONObject(it) } ?: JSONObject()
+
+    val backendErrorCode: Int? = if (!isSuccessful()) body.optInt("code").takeIf { it > 0 } else null
+    val backendErrorMessage: String? = if (!isSuccessful()) {
+        body.optString(
+            "message",
+        ).takeIf { it.isNotBlank() }
+    } else {
+        null
+    }
 
     fun serialize(): String {
         val jsonObject = JSONObject().apply {

@@ -240,6 +240,7 @@ internal class HTTPClient(
                 responseTime,
                 requestWasError,
                 responseCode,
+                callResult?.backendErrorCode,
                 origin,
                 verificationResult,
             )

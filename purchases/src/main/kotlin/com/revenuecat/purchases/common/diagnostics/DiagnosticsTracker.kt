@@ -12,6 +12,7 @@ import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.verboseLog
 import com.revenuecat.purchases.strings.OfflineEntitlementsStrings
+import com.revenuecat.purchases.utils.filterNotNullValues
 import com.revenuecat.purchases.utils.isAndroidNOrNewer
 import java.io.IOException
 import kotlin.time.Duration
@@ -31,6 +32,7 @@ internal class DiagnosticsTracker(
         const val ENDPOINT_NAME_KEY = "endpoint_name"
         const val SUCCESSFUL_KEY = "successful"
         const val RESPONSE_CODE_KEY = "response_code"
+        const val BACKEND_ERROR_CODE_KEY = "backend_error_code"
         const val ETAG_HIT_KEY = "etag_hit"
         const val VERIFICATION_RESULT_KEY = "verification_result"
         const val RESPONSE_TIME_MILLIS_KEY = "response_time_millis"
@@ -45,6 +47,7 @@ internal class DiagnosticsTracker(
         responseTime: Duration,
         wasSuccessful: Boolean,
         responseCode: Int,
+        backendErrorCode: Int?,
         resultOrigin: HTTPResult.Origin?,
         verificationResult: VerificationResult,
     ) {
@@ -57,9 +60,10 @@ internal class DiagnosticsTracker(
                     RESPONSE_TIME_MILLIS_KEY to responseTime.inWholeMilliseconds,
                     SUCCESSFUL_KEY to wasSuccessful,
                     RESPONSE_CODE_KEY to responseCode,
+                    BACKEND_ERROR_CODE_KEY to backendErrorCode,
                     ETAG_HIT_KEY to eTagHit,
                     VERIFICATION_RESULT_KEY to verificationResult.name,
-                ),
+                ).filterNotNullValues(),
             ),
         )
     }
