@@ -48,9 +48,11 @@ internal fun String.createPeriod(): Period? {
         "BiMonthly" -> Period(2, Period.Unit.MONTH, "P2M")
         "Quarterly" -> Period(3, Period.Unit.MONTH, "P3M")
         "SemiAnnually",
-        "SemiAnnual" -> Period(6, Period.Unit.MONTH, "P6M")
+        "SemiAnnual",
+        -> Period(6, Period.Unit.MONTH, "P6M")
         "Annually",
-        "Annual" -> Period(1, Period.Unit.YEAR, "P1Y")
+        "Annual",
+        -> Period(1, Period.Unit.YEAR, "P1Y")
 
         // Handle "7 Days" or "14 Days" or "1 Month" just in case
         else -> this.split(" ")
