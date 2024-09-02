@@ -147,6 +147,7 @@ class DiagnosticsTrackerTest {
             1234L.milliseconds,
             true,
             200,
+            null,
             HTTPResult.Origin.CACHE,
             VerificationResult.NOT_REQUESTED
         )
@@ -164,6 +165,7 @@ class DiagnosticsTrackerTest {
             "response_time_millis" to 1234L,
             "successful" to true,
             "response_code" to 200,
+            "backend_error_code" to 1234,
             "etag_hit" to false,
             "verification_result" to "NOT_REQUESTED"
         )
@@ -173,6 +175,7 @@ class DiagnosticsTrackerTest {
             1234L.milliseconds,
             true,
             200,
+            1234,
             HTTPResult.Origin.BACKEND,
             VerificationResult.NOT_REQUESTED
         )
