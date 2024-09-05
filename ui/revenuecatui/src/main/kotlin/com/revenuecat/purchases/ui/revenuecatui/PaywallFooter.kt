@@ -6,14 +6,9 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentHeight
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
 
 /**
  * Composable offering a minified screen Paywall UI configured from the RevenueCat dashboard.
@@ -61,34 +56,4 @@ fun PaywallFooter(
             paywallComposable()
         }
     }
-}
-
-@Suppress("MagicNumber")
-@Preview(showBackground = true)
-@Composable
-private fun PaywallFooterPreview() {
-    PaywallFooter(
-        options = PaywallOptions.Builder(dismissRequest = {}).build(),
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .verticalScroll(rememberScrollState())
-                .padding(it),
-        ) {
-            // TODO-PAYWALLS: Implement an actual sample paywall
-            for (i in 1..50) {
-                Text(text = "Main content $i")
-            }
-        }
-    }
-}
-
-@Suppress("MagicNumber")
-@Preview(showBackground = true)
-@Composable
-private fun PaywallFooterNoContentPreview() {
-    PaywallFooter(
-        options = PaywallOptions.Builder(dismissRequest = {}).build(),
-    )
 }
