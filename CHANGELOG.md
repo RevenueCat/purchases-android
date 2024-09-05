@@ -1,3 +1,9 @@
+## 8.7.1
+### Bugfixes
+* [EXTERNAL] Fixes Amazon subscription period parsing (#1813) by @tessmerandre (#1828) via Toni Rico (@tonidero)
+### Other Changes
+* [Diagnostics] Send backend_error_code in http request failures if available (#1825) via Toni Rico (@tonidero)
+
 ## 8.7.0
 ### New Features
 * Paywalls can use custom in-app purchase/restore code (#1777) via James Borthwick (@jamesrb1)
