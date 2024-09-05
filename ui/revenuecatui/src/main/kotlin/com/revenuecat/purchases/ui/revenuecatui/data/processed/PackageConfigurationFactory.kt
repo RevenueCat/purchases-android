@@ -123,6 +123,10 @@ internal object PackageConfigurationFactory {
             )
         }.filterNotNullValues()
 
+        if (all.isEmpty()) {
+            return Result.failure(PackageConfigurationError("None of the tiers have any available products."))
+        }
+
         val allTierInfos = all.entries.map { (tier, packageInfo) ->
             val tierName = packageInfo.default.localization.tierName
                 ?: return Result.failure(
