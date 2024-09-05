@@ -54,8 +54,7 @@ emerge {
     apiToken.set(System.getenv("EMERGE_API_TOKEN"))
 
     vcs {
-        // TODO: RevenueCat to set from CircleCi variables
-        sha.set("")
+        sha.set(System.getenv("CIRCLE_SHA1"))
         // TODO: RevenueCat to set from CircleCi variables
         // Should skip setting for main branch uploads
         baseSha.set("")

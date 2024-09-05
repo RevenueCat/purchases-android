@@ -648,6 +648,7 @@ workflows:
       - run-backend-integration-tests
       - verify-revenuecatui-snapshots
       - run-revenuecatui-ui-tests
+      - emerge_purchases_ui_snapshot_tests
       - verify_debug_view_snapshot_tests: *release-branches
       - integration-tests-build: *release-branches
       - purchases-integration-tests-build: *release-branches
