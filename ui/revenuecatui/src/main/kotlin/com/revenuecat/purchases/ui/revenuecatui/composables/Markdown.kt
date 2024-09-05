@@ -19,7 +19,6 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
@@ -31,6 +30,7 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.unit.TextUnitType
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
 import org.commonmark.ext.gfm.strikethrough.Strikethrough
@@ -71,25 +71,21 @@ internal fun Markdown(
     textAlign: TextAlign? = null,
     allowLinks: Boolean = true,
 ) {
-    if (LocalInspectionMode.current) {
-        Text(
-            text = text,
-            style = style,
-            color = color,
-            fontWeight = fontWeight,
-            textAlign = textAlign,
-        )
-    } else {
-        val root = parser.parse(text) as Document
+    val root = parser.parse(text) as Document
 
-        val density = LocalDensity.current
-        val paragraphPadding = with(density) { style.lineHeight.toDp() }
-
-        Column(
-            verticalArrangement = Arrangement.spacedBy(paragraphPadding),
-        ) {
-            MDDocument(root, color, style, fontWeight, textAlign, allowLinks, modifier)
+    val density = LocalDensity.current
+    val paragraphPadding = with(density) {
+        if (style.lineHeight.type == TextUnitType.Sp) {
+            style.lineHeight.toDp()
+        } else {
+            0.dp
         }
+    }
+
+    Column(
+        verticalArrangement = Arrangement.spacedBy(paragraphPadding),
+    ) {
+        MDDocument(root, color, style, fontWeight, textAlign, allowLinks, modifier)
     }
 }
 
