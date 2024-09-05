@@ -30,6 +30,7 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.unit.TextUnitType
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
 import org.commonmark.ext.gfm.strikethrough.Strikethrough
@@ -73,7 +74,13 @@ internal fun Markdown(
     val root = parser.parse(text) as Document
 
     val density = LocalDensity.current
-    val paragraphPadding = with(density) { style.lineHeight.toDp() }
+    val paragraphPadding = with(density) {
+        if (style.lineHeight.type == TextUnitType.Sp) {
+            style.lineHeight.toDp()
+        } else {
+            0.dp
+        }
+    }
 
     Column(
         verticalArrangement = Arrangement.spacedBy(paragraphPadding),

@@ -50,12 +50,11 @@ android {
 }
 
 emerge {
-    // TODO: RevenueCat to set from CircleCi variables
     apiToken.set(System.getenv("EMERGE_API_TOKEN"))
 
     vcs {
         sha.set(System.getenv("CIRCLE_SHA1"))
-        // TODO: RevenueCat to set from CircleCi variables
+        // WIP: Set from CircleCi variables
         // Should skip setting for main branch uploads
         baseSha.set("")
         gitHub {
