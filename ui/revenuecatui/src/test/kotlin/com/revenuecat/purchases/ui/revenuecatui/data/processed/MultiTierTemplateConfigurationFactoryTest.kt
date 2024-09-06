@@ -2,11 +2,13 @@ package com.revenuecat.purchases.ui.revenuecatui.data.processed
 
 import android.net.Uri
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.PackageType
 import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.templates.template7
+import com.revenuecat.purchases.ui.revenuecatui.errors.PackageConfigurationError
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getPackageInfoForTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
@@ -207,6 +209,54 @@ internal class MultiTierTemplateConfigurationFactoryTest {
             .isEqualTo(Uri.parse("https://assets.pawwalls.com/954459_1692992845.png"))
         assertThat(template7Configuration.imagesByTier["premium"]!!.headerUri)
             .isEqualTo(Uri.parse("https://assets.pawwalls.com/954459_1701267532.jpeg"))
+    }
+
+    @Test
+    fun `Should return failure if no tiers have any available products`() {
+        val result = TemplateConfigurationFactory.create(
+            variableDataProvider = variableDataProvider,
+            mode = paywallMode,
+            paywallData = TestData.template7.run {
+                copy(
+                    config = config.copy(
+                        // Our config contains no packageIds.
+                        packageIds = emptyList(),
+                        // Our tiers contain 4 packages, but none of them are in availablePackages below.
+                        tiers = listOf(
+                            PaywallData.Configuration.Tier(
+                                id = "basic",
+                                packageIds = listOf(
+                                    PackageType.ANNUAL.identifier!!,
+                                    PackageType.MONTHLY.identifier!!,
+                                ),
+                                defaultPackageId = PackageType.ANNUAL.identifier!!,
+                            ),
+                            PaywallData.Configuration.Tier(
+                                id = "standard",
+                                packageIds = listOf(
+                                    PackageType.TWO_MONTH.identifier!!,
+                                    PackageType.SIX_MONTH.identifier!!,
+                                ),
+                                defaultPackageId = PackageType.SIX_MONTH.identifier!!,
+                            ),
+                        )
+                    )
+                )
+            },
+            // availablePackages contains some packages, but none of them are part of any tiers.
+            availablePackages = listOf(
+                TestData.Packages.weekly,
+                TestData.Packages.lifetime,
+            ),
+            activelySubscribedProductIdentifiers = emptySet(),
+            nonSubscriptionProductIdentifiers = emptySet(),
+            template = PaywallTemplate.TEMPLATE_7,
+            storefrontCountryCode = "US",
+        )
+
+        assertThat(result.isFailure).isTrue()
+        assertThat(result.exceptionOrNull()).isInstanceOf(PackageConfigurationError::class.java)
+        assertThat(result.exceptionOrNull()!!.message).isEqualTo("None of the tiers have any available products.")
     }
 
 }
