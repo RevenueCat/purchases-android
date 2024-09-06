@@ -11,6 +11,7 @@ import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.paywalls.PaywallColor
 import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.ui.revenuecatui.InternalPaywall
+import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.R
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.PaywallTemplate
@@ -123,10 +124,8 @@ private fun getThemeColors(currentColorScheme: ColorScheme): PaywallData.Configu
 
 private fun Color.asPaywallColor(): PaywallColor = PaywallColor(colorInt = this.toArgb())
 
-@Preview(showBackground = true, locale = "en-rUS")
-@Preview(showBackground = true, locale = "es-rES")
 @Composable
-internal fun DefaultPaywallPreview() {
+private fun getDefaultPreviewOffering(): Offering {
     val availablePackages = listOf(
         TestData.Packages.weekly,
         TestData.Packages.monthly,
@@ -137,15 +136,39 @@ internal fun DefaultPaywallPreview() {
         MaterialTheme.colorScheme,
         MockResourceProvider(),
     )
-    val template2Offering = Offering(
+    return Offering(
         identifier = "Template2",
         availablePackages = availablePackages,
         metadata = mapOf(),
         paywall = paywallData,
         serverDescription = "",
     )
+}
+
+@Preview(showBackground = true, locale = "en-rUS")
+@Preview(showBackground = true, locale = "es-rES")
+@Composable
+internal fun DefaultPaywallPreview() {
     InternalPaywall(
         options = PaywallOptions.Builder(dismissRequest = {}).build(),
-        viewModel = MockViewModel(offering = template2Offering),
+        viewModel = MockViewModel(offering = getDefaultPreviewOffering()),
+    )
+}
+
+@Preview(showBackground = true, locale = "en-rUS", group = "footer")
+@Composable
+internal fun DefaultPaywallFooterPreview() {
+    InternalPaywall(
+        options = PaywallOptions.Builder(dismissRequest = {}).build(),
+        viewModel = MockViewModel(mode = PaywallMode.FOOTER, offering = getDefaultPreviewOffering()),
+    )
+}
+
+@Preview(showBackground = true, locale = "en-rUS", group = "footer")
+@Composable
+internal fun DefaultPaywallFooterCondensedPreview() {
+    InternalPaywall(
+        options = PaywallOptions.Builder(dismissRequest = {}).build(),
+        viewModel = MockViewModel(mode = PaywallMode.FOOTER_CONDENSED, offering = getDefaultPreviewOffering()),
     )
 }
