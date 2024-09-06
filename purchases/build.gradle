@@ -80,7 +80,8 @@ dependencies {
     implementation libs.kotlinx.serialization.json
     api libs.billing
     implementation libs.tink
-    implementation libs.playServices.ads.identifier
+    // Removing temporarily to create a version of the library without this library.
+    // implementation libs.playServices.ads.identifier
 
     compileOnly libs.amazon.appstore.sdk
     compileOnly libs.coil.compose
