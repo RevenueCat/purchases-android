@@ -634,16 +634,6 @@ class Purchases internal constructor(
         purchasesOrchestrator.setCleverTapID(cleverTapID)
     }
 
-    /**
-     * Subscriber attribute associated with the Kochava Device ID for the user
-     * Recommended for the RevenueCat Kochava integration
-     *
-     * @param kochavaDeviceID null or an empty string will delete the subscriber attribute.
-     */
-    fun setKochavaDeviceID(kochavaDeviceID: String?) {
-        purchasesOrchestrator.setKochavaDeviceID(kochavaDeviceID)
-    }
-
     // endregion
     // region Campaign parameters
 

@@ -708,16 +708,6 @@ internal class PurchasesOrchestrator(
         )
     }
 
-    fun setKochavaDeviceID(kochavaDeviceID: String?) {
-        log(LogIntent.DEBUG, AttributionStrings.METHOD_CALLED.format("setKochavaDeviceID"))
-        subscriberAttributesManager.setAttributionID(
-            SubscriberAttributeKey.AttributionIds.Kochava,
-            kochavaDeviceID,
-            appUserID,
-            application,
-        )
-    }
-
     // endregion
     // region Campaign parameters
 

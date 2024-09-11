@@ -167,7 +167,6 @@ private class PurchasesAPI {
             setMediaSource("")
             setCampaign("")
             setCleverTapID("")
-            setKochavaDeviceID("")
             setAdGroup("")
             setAd("")
             setKeyword("")
