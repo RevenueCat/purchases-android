@@ -50,13 +50,18 @@ android {
 }
 
 emerge {
+    // TODO: RevenueCat to set from CircleCi variables
     apiToken.set(System.getenv("EMERGE_API_TOKEN"))
 
     vcs {
         sha.set(System.getenv("CIRCLE_SHA1"))
-        // WIP: Set from CircleCi variables
-        // Should skip setting for main branch uploads
-        baseSha.set("")
+        val circleCiBaseSha = System.getenv("CIRCLE_MERGE_BASE")
+        if (!circleCiBaseSha.isNullOrBlank()) {
+            baseSha.set(circleCiBaseSha)
+        } else {
+            // Should skip setting for main branch uploads
+            baseSha.set("")
+        }
         gitHub {
             repoName.set("purchases-android")
             repoOwner.set("RevenueCat")
