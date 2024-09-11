@@ -60,6 +60,8 @@ class GoogleDeviceIdentifiersFetcherTests {
 
             val ip = identifiers[SubscriberAttributeKey.DeviceIdentifiers.IP.backendKey]
             assertThat(ip).isEqualTo("true")
+
+            assertContainsUserAgent(identifiers)
         }
 
         assertThat(completionCalled).isTrue()
@@ -86,6 +88,8 @@ class GoogleDeviceIdentifiersFetcherTests {
 
             val ip = identifiers[SubscriberAttributeKey.DeviceIdentifiers.IP.backendKey]
             assertThat(ip).isEqualTo("true")
+
+            assertContainsUserAgent(identifiers)
         }
 
         assertThat(completionCalled).isTrue()
@@ -282,5 +286,9 @@ class GoogleDeviceIdentifiersFetcherTests {
         assertThat(identifiers.containsKey("\$androidId")).isFalse()
         // This value is set by mockAdvertisingInfo(). 
         assertThat(identifiers.containsValue("androidid")).isFalse()
+    }
+
+    private fun assertContainsUserAgent(identifiers: Map<String, String>) {
+        assertThat(identifiers[SubscriberAttributeKey.DeviceIdentifiers.UserAgent.backendKey]).isEqualTo("true")
     }
 }
