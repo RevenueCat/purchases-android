@@ -54,11 +54,15 @@ emerge {
 
     vcs {
         sha.set(System.getenv("CIRCLE_SHA1"))
-        val circleCiBaseSha = System.getenv("CIRCLE_MERGE_BASE")
-        if (!circleCiBaseSha.isNullOrBlank()) {
-            baseSha.set(circleCiBaseSha)
+        val prUrl = System.getenv("CIRCLE_PULL_REQUEST")
+        if (!prUrl.isNullOrEmpty()) {
+            val prNum = prUrl.split("/").lastOrNull()
+            if (!prNum.isNullOrEmpty()) {
+                prNumber.set(prNum)
+            }
+            // baseSha will be set automatically by Emerge gradle plugin for PRs
         } else {
-            // Should skip setting for main branch uploads
+            // Explicitly skip baseSha setting for main branch as it could trigger unexpected main branch comparison.
             baseSha.set("")
         }
         gitHub {
