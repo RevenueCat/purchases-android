@@ -50,7 +50,6 @@ android {
 }
 
 emerge {
-    // TODO: RevenueCat to set from CircleCi variables
     apiToken.set(System.getenv("EMERGE_API_TOKEN"))
 
     vcs {
