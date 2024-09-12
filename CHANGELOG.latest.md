@@ -1,4 +1,6 @@
 ### Bugfixes
-* [EXTERNAL] Fixes Amazon subscription period parsing (#1813) by @tessmerandre (#1828) via Toni Rico (@tonidero)
+* Fixes a Paywall Template 7 crash when none of the tiers have any available products. (#1834) via JayShortway (@JayShortway)
+### Dependency Updates
+* Bump fastlane-plugin-revenuecat_internal from `85e1c83` to `5140dbc` (#1835) via dependabot[bot] (@dependabot[bot])
 ### Other Changes
-* [Diagnostics] Send backend_error_code in http request failures if available (#1825) via Toni Rico (@tonidero)
+* [EXTERNAL] Add Emerge snapshot testing (#1785) by @rbro112 (#1831) via Toni Rico (@tonidero)
