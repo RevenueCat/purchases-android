@@ -266,6 +266,7 @@ internal class HTTPClient(
             "X-Platform-Flavor" to appConfig.platformInfo.flavor,
             "X-Platform-Flavor-Version" to appConfig.platformInfo.version,
             "X-Platform-Version" to Build.VERSION.SDK_INT.toString(),
+            "X-Platform-Device" to Build.MODEL,
             "X-Version" to Config.frameworkVersion,
             "X-Client-Locale" to appConfig.languageTag,
             "X-Client-Version" to appConfig.versionName,
