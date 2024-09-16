@@ -29,7 +29,7 @@ internal class GoogleDeviceIdentifiersFetcher(
             val deviceIdentifiers = mapOf(
                 SubscriberAttributeKey.DeviceIdentifiers.GPSAdID.backendKey to advertisingID,
                 SubscriberAttributeKey.DeviceIdentifiers.IP.backendKey to "true",
-                SubscriberAttributeKey.DeviceIdentifiers.UserAgent.backendKey to "true",
+                SubscriberAttributeKey.DeviceIdentifiers.DeviceVersion.backendKey to "true",
             ).filterNotNullValues()
             completion(deviceIdentifiers)
         })

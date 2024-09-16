@@ -123,6 +123,6 @@ class AmazonDeviceIdentifiersFetcherTests {
 
     private fun assertAttributionProperties(identifiers: Map<String, String>) {
         assertThat(identifiers[SubscriberAttributeKey.DeviceIdentifiers.IP.backendKey]).isEqualTo("true")
-        assertThat(identifiers[SubscriberAttributeKey.DeviceIdentifiers.UserAgent.backendKey]).isEqualTo("true")
+        assertThat(identifiers[SubscriberAttributeKey.DeviceIdentifiers.DeviceVersion.backendKey]).isEqualTo("true")
     }
 }

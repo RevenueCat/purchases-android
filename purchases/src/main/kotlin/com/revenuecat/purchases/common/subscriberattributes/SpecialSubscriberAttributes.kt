@@ -15,7 +15,7 @@ internal enum class ReservedSubscriberAttribute(val value: String) {
     IDFA("\$idfa"),
     IDFV("\$idfv"),
     IP("\$ip"),
-    USER_AGENT("\$userAgent"),
+    DEVICE_VERSION("\$deviceVersion"),
     GPS_AD_ID("\$gpsAdId"),
     AMAZON_AD_ID("\$amazonAdId"),
 
@@ -60,7 +60,7 @@ internal sealed class SubscriberAttributeKey(val backendKey: String) {
     sealed class DeviceIdentifiers {
         object GPSAdID : SubscriberAttributeKey(ReservedSubscriberAttribute.GPS_AD_ID.value)
         object IP : SubscriberAttributeKey(ReservedSubscriberAttribute.IP.value)
-        object UserAgent : SubscriberAttributeKey(ReservedSubscriberAttribute.USER_AGENT.value)
+        object DeviceVersion : SubscriberAttributeKey(ReservedSubscriberAttribute.DEVICE_VERSION.value)
         object AmazonAdID : SubscriberAttributeKey(ReservedSubscriberAttribute.AMAZON_AD_ID.value)
     }
 
