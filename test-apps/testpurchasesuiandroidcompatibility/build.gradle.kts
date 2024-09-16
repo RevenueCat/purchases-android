@@ -54,9 +54,17 @@ emerge {
 
     vcs {
         sha.set(System.getenv("CIRCLE_SHA1"))
-        // WIP: Set from CircleCi variables
-        // Should skip setting for main branch uploads
-        baseSha.set("")
+        val prUrl = System.getenv("CIRCLE_PULL_REQUEST")
+        if (!prUrl.isNullOrEmpty()) {
+            val prNum = prUrl.split("/").lastOrNull()
+            if (!prNum.isNullOrEmpty()) {
+                prNumber.set(prNum)
+            }
+            // baseSha will be set automatically by Emerge gradle plugin for PRs
+        } else {
+            // Explicitly skip baseSha setting for main branch as it could trigger unexpected main branch comparison.
+            baseSha.set("")
+        }
         gitHub {
             repoName.set("purchases-android")
             repoOwner.set("RevenueCat")
