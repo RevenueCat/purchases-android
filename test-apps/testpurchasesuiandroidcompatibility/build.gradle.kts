@@ -54,9 +54,16 @@ emerge {
 
     vcs {
         sha.set(System.getenv("CIRCLE_SHA1"))
-        // WIP: Set from CircleCi variables
-        // Should skip setting for main branch uploads
-        baseSha.set("")
+        val prNum = System.getenv("CIRCLE_PULL_REQUEST")
+            .takeUnless { prUrl -> prUrl.isNullOrEmpty() }
+            ?.takeIf { prUrl -> prUrl.contains('/') }
+            ?.split('/')
+            ?.lastOrNull()
+        if (prNum != null) {
+            prNumber.set(prNum)
+        } else {
+            baseSha.set("")
+        }
         gitHub {
             repoName.set("purchases-android")
             repoOwner.set("RevenueCat")
