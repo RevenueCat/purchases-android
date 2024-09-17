@@ -181,6 +181,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         assertThat(request.getHeader("X-Platform")).isEqualTo("android")
         assertThat(request.getHeader("X-Platform-Version")).isEqualTo("${Build.VERSION.SDK_INT}")
         assertThat(request.getHeader("X-Platform-Device")).isEqualTo(Build.MODEL)
+        assertThat(request.getHeader("X-Platform-Brand")).isEqualTo(Build.BRAND)
         assertThat(request.getHeader("X-Platform-Flavor")).isEqualTo(expectedPlatformInfo.flavor)
         assertThat(request.getHeader("X-Platform-Flavor-Version")).isEqualTo(expectedPlatformInfo.version)
         assertThat(request.getHeader("X-Version")).isEqualTo(Config.frameworkVersion)
