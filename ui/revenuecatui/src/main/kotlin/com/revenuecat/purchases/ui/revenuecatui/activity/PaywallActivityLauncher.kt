@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.activity
 
+import android.app.Activity
 import androidx.activity.ComponentActivity
 import androidx.activity.result.ActivityResultCallback
 import androidx.activity.result.ActivityResultCaller
@@ -10,6 +11,7 @@ import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.ui.revenuecatui.fonts.ParcelizableFontProvider
 import com.revenuecat.purchases.ui.revenuecatui.helpers.shouldDisplayBlockForEntitlementIdentifier
 import com.revenuecat.purchases.ui.revenuecatui.helpers.shouldDisplayPaywall
+import java.lang.ref.WeakReference
 
 /**
  * Implement this interface to receive the result of the paywall activity.
@@ -31,6 +33,8 @@ interface PaywallDisplayCallback {
  */
 class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler: PaywallResultHandler) {
     private val activityResultLauncher: ActivityResultLauncher<PaywallActivityArgs>
+    private val weakActivity = WeakReference(resultCaller as? Activity)
+    private val weakFragment = WeakReference(resultCaller as? Fragment)
 
     init {
         activityResultLauncher = resultCaller.registerForActivityResult(PaywallContract(), resultHandler)
@@ -105,7 +109,7 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
         val shouldDisplayBlock = shouldDisplayBlockForEntitlementIdentifier(requiredEntitlementIdentifier)
         shouldDisplayPaywall(shouldDisplayBlock) { shouldDisplay ->
             paywallDisplayCallback?.onPaywallDisplayResult(shouldDisplay)
-            if (shouldDisplay) {
+            if (shouldDisplay && !isActivityFinishing()) {
                 activityResultLauncher.launch(
                     PaywallActivityArgs(
                         requiredEntitlementIdentifier = requiredEntitlementIdentifier,
@@ -143,7 +147,7 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
         val shouldDisplayBlock = shouldDisplayBlockForEntitlementIdentifier(requiredEntitlementIdentifier)
         shouldDisplayPaywall(shouldDisplayBlock) { shouldDisplay ->
             paywallDisplayCallback?.onPaywallDisplayResult(shouldDisplay)
-            if (shouldDisplay) {
+            if (shouldDisplay && !isActivityFinishing()) {
                 activityResultLauncher.launch(
                     PaywallActivityArgs(
                         requiredEntitlementIdentifier = requiredEntitlementIdentifier,
@@ -172,7 +176,7 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
         shouldDisplayBlock: (CustomerInfo) -> Boolean,
     ) {
         shouldDisplayPaywall(shouldDisplayBlock) { shouldDisplay ->
-            if (shouldDisplay) {
+            if (shouldDisplay && !isActivityFinishing()) {
                 activityResultLauncher.launch(
                     PaywallActivityArgs(
                         offeringId = offering?.identifier,
@@ -182,5 +186,11 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
                 )
             }
         }
+    }
+
+    private fun isActivityFinishing(): Boolean {
+        val activity = weakActivity.get()
+        val fragment = weakFragment.get()
+        return activity?.isFinishing == true || fragment?.activity?.isFinishing == true
     }
 }
