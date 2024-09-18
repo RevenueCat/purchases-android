@@ -200,8 +200,8 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
     private fun isActivityFinishing(): Boolean {
         val activity = weakActivity.get()
         val fragment = weakFragment.get()
-        return (activity == null && fragment?.activity == null)
-            || activity?.isFinishing == true
-            || fragment?.activity?.isFinishing == true
+        return (activity == null && fragment?.activity == null) ||
+            activity?.isFinishing == true ||
+            fragment?.activity?.isFinishing == true
     }
 }
