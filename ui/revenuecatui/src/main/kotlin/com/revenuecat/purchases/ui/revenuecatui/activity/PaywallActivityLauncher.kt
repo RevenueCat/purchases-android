@@ -191,7 +191,7 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
 
     private fun launchPaywallWithArgs(args: PaywallActivityArgs) {
         if (isActivityFinishing()) {
-            Logger.e("Not displaying paywall because activity/fragment is finishing.")
+            Logger.e("Not displaying paywall because activity/fragment is finishing or has finished.")
             return
         }
         activityResultLauncher.launch(args)
@@ -200,6 +200,8 @@ class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler:
     private fun isActivityFinishing(): Boolean {
         val activity = weakActivity.get()
         val fragment = weakFragment.get()
-        return activity?.isFinishing == true || fragment?.activity?.isFinishing == true
+        return (activity == null && fragment?.activity == null)
+            || activity?.isFinishing == true
+            || fragment?.activity?.isFinishing == true
     }
 }
