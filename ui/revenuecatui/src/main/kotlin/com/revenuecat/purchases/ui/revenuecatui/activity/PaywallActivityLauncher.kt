@@ -34,6 +34,9 @@ interface PaywallDisplayCallback {
  */
 class PaywallActivityLauncher(resultCaller: ActivityResultCaller, resultHandler: PaywallResultHandler) {
     private val activityResultLauncher: ActivityResultLauncher<PaywallActivityArgs>
+    // We need to know whether the activity is running or finished to avoid launching the paywall
+    // after the activity has been destroyed. See https://github.com/RevenueCat/purchases-android/issues/1842.
+    // We keep a weak reference to avoid memory leaks.
     private val weakActivity = WeakReference(resultCaller as? Activity)
     private val weakFragment = WeakReference(resultCaller as? Fragment)
 
