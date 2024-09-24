@@ -32,6 +32,9 @@ data class PaywallOptions internal constructor(
     internal val mode: PaywallMode,
     val dismissRequest: () -> Unit,
 ) {
+    companion object {
+        private const val hashMultiplier = 31
+    }
 
     constructor(builder: Builder) : this(
         offeringSelection = builder.offeringSelection,
@@ -42,6 +45,13 @@ data class PaywallOptions internal constructor(
         mode = builder.mode,
         dismissRequest = builder.dismissRequest,
     )
+
+    internal val dataHash: String = run {
+        var result = offeringSelection.offeringIdentifier.hashCode()
+        result = hashMultiplier * result + shouldDisplayDismissButton.hashCode()
+        result = hashMultiplier * result + mode.hashCode()
+        result.toString()
+    }
 
     class Builder(
         internal val dismissRequest: () -> Unit,
