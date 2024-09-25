@@ -53,8 +53,8 @@ class AmazonDeviceIdentifiersFetcherTests {
         }
 
         assertThat(completionCalled).isTrue()
-        assertThat(receivedDeviceIdentifiers.size).isEqualTo(1)
-        assertThat(receivedDeviceIdentifiers[SubscriberAttributeKey.DeviceIdentifiers.IP.backendKey]).isEqualTo("true")
+        assertThat(receivedDeviceIdentifiers.size).isEqualTo(2)
+        assertAttributionProperties(receivedDeviceIdentifiers)
     }
 
     @Test
@@ -74,10 +74,10 @@ class AmazonDeviceIdentifiersFetcherTests {
         }
 
         assertThat(completionCalled).isTrue()
-        assertThat(receivedDeviceIdentifiers.size).isEqualTo(2)
+        assertThat(receivedDeviceIdentifiers.size).isEqualTo(3)
         assertThat(receivedDeviceIdentifiers[SubscriberAttributeKey.DeviceIdentifiers.AmazonAdID.backendKey])
             .isEqualTo(expectedAmazonAdID)
-        assertThat(receivedDeviceIdentifiers[SubscriberAttributeKey.DeviceIdentifiers.IP.backendKey]).isEqualTo("true")
+        assertAttributionProperties(receivedDeviceIdentifiers)
     }
 
     @Test
@@ -96,8 +96,8 @@ class AmazonDeviceIdentifiersFetcherTests {
         }
 
         assertThat(completionCalled).isTrue()
-        assertThat(receivedDeviceIdentifiers.size).isEqualTo(1)
-        assertThat(receivedDeviceIdentifiers[SubscriberAttributeKey.DeviceIdentifiers.IP.backendKey]).isEqualTo("true")
+        assertThat(receivedDeviceIdentifiers.size).isEqualTo(2)
+        assertAttributionProperties(receivedDeviceIdentifiers)
     }
 
     @Test
@@ -117,8 +117,12 @@ class AmazonDeviceIdentifiersFetcherTests {
         }
 
         assertThat(completionCalled).isTrue()
-        assertThat(receivedDeviceIdentifiers.size).isEqualTo(1)
-        assertThat(receivedDeviceIdentifiers[SubscriberAttributeKey.DeviceIdentifiers.IP.backendKey]).isEqualTo("true")
+        assertThat(receivedDeviceIdentifiers.size).isEqualTo(2)
+        assertAttributionProperties(receivedDeviceIdentifiers)
     }
 
+    private fun assertAttributionProperties(identifiers: Map<String, String>) {
+        assertThat(identifiers[SubscriberAttributeKey.DeviceIdentifiers.IP.backendKey]).isEqualTo("true")
+        assertThat(identifiers[SubscriberAttributeKey.DeviceIdentifiers.DeviceVersion.backendKey]).isEqualTo("true")
+    }
 }

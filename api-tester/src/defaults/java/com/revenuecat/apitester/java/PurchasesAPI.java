@@ -119,6 +119,7 @@ final class PurchasesAPI {
         purchases.setMediaSource("");
         purchases.setCampaign("");
         purchases.setCleverTapID("");
+        purchases.setKochavaDeviceID("");
         purchases.setAdGroup("");
         purchases.setAd("");
         purchases.setKeyword("");

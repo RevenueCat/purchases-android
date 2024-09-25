@@ -267,6 +267,13 @@ class SubscriberAttributesPurchasesTests {
         }
     }
 
+    @Test
+    fun `setKochavaDeviceID`() {
+        attributionIDTest(SubscriberAttributeKey.AttributionIds.Kochava) { parameter ->
+            underTest.setKochavaDeviceID(parameter)
+        }
+    }
+
     // endregion
 
     // region Integration IDs
