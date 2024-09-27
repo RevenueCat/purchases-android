@@ -6,9 +6,11 @@ import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.offlineentitlements.ProductEntitlementMapping
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
+import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.paywalls.events.PaywallBackendEvent
 import com.revenuecat.purchases.paywalls.events.PaywallEventRequest
 import com.revenuecat.purchases.paywalls.events.PaywallEventType
+import io.mockk.InternalPlatformDsl.toArray
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
@@ -197,5 +199,35 @@ internal class ProductionBackendIntegrationTest: BaseBackendIntegrationTest() {
         }
         verify(exactly = 1) { sharedPreferencesEditor.apply() }
         assertSigningNotPerformed()
+    }
+
+    @Test
+    fun `can get customer center config data`() {
+        var customerCenterConfigData: CustomerCenterConfigData? = null
+        ensureBlockFinishes { latch ->
+            backend.getCustomerCenterConfig(
+                appUserID = "test-user-id",
+                onSuccessHandler = { receivedData ->
+                    customerCenterConfigData = receivedData
+                    latch.countDown()
+                },
+                onErrorHandler = { error ->
+                    fail("Expected success. Got $error")
+                }
+            )
+        }
+        if (customerCenterConfigData == null) {
+            error("Expected customer center config data")
+        }
+        customerCenterConfigData?.let { customerCenterConfigData->
+            val managementScreen = customerCenterConfigData.screens[CustomerCenterConfigData.Screen.ScreenType.MANAGEMENT] ?: fail("Expected management screen")
+            val noActiveScreen = customerCenterConfigData.screens[CustomerCenterConfigData.Screen.ScreenType.NO_ACTIVE] ?: fail("Expected no active screen")
+            assertThat(managementScreen.type).isEqualTo(CustomerCenterConfigData.Screen.ScreenType.MANAGEMENT)
+            assertThat(managementScreen.paths.size).isEqualTo(4)
+            val expectedLocalizationKeys = CustomerCenterConfigData.Localization.CommonLocalizedString.values().map { it.name.lowercase() }.toTypedArray()
+            assertThat(customerCenterConfigData.localization.localizedStrings.keys).contains(*expectedLocalizationKeys)
+            assertThat(customerCenterConfigData.support.email).isNull()
+        }
+
     }
 }

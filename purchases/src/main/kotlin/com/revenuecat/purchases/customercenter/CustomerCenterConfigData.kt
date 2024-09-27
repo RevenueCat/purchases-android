@@ -102,7 +102,7 @@ class CustomerCenterConfigData(
             UPDATE_WARNING_IGNORE,
 
             @SerialName("please_contact_support")
-            PLEASE_CONTACT_SUPPORT_TO_MANAGE,
+            PLEASE_CONTACT_SUPPORT,
 
             @SerialName("apple_subscription_manage")
             APPLE_SUBSCRIPTION_MANAGE,
@@ -146,7 +146,7 @@ class CustomerCenterConfigData(
                     UPDATE_WARNING_UPDATE -> "Update"
                     UPDATE_WARNING_IGNORE -> "Continue"
                     PLATFORM_MISMATCH -> "Platform mismatch"
-                    PLEASE_CONTACT_SUPPORT_TO_MANAGE -> "Please contact support to manage your subscription."
+                    PLEASE_CONTACT_SUPPORT -> "Please contact support to manage your subscription."
                     APPLE_SUBSCRIPTION_MANAGE ->
                         "You can manage your subscription by using the App Store app on an Apple device."
                     GOOGLE_SUBSCRIPTION_MANAGE ->
