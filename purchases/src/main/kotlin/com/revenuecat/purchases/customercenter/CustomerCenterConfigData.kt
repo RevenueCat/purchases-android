@@ -445,10 +445,7 @@ class CustomerCenterConfigData(
 
         other as CustomerCenterConfigData
 
-        if (screens.keys != other.screens.keys) return false
-        for (key in screens.keys) {
-            if (screens[key] != other.screens[key]) return false
-        }
+        if (screens != other.screens) return false
         if (appearance != other.appearance) return false
         if (localization != other.localization) return false
         if (support != other.support) return false
