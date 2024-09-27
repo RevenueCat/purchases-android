@@ -13,17 +13,21 @@ import com.revenuecat.purchases.PurchasesConfiguration
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.amazon.AmazonConfiguration
+import com.revenuecat.purchases.awaitCustomerCenterConfigData
 import com.revenuecat.purchases.awaitCustomerInfo
 import com.revenuecat.purchases.awaitLogIn
 import com.revenuecat.purchases.awaitLogOut
 import com.revenuecat.purchases.awaitRestore
 import com.revenuecat.purchases.awaitSyncAttributesAndOfferingsIfNeeded
 import com.revenuecat.purchases.awaitSyncPurchases
+import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.data.LogInResult
 import com.revenuecat.purchases.getAmazonLWAConsentStatus
 import com.revenuecat.purchases.getAmazonLWAConsentStatusWith
+import com.revenuecat.purchases.getCustomerCenterConfigDataWith
 import com.revenuecat.purchases.getCustomerInfoWith
 import com.revenuecat.purchases.interfaces.GetAmazonLWAConsentStatusCallback
+import com.revenuecat.purchases.interfaces.GetCustomerCenterConfigCallback
 import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.SyncAttributesAndOfferingsCallback
@@ -61,6 +65,10 @@ private class PurchasesAPI {
             override fun onSuccess(status: AmazonLWAConsentStatus) {}
             override fun onError(error: PurchasesError) {}
         }
+        val getCustomerCenterConfigCallback = object : GetCustomerCenterConfigCallback {
+            override fun onSuccess(customerCenterConfig: CustomerCenterConfigData) {}
+            override fun onError(error: PurchasesError) {}
+        }
 
         purchases.syncAttributesAndOfferingsIfNeeded(syncAttributesAndOfferingsCallback)
         purchases.getAmazonLWAConsentStatus(getAmazonLWAConsentStatusCallback)
@@ -88,6 +96,8 @@ private class PurchasesAPI {
         val store: Store = purchases.store
 
         val countryCode = purchases.storefrontCountryCode
+
+        purchases.getCustomerCenterConfigData(getCustomerCenterConfigCallback)
     }
 
     @Suppress("LongMethod", "LongParameterList")
@@ -130,6 +140,10 @@ private class PurchasesAPI {
             onError = { _: PurchasesError -> },
             onSuccess = { _: AmazonLWAConsentStatus -> },
         )
+        purchases.getCustomerCenterConfigDataWith(
+            onError = { _: PurchasesError -> },
+            onSuccess = { _: CustomerCenterConfigData -> },
+        )
     }
 
     suspend fun checkCoroutines(
@@ -145,6 +159,7 @@ private class PurchasesAPI {
         val customerInfo5: CustomerInfo = purchases.awaitSyncPurchases()
         var offerings: Offerings = purchases.awaitSyncAttributesAndOfferingsIfNeeded()
         var consentStatus: AmazonLWAConsentStatus = purchases.getAmazonLWAConsentStatus()
+        var customerCenterConfigData: CustomerCenterConfigData = purchases.awaitCustomerCenterConfigData()
     }
 
     fun check(purchases: Purchases, attributes: Map<String, String>) {

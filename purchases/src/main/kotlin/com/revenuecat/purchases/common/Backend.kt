@@ -7,6 +7,7 @@ package com.revenuecat.purchases.common
 
 import android.os.Build
 import androidx.annotation.RequiresApi
+import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.PostReceiptInitiationSource
 import com.revenuecat.purchases.PurchasesError
@@ -18,6 +19,8 @@ import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
 import com.revenuecat.purchases.common.networking.buildPostReceiptResponse
 import com.revenuecat.purchases.common.offlineentitlements.ProductEntitlementMapping
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
+import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
+import com.revenuecat.purchases.customercenter.CustomerCenterRoot
 import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.PricingPhase
 import com.revenuecat.purchases.paywalls.events.PaywallEventRequest
@@ -25,6 +28,8 @@ import com.revenuecat.purchases.paywalls.events.PaywallPostReceiptData
 import com.revenuecat.purchases.strings.NetworkStrings
 import com.revenuecat.purchases.utils.asMap
 import com.revenuecat.purchases.utils.filterNotNullValues
+import kotlinx.serialization.SerializationException
+import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.encodeToJsonElement
 import org.json.JSONArray
 import org.json.JSONException
@@ -67,6 +72,8 @@ internal typealias PaywallEventsCallback = Pair<() -> Unit, (PurchasesError, Boo
 /** @suppress */
 internal typealias ProductEntitlementCallback = Pair<(ProductEntitlementMapping) -> Unit, (PurchasesError) -> Unit>
 
+internal typealias CustomerCenterCallback = Pair<(CustomerCenterConfigData) -> Unit, (PurchasesError) -> Unit>
+
 internal enum class PostReceiptErrorHandlingBehavior {
     SHOULD_BE_MARKED_SYNCED,
     SHOULD_USE_OFFLINE_ENTITLEMENTS_AND_NOT_CONSUME,
@@ -81,10 +88,15 @@ internal class Backend(
     private val httpClient: HTTPClient,
     private val backendHelper: BackendHelper,
 ) {
-    private companion object {
-        const val APP_USER_ID = "app_user_id"
-        const val FETCH_TOKEN = "fetch_token"
-        const val NEW_APP_USER_ID = "new_app_user_id"
+    companion object {
+        private const val APP_USER_ID = "app_user_id"
+        private const val FETCH_TOKEN = "fetch_token"
+        private const val NEW_APP_USER_ID = "new_app_user_id"
+
+        @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+        internal val json = Json {
+            ignoreUnknownKeys = true
+        }
     }
 
     val verificationMode: SignatureVerificationMode
@@ -110,6 +122,9 @@ internal class Backend(
 
     @get:Synchronized @set:Synchronized
     @Volatile var productEntitlementCallbacks = mutableMapOf<String, MutableList<ProductEntitlementCallback>>()
+
+    @get:Synchronized @set:Synchronized
+    @Volatile var customerCenterCallbacks = mutableMapOf<String, MutableList<CustomerCenterCallback>>()
 
     fun close() {
         this.dispatcher.close()
@@ -576,6 +591,65 @@ internal class Backend(
                 path,
                 onSuccessHandler to onErrorHandler,
                 Delay.LONG,
+            )
+        }
+    }
+
+    fun getCustomerCenterConfig(
+        appUserID: String,
+        onSuccessHandler: (CustomerCenterConfigData) -> Unit,
+        onErrorHandler: (PurchasesError) -> Unit,
+    ) {
+        val endpoint = Endpoint.GetCustomerCenterConfig(appUserID)
+        val path = endpoint.getPath()
+        val call = object : Dispatcher.AsyncCall() {
+            override fun call(): HTTPResult {
+                return httpClient.performRequest(
+                    appConfig.baseURL,
+                    endpoint,
+                    body = null,
+                    postFieldsToSign = null,
+                    backendHelper.authenticationHeaders,
+                )
+            }
+
+            override fun onError(error: PurchasesError) {
+                synchronized(this@Backend) {
+                    customerCenterCallbacks.remove(path)
+                }?.forEach { (_, onErrorHandler) ->
+                    onErrorHandler(error)
+                }
+            }
+
+            override fun onCompletion(result: HTTPResult) {
+                synchronized(this@Backend) {
+                    customerCenterCallbacks.remove(path)
+                }?.forEach { (onSuccessHandler, onErrorHandler) ->
+                    if (result.isSuccessful()) {
+                        try {
+                            errorLog("Received customer center config: ${result.payload}")
+                            val customerCenterRoot = json.decodeFromString<CustomerCenterRoot>(
+                                result.payload,
+                            )
+                            onSuccessHandler(customerCenterRoot.customerCenter)
+                        } catch (e: SerializationException) {
+                            onErrorHandler(e.toPurchasesError().also { errorLog(it) })
+                        } catch (e: IllegalArgumentException) {
+                            onErrorHandler(e.toPurchasesError().also { errorLog(it) })
+                        }
+                    } else {
+                        onErrorHandler(result.toPurchasesError().also { errorLog(it) })
+                    }
+                }
+            }
+        }
+        synchronized(this@Backend) {
+            customerCenterCallbacks.addCallback(
+                call,
+                dispatcher,
+                path,
+                onSuccessHandler to onErrorHandler,
+                Delay.NONE,
             )
         }
     }

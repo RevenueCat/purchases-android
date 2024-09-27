@@ -10,6 +10,7 @@ import com.revenuecat.purchases.common.infoLog
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.interfaces.Callback
 import com.revenuecat.purchases.interfaces.GetAmazonLWAConsentStatusCallback
+import com.revenuecat.purchases.interfaces.GetCustomerCenterConfigCallback
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
 import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
@@ -460,6 +461,15 @@ class Purchases internal constructor(
     @JvmSynthetic
     fun track(paywallEvent: PaywallEvent) {
         purchasesOrchestrator.track(paywallEvent)
+    }
+
+    /**
+     * Used by `RevenueCatUI` to get the customer center config data.
+     */
+    fun getCustomerCenterConfigData(
+        callback: GetCustomerCenterConfigCallback,
+    ) {
+        purchasesOrchestrator.getCustomerCenterConfig(callback)
     }
 
     // region Subscriber Attributes

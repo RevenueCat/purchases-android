@@ -38,6 +38,7 @@ import com.revenuecat.purchases.google.isSuccessful
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.interfaces.Callback
 import com.revenuecat.purchases.interfaces.GetAmazonLWAConsentStatusCallback
+import com.revenuecat.purchases.interfaces.GetCustomerCenterConfigCallback
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
 import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.interfaces.ProductChangeCallback
@@ -560,6 +561,18 @@ internal class PurchasesOrchestrator(
         if (isAndroidNOrNewer()) {
             paywallEventsManager?.track(paywallEvent)
         }
+    }
+
+    fun getCustomerCenterConfig(callback: GetCustomerCenterConfigCallback) {
+        backend.getCustomerCenterConfig(
+            identityManager.currentAppUserID,
+            onSuccessHandler = { config ->
+                callback.onSuccess(config)
+            },
+            onErrorHandler = { error ->
+                callback.onError(error)
+            },
+        )
     }
 
     // region Subscriber Attributes

@@ -1,6 +1,7 @@
 package com.revenuecat.purchases
 
 import com.revenuecat.purchases.CacheFetchPolicy.CACHED_OR_FETCHED
+import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.data.LogInResult
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
@@ -103,7 +104,7 @@ suspend fun Purchases.awaitSyncPurchases(): CustomerInfo {
  * This method is rate limited to 5 calls per minute. It will log a warning and return offerings cache when reached.
  *
  * Refer to [the guide](https://www.revenuecat.com/docs/tools/targeting) for more targeting information
- * For more offerings information, see [getOfferings]
+ * For more offerings information, see [Purchases.getOfferings]
  *
  * Coroutine friendly version of [Purchases.syncAttributesAndOfferingsIfNeeded].
  *
@@ -144,6 +145,24 @@ suspend fun Purchases.getAmazonLWAConsentStatus(): AmazonLWAConsentStatus {
         getAmazonLWAConsentStatusWith(
             onSuccess = continuation::resume,
             onError = { continuation.resumeWithException(PurchasesException(it)) },
+        )
+    }
+}
+
+/**
+ * Gets the current user's [CustomerCenterConfigData]. Used by RevenueCatUI to present the customer center.
+ *
+ * @throws [PurchasesException] with the first [PurchasesError] if there's an error getting the customer center
+ * config data.
+ * @returns The [CustomerCenterConfigData] for the current user.
+ */
+@JvmSynthetic
+@Throws(PurchasesException::class)
+suspend fun Purchases.awaitCustomerCenterConfigData(): CustomerCenterConfigData {
+    return suspendCoroutine { continuation ->
+        getCustomerCenterConfigDataWith(
+            onError = { continuation.resumeWithException(PurchasesException(it)) },
+            onSuccess = continuation::resume,
         )
     }
 }
