@@ -627,7 +627,6 @@ internal class Backend(
                 }?.forEach { (onSuccessHandler, onErrorHandler) ->
                     if (result.isSuccessful()) {
                         try {
-                            errorLog("Received customer center config: ${result.payload}")
                             val customerCenterRoot = json.decodeFromString<CustomerCenterRoot>(
                                 result.payload,
                             )

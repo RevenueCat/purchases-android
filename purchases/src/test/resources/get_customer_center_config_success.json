@@ -1,0 +1,140 @@
+{
+  "customer_center":{
+    "appearance":{
+      "dark":{
+        "accent_color":"#F4A900",
+        "background_color":"#000000",
+        "button_background_color":"#ffffff",
+        "button_text_color":"#000000",
+        "text_color":"#ffffff"
+      },
+      "light":{
+        "accent_color":"#a28339",
+        "background_color":"#ffffff",
+        "button_background_color":"#000000",
+        "button_text_color":"#ffffff",
+        "text_color":"#000000"
+      }
+    },
+    "localization":{
+      "locale":"en",
+      "localized_strings":{
+        "amazon_subscription_manage":"You can manage your subscription in the Amazon Appstore app on an Amazon device.",
+        "apple_subscription_manage":"You can manage your subscription by using the App Store app on an Apple device.",
+        "billing_cycle":"Billing cycle",
+        "cancel":"Cancel",
+        "check_past_purchases":"Check past purchases",
+        "contact_support":"Contact support",
+        "current_price":"Current price",
+        "default_body":"Please describe your issue or question.",
+        "default_subject":"Support Request",
+        "dismiss":"Dismiss",
+        "expired":"Expired",
+        "expires":"Expires",
+        "going_to_check_purchases":"Let\u2019s take a look! We\u2019re going to check your account for missing purchases.",
+        "google_subscription_manage":"You can manage your subscription by using the Play Store app on an Android device.",
+        "next_billing_date":"Next billing date",
+        "no_subscriptions_found":"No Subscriptions found",
+        "no_thanks":"No, thanks",
+        "platform_mismatch":"Platform mismatch",
+        "please_contact_support":"Please contact support to manage your subscription.",
+        "purchases_not_recovered":"We couldn't find any additional purchases under this account. Contact support for assistance if you think this is an error.",
+        "purchases_recovered":"Purchases recovered!",
+        "purchases_recovered_explanation":"We applied the previously purchased items to your account. Sorry for the inconvenience.",
+        "refund_canceled":"Refund canceled",
+        "refund_error_generic":"An error occurred while processing the refund request. Please try again.",
+        "refund_granted":"Refund granted successfully!",
+        "refund_status":"Refund status",
+        "restore_purchases":"Restore purchases",
+        "sub_earliest_expiration":"This is your subscription with the earliest expiration date.",
+        "sub_earliest_renewal":"This is your subscription with the earliest billing date.",
+        "sub_expired":"This subscription has expired.",
+        "try_check_restore":"We can try checking your Apple account for any previous purchases",
+        "update_warning_description":"Downloading the latest version of the app may help solve the problem.",
+        "update_warning_ignore":"Continue",
+        "update_warning_title":"Update available",
+        "update_warning_update":"Update"
+      }
+    },
+    "screens":{
+      "MANAGEMENT":{
+        "paths":[
+          {
+            "id":"ownmsldfow",
+            "title":"Didn't receive purchase",
+            "type":"MISSING_PURCHASE"
+          },
+          {
+            "id":"nwodkdnfaoeb",
+            "promotional_offer":{
+              "eligible":true,
+              "ios_offer_id":"rc-refund-offer",
+              "subtitle":"Before you go, here's a one-time offer to continue at a discount.",
+              "title":"Wait!"
+            },
+            "title":"Request a refund",
+            "type":"REFUND_REQUEST"
+          },
+          {
+            "id":"nfoaiodifj9",
+            "title":"Change plans",
+            "type":"CHANGE_PLANS"
+          },
+          {
+            "feedback_survey":{
+              "options":[
+                {
+                  "id":"cancel_survey_too_expensive",
+                  "promotional_offer":{
+                    "eligible":true,
+                    "ios_offer_id":"rc-cancel-offer",
+                    "subtitle":"Before you go, here's a one-time offer to continue at a discount.",
+                    "title":"Wait!"
+                  },
+                  "title":"Too expensive"
+                },
+                {
+                  "id":"cancel_survey_usage",
+                  "promotional_offer":{
+                    "eligible":true,
+                    "ios_offer_id":"rc-cancel-offer",
+                    "subtitle":"Before you go, here's a one-time offer to continue at a discount.",
+                    "title":"Wait!"
+                  },
+                  "title":"Don't use the app"
+                },
+                {
+                  "id":"cancel_survey_mistake",
+                  "title":"Bought by mistake"
+                }
+              ],
+              "title":"Why are you cancelling?"
+            },
+            "id":"jnkasldfhas",
+            "title":"Cancel subscription",
+            "type":"CANCEL"
+          }
+        ],
+        "title":"How can we help?",
+        "type":"MANAGEMENT"
+      },
+      "NO_ACTIVE":{
+        "paths":[
+          {
+            "id":"9q9719171o",
+            "title":"Check purchases",
+            "type":"MISSING_PURCHASE"
+          }
+        ],
+        "subtitle":"You currently have no active subscriptions",
+        "title":"No subscriptions found",
+        "type":"NO_ACTIVE"
+      }
+    },
+    "support":{
+      "email":"support@revenuecat.com"
+    }
+  },
+  "itunes_track_id":null,
+  "last_published_app_version":null
+}
