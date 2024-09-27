@@ -6,7 +6,7 @@ import kotlinx.serialization.Serializable
 
 typealias RCColor = PaywallColor
 
-private const val hashCodeMultiplier = 31
+private const val HASH_CODE_MULTIPLIER = 31
 
 @Serializable
 internal class CustomerCenterRoot(
@@ -176,7 +176,7 @@ class CustomerCenterConfigData(
 
         override fun hashCode(): Int {
             var result = locale.hashCode()
-            result = hashCodeMultiplier * result + localizedStrings.hashCode()
+            result = HASH_CODE_MULTIPLIER * result + localizedStrings.hashCode()
             return result
         }
     }
@@ -215,9 +215,9 @@ class CustomerCenterConfigData(
 
                 override fun hashCode(): Int {
                     var result = androidOfferId.hashCode()
-                    result = hashCodeMultiplier * result + eligible.hashCode()
-                    result = hashCodeMultiplier * result + title.hashCode()
-                    result = hashCodeMultiplier * result + subtitle.hashCode()
+                    result = HASH_CODE_MULTIPLIER * result + eligible.hashCode()
+                    result = HASH_CODE_MULTIPLIER * result + title.hashCode()
+                    result = HASH_CODE_MULTIPLIER * result + subtitle.hashCode()
                     return result
                 }
             }
@@ -268,7 +268,7 @@ class CustomerCenterConfigData(
 
                 override fun hashCode(): Int {
                     var result = title.hashCode()
-                    result = hashCodeMultiplier * result + options.hashCode()
+                    result = HASH_CODE_MULTIPLIER * result + options.hashCode()
                     return result
                 }
             }
@@ -309,10 +309,10 @@ class CustomerCenterConfigData(
 
         override fun hashCode(): Int {
             var result = id.hashCode()
-            result = hashCodeMultiplier * result + title.hashCode()
-            result = hashCodeMultiplier * result + type.hashCode()
-            result = hashCodeMultiplier * result + (promotionalOffer?.hashCode() ?: 0)
-            result = hashCodeMultiplier * result + (feedbackSurvey?.hashCode() ?: 0)
+            result = HASH_CODE_MULTIPLIER * result + title.hashCode()
+            result = HASH_CODE_MULTIPLIER * result + type.hashCode()
+            result = HASH_CODE_MULTIPLIER * result + (promotionalOffer?.hashCode() ?: 0)
+            result = HASH_CODE_MULTIPLIER * result + (feedbackSurvey?.hashCode() ?: 0)
             return result
         }
     }
@@ -352,10 +352,10 @@ class CustomerCenterConfigData(
 
             override fun hashCode(): Int {
                 var result = accentColor?.hashCode() ?: 0
-                result = hashCodeMultiplier * result + (textColor?.hashCode() ?: 0)
-                result = hashCodeMultiplier * result + (backgroundColor?.hashCode() ?: 0)
-                result = hashCodeMultiplier * result + (buttonTextColor?.hashCode() ?: 0)
-                result = hashCodeMultiplier * result + (buttonBackgroundColor?.hashCode() ?: 0)
+                result = HASH_CODE_MULTIPLIER * result + (textColor?.hashCode() ?: 0)
+                result = HASH_CODE_MULTIPLIER * result + (backgroundColor?.hashCode() ?: 0)
+                result = HASH_CODE_MULTIPLIER * result + (buttonTextColor?.hashCode() ?: 0)
+                result = HASH_CODE_MULTIPLIER * result + (buttonBackgroundColor?.hashCode() ?: 0)
                 return result
             }
         }
@@ -374,7 +374,7 @@ class CustomerCenterConfigData(
 
         override fun hashCode(): Int {
             var result = light?.hashCode() ?: 0
-            result = hashCodeMultiplier * result + (dark?.hashCode() ?: 0)
+            result = HASH_CODE_MULTIPLIER * result + (dark?.hashCode() ?: 0)
             return result
         }
     }
@@ -414,9 +414,9 @@ class CustomerCenterConfigData(
 
         override fun hashCode(): Int {
             var result = type.hashCode()
-            result = hashCodeMultiplier * result + title.hashCode()
-            result = hashCodeMultiplier * result + (subtitle?.hashCode() ?: 0)
-            result = hashCodeMultiplier * result + paths.hashCode()
+            result = HASH_CODE_MULTIPLIER * result + title.hashCode()
+            result = HASH_CODE_MULTIPLIER * result + (subtitle?.hashCode() ?: 0)
+            result = HASH_CODE_MULTIPLIER * result + paths.hashCode()
             return result
         }
     }
@@ -459,10 +459,10 @@ class CustomerCenterConfigData(
 
     override fun hashCode(): Int {
         var result = screens.hashCode()
-        result = hashCodeMultiplier * result + appearance.hashCode()
-        result = hashCodeMultiplier * result + localization.hashCode()
-        result = hashCodeMultiplier * result + support.hashCode()
-        result = hashCodeMultiplier * result + (lastPublishedAppVersion?.hashCode() ?: 0)
+        result = HASH_CODE_MULTIPLIER * result + appearance.hashCode()
+        result = HASH_CODE_MULTIPLIER * result + localization.hashCode()
+        result = HASH_CODE_MULTIPLIER * result + support.hashCode()
+        result = HASH_CODE_MULTIPLIER * result + (lastPublishedAppVersion?.hashCode() ?: 0)
         return result
     }
 }
