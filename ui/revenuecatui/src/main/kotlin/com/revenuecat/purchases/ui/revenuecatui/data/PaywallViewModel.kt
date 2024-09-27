@@ -19,11 +19,13 @@ import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
 import com.revenuecat.purchases.paywalls.events.PaywallEventType
+import com.revenuecat.purchases.ui.revenuecatui.PackageProvider
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogic
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult
+import com.revenuecat.purchases.ui.revenuecatui.SubscriptionOptionProvider
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvider
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
@@ -96,6 +98,9 @@ internal class PaywallViewModelImpl(
 
     private val purchaseLogic: PurchaseLogic?
         get() = options.purchaseLogic
+
+    private val subscriptionOptionProvider: SubscriptionOptionProvider?
+        get() = options.subscriptionOptionProvider
 
     private var paywallPresentationData: PaywallEvent.Data? = null
 
@@ -296,9 +301,17 @@ internal class PaywallViewModelImpl(
                                 "myAppPurchaseLogic.performPurchase will not be executed.",
                         )
                     }
-                    val purchaseResult = purchases.awaitPurchase(
-                        PurchaseParams.Builder(activity, packageToPurchase),
-                    )
+                    val subscriptionOption = subscriptionOptionProvider?.subscriptionOption(packageToPurchase)
+                    val purchaseResult = if (subscriptionOption != null) {
+                        purchases.awaitPurchase(
+                            PurchaseParams.Builder(activity, subscriptionOption)
+                        )
+                    } else {
+                        purchases.awaitPurchase(
+                            PurchaseParams.Builder(activity, packageToPurchase),
+                        )
+                    }
+
                     listener?.onPurchaseCompleted(purchaseResult.customerInfo, purchaseResult.storeTransaction)
                     Logger.d("Dismissing paywall after purchase")
                     options.dismissRequest()
