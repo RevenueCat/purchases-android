@@ -198,19 +198,10 @@ data class CustomerCenterConfigData(
 
         @Serializable
         enum class PathType {
-            @SerialName("MISSING_PURCHASE")
             MISSING_PURCHASE,
-
-            @SerialName("REFUND_REQUEST")
             REFUND_REQUEST,
-
-            @SerialName("CHANGE_PLANS")
             CHANGE_PLANS,
-
-            @SerialName("CANCEL")
             CANCEL,
-
-            @SerialName("UNKNOWN")
             UNKNOWN,
         }
     }
@@ -244,13 +235,8 @@ data class CustomerCenterConfigData(
     ) {
         @Serializable
         enum class ScreenType {
-            @SerialName("MANAGEMENT")
             MANAGEMENT,
-
-            @SerialName("NO_ACTIVE")
             NO_ACTIVE,
-
-            @SerialName("UNKNOWN")
             UNKNOWN,
         }
     }
