@@ -5,7 +5,6 @@
 
 package com.revenuecat.purchases.common
 
-import android.content.res.Resources
 import android.os.Build
 import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.Store
@@ -47,6 +46,7 @@ internal class HTTPClient(
     private val storefrontProvider: StorefrontProvider,
     private val dateProvider: DateProvider = DefaultDateProvider(),
     private val mapConverter: MapConverter = MapConverter(),
+    private val localeProvider: LocaleProvider = DefaultLocaleProvider(),
 ) {
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     internal companion object {
@@ -270,7 +270,7 @@ internal class HTTPClient(
             "X-Platform-Device" to Build.MODEL,
             "X-Platform-Brand" to Build.BRAND,
             "X-Version" to Config.frameworkVersion,
-            "X-Preferred-Locales" to getXPreferredLocalesHeader(),
+            "X-Preferred-Locales" to localeProvider.currentLocalesLanguageTags,
             "X-Client-Locale" to appConfig.languageTag,
             "X-Client-Version" to appConfig.versionName,
             "X-Client-Bundle-ID" to appConfig.packageName,
@@ -302,15 +302,6 @@ internal class HTTPClient(
     private fun getXPlatformHeader() = when (appConfig.store) {
         Store.AMAZON -> "amazon"
         else -> "android"
-    }
-
-    private fun getXPreferredLocalesHeader(): String {
-        val locales = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            Resources.getSystem().configuration.locales.toLanguageTags()
-        } else {
-            Resources.getSystem().configuration.locale.toLanguageTag()
-        }
-        return locales.replace('-', '_')
     }
 
     private fun verifyResponse(
