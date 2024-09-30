@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.customercenter
 
+import com.revenuecat.purchases.paywalls.EmptyStringToNullSerializer
 import com.revenuecat.purchases.paywalls.PaywallColor
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -17,7 +18,9 @@ data class CustomerCenterConfigData(
     val appearance: Appearance,
     val localization: Localization,
     val support: Support,
-    @SerialName("last_published_app_version") val lastPublishedAppVersion: String? = null,
+    @SerialName("last_published_app_version")
+    @Serializable(with = EmptyStringToNullSerializer::class)
+    val lastPublishedAppVersion: String? = null,
 ) {
     @Serializable
     data class Localization(
@@ -252,7 +255,7 @@ data class CustomerCenterConfigData(
     data class Screen(
         val type: ScreenType,
         val title: String,
-        val subtitle: String? = null,
+        @Serializable(with = EmptyStringToNullSerializer::class) val subtitle: String? = null,
         val paths: List<HelpPath>,
     ) {
         @Serializable
@@ -265,6 +268,6 @@ data class CustomerCenterConfigData(
 
     @Serializable
     data class Support(
-        val email: String? = null,
+        @Serializable(with = EmptyStringToNullSerializer::class) val email: String? = null,
     )
 }
