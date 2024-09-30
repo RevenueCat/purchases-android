@@ -1,6 +1,6 @@
 package com.revenuecat.purchases.customercenter
 
-import com.revenuecat.purchases.common.warnLog
+import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData.Screen
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData.Screen.ScreenType
 import kotlinx.serialization.KSerializer
@@ -24,7 +24,7 @@ internal object ScreenMapSerializer : KSerializer<Map<ScreenType, Screen>> {
                 val enumKey = ScreenType.valueOf(key)
                 map[enumKey] = jsonInput.json.decodeFromJsonElement(Screen.serializer(), value)
             } catch (_: IllegalArgumentException) {
-                warnLog("Unknown CustomerCenter ScreenType: $key. Ignoring.")
+                debugLog("Unknown CustomerCenter ScreenType: $key. Ignoring.")
             }
         }
 

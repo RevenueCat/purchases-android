@@ -6,8 +6,6 @@ import kotlinx.serialization.Serializable
 
 typealias RCColor = PaywallColor
 
-private const val HASH_CODE_MULTIPLIER = 31
-
 @Serializable
 internal class CustomerCenterRoot(
     @SerialName("customer_center") val customerCenter: CustomerCenterConfigData,
@@ -117,6 +115,21 @@ data class CustomerCenterConfigData(
 
             @SerialName("platform_mismatch")
             PLATFORM_MISMATCH,
+
+            @SerialName("going_to_check_purchases")
+            GOING_TO_CHECK_PURCHASES,
+
+            @SerialName("check_past_purchases")
+            CHECK_PAST_PURCHASES,
+
+            @SerialName("purchases_recovered")
+            PURCHASES_RECOVERED,
+
+            @SerialName("purchases_recovered_explanation")
+            PURCHASES_RECOVERED_EXPLANATION,
+
+            @SerialName("purchases_not_recovered")
+            PURCHASES_NOT_RECOVERED,
             ;
 
             val defaultValue: String
@@ -155,6 +168,15 @@ data class CustomerCenterConfigData(
                         "You can manage your subscription by using the Play Store app on an Android device"
                     AMAZON_SUBSCRIPTION_MANAGE ->
                         "You can manage your subscription in the Amazon Appstore app on an Amazon device."
+                    GOING_TO_CHECK_PURCHASES ->
+                        "Let’s take a look! We’re going to check your account for missing purchases."
+                    CHECK_PAST_PURCHASES -> "Check past purchases"
+                    PURCHASES_RECOVERED -> "Purchases recovered!"
+                    PURCHASES_RECOVERED_EXPLANATION ->
+                        "We applied the previously purchased items to your account. Sorry for the inconvenience."
+                    PURCHASES_NOT_RECOVERED ->
+                        "We couldn't find any additional purchases under this account. " +
+                            "Contact support for assistance if you think this is an error."
                 }
         }
 

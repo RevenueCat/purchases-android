@@ -219,14 +219,14 @@ internal class ProductionBackendIntegrationTest: BaseBackendIntegrationTest() {
         if (customerCenterConfigData == null) {
             error("Expected customer center config data")
         }
-        customerCenterConfigData?.let { customerCenterConfigData->
-            val managementScreen = customerCenterConfigData.screens[CustomerCenterConfigData.Screen.ScreenType.MANAGEMENT] ?: fail("Expected management screen")
-            val noActiveScreen = customerCenterConfigData.screens[CustomerCenterConfigData.Screen.ScreenType.NO_ACTIVE] ?: fail("Expected no active screen")
+        customerCenterConfigData?.let {
+            val managementScreen = it.screens[CustomerCenterConfigData.Screen.ScreenType.MANAGEMENT] ?: fail("Expected management screen")
+            val noActiveScreen = it.screens[CustomerCenterConfigData.Screen.ScreenType.NO_ACTIVE] ?: fail("Expected no active screen")
             assertThat(managementScreen.type).isEqualTo(CustomerCenterConfigData.Screen.ScreenType.MANAGEMENT)
             assertThat(managementScreen.paths.size).isEqualTo(4)
             val expectedLocalizationKeys = CustomerCenterConfigData.Localization.CommonLocalizedString.values().map { it.name.lowercase() }.toTypedArray()
-            assertThat(customerCenterConfigData.localization.localizedStrings.keys).contains(*expectedLocalizationKeys)
-            assertThat(customerCenterConfigData.support.email).isNull()
+            assertThat(it.localization.localizedStrings.keys).contains(*expectedLocalizationKeys)
+            assertThat(it.support.email).isNull()
         }
 
     }
