@@ -14,7 +14,7 @@ internal class CustomerCenterRoot(
 )
 
 @Serializable
-class CustomerCenterConfigData(
+data class CustomerCenterConfigData(
     @Serializable(with = ScreenMapSerializer::class) val screens: Map<Screen.ScreenType, Screen>,
     val appearance: Appearance,
     val localization: Localization,
@@ -22,7 +22,7 @@ class CustomerCenterConfigData(
     @SerialName("last_published_app_version") val lastPublishedAppVersion: String? = null,
 ) {
     @Serializable
-    class Localization(
+    data class Localization(
         val locale: String,
         @SerialName("localized_strings") val localizedStrings: Map<String, String>,
     ) {
@@ -161,28 +161,10 @@ class CustomerCenterConfigData(
         fun commonLocalizedString(key: CommonLocalizedString): String {
             return localizedStrings[key.name.lowercase()] ?: key.defaultValue
         }
-
-        override fun equals(other: Any?): Boolean {
-            if (this === other) return true
-            if (javaClass != other?.javaClass) return false
-
-            other as Localization
-
-            if (locale != other.locale) return false
-            if (localizedStrings != other.localizedStrings) return false
-
-            return true
-        }
-
-        override fun hashCode(): Int {
-            var result = locale.hashCode()
-            result = HASH_CODE_MULTIPLIER * result + localizedStrings.hashCode()
-            return result
-        }
     }
 
     @Serializable
-    class HelpPath(
+    data class HelpPath(
         val id: String,
         val title: String,
         val type: PathType,
@@ -192,85 +174,25 @@ class CustomerCenterConfigData(
         @Serializable
         sealed class PathDetail {
             @Serializable
-            class PromotionalOffer(
+            data class PromotionalOffer(
                 // WIP: Rename this field name to a new android id
                 @SerialName("ios_offer_id") val androidOfferId: String,
                 val eligible: Boolean,
                 val title: String,
                 val subtitle: String,
-            ) : PathDetail() {
-                override fun equals(other: Any?): Boolean {
-                    if (this === other) return true
-                    if (javaClass != other?.javaClass) return false
-
-                    other as PromotionalOffer
-
-                    if (androidOfferId != other.androidOfferId) return false
-                    if (eligible != other.eligible) return false
-                    if (title != other.title) return false
-                    if (subtitle != other.subtitle) return false
-
-                    return true
-                }
-
-                override fun hashCode(): Int {
-                    var result = androidOfferId.hashCode()
-                    result = HASH_CODE_MULTIPLIER * result + eligible.hashCode()
-                    result = HASH_CODE_MULTIPLIER * result + title.hashCode()
-                    result = HASH_CODE_MULTIPLIER * result + subtitle.hashCode()
-                    return result
-                }
-            }
+            ) : PathDetail()
 
             @Serializable
-            class FeedbackSurvey(
+            data class FeedbackSurvey(
                 val title: String,
                 val options: List<Option>,
             ) : PathDetail() {
                 @Serializable
-                class Option(
+                data class Option(
                     val id: String,
                     val title: String,
                     @SerialName("promotional_offer") val promotionalOffer: PromotionalOffer? = null,
-                ) {
-                    override fun equals(other: Any?): Boolean {
-                        if (this === other) return true
-                        if (javaClass != other?.javaClass) return false
-
-                        other as Option
-
-                        if (id != other.id) return false
-                        if (title != other.title) return false
-                        if (promotionalOffer != other.promotionalOffer) return false
-
-                        return true
-                    }
-
-                    override fun hashCode(): Int {
-                        var result = id.hashCode()
-                        result = 31 * result + title.hashCode()
-                        result = 31 * result + (promotionalOffer?.hashCode() ?: 0)
-                        return result
-                    }
-                }
-
-                override fun equals(other: Any?): Boolean {
-                    if (this === other) return true
-                    if (javaClass != other?.javaClass) return false
-
-                    other as FeedbackSurvey
-
-                    if (title != other.title) return false
-                    if (options != other.options) return false
-
-                    return true
-                }
-
-                override fun hashCode(): Int {
-                    var result = title.hashCode()
-                    result = HASH_CODE_MULTIPLIER * result + options.hashCode()
-                    return result
-                }
+                )
             }
         }
 
@@ -291,39 +213,15 @@ class CustomerCenterConfigData(
             @SerialName("UNKNOWN")
             UNKNOWN,
         }
-
-        override fun equals(other: Any?): Boolean {
-            if (this === other) return true
-            if (javaClass != other?.javaClass) return false
-
-            other as HelpPath
-
-            if (id != other.id) return false
-            if (title != other.title) return false
-            if (type != other.type) return false
-            if (promotionalOffer != other.promotionalOffer) return false
-            if (feedbackSurvey != other.feedbackSurvey) return false
-
-            return true
-        }
-
-        override fun hashCode(): Int {
-            var result = id.hashCode()
-            result = HASH_CODE_MULTIPLIER * result + title.hashCode()
-            result = HASH_CODE_MULTIPLIER * result + type.hashCode()
-            result = HASH_CODE_MULTIPLIER * result + (promotionalOffer?.hashCode() ?: 0)
-            result = HASH_CODE_MULTIPLIER * result + (feedbackSurvey?.hashCode() ?: 0)
-            return result
-        }
     }
 
     @Serializable
-    class Appearance(
+    data class Appearance(
         val light: ColorInformation? = null,
         val dark: ColorInformation? = null,
     ) {
         @Serializable
-        class ColorInformation(
+        data class ColorInformation(
             @SerialName("accent_color") @Serializable(with = PaywallColor.Serializer::class)
             val accentColor: RCColor? = null,
             @SerialName("text_color") @Serializable(with = PaywallColor.Serializer::class)
@@ -334,53 +232,11 @@ class CustomerCenterConfigData(
             val buttonTextColor: RCColor? = null,
             @SerialName("button_background_color") @Serializable(with = PaywallColor.Serializer::class)
             val buttonBackgroundColor: RCColor? = null,
-        ) {
-            override fun equals(other: Any?): Boolean {
-                if (this === other) return true
-                if (javaClass != other?.javaClass) return false
-
-                other as ColorInformation
-
-                if (accentColor != other.accentColor) return false
-                if (textColor != other.textColor) return false
-                if (backgroundColor != other.backgroundColor) return false
-                if (buttonTextColor != other.buttonTextColor) return false
-                if (buttonBackgroundColor != other.buttonBackgroundColor) return false
-
-                return true
-            }
-
-            override fun hashCode(): Int {
-                var result = accentColor?.hashCode() ?: 0
-                result = HASH_CODE_MULTIPLIER * result + (textColor?.hashCode() ?: 0)
-                result = HASH_CODE_MULTIPLIER * result + (backgroundColor?.hashCode() ?: 0)
-                result = HASH_CODE_MULTIPLIER * result + (buttonTextColor?.hashCode() ?: 0)
-                result = HASH_CODE_MULTIPLIER * result + (buttonBackgroundColor?.hashCode() ?: 0)
-                return result
-            }
-        }
-
-        override fun equals(other: Any?): Boolean {
-            if (this === other) return true
-            if (javaClass != other?.javaClass) return false
-
-            other as Appearance
-
-            if (light != other.light) return false
-            if (dark != other.dark) return false
-
-            return true
-        }
-
-        override fun hashCode(): Int {
-            var result = light?.hashCode() ?: 0
-            result = HASH_CODE_MULTIPLIER * result + (dark?.hashCode() ?: 0)
-            return result
-        }
+        )
     }
 
     @Serializable
-    class Screen(
+    data class Screen(
         val type: ScreenType,
         val title: String,
         val subtitle: String? = null,
@@ -397,69 +253,10 @@ class CustomerCenterConfigData(
             @SerialName("UNKNOWN")
             UNKNOWN,
         }
-
-        override fun equals(other: Any?): Boolean {
-            if (this === other) return true
-            if (javaClass != other?.javaClass) return false
-
-            other as Screen
-
-            if (type != other.type) return false
-            if (title != other.title) return false
-            if (subtitle != other.subtitle) return false
-            if (paths != other.paths) return false
-
-            return true
-        }
-
-        override fun hashCode(): Int {
-            var result = type.hashCode()
-            result = HASH_CODE_MULTIPLIER * result + title.hashCode()
-            result = HASH_CODE_MULTIPLIER * result + (subtitle?.hashCode() ?: 0)
-            result = HASH_CODE_MULTIPLIER * result + paths.hashCode()
-            return result
-        }
     }
 
     @Serializable
-    class Support(
+    data class Support(
         val email: String? = null,
-    ) {
-        override fun equals(other: Any?): Boolean {
-            if (this === other) return true
-            if (javaClass != other?.javaClass) return false
-
-            other as Support
-
-            return email == other.email
-        }
-
-        override fun hashCode(): Int {
-            return email?.hashCode() ?: 0
-        }
-    }
-
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (javaClass != other?.javaClass) return false
-
-        other as CustomerCenterConfigData
-
-        if (screens != other.screens) return false
-        if (appearance != other.appearance) return false
-        if (localization != other.localization) return false
-        if (support != other.support) return false
-        if (lastPublishedAppVersion != other.lastPublishedAppVersion) return false
-
-        return true
-    }
-
-    override fun hashCode(): Int {
-        var result = screens.hashCode()
-        result = HASH_CODE_MULTIPLIER * result + appearance.hashCode()
-        result = HASH_CODE_MULTIPLIER * result + localization.hashCode()
-        result = HASH_CODE_MULTIPLIER * result + support.hashCode()
-        result = HASH_CODE_MULTIPLIER * result + (lastPublishedAppVersion?.hashCode() ?: 0)
-        return result
-    }
+    )
 }
