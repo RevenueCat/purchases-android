@@ -241,8 +241,8 @@ class BackendGetCustomerCenterConfigTest {
     }
 
     @Test
-    fun `given multiple getCustomerInfo calls for same subscriber same body, only one is triggered`() {
-        mockHttpResult()
+    fun `given multiple getCustomerCenterConfig calls for same subscriber same body, only one is triggered`() {
+        mockHttpResult(delayMs = 200)
         val lock = CountDownLatch(2)
         asyncBackend.getCustomerCenterConfig("test-user-id",
             onSuccessHandler = {
@@ -260,7 +260,7 @@ class BackendGetCustomerCenterConfigTest {
                 fail("Expected success. Got error: $it")
             },
         )
-        lock.await(10.seconds.inWholeSeconds, TimeUnit.SECONDS)
+        lock.await(5.seconds.inWholeSeconds, TimeUnit.SECONDS)
         assertThat(lock.count).isEqualTo(0)
         verify(exactly = 1) {
             httpClient.performRequest(
