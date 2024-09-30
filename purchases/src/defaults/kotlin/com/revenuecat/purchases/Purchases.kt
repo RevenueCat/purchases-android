@@ -463,10 +463,8 @@ class Purchases internal constructor(
         purchasesOrchestrator.track(paywallEvent)
     }
 
-    /**
-     * Used by `RevenueCatUI` to get the customer center config data.
-     */
-    fun getCustomerCenterConfigData(
+    // Kept internal since it's not meant for public usage.
+    internal fun getCustomerCenterConfigData(
         callback: GetCustomerCenterConfigCallback,
     ) {
         purchasesOrchestrator.getCustomerCenterConfig(callback)

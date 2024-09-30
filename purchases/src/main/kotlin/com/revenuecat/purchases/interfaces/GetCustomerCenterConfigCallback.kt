@@ -3,7 +3,8 @@ package com.revenuecat.purchases.interfaces
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 
-interface GetCustomerCenterConfigCallback {
+// Kept internal since it's not meant for public usage.
+internal interface GetCustomerCenterConfigCallback {
     /**
      * Will be called after the call has completed.
      * @param customerCenterConfig config for the customer center to be created

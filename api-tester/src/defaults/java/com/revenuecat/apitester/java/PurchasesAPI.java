@@ -15,9 +15,7 @@ import com.revenuecat.purchases.PurchasesConfiguration;
 import com.revenuecat.purchases.PurchasesError;
 import com.revenuecat.purchases.Store;
 import com.revenuecat.purchases.amazon.AmazonConfiguration;
-import com.revenuecat.purchases.customercenter.CustomerCenterConfigData;
 import com.revenuecat.purchases.interfaces.GetAmazonLWAConsentStatusCallback;
-import com.revenuecat.purchases.interfaces.GetCustomerCenterConfigCallback;
 import com.revenuecat.purchases.interfaces.LogInCallback;
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback;
 import com.revenuecat.purchases.interfaces.SyncAttributesAndOfferingsCallback;
@@ -78,16 +76,6 @@ final class PurchasesAPI {
             }
         };
 
-        final GetCustomerCenterConfigCallback getCustomerCenterConfigCallback = new GetCustomerCenterConfigCallback() {
-            @Override
-            public void onError(@NonNull PurchasesError error) {
-            }
-
-            @Override
-            public void onSuccess(@NonNull CustomerCenterConfigData customerCenterConfig) {
-            }
-        };
-
         purchases.syncAttributesAndOfferingsIfNeeded(syncAttributesAndOfferingsCallback);
         purchases.syncPurchases();
         purchases.syncPurchases(syncPurchasesCallback);
@@ -97,7 +85,6 @@ final class PurchasesAPI {
         purchases.getCustomerInfo(receiveCustomerInfoListener);
         purchases.getCustomerInfo(CacheFetchPolicy.CACHED_OR_FETCHED, receiveCustomerInfoListener);
         purchases.getAmazonLWAConsentStatus(getAmazonLWAContentStatusCallback);
-        purchases.getCustomerCenterConfigData(getCustomerCenterConfigCallback);
 
         purchases.restorePurchases(receiveCustomerInfoListener);
         purchases.invalidateCustomerInfoCache();

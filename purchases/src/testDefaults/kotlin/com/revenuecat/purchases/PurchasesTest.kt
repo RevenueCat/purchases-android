@@ -15,6 +15,7 @@ import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.google.toInAppStoreProduct
 import com.revenuecat.purchases.google.toStoreProduct
+import com.revenuecat.purchases.interfaces.GetCustomerCenterConfigCallback
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
 import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
@@ -1464,14 +1465,15 @@ internal class PurchasesTest : BasePurchasesTest() {
         }
 
         var receivedData: CustomerCenterConfigData? = null
-        purchases.getCustomerCenterConfigDataWith(
-            onError = {
+        purchases.getCustomerCenterConfigData(object : GetCustomerCenterConfigCallback {
+            override fun onError(error: PurchasesError) {
                 fail("should be success")
-            },
-            onSuccess = {
-                receivedData = it
-            },
-        )
+            }
+
+            override fun onSuccess(customerCenterConfig: CustomerCenterConfigData) {
+                receivedData = customerCenterConfig
+            }
+        })
 
         assertThat(receivedData).isEqualTo(expectedData)
     }
@@ -1493,14 +1495,15 @@ internal class PurchasesTest : BasePurchasesTest() {
         }
 
         var receivedError: PurchasesError? = null
-        purchases.getCustomerCenterConfigDataWith(
-            onError = {
-                receivedError = it
-            },
-            onSuccess = {
+        purchases.getCustomerCenterConfigData(object : GetCustomerCenterConfigCallback {
+            override fun onError(error: PurchasesError) {
+                receivedError = error
+            }
+
+            override fun onSuccess(customerCenterConfig: CustomerCenterConfigData) {
                 fail("should be error")
-            },
-        )
+            }
+        })
 
         assertThat(receivedError).isEqualTo(expectedError)
     }

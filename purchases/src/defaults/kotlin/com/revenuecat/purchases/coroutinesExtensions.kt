@@ -3,6 +3,7 @@ package com.revenuecat.purchases
 import com.revenuecat.purchases.CacheFetchPolicy.CACHED_OR_FETCHED
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.data.LogInResult
+import com.revenuecat.purchases.interfaces.GetCustomerCenterConfigCallback
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
@@ -160,9 +161,14 @@ suspend fun Purchases.getAmazonLWAConsentStatus(): AmazonLWAConsentStatus {
 @Throws(PurchasesException::class)
 suspend fun Purchases.awaitCustomerCenterConfigData(): CustomerCenterConfigData {
     return suspendCoroutine { continuation ->
-        getCustomerCenterConfigDataWith(
-            onError = { continuation.resumeWithException(PurchasesException(it)) },
-            onSuccess = continuation::resume,
-        )
+        getCustomerCenterConfigData(object : GetCustomerCenterConfigCallback {
+            override fun onSuccess(customerCenterConfig: CustomerCenterConfigData) {
+                continuation.resume(customerCenterConfig)
+            }
+
+            override fun onError(error: PurchasesError) {
+                continuation.resumeWithException(PurchasesException(error))
+            }
+        })
     }
 }

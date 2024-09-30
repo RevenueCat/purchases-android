@@ -255,16 +255,6 @@ fun Purchases.getAmazonLWAConsentStatusWith(
     getAmazonLWAConsentStatus(getAmazonLWAConsentStatusListener(onSuccess, onError))
 }
 
-/**
- * Gets the [CustomerCenterConfigData] for the current user. Used by RevenueCatUI to present the CustomerCenter.
- */
-fun Purchases.getCustomerCenterConfigDataWith(
-    onError: (error: PurchasesError) -> Unit = ON_ERROR_STUB,
-    onSuccess: (CustomerCenterConfigData) -> Unit,
-) {
-    getCustomerCenterConfigData(getCustomerCenterConfigDataListener(onSuccess, onError))
-}
-
 // region Deprecated
 
 /**
