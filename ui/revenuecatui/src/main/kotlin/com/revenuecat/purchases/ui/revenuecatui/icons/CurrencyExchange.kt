@@ -12,7 +12,7 @@ import androidx.compose.ui.graphics.vector.path
 import androidx.compose.ui.unit.dp
 
 /**
- * Exported from [Compose Icons](https://composeicons.com/icons/material-symbols/outlined/calendar_month).
+ * Exported from [Compose Icons](https://composeicons.com/icons/material-symbols/outlined/currency_exchange).
  */
 internal val CurrencyExchange: ImageVector
     get() {
