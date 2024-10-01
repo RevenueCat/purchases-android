@@ -5,7 +5,6 @@ internal data class SubscriptionInformation(
     val durationTitle: String,
     val price: String,
     val expirationDateString: String?,
-    val productIdentifier: String,
     val willRenew: Boolean,
     val active: Boolean,
 )

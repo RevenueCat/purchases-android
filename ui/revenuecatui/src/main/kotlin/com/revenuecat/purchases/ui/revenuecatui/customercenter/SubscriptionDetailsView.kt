@@ -6,18 +6,25 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.SubscriptionInformation
+import com.revenuecat.purchases.ui.revenuecatui.icons.CalendarMonth
+import com.revenuecat.purchases.ui.revenuecatui.icons.CurrencyExchange
+import com.revenuecat.purchases.ui.revenuecatui.icons.UniversalCurrencyAlt
 
 @Composable
 internal fun SubscriptionDetailsView(
@@ -58,6 +65,7 @@ internal fun SubscriptionDetailsView(
             Spacer(modifier = Modifier.size(PaddingVertical))
 
             SubscriptionDetailRow(
+                icon = CurrencyExchange,
                 overline = "Billing cycle",
                 text = details.durationTitle,
             )
@@ -65,6 +73,7 @@ internal fun SubscriptionDetailsView(
             Spacer(modifier = Modifier.size(PaddingVertical))
 
             SubscriptionDetailRow(
+                icon = UniversalCurrencyAlt,
                 overline = "Current price",
                 text = details.price,
             )
@@ -81,6 +90,7 @@ internal fun SubscriptionDetailsView(
                 Spacer(modifier = Modifier.size(PaddingVertical))
 
                 SubscriptionDetailRow(
+                    icon = CalendarMonth,
                     overline = expirationOverline,
                     text = details.expirationDateString,
                 )
@@ -91,12 +101,23 @@ internal fun SubscriptionDetailsView(
 
 @Composable
 private fun SubscriptionDetailRow(
+    icon: ImageVector,
     overline: String,
     text: String,
     modifier: Modifier = Modifier,
 ) {
-    Row(modifier) {
-        // TODO Icon
+    Row(
+        modifier = modifier,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            modifier = Modifier.size((LocalDensity.current.fontScale * SizeIconDp).dp),
+        )
+
+        Spacer(modifier = Modifier.size(PaddingHorizontal))
+
         Column {
             Text(
                 text = overline,
@@ -111,9 +132,11 @@ private fun SubscriptionDetailRow(
     }
 }
 
-private val PaddingVertical = 8.dp
-private val PaddingContent = 16.dp
 private const val AlphaSecondaryText = 0.6f
+private val PaddingContent = 16.dp
+private val PaddingHorizontal = 8.dp
+private val PaddingVertical = 8.dp
+private const val SizeIconDp = 22
 
 private class SubscriptionInformationProvider : PreviewParameterProvider<SubscriptionInformation> {
     override val values: Sequence<SubscriptionInformation> = sequenceOf(
@@ -122,7 +145,6 @@ private class SubscriptionInformationProvider : PreviewParameterProvider<Subscri
             durationTitle = "Monthly",
             price = "$4.99",
             expirationDateString = "June 1st, 2024",
-            productIdentifier = "product_id",
             willRenew = true,
             active = true,
         ),
@@ -131,7 +153,6 @@ private class SubscriptionInformationProvider : PreviewParameterProvider<Subscri
             durationTitle = "Yearly",
             price = "$49.99",
             expirationDateString = "June 1st, 2024",
-            productIdentifier = "product_id",
             willRenew = false,
             active = true,
         ),
@@ -140,14 +161,14 @@ private class SubscriptionInformationProvider : PreviewParameterProvider<Subscri
             durationTitle = "Weekly",
             price = "$1.99",
             expirationDateString = "June 1st, 2024",
-            productIdentifier = "product_id",
             willRenew = false,
             active = false,
         ),
     )
 }
 
-@Preview
+@Preview(group = "scale = 1", fontScale = 1F)
+@Preview(group = "scale = 2", fontScale = 2F)
 @Composable
 internal fun SubscriptionDetailsView_Preview(
     @PreviewParameter(SubscriptionInformationProvider::class) details: SubscriptionInformation,
