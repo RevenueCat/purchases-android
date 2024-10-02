@@ -1,8 +1,10 @@
 package com.revenuecat.purchases.ui.revenuecatui.customercenter
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.HorizontalDivider
@@ -18,7 +20,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.SubscriptionInformation
@@ -168,12 +169,21 @@ private class SubscriptionInformationProvider : PreviewParameterProvider<Subscri
 }
 
 @Preview(group = "scale = 1", fontScale = 1F)
-@Preview(group = "scale = 2", fontScale = 2F)
+// Unrealistically long device to make the Column fit. Can be removed once Emerge Snapshot Test supports
+// @PreviewParameter.
+@Preview(group = "scale = 2", fontScale = 2F, device = "spec:width=1080px,height=4720px,dpi=440")
 @Composable
-internal fun SubscriptionDetailsView_Preview(
-    @PreviewParameter(SubscriptionInformationProvider::class) details: SubscriptionInformation,
-) {
-    SubscriptionDetailsView(
-        details = details,
-    )
+internal fun SubscriptionDetailsView_Preview() {
+    Column(
+        modifier = Modifier.height(2000.dp),
+        verticalArrangement = Arrangement.spacedBy(20.dp),
+    ) {
+        // Bit of a roundabout way of using the PreviewParameterProvider, because Emerge Snapshot Test doesn't support
+        // it yet.
+        SubscriptionInformationProvider().values.forEach { details ->
+            SubscriptionDetailsView(
+                details = details,
+            )
+        }
+    }
 }
