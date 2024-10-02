@@ -68,7 +68,7 @@
             "id":"nwodkdnfaoeb",
             "promotional_offer":{
               "eligible":true,
-              "ios_offer_id":"rc-refund-offer",
+              "android_offer_id":"rc-refund-offer",
               "subtitle":"Before you go, here's a one-time offer to continue at a discount.",
               "title":"Wait!"
             },
@@ -87,7 +87,7 @@
                   "id":"cancel_survey_too_expensive",
                   "promotional_offer":{
                     "eligible":true,
-                    "ios_offer_id":"rc-cancel-offer",
+                    "android_offer_id":"rc-cancel-offer",
                     "subtitle":"Before you go, here's a one-time offer to continue at a discount.",
                     "title":"Wait!"
                   },
@@ -97,7 +97,7 @@
                   "id":"cancel_survey_usage",
                   "promotional_offer":{
                     "eligible":true,
-                    "ios_offer_id":"rc-cancel-offer",
+                    "android_offer_id":"rc-cancel-offer",
                     "subtitle":"Before you go, here's a one-time offer to continue at a discount.",
                     "title":"Wait!"
                   },

@@ -203,8 +203,7 @@ data class CustomerCenterConfigData(
         sealed class PathDetail {
             @Serializable
             data class PromotionalOffer(
-                // WIP: Rename this field name to a new android id
-                @SerialName("ios_offer_id") val androidOfferId: String,
+                @SerialName("android_offer_id") val androidOfferId: String,
                 val eligible: Boolean,
                 val title: String,
                 val subtitle: String,
