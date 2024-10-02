@@ -1,7 +1,9 @@
 package com.revenuecat.purchases
 
 import android.app.Activity
+import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.interfaces.GetAmazonLWAConsentStatusCallback
+import com.revenuecat.purchases.interfaces.GetCustomerCenterConfigCallback
 import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.interfaces.ProductChangeCallback
 import com.revenuecat.purchases.interfaces.SyncAttributesAndOfferingsCallback
@@ -68,6 +70,20 @@ internal fun getAmazonLWAConsentStatusListener(
 ) = object : GetAmazonLWAConsentStatusCallback {
     override fun onSuccess(consentStatus: AmazonLWAConsentStatus) {
         onSuccess(consentStatus)
+    }
+
+    override fun onError(error: PurchasesError) {
+        onError(error)
+    }
+}
+
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+internal fun getCustomerCenterConfigDataListener(
+    onSuccess: (CustomerCenterConfigData) -> Unit,
+    onError: (PurchasesError) -> Unit,
+) = object : GetCustomerCenterConfigCallback {
+    override fun onSuccess(customerCenterConfig: CustomerCenterConfigData) {
+        onSuccess(customerCenterConfig)
     }
 
     override fun onError(error: PurchasesError) {
@@ -205,7 +221,7 @@ fun Purchases.syncPurchasesWith(
  * This method is rate limited to 5 calls per minute. It will log a warning and return offerings cache when reached.
  *
  * Refer to [the guide](https://www.revenuecat.com/docs/tools/targeting) for more targeting information
- * For more offerings information, see [getOfferings]
+ * For more offerings information, see [Purchases.getOfferings]
  *
  * @param [onError] Called when there was an error syncing attributes or fetching offerings. Will return the first error
  * found syncing the purchases.
