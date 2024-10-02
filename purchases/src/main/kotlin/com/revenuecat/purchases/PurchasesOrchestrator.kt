@@ -563,6 +563,7 @@ internal class PurchasesOrchestrator(
         }
     }
 
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     fun getCustomerCenterConfig(callback: GetCustomerCenterConfigCallback) {
         backend.getCustomerCenterConfig(
             identityManager.currentAppUserID,

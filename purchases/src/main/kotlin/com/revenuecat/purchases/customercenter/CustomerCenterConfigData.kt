@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.customercenter
 
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.paywalls.EmptyStringToNullSerializer
 import com.revenuecat.purchases.paywalls.PaywallColor
 import kotlinx.serialization.SerialName
@@ -7,11 +8,13 @@ import kotlinx.serialization.Serializable
 
 typealias RCColor = PaywallColor
 
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Serializable
 internal class CustomerCenterRoot(
     @SerialName("customer_center") val customerCenter: CustomerCenterConfigData,
 )
 
+@ExperimentalPreviewRevenueCatPurchasesAPI
 @Serializable
 data class CustomerCenterConfigData(
     @Serializable(with = ScreenMapSerializer::class) val screens: Map<Screen.ScreenType, Screen>,

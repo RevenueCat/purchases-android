@@ -201,6 +201,7 @@ internal class ProductionBackendIntegrationTest: BaseBackendIntegrationTest() {
         assertSigningNotPerformed()
     }
 
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     @Test
     fun `can get customer center config data`() {
         var customerCenterConfigData: CustomerCenterConfigData? = null

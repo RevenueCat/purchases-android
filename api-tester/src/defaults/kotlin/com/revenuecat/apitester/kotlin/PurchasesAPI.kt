@@ -134,6 +134,7 @@ private class PurchasesAPI {
         )
     }
 
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     suspend fun checkCoroutines(
         purchases: Purchases,
     ) {
