@@ -12,7 +12,6 @@ import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.JsonDecoder
 import kotlinx.serialization.json.jsonArray
-import kotlinx.serialization.json.jsonObject
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 internal object HelpPathsSerializer : KSerializer<List<CustomerCenterConfigData.HelpPath>> {
@@ -25,7 +24,9 @@ internal object HelpPathsSerializer : KSerializer<List<CustomerCenterConfigData.
 
         jsonArray.forEach { jsonElement ->
             try {
-                list.add(jsonInput.json.decodeFromJsonElement(CustomerCenterConfigData.HelpPath.serializer(), jsonElement))
+                list.add(
+                    jsonInput.json.decodeFromJsonElement(CustomerCenterConfigData.HelpPath.serializer(), jsonElement),
+                )
             } catch (e: IllegalArgumentException) {
                 debugLog("Issue deserializing CustomerCenter HelpPath. Ignoring. Error: $e")
             }
