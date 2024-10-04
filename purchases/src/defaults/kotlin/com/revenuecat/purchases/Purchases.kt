@@ -4,7 +4,6 @@ import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Context
 import androidx.annotation.VisibleForTesting
-import com.revenuecat.purchases.common.Config
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.infoLog
@@ -63,7 +62,9 @@ class Purchases internal constructor(
         @Synchronized get() =
             if (purchasesOrchestrator.finishTransactions) {
                 PurchasesAreCompletedBy.REVENUECAT
-            } else PurchasesAreCompletedBy.MY_APP
+            } else {
+                PurchasesAreCompletedBy.MY_APP
+            }
 
         @Synchronized set(value) {
             purchasesOrchestrator.finishTransactions = when (value) {

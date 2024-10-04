@@ -49,8 +49,6 @@ open class PurchasesConfiguration(builder: Builder) {
         this.pendingTransactionsForPrepaidPlansEnabled = builder.pendingTransactionsForPrepaidPlansEnabled
     }
 
-
-
     @SuppressWarnings("TooManyFunctions")
     open class Builder(
         @get:JvmSynthetic internal val context: Context,
@@ -119,7 +117,9 @@ open class PurchasesConfiguration(builder: Builder) {
             purchasesAreCompletedBy(
                 if (observerMode) {
                     PurchasesAreCompletedBy.MY_APP
-                } else PurchasesAreCompletedBy.REVENUECAT,
+                } else {
+                    PurchasesAreCompletedBy.REVENUECAT
+                },
             )
         }
 
