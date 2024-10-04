@@ -258,7 +258,7 @@ data class CustomerCenterConfigData(
         val type: ScreenType,
         val title: String,
         @Serializable(with = EmptyStringToNullSerializer::class) val subtitle: String? = null,
-        val paths: List<HelpPath>,
+        @Serializable(with = HelpPathsSerializer::class) val paths: List<HelpPath>,
     ) {
         @Serializable
         enum class ScreenType {
