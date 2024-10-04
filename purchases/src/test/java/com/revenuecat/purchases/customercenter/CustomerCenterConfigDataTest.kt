@@ -4,6 +4,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.common.Backend
 import org.assertj.core.api.Assertions.assertThat
+import org.json.JSONObject
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
@@ -144,10 +145,33 @@ class CustomerCenterConfigDataTest {
         assertThat(support.email).isEqualTo("support@example.com")
     }
 
-    private fun createSampleConfigData(): CustomerCenterConfigData {
+    @Test
+    fun `can parse json with unknown screen types`() {
+        val json = JSONObject(loadTestJSON())
+        val screens = json.getJSONObject("customer_center").getJSONObject("screens")
+        screens.put("random_screen_id", screens.getJSONObject("MANAGEMENT"))
+        val configData = createSampleConfigData(json.toString())
+        assertThat(configData.screens).hasSize(2)
+    }
+
+    @Test
+    fun `can parse json with unknown path types`() {
+        val json = JSONObject(loadTestJSON())
+        val managementScreenPaths = json
+            .getJSONObject("customer_center")
+            .getJSONObject("screens")
+            .getJSONObject("MANAGEMENT")
+            .getJSONArray("paths")
+        val firstPathClone = JSONObject(managementScreenPaths.getJSONObject(0).toString())
+        managementScreenPaths.put(firstPathClone.put("type", "UNKNOWN_PATH_TYPE"))
+        val configData = createSampleConfigData(json.toString())
+        assertThat(configData.screens[CustomerCenterConfigData.Screen.ScreenType.MANAGEMENT]!!.paths).hasSize(4)
+    }
+
+    private fun createSampleConfigData(json: String = loadTestJSON()): CustomerCenterConfigData {
         return Backend.json.decodeFromString(
             CustomerCenterRoot.serializer(),
-            loadTestJSON()
+            json,
         ).customerCenter
     }
 
