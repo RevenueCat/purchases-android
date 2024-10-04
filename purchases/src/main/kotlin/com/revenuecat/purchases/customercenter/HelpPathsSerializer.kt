@@ -2,11 +2,8 @@ package com.revenuecat.purchases.customercenter
 
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.common.debugLog
-import com.revenuecat.purchases.customercenter.CustomerCenterConfigData.Screen
-import com.revenuecat.purchases.customercenter.CustomerCenterConfigData.Screen.ScreenType
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.builtins.ListSerializer
-import kotlinx.serialization.builtins.MapSerializer
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
@@ -15,7 +12,9 @@ import kotlinx.serialization.json.jsonArray
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 internal object HelpPathsSerializer : KSerializer<List<CustomerCenterConfigData.HelpPath>> {
-    override val descriptor: SerialDescriptor = MapSerializer(ScreenType.serializer(), Screen.serializer()).descriptor
+    override val descriptor: SerialDescriptor = ListSerializer(
+        CustomerCenterConfigData.HelpPath.serializer(),
+    ).descriptor
 
     override fun deserialize(decoder: Decoder): List<CustomerCenterConfigData.HelpPath> {
         val list = mutableListOf<CustomerCenterConfigData.HelpPath>()
