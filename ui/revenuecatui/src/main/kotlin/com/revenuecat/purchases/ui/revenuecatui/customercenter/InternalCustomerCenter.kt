@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -14,17 +15,10 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.revenuecat.purchases.CacheFetchPolicy
-import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
-import com.revenuecat.purchases.Offerings
-import com.revenuecat.purchases.PurchaseParams
-import com.revenuecat.purchases.PurchaseResult
-import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
-import com.revenuecat.purchases.paywalls.events.PaywallEvent
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterState
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterViewModel
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterViewModelFactory
@@ -34,10 +28,20 @@ import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesType
 
 @Composable
 internal fun InternalCustomerCenter(
+    modifier: Modifier = Modifier,
     viewModel: CustomerCenterViewModel = getCustomerCenterViewModel(),
 ) {
-    CustomerCenterScaffold {
-        when (val state = viewModel.state.collectAsState().value) {
+    val state by viewModel.state.collectAsState()
+    InternalCustomerCenter(state, modifier)
+}
+
+@Composable
+private fun InternalCustomerCenter(
+    state: CustomerCenterState,
+    modifier: Modifier = Modifier,
+) {
+    CustomerCenterScaffold(modifier) {
+        when (state) {
             is CustomerCenterState.Loading -> CustomerCenterLoading()
             is CustomerCenterState.Error -> CustomerCenterError(state)
             is CustomerCenterState.Success -> CustomerCenterLoaded(state)
@@ -46,9 +50,12 @@ internal fun InternalCustomerCenter(
 }
 
 @Composable
-private fun CustomerCenterScaffold(mainContent: @Composable () -> Unit) {
+private fun CustomerCenterScaffold(
+    modifier: Modifier = Modifier,
+    mainContent: @Composable () -> Unit,
+) {
     Column(
-        modifier = Modifier.fillMaxSize().padding(10.dp),
+        modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
@@ -90,85 +97,56 @@ internal fun getCustomerCenterViewModel(
 @Preview
 @Composable
 internal fun CustomerCenterLoadingPreview() {
-    CustomerCenterScaffold {
-        CustomerCenterLoading()
-    }
+    InternalCustomerCenter(
+        modifier = Modifier.fillMaxSize().padding(10.dp),
+        state = CustomerCenterState.Loading,
+    )
 }
 
 @Preview
 @Composable
 internal fun CustomerCenterErrorPreview() {
-    CustomerCenterScaffold {
-        CustomerCenterError(CustomerCenterState.Error(PurchasesError(PurchasesErrorCode.UnknownBackendError)))
-    }
-}
-
-@Preview
-@Composable
-internal fun CustomerCenterLoadedPreview() {
-    val viewModel = getCustomerCenterViewModel(previewPurchases)
-    InternalCustomerCenter(viewModel)
+    InternalCustomerCenter(
+        modifier = Modifier.fillMaxSize().padding(10.dp),
+        state = CustomerCenterState.Error(PurchasesError(PurchasesErrorCode.UnknownBackendError)),
+    )
 }
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
-private val previewPurchases = object : PurchasesType {
-    override suspend fun awaitPurchase(purchaseParams: PurchaseParams.Builder): PurchaseResult {
-        error("Not implemented for preview")
-    }
-
-    override suspend fun awaitRestore(): CustomerInfo {
-        error("Not implemented for preview")
-    }
-
-    override suspend fun awaitOfferings(): Offerings {
-        error("Not implemented for preview")
-    }
-
-    override suspend fun awaitCustomerInfo(fetchPolicy: CacheFetchPolicy): CustomerInfo {
-        error("Not implemented for preview")
-    }
-
-    override suspend fun awaitCustomerCenterConfigData(): CustomerCenterConfigData {
-        return CustomerCenterConfigData(
-            screens = mapOf(
-                CustomerCenterConfigData.Screen.ScreenType.MANAGEMENT to CustomerCenterConfigData.Screen(
-                    type = CustomerCenterConfigData.Screen.ScreenType.MANAGEMENT,
-                    title = "Manage Subscription",
-                    subtitle = "Manage subscription subtitle",
-                    paths = listOf(
-                        CustomerCenterConfigData.HelpPath(
-                            id = "path-id-1",
-                            title = "Subscription",
-                            type = CustomerCenterConfigData.HelpPath.PathType.CANCEL,
-                            promotionalOffer = null,
-                            feedbackSurvey = null,
-                        ),
-                    ),
-                ),
-            ),
-            appearance = CustomerCenterConfigData.Appearance(),
-            localization = CustomerCenterConfigData.Localization(
-                locale = "en_US",
-                localizedStrings = mapOf(
-                    "cancel" to "Cancel",
-                    "subscription" to "Subscription",
-                ),
-            ),
-            support = CustomerCenterConfigData.Support(email = "test@revenuecat.com"),
-        )
-    }
-
-    override fun track(event: PaywallEvent) {
-        error("Not implemented for preview")
-    }
-
-    override val purchasesAreCompletedBy: PurchasesAreCompletedBy
-        get() = PurchasesAreCompletedBy.REVENUECAT
-
-    override fun syncPurchases() {
-        error("Not implemented for preview")
-    }
-
-    override val storefrontCountryCode: String
-        get() = "US"
+@Preview
+@Composable
+internal fun CustomerCenterLoadedPreview() {
+    InternalCustomerCenter(
+        modifier = Modifier.fillMaxSize().padding(10.dp),
+        state = CustomerCenterState.Success(previewConfigData.toString()),
+    )
 }
+
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+private val previewConfigData = CustomerCenterConfigData(
+    screens = mapOf(
+        CustomerCenterConfigData.Screen.ScreenType.MANAGEMENT to CustomerCenterConfigData.Screen(
+            type = CustomerCenterConfigData.Screen.ScreenType.MANAGEMENT,
+            title = "Manage Subscription",
+            subtitle = "Manage subscription subtitle",
+            paths = listOf(
+                CustomerCenterConfigData.HelpPath(
+                    id = "path-id-1",
+                    title = "Subscription",
+                    type = CustomerCenterConfigData.HelpPath.PathType.CANCEL,
+                    promotionalOffer = null,
+                    feedbackSurvey = null,
+                ),
+            ),
+        ),
+    ),
+    appearance = CustomerCenterConfigData.Appearance(),
+    localization = CustomerCenterConfigData.Localization(
+        locale = "en_US",
+        localizedStrings = mapOf(
+            "cancel" to "Cancel",
+            "subscription" to "Subscription",
+        ),
+    ),
+    support = CustomerCenterConfigData.Support(email = "test@revenuecat.com"),
+)
