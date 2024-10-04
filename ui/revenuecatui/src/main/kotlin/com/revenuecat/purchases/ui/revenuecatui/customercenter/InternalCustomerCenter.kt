@@ -111,7 +111,7 @@ internal fun CustomerCenterLoadedPreview() {
 }
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
-private val previewPurchases = object : PurchasesType {
+internal val previewPurchases = object : PurchasesType {
     override suspend fun awaitPurchase(purchaseParams: PurchaseParams.Builder): PurchaseResult {
         error("Not implemented for preview")
     }

@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Button
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
@@ -28,12 +29,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.revenuecat.purchases.ui.debugview.DebugRevenueCatBottomSheet
+import com.revenuecat.purchases.ui.revenuecatui.ExperimentalPreviewRevenueCatUIPurchasesAPI
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalPreviewRevenueCatUIPurchasesAPI::class)
 @Composable
 fun AppInfoScreen(viewModel: AppInfoScreenViewModel = viewModel<AppInfoScreenViewModelImpl>()) {
     var isDebugBottomSheetVisible by remember { mutableStateOf(false) }
+    var isCustomerCenterBottomSheetVisible by remember { mutableStateOf(false) }
     var showLogInDialog by remember { mutableStateOf(false) }
 
     Column(
@@ -52,6 +56,9 @@ fun AppInfoScreen(viewModel: AppInfoScreenViewModel = viewModel<AppInfoScreenVie
         Button(onClick = { isDebugBottomSheetVisible = true }) {
             Text(text = "Show debug view")
         }
+        Button(onClick = { isCustomerCenterBottomSheetVisible = true }) {
+            Text(text = "Show customer center bottom sheet")
+        }
     }
 
     if (showLogInDialog) {
@@ -64,6 +71,16 @@ fun AppInfoScreen(viewModel: AppInfoScreenViewModel = viewModel<AppInfoScreenVie
         isVisible = isDebugBottomSheetVisible,
         onDismissCallback = { isDebugBottomSheetVisible = false },
     )
+
+    // CustomerCenter WIP: Uncomment once access to CustomerCenter is public.
+//    if (isCustomerCenterBottomSheetVisible) {
+//        val customerCenterSheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+//
+//        CustomerCenterBottomSheet(
+//            onDismissRequest = { isCustomerCenterBottomSheetVisible = false },
+//            sheetState = customerCenterSheetState,
+//        )
+//    }
 }
 
 @Composable
