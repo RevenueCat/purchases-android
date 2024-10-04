@@ -145,13 +145,6 @@ class CustomerCenterConfigDataTest {
         assertThat(support.email).isEqualTo("support@example.com")
     }
 
-    private fun createSampleConfigData(): CustomerCenterConfigData {
-        return Backend.json.decodeFromString(
-            CustomerCenterRoot.serializer(),
-            loadTestJSON()
-        ).customerCenter
-    }
-
     @Test
     fun `can parse json with unknown screen types`() {
         val json = JSONObject(loadTestJSON())
