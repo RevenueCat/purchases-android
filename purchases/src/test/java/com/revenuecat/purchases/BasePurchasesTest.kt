@@ -408,6 +408,7 @@ internal open class BasePurchasesTest {
             paywallPresentedCache = paywallPresentedCache,
             purchasesStateCache = purchasesStateProvider,
             dispatcher = SyncDispatcher(),
+            configuration = PurchasesConfiguration.Builder(mockContext, "api_key").build()
         )
         purchases = Purchases(purchasesOrchestrator)
         Purchases.sharedInstance = purchases

@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Context
 import androidx.annotation.VisibleForTesting
+import com.revenuecat.purchases.common.Config
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.infoLog
@@ -882,7 +883,12 @@ class Purchases internal constructor(
             configuration: PurchasesConfiguration,
         ): Purchases {
             if (isConfigured) {
-                infoLog(ConfigureStrings.INSTANCE_ALREADY_EXISTS)
+                if (backingFieldSharedInstance?.purchasesOrchestrator?.configuration == configuration) {
+                    infoLog(ConfigureStrings.INSTANCE_ALREADY_EXISTS_WITH_SAME_CONFIG)
+                    return sharedInstance
+                } else {
+                    infoLog(ConfigureStrings.INSTANCE_ALREADY_EXISTS)
+                }
             }
             return PurchasesFactory().createPurchases(
                 configuration,

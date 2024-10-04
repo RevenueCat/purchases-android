@@ -36,4 +36,6 @@ internal object ConfigureStrings {
         "purchase."
     const val INSTANCE_ALREADY_EXISTS = "Purchases instance already set. " +
         "Did you mean to configure two Purchases objects?"
+    const val INSTANCE_ALREADY_EXISTS_WITH_SAME_CONFIG = "Purchases instance already set with the same configuration. " +
+        "Ignoring duplicate call."
 }

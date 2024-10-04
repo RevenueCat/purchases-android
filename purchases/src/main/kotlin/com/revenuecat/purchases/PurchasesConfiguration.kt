@@ -49,6 +49,8 @@ open class PurchasesConfiguration(builder: Builder) {
         this.pendingTransactionsForPrepaidPlansEnabled = builder.pendingTransactionsForPrepaidPlansEnabled
     }
 
+
+
     @SuppressWarnings("TooManyFunctions")
     open class Builder(
         @get:JvmSynthetic internal val context: Context,
@@ -237,5 +239,41 @@ open class PurchasesConfiguration(builder: Builder) {
         open fun build(): PurchasesConfiguration {
             return PurchasesConfiguration(this)
         }
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as PurchasesConfiguration
+
+        if (context != other.context) return false
+        if (apiKey != other.apiKey) return false
+        if (appUserID != other.appUserID) return false
+        if (purchasesAreCompletedBy != other.purchasesAreCompletedBy) return false
+        if (showInAppMessagesAutomatically != other.showInAppMessagesAutomatically) return false
+        if (service != other.service) return false
+        if (store != other.store) return false
+        if (diagnosticsEnabled != other.diagnosticsEnabled) return false
+        if (dangerousSettings != other.dangerousSettings) return false
+        if (verificationMode != other.verificationMode) return false
+        if (pendingTransactionsForPrepaidPlansEnabled != other.pendingTransactionsForPrepaidPlansEnabled) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = context.hashCode()
+        result = 31 * result + apiKey.hashCode()
+        result = 31 * result + (appUserID?.hashCode() ?: 0)
+        result = 31 * result + purchasesAreCompletedBy.hashCode()
+        result = 31 * result + showInAppMessagesAutomatically.hashCode()
+        result = 31 * result + (service?.hashCode() ?: 0)
+        result = 31 * result + store.hashCode()
+        result = 31 * result + diagnosticsEnabled.hashCode()
+        result = 31 * result + dangerousSettings.hashCode()
+        result = 31 * result + verificationMode.hashCode()
+        result = 31 * result + pendingTransactionsForPrepaidPlansEnabled.hashCode()
+        return result
     }
 }

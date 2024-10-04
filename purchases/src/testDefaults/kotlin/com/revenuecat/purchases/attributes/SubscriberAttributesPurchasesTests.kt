@@ -11,6 +11,7 @@ import com.revenuecat.purchases.PostTransactionWithProductDetailsHelper
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.PurchasesAreCompletedBy.REVENUECAT
+import com.revenuecat.purchases.PurchasesConfiguration
 import com.revenuecat.purchases.PurchasesOrchestrator
 import com.revenuecat.purchases.PurchasesState
 import com.revenuecat.purchases.PurchasesStateCache
@@ -84,8 +85,10 @@ class SubscriberAttributesPurchasesTests {
             postTransactionHelper,
         )
 
+        val context = mockk<Application>(relaxed = true).also { applicationMock = it }
+
         val purchasesOrchestrator = PurchasesOrchestrator(
-            application = mockk<Application>(relaxed = true).also { applicationMock = it },
+            application = context,
             backingFieldAppUserID = appUserId,
             backend = backendMock,
             billing = billingWrapperMock,
@@ -106,6 +109,7 @@ class SubscriberAttributesPurchasesTests {
             paywallPresentedCache = PaywallPresentedCache(),
             purchasesStateCache = PurchasesStateCache(PurchasesState()),
             dispatcher = SyncDispatcher(),
+            configuration = PurchasesConfiguration.Builder(context, "mock-api-key").build(),
         )
 
         underTest = Purchases(purchasesOrchestrator)

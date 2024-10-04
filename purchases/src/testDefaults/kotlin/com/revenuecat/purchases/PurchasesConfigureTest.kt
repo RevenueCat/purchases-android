@@ -5,10 +5,12 @@
 
 package com.revenuecat.purchases
 
+import android.content.Context
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.PurchasesAreCompletedBy.MY_APP
 import com.revenuecat.purchases.PurchasesAreCompletedBy.REVENUECAT
 import com.revenuecat.purchases.common.PlatformInfo
+import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -68,5 +70,101 @@ internal class PurchasesConfigureTest : BasePurchasesTest() {
         val builder = PurchasesConfiguration.Builder(mockContext, "api").store(Store.PLAY_STORE)
         Purchases.configure(builder.build())
         assertThat(Purchases.sharedInstance.store).isEqualTo(Store.PLAY_STORE)
+    }
+
+    @Test
+    fun `Calling configure multiple times with same configuration does not create a new instance`() {
+        val builder = PurchasesConfiguration.Builder(mockContext, "api_key")
+        val instance1 = Purchases.configure(builder.build())
+        assertThat(Purchases.sharedInstance).isEqualTo(instance1)
+        val instance2 = Purchases.configure(builder.build())
+        assertThat(Purchases.sharedInstance).isEqualTo(instance2)
+        assertThat(instance2).isEqualTo(instance1)
+    }
+
+    @Test
+    fun `Calling configure multiple times with different configuration does create a new instance`() {
+        val config1 = PurchasesConfiguration.Builder(mockContext, "api_key").build()
+        val instance1 = Purchases.configure(config1)
+        assertThat(Purchases.sharedInstance).isEqualTo(instance1)
+        val config2 = PurchasesConfiguration.Builder(mockContext, "api_key2").build()
+        val instance2 = Purchases.configure(config2)
+        assertThat(Purchases.sharedInstance).isEqualTo(instance2)
+        assertThat(instance2).isNotEqualTo(instance1)
+    }
+
+    @Test
+    fun `configurations with same properties are equal`() {
+        val config1 = PurchasesConfiguration.Builder(mockContext, "api_key").build()
+        val config2 = PurchasesConfiguration.Builder(mockContext, "api_key").build()
+
+        assertThat(config1).isEqualTo(config2)
+        assertThat(config1.hashCode()).isEqualTo(config2.hashCode())
+    }
+
+    @Test
+    fun `configurations with different api keys are not equal`() {
+        val config1 = PurchasesConfiguration.Builder(mockContext, "api_key1").build()
+        val config2 = PurchasesConfiguration.Builder(mockContext, "api_key2").build()
+
+        assertThat(config1).isNotEqualTo(config2)
+    }
+
+    @Test
+    fun `configurations with different app user IDs are not equal`() {
+        val config1 = PurchasesConfiguration.Builder(mockContext, "api_key").appUserID("user1").build()
+        val config2 = PurchasesConfiguration.Builder(mockContext, "api_key").appUserID("user2").build()
+
+        assertThat(config1).isNotEqualTo(config2)
+    }
+
+    @Test
+    fun `configurations with different purchasesAreCompletedBy are not equal`() {
+        val config1 = PurchasesConfiguration.Builder(mockContext, "api_key").purchasesAreCompletedBy(MY_APP).build()
+        val config2 = PurchasesConfiguration.Builder(mockContext, "api_key").purchasesAreCompletedBy(REVENUECAT).build()
+
+        assertThat(config1).isNotEqualTo(config2)
+    }
+
+    @Test
+    fun `configurations with different stores are not equal`() {
+        val config1 = PurchasesConfiguration.Builder(mockContext, "api_key").store(Store.PLAY_STORE).build()
+        val config2 = PurchasesConfiguration.Builder(mockContext, "api_key").store(Store.AMAZON).build()
+
+        assertThat(config1).isNotEqualTo(config2)
+    }
+
+    @Test
+    fun `configurations with different contexts are not equal`() {
+        val context1 = mockContext
+        val context2 = mockk<Context>()
+        val config1 = PurchasesConfiguration.Builder(context1, "api_key").build()
+        val config2 = PurchasesConfiguration.Builder(context2, "api_key").build()
+
+        assertThat(config1).isNotEqualTo(config2)
+    }
+
+    @Test
+    fun `configurations with different verificationMode are not equal`() {
+        val config1 = PurchasesConfiguration.Builder(mockContext, "api_key")
+            .entitlementVerificationMode(EntitlementVerificationMode.DISABLED)
+            .build()
+        val config2 = PurchasesConfiguration.Builder(mockContext, "api_key")
+            .entitlementVerificationMode(EntitlementVerificationMode.INFORMATIONAL)
+            .build()
+
+        assertThat(config1).isNotEqualTo(config2)
+    }
+
+    @Test
+    fun `configurations with different dangerousSettings are not equal`() {
+        val config1 = PurchasesConfiguration.Builder(mockContext, "api_key")
+            .dangerousSettings(DangerousSettings(autoSyncPurchases = true))
+            .build()
+        val config2 = PurchasesConfiguration.Builder(mockContext, "api_key")
+            .dangerousSettings(DangerousSettings(autoSyncPurchases = false))
+            .build()
+
+        assertThat(config1).isNotEqualTo(config2)
     }
 }

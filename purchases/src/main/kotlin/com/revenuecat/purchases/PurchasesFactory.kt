@@ -284,6 +284,7 @@ internal class PurchasesFactory(
                 paywallPresentedCache,
                 purchasesStateProvider,
                 dispatcher = dispatcher,
+                configuration = configuration,
             )
 
             return Purchases(purchasesOrchestrator)
