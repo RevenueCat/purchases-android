@@ -49,6 +49,25 @@ open class PurchasesConfiguration(builder: Builder) {
         this.pendingTransactionsForPrepaidPlansEnabled = builder.pendingTransactionsForPrepaidPlansEnabled
     }
 
+    internal fun copy(
+        appUserID: String? = this.appUserID,
+        service: ExecutorService? = this.service,
+    ): PurchasesConfiguration {
+        var builder = Builder(context, apiKey)
+            .appUserID(appUserID)
+            .purchasesAreCompletedBy(purchasesAreCompletedBy)
+            .store(store)
+            .diagnosticsEnabled(diagnosticsEnabled)
+            .entitlementVerificationMode(verificationMode)
+            .dangerousSettings(dangerousSettings)
+            .showInAppMessagesAutomatically(showInAppMessagesAutomatically)
+            .pendingTransactionsForPrepaidPlansEnabled(pendingTransactionsForPrepaidPlansEnabled)
+        if (service != null) {
+            builder = builder.service(service)
+        }
+        return builder.build()
+    }
+
     @SuppressWarnings("TooManyFunctions")
     open class Builder(
         @get:JvmSynthetic internal val context: Context,
@@ -247,12 +266,10 @@ open class PurchasesConfiguration(builder: Builder) {
 
         other as PurchasesConfiguration
 
-        if (context != other.context) return false
         if (apiKey != other.apiKey) return false
         if (appUserID != other.appUserID) return false
         if (purchasesAreCompletedBy != other.purchasesAreCompletedBy) return false
         if (showInAppMessagesAutomatically != other.showInAppMessagesAutomatically) return false
-        if (service != other.service) return false
         if (store != other.store) return false
         if (diagnosticsEnabled != other.diagnosticsEnabled) return false
         if (dangerousSettings != other.dangerousSettings) return false
@@ -263,12 +280,10 @@ open class PurchasesConfiguration(builder: Builder) {
     }
 
     override fun hashCode(): Int {
-        var result = context.hashCode()
-        result = 31 * result + apiKey.hashCode()
+        var result = apiKey.hashCode()
         result = 31 * result + (appUserID?.hashCode() ?: 0)
         result = 31 * result + purchasesAreCompletedBy.hashCode()
         result = 31 * result + showInAppMessagesAutomatically.hashCode()
-        result = 31 * result + (service?.hashCode() ?: 0)
         result = 31 * result + store.hashCode()
         result = 31 * result + diagnosticsEnabled.hashCode()
         result = 31 * result + dangerousSettings.hashCode()

@@ -230,6 +230,10 @@ internal class PurchasesOrchestrator(
         }
     }
 
+    fun getLatestConfiguration(): PurchasesConfiguration {
+        return configuration.copy(appUserID = this.appUserID)
+    }
+
     // region Public Methods
 
     fun syncAttributesAndOfferingsIfNeeded(

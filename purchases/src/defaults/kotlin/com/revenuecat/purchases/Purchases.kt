@@ -38,6 +38,11 @@ import java.net.URL
 class Purchases internal constructor(
     @get:JvmSynthetic internal val purchasesOrchestrator: PurchasesOrchestrator,
 ) : LifecycleDelegate {
+    /**
+     * The configuration that was used to start Purchases.
+     */
+    val configuration: PurchasesConfiguration
+        get() = purchasesOrchestrator.getLatestConfiguration()
 
     /**
      * Default to TRUE, set this to FALSE if you are consuming and acknowledging transactions

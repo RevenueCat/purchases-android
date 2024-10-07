@@ -1,8 +1,12 @@
 package com.revenuecat.purchases
 
+import android.os.Parcelable
+import kotlinx.parcelize.Parcelize
+
 /**
  * Only use a Dangerous Setting if suggested by RevenueCat support team.
  */
+@Parcelize
 data class DangerousSettings internal constructor(
     /**
      * Disable or enable syncing purchases automatically. If this is disabled, RevenueCat will not sync any purchase
@@ -12,6 +16,6 @@ data class DangerousSettings internal constructor(
     val autoSyncPurchases: Boolean = true,
 
     internal val customEntitlementComputation: Boolean = false,
-) {
+) : Parcelable {
     constructor(autoSyncPurchases: Boolean = true) : this(autoSyncPurchases, false)
 }
