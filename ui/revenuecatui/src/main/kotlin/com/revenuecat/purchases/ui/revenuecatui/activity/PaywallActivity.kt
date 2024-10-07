@@ -18,6 +18,7 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.googlefonts.Font
 import androidx.compose.ui.text.googlefonts.GoogleFont
 import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.models.StoreTransaction
@@ -28,6 +29,7 @@ import com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider
 import com.revenuecat.purchases.ui.revenuecatui.fonts.GoogleFontProvider
 import com.revenuecat.purchases.ui.revenuecatui.fonts.PaywallFont
 import com.revenuecat.purchases.ui.revenuecatui.fonts.TypographyType
+import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 
 /**
  * Wrapper activity around [Paywall] that allows using it when you are not using Jetpack Compose directly.
@@ -86,15 +88,25 @@ internal class PaywallActivity : ComponentActivity(), PaywallListener {
             .setShouldDisplayDismissButton(args?.shouldDisplayDismissButton ?: DEFAULT_DISPLAY_DISMISS_BUTTON)
             .setListener(this)
             .build()
-        setContent {
-            MaterialTheme {
-                Scaffold { paddingValues ->
-                    Box(Modifier.fillMaxSize().padding(paddingValues)) {
-                        Paywall(paywallOptions)
+        if (Purchases.isConfigured) {
+            setContent {
+                MaterialTheme {
+                    Scaffold { paddingValues ->
+                        Box(Modifier.fillMaxSize().padding(paddingValues)) {
+                            Paywall(paywallOptions)
+                        }
                     }
                 }
             }
+        } else {
+            Logger.w("Paywall activity created without configuring SDK, finishing activity with error")
+            setResult(
+                RESULT_OK,
+                createResultIntent(PaywallResult.Error(PurchasesError(PurchasesErrorCode.ConfigurationError))),
+            )
+            finish()
         }
+
     }
 
     override fun onPurchaseCompleted(customerInfo: CustomerInfo, storeTransaction: StoreTransaction) {
