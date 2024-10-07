@@ -36,7 +36,7 @@ open class PurchasesConfiguration(builder: Builder) {
     val pendingTransactionsForPrepaidPlansEnabled: Boolean
 
     init {
-        this.context = builder.context
+        this.context = builder.context.applicationContext
         this.apiKey = builder.apiKey.trim()
         this.appUserID = builder.appUserID
         this.purchasesAreCompletedBy = builder.purchasesAreCompletedBy
