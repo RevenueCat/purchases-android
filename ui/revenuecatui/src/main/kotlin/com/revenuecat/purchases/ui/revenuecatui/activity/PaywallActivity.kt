@@ -131,7 +131,7 @@ internal class PaywallActivity : ComponentActivity(), PaywallListener {
 
     override fun onSaveInstanceState(outState: Bundle) {
         if (Purchases.isConfigured) {
-            val configuration = Purchases.sharedInstance.configuration
+            val configuration = Purchases.sharedInstance.latestConfiguration
             outState.putParcelable(
                 SDK_CONFIG_EXTRA,
                 SdkConfigArgs(

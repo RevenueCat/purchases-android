@@ -101,7 +101,7 @@ internal class PurchasesOrchestrator(
     // This is nullable due to: https://github.com/RevenueCat/purchases-flutter/issues/408
     private val mainHandler: Handler? = Handler(Looper.getMainLooper()),
     private val dispatcher: Dispatcher,
-    internal val configuration: PurchasesConfiguration,
+    private val initialConfiguration: PurchasesConfiguration,
 ) : LifecycleDelegate, CustomActivityLifecycleHandler {
 
     internal var state: PurchasesState
@@ -109,6 +109,13 @@ internal class PurchasesOrchestrator(
 
         set(value) {
             purchasesStateCache.purchasesState = value
+        }
+
+    val latestConfiguration: PurchasesConfiguration
+        get() = if (initialConfiguration.appUserID == null) {
+            initialConfiguration
+        } else {
+            initialConfiguration.copy(appUserID = this.appUserID)
         }
 
     var finishTransactions: Boolean
@@ -228,10 +235,6 @@ internal class PurchasesOrchestrator(
         if (appConfig.showInAppMessagesAutomatically) {
             showInAppMessagesIfNeeded(activity, InAppMessageType.values().toList())
         }
-    }
-
-    fun getLatestConfiguration(): PurchasesConfiguration {
-        return configuration.copy(appUserID = this.appUserID)
     }
 
     // region Public Methods

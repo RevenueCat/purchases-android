@@ -41,8 +41,8 @@ class Purchases internal constructor(
     /**
      * The configuration that was used to start Purchases.
      */
-    val configuration: PurchasesConfiguration
-        get() = purchasesOrchestrator.getLatestConfiguration()
+    val latestConfiguration: PurchasesConfiguration
+        get() = purchasesOrchestrator.latestConfiguration
 
     /**
      * Default to TRUE, set this to FALSE if you are consuming and acknowledging transactions
@@ -889,7 +889,7 @@ class Purchases internal constructor(
             configuration: PurchasesConfiguration,
         ): Purchases {
             if (isConfigured) {
-                if (backingFieldSharedInstance?.purchasesOrchestrator?.configuration == configuration) {
+                if (backingFieldSharedInstance?.purchasesOrchestrator?.latestConfiguration == configuration) {
                     infoLog(ConfigureStrings.INSTANCE_ALREADY_EXISTS_WITH_SAME_CONFIG)
                     return sharedInstance
                 } else {

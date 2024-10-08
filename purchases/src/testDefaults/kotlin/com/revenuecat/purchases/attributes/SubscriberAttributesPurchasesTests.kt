@@ -109,7 +109,7 @@ class SubscriberAttributesPurchasesTests {
             paywallPresentedCache = PaywallPresentedCache(),
             purchasesStateCache = PurchasesStateCache(PurchasesState()),
             dispatcher = SyncDispatcher(),
-            configuration = PurchasesConfiguration.Builder(context, "mock-api-key").build(),
+            initialConfiguration = PurchasesConfiguration.Builder(context, "mock-api-key").build(),
         )
 
         underTest = Purchases(purchasesOrchestrator)

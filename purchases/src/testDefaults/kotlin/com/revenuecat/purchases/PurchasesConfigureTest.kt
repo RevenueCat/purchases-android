@@ -10,6 +10,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.PurchasesAreCompletedBy.MY_APP
 import com.revenuecat.purchases.PurchasesAreCompletedBy.REVENUECAT
 import com.revenuecat.purchases.common.PlatformInfo
+import io.mockk.every
 import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
@@ -135,13 +136,13 @@ internal class PurchasesConfigureTest : BasePurchasesTest() {
     }
 
     @Test
-    fun `configurations with different contexts are not equal`() {
+    fun `configurations with different contexts are equal`() {
         val context1 = mockContext
-        val context2 = mockk<Context>()
+        val context2 = mockk<Context>().apply { every { applicationContext } returns mockk() }
         val config1 = PurchasesConfiguration.Builder(context1, "api_key").build()
         val config2 = PurchasesConfiguration.Builder(context2, "api_key").build()
 
-        assertThat(config1).isNotEqualTo(config2)
+        assertThat(config1).isEqualTo(config2)
     }
 
     @Test
