@@ -39,10 +39,10 @@ class Purchases internal constructor(
     @get:JvmSynthetic internal val purchasesOrchestrator: PurchasesOrchestrator,
 ) : LifecycleDelegate {
     /**
-     * The configuration that was used to start Purchases.
+     * The current configuration parameters of the Purchases SDK.
      */
-    val latestConfiguration: PurchasesConfiguration
-        get() = purchasesOrchestrator.latestConfiguration
+    val currentConfiguration: PurchasesConfiguration
+        get() = purchasesOrchestrator.currentConfiguration
 
     /**
      * Default to TRUE, set this to FALSE if you are consuming and acknowledging transactions
@@ -889,7 +889,7 @@ class Purchases internal constructor(
             configuration: PurchasesConfiguration,
         ): Purchases {
             if (isConfigured) {
-                if (backingFieldSharedInstance?.purchasesOrchestrator?.latestConfiguration == configuration) {
+                if (backingFieldSharedInstance?.purchasesOrchestrator?.currentConfiguration == configuration) {
                     infoLog(ConfigureStrings.INSTANCE_ALREADY_EXISTS_WITH_SAME_CONFIG)
                     return sharedInstance
                 } else {

@@ -111,7 +111,7 @@ internal class PurchasesOrchestrator(
             purchasesStateCache.purchasesState = value
         }
 
-    val latestConfiguration: PurchasesConfiguration
+    val currentConfiguration: PurchasesConfiguration
         get() = if (initialConfiguration.appUserID == null) {
             initialConfiguration
         } else {

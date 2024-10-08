@@ -101,7 +101,7 @@ final class PurchasesAPI {
 
         final String storefrontCountryCode = purchases.getStorefrontCountryCode();
 
-        final PurchasesConfiguration configuration = purchases.getLatestConfiguration();
+        final PurchasesConfiguration configuration = purchases.getCurrentConfiguration();
     }
 
     static void check(final Purchases purchases, final Map<String, String> attributes) {

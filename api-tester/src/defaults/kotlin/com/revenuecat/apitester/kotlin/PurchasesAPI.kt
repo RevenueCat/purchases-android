@@ -91,7 +91,7 @@ private class PurchasesAPI {
 
         val countryCode = purchases.storefrontCountryCode
 
-        val configuration: PurchasesConfiguration = purchases.latestConfiguration
+        val configuration: PurchasesConfiguration = purchases.currentConfiguration
     }
 
     @Suppress("LongMethod", "LongParameterList")
