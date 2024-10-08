@@ -74,12 +74,8 @@ internal class PaywallActivity : ComponentActivity(), PaywallListener {
     ) : Parcelable
 
     private fun getSdkConfigArgs(savedInstanceState: Bundle): SdkConfigArgs? {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            savedInstanceState.getParcelable(SDK_CONFIG_EXTRA, SdkConfigArgs::class.java)
-        } else {
-            @Suppress("DEPRECATION")
-            savedInstanceState.getParcelable(SDK_CONFIG_EXTRA)
-        }
+        @Suppress("DEPRECATION")
+        return savedInstanceState.getParcelable(SDK_CONFIG_EXTRA)
     }
 
     private fun getFontProvider(): FontProvider? {
@@ -183,7 +179,7 @@ internal class PaywallActivity : ComponentActivity(), PaywallListener {
     private fun configureSdkWithSavedData(savedInstanceState: Bundle) {
         val sdkConfigArgs = getSdkConfigArgs(savedInstanceState)
         if (sdkConfigArgs == null) {
-            Logger.e("TEST: Missing SDK configuration arguments")
+            Logger.e("Missing SDK configuration arguments while restoring PaywallActivity")
             return
         }
         Purchases.configure(
