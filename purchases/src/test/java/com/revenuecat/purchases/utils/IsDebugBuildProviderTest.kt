@@ -10,7 +10,6 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class IsDebugBuildProviderTest {
 
-
     @Test
     fun `Correctly determines non-debug builds`() {
         val context = ApplicationProvider.getApplicationContext<Context>()
