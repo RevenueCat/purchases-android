@@ -119,7 +119,8 @@ internal class PurchasesCanMakePaymentsTest : BasePurchasesTest() {
             false,
             PlatformInfo("", null),
             null,
-            Store.AMAZON
+            Store.AMAZON,
+            isDebugBuild = false,
         )
         Purchases.canMakePayments(mockContext, listOf()) {
             assertThat(it).isTrue()

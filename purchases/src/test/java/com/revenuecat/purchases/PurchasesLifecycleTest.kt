@@ -156,7 +156,8 @@ internal class PurchasesLifecycleTest: BasePurchasesTest() {
             showInAppMessagesAutomatically = showInAppMessagesAutomatically,
             PlatformInfo("", null),
             proxyURL = null,
-            Store.AMAZON
+            Store.AMAZON,
+            isDebugBuild = false,
         )
     }
 

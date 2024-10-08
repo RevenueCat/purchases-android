@@ -380,6 +380,7 @@ internal open class BasePurchasesTest {
             platformInfo = PlatformInfo("native", "3.2.0"),
             proxyURL = null,
             store = Store.PLAY_STORE,
+            isDebugBuild = false,
             dangerousSettings = DangerousSettings(
                 autoSyncPurchases = autoSync,
                 customEntitlementComputation = customEntitlementComputation,

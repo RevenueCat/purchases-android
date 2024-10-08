@@ -74,6 +74,7 @@ internal class PurchasesFactory(
                 platformInfo,
                 proxyURL,
                 store,
+                isDebugBuild = false, // TODO actually determine this!
                 dangerousSettings,
                 runningIntegrationTests,
                 forceServerErrors,

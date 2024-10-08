@@ -16,6 +16,7 @@ internal class AppConfig(
     val platformInfo: PlatformInfo,
     proxyURL: URL?,
     val store: Store,
+    val isDebugBuild: Boolean,
     val dangerousSettings: DangerousSettings = DangerousSettings(autoSyncPurchases = true),
     // Should only be used for tests
     private val runningTests: Boolean = false,
@@ -47,6 +48,7 @@ internal class AppConfig(
     val playStoreVersionName = context.playStoreVersionName
     val playServicesVersionName = context.playServicesVersionName
 
+    @Suppress("CyclomaticComplexMethod")
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
@@ -55,6 +57,7 @@ internal class AppConfig(
 
         if (platformInfo != other.platformInfo) return false
         if (store != other.store) return false
+        if (isDebugBuild != other.isDebugBuild) return false
         if (dangerousSettings != other.dangerousSettings) return false
         if (languageTag != other.languageTag) return false
         if (versionName != other.versionName) return false
@@ -71,6 +74,7 @@ internal class AppConfig(
     override fun hashCode(): Int {
         var result = platformInfo.hashCode()
         result = 31 * result + store.hashCode()
+        result = 31 * result + isDebugBuild.hashCode()
         result = 31 * result + dangerousSettings.hashCode()
         result = 31 * result + languageTag.hashCode()
         result = 31 * result + versionName.hashCode()
@@ -87,6 +91,7 @@ internal class AppConfig(
         return "AppConfig(" +
             "platformInfo=$platformInfo, " +
             "store=$store, " +
+            "isDebugBuild=$isDebugBuild, " +
             "dangerousSettings=$dangerousSettings, " +
             "languageTag='$languageTag', " +
             "versionName='$versionName', " +

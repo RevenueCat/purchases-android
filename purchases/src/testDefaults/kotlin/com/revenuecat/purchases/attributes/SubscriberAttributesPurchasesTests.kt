@@ -70,6 +70,7 @@ class SubscriberAttributesPurchasesTests {
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
             store = Store.PLAY_STORE,
+            isDebugBuild = false,
         )
         val identityManager = mockk<IdentityManager>(relaxed = true).apply {
             every { currentAppUserID } returns appUserId
