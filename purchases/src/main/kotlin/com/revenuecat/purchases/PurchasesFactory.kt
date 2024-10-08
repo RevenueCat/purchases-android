@@ -42,6 +42,7 @@ import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesPoster
 import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesCache
 import com.revenuecat.purchases.utils.CoilImageDownloader
 import com.revenuecat.purchases.utils.EventsFileHelper
+import com.revenuecat.purchases.utils.IsDebugBuildProvider
 import com.revenuecat.purchases.utils.OfferingImagePreDownloader
 import com.revenuecat.purchases.utils.isAndroidNOrNewer
 import java.net.URL
@@ -50,6 +51,7 @@ import java.util.concurrent.Executors
 import java.util.concurrent.ThreadFactory
 
 internal class PurchasesFactory(
+    private val isDebugBuild: IsDebugBuildProvider,
     private val apiKeyValidator: APIKeyValidator = APIKeyValidator(),
 ) {
 
@@ -74,7 +76,7 @@ internal class PurchasesFactory(
                 platformInfo,
                 proxyURL,
                 store,
-                isDebugBuild = false, // TODO actually determine this!
+                isDebugBuild(),
                 dangerousSettings,
                 runningIntegrationTests,
                 forceServerErrors,

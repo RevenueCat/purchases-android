@@ -19,6 +19,7 @@ import com.revenuecat.purchases.models.InAppMessageType
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.strings.BillingStrings
 import com.revenuecat.purchases.strings.ConfigureStrings
+import com.revenuecat.purchases.utils.DefaultIsDebugBuildProvider
 import java.net.URL
 
 /**
@@ -282,7 +283,9 @@ class Purchases internal constructor(
                 .dangerousSettings(DangerousSettings(customEntitlementComputation = true))
                 .pendingTransactionsForPrepaidPlansEnabled(true)
                 .build()
-            return PurchasesFactory().createPurchases(
+            return PurchasesFactory(
+                isDebugBuild = DefaultIsDebugBuildProvider(context),
+            ).createPurchases(
                 configuration,
                 platformInfo,
                 proxyURL,
