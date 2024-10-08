@@ -9,7 +9,7 @@ internal fun Purchases.Companion.configure(
     forceServerErrors: Boolean = false,
     forceSigningErrors: Boolean = false,
 ): Purchases {
-    return PurchasesFactory(isDebugBuild = { false }).createPurchases(
+    return PurchasesFactory(isDebugBuild = { true }).createPurchases(
         configuration,
         platformInfo,
         proxyURL,
