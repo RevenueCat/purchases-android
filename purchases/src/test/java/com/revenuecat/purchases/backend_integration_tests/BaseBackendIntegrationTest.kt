@@ -75,6 +75,7 @@ internal abstract class BaseBackendIntegrationTest {
         appConfig = mockk<AppConfig>().apply {
             every { baseURL } returns URL("https://api.revenuecat.com")
             every { store } returns Store.PLAY_STORE
+            every { isDebugBuild } returns true
             every { platformInfo } returns PlatformInfo("test-flavor", version = null)
             every { languageTag } returns "en-US"
             every { versionName } returns "test-version-name"
