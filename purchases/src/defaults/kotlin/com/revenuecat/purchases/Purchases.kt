@@ -38,6 +38,11 @@ import java.net.URL
 class Purchases internal constructor(
     @get:JvmSynthetic internal val purchasesOrchestrator: PurchasesOrchestrator,
 ) : LifecycleDelegate {
+    /**
+     * The current configuration parameters of the Purchases SDK.
+     */
+    val currentConfiguration: PurchasesConfiguration
+        get() = purchasesOrchestrator.currentConfiguration
 
     /**
      * Default to TRUE, set this to FALSE if you are consuming and acknowledging transactions
@@ -62,7 +67,9 @@ class Purchases internal constructor(
         @Synchronized get() =
             if (purchasesOrchestrator.finishTransactions) {
                 PurchasesAreCompletedBy.REVENUECAT
-            } else PurchasesAreCompletedBy.MY_APP
+            } else {
+                PurchasesAreCompletedBy.MY_APP
+            }
 
         @Synchronized set(value) {
             purchasesOrchestrator.finishTransactions = when (value) {
@@ -882,7 +889,12 @@ class Purchases internal constructor(
             configuration: PurchasesConfiguration,
         ): Purchases {
             if (isConfigured) {
-                infoLog(ConfigureStrings.INSTANCE_ALREADY_EXISTS)
+                if (backingFieldSharedInstance?.purchasesOrchestrator?.currentConfiguration == configuration) {
+                    infoLog(ConfigureStrings.INSTANCE_ALREADY_EXISTS_WITH_SAME_CONFIG)
+                    return sharedInstance
+                } else {
+                    infoLog(ConfigureStrings.INSTANCE_ALREADY_EXISTS)
+                }
             }
             return PurchasesFactory().createPurchases(
                 configuration,

@@ -20,7 +20,10 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class PurchasesFactoryTest {
 
-    private val contextMock = mockk<Context>()
+    private val applicationMock = mockk<Context>()
+    private val contextMock = mockk<Context>().apply {
+        every { applicationContext } returns applicationMock
+    }
     private val apiKeyValidatorMock = mockk<APIKeyValidator>()
 
     private lateinit var purchasesFactory: PurchasesFactory
@@ -41,7 +44,7 @@ class PurchasesFactoryTest {
     fun `creating purchase checks context has INTERNET permission`() {
         val configuration = createConfiguration()
         every {
-            contextMock.checkCallingOrSelfPermission(Manifest.permission.INTERNET)
+            applicationMock.checkCallingOrSelfPermission(Manifest.permission.INTERNET)
         } returns PackageManager.PERMISSION_DENIED
         assertThatExceptionOfType(IllegalArgumentException::class.java).isThrownBy {
             purchasesFactory.validateConfiguration(configuration)
@@ -52,7 +55,7 @@ class PurchasesFactoryTest {
     fun `creating purchase checks api key is not empty`() {
         val configuration = createConfiguration(testApiKey = "")
         every {
-            contextMock.checkCallingOrSelfPermission(Manifest.permission.INTERNET)
+            applicationMock.checkCallingOrSelfPermission(Manifest.permission.INTERNET)
         } returns PackageManager.PERMISSION_GRANTED
         assertThatExceptionOfType(IllegalArgumentException::class.java).isThrownBy {
             purchasesFactory.validateConfiguration(configuration)
@@ -64,10 +67,10 @@ class PurchasesFactoryTest {
         val configuration = createConfiguration()
         val nonApplicationContextMock = mockk<Context>()
         every {
-            contextMock.checkCallingOrSelfPermission(Manifest.permission.INTERNET)
+            applicationMock.checkCallingOrSelfPermission(Manifest.permission.INTERNET)
         } returns PackageManager.PERMISSION_GRANTED
         every {
-            contextMock.applicationContext
+            applicationMock.applicationContext
         } returns nonApplicationContextMock
         assertThatExceptionOfType(IllegalArgumentException::class.java).isThrownBy {
             purchasesFactory.validateConfiguration(configuration)
@@ -79,10 +82,10 @@ class PurchasesFactoryTest {
         val configuration = createConfiguration()
         val applicationContextMock = mockk<Application>()
         every {
-            contextMock.checkCallingOrSelfPermission(Manifest.permission.INTERNET)
+            applicationMock.checkCallingOrSelfPermission(Manifest.permission.INTERNET)
         } returns PackageManager.PERMISSION_GRANTED
         every {
-            contextMock.applicationContext
+            applicationMock.applicationContext
         } returns applicationContextMock
         purchasesFactory.validateConfiguration(configuration)
         verify(exactly = 1) { apiKeyValidatorMock.validateAndLog("fakeApiKey", Store.PLAY_STORE) }

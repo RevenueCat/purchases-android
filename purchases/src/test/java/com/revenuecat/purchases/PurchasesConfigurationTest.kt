@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.PurchasesAreCompletedBy.MY_APP
 import com.revenuecat.purchases.PurchasesAreCompletedBy.REVENUECAT
+import io.mockk.every
 import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
@@ -17,12 +18,15 @@ class PurchasesConfigurationTest {
     private val apiKey = "test-api-key"
 
     private lateinit var context: Context
+    private lateinit var applicationContext: Context
 
     private lateinit var builder: PurchasesConfiguration.Builder
 
     @Before
     fun setup() {
         context = mockk()
+        applicationContext = mockk()
+        every { context.applicationContext } returns applicationContext
 
         builder = PurchasesConfiguration.Builder(context, apiKey)
     }
@@ -31,7 +35,7 @@ class PurchasesConfigurationTest {
     fun `PurchasesConfiguration has expected default parameters`() {
         val purchasesConfiguration = builder.build()
         assertThat(purchasesConfiguration.apiKey).isEqualTo(apiKey)
-        assertThat(purchasesConfiguration.context).isEqualTo(context)
+        assertThat(purchasesConfiguration.context).isEqualTo(applicationContext)
         assertThat(purchasesConfiguration.appUserID).isNull()
         assertThat(purchasesConfiguration.observerMode).isFalse
         assertThat(purchasesConfiguration.purchasesAreCompletedBy).isEqualTo(REVENUECAT)
