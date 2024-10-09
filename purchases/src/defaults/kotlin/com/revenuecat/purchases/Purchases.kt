@@ -10,6 +10,7 @@ import com.revenuecat.purchases.common.infoLog
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.interfaces.Callback
 import com.revenuecat.purchases.interfaces.GetAmazonLWAConsentStatusCallback
+import com.revenuecat.purchases.interfaces.GetCustomerCenterConfigCallback
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
 import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
@@ -37,6 +38,11 @@ import java.net.URL
 class Purchases internal constructor(
     @get:JvmSynthetic internal val purchasesOrchestrator: PurchasesOrchestrator,
 ) : LifecycleDelegate {
+    /**
+     * The current configuration parameters of the Purchases SDK.
+     */
+    val currentConfiguration: PurchasesConfiguration
+        get() = purchasesOrchestrator.currentConfiguration
 
     /**
      * Default to TRUE, set this to FALSE if you are consuming and acknowledging transactions
@@ -61,7 +67,9 @@ class Purchases internal constructor(
         @Synchronized get() =
             if (purchasesOrchestrator.finishTransactions) {
                 PurchasesAreCompletedBy.REVENUECAT
-            } else PurchasesAreCompletedBy.MY_APP
+            } else {
+                PurchasesAreCompletedBy.MY_APP
+            }
 
         @Synchronized set(value) {
             purchasesOrchestrator.finishTransactions = when (value) {
@@ -460,6 +468,13 @@ class Purchases internal constructor(
     @JvmSynthetic
     fun track(paywallEvent: PaywallEvent) {
         purchasesOrchestrator.track(paywallEvent)
+    }
+
+    // Kept internal since it's not meant for public usage.
+    internal fun getCustomerCenterConfigData(
+        callback: GetCustomerCenterConfigCallback,
+    ) {
+        purchasesOrchestrator.getCustomerCenterConfig(callback)
     }
 
     // region Subscriber Attributes
@@ -874,7 +889,12 @@ class Purchases internal constructor(
             configuration: PurchasesConfiguration,
         ): Purchases {
             if (isConfigured) {
-                infoLog(ConfigureStrings.INSTANCE_ALREADY_EXISTS)
+                if (backingFieldSharedInstance?.purchasesOrchestrator?.currentConfiguration == configuration) {
+                    infoLog(ConfigureStrings.INSTANCE_ALREADY_EXISTS_WITH_SAME_CONFIG)
+                    return sharedInstance
+                } else {
+                    infoLog(ConfigureStrings.INSTANCE_ALREADY_EXISTS)
+                }
             }
             return PurchasesFactory().createPurchases(
                 configuration,

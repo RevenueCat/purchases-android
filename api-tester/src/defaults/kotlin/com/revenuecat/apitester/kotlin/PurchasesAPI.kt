@@ -13,12 +13,14 @@ import com.revenuecat.purchases.PurchasesConfiguration
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.amazon.AmazonConfiguration
+import com.revenuecat.purchases.awaitCustomerCenterConfigData
 import com.revenuecat.purchases.awaitCustomerInfo
 import com.revenuecat.purchases.awaitLogIn
 import com.revenuecat.purchases.awaitLogOut
 import com.revenuecat.purchases.awaitRestore
 import com.revenuecat.purchases.awaitSyncAttributesAndOfferingsIfNeeded
 import com.revenuecat.purchases.awaitSyncPurchases
+import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.data.LogInResult
 import com.revenuecat.purchases.getAmazonLWAConsentStatus
 import com.revenuecat.purchases.getAmazonLWAConsentStatusWith
@@ -88,6 +90,8 @@ private class PurchasesAPI {
         val store: Store = purchases.store
 
         val countryCode = purchases.storefrontCountryCode
+
+        val configuration: PurchasesConfiguration = purchases.currentConfiguration
     }
 
     @Suppress("LongMethod", "LongParameterList")
@@ -132,6 +136,7 @@ private class PurchasesAPI {
         )
     }
 
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     suspend fun checkCoroutines(
         purchases: Purchases,
     ) {
@@ -145,6 +150,7 @@ private class PurchasesAPI {
         val customerInfo5: CustomerInfo = purchases.awaitSyncPurchases()
         var offerings: Offerings = purchases.awaitSyncAttributesAndOfferingsIfNeeded()
         var consentStatus: AmazonLWAConsentStatus = purchases.getAmazonLWAConsentStatus()
+        var customerCenterConfigData: CustomerCenterConfigData = purchases.awaitCustomerCenterConfigData()
     }
 
     fun check(purchases: Purchases, attributes: Map<String, String>) {

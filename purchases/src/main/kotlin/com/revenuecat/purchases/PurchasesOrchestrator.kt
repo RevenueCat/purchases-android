@@ -38,6 +38,7 @@ import com.revenuecat.purchases.google.isSuccessful
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.interfaces.Callback
 import com.revenuecat.purchases.interfaces.GetAmazonLWAConsentStatusCallback
+import com.revenuecat.purchases.interfaces.GetCustomerCenterConfigCallback
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
 import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.interfaces.ProductChangeCallback
@@ -100,6 +101,7 @@ internal class PurchasesOrchestrator(
     // This is nullable due to: https://github.com/RevenueCat/purchases-flutter/issues/408
     private val mainHandler: Handler? = Handler(Looper.getMainLooper()),
     private val dispatcher: Dispatcher,
+    private val initialConfiguration: PurchasesConfiguration,
 ) : LifecycleDelegate, CustomActivityLifecycleHandler {
 
     internal var state: PurchasesState
@@ -107,6 +109,13 @@ internal class PurchasesOrchestrator(
 
         set(value) {
             purchasesStateCache.purchasesState = value
+        }
+
+    val currentConfiguration: PurchasesConfiguration
+        get() = if (initialConfiguration.appUserID == null) {
+            initialConfiguration
+        } else {
+            initialConfiguration.copy(appUserID = this.appUserID)
         }
 
     var finishTransactions: Boolean
@@ -560,6 +569,19 @@ internal class PurchasesOrchestrator(
         if (isAndroidNOrNewer()) {
             paywallEventsManager?.track(paywallEvent)
         }
+    }
+
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    fun getCustomerCenterConfig(callback: GetCustomerCenterConfigCallback) {
+        backend.getCustomerCenterConfig(
+            identityManager.currentAppUserID,
+            onSuccessHandler = { config ->
+                callback.onSuccess(config)
+            },
+            onErrorHandler = { error ->
+                callback.onError(error)
+            },
+        )
     }
 
     // region Subscriber Attributes

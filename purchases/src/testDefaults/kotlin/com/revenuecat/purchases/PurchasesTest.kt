@@ -12,8 +12,10 @@ import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.ReplaceProductInfo
 import com.revenuecat.purchases.common.sha1
+import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.google.toInAppStoreProduct
 import com.revenuecat.purchases.google.toStoreProduct
+import com.revenuecat.purchases.interfaces.GetCustomerCenterConfigCallback
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
 import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
@@ -1436,6 +1438,74 @@ internal class PurchasesTest : BasePurchasesTest() {
         )
         assertThat(onErrorCalled).isTrue()
         assertThat(exception).isEqualTo(error)
+    }
+
+    @Test
+    fun `getCustomerCenterData returns data from backend on success`() {
+        val expectedData = CustomerCenterConfigData(
+            screens = emptyMap(),
+            appearance = CustomerCenterConfigData.Appearance(),
+            localization = CustomerCenterConfigData.Localization(
+                locale = "en",
+                localizedStrings = emptyMap(),
+            ),
+            support = CustomerCenterConfigData.Support(
+                email = "",
+            ),
+        )
+
+        every {
+            mockBackend.getCustomerCenterConfig(
+                appUserID = appUserId,
+                onSuccessHandler = captureLambda(),
+                onErrorHandler = any(),
+            )
+        } answers {
+            lambda<(CustomerCenterConfigData) -> Unit>().captured.invoke(expectedData)
+        }
+
+        var receivedData: CustomerCenterConfigData? = null
+        purchases.getCustomerCenterConfigData(object : GetCustomerCenterConfigCallback {
+            override fun onError(error: PurchasesError) {
+                fail("should be success")
+            }
+
+            override fun onSuccess(customerCenterConfig: CustomerCenterConfigData) {
+                receivedData = customerCenterConfig
+            }
+        })
+
+        assertThat(receivedData).isEqualTo(expectedData)
+    }
+
+    @Test
+    fun `getCustomerCenterData returns error from backend on error`() {
+        val expectedError = PurchasesError(PurchasesErrorCode.UnknownBackendError, "Unknown backend error")
+
+        every {
+            mockBackend.getCustomerCenterConfig(
+                appUserID = appUserId,
+                onSuccessHandler = any(),
+                onErrorHandler = captureLambda(),
+            )
+        } answers {
+            lambda<(PurchasesError) -> Unit>().captured.also {
+                it.invoke(expectedError)
+            }
+        }
+
+        var receivedError: PurchasesError? = null
+        purchases.getCustomerCenterConfigData(object : GetCustomerCenterConfigCallback {
+            override fun onError(error: PurchasesError) {
+                receivedError = error
+            }
+
+            override fun onSuccess(customerCenterConfig: CustomerCenterConfigData) {
+                fail("should be error")
+            }
+        })
+
+        assertThat(receivedError).isEqualTo(expectedError)
     }
 
     // region Private Methods
