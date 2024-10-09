@@ -1,16 +1,14 @@
 ## RevenueCat SDK
-### ✨ New Features
-* Add `kochava` integration (#1844) via Toni Rico (@tonidero)
-
-## RevenueCatUI SDK
 ### 🐞 Bugfixes
-* Fix multiple paywalls display issues (#1854) via Toni Rico (@tonidero)
-* Fix interaction not disabled during purchases (#1850) via Toni Rico (@tonidero)
-* Fix crash if activity finished while calculating presentation logic (#1846) via Toni Rico (@tonidero)
+* Save SDK configuration on paywall activity so it can reconfigure automatically (#1872) via Toni Rico (@tonidero)
+### 📦 Dependency Updates
+* Bump fastlane from 2.223.1 to 2.224.0 (#1870) via dependabot[bot] (@dependabot[bot])
+* Bump fastlane-plugin-revenuecat_internal from `5b2e35c` to `3b1e7cf` (#1865) via dependabot[bot] (@dependabot[bot])
+* Bump fastlane from 2.222.0 to 2.223.1 (#1860) via dependabot[bot] (@dependabot[bot])
+* Bump fastlane-plugin-revenuecat_internal from `55a0455` to `5b2e35c` (#1858) via dependabot[bot] (@dependabot[bot])
 
 ### 🔄 Other Changes
-* Adds some more test cases validating {{ total_price_and_per_month }} for quarterly packages.  (#1853) via JayShortway (@JayShortway)
-* Converts CustomEntitlementComputationSample's Gradle files to Kotlin (#1852) via JayShortway (@JayShortway)
-* Converts MagicWeatherCompose's Gradle files to Kotlin (#1851) via JayShortway (@JayShortway)
-* [EXTERNAL] Wireup Emerge gradle plugin config for PR snapshot diffs (#1841) by @rbro112 (#1843) via Toni Rico (@tonidero)
-* Bump fastlane-plugin-revenuecat_internal from `5140dbc` to `55a0455` (#1845) via Cesar de la Vega (@vegaro)
+* [CustomerCenter] Fix help path deserializing when unknown type (#1869) via Toni Rico (@tonidero)
+* [CustomerCenter] Create `CustomerCenter` composable and view model with some initial UI (#1867) via Toni Rico (@tonidero)
+* [CustomerCenter] Add networking layer and models (#1859) via Toni Rico (@tonidero)
+* [CustomerCenter] Adds SubscriptionDetailsView (#1863) via JayShortway (@JayShortway)
