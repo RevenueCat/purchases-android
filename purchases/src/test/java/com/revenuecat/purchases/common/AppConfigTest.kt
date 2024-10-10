@@ -37,7 +37,8 @@ class AppConfigTest {
             showInAppMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
-            store = Store.PLAY_STORE
+            store = Store.PLAY_STORE,
+            isDebugBuild = false,
         )
         assertThat(appConfig.languageTag).isEqualTo(expected)
     }
@@ -55,7 +56,8 @@ class AppConfigTest {
             showInAppMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
-            store = Store.PLAY_STORE
+            store = Store.PLAY_STORE,
+            isDebugBuild = false,
         )
         assertThat(appConfig.languageTag).isEqualTo(expected)
     }
@@ -76,7 +78,8 @@ class AppConfigTest {
             showInAppMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
-            store = Store.PLAY_STORE
+            store = Store.PLAY_STORE,
+            isDebugBuild = false,
         )
         assertThat(appConfig.versionName).isEqualTo(expected)
     }
@@ -96,7 +99,8 @@ class AppConfigTest {
             showInAppMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
-            store = Store.PLAY_STORE
+            store = Store.PLAY_STORE,
+            isDebugBuild = false,
         )
         assertThat(appConfig.versionName).isEqualTo(expected)
     }
@@ -117,7 +121,8 @@ class AppConfigTest {
             showInAppMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
-            store = Store.PLAY_STORE
+            store = Store.PLAY_STORE,
+            isDebugBuild = false,
         )
         assertThat(appConfig.packageName).isEqualTo(expected)
     }
@@ -130,7 +135,8 @@ class AppConfigTest {
             showInAppMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
-            store = Store.PLAY_STORE
+            store = Store.PLAY_STORE,
+            isDebugBuild = false,
         )
         assertThat(appConfig.showInAppMessagesAutomatically).isFalse
         val appConfig2 = AppConfig(
@@ -139,7 +145,8 @@ class AppConfigTest {
             showInAppMessagesAutomatically = true,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
-            store = Store.PLAY_STORE
+            store = Store.PLAY_STORE,
+            isDebugBuild = false,
         )
         assertThat(appConfig2.showInAppMessagesAutomatically).isTrue
     }
@@ -152,7 +159,8 @@ class AppConfigTest {
             showInAppMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
-            store = Store.PLAY_STORE
+            store = Store.PLAY_STORE,
+            isDebugBuild = false,
         )
         assertThat(appConfig.finishTransactions).isTrue()
     }
@@ -165,7 +173,8 @@ class AppConfigTest {
             showInAppMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
-            store = Store.PLAY_STORE
+            store = Store.PLAY_STORE,
+            isDebugBuild = false,
         )
         assertThat(appConfig.finishTransactions).isFalse()
     }
@@ -179,7 +188,8 @@ class AppConfigTest {
             showInAppMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = expected,
-            store = Store.PLAY_STORE
+            store = Store.PLAY_STORE,
+            isDebugBuild = false,
         )
         assertThat(appConfig.baseURL).isEqualTo(expected)
     }
@@ -193,7 +203,8 @@ class AppConfigTest {
             showInAppMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
-            store = Store.PLAY_STORE
+            store = Store.PLAY_STORE,
+            isDebugBuild = false,
         )
         assertThat(appConfig.baseURL).isEqualTo(expected)
     }
@@ -206,7 +217,8 @@ class AppConfigTest {
             showInAppMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
-            store = Store.PLAY_STORE
+            store = Store.PLAY_STORE,
+            isDebugBuild = false,
         )
         assertThat(appConfig.forceServerErrors).isFalse
     }
@@ -219,7 +231,8 @@ class AppConfigTest {
             showInAppMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
-            store = Store.PLAY_STORE
+            store = Store.PLAY_STORE,
+            isDebugBuild = false,
         )
         assertThat(appConfig.forceSigningErrors).isFalse
     }
@@ -233,6 +246,7 @@ class AppConfigTest {
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
             store = Store.PLAY_STORE,
+            isDebugBuild = false,
             dangerousSettings = DangerousSettings(customEntitlementComputation = true)
         )
         assertThat(appConfig.customEntitlementComputation).isTrue
@@ -243,6 +257,7 @@ class AppConfigTest {
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
             store = Store.PLAY_STORE,
+            isDebugBuild = false,
             dangerousSettings = DangerousSettings(customEntitlementComputation = false)
         )
         assertThat(appConfig2.customEntitlementComputation).isFalse
@@ -256,7 +271,8 @@ class AppConfigTest {
             showInAppMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
-            store = Store.PLAY_STORE
+            store = Store.PLAY_STORE,
+            isDebugBuild = false,
         )
         val y = AppConfig(
             context = mockk(relaxed = true),
@@ -264,7 +280,8 @@ class AppConfigTest {
             showInAppMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
-            store = Store.PLAY_STORE
+            store = Store.PLAY_STORE,
+            isDebugBuild = false,
         )
 
         assertThat(x).isEqualTo(y)
@@ -278,7 +295,8 @@ class AppConfigTest {
             showInAppMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
-            store = Store.PLAY_STORE
+            store = Store.PLAY_STORE,
+            isDebugBuild = false,
         )
         var y = AppConfig(
             context = mockk(relaxed = true),
@@ -286,7 +304,8 @@ class AppConfigTest {
             showInAppMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
-            store = Store.PLAY_STORE
+            store = Store.PLAY_STORE,
+            isDebugBuild = false,
         )
 
         assertThat(x).isNotEqualTo(y)
@@ -297,7 +316,8 @@ class AppConfigTest {
             showInAppMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.1.0"),
             proxyURL = null,
-            store = Store.PLAY_STORE
+            store = Store.PLAY_STORE,
+            isDebugBuild = false,
         )
 
         assertThat(x).isNotEqualTo(y)
@@ -308,7 +328,8 @@ class AppConfigTest {
             showInAppMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = URL("https://a.com"),
-            store = Store.PLAY_STORE
+            store = Store.PLAY_STORE,
+            isDebugBuild = false,
         )
 
         assertThat(x).isNotEqualTo(y)
@@ -320,7 +341,20 @@ class AppConfigTest {
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
             store = Store.PLAY_STORE,
+            isDebugBuild = false,
             dangerousSettings = DangerousSettings(autoSyncPurchases = false)
+        )
+
+        assertThat(x).isNotEqualTo(y)
+
+        y = AppConfig(
+            context = mockk(relaxed = true),
+            purchasesAreCompletedBy = REVENUECAT,
+            showInAppMessagesAutomatically = false,
+            platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
+            proxyURL = null,
+            store = Store.PLAY_STORE,
+            isDebugBuild = true,
         )
 
         assertThat(x).isNotEqualTo(y)
@@ -334,7 +368,8 @@ class AppConfigTest {
             showInAppMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
-            store = Store.PLAY_STORE
+            store = Store.PLAY_STORE,
+            isDebugBuild = false,
         )
         val y = AppConfig(
             context = mockk(relaxed = true),
@@ -342,7 +377,8 @@ class AppConfigTest {
             showInAppMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
-            store = Store.PLAY_STORE
+            store = Store.PLAY_STORE,
+            isDebugBuild = false,
         )
         assertThat(x.hashCode()).isEqualTo(y.hashCode())
     }
@@ -355,12 +391,14 @@ class AppConfigTest {
             showInAppMessagesAutomatically = false,
             platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
             proxyURL = null,
-            store = Store.PLAY_STORE
+            store = Store.PLAY_STORE,
+            isDebugBuild = false,
         )
         assertThat(x.toString()).isEqualTo(
             "AppConfig(" +
                 "platformInfo=PlatformInfo(flavor=native, version=3.2.0), " +
                 "store=PLAY_STORE, " +
+                "isDebugBuild=false, " +
                 "dangerousSettings=DangerousSettings(autoSyncPurchases=true, customEntitlementComputation=false), " +
                 "languageTag='', " +
                 "versionName='', " +

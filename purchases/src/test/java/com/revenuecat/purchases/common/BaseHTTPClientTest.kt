@@ -6,7 +6,6 @@ import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.PurchasesAreCompletedBy.REVENUECAT
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.VerificationResult
-import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.networking.ETagManager
 import com.revenuecat.purchases.common.networking.Endpoint
@@ -82,6 +81,7 @@ internal abstract class BaseHTTPClientTest {
         platformInfo: PlatformInfo = expectedPlatformInfo,
         proxyURL: URL? = baseURL,
         store: Store = Store.PLAY_STORE,
+        isDebugBuild: Boolean = false,
         customEntitlementComputation: Boolean = false,
         forceServerErrors: Boolean = false,
         forceSigningErrors: Boolean = false,
@@ -93,6 +93,7 @@ internal abstract class BaseHTTPClientTest {
             platformInfo = platformInfo,
             proxyURL = proxyURL,
             store = store,
+            isDebugBuild = isDebugBuild,
             dangerousSettings = DangerousSettings(customEntitlementComputation = customEntitlementComputation),
             runningTests = true,
             forceServerErrors = forceServerErrors,

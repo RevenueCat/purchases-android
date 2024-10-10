@@ -25,6 +25,7 @@ import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
 import com.revenuecat.purchases.strings.BillingStrings
 import com.revenuecat.purchases.strings.ConfigureStrings
+import com.revenuecat.purchases.utils.DefaultIsDebugBuildProvider
 import java.net.URL
 
 /**
@@ -896,7 +897,9 @@ class Purchases internal constructor(
                     infoLog(ConfigureStrings.INSTANCE_ALREADY_EXISTS)
                 }
             }
-            return PurchasesFactory().createPurchases(
+            return PurchasesFactory(
+                isDebugBuild = DefaultIsDebugBuildProvider(configuration.context),
+            ).createPurchases(
                 configuration,
                 platformInfo,
                 proxyURL,

@@ -279,6 +279,7 @@ internal class HTTPClient(
             HTTPRequest.POST_PARAMS_HASH to postFieldsToSignHeader,
             "X-Custom-Entitlements-Computation" to if (appConfig.customEntitlementComputation) "true" else null,
             "X-Storefront" to storefrontProvider.getStorefront(),
+            "X-Is-Debug-Build" to appConfig.isDebugBuild.toString(),
         )
             .plus(authenticationHeaders)
             .plus(eTagManager.getETagHeaders(urlPath, shouldSignResponse, refreshETag))

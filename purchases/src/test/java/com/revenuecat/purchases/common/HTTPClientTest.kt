@@ -190,6 +190,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         assertThat(request.getHeader("X-Client-Bundle-ID")).isEqualTo("mock-package-name")
         assertThat(request.getHeader("X-Observer-Mode-Enabled")).isEqualTo("false")
         assertThat(request.getHeader("X-Storefront")).isEqualTo("JP")
+        assertThat(request.getHeader("X-Is-Debug-Build")).isEqualTo("false")
     }
 
     @Test
@@ -355,6 +356,22 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         val request = server.takeRequest()
 
         assertThat(request.getHeader("X-Observer-Mode-Enabled")).isEqualTo("true")
+    }
+
+    @Test
+    fun `correctly sets debug header`() {
+        val appConfig = createAppConfig(isDebugBuild = true)
+        client = createClient(appConfig = appConfig)
+        val endpoint = Endpoint.LogIn
+        enqueue(
+            endpoint,
+            HTTPResult.createResult()
+        )
+
+        client.performRequest(baseURL, endpoint, body = null, postFieldsToSign = null, mapOf("" to ""))
+        val request = server.takeRequest()
+
+        assertThat(request.getHeader("X-Is-Debug-Build")).isEqualTo("true")
     }
 
     @Test

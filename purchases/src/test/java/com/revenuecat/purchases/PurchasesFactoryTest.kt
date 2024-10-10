@@ -30,7 +30,7 @@ class PurchasesFactoryTest {
 
     @Before
     fun setup() {
-        purchasesFactory = PurchasesFactory(apiKeyValidatorMock)
+        purchasesFactory = PurchasesFactory(isDebugBuild = { true }, apiKeyValidatorMock)
 
         every { apiKeyValidatorMock.validateAndLog("fakeApiKey", Store.PLAY_STORE) } just runs
     }
