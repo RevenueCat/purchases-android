@@ -250,7 +250,7 @@ internal class PaywallViewModelImpl(
         when (val currentState = _state.value) {
             is PaywallState.Loaded -> {
                 val selectedPackage = currentState.selectedPackage.value
-                if (!selectedPackage.currentlySubscribed) {
+                if (selectedPackage.rcPackage.product.type != ProductType.SUBS || !selectedPackage.currentlySubscribed) {
                     performPurchase(activity, selectedPackage.rcPackage)
                 } else {
                     Logger.d("Ignoring purchase request for already subscribed package")
