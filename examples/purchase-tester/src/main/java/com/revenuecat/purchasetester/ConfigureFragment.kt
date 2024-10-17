@@ -162,6 +162,7 @@ class ConfigureFragment : Fragment() {
         Purchases.sharedInstance.setAttributes(mapOf("favorite_cat" to "garfield"))
 
         Purchases.sharedInstance.updatedCustomerInfoListener = application
+        Purchases.sharedInstance.redeemRCBillingPurchaseListener = application
 
         dataStoreUtils.saveSdkConfig(SdkConfiguration(apiKey, proxyUrl, useAmazonStore))
     }

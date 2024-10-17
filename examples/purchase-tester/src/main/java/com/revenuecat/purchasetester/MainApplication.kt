@@ -15,9 +15,12 @@ import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.LogLevel
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.interfaces.RedeemRCBillingPurchaseListener
+import com.revenuecat.purchases.interfaces.RedeemRCBillingPurchaseResult
+import com.revenuecat.purchases.interfaces.RedeemRCBillingResultListener
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 
-class MainApplication : Application(), UpdatedCustomerInfoListener {
+class MainApplication : Application(), UpdatedCustomerInfoListener, RedeemRCBillingPurchaseListener {
 
     val logHandler = TesterLogHandler(this)
 
@@ -43,6 +46,23 @@ class MainApplication : Application(), UpdatedCustomerInfoListener {
             Toast.LENGTH_SHORT,
         ).show()
         Log.d("CustomerInfoListener", "$message: $customerInfo")
+    }
+
+    override fun handleRCBillingPurchaseRedemption(startRedemption: (RedeemRCBillingResultListener) -> Unit) {
+        startRedemption(object : RedeemRCBillingResultListener {
+            override fun handleResult(result: RedeemRCBillingPurchaseResult) {
+                val message = when (result) {
+                    RedeemRCBillingPurchaseResult.SUCCESS -> "Redeem RC Billing purchase successful"
+                    RedeemRCBillingPurchaseResult.ERROR -> "Redeem RC Billing purchase failed"
+                }
+                Toast.makeText(
+                    this@MainApplication,
+                    message,
+                    Toast.LENGTH_SHORT,
+                ).show()
+                Log.d("Purchase Tester", message)
+            }
+        })
     }
 }
 

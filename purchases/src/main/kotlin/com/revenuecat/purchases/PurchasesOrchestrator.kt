@@ -49,6 +49,7 @@ import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.interfaces.PurchaseErrorCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback
+import com.revenuecat.purchases.interfaces.RedeemRCBillingPurchaseListener
 import com.revenuecat.purchases.interfaces.SyncAttributesAndOfferingsCallback
 import com.revenuecat.purchases.interfaces.SyncPurchasesCallback
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
@@ -143,6 +144,13 @@ internal class PurchasesOrchestrator(
 
         @Synchronized set(value) {
             customerInfoUpdateHandler.updatedCustomerInfoListener = value
+        }
+
+    var redeemRCBillingPurchaseListener: RedeemRCBillingPurchaseListener?
+        @Synchronized get() = rcBillingPurchaseRedemptionHelper.redeemRCBillingPurchaseListener
+
+        @Synchronized set(value) {
+            rcBillingPurchaseRedemptionHelper.redeemRCBillingPurchaseListener = value
         }
 
     val isAnonymous: Boolean

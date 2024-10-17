@@ -17,6 +17,7 @@ import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback
+import com.revenuecat.purchases.interfaces.RedeemRCBillingPurchaseListener
 import com.revenuecat.purchases.interfaces.SyncAttributesAndOfferingsCallback
 import com.revenuecat.purchases.interfaces.SyncPurchasesCallback
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
@@ -98,6 +99,17 @@ class Purchases internal constructor(
 
         @Synchronized set(value) {
             purchasesOrchestrator.updatedCustomerInfoListener = value
+        }
+
+    /**
+     * Set a value to be able to handle redemptions of RCBilling purchases.
+     * You can set to null to destroy the listener.
+     */
+    var redeemRCBillingPurchaseListener: RedeemRCBillingPurchaseListener?
+        @Synchronized get() = purchasesOrchestrator.redeemRCBillingPurchaseListener
+
+        @Synchronized set(value) {
+            purchasesOrchestrator.redeemRCBillingPurchaseListener = value
         }
 
     /**
