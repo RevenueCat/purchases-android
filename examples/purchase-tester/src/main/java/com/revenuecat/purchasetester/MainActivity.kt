@@ -26,5 +26,4 @@ class MainActivity : AppCompatActivity() {
             Purchases.sharedInstance.handleDeepLink(intent)
         }
     }
-
 }
