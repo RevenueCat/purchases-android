@@ -3,6 +3,7 @@ package com.revenuecat.purchases
 import android.app.Activity
 import android.app.Application
 import android.content.Context
+import android.content.Intent
 import android.os.Handler
 import android.os.Looper
 import android.util.Pair
@@ -34,6 +35,8 @@ import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsMa
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.subscriberattributes.SubscriberAttributeKey
 import com.revenuecat.purchases.common.warnLog
+import com.revenuecat.purchases.deeplinks.DeepLinkHandler
+import com.revenuecat.purchases.deeplinks.RCBillingPurchaseRedemptionHelper
 import com.revenuecat.purchases.google.isSuccessful
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.interfaces.Callback
@@ -46,6 +49,7 @@ import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.interfaces.PurchaseErrorCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback
+import com.revenuecat.purchases.interfaces.RedeemRCBillingPurchaseListener
 import com.revenuecat.purchases.interfaces.SyncAttributesAndOfferingsCallback
 import com.revenuecat.purchases.interfaces.SyncPurchasesCallback
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
@@ -102,6 +106,13 @@ internal class PurchasesOrchestrator(
     private val mainHandler: Handler? = Handler(Looper.getMainLooper()),
     private val dispatcher: Dispatcher,
     private val initialConfiguration: PurchasesConfiguration,
+    private val deepLinkHandler: DeepLinkHandler = DeepLinkHandler(),
+    private val rcBillingPurchaseRedemptionHelper: RCBillingPurchaseRedemptionHelper =
+        RCBillingPurchaseRedemptionHelper(
+            backend,
+            identityManager,
+            customerInfoHelper,
+        ),
 ) : LifecycleDelegate, CustomActivityLifecycleHandler {
 
     internal var state: PurchasesState
@@ -133,6 +144,13 @@ internal class PurchasesOrchestrator(
 
         @Synchronized set(value) {
             customerInfoUpdateHandler.updatedCustomerInfoListener = value
+        }
+
+    var redeemRCBillingPurchaseListener: RedeemRCBillingPurchaseListener?
+        @Synchronized get() = rcBillingPurchaseRedemptionHelper.redeemRCBillingPurchaseListener
+
+        @Synchronized set(value) {
+            rcBillingPurchaseRedemptionHelper.redeemRCBillingPurchaseListener = value
         }
 
     val isAnonymous: Boolean
@@ -235,6 +253,19 @@ internal class PurchasesOrchestrator(
         if (appConfig.showInAppMessagesAutomatically) {
             showInAppMessagesIfNeeded(activity, InAppMessageType.values().toList())
         }
+    }
+
+    fun handleDeepLink(intent: Intent): Boolean {
+        val deepLink = intent.data?.let { deepLinkHandler.parseDeepLink(it) } ?: return false
+
+        when (deepLink) {
+            is DeepLinkHandler.DeepLink.RedeemRCBPurchase -> {
+                rcBillingPurchaseRedemptionHelper.handleRedeemRCBPurchase(deepLink)
+            }
+        }
+        // WIP: This currently returns before the operation is completed. We might want to provide a way for devs
+        // to detect when the operation is started/completed.
+        return true
     }
 
     // region Public Methods
@@ -1069,7 +1100,9 @@ internal class PurchasesOrchestrator(
                 val productId =
                     if (googleReplacementMode == GoogleReplacementMode.DEFERRED) {
                         oldProductId
-                    } else purchasingData.productId
+                    } else {
+                        purchasingData.productId
+                    }
                 val mapOfProductIdToListener = mapOf(productId to purchaseCallback)
                 state = state.copy(
                     purchaseCallbacksByProductId = state.purchaseCallbacksByProductId + mapOfProductIdToListener,
