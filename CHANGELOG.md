@@ -1,3 +1,7 @@
+## 8.8.2
+### 🔄 Other Changes
+* Adds X-Is-Debug-Build header (#1873) via JayShortway (@JayShortway)
+
 ## 8.8.1
 ## RevenueCat SDK
 ### 🐞 Bugfixes
