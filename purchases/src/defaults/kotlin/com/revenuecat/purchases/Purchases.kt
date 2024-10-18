@@ -3,12 +3,12 @@ package com.revenuecat.purchases
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Context
-import android.content.Intent
 import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.infoLog
 import com.revenuecat.purchases.common.log
+import com.revenuecat.purchases.deeplinks.DeepLinkParser
 import com.revenuecat.purchases.interfaces.Callback
 import com.revenuecat.purchases.interfaces.GetAmazonLWAConsentStatusCallback
 import com.revenuecat.purchases.interfaces.GetCustomerCenterConfigCallback
@@ -137,15 +137,6 @@ class Purchases internal constructor(
     }
 
     // region Public Methods
-
-    /**
-     * Allows the SDK to handle the activities intent to process relevant deep links.
-     * @return A boolean indicating whether the SDK handled the deep link or ignored it.
-     */
-    @ExperimentalPreviewRevenueCatPurchasesAPI
-    fun handleDeepLink(intent: Intent): Boolean {
-        return purchasesOrchestrator.handleDeepLink(intent)
-    }
 
     /**
      * This method will send all the purchases to the RevenueCat backend. Call this when using your own implementation
@@ -809,6 +800,10 @@ class Purchases internal constructor(
         purchasesOrchestrator.getAmazonLWAConsentStatus(callback)
     }
     // endregion
+
+    internal fun handleDeepLink(deepLink: DeepLinkParser.DeepLink): Boolean {
+        return purchasesOrchestrator.handleDeepLink(deepLink)
+    }
 
     // region Static
     companion object {
