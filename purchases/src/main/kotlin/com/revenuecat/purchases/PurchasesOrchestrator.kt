@@ -3,7 +3,6 @@ package com.revenuecat.purchases
 import android.app.Activity
 import android.app.Application
 import android.content.Context
-import android.content.Intent
 import android.os.Handler
 import android.os.Looper
 import android.util.Pair
@@ -36,6 +35,7 @@ import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.subscriberattributes.SubscriberAttributeKey
 import com.revenuecat.purchases.common.warnLog
 import com.revenuecat.purchases.deeplinks.DeepLinkHandler
+import com.revenuecat.purchases.deeplinks.DeepLinkParser
 import com.revenuecat.purchases.deeplinks.RCBillingPurchaseRedemptionHelper
 import com.revenuecat.purchases.google.isSuccessful
 import com.revenuecat.purchases.identity.IdentityManager
@@ -106,7 +106,6 @@ internal class PurchasesOrchestrator(
     private val mainHandler: Handler? = Handler(Looper.getMainLooper()),
     private val dispatcher: Dispatcher,
     private val initialConfiguration: PurchasesConfiguration,
-    private val deepLinkHandler: DeepLinkHandler = DeepLinkHandler(),
     private val rcBillingPurchaseRedemptionHelper: RCBillingPurchaseRedemptionHelper =
         RCBillingPurchaseRedemptionHelper(
             backend,
@@ -246,6 +245,7 @@ internal class PurchasesOrchestrator(
             if (firstTimeInForeground && isAndroidNOrNewer()) {
                 diagnosticsSynchronizer?.syncDiagnosticsFileIfNeeded()
             }
+            processCachedDeepLinks()
         }
     }
 
@@ -255,11 +255,9 @@ internal class PurchasesOrchestrator(
         }
     }
 
-    fun handleDeepLink(intent: Intent): Boolean {
-        val deepLink = intent.data?.let { deepLinkHandler.parseDeepLink(it) } ?: return false
-
+    fun handleDeepLink(deepLink: DeepLinkParser.DeepLink): Boolean {
         when (deepLink) {
-            is DeepLinkHandler.DeepLink.RedeemRCBPurchase -> {
+            is DeepLinkParser.DeepLink.RedeemRCBPurchase -> {
                 rcBillingPurchaseRedemptionHelper.handleRedeemRCBPurchase(deepLink)
             }
         }
@@ -1248,6 +1246,13 @@ internal class PurchasesOrchestrator(
     private fun flushPaywallEvents() {
         if (isAndroidNOrNewer()) {
             paywallEventsManager?.flushEvents()
+        }
+    }
+
+    private fun processCachedDeepLinks() {
+        while (DeepLinkHandler.cachedLinks.isNotEmpty()) {
+            val deepLink = DeepLinkHandler.cachedLinks.removeFirst()
+            handleDeepLink(deepLink)
         }
     }
 

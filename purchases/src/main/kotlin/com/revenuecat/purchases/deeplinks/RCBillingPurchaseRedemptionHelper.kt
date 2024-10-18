@@ -1,5 +1,7 @@
 package com.revenuecat.purchases.deeplinks
 
+import android.os.Handler
+import android.os.Looper
 import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.CustomerInfoHelper
@@ -7,16 +9,16 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
-import com.revenuecat.purchases.deeplinks.DeepLinkHandler.DeepLink
+import com.revenuecat.purchases.deeplinks.DeepLinkParser.DeepLink
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.RedeemRCBillingPurchaseListener
-import com.revenuecat.purchases.interfaces.RedeemRCBillingPurchaseResult
 
 internal class RCBillingPurchaseRedemptionHelper(
     private val backend: Backend,
     private val identityManager: IdentityManager,
     private val customerInfoHelper: CustomerInfoHelper,
+    private val mainHandler: Handler? = Handler(Looper.getMainLooper()),
 ) {
     var redeemRCBillingPurchaseListener: RedeemRCBillingPurchaseListener? = null
 
@@ -31,7 +33,7 @@ internal class RCBillingPurchaseRedemptionHelper(
                 identityManager.currentAppUserID,
                 onErrorHandler = {
                     errorLog("Error redeeming RCBilling purchase: $it")
-                    resultListener.handleResult(RedeemRCBillingPurchaseResult.ERROR)
+                    handleResult(resultListener, RedeemRCBillingPurchaseListener.RedeemResult.ERROR)
                 },
                 onSuccessHandler = {
                     // WIP: This ideally shouldn't be needed and the redemption endpoint should give us the customer
@@ -45,16 +47,32 @@ internal class RCBillingPurchaseRedemptionHelper(
                         allowSharingPlayStoreAccount = identityManager.currentUserIsAnonymous(),
                         callback = object : ReceiveCustomerInfoCallback {
                             override fun onReceived(customerInfo: CustomerInfo) {
-                                resultListener.handleResult(RedeemRCBillingPurchaseResult.SUCCESS)
+                                handleResult(resultListener, RedeemRCBillingPurchaseListener.RedeemResult.SUCCESS)
                             }
 
                             override fun onError(error: PurchasesError) {
-                                resultListener.handleResult(RedeemRCBillingPurchaseResult.ERROR)
+                                handleResult(resultListener, RedeemRCBillingPurchaseListener.RedeemResult.ERROR)
                             }
                         },
                     )
                 },
             )
+        }
+    }
+
+    private fun handleResult(
+        resultListener: RedeemRCBillingPurchaseListener.ResultListener,
+        result: RedeemRCBillingPurchaseListener.RedeemResult,
+    ) {
+        dispatch { resultListener.handleResult(result) }
+    }
+
+    private fun dispatch(action: () -> Unit) {
+        if (Thread.currentThread() != Looper.getMainLooper().thread) {
+            val handler = mainHandler ?: Handler(Looper.getMainLooper())
+            handler.post(action)
+        } else {
+            action()
         }
     }
 }

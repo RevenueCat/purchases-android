@@ -16,8 +16,6 @@ import com.revenuecat.purchases.LogLevel
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.interfaces.RedeemRCBillingPurchaseListener
-import com.revenuecat.purchases.interfaces.RedeemRCBillingPurchaseResult
-import com.revenuecat.purchases.interfaces.RedeemRCBillingResultListener
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 
 class MainApplication : Application(), UpdatedCustomerInfoListener, RedeemRCBillingPurchaseListener {
@@ -48,12 +46,14 @@ class MainApplication : Application(), UpdatedCustomerInfoListener, RedeemRCBill
         Log.d("CustomerInfoListener", "$message: $customerInfo")
     }
 
-    override fun handleRCBillingPurchaseRedemption(startRedemption: (RedeemRCBillingResultListener) -> Unit) {
-        startRedemption(object : RedeemRCBillingResultListener {
-            override fun handleResult(result: RedeemRCBillingPurchaseResult) {
+    override fun handleRCBillingPurchaseRedemption(
+        startRedemption: (RedeemRCBillingPurchaseListener.ResultListener) -> Unit,
+    ) {
+        startRedemption(object : RedeemRCBillingPurchaseListener.ResultListener {
+            override fun handleResult(result: RedeemRCBillingPurchaseListener.RedeemResult) {
                 val message = when (result) {
-                    RedeemRCBillingPurchaseResult.SUCCESS -> "Redeem RC Billing purchase successful"
-                    RedeemRCBillingPurchaseResult.ERROR -> "Redeem RC Billing purchase failed"
+                    RedeemRCBillingPurchaseListener.RedeemResult.SUCCESS -> "Redeem RC Billing purchase successful"
+                    RedeemRCBillingPurchaseListener.RedeemResult.ERROR -> "Redeem RC Billing purchase failed"
                 }
                 Toast.makeText(
                     this@MainApplication,
