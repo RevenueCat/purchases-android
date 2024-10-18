@@ -22,7 +22,8 @@ private class RedeemRCBillingPurchaseListenerAPI {
     fun checkResult(result: RedeemRCBillingPurchaseListener.RedeemResult): Boolean {
         when (result) {
             RedeemRCBillingPurchaseListener.RedeemResult.SUCCESS,
-            RedeemRCBillingPurchaseListener.RedeemResult.ERROR -> {
+            RedeemRCBillingPurchaseListener.RedeemResult.ERROR,
+            -> {
                 return true
             }
         }

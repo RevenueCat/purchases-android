@@ -13,7 +13,8 @@ private class DeepLinkHandlerAPI {
         when (handleResult) {
             DeepLinkHandler.HandleResult.HANDLED,
             DeepLinkHandler.HandleResult.DEFERRED_TO_SDK_CONFIGURATION,
-            DeepLinkHandler.HandleResult.IGNORED -> {
+            DeepLinkHandler.HandleResult.IGNORED,
+            -> {
                 return true
             }
         }
