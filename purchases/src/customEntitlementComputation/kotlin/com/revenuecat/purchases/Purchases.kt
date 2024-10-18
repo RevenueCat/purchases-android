@@ -8,6 +8,7 @@ import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.infoLog
 import com.revenuecat.purchases.common.log
+import com.revenuecat.purchases.deeplinks.DeepLinkParser
 import com.revenuecat.purchases.interfaces.Callback
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
@@ -180,6 +181,10 @@ class Purchases internal constructor(
         purchasesOrchestrator.switchUser(newAppUserID)
     }
     //endregion
+
+    internal fun handleDeepLink(deepLink: DeepLinkParser.DeepLink): Boolean {
+        return purchasesOrchestrator.handleDeepLink(deepLink)
+    }
 
     // region Static
     companion object {
