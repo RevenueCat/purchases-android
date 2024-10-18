@@ -34,6 +34,9 @@ import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsMa
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.subscriberattributes.SubscriberAttributeKey
 import com.revenuecat.purchases.common.warnLog
+import com.revenuecat.purchases.deeplinks.DeepLinkHandler
+import com.revenuecat.purchases.deeplinks.DeepLinkParser
+import com.revenuecat.purchases.deeplinks.RCBillingPurchaseRedemptionHelper
 import com.revenuecat.purchases.google.isSuccessful
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.interfaces.Callback
@@ -46,6 +49,7 @@ import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.interfaces.PurchaseErrorCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback
+import com.revenuecat.purchases.interfaces.RedeemRCBillingPurchaseListener
 import com.revenuecat.purchases.interfaces.SyncAttributesAndOfferingsCallback
 import com.revenuecat.purchases.interfaces.SyncPurchasesCallback
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
@@ -102,6 +106,12 @@ internal class PurchasesOrchestrator(
     private val mainHandler: Handler? = Handler(Looper.getMainLooper()),
     private val dispatcher: Dispatcher,
     private val initialConfiguration: PurchasesConfiguration,
+    private val rcBillingPurchaseRedemptionHelper: RCBillingPurchaseRedemptionHelper =
+        RCBillingPurchaseRedemptionHelper(
+            backend,
+            identityManager,
+            customerInfoHelper,
+        ),
 ) : LifecycleDelegate, CustomActivityLifecycleHandler {
 
     internal var state: PurchasesState
@@ -133,6 +143,14 @@ internal class PurchasesOrchestrator(
 
         @Synchronized set(value) {
             customerInfoUpdateHandler.updatedCustomerInfoListener = value
+        }
+
+    var redeemRCBillingPurchaseListener: RedeemRCBillingPurchaseListener?
+        @Synchronized get() = rcBillingPurchaseRedemptionHelper.redeemRCBillingPurchaseListener
+
+        @Synchronized set(value) {
+            rcBillingPurchaseRedemptionHelper.redeemRCBillingPurchaseListener = value
+            processCachedDeepLinks()
         }
 
     val isAnonymous: Boolean
@@ -228,12 +246,21 @@ internal class PurchasesOrchestrator(
             if (firstTimeInForeground && isAndroidNOrNewer()) {
                 diagnosticsSynchronizer?.syncDiagnosticsFileIfNeeded()
             }
+            processCachedDeepLinks()
         }
     }
 
     override fun onActivityStarted(activity: Activity) {
         if (appConfig.showInAppMessagesAutomatically) {
             showInAppMessagesIfNeeded(activity, InAppMessageType.values().toList())
+        }
+    }
+
+    fun handleDeepLink(deepLink: DeepLinkParser.DeepLink): Boolean {
+        when (deepLink) {
+            is DeepLinkParser.DeepLink.RedeemRCBPurchase -> {
+                return rcBillingPurchaseRedemptionHelper.handleRedeemRCBPurchase(deepLink)
+            }
         }
     }
 
@@ -1069,7 +1096,9 @@ internal class PurchasesOrchestrator(
                 val productId =
                     if (googleReplacementMode == GoogleReplacementMode.DEFERRED) {
                         oldProductId
-                    } else purchasingData.productId
+                    } else {
+                        purchasingData.productId
+                    }
                 val mapOfProductIdToListener = mapOf(productId to purchaseCallback)
                 state = state.copy(
                     purchaseCallbacksByProductId = state.purchaseCallbacksByProductId + mapOfProductIdToListener,
@@ -1216,6 +1245,21 @@ internal class PurchasesOrchestrator(
         if (isAndroidNOrNewer()) {
             paywallEventsManager?.flushEvents()
         }
+    }
+
+    @Synchronized
+    private fun processCachedDeepLinks() {
+        // WIP: Revisit logic
+        val unprocessedDeepLinks = mutableSetOf<DeepLinkParser.DeepLink>()
+        while (DeepLinkHandler.cachedLinks.isNotEmpty()) {
+            val deepLink = DeepLinkHandler.cachedLinks.first()
+            DeepLinkHandler.cachedLinks.remove(deepLink)
+            val processed = handleDeepLink(deepLink)
+            if (!processed) {
+                unprocessedDeepLinks.add(deepLink)
+            }
+        }
+        DeepLinkHandler.cachedLinks.addAll(unprocessedDeepLinks)
     }
 
     // endregion
