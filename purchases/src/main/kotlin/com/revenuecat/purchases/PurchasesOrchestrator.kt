@@ -150,6 +150,7 @@ internal class PurchasesOrchestrator(
 
         @Synchronized set(value) {
             rcBillingPurchaseRedemptionHelper.redeemRCBillingPurchaseListener = value
+            processCachedDeepLinks()
         }
 
     val isAnonymous: Boolean
@@ -258,12 +259,9 @@ internal class PurchasesOrchestrator(
     fun handleDeepLink(deepLink: DeepLinkParser.DeepLink): Boolean {
         when (deepLink) {
             is DeepLinkParser.DeepLink.RedeemRCBPurchase -> {
-                rcBillingPurchaseRedemptionHelper.handleRedeemRCBPurchase(deepLink)
+                return rcBillingPurchaseRedemptionHelper.handleRedeemRCBPurchase(deepLink)
             }
         }
-        // WIP: This currently returns before the operation is completed. We might want to provide a way for devs
-        // to detect when the operation is started/completed.
-        return true
     }
 
     // region Public Methods
@@ -1249,11 +1247,19 @@ internal class PurchasesOrchestrator(
         }
     }
 
+    @Synchronized
     private fun processCachedDeepLinks() {
+        // WIP: Revisit logic
+        val unprocessedDeepLinks = mutableSetOf<DeepLinkParser.DeepLink>()
         while (DeepLinkHandler.cachedLinks.isNotEmpty()) {
-            val deepLink = DeepLinkHandler.cachedLinks.removeFirst()
-            handleDeepLink(deepLink)
+            val deepLink = DeepLinkHandler.cachedLinks.first()
+            DeepLinkHandler.cachedLinks.remove(deepLink)
+            val processed = handleDeepLink(deepLink)
+            if (!processed) {
+                unprocessedDeepLinks.add(deepLink)
+            }
         }
+        DeepLinkHandler.cachedLinks.addAll(unprocessedDeepLinks)
     }
 
     // endregion

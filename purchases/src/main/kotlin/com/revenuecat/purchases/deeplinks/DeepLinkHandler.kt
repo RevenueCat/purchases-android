@@ -32,7 +32,7 @@ class DeepLinkHandler {
 
     companion object {
         @get:Synchronized
-        internal val cachedLinks = mutableListOf<DeepLinkParser.DeepLink>()
+        internal val cachedLinks = mutableSetOf<DeepLinkParser.DeepLink>()
 
         /**
          * Allows the RevenueCat SDK to handle the activity intent to process relevant deep links.

@@ -22,9 +22,13 @@ internal class RCBillingPurchaseRedemptionHelper(
 ) {
     var redeemRCBillingPurchaseListener: RedeemRCBillingPurchaseListener? = null
 
-    fun handleRedeemRCBPurchase(deepLink: DeepLink.RedeemRCBPurchase) {
-        debugLog("Detected RCB purchase redemption. Asking callback to initiate redeem.")
-        redeemRCBillingPurchaseListener?.handleRCBillingPurchaseRedemption { resultListener ->
+    fun handleRedeemRCBPurchase(deepLink: DeepLink.RedeemRCBPurchase): Boolean {
+        val listener = redeemRCBillingPurchaseListener ?: run {
+            errorLog("No RedeemRCBillingPurchaseListener set. Ignoring RCBilling purchase redemption.")
+            return false
+        }
+        debugLog("Detected RCB purchase redemption. Asking callback to initiate redemption.")
+        listener.handleRCBillingPurchaseRedemption { resultListener ->
             debugLog("Redeeming RCBilling purchase with redemption token: ${deepLink.redemptionToken}")
             backend.postRedeemRCBillingPurchase(
                 // WIP: These parameters are the other way around because the aliasing endpoint doesn't seem to work if
@@ -58,6 +62,7 @@ internal class RCBillingPurchaseRedemptionHelper(
                 },
             )
         }
+        return true
     }
 
     private fun handleResult(
