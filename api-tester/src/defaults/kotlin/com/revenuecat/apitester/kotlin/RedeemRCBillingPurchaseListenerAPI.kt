@@ -1,8 +1,10 @@
 package com.revenuecat.apitester.kotlin
 
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.interfaces.RedeemRCBillingPurchaseListener
 
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Suppress("unused", "UNUSED_VARIABLE")
 private class RedeemRCBillingPurchaseListenerAPI {
     fun checkListener(

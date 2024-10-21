@@ -1,10 +1,14 @@
 package com.revenuecat.apitester.java;
 
+import androidx.annotation.OptIn;
+
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI;
 import com.revenuecat.purchases.interfaces.RedeemRCBillingPurchaseListener;
 
 import kotlin.Unit;
 import kotlin.jvm.functions.Function1;
 
+@OptIn(markerClass = ExperimentalPreviewRevenueCatPurchasesAPI.class)
 @SuppressWarnings({"unused"})
 final class RedeemRCBillingPurchaseListenerAPI {
     static void checkListener(RedeemRCBillingPurchaseListener listener,

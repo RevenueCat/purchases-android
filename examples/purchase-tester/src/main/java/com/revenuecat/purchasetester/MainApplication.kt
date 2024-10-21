@@ -12,12 +12,14 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.LogLevel
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.interfaces.RedeemRCBillingPurchaseListener
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 class MainApplication : Application(), UpdatedCustomerInfoListener, RedeemRCBillingPurchaseListener {
 
     val logHandler = TesterLogHandler(this)

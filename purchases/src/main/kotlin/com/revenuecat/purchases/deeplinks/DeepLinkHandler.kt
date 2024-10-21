@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.deeplinks
 
 import android.content.Intent
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.verboseLog
@@ -8,6 +9,7 @@ import com.revenuecat.purchases.common.verboseLog
 /**
  * Allows to pass deep links to the RevenueCat SDK for processing.
  */
+@ExperimentalPreviewRevenueCatPurchasesAPI
 class DeepLinkHandler {
     /**
      * Represents whether the deep link will be handled by the SDK or not.

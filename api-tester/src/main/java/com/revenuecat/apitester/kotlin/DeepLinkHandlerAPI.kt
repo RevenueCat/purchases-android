@@ -1,8 +1,10 @@
 package com.revenuecat.apitester.kotlin
 
 import android.content.Intent
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.deeplinks.DeepLinkHandler
 
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Suppress("unused", "UNUSED_VARIABLE")
 private class DeepLinkHandlerAPI {
     fun check(intent: Intent, shouldCache: Boolean) {

@@ -145,6 +145,7 @@ internal class PurchasesOrchestrator(
             customerInfoUpdateHandler.updatedCustomerInfoListener = value
         }
 
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     var redeemRCBillingPurchaseListener: RedeemRCBillingPurchaseListener?
         @Synchronized get() = rcBillingPurchaseRedemptionHelper.redeemRCBillingPurchaseListener
 
@@ -1247,6 +1248,7 @@ internal class PurchasesOrchestrator(
         }
     }
 
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     @Synchronized
     private fun processCachedDeepLinks() {
         // WIP: Revisit logic

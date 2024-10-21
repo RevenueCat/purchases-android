@@ -105,6 +105,7 @@ class Purchases internal constructor(
      * Set a value to be able to handle redemptions of RCBilling purchases.
      * You can set to null to destroy the listener.
      */
+    @ExperimentalPreviewRevenueCatPurchasesAPI
     var redeemRCBillingPurchaseListener: RedeemRCBillingPurchaseListener?
         @Synchronized get() = purchasesOrchestrator.redeemRCBillingPurchaseListener
 

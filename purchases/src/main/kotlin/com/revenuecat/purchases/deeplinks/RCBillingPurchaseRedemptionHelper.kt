@@ -5,6 +5,7 @@ import android.os.Looper
 import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.CustomerInfoHelper
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.debugLog
@@ -14,6 +15,7 @@ import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.RedeemRCBillingPurchaseListener
 
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 internal class RCBillingPurchaseRedemptionHelper(
     private val backend: Backend,
     private val identityManager: IdentityManager,
