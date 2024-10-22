@@ -45,7 +45,9 @@ internal class OfferingsManager(
                     LogIntent.DEBUG,
                     if (appInBackground) {
                         OfferingStrings.OFFERINGS_STALE_UPDATING_IN_BACKGROUND
-                    } else OfferingStrings.OFFERINGS_STALE_UPDATING_IN_FOREGROUND,
+                    } else {
+                        OfferingStrings.OFFERINGS_STALE_UPDATING_IN_FOREGROUND
+                    },
                 )
                 fetchAndCacheOfferings(appUserID, appInBackground)
             }

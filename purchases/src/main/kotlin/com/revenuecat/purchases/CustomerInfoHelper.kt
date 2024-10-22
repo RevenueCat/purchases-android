@@ -186,7 +186,9 @@ internal class CustomerInfoHelper(
                 LogIntent.DEBUG,
                 if (appInBackground) {
                     CustomerInfoStrings.CUSTOMERINFO_STALE_UPDATING_BACKGROUND
-                } else CustomerInfoStrings.CUSTOMERINFO_STALE_UPDATING_FOREGROUND,
+                } else {
+                    CustomerInfoStrings.CUSTOMERINFO_STALE_UPDATING_FOREGROUND
+                },
             )
             postPendingPurchasesAndFetchCustomerInfo(appUserID, appInBackground, allowSharingPlayStoreAccount)
         }

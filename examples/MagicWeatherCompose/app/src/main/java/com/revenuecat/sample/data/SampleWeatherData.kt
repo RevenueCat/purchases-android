@@ -33,7 +33,9 @@ class SampleWeatherData(val emoji: String, val temperature: String) {
                 it.titlecase(
                     Locale.ROOT,
                 )
-            } else it.toString()
+            } else {
+                it.toString()
+            }
         }}"
 
     val weatherColor: Int
