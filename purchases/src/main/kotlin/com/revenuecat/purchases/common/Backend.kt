@@ -76,8 +76,7 @@ internal typealias ProductEntitlementCallback = Pair<(ProductEntitlementMapping)
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 internal typealias CustomerCenterCallback = Pair<(CustomerCenterConfigData) -> Unit, (PurchasesError) -> Unit>
 
-// WIP: Use appropriate types for callback
-internal typealias RedeemRCBillingPurchaseCallback = Pair<() -> Unit, (PurchasesError) -> Unit>
+internal typealias RedeemWebPurchaseCallback = Pair<(CustomerInfo) -> Unit, (PurchasesError) -> Unit>
 
 internal enum class PostReceiptErrorHandlingBehavior {
     SHOULD_BE_MARKED_SYNCED,
@@ -133,7 +132,7 @@ internal class Backend(
     @Volatile var customerCenterCallbacks = mutableMapOf<String, MutableList<CustomerCenterCallback>>()
 
     @get:Synchronized @set:Synchronized
-    @Volatile var redeemRCBPurchaseCallbacks = mutableMapOf<String, MutableList<RedeemRCBillingPurchaseCallback>>()
+    @Volatile var redeemWebPurchaseCallbacks = mutableMapOf<String, MutableList<RedeemWebPurchaseCallback>>()
 
     fun close() {
         this.dispatcher.close()
@@ -662,15 +661,15 @@ internal class Backend(
         }
     }
 
-    fun postRedeemRCBillingPurchase(
+    fun postRedeemWebPurchase(
         appUserID: String,
         redemptionToken: String,
-        onSuccessHandler: () -> Unit,
+        onSuccessHandler: (CustomerInfo) -> Unit,
         onErrorHandler: (PurchasesError) -> Unit,
     ) {
-        val endpoint = Endpoint.PostRedeemRCBillingPurchase(appUserID)
+        val endpoint = Endpoint.PostRedeemWebPurchase(appUserID)
         val path = endpoint.getPath()
-        val body = mapOf("new_app_user_id" to redemptionToken) // WIP: change this field to the actual field
+        val body = mapOf("redemption_token" to redemptionToken)
         val call = object : Dispatcher.AsyncCall() {
             override fun call(): HTTPResult {
                 return httpClient.performRequest(
@@ -684,7 +683,7 @@ internal class Backend(
 
             override fun onError(error: PurchasesError) {
                 synchronized(this@Backend) {
-                    redeemRCBPurchaseCallbacks.remove(path)
+                    redeemWebPurchaseCallbacks.remove(path)
                 }?.forEach { (_, onErrorHandler) ->
                     onErrorHandler(error)
                 }
@@ -692,10 +691,10 @@ internal class Backend(
 
             override fun onCompletion(result: HTTPResult) {
                 synchronized(this@Backend) {
-                    redeemRCBPurchaseCallbacks.remove(path)
+                    redeemWebPurchaseCallbacks.remove(path)
                 }?.forEach { (onSuccessHandler, onErrorHandler) ->
                     if (result.isSuccessful()) {
-                        onSuccessHandler()
+                        onSuccessHandler(CustomerInfoFactory.buildCustomerInfo(result))
                     } else {
                         onErrorHandler(result.toPurchasesError().also { errorLog(it) })
                     }
@@ -703,7 +702,7 @@ internal class Backend(
             }
         }
         synchronized(this@Backend) {
-            redeemRCBPurchaseCallbacks.addCallback(
+            redeemWebPurchaseCallbacks.addCallback(
                 call,
                 dispatcher,
                 path,

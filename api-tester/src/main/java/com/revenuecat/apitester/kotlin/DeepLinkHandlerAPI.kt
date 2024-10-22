@@ -8,14 +8,14 @@ import com.revenuecat.purchases.deeplinks.DeepLinkHandler
 @Suppress("unused", "UNUSED_VARIABLE")
 private class DeepLinkHandlerAPI {
     fun check(intent: Intent, shouldCache: Boolean) {
-        val handleResult: DeepLinkHandler.HandleResult = DeepLinkHandler.handleDeepLink(intent, shouldCache)
+        val result: DeepLinkHandler.Result = DeepLinkHandler.handleDeepLink(intent, shouldCache)
     }
 
-    fun checkHandleResult(handleResult: DeepLinkHandler.HandleResult): Boolean {
-        when (handleResult) {
-            DeepLinkHandler.HandleResult.HANDLED,
-            DeepLinkHandler.HandleResult.DEFERRED_TO_SDK_CONFIGURATION,
-            DeepLinkHandler.HandleResult.IGNORED,
+    fun checkHandleResult(result: DeepLinkHandler.Result): Boolean {
+        when (result) {
+            DeepLinkHandler.Result.HANDLED,
+            DeepLinkHandler.Result.DEFERRED_TO_SDK_CONFIGURATION,
+            DeepLinkHandler.Result.IGNORED,
             -> {
                 return true
             }

@@ -36,7 +36,7 @@ import com.revenuecat.purchases.common.subscriberattributes.SubscriberAttributeK
 import com.revenuecat.purchases.common.warnLog
 import com.revenuecat.purchases.deeplinks.DeepLinkHandler
 import com.revenuecat.purchases.deeplinks.DeepLinkParser
-import com.revenuecat.purchases.deeplinks.RCBillingPurchaseRedemptionHelper
+import com.revenuecat.purchases.deeplinks.WebPurchaseRedemptionHelper
 import com.revenuecat.purchases.google.isSuccessful
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.interfaces.Callback
@@ -49,7 +49,7 @@ import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.interfaces.PurchaseErrorCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback
-import com.revenuecat.purchases.interfaces.RedeemRCBillingPurchaseListener
+import com.revenuecat.purchases.interfaces.RedeemWebPurchaseListener
 import com.revenuecat.purchases.interfaces.SyncAttributesAndOfferingsCallback
 import com.revenuecat.purchases.interfaces.SyncPurchasesCallback
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
@@ -106,11 +106,12 @@ internal class PurchasesOrchestrator(
     private val mainHandler: Handler? = Handler(Looper.getMainLooper()),
     private val dispatcher: Dispatcher,
     private val initialConfiguration: PurchasesConfiguration,
-    private val rcBillingPurchaseRedemptionHelper: RCBillingPurchaseRedemptionHelper =
-        RCBillingPurchaseRedemptionHelper(
+    private val webPurchaseRedemptionHelper: WebPurchaseRedemptionHelper =
+        WebPurchaseRedemptionHelper(
             backend,
             identityManager,
-            customerInfoHelper,
+            offlineEntitlementsManager,
+            customerInfoUpdateHandler,
         ),
 ) : LifecycleDelegate, CustomActivityLifecycleHandler {
 
@@ -146,11 +147,11 @@ internal class PurchasesOrchestrator(
         }
 
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
-    var redeemRCBillingPurchaseListener: RedeemRCBillingPurchaseListener?
-        @Synchronized get() = rcBillingPurchaseRedemptionHelper.redeemRCBillingPurchaseListener
+    var redeemWebPurchaseListener: RedeemWebPurchaseListener?
+        @Synchronized get() = webPurchaseRedemptionHelper.redeemWebPurchaseListener
 
         @Synchronized set(value) {
-            rcBillingPurchaseRedemptionHelper.redeemRCBillingPurchaseListener = value
+            webPurchaseRedemptionHelper.redeemWebPurchaseListener = value
             processCachedDeepLinks()
         }
 
@@ -259,8 +260,8 @@ internal class PurchasesOrchestrator(
 
     fun handleDeepLink(deepLink: DeepLinkParser.DeepLink): Boolean {
         when (deepLink) {
-            is DeepLinkParser.DeepLink.RedeemRCBPurchase -> {
-                return rcBillingPurchaseRedemptionHelper.handleRedeemRCBPurchase(deepLink)
+            is DeepLinkParser.DeepLink.RedeemWebPurchase -> {
+                return webPurchaseRedemptionHelper.handleRedeemWebPurchase(deepLink)
             }
         }
     }

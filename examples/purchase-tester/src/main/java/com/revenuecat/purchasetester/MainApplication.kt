@@ -16,11 +16,11 @@ import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.LogLevel
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
-import com.revenuecat.purchases.interfaces.RedeemRCBillingPurchaseListener
+import com.revenuecat.purchases.interfaces.RedeemWebPurchaseListener
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
-class MainApplication : Application(), UpdatedCustomerInfoListener, RedeemRCBillingPurchaseListener {
+class MainApplication : Application(), UpdatedCustomerInfoListener, RedeemWebPurchaseListener {
 
     val logHandler = TesterLogHandler(this)
 
@@ -48,14 +48,14 @@ class MainApplication : Application(), UpdatedCustomerInfoListener, RedeemRCBill
         Log.d("CustomerInfoListener", "$message: $customerInfo")
     }
 
-    override fun handleRCBillingPurchaseRedemption(
-        redemptionStarter: RedeemRCBillingPurchaseListener.RedemptionStarter,
+    override fun handleWebPurchaseRedemption(
+        webPurchaseRedeemer: RedeemWebPurchaseListener.WebPurchaseRedeemer,
     ) {
-        redemptionStarter.startRedemption(object : RedeemRCBillingPurchaseListener.ResultListener {
-            override fun handleResult(result: RedeemRCBillingPurchaseListener.RedeemResult) {
+        webPurchaseRedeemer.redeemWebPurchase(object : RedeemWebPurchaseListener.ResultListener {
+            override fun handleResult(result: RedeemWebPurchaseListener.Result) {
                 val message = when (result) {
-                    RedeemRCBillingPurchaseListener.RedeemResult.SUCCESS -> "Redeem RC Billing purchase successful"
-                    RedeemRCBillingPurchaseListener.RedeemResult.ERROR -> "Redeem RC Billing purchase failed"
+                    is RedeemWebPurchaseListener.Result.Success -> "Redeem RC Billing purchase successful"
+                    is RedeemWebPurchaseListener.Result.Error -> "Redeem RC Billing purchase failed"
                 }
                 Toast.makeText(
                     this@MainApplication,

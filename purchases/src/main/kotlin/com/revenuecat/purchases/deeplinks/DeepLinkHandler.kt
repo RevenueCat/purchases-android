@@ -14,7 +14,7 @@ class DeepLinkHandler {
     /**
      * Represents whether the deep link will be handled by the SDK or not.
      */
-    enum class HandleResult {
+    enum class Result {
         /**
          * Deep link is recognized by RevenueCat's SDK and will be handled.
          */
@@ -42,24 +42,25 @@ class DeepLinkHandler {
          * @param shouldCache Whether the deep link should be cached for later processing if the SDK is not configured.
          */
         @Suppress("ReturnCount")
-        fun handleDeepLink(intent: Intent, shouldCache: Boolean = true): HandleResult {
+        @JvmStatic
+        fun handleDeepLink(intent: Intent, shouldCache: Boolean = true): Result {
             val deepLink = intent.data?.let {
                 DeepLinkParser().parseDeepLink(it)
-            } ?: return HandleResult.IGNORED
+            } ?: return Result.IGNORED
             if (Purchases.isConfigured) {
                 debugLog("Handling deep link: $deepLink")
                 val handleResult = Purchases.sharedInstance.handleDeepLink(deepLink)
                 return if (handleResult) {
-                    HandleResult.HANDLED
+                    Result.HANDLED
                 } else {
-                    HandleResult.IGNORED
+                    Result.IGNORED
                 }
             } else if (shouldCache) {
                 cacheDeepLink(deepLink)
-                return HandleResult.DEFERRED_TO_SDK_CONFIGURATION
+                return Result.DEFERRED_TO_SDK_CONFIGURATION
             } else {
                 verboseLog("Deep link ignored because SDK is not configured and caching disabled: $deepLink")
-                return HandleResult.IGNORED
+                return Result.IGNORED
             }
         }
 

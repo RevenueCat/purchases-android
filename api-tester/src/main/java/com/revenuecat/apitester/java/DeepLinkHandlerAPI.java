@@ -11,11 +11,11 @@ import com.revenuecat.purchases.deeplinks.DeepLinkHandler;
 @SuppressWarnings({"unused"})
 final class DeepLinkHandlerAPI {
     static void check(Intent intent, Boolean shouldCache) {
-        DeepLinkHandler.HandleResult result = DeepLinkHandler.Companion.handleDeepLink(intent, shouldCache);
+        DeepLinkHandler.Result result = DeepLinkHandler.handleDeepLink(intent, shouldCache);
     }
 
-    static boolean checkResult(DeepLinkHandler.HandleResult handleResult) {
-        switch (handleResult) {
+    static boolean checkResult(DeepLinkHandler.Result result) {
+        switch (result) {
             case HANDLED:
             case IGNORED:
             case DEFERRED_TO_SDK_CONFIGURATION:

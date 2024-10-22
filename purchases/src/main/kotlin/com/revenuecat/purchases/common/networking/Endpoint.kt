@@ -40,9 +40,9 @@ internal sealed class Endpoint(val pathTemplate: String, val name: String) {
     ) {
         override fun getPath() = pathTemplate.format(Uri.encode(userId))
     }
-    data class PostRedeemRCBillingPurchase(val userId: String) : Endpoint(
-        "/subscribers/%s/alias", // WIP: Change with actual endpoint
-        "post_redeem_rc_billing_purchase",
+    data class PostRedeemWebPurchase(val userId: String) : Endpoint(
+        "/subscribers/%s/redeem_web_purchase",
+        "post_redeem_web_purchase",
     ) {
         override fun getPath() = pathTemplate.format(Uri.encode(userId))
     }
@@ -54,6 +54,7 @@ internal sealed class Endpoint(val pathTemplate: String, val name: String) {
             PostReceipt,
             is GetOfferings,
             GetProductEntitlementMapping,
+            is PostRedeemWebPurchase,
             ->
                 true
             is GetAmazonReceipt,
@@ -61,7 +62,6 @@ internal sealed class Endpoint(val pathTemplate: String, val name: String) {
             PostDiagnostics,
             PostPaywallEvents,
             is GetCustomerCenterConfig,
-            is PostRedeemRCBillingPurchase,
             ->
                 false
         }
@@ -71,6 +71,7 @@ internal sealed class Endpoint(val pathTemplate: String, val name: String) {
             is GetCustomerInfo,
             LogIn,
             PostReceipt,
+            is PostRedeemWebPurchase,
             ->
                 true
             is GetAmazonReceipt,
@@ -80,7 +81,6 @@ internal sealed class Endpoint(val pathTemplate: String, val name: String) {
             PostPaywallEvents,
             GetProductEntitlementMapping,
             is GetCustomerCenterConfig,
-            is PostRedeemRCBillingPurchase,
             ->
                 false
         }
