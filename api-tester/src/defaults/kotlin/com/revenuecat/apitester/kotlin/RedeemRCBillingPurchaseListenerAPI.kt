@@ -9,9 +9,16 @@ import com.revenuecat.purchases.interfaces.RedeemRCBillingPurchaseListener
 private class RedeemRCBillingPurchaseListenerAPI {
     fun checkListener(
         redeemRCBillingPurchaseListener: RedeemRCBillingPurchaseListener,
-        callback: (RedeemRCBillingPurchaseListener.ResultListener) -> Unit,
+        redemptionStarter: RedeemRCBillingPurchaseListener.RedemptionStarter,
     ) {
-        redeemRCBillingPurchaseListener.handleRCBillingPurchaseRedemption(callback)
+        redeemRCBillingPurchaseListener.handleRCBillingPurchaseRedemption(redemptionStarter)
+    }
+
+    fun checkRedemptionStarter(
+        redemptionStarter: RedeemRCBillingPurchaseListener.RedemptionStarter,
+        resultListener: RedeemRCBillingPurchaseListener.ResultListener,
+    ) {
+        redemptionStarter.startRedemption(resultListener)
     }
 
     fun checkResultListener(

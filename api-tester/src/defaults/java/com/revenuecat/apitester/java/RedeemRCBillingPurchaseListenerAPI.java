@@ -12,8 +12,13 @@ import kotlin.jvm.functions.Function1;
 @SuppressWarnings({"unused"})
 final class RedeemRCBillingPurchaseListenerAPI {
     static void checkListener(RedeemRCBillingPurchaseListener listener,
-                              Function1<RedeemRCBillingPurchaseListener.ResultListener, Unit> startRedemption) {
-        listener.handleRCBillingPurchaseRedemption(startRedemption);
+                              RedeemRCBillingPurchaseListener.RedemptionStarter redemptionStarter) {
+        listener.handleRCBillingPurchaseRedemption(redemptionStarter);
+    }
+
+    static void checkRedemptionStarter(RedeemRCBillingPurchaseListener.RedemptionStarter redemptionStarter,
+                                       RedeemRCBillingPurchaseListener.ResultListener resultListener) {
+        redemptionStarter.startRedemption(resultListener);
     }
 
     static void checkResultListener(RedeemRCBillingPurchaseListener.ResultListener resultListener,

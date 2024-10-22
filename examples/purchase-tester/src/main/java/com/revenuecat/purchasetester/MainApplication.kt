@@ -49,9 +49,9 @@ class MainApplication : Application(), UpdatedCustomerInfoListener, RedeemRCBill
     }
 
     override fun handleRCBillingPurchaseRedemption(
-        startRedemption: (RedeemRCBillingPurchaseListener.ResultListener) -> Unit,
+        redemptionStarter: RedeemRCBillingPurchaseListener.RedemptionStarter,
     ) {
-        startRedemption(object : RedeemRCBillingPurchaseListener.ResultListener {
+        redemptionStarter.startRedemption(object : RedeemRCBillingPurchaseListener.ResultListener {
             override fun handleResult(result: RedeemRCBillingPurchaseListener.RedeemResult) {
                 val message = when (result) {
                     RedeemRCBillingPurchaseListener.RedeemResult.SUCCESS -> "Redeem RC Billing purchase successful"
