@@ -534,7 +534,10 @@ internal class PurchasesOrchestrator(
         }
     }
 
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     fun close() {
+        // Clear any unprocessed deep links
+        DeepLinkHandler.clearCachedLinks()
         synchronized(this@PurchasesOrchestrator) {
             state = state.copy(purchaseCallbacksByProductId = Collections.emptyMap())
         }
@@ -1252,17 +1255,9 @@ internal class PurchasesOrchestrator(
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     @Synchronized
     private fun processCachedDeepLinks() {
-        // WIP: Revisit logic
-        val unprocessedDeepLinks = mutableSetOf<DeepLinkParser.DeepLink>()
-        while (DeepLinkHandler.cachedLinks.isNotEmpty()) {
-            val deepLink = DeepLinkHandler.cachedLinks.first()
-            DeepLinkHandler.cachedLinks.remove(deepLink)
-            val processed = handleDeepLink(deepLink)
-            if (!processed) {
-                unprocessedDeepLinks.add(deepLink)
-            }
+        DeepLinkHandler.forEachCachedLink { deepLink ->
+            handleDeepLink(deepLink)
         }
-        DeepLinkHandler.cachedLinks.addAll(unprocessedDeepLinks)
     }
 
     // endregion

@@ -5,6 +5,8 @@ import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.verboseLog
+import java.util.Collections
+import java.util.HashSet
 
 /**
  * Allows to pass deep links to the RevenueCat SDK for processing.
@@ -21,10 +23,10 @@ class DeepLinkHandler {
         HANDLED,
 
         /**
-         * Deep link is recognized by RevenueCat's SDK but it's not configured so it will be cached
-         * and processed after SDK has been configured.
+         * Deep link is recognized by RevenueCat's SDK but either it's not configured or it's not set to process
+         * the deep link so it will be cached and processed after SDK has been configured correctly.
          */
-        DEFERRED_TO_SDK_CONFIGURATION,
+        DEFERRED,
 
         /**
          * Deep link is not recognized by RevenueCat's SDK so it's ignored.
@@ -33,8 +35,7 @@ class DeepLinkHandler {
     }
 
     companion object {
-        @get:Synchronized
-        internal val cachedLinks = mutableSetOf<DeepLinkParser.DeepLink>()
+        private val cachedLinks = Collections.synchronizedSet(HashSet<DeepLinkParser.DeepLink>())
 
         /**
          * Allows the RevenueCat SDK to handle the activity intent to process relevant deep links.
@@ -53,20 +54,42 @@ class DeepLinkHandler {
                 return if (handleResult) {
                     Result.HANDLED
                 } else {
-                    Result.IGNORED
+                    Result.DEFERRED
                 }
             } else if (shouldCache) {
                 cacheDeepLink(deepLink)
-                return Result.DEFERRED_TO_SDK_CONFIGURATION
+                return Result.DEFERRED
             } else {
                 verboseLog("Deep link ignored because SDK is not configured and caching disabled: $deepLink")
                 return Result.IGNORED
             }
         }
 
+        internal fun forEachCachedLink(action: (DeepLinkParser.DeepLink) -> Boolean) {
+            synchronized(cachedLinks) {
+                val unprocessedDeepLinks = mutableSetOf<DeepLinkParser.DeepLink>()
+                for (deepLink in cachedLinks) {
+                    val hasBeenProcessed = action(deepLink)
+                    if (!hasBeenProcessed) {
+                        unprocessedDeepLinks.add(deepLink)
+                    }
+                }
+                cachedLinks.clear()
+                cachedLinks.addAll(unprocessedDeepLinks)
+            }
+        }
+
+        internal fun clearCachedLinks() {
+            synchronized(cachedLinks) {
+                cachedLinks.clear()
+            }
+        }
+
         private fun cacheDeepLink(deepLink: DeepLinkParser.DeepLink) {
             verboseLog("Caching deep link for processing after SDK has been configured: $deepLink")
-            cachedLinks.add(deepLink)
+            synchronized(cachedLinks) {
+                cachedLinks.add(deepLink)
+            }
         }
     }
 }

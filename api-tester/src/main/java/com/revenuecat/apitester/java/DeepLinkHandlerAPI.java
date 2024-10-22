@@ -18,7 +18,7 @@ final class DeepLinkHandlerAPI {
         switch (result) {
             case HANDLED:
             case IGNORED:
-            case DEFERRED_TO_SDK_CONFIGURATION:
+            case DEFERRED:
                 return true;
             default:
                 return false;

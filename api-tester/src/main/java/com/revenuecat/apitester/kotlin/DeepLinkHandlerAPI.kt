@@ -14,7 +14,7 @@ private class DeepLinkHandlerAPI {
     fun checkHandleResult(result: DeepLinkHandler.Result): Boolean {
         when (result) {
             DeepLinkHandler.Result.HANDLED,
-            DeepLinkHandler.Result.DEFERRED_TO_SDK_CONFIGURATION,
+            DeepLinkHandler.Result.DEFERRED,
             DeepLinkHandler.Result.IGNORED,
             -> {
                 return true
