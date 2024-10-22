@@ -231,7 +231,9 @@ internal class SubscriberAttributesManager(
         fun waitUntilIdle(completion: () -> Unit) {
             if (numberOfProcesses == 0) {
                 completion()
-            } else listeners.add { completion() }
+            } else {
+                listeners.add { completion() }
+            }
         }
     }
 }

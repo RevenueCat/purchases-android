@@ -56,7 +56,9 @@ class ConfigureFragment : Fragment() {
                 val storeToCheckId =
                     if (sdkConfiguration.useAmazon) {
                         R.id.amazon_store_radio_id
-                    } else R.id.google_store_radio_id
+                    } else {
+                        R.id.google_store_radio_id
+                    }
                 binding.storeRadioGroup.check(storeToCheckId)
             }.collect()
         }
@@ -139,7 +141,9 @@ class ConfigureFragment : Fragment() {
         val configurationBuilder =
             if (useAmazonStore) {
                 AmazonConfiguration.Builder(application, apiKey)
-            } else PurchasesConfiguration.Builder(application, apiKey)
+            } else {
+                PurchasesConfiguration.Builder(application, apiKey)
+            }
 
         val configuration = configurationBuilder
             .diagnosticsEnabled(true)

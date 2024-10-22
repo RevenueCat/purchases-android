@@ -272,7 +272,9 @@ internal class BillingWrapper(
             val productId =
                 if (replaceProductInfo?.replacementMode == GoogleReplacementMode.DEFERRED) {
                     replaceProductInfo.oldPurchase.productIds.first()
-                } else googlePurchasingData.productId
+                } else {
+                    googlePurchasingData.productId
+                }
             purchaseContext[productId] = PurchaseContext(
                 googlePurchasingData.productType,
                 presentedOfferingContext,
