@@ -15,6 +15,15 @@ interface RedeemWebPurchaseListener {
     sealed class Result {
         data class Success(val customerInfo: CustomerInfo) : Result()
         data class Error(val error: PurchasesError) : Result()
+
+        /**
+         * Whether the redemption was successful or not.
+         */
+        val isSuccess: Boolean
+            get() = when (this) {
+                is Success -> true
+                is Error -> false
+            }
     }
 
     /**

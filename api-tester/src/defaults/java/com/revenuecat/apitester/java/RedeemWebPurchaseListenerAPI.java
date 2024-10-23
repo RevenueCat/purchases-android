@@ -31,5 +31,7 @@ final class RedeemWebPurchaseListenerAPI {
         } else if (result instanceof RedeemWebPurchaseListener.Result.Error) {
             PurchasesError error = ((RedeemWebPurchaseListener.Result.Error) result).getError();
         }
+
+        boolean isSuccess = result.isSuccess();
     }
 }

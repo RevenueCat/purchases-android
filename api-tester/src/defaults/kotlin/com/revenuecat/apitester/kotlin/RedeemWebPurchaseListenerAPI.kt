@@ -31,6 +31,8 @@ private class RedeemWebPurchaseListenerAPI {
     }
 
     fun checkResult(result: RedeemWebPurchaseListener.Result): Boolean {
+        val isSuccess: Boolean = result.isSuccess
+
         when (result) {
             is RedeemWebPurchaseListener.Result.Success -> {
                 val customerInfo: CustomerInfo = result.customerInfo
