@@ -8,6 +8,7 @@ import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.infoLog
 import com.revenuecat.purchases.common.log
+import com.revenuecat.purchases.deeplinks.DeepLinkParser
 import com.revenuecat.purchases.interfaces.Callback
 import com.revenuecat.purchases.interfaces.GetAmazonLWAConsentStatusCallback
 import com.revenuecat.purchases.interfaces.GetCustomerCenterConfigCallback
@@ -16,6 +17,7 @@ import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback
+import com.revenuecat.purchases.interfaces.RedeemWebPurchaseListener
 import com.revenuecat.purchases.interfaces.SyncAttributesAndOfferingsCallback
 import com.revenuecat.purchases.interfaces.SyncPurchasesCallback
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
@@ -97,6 +99,18 @@ class Purchases internal constructor(
 
         @Synchronized set(value) {
             purchasesOrchestrator.updatedCustomerInfoListener = value
+        }
+
+    /**
+     * Set a value to be able to handle redemptions of RevenueCat web purchases.
+     * You can set to null to destroy the listener.
+     */
+    @ExperimentalPreviewRevenueCatPurchasesAPI
+    var redeemWebPurchaseListener: RedeemWebPurchaseListener?
+        @Synchronized get() = purchasesOrchestrator.redeemWebPurchaseListener
+
+        @Synchronized set(value) {
+            purchasesOrchestrator.redeemWebPurchaseListener = value
         }
 
     /**
@@ -787,6 +801,10 @@ class Purchases internal constructor(
         purchasesOrchestrator.getAmazonLWAConsentStatus(callback)
     }
     // endregion
+
+    internal fun handleDeepLink(deepLink: DeepLinkParser.DeepLink): Boolean {
+        return purchasesOrchestrator.handleDeepLink(deepLink)
+    }
 
     // region Static
     companion object {
