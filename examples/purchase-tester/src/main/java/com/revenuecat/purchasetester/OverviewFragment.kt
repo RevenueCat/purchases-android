@@ -20,6 +20,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.transition.MaterialElevationScale
 import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.PurchaseParams
@@ -29,6 +30,7 @@ import com.revenuecat.purchases.getAmazonLWAConsentStatusWith
 import com.revenuecat.purchases.getOfferingsWith
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
+import com.revenuecat.purchases.interfaces.RedeemWebResultListener
 import com.revenuecat.purchases.interfaces.SyncAttributesAndOfferingsCallback
 import com.revenuecat.purchases.logOutWith
 import com.revenuecat.purchases.models.GoogleStoreProduct
@@ -110,6 +112,27 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
                     })
                 }
             }.collect()
+        }
+    }
+
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    override fun onResume() {
+        super.onResume()
+
+        val activity = requireActivity() as MainActivity
+        val deepLink = activity.rcDeepLink ?: return
+        if (deepLink is Purchases.DeepLink.WebRedemptionLink) {
+            activity.clearDeepLink()
+            Purchases.sharedInstance.redeemWebPurchase(deepLink) { result ->
+                when (result) {
+                    is RedeemWebResultListener.Result.Success -> {
+                        showToast("Successfully redeemed web purchase. Updating customer info.")
+                    }
+                    is RedeemWebResultListener.Result.Error -> {
+                        showUserError(requireActivity(), result.error)
+                    }
+                }
+            }
         }
     }
 

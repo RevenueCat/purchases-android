@@ -181,6 +181,11 @@ class Purchases internal constructor(
     }
     //endregion
 
+    @ExperimentalPreviewRevenueCatPurchasesAPI
+    sealed class DeepLink {
+        class WebRedemptionLink internal constructor(internal val redemptionToken: String) : DeepLink()
+    }
+
     // region Static
     companion object {
 

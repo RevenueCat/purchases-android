@@ -3,11 +3,13 @@ package com.revenuecat.purchases
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Context
+import android.content.Intent
 import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.infoLog
 import com.revenuecat.purchases.common.log
+import com.revenuecat.purchases.deeplinks.DeepLinkParser
 import com.revenuecat.purchases.interfaces.Callback
 import com.revenuecat.purchases.interfaces.GetAmazonLWAConsentStatusCallback
 import com.revenuecat.purchases.interfaces.GetCustomerCenterConfigCallback
@@ -16,6 +18,7 @@ import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback
+import com.revenuecat.purchases.interfaces.RedeemWebResultListener
 import com.revenuecat.purchases.interfaces.SyncAttributesAndOfferingsCallback
 import com.revenuecat.purchases.interfaces.SyncPurchasesCallback
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
@@ -788,8 +791,25 @@ class Purchases internal constructor(
     }
     // endregion
 
+    @ExperimentalPreviewRevenueCatPurchasesAPI
+    fun redeemWebPurchase(webRedemptionLink: DeepLink.WebRedemptionLink, listener: RedeemWebResultListener) {
+        purchasesOrchestrator.redeemWebPurchase(webRedemptionLink, listener)
+    }
+
+    @ExperimentalPreviewRevenueCatPurchasesAPI
+    sealed class DeepLink {
+        class WebRedemptionLink internal constructor(internal val redemptionToken: String) : DeepLink()
+    }
+
     // region Static
     companion object {
+
+        @ExperimentalPreviewRevenueCatPurchasesAPI
+        @JvmStatic
+        fun parseIntent(intent: Intent?): DeepLink? {
+            val intentData = intent?.data ?: return null
+            return DeepLinkParser().parseDeepLink(intentData)
+        }
 
         /**
          * DO NOT MODIFY. This is used internally by the Hybrid SDKs to indicate which platform is

@@ -92,6 +92,9 @@ internal open class BasePurchasesTest {
     protected val mockActivity: Activity = mockk()
     protected val subscriptionOptionId = "mock-base-plan-id:mock-offer-id"
 
+    protected open val shouldConfigureOnSetUp: Boolean
+        get() = true
+
     @Before
     fun setUp() {
         mockkStatic(ProcessLifecycleOwner::class)
@@ -123,7 +126,9 @@ internal open class BasePurchasesTest {
             mockPaywallEventsManager.flushEvents()
         } just Runs
 
-        anonymousSetup(false)
+        if (shouldConfigureOnSetUp) {
+            anonymousSetup(false)
+        }
     }
 
     @After
