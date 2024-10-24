@@ -20,7 +20,6 @@ import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsSynchronizer
 import com.revenuecat.purchases.common.offerings.OfferingsManager
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
-import com.revenuecat.purchases.deeplinks.DeepLinkHandler
 import com.revenuecat.purchases.google.toInAppStoreProduct
 import com.revenuecat.purchases.google.toStoreTransaction
 import com.revenuecat.purchases.identity.IdentityManager
@@ -96,10 +95,8 @@ internal open class BasePurchasesTest {
     protected open val shouldConfigureOnSetUp: Boolean
         get() = true
 
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     @Before
     fun setUp() {
-        DeepLinkHandler.clearCachedLinks()
         mockkStatic(ProcessLifecycleOwner::class)
 
         val productIds = listOf(STUB_PRODUCT_IDENTIFIER)

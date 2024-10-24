@@ -13,7 +13,6 @@ import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.revenuecat.purchases.EntitlementVerificationMode
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.LogLevel
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesAreCompletedBy
@@ -118,7 +117,6 @@ class ConfigureFragment : Fragment() {
         return binding.root
     }
 
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     private suspend fun configureSDK() {
         val apiKey = binding.apiKeyInput.text.toString()
         val proxyUrl = binding.proxyUrlInput.text?.toString() ?: ""
@@ -164,7 +162,6 @@ class ConfigureFragment : Fragment() {
         Purchases.sharedInstance.setAttributes(mapOf("favorite_cat" to "garfield"))
 
         Purchases.sharedInstance.updatedCustomerInfoListener = application
-        Purchases.sharedInstance.redeemWebPurchaseListener = application
 
         dataStoreUtils.saveSdkConfig(SdkConfiguration(apiKey, proxyUrl, useAmazonStore))
     }

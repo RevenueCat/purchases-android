@@ -12,15 +12,12 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.revenuecat.purchases.CustomerInfo
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.LogLevel
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
-import com.revenuecat.purchases.interfaces.RedeemWebPurchaseListener
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
-class MainApplication : Application(), UpdatedCustomerInfoListener, RedeemWebPurchaseListener {
+class MainApplication : Application(), UpdatedCustomerInfoListener {
 
     val logHandler = TesterLogHandler(this)
 
@@ -46,25 +43,6 @@ class MainApplication : Application(), UpdatedCustomerInfoListener, RedeemWebPur
             Toast.LENGTH_SHORT,
         ).show()
         Log.d("CustomerInfoListener", "$message: $customerInfo")
-    }
-
-    override fun handleWebPurchaseRedemption(
-        webPurchaseRedeemer: RedeemWebPurchaseListener.WebPurchaseRedeemer,
-    ) {
-        webPurchaseRedeemer.redeemWebPurchase(object : RedeemWebPurchaseListener.ResultListener {
-            override fun handleResult(result: RedeemWebPurchaseListener.Result) {
-                val message = when (result) {
-                    is RedeemWebPurchaseListener.Result.Success -> "Redeem RC Billing purchase successful"
-                    is RedeemWebPurchaseListener.Result.Error -> "Redeem RC Billing purchase failed"
-                }
-                Toast.makeText(
-                    this@MainApplication,
-                    message,
-                    Toast.LENGTH_SHORT,
-                ).show()
-                Log.d("Purchase Tester", message)
-            }
-        })
     }
 }
 

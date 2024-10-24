@@ -34,8 +34,6 @@ import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsMa
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.subscriberattributes.SubscriberAttributeKey
 import com.revenuecat.purchases.common.warnLog
-import com.revenuecat.purchases.deeplinks.DeepLinkHandler
-import com.revenuecat.purchases.deeplinks.DeepLinkParser
 import com.revenuecat.purchases.deeplinks.WebPurchaseRedemptionHelper
 import com.revenuecat.purchases.google.isSuccessful
 import com.revenuecat.purchases.identity.IdentityManager
@@ -49,7 +47,7 @@ import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.interfaces.PurchaseErrorCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback
-import com.revenuecat.purchases.interfaces.RedeemWebPurchaseListener
+import com.revenuecat.purchases.interfaces.RedeemWebResultListener
 import com.revenuecat.purchases.interfaces.SyncAttributesAndOfferingsCallback
 import com.revenuecat.purchases.interfaces.SyncPurchasesCallback
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
@@ -146,15 +144,6 @@ internal class PurchasesOrchestrator(
             customerInfoUpdateHandler.updatedCustomerInfoListener = value
         }
 
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
-    var redeemWebPurchaseListener: RedeemWebPurchaseListener?
-        @Synchronized get() = webPurchaseRedemptionHelper.redeemWebPurchaseListener
-
-        @Synchronized set(value) {
-            webPurchaseRedemptionHelper.redeemWebPurchaseListener = value
-            processCachedDeepLinks()
-        }
-
     val isAnonymous: Boolean
         get() = identityManager.currentUserIsAnonymous()
 
@@ -248,7 +237,6 @@ internal class PurchasesOrchestrator(
             if (firstTimeInForeground && isAndroidNOrNewer()) {
                 diagnosticsSynchronizer?.syncDiagnosticsFileIfNeeded()
             }
-            processCachedDeepLinks()
         }
     }
 
@@ -258,12 +246,12 @@ internal class PurchasesOrchestrator(
         }
     }
 
-    fun handleDeepLink(deepLink: DeepLinkParser.DeepLink): Boolean {
-        when (deepLink) {
-            is DeepLinkParser.DeepLink.RedeemWebPurchase -> {
-                return webPurchaseRedemptionHelper.handleRedeemWebPurchase(deepLink)
-            }
-        }
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    fun redeemWebPurchase(
+        webRedemptionLink: Purchases.DeepLink.WebRedemptionLink,
+        listener: RedeemWebResultListener,
+    ) {
+        webPurchaseRedemptionHelper.handleRedeemWebPurchase(webRedemptionLink, listener)
     }
 
     // region Public Methods
@@ -534,10 +522,7 @@ internal class PurchasesOrchestrator(
         }
     }
 
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     fun close() {
-        // Clear any unprocessed deep links
-        DeepLinkHandler.clearCachedLinks()
         synchronized(this@PurchasesOrchestrator) {
             state = state.copy(purchaseCallbacksByProductId = Collections.emptyMap())
         }
@@ -1249,14 +1234,6 @@ internal class PurchasesOrchestrator(
     private fun flushPaywallEvents() {
         if (isAndroidNOrNewer()) {
             paywallEventsManager?.flushEvents()
-        }
-    }
-
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
-    @Synchronized
-    private fun processCachedDeepLinks() {
-        DeepLinkHandler.forEachCachedLink { deepLink ->
-            handleDeepLink(deepLink)
         }
     }
 

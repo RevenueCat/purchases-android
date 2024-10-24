@@ -3,6 +3,7 @@ package com.revenuecat.purchases
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Context
+import android.content.Intent
 import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.PlatformInfo
@@ -17,7 +18,7 @@ import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback
-import com.revenuecat.purchases.interfaces.RedeemWebPurchaseListener
+import com.revenuecat.purchases.interfaces.RedeemWebResultListener
 import com.revenuecat.purchases.interfaces.SyncAttributesAndOfferingsCallback
 import com.revenuecat.purchases.interfaces.SyncPurchasesCallback
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
@@ -99,18 +100,6 @@ class Purchases internal constructor(
 
         @Synchronized set(value) {
             purchasesOrchestrator.updatedCustomerInfoListener = value
-        }
-
-    /**
-     * Set a value to be able to handle redemptions of RevenueCat web purchases.
-     * You can set to null to destroy the listener.
-     */
-    @ExperimentalPreviewRevenueCatPurchasesAPI
-    var redeemWebPurchaseListener: RedeemWebPurchaseListener?
-        @Synchronized get() = purchasesOrchestrator.redeemWebPurchaseListener
-
-        @Synchronized set(value) {
-            purchasesOrchestrator.redeemWebPurchaseListener = value
         }
 
     /**
@@ -802,12 +791,25 @@ class Purchases internal constructor(
     }
     // endregion
 
-    internal fun handleDeepLink(deepLink: DeepLinkParser.DeepLink): Boolean {
-        return purchasesOrchestrator.handleDeepLink(deepLink)
+    @ExperimentalPreviewRevenueCatPurchasesAPI
+    fun redeemWebPurchase(webRedemptionLink: DeepLink.WebRedemptionLink, listener: RedeemWebResultListener) {
+        purchasesOrchestrator.redeemWebPurchase(webRedemptionLink, listener)
+    }
+
+    @ExperimentalPreviewRevenueCatPurchasesAPI
+    sealed class DeepLink {
+        class WebRedemptionLink internal constructor(internal val redemptionToken: String) : DeepLink()
     }
 
     // region Static
     companion object {
+
+        @ExperimentalPreviewRevenueCatPurchasesAPI
+        @JvmStatic
+        fun parseIntent(intent: Intent?): DeepLink? {
+            val intentData = intent?.data ?: return null
+            return DeepLinkParser().parseDeepLink(intentData)
+        }
 
         /**
          * DO NOT MODIFY. This is used internally by the Hybrid SDKs to indicate which platform is

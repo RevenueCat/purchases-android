@@ -27,6 +27,7 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:scheme="revenuecatbilling" />
+                <data android:scheme="rc-43e41a79a1" />
             </intent-filter>
         </activity>
     </application>
