@@ -5,8 +5,7 @@ import com.revenuecat.purchases.common.debugLog
 
 internal class DeepLinkParser {
     companion object {
-        // WIP: Update deep link host
-        private const val REDEEM_WEB_PURCHASE_HOST = "redeem_rcb_purchase"
+        private const val REDEEM_WEB_PURCHASE_HOST = "redeem_web_purchase"
     }
 
     sealed class DeepLink {
