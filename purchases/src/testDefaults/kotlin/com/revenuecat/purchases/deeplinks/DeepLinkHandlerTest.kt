@@ -29,7 +29,7 @@ internal class DeepLinkHandlerTest: BasePurchasesTest() {
     fun setUpDeepLinkHandlerTests() {
         intent = mockk()
 
-        every { intent.data } returns Uri.parse("revenuecatbilling://redeem_rcb_purchase?redemption_token=token")
+        every { intent.data } returns Uri.parse("revenuecatbilling://redeem_web_purchase?redemption_token=token")
     }
 
     @Test
@@ -57,7 +57,7 @@ internal class DeepLinkHandlerTest: BasePurchasesTest() {
     @Test
     fun `if SDK is not configured, multiple deep link are cached`() {
         val intent2 = mockk<Intent>()
-        every { intent2.data } returns Uri.parse("revenuecatbilling://redeem_rcb_purchase?redemption_token=token2")
+        every { intent2.data } returns Uri.parse("revenuecatbilling://redeem_web_purchase?redemption_token=token2")
         DeepLinkHandler.handleDeepLink(intent)
         DeepLinkHandler.handleDeepLink(intent2)
         val deepLinksCached = mutableListOf<DeepLinkParser.DeepLink>()
@@ -72,7 +72,7 @@ internal class DeepLinkHandlerTest: BasePurchasesTest() {
     @Test
     fun `when processing deep links, if returning not handled they remain cached`() {
         val intent2 = mockk<Intent>()
-        every { intent2.data } returns Uri.parse("revenuecatbilling://redeem_rcb_purchase?redemption_token=token2")
+        every { intent2.data } returns Uri.parse("revenuecatbilling://redeem_web_purchase?redemption_token=token2")
         DeepLinkHandler.handleDeepLink(intent)
         DeepLinkHandler.handleDeepLink(intent2)
         val deepLinksCached = mutableListOf<DeepLinkParser.DeepLink>()
@@ -95,7 +95,7 @@ internal class DeepLinkHandlerTest: BasePurchasesTest() {
     @Test
     fun `if not configured, if disabling caching`() {
         val intent2 = mockk<Intent>()
-        every { intent2.data } returns Uri.parse("revenuecatbilling://redeem_rcb_purchase?redemption_token=token2")
+        every { intent2.data } returns Uri.parse("revenuecatbilling://redeem_web_purchase?redemption_token=token2")
         DeepLinkHandler.handleDeepLink(intent, shouldCache = false)
         DeepLinkHandler.handleDeepLink(intent2, shouldCache = true)
         val deepLinksCached = mutableListOf<DeepLinkParser.DeepLink>()
@@ -109,7 +109,7 @@ internal class DeepLinkHandlerTest: BasePurchasesTest() {
     @Test
     fun `if not configured, and cached deep link accessed in different threads only processed once`() {
         val intent2 = mockk<Intent>()
-        every { intent2.data } returns Uri.parse("revenuecatbilling://redeem_rcb_purchase?redemption_token=token2")
+        every { intent2.data } returns Uri.parse("revenuecatbilling://redeem_web_purchase?redemption_token=token2")
         DeepLinkHandler.handleDeepLink(intent)
         DeepLinkHandler.handleDeepLink(intent2)
         val deepLinksCachedThread1 = mutableListOf<DeepLinkParser.DeepLink>()
@@ -139,7 +139,7 @@ internal class DeepLinkHandlerTest: BasePurchasesTest() {
     @Test
     fun `if not configured, and cached deep link accessed in different threads but not processed are processed again`() {
         val intent2 = mockk<Intent>()
-        every { intent2.data } returns Uri.parse("revenuecatbilling://redeem_rcb_purchase?redemption_token=token2")
+        every { intent2.data } returns Uri.parse("revenuecatbilling://redeem_web_purchase?redemption_token=token2")
         DeepLinkHandler.handleDeepLink(intent)
         DeepLinkHandler.handleDeepLink(intent2)
         val deepLinksCachedThread1 = mutableListOf<DeepLinkParser.DeepLink>()
