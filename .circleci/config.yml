@@ -48,7 +48,7 @@ orbs:
 parameters:
   action:
     type: enum
-    enum: [default, bump, paywall_tester_release, generate_revenuecatui_snapshots, deploy_snapshot]
+    enum: [default, bump, paywall_tester_release, generate_revenuecatui_snapshots, deploy_snapshot_release]
     default: default
 
 commands:
@@ -624,7 +624,7 @@ workflows:
 
   snapshot-deploy-manual:
     when:
-      equal: [ deploy_snapshot, << pipeline.parameters.action >> ]
+      equal: [ deploy_snapshot_release, << pipeline.parameters.action >> ]
     jobs:
       - deploy-snapshot
 
