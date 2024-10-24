@@ -48,7 +48,7 @@ orbs:
 parameters:
   action:
     type: enum
-    enum: [default, bump, paywall_tester_release, generate_revenuecatui_snapshots]
+    enum: [default, bump, paywall_tester_release, generate_revenuecatui_snapshots, deploy_snapshot_release]
     default: default
 
 commands:
@@ -621,6 +621,12 @@ workflows:
         equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
     jobs:
       - revenuecat/danger
+
+  snapshot-deploy-manual:
+    when:
+      equal: [ deploy_snapshot_release, << pipeline.parameters.action >> ]
+    jobs:
+      - deploy-snapshot
 
   snapshot-deploy-sample-app-tests:
     when:
