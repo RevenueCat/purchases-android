@@ -54,3 +54,8 @@
 -keep class kotlinx.serialization.internal.ClassValueParametrizedCache$initClassValue$1 { ** computeValue(java.lang.Class); }
 -keep class kotlinx.serialization.internal.ClassValueCache$initClassValue$1 { ** computeValue(java.lang.Class); }
 # END Keep kotlinx.serialization annotations.
+
+# The org.json package is part of the Android framework, so the classes are always available.
+# However, sometimes it gets added to the app's classpath, either explicitly or transitively. When
+# this happens, it becomes susceptible to be shrunk. The following rule avoids that.
+-keep class org.json.* { *; }
