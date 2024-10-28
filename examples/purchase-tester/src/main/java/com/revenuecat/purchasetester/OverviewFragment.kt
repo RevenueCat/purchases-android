@@ -30,7 +30,7 @@ import com.revenuecat.purchases.getAmazonLWAConsentStatusWith
 import com.revenuecat.purchases.getOfferingsWith
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
-import com.revenuecat.purchases.interfaces.RedeemWebResultListener
+import com.revenuecat.purchases.interfaces.RedeemWebPurchaseListener
 import com.revenuecat.purchases.interfaces.SyncAttributesAndOfferingsCallback
 import com.revenuecat.purchases.logOutWith
 import com.revenuecat.purchases.models.GoogleStoreProduct
@@ -121,14 +121,14 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
 
         val activity = requireActivity() as MainActivity
         val deepLink = activity.rcDeepLink ?: return
-        if (deepLink is Purchases.DeepLink.WebRedemptionLink) {
+        if (deepLink is Purchases.DeepLink.WebPurchaseRedemption) {
             activity.clearDeepLink()
             Purchases.sharedInstance.redeemWebPurchase(deepLink) { result ->
                 when (result) {
-                    is RedeemWebResultListener.Result.Success -> {
+                    is RedeemWebPurchaseListener.Result.Success -> {
                         showToast("Successfully redeemed web purchase. Updating customer info.")
                     }
-                    is RedeemWebResultListener.Result.Error -> {
+                    is RedeemWebPurchaseListener.Result.Error -> {
                         showUserError(requireActivity(), result.error)
                     }
                 }

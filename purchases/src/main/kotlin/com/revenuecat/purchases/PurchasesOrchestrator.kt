@@ -47,7 +47,7 @@ import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.interfaces.PurchaseErrorCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback
-import com.revenuecat.purchases.interfaces.RedeemWebResultListener
+import com.revenuecat.purchases.interfaces.RedeemWebPurchaseListener
 import com.revenuecat.purchases.interfaces.SyncAttributesAndOfferingsCallback
 import com.revenuecat.purchases.interfaces.SyncPurchasesCallback
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
@@ -248,10 +248,10 @@ internal class PurchasesOrchestrator(
 
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     fun redeemWebPurchase(
-        webRedemptionLink: Purchases.DeepLink.WebRedemptionLink,
-        listener: RedeemWebResultListener,
+        webPurchaseRedemption: Purchases.DeepLink.WebPurchaseRedemption,
+        listener: RedeemWebPurchaseListener,
     ) {
-        webPurchaseRedemptionHelper.handleRedeemWebPurchase(webRedemptionLink, listener)
+        webPurchaseRedemptionHelper.handleRedeemWebPurchase(webPurchaseRedemption, listener)
     }
 
     // region Public Methods

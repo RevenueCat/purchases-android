@@ -10,7 +10,7 @@ import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
 import com.revenuecat.purchases.identity.IdentityManager
-import com.revenuecat.purchases.interfaces.RedeemWebResultListener
+import com.revenuecat.purchases.interfaces.RedeemWebPurchaseListener
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 internal class WebPurchaseRedemptionHelper(
@@ -21,8 +21,8 @@ internal class WebPurchaseRedemptionHelper(
     private val mainHandler: Handler? = Handler(Looper.getMainLooper()),
 ) {
     fun handleRedeemWebPurchase(
-        deepLink: Purchases.DeepLink.WebRedemptionLink,
-        listener: RedeemWebResultListener,
+        deepLink: Purchases.DeepLink.WebPurchaseRedemption,
+        listener: RedeemWebPurchaseListener,
     ) {
         debugLog("Starting redeeming web purchase.")
         backend.postRedeemWebPurchase(
@@ -30,20 +30,20 @@ internal class WebPurchaseRedemptionHelper(
             deepLink.redemptionToken,
             onErrorHandler = {
                 errorLog("Error redeeming web purchase: $it")
-                dispatchResult(listener, RedeemWebResultListener.Result.Error(it))
+                dispatchResult(listener, RedeemWebPurchaseListener.Result.Error(it))
             },
             onSuccessHandler = {
                 debugLog("Successfully redeemed web purchase. Updating customer info.")
                 offlineEntitlementsManager.resetOfflineCustomerInfoCache()
                 customerInfoUpdateHandler.cacheAndNotifyListeners(it)
-                dispatchResult(listener, RedeemWebResultListener.Result.Success(it))
+                dispatchResult(listener, RedeemWebPurchaseListener.Result.Success(it))
             },
         )
     }
 
     private fun dispatchResult(
-        resultListener: RedeemWebResultListener,
-        result: RedeemWebResultListener.Result,
+        resultListener: RedeemWebPurchaseListener,
+        result: RedeemWebPurchaseListener.Result,
     ) {
         dispatch { resultListener.handleResult(result) }
     }

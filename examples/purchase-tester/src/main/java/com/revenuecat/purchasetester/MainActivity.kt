@@ -15,12 +15,14 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        rcDeepLink = Purchases.parseIntent(intent)
+        rcDeepLink = Purchases.parseAsDeepLink(intent)
     }
 
     override fun onNewIntent(intent: Intent?) {
         super.onNewIntent(intent)
-        rcDeepLink = Purchases.parseIntent(intent)
+        if (intent != null) {
+            rcDeepLink = Purchases.parseAsDeepLink(intent)
+        }
     }
 
     fun clearDeepLink() {
