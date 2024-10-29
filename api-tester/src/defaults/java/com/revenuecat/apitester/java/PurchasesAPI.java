@@ -1,13 +1,16 @@
 package com.revenuecat.apitester.java;
 
 import android.content.Context;
+import android.content.Intent;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.OptIn;
 
 import com.revenuecat.purchases.AmazonLWAConsentStatus;
 import com.revenuecat.purchases.CacheFetchPolicy;
 import com.revenuecat.purchases.CustomerInfo;
 import com.revenuecat.purchases.EntitlementVerificationMode;
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI;
 import com.revenuecat.purchases.Offerings;
 import com.revenuecat.purchases.Purchases;
 import com.revenuecat.purchases.PurchasesAreCompletedBy;
@@ -18,6 +21,7 @@ import com.revenuecat.purchases.amazon.AmazonConfiguration;
 import com.revenuecat.purchases.interfaces.GetAmazonLWAConsentStatusCallback;
 import com.revenuecat.purchases.interfaces.LogInCallback;
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback;
+import com.revenuecat.purchases.interfaces.RedeemWebPurchaseListener;
 import com.revenuecat.purchases.interfaces.SyncAttributesAndOfferingsCallback;
 import com.revenuecat.purchases.interfaces.SyncPurchasesCallback;
 
@@ -26,9 +30,15 @@ import org.jetbrains.annotations.NotNull;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 
+@OptIn(markerClass = ExperimentalPreviewRevenueCatPurchasesAPI.class)
 @SuppressWarnings({"unused"})
 final class PurchasesAPI {
-    static void check(final Purchases purchases) {
+    static void check(
+            final Purchases purchases,
+            final Purchases.DeepLink.WebPurchaseRedemption deepLink,
+            final RedeemWebPurchaseListener redeemWebPurchaseListener,
+            final Intent intent
+            ) {
         final ReceiveCustomerInfoCallback receiveCustomerInfoListener = new ReceiveCustomerInfoCallback() {
             @Override
             public void onReceived(@NonNull CustomerInfo customerInfo) {
@@ -85,6 +95,7 @@ final class PurchasesAPI {
         purchases.getCustomerInfo(receiveCustomerInfoListener);
         purchases.getCustomerInfo(CacheFetchPolicy.CACHED_OR_FETCHED, receiveCustomerInfoListener);
         purchases.getAmazonLWAConsentStatus(getAmazonLWAContentStatusCallback);
+        purchases.redeemWebPurchase(deepLink, redeemWebPurchaseListener);
 
         purchases.restorePurchases(receiveCustomerInfoListener);
         purchases.invalidateCustomerInfoCache();
@@ -102,6 +113,8 @@ final class PurchasesAPI {
         final String storefrontCountryCode = purchases.getStorefrontCountryCode();
 
         final PurchasesConfiguration configuration = purchases.getCurrentConfiguration();
+
+        final Purchases.DeepLink parsedDeepLink = Purchases.parseAsDeepLink(intent);
     }
 
     static void check(final Purchases purchases, final Map<String, String> attributes) {

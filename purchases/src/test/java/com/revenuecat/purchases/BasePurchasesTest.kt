@@ -20,6 +20,7 @@ import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsSynchronizer
 import com.revenuecat.purchases.common.offerings.OfferingsManager
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
+import com.revenuecat.purchases.deeplinks.WebPurchaseRedemptionHelper
 import com.revenuecat.purchases.google.toInAppStoreProduct
 import com.revenuecat.purchases.google.toStoreTransaction
 import com.revenuecat.purchases.identity.IdentityManager
@@ -74,6 +75,7 @@ internal open class BasePurchasesTest {
     internal val mockSyncPurchasesHelper = mockk<SyncPurchasesHelper>()
     protected val mockOfferingsManager = mockk<OfferingsManager>()
     internal val mockPaywallEventsManager = mockk<PaywallEventsManager>()
+    internal val mockWebPurchasesRedemptionHelper = mockk<WebPurchaseRedemptionHelper>()
     private val purchasesStateProvider = PurchasesStateCache(PurchasesState())
 
     protected var capturedPurchasesUpdatedListener = slot<BillingAbstract.PurchasesUpdatedListener>()
@@ -142,6 +144,7 @@ internal open class BasePurchasesTest {
             mockCustomerInfoUpdateHandler,
             mockPostPendingTransactionsHelper,
             mockPaywallEventsManager,
+            mockWebPurchasesRedemptionHelper,
         )
         unmockkStatic(ProcessLifecycleOwner::class)
     }
@@ -416,7 +419,8 @@ internal open class BasePurchasesTest {
             paywallPresentedCache = paywallPresentedCache,
             purchasesStateCache = purchasesStateProvider,
             dispatcher = SyncDispatcher(),
-            initialConfiguration = PurchasesConfiguration.Builder(mockContext, "api_key").build()
+            initialConfiguration = PurchasesConfiguration.Builder(mockContext, "api_key").build(),
+            webPurchaseRedemptionHelper = mockWebPurchasesRedemptionHelper,
         )
         purchases = Purchases(purchasesOrchestrator)
         Purchases.sharedInstance = purchases

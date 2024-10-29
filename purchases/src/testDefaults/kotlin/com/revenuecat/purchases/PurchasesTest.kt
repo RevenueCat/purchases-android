@@ -11,6 +11,7 @@ import com.revenuecat.purchases.common.CustomerInfoFactory
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.ReplaceProductInfo
+import com.revenuecat.purchases.common.createCustomerInfo
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.google.toInAppStoreProduct
@@ -20,6 +21,7 @@ import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
 import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
+import com.revenuecat.purchases.interfaces.RedeemWebPurchaseListener
 import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreTransaction
@@ -34,6 +36,7 @@ import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
+import io.mockk.slot
 import io.mockk.verify
 import io.mockk.verifyAll
 import org.assertj.core.api.Assertions.assertThat
@@ -1507,6 +1510,39 @@ internal class PurchasesTest : BasePurchasesTest() {
 
         assertThat(receivedError).isEqualTo(expectedError)
     }
+
+    // region redeemWebPurchase
+
+    @Test
+    fun `redeemWebPurchase is successful if helper returns success`() {
+        val redemptionLink = Purchases.DeepLink.WebPurchaseRedemption("redemption_token")
+        val slot = slot<RedeemWebPurchaseListener>()
+        every { mockWebPurchasesRedemptionHelper.handleRedeemWebPurchase(redemptionLink, capture(slot)) } answers {
+            slot.captured.handleResult(RedeemWebPurchaseListener.Result.Success(mockInfo))
+        }
+        var result: RedeemWebPurchaseListener.Result? = null
+        purchases.redeemWebPurchase(redemptionLink) {
+            result = it
+        }
+        assertThat(result).isEqualTo(RedeemWebPurchaseListener.Result.Success(mockInfo))
+    }
+
+    @Test
+    fun `redeemWebPurchase errors if helper returns error`() {
+        val redemptionLink = Purchases.DeepLink.WebPurchaseRedemption("redemption_token")
+        val slot = slot<RedeemWebPurchaseListener>()
+        val expectedError = PurchasesError(PurchasesErrorCode.UnknownBackendError)
+        every { mockWebPurchasesRedemptionHelper.handleRedeemWebPurchase(redemptionLink, capture(slot)) } answers {
+            slot.captured.handleResult(RedeemWebPurchaseListener.Result.Error(expectedError))
+        }
+        var result: RedeemWebPurchaseListener.Result? = null
+        purchases.redeemWebPurchase(redemptionLink) {
+            result = it
+        }
+        assertThat(result).isEqualTo(RedeemWebPurchaseListener.Result.Error(expectedError))
+    }
+
+    // endregion redeemWebPurchase
 
     // region Private Methods
 
