@@ -150,7 +150,7 @@ private fun PurchaseButton(
                         fontWeight = FontWeight.SemiBold,
                         allowLinks = false,
                         modifier = Modifier
-                            .padding(vertical = UIConstant.defaultVerticalSpacing / 3)
+                            .padding(vertical = UIConstant.defaultVerticalSpacing * 2 / 3)
                             .alpha(labelOpacity),
                     )
                 }
