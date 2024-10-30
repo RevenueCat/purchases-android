@@ -189,7 +189,7 @@ class Purchases internal constructor(
         /**
          * Represents a web redemption link, that can be redeemed using [Purchases.redeemWebPurchase]
          */
-        class WebPurchaseRedemption internal constructor(internal val redemptionToken: String) : DeepLink()
+        class WebPurchaseRedemption internal constructor(internal val redemptionToken: String) : DeepLink
     }
 
     // region Static
