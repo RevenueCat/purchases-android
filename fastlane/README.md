@@ -53,7 +53,7 @@ Record/Update snapshots for tests in the debug view library
 [bundle exec] fastlane android emerge_purchases_ui_snapshot_tests
 ```
 
-Run snapshot tests for the purchases UI library
+Emerge snapshot tests
 
 ### android bump
 
