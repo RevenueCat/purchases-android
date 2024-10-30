@@ -24,7 +24,7 @@ internal class WebPurchaseRedemptionHelper(
         deepLink: Purchases.DeepLink.WebPurchaseRedemption,
         listener: RedeemWebPurchaseListener,
     ) {
-        debugLog("Starting redeeming web purchase.")
+        debugLog("Starting web purchase redemption.")
         backend.postRedeemWebPurchase(
             identityManager.currentAppUserID,
             deepLink.redemptionToken,

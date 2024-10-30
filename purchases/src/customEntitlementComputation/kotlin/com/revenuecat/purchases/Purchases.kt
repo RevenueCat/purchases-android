@@ -185,7 +185,7 @@ class Purchases internal constructor(
      * Represents a valid RevenueCat deep link.
      */
     @ExperimentalPreviewRevenueCatPurchasesAPI
-    sealed class DeepLink {
+    sealed interface DeepLink {
         /**
          * Represents a web redemption link, that can be redeemed using [Purchases.redeemWebPurchase]
          */
