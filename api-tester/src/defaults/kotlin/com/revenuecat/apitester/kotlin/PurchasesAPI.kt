@@ -1,6 +1,7 @@
 package com.revenuecat.apitester.kotlin
 
 import android.content.Context
+import android.content.Intent
 import com.revenuecat.purchases.AmazonLWAConsentStatus
 import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfo
@@ -28,6 +29,7 @@ import com.revenuecat.purchases.getCustomerInfoWith
 import com.revenuecat.purchases.interfaces.GetAmazonLWAConsentStatusCallback
 import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
+import com.revenuecat.purchases.interfaces.RedeemWebPurchaseListener
 import com.revenuecat.purchases.interfaces.SyncAttributesAndOfferingsCallback
 import com.revenuecat.purchases.interfaces.SyncPurchasesCallback
 import com.revenuecat.purchases.logInWith
@@ -37,11 +39,15 @@ import com.revenuecat.purchases.syncAttributesAndOfferingsIfNeededWith
 import com.revenuecat.purchases.syncPurchasesWith
 import java.util.concurrent.ExecutorService
 
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Suppress("unused", "UNUSED_VARIABLE", "EmptyFunctionBlock", "DEPRECATION")
 private class PurchasesAPI {
     @SuppressWarnings("LongParameterList")
     fun check(
         purchases: Purchases,
+        deepLink: Purchases.DeepLink.WebPurchaseRedemption,
+        redeemWebPurchaseListener: RedeemWebPurchaseListener,
+        intent: Intent,
     ) {
         val receiveCustomerInfoCallback = object : ReceiveCustomerInfoCallback {
             override fun onReceived(customerInfo: CustomerInfo) {}
@@ -92,6 +98,15 @@ private class PurchasesAPI {
         val countryCode = purchases.storefrontCountryCode
 
         val configuration: PurchasesConfiguration = purchases.currentConfiguration
+
+        purchases.redeemWebPurchase(deepLink, redeemWebPurchaseListener)
+        val parsedDeepLink: Purchases.DeepLink? = Purchases.parseAsDeepLink(intent)
+    }
+
+    fun checkDeepLink(deepLink: Purchases.DeepLink): Boolean {
+        when (deepLink) {
+            is Purchases.DeepLink.WebPurchaseRedemption -> return true
+        }
     }
 
     @Suppress("LongMethod", "LongParameterList")

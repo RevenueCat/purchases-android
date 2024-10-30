@@ -181,6 +181,17 @@ class Purchases internal constructor(
     }
     //endregion
 
+    /**
+     * Represents a valid RevenueCat deep link.
+     */
+    @ExperimentalPreviewRevenueCatPurchasesAPI
+    sealed interface DeepLink {
+        /**
+         * Represents a web redemption link, that can be redeemed using [Purchases.redeemWebPurchase]
+         */
+        class WebPurchaseRedemption internal constructor(internal val redemptionToken: String) : DeepLink
+    }
+
     // region Static
     companion object {
 

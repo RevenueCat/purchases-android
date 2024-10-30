@@ -20,6 +20,7 @@ class EndpointTest {
         Endpoint.PostAttributes("test-user-id"),
         Endpoint.PostDiagnostics,
         Endpoint.PostPaywallEvents,
+        Endpoint.PostRedeemWebPurchase("test-user-id"),
     )
 
     @Test
@@ -86,6 +87,13 @@ class EndpointTest {
     }
 
     @Test
+    fun `PostRedeemWebPurchase has correct path`() {
+        val endpoint = Endpoint.PostRedeemWebPurchase("test user-id")
+        val expectedPath = "/subscribers/test%20user-id/redeem_web_purchase"
+        assertThat(endpoint.getPath()).isEqualTo(expectedPath)
+    }
+
+    @Test
     fun `supportsSignatureVerification returns true for expected values`() {
         val expectedSupportsValidationEndpoints = listOf(
             Endpoint.GetCustomerInfo("test-user-id"),
@@ -93,6 +101,7 @@ class EndpointTest {
             Endpoint.PostReceipt,
             Endpoint.GetOfferings("test-user-id"),
             Endpoint.GetProductEntitlementMapping,
+            Endpoint.PostRedeemWebPurchase("test-user-id"),
         )
         for (endpoint in expectedSupportsValidationEndpoints) {
             assertThat(endpoint.supportsSignatureVerification)
@@ -133,6 +142,7 @@ class EndpointTest {
             Endpoint.GetCustomerInfo("test-user-id"),
             Endpoint.LogIn,
             Endpoint.PostReceipt,
+            Endpoint.PostRedeemWebPurchase("test-user-id"),
         )
         for (endpoint in expectedEndpoints) {
             assertThat(endpoint.needsNonceToPerformSigning)
