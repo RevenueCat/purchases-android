@@ -84,8 +84,9 @@ internal fun Markdown(
 
     Column(
         verticalArrangement = Arrangement.spacedBy(paragraphPadding),
+        modifier = modifier,
     ) {
-        MDDocument(root, color, style, fontWeight, textAlign, allowLinks, modifier)
+        MDDocument(root, color, style, fontWeight, textAlign, allowLinks)
     }
 }
 
@@ -98,7 +99,7 @@ private fun MDDocument(
     fontWeight: FontWeight?,
     textAlign: TextAlign?,
     allowLinks: Boolean,
-    modifier: Modifier,
+    modifier: Modifier = Modifier,
 ) {
     MDBlockChildren(document, color, style, fontWeight, textAlign, allowLinks, modifier)
 }

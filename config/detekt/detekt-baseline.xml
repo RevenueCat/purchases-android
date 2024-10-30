@@ -136,17 +136,6 @@
     <ID>ModifierWithoutDefault:Markdown.kt$modifier</ID>
     <ID>ModifierWithoutDefault:RemoteImage.kt$modifier</ID>
     <ID>ModifierWithoutDefault:Template2.kt$childModifier</ID>
-    <ID>MultiLineIfElse:BillingWrapper.kt$BillingWrapper$googlePurchasingData.productId</ID>
-    <ID>MultiLineIfElse:ConfigureFragment.kt$ConfigureFragment$PurchasesConfiguration.Builder(application, apiKey)</ID>
-    <ID>MultiLineIfElse:ConfigureFragment.kt$ConfigureFragment$R.id.google_store_radio_id</ID>
-    <ID>MultiLineIfElse:CustomerInfoHelper.kt$CustomerInfoHelper$CustomerInfoStrings.CUSTOMERINFO_STALE_UPDATING_FOREGROUND</ID>
-    <ID>MultiLineIfElse:DeviceCache.kt$DeviceCache$VerificationResult.NOT_REQUESTED.name</ID>
-    <ID>MultiLineIfElse:OfferingsManager.kt$OfferingsManager$OfferingStrings.OFFERINGS_STALE_UPDATING_IN_FOREGROUND</ID>
-    <ID>MultiLineIfElse:Purchases.kt$Purchases$PurchasesAreCompletedBy.MY_APP</ID>
-    <ID>MultiLineIfElse:PurchasesConfiguration.kt$PurchasesConfiguration.Builder$PurchasesAreCompletedBy.REVENUECAT</ID>
-    <ID>MultiLineIfElse:PurchasesOrchestrator.kt$PurchasesOrchestrator$purchasingData.productId</ID>
-    <ID>MultiLineIfElse:SampleWeatherData.kt$SampleWeatherData$it.toString()</ID>
-    <ID>MultiLineIfElse:SubscriberAttributesManager.kt$SubscriberAttributesManager.ObtainDeviceIdentifiersObservable$listeners.add { completion() }</ID>
     <ID>MutableStateAutoboxing:AdaptiveComposable.kt$mutableStateOf(0)</ID>
     <ID>MutableStateAutoboxing:Placeholder.kt$mutableStateOf(0f)</ID>
     <ID>MutableStateAutoboxing:TierSwitcher.kt$mutableStateOf(0)</ID>
