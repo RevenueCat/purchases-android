@@ -1,9 +1,9 @@
 package com.revenuecat.purchases.common.backend
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
@@ -15,12 +15,12 @@ import com.revenuecat.purchases.common.createCustomerInfo
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
+import com.revenuecat.purchases.interfaces.RedeemWebPurchaseListener
 import com.revenuecat.purchases.utils.Responses
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.Assert.fail
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -77,27 +77,56 @@ class BackendRedeemWebPurchaseTest {
     @Test
     fun `postRedeemWebPurchase posts correctly`() {
         mockHttpResult()
-        var receivedCustomerInfo: CustomerInfo? = null
-        backend.postRedeemWebPurchase(
-            appUserID = "test-user-id",
-            redemptionToken = "test-redemption-token",
-            onSuccessHandler = { receivedCustomerInfo = it },
-            onErrorHandler = { error -> fail("Expected success. Got error: $error") },
-        )
-        assertThat(receivedCustomerInfo).isEqualTo(expectedCustomerInfo)
+        performPostAndExpectResult(RedeemWebPurchaseListener.Result.Success(expectedCustomerInfo))
     }
 
     @Test
     fun `postRedeemWebPurchase errors propagate correctly`() {
         mockHttpResult(responseCode = RCHTTPStatusCodes.ERROR)
-        var obtainedError: PurchasesError? = null
-        backend.postRedeemWebPurchase(
-            appUserID = "test-user-id",
-            redemptionToken = "test-redemption-token",
-            onSuccessHandler = { fail("Expected error. Got success") },
-            onErrorHandler = { error -> obtainedError = error },
+        performPostAndExpectResult(RedeemWebPurchaseListener.Result.Error(PurchasesError(
+            PurchasesErrorCode.UnknownBackendError,
+            "Backend Code: N/A - ",
+        )))
+    }
+
+    @Test
+    fun `postRedeemWebPurchase errors with invalid token if backend returns that code`() {
+        val responseBody = """
+            {
+                "code": 7849,
+                "message": "Invalid RevenueCat Billing redemption token."
+            }
+        """.trimIndent()
+        mockHttpResult(responseCode = RCHTTPStatusCodes.BAD_REQUEST, responseBody = responseBody)
+        performPostAndExpectResult(RedeemWebPurchaseListener.Result.InvalidToken)
+    }
+
+    @Test
+    fun `postRedeemWebPurchase errors with already redeemed token if backend returns that code`() {
+        val responseBody = """
+            {
+                "code": 7852,
+                "message": "The purchase has already been redeemed."
+            }
+        """.trimIndent()
+        mockHttpResult(responseCode = RCHTTPStatusCodes.FORBIDDEN, responseBody = responseBody)
+        performPostAndExpectResult(RedeemWebPurchaseListener.Result.AlreadyRedeemed)
+    }
+
+    @Test
+    fun `postRedeemWebPurchase errors with token expired if backend returns that code`() {
+        val responseBody = """
+            {
+                "code": 7853,
+                "message": "The link has expired.",
+                "email": "t***@r******t.com",
+                "was_email_sent": true
+            }
+        """.trimIndent()
+        mockHttpResult(responseCode = RCHTTPStatusCodes.FORBIDDEN, responseBody = responseBody)
+        performPostAndExpectResult(
+            RedeemWebPurchaseListener.Result.Expired(obfuscatedEmail = "t***@r******t.com", wasEmailSent = true)
         )
-        assertThat(obtainedError).isNotNull
     }
 
     @Test
@@ -107,21 +136,17 @@ class BackendRedeemWebPurchaseTest {
         asyncBackend.postRedeemWebPurchase(
             appUserID = "test-user-id",
             redemptionToken = "test-redemption-token",
-            onSuccessHandler = {
+            onResultHandler = {
+                assertThat(it).isEqualTo(RedeemWebPurchaseListener.Result.Success(expectedCustomerInfo))
                 lock.countDown()
-            },
-            onErrorHandler = {
-                fail("Expected success. Got error: $it")
             },
         )
         asyncBackend.postRedeemWebPurchase(
             appUserID = "test-user-id",
             redemptionToken = "test-redemption-token",
-            onSuccessHandler = {
+            onResultHandler = {
+                assertThat(it).isEqualTo(RedeemWebPurchaseListener.Result.Success(expectedCustomerInfo))
                 lock.countDown()
-            },
-            onErrorHandler = {
-                fail("Expected success. Got error: $it")
             },
         )
         lock.await(5.seconds.inWholeSeconds, TimeUnit.SECONDS)
@@ -137,8 +162,19 @@ class BackendRedeemWebPurchaseTest {
         }
     }
 
+    private fun performPostAndExpectResult(expectedResult: RedeemWebPurchaseListener.Result) {
+        var receivedResult: RedeemWebPurchaseListener.Result? = null
+        backend.postRedeemWebPurchase(
+            appUserID = "test-user-id",
+            redemptionToken = "test-redemption-token",
+            onResultHandler = { receivedResult = it },
+        )
+        assertThat(receivedResult).isEqualTo(expectedResult)
+    }
+
     private fun mockHttpResult(
         responseCode: Int = RCHTTPStatusCodes.SUCCESS,
+        responseBody: String = Responses.validFullPurchaserResponse,
         delayMs: Long? = null
     ) {
         every {
@@ -155,7 +191,7 @@ class BackendRedeemWebPurchaseTest {
             }
             HTTPResult(
                 responseCode,
-                Responses.validFullPurchaserResponse,
+                responseBody,
                 HTTPResult.Origin.BACKEND,
                 requestDate = null,
                 VerificationResult.NOT_REQUESTED

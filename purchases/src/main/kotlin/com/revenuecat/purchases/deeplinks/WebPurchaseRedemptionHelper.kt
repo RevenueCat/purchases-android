@@ -28,15 +28,19 @@ internal class WebPurchaseRedemptionHelper(
         backend.postRedeemWebPurchase(
             identityManager.currentAppUserID,
             deepLink.redemptionToken,
-            onErrorHandler = {
-                errorLog("Error redeeming web purchase: $it")
-                dispatchResult(listener, RedeemWebPurchaseListener.Result.Error(it))
-            },
-            onSuccessHandler = {
-                debugLog("Successfully redeemed web purchase. Updating customer info.")
-                offlineEntitlementsManager.resetOfflineCustomerInfoCache()
-                customerInfoUpdateHandler.cacheAndNotifyListeners(it)
-                dispatchResult(listener, RedeemWebPurchaseListener.Result.Success(it))
+            onResultHandler = { result ->
+                when (result) {
+                    is RedeemWebPurchaseListener.Result.Success -> {
+                        debugLog("Successfully redeemed web purchase. Updating customer info.")
+                        offlineEntitlementsManager.resetOfflineCustomerInfoCache()
+                        customerInfoUpdateHandler.cacheAndNotifyListeners(result.customerInfo)
+                        dispatchResult(listener, result)
+                    }
+                    else -> {
+                        errorLog("Error redeeming web purchase: $result")
+                        dispatchResult(listener, result)
+                    }
+                }
             },
         )
     }

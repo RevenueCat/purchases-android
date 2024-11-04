@@ -20,6 +20,13 @@ final class RedeemWebPurchaseListenerAPI {
             CustomerInfo customerInfo = ((RedeemWebPurchaseListener.Result.Success) result).getCustomerInfo();
         } else if (result instanceof RedeemWebPurchaseListener.Result.Error) {
             PurchasesError error = ((RedeemWebPurchaseListener.Result.Error) result).getError();
+        } else if (result instanceof RedeemWebPurchaseListener.Result.InvalidToken) {
+            return;
+        } else if (result instanceof RedeemWebPurchaseListener.Result.AlreadyRedeemed) {
+            return;
+        } else if (result instanceof RedeemWebPurchaseListener.Result.Expired) {
+            String obfuscatedEmail = ((RedeemWebPurchaseListener.Result.Expired) result).getObfuscatedEmail();
+            Boolean wasEmailSent = ((RedeemWebPurchaseListener.Result.Expired) result).getWasEmailSent();
         }
 
         boolean isSuccess = result.isSuccess();

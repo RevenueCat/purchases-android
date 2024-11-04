@@ -61,7 +61,7 @@ class WebPurchaseRedemptionHelperTest {
 
     @Test
     fun `handleRedeemWebPurchase posts token and returns success`() {
-        mockBackendResult(customerInfo = customerInfo)
+        mockBackendResult()
         var result: RedeemWebPurchaseListener.Result? = null
         webPurchaseRedemptionHelper.handleRedeemWebPurchase(deepLink) {
             result = it
@@ -72,14 +72,14 @@ class WebPurchaseRedemptionHelperTest {
 
     @Test
     fun `handleRedeemWebPurchase posts token and resets offline entitlements cache on success`() {
-        mockBackendResult(customerInfo = customerInfo)
+        mockBackendResult()
         webPurchaseRedemptionHelper.handleRedeemWebPurchase(deepLink) {}
         verify(exactly = 1) { offlineEntitlementsManager.resetOfflineCustomerInfoCache() }
     }
 
     @Test
     fun `handleRedeemWebPurchase posts token and notifies listener on success`() {
-        mockBackendResult(customerInfo = customerInfo)
+        mockBackendResult()
         webPurchaseRedemptionHelper.handleRedeemWebPurchase(deepLink) {}
         verify(exactly = 1) { customerInfoUpdateHandler.cacheAndNotifyListeners(customerInfo) }
     }
@@ -87,7 +87,7 @@ class WebPurchaseRedemptionHelperTest {
     @Test
     fun `handleRedeemWebPurchase posts token and returns error`() {
         val expectedError = PurchasesError(PurchasesErrorCode.UnknownBackendError)
-        mockBackendResult(error = expectedError)
+        mockBackendResult(result = RedeemWebPurchaseListener.Result.Error(expectedError))
         var result: RedeemWebPurchaseListener.Result? = null
         webPurchaseRedemptionHelper.handleRedeemWebPurchase(deepLink) {
             result = it
@@ -98,18 +98,49 @@ class WebPurchaseRedemptionHelperTest {
         verify(exactly = 0) { customerInfoUpdateHandler.cacheAndNotifyListeners(any()) }
     }
 
+    @Test
+    fun `handleRedeemWebPurchase posts token and returns already redeemed`() {
+        mockBackendResult(result = RedeemWebPurchaseListener.Result.AlreadyRedeemed)
+        var result: RedeemWebPurchaseListener.Result? = null
+        webPurchaseRedemptionHelper.handleRedeemWebPurchase(deepLink) {
+            result = it
+        }
+        assertTrue(result is RedeemWebPurchaseListener.Result.AlreadyRedeemed)
+        verify(exactly = 0) { offlineEntitlementsManager.resetOfflineCustomerInfoCache() }
+        verify(exactly = 0) { customerInfoUpdateHandler.cacheAndNotifyListeners(any()) }
+    }
+
+    @Test
+    fun `handleRedeemWebPurchase posts token and returns token expired`() {
+        val expectedResult = RedeemWebPurchaseListener.Result.Expired("test-email", wasEmailSent = false)
+        mockBackendResult(expectedResult)
+        var result: RedeemWebPurchaseListener.Result? = null
+        webPurchaseRedemptionHelper.handleRedeemWebPurchase(deepLink) {
+            result = it
+        }
+        assertThat(result).isEqualTo(expectedResult)
+        verify(exactly = 0) { offlineEntitlementsManager.resetOfflineCustomerInfoCache() }
+        verify(exactly = 0) { customerInfoUpdateHandler.cacheAndNotifyListeners(any()) }
+    }
+
+    @Test
+    fun `handleRedeemWebPurchase posts token and returns invalid token`() {
+        val expectedResult = RedeemWebPurchaseListener.Result.InvalidToken
+        mockBackendResult(expectedResult)
+        var result: RedeemWebPurchaseListener.Result? = null
+        webPurchaseRedemptionHelper.handleRedeemWebPurchase(deepLink) {
+            result = it
+        }
+        assertThat(result).isEqualTo(expectedResult)
+        verify(exactly = 0) { offlineEntitlementsManager.resetOfflineCustomerInfoCache() }
+        verify(exactly = 0) { customerInfoUpdateHandler.cacheAndNotifyListeners(any()) }
+    }
+
     private fun mockBackendResult(
-        customerInfo: CustomerInfo? = null,
-        error: PurchasesError? = null
+        result: RedeemWebPurchaseListener.Result = RedeemWebPurchaseListener.Result.Success(customerInfo),
     ) {
-        if (customerInfo != null) {
-            every { backend.postRedeemWebPurchase(userId, redemptionToken, captureLambda(), any()) } answers {
-                lambda<(CustomerInfo) -> Unit>().captured.invoke(customerInfo)
-            }
-        } else if (error != null) {
-            every { backend.postRedeemWebPurchase(userId, redemptionToken, any(), captureLambda()) } answers {
-                lambda<(PurchasesError) -> Unit>().captured.invoke(error)
-            }
+        every { backend.postRedeemWebPurchase(userId, redemptionToken, captureLambda()) } answers {
+            lambda<(RedeemWebPurchaseListener.Result) -> Unit>().captured.invoke(result)
         }
     }
 }
