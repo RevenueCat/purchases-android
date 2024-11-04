@@ -37,7 +37,7 @@ internal enum class ReservedSubscriberAttribute(val value: String) {
      */
     MIXPANEL_DISTINCT_ID("\$mixpanelDistinctId"),
     FIREBASE_APP_INSTANCE_ID("\$firebaseAppInstanceId"),
-    TENJIN_ANALYTICS_INSTALLATION_ID("\$tenjinAnalyticsInstallationId"),
+    TENJIN_ANALYTICS_INSTALLATION_ID("\$tenjinId"),
 
     /**
      * Optional campaign parameters
