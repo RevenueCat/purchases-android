@@ -689,6 +689,15 @@ internal class PurchasesOrchestrator(
         )
     }
 
+    fun setTenjinAnalyticsInstallationID(tenjinAnalyticsInstallationID: String?) {
+        log(LogIntent.DEBUG, AttributionStrings.METHOD_CALLED.format("setTenjinAnalyticsInstallationID"))
+        subscriberAttributesManager.setAttribute(
+            SubscriberAttributeKey.IntegrationIds.TenjinAnalyticsInstallationId,
+            tenjinAnalyticsInstallationID,
+            appUserID,
+        )
+    }
+
     // endregion
     // region Attribution IDs
 

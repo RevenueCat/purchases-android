@@ -318,6 +318,13 @@ class SubscriberAttributesPurchasesTests {
         }
     }
 
+    @Test
+    fun `setTenjinAnalyticsInstallationID`() {
+        integrationIDTest(SubscriberAttributeKey.IntegrationIds.TenjinAnalyticsInstallationId) { parameter ->
+            underTest.setTenjinAnalyticsInstallationID(parameter)
+        }
+    }
+
     // endregion
 
     // region Campaign parameters

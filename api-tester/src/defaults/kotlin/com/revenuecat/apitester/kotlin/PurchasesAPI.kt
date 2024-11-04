@@ -185,6 +185,7 @@ private class PurchasesAPI {
             setAirshipChannelID("")
             setMixpanelDistinctID("")
             setFirebaseAppInstanceID("")
+            setTenjinAnalyticsInstallationID("")
             setMediaSource("")
             setCampaign("")
             setCleverTapID("")
