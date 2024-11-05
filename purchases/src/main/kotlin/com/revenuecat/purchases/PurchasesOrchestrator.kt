@@ -209,6 +209,7 @@ internal class PurchasesOrchestrator(
         }
         log(LogIntent.DEBUG, ConfigureStrings.APP_BACKGROUNDED)
         synchronizeSubscriberAttributesIfNeeded()
+        flushPaywallEvents()
     }
 
     /** @suppress */
@@ -950,6 +951,9 @@ internal class PurchasesOrchestrator(
                     transactionPostSuccess = callbackPair.first,
                     transactionPostError = callbackPair.second,
                 )
+
+                // Synchronize paywall events after a new purchase
+                flushPaywallEvents()
             }
 
             override fun onPurchasesFailedToUpdate(purchasesError: PurchasesError) {
