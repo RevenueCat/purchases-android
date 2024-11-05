@@ -586,6 +586,16 @@ class Purchases internal constructor(
         purchasesOrchestrator.setFirebaseAppInstanceID(firebaseAppInstanceID)
     }
 
+    /**
+     * Subscriber attribute associated with the Tenjin Analytics installation ID for the user
+     * Required for the RevenueCat Tenjin integration
+     *
+     * @param tenjinAnalyticsInstallationID null or an empty string will delete the subscriber attribute.
+     */
+    fun setTenjinAnalyticsInstallationID(tenjinAnalyticsInstallationID: String?) {
+        purchasesOrchestrator.setTenjinAnalyticsInstallationID(tenjinAnalyticsInstallationID)
+    }
+
     // endregion
     // region Attribution IDs
 

@@ -37,6 +37,7 @@ internal enum class ReservedSubscriberAttribute(val value: String) {
      */
     MIXPANEL_DISTINCT_ID("\$mixpanelDistinctId"),
     FIREBASE_APP_INSTANCE_ID("\$firebaseAppInstanceId"),
+    TENJIN_ANALYTICS_INSTALLATION_ID("\$tenjinId"),
 
     /**
      * Optional campaign parameters
@@ -79,6 +80,9 @@ internal sealed class SubscriberAttributeKey(val backendKey: String) {
         object OneSignalUserId : IntegrationIds(ReservedSubscriberAttribute.ONESIGNAL_USER_ID)
         object Airship : IntegrationIds(ReservedSubscriberAttribute.AIRSHIP_CHANNEL_ID)
         object FirebaseAppInstanceId : IntegrationIds(ReservedSubscriberAttribute.FIREBASE_APP_INSTANCE_ID)
+        object TenjinAnalyticsInstallationId : IntegrationIds(
+            ReservedSubscriberAttribute.TENJIN_ANALYTICS_INSTALLATION_ID,
+        )
     }
 
     sealed class CampaignParameters(
