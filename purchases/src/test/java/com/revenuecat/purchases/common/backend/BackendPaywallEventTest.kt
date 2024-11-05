@@ -18,7 +18,11 @@ import com.revenuecat.purchases.paywalls.events.PaywallEventType
 import com.revenuecat.purchases.utils.asMap
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkObject
+import io.mockk.unmockkObject
 import io.mockk.verify
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.encodeToJsonElement
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Assert.fail
@@ -186,13 +190,38 @@ class BackendPaywallEventTest {
 
     @Test
     fun `postPaywallEvents calls error handler with shouldMarkAsSynced true if json error`() {
-        mockHttpClientException()
+        mockkObject(PaywallEventRequest)
+        val mockJson = mockk<Json>()
+        every {
+            PaywallEventRequest.json
+        } returns mockJson
+        every {
+            mockJson.encodeToJsonElement(paywallEventRequest)
+        } answers {
+            JsonPrimitive(123)
+        }
         var errorCalled = false
         backend.postPaywallEvents(
             paywallEventRequest,
             onSuccessHandler = { fail("Expected error") },
             onErrorHandler = { _, shouldMarkAsSynced ->
                 assertThat(shouldMarkAsSynced).isTrue
+                errorCalled = true
+            },
+        )
+        assertThat(errorCalled).isTrue
+        unmockkObject(PaywallEventRequest)
+    }
+
+    @Test
+    fun `postPaywallEvents calls error handler with shouldMarkAsSynced false if a network error is raised`() {
+        mockHttpClientException()
+        var errorCalled = false
+        backend.postPaywallEvents(
+            paywallEventRequest,
+            onSuccessHandler = { fail("Expected error") },
+            onErrorHandler = { _, shouldMarkAsSynced ->
+                assertThat(shouldMarkAsSynced).isFalse()
                 errorCalled = true
             },
         )
