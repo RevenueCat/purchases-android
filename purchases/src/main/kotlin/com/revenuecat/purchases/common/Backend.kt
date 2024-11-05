@@ -524,7 +524,7 @@ internal class Backend(
                 synchronized(this@Backend) {
                     paywallEventsCallbacks.remove(paywallEventRequest.cacheKey)
                 }?.forEach { (_, onErrorHandler) ->
-                    onErrorHandler(error, true)
+                    onErrorHandler(error, false)
                 }
             }
 
