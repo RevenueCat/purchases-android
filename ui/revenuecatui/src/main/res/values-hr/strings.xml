@@ -19,4 +19,5 @@
     <string name="continue_cta">Nastaviti</string>
     <string name="default_offer_details_with_intro_offer">Započnite probno razdoblje od {{ sub_offer_duration }}, a zatim {{ total_price_and_per_month }}.</string>
     <string name="no_browser_cannot_open_link">Nije instaliran preglednik. Veza se nije mogla otvoriti.</string>
+    <string name="cannot_open_link">Nevažeća poveznica. Nije moguće otvoriti.</string>
 </resources>

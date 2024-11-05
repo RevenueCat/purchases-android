@@ -19,4 +19,5 @@
     <string name="continue_cta">Blive ved</string>
     <string name="default_offer_details_with_intro_offer">Start din prøveperiode på {{ sub_offer_duration }} og derefter {{ total_price_and_per_month }}.</string>
     <string name="no_browser_cannot_open_link">Ingen browser installeret. Link kunne ikke åbnes.</string>
+    <string name="cannot_open_link">Ugyldigt link. Kunne ikke åbnes.</string>
 </resources>

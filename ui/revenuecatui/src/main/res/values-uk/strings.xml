@@ -19,4 +19,5 @@
     <string name="continue_cta">Продовжити</string>
     <string name="default_offer_details_with_intro_offer">Розпочніть {{ sub_offer_duration }} пробний період, а потім {{ total_price_and_per_month }}.</string>
     <string name="no_browser_cannot_open_link">Браузер не встановлено. Посилання не вдалося відкрити.</string>
+    <string name="cannot_open_link">Недійсне посилання. Не вдалося відкрити.</string>
 </resources>

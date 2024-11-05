@@ -19,4 +19,5 @@
     <string name="continue_cta">ดำเนินการต่อ</string>
     <string name="default_offer_details_with_intro_offer">เริ่มทดลองใช้ {{ sub_offer_duration }} จากนั้นจ่ายเป็น {{ Total_price_and_per_month }}</string>
     <string name="no_browser_cannot_open_link">ไม่ได้ติดตั้งเบราว์เซอร์ ลิงก์ไม่สามารถเปิดได้</string>
+    <string name="cannot_open_link">ลิงก์ไม่ถูกต้อง ไม่สามารถเปิดได้</string>
 </resources>

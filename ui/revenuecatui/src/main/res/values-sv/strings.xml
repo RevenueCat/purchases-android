@@ -19,4 +19,5 @@
     <string name="continue_cta">Fortsätta</string>
     <string name="default_offer_details_with_intro_offer">Starta din provperiod på {{ sub_offer_duration }} och sedan {{ total_price_and_per_month }}.</string>
     <string name="no_browser_cannot_open_link">Ingen webbläsare installerad. Länken kunde inte öppnas.</string>
+    <string name="cannot_open_link">Ogiltig länk. Kunde inte öppnas.</string>
 </resources>
