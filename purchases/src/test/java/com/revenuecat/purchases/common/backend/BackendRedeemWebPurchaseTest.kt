@@ -15,11 +15,6 @@ import com.revenuecat.purchases.common.createCustomerInfo
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
-import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
-import com.revenuecat.purchases.customercenter.CustomerCenterConfigData.HelpPath
-import com.revenuecat.purchases.customercenter.CustomerCenterConfigData.Screen
-import com.revenuecat.purchases.customercenter.CustomerCenterConfigData.Screen.ScreenType
-import com.revenuecat.purchases.customercenter.RCColor
 import com.revenuecat.purchases.utils.Responses
 import io.mockk.every
 import io.mockk.mockk
@@ -29,7 +24,6 @@ import org.junit.Assert.fail
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import java.io.File
 import java.net.URL
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.LinkedBlockingQueue
@@ -37,7 +31,6 @@ import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 import kotlin.time.Duration.Companion.seconds
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @RunWith(AndroidJUnit4::class)
 class BackendRedeemWebPurchaseTest {
 
@@ -136,8 +129,8 @@ class BackendRedeemWebPurchaseTest {
         verify(exactly = 1) {
             httpClient.performRequest(
                 mockBaseURL,
-                Endpoint.PostRedeemWebPurchase("test-user-id"),
-                body = mapOf("redemption_token" to "test-redemption-token"),
+                Endpoint.PostRedeemWebPurchase,
+                body = mapOf("redemption_token" to "test-redemption-token", "app_user_id" to "test-user-id"),
                 postFieldsToSign = null,
                 any()
             )

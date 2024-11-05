@@ -20,7 +20,7 @@ class EndpointTest {
         Endpoint.PostAttributes("test-user-id"),
         Endpoint.PostDiagnostics,
         Endpoint.PostPaywallEvents,
-        Endpoint.PostRedeemWebPurchase("test-user-id"),
+        Endpoint.PostRedeemWebPurchase,
     )
 
     @Test
@@ -88,8 +88,8 @@ class EndpointTest {
 
     @Test
     fun `PostRedeemWebPurchase has correct path`() {
-        val endpoint = Endpoint.PostRedeemWebPurchase("test user-id")
-        val expectedPath = "/subscribers/test%20user-id/redeem_web_purchase"
+        val endpoint = Endpoint.PostRedeemWebPurchase
+        val expectedPath = "/subscribers/redeem_web_purchase"
         assertThat(endpoint.getPath()).isEqualTo(expectedPath)
     }
 
@@ -101,7 +101,7 @@ class EndpointTest {
             Endpoint.PostReceipt,
             Endpoint.GetOfferings("test-user-id"),
             Endpoint.GetProductEntitlementMapping,
-            Endpoint.PostRedeemWebPurchase("test-user-id"),
+            Endpoint.PostRedeemWebPurchase,
         )
         for (endpoint in expectedSupportsValidationEndpoints) {
             assertThat(endpoint.supportsSignatureVerification)
@@ -142,7 +142,7 @@ class EndpointTest {
             Endpoint.GetCustomerInfo("test-user-id"),
             Endpoint.LogIn,
             Endpoint.PostReceipt,
-            Endpoint.PostRedeemWebPurchase("test-user-id"),
+            Endpoint.PostRedeemWebPurchase,
         )
         for (endpoint in expectedEndpoints) {
             assertThat(endpoint.needsNonceToPerformSigning)

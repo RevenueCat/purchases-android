@@ -40,11 +40,11 @@ internal sealed class Endpoint(val pathTemplate: String, val name: String) {
     ) {
         override fun getPath() = pathTemplate.format(Uri.encode(userId))
     }
-    data class PostRedeemWebPurchase(val userId: String) : Endpoint(
-        "/subscribers/%s/redeem_web_purchase",
+    object PostRedeemWebPurchase : Endpoint(
+        "/subscribers/redeem_web_purchase",
         "post_redeem_web_purchase",
     ) {
-        override fun getPath() = pathTemplate.format(Uri.encode(userId))
+        override fun getPath() = pathTemplate
     }
 
     val supportsSignatureVerification: Boolean
@@ -54,7 +54,7 @@ internal sealed class Endpoint(val pathTemplate: String, val name: String) {
             PostReceipt,
             is GetOfferings,
             GetProductEntitlementMapping,
-            is PostRedeemWebPurchase,
+            PostRedeemWebPurchase,
             ->
                 true
             is GetAmazonReceipt,
@@ -71,7 +71,7 @@ internal sealed class Endpoint(val pathTemplate: String, val name: String) {
             is GetCustomerInfo,
             LogIn,
             PostReceipt,
-            is PostRedeemWebPurchase,
+            PostRedeemWebPurchase,
             ->
                 true
             is GetAmazonReceipt,
