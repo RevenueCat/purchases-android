@@ -89,7 +89,7 @@ class EndpointTest {
     @Test
     fun `PostRedeemWebPurchase has correct path`() {
         val endpoint = Endpoint.PostRedeemWebPurchase
-        val expectedPath = "/subscribers/redeem_web_purchase"
+        val expectedPath = "/subscribers/redeem_purchase"
         assertThat(endpoint.getPath()).isEqualTo(expectedPath)
     }
 

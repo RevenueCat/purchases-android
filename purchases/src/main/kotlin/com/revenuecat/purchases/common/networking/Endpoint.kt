@@ -41,7 +41,7 @@ internal sealed class Endpoint(val pathTemplate: String, val name: String) {
         override fun getPath() = pathTemplate.format(Uri.encode(userId))
     }
     object PostRedeemWebPurchase : Endpoint(
-        "/subscribers/redeem_web_purchase",
+        "/subscribers/redeem_purchase",
         "post_redeem_web_purchase",
     ) {
         override fun getPath() = pathTemplate
