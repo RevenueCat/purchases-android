@@ -119,8 +119,10 @@ class BackendRedeemWebPurchaseTest {
             {
                 "code": 7853,
                 "message": "The link has expired.",
-                "email": "t***@r******t.com",
-                "was_email_sent": true
+                "purchase_redemption_error_info": {
+                   "obfuscated_email": "t***@r******t.com",
+                   "was_email_sent": true
+                }
             }
         """.trimIndent()
         mockHttpResult(responseCode = RCHTTPStatusCodes.FORBIDDEN, responseBody = responseBody)

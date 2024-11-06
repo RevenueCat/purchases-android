@@ -663,6 +663,7 @@ internal class Backend(
         }
     }
 
+    @Suppress("NestedBlockDepth")
     fun postRedeemWebPurchase(
         appUserID: String,
         redemptionToken: String,
@@ -705,9 +706,15 @@ internal class Backend(
                             }
                             BackendErrorCode.BackendExpiredWebRedemptionToken.value -> {
                                 val resultBody = result.body
-                                val obfuscatedEmail = resultBody.optString("email")
-                                val emailSent = resultBody.optBoolean("was_email_sent")
-                                callback(RedeemWebPurchaseListener.Result.Expired(obfuscatedEmail, emailSent))
+                                val redemptionError = resultBody.optJSONObject("purchase_redemption_error_info")
+                                val obfuscatedEmail = redemptionError?.optString("obfuscated_email")
+                                val emailSent = redemptionError?.optBoolean("was_email_sent")
+                                if (obfuscatedEmail == null || emailSent == null) {
+                                    errorLog("Error parsing expired redemption token response: $resultBody")
+                                    callback(RedeemWebPurchaseListener.Result.Error(result.toPurchasesError()))
+                                } else {
+                                    callback(RedeemWebPurchaseListener.Result.Expired(obfuscatedEmail, emailSent))
+                                }
                             }
                             BackendErrorCode.BackendWebPurchaseAlreadyRedeemed.value -> {
                                 callback(RedeemWebPurchaseListener.Result.AlreadyRedeemed)
