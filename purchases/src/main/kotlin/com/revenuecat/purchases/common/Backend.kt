@@ -667,9 +667,9 @@ internal class Backend(
         onSuccessHandler: (CustomerInfo) -> Unit,
         onErrorHandler: (PurchasesError) -> Unit,
     ) {
-        val endpoint = Endpoint.PostRedeemWebPurchase(appUserID)
+        val endpoint = Endpoint.PostRedeemWebPurchase
         val path = endpoint.getPath()
-        val body = mapOf("redemption_token" to redemptionToken)
+        val body = mapOf("redemption_token" to redemptionToken, APP_USER_ID to appUserID)
         val call = object : Dispatcher.AsyncCall() {
             override fun call(): HTTPResult {
                 return httpClient.performRequest(
