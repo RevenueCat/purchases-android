@@ -19,4 +19,5 @@
     <string name="continue_cta">teruskan</string>
     <string name="default_offer_details_with_intro_offer">Mulakan percubaan {{ sub_offer_duration }} anda, kemudian {{ total_price_and_per_month }}.</string>
     <string name="no_browser_cannot_open_link">Tiada pelayar dipasang. Pautan tidak dapat dibuka.</string>
+    <string name="cannot_open_link">Pautan tidak sah. Tidak dapat dibuka.</string>
 </resources>

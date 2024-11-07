@@ -1,5 +1,7 @@
 package com.revenuecat.purchases.ui.revenuecatui.composables
 
+import android.content.ActivityNotFoundException
+import android.content.Context
 import android.widget.Toast
 import androidx.annotation.StringRes
 import androidx.compose.foundation.background
@@ -28,6 +30,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.platform.UriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.semantics
@@ -144,11 +147,7 @@ private fun Footer(
                 R.string.terms_and_conditions,
                 R.string.terms,
             ) {
-                uriHandler.openUriOrElse(it.toString()) {
-                    val msg = context.getString(R.string.no_browser_cannot_open_link)
-                    Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
-                    Logger.w(msg)
-                }
+                openURL(context, uriHandler, it)
             }
 
             if (configuration.privacyURL != null) {
@@ -163,11 +162,7 @@ private fun Footer(
                 R.string.privacy_policy,
                 R.string.privacy,
             ) {
-                uriHandler.openUriOrElse(it.toString()) {
-                    val msg = context.getString(R.string.no_browser_cannot_open_link)
-                    Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
-                    Logger.w(msg)
-                }
+                openURL(context, uriHandler, it)
             }
         }
     }
@@ -259,6 +254,18 @@ private fun RowScope.Button(
 private object FooterConstants {
     @ReadOnlyComposable @Composable
     fun style(): TextStyle = MaterialTheme.typography.bodySmall
+}
+
+private fun openURL(context: Context, uriHandler: UriHandler, url: URL) {
+    uriHandler.openUriOrElse(url.toString()) { exception ->
+        val msg = if (exception is ActivityNotFoundException) {
+            context.getString(R.string.no_browser_cannot_open_link)
+        } else {
+            context.getString(R.string.cannot_open_link)
+        }
+        Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+        Logger.w(msg)
+    }
 }
 
 @Preview(showBackground = true)

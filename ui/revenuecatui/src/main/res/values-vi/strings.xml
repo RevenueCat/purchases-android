@@ -19,4 +19,5 @@
     <string name="continue_cta">Tiếp tục</string>
     <string name="default_offer_details_with_intro_offer">Bắt đầu dùng thử {{ sub_offer_duration }}, sau đó là {{ Total_price_and_per_month }}.</string>
     <string name="no_browser_cannot_open_link">Không có trình duyệt nào được cài đặt. Liên kết không thể mở được.</string>
+    <string name="cannot_open_link">Liên kết không hợp lệ. Không thể mở được.</string>
 </resources>

@@ -19,4 +19,5 @@
     <string name="continue_cta">계속하다</string>
     <string name="default_offer_details_with_intro_offer">{{ sub_offer_duration }} 무료 체험을 시작한 후 {{ total_price_and_per_month }}를 시작하세요.</string>
     <string name="no_browser_cannot_open_link">브라우저가 설치되어 있지 않습니다. 링크를 열 수 없습니다.</string>
+    <string name="cannot_open_link">링크가 유효하지 않습니다. 열 수 없습니다.</string>
 </resources>

@@ -19,4 +19,5 @@
     <string name="continue_cta">Jatkaa</string>
     <string name="default_offer_details_with_intro_offer">Aloita {{ sub_offer_duration }} -kokeilu ja sitten {{ total_price_and_per_month }}.</string>
     <string name="no_browser_cannot_open_link">Selainta ei ole asennettu. Linkkiä ei voitu avata.</string>
+    <string name="cannot_open_link">Virheellinen linkki. Ei voitu avata.</string>
 </resources>

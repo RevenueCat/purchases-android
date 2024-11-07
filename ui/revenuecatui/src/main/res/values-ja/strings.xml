@@ -19,4 +19,5 @@
     <string name="continue_cta">続く</string>
     <string name="default_offer_details_with_intro_offer">{{ sub_offer_duration }} トライアルを開始してから、{{ total_price_and_per_month }} を開始してください。</string>
     <string name="no_browser_cannot_open_link">ブラウザがインストールされていません。リンクを開くことができませんでした。</string>
+    <string name="cannot_open_link">リンクが無効です。開くことができませんでした。</string>
 </resources>
