@@ -137,8 +137,10 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
                     showToast("Web purchase already redeemed. Ignoring.")
                 }
                 is RedeemWebPurchaseListener.Result.Expired -> {
-                    showToast("Web purchase redemption token expired. " +
-                        "An email with a new one was sent to ${result.obfuscatedEmail}.")
+                    showToast(
+                        "Web purchase redemption token expired. " +
+                            "An email with a new one was sent to ${result.obfuscatedEmail}.",
+                    )
                 }
             }
         }
