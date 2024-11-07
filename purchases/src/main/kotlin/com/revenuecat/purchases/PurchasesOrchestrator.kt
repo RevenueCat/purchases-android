@@ -249,7 +249,7 @@ internal class PurchasesOrchestrator(
 
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     fun redeemWebPurchase(
-        webPurchaseRedemption: Purchases.DeepLink.WebPurchaseRedemption,
+        webPurchaseRedemption: WebPurchaseRedemption,
         listener: RedeemWebPurchaseListener,
     ) {
         webPurchaseRedemptionHelper.handleRedeemWebPurchase(webPurchaseRedemption, listener)

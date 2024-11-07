@@ -13,6 +13,7 @@ import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.PurchasesConfiguration
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.Store
+import com.revenuecat.purchases.WebPurchaseRedemption
 import com.revenuecat.purchases.amazon.AmazonConfiguration
 import com.revenuecat.purchases.awaitCustomerCenterConfigData
 import com.revenuecat.purchases.awaitCustomerInfo
@@ -45,7 +46,7 @@ private class PurchasesAPI {
     @SuppressWarnings("LongParameterList")
     fun check(
         purchases: Purchases,
-        deepLink: Purchases.DeepLink.WebPurchaseRedemption,
+        webPurchaseRedemption: WebPurchaseRedemption,
         redeemWebPurchaseListener: RedeemWebPurchaseListener,
         intent: Intent,
     ) {
@@ -99,14 +100,8 @@ private class PurchasesAPI {
 
         val configuration: PurchasesConfiguration = purchases.currentConfiguration
 
-        purchases.redeemWebPurchase(deepLink, redeemWebPurchaseListener)
-        val parsedDeepLink: Purchases.DeepLink? = Purchases.parseAsDeepLink(intent)
-    }
-
-    fun checkDeepLink(deepLink: Purchases.DeepLink): Boolean {
-        when (deepLink) {
-            is Purchases.DeepLink.WebPurchaseRedemption -> return true
-        }
+        purchases.redeemWebPurchase(webPurchaseRedemption, redeemWebPurchaseListener)
+        val parsedWebPurchaseRedemption: WebPurchaseRedemption? = Purchases.parseAsWebPurchaseRedemption(intent)
     }
 
     @Suppress("LongMethod", "LongParameterList")

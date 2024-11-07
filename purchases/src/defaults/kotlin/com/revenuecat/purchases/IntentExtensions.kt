@@ -4,6 +4,6 @@ import android.content.Intent
 
 @ExperimentalPreviewRevenueCatPurchasesAPI
 @JvmSynthetic
-fun Intent.parseAsDeepLink(): Purchases.DeepLink? {
-    return Purchases.parseAsDeepLink(this)
+fun Intent.parseAsWebPurchaseRedemption(): WebPurchaseRedemption? {
+    return Purchases.parseAsWebPurchaseRedemption(this)
 }

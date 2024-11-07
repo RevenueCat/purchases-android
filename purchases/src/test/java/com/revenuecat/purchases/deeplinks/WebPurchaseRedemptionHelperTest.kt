@@ -4,9 +4,9 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.CustomerInfoUpdateHandler
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
-import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.WebPurchaseRedemption
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
 import com.revenuecat.purchases.identity.IdentityManager
@@ -28,7 +28,7 @@ class WebPurchaseRedemptionHelperTest {
 
     private val userId = "test-user-id"
     private val redemptionToken = "test-redemption-token"
-    private val deepLink = Purchases.DeepLink.WebPurchaseRedemption(redemptionToken)
+    private val webPurchaseRedemption = WebPurchaseRedemption(redemptionToken)
 
     private lateinit var customerInfo: CustomerInfo
 
@@ -63,7 +63,7 @@ class WebPurchaseRedemptionHelperTest {
     fun `handleRedeemWebPurchase posts token and returns success`() {
         mockBackendResult()
         var result: RedeemWebPurchaseListener.Result? = null
-        webPurchaseRedemptionHelper.handleRedeemWebPurchase(deepLink) {
+        webPurchaseRedemptionHelper.handleRedeemWebPurchase(webPurchaseRedemption) {
             result = it
         }
         assertTrue(result is RedeemWebPurchaseListener.Result.Success)
@@ -73,14 +73,14 @@ class WebPurchaseRedemptionHelperTest {
     @Test
     fun `handleRedeemWebPurchase posts token and resets offline entitlements cache on success`() {
         mockBackendResult()
-        webPurchaseRedemptionHelper.handleRedeemWebPurchase(deepLink) {}
+        webPurchaseRedemptionHelper.handleRedeemWebPurchase(webPurchaseRedemption) {}
         verify(exactly = 1) { offlineEntitlementsManager.resetOfflineCustomerInfoCache() }
     }
 
     @Test
     fun `handleRedeemWebPurchase posts token and notifies listener on success`() {
         mockBackendResult()
-        webPurchaseRedemptionHelper.handleRedeemWebPurchase(deepLink) {}
+        webPurchaseRedemptionHelper.handleRedeemWebPurchase(webPurchaseRedemption) {}
         verify(exactly = 1) { customerInfoUpdateHandler.cacheAndNotifyListeners(customerInfo) }
     }
 
@@ -89,7 +89,7 @@ class WebPurchaseRedemptionHelperTest {
         val expectedError = PurchasesError(PurchasesErrorCode.UnknownBackendError)
         mockBackendResult(result = RedeemWebPurchaseListener.Result.Error(expectedError))
         var result: RedeemWebPurchaseListener.Result? = null
-        webPurchaseRedemptionHelper.handleRedeemWebPurchase(deepLink) {
+        webPurchaseRedemptionHelper.handleRedeemWebPurchase(webPurchaseRedemption) {
             result = it
         }
         assertTrue(result is RedeemWebPurchaseListener.Result.Error)
@@ -102,7 +102,7 @@ class WebPurchaseRedemptionHelperTest {
     fun `handleRedeemWebPurchase posts token and returns already redeemed`() {
         mockBackendResult(result = RedeemWebPurchaseListener.Result.AlreadyRedeemed)
         var result: RedeemWebPurchaseListener.Result? = null
-        webPurchaseRedemptionHelper.handleRedeemWebPurchase(deepLink) {
+        webPurchaseRedemptionHelper.handleRedeemWebPurchase(webPurchaseRedemption) {
             result = it
         }
         assertTrue(result is RedeemWebPurchaseListener.Result.AlreadyRedeemed)
@@ -115,7 +115,7 @@ class WebPurchaseRedemptionHelperTest {
         val expectedResult = RedeemWebPurchaseListener.Result.Expired("test-email", wasEmailSent = false)
         mockBackendResult(expectedResult)
         var result: RedeemWebPurchaseListener.Result? = null
-        webPurchaseRedemptionHelper.handleRedeemWebPurchase(deepLink) {
+        webPurchaseRedemptionHelper.handleRedeemWebPurchase(webPurchaseRedemption) {
             result = it
         }
         assertThat(result).isEqualTo(expectedResult)
@@ -128,7 +128,7 @@ class WebPurchaseRedemptionHelperTest {
         val expectedResult = RedeemWebPurchaseListener.Result.InvalidToken
         mockBackendResult(expectedResult)
         var result: RedeemWebPurchaseListener.Result? = null
-        webPurchaseRedemptionHelper.handleRedeemWebPurchase(deepLink) {
+        webPurchaseRedemptionHelper.handleRedeemWebPurchase(webPurchaseRedemption) {
             result = it
         }
         assertThat(result).isEqualTo(expectedResult)

@@ -1515,7 +1515,7 @@ internal class PurchasesTest : BasePurchasesTest() {
 
     @Test
     fun `redeemWebPurchase is successful if helper returns success`() {
-        val redemptionLink = Purchases.DeepLink.WebPurchaseRedemption("redemption_token")
+        val redemptionLink = WebPurchaseRedemption("redemption_token")
         val slot = slot<RedeemWebPurchaseListener>()
         every { mockWebPurchasesRedemptionHelper.handleRedeemWebPurchase(redemptionLink, capture(slot)) } answers {
             slot.captured.handleResult(RedeemWebPurchaseListener.Result.Success(mockInfo))
@@ -1529,7 +1529,7 @@ internal class PurchasesTest : BasePurchasesTest() {
 
     @Test
     fun `redeemWebPurchase errors if helper returns error`() {
-        val redemptionLink = Purchases.DeepLink.WebPurchaseRedemption("redemption_token")
+        val redemptionLink = WebPurchaseRedemption("redemption_token")
         val slot = slot<RedeemWebPurchaseListener>()
         val expectedError = PurchasesError(PurchasesErrorCode.UnknownBackendError)
         every { mockWebPurchasesRedemptionHelper.handleRedeemWebPurchase(redemptionLink, capture(slot)) } answers {

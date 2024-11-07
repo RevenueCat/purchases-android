@@ -120,33 +120,31 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
         super.onResume()
 
         val activity = requireActivity() as MainActivity
-        val deepLink = activity.rcDeepLink ?: return
-        if (deepLink is Purchases.DeepLink.WebPurchaseRedemption) {
-            activity.clearDeepLink()
-            Purchases.sharedInstance.redeemWebPurchase(deepLink) { result ->
-                when (result) {
-                    is RedeemWebPurchaseListener.Result.Success -> {
-                        showToast("Successfully redeemed web purchase. Updating customer info.")
+        val webPurchaseRedemption = activity.webPurchaseRedemption ?: return
+        activity.clearWebPurchaseRedemption()
+        Purchases.sharedInstance.redeemWebPurchase(webPurchaseRedemption) { result ->
+            when (result) {
+                is RedeemWebPurchaseListener.Result.Success -> {
+                    showToast("Successfully redeemed web purchase. Updating customer info.")
+                }
+                is RedeemWebPurchaseListener.Result.Error -> {
+                    showUserError(requireActivity(), result.error)
+                }
+                RedeemWebPurchaseListener.Result.InvalidToken -> {
+                    showToast("Invalid web redemption token. Please check your link.")
+                }
+                RedeemWebPurchaseListener.Result.AlreadyRedeemed -> {
+                    showToast("Web purchase already redeemed. Ignoring.")
+                }
+                is RedeemWebPurchaseListener.Result.Expired -> {
+                    val message = if (result.wasEmailSent) {
+                        "Web purchase redemption token expired. " +
+                            "An email with a new one was sent to ${result.obfuscatedEmail}."
+                    } else {
+                        "Web purchase redemption token expired. " +
+                            "A new one was previously sent to ${result.obfuscatedEmail}."
                     }
-                    is RedeemWebPurchaseListener.Result.Error -> {
-                        showUserError(requireActivity(), result.error)
-                    }
-                    RedeemWebPurchaseListener.Result.InvalidToken -> {
-                        showToast("Invalid web redemption token. Please check your link.")
-                    }
-                    RedeemWebPurchaseListener.Result.AlreadyRedeemed -> {
-                        showToast("Web purchase already redeemed. Ignoring.")
-                    }
-                    is RedeemWebPurchaseListener.Result.Expired -> {
-                        val message = if (result.wasEmailSent) {
-                            "Web purchase redemption token expired. " +
-                                "An email with a new one was sent to ${result.obfuscatedEmail}."
-                        } else {
-                            "Web purchase redemption token expired. " +
-                                "A new one was previously sent to ${result.obfuscatedEmail}."
-                        }
-                        showToast(message)
-                    }
+                    showToast(message)
                 }
             }
         }
