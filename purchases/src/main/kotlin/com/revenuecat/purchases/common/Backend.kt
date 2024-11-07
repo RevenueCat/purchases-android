@@ -708,12 +708,11 @@ internal class Backend(
                                 val resultBody = result.body
                                 val redemptionError = resultBody.optJSONObject("purchase_redemption_error_info")
                                 val obfuscatedEmail = redemptionError?.optString("obfuscated_email")
-                                val emailSent = redemptionError?.optBoolean("was_email_sent")
-                                if (obfuscatedEmail == null || emailSent == null) {
+                                if (obfuscatedEmail == null) {
                                     errorLog("Error parsing expired redemption token response: $resultBody")
                                     callback(RedeemWebPurchaseListener.Result.Error(result.toPurchasesError()))
                                 } else {
-                                    callback(RedeemWebPurchaseListener.Result.Expired(obfuscatedEmail, emailSent))
+                                    callback(RedeemWebPurchaseListener.Result.Expired(obfuscatedEmail))
                                 }
                             }
                             BackendErrorCode.BackendWebPurchaseAlreadyRedeemed.value -> {

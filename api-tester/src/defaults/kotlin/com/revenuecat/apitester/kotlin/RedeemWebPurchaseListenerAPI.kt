@@ -35,7 +35,6 @@ private class RedeemWebPurchaseListenerAPI {
             }
             is RedeemWebPurchaseListener.Result.Expired -> {
                 val obfuscatedEmail: String = result.obfuscatedEmail
-                val emailSent: Boolean = result.wasEmailSent
                 return false
             }
         }

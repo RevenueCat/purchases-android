@@ -112,7 +112,7 @@ class WebPurchaseRedemptionHelperTest {
 
     @Test
     fun `handleRedeemWebPurchase posts token and returns token expired`() {
-        val expectedResult = RedeemWebPurchaseListener.Result.Expired("test-email", wasEmailSent = false)
+        val expectedResult = RedeemWebPurchaseListener.Result.Expired("test-email")
         mockBackendResult(expectedResult)
         var result: RedeemWebPurchaseListener.Result? = null
         webPurchaseRedemptionHelper.handleRedeemWebPurchase(webPurchaseRedemption) {

@@ -120,14 +120,13 @@ class BackendRedeemWebPurchaseTest {
                 "code": 7853,
                 "message": "The link has expired.",
                 "purchase_redemption_error_info": {
-                   "obfuscated_email": "t***@r******t.com",
-                   "was_email_sent": true
+                   "obfuscated_email": "t***@r******t.com"
                 }
             }
         """.trimIndent()
         mockHttpResult(responseCode = RCHTTPStatusCodes.FORBIDDEN, responseBody = responseBody)
         performPostAndExpectResult(
-            RedeemWebPurchaseListener.Result.Expired(obfuscatedEmail = "t***@r******t.com", wasEmailSent = true)
+            RedeemWebPurchaseListener.Result.Expired(obfuscatedEmail = "t***@r******t.com")
         )
     }
 

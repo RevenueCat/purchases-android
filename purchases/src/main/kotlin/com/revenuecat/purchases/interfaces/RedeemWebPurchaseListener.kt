@@ -30,10 +30,10 @@ fun interface RedeemWebPurchaseListener {
 
         /**
          * Indicates that the redemption token has expired. An email with a new redemption token
-         * might be sent depending on the value of [wasEmailSent].
+         * might be sent if a new one wasn't already sent recently.
          * The email where it will be sent is indicated by the [obfuscatedEmail].
          */
-        data class Expired(val obfuscatedEmail: String, val wasEmailSent: Boolean) : Result()
+        data class Expired(val obfuscatedEmail: String) : Result()
 
         /**
          * Indicates that the web purchase has already been redeemed and can't be redeemed again.
