@@ -40,7 +40,7 @@ import com.revenuecat.purchases.interfaces.RedeemWebPurchaseListener
 import kotlinx.coroutines.launch
 
 @Composable
-fun Content(modifier: Modifier) {
+fun Content(modifier: Modifier = Modifier) {
     val coroutineScope = rememberCoroutineScope()
     var customerInfo: CustomerInfo? by remember { mutableStateOf(null) }
     var isAnonymous by remember { mutableStateOf(Purchases.sharedInstance.isAnonymous) }
@@ -55,11 +55,7 @@ fun Content(modifier: Modifier) {
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text("Your user ID:\n${Purchases.sharedInstance.appUserID}", textAlign = TextAlign.Center)
-        if (customerInfo?.entitlements?.active?.containsKey(Constants.ENTITLEMENT_ID) == true) {
-            HasEntitlement()
-        } else {
-            DoesNotHaveEntitlement()
-        }
+        EntitlementInfo(customerInfo)
         Button(onClick = {
             if (Purchases.sharedInstance.isAnonymous) {
                 shouldShowLoginDialog = true
@@ -96,7 +92,7 @@ fun Content(modifier: Modifier) {
                         Log.e("WebPurchaseSample", "Error logging out", e)
                     }
                 }
-            }
+            },
         )
     }
     WebRedemption { newCustomerInfo ->
@@ -111,7 +107,7 @@ fun WebRedemption(onSuccess: (CustomerInfo) -> Unit) {
     val activity = (LocalContext.current as? MainActivity)
     val webPurchaseRedemption = activity?.webPurchaseRedemption
     if (webPurchaseRedemption != null) {
-        LaunchedEffect(webPurchaseRedemption) {
+        LaunchedEffect(webPurchaseRedemption, onSuccess) {
             Purchases.sharedInstance.redeemWebPurchase(webPurchaseRedemption) { result ->
                 dialogMessage = when (result) {
                     is RedeemWebPurchaseListener.Result.Success -> {
@@ -139,40 +135,41 @@ fun WebRedemption(onSuccess: (CustomerInfo) -> Unit) {
             text = { Text(currentDialogMessage) },
             confirmButton = {
                 TextButton(
-                    onClick = { dialogMessage = null }
+                    onClick = { dialogMessage = null },
                 ) {
                     Text("OK")
                 }
-            }
+            },
         )
     }
 }
 
 @Composable
-fun HasEntitlement() {
-    Box(
-        modifier = Modifier
-            .padding(8.dp)
-            .background(Color.Green.copy(alpha = 0.5f), shape = RoundedCornerShape(8.dp))
-            .fillMaxWidth()
-            .fillMaxHeight(0.5f),
-        contentAlignment = Alignment.Center
-    ) {
-        Text("You have access to ${Constants.ENTITLEMENT_ID}!")
+fun EntitlementInfo(
+    customerInfo: CustomerInfo?,
+    modifier: Modifier = Modifier,
+) {
+    val hasEntitlement = customerInfo?.entitlements?.active?.containsKey(Constants.ENTITLEMENT_ID) == true
+    val color = if (hasEntitlement) {
+        Color.Green
+    } else {
+        Color.Red
     }
-}
-
-@Composable
-fun DoesNotHaveEntitlement() {
+    val text = if (hasEntitlement) {
+        "You have access to ${Constants.ENTITLEMENT_ID}!"
+    } else {
+        "You don't have access to ${Constants.ENTITLEMENT_ID} \uD83D\uDE1E"
+    }
+    @Suppress("MagicNumber")
     Box(
-        modifier = Modifier
+        modifier = modifier
             .padding(8.dp)
-            .background(Color.Red.copy(alpha = 0.5f), shape = RoundedCornerShape(8.dp))
+            .background(color.copy(alpha = 0.5f), shape = RoundedCornerShape(8.dp))
             .fillMaxWidth()
             .fillMaxHeight(0.5f),
-        contentAlignment = Alignment.Center
+        contentAlignment = Alignment.Center,
     ) {
-        Text("You don't have access to ${Constants.ENTITLEMENT_ID} \uD83D\uDE1E")
+        Text(text)
     }
 }
 
@@ -181,7 +178,7 @@ fun InputTextDialog(
     title: String,
     message: String,
     onDismiss: () -> Unit,
-    onConfirm: (String) -> Unit
+    onConfirm: (String) -> Unit,
 ) {
     var text by remember { mutableStateOf("") }
 
@@ -197,7 +194,7 @@ fun InputTextDialog(
                 TextField(
                     value = text,
                     onValueChange = { text = it },
-                    placeholder = { Text(text = "Enter text here") }
+                    placeholder = { Text(text = "Enter text here") },
                 )
             }
         },
@@ -205,17 +202,17 @@ fun InputTextDialog(
             TextButton(
                 onClick = {
                     onConfirm(text)
-                }
+                },
             ) {
                 Text("OK")
             }
         },
         dismissButton = {
             TextButton(
-                onClick = onDismiss
+                onClick = onDismiss,
             ) {
                 Text("Cancel")
             }
-        }
+        },
     )
 }
