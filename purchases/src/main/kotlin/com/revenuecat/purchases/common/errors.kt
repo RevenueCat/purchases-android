@@ -8,7 +8,7 @@ import org.json.JSONException
 import java.io.IOException
 
 @SuppressWarnings("MagicNumber")
-private enum class BackendErrorCode(val value: Int) {
+internal enum class BackendErrorCode(val value: Int) {
     BackendInvalidPlatform(7000),
     BackendStoreProblem(7101),
     BackendCannotTransferPurchase(7102),
@@ -30,6 +30,9 @@ private enum class BackendErrorCode(val value: Int) {
     BackendInvalidSubscriberAttributes(7263),
     BackendInvalidSubscriberAttributesBody(7264),
     BackendProductIDsMalformed(7662),
+    BackendInvalidWebRedemptionToken(7849),
+    BackendWebPurchaseAlreadyRedeemed(7852),
+    BackendExpiredWebRedemptionToken(7853),
     ;
 
     companion object {
@@ -97,6 +100,9 @@ private fun BackendErrorCode.toPurchasesErrorCode(): PurchasesErrorCode {
         BackendErrorCode.BackendInternalServerError,
         -> PurchasesErrorCode.UnexpectedBackendResponseError
         BackendErrorCode.BackendProductIDsMalformed -> PurchasesErrorCode.UnsupportedError
+        BackendErrorCode.BackendInvalidWebRedemptionToken -> PurchasesErrorCode.PurchaseInvalidError
+        BackendErrorCode.BackendWebPurchaseAlreadyRedeemed -> PurchasesErrorCode.ProductAlreadyPurchasedError
+        BackendErrorCode.BackendExpiredWebRedemptionToken -> PurchasesErrorCode.PurchaseInvalidError
     }
 }
 

@@ -4,7 +4,7 @@ import android.os.Handler
 import android.os.Looper
 import com.revenuecat.purchases.CustomerInfoUpdateHandler
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
-import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.WebPurchaseRedemption
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
@@ -21,22 +21,26 @@ internal class WebPurchaseRedemptionHelper(
     private val mainHandler: Handler? = Handler(Looper.getMainLooper()),
 ) {
     fun handleRedeemWebPurchase(
-        deepLink: Purchases.DeepLink.WebPurchaseRedemption,
+        webPurchaseRedemption: WebPurchaseRedemption,
         listener: RedeemWebPurchaseListener,
     ) {
         debugLog("Starting web purchase redemption.")
         backend.postRedeemWebPurchase(
             identityManager.currentAppUserID,
-            deepLink.redemptionToken,
-            onErrorHandler = {
-                errorLog("Error redeeming web purchase: $it")
-                dispatchResult(listener, RedeemWebPurchaseListener.Result.Error(it))
-            },
-            onSuccessHandler = {
-                debugLog("Successfully redeemed web purchase. Updating customer info.")
-                offlineEntitlementsManager.resetOfflineCustomerInfoCache()
-                customerInfoUpdateHandler.cacheAndNotifyListeners(it)
-                dispatchResult(listener, RedeemWebPurchaseListener.Result.Success(it))
+            webPurchaseRedemption.redemptionToken,
+            onResultHandler = { result ->
+                when (result) {
+                    is RedeemWebPurchaseListener.Result.Success -> {
+                        debugLog("Successfully redeemed web purchase. Updating customer info.")
+                        offlineEntitlementsManager.resetOfflineCustomerInfoCache()
+                        customerInfoUpdateHandler.cacheAndNotifyListeners(result.customerInfo)
+                        dispatchResult(listener, result)
+                    }
+                    else -> {
+                        errorLog("Error redeeming web purchase: $result")
+                        dispatchResult(listener, result)
+                    }
+                }
             },
         )
     }

@@ -6,6 +6,7 @@ internal object RCHTTPStatusCodes {
     const val UNSUCCESSFUL = 300
     const val NOT_MODIFIED = 304
     const val BAD_REQUEST = 400
+    const val FORBIDDEN = 403
     const val NOT_FOUND = 404
     const val ERROR = 500
 

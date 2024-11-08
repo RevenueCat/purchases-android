@@ -5,27 +5,28 @@ import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.WebPurchaseRedemption
 import com.revenuecat.purchases_sample.R
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 class MainActivity : AppCompatActivity() {
 
-    internal var rcDeepLink: Purchases.DeepLink? = null
+    internal var webPurchaseRedemption: WebPurchaseRedemption? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        rcDeepLink = Purchases.parseAsDeepLink(intent)
+        webPurchaseRedemption = Purchases.parseAsWebPurchaseRedemption(intent)
     }
 
     override fun onNewIntent(intent: Intent?) {
         super.onNewIntent(intent)
         if (intent != null) {
-            rcDeepLink = Purchases.parseAsDeepLink(intent)
+            webPurchaseRedemption = Purchases.parseAsWebPurchaseRedemption(intent)
         }
     }
 
-    fun clearDeepLink() {
-        rcDeepLink = null
+    fun clearWebPurchaseRedemption() {
+        webPurchaseRedemption = null
     }
 }

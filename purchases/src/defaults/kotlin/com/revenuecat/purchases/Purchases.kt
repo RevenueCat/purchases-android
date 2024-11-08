@@ -802,38 +802,27 @@ class Purchases internal constructor(
     // endregion
 
     /**
-     * Redeem a web purchase using a [DeepLink.WebPurchaseRedemption] object obtained
-     * through [Purchases.parseAsDeepLink].
+     * Redeem a web purchase using a [WebPurchaseRedemption] object obtained
+     * through [Purchases.parseAsWebPurchaseRedemption].
      */
     @ExperimentalPreviewRevenueCatPurchasesAPI
-    fun redeemWebPurchase(webPurchaseRedemption: DeepLink.WebPurchaseRedemption, listener: RedeemWebPurchaseListener) {
+    fun redeemWebPurchase(webPurchaseRedemption: WebPurchaseRedemption, listener: RedeemWebPurchaseListener) {
         purchasesOrchestrator.redeemWebPurchase(webPurchaseRedemption, listener)
-    }
-
-    /**
-     * Represents a valid RevenueCat deep link.
-     */
-    @ExperimentalPreviewRevenueCatPurchasesAPI
-    sealed interface DeepLink {
-        /**
-         * Represents a web redemption link, that can be redeemed using [Purchases.redeemWebPurchase]
-         */
-        class WebPurchaseRedemption internal constructor(internal val redemptionToken: String) : DeepLink
     }
 
     // region Static
     companion object {
 
         /**
-         * Given an intent, parses the deep link if any and returns a parsed version of it.
-         * Currently supports web redemption links.
-         * @return A parsed version of the deep link or null if it's not a valid RevenueCat deep link.
+         * Given an intent, parses the associated link if any and returns a [WebPurchaseRedemption], which can
+         * be used to redeem a web purchase using [Purchases.redeemWebPurchase]
+         * @return A parsed version of the link or null if it's not a valid RevenueCat web purchase redemption link.
          */
         @ExperimentalPreviewRevenueCatPurchasesAPI
         @JvmStatic
-        fun parseAsDeepLink(intent: Intent): DeepLink? {
+        fun parseAsWebPurchaseRedemption(intent: Intent): WebPurchaseRedemption? {
             val intentData = intent.data ?: return null
-            return DeepLinkParser.parseDeepLink(intentData)
+            return DeepLinkParser.parseWebPurchaseRedemption(intentData)
         }
 
         /**

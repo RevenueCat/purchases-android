@@ -24,6 +24,24 @@ class PurchasesError(
     override fun toString(): String {
         return "PurchasesError(code=$code, underlyingErrorMessage=$underlyingErrorMessage, message='$message')"
     }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as PurchasesError
+
+        if (code != other.code) return false
+        if (underlyingErrorMessage != other.underlyingErrorMessage) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = code.hashCode()
+        result = 31 * result + (underlyingErrorMessage?.hashCode() ?: 0)
+        return result
+    }
 }
 
 @SuppressWarnings("MagicNumber")

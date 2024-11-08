@@ -17,6 +17,7 @@ import com.revenuecat.purchases.PurchasesAreCompletedBy;
 import com.revenuecat.purchases.PurchasesConfiguration;
 import com.revenuecat.purchases.PurchasesError;
 import com.revenuecat.purchases.Store;
+import com.revenuecat.purchases.WebPurchaseRedemption;
 import com.revenuecat.purchases.amazon.AmazonConfiguration;
 import com.revenuecat.purchases.interfaces.GetAmazonLWAConsentStatusCallback;
 import com.revenuecat.purchases.interfaces.LogInCallback;
@@ -35,7 +36,7 @@ import java.util.concurrent.ExecutorService;
 final class PurchasesAPI {
     static void check(
             final Purchases purchases,
-            final Purchases.DeepLink.WebPurchaseRedemption deepLink,
+            final WebPurchaseRedemption webPurchaseRedemption,
             final RedeemWebPurchaseListener redeemWebPurchaseListener,
             final Intent intent
             ) {
@@ -95,7 +96,7 @@ final class PurchasesAPI {
         purchases.getCustomerInfo(receiveCustomerInfoListener);
         purchases.getCustomerInfo(CacheFetchPolicy.CACHED_OR_FETCHED, receiveCustomerInfoListener);
         purchases.getAmazonLWAConsentStatus(getAmazonLWAContentStatusCallback);
-        purchases.redeemWebPurchase(deepLink, redeemWebPurchaseListener);
+        purchases.redeemWebPurchase(webPurchaseRedemption, redeemWebPurchaseListener);
 
         purchases.restorePurchases(receiveCustomerInfoListener);
         purchases.invalidateCustomerInfoCache();
@@ -114,7 +115,7 @@ final class PurchasesAPI {
 
         final PurchasesConfiguration configuration = purchases.getCurrentConfiguration();
 
-        final Purchases.DeepLink parsedDeepLink = Purchases.parseAsDeepLink(intent);
+        final WebPurchaseRedemption webPurchaseRedemption1 = Purchases.parseAsWebPurchaseRedemption(intent);
     }
 
     static void check(final Purchases purchases, final Map<String, String> attributes) {

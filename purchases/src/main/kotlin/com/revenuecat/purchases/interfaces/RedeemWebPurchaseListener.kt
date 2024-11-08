@@ -13,8 +13,32 @@ fun interface RedeemWebPurchaseListener {
      * Result of the redemption of a RevenueCat Web purchase.
      */
     sealed class Result {
+        /**
+         * Indicates that the web purchase was redeemed successfully.
+         */
         data class Success(val customerInfo: CustomerInfo) : Result()
+
+        /**
+         * Indicates that an unknown error occurred during the redemption.
+         */
         data class Error(val error: PurchasesError) : Result()
+
+        /**
+         * Indicates that the redemption token is invalid.
+         */
+        object InvalidToken : Result()
+
+        /**
+         * Indicates that the redemption token has expired. An email with a new redemption token
+         * might be sent if a new one wasn't already sent recently.
+         * The email where it will be sent is indicated by the [obfuscatedEmail].
+         */
+        data class Expired(val obfuscatedEmail: String) : Result()
+
+        /**
+         * Indicates that the web purchase has already been redeemed and can't be redeemed again.
+         */
+        object AlreadyRedeemed : Result()
 
         /**
          * Whether the redemption was successful or not.
@@ -23,6 +47,9 @@ fun interface RedeemWebPurchaseListener {
             get() = when (this) {
                 is Success -> true
                 is Error -> false
+                InvalidToken -> false
+                is Expired -> false
+                AlreadyRedeemed -> false
             }
     }
 

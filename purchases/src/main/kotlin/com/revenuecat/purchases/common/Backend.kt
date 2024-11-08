@@ -22,6 +22,7 @@ import com.revenuecat.purchases.common.offlineentitlements.ProductEntitlementMap
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.customercenter.CustomerCenterRoot
+import com.revenuecat.purchases.interfaces.RedeemWebPurchaseListener
 import com.revenuecat.purchases.models.GoogleReplacementMode
 import com.revenuecat.purchases.models.PricingPhase
 import com.revenuecat.purchases.paywalls.events.PaywallEventRequest
@@ -76,7 +77,8 @@ internal typealias ProductEntitlementCallback = Pair<(ProductEntitlementMapping)
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 internal typealias CustomerCenterCallback = Pair<(CustomerCenterConfigData) -> Unit, (PurchasesError) -> Unit>
 
-internal typealias RedeemWebPurchaseCallback = Pair<(CustomerInfo) -> Unit, (PurchasesError) -> Unit>
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+internal typealias RedeemWebPurchaseCallback = (RedeemWebPurchaseListener.Result) -> Unit
 
 internal enum class PostReceiptErrorHandlingBehavior {
     SHOULD_BE_MARKED_SYNCED,
@@ -661,11 +663,11 @@ internal class Backend(
         }
     }
 
+    @Suppress("NestedBlockDepth")
     fun postRedeemWebPurchase(
         appUserID: String,
         redemptionToken: String,
-        onSuccessHandler: (CustomerInfo) -> Unit,
-        onErrorHandler: (PurchasesError) -> Unit,
+        onResultHandler: (RedeemWebPurchaseListener.Result) -> Unit,
     ) {
         val endpoint = Endpoint.PostRedeemWebPurchase
         val path = endpoint.getPath()
@@ -684,19 +686,42 @@ internal class Backend(
             override fun onError(error: PurchasesError) {
                 synchronized(this@Backend) {
                     redeemWebPurchaseCallbacks.remove(path)
-                }?.forEach { (_, onErrorHandler) ->
-                    onErrorHandler(error)
+                }?.forEach { callback ->
+                    callback(RedeemWebPurchaseListener.Result.Error(error))
                 }
             }
 
             override fun onCompletion(result: HTTPResult) {
                 synchronized(this@Backend) {
                     redeemWebPurchaseCallbacks.remove(path)
-                }?.forEach { (onSuccessHandler, onErrorHandler) ->
+                }?.forEach { callback ->
                     if (result.isSuccessful()) {
-                        onSuccessHandler(CustomerInfoFactory.buildCustomerInfo(result))
+                        callback(
+                            RedeemWebPurchaseListener.Result.Success(CustomerInfoFactory.buildCustomerInfo(result)),
+                        )
                     } else {
-                        onErrorHandler(result.toPurchasesError().also { errorLog(it) })
+                        when (result.backendErrorCode) {
+                            BackendErrorCode.BackendInvalidWebRedemptionToken.value -> {
+                                callback(RedeemWebPurchaseListener.Result.InvalidToken)
+                            }
+                            BackendErrorCode.BackendExpiredWebRedemptionToken.value -> {
+                                val resultBody = result.body
+                                val redemptionError = resultBody.optJSONObject("purchase_redemption_error_info")
+                                val obfuscatedEmail = redemptionError?.optString("obfuscated_email")
+                                if (obfuscatedEmail == null) {
+                                    errorLog("Error parsing expired redemption token response: $resultBody")
+                                    callback(RedeemWebPurchaseListener.Result.Error(result.toPurchasesError()))
+                                } else {
+                                    callback(RedeemWebPurchaseListener.Result.Expired(obfuscatedEmail))
+                                }
+                            }
+                            BackendErrorCode.BackendWebPurchaseAlreadyRedeemed.value -> {
+                                callback(RedeemWebPurchaseListener.Result.AlreadyRedeemed)
+                            }
+                            else -> {
+                                callback(RedeemWebPurchaseListener.Result.Error(result.toPurchasesError()))
+                            }
+                        }
                     }
                 }
             }
@@ -706,7 +731,7 @@ internal class Backend(
                 call,
                 dispatcher,
                 path,
-                onSuccessHandler to onErrorHandler,
+                onResultHandler,
                 Delay.NONE,
             )
         }
@@ -760,11 +785,11 @@ internal class Backend(
         }
     }
 
-    private fun <K, S, E> MutableMap<K, MutableList<Pair<S, E>>>.addCallback(
+    private fun <K, F> MutableMap<K, MutableList<F>>.addCallback(
         call: Dispatcher.AsyncCall,
         dispatcher: Dispatcher,
         cacheKey: K,
-        functions: Pair<S, E>,
+        functions: F,
         delay: Delay = Delay.NONE,
     ) {
         if (!containsKey(cacheKey)) {

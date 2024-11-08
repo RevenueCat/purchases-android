@@ -6,7 +6,7 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.interfaces.RedeemWebPurchaseListener
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
-@Suppress("unused", "UNUSED_VARIABLE")
+@Suppress("unused", "UNUSED_VARIABLE", "ReturnCount")
 private class RedeemWebPurchaseListenerAPI {
     fun checkListener(
         redeemWebPurchaseListener: RedeemWebPurchaseListener,
@@ -25,6 +25,16 @@ private class RedeemWebPurchaseListenerAPI {
             }
             is RedeemWebPurchaseListener.Result.Error -> {
                 val error: PurchasesError = result.error
+                return false
+            }
+            is RedeemWebPurchaseListener.Result.InvalidToken -> {
+                return false
+            }
+            is RedeemWebPurchaseListener.Result.AlreadyRedeemed -> {
+                return false
+            }
+            is RedeemWebPurchaseListener.Result.Expired -> {
+                val obfuscatedEmail: String = result.obfuscatedEmail
                 return false
             }
         }
