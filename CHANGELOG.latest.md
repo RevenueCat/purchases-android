@@ -1,9 +1,8 @@
-## RevenueCat SDK
-### ✨ New Features
-* Add `tenjinAnalyticsInstallationId` setter property (#1897) via Toni Rico (@tonidero)
+## RevenueCatUI SDK
 ### 🐞 Bugfixes
-* [Fix] Consider a network error as not successfully synced for paywall events (#1900) via Mark Villacampa (@MarkVillacampa)
+* Handle `IllegalArgumentException` when opening a Uri in the paywalls (#1904) via Toni Rico (@tonidero)
 
 ### 🔄 Other Changes
-* [Paywalls] Synchronize paywall events on app backgrounding and after a purchase (#1901) via Mark Villacampa (@MarkVillacampa)
-* Dispatcher catches and rethrows Throwable instead of Exception to avoid swallowing errors (#1894) via JayShortway (@JayShortway)
+* Create sample web purchase redemption app (#1908) via Toni Rico (@tonidero)
+* Add extra error cases for web purchases redemptions (#1899) via Toni Rico (@tonidero)
+* Use new web redemption endpoint (#1903) via Toni Rico (@tonidero)
