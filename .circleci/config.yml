@@ -115,7 +115,7 @@ commands:
             gcloud firebase test android run --type instrumentation \
               --app <<parameters.app_apk_path>> \
               --test <<parameters.test_apk_path>> \
-              --device model=panther,version=33,locale=en,orientation=portrait \
+              --device model=MediumPhone.arm,version=33,locale=en,orientation=portrait \
               --timeout 2m \
               --results-bucket cloud-test-${GOOGLE_PROJECT_ID}
       - run:
