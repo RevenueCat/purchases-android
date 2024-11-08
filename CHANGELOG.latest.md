@@ -1,17 +1,9 @@
 ## RevenueCat SDK
 ### ✨ New Features
-* [Experimental] Web purchase redemption (#1889) via Toni Rico (@tonidero)
+* Add `tenjinAnalyticsInstallationId` setter property (#1897) via Toni Rico (@tonidero)
 ### 🐞 Bugfixes
-* Keeps the org.json package. (#1891) via JayShortway (@JayShortway)
-### 📦 Dependency Updates
-* Bump rexml from 3.3.8 to 3.3.9 (#1892) via dependabot[bot] (@dependabot[bot])
-* Bump danger from 9.5.0 to 9.5.1 (#1885) via dependabot[bot] (@dependabot[bot])
-* Bump fastlane from 2.224.0 to 2.225.0 (#1884) via dependabot[bot] (@dependabot[bot])
-
-## RevenueCatUI SDK
-### 🐞 Bugfixes
-* Fix application of modifiers in `Markdown` component (#1893) via Toni Rico (@tonidero)
+* [Fix] Consider a network error as not successfully synced for paywall events (#1900) via Mark Villacampa (@MarkVillacampa)
 
 ### 🔄 Other Changes
-* [CI] Allow publishing snapshot releases manually from branches (#1888) via Toni Rico (@tonidero)
-* Detekt auto-fixes (#1886) via Toni Rico (@tonidero)
+* [Paywalls] Synchronize paywall events on app backgrounding and after a purchase (#1901) via Mark Villacampa (@MarkVillacampa)
+* Dispatcher catches and rethrows Throwable instead of Exception to avoid swallowing errors (#1894) via JayShortway (@JayShortway)
