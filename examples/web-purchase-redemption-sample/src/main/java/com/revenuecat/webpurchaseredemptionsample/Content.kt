@@ -45,7 +45,11 @@ fun Content(modifier: Modifier = Modifier) {
     var customerInfo: CustomerInfo? by remember { mutableStateOf(null) }
     var isAnonymous by remember { mutableStateOf(Purchases.sharedInstance.isAnonymous) }
     LaunchedEffect(Unit) {
-        customerInfo = Purchases.sharedInstance.awaitCustomerInfo()
+        try {
+            customerInfo = Purchases.sharedInstance.awaitCustomerInfo()
+        } catch (e: PurchasesException) {
+            Log.e("WebPurchaseSample", "Error fetching customer info", e)
+        }
     }
     var shouldShowLoginDialog by remember { mutableStateOf(false) }
 
