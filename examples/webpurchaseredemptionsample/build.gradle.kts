@@ -48,7 +48,6 @@ android {
 }
 
 dependencies {
-
     implementation(project(path = ":purchases"))
     implementation(libs.androidx.core)
     implementation(libs.androidx.lifecycle.runtime.ktx)

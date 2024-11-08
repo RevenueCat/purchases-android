@@ -15,7 +15,7 @@ import androidx.compose.ui.Modifier
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.WebPurchaseRedemption
-import com.revenuecat.webpurchaseredemptionsample.ui.theme.PurchasesandroidTheme
+import com.revenuecat.webpurchaseredemptionsample.ui.theme.PurchasesTheme
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 class MainActivity : ComponentActivity() {
@@ -27,7 +27,7 @@ class MainActivity : ComponentActivity() {
         webPurchaseRedemption = Purchases.parseAsWebPurchaseRedemption(intent)
         enableEdgeToEdge()
         setContent {
-            PurchasesandroidTheme {
+            PurchasesTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     Content(modifier = Modifier.padding(innerPadding))
                 }
