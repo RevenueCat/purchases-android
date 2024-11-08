@@ -39,6 +39,7 @@ import com.revenuecat.purchases.awaitLogOut
 import com.revenuecat.purchases.interfaces.RedeemWebPurchaseListener
 import kotlinx.coroutines.launch
 
+@Suppress("LongMethod")
 @Composable
 fun Content(modifier: Modifier = Modifier) {
     val coroutineScope = rememberCoroutineScope()
