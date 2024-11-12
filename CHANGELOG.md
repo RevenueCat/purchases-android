@@ -1,3 +1,8 @@
+## 8.10.2
+## RevenueCat SDK
+### 🐞 Bugfixes
+* Catch `NoSuchMethodError` on Ads library (#1914) via Cesar de la Vega (@vegaro)
+
 ## 8.10.1
 ## RevenueCatUI SDK
 ### 🐞 Bugfixes
