@@ -4,7 +4,7 @@
     <string name="all_plans">Wszystkie subskrypcje</string>
     <string name="privacy">Prywatność</string>
     <string name="privacy_policy">Polityka prywatności</string>
-    <string name="restore">Przywrócić</string>
+    <string name="restore">Przywróć</string>
     <string name="restore_purchases">Przywróć zakupy</string>
     <string name="terms">Warunki</string>
     <string name="terms_and_conditions">Regulamin</string>
@@ -16,8 +16,8 @@
     <string name="weekly">Co tydzień</string>
     <string name="lifetime">Dożywotni</string>
     <string name="package_discount">%1$d%% zniżki</string>
-    <string name="continue_cta">Kontynuować</string>
+    <string name="continue_cta">Kontynuuj</string>
     <string name="default_offer_details_with_intro_offer">Rozpocznij okres próbny {{ sub_offer_duration }}, a następnie {{ total_price_and_per_month }}.</string>
     <string name="no_browser_cannot_open_link">Brak zainstalowanej przeglądarki. Link nie mógł zostać otwarty.</string>
-    <string name="cannot_open_link">Nieprawidłowy link. Nie można otworzyć.</string>
+    <string name="cannot_open_link">Link jest nieprawidłowy. Nie można go otworzyć.</string>
 </resources>
