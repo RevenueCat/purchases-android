@@ -1,7 +1,7 @@
 package com.revenuecat.purchases.ui.revenuecatui.composables
 
-import android.app.Activity
 import android.content.ActivityNotFoundException
+import android.content.Context
 import android.widget.Toast
 import androidx.annotation.StringRes
 import androidx.compose.foundation.background
@@ -48,7 +48,6 @@ import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfigura
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockViewModel
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.templates.template2
-import com.revenuecat.purchases.ui.revenuecatui.extensions.findActivityOrThrow
 import com.revenuecat.purchases.ui.revenuecatui.extensions.openUriOrElse
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import java.net.URL
@@ -86,7 +85,6 @@ private fun Footer(
 ) {
     // Not using LocalContext, as that is not an Activity context in (Robolectric) tests.
     val context = LocalView.current.context
-    val activity = context.findActivityOrThrow()
     val shouldDisplayAllPlansButton = mode == PaywallMode.FOOTER_CONDENSED && allPlansTapped != null
     val anyButtonDisplayed = shouldDisplayAllPlansButton ||
         configuration.displayRestorePurchases ||
@@ -147,7 +145,7 @@ private fun Footer(
                 R.string.terms_and_conditions,
                 R.string.terms,
             ) {
-                openURL(activity, it)
+                openURL(context, it)
             }
 
             if (configuration.privacyURL != null) {
@@ -162,7 +160,7 @@ private fun Footer(
                 R.string.privacy_policy,
                 R.string.privacy,
             ) {
-                openURL(activity, it)
+                openURL(context, it)
             }
         }
     }
@@ -256,14 +254,14 @@ private object FooterConstants {
     fun style(): TextStyle = MaterialTheme.typography.bodySmall
 }
 
-private fun openURL(activity: Activity, url: URL) {
-    activity.openUriOrElse(url.toString()) { exception ->
+private fun openURL(context: Context, url: URL) {
+    context.openUriOrElse(url.toString()) { exception ->
         val msg = if (exception is ActivityNotFoundException) {
-            activity.getString(R.string.no_browser_cannot_open_link)
+            context.getString(R.string.no_browser_cannot_open_link)
         } else {
-            activity.getString(R.string.cannot_open_link)
+            context.getString(R.string.cannot_open_link)
         }
-        Toast.makeText(activity, msg, Toast.LENGTH_SHORT).show()
+        Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
         Logger.w(msg)
     }
 }
