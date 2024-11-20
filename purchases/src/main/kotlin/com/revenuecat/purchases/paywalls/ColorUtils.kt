@@ -37,7 +37,8 @@ internal fun parseRGBAColor(stringRepresentation: String): Int =
     } ?: Color.parseColor(stringRepresentation)
 
 /**
- * Copied from Android's Color.argb(), which we can't use in unit tests because it's an Android method.
+ * Copied from Android's Color.argb(), making it slightly more testable as it avoids the need for mocking or
+ * Robolectric test runners.
  */
 @Suppress("MagicNumber")
 @ColorInt
