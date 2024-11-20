@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.paywalls.components.properties
 
 import com.revenuecat.purchases.common.OfferingParser
+import com.revenuecat.purchases.paywalls.colorInt
 import org.intellij.lang.annotations.Language
 import org.junit.Test
 import org.junit.experimental.runners.Enclosed
@@ -26,16 +27,30 @@ internal class ColorInfoTests {
             @Parameterized.Parameters(name = "{0}")
             fun parameters(): Collection<*> = listOf(
                 arrayOf(
-                    "hex",
+                    "hex - rgba",
                     Args(
                         json = """
                             {
                               "type": "hex",
-                              "value": "#ff00ffff"
+                              "value": "#ff331122"
                             }
                         """.trimIndent(),
                         expected = ColorInfo.Hex(
-                            value = "#ff00ffff"
+                            value = colorInt(alpha = 0x22, red = 0xff, green = 0x33, blue = 0x11)
+                        )
+                    )
+                ),
+                arrayOf(
+                    "hex - rgb",
+                    Args(
+                        json = """
+                            {
+                              "type": "hex",
+                              "value": "#332211"
+                            }
+                        """.trimIndent(),
+                        expected = ColorInfo.Hex(
+                            value = colorInt(alpha = 0xff, red = 0x33, green = 0x22, blue = 0x11)
                         )
                     )
                 ),
@@ -88,7 +103,7 @@ internal class ColorInfoTests {
                             {
                               "light": {
                                 "type": "hex",
-                                "value": "#ff00ffff"
+                                "value": "#f403a1de"
                               },
                               "dark": {
                                 "type": "alias",
@@ -97,7 +112,9 @@ internal class ColorInfoTests {
                             }
                         """.trimIndent(),
                         expected = ColorScheme(
-                            light = ColorInfo.Hex(value = "#ff00ffff"),
+                            light = ColorInfo.Hex(
+                                value = colorInt(alpha = 0xde, red = 0xf4, green = 0x03, blue = 0xa1))
+                            ,
                             dark = ColorInfo.Alias(value = "primary"),
                         )
                     )
