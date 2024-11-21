@@ -11,7 +11,7 @@ import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 
 @Serializable
-internal sealed class ColorInfo {
+internal sealed interface ColorInfo {
 
     @Serializable
     @SerialName("hex")
@@ -19,11 +19,11 @@ internal sealed class ColorInfo {
         @Serializable(with = RgbaStringArgbColorIntDeserializer::class)
         @ColorInt
         val value: Int,
-    ) : ColorInfo()
+    ) : ColorInfo
 
     @Serializable
     @SerialName("alias")
-    data class Alias(val value: String) : ColorInfo()
+    data class Alias(val value: String) : ColorInfo
 }
 
 @Serializable
