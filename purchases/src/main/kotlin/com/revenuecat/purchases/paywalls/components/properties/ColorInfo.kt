@@ -24,6 +24,33 @@ internal sealed interface ColorInfo {
     @Serializable
     @SerialName("alias")
     data class Alias(val value: String) : ColorInfo
+
+    sealed interface Gradient : ColorInfo {
+
+        @Serializable
+        @SerialName("linear")
+        data class Linear(
+            val degrees: Float,
+            val points: List<Point>,
+        ) : Gradient
+
+        @Serializable
+        @SerialName("radial")
+        data class Radial(
+            val points: List<Point>,
+        ) : Gradient
+
+        /**
+         * A point in a gradient. Used by [Linear] and [Radial].
+         */
+        @Serializable
+        data class Point(
+            @Serializable(with = RgbaStringArgbColorIntDeserializer::class)
+            @ColorInt
+            val color: Int,
+            val percent: Float,
+        )
+    }
 }
 
 @Serializable
