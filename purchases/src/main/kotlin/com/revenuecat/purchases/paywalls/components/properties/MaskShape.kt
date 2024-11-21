@@ -4,23 +4,23 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-internal sealed class MaskShape {
+internal sealed interface MaskShape {
 
     @Serializable
     @SerialName("rectangle")
-    internal data class Rectangle(
+    data class Rectangle(
         val corners: CornerRadiuses? = null,
-    ) : MaskShape()
+    ) : MaskShape
 
     @Serializable
     @SerialName("pill")
-    internal object Pill : MaskShape()
+    object Pill : MaskShape
 
     @Serializable
     @SerialName("concave")
-    internal object Concave : MaskShape()
+    object Concave : MaskShape
 
     @Serializable
     @SerialName("convex")
-    internal object Convex : MaskShape()
+    object Convex : MaskShape
 }
