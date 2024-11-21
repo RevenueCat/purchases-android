@@ -23,13 +23,17 @@ internal class ImageUrlsTests {
                   "heic_low_res": "https://assets.pawwalls.com/1151049_low_res_1732039548.heic",
                   "original": "https://assets.pawwalls.com/1151049_1732039548.png",
                   "webp": "https://assets.pawwalls.com/1151049_1732039548.webp",
-                  "webp_low_res": "https://assets.pawwalls.com/1151049_low_res_1732039548.webp"
+                  "webp_low_res": "https://assets.pawwalls.com/1151049_low_res_1732039548.webp",
+                  "width": 5467,
+                  "height": 3564
                 }
             """.trimIndent()
             val expected = ImageUrls(
                 original = URL("https://assets.pawwalls.com/1151049_1732039548.png"),
                 webp = URL("https://assets.pawwalls.com/1151049_1732039548.webp"),
                 webpLowRes = URL("https://assets.pawwalls.com/1151049_low_res_1732039548.webp"),
+                width = 5467.toUInt(),
+                height = 3564.toUInt(),
             )
             
             // Act
@@ -65,14 +69,18 @@ internal class ImageUrlsTests {
                                 "heic_low_res": "https://assets.pawwalls.com/1151049_low_res_1732039548.heic",
                                 "original": "https://assets.pawwalls.com/1151049_1732039548.png",
                                 "webp": "https://assets.pawwalls.com/1151049_1732039548.webp",
-                                "webp_low_res": "https://assets.pawwalls.com/1151049_low_res_1732039548.webp"
+                                "webp_low_res": "https://assets.pawwalls.com/1151049_low_res_1732039548.webp",
+                                "width": 2345,
+                                "height": 1234
                               },
                               "dark": {
                                 "heic": "https://assets.pawwalls.com/2262159_2843140659.heic",
                                 "heic_low_res": "https://assets.pawwalls.com/2262159_low_res_2843140659.heic",
                                 "original": "https://assets.pawwalls.com/2262159_2843140659.png",
                                 "webp": "https://assets.pawwalls.com/2262159_2843140659.webp",
-                                "webp_low_res": "https://assets.pawwalls.com/2262159_low_res_2843140659.webp"
+                                "webp_low_res": "https://assets.pawwalls.com/2262159_low_res_2843140659.webp",
+                                "width": 35687,
+                                "height": 3568
                               }
                             }
                         """.trimIndent(),
@@ -81,11 +89,15 @@ internal class ImageUrlsTests {
                                 original = URL("https://assets.pawwalls.com/1151049_1732039548.png"),
                                 webp = URL("https://assets.pawwalls.com/1151049_1732039548.webp"),
                                 webpLowRes = URL("https://assets.pawwalls.com/1151049_low_res_1732039548.webp"),
+                                width = 2345.toUInt(),
+                                height = 1234.toUInt(),
                             ),
                             dark = ImageUrls(
                                 original = URL("https://assets.pawwalls.com/2262159_2843140659.png"),
                                 webp = URL("https://assets.pawwalls.com/2262159_2843140659.webp"),
                                 webpLowRes = URL("https://assets.pawwalls.com/2262159_low_res_2843140659.webp"),
+                                width = 35687.toUInt(),
+                                height = 3568.toUInt(),
                             ),
                         )
                     )
@@ -100,7 +112,9 @@ internal class ImageUrlsTests {
                                 "heic_low_res": "https://assets.pawwalls.com/1151049_low_res_1732039548.heic",
                                 "original": "https://assets.pawwalls.com/1151049_1732039548.png",
                                 "webp": "https://assets.pawwalls.com/1151049_1732039548.webp",
-                                "webp_low_res": "https://assets.pawwalls.com/1151049_low_res_1732039548.webp"
+                                "webp_low_res": "https://assets.pawwalls.com/1151049_low_res_1732039548.webp",
+                                "width": 547,
+                                "height": 257
                               }
                             }
                         """.trimIndent(),
@@ -109,6 +123,8 @@ internal class ImageUrlsTests {
                                 original = URL("https://assets.pawwalls.com/1151049_1732039548.png"),
                                 webp = URL("https://assets.pawwalls.com/1151049_1732039548.webp"),
                                 webpLowRes = URL("https://assets.pawwalls.com/1151049_low_res_1732039548.webp"),
+                                width = 547.toUInt(),
+                                height = 257.toUInt(),
                             ),
                         )
                     )
