@@ -2,6 +2,7 @@ package com.revenuecat.purchases.paywalls.components.properties
 
 import com.revenuecat.purchases.common.OfferingParser
 import com.revenuecat.purchases.paywalls.colorInt
+import com.revenuecat.purchases.paywalls.components.properties.ColorInfo.Gradient.Point
 import org.intellij.lang.annotations.Language
 import org.junit.Test
 import org.junit.experimental.runners.Enclosed
@@ -65,6 +66,88 @@ internal class ColorInfoTests {
                         """.trimIndent(),
                         expected = ColorInfo.Alias(
                             value = "primary"
+                        )
+                    )
+                ),
+                arrayOf(
+                    "gradient - linear",
+                    Args(
+                        json = """
+                            {
+                              "type": "linear",
+                              "degrees": 45,
+                              "points": [
+                                {
+                                  "color": "#032400ff",
+                                  "percent": 0
+                                },
+                                {
+                                  "color": "#090979ff",
+                                  "percent": 35
+                                },
+                                {
+                                  "color": "#216c32ff",
+                                  "percent": 100
+                                }
+                              ]
+                            }
+                        """.trimIndent(),
+                        expected = ColorInfo.Gradient.Linear(
+                            degrees = 45f,
+                            points = listOf(
+                                Point(
+                                    color = colorInt(alpha = 0xff, red = 0x03, green = 0x24, blue = 0x00),
+                                    percent = 0f,
+                                ),
+                                Point(
+                                    color = colorInt(alpha = 0xff, red = 0x09, green = 0x09, blue = 0x79),
+                                    percent = 35f,
+                                ),
+                                Point(
+                                    color = colorInt(alpha = 0xff, red = 0x21, green = 0x6c, blue = 0x32),
+                                    percent = 100f,
+                                )
+                            )
+                        )
+                    )
+                ),
+                arrayOf(
+                    "gradient - radial",
+                    Args(
+                        json = """
+                            {
+                              "type": "radial",
+                              "points": [
+                                {
+                                  "color": "#032400ff",
+                                  "percent": 0
+                                },
+                                {
+                                  "color": "#090979ff",
+                                  "percent": 35
+                                },
+                                {
+                                  "color": "#216c32ff",
+                                  "percent": 100
+                                }
+                              ]
+                            }
+                        """.trimIndent(),
+                        expected = ColorInfo.Gradient.Radial(
+                            points = listOf(
+                                Point(
+                                    color = colorInt(alpha = 0xff, red = 0x03, green = 0x24, blue = 0x00),
+                                    percent = 0f,
+                                ),
+                                Point(
+                                    color = colorInt(alpha = 0xff, red = 0x09, green = 0x09, blue = 0x79),
+                                    percent = 35f,
+                                ),
+                                Point(
+                                    color = colorInt(alpha = 0xff, red = 0x21, green = 0x6c, blue = 0x32),
+                                    percent = 100f,
+                                )
+                            )
                         )
                     )
                 ),
