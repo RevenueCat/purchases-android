@@ -34,4 +34,26 @@ internal data class TextComponent(
     val size: Size = Size(width = Fill, height = Fit),
     val padding: Padding = zero,
     val margin: Padding = zero,
+    val overrides: ComponentOverrides<PartialTextComponent>? = null,
 ) : PaywallComponent
+
+@Serializable
+internal data class PartialTextComponent(
+    val visible: Boolean? = true,
+    @SerialName("text_lid")
+    val text: LocalizationKey? = null,
+    val color: ColorScheme? = null,
+    @SerialName("background_color")
+    val backgroundColor: ColorScheme? = null,
+    @SerialName("font_name")
+    val fontName: String? = null,
+    @SerialName("font_weight")
+    val fontWeight: FontWeight? = null,
+    @SerialName("font_size")
+    val fontSize: FontSize? = null,
+    @SerialName("horizontal_alignment")
+    val horizontalAlignment: HorizontalAlignment? = null,
+    val size: Size? = null,
+    val padding: Padding? = null,
+    val margin: Padding? = null,
+) : PartialComponent
