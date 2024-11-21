@@ -4,15 +4,15 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-internal sealed class Shape {
+internal sealed interface Shape {
 
     @Serializable
     @SerialName("rectangle")
-    internal data class Rectangle(
+    data class Rectangle(
         val corners: CornerRadiuses? = null,
-    ) : Shape()
+    ) : Shape
 
     @Serializable
     @SerialName("pill")
-    internal object Pill : Shape()
+    object Pill : Shape
 }

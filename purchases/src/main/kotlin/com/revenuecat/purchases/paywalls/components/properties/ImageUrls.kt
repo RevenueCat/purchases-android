@@ -14,6 +14,8 @@ internal data class ImageUrls internal constructor(
     @SerialName("webp_low_res")
     @Serializable(with = URLSerializer::class)
     val webpLowRes: URL,
+    val width: UInt,
+    val height: UInt,
 )
 
 @Serializable
