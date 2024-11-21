@@ -10,19 +10,19 @@ internal data class Size(
 )
 
 @Serializable
-internal sealed class SizeConstraint {
+internal sealed interface SizeConstraint {
 
     @Serializable
     @SerialName("fit")
-    internal object Fit : SizeConstraint()
+    object Fit : SizeConstraint
 
     @Serializable
     @SerialName("fill")
-    internal object Fill : SizeConstraint()
+    object Fill : SizeConstraint
 
     @Serializable
     @SerialName("fixed")
-    internal data class Fixed(
+    data class Fixed(
         val value: UInt,
-    ) : SizeConstraint()
+    ) : SizeConstraint
 }
