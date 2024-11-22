@@ -12,7 +12,13 @@ import kotlinx.serialization.descriptors.buildSerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 
+@Serializable
+@JvmInline
+internal value class LocaleId(val value: String)
+
 internal typealias LocalizationKey = String
+
+internal typealias LocalizationDictionary = Map<LocalizationKey, LocalizationData>
 
 /**
  * A make-shift union type. LocalizationData is either a plain String or a ThemeImageUrls object.
