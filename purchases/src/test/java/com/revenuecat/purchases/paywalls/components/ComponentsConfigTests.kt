@@ -56,7 +56,7 @@ internal class ComponentsConfigTests {
                     stack = StackComponent(
                         components = listOf(
                             TextComponent(
-                                text = "7bkohQjzIE",
+                                text = LocalizationKey("7bkohQjzIE"),
                                 color = ColorScheme(light = ColorInfo.Alias("primary"))
                             )
                         ),
@@ -154,7 +154,7 @@ internal class ComponentsConfigTests {
                             stack = StackComponent(
                                 components = listOf(
                                     TextComponent(
-                                        text = "7bkohQjzIE",
+                                        text = LocalizationKey("7bkohQjzIE"),
                                         color = ColorScheme(light = ColorInfo.Alias("primary"))
                                     )
                                 ),
@@ -168,7 +168,7 @@ internal class ComponentsConfigTests {
                                 stack = StackComponent(
                                     components = listOf(
                                         TextComponent(
-                                            text = "7bkohQjzIE",
+                                            text = LocalizationKey("7bkohQjzIE"),
                                             color = ColorScheme(light = ColorInfo.Alias("primary"))
                                         )
                                     ),
@@ -215,7 +215,7 @@ internal class ComponentsConfigTests {
                             stack = StackComponent(
                                 components = listOf(
                                     TextComponent(
-                                        text = "7bkohQjzIE",
+                                        text = LocalizationKey("7bkohQjzIE"),
                                         color = ColorScheme(light = ColorInfo.Alias("primary"))
                                     )
                                 ),
@@ -267,7 +267,7 @@ internal class ComponentsConfigTests {
                             stack = StackComponent(
                                 components = listOf(
                                     TextComponent(
-                                        text = "7bkohQjzIE",
+                                        text = LocalizationKey("7bkohQjzIE"),
                                         color = ColorScheme(light = ColorInfo.Alias("primary"))
                                     )
                                 ),
