@@ -62,8 +62,9 @@ internal data class ButtonComponent(
 }
 
 /**
- * Using the surrogate pattern to serialize Actions in a custom way. We want to decrease the level of nesting in the
- * JSON that would otherwise occur with this many nested classes.
+ * A custom (de)serializer for Actions using the surrogate pattern. The JSON we get from the backend does not map 1 to
+ * 1 to the class structure, as we want to decrease the level of nesting in the JSON that would otherwise occur with
+ * this many nested classes.
  *
  * See also:
  * * [RevenueCat/purchases-ios#4408](https://github.com/RevenueCat/purchases-ios/pull/4408)
