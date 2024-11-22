@@ -24,4 +24,20 @@ internal data class ImageComponent(
     val colorOverlay: ColorScheme? = null,
     @SerialName("fit_mode")
     val fitMode: FitMode = FIT,
+    val overrides: ComponentOverrides<PartialImageComponent>? = null,
 ) : PaywallComponent
+
+@Serializable
+internal data class PartialImageComponent(
+    val visible: Boolean? = true,
+    val source: ThemeImageUrls? = null,
+    val size: Size? = null,
+    @SerialName("override_source_lid")
+    val overrideSourceLid: LocalizationKey? = null,
+    @SerialName("fit_mode")
+    val fitMode: FitMode? = null,
+    @SerialName("mask_shape")
+    val maskShape: MaskShape? = null,
+    @SerialName("color_overlay")
+    val colorOverlay: ColorScheme? = null,
+) : PartialComponent
