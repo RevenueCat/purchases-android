@@ -38,6 +38,15 @@ internal class ComponentsConfigTests {
                           "type": "text"
                         }
                       ]
+                    },
+                    "background": {
+                      "type": "color",
+                      "value": {
+                        "light": {
+                          "type": "alias",
+                          "value": "primary"
+                        }
+                      }
                     }
                   }
                 }
@@ -51,6 +60,11 @@ internal class ComponentsConfigTests {
                                 color = ColorScheme(light = ColorInfo.Alias("primary"))
                             )
                         ),
+                    ),
+                    background = Background.Color(
+                        value = ColorScheme(
+                            light = ColorInfo.Alias("primary")
+                        )
                     )
                 )
             )
@@ -104,6 +118,15 @@ internal class ComponentsConfigTests {
                               }
                             ]
                           },
+                          "background": {
+                            "type": "color",
+                            "value": {
+                              "light": {
+                                "type": "alias",
+                                "value": "primary"
+                              }
+                            }
+                          },
                           "sticky_footer": {
                             "type": "sticky_footer",
                             "stack": {
@@ -135,6 +158,11 @@ internal class ComponentsConfigTests {
                                         color = ColorScheme(light = ColorInfo.Alias("primary"))
                                     )
                                 ),
+                            ),
+                            background = Background.Color(
+                                value = ColorScheme(
+                                    light = ColorInfo.Alias("primary")
+                                )
                             ),
                             stickyFooter = StickyFooterComponent(
                                 stack = StackComponent(
@@ -171,6 +199,15 @@ internal class ComponentsConfigTests {
                                 "type": "text"
                               }
                             ]
+                          },
+                          "background": {
+                            "type": "color",
+                            "value": {
+                              "light": {
+                                "type": "alias",
+                                "value": "primary"
+                              }
+                            }
                           }
                         }
                         """.trimIndent(),
@@ -182,6 +219,11 @@ internal class ComponentsConfigTests {
                                         color = ColorScheme(light = ColorInfo.Alias("primary"))
                                     )
                                 ),
+                            ),
+                            background = Background.Color(
+                                value = ColorScheme(
+                                    light = ColorInfo.Alias("primary")
+                                )
                             )
                         )
                     ),
@@ -209,6 +251,15 @@ internal class ComponentsConfigTests {
                               }
                             ]
                           },
+                          "background": {
+                            "type": "color",
+                            "value": {
+                              "light": {
+                                "type": "alias",
+                                "value": "primary"
+                              }
+                            }
+                          },
                           "sticky_footer": null
                         }
                         """.trimIndent(),
@@ -220,6 +271,11 @@ internal class ComponentsConfigTests {
                                         color = ColorScheme(light = ColorInfo.Alias("primary"))
                                     )
                                 ),
+                            ),
+                            background = Background.Color(
+                                value = ColorScheme(
+                                    light = ColorInfo.Alias("primary")
+                                )
                             )
                         )
                     ),

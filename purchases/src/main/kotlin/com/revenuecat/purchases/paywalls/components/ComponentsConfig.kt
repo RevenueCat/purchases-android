@@ -11,6 +11,7 @@ internal data class ComponentsConfig(
 @Serializable
 internal data class PaywallComponentsConfig(
     val stack: StackComponent,
+    val background: Background,
     @SerialName("sticky_footer")
     val stickyFooter: StickyFooterComponent? = null,
 )

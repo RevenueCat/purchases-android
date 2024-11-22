@@ -1,6 +1,8 @@
 package com.revenuecat.purchases.paywalls.components
 
 import com.revenuecat.purchases.common.OfferingParser
+import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
+import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import org.intellij.lang.annotations.Language
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -37,6 +39,15 @@ internal class PaywallComponentsDataTests(
                               "stack": {
                                 "type": "stack",
                                 "components": []
+                              },
+                              "background": {
+                                "type": "color",
+                                "value": {
+                                  "light": {
+                                    "type": "alias",
+                                    "value": "primary"
+                                  }
+                                }
                               }
                             }
                           },
@@ -58,6 +69,11 @@ internal class PaywallComponentsDataTests(
                                 stack = StackComponent(
                                     components = emptyList()
                                 ),
+                                background = Background.Color(
+                                    value = ColorScheme(
+                                        light = ColorInfo.Alias("primary")
+                                    )
+                                )
                             )
                         ),
                         componentsLocalizations = mapOf(
@@ -82,6 +98,15 @@ internal class PaywallComponentsDataTests(
                               "stack": {
                                 "type": "stack",
                                 "components": []
+                              },
+                              "background": {
+                                "type": "color",
+                                "value": {
+                                  "light": {
+                                    "type": "alias",
+                                    "value": "primary"
+                                  }
+                                }
                               }
                             }
                           },
@@ -102,6 +127,11 @@ internal class PaywallComponentsDataTests(
                                 stack = StackComponent(
                                     components = emptyList()
                                 ),
+                                background = Background.Color(
+                                    value = ColorScheme(
+                                        light = ColorInfo.Alias("primary")
+                                    )
+                                )
                             )
                         ),
                         componentsLocalizations = mapOf(
