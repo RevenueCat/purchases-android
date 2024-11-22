@@ -1,6 +1,8 @@
-package com.revenuecat.purchases.paywalls.components
+package com.revenuecat.purchases.paywalls.components.common
 
 import com.revenuecat.purchases.common.OfferingParser
+import com.revenuecat.purchases.paywalls.components.PartialImageComponent
+import com.revenuecat.purchases.paywalls.components.PartialTextComponent
 import org.intellij.lang.annotations.Language
 import org.junit.Test
 import org.junit.experimental.runners.Enclosed

@@ -1,6 +1,7 @@
-package com.revenuecat.purchases.paywalls.components
+package com.revenuecat.purchases.paywalls.components.common
 
 import com.revenuecat.purchases.common.OfferingParser
+import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import org.intellij.lang.annotations.Language

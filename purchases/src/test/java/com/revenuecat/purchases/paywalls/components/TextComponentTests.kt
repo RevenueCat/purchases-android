@@ -2,6 +2,7 @@ package com.revenuecat.purchases.paywalls.components
 
 import com.revenuecat.purchases.common.OfferingParser
 import com.revenuecat.purchases.paywalls.colorInt
+import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.FontSize

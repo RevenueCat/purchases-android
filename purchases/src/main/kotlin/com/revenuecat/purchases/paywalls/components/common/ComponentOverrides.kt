@@ -1,5 +1,6 @@
-package com.revenuecat.purchases.paywalls.components
+package com.revenuecat.purchases.paywalls.components.common
 
+import com.revenuecat.purchases.paywalls.components.PartialComponent
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -20,5 +21,3 @@ internal data class ComponentConditions<T : PartialComponent>(
     val medium: T? = null,
     val expanded: T? = null,
 )
-
-internal sealed interface PartialComponent
