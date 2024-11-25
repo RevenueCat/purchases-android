@@ -28,9 +28,7 @@ import androidx.compose.ui.Alignment.Companion.CenterHorizontally
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalUriHandler
-import androidx.compose.ui.platform.UriHandler
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.semantics
@@ -85,8 +83,8 @@ private fun Footer(
     childModifier: Modifier = Modifier,
     allPlansTapped: (() -> Unit)? = null,
 ) {
-    val context = LocalContext.current
-    val uriHandler = LocalUriHandler.current
+    // Not using LocalContext, as that is not an Activity context in (Robolectric) tests.
+    val context = LocalView.current.context
     val shouldDisplayAllPlansButton = mode == PaywallMode.FOOTER_CONDENSED && allPlansTapped != null
     val anyButtonDisplayed = shouldDisplayAllPlansButton ||
         configuration.displayRestorePurchases ||
@@ -147,7 +145,7 @@ private fun Footer(
                 R.string.terms_and_conditions,
                 R.string.terms,
             ) {
-                openURL(context, uriHandler, it)
+                openURL(context, it)
             }
 
             if (configuration.privacyURL != null) {
@@ -162,7 +160,7 @@ private fun Footer(
                 R.string.privacy_policy,
                 R.string.privacy,
             ) {
-                openURL(context, uriHandler, it)
+                openURL(context, it)
             }
         }
     }
@@ -256,8 +254,8 @@ private object FooterConstants {
     fun style(): TextStyle = MaterialTheme.typography.bodySmall
 }
 
-private fun openURL(context: Context, uriHandler: UriHandler, url: URL) {
-    uriHandler.openUriOrElse(url.toString()) { exception ->
+private fun openURL(context: Context, url: URL) {
+    context.openUriOrElse(url.toString()) { exception ->
         val msg = if (exception is ActivityNotFoundException) {
             context.getString(R.string.no_browser_cannot_open_link)
         } else {
