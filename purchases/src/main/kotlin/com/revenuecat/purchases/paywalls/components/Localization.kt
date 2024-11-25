@@ -16,7 +16,9 @@ import kotlinx.serialization.encoding.Encoder
 @JvmInline
 internal value class LocaleId(val value: String)
 
-internal typealias LocalizationKey = String
+@Serializable
+@JvmInline
+internal value class LocalizationKey(val value: String)
 
 internal typealias LocalizationDictionary = Map<LocalizationKey, LocalizationData>
 

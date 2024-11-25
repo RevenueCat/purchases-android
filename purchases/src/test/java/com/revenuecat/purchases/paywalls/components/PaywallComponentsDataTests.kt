@@ -78,7 +78,7 @@ internal class PaywallComponentsDataTests(
                         ),
                         componentsLocalizations = mapOf(
                             LocaleId("en_US") to mapOf(
-                                "ZvS4Ck5hGM" to LocalizationData.Text("Hello")
+                                LocalizationKey("ZvS4Ck5hGM") to LocalizationData.Text("Hello")
                             )
                         ),
                         defaultLocaleIdentifier = LocaleId("en_US"),
@@ -136,7 +136,7 @@ internal class PaywallComponentsDataTests(
                         ),
                         componentsLocalizations = mapOf(
                             LocaleId("en_US") to mapOf(
-                                "ZvS4Ck5hGM" to LocalizationData.Text("Hello")
+                                LocalizationKey("ZvS4Ck5hGM") to LocalizationData.Text("Hello")
                             )
                         ),
                         defaultLocaleIdentifier = LocaleId("en_US"),

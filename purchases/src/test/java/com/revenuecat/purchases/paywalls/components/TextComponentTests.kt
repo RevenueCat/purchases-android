@@ -85,7 +85,7 @@ internal class TextComponentTests {
                         }
                         """.trimIndent(),
                         expected = TextComponent(
-                            text = "7bkohQjzIE",
+                            text = LocalizationKey("7bkohQjzIE"),
                             color = ColorScheme(
                                 light = ColorInfo.Hex(colorInt(alpha = 0xff, red = 0, green = 0, blue = 0))
                             ),
@@ -121,7 +121,7 @@ internal class TextComponentTests {
                         }
                         """.trimIndent(),
                         expected = TextComponent(
-                            text = "7bkohQjzIE",
+                            text = LocalizationKey("7bkohQjzIE"),
                             color = ColorScheme(
                                 light = ColorInfo.Hex(colorInt(alpha = 0xff, red = 0xff, green = 0xff, blue = 0xff))
                             ),
@@ -217,7 +217,7 @@ internal class TextComponentTests {
                         """.trimIndent(),
                         expected = PartialTextComponent(
                             visible = false,
-                            text = "7bkohQjzIE",
+                            text = LocalizationKey("7bkohQjzIE"),
                             color = ColorScheme(
                                 light = ColorInfo.Hex(colorInt(alpha = 0xff, red = 0, green = 0, blue = 0))
                             ),

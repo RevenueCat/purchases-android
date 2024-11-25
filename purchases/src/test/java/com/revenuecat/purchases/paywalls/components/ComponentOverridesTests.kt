@@ -137,14 +137,14 @@ internal class ComponentOverridesTests {
                         }
                         """.trimIndent(),
                         expected = ComponentOverrides(
-                            introOffer = PartialImageComponent(overrideSourceLid = "intro"),
+                            introOffer = PartialImageComponent(overrideSourceLid = LocalizationKey("intro")),
                             states = ComponentStates(
-                                selected = PartialImageComponent(overrideSourceLid = "selected")
+                                selected = PartialImageComponent(overrideSourceLid = LocalizationKey("selected"))
                             ),
                             conditions = ComponentConditions(
-                                compact = PartialImageComponent(overrideSourceLid = "compact"),
-                                medium = PartialImageComponent(overrideSourceLid = "medium"),
-                                expanded = PartialImageComponent(overrideSourceLid = "expanded"),
+                                compact = PartialImageComponent(overrideSourceLid = LocalizationKey("compact")),
+                                medium = PartialImageComponent(overrideSourceLid = LocalizationKey("medium")),
+                                expanded = PartialImageComponent(overrideSourceLid = LocalizationKey("expanded")),
                             )
                         )
                     )
