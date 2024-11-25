@@ -1,11 +1,13 @@
 package com.revenuecat.purchases.paywalls.components.properties
 
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /**
  * Contains radius values for 4 corners, in dp.
  */
+@InternalRevenueCatAPI
 @Serializable
 internal data class CornerRadiuses(
     /**

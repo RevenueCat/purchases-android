@@ -1,10 +1,12 @@
 package com.revenuecat.purchases.paywalls.components.common
 
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.utils.serializers.URLSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import java.net.URL
 
+@InternalRevenueCatAPI
 @Serializable
 internal data class PaywallComponentsData(
     @SerialName("template_name")

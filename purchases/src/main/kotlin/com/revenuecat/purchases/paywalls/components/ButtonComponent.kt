@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.paywalls.components
 
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.paywalls.components.ButtonComponent.Action
 import com.revenuecat.purchases.paywalls.components.ButtonComponent.Destination
 import com.revenuecat.purchases.paywalls.components.ButtonComponent.UrlMethod
@@ -10,6 +11,7 @@ import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 
+@InternalRevenueCatAPI
 @Serializable
 @SerialName("button")
 internal data class ButtonComponent(
@@ -17,6 +19,7 @@ internal data class ButtonComponent(
     val stack: StackComponent,
 ) : PaywallComponent {
 
+    @InternalRevenueCatAPI
     @Serializable(with = ActionSerializer::class)
     sealed interface Action {
         // SerialNames are handled by the ActionSerializer.
@@ -31,6 +34,7 @@ internal data class ButtonComponent(
         data class NavigateTo(val destination: Destination) : Action
     }
 
+    @InternalRevenueCatAPI
     @Serializable
     sealed interface Destination {
         // SerialNames are handled by the ActionSerializer.
@@ -48,6 +52,7 @@ internal data class ButtonComponent(
         data class Url(val urlLid: String, val method: UrlMethod) : Destination
     }
 
+    @InternalRevenueCatAPI
     @Serializable
     enum class UrlMethod {
         @SerialName("in_app_browser")
@@ -71,6 +76,7 @@ internal data class ButtonComponent(
  * * [Composite serializers via surrogate](https://github.com/Kotlin/kotlinx.serialization/blob/31ab68caec3a448e1485f0d924106044fef112a7/docs/serializers.md#composite-serializer-via-surrogate)
  * * `ButtonComponentTests` for the expected format.
  */
+@OptIn(InternalRevenueCatAPI::class)
 private object ActionSerializer : KSerializer<Action> {
     override val descriptor: SerialDescriptor = ActionSurrogate.serializer().descriptor
 
@@ -85,6 +91,7 @@ private object ActionSerializer : KSerializer<Action> {
     }
 }
 
+@OptIn(InternalRevenueCatAPI::class)
 @Serializable
 private class ActionSurrogate(
     val type: ActionTypeSurrogate,
@@ -188,6 +195,7 @@ private enum class DestinationSurrogate {
     url,
 }
 
+@OptIn(InternalRevenueCatAPI::class)
 @Suppress("ConstructorParameterNaming", "PropertyName")
 @Serializable
 private class UrlSurrogate(val url_lid: String, val method: UrlMethod)

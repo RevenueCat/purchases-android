@@ -1,10 +1,12 @@
 package com.revenuecat.purchases.paywalls.components.properties
 
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.utils.serializers.URLSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import java.net.URL
 
+@InternalRevenueCatAPI
 @Serializable
 internal data class ImageUrls internal constructor(
     @Serializable(with = URLSerializer::class)
@@ -18,6 +20,7 @@ internal data class ImageUrls internal constructor(
     val height: UInt,
 )
 
+@InternalRevenueCatAPI
 @Serializable
 internal data class ThemeImageUrls internal constructor(
     val light: ImageUrls,

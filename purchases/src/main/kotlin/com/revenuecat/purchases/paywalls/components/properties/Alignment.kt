@@ -1,8 +1,10 @@
 package com.revenuecat.purchases.paywalls.components.properties
 
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
+@InternalRevenueCatAPI
 @Serializable
 internal enum class HorizontalAlignment {
     @SerialName("leading")
@@ -15,6 +17,7 @@ internal enum class HorizontalAlignment {
     TRAILING,
 }
 
+@InternalRevenueCatAPI
 @Serializable
 internal enum class VerticalAlignment {
     @SerialName("top")
@@ -27,6 +30,7 @@ internal enum class VerticalAlignment {
     BOTTOM,
 }
 
+@InternalRevenueCatAPI
 @Serializable
 internal enum class TwoDimensionalAlignment {
     @SerialName("center")

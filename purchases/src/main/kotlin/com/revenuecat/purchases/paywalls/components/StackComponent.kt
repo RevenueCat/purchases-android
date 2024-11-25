@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.paywalls.components
 
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.paywalls.components.common.ComponentOverrides
 import com.revenuecat.purchases.paywalls.components.properties.Border
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
@@ -16,6 +17,7 @@ import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
+@InternalRevenueCatAPI
 @Serializable
 @SerialName("stack")
 internal data class StackComponent(
@@ -33,6 +35,7 @@ internal data class StackComponent(
     val overrides: ComponentOverrides<PartialStackComponent>? = null,
 ) : PaywallComponent
 
+@InternalRevenueCatAPI
 @Serializable
 internal data class PartialStackComponent(
     val visible: Boolean? = true,

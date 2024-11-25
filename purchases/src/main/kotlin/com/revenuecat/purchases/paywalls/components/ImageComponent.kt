@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.paywalls.components
 
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.paywalls.components.common.ComponentOverrides
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
@@ -13,6 +14,7 @@ import com.revenuecat.purchases.paywalls.components.properties.ThemeImageUrls
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
+@InternalRevenueCatAPI
 @Serializable
 @SerialName("image")
 internal data class ImageComponent(
@@ -29,6 +31,7 @@ internal data class ImageComponent(
     val overrides: ComponentOverrides<PartialImageComponent>? = null,
 ) : PaywallComponent
 
+@InternalRevenueCatAPI
 @Serializable
 internal data class PartialImageComponent(
     val visible: Boolean? = true,
