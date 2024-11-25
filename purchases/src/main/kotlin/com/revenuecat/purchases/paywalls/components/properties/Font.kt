@@ -6,7 +6,7 @@ import kotlinx.serialization.Serializable
 
 @InternalRevenueCatAPI
 @Serializable
-internal enum class FontWeight {
+enum class FontWeight {
     @SerialName("extra_light")
     EXTRA_LIGHT,
 
@@ -37,7 +37,7 @@ internal enum class FontWeight {
 
 @InternalRevenueCatAPI
 @Serializable
-internal enum class FontSize {
+enum class FontSize {
     @SerialName("heading_xxl")
     HEADING_XXL,
 

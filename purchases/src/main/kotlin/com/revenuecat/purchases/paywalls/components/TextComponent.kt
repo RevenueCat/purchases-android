@@ -15,13 +15,17 @@ import com.revenuecat.purchases.paywalls.components.properties.Padding.Companion
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fill
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fit
+import dev.drewhamilton.poko.Poko
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @InternalRevenueCatAPI
+@Poko
 @Serializable
 @SerialName("text")
-internal data class TextComponent(
+class TextComponent
+@Suppress("LongParameterList")
+internal constructor(
     @SerialName("text_lid")
     val text: LocalizationKey,
     val color: ColorScheme,
@@ -42,8 +46,11 @@ internal data class TextComponent(
 ) : PaywallComponent
 
 @InternalRevenueCatAPI
+@Poko
 @Serializable
-internal data class PartialTextComponent(
+class PartialTextComponent
+@Suppress("LongParameterList")
+internal constructor(
     val visible: Boolean? = true,
     @SerialName("text_lid")
     val text: LocalizationKey? = null,

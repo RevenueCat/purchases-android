@@ -3,6 +3,7 @@ package com.revenuecat.purchases.paywalls.components.properties
 import androidx.annotation.ColorInt
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.paywalls.parseRGBAColor
+import dev.drewhamilton.poko.Poko
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -13,41 +14,45 @@ import kotlinx.serialization.encoding.Encoder
 
 @InternalRevenueCatAPI
 @Serializable
-internal sealed interface ColorInfo {
+sealed interface ColorInfo {
 
+    @Poko
     @Serializable
     @SerialName("hex")
-    data class Hex(
+    class Hex internal constructor(
         @Serializable(with = RgbaStringArgbColorIntDeserializer::class)
         @ColorInt
         val value: Int,
     ) : ColorInfo
 
+    @Poko
     @Serializable
     @SerialName("alias")
-    data class Alias(val value: String) : ColorInfo
+    class Alias internal constructor(val value: String) : ColorInfo
 
     sealed interface Gradient : ColorInfo {
 
+        @Poko
         @Serializable
         @SerialName("linear")
-        data class Linear(
+        class Linear internal constructor(
             val degrees: Float,
             val points: List<Point>,
         ) : Gradient
 
+        @Poko
         @Serializable
         @SerialName("radial")
-        data class Radial(
+        class Radial internal constructor(
             val points: List<Point>,
         ) : Gradient
 
         /**
          * A point in a gradient. Used by [Linear] and [Radial].
          */
-        @InternalRevenueCatAPI
+        @Poko
         @Serializable
-        data class Point(
+        class Point internal constructor(
             @Serializable(with = RgbaStringArgbColorIntDeserializer::class)
             @ColorInt
             val color: Int,
@@ -57,8 +62,9 @@ internal sealed interface ColorInfo {
 }
 
 @InternalRevenueCatAPI
+@Poko
 @Serializable
-internal data class ColorScheme(
+class ColorScheme internal constructor(
     val light: ColorInfo,
     val dark: ColorInfo? = null,
 )

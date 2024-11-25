@@ -57,6 +57,7 @@ kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", versi
 kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover"}
 mavenPublish = { id = "com.vanniktech.maven.publish", version.ref = "mavenPublish" }
 paparazzi = { id = "app.cash.paparazzi", version.ref = "paparrazzi" }
+poko = { id = "dev.drewhamilton.poko", version = "0.13.1" }
 
 [libraries]
 androidx-appcompat = { module = "androidx.appcompat:appcompat", version.ref = "appcompat" }
