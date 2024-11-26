@@ -21,7 +21,7 @@ internal value class LocaleId(val value: String)
 @InternalRevenueCatAPI
 @Serializable
 @JvmInline
-internal value class LocalizationKey(val value: String)
+value class LocalizationKey internal constructor(val value: String)
 
 @InternalRevenueCatAPI
 internal typealias LocalizationDictionary = Map<LocalizationKey, LocalizationData>

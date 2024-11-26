@@ -1,14 +1,16 @@
 package com.revenuecat.purchases.paywalls.components.properties
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import dev.drewhamilton.poko.Poko
 import kotlinx.serialization.Serializable
 
 /**
  * Contains padding values for 4 axes, in dp.
  */
 @InternalRevenueCatAPI
+@Poko
 @Serializable
-internal data class Padding(
+class Padding internal constructor(
     /**
      * The top padding, in dp.
      */
@@ -26,8 +28,11 @@ internal data class Padding(
      */
     val trailing: Double,
 ) {
-    companion object {
+    internal companion object {
+        @get:JvmSynthetic
         val zero = Padding(0.0, 0.0, 0.0, 0.0)
+
+        @get:JvmSynthetic
         val default = Padding(10.0, 10.0, 20.0, 20.0)
     }
 }

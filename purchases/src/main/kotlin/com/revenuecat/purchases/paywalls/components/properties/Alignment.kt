@@ -6,7 +6,7 @@ import kotlinx.serialization.Serializable
 
 @InternalRevenueCatAPI
 @Serializable
-internal enum class HorizontalAlignment {
+enum class HorizontalAlignment {
     @SerialName("leading")
     LEADING,
 

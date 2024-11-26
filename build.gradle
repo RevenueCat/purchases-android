@@ -13,6 +13,7 @@ plugins {
     alias libs.plugins.detekt
     alias libs.plugins.dependencyGraph
     alias libs.plugins.emerge apply false
+    alias libs.plugins.poko apply false
 //    Removing from here gives an error
 //    The request for this plugin could not be satisfied because the plugin is already on the classpath with an
 //    unknown version, so compatibility cannot be checked.
