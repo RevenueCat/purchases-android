@@ -29,7 +29,10 @@ class Padding internal constructor(
     val trailing: Double,
 ) {
     internal companion object {
-        internal val zero = Padding(0.0, 0.0, 0.0, 0.0)
-        internal val default = Padding(10.0, 10.0, 20.0, 20.0)
+        @get:JvmSynthetic
+        val zero = Padding(0.0, 0.0, 0.0, 0.0)
+
+        @get:JvmSynthetic
+        val default = Padding(10.0, 10.0, 20.0, 20.0)
     }
 }
