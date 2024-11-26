@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.paywalls.components
 
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.paywalls.components.common.ComponentOverrides
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
@@ -17,6 +18,7 @@ import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fi
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
+@InternalRevenueCatAPI
 @Serializable
 @SerialName("text")
 internal data class TextComponent(
@@ -39,6 +41,7 @@ internal data class TextComponent(
     val overrides: ComponentOverrides<PartialTextComponent>? = null,
 ) : PaywallComponent
 
+@InternalRevenueCatAPI
 @Serializable
 internal data class PartialTextComponent(
     val visible: Boolean? = true,

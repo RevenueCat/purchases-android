@@ -1,3 +1,5 @@
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompilationTask
+
 plugins {
     alias libs.plugins.android.library
     alias libs.plugins.kotlin.android
@@ -44,6 +46,16 @@ android {
                     exclude "com/revenuecat/purchases/backend_integration_tests/**"
                 }
             }
+        }
+    }
+}
+
+// Opt-in to InternalRevenueCatAPI for tests only. This avoids having to explicitly opt in for every test file
+// separately.
+tasks.withType(KotlinCompilationTask).configureEach {
+    if (name.contains("UnitTest") || name.contains("AndroidTest")) {
+        compilerOptions {
+            freeCompilerArgs.add("-opt-in=com.revenuecat.purchases.InternalRevenueCatAPI")
         }
     }
 }

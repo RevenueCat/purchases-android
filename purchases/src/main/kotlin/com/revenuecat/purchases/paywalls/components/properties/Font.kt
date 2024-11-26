@@ -1,8 +1,10 @@
 package com.revenuecat.purchases.paywalls.components.properties
 
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
+@InternalRevenueCatAPI
 @Serializable
 internal enum class FontWeight {
     @SerialName("extra_light")
@@ -33,6 +35,7 @@ internal enum class FontWeight {
     BLACK,
 }
 
+@InternalRevenueCatAPI
 @Serializable
 internal enum class FontSize {
     @SerialName("heading_xxl")

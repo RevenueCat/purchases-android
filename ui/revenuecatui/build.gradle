@@ -1,3 +1,5 @@
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompilationTask
+
 plugins {
     alias libs.plugins.android.library
     alias libs.plugins.dokka
@@ -107,5 +109,13 @@ tasks.dokkaHtmlPartial.configure {
                 remoteLineSuffix.set("#L")
             }
         }
+    }
+}
+
+// Opt-in to InternalRevenueCatAPI for the entire module. This avoids having to explicitly opt in at every call site
+// separately.
+tasks.withType(KotlinCompilationTask).configureEach {
+    compilerOptions {
+        freeCompilerArgs.add("-opt-in=com.revenuecat.purchases.InternalRevenueCatAPI")
     }
 }

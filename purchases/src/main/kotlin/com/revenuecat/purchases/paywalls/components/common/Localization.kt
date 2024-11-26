@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.paywalls.components.common
 
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.paywalls.components.properties.ThemeImageUrls
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.InternalSerializationApi
@@ -12,19 +13,23 @@ import kotlinx.serialization.descriptors.buildSerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 
+@InternalRevenueCatAPI
 @Serializable
 @JvmInline
 internal value class LocaleId(val value: String)
 
+@InternalRevenueCatAPI
 @Serializable
 @JvmInline
 internal value class LocalizationKey(val value: String)
 
+@InternalRevenueCatAPI
 internal typealias LocalizationDictionary = Map<LocalizationKey, LocalizationData>
 
 /**
  * A make-shift union type. LocalizationData is either a plain String or a ThemeImageUrls object.
  */
+@InternalRevenueCatAPI
 @Serializable(with = LocalizationDataSerializer::class)
 internal sealed interface LocalizationData {
     @Serializable
@@ -36,6 +41,7 @@ internal sealed interface LocalizationData {
     value class Image(val value: ThemeImageUrls) : LocalizationData
 }
 
+@OptIn(InternalRevenueCatAPI::class)
 private object LocalizationDataSerializer : KSerializer<LocalizationData> {
     // Documentation says to use either PrimitiveSerialDescriptor or buildClassSerialDescriptor. However, we need a
     // polymorphic descriptor that's either a primitive (string) or a class. So neither of those options fit the bill.

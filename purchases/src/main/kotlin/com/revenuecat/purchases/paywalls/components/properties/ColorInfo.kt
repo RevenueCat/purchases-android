@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.paywalls.components.properties
 
 import androidx.annotation.ColorInt
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.paywalls.parseRGBAColor
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
@@ -10,6 +11,7 @@ import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 
+@InternalRevenueCatAPI
 @Serializable
 internal sealed interface ColorInfo {
 
@@ -43,6 +45,7 @@ internal sealed interface ColorInfo {
         /**
          * A point in a gradient. Used by [Linear] and [Radial].
          */
+        @InternalRevenueCatAPI
         @Serializable
         data class Point(
             @Serializable(with = RgbaStringArgbColorIntDeserializer::class)
@@ -53,6 +56,7 @@ internal sealed interface ColorInfo {
     }
 }
 
+@InternalRevenueCatAPI
 @Serializable
 internal data class ColorScheme(
     val light: ColorInfo,

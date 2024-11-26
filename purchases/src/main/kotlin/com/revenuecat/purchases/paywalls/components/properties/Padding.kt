@@ -1,10 +1,12 @@
 package com.revenuecat.purchases.paywalls.components.properties
 
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import kotlinx.serialization.Serializable
 
 /**
  * Contains padding values for 4 axes, in dp.
  */
+@InternalRevenueCatAPI
 @Serializable
 internal data class Padding(
     /**
