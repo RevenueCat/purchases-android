@@ -1,4 +1,4 @@
-package com.revenuecat.purchases.paywalls.components
+package com.revenuecat.purchases.paywalls.components.common
 
 import com.revenuecat.purchases.common.OfferingParser
 import com.revenuecat.purchases.paywalls.components.properties.ImageUrls

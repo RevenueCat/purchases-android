@@ -1,4 +1,4 @@
-package com.revenuecat.purchases.paywalls.components
+package com.revenuecat.purchases.paywalls.components.common
 
 import com.revenuecat.purchases.utils.serializers.URLSerializer
 import kotlinx.serialization.SerialName

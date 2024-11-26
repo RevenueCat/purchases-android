@@ -1,5 +1,7 @@
-package com.revenuecat.purchases.paywalls.components
+package com.revenuecat.purchases.paywalls.components.common
 
+import com.revenuecat.purchases.paywalls.components.StackComponent
+import com.revenuecat.purchases.paywalls.components.StickyFooterComponent
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
