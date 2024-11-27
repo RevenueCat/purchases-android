@@ -10,7 +10,7 @@ import kotlinx.serialization.Serializable
 @InternalRevenueCatAPI
 @Poko
 @Serializable
-class Padding internal constructor(
+class Padding(
     /**
      * The top padding, in dp.
      */
@@ -28,7 +28,7 @@ class Padding internal constructor(
      */
     val trailing: Double,
 ) {
-    internal companion object {
+    companion object {
         @get:JvmSynthetic
         val zero = Padding(0.0, 0.0, 0.0, 0.0)
 
