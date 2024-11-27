@@ -707,10 +707,6 @@ workflows:
       - prepare-next-version: *only-main-branch
 
   daily-load-shedder-integration-tests:
-    when:
-      and:
-        - equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
-        - equal: [ "load-shedder-integration-tests", << pipeline.schedule.name >> ]
     jobs:
       - run-firebase-tests-purchases-load-shedder-integration-test:
           context:
