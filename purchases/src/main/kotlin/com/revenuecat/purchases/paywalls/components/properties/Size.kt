@@ -9,8 +9,8 @@ import kotlinx.serialization.Serializable
 @Poko
 @Serializable
 class Size(
-    val width: SizeConstraint,
-    val height: SizeConstraint,
+    @get:JvmSynthetic val width: SizeConstraint,
+    @get:JvmSynthetic val height: SizeConstraint,
 )
 
 @InternalRevenueCatAPI
@@ -29,6 +29,6 @@ sealed interface SizeConstraint {
     @Serializable
     @SerialName("fixed")
     class Fixed(
-        val value: UInt,
+        @get:JvmSynthetic val value: UInt,
     ) : SizeConstraint
 }

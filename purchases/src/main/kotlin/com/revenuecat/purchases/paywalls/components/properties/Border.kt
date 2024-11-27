@@ -6,6 +6,8 @@ import kotlinx.serialization.Serializable
 @InternalRevenueCatAPI
 @Serializable
 internal data class Border(
+    @get:JvmSynthetic
     val color: ColorScheme,
+    @get:JvmSynthetic
     val width: Double,
 )

@@ -14,19 +14,19 @@ class Padding(
     /**
      * The top padding, in dp.
      */
-    val top: Double,
+    @get:JvmSynthetic val top: Double,
     /**
      * The bottom padding, in dp.
      */
-    val bottom: Double,
+    @get:JvmSynthetic val bottom: Double,
     /**
      * The leading, or start, padding, in dp.
      */
-    val leading: Double,
+    @get:JvmSynthetic val leading: Double,
     /**
      * The trailing, or end, padding, in dp.
      */
-    val trailing: Double,
+    @get:JvmSynthetic val trailing: Double,
 ) {
     companion object {
         @get:JvmSynthetic
