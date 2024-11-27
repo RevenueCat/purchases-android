@@ -8,7 +8,7 @@ import kotlinx.serialization.Serializable
 @InternalRevenueCatAPI
 @Poko
 @Serializable
-class Size internal constructor(
+class Size(
     val width: SizeConstraint,
     val height: SizeConstraint,
 )
@@ -28,7 +28,7 @@ sealed interface SizeConstraint {
     @Poko
     @Serializable
     @SerialName("fixed")
-    class Fixed internal constructor(
+    class Fixed(
         val value: UInt,
     ) : SizeConstraint
 }
