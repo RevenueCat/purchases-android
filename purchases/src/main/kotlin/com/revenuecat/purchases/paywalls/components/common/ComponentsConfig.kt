@@ -9,14 +9,15 @@ import kotlinx.serialization.Serializable
 @InternalRevenueCatAPI
 @Serializable
 internal data class ComponentsConfig(
-    val base: PaywallComponentsConfig,
+    @get:JvmSynthetic val base: PaywallComponentsConfig,
 )
 
 @InternalRevenueCatAPI
 @Serializable
 internal data class PaywallComponentsConfig(
-    val stack: StackComponent,
-    val background: Background,
+    @get:JvmSynthetic val stack: StackComponent,
+    @get:JvmSynthetic val background: Background,
+    @get:JvmSynthetic
     @SerialName("sticky_footer")
     val stickyFooter: StickyFooterComponent? = null,
 )

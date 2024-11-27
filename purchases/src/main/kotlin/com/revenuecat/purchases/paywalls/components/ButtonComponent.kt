@@ -15,8 +15,8 @@ import kotlinx.serialization.encoding.Encoder
 @Serializable
 @SerialName("button")
 internal data class ButtonComponent(
-    val action: Action,
-    val stack: StackComponent,
+    @get:JvmSynthetic val action: Action,
+    @get:JvmSynthetic val stack: StackComponent,
 ) : PaywallComponent {
 
     @InternalRevenueCatAPI
@@ -31,7 +31,7 @@ internal data class ButtonComponent(
         object NavigateBack : Action
 
         @Serializable
-        data class NavigateTo(val destination: Destination) : Action
+        data class NavigateTo(@get:JvmSynthetic val destination: Destination) : Action
     }
 
     @InternalRevenueCatAPI
@@ -43,13 +43,16 @@ internal data class ButtonComponent(
         object CustomerCenter : Destination
 
         @Serializable
-        data class PrivacyPolicy(val urlLid: String, val method: UrlMethod) : Destination
+        data class PrivacyPolicy(
+            @get:JvmSynthetic val urlLid: String,
+            @get:JvmSynthetic val method: UrlMethod,
+        ) : Destination
 
         @Serializable
-        data class Terms(val urlLid: String, val method: UrlMethod) : Destination
+        data class Terms(@get:JvmSynthetic val urlLid: String, @get:JvmSynthetic val method: UrlMethod) : Destination
 
         @Serializable
-        data class Url(val urlLid: String, val method: UrlMethod) : Destination
+        data class Url(@get:JvmSynthetic val urlLid: String, @get:JvmSynthetic val method: UrlMethod) : Destination
     }
 
     @InternalRevenueCatAPI

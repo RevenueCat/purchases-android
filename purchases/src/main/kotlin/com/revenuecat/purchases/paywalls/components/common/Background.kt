@@ -11,9 +11,9 @@ import kotlinx.serialization.Serializable
 internal sealed interface Background {
     @Serializable
     @SerialName("color")
-    data class Color(val value: ColorScheme) : Background
+    data class Color(@get:JvmSynthetic val value: ColorScheme) : Background
 
     @Serializable
     @SerialName("image")
-    data class Image(val value: ThemeImageUrls) : Background
+    data class Image(@get:JvmSynthetic val value: ThemeImageUrls) : Background
 }

@@ -11,20 +11,20 @@ internal sealed interface Dimension {
     @Serializable
     @SerialName("vertical")
     data class Vertical(
-        val alignment: HorizontalAlignment,
-        val distribution: FlexDistribution,
+        @get:JvmSynthetic val alignment: HorizontalAlignment,
+        @get:JvmSynthetic val distribution: FlexDistribution,
     ) : Dimension
 
     @Serializable
     @SerialName("horizontal")
     data class Horizontal(
-        val alignment: VerticalAlignment,
-        val distribution: FlexDistribution,
+        @get:JvmSynthetic val alignment: VerticalAlignment,
+        @get:JvmSynthetic val distribution: FlexDistribution,
     ) : Dimension
 
     @Serializable
     @SerialName("zlayer")
     data class ZLayer(
-        val alignment: TwoDimensionalAlignment,
+        @get:JvmSynthetic val alignment: TwoDimensionalAlignment,
     ) : Dimension
 }

@@ -26,22 +26,33 @@ import kotlinx.serialization.Serializable
 class TextComponent
 @Suppress("LongParameterList")
 internal constructor(
+    @get:JvmSynthetic
     @SerialName("text_lid")
     val text: LocalizationKey,
+    @get:JvmSynthetic
     val color: ColorScheme,
+    @get:JvmSynthetic
     @SerialName("background_color")
     val backgroundColor: ColorScheme? = null,
+    @get:JvmSynthetic
     @SerialName("font_name")
     val fontName: String? = null,
+    @get:JvmSynthetic
     @SerialName("font_weight")
     val fontWeight: FontWeight = REGULAR,
+    @get:JvmSynthetic
     @SerialName("font_size")
     val fontSize: FontSize = BODY_M,
+    @get:JvmSynthetic
     @SerialName("horizontal_alignment")
     val horizontalAlignment: HorizontalAlignment = CENTER,
+    @get:JvmSynthetic
     val size: Size = Size(width = Fill, height = Fit),
+    @get:JvmSynthetic
     val padding: Padding = zero,
+    @get:JvmSynthetic
     val margin: Padding = zero,
+    @get:JvmSynthetic
     val overrides: ComponentOverrides<PartialTextComponent>? = null,
 ) : PaywallComponent
 
@@ -51,21 +62,32 @@ internal constructor(
 class PartialTextComponent
 @Suppress("LongParameterList")
 internal constructor(
+    @get:JvmSynthetic
     val visible: Boolean? = true,
+    @get:JvmSynthetic
     @SerialName("text_lid")
     val text: LocalizationKey? = null,
+    @get:JvmSynthetic
     val color: ColorScheme? = null,
+    @get:JvmSynthetic
     @SerialName("background_color")
     val backgroundColor: ColorScheme? = null,
+    @get:JvmSynthetic
     @SerialName("font_name")
     val fontName: String? = null,
+    @get:JvmSynthetic
     @SerialName("font_weight")
     val fontWeight: FontWeight? = null,
+    @get:JvmSynthetic
     @SerialName("font_size")
     val fontSize: FontSize? = null,
+    @get:JvmSynthetic
     @SerialName("horizontal_alignment")
     val horizontalAlignment: HorizontalAlignment? = null,
+    @get:JvmSynthetic
     val size: Size? = null,
+    @get:JvmSynthetic
     val padding: Padding? = null,
+    @get:JvmSynthetic
     val margin: Padding? = null,
 ) : PartialComponent

@@ -16,12 +16,12 @@ import kotlinx.serialization.encoding.Encoder
 @InternalRevenueCatAPI
 @Serializable
 @JvmInline
-internal value class LocaleId(val value: String)
+internal value class LocaleId(@get:JvmSynthetic val value: String)
 
 @InternalRevenueCatAPI
 @Serializable
 @JvmInline
-value class LocalizationKey internal constructor(val value: String)
+value class LocalizationKey internal constructor(@get:JvmSynthetic val value: String)
 
 @InternalRevenueCatAPI
 internal typealias LocalizationDictionary = Map<LocalizationKey, LocalizationData>
@@ -34,11 +34,11 @@ internal typealias LocalizationDictionary = Map<LocalizationKey, LocalizationDat
 internal sealed interface LocalizationData {
     @Serializable
     @JvmInline
-    value class Text(val value: String) : LocalizationData
+    value class Text(@get:JvmSynthetic val value: String) : LocalizationData
 
     @Serializable
     @JvmInline
-    value class Image(val value: ThemeImageUrls) : LocalizationData
+    value class Image(@get:JvmSynthetic val value: ThemeImageUrls) : LocalizationData
 }
 
 @OptIn(InternalRevenueCatAPI::class)
