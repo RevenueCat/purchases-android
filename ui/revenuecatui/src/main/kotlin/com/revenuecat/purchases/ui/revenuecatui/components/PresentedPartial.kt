@@ -11,23 +11,27 @@ internal sealed interface PresentedPartial<T : PresentedPartial<T>> {
 
     companion object {
         /**
-         * Builds a presentable partial component based on current view state and screen condition.
+         * Builds a presentable partial component based on current view state, screen condition and whether the user
+         * is eligible for an intro offer.
          *
          * @param state Current view state (selected / unselected).
          * @param condition Current screen condition (compact / medium / expanded).
-         * @param with Override configurations to apply.
+         * @param isEligibleForIntroOffer Whether the user is eligible for an intro offer.
+         *
+         * @return A presentable partial component, or null if [this] [PresentedOverrides] did not contain any
+         * available overrides to use.
          */
         @JvmSynthetic
-        fun <T : PresentedPartial<T>> buildPartial(
+        fun <T : PresentedPartial<T>> PresentedOverrides<T>.buildPartial(
             state: ComponentViewState,
             condition: ScreenCondition,
             isEligibleForIntroOffer: Boolean,
-            with: PresentedOverrides<T>?,
         ): T? {
-            var conditionPartial = buildScreenConditionPartial(condition, with)
+            var conditionPartial = buildScreenConditionPartial(condition)
 
             if (isEligibleForIntroOffer) {
-                conditionPartial = conditionPartial?.combine(with?.introOffer)
+                // If conditionPartial is null here, we want to continue with the introOffer partial.
+                conditionPartial = conditionPartial.combineOrReplace(introOffer)
             }
 
             when (state) {
@@ -35,33 +39,36 @@ internal sealed interface PresentedPartial<T : PresentedPartial<T>> {
                     // Nothing to do.
                 }
 
-                ComponentViewState.SELECTED -> conditionPartial = conditionPartial?.combine(with?.states?.selected)
+                ComponentViewState.SELECTED -> {
+                    // If conditionPartial is null here, we want to continue with the selected state partial.
+                    conditionPartial = conditionPartial.combineOrReplace(states?.selected)
+                }
             }
 
             return conditionPartial
         }
 
         /**
-         * Builds a partial component based on screen conditions.
-         * @param condition Screen size condition.
-         * @param presentedOverrides Override configurations to apply.
-         * @return Configured partial component for the given screen condition.
+         * Builds a partial component based on the current screen conditions.
+         * @param currentScreenCondition Screen size condition.
+         * @return Configured partial component for the given screen condition, or null if this
+         * `PresentedOverrides.conditions` is null, which means there are no overrides defined for screen conditions.
          */
-        private fun <T : PresentedPartial<T>> buildScreenConditionPartial(
-            condition: ScreenCondition,
-            presentedOverrides: PresentedOverrides<T>?,
+        private fun <T : PresentedPartial<T>> PresentedOverrides<T>.buildScreenConditionPartial(
+            currentScreenCondition: ScreenCondition,
         ): T? {
-            val conditions = presentedOverrides?.conditions
-            val applicableConditions: List<T> = condition.applicableConditions
+            val availableScreenOverrides: PresentedConditions<T>? = conditions
+            val applicableScreenOverrides: List<T> = currentScreenCondition.applicableConditions
                 .mapNotNull { type ->
                     when (type) {
-                        ScreenCondition.COMPACT -> conditions?.compact
-                        ScreenCondition.MEDIUM -> conditions?.medium
-                        ScreenCondition.EXPANDED -> conditions?.expanded
+                        ScreenCondition.COMPACT -> availableScreenOverrides?.compact
+                        ScreenCondition.MEDIUM -> availableScreenOverrides?.medium
+                        ScreenCondition.EXPANDED -> availableScreenOverrides?.expanded
                     }
                 }
 
-            return applicableConditions.reduceOrNull { partial, next ->
+            // Combine all applicable overrides into a single one.
+            return applicableScreenOverrides.reduceOrNull { partial, next ->
                 partial.combine(with = next)
             }
         }
@@ -89,6 +96,12 @@ internal sealed interface PresentedPartial<T : PresentedPartial<T>> {
     fun combine(with: T?): T
 // TODO This needs to support a null receiver / be static. Return should still be non-null.
 }
+
+/**
+ * @return A combined partial if both [this] and [with] are non-null. Will return [with] if [this] is null.
+ */
+private fun <T : PresentedPartial<T>> PresentedPartial<T>?.combineOrReplace(with: T?): T? =
+    this?.combine(with) ?: with
 
 /**
  * Structure holding override configurations for different presentation states.
