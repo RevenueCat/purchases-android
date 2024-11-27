@@ -8,5 +8,6 @@ import kotlinx.serialization.Serializable
 @Serializable
 @SerialName("sticky_footer")
 internal data class StickyFooterComponent(
+    @get:JvmSynthetic
     val stack: StackComponent,
 ) : PaywallComponent

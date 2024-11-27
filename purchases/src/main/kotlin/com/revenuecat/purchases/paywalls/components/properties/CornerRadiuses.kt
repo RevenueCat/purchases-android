@@ -13,26 +13,31 @@ internal data class CornerRadiuses(
     /**
      * The top-leading, or top-start, corner radius, in dp.
      */
+    @get:JvmSynthetic
     @SerialName("top_leading")
     val topLeading: Double,
     /**
      * The top-trailing, or top-end, corner radius, in dp.
      */
+    @get:JvmSynthetic
     @SerialName("top_trailing")
     val topTrailing: Double,
     /**
      * The bottom-leading, or bottom-start, corner radius, in dp.
      */
+    @get:JvmSynthetic
     @SerialName("bottom_leading")
     val bottomLeading: Double,
     /**
      * The bottom-trailing, or bottom-end, corner radius, in dp.
      */
+    @get:JvmSynthetic
     @SerialName("bottom_trailing")
     val bottomTrailing: Double,
 ) {
     companion object {
-        val zero = CornerRadiuses(0.0, 0.0, 0.0, 0.0)
-        val default = zero
+        @get:JvmSynthetic val zero = CornerRadiuses(0.0, 0.0, 0.0, 0.0)
+
+        @get:JvmSynthetic val default = zero
     }
 }

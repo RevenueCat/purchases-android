@@ -21,32 +21,53 @@ import kotlinx.serialization.Serializable
 @Serializable
 @SerialName("stack")
 internal data class StackComponent(
+    @get:JvmSynthetic
     val components: List<PaywallComponent>,
+    @get:JvmSynthetic
     val dimension: Dimension = Vertical(CENTER, START),
+    @get:JvmSynthetic
     val size: Size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit),
+    @get:JvmSynthetic
     val spacing: Float? = null,
+    @get:JvmSynthetic
     @SerialName("background_color")
     val backgroundColor: ColorScheme? = null,
+    @get:JvmSynthetic
     val padding: Padding = zero,
+    @get:JvmSynthetic
     val margin: Padding = zero,
+    @get:JvmSynthetic
     val shape: Shape? = null,
+    @get:JvmSynthetic
     val border: Border? = null,
+    @get:JvmSynthetic
     val shadow: Shadow? = null,
+    @get:JvmSynthetic
     val overrides: ComponentOverrides<PartialStackComponent>? = null,
 ) : PaywallComponent
 
 @InternalRevenueCatAPI
 @Serializable
 internal data class PartialStackComponent(
+    @get:JvmSynthetic
     val visible: Boolean? = true,
+    @get:JvmSynthetic
     val dimension: Dimension? = null,
+    @get:JvmSynthetic
     val size: Size? = null,
+    @get:JvmSynthetic
     val spacing: Float? = null,
+    @get:JvmSynthetic
     @SerialName("background_color")
     val backgroundColor: ColorScheme? = null,
+    @get:JvmSynthetic
     val padding: Padding? = null,
+    @get:JvmSynthetic
     val margin: Padding? = null,
+    @get:JvmSynthetic
     val shape: Shape? = null,
+    @get:JvmSynthetic
     val border: Border? = null,
+    @get:JvmSynthetic
     val shadow: Shadow? = null,
 ) : PartialComponent
