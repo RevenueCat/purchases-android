@@ -9,82 +9,6 @@ import com.revenuecat.purchases.paywalls.components.common.ComponentOverrides
 internal sealed interface PresentedPartial<T : PresentedPartial<T>> {
     // FIXME This whole file is a test candidate.
 
-    companion object {
-        /**
-         * Builds a presentable partial component based on current view state, screen condition and whether the user
-         * is eligible for an intro offer.
-         *
-         * @param state Current view state (selected / unselected).
-         * @param condition Current screen condition (compact / medium / expanded).
-         * @param isEligibleForIntroOffer Whether the user is eligible for an intro offer.
-         *
-         * @return A presentable partial component, or null if [this] [PresentedOverrides] did not contain any
-         * available overrides to use.
-         */
-        @JvmSynthetic
-        fun <T : PresentedPartial<T>> PresentedOverrides<T>.buildPartial(
-            state: ComponentViewState,
-            condition: ScreenCondition,
-            isEligibleForIntroOffer: Boolean,
-        ): T? {
-            var conditionPartial = buildScreenConditionPartial(condition)
-
-            if (isEligibleForIntroOffer) {
-                // If conditionPartial is null here, we want to continue with the introOffer partial.
-                conditionPartial = conditionPartial.combineOrReplace(introOffer)
-            }
-
-            when (state) {
-                ComponentViewState.DEFAULT -> {
-                    // Nothing to do.
-                }
-
-                ComponentViewState.SELECTED -> {
-                    // If conditionPartial is null here, we want to continue with the selected state partial.
-                    conditionPartial = conditionPartial.combineOrReplace(states?.selected)
-                }
-            }
-
-            return conditionPartial
-        }
-
-        /**
-         * Builds a partial component based on the current screen conditions.
-         * @param currentScreenCondition Screen size condition.
-         * @return Configured partial component for the given screen condition, or null if this
-         * `PresentedOverrides.conditions` is null, which means there are no overrides defined for screen conditions.
-         */
-        private fun <T : PresentedPartial<T>> PresentedOverrides<T>.buildScreenConditionPartial(
-            currentScreenCondition: ScreenCondition,
-        ): T? {
-            val availableScreenOverrides: PresentedConditions<T>? = conditions
-            val applicableScreenOverrides: List<T> = currentScreenCondition.applicableConditions
-                .mapNotNull { type ->
-                    when (type) {
-                        ScreenCondition.COMPACT -> availableScreenOverrides?.compact
-                        ScreenCondition.MEDIUM -> availableScreenOverrides?.medium
-                        ScreenCondition.EXPANDED -> availableScreenOverrides?.expanded
-                    }
-                }
-
-            // Combine all applicable overrides into a single one.
-            return applicableScreenOverrides.reduceOrNull { partial, next ->
-                partial.combine(with = next)
-            }
-        }
-
-        private val ScreenCondition.applicableConditions: List<ScreenCondition>
-            get() = when (this) {
-                ScreenCondition.COMPACT -> listOf(ScreenCondition.COMPACT)
-                ScreenCondition.MEDIUM -> listOf(ScreenCondition.COMPACT, ScreenCondition.MEDIUM)
-                ScreenCondition.EXPANDED -> listOf(
-                    ScreenCondition.COMPACT,
-                    ScreenCondition.MEDIUM,
-                    ScreenCondition.EXPANDED,
-                )
-            }
-    }
-
     /**
      * Combines this partial component with another, allowing for override behavior.
      *
@@ -94,7 +18,6 @@ internal sealed interface PresentedPartial<T : PresentedPartial<T>> {
      */
     @JvmSynthetic
     fun combine(with: T?): T
-// TODO This needs to support a null receiver / be static. Return should still be non-null.
 }
 
 /**
@@ -181,3 +104,77 @@ internal fun <T : PartialComponent, P : PresentedPartial<P>> ComponentOverrides<
         ),
     )
 }
+
+/**
+ * Builds a presentable partial component based on current view state, screen condition and whether the user
+ * is eligible for an intro offer.
+ *
+ * @param state Current view state (selected / unselected).
+ * @param condition Current screen condition (compact / medium / expanded).
+ * @param isEligibleForIntroOffer Whether the user is eligible for an intro offer.
+ *
+ * @return A presentable partial component, or null if [this] [PresentedOverrides] did not contain any
+ * available overrides to use.
+ */
+@JvmSynthetic
+internal fun <T : PresentedPartial<T>> PresentedOverrides<T>.buildPresentedPartial(
+    state: ComponentViewState,
+    condition: ScreenCondition,
+    isEligibleForIntroOffer: Boolean,
+): T? {
+    var conditionPartial = buildScreenConditionPartial(condition)
+
+    if (isEligibleForIntroOffer) {
+        // If conditionPartial is null here, we want to continue with the introOffer partial.
+        conditionPartial = conditionPartial.combineOrReplace(introOffer)
+    }
+
+    when (state) {
+        ComponentViewState.DEFAULT -> {
+            // Nothing to do.
+        }
+
+        ComponentViewState.SELECTED -> {
+            // If conditionPartial is null here, we want to continue with the selected state partial.
+            conditionPartial = conditionPartial.combineOrReplace(states?.selected)
+        }
+    }
+
+    return conditionPartial
+}
+
+/**
+ * Builds a partial component based on the current screen conditions.
+ * @param currentScreenCondition Screen size condition.
+ * @return Configured partial component for the given screen condition, or null if this
+ * `PresentedOverrides.conditions` is null, which means there are no overrides defined for screen conditions.
+ */
+private fun <T : PresentedPartial<T>> PresentedOverrides<T>.buildScreenConditionPartial(
+    currentScreenCondition: ScreenCondition,
+): T? {
+    val availableScreenOverrides: PresentedConditions<T>? = conditions
+    val applicableScreenOverrides: List<T> = currentScreenCondition.applicableConditions
+        .mapNotNull { type ->
+            when (type) {
+                ScreenCondition.COMPACT -> availableScreenOverrides?.compact
+                ScreenCondition.MEDIUM -> availableScreenOverrides?.medium
+                ScreenCondition.EXPANDED -> availableScreenOverrides?.expanded
+            }
+        }
+
+    // Combine all applicable overrides into a single one.
+    return applicableScreenOverrides.reduceOrNull { partial, next ->
+        partial.combine(with = next)
+    }
+}
+
+private val ScreenCondition.applicableConditions: List<ScreenCondition>
+    get() = when (this) {
+        ScreenCondition.COMPACT -> listOf(ScreenCondition.COMPACT)
+        ScreenCondition.MEDIUM -> listOf(ScreenCondition.COMPACT, ScreenCondition.MEDIUM)
+        ScreenCondition.EXPANDED -> listOf(
+            ScreenCondition.COMPACT,
+            ScreenCondition.MEDIUM,
+            ScreenCondition.EXPANDED,
+        )
+    }
