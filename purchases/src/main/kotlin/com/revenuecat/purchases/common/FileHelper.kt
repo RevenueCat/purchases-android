@@ -1,8 +1,6 @@
 package com.revenuecat.purchases.common
 
 import android.content.Context
-import android.os.Build
-import androidx.annotation.RequiresApi
 import com.revenuecat.purchases.utils.sizeInKB
 import java.io.BufferedReader
 import java.io.File
@@ -36,14 +34,12 @@ internal class FileHelper(
     // This is using a lambda with a Sequence instead of returning the Sequence itself. This is so we keep
     // the responsibility of closing the bufferedReader to this class. Note that the Sequence should
     // be used synchronously, otherwise the bufferedReader will be closed before the Sequence is used.
-    @RequiresApi(Build.VERSION_CODES.N)
     fun readFilePerLines(filePath: String, block: ((Sequence<String>) -> Unit)) {
         openBufferedReader(filePath) { bufferedReader ->
             block(bufferedReader.lineSequence())
         }
     }
 
-    @RequiresApi(Build.VERSION_CODES.N)
     fun removeFirstLinesFromFile(filePath: String, numberOfLinesToRemove: Int) {
         val textToAppend = StringBuilder()
         readFilePerLines(filePath) { sequence ->

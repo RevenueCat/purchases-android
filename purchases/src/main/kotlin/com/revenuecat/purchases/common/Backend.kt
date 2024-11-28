@@ -5,8 +5,6 @@
 
 package com.revenuecat.purchases.common
 
-import android.os.Build
-import androidx.annotation.RequiresApi
 import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
@@ -494,7 +492,6 @@ internal class Backend(
         }
     }
 
-    @RequiresApi(Build.VERSION_CODES.N)
     fun postPaywallEvents(
         paywallEventRequest: PaywallEventRequest,
         onSuccessHandler: () -> Unit,

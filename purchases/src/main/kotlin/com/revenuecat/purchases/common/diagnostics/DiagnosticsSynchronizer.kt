@@ -2,8 +2,6 @@ package com.revenuecat.purchases.common.diagnostics
 
 import android.content.Context
 import android.content.SharedPreferences
-import android.os.Build
-import androidx.annotation.RequiresApi
 import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.Dispatcher
@@ -18,7 +16,6 @@ import java.io.IOException
  *
  * If syncing diagnostics fails multiple times, we will delete any stored diagnostics data and start again.
  */
-@RequiresApi(Build.VERSION_CODES.N)
 internal class DiagnosticsSynchronizer(
     private val diagnosticsHelper: DiagnosticsHelper,
     private val diagnosticsFileHelper: DiagnosticsFileHelper,
