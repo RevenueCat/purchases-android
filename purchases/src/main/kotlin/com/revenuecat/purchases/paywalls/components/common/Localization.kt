@@ -21,7 +21,7 @@ internal value class LocaleId(@get:JvmSynthetic val value: String)
 @InternalRevenueCatAPI
 @Serializable
 @JvmInline
-value class LocalizationKey internal constructor(@get:JvmSynthetic val value: String)
+value class LocalizationKey(@get:JvmSynthetic val value: String)
 
 @InternalRevenueCatAPI
 typealias LocalizationDictionary = Map<LocalizationKey, LocalizationData>
