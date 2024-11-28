@@ -2,13 +2,12 @@ package com.revenuecat.purchases.ui.revenuecatui.components
 
 import com.revenuecat.purchases.paywalls.components.PartialComponent
 import com.revenuecat.purchases.paywalls.components.common.ComponentOverrides
+import dev.drewhamilton.poko.Poko
 
 /**
  * Partial components transformed and ready for presentation.
  */
 internal sealed interface PresentedPartial<T : PresentedPartial<T>> {
-    // FIXME This whole file is a test candidate.
-
     /**
      * Combines this partial component with another, allowing for override behavior.
      *
@@ -29,6 +28,7 @@ private fun <T : PresentedPartial<T>> PresentedPartial<T>?.combineOrReplace(with
 /**
  * Structure holding override configurations for different presentation states.
  */
+@Poko
 internal class PresentedOverrides<T : PresentedPartial<T>>(
     /**
      * Override for different selection states.
@@ -47,6 +47,7 @@ internal class PresentedOverrides<T : PresentedPartial<T>>(
 /**
  * Structure defining states for selected/unselected components.
  */
+@Poko
 internal class PresentedStates<T : PresentedPartial<T>>(
     /**
      * Override for selected state
@@ -57,6 +58,7 @@ internal class PresentedStates<T : PresentedPartial<T>>(
 /**
  * Structure defining overrides for different screen size conditions.
  */
+@Poko
 internal class PresentedConditions<T : PresentedPartial<T>>(
     /**
      * Override for compact size
@@ -91,8 +93,8 @@ internal fun <T : PartialComponent, P : PresentedPartial<P>> ComponentOverrides<
     val conditions = conditions?.let { conditions ->
         PresentedConditions(
             compact = conditions.compact?.let(transform)?.getOrElse { return Result.failure(it) },
-            medium = conditions.compact?.let(transform)?.getOrElse { return Result.failure(it) },
-            expanded = conditions.compact?.let(transform)?.getOrElse { return Result.failure(it) },
+            medium = conditions.medium?.let(transform)?.getOrElse { return Result.failure(it) },
+            expanded = conditions.expanded?.let(transform)?.getOrElse { return Result.failure(it) },
         )
     }
 
