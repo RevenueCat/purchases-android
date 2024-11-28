@@ -10,7 +10,6 @@ import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.verboseLog
 import org.json.JSONObject
 import java.io.IOException
-import java.util.stream.Collectors
 
 /**
  * This class is in charge of syncing all previously tracked diagnostics. All operations will be executed
@@ -32,7 +31,7 @@ internal class DiagnosticsSynchronizer(
         const val MAX_NUMBER_POST_RETRIES = 3
 
         @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
-        const val MAX_EVENTS_TO_SYNC_PER_REQUEST: Long = 200
+        const val MAX_EVENTS_TO_SYNC_PER_REQUEST: Int = 200
 
         fun initializeSharedPreferences(context: Context): SharedPreferences =
             context.getSharedPreferences(
@@ -95,8 +94,8 @@ internal class DiagnosticsSynchronizer(
 
     private fun getEventsToSync(): List<JSONObject> {
         var eventsToSync: List<JSONObject> = emptyList()
-        diagnosticsFileHelper.readFileAsJson { stream ->
-            eventsToSync = stream.limit(MAX_EVENTS_TO_SYNC_PER_REQUEST).collect(Collectors.toList())
+        diagnosticsFileHelper.readFileAsJson { sequence ->
+            eventsToSync = sequence.take(MAX_EVENTS_TO_SYNC_PER_REQUEST).toList()
         }
         return eventsToSync
     }
