@@ -656,15 +656,13 @@ workflows:
       - run-revenuecatui-ui-tests
       - emerge_purchases_ui_snapshot_tests
       - verify_debug_view_snapshot_tests: *release-branches
-      - integration-tests-build: *release-branches
-      - purchases-integration-tests-build: *release-branches
-      - run-firebase-tests-purchases-custom-entitlement-computation-integration-test:
-          <<: *release-branches
+      - integration-tests-build
+      - purchases-integration-tests-build
+      - run-firebase-tests-purchases-custom-entitlement-computation-integration-test
       - run-firebase-tests-purchases-integration-test:
           requires:
             - purchases-integration-tests-build
       - run-firebase-tests-purchases-load-shedder-integration-test:
-          <<: *release-branches
           context:
             - slack-secrets
       - run-firebase-tests:
