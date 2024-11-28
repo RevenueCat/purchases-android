@@ -1,7 +1,5 @@
 package com.revenuecat.purchases.paywalls.events
 
-import android.os.Build
-import androidx.annotation.RequiresApi
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.Delay
@@ -13,7 +11,6 @@ import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.utils.EventsFileHelper
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
-@RequiresApi(Build.VERSION_CODES.N)
 internal class PaywallEventsManager(
     private val fileHelper: EventsFileHelper<PaywallStoredEvent>,
     private val identityManager: IdentityManager,

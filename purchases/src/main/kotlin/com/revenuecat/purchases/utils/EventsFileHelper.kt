@@ -1,13 +1,10 @@
 package com.revenuecat.purchases.utils
 
-import android.os.Build
-import androidx.annotation.RequiresApi
 import com.revenuecat.purchases.common.FileHelper
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.verboseLog
 import org.json.JSONObject
 
-@RequiresApi(Build.VERSION_CODES.N)
 /**
  * Class to handle file operations for event types like PaywallEvents and Diagnostics.
  * When [eventDeserializer] is null, [readFile] with the deserialized type won't return any events.
