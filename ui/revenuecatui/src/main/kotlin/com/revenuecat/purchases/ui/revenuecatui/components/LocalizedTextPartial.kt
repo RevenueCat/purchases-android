@@ -11,6 +11,11 @@ internal class LocalizedTextPartial private constructor(
 ) : PresentedPartial<LocalizedTextPartial> {
 
     companion object {
+        /**
+         * Creates a [LocalizedTextPartial] from the provided [PartialTextComponent] and [LocalizationDictionary]. If
+         * [PartialTextComponent.text] is non null, it should exist in the [LocalizationDictionary]. If it doesn't,
+         * this function will return a failure result.
+         */
         @JvmSynthetic
         operator fun invoke(
             from: PartialTextComponent,
