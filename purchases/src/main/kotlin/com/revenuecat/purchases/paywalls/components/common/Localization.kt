@@ -34,11 +34,11 @@ typealias LocalizationDictionary = Map<LocalizationKey, LocalizationData>
 sealed interface LocalizationData {
     @Serializable
     @JvmInline
-    value class Text internal constructor(@get:JvmSynthetic val value: String) : LocalizationData
+    value class Text(@get:JvmSynthetic val value: String) : LocalizationData
 
     @Serializable
     @JvmInline
-    value class Image internal constructor(@get:JvmSynthetic val value: ThemeImageUrls) : LocalizationData
+    value class Image(@get:JvmSynthetic val value: ThemeImageUrls) : LocalizationData
 }
 
 @OptIn(InternalRevenueCatAPI::class)
