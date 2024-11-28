@@ -9,7 +9,6 @@ import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.io.InputStreamReader
-import java.util.stream.Stream
 
 internal class FileHelper(
     private val applicationContext: Context,
@@ -34,21 +33,21 @@ internal class FileHelper(
         return file.delete()
     }
 
-    // This is using a lambda with a Stream instead of returning the Stream itself. This is so we keep
-    // the responsibility of closing the bufferedReader to this class. Note that the Stream should
-    // be used synchronously, otherwise the bufferedReader will be closed before the stream is used.
+    // This is using a lambda with a Sequence instead of returning the Sequence itself. This is so we keep
+    // the responsibility of closing the bufferedReader to this class. Note that the Sequence should
+    // be used synchronously, otherwise the bufferedReader will be closed before the Sequence is used.
     @RequiresApi(Build.VERSION_CODES.N)
-    fun readFilePerLines(filePath: String, streamBlock: ((Stream<String>) -> Unit)) {
+    fun readFilePerLines(filePath: String, block: ((Sequence<String>) -> Unit)) {
         openBufferedReader(filePath) { bufferedReader ->
-            streamBlock(bufferedReader.lines())
+            block(bufferedReader.lineSequence())
         }
     }
 
     @RequiresApi(Build.VERSION_CODES.N)
     fun removeFirstLinesFromFile(filePath: String, numberOfLinesToRemove: Int) {
         val textToAppend = StringBuilder()
-        readFilePerLines(filePath) { stream ->
-            stream.skip(numberOfLinesToRemove.toLong()).forEach { line ->
+        readFilePerLines(filePath) { sequence ->
+            sequence.drop(numberOfLinesToRemove).forEach { line ->
                 textToAppend.append(line).append("\n")
             }
         }

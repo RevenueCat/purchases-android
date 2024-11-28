@@ -20,7 +20,6 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import java.io.IOException
-import java.util.stream.Stream
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
@@ -272,9 +271,9 @@ class DiagnosticsSynchronizerTest {
     }
 
     private fun mockReadDiagnosticsFile(jsons: List<JSONObject>) {
-        val slot = slot<((Stream<JSONObject>) -> Unit)>()
+        val slot = slot<((Sequence<JSONObject>) -> Unit)>()
         every { diagnosticsFileHelper.readFileAsJson(capture(slot)) } answers {
-            slot.captured(jsons.stream())
+            slot.captured(jsons.asSequence())
         }
     }
 }
