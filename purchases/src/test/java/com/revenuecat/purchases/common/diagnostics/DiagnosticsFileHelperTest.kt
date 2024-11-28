@@ -14,7 +14,6 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
-import java.util.stream.Stream
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
@@ -76,8 +75,8 @@ class DiagnosticsFileHelperTest {
     fun `readDiagnosticsFile returns empty list if file is empty`() {
         every { fileHelper.fileIsEmpty(diagnosticsFilePath) } returns true
         var resultList: List<JSONObject>? = null
-        diagnosticsFileHelper.readFileAsJson { stream ->
-            resultList = stream.toList()
+        diagnosticsFileHelper.readFileAsJson { sequence ->
+            resultList = sequence.toList()
         }
         verify(exactly = 1) { fileHelper.fileIsEmpty(diagnosticsFilePath) }
         assertThat(resultList).isNotNull
@@ -88,13 +87,13 @@ class DiagnosticsFileHelperTest {
     @Test
     fun `readDiagnosticsFile reads content as json`() {
         every { fileHelper.fileIsEmpty(diagnosticsFilePath) } returns false
-        val streamBlockSlot = slot<((Stream<String>) -> Unit)>()
-        every { fileHelper.readFilePerLines(diagnosticsFilePath, capture(streamBlockSlot)) } answers {
-            streamBlockSlot.captured(Stream.of("{}", "{\"test_key\": \"test_value\"}"))
+        val sequenceBlockSlot = slot<((Sequence<String>) -> Unit)>()
+        every { fileHelper.readFilePerLines(diagnosticsFilePath, capture(sequenceBlockSlot)) } answers {
+            sequenceBlockSlot.captured(sequenceOf("{}", "{\"test_key\": \"test_value\"}"))
         }
         var resultList: List<JSONObject>? = null
-        diagnosticsFileHelper.readFileAsJson { stream ->
-            resultList = stream.toList()
+        diagnosticsFileHelper.readFileAsJson { sequence ->
+            resultList = sequence.toList()
         }
         assertThat(resultList).isNotNull
         assertThat(resultList?.size).isEqualTo(2)

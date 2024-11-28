@@ -2,15 +2,12 @@ package com.revenuecat.purchases.common.diagnostics
 
 import android.content.Context
 import android.content.SharedPreferences
-import android.os.Build
-import androidx.annotation.RequiresApi
 import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.verboseLog
 import org.json.JSONObject
 import java.io.IOException
-import java.util.stream.Collectors
 
 /**
  * This class is in charge of syncing all previously tracked diagnostics. All operations will be executed
@@ -19,7 +16,6 @@ import java.util.stream.Collectors
  *
  * If syncing diagnostics fails multiple times, we will delete any stored diagnostics data and start again.
  */
-@RequiresApi(Build.VERSION_CODES.N)
 internal class DiagnosticsSynchronizer(
     private val diagnosticsHelper: DiagnosticsHelper,
     private val diagnosticsFileHelper: DiagnosticsFileHelper,
@@ -32,7 +28,7 @@ internal class DiagnosticsSynchronizer(
         const val MAX_NUMBER_POST_RETRIES = 3
 
         @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
-        const val MAX_EVENTS_TO_SYNC_PER_REQUEST: Long = 200
+        const val MAX_EVENTS_TO_SYNC_PER_REQUEST: Int = 200
 
         fun initializeSharedPreferences(context: Context): SharedPreferences =
             context.getSharedPreferences(
@@ -95,8 +91,8 @@ internal class DiagnosticsSynchronizer(
 
     private fun getEventsToSync(): List<JSONObject> {
         var eventsToSync: List<JSONObject> = emptyList()
-        diagnosticsFileHelper.readFileAsJson { stream ->
-            eventsToSync = stream.limit(MAX_EVENTS_TO_SYNC_PER_REQUEST).collect(Collectors.toList())
+        diagnosticsFileHelper.readFileAsJson { sequence ->
+            eventsToSync = sequence.take(MAX_EVENTS_TO_SYNC_PER_REQUEST).toList()
         }
         return eventsToSync
     }

@@ -2,8 +2,6 @@ package com.revenuecat.purchases.common.diagnostics
 
 import android.content.Context
 import android.content.SharedPreferences
-import android.os.Build
-import androidx.annotation.RequiresApi
 import androidx.annotation.VisibleForTesting
 
 internal class DiagnosticsHelper(
@@ -22,7 +20,6 @@ internal class DiagnosticsHelper(
             )
     }
 
-    @RequiresApi(Build.VERSION_CODES.N)
     fun resetDiagnosticsStatus() {
         clearConsecutiveNumberOfErrors()
         diagnosticsFileHelper.deleteFile()
