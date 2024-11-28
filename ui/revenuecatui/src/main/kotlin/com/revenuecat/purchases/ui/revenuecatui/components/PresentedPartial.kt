@@ -109,20 +109,20 @@ internal fun <T : PartialComponent, P : PresentedPartial<P>> ComponentOverrides<
  * Builds a presentable partial component based on current view state, screen condition and whether the user
  * is eligible for an intro offer.
  *
- * @param state Current view state (selected / unselected).
- * @param condition Current screen condition (compact / medium / expanded).
+ * @param windowSize Current screen condition (compact / medium / expanded).
  * @param isEligibleForIntroOffer Whether the user is eligible for an intro offer.
+ * @param state Current view state (selected / unselected).
  *
  * @return A presentable partial component, or null if [this] [PresentedOverrides] did not contain any
  * available overrides to use.
  */
 @JvmSynthetic
 internal fun <T : PresentedPartial<T>> PresentedOverrides<T>.buildPresentedPartial(
-    state: ComponentViewState,
-    condition: ScreenCondition,
+    windowSize: ScreenCondition,
     isEligibleForIntroOffer: Boolean,
+    state: ComponentViewState,
 ): T? {
-    var conditionPartial = buildScreenConditionPartial(condition)
+    var conditionPartial = buildScreenConditionPartial(windowSize)
 
     if (isEligibleForIntroOffer) {
         // If conditionPartial is null here, we want to continue with the introOffer partial.

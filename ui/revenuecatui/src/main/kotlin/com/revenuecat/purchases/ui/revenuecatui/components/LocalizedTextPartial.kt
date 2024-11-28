@@ -5,7 +5,7 @@ import com.revenuecat.purchases.paywalls.components.common.LocalizationDictionar
 import dev.drewhamilton.poko.Poko
 
 @Poko
-internal class LocalizedTextPartial private constructor(
+internal class LocalizedTextPartial(
     @get:JvmSynthetic val text: String?,
     @get:JvmSynthetic val partial: PartialTextComponent,
 ) : PresentedPartial<LocalizedTextPartial> {
@@ -36,14 +36,15 @@ internal class LocalizedTextPartial private constructor(
             partial = PartialTextComponent(
                 visible = otherPartial?.visible ?: partial.visible,
                 text = otherPartial?.text ?: partial.text,
-                fontName = otherPartial?.fontName ?: partial.fontName,
-                fontWeight = otherPartial?.fontWeight ?: partial.fontWeight,
                 color = otherPartial?.color ?: partial.color,
                 backgroundColor = otherPartial?.backgroundColor ?: partial.backgroundColor,
-                padding = otherPartial?.padding ?: partial.padding,
-                margin = otherPartial?.margin ?: partial.margin,
+                fontName = otherPartial?.fontName ?: partial.fontName,
+                fontWeight = otherPartial?.fontWeight ?: partial.fontWeight,
                 fontSize = otherPartial?.fontSize ?: partial.fontSize,
                 horizontalAlignment = otherPartial?.horizontalAlignment ?: partial.horizontalAlignment,
+                size = otherPartial?.size ?: partial.size,
+                padding = otherPartial?.padding ?: partial.padding,
+                margin = otherPartial?.margin ?: partial.margin,
             ),
         )
     }
