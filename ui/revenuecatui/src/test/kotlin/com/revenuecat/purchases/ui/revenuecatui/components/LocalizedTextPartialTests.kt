@@ -39,8 +39,7 @@ internal class LocalizedTextPartialTests {
                     "Should properly override all properties if they are non-null in both",
                     Args(
                         base = LocalizedTextPartial(
-                            text = "base",
-                            partial = PartialTextComponent(
+                            from = PartialTextComponent(
                                 visible = true,
                                 text = LocalizationKey("baseKey"),
                                 color = ColorScheme(light = ColorInfo.Alias("baseColor")),
@@ -52,11 +51,13 @@ internal class LocalizedTextPartialTests {
                                 size = Size(width = Fixed(10.toUInt()), height = Fixed(10.toUInt())),
                                 padding = Padding(top = 10.0, bottom = 10.0, leading = 10.0, trailing = 10.0),
                                 margin = Padding(top = 20.0, bottom = 20.0, leading = 20.0, trailing = 20.0),
+                            ),
+                            using = mapOf(
+                                LocalizationKey("baseKey") to LocalizationData.Text("base"),
                             )
-                        ),
+                        ).getOrThrow(),
                         override = LocalizedTextPartial(
-                            text = "override",
-                            partial = PartialTextComponent(
+                            from = PartialTextComponent(
                                 visible = false,
                                 text = LocalizationKey("overrideKey"),
                                 color = ColorScheme(light = ColorInfo.Alias("overrideColor")),
@@ -68,11 +69,13 @@ internal class LocalizedTextPartialTests {
                                 size = Size(width = Fixed(20.toUInt()), height = Fixed(20.toUInt())),
                                 padding = Padding(top = 20.0, bottom = 20.0, leading = 20.0, trailing = 20.0),
                                 margin = Padding(top = 10.0, bottom = 10.0, leading = 10.0, trailing = 10.0),
+                            ),
+                            using = mapOf(
+                                LocalizationKey("overrideKey") to LocalizationData.Text("override"),
                             )
-                        ),
+                        ).getOrThrow(),
                         expected = LocalizedTextPartial(
-                            text = "override",
-                            partial = PartialTextComponent(
+                            from = PartialTextComponent(
                                 visible = false,
                                 text = LocalizationKey("overrideKey"),
                                 color = ColorScheme(light = ColorInfo.Alias("overrideColor")),
@@ -84,16 +87,18 @@ internal class LocalizedTextPartialTests {
                                 size = Size(width = Fixed(20.toUInt()), height = Fixed(20.toUInt())),
                                 padding = Padding(top = 20.0, bottom = 20.0, leading = 20.0, trailing = 20.0),
                                 margin = Padding(top = 10.0, bottom = 10.0, leading = 10.0, trailing = 10.0),
+                            ),
+                            using = mapOf(
+                                LocalizationKey("overrideKey") to LocalizationData.Text("override"),
                             )
-                        ),
+                        ).getOrThrow(),
                     )
                 ),
                 arrayOf(
                     "Should not override anything if all properties are null in both",
                     Args(
                         base = LocalizedTextPartial(
-                            text = null,
-                            partial = PartialTextComponent(
+                            from = PartialTextComponent(
                                 visible = null,
                                 text = null,
                                 color = null,
@@ -105,11 +110,11 @@ internal class LocalizedTextPartialTests {
                                 size = null,
                                 padding = null,
                                 margin = null,
-                            )
-                        ),
+                            ),
+                            using = emptyMap()
+                        ).getOrThrow(),
                         override = LocalizedTextPartial(
-                            text = null,
-                            partial = PartialTextComponent(
+                            from = PartialTextComponent(
                                 visible = null,
                                 text = null,
                                 color = null,
@@ -121,11 +126,11 @@ internal class LocalizedTextPartialTests {
                                 size = null,
                                 padding = null,
                                 margin = null,
-                            )
-                        ),
+                            ),
+                            using = emptyMap()
+                        ).getOrThrow(),
                         expected = LocalizedTextPartial(
-                            text = null,
-                            partial = PartialTextComponent(
+                            from = PartialTextComponent(
                                 visible = null,
                                 text = null,
                                 color = null,
@@ -137,16 +142,16 @@ internal class LocalizedTextPartialTests {
                                 size = null,
                                 padding = null,
                                 margin = null,
-                            )
-                        ),
+                            ),
+                            using = emptyMap()
+                        ).getOrThrow(),
                     )
                 ),
                 arrayOf(
                     "Should not override anything if override is null",
                     Args(
                         base = LocalizedTextPartial(
-                            text = "base",
-                            partial = PartialTextComponent(
+                            from = PartialTextComponent(
                                 visible = true,
                                 text = LocalizationKey("baseKey"),
                                 color = ColorScheme(light = ColorInfo.Alias("baseColor")),
@@ -158,12 +163,14 @@ internal class LocalizedTextPartialTests {
                                 size = Size(width = Fixed(10.toUInt()), height = Fixed(10.toUInt())),
                                 padding = Padding(top = 10.0, bottom = 10.0, leading = 10.0, trailing = 10.0),
                                 margin = Padding(top = 20.0, bottom = 20.0, leading = 20.0, trailing = 20.0),
+                            ),
+                            using = mapOf(
+                                LocalizationKey("baseKey") to LocalizationData.Text("base"),
                             )
-                        ),
+                        ).getOrThrow(),
                         override = null,
                         expected = LocalizedTextPartial(
-                            text = "base",
-                            partial = PartialTextComponent(
+                            from = PartialTextComponent(
                                 visible = true,
                                 text = LocalizationKey("baseKey"),
                                 color = ColorScheme(light = ColorInfo.Alias("baseColor")),
@@ -175,16 +182,18 @@ internal class LocalizedTextPartialTests {
                                 size = Size(width = Fixed(10.toUInt()), height = Fixed(10.toUInt())),
                                 padding = Padding(top = 10.0, bottom = 10.0, leading = 10.0, trailing = 10.0),
                                 margin = Padding(top = 20.0, bottom = 20.0, leading = 20.0, trailing = 20.0),
+                            ),
+                            using = mapOf(
+                                LocalizationKey("baseKey") to LocalizationData.Text("base"),
                             )
-                        ),
+                        ).getOrThrow(),
                     )
                 ),
                 arrayOf(
                     "Should properly override the first 6 individual properties if they are non-null in both",
                     Args(
                         base = LocalizedTextPartial(
-                            text = "base",
-                            partial = PartialTextComponent(
+                            from = PartialTextComponent(
                                 visible = true,
                                 text = LocalizationKey("baseKey"),
                                 color = ColorScheme(light = ColorInfo.Alias("baseColor")),
@@ -196,11 +205,13 @@ internal class LocalizedTextPartialTests {
                                 size = Size(width = Fixed(10.toUInt()), height = Fixed(10.toUInt())),
                                 padding = Padding(top = 10.0, bottom = 10.0, leading = 10.0, trailing = 10.0),
                                 margin = Padding(top = 20.0, bottom = 20.0, leading = 20.0, trailing = 20.0),
+                            ),
+                            using = mapOf(
+                                LocalizationKey("baseKey") to LocalizationData.Text("base"),
                             )
-                        ),
+                        ).getOrThrow(),
                         override = LocalizedTextPartial(
-                            text = "override",
-                            partial = PartialTextComponent(
+                            from = PartialTextComponent(
                                 visible = false,
                                 text = LocalizationKey("overrideKey"),
                                 color = ColorScheme(light = ColorInfo.Alias("overrideColor")),
@@ -212,11 +223,13 @@ internal class LocalizedTextPartialTests {
                                 size = null,
                                 padding = null,
                                 margin = null,
+                            ),
+                            using = mapOf(
+                                LocalizationKey("overrideKey") to LocalizationData.Text("override"),
                             )
-                        ),
+                        ).getOrThrow(),
                         expected = LocalizedTextPartial(
-                            text = "override",
-                            partial = PartialTextComponent(
+                            from = PartialTextComponent(
                                 visible = false,
                                 text = LocalizationKey("overrideKey"),
                                 color = ColorScheme(light = ColorInfo.Alias("overrideColor")),
@@ -228,16 +241,18 @@ internal class LocalizedTextPartialTests {
                                 size = Size(width = Fixed(10.toUInt()), height = Fixed(10.toUInt())),
                                 padding = Padding(top = 10.0, bottom = 10.0, leading = 10.0, trailing = 10.0),
                                 margin = Padding(top = 20.0, bottom = 20.0, leading = 20.0, trailing = 20.0),
+                            ),
+                            using = mapOf(
+                                LocalizationKey("overrideKey") to LocalizationData.Text("override"),
                             )
-                        ),
+                        ).getOrThrow(),
                     )
                 ),
                 arrayOf(
                     "Should properly override the first 6 individual properties if they are null in the base",
                     Args(
                         base = LocalizedTextPartial(
-                            text = null,
-                            partial = PartialTextComponent(
+                            from = PartialTextComponent(
                                 visible = null,
                                 text = null,
                                 color = null,
@@ -248,11 +263,11 @@ internal class LocalizedTextPartialTests {
                                 size = Size(width = Fixed(10.toUInt()), height = Fixed(10.toUInt())),
                                 padding = Padding(top = 10.0, bottom = 10.0, leading = 10.0, trailing = 10.0),
                                 margin = Padding(top = 20.0, bottom = 20.0, leading = 20.0, trailing = 20.0),
-                            )
-                        ),
+                            ),
+                            using = emptyMap(),
+                        ).getOrThrow(),
                         override = LocalizedTextPartial(
-                            text = "override",
-                            partial = PartialTextComponent(
+                            from = PartialTextComponent(
                                 visible = false,
                                 text = LocalizationKey("overrideKey"),
                                 color = ColorScheme(light = ColorInfo.Alias("overrideColor")),
@@ -264,11 +279,13 @@ internal class LocalizedTextPartialTests {
                                 size = null,
                                 padding = null,
                                 margin = null,
+                            ),
+                            using = mapOf(
+                                LocalizationKey("overrideKey") to LocalizationData.Text("override"),
                             )
-                        ),
+                        ).getOrThrow(),
                         expected = LocalizedTextPartial(
-                            text = "override",
-                            partial = PartialTextComponent(
+                            from = PartialTextComponent(
                                 visible = false,
                                 text = LocalizationKey("overrideKey"),
                                 color = ColorScheme(light = ColorInfo.Alias("overrideColor")),
@@ -280,16 +297,18 @@ internal class LocalizedTextPartialTests {
                                 size = Size(width = Fixed(10.toUInt()), height = Fixed(10.toUInt())),
                                 padding = Padding(top = 10.0, bottom = 10.0, leading = 10.0, trailing = 10.0),
                                 margin = Padding(top = 20.0, bottom = 20.0, leading = 20.0, trailing = 20.0),
+                            ),
+                            using = mapOf(
+                                LocalizationKey("overrideKey") to LocalizationData.Text("override"),
                             )
-                        ),
+                        ).getOrThrow(),
                     )
                 ),
                 arrayOf(
                     "Should properly override the second 6 individual properties if they are non-null in both",
                     Args(
                         base = LocalizedTextPartial(
-                            text = "base",
-                            partial = PartialTextComponent(
+                            from = PartialTextComponent(
                                 visible = true,
                                 text = LocalizationKey("baseKey"),
                                 color = ColorScheme(light = ColorInfo.Alias("baseColor")),
@@ -301,11 +320,13 @@ internal class LocalizedTextPartialTests {
                                 size = Size(width = Fixed(10.toUInt()), height = Fixed(10.toUInt())),
                                 padding = Padding(top = 10.0, bottom = 10.0, leading = 10.0, trailing = 10.0),
                                 margin = Padding(top = 20.0, bottom = 20.0, leading = 20.0, trailing = 20.0),
+                            ),
+                            using = mapOf(
+                                LocalizationKey("baseKey") to LocalizationData.Text("base"),
                             )
-                        ),
+                        ).getOrThrow(),
                         override = LocalizedTextPartial(
-                            text = null,
-                            partial = PartialTextComponent(
+                            from = PartialTextComponent(
                                 visible = null,
                                 text = null,
                                 color = null,
@@ -317,11 +338,11 @@ internal class LocalizedTextPartialTests {
                                 size = Size(width = Fixed(20.toUInt()), height = Fixed(20.toUInt())),
                                 padding = Padding(top = 20.0, bottom = 20.0, leading = 20.0, trailing = 20.0),
                                 margin = Padding(top = 10.0, bottom = 10.0, leading = 10.0, trailing = 10.0),
-                            )
-                        ),
+                            ),
+                            using = emptyMap(),
+                        ).getOrThrow(),
                         expected = LocalizedTextPartial(
-                            text = "base",
-                            partial = PartialTextComponent(
+                            from = PartialTextComponent(
                                 visible = true,
                                 text = LocalizationKey("baseKey"),
                                 color = ColorScheme(light = ColorInfo.Alias("baseColor")),
@@ -333,16 +354,18 @@ internal class LocalizedTextPartialTests {
                                 size = Size(width = Fixed(20.toUInt()), height = Fixed(20.toUInt())),
                                 padding = Padding(top = 20.0, bottom = 20.0, leading = 20.0, trailing = 20.0),
                                 margin = Padding(top = 10.0, bottom = 10.0, leading = 10.0, trailing = 10.0),
+                            ),
+                            using = mapOf(
+                                LocalizationKey("baseKey") to LocalizationData.Text("base"),
                             )
-                        ),
+                        ).getOrThrow(),
                     )
                 ),
                 arrayOf(
                     "Should properly override the second 6 individual properties if they are null in the base",
                     Args(
                         base = LocalizedTextPartial(
-                            text = "base",
-                            partial = PartialTextComponent(
+                            from = PartialTextComponent(
                                 visible = true,
                                 text = LocalizationKey("baseKey"),
                                 color = ColorScheme(light = ColorInfo.Alias("baseColor")),
@@ -354,11 +377,13 @@ internal class LocalizedTextPartialTests {
                                 size = null,
                                 padding = null,
                                 margin = null,
+                            ),
+                            using = mapOf(
+                                LocalizationKey("baseKey") to LocalizationData.Text("base"),
                             )
-                        ),
+                        ).getOrThrow(),
                         override = LocalizedTextPartial(
-                            text = null,
-                            partial = PartialTextComponent(
+                            from = PartialTextComponent(
                                 visible = null,
                                 text = null,
                                 color = null,
@@ -370,11 +395,11 @@ internal class LocalizedTextPartialTests {
                                 size = Size(width = Fixed(20.toUInt()), height = Fixed(20.toUInt())),
                                 padding = Padding(top = 20.0, bottom = 20.0, leading = 20.0, trailing = 20.0),
                                 margin = Padding(top = 10.0, bottom = 10.0, leading = 10.0, trailing = 10.0),
-                            )
-                        ),
+                            ),
+                            using = emptyMap(),
+                        ).getOrThrow(),
                         expected = LocalizedTextPartial(
-                            text = "base",
-                            partial = PartialTextComponent(
+                            from = PartialTextComponent(
                                 visible = true,
                                 text = LocalizationKey("baseKey"),
                                 color = ColorScheme(light = ColorInfo.Alias("baseColor")),
@@ -386,8 +411,11 @@ internal class LocalizedTextPartialTests {
                                 size = Size(width = Fixed(20.toUInt()), height = Fixed(20.toUInt())),
                                 padding = Padding(top = 20.0, bottom = 20.0, leading = 20.0, trailing = 20.0),
                                 margin = Padding(top = 10.0, bottom = 10.0, leading = 10.0, trailing = 10.0),
+                            ),
+                            using = mapOf(
+                                LocalizationKey("baseKey") to LocalizationData.Text("base"),
                             )
-                        ),
+                        ).getOrThrow(),
                     )
                 ),
 
@@ -435,6 +463,37 @@ internal class LocalizedTextPartialTests {
                 using = mapOf(
                     LocalizationKey("existing-key") to LocalizationData.Text("Hello, world"),
                 )
+            )
+
+            // Assert
+            assert(actualResult.isSuccess)
+        }
+
+        @Test
+        fun `Should create successfully if the PartialTextComponent has no LocalizationKey`() {
+            // Arrange, Act
+            val actualResult = LocalizedTextPartial(
+                from = PartialTextComponent(
+                    text = null,
+                ),
+                using = mapOf(
+                    LocalizationKey("existing-key") to LocalizationData.Text("Hello, world"),
+                )
+            )
+
+            // Assert
+            assert(actualResult.isSuccess)
+        }
+
+        @Suppress("MaxLineLength")
+        @Test
+        fun `Should create successfully if the PartialTextComponent has no LocalizationKey, LocalizationDictionary is empty`() {
+            // Arrange, Act
+            val actualResult = LocalizedTextPartial(
+                from = PartialTextComponent(
+                    text = null,
+                ),
+                using = emptyMap()
             )
 
             // Assert

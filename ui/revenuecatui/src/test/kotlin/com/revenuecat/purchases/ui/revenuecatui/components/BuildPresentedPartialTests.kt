@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.ui.revenuecatui.components
 
 import com.revenuecat.purchases.paywalls.components.PartialTextComponent
+import com.revenuecat.purchases.paywalls.components.common.LocalizationData
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
@@ -34,25 +35,35 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
 
     companion object {
         private val selectedPartial = LocalizedTextPartial(
-            text = "Hello selected",
-            partial = PartialTextComponent(),
-        )
+            from = PartialTextComponent(),
+            using = mapOf(
+                LocalizationKey("key") to LocalizationData.Text("Hello selected"),
+            )
+        ).getOrThrow()
         private val introOfferPartial = LocalizedTextPartial(
-            text = "Hello intro",
-            partial = PartialTextComponent(),
-        )
+            from = PartialTextComponent(),
+            using = mapOf(
+                LocalizationKey("key") to LocalizationData.Text("Hello intro"),
+            )
+        ).getOrThrow()
         private val compactPartial = LocalizedTextPartial(
-            text = "Hello compact",
-            partial = PartialTextComponent(),
-        )
+            from = PartialTextComponent(),
+            using = mapOf(
+                LocalizationKey("key") to LocalizationData.Text("Hello compact"),
+            )
+        ).getOrThrow()
         private val mediumPartial = LocalizedTextPartial(
-            text = "Hello medium",
-            partial = PartialTextComponent(),
-        )
+            from = PartialTextComponent(),
+            using = mapOf(
+                LocalizationKey("key") to LocalizationData.Text("Hello medium"),
+            )
+        ).getOrThrow()
         private val expandedPartial = LocalizedTextPartial(
-            text = "Hello expanded",
-            partial = PartialTextComponent(),
-        )
+            from = PartialTextComponent(),
+            using = mapOf(
+                LocalizationKey("key") to LocalizationData.Text("Hello expanded"),
+            )
+        ).getOrThrow()
 
         @Suppress("LongMethod")
         @JvmStatic
@@ -339,8 +350,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                         ),
                         conditions = PresentedConditions(
                             compact = LocalizedTextPartial(
-                                text = "compactText",
-                                partial = PartialTextComponent(
+                                from = PartialTextComponent(
                                     visible = true,
                                     text = LocalizationKey("compactKey"),
                                     color = ColorScheme(light = ColorInfo.Alias("compactColor")),
@@ -352,11 +362,13 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                                     size = Size(width = Fixed(10.toUInt()), height = Fixed(10.toUInt())),
                                     padding = Padding(top = 10.0, bottom = 10.0, leading = 10.0, trailing = 10.0),
                                     margin = Padding(top = 20.0, bottom = 20.0, leading = 20.0, trailing = 20.0),
+                                ),
+                                using = mapOf(
+                                    LocalizationKey("compactKey") to LocalizationData.Text("compactText"),
                                 )
-                            ),
+                            ).getOrThrow(),
                             medium = LocalizedTextPartial(
-                                text = null,
-                                partial = PartialTextComponent(
+                                from = PartialTextComponent(
                                     visible = true,
                                     text = null,
                                     color = null,
@@ -368,11 +380,11 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                                     size = Size(width = Fixed(20.toUInt()), height = Fixed(20.toUInt())),
                                     padding = Padding(top = 20.0, bottom = 20.0, leading = 20.0, trailing = 20.0),
                                     margin = Padding(top = 30.0, bottom = 30.0, leading = 30.0, trailing = 30.0),
-                                )
-                            ),
+                                ),
+                                using = emptyMap(),
+                            ).getOrThrow(),
                             expanded = LocalizedTextPartial(
-                                text = null,
-                                partial = PartialTextComponent(
+                                from = PartialTextComponent(
                                     visible = true,
                                     text = null,
                                     color = null,
@@ -384,8 +396,9 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                                     size = Size(width = Fixed(30.toUInt()), height = Fixed(30.toUInt())),
                                     padding = Padding(top = 30.0, bottom = 30.0, leading = 30.0, trailing = 30.0),
                                     margin = Padding(top = 40.0, bottom = 40.0, leading = 40.0, trailing = 40.0),
-                                )
-                            ),
+                                ),
+                                using = emptyMap(),
+                            ).getOrThrow(),
                         ),
                     ),
                     windowSize = EXPANDED,
@@ -395,8 +408,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                     // from the medium override that are null in expanded, and the non-null properties from the compact
                     // override that are null in medium or expanded.
                     expected = LocalizedTextPartial(
-                        text = "compactText",
-                        partial = PartialTextComponent(
+                        from = PartialTextComponent(
                             visible = true,
                             text = LocalizationKey("compactKey"),
                             color = ColorScheme(light = ColorInfo.Alias("compactColor")),
@@ -408,8 +420,11 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                             size = Size(width = Fixed(30.toUInt()), height = Fixed(30.toUInt())),
                             padding = Padding(top = 30.0, bottom = 30.0, leading = 30.0, trailing = 30.0),
                             margin = Padding(top = 40.0, bottom = 40.0, leading = 40.0, trailing = 40.0),
+                        ),
+                        using = mapOf(
+                            LocalizationKey("compactKey") to LocalizationData.Text("compactText"),
                         )
-                    ),
+                    ).getOrThrow(),
                 ),
             ),
             arrayOf(
@@ -417,8 +432,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                 Args(
                     availableOverrides = PresentedOverrides(
                         introOffer = LocalizedTextPartial(
-                            text = null,
-                            partial = PartialTextComponent(
+                            from = PartialTextComponent(
                                 visible = true,
                                 text = null,
                                 color = null,
@@ -430,12 +444,12 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                                 size = Size(width = Fixed(50.toUInt()), height = Fixed(50.toUInt())),
                                 padding = Padding(top = 50.0, bottom = 50.0, leading = 50.0, trailing = 50.0),
                                 margin = Padding(top = 60.0, bottom = 60.0, leading = 60.0, trailing = 60.0),
-                            )
-                        ),
+                            ),
+                            using = emptyMap(),
+                        ).getOrThrow(),
                         states = PresentedStates(
                             selected = LocalizedTextPartial(
-                                text = null,
-                                partial = PartialTextComponent(
+                                from = PartialTextComponent(
                                     visible = true,
                                     text = null,
                                     color = null,
@@ -447,13 +461,13 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                                     size = Size(width = Fixed(60.toUInt()), height = Fixed(60.toUInt())),
                                     padding = Padding(top = 60.0, bottom = 60.0, leading = 60.0, trailing = 60.0),
                                     margin = Padding(top = 70.0, bottom = 70.0, leading = 70.0, trailing = 70.0),
-                                )
-                            ),
+                                ),
+                                using = emptyMap(),
+                            ).getOrThrow(),
                         ),
                         conditions = PresentedConditions(
                             compact = LocalizedTextPartial(
-                                text = "compactText",
-                                partial = PartialTextComponent(
+                                from = PartialTextComponent(
                                     visible = true,
                                     text = LocalizationKey("compactKey"),
                                     color = ColorScheme(light = ColorInfo.Alias("compactColor")),
@@ -465,11 +479,13 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                                     size = Size(width = Fixed(10.toUInt()), height = Fixed(10.toUInt())),
                                     padding = Padding(top = 10.0, bottom = 10.0, leading = 10.0, trailing = 10.0),
                                     margin = Padding(top = 20.0, bottom = 20.0, leading = 20.0, trailing = 20.0),
+                                ),
+                                using = mapOf(
+                                    LocalizationKey("compactKey") to LocalizationData.Text("compactText"),
                                 )
-                            ),
+                            ).getOrThrow(),
                             medium = LocalizedTextPartial(
-                                text = null,
-                                partial = PartialTextComponent(
+                                from = PartialTextComponent(
                                     visible = true,
                                     text = null,
                                     color = ColorScheme(light = ColorInfo.Alias("mediumColor")),
@@ -481,11 +497,11 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                                     size = Size(width = Fixed(20.toUInt()), height = Fixed(20.toUInt())),
                                     padding = Padding(top = 20.0, bottom = 20.0, leading = 20.0, trailing = 20.0),
                                     margin = Padding(top = 30.0, bottom = 30.0, leading = 30.0, trailing = 30.0),
-                                )
-                            ),
+                                ),
+                                using = emptyMap(),
+                            ).getOrThrow(),
                             expanded = LocalizedTextPartial(
-                                text = null,
-                                partial = PartialTextComponent(
+                                from = PartialTextComponent(
                                     visible = true,
                                     text = null,
                                     color = null,
@@ -497,16 +513,16 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                                     size = Size(width = Fixed(40.toUInt()), height = Fixed(40.toUInt())),
                                     padding = Padding(top = 40.0, bottom = 40.0, leading = 40.0, trailing = 40.0),
                                     margin = Padding(top = 50.0, bottom = 50.0, leading = 50.0, trailing = 50.0),
-                                )
-                            ),
+                                ),
+                                using = emptyMap(),
+                            ).getOrThrow(),
                         ),
                     ),
                     windowSize = EXPANDED,
                     isEligibleForIntroOffer = true,
                     state = SELECTED,
                     expected = LocalizedTextPartial(
-                        text = "compactText",
-                        partial = PartialTextComponent(
+                        from = PartialTextComponent(
                             visible = true,
                             text = LocalizationKey("compactKey"),
                             color = ColorScheme(light = ColorInfo.Alias("mediumColor")),
@@ -518,8 +534,11 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                             size = Size(width = Fixed(60.toUInt()), height = Fixed(60.toUInt())),
                             padding = Padding(top = 60.0, bottom = 60.0, leading = 60.0, trailing = 60.0),
                             margin = Padding(top = 70.0, bottom = 70.0, leading = 70.0, trailing = 70.0),
+                        ),
+                        using = mapOf(
+                            LocalizationKey("compactKey") to LocalizationData.Text("compactText"),
                         )
-                    ),
+                    ).getOrThrow(),
                 ),
             ),
         )

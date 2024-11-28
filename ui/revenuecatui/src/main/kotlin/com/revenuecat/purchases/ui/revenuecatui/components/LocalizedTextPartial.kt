@@ -5,7 +5,7 @@ import com.revenuecat.purchases.paywalls.components.common.LocalizationDictionar
 import dev.drewhamilton.poko.Poko
 
 @Poko
-internal class LocalizedTextPartial(
+internal class LocalizedTextPartial private constructor(
     @get:JvmSynthetic val text: String?,
     @get:JvmSynthetic val partial: PartialTextComponent,
 ) : PresentedPartial<LocalizedTextPartial> {
