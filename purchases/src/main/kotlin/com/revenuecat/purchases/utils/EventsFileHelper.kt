@@ -1,14 +1,10 @@
 package com.revenuecat.purchases.utils
 
-import android.os.Build
-import androidx.annotation.RequiresApi
 import com.revenuecat.purchases.common.FileHelper
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.verboseLog
 import org.json.JSONObject
-import java.util.stream.Stream
 
-@RequiresApi(Build.VERSION_CODES.N)
 /**
  * Class to handle file operations for event types like PaywallEvents and Diagnostics.
  * When [eventDeserializer] is null, [readFile] with the deserialized type won't return any events.
@@ -24,13 +20,13 @@ internal open class EventsFileHelper<T : Event> (
     }
 
     @Synchronized
-    fun readFile(streamBlock: ((Stream<T>) -> Unit)) {
+    fun readFile(block: ((Sequence<T?>) -> Unit)) {
         val eventDeserializer = eventDeserializer
         if (eventDeserializer == null || fileHelper.fileIsEmpty(filePath)) {
-            streamBlock(Stream.empty())
+            block(emptySequence())
         } else {
-            fileHelper.readFilePerLines(filePath) { stream ->
-                streamBlock(stream.map { line -> mapToEvent(line) })
+            fileHelper.readFilePerLines(filePath) { sequence ->
+                block(sequence.map { line -> mapToEvent(line) })
             }
         }
     }
@@ -39,12 +35,12 @@ internal open class EventsFileHelper<T : Event> (
     // so adding this method to avoid the overhead of converting back to the model, then
     // back again to a JSONObject.
     @Synchronized
-    fun readFileAsJson(streamBlock: ((Stream<JSONObject>) -> Unit)) {
+    fun readFileAsJson(block: ((Sequence<JSONObject>) -> Unit)) {
         if (fileHelper.fileIsEmpty(filePath)) {
-            streamBlock(Stream.empty())
+            block(emptySequence())
         } else {
-            fileHelper.readFilePerLines(filePath) { stream ->
-                streamBlock(stream.map { JSONObject(it) })
+            fileHelper.readFilePerLines(filePath) { sequence ->
+                block(sequence.map { JSONObject(it) })
             }
         }
     }

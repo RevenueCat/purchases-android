@@ -1,7 +1,5 @@
 package com.revenuecat.purchases.paywalls.events
 
-import android.os.Build
-import androidx.annotation.RequiresApi
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.Delay
@@ -11,10 +9,8 @@ import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.verboseLog
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.utils.EventsFileHelper
-import java.util.stream.Collectors
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
-@RequiresApi(Build.VERSION_CODES.N)
 internal class PaywallEventsManager(
     private val fileHelper: EventsFileHelper<PaywallStoredEvent>,
     private val identityManager: IdentityManager,
@@ -23,7 +19,7 @@ internal class PaywallEventsManager(
 ) {
     companion object {
         const val PAYWALL_EVENTS_FILE_PATH = "RevenueCat/paywall_event_store/paywall_event_store.jsonl"
-        private const val FLUSH_COUNT = 50L
+        private const val FLUSH_COUNT = 50
     }
 
     @get:Synchronized
@@ -78,9 +74,9 @@ internal class PaywallEventsManager(
     }
 
     private fun getEventsToSync(): List<PaywallStoredEvent?> {
-        var eventsToSync: List<PaywallStoredEvent> = emptyList()
-        fileHelper.readFile { stream ->
-            eventsToSync = stream.limit(FLUSH_COUNT).collect(Collectors.toList())
+        var eventsToSync: List<PaywallStoredEvent?> = emptyList()
+        fileHelper.readFile { sequence ->
+            eventsToSync = sequence.take(FLUSH_COUNT).toList()
         }
         return eventsToSync
     }
