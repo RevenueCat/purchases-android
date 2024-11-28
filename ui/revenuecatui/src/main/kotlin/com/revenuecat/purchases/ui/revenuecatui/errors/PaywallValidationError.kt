@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.ui.revenuecatui.errors
 
 import com.revenuecat.purchases.Offering
+import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.ui.revenuecatui.strings.PaywallValidationErrorStrings
 
 internal sealed class PaywallValidationError : Throwable() {
@@ -24,6 +25,8 @@ internal sealed class PaywallValidationError : Throwable() {
                 val joinedTierIds = this.tierIds.joinToString()
                 PaywallValidationErrorStrings.MISSING_TIER_CONFIGURATIONS.format(joinedTierIds)
             }
+            is MissingStringLocalization -> message
+            is MissingImageLocalization -> message
         }
     }
 
@@ -33,4 +36,10 @@ internal sealed class PaywallValidationError : Throwable() {
     data class InvalidIcons(val invalidIcons: Set<String>) : PaywallValidationError()
     object MissingTiers : PaywallValidationError()
     data class MissingTierConfigurations(val tierIds: Set<String>) : PaywallValidationError()
+    data class MissingStringLocalization(val key: LocalizationKey) : PaywallValidationError() {
+        override val message: String = PaywallValidationErrorStrings.MISSING_STRING_LOCALIZATION.format(key.value)
+    }
+    data class MissingImageLocalization(val key: LocalizationKey) : PaywallValidationError() {
+        override val message: String = PaywallValidationErrorStrings.MISSING_IMAGE_LOCALIZATION.format(key.value)
+    }
 }

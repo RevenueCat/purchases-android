@@ -2,6 +2,7 @@ package com.revenuecat.purchases.ui.revenuecatui.components
 
 import com.revenuecat.purchases.paywalls.components.PartialTextComponent
 import com.revenuecat.purchases.paywalls.components.common.LocalizationDictionary
+import com.revenuecat.purchases.ui.revenuecatui.components.ktx.string
 import dev.drewhamilton.poko.Poko
 
 @Poko
