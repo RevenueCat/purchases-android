@@ -6,6 +6,7 @@ import androidx.appcompat.app.AppCompatActivity
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.WebPurchaseRedemption
+import com.revenuecat.purchases.asWebPurchaseRedemption
 import com.revenuecat.purchases_sample.R
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
@@ -16,13 +17,13 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        webPurchaseRedemption = Purchases.parseAsWebPurchaseRedemption(intent)
+        webPurchaseRedemption = intent.asWebPurchaseRedemption
     }
 
     override fun onNewIntent(intent: Intent?) {
         super.onNewIntent(intent)
         if (intent != null) {
-            webPurchaseRedemption = Purchases.parseAsWebPurchaseRedemption(intent)
+            webPurchaseRedemption = intent.asWebPurchaseRedemption
         }
     }
 

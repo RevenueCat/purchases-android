@@ -3,7 +3,6 @@ package com.revenuecat.purchases
 import android.content.Intent
 
 @ExperimentalPreviewRevenueCatPurchasesAPI
-@JvmSynthetic
-fun Intent.parseAsWebPurchaseRedemption(): WebPurchaseRedemption? {
-    return Purchases.parseAsWebPurchaseRedemption(this)
-}
+val Intent.asWebPurchaseRedemption: WebPurchaseRedemption?
+    @JvmSynthetic
+    get() = Purchases.parseAsWebPurchaseRedemption(this)
