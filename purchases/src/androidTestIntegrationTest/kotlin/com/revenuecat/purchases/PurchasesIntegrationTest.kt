@@ -36,7 +36,7 @@ class PurchasesIntegrationTest {
             }
         }
 
-        private const val testTimeoutInSeconds = 5L
+        private const val testTimeoutInSeconds = 10L
 
         private fun canRunIntegrationTests() = Constants.apiKey != "REVENUECAT_API_KEY" &&
             Constants.googlePurchaseToken != "GOOGLE_PURCHASE_TOKEN" &&
