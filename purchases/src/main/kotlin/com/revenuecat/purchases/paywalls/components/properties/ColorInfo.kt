@@ -19,7 +19,7 @@ sealed interface ColorInfo {
     @Poko
     @Serializable
     @SerialName("hex")
-    class Hex internal constructor(
+    class Hex(
         @get:JvmSynthetic
         @Serializable(with = RgbaStringArgbColorIntDeserializer::class)
         @ColorInt
@@ -29,14 +29,14 @@ sealed interface ColorInfo {
     @Poko
     @Serializable
     @SerialName("alias")
-    class Alias internal constructor(@get:JvmSynthetic val value: String) : ColorInfo
+    class Alias(@get:JvmSynthetic val value: String) : ColorInfo
 
     sealed interface Gradient : ColorInfo {
 
         @Poko
         @Serializable
         @SerialName("linear")
-        class Linear internal constructor(
+        class Linear(
             @get:JvmSynthetic val degrees: Float,
             @get:JvmSynthetic val points: List<Point>,
         ) : Gradient
@@ -44,7 +44,7 @@ sealed interface ColorInfo {
         @Poko
         @Serializable
         @SerialName("radial")
-        class Radial internal constructor(
+        class Radial(
             @get:JvmSynthetic val points: List<Point>,
         ) : Gradient
 
@@ -53,7 +53,7 @@ sealed interface ColorInfo {
          */
         @Poko
         @Serializable
-        class Point internal constructor(
+        class Point(
             @Serializable(with = RgbaStringArgbColorIntDeserializer::class)
             @ColorInt
             @get:JvmSynthetic val color: Int,
@@ -65,7 +65,7 @@ sealed interface ColorInfo {
 @InternalRevenueCatAPI
 @Poko
 @Serializable
-class ColorScheme internal constructor(
+class ColorScheme(
     @get:JvmSynthetic val light: ColorInfo,
     @get:JvmSynthetic val dark: ColorInfo? = null,
 )

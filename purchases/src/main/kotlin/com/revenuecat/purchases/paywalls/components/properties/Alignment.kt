@@ -19,7 +19,7 @@ enum class HorizontalAlignment {
 
 @InternalRevenueCatAPI
 @Serializable
-internal enum class VerticalAlignment {
+enum class VerticalAlignment {
     @SerialName("top")
     TOP,
 

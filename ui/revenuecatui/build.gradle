@@ -7,6 +7,7 @@ plugins {
     alias libs.plugins.kotlin.serialization
     alias libs.plugins.kotlin.parcelize
     alias libs.plugins.paparazzi
+    alias libs.plugins.poko
 }
 
 
@@ -113,7 +114,7 @@ tasks.dokkaHtmlPartial.configure {
 }
 
 // Opt-in to InternalRevenueCatAPI for the entire module. This avoids having to explicitly opt in at every call site
-// separately.
+// separately. Lint is handled by ui/revenuecatui/lint.xml.
 tasks.withType(KotlinCompilationTask).configureEach {
     compilerOptions {
         freeCompilerArgs.add("-opt-in=com.revenuecat.purchases.InternalRevenueCatAPI")
