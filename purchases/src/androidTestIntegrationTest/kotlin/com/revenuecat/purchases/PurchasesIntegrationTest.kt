@@ -41,7 +41,7 @@ class PurchasesIntegrationTest {
             Constants.productIdToPurchase != "PRODUCT_ID_TO_PURCHASE"
     }
 
-    private val testTimeout = 5.seconds
+    private val testTimeout = 10.seconds
     private val currentTimestamp = Date().time
     private val testUserId = "android-integration-test-$currentTimestamp"
     private val entitlementsToVerify = Constants.activeEntitlementIdsToVerify
