@@ -1,4 +1,4 @@
-package com.revenuecat.purchases.ui.revenuecatui.components.text
+package com.revenuecat.purchases.ui.revenuecatui.components.style
 
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Composable
@@ -15,48 +15,48 @@ import com.revenuecat.purchases.paywalls.components.properties.FontSize
 import com.revenuecat.purchases.paywalls.components.properties.HorizontalAlignment
 import com.revenuecat.purchases.paywalls.components.properties.Padding
 import com.revenuecat.purchases.paywalls.components.properties.Size
-import com.revenuecat.purchases.ui.revenuecatui.components.ColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toAlignment
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toFontWeight
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toTextAlign
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toTextUnit
-import com.revenuecat.purchases.ui.revenuecatui.components.toColorStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.property.ColorStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.property.toColorStyle
 import com.revenuecat.purchases.paywalls.components.properties.FontWeight as RcFontWeight
 
 @Suppress("LongParameterList")
 @Immutable
 internal class TextComponentStyle private constructor(
-    @JvmSynthetic
+    @get:JvmSynthetic
     val visible: Boolean,
-    @JvmSynthetic
+    @get:JvmSynthetic
     val text: String,
-    @JvmSynthetic
+    @get:JvmSynthetic
     val color: ColorStyle,
-    @JvmSynthetic
+    @get:JvmSynthetic
     val fontSize: TextUnit,
-    @JvmSynthetic
+    @get:JvmSynthetic
     val fontWeight: FontWeight?,
-    @JvmSynthetic
+    @get:JvmSynthetic
     val fontFamily: FontFamily?,
-    @JvmSynthetic
+    @get:JvmSynthetic
     val textAlign: TextAlign?,
-    @JvmSynthetic
+    @get:JvmSynthetic
     val horizontalAlignment: Alignment.Horizontal,
-    @JvmSynthetic
+    @get:JvmSynthetic
     val backgroundColor: ColorStyle?,
-    @JvmSynthetic
+    @get:JvmSynthetic
     val size: Size,
-    @JvmSynthetic
+    @get:JvmSynthetic
     val padding: PaddingValues,
-    @JvmSynthetic
+    @get:JvmSynthetic
     val margin: PaddingValues,
-) {
+) : ComponentStyle {
 
     companion object {
 
         @Suppress("LongParameterList")
-        @JvmSynthetic
+        @get:JvmSynthetic
         @Composable
         operator fun invoke(
             visible: Boolean,

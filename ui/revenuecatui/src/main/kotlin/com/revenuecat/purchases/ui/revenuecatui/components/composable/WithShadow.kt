@@ -28,9 +28,9 @@ import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.Shadow
-import com.revenuecat.purchases.ui.revenuecatui.components.ShadowStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.background
-import com.revenuecat.purchases.ui.revenuecatui.components.toShadowStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.property.ShadowStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.property.toShadowStyle
 
 /**
  * Adds a [shadow] in the provided [shape] to the [content].

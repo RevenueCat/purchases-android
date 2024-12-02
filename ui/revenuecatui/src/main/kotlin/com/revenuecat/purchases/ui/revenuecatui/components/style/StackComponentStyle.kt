@@ -1,4 +1,4 @@
-package com.revenuecat.purchases.ui.revenuecatui.components.stack
+package com.revenuecat.purchases.ui.revenuecatui.components.style
 
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Immutable
@@ -6,31 +6,33 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.Dp
 import com.revenuecat.purchases.paywalls.components.properties.Dimension
 import com.revenuecat.purchases.paywalls.components.properties.Size
-import com.revenuecat.purchases.ui.revenuecatui.components.BackgroundStyle
-import com.revenuecat.purchases.ui.revenuecatui.components.BorderStyle
-import com.revenuecat.purchases.ui.revenuecatui.components.ShadowStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.property.BackgroundStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.property.BorderStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.property.ShadowStyle
 
 @Suppress("LongParameterList")
 @Immutable
 internal class StackComponentStyle(
-    @JvmSynthetic
+    @get:JvmSynthetic
     val visible: Boolean,
-    @JvmSynthetic
+    @get:JvmSynthetic
+    val children: List<ComponentStyle>,
+    @get:JvmSynthetic
     val dimension: Dimension,
-    @JvmSynthetic
+    @get:JvmSynthetic
     val size: Size,
-    @JvmSynthetic
+    @get:JvmSynthetic
     val spacing: Dp,
-    @JvmSynthetic
+    @get:JvmSynthetic
     val background: BackgroundStyle?,
-    @JvmSynthetic
+    @get:JvmSynthetic
     val padding: PaddingValues,
-    @JvmSynthetic
+    @get:JvmSynthetic
     val margin: PaddingValues,
-    @JvmSynthetic
+    @get:JvmSynthetic
     val shape: Shape,
-    @JvmSynthetic
+    @get:JvmSynthetic
     val border: BorderStyle?,
-    @JvmSynthetic
+    @get:JvmSynthetic
     val shadow: ShadowStyle?,
-)
+) : ComponentStyle

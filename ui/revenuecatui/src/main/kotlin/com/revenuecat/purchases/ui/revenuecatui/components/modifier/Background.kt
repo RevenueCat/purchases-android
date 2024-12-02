@@ -9,8 +9,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.paint
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.Shape
-import com.revenuecat.purchases.ui.revenuecatui.components.BackgroundStyle
-import com.revenuecat.purchases.ui.revenuecatui.components.ColorStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.property.BackgroundStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.property.ColorStyle
 
 @JvmSynthetic
 @Stable

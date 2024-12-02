@@ -1,4 +1,4 @@
-package com.revenuecat.purchases.ui.revenuecatui.components
+package com.revenuecat.purchases.ui.revenuecatui.components.property
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.requiredSize
