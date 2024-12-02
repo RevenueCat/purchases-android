@@ -46,6 +46,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentSt
 import com.revenuecat.purchases.ui.revenuecatui.components.text.TextComponentView
 import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
 
+@Suppress("LongMethod")
 @Composable
 internal fun StackComponentView(
     style: StackComponentStyle,
@@ -111,7 +112,7 @@ internal fun StackComponentView(
 
         // Wrap it all in WithShadow if necessary.
         if (style.shadow != null) {
-            WithShadow(style.shadow, style.shape, container)
+            WithShadow(style.shadow, style.shape, style.margin, container)
         } else {
             container()
         }
@@ -136,7 +137,7 @@ private fun StackComponentView_Preview_Vertical() {
                 margin = PaddingValues(all = 16.dp),
                 shape = RoundedCornerShape(size = 20.dp),
                 border = BorderStyle(width = 2.dp, color = Solid(Color.Blue)),
-                shadow = ShadowStyle(color = Solid(Color.Black), radius = 30.dp, x = 0.dp, y = 5.dp),
+                shadow = ShadowStyle(color = Solid(Color.Black), radius = 10.dp, x = 0.dp, y = 3.dp),
             ),
         )
     }
@@ -221,7 +222,7 @@ private fun StackComponentView_Preview_ZLayer() {
                 margin = PaddingValues(all = 16.dp),
                 shape = RoundedCornerShape(size = 20.dp),
                 border = BorderStyle(width = 2.dp, color = Solid(Color.Blue)),
-                shadow = ShadowStyle(color = Solid(Color.Black), radius = 30.dp, x = 0.dp, y = 5.dp),
+                shadow = ShadowStyle(color = Solid(Color.Black), radius = 20.dp, x = 5.dp, y = 5.dp),
             ),
         )
     }

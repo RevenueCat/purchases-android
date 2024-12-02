@@ -3,7 +3,13 @@
 package com.revenuecat.purchases.ui.revenuecatui.components.composable
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredSize
@@ -34,9 +40,17 @@ import com.revenuecat.purchases.ui.revenuecatui.components.property.toShadowStyl
 
 /**
  * Adds a [shadow] in the provided [shape] to the [content].
+ *
+ * @param margin If your [content] has a margin, provide that here. Otherwise the transparent pixels of the margin will
+ * participate in the shadow.
  */
 @Composable
-internal fun WithShadow(shadow: ShadowStyle, shape: Shape, content: @Composable () -> Unit) {
+internal fun WithShadow(
+    shadow: ShadowStyle,
+    shape: Shape,
+    margin: PaddingValues = PaddingValues(all = 0.dp),
+    content: @Composable () -> Unit,
+) {
     // We cannot use the built-in .shadow() modifier, as it takes very different parameters from what we have in our
     // ShadowStyle. WithShadow also can't be a modifier itself, because the modifiers we use to draw the shadow
     // (offset, blur and background) cannot be part of the same modifier chain as those applied to the content. If they
@@ -58,21 +72,26 @@ internal fun WithShadow(shadow: ShadowStyle, shape: Shape, content: @Composable 
         val contentMeasurable = measurables[0]
         val shadowMeasurable = measurables[1]
 
-        // We measure the content first, then make the shadow exactly as big.
+        val startMarginPx = margin.calculateStartPadding(layoutDirection).roundToPx()
+        val topMarginPx = margin.calculateTopPadding().roundToPx()
+        val endMarginPx = margin.calculateEndPadding(layoutDirection).roundToPx()
+        val bottomMarginPx = margin.calculateBottomPadding().roundToPx()
+
+        // We measure the content first, then make the shadow exactly as big, minus any margins.
         val contentPlaceable = contentMeasurable.measure(constraints)
         val shadowPlaceable = shadowMeasurable.measure(
             constraints = Constraints(
-                minWidth = contentPlaceable.measuredWidth,
-                maxWidth = contentPlaceable.measuredWidth,
-                minHeight = contentPlaceable.measuredHeight,
-                maxHeight = contentPlaceable.measuredHeight,
+                minWidth = contentPlaceable.measuredWidth - startMarginPx - endMarginPx,
+                maxWidth = contentPlaceable.measuredWidth - startMarginPx - endMarginPx,
+                minHeight = contentPlaceable.measuredHeight - topMarginPx - bottomMarginPx,
+                maxHeight = contentPlaceable.measuredHeight - topMarginPx - bottomMarginPx,
             ),
         )
 
         layout(width = contentPlaceable.measuredWidth, height = contentPlaceable.measuredHeight) {
             // We place the shadow and the content on top of each other.
-            shadowPlaceable.placeRelative(0, 0)
-            contentPlaceable.placeRelative(0, 0)
+            shadowPlaceable.placeRelative(x = startMarginPx, y = topMarginPx)
+            contentPlaceable.placeRelative(x = 0, y = 0)
         }
     }
 }
@@ -181,6 +200,64 @@ private fun Shadow_Preview_Gradient_CustomShape() {
                     .padding(horizontal = 24.dp, vertical = 16.dp),
                 color = Color.White,
                 style = MaterialTheme.typography.titleSmall,
+            )
+        }
+    }
+}
+
+@Suppress("MagicNumber")
+@Preview("Margin")
+@Composable
+private fun Shadow_Preview_Margin() {
+    val margin = PaddingValues(start = 8.dp, top = 16.dp, end = 4.dp, bottom = 24.dp)
+    val shape = RectangleShape
+    Column(
+        modifier = Modifier
+            .requiredSize(width = 100.dp, height = 200.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        WithShadow(
+            shadow = Shadow(
+                color = ColorScheme(
+                    light = ColorInfo.Hex(Color.Black.toArgb()),
+                ),
+                x = 0.0,
+                y = 5.0,
+                radius = 20.0,
+            ).toShadowStyle(),
+            shape = shape,
+            margin = margin,
+        ) {
+            Box(
+                modifier = Modifier
+                    .padding(margin)
+                    .requiredSize(width = 50.dp, height = 50.dp)
+                    .background(Color.Red, shape)
+                    .border(width = 2.dp, Color.Blue, shape)
+                    .padding(all = 16.dp),
+            )
+        }
+
+        WithShadow(
+            shadow = Shadow(
+                color = ColorScheme(
+                    light = ColorInfo.Hex(Color.Black.toArgb()),
+                ),
+                x = 0.0,
+                y = 5.0,
+                radius = 20.0,
+            ).toShadowStyle(),
+            shape = shape,
+            margin = margin,
+        ) {
+            Box(
+                modifier = Modifier
+                    .padding(margin)
+                    .requiredSize(width = 50.dp, height = 50.dp)
+                    .background(Color.Red, shape)
+                    .border(width = 2.dp, Color.Blue, shape)
+                    .padding(all = 16.dp),
             )
         }
     }
