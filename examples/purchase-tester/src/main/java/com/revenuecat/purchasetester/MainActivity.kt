@@ -16,13 +16,13 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        webPurchaseRedemption = intent.asWebPurchaseRedemption
+        webPurchaseRedemption = intent.asWebPurchaseRedemption()
     }
 
     override fun onNewIntent(intent: Intent?) {
         super.onNewIntent(intent)
         if (intent != null) {
-            webPurchaseRedemption = intent.asWebPurchaseRedemption
+            webPurchaseRedemption = intent.asWebPurchaseRedemption()
         }
     }
 

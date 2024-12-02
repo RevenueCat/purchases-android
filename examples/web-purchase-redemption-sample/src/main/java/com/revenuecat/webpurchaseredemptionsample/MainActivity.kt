@@ -24,7 +24,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        webPurchaseRedemption = intent.asWebPurchaseRedemption
+        webPurchaseRedemption = intent.asWebPurchaseRedemption()
         enableEdgeToEdge()
         setContent {
             PurchasesTheme {
@@ -37,7 +37,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        webPurchaseRedemption = intent.asWebPurchaseRedemption
+        webPurchaseRedemption = intent.asWebPurchaseRedemption()
     }
 
     fun clearWebPurchaseRedemption() {

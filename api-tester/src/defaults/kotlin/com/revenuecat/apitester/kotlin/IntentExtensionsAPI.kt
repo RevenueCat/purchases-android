@@ -9,6 +9,6 @@ import com.revenuecat.purchases.asWebPurchaseRedemption
 @Suppress("unused", "UNUSED_VARIABLE")
 private class IntentExtensionsAPI {
     fun check(intent: Intent) {
-        val webPurchaseRedemption: WebPurchaseRedemption? = intent.asWebPurchaseRedemption
+        val webPurchaseRedemption: WebPurchaseRedemption? = intent.asWebPurchaseRedemption()
     }
 }
