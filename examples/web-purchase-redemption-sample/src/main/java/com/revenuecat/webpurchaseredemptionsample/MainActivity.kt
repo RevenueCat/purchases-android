@@ -13,8 +13,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
-import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.WebPurchaseRedemption
+import com.revenuecat.purchases.asWebPurchaseRedemption
 import com.revenuecat.webpurchaseredemptionsample.ui.theme.PurchasesTheme
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
@@ -24,7 +24,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        webPurchaseRedemption = Purchases.parseAsWebPurchaseRedemption(intent)
+        webPurchaseRedemption = intent.asWebPurchaseRedemption()
         enableEdgeToEdge()
         setContent {
             PurchasesTheme {
@@ -37,7 +37,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        webPurchaseRedemption = Purchases.parseAsWebPurchaseRedemption(intent)
+        webPurchaseRedemption = intent.asWebPurchaseRedemption()
     }
 
     fun clearWebPurchaseRedemption() {

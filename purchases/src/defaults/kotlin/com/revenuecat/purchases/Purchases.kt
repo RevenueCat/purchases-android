@@ -803,7 +803,7 @@ class Purchases internal constructor(
 
     /**
      * Redeem a web purchase using a [WebPurchaseRedemption] object obtained
-     * through [Purchases.parseAsWebPurchaseRedemption].
+     * through [Intent.asWebPurchaseRedemption] or [Purchases.parseAsWebPurchaseRedemption].
      */
     @ExperimentalPreviewRevenueCatPurchasesAPI
     fun redeemWebPurchase(webPurchaseRedemption: WebPurchaseRedemption, listener: RedeemWebPurchaseListener) {

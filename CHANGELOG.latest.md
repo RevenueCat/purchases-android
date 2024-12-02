@@ -1,3 +1,26 @@
 ## RevenueCat SDK
 ### 🐞 Bugfixes
-* Catch `NoSuchMethodError` on Ads library (#1914) via Cesar de la Vega (@vegaro)
+* Uses `Sequence` instead of `Stream` to avoid errors due to unavailable Java 8 APIs (#1943) via JayShortway (@JayShortway)
+
+### 🔄 Other Changes
+* Increase integration test timeout (#1946) via Toni Rico (@tonidero)
+* Removes `@RequiresApi(N)` from `FileHelper` and related classes (#1944) via JayShortway (@JayShortway)
+* [Paywalls V2] Minimizes Java API (#1942) via JayShortway (@JayShortway)
+* [Paywalls V2] Makes `TextComponent` public (#1939) via JayShortway (@JayShortway)
+* Introduces an `@InternalRevenueCatAPI` annotation (#1938) via JayShortway (@JayShortway)
+* [Paywalls V2] Moves any non-component file to a new `common` package. (#1937) via JayShortway (@JayShortway)
+* [Paywalls V2] `LocalizationKey` is an inline value class now. (#1936) via JayShortway (@JayShortway)
+* [Paywalls V2] Adds `PaywallComponentsData` (#1935) via JayShortway (@JayShortway)
+* [Paywalls V2] Adds `StickyFooterComponent` (#1934) via JayShortway (@JayShortway)
+* [Paywalls V2] Adds `PurchaseButtonComponent` (#1933) via JayShortway (@JayShortway)
+* [Paywalls V2] Adds `PackageComponent` (#1932) via JayShortway (@JayShortway)
+* Ensure the correct error message is shown when failing to open a Uri in paywalls (#1922) via JayShortway (@JayShortway)
+* [Paywalls V2] Adds `ButtonComponent` (#1931) via JayShortway (@JayShortway)
+* [Paywalls V2] Adds `StackComponent` (#1930) via JayShortway (@JayShortway)
+* [Paywalls V2] Adds `ComponentOverrides` (#1929) via JayShortway (@JayShortway)
+* [Paywalls V2] Adds `ImageComponent` (#1928) via JayShortway (@JayShortway)
+* [Paywalls V2] Adds `TextComponent` (#1927) via JayShortway (@JayShortway)
+* [Paywalls V2] Adds all enum properties (#1926) via JayShortway (@JayShortway)
+* [Paywalls V2] Adds `SizeConstraints`, `Size`, `Padding` and `Shadow` properties (#1925) via JayShortway (@JayShortway)
+* [Paywalls V2] Adds `CornerRadiuses`, `Shape` and `MaskShape` properties (#1924) via JayShortway (@JayShortway)
+* [Paywalls V2] Adds `ImageUrls` and `ColorInfo` properties (#1923) via JayShortway (@JayShortway)
