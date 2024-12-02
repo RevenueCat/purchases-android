@@ -4,6 +4,6 @@ import android.content.Intent
 
 @ExperimentalPreviewRevenueCatPurchasesAPI
 @JvmSynthetic
-fun Intent.parseAsWebPurchaseRedemption(): WebPurchaseRedemption? {
+fun Intent.asWebPurchaseRedemption(): WebPurchaseRedemption? {
     return Purchases.parseAsWebPurchaseRedemption(this)
 }
