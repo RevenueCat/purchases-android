@@ -26,7 +26,7 @@ import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fi
 import com.revenuecat.purchases.ui.revenuecatui.components.ColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.background
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
-import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
+import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
 
 @Composable
 private fun TextComponentView(
@@ -52,7 +52,7 @@ private fun TextComponentView(
             modifier = modifier
                 .size(style.size, horizontalAlignment = style.horizontalAlignment)
                 .padding(style.margin)
-                .conditional(style.backgroundColor != null) { background(style.backgroundColor!!) }
+                .applyIfNotNull(style.backgroundColor) { background(it) }
                 .padding(style.padding),
             color = color,
             fontSize = style.fontSize,
