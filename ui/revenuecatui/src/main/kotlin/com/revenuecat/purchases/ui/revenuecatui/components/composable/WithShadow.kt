@@ -111,9 +111,9 @@ private fun Shadow_Preview_Circle() {
                 color = ColorScheme(
                     light = ColorInfo.Hex(Color.Black.toArgb()),
                 ),
-                x = 0.0,
+                x = 5.0,
                 y = 5.0,
-                radius = 30.0,
+                radius = 0.0,
             ).toShadowStyle(),
             shape = shape,
         ) {
