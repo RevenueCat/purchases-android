@@ -4,8 +4,8 @@
     <string name="all_plans">Kaikki tilaukset</string>
     <string name="privacy">Yksityisyys</string>
     <string name="privacy_policy">Tietosuojakäytäntö</string>
-    <string name="restore">Palauttaa</string>
-    <string name="restore_purchases">Palauttaa ostot</string>
+    <string name="restore">Palauta</string>
+    <string name="restore_purchases">Palauta ostot</string>
     <string name="terms">Ehdot</string>
     <string name="terms_and_conditions">Käyttöehdot</string>
     <string name="annual">Vuosittainen</string>
