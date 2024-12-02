@@ -6,7 +6,7 @@ import kotlinx.serialization.Serializable
 
 @InternalRevenueCatAPI
 @Serializable
-internal sealed interface Dimension {
+sealed interface Dimension {
 
     @Serializable
     @SerialName("vertical")

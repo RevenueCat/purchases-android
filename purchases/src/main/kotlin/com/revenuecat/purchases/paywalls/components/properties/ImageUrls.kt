@@ -10,7 +10,7 @@ import java.net.URL
 @InternalRevenueCatAPI
 @Poko
 @Serializable
-class ImageUrls internal constructor(
+class ImageUrls(
     @get:JvmSynthetic
     @Serializable(with = URLSerializer::class)
     val original: URL,
@@ -30,7 +30,7 @@ class ImageUrls internal constructor(
 @InternalRevenueCatAPI
 @Poko
 @Serializable
-class ThemeImageUrls internal constructor(
+class ThemeImageUrls(
     @get:JvmSynthetic val light: ImageUrls,
     @get:JvmSynthetic val dark: ImageUrls? = null,
 )

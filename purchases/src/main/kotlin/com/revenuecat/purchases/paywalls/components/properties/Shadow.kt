@@ -5,7 +5,7 @@ import kotlinx.serialization.Serializable
 
 @InternalRevenueCatAPI
 @Serializable
-internal data class Shadow(
+data class Shadow(
     @get:JvmSynthetic val color: ColorScheme,
     @get:JvmSynthetic val radius: Double,
     @get:JvmSynthetic val x: Double,
