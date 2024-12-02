@@ -56,7 +56,7 @@ internal class TextComponentStyle private constructor(
     companion object {
 
         @Suppress("LongParameterList")
-        @get:JvmSynthetic
+        @JvmSynthetic
         @Composable
         operator fun invoke(
             visible: Boolean,
