@@ -28,7 +28,7 @@ internal class StackComponentStyle(
     @JvmSynthetic
     val margin: PaddingValues,
     @JvmSynthetic
-    val shape: Shape?,
+    val shape: Shape,
     @JvmSynthetic
     val border: BorderStyle?,
     @JvmSynthetic
