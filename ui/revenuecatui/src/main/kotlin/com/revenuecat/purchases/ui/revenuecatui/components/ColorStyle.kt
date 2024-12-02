@@ -26,6 +26,9 @@ import kotlin.math.cos
 import kotlin.math.max
 import kotlin.math.sin
 
+/**
+ * Ready to use color properties for the current theme.
+ */
 internal sealed interface ColorStyle {
 
     @JvmInline
