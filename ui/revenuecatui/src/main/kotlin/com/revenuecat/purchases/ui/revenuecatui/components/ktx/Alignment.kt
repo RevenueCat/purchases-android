@@ -33,13 +33,13 @@ internal fun VerticalAlignment.toAlignment(): Alignment.Vertical =
     }
 
 @JvmSynthetic
-internal fun TwoDimensionalAlignment.toAlignmentOrNull(): Alignment? =
+internal fun TwoDimensionalAlignment.toAlignment(): Alignment =
     when (this) {
         TwoDimensionalAlignment.CENTER -> Alignment.Center
-        TwoDimensionalAlignment.LEADING -> null
-        TwoDimensionalAlignment.TRAILING -> null
-        TwoDimensionalAlignment.TOP -> null
-        TwoDimensionalAlignment.BOTTOM -> null
+        TwoDimensionalAlignment.LEADING -> Alignment.CenterStart
+        TwoDimensionalAlignment.TRAILING -> Alignment.CenterEnd
+        TwoDimensionalAlignment.TOP -> Alignment.TopCenter
+        TwoDimensionalAlignment.BOTTOM -> Alignment.BottomCenter
         TwoDimensionalAlignment.TOP_LEADING -> Alignment.TopStart
         TwoDimensionalAlignment.TOP_TRAILING -> Alignment.TopEnd
         TwoDimensionalAlignment.BOTTOM_LEADING -> Alignment.BottomStart
