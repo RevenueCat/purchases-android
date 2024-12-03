@@ -1,17 +1,36 @@
 package com.revenuecat.purchases
 
+import android.content.Context
+import android.os.StrictMode
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.common.AppConfig
+import com.revenuecat.purchases.common.HTTPClient
+import com.revenuecat.purchases.common.PlatformInfo
+import com.revenuecat.purchases.common.networking.ETagManager
+import com.revenuecat.purchases.common.networking.Endpoint
+import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
+import com.revenuecat.purchases.common.verification.SigningManager
 import com.revenuecat.purchases.factories.StoreProductFactory
 import com.revenuecat.purchases.factories.StoreTransactionFactory
 import com.revenuecat.purchases.helpers.mockQueryProductDetails
+import com.revenuecat.purchases.interfaces.StorefrontProvider
 import com.revenuecat.purchases.models.GooglePurchasingData
 import com.revenuecat.purchases.models.GoogleStoreProduct
+import io.mockk.every
+import io.mockk.mockk
 import io.mockk.verify
+import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatExceptionOfType
 import org.assertj.core.api.Assertions.fail
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.net.URL
+import java.net.UnknownHostException
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
@@ -187,4 +206,83 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
     }
 
     // endregion
+
+    // region reachability
+    // These tests are to verify that the other tests can reach the RC servers.
+
+    @OptIn(DelicateCoroutinesApi::class)
+    @Test
+    fun failsWithUnknownHostIfInvalidSubdomain() {
+        val policy = StrictMode.ThreadPolicy.Builder().permitAll().build()
+        StrictMode.setThreadPolicy(policy)
+        ensureBlockFinishes { latch ->
+            onActivityReady {
+                val httpClient = createHttpClient(activity)
+                GlobalScope.launch(Dispatchers.IO) {
+                    assertThatExceptionOfType(UnknownHostException::class.java).isThrownBy {
+                        httpClient.performRequest(
+                            baseURL = URL("https://invalid-base-url.revenuecat.com/"),
+                            endpoint = Endpoint.GetOfferings("test-user-id"),
+                            body = null,
+                            postFieldsToSign = null,
+                            requestHeaders = emptyMap(),
+                        )
+                    }
+                    latch.countDown()
+                }
+            }
+        }
+    }
+
+    @OptIn(DelicateCoroutinesApi::class)
+    @Test
+    fun failsWithUnauthorizedIfValidURLButInvalidAuth() {
+        val policy = StrictMode.ThreadPolicy.Builder().permitAll().build()
+        StrictMode.setThreadPolicy(policy)
+        ensureBlockFinishes { latch ->
+            onActivityReady {
+                val httpClient = createHttpClient(activity)
+                GlobalScope.launch(Dispatchers.IO) {
+                    val result = httpClient.performRequest(
+                        baseURL = URL("https://api.revenuecat.com/"),
+                        endpoint = Endpoint.GetOfferings("test-user-id"),
+                        body = null,
+                        postFieldsToSign = null,
+                        requestHeaders = emptyMap(),
+                    )
+                    assertThat(result.responseCode).isEqualTo(RCHTTPStatusCodes.UNAUTHORIZED)
+                    latch.countDown()
+                }
+            }
+        }
+    }
+
+    private fun createHttpClient(context: Context): HTTPClient {
+        val appConfig = mockk<AppConfig>().apply {
+            every { forceServerErrors } returns false
+            every { store } returns Store.PLAY_STORE
+            every { platformInfo } returns PlatformInfo("native", "3.2.0")
+            every { languageTag } returns "en"
+            every { versionName } returns "3.2.0"
+            every { packageName } returns "com.revenuecat.purchase_integration_tests"
+            every { finishTransactions } returns true
+            every { customEntitlementComputation } returns false
+            every { isDebugBuild } returns true
+        }
+        return HTTPClient(
+            appConfig = appConfig,
+            eTagManager = ETagManager(context),
+            diagnosticsTrackerIfEnabled = null,
+            signingManager = mockk<SigningManager>().apply {
+                every { shouldVerifyEndpoint(any()) } returns false
+            },
+            storefrontProvider = object : StorefrontProvider {
+                override fun getStorefront(): String {
+                    return "test-storefront"
+                }
+            },
+        )
+    }
+
+    // endregion reachability
 }
