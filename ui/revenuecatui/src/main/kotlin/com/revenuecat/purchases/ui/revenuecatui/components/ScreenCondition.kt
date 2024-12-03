@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.ui.revenuecatui.components
 
 import androidx.window.core.layout.WindowWidthSizeClass
+import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 
 internal enum class ScreenCondition {
     COMPACT,
@@ -15,7 +16,10 @@ internal enum class ScreenCondition {
                 WindowWidthSizeClass.COMPACT -> COMPACT
                 WindowWidthSizeClass.MEDIUM -> MEDIUM
                 WindowWidthSizeClass.EXPANDED -> EXPANDED
-                else -> COMPACT
+                else -> {
+                    Logger.d("Unexpected WindowWidthSizeClass: '$sizeClass'. Falling back to COMPACT.")
+                    COMPACT
+                }
             }
     }
 }
