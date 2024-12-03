@@ -1,4 +1,4 @@
-package com.revenuecat.purchases.ui.revenuecatui.components.text
+package com.revenuecat.purchases.ui.revenuecatui.components.style
 
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Composable
@@ -27,31 +27,31 @@ import com.revenuecat.purchases.paywalls.components.properties.FontWeight as RcF
 @Suppress("LongParameterList")
 @Immutable
 internal class TextComponentStyle private constructor(
-    @JvmSynthetic
+    @get:JvmSynthetic
     val visible: Boolean,
-    @JvmSynthetic
+    @get:JvmSynthetic
     val text: String,
-    @JvmSynthetic
+    @get:JvmSynthetic
     val color: ColorStyle,
-    @JvmSynthetic
+    @get:JvmSynthetic
     val fontSize: TextUnit,
-    @JvmSynthetic
+    @get:JvmSynthetic
     val fontWeight: FontWeight?,
-    @JvmSynthetic
+    @get:JvmSynthetic
     val fontFamily: FontFamily?,
-    @JvmSynthetic
+    @get:JvmSynthetic
     val textAlign: TextAlign?,
-    @JvmSynthetic
+    @get:JvmSynthetic
     val horizontalAlignment: Alignment.Horizontal,
-    @JvmSynthetic
+    @get:JvmSynthetic
     val backgroundColor: ColorStyle?,
-    @JvmSynthetic
+    @get:JvmSynthetic
     val size: Size,
-    @JvmSynthetic
+    @get:JvmSynthetic
     val padding: PaddingValues,
-    @JvmSynthetic
+    @get:JvmSynthetic
     val margin: PaddingValues,
-) {
+) : ComponentStyle {
 
     companion object {
 

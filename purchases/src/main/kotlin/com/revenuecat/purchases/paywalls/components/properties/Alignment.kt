@@ -32,7 +32,7 @@ enum class VerticalAlignment {
 
 @InternalRevenueCatAPI
 @Serializable
-internal enum class TwoDimensionalAlignment {
+enum class TwoDimensionalAlignment {
     @SerialName("center")
     CENTER,
 
