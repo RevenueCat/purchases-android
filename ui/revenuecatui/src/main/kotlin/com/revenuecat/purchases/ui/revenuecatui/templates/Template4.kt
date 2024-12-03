@@ -163,6 +163,7 @@ private fun Template4MainContent(
                 textAlign = TextAlign.Center,
                 text = localizedConfig.title,
                 color = colors.text1,
+                textFillMaxWidth = true,
                 modifier = Modifier.padding(horizontal = UIConstant.defaultHorizontalPadding),
             )
         }

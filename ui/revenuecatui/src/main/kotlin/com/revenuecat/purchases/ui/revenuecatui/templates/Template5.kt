@@ -247,6 +247,7 @@ private fun ColumnScope.Title(
         textAlign = TextAlign.Start,
         text = state.selectedLocalization.title,
         color = state.templateConfiguration.getCurrentColors().text1,
+        textFillMaxWidth = true,
         modifier = Modifier
             .fillMaxWidth(),
     )
@@ -301,6 +302,7 @@ private fun Feature(
                 textAlign = TextAlign.Start,
                 text = feature.title,
                 color = colors.text1,
+                textFillMaxWidth = true,
             )
             feature.content?.let { content ->
                 Markdown(
@@ -309,6 +311,7 @@ private fun Feature(
                     textAlign = TextAlign.Start,
                     text = content,
                     color = colors.text2,
+                    textFillMaxWidth = true,
                 )
             }
         }
