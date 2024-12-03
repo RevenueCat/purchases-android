@@ -62,6 +62,11 @@ private val parser = Parser.builder()
     .extensions(listOf(StrikethroughExtension.create()))
     .build()
 
+/**
+ * @param allowLinks If true, links will be decorated and clickable.
+ * @param textFillMaxWidth If true, the text will fill the maximum width available. This was used by paywalls V1 and
+ * left to avoid unintended UI changes.
+ */
 @SuppressWarnings("LongParameterList")
 @Composable
 internal fun Markdown(
