@@ -1,4 +1,4 @@
-package com.revenuecat.purchases.ui.revenuecatui.components
+package com.revenuecat.purchases.ui.revenuecatui.components.properties
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -26,6 +26,9 @@ import kotlin.math.cos
 import kotlin.math.max
 import kotlin.math.sin
 
+/**
+ * Ready to use color properties for the current theme.
+ */
 internal sealed interface ColorStyle {
 
     @JvmInline
