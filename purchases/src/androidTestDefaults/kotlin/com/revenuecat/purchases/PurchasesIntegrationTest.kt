@@ -236,7 +236,7 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
 
     @OptIn(DelicateCoroutinesApi::class)
     @Test
-    fun failsWithErrorIfValidURLButInvalidAuth() {
+    fun failsWithUnauthorizedIfValidURLButInvalidAuth() {
         val policy = StrictMode.ThreadPolicy.Builder().permitAll().build()
         StrictMode.setThreadPolicy(policy)
         ensureBlockFinishes { latch ->
