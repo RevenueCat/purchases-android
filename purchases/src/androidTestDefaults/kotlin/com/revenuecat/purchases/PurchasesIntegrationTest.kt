@@ -208,7 +208,7 @@ class PurchasesIntegrationTest : BasePurchasesIntegrationTest() {
     // endregion
 
     // region reachability
-    // These tests are to verify that the other tests have reachability for RC servers.
+    // These tests are to verify that the other tests can reach the RC servers.
 
     @OptIn(DelicateCoroutinesApi::class)
     @Test
