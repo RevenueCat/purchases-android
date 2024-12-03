@@ -55,6 +55,8 @@ internal fun WithShadow(
     // ShadowStyle. WithShadow also can't be a modifier itself, because the modifiers we use to draw the shadow
     // (offset, blur and background) cannot be part of the same modifier chain as those applied to the content. If they
     // are, they will be combined in ways we don't want.
+    // We might be able to achieve a similar result using a .drawBehind() modifier, but we would need to figure out how
+    // to draw gradients on a canvas.
     Layout(
         content = {
             // Content
