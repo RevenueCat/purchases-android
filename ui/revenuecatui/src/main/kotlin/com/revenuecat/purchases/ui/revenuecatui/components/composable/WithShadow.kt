@@ -35,8 +35,8 @@ import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.Shadow
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.background
-import com.revenuecat.purchases.ui.revenuecatui.components.property.ShadowStyle
-import com.revenuecat.purchases.ui.revenuecatui.components.property.toShadowStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.ShadowStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.toShadowStyle
 
 /**
  * Adds a [shadow] in the provided [shape] to the [content].

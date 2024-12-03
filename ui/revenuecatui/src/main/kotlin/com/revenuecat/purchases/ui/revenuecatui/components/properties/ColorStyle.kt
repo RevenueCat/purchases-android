@@ -1,4 +1,4 @@
-package com.revenuecat.purchases.ui.revenuecatui.components.property
+package com.revenuecat.purchases.ui.revenuecatui.components.properties
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
