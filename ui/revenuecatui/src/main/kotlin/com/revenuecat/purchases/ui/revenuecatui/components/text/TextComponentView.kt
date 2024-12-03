@@ -3,10 +3,10 @@
 
 package com.revenuecat.purchases.ui.revenuecatui.components.text
 
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.LocalTextStyle
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -29,6 +29,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
 import com.revenuecat.purchases.ui.revenuecatui.components.property.ColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
+import com.revenuecat.purchases.ui.revenuecatui.composables.Markdown
 
 @Composable
 internal fun TextComponentView(
@@ -49,7 +50,7 @@ internal fun TextComponentView(
     }
 
     if (style.visible) {
-        Text(
+        Markdown(
             text = style.text,
             modifier = modifier
                 .size(style.size, horizontalAlignment = style.horizontalAlignment)
@@ -60,6 +61,7 @@ internal fun TextComponentView(
             fontSize = style.fontSize,
             fontWeight = style.fontWeight,
             fontFamily = style.fontFamily,
+            horizontalAlignment = style.horizontalAlignment,
             textAlign = style.textAlign,
             style = textStyle,
         )
@@ -158,6 +160,18 @@ private fun TextComponentView_Preview_Customizations() {
             backgroundColor = ColorScheme(light = ColorInfo.Hex(Color(red = 0xde, green = 0xde, blue = 0xde).toArgb())),
             padding = Padding(top = 10.0, bottom = 10.0, leading = 20.0, trailing = 20.0),
             margin = Padding(top = 20.0, bottom = 20.0, leading = 10.0, trailing = 10.0),
+        ),
+    )
+}
+
+@Preview(name = "Default")
+@Composable
+private fun TextComponentView_Preview_Markdown() {
+    TextComponentView(
+        style = previewTextComponentStyle(
+            text = "Hello, **bold**, *italic* or _italic2_ with ~strikethrough~ and `monospace`. " +
+                "Click [here](https://revenuecat.com)",
+            color = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb())),
         ),
     )
 }

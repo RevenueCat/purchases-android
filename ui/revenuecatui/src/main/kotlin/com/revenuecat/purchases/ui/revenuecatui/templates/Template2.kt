@@ -268,6 +268,7 @@ private fun Title(
         textAlign = textAlign,
         text = state.selectedLocalization.title,
         color = state.templateConfiguration.getCurrentColors().text1,
+        textFillMaxWidth = true,
         modifier = childModifier,
     )
 }
@@ -284,6 +285,7 @@ private fun Subtitle(
         textAlign = textAlign,
         text = state.selectedLocalization.subtitle ?: "",
         color = state.templateConfiguration.getCurrentColors().text1,
+        textFillMaxWidth = true,
         modifier = childModifier,
     )
 }
