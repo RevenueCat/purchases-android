@@ -15,13 +15,13 @@ import com.revenuecat.purchases.paywalls.components.properties.FontSize
 import com.revenuecat.purchases.paywalls.components.properties.HorizontalAlignment
 import com.revenuecat.purchases.paywalls.components.properties.Padding
 import com.revenuecat.purchases.paywalls.components.properties.Size
-import com.revenuecat.purchases.ui.revenuecatui.components.ColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toAlignment
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toFontWeight
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toTextAlign
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toTextUnit
-import com.revenuecat.purchases.ui.revenuecatui.components.toColorStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.property.ColorStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.property.toColorStyle
 import com.revenuecat.purchases.paywalls.components.properties.FontWeight as RcFontWeight
 
 @Suppress("LongParameterList")

@@ -7,7 +7,7 @@ import androidx.compose.runtime.Stable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.Shape
-import com.revenuecat.purchases.ui.revenuecatui.components.ColorStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.property.ColorStyle
 
 @JvmSynthetic
 @Stable
