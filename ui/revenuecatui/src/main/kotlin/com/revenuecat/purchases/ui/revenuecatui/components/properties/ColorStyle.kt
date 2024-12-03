@@ -1,7 +1,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.components.properties
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.runtime.Composable
@@ -20,6 +19,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
+import com.revenuecat.purchases.ui.revenuecatui.components.ktx.colorsForCurrentTheme
 import dev.drewhamilton.poko.Poko
 import kotlin.math.abs
 import kotlin.math.cos
@@ -41,9 +41,7 @@ internal sealed interface ColorStyle {
 @JvmSynthetic
 @Composable
 internal fun ColorScheme.toColorStyle(): ColorStyle {
-    val colorInfo = if (isSystemInDarkTheme()) dark ?: light else light
-
-    return when (colorInfo) {
+    return when (val colorInfo = colorsForCurrentTheme) {
         is ColorInfo.Alias -> TODO("Color aliases are not yet implemented.")
         is ColorInfo.Hex -> ColorStyle.Solid(Color(color = colorInfo.value))
         is ColorInfo.Gradient -> ColorStyle.Gradient(
