@@ -156,6 +156,7 @@ private fun Title(
         textAlign = TextAlign.Center,
         text = state.selectedLocalization.title,
         color = state.templateConfiguration.getCurrentColors().text1,
+        textFillMaxWidth = true,
     )
 }
 
@@ -222,6 +223,7 @@ private fun Feature(
                 textAlign = TextAlign.Start,
                 text = feature.title,
                 color = colors.text1,
+                textFillMaxWidth = true,
             )
             feature.content?.let { content ->
                 Markdown(
@@ -230,6 +232,7 @@ private fun Feature(
                     textAlign = TextAlign.Start,
                     text = content,
                     color = colors.text2,
+                    textFillMaxWidth = true,
                 )
             }
         }
