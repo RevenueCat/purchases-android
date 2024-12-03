@@ -61,7 +61,7 @@ internal constructor(
 @Serializable
 class PartialTextComponent
 @Suppress("LongParameterList")
-internal constructor(
+constructor(
     @get:JvmSynthetic
     val visible: Boolean? = true,
     @get:JvmSynthetic

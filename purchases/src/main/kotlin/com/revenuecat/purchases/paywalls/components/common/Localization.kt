@@ -21,17 +21,17 @@ internal value class LocaleId(@get:JvmSynthetic val value: String)
 @InternalRevenueCatAPI
 @Serializable
 @JvmInline
-value class LocalizationKey internal constructor(@get:JvmSynthetic val value: String)
+value class LocalizationKey(@get:JvmSynthetic val value: String)
 
 @InternalRevenueCatAPI
-internal typealias LocalizationDictionary = Map<LocalizationKey, LocalizationData>
+typealias LocalizationDictionary = Map<LocalizationKey, LocalizationData>
 
 /**
  * A make-shift union type. LocalizationData is either a plain String or a ThemeImageUrls object.
  */
 @InternalRevenueCatAPI
 @Serializable(with = LocalizationDataSerializer::class)
-internal sealed interface LocalizationData {
+sealed interface LocalizationData {
     @Serializable
     @JvmInline
     value class Text(@get:JvmSynthetic val value: String) : LocalizationData

@@ -9,4 +9,6 @@ internal object PaywallValidationErrorStrings {
     const val INVALID_ICONS = "One or more icons were not recognized: %s"
     const val MISSING_TIERS = "Displaying default template because paywall tiers are missing for offering '%s'."
     const val MISSING_TIER_CONFIGURATIONS = "There are required tier configurations missing for: '%s'."
+    const val MISSING_STRING_LOCALIZATION = "Missing string localization for property with id: '%s'"
+    const val MISSING_IMAGE_LOCALIZATION = "Missing image localization for property with id: '%s'"
 }

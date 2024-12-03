@@ -8,7 +8,7 @@ import kotlinx.serialization.Serializable
 @InternalRevenueCatAPI
 @Poko
 @Serializable
-class ComponentOverrides<T : PartialComponent> internal constructor(
+class ComponentOverrides<T : PartialComponent>(
     @get:JvmSynthetic val introOffer: T? = null,
     @get:JvmSynthetic val states: ComponentStates<T>? = null,
     @get:JvmSynthetic val conditions: ComponentConditions<T>? = null,
@@ -17,14 +17,14 @@ class ComponentOverrides<T : PartialComponent> internal constructor(
 @InternalRevenueCatAPI
 @Poko
 @Serializable
-class ComponentStates<T : PartialComponent> internal constructor(
+class ComponentStates<T : PartialComponent>(
     @get:JvmSynthetic val selected: T? = null,
 )
 
 @InternalRevenueCatAPI
 @Poko
 @Serializable
-class ComponentConditions<T : PartialComponent> internal constructor(
+class ComponentConditions<T : PartialComponent>(
     @get:JvmSynthetic val compact: T? = null,
     @get:JvmSynthetic val medium: T? = null,
     @get:JvmSynthetic val expanded: T? = null,

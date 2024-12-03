@@ -2,13 +2,15 @@ package com.revenuecat.purchases.paywalls.components.properties
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.utils.serializers.URLSerializer
+import dev.drewhamilton.poko.Poko
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import java.net.URL
 
 @InternalRevenueCatAPI
+@Poko
 @Serializable
-internal data class ImageUrls internal constructor(
+class ImageUrls internal constructor(
     @get:JvmSynthetic
     @Serializable(with = URLSerializer::class)
     val original: URL,
@@ -26,8 +28,9 @@ internal data class ImageUrls internal constructor(
 )
 
 @InternalRevenueCatAPI
+@Poko
 @Serializable
-internal data class ThemeImageUrls internal constructor(
+class ThemeImageUrls internal constructor(
     @get:JvmSynthetic val light: ImageUrls,
     @get:JvmSynthetic val dark: ImageUrls? = null,
 )
