@@ -18,9 +18,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
-import com.revenuecat.purchases.ui.revenuecatui.components.property.BorderStyle
-import com.revenuecat.purchases.ui.revenuecatui.components.property.ColorStyle
-import com.revenuecat.purchases.ui.revenuecatui.components.property.toColorStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.BorderStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.toColorStyle
 
 @JvmSynthetic
 @Stable

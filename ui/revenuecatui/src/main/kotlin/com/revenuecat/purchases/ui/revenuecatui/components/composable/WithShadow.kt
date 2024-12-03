@@ -35,8 +35,8 @@ import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.Shadow
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.background
-import com.revenuecat.purchases.ui.revenuecatui.components.property.ShadowStyle
-import com.revenuecat.purchases.ui.revenuecatui.components.property.toShadowStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.ShadowStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.toShadowStyle
 
 /**
  * Adds a [shadow] in the provided [shape] to the [content].
@@ -55,6 +55,8 @@ internal fun WithShadow(
     // ShadowStyle. WithShadow also can't be a modifier itself, because the modifiers we use to draw the shadow
     // (offset, blur and background) cannot be part of the same modifier chain as those applied to the content. If they
     // are, they will be combined in ways we don't want.
+    // We might be able to achieve a similar result using a .drawBehind() modifier, but we would need to figure out how
+    // to draw gradients on a canvas.
     Layout(
         content = {
             // Content

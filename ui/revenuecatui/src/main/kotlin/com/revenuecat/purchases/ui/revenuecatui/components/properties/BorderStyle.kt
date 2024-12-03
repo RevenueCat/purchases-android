@@ -1,4 +1,4 @@
-package com.revenuecat.purchases.ui.revenuecatui.components.property
+package com.revenuecat.purchases.ui.revenuecatui.components.properties
 
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.unit.Dp
