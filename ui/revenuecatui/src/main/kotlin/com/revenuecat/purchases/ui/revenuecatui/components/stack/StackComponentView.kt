@@ -37,10 +37,10 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toVerticalArrange
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.background
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.border
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
-import com.revenuecat.purchases.ui.revenuecatui.components.property.BackgroundStyle
-import com.revenuecat.purchases.ui.revenuecatui.components.property.BorderStyle
-import com.revenuecat.purchases.ui.revenuecatui.components.property.ColorStyle.Solid
-import com.revenuecat.purchases.ui.revenuecatui.components.property.ShadowStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.BorderStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle.Solid
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.ShadowStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.text.TextComponentView

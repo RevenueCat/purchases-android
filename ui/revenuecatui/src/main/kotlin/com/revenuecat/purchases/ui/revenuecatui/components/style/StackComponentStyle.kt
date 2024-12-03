@@ -6,9 +6,9 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.Dp
 import com.revenuecat.purchases.paywalls.components.properties.Dimension
 import com.revenuecat.purchases.paywalls.components.properties.Size
-import com.revenuecat.purchases.ui.revenuecatui.components.property.BackgroundStyle
-import com.revenuecat.purchases.ui.revenuecatui.components.property.BorderStyle
-import com.revenuecat.purchases.ui.revenuecatui.components.property.ShadowStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.BorderStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.ShadowStyle
 
 @Suppress("LongParameterList")
 @Immutable
