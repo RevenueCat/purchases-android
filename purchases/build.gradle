@@ -98,6 +98,8 @@ dependencies {
     compileOnly libs.amazon.appstore.sdk
     compileOnly libs.coil.compose
 
+    dokkaPlugin(project(":dokka-hide-internal"))
+
     testImplementation libs.bundles.test
     testImplementation libs.billing
     testImplementation libs.coroutines.test
@@ -147,6 +149,13 @@ tasks.dokkaHtmlPartial.configure {
             includeNonPublic.set(false)
             skipDeprecated.set(true)
 
+            // This package exclusively contains symbols annotated with @InternalRevenueCatAPI, for which no
+            // documentation is generated due to our dokka-hide-internal plugin. However, by default Dokka still
+            // generates an empty page for the package. This avoids that.
+            perPackageOption {
+                matchingRegex.set("com\\.revenuecat\\.purchases\\.paywalls\\.components.*")
+                suppress.set(true)
+            }
             externalDocumentationLink {
                 url.set(uri("https://developer.android.com/reference/package-list").toURL())
             }
