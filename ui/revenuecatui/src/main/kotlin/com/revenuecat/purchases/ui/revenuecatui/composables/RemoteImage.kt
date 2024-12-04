@@ -83,7 +83,7 @@ private sealed class ImageSource {
 @Composable
 private fun Image(
     source: ImageSource,
-    placeholderSource: ImageSource.Remote?,
+    placeholderSource: ImageSource?,
     modifier: Modifier = Modifier,
     contentScale: ContentScale,
     contentDescription: String?,
