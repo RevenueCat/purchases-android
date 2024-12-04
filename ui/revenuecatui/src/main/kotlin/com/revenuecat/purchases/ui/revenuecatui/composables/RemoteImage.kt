@@ -2,6 +2,9 @@ package com.revenuecat.purchases.ui.revenuecatui.composables
 
 import android.content.Context
 import androidx.annotation.DrawableRes
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -90,6 +93,11 @@ private fun Image(
     transformation: Transformation?,
     alpha: Float,
 ) {
+    // Previews don't support images
+    if (isInPreviewMode()) {
+        return ImageForPreviews(modifier)
+    }
+
     var useCache by remember { mutableStateOf(true) }
     val applicationContext = LocalContext.current.applicationContext
     val imageLoader = remember(useCache) {
@@ -171,6 +179,13 @@ private fun AsyncImage(
             Logger.e(error, it.result.throwable)
             onError?.invoke(it)
         },
+    )
+}
+
+@Composable
+private fun ImageForPreviews(modifier: Modifier) {
+    Box(
+        modifier = modifier.background(MaterialTheme.colorScheme.primary),
     )
 }
 
