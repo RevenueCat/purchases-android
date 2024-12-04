@@ -2,8 +2,6 @@ package com.revenuecat.purchases.ui.revenuecatui.composables
 
 import android.content.Context
 import androidx.annotation.DrawableRes
-import androidx.compose.foundation.background
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -92,11 +90,6 @@ private fun Image(
     transformation: Transformation?,
     alpha: Float,
 ) {
-    // Previews don't support images
-    if (isInPreviewMode()) {
-        return ImageForPreviews(modifier)
-    }
-
     var useCache by remember { mutableStateOf(true) }
     val applicationContext = LocalContext.current.applicationContext
     val imageLoader = remember(useCache) {
@@ -157,13 +150,14 @@ private fun AsyncImage(
         placeholder = placeholderSource?.let {
             rememberAsyncImagePainter(
                 model = it.data,
+                placeholder = if (isInPreviewMode()) painterResource(R.drawable.android) else null,
                 imageLoader = imageLoader,
                 contentScale = contentScale,
                 onError = { errorState ->
                     Logger.e("Error loading placeholder image", errorState.result.throwable)
                 },
             )
-        },
+        } ?: if (isInPreviewMode()) painterResource(R.drawable.android) else null,
         imageLoader = imageLoader,
         modifier = modifier,
         contentScale = contentScale,
@@ -177,16 +171,6 @@ private fun AsyncImage(
             Logger.e(error, it.result.throwable)
             onError?.invoke(it)
         },
-    )
-}
-
-@Composable
-private fun ImageForPreviews(modifier: Modifier) {
-    AsyncImage(
-        model = R.drawable.android,
-        placeholder = painterResource(R.drawable.android),
-        contentDescription = null,
-        modifier = modifier.background(MaterialTheme.colorScheme.primary),
     )
 }
 

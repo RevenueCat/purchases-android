@@ -81,7 +81,7 @@ private fun ImageComponentView_Preview_Default() {
 @Preview
 @Composable
 private fun ImageComponentView_Preview_LinearGradient() {
-    Box(modifier = Modifier.background(androidx.compose.ui.graphics.Color.Red)) {
+    Box(modifier = Modifier.background(ComposeColor.Red)) {
         ImageComponentView(
             style = previewImageComponentStyle(
                 gradientColors = ColorInfo.Gradient.Linear(
@@ -100,7 +100,7 @@ private fun ImageComponentView_Preview_LinearGradient() {
 @Preview
 @Composable
 private fun ImageComponentView_Preview_RadialGradient() {
-    Box(modifier = Modifier.background(androidx.compose.ui.graphics.Color.Red)) {
+    Box(modifier = Modifier.background(ComposeColor.Red)) {
         ImageComponentView(
             style = previewImageComponentStyle(
                 gradientColors = ColorInfo.Gradient.Radial(
