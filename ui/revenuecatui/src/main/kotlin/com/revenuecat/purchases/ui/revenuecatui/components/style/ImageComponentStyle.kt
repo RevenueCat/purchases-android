@@ -1,14 +1,12 @@
 package com.revenuecat.purchases.ui.revenuecatui.components.style
 
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
-import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.layout.ContentScale
-import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.Size
-import java.net.URL
+import com.revenuecat.purchases.paywalls.components.properties.ThemeImageUrls
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
 
 @Suppress("LongParameterList")
 @Immutable
@@ -16,21 +14,13 @@ internal class ImageComponentStyle private constructor(
     @get:JvmSynthetic
     val visible: Boolean,
     @get:JvmSynthetic
-    val url: URL,
-    @get:JvmSynthetic
-    val lowResURL: URL?,
-    @get:JvmSynthetic
-    val darkURL: URL?,
-    @get:JvmSynthetic
-    val darkLowResURL: URL?,
+    val urls: ThemeImageUrls,
     @get:JvmSynthetic
     val size: Size,
     @get:JvmSynthetic
     val shape: Shape?,
     @get:JvmSynthetic
-    val gradientColors: ColorInfo.Gradient?,
-    @get:JvmSynthetic
-    val darkGradientColors: ColorInfo.Gradient?,
+    val colorStyle: ColorStyle?,
     @get:JvmSynthetic
     val contentScale: ContentScale,
 ) : ComponentStyle {
@@ -42,49 +32,20 @@ internal class ImageComponentStyle private constructor(
         @Composable
         operator fun invoke(
             visible: Boolean,
-            url: URL,
-            lowResURL: URL?,
-            darkURL: URL?,
-            darkLowResURL: URL?,
+            themeImageUrls: ThemeImageUrls,
             size: Size,
             shape: Shape?,
-            gradientColors: ColorInfo.Gradient?,
-            darkGradientColors: ColorInfo.Gradient?,
+            colorStyle: ColorStyle?,
             contentScale: ContentScale,
         ): ImageComponentStyle {
             return ImageComponentStyle(
                 visible = visible,
-                url = url,
-                lowResURL = lowResURL,
-                darkURL = darkURL,
-                darkLowResURL = darkLowResURL,
+                urls = themeImageUrls,
                 size = size,
                 shape = shape,
-                gradientColors = gradientColors,
-                darkGradientColors = darkGradientColors,
+                colorStyle = colorStyle,
                 contentScale = contentScale,
             )
         }
-    }
-
-    @ReadOnlyComposable
-    @JvmSynthetic
-    @Composable
-    fun urlToUse(): URL {
-        return if (isSystemInDarkTheme()) darkURL ?: url else url
-    }
-
-    @ReadOnlyComposable
-    @JvmSynthetic
-    @Composable
-    fun lowResUrlToUse(): URL? {
-        return if (isSystemInDarkTheme()) darkLowResURL ?: lowResURL else lowResURL
-    }
-
-    @ReadOnlyComposable
-    @JvmSynthetic
-    @Composable
-    fun gradientColors(): ColorInfo.Gradient? {
-        return if (isSystemInDarkTheme()) darkGradientColors ?: gradientColors else gradientColors
     }
 }

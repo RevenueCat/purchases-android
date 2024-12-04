@@ -12,10 +12,13 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
+import com.revenuecat.purchases.paywalls.components.properties.ImageUrls
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
+import com.revenuecat.purchases.paywalls.components.properties.ThemeImageUrls
+import com.revenuecat.purchases.ui.revenuecatui.components.ktx.urlsForCurrentTheme
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ImageComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.composables.RemoteImage
 import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
@@ -32,40 +35,25 @@ internal fun ImageComponentView(
     if (style.visible) {
         Box(modifier = modifier.applyIfNotNull(style.shape) { clip(it) }) {
             RemoteImage(
-                urlString = style.urlToUse().toString(),
+                urlString = style.urls.urlsForCurrentTheme.webp.toString(),
                 modifier = Modifier
                     .size(style.size)
-                    .applyIfNotNull(style.gradientColors()) { gradientColors ->
+                    .applyIfNotNull(style.colorStyle) { colorStyle ->
                         drawWithCache {
-                            val gradientBrush: Brush? = when (gradientColors) {
-                                is ColorInfo.Gradient.Radial -> {
-                                    Brush.radialGradient(*gradientColors.points.toColorStops())
-                                }
-                                is ColorInfo.Gradient.Linear -> {
-                                    // TODO-PAYWALLS-V2: Support degrees
-                                    Brush.verticalGradient(*gradientColors.points.toColorStops())
-                                }
-                                else -> null
-                            }
                             onDrawWithContent {
                                 drawContent()
-                                gradientBrush?.let {
-                                    drawRect(it)
+                                when (colorStyle) {
+                                    is ColorStyle.Solid -> drawRect(colorStyle.color)
+                                    is ColorStyle.Gradient -> drawRect(colorStyle.brush)
                                 }
                             }
                         }
                     },
-                placeholderUrlString = style.lowResUrlToUse()?.toString(),
+                placeholderUrlString = style.urls.urlsForCurrentTheme.webpLowRes.toString(),
                 contentScale = style.contentScale,
             )
         }
     }
-}
-
-private fun List<ColorInfo.Gradient.Point>.toColorStops(): Array<Pair<Float, ComposeColor>> {
-    return map { point ->
-        point.percent to ComposeColor(point.color)
-    }.toTypedArray()
 }
 
 @Preview
@@ -78,18 +66,18 @@ private fun ImageComponentView_Preview_Default() {
     }
 }
 
+@Suppress("MagicNumber")
 @Preview
 @Composable
 private fun ImageComponentView_Preview_LinearGradient() {
     Box(modifier = Modifier.background(ComposeColor.Red)) {
         ImageComponentView(
             style = previewImageComponentStyle(
-                gradientColors = ColorInfo.Gradient.Linear(
-                    degrees = 45f,
-                    points = listOf(
-                        ColorInfo.Gradient.Point(color = Color.parseColor("#88FF0000"), percent = 0f),
-                        ColorInfo.Gradient.Point(color = Color.parseColor("#8800FF00"), percent = 0.5f),
-                        ColorInfo.Gradient.Point(color = Color.parseColor("#880000FF"), percent = 1f),
+                colorStyle = ColorStyle.Gradient(
+                    Brush.verticalGradient(
+                        Pair(0f, ComposeColor(Color.parseColor("#88FF0000"))),
+                        Pair(0.5f, ComposeColor(Color.parseColor("#8800FF00"))),
+                        Pair(1f, ComposeColor(Color.parseColor("#880000FF"))),
                     ),
                 ),
             ),
@@ -97,17 +85,18 @@ private fun ImageComponentView_Preview_LinearGradient() {
     }
 }
 
+@Suppress("MagicNumber")
 @Preview
 @Composable
 private fun ImageComponentView_Preview_RadialGradient() {
     Box(modifier = Modifier.background(ComposeColor.Red)) {
         ImageComponentView(
             style = previewImageComponentStyle(
-                gradientColors = ColorInfo.Gradient.Radial(
-                    points = listOf(
-                        ColorInfo.Gradient.Point(color = Color.parseColor("#88FF0000"), percent = 0f),
-                        ColorInfo.Gradient.Point(color = Color.parseColor("#8800FF00"), percent = 0.5f),
-                        ColorInfo.Gradient.Point(color = Color.parseColor("#880000FF"), percent = 1f),
+                colorStyle = ColorStyle.Gradient(
+                    Brush.radialGradient(
+                        Pair(0f, ComposeColor(Color.parseColor("#88FF0000"))),
+                        Pair(0.5f, ComposeColor(Color.parseColor("#8800FF00"))),
+                        Pair(1f, ComposeColor(Color.parseColor("#880000FF"))),
                     ),
                 ),
             ),
@@ -119,20 +108,16 @@ private fun ImageComponentView_Preview_RadialGradient() {
 @Composable
 private fun previewImageComponentStyle(
     url: URL = URL("https://sample-videos.com/img/Sample-jpg-image-5mb.jpg"),
-    lowResURL: URL? = URL("https://assets.pawwalls.com/954459_1701163461.jpg"),
+    lowResURL: URL = URL("https://assets.pawwalls.com/954459_1701163461.jpg"),
     visible: Boolean = true,
     size: Size = Size(width = SizeConstraint.Fixed(400u), height = SizeConstraint.Fixed(400u)),
     contentScale: ContentScale = ContentScale.Crop,
-    gradientColors: ColorInfo.Gradient? = null,
+    colorStyle: ColorStyle? = null,
 ) = ImageComponentStyle(
     visible = visible,
-    url = url,
-    lowResURL = lowResURL,
-    darkURL = null,
-    darkLowResURL = null,
+    themeImageUrls = ThemeImageUrls(light = ImageUrls(url, url, lowResURL, 200u, 200u)),
     size = size,
     shape = RoundedCornerShape(20.dp, 20.dp, 20.dp, 20.dp),
-    gradientColors = gradientColors,
-    darkGradientColors = null,
+    colorStyle = colorStyle,
     contentScale = contentScale,
 )
