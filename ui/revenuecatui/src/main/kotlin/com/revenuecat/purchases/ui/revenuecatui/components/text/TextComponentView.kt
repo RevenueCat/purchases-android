@@ -1,3 +1,4 @@
+@file:JvmSynthetic
 @file:Suppress("TooManyFunctions")
 
 package com.revenuecat.purchases.ui.revenuecatui.components.text
@@ -25,11 +26,12 @@ import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fi
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.background
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.composables.Markdown
-import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
+import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
 
 @Composable
-private fun TextComponentView(
+internal fun TextComponentView(
     style: TextComponentStyle,
     modifier: Modifier = Modifier,
 ) {
@@ -52,7 +54,7 @@ private fun TextComponentView(
             modifier = modifier
                 .size(style.size, horizontalAlignment = style.horizontalAlignment)
                 .padding(style.margin)
-                .conditional(style.backgroundColor != null) { background(style.backgroundColor!!) }
+                .applyIfNotNull(style.backgroundColor) { background(it) }
                 .padding(style.padding),
             color = color,
             fontSize = style.fontSize,
