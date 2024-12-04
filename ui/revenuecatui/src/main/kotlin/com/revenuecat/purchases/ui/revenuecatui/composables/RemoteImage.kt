@@ -3,7 +3,6 @@ package com.revenuecat.purchases.ui.revenuecatui.composables
 import android.content.Context
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -13,6 +12,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import coil.ImageLoader
 import coil.compose.AsyncImage
 import coil.compose.AsyncImagePainter
@@ -22,6 +22,7 @@ import coil.memory.MemoryCache
 import coil.request.CachePolicy
 import coil.request.ImageRequest
 import coil.transform.Transformation
+import com.revenuecat.purchases.ui.revenuecatui.R
 import com.revenuecat.purchases.ui.revenuecatui.UIConstant
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.isInPreviewMode
@@ -181,7 +182,10 @@ private fun AsyncImage(
 
 @Composable
 private fun ImageForPreviews(modifier: Modifier) {
-    Box(
+    AsyncImage(
+        model = R.drawable.android,
+        placeholder = painterResource(R.drawable.android),
+        contentDescription = null,
         modifier = modifier.background(MaterialTheme.colorScheme.primary),
     )
 }
