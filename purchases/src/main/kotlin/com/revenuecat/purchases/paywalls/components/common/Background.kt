@@ -8,7 +8,7 @@ import kotlinx.serialization.Serializable
 
 @InternalRevenueCatAPI
 @Serializable
-internal sealed interface Background {
+sealed interface Background {
     @Serializable
     @SerialName("color")
     data class Color(@get:JvmSynthetic val value: ColorScheme) : Background
