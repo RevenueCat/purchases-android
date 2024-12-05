@@ -1,3 +1,5 @@
+@file:JvmSynthetic
+
 package com.revenuecat.purchases.ui.revenuecatui.components.image
 
 import android.graphics.Color
@@ -33,13 +35,14 @@ internal fun ImageComponentView(
     modifier: Modifier = Modifier,
 ) {
     if (style.visible) {
+        val currentUrls = style.themeImageUrls.urlsForCurrentTheme
         RemoteImage(
-            urlString = style.themeImageUrls.urlsForCurrentTheme.webp.toString(),
+            urlString = currentUrls.webp.toString(),
             modifier = modifier
-                .size(style.size)
+                .size(style.size, imageUrls = currentUrls)
                 .applyIfNotNull(style.overlay) { overlay(it, style.shape ?: RectangleShape) }
                 .applyIfNotNull(style.shape) { clip(it) },
-            placeholderUrlString = style.themeImageUrls.urlsForCurrentTheme.webpLowRes.toString(),
+            placeholderUrlString = currentUrls.webpLowRes.toString(),
             contentScale = style.contentScale,
         )
     }
@@ -99,12 +102,12 @@ private fun previewImageComponentStyle(
     url: URL = URL("https://sample-videos.com/img/Sample-jpg-image-5mb.jpg"),
     lowResURL: URL = URL("https://assets.pawwalls.com/954459_1701163461.jpg"),
     visible: Boolean = true,
-    size: Size = Size(width = SizeConstraint.Fixed(400u), height = SizeConstraint.Fixed(400u)),
+    size: Size = Size(width = SizeConstraint.Fixed(400u), height = SizeConstraint.Fit),
     contentScale: ContentScale = ContentScale.Crop,
     overlay: ColorStyle? = null,
 ) = ImageComponentStyle(
     visible = visible,
-    themeImageUrls = ThemeImageUrls(light = ImageUrls(url, url, lowResURL, 200u, 200u)),
+    themeImageUrls = ThemeImageUrls(light = ImageUrls(url, url, lowResURL, 200u, 400u)),
     size = size,
     shape = RoundedCornerShape(20.dp, 20.dp, 20.dp, 20.dp),
     overlay = overlay,
