@@ -99,13 +99,13 @@ class WebPurchaseRedemptionHelperTest {
     }
 
     @Test
-    fun `handleRedeemWebPurchase posts token and returns already redeemed`() {
-        mockBackendResult(result = RedeemWebPurchaseListener.Result.AlreadyRedeemed)
+    fun `handleRedeemWebPurchase posts token and returns belongs to other user`() {
+        mockBackendResult(result = RedeemWebPurchaseListener.Result.PurchaseBelongsToOtherUser)
         var result: RedeemWebPurchaseListener.Result? = null
         webPurchaseRedemptionHelper.handleRedeemWebPurchase(webPurchaseRedemption) {
             result = it
         }
-        assertTrue(result is RedeemWebPurchaseListener.Result.AlreadyRedeemed)
+        assertTrue(result is RedeemWebPurchaseListener.Result.PurchaseBelongsToOtherUser)
         verify(exactly = 0) { offlineEntitlementsManager.resetOfflineCustomerInfoCache() }
         verify(exactly = 0) { customerInfoUpdateHandler.cacheAndNotifyListeners(any()) }
     }

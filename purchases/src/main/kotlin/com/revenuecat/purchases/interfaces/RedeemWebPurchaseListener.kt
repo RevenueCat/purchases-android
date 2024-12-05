@@ -36,9 +36,9 @@ fun interface RedeemWebPurchaseListener {
         data class Expired(val obfuscatedEmail: String) : Result()
 
         /**
-         * Indicates that the web purchase has already been redeemed and can't be redeemed again.
+         * Indicates that the redemption couldn't be performed because the purchase belongs to a different user.
          */
-        object AlreadyRedeemed : Result()
+        object PurchaseBelongsToOtherUser : Result()
 
         /**
          * Whether the redemption was successful or not.
@@ -49,7 +49,7 @@ fun interface RedeemWebPurchaseListener {
                 is Error -> false
                 InvalidToken -> false
                 is Expired -> false
-                AlreadyRedeemed -> false
+                PurchaseBelongsToOtherUser -> false
             }
     }
 
