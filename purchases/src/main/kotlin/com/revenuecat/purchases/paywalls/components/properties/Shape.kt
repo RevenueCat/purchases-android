@@ -1,16 +1,18 @@
 package com.revenuecat.purchases.paywalls.components.properties
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import dev.drewhamilton.poko.Poko
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @InternalRevenueCatAPI
 @Serializable
-internal sealed interface Shape {
+sealed interface Shape {
 
     @Serializable
+    @Poko
     @SerialName("rectangle")
-    data class Rectangle(
+    class Rectangle(
         @get:JvmSynthetic val corners: CornerRadiuses? = null,
     ) : Shape
 

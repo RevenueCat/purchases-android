@@ -14,13 +14,16 @@ import com.revenuecat.purchases.paywalls.components.properties.Shadow
 import com.revenuecat.purchases.paywalls.components.properties.Shape
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
+import dev.drewhamilton.poko.Poko
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
+@Suppress("LongParameterList")
 @InternalRevenueCatAPI
+@Poko
 @Serializable
 @SerialName("stack")
-internal data class StackComponent(
+class StackComponent internal constructor(
     @get:JvmSynthetic
     val components: List<PaywallComponent>,
     @get:JvmSynthetic
@@ -46,9 +49,11 @@ internal data class StackComponent(
     val overrides: ComponentOverrides<PartialStackComponent>? = null,
 ) : PaywallComponent
 
+@Suppress("LongParameterList")
 @InternalRevenueCatAPI
+@Poko
 @Serializable
-internal data class PartialStackComponent(
+class PartialStackComponent internal constructor(
     @get:JvmSynthetic
     val visible: Boolean? = true,
     @get:JvmSynthetic
