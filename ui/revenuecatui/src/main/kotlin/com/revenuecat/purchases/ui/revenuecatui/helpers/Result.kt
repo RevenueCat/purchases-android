@@ -1,3 +1,6 @@
+@file:Suppress("TooManyFunctions")
+@file:JvmSynthetic
+
 package com.revenuecat.purchases.ui.revenuecatui.helpers
 
 /**
@@ -16,6 +19,14 @@ internal sealed class Result<out A, out B> {
     class Success<A>(val value: A) : Result<A, Nothing>()
     class Error<B>(val value: B) : Result<Nothing, B>()
 }
+
+@get:JvmSynthetic
+internal val Result<*, *>.isSuccess: Boolean
+    get() = this is Result.Success
+
+@get:JvmSynthetic
+internal val Result<*, *>.isError: Boolean
+    get() = this is Result.Error
 
 /**
  * Maps this Result's success value.
@@ -42,6 +53,27 @@ internal inline fun <A : R, B, R> Result<A, B>.getOrElse(onFailure: (error: B) -
     when (this) {
         is Result.Success -> value
         is Result.Error -> onFailure(value)
+    }
+
+@JvmSynthetic
+internal fun <A, B> Result<A, B>.getOrThrow(): A =
+    when (this) {
+        is Result.Success -> value
+        is Result.Error -> if (value is Throwable) throw value else error("Result was unsuccessful: $value")
+    }
+
+@JvmSynthetic
+internal fun <A, B> Result<A, B>.getOrNull(): A? =
+    when (this) {
+        is Result.Success -> value
+        is Result.Error -> null
+    }
+
+@JvmSynthetic
+internal fun <A, B> Result<A, B>.errorOrNull(): B? =
+    when (this) {
+        is Result.Success -> null
+        is Result.Error -> value
     }
 
 /**

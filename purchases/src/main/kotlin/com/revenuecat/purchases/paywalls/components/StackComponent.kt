@@ -53,7 +53,7 @@ class StackComponent internal constructor(
 @InternalRevenueCatAPI
 @Poko
 @Serializable
-class PartialStackComponent internal constructor(
+class PartialStackComponent(
     @get:JvmSynthetic
     val visible: Boolean? = true,
     @get:JvmSynthetic
