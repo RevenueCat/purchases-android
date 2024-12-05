@@ -28,7 +28,6 @@ import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fit
 import com.revenuecat.purchases.paywalls.components.properties.TwoDimensionalAlignment
 import com.revenuecat.purchases.paywalls.components.properties.VerticalAlignment
-import com.revenuecat.purchases.ui.revenuecatui.components.composable.WithShadow
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toAlignment
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toHorizontalAlignmentOrNull
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toHorizontalArrangement
@@ -36,6 +35,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toVerticalAlignme
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toVerticalArrangement
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.background
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.border
+import com.revenuecat.purchases.ui.revenuecatui.components.modifier.shadow
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BorderStyle
@@ -57,6 +57,7 @@ internal fun StackComponentView(
         val commonModifier = remember(style) {
             Modifier
                 .padding(style.margin)
+                .applyIfNotNull(style.shadow) { shadow(it, style.shape) }
                 .applyIfNotNull(style.background) { background(it, style.shape) }
                 .clip(style.shape)
                 .applyIfNotNull(style.border) { border(it, style.shape) }
@@ -74,47 +75,38 @@ internal fun StackComponentView(
             }
         }
 
-        // Get the right container composable depending on the dimension.
-        val container = @Composable {
-            when (style.dimension) {
-                is Dimension.Horizontal -> Row(
-                    modifier = modifier
-                        .size(style.size, verticalAlignment = style.dimension.alignment.toAlignment())
-                        .then(commonModifier),
-                    verticalAlignment = style.dimension.alignment.toAlignment(),
-                    horizontalArrangement = style.dimension.distribution.toHorizontalArrangement(
-                        spacing = style.spacing,
-                    ),
-                ) { content() }
+        // Show the right container composable depending on the dimension.
+        when (style.dimension) {
+            is Dimension.Horizontal -> Row(
+                modifier = modifier
+                    .size(style.size, verticalAlignment = style.dimension.alignment.toAlignment())
+                    .then(commonModifier),
+                verticalAlignment = style.dimension.alignment.toAlignment(),
+                horizontalArrangement = style.dimension.distribution.toHorizontalArrangement(
+                    spacing = style.spacing,
+                ),
+            ) { content() }
 
-                is Dimension.Vertical -> Column(
-                    modifier = modifier
-                        .size(style.size, horizontalAlignment = style.dimension.alignment.toAlignment())
-                        .then(commonModifier),
-                    verticalArrangement = style.dimension.distribution.toVerticalArrangement(
-                        spacing = style.spacing,
-                    ),
-                    horizontalAlignment = style.dimension.alignment.toAlignment(),
-                ) { content() }
+            is Dimension.Vertical -> Column(
+                modifier = modifier
+                    .size(style.size, horizontalAlignment = style.dimension.alignment.toAlignment())
+                    .then(commonModifier),
+                verticalArrangement = style.dimension.distribution.toVerticalArrangement(
+                    spacing = style.spacing,
+                ),
+                horizontalAlignment = style.dimension.alignment.toAlignment(),
+            ) { content() }
 
-                is Dimension.ZLayer -> Box(
-                    modifier = modifier
-                        .size(
-                            size = style.size,
-                            horizontalAlignment = style.dimension.alignment.toHorizontalAlignmentOrNull(),
-                            verticalAlignment = style.dimension.alignment.toVerticalAlignmentOrNull(),
-                        )
-                        .then(commonModifier),
-                    contentAlignment = style.dimension.alignment.toAlignment(),
-                ) { content() }
-            }
-        }
-
-        // Wrap it all in WithShadow if necessary.
-        if (style.shadow != null) {
-            WithShadow(style.shadow, style.shape, style.margin, container)
-        } else {
-            container()
+            is Dimension.ZLayer -> Box(
+                modifier = modifier
+                    .size(
+                        size = style.size,
+                        horizontalAlignment = style.dimension.alignment.toHorizontalAlignmentOrNull(),
+                        verticalAlignment = style.dimension.alignment.toVerticalAlignmentOrNull(),
+                    )
+                    .then(commonModifier),
+                contentAlignment = style.dimension.alignment.toAlignment(),
+            ) { content() }
         }
     }
 }
