@@ -31,10 +31,12 @@ import com.revenuecat.purchases.ui.revenuecatui.components.toPresentedOverrides
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvider
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableProcessor
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
+import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyList
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Result
 import com.revenuecat.purchases.ui.revenuecatui.helpers.map
 import com.revenuecat.purchases.ui.revenuecatui.helpers.mapError
 import com.revenuecat.purchases.ui.revenuecatui.helpers.mapOrAccumulate
+import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyListOf
 import com.revenuecat.purchases.ui.revenuecatui.helpers.orSuccessfullyNull
 import com.revenuecat.purchases.ui.revenuecatui.helpers.zipOrAccumulate
 import java.util.Locale
@@ -56,7 +58,7 @@ internal class StyleFactory(
     }
 
     @Composable
-    fun create(component: PaywallComponent): Result<ComponentStyle, List<PaywallValidationError>> =
+    fun create(component: PaywallComponent): Result<ComponentStyle, NonEmptyList<PaywallValidationError>> =
         when (component) {
             is ButtonComponent -> TODO("ButtonComponentStyle is not yet implemented.")
             is ImageComponent -> TODO("ImageComponentStyle is not yet implemented.")
@@ -70,12 +72,12 @@ internal class StyleFactory(
     @Composable
     private fun createStackComponentStyle(
         component: StackComponent,
-    ): Result<StackComponentStyle, List<PaywallValidationError>> = zipOrAccumulate(
+    ): Result<StackComponentStyle, NonEmptyList<PaywallValidationError>> = zipOrAccumulate(
         // Build the PresentedOverrides.
         first = component.overrides
             ?.toPresentedOverrides { partial -> Result.Success(PresentedStackPartial(partial)) }
             .orSuccessfullyNull()
-            .mapError { listOf(it) },
+            .mapError { nonEmptyListOf(it) },
         // Build all children styles.
         second = component.components
             .map { create(it) }
@@ -106,16 +108,16 @@ internal class StyleFactory(
     @Composable
     private fun createTextComponentStyle(
         component: TextComponent,
-    ): Result<TextComponentStyle, List<PaywallValidationError>> = zipOrAccumulate(
+    ): Result<TextComponentStyle, NonEmptyList<PaywallValidationError>> = zipOrAccumulate(
         // Get our text from the localization dictionary.
-        first = localizationDictionary.string(component.text).mapError { listOf(it) },
+        first = localizationDictionary.string(component.text).mapError { nonEmptyListOf(it) },
         second = component.overrides
             // Map all overrides to PresentedOverrides.
             ?.toPresentedOverrides { LocalizedTextPartial(from = it, using = localizationDictionary) }
             .orSuccessfullyNull()
             // Pick a single PresentedPartial to show.
             .map { it?.buildPresentedPartial(windowSize, isEligibleForIntroOffer, componentState) }
-            .mapError { listOf(it) },
+            .mapError { nonEmptyListOf(it) },
     ) { text, presentedPartial ->
         // Combine the text and PresentedPartial into a TextComponentStyle.
         val partial = presentedPartial?.partial

@@ -91,10 +91,10 @@ internal fun <A, B> Result<A, B>?.orSuccessfullyNull(): Result<A?, B> =
  */
 @JvmSynthetic
 internal inline fun <A, B, E, F> zipOrAccumulate(
-    first: Result<A, List<F>>,
-    second: Result<B, List<F>>,
+    first: Result<A, NonEmptyList<F>>,
+    second: Result<B, NonEmptyList<F>>,
     transform: (A, B) -> E,
-): Result<E, List<F>> = zipOrAccumulate(
+): Result<E, NonEmptyList<F>> = zipOrAccumulate(
     first = first,
     second = second,
     third = Result.Success(Unit),
@@ -107,11 +107,11 @@ internal inline fun <A, B, E, F> zipOrAccumulate(
  */
 @JvmSynthetic
 internal inline fun <A, B, C, E, F> zipOrAccumulate(
-    first: Result<A, List<F>>,
-    second: Result<B, List<F>>,
-    third: Result<C, List<F>>,
+    first: Result<A, NonEmptyList<F>>,
+    second: Result<B, NonEmptyList<F>>,
+    third: Result<C, NonEmptyList<F>>,
     transform: (A, B, C) -> E,
-): Result<E, List<F>> = zipOrAccumulate(
+): Result<E, NonEmptyList<F>> = zipOrAccumulate(
     first = first,
     second = second,
     third = third,
@@ -125,19 +125,20 @@ internal inline fun <A, B, C, E, F> zipOrAccumulate(
  */
 @JvmSynthetic
 internal inline fun <A, B, C, D, E, F> zipOrAccumulate(
-    first: Result<A, List<F>>,
-    second: Result<B, List<F>>,
-    third: Result<C, List<F>>,
-    fourth: Result<D, List<F>>,
+    first: Result<A, NonEmptyList<F>>,
+    second: Result<B, NonEmptyList<F>>,
+    third: Result<C, NonEmptyList<F>>,
+    fourth: Result<D, NonEmptyList<F>>,
     transform: (A, B, C, D) -> E,
-): Result<E, List<F>> {
+): Result<E, NonEmptyList<F>> {
     // This one can be extended to support as many parameters as we need.
     val results = listOf(first, second, third, fourth)
     val errors = results.collectErrors()
 
-    return if (errors.isEmpty()) {
+    return errors.toNonEmptyListOrNull()
+        ?.let { Result.Error(it) }
         // We know they're all successful here.
-        Result.Success(
+        ?: Result.Success(
             transform(
                 (first as Result.Success<A>).value,
                 (second as Result.Success<B>).value,
@@ -145,18 +146,15 @@ internal inline fun <A, B, C, D, E, F> zipOrAccumulate(
                 (fourth as Result.Success<D>).value,
             ),
         )
-    } else {
-        Result.Error(errors)
-    }
 }
 
 /**
  * Maps the values from these Results using [transform], or accumulates the errors if at least one is a [Result.Error].
  */
 @JvmSynthetic
-internal inline fun <A, B, E> Iterable<Result<A, List<E>>>.mapOrAccumulate(
+internal inline fun <A, B, E> Iterable<Result<A, NonEmptyList<E>>>.mapOrAccumulate(
     transform: (A) -> B,
-): Result<List<B>, List<E>> {
+): Result<List<B>, NonEmptyList<E>> {
     val successes = mutableListOf<B>()
     val errors = mutableListOf<E>()
 
@@ -167,12 +165,10 @@ internal inline fun <A, B, E> Iterable<Result<A, List<E>>>.mapOrAccumulate(
         }
     }
 
-    return if (errors.isEmpty()) {
-        Result.Success(successes)
-    } else {
-        Result.Error(errors)
-    }
+    return errors.toNonEmptyListOrNull()
+        ?.let { Result.Error(it) }
+        ?: Result.Success(successes)
 }
 
-private fun <T, F> List<Result<T, List<F>>>.collectErrors(): List<F> =
+private fun <T, F> List<Result<T, NonEmptyList<F>>>.collectErrors(): List<F> =
     mapNotNull { result -> (result as? Result.Error)?.value }.flatten()
