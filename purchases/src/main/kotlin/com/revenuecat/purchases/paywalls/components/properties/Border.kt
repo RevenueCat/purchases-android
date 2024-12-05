@@ -5,7 +5,7 @@ import kotlinx.serialization.Serializable
 
 @InternalRevenueCatAPI
 @Serializable
-internal data class Border(
+data class Border(
     @get:JvmSynthetic
     val color: ColorScheme,
     @get:JvmSynthetic

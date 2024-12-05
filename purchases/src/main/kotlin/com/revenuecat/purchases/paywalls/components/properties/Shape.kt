@@ -6,7 +6,7 @@ import kotlinx.serialization.Serializable
 
 @InternalRevenueCatAPI
 @Serializable
-internal sealed interface Shape {
+sealed interface Shape {
 
     @Serializable
     @SerialName("rectangle")

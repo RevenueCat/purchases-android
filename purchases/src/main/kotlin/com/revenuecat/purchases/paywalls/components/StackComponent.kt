@@ -20,7 +20,7 @@ import kotlinx.serialization.Serializable
 @InternalRevenueCatAPI
 @Serializable
 @SerialName("stack")
-internal data class StackComponent(
+data class StackComponent(
     @get:JvmSynthetic
     val components: List<PaywallComponent>,
     @get:JvmSynthetic
@@ -48,7 +48,7 @@ internal data class StackComponent(
 
 @InternalRevenueCatAPI
 @Serializable
-internal data class PartialStackComponent(
+data class PartialStackComponent(
     @get:JvmSynthetic
     val visible: Boolean? = true,
     @get:JvmSynthetic

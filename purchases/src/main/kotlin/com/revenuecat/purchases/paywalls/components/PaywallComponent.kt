@@ -5,4 +5,4 @@ import kotlinx.serialization.Serializable
 
 @InternalRevenueCatAPI
 @Serializable
-internal sealed interface PaywallComponent
+sealed interface PaywallComponent
