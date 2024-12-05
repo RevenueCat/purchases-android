@@ -39,7 +39,7 @@ internal fun ImageComponentView(
         RemoteImage(
             urlString = currentUrls.webp.toString(),
             modifier = modifier
-                .size(style.size, imageUrls = currentUrls)
+                .size(style.adjustedSize())
                 .applyIfNotNull(style.overlay) { overlay(it, style.shape ?: RectangleShape) }
                 .applyIfNotNull(style.shape) { clip(it) },
             placeholderUrlString = currentUrls.webpLowRes.toString(),
@@ -107,7 +107,7 @@ private fun previewImageComponentStyle(
     overlay: ColorStyle? = null,
 ) = ImageComponentStyle(
     visible = visible,
-    themeImageUrls = ThemeImageUrls(light = ImageUrls(url, url, lowResURL, 200u, 400u)),
+    themeImageUrls = ThemeImageUrls(light = ImageUrls(url, url, lowResURL, 1000u, 1000u)),
     size = size,
     shape = RoundedCornerShape(20.dp, 20.dp, 20.dp, 20.dp),
     overlay = overlay,
