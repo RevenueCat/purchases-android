@@ -1,5 +1,4 @@
 @file:JvmSynthetic
-@file:Suppress("TooManyFunctions")
 
 package com.revenuecat.purchases.ui.revenuecatui.components.modifier
 
