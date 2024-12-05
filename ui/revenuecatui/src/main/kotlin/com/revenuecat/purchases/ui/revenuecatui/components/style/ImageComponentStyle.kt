@@ -14,13 +14,13 @@ internal class ImageComponentStyle private constructor(
     @get:JvmSynthetic
     val visible: Boolean,
     @get:JvmSynthetic
-    val urls: ThemeImageUrls,
+    val themeImageUrls: ThemeImageUrls,
     @get:JvmSynthetic
     val size: Size,
     @get:JvmSynthetic
     val shape: Shape?,
     @get:JvmSynthetic
-    val colorStyle: ColorStyle?,
+    val overlay: ColorStyle?,
     @get:JvmSynthetic
     val contentScale: ContentScale,
 ) : ComponentStyle {
@@ -32,18 +32,18 @@ internal class ImageComponentStyle private constructor(
         @Composable
         operator fun invoke(
             visible: Boolean,
-            themeImageUrls: ThemeImageUrls,
             size: Size,
+            themeImageUrls: ThemeImageUrls,
             shape: Shape?,
-            colorStyle: ColorStyle?,
+            overlay: ColorStyle?,
             contentScale: ContentScale,
         ): ImageComponentStyle {
             return ImageComponentStyle(
                 visible = visible,
-                urls = themeImageUrls,
                 size = size,
+                themeImageUrls = themeImageUrls,
                 shape = shape,
-                colorStyle = colorStyle,
+                overlay = overlay,
                 contentScale = contentScale,
             )
         }
