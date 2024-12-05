@@ -103,7 +103,7 @@ class BackendRedeemWebPurchaseTest {
     }
 
     @Test
-    fun `postRedeemWebPurchase errors with already redeemed token if backend returns that code`() {
+    fun `postRedeemWebPurchase errors with purchase belongs to other user if backend returns that code`() {
         val responseBody = """
             {
                 "code": 7852,
@@ -111,7 +111,7 @@ class BackendRedeemWebPurchaseTest {
             }
         """.trimIndent()
         mockHttpResult(responseCode = RCHTTPStatusCodes.FORBIDDEN, responseBody = responseBody)
-        performPostAndExpectResult(RedeemWebPurchaseListener.Result.AlreadyRedeemed)
+        performPostAndExpectResult(RedeemWebPurchaseListener.Result.PurchaseBelongsToOtherUser)
     }
 
     @Test

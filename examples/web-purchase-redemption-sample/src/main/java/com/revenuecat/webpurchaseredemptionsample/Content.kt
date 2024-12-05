@@ -119,8 +119,8 @@ fun WebRedemption(onSuccess: (CustomerInfo) -> Unit) {
                         onSuccess(result.customerInfo)
                         "Successfully redeemed purchase!"
                     }
-                    RedeemWebPurchaseListener.Result.AlreadyRedeemed ->
-                        "Purchase already redeemed. Nothing to do."
+                    RedeemWebPurchaseListener.Result.PurchaseBelongsToOtherUser ->
+                        "Purchase already belongs to a different user."
                     is RedeemWebPurchaseListener.Result.Error ->
                         "Error redeeming purchase: ${result.error.message}"
                     is RedeemWebPurchaseListener.Result.Expired ->

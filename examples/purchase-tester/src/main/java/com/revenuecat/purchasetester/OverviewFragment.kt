@@ -133,8 +133,8 @@ class OverviewFragment : Fragment(), OfferingCardAdapter.OfferingCardAdapterList
                 RedeemWebPurchaseListener.Result.InvalidToken -> {
                     showToast("Invalid web redemption token. Please check your link.")
                 }
-                RedeemWebPurchaseListener.Result.AlreadyRedeemed -> {
-                    showToast("Web purchase already redeemed. Ignoring.")
+                RedeemWebPurchaseListener.Result.PurchaseBelongsToOtherUser -> {
+                    showToast("Web purchase belongs to a different user. Ignoring.")
                 }
                 is RedeemWebPurchaseListener.Result.Expired -> {
                     showToast(
