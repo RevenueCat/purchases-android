@@ -31,7 +31,7 @@ internal enum class BackendErrorCode(val value: Int) {
     BackendInvalidSubscriberAttributesBody(7264),
     BackendProductIDsMalformed(7662),
     BackendInvalidWebRedemptionToken(7849),
-    BackendPurchaseBelongsToDifferentUser(7852),
+    BackendPurchaseBelongsToOtherUser(7852),
     BackendExpiredWebRedemptionToken(7853),
     ;
 
@@ -101,7 +101,7 @@ private fun BackendErrorCode.toPurchasesErrorCode(): PurchasesErrorCode {
         -> PurchasesErrorCode.UnexpectedBackendResponseError
         BackendErrorCode.BackendProductIDsMalformed -> PurchasesErrorCode.UnsupportedError
         BackendErrorCode.BackendInvalidWebRedemptionToken -> PurchasesErrorCode.PurchaseInvalidError
-        BackendErrorCode.BackendPurchaseBelongsToDifferentUser -> PurchasesErrorCode.ProductAlreadyPurchasedError
+        BackendErrorCode.BackendPurchaseBelongsToOtherUser -> PurchasesErrorCode.ProductAlreadyPurchasedError
         BackendErrorCode.BackendExpiredWebRedemptionToken -> PurchasesErrorCode.PurchaseInvalidError
     }
 }

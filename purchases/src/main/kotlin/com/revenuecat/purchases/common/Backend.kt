@@ -712,7 +712,7 @@ internal class Backend(
                                     callback(RedeemWebPurchaseListener.Result.Expired(obfuscatedEmail))
                                 }
                             }
-                            BackendErrorCode.BackendPurchaseBelongsToDifferentUser.value -> {
+                            BackendErrorCode.BackendPurchaseBelongsToOtherUser.value -> {
                                 callback(RedeemWebPurchaseListener.Result.PurchaseBelongsToOtherUser)
                             }
                             else -> {
