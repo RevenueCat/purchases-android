@@ -9,7 +9,7 @@ import kotlinx.serialization.Serializable
  */
 @InternalRevenueCatAPI
 @Serializable
-internal data class CornerRadiuses(
+data class CornerRadiuses(
     /**
      * The top-leading, or top-start, corner radius, in dp.
      */
