@@ -23,7 +23,7 @@ import kotlinx.serialization.Serializable
 @Poko
 @Serializable
 @SerialName("stack")
-class StackComponent(
+class StackComponent internal constructor(
     @get:JvmSynthetic
     val components: List<PaywallComponent>,
     @get:JvmSynthetic
@@ -53,7 +53,7 @@ class StackComponent(
 @InternalRevenueCatAPI
 @Poko
 @Serializable
-class PartialStackComponent(
+class PartialStackComponent internal constructor(
     @get:JvmSynthetic
     val visible: Boolean? = true,
     @get:JvmSynthetic
