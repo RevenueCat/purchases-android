@@ -86,6 +86,7 @@ dependencies {
     testImplementation libs.coroutines.test
     testImplementation libs.kotlinx.serialization.json
     testImplementation libs.androidx.test.compose
+    testImplementation libs.androidx.test.compose.manifest
     testImplementation libs.hamcrest.core
 
     androidTestImplementation libs.assertJ
