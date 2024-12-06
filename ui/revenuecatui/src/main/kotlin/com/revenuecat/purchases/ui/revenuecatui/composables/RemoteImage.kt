@@ -13,14 +13,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import coil.ImageLoader
 import coil.compose.AsyncImage
 import coil.compose.AsyncImagePainter
+import coil.compose.rememberAsyncImagePainter
 import coil.disk.DiskCache
 import coil.memory.MemoryCache
 import coil.request.CachePolicy
 import coil.request.ImageRequest
 import coil.transform.Transformation
+import com.revenuecat.purchases.ui.revenuecatui.R
 import com.revenuecat.purchases.ui.revenuecatui.UIConstant
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.isInPreviewMode
@@ -37,6 +40,7 @@ internal fun LocalImage(
 ) {
     Image(
         source = ImageSource.Local(resource),
+        placeholderSource = null,
         modifier = modifier,
         contentScale = contentScale,
         contentDescription = contentDescription,
@@ -50,6 +54,7 @@ internal fun LocalImage(
 internal fun RemoteImage(
     urlString: String,
     modifier: Modifier = Modifier,
+    placeholderUrlString: String? = null,
     contentScale: ContentScale = ContentScale.Fit,
     contentDescription: String? = null,
     transformation: Transformation? = null,
@@ -57,6 +62,7 @@ internal fun RemoteImage(
 ) {
     Image(
         source = ImageSource.Remote(urlString),
+        placeholderSource = placeholderUrlString?.let { ImageSource.Remote(it) },
         modifier = modifier,
         contentScale = contentScale,
         contentDescription = contentDescription,
@@ -80,6 +86,7 @@ private sealed class ImageSource {
 @Composable
 private fun Image(
     source: ImageSource,
+    placeholderSource: ImageSource?,
     modifier: Modifier = Modifier,
     contentScale: ContentScale,
     contentDescription: String?,
@@ -106,6 +113,7 @@ private fun Image(
     if (useCache) {
         AsyncImage(
             source = source,
+            placeholderSource = placeholderSource,
             imageRequest = imageRequest,
             contentDescription = contentDescription,
             imageLoader = imageLoader,
@@ -120,6 +128,7 @@ private fun Image(
     } else {
         AsyncImage(
             source = source,
+            placeholderSource = placeholderSource,
             imageRequest = imageRequest,
             contentDescription = contentDescription,
             imageLoader = imageLoader,
@@ -134,6 +143,7 @@ private fun Image(
 @Composable
 private fun AsyncImage(
     source: ImageSource,
+    placeholderSource: ImageSource?,
     imageRequest: ImageRequest,
     imageLoader: ImageLoader,
     modifier: Modifier = Modifier,
@@ -145,23 +155,29 @@ private fun AsyncImage(
     AsyncImage(
         model = imageRequest,
         contentDescription = contentDescription,
+        placeholder = placeholderSource?.let {
+            rememberAsyncImagePainter(
+                model = it.data,
+                placeholder = if (isInPreviewMode()) painterResource(R.drawable.android) else null,
+                imageLoader = imageLoader,
+                contentScale = contentScale,
+                onError = { errorState ->
+                    Logger.e("Error loading placeholder image", errorState.result.throwable)
+                },
+            )
+        } ?: if (isInPreviewMode()) painterResource(R.drawable.android) else null,
         imageLoader = imageLoader,
         modifier = modifier,
         contentScale = contentScale,
         alpha = alpha,
-        onState = {
-            when (it) {
-                is AsyncImagePainter.State.Error -> {
-                    val error = when (source) {
-                        is ImageSource.Local -> "Error loading local image: '${source.resource}'"
-                        is ImageSource.Remote -> "Error loading image from '${source.urlString}'"
-                    }
-
-                    Logger.e(error, it.result.throwable)
-                    onError?.invoke(it)
-                }
-                else -> {}
+        onError = {
+            val error = when (source) {
+                is ImageSource.Local -> "Error loading local image: '${source.resource}'"
+                is ImageSource.Remote -> "Error loading image from '${source.urlString}'"
             }
+
+            Logger.e(error, it.result.throwable)
+            onError?.invoke(it)
         },
     )
 }

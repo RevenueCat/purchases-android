@@ -30,7 +30,7 @@ private class RedeemWebPurchaseListenerAPI {
             is RedeemWebPurchaseListener.Result.InvalidToken -> {
                 return false
             }
-            is RedeemWebPurchaseListener.Result.AlreadyRedeemed -> {
+            is RedeemWebPurchaseListener.Result.PurchaseBelongsToOtherUser -> {
                 return false
             }
             is RedeemWebPurchaseListener.Result.Expired -> {
