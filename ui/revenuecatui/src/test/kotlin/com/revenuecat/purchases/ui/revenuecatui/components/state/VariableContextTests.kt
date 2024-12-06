@@ -178,7 +178,7 @@ class VariableContextTests {
         )
 
     /**
-     * Exact output of this doesn't really matter. It's only use is more helpful errors.
+     * Exact output of this doesn't really matter. Its only use is more helpful errors.
      */
     private fun formatMicrosToCurrency(micros: Long, locale: Locale = Locale.US): String =
         NumberFormat.getCurrencyInstance(locale).format(micros / 1_000_000.0)
