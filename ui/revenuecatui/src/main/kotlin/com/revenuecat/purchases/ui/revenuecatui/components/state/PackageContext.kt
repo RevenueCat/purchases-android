@@ -23,7 +23,6 @@ internal class PackageContext(
         val showZeroDecimalPlacePrices: Boolean = true,
     ) {
         private companion object {
-            // FIXME TEST CANDIDATE!
             fun List<Package>.mostExpensivePricePerMonthMicros(): Long? =
                 asSequence()
                     .map { pkg -> pkg.product }
