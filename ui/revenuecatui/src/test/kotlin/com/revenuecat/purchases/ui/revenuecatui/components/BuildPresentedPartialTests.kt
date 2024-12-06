@@ -16,6 +16,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState.SE
 import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition.COMPACT
 import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition.EXPANDED
 import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition.MEDIUM
+import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized

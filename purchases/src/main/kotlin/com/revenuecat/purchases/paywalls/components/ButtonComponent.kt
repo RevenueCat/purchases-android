@@ -4,6 +4,7 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.paywalls.components.ButtonComponent.Action
 import com.revenuecat.purchases.paywalls.components.ButtonComponent.Destination
 import com.revenuecat.purchases.paywalls.components.ButtonComponent.UrlMethod
+import dev.drewhamilton.poko.Poko
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -12,9 +13,10 @@ import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 
 @InternalRevenueCatAPI
+@Poko
 @Serializable
 @SerialName("button")
-internal data class ButtonComponent(
+class ButtonComponent internal constructor(
     @get:JvmSynthetic val action: Action,
     @get:JvmSynthetic val stack: StackComponent,
 ) : PaywallComponent {

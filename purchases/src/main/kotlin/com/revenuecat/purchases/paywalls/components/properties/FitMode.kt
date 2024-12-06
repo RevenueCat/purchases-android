@@ -6,7 +6,7 @@ import kotlinx.serialization.Serializable
 
 @InternalRevenueCatAPI
 @Serializable
-internal enum class FitMode {
+enum class FitMode {
     @SerialName("fit")
     FIT,
 

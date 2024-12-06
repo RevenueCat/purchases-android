@@ -11,13 +11,16 @@ import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fill
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fit
 import com.revenuecat.purchases.paywalls.components.properties.ThemeImageUrls
+import dev.drewhamilton.poko.Poko
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
+@Suppress("LongParameterList")
 @InternalRevenueCatAPI
+@Poko
 @Serializable
 @SerialName("image")
-internal data class ImageComponent(
+class ImageComponent internal constructor(
     @get:JvmSynthetic
     val source: ThemeImageUrls,
     @get:JvmSynthetic
@@ -38,9 +41,11 @@ internal data class ImageComponent(
     val overrides: ComponentOverrides<PartialImageComponent>? = null,
 ) : PaywallComponent
 
+@Suppress("LongParameterList")
 @InternalRevenueCatAPI
+@Poko
 @Serializable
-internal data class PartialImageComponent(
+class PartialImageComponent internal constructor(
     @get:JvmSynthetic
     val visible: Boolean? = true,
     @get:JvmSynthetic
