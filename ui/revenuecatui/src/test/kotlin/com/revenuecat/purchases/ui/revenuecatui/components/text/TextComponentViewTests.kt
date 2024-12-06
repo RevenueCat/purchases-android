@@ -14,11 +14,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.semantics.SemanticsActions
-import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.junit4.ComposeTestRule
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -86,6 +86,64 @@ class TextComponentViewTests {
             ),
         )
 
+        // Act
+        themeChangingTest(
+            component = component,
+            assertBlock = { controller ->
+                // Assert
+                onNodeWithText(localizationDictionary.values.first().value)
+                    .assertIsDisplayed()
+                    .assertTextColorEquals(expectedLightColor)
+
+                // Change the theme.
+                controller.toggleTheme()
+
+                onNodeWithText(localizationDictionary.values.first().value)
+                    .assertIsDisplayed()
+                    .assertTextColorEquals(expectedDarkColor)
+            }
+        )
+    }
+
+    @Test
+    fun `Should change background color based on theme`() {
+        // Arrange
+        val expectedLightColor = Color.Red
+        val expectedDarkColor = Color.Yellow
+        val component = TextComponent(
+            text = localizationDictionary.keys.first(),
+            color = ColorScheme(
+                light = ColorInfo.Hex(Color.Black.toArgb()),
+            ),
+            backgroundColor = ColorScheme(
+                light = ColorInfo.Hex(expectedLightColor.toArgb()),
+                dark = ColorInfo.Hex(expectedDarkColor.toArgb()),
+            ),
+        )
+
+        // Act
+        themeChangingTest(
+            component = component,
+            assertBlock = { controller ->
+                // Assert
+                onNodeWithText(localizationDictionary.values.first().value)
+                    .assertIsDisplayed()
+                    .assertTextBackgroundColorEquals(expectedLightColor)
+
+                // Change the theme.
+                controller.toggleTheme()
+
+                onNodeWithText(localizationDictionary.values.first().value)
+                    .assertIsDisplayed()
+                    .assertTextBackgroundColorEquals(expectedDarkColor)
+            }
+        )
+    }
+
+    private fun themeChangingTest(
+        component: TextComponent,
+        assertBlock: ComposeTestRule.(ThemeController) -> Unit,
+    ): Unit = with(composeTestRule) {
         setContent {
             // We don't want to recreate the entire tree every time the theme, or any other state, changes.
             val style = styleFactory.create(component).getOrThrow() as TextComponentStyle
@@ -101,7 +159,6 @@ class TextComponentViewTests {
                 derivedStateOf { if (darkTheme) darkModeConfiguration else lightModeConfiguration }
             }
 
-            // Act
             CompositionLocalProvider(LocalConfiguration provides configuration) {
                 // A TextComponentView and a button to change the theme.
                 Column {
@@ -111,18 +168,15 @@ class TextComponentViewTests {
             }
         }
 
-        // Assert
-        onNodeWithText(localizationDictionary.values.first().value)
-            .assertIsDisplayed()
-            .assertTextColorEquals(expectedLightColor)
+        assertBlock(ThemeController(this))
+    }
 
-        // Change the theme.
-        onNodeWithText("Toggle")
-            .performClick()
-
-        onNodeWithText(localizationDictionary.values.first().value)
-            .assertIsDisplayed()
-            .assertTextColorEquals(expectedDarkColor)
+    private class ThemeController(private val composeTestRule: ComposeTestRule) {
+        fun toggleTheme() {
+            composeTestRule
+                .onNodeWithText("Toggle")
+                .performClick()
+        }
     }
 
     private fun setUiModeToDarkTheme(uiMode: Int): Int =
@@ -132,15 +186,25 @@ class TextComponentViewTests {
         (uiMode and Configuration.UI_MODE_NIGHT_MASK.inv()) or Configuration.UI_MODE_NIGHT_NO
 
     private fun SemanticsNodeInteraction.assertTextColorEquals(color: Color) =
-        assert(
-            SemanticsMatcher(
-                "${SemanticsProperties.Text.name} has color '$color'"
-            ) { node ->
-                val results = mutableListOf<TextLayoutResult>()
-                node.config[SemanticsActions.GetTextLayoutResult].action?.invoke(results)
+        assertTextLayoutResult("Text has color '$color'") {
+            it.layoutInput.style.color == color
+        }
 
-                if (results.isEmpty()) false
-                else results.first().layoutInput.style.color == color
-            }
-        )
+    private fun SemanticsNodeInteraction.assertTextBackgroundColorEquals(color: Color) =
+        assertTextLayoutResult("Text has background color '$color'") {
+            it.layoutInput.style.background == color
+        }
+
+    private fun SemanticsNodeInteraction.assertTextLayoutResult(
+        description: String,
+        predicate: (TextLayoutResult) -> Boolean,
+    ) = assert(
+        SemanticsMatcher(description) { node ->
+            val results = mutableListOf<TextLayoutResult>()
+            node.config[SemanticsActions.GetTextLayoutResult].action?.invoke(results)
+
+            if (results.isEmpty()) false
+            else predicate(results.first())
+        }
+    )
 }
