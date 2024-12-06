@@ -32,7 +32,7 @@ internal class TextComponentStyle private constructor(
     @get:JvmSynthetic
     val text: String,
     @get:JvmSynthetic
-    val color: ColorStyle,
+    val color: ColorScheme,
     @get:JvmSynthetic
     val fontSize: TextUnit,
     @get:JvmSynthetic
@@ -77,7 +77,7 @@ internal class TextComponentStyle private constructor(
             return TextComponentStyle(
                 visible = visible,
                 text = text,
-                color = color.toColorStyle(),
+                color = color,
                 fontSize = fontSize.toTextUnit(),
                 fontWeight = weight,
                 fontFamily = fontFamily?.let { SystemFontFamily(it, weight) },

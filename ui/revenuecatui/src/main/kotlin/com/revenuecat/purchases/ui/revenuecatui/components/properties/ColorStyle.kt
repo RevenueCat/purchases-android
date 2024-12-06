@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -40,19 +41,29 @@ internal sealed interface ColorStyle {
 
 @JvmSynthetic
 @Composable
-internal fun ColorScheme.toColorStyle(): ColorStyle {
-    return when (val colorInfo = colorsForCurrentTheme) {
+internal fun rememberColorStyle(scheme: ColorScheme): ColorStyle {
+    val colorInfo = scheme.colorsForCurrentTheme
+    return remember(colorInfo) { colorInfo.toColorStyle() }
+}
+
+@JvmSynthetic
+@Composable
+internal fun ColorScheme.toColorStyle(): ColorStyle = colorsForCurrentTheme.toColorStyle()
+
+@JvmSynthetic
+internal fun ColorInfo.toColorStyle(): ColorStyle {
+    return when (this) {
         is ColorInfo.Alias -> TODO("Color aliases are not yet implemented.")
-        is ColorInfo.Hex -> ColorStyle.Solid(Color(color = colorInfo.value))
+        is ColorInfo.Hex -> ColorStyle.Solid(Color(color = value))
         is ColorInfo.Gradient -> ColorStyle.Gradient(
-            when (colorInfo) {
+            when (this) {
                 is ColorInfo.Gradient.Linear -> relativeLinearGradient(
-                    colorStops = colorInfo.points.toColorStops(),
-                    degrees = colorInfo.degrees,
+                    colorStops = points.toColorStops(),
+                    degrees = degrees,
                 )
 
                 is ColorInfo.Gradient.Radial -> Brush.radialGradient(
-                    colorStops = colorInfo.points.toColorStops(),
+                    colorStops = points.toColorStops(),
                 )
             },
         )
