@@ -46,7 +46,7 @@ internal fun <T> ComposeContentTestRule.themeChangingTest(
         val arrangeResult = arrange()
 
         CompositionLocalProvider(LocalConfiguration provides configuration) {
-            // A TextComponentView and 2 buttons to change the theme.
+            // The themable content under test, and 2 buttons to change the theme.
             Column {
                 act(arrangeResult)
                 Button(onClick = { darkTheme = false }) { Text("Light") }
