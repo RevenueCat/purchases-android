@@ -136,5 +136,5 @@ private fun Background_Preview_ColorGradientRadial() {
     )
 }
 
-// We cannot use a network image in Compose previews, so we don't have a preview for Background.Image. We do have some
-// tests in BackgroundTests.
+// We cannot use a network image in Compose previews, so we don't have a preview for Background.Image. Instead, we have
+// some tests in BackgroundTests.
