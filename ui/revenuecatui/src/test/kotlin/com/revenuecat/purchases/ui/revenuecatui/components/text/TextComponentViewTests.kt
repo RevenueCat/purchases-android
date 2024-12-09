@@ -90,7 +90,10 @@ class TextComponentViewTests {
 
         // Act
         themeChangingTest(
-            component = component,
+            arrange = {
+                // We don't want to recreate the entire tree every time the theme, or any other state, changes.
+                styleFactory.create(component).getOrThrow() as TextComponentStyle
+            },
             themableContent = { TextComponentView(style = it) },
             assert = { controller ->
                 // Assert
@@ -130,7 +133,10 @@ class TextComponentViewTests {
 
         // Act
         themeChangingTest(
-            component = component,
+            arrange = {
+                // We don't want to recreate the entire tree every time the theme, or any other state, changes.
+                styleFactory.create(component).getOrThrow() as TextComponentStyle
+            },
             themableContent = { TextComponentView(style = it) },
             assert = { controller ->
                 // Assert
@@ -148,15 +154,12 @@ class TextComponentViewTests {
         )
     }
 
-    private fun themeChangingTest(
-        component: TextComponent,
-        themableContent: @Composable (TextComponentStyle) -> Unit,
+    private fun <T> themeChangingTest(
+        arrange: @Composable () -> T,
+        themableContent: @Composable (T) -> Unit,
         assert: ComposeTestRule.(ThemeController) -> Unit,
     ): Unit = with(composeTestRule) {
         setContent {
-            // We don't want to recreate the entire tree every time the theme, or any other state, changes.
-            val style = styleFactory.create(component).getOrThrow() as TextComponentStyle
-
             val baseConfiguration: Configuration = LocalConfiguration.current
             val lightModeConfiguration = Configuration(baseConfiguration)
                 .apply { uiMode = setUiModeToLightTheme(baseConfiguration.uiMode) }
@@ -168,10 +171,12 @@ class TextComponentViewTests {
                 derivedStateOf { if (darkTheme) darkModeConfiguration else lightModeConfiguration }
             }
 
+            val arrangeResult = arrange()
+
             CompositionLocalProvider(LocalConfiguration provides configuration) {
                 // A TextComponentView and a button to change the theme.
                 Column {
-                    themableContent(style)
+                    themableContent(arrangeResult)
                     Button(onClick = { darkTheme = !darkTheme }) { Text("Toggle") }
                 }
             }
