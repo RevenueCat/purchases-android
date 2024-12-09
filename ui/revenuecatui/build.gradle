@@ -83,6 +83,7 @@ dependencies {
     debugImplementation libs.androidx.test.compose.manifest
 
     testImplementation libs.bundles.test
+    testImplementation libs.coil.test
     testImplementation libs.coroutines.test
     testImplementation libs.kotlinx.serialization.json
     testImplementation libs.androidx.test.compose
