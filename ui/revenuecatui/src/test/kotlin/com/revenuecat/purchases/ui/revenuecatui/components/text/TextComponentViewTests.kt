@@ -1,25 +1,11 @@
 package com.revenuecat.purchases.ui.revenuecatui.components.text
 
-import android.content.res.Configuration
-import androidx.compose.foundation.layout.Column
-import androidx.compose.material3.Button
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.junit4.ComposeTestRule
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
-import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.paywalls.components.TextComponent
 import com.revenuecat.purchases.paywalls.components.common.LocalizationData
@@ -36,6 +22,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentSt
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvider
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
+import com.revenuecat.purchases.ui.revenuecatui.helpers.themeChangingTest
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -76,7 +63,7 @@ class TextComponentViewTests {
     }
 
     @Test
-    fun `Should change text color based on theme`() {
+    fun `Should change text color based on theme`(): Unit = with(composeTestRule) {
         // Arrange
         val expectedLightColor = Color.Red
         val expectedDarkColor = Color.Yellow
@@ -94,7 +81,7 @@ class TextComponentViewTests {
                 // We don't want to recreate the entire tree every time the theme, or any other state, changes.
                 styleFactory.create(component).getOrThrow() as TextComponentStyle
             },
-            themableContent = { TextComponentView(style = it) },
+            act = { TextComponentView(style = it) },
             assert = { controller ->
                 // Assert
                 onNodeWithText(localizationDictionary.values.first().value)
@@ -114,7 +101,7 @@ class TextComponentViewTests {
     @GraphicsMode(GraphicsMode.Mode.NATIVE)
     @Config(shadows = [ShadowPixelCopy::class], sdk = [26])
     @Test
-    fun `Should change background color based on theme`() {
+    fun `Should change background color based on theme`(): Unit = with(composeTestRule) {
         // Arrange
         val expectedLightColor = Color.Red
         val expectedDarkColor = Color.Yellow
@@ -137,7 +124,7 @@ class TextComponentViewTests {
                 // We don't want to recreate the entire tree every time the theme, or any other state, changes.
                 styleFactory.create(component).getOrThrow() as TextComponentStyle
             },
-            themableContent = { TextComponentView(style = it) },
+            act = { TextComponentView(style = it) },
             assert = { controller ->
                 // Assert
                 onNodeWithText(localizationDictionary.values.first().value)
@@ -153,51 +140,6 @@ class TextComponentViewTests {
             }
         )
     }
-
-    private fun <T> themeChangingTest(
-        arrange: @Composable () -> T,
-        themableContent: @Composable (T) -> Unit,
-        assert: ComposeTestRule.(ThemeController) -> Unit,
-    ): Unit = with(composeTestRule) {
-        setContent {
-            val baseConfiguration: Configuration = LocalConfiguration.current
-            val lightModeConfiguration = Configuration(baseConfiguration)
-                .apply { uiMode = setUiModeToLightTheme(baseConfiguration.uiMode) }
-            val darkModeConfiguration = Configuration(baseConfiguration)
-                .apply { uiMode = setUiModeToDarkTheme(baseConfiguration.uiMode) }
-
-            var darkTheme by mutableStateOf(false)
-            val configuration by remember {
-                derivedStateOf { if (darkTheme) darkModeConfiguration else lightModeConfiguration }
-            }
-
-            val arrangeResult = arrange()
-
-            CompositionLocalProvider(LocalConfiguration provides configuration) {
-                // A TextComponentView and a button to change the theme.
-                Column {
-                    themableContent(arrangeResult)
-                    Button(onClick = { darkTheme = !darkTheme }) { Text("Toggle") }
-                }
-            }
-        }
-
-        assert(ThemeController(this))
-    }
-
-    private class ThemeController(private val composeTestRule: ComposeTestRule) {
-        fun toggleTheme() {
-            composeTestRule
-                .onNodeWithText("Toggle")
-                .performClick()
-        }
-    }
-
-    private fun setUiModeToDarkTheme(uiMode: Int): Int =
-        (uiMode and Configuration.UI_MODE_NIGHT_MASK.inv()) or Configuration.UI_MODE_NIGHT_YES
-
-    private fun setUiModeToLightTheme(uiMode: Int): Int =
-        (uiMode and Configuration.UI_MODE_NIGHT_MASK.inv()) or Configuration.UI_MODE_NIGHT_NO
 
     /**
      * This is a very naive way of checking the background color: by just looking at the 16 top-left pixels. It works
