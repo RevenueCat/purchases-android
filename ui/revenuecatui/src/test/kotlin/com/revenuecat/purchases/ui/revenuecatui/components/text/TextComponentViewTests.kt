@@ -82,15 +82,14 @@ class TextComponentViewTests {
                 styleFactory.create(component).getOrThrow() as TextComponentStyle
             },
             act = { TextComponentView(style = it) },
-            assert = { controller ->
+            assert = { theme ->
                 // Assert
+                theme.setLight()
                 onNodeWithText(localizationDictionary.values.first().value)
                     .assertIsDisplayed()
                     .assertTextColorEquals(expectedLightColor)
 
-                // Change the theme.
-                controller.toggleTheme()
-
+                theme.setDark()
                 onNodeWithText(localizationDictionary.values.first().value)
                     .assertIsDisplayed()
                     .assertTextColorEquals(expectedDarkColor)
@@ -125,15 +124,14 @@ class TextComponentViewTests {
                 styleFactory.create(component).getOrThrow() as TextComponentStyle
             },
             act = { TextComponentView(style = it) },
-            assert = { controller ->
+            assert = { theme ->
                 // Assert
+                theme.setLight()
                 onNodeWithText(localizationDictionary.values.first().value)
                     .assertIsDisplayed()
                     .assertBackgroundColorEquals(expectedLightColor)
 
-                // Change the theme.
-                controller.toggleTheme()
-
+                theme.setDark()
                 onNodeWithText(localizationDictionary.values.first().value)
                     .assertIsDisplayed()
                     .assertBackgroundColorEquals(expectedDarkColor)

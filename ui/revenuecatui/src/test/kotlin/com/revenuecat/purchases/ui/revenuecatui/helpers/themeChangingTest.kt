@@ -46,10 +46,11 @@ internal fun <T> ComposeContentTestRule.themeChangingTest(
         val arrangeResult = arrange()
 
         CompositionLocalProvider(LocalConfiguration provides configuration) {
-            // A TextComponentView and a button to change the theme.
+            // A TextComponentView and 2 buttons to change the theme.
             Column {
                 act(arrangeResult)
-                Button(onClick = { darkTheme = !darkTheme }) { Text("Toggle") }
+                Button(onClick = { darkTheme = false }) { Text("Light") }
+                Button(onClick = { darkTheme = true }) { Text("Dark") }
             }
         }
     }
@@ -58,9 +59,15 @@ internal fun <T> ComposeContentTestRule.themeChangingTest(
 }
 
 internal class ThemeController(private val composeTestRule: ComposeTestRule) {
-    fun toggleTheme() {
+    fun setLight() {
         composeTestRule
-            .onNodeWithText("Toggle")
+            .onNodeWithText("Light")
+            .performClick()
+    }
+
+    fun setDark() {
+        composeTestRule
+            .onNodeWithText("Dark")
             .performClick()
     }
 }
