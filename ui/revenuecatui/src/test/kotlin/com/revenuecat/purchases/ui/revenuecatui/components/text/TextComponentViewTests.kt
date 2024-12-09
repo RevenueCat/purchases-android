@@ -4,6 +4,7 @@ import android.content.res.Configuration
 import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -90,6 +91,7 @@ class TextComponentViewTests {
         // Act
         themeChangingTest(
             component = component,
+            themableContent = { TextComponentView(style = it) },
             assert = { controller ->
                 // Assert
                 onNodeWithText(localizationDictionary.values.first().value)
@@ -129,6 +131,7 @@ class TextComponentViewTests {
         // Act
         themeChangingTest(
             component = component,
+            themableContent = { TextComponentView(style = it) },
             assert = { controller ->
                 // Assert
                 onNodeWithText(localizationDictionary.values.first().value)
@@ -147,6 +150,7 @@ class TextComponentViewTests {
 
     private fun themeChangingTest(
         component: TextComponent,
+        themableContent: @Composable (TextComponentStyle) -> Unit,
         assert: ComposeTestRule.(ThemeController) -> Unit,
     ): Unit = with(composeTestRule) {
         setContent {
@@ -167,7 +171,7 @@ class TextComponentViewTests {
             CompositionLocalProvider(LocalConfiguration provides configuration) {
                 // A TextComponentView and a button to change the theme.
                 Column {
-                    TextComponentView(style)
+                    themableContent(style)
                     Button(onClick = { darkTheme = !darkTheme }) { Text("Toggle") }
                 }
             }
