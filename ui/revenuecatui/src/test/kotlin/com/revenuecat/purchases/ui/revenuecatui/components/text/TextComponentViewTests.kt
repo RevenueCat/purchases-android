@@ -75,7 +75,6 @@ class TextComponentViewTests {
             ),
         )
 
-        // Act
         themeChangingTest(
             arrange = {
                 // We don't want to recreate the entire tree every time the theme, or any other state, changes.
@@ -83,7 +82,6 @@ class TextComponentViewTests {
             },
             act = { TextComponentView(style = it) },
             assert = { theme ->
-                // Assert
                 theme.setLight()
                 onNodeWithText(localizationDictionary.values.first().value)
                     .assertIsDisplayed()
@@ -117,7 +115,6 @@ class TextComponentViewTests {
             ),
         )
 
-        // Act
         themeChangingTest(
             arrange = {
                 // We don't want to recreate the entire tree every time the theme, or any other state, changes.
@@ -125,7 +122,6 @@ class TextComponentViewTests {
             },
             act = { TextComponentView(style = it) },
             assert = { theme ->
-                // Assert
                 theme.setLight()
                 onNodeWithText(localizationDictionary.values.first().value)
                     .assertIsDisplayed()
