@@ -20,8 +20,6 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toFontWeight
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toTextAlign
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toTextUnit
-import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
-import com.revenuecat.purchases.ui.revenuecatui.components.properties.toColorStyle
 import com.revenuecat.purchases.paywalls.components.properties.FontWeight as RcFontWeight
 
 @Suppress("LongParameterList")
@@ -44,7 +42,7 @@ internal class TextComponentStyle private constructor(
     @get:JvmSynthetic
     val horizontalAlignment: Alignment.Horizontal,
     @get:JvmSynthetic
-    val backgroundColor: ColorStyle?,
+    val backgroundColor: ColorScheme?,
     @get:JvmSynthetic
     val size: Size,
     @get:JvmSynthetic
@@ -83,7 +81,7 @@ internal class TextComponentStyle private constructor(
                 fontFamily = fontFamily?.let { SystemFontFamily(it, weight) },
                 textAlign = textAlign.toTextAlign(),
                 horizontalAlignment = horizontalAlignment.toAlignment(),
-                backgroundColor = backgroundColor?.toColorStyle(),
+                backgroundColor = backgroundColor,
                 size = size,
                 padding = padding.toPaddingValues(),
                 margin = margin.toPaddingValues(),

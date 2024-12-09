@@ -37,6 +37,7 @@ internal fun TextComponentView(
     modifier: Modifier = Modifier,
 ) {
     val colorStyle = rememberColorStyle(scheme = style.color)
+    val backgroundColorStyle = style.backgroundColor?.let { rememberColorStyle(scheme = it) }
 
     // Get the text color if it's solid.
     val color = when (colorStyle) {
@@ -57,7 +58,7 @@ internal fun TextComponentView(
             modifier = modifier
                 .size(style.size, horizontalAlignment = style.horizontalAlignment)
                 .padding(style.margin)
-                .applyIfNotNull(style.backgroundColor) { background(it) }
+                .applyIfNotNull(backgroundColorStyle) { background(it) }
                 .padding(style.padding),
             color = color,
             fontSize = style.fontSize,
