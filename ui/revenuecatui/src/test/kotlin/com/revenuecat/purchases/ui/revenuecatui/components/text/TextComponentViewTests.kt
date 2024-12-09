@@ -13,22 +13,20 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.semantics.SemanticsActions
-import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.SemanticsNodeInteraction
-import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.ComposeTestRule
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.text.TextLayoutResult
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.paywalls.components.TextComponent
 import com.revenuecat.purchases.paywalls.components.common.LocalizationData
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
+import com.revenuecat.purchases.ui.revenuecatui.assertions.assertPixelColorEquals
+import com.revenuecat.purchases.ui.revenuecatui.assertions.assertTextColorEquals
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState
 import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition
 import com.revenuecat.purchases.ui.revenuecatui.components.state.PackageContext
@@ -41,6 +39,9 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.robolectric.annotation.Config
+import org.robolectric.annotation.GraphicsMode
+import org.robolectric.shadows.ShadowPixelCopy
 import java.util.Locale
 
 @RunWith(AndroidJUnit4::class)
@@ -74,7 +75,7 @@ class TextComponentViewTests {
     }
 
     @Test
-    fun `Should change text color based on theme`(): Unit = with(composeTestRule) {
+    fun `Should change text color based on theme`() {
         // Arrange
         val expectedLightColor = Color.Red
         val expectedDarkColor = Color.Yellow
@@ -89,7 +90,7 @@ class TextComponentViewTests {
         // Act
         themeChangingTest(
             component = component,
-            assertBlock = { controller ->
+            assert = { controller ->
                 // Assert
                 onNodeWithText(localizationDictionary.values.first().value)
                     .assertIsDisplayed()
@@ -105,6 +106,8 @@ class TextComponentViewTests {
         )
     }
 
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    @Config(shadows = [ShadowPixelCopy::class], sdk = [26])
     @Test
     fun `Should change background color based on theme`() {
         // Arrange
@@ -113,7 +116,9 @@ class TextComponentViewTests {
         val component = TextComponent(
             text = localizationDictionary.keys.first(),
             color = ColorScheme(
-                light = ColorInfo.Hex(Color.Black.toArgb()),
+                // We're setting the text color to transparent, because our way of checking the background is far from
+                // optimal. It just checks a few pixels.
+                light = ColorInfo.Hex(Color.Transparent.toArgb()),
             ),
             backgroundColor = ColorScheme(
                 light = ColorInfo.Hex(expectedLightColor.toArgb()),
@@ -124,25 +129,25 @@ class TextComponentViewTests {
         // Act
         themeChangingTest(
             component = component,
-            assertBlock = { controller ->
+            assert = { controller ->
                 // Assert
                 onNodeWithText(localizationDictionary.values.first().value)
                     .assertIsDisplayed()
-                    .assertTextBackgroundColorEquals(expectedLightColor)
+                    .assertBackgroundColorEquals(expectedLightColor)
 
                 // Change the theme.
                 controller.toggleTheme()
 
                 onNodeWithText(localizationDictionary.values.first().value)
                     .assertIsDisplayed()
-                    .assertTextBackgroundColorEquals(expectedDarkColor)
+                    .assertBackgroundColorEquals(expectedDarkColor)
             }
         )
     }
 
     private fun themeChangingTest(
         component: TextComponent,
-        assertBlock: ComposeTestRule.(ThemeController) -> Unit,
+        assert: ComposeTestRule.(ThemeController) -> Unit,
     ): Unit = with(composeTestRule) {
         setContent {
             // We don't want to recreate the entire tree every time the theme, or any other state, changes.
@@ -168,7 +173,7 @@ class TextComponentViewTests {
             }
         }
 
-        assertBlock(ThemeController(this))
+        assert(ThemeController(this))
     }
 
     private class ThemeController(private val composeTestRule: ComposeTestRule) {
@@ -185,26 +190,13 @@ class TextComponentViewTests {
     private fun setUiModeToLightTheme(uiMode: Int): Int =
         (uiMode and Configuration.UI_MODE_NIGHT_MASK.inv()) or Configuration.UI_MODE_NIGHT_NO
 
-    private fun SemanticsNodeInteraction.assertTextColorEquals(color: Color) =
-        assertTextLayoutResult("Text has color '$color'") {
-            it.layoutInput.style.color == color
-        }
-
-    private fun SemanticsNodeInteraction.assertTextBackgroundColorEquals(color: Color) =
-        assertTextLayoutResult("Text has background color '$color'") {
-            it.layoutInput.style.background == color
-        }
-
-    private fun SemanticsNodeInteraction.assertTextLayoutResult(
-        description: String,
-        predicate: (TextLayoutResult) -> Boolean,
-    ) = assert(
-        SemanticsMatcher(description) { node ->
-            val results = mutableListOf<TextLayoutResult>()
-            node.config[SemanticsActions.GetTextLayoutResult].action?.invoke(results)
-
-            if (results.isEmpty()) false
-            else predicate(results.first())
-        }
-    )
+    /**
+     * This is a very naive way of checking the background color: by just looking at the 16 top-left pixels. It works
+     * for the particular test where it is used, because the color is solid and the text is transparent, but it
+     * shouldn't be used more generally.
+     *
+     * See the documentation for [assertPixelColorEquals] for required annotations.
+     */
+    private fun SemanticsNodeInteraction.assertBackgroundColorEquals(color: Color): SemanticsNodeInteraction =
+        assertPixelColorEquals(startX = 0, startY = 0, width = 4, height = 4, color = color)
 }
