@@ -19,7 +19,7 @@ import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import com.revenuecat.purchases.ui.revenuecatui.R
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModel
-import com.revenuecat.purchases.ui.revenuecatui.data.loaded
+import com.revenuecat.purchases.ui.revenuecatui.data.loadedLegacy
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.PaywallTemplate
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvider
@@ -436,8 +436,8 @@ internal class MockViewModel(
     override val actionError: State<PurchasesError?>
         get() = _actionError
 
-    fun loadedState(): PaywallState.Loaded? {
-        return state.value.loaded()
+    fun loadedLegacyState(): PaywallState.Loaded.Legacy? {
+        return state.value.loadedLegacy()
     }
 
     private val _state = MutableStateFlow(

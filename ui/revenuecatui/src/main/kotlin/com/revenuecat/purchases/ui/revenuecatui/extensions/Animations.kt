@@ -22,7 +22,7 @@ internal fun PaywallViewModel.packageButtonActionInProgressOpacityAnimation(): F
 }
 
 @Composable
-internal fun PaywallState.Loaded.packageButtonColorAnimation(
+internal fun PaywallState.Loaded.Legacy.packageButtonColorAnimation(
     packageInfo: TemplateConfiguration.PackageInfo,
     selectedColor: Color,
     unselectedColor: Color,

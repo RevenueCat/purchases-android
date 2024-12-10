@@ -81,15 +81,16 @@ internal fun LoadingPaywall(
         // and snapshots ensure that these 2 states are impossible.
         is PaywallState.Error,
         is PaywallState.Loading,
+        is PaywallState.Loaded.Components,
         -> Box {}
 
-        is PaywallState.Loaded -> LoadingPaywall(state, LoadingViewModel(state, resourceProvider), onDismiss)
+        is PaywallState.Loaded.Legacy -> LoadingPaywall(state, LoadingViewModel(state, resourceProvider), onDismiss)
     }
 }
 
 @Composable
 private fun LoadingPaywall(
-    state: PaywallState.Loaded,
+    state: PaywallState.Loaded.Legacy,
     viewModel: PaywallViewModel,
     onDismiss: () -> Unit,
 ) {

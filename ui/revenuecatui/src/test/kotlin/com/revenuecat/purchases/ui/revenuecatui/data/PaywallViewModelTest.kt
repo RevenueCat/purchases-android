@@ -18,12 +18,12 @@ import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.Transaction
 import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.paywalls.events.PaywallEventType
-import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogic
-import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicWithCallback
-import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
+import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogic
+import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult
+import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicWithCallback
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
@@ -457,7 +457,7 @@ class PaywallViewModelTest {
         coVerify { purchases.awaitOfferings() }
 
         val state = model.state.value
-        if (state !is PaywallState.Loaded) {
+        if (state !is PaywallState.Loaded.Legacy) {
             fail("Invalid state")
             return
         }
@@ -526,7 +526,7 @@ class PaywallViewModelTest {
         coVerify(exactly = 0) { purchases.awaitOfferings() }
 
         val state = model.state.value
-        if (state !is PaywallState.Loaded) {
+        if (state !is PaywallState.Loaded.Legacy) {
             fail("Invalid state")
             return
         }
@@ -541,7 +541,7 @@ class PaywallViewModelTest {
         val model = create()
 
         val state = model.state.value
-        if (state !is PaywallState.Loaded) {
+        if (state !is PaywallState.Loaded.Legacy) {
             fail("Invalid state")
             return
         }
@@ -558,7 +558,7 @@ class PaywallViewModelTest {
         val model = create()
 
         val state = model.state.value
-        if (state !is PaywallState.Loaded) {
+        if (state !is PaywallState.Loaded.Legacy) {
             fail("Invalid state")
             return
         }
@@ -592,7 +592,7 @@ class PaywallViewModelTest {
         val model = create()
 
         val state = model.state.value
-        if (state !is PaywallState.Loaded) {
+        if (state !is PaywallState.Loaded.Legacy) {
             fail("Invalid state")
             return
         }
@@ -624,7 +624,7 @@ class PaywallViewModelTest {
         val model = create()
 
         val state = model.state.value
-        if (state !is PaywallState.Loaded) {
+        if (state !is PaywallState.Loaded.Legacy) {
             fail("Invalid state")
             return
         }
@@ -684,7 +684,7 @@ class PaywallViewModelTest {
         val model = create()
 
         val state = model.state.value
-        if (state !is PaywallState.Loaded) {
+        if (state !is PaywallState.Loaded.Legacy) {
             fail("Invalid state")
             return
         }
@@ -715,7 +715,7 @@ class PaywallViewModelTest {
         val model = create()
 
         val state = model.state.value
-        if (state !is PaywallState.Loaded) {
+        if (state !is PaywallState.Loaded.Legacy) {
             fail("Invalid state")
             return
         }
@@ -905,7 +905,7 @@ class PaywallViewModelTest {
     }
 
     private fun verifyPaywall(
-        state: PaywallState.Loaded,
+        state: PaywallState.Loaded.Legacy,
         expectedPaywall: PaywallData,
     ) {
         assertThat(state.selectedPackage.value.rcPackage.identifier)

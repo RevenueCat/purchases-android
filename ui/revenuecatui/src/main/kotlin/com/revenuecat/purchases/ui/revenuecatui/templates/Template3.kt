@@ -60,7 +60,7 @@ private object Template3UIConstants {
 
 @Composable
 internal fun Template3(
-    state: PaywallState.Loaded,
+    state: PaywallState.Loaded.Legacy,
     viewModel: PaywallViewModel,
 ) {
     Column {
@@ -75,7 +75,7 @@ internal fun Template3(
 }
 
 @Composable
-private fun ColumnScope.PortraitContent(state: PaywallState.Loaded, viewModel: PaywallViewModel) {
+private fun ColumnScope.PortraitContent(state: PaywallState.Loaded.Legacy, viewModel: PaywallViewModel) {
     if (state.isInFullScreenMode) {
         Column(
             modifier = Modifier
@@ -104,7 +104,7 @@ private fun ColumnScope.PortraitContent(state: PaywallState.Loaded, viewModel: P
 }
 
 @Composable
-private fun ColumnScope.LandscapeContent(state: PaywallState.Loaded, viewModel: PaywallViewModel) {
+private fun ColumnScope.LandscapeContent(state: PaywallState.Loaded.Legacy, viewModel: PaywallViewModel) {
     Row(
         horizontalArrangement = Arrangement.Absolute.SpaceEvenly,
         verticalAlignment = Alignment.CenterVertically,
@@ -136,7 +136,7 @@ private fun ColumnScope.LandscapeContent(state: PaywallState.Loaded, viewModel: 
 
 @Composable
 private fun Icon(
-    state: PaywallState.Loaded,
+    state: PaywallState.Loaded.Legacy,
 ) {
     IconImage(
         uri = state.templateConfiguration.images.iconUri,
@@ -148,7 +148,7 @@ private fun Icon(
 
 @Composable
 private fun Title(
-    state: PaywallState.Loaded,
+    state: PaywallState.Loaded.Legacy,
 ) {
     Markdown(
         style = MaterialTheme.typography.headlineMedium,
@@ -162,7 +162,7 @@ private fun Title(
 
 @Composable
 private fun ColumnScope.Features(
-    state: PaywallState.Loaded,
+    state: PaywallState.Loaded.Legacy,
     spacing: Dp,
 ) {
     val features = state.selectedLocalization.features

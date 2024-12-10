@@ -21,7 +21,7 @@ import com.revenuecat.purchases.ui.revenuecatui.extensions.introEligibility
  */
 @Composable
 internal fun OfferDetails(
-    state: PaywallState.Loaded,
+    state: PaywallState.Loaded.Legacy,
     colors: TemplateConfiguration.Colors = state.templateConfiguration.getCurrentColors(),
 ) {
     OfferDetails(state = state, color = colors.text1)
@@ -33,7 +33,7 @@ internal fun OfferDetails(
  */
 @Composable
 internal fun OfferDetails(
-    state: PaywallState.Loaded,
+    state: PaywallState.Loaded.Legacy,
     color: Color,
 ) {
     Box(

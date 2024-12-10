@@ -33,7 +33,7 @@ internal fun hasCompactDimension(): Boolean {
 
 @Composable
 @ReadOnlyComposable
-internal fun PaywallState.Loaded.shouldUseLandscapeLayout(): Boolean {
+internal fun PaywallState.Loaded.Legacy.shouldUseLandscapeLayout(): Boolean {
     return shouldUseLandscapeLayout(mode = templateConfiguration.mode)
 }
 
