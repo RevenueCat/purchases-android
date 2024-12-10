@@ -37,9 +37,9 @@ internal fun Background.toBackgroundStyle(): BackgroundStyle =
             val imageUrls = value.urlsForCurrentTheme
             BackgroundStyle.Image(
                 painter = rememberAsyncImagePainter(
-                    model = imageUrls.webp,
+                    model = imageUrls.webp.toString(),
                     placeholder = rememberAsyncImagePainter(
-                        model = imageUrls.webpLowRes,
+                        model = imageUrls.webpLowRes.toString(),
                         error = null,
                         fallback = null,
                         contentScale = ContentScale.Crop,
@@ -136,4 +136,5 @@ private fun Background_Preview_ColorGradientRadial() {
     )
 }
 
-// We cannot use a network image in Compose previews, so we don't have a preview for Background.Image.
+// We cannot use a network image in Compose previews, so we don't have a preview for Background.Image. Instead, we have
+// some tests in BackgroundTests.
