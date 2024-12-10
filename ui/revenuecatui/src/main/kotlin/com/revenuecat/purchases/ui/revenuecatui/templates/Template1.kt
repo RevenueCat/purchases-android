@@ -58,7 +58,7 @@ import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
 import com.revenuecat.purchases.ui.revenuecatui.helpers.shouldUseLandscapeLayout
 
 @Composable
-internal fun Template1(state: PaywallState.Loaded, viewModel: PaywallViewModel) {
+internal fun Template1(state: PaywallState.Loaded.Legacy, viewModel: PaywallViewModel) {
     Column(
         modifier = Modifier
             .fillMaxWidth(),
@@ -72,7 +72,7 @@ internal fun Template1(state: PaywallState.Loaded, viewModel: PaywallViewModel) 
 
 @SuppressWarnings("LongMethod")
 @Composable
-private fun ColumnScope.Template1MainContent(state: PaywallState.Loaded) {
+private fun ColumnScope.Template1MainContent(state: PaywallState.Loaded.Legacy) {
     val localizedConfig = state.selectedLocalization
     val colors = state.currentColors
 

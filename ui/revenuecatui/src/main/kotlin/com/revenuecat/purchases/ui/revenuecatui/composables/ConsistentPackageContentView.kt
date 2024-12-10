@@ -10,7 +10,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfigura
 
 @Composable
 internal fun ConsistentPackageContentView(
-    state: PaywallState.Loaded,
+    state: PaywallState.Loaded.Legacy,
     creator: @Composable (TemplateConfiguration.PackageInfo) -> Unit,
 ) {
     ConsistentPackageContentView(

@@ -153,7 +153,7 @@ internal fun Offering.toPaywallState(
         return PaywallState.Error(it.message ?: "Unknown error")
     }
 
-    return PaywallState.Loaded(
+    return PaywallState.Loaded.Legacy(
         offering = this,
         templateConfiguration = templateConfiguration,
         selectedPackage = templateConfiguration.packages.default,

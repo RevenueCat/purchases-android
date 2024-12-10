@@ -98,7 +98,7 @@ private object Template4UIConstants {
 
 @Composable
 internal fun Template4(
-    state: PaywallState.Loaded,
+    state: PaywallState.Loaded.Legacy,
     viewModel: PaywallViewModel,
 ) {
     if (state.isInFullScreenMode) {
@@ -144,7 +144,7 @@ internal fun Template4(
 
 @Composable
 private fun Template4MainContent(
-    state: PaywallState.Loaded,
+    state: PaywallState.Loaded.Legacy,
     viewModel: PaywallViewModel,
 ) {
     val colors = state.templateConfiguration.getCurrentColors()
@@ -212,7 +212,7 @@ private fun Template4MainContent(
 
 @Composable
 private fun Packages(
-    state: PaywallState.Loaded,
+    state: PaywallState.Loaded.Legacy,
     viewModel: PaywallViewModel,
 ) {
     @SuppressWarnings("MagicNumber")
@@ -261,7 +261,7 @@ private fun Packages(
 @SuppressWarnings("LongMethod")
 @Composable
 private fun SelectPackageButton(
-    state: PaywallState.Loaded,
+    state: PaywallState.Loaded.Legacy,
     packageInfo: TemplateConfiguration.PackageInfo,
     viewModel: PaywallViewModel,
     modifier: Modifier = Modifier,

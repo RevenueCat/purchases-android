@@ -10,54 +10,67 @@ import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfigura
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.isFullScreen
 
-internal sealed class PaywallState {
-    object Loading : PaywallState()
+internal sealed interface PaywallState {
+    object Loading : PaywallState
 
-    data class Error(val errorMessage: String) : PaywallState() {
+    data class Error(val errorMessage: String) : PaywallState {
         init {
             Logger.e("Paywall transitioned to error state: $errorMessage")
         }
     }
 
-    data class Loaded(
-        val offering: Offering,
-        val templateConfiguration: TemplateConfiguration,
-        val selectedPackage: MutableState<TemplateConfiguration.PackageInfo>,
-        val shouldDisplayDismissButton: Boolean,
-    ) : PaywallState() {
-        constructor(
-            offering: Offering,
-            templateConfiguration: TemplateConfiguration,
-            selectedPackage: TemplateConfiguration.PackageInfo,
-            shouldDisplayDismissButton: Boolean,
-        ) :
-            this(
-                offering,
-                templateConfiguration,
-                mutableStateOf(selectedPackage),
-                shouldDisplayDismissButton,
-            )
+    sealed interface Loaded : PaywallState {
+        val offering: Offering
 
-        fun selectPackage(packageInfo: TemplateConfiguration.PackageInfo) {
-            selectedPackage.value = packageInfo
+        data class Legacy(
+            override val offering: Offering,
+            val templateConfiguration: TemplateConfiguration,
+            val selectedPackage: MutableState<TemplateConfiguration.PackageInfo>,
+            val shouldDisplayDismissButton: Boolean,
+        ) : Loaded {
+
+            constructor(
+                offering: Offering,
+                templateConfiguration: TemplateConfiguration,
+                selectedPackage: TemplateConfiguration.PackageInfo,
+                shouldDisplayDismissButton: Boolean,
+            ) :
+                this(
+                    offering,
+                    templateConfiguration,
+                    mutableStateOf(selectedPackage),
+                    shouldDisplayDismissButton,
+                )
+
+            fun selectPackage(packageInfo: TemplateConfiguration.PackageInfo) {
+                selectedPackage.value = packageInfo
+            }
         }
+
+        data class Components(
+            override val offering: Offering,
+            // TODO val data: PaywallComponentsData,
+        ) : Loaded
     }
 }
 
-internal fun PaywallState.loaded(): PaywallState.Loaded? {
+internal fun PaywallState.loadedLegacy(): PaywallState.Loaded.Legacy? {
     return when (val state = this) {
         is PaywallState.Error -> null
-        is PaywallState.Loaded -> state
+        is PaywallState.Loaded -> when (state) {
+            is PaywallState.Loaded.Legacy -> state
+            is PaywallState.Loaded.Components -> null
+        }
         is PaywallState.Loading -> null
     }
 }
 
-internal val PaywallState.Loaded.selectedLocalization: ProcessedLocalizedConfiguration
+internal val PaywallState.Loaded.Legacy.selectedLocalization: ProcessedLocalizedConfiguration
     get() = selectedPackage.value.localization
 
-internal val PaywallState.Loaded.currentColors: TemplateConfiguration.Colors
+internal val PaywallState.Loaded.Legacy.currentColors: TemplateConfiguration.Colors
     @Composable @ReadOnlyComposable
     get() = templateConfiguration.getCurrentColors()
 
-internal val PaywallState.Loaded.isInFullScreenMode: Boolean
+internal val PaywallState.Loaded.Legacy.isInFullScreenMode: Boolean
     get() = templateConfiguration.mode.isFullScreen

@@ -131,7 +131,7 @@ internal class PaywallViewModelImpl(
 
     override fun selectPackage(packageToSelect: TemplateConfiguration.PackageInfo) {
         when (val currentState = _state.value) {
-            is PaywallState.Loaded -> {
+            is PaywallState.Loaded.Legacy -> {
                 currentState.selectPackage(packageToSelect)
             }
 
@@ -248,7 +248,7 @@ internal class PaywallViewModelImpl(
 
     private suspend fun handlePackagePurchase(activity: Activity) {
         when (val currentState = _state.value) {
-            is PaywallState.Loaded -> {
+            is PaywallState.Loaded.Legacy -> {
                 val selectedPackage = currentState.selectedPackage.value
                 if (!selectedPackage.currentlySubscribed) {
                     performPurchase(activity, selectedPackage.rcPackage)
@@ -441,7 +441,7 @@ internal class PaywallViewModelImpl(
     @Suppress("ReturnCount")
     private fun createEventData(): PaywallEvent.Data? {
         val currentState = state.value
-        if (currentState !is PaywallState.Loaded) {
+        if (currentState !is PaywallState.Loaded.Legacy) {
             Logger.e("Unexpected state trying to create event data: $currentState")
             return null
         }

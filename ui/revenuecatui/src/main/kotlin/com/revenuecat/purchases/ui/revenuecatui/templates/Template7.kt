@@ -91,7 +91,7 @@ private object Template7UIConstants {
 
 @Composable
 internal fun Template7(
-    state: PaywallState.Loaded,
+    state: PaywallState.Loaded.Legacy,
     viewModel: PaywallViewModel,
 ) {
     val packagesConfig = state.templateConfiguration.packages
@@ -153,7 +153,7 @@ internal fun Template7(
 @Suppress("LongMethod", "LongParameterList")
 @Composable
 private fun ColumnScope.Template7PortraitContent(
-    state: PaywallState.Loaded,
+    state: PaywallState.Loaded.Legacy,
     viewModel: PaywallViewModel,
     packageSelectionVisible: Boolean,
     tiers: List<TemplateConfiguration.TierInfo>,
@@ -241,7 +241,7 @@ private fun ColumnScope.Template7PortraitContent(
 @Composable
 @Suppress("LongMethod")
 private fun ColumnScope.Template7LandscapeContent(
-    state: PaywallState.Loaded,
+    state: PaywallState.Loaded.Legacy,
     viewModel: PaywallViewModel,
     tiers: List<TemplateConfiguration.TierInfo>,
     selectedTier: TemplateConfiguration.TierInfo,
@@ -335,7 +335,7 @@ private fun HeaderImage(uri: Uri?) {
 
 @Composable
 private fun ColumnScope.Title(
-    state: PaywallState.Loaded,
+    state: PaywallState.Loaded.Legacy,
     selectedTier: TemplateConfiguration.TierInfo,
 ) {
     val colorForTier = state.templateConfiguration.getCurrentColorsForTier(tier = selectedTier)
@@ -359,7 +359,7 @@ private fun selectedLocalizationForTier(tier: TemplateConfiguration.TierInfo): P
 
 @Composable
 private fun Features(
-    state: PaywallState.Loaded,
+    state: PaywallState.Loaded.Legacy,
     selectedTier: TemplateConfiguration.TierInfo,
 ) {
     val colorForTier = state.templateConfiguration.getCurrentColorsForTier(tier = selectedTier)
@@ -440,7 +440,7 @@ private fun Feature(
 
 @Composable
 private fun AnimatedPackages(
-    state: PaywallState.Loaded,
+    state: PaywallState.Loaded.Legacy,
     viewModel: PaywallViewModel,
     packageSelectionVisible: Boolean = true,
     packages: List<TemplateConfiguration.PackageInfo>,
@@ -487,7 +487,7 @@ private fun AnimatedPackages(
 @SuppressWarnings("LongMethod")
 @Composable
 private fun ColumnScope.SelectPackageButton(
-    state: PaywallState.Loaded,
+    state: PaywallState.Loaded.Legacy,
     packageInfo: TemplateConfiguration.PackageInfo,
     viewModel: PaywallViewModel,
     colors: TemplateConfiguration.Colors,
@@ -577,7 +577,7 @@ private fun CheckmarkBox(isSelected: Boolean, colors: TemplateConfiguration.Colo
 
 @Composable
 private fun RowScope.DiscountBanner(
-    state: PaywallState.Loaded,
+    state: PaywallState.Loaded.Legacy,
     packageInfo: TemplateConfiguration.PackageInfo,
     colors: TemplateConfiguration.Colors,
 ) {

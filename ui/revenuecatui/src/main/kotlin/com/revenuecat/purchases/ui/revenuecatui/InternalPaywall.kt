@@ -53,6 +53,7 @@ import com.revenuecat.purchases.ui.revenuecatui.templates.Template4
 import com.revenuecat.purchases.ui.revenuecatui.templates.Template5
 import com.revenuecat.purchases.ui.revenuecatui.templates.Template7
 
+@Suppress("LongMethod")
 @Composable
 internal fun InternalPaywall(
     options: PaywallOptions,
@@ -80,11 +81,11 @@ internal fun InternalPaywall(
         }
 
         AnimatedVisibility(
-            visible = state is PaywallState.Loaded,
+            visible = state is PaywallState.Loaded.Legacy,
             enter = fadeIn(animationSpec = defaultAnimation()),
             exit = fadeOut(animationSpec = defaultAnimation()),
         ) {
-            if (state is PaywallState.Loaded) {
+            if (state is PaywallState.Loaded.Legacy) {
                 LoadedPaywall(state = state, viewModel = viewModel)
             } else {
                 Logger.e(
@@ -117,7 +118,7 @@ internal fun InternalPaywall(
 }
 
 @Composable
-private fun LoadedPaywall(state: PaywallState.Loaded, viewModel: PaywallViewModel) {
+private fun LoadedPaywall(state: PaywallState.Loaded.Legacy, viewModel: PaywallViewModel) {
     viewModel.trackPaywallImpressionIfNeeded()
     val backgroundColor = state.templateConfiguration.getCurrentColors().background
     Box(
@@ -157,7 +158,7 @@ private fun LoadedPaywall(state: PaywallState.Loaded, viewModel: PaywallViewMode
 }
 
 @Composable
-private fun TemplatePaywall(state: PaywallState.Loaded, viewModel: PaywallViewModel) {
+private fun TemplatePaywall(state: PaywallState.Loaded.Legacy, viewModel: PaywallViewModel) {
     when (state.templateConfiguration.template) {
         PaywallTemplate.TEMPLATE_1 -> Template1(state = state, viewModel = viewModel)
         PaywallTemplate.TEMPLATE_2 -> Template2(state = state, viewModel = viewModel)
@@ -191,7 +192,7 @@ internal fun getPaywallViewModel(
 
 @ReadOnlyComposable
 @Composable
-private fun PaywallState.Loaded.contextWithConfiguration(configuration: Configuration): Context {
+private fun PaywallState.Loaded.Legacy.contextWithConfiguration(configuration: Configuration): Context {
     val context = LocalContext.current
 
     // Context.createConfigurationContext returns `null` with Paparazzi
@@ -200,7 +201,7 @@ private fun PaywallState.Loaded.contextWithConfiguration(configuration: Configur
 
 @ReadOnlyComposable
 @Composable
-private fun PaywallState.Loaded.configurationWithOverriddenLocale(): Configuration {
+private fun PaywallState.Loaded.Legacy.configurationWithOverriddenLocale(): Configuration {
     val configuration = Configuration(LocalConfiguration.current)
     configuration.setLocale(templateConfiguration.locale)
 

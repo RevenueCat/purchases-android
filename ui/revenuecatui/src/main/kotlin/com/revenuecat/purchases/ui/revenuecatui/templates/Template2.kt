@@ -87,7 +87,7 @@ private object Template2UIConstants {
  */
 @Composable
 internal fun Template2(
-    state: PaywallState.Loaded,
+    state: PaywallState.Loaded.Legacy,
     viewModel: PaywallViewModel,
     childModifier: Modifier = Modifier,
 ) {
@@ -132,7 +132,7 @@ internal fun Template2(
 @Suppress("LongMethod")
 @Composable
 private fun ColumnScope.Template2PortraitContent(
-    state: PaywallState.Loaded,
+    state: PaywallState.Loaded.Legacy,
     viewModel: PaywallViewModel,
     packageSelectionVisible: Boolean,
     childModifier: Modifier,
@@ -182,7 +182,7 @@ private fun ColumnScope.Template2PortraitContent(
 @Suppress("LongMethod")
 @Composable
 private fun ColumnScope.Template2LandscapeContent(
-    state: PaywallState.Loaded,
+    state: PaywallState.Loaded.Legacy,
     viewModel: PaywallViewModel,
     packageSelectionVisible: Boolean,
     childModifier: Modifier,
@@ -245,7 +245,7 @@ private fun ColumnScope.Template2LandscapeContent(
 
 @Composable
 private fun IconImage(
-    state: PaywallState.Loaded,
+    state: PaywallState.Loaded.Legacy,
     childModifier: Modifier,
 ) {
     IconImage(
@@ -258,7 +258,7 @@ private fun IconImage(
 
 @Composable
 private fun Title(
-    state: PaywallState.Loaded,
+    state: PaywallState.Loaded.Legacy,
     childModifier: Modifier,
     textAlign: TextAlign = TextAlign.Center,
 ) {
@@ -275,7 +275,7 @@ private fun Title(
 
 @Composable
 private fun Subtitle(
-    state: PaywallState.Loaded,
+    state: PaywallState.Loaded.Legacy,
     childModifier: Modifier,
     textAlign: TextAlign = TextAlign.Center,
 ) {
@@ -292,7 +292,7 @@ private fun Subtitle(
 
 @Composable
 private fun AnimatedPackages(
-    state: PaywallState.Loaded,
+    state: PaywallState.Loaded.Legacy,
     packageSelectionVisible: Boolean,
     landscapeLayout: Boolean,
     viewModel: PaywallViewModel,
@@ -340,7 +340,7 @@ private fun AnimatedPackages(
 @SuppressWarnings("LongMethod")
 @Composable
 private fun ColumnScope.SelectPackageButton(
-    state: PaywallState.Loaded,
+    state: PaywallState.Loaded.Legacy,
     packageInfo: TemplateConfiguration.PackageInfo,
     viewModel: PaywallViewModel,
     childModifier: Modifier,
