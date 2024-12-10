@@ -26,6 +26,7 @@ import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fi
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.background
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.composables.Markdown
 import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
@@ -35,16 +36,19 @@ internal fun TextComponentView(
     style: TextComponentStyle,
     modifier: Modifier = Modifier,
 ) {
+    val colorStyle = rememberColorStyle(scheme = style.color)
+    val backgroundColorStyle = style.backgroundColor?.let { rememberColorStyle(scheme = it) }
+
     // Get the text color if it's solid.
-    val color = when (style.color) {
-        is ColorStyle.Solid -> style.color.color
+    val color = when (colorStyle) {
+        is ColorStyle.Solid -> colorStyle.color
         is ColorStyle.Gradient -> Color.Unspecified
     }
     // Create a TextStyle with gradient if necessary.
-    val textStyle = when (style.color) {
+    val textStyle = when (colorStyle) {
         is ColorStyle.Solid -> LocalTextStyle.current
         is ColorStyle.Gradient -> LocalTextStyle.current.copy(
-            brush = style.color.brush,
+            brush = colorStyle.brush,
         )
     }
 
@@ -54,7 +58,7 @@ internal fun TextComponentView(
             modifier = modifier
                 .size(style.size, horizontalAlignment = style.horizontalAlignment)
                 .padding(style.margin)
-                .applyIfNotNull(style.backgroundColor) { background(it) }
+                .applyIfNotNull(backgroundColorStyle) { background(it) }
                 .padding(style.padding),
             color = color,
             fontSize = style.fontSize,
