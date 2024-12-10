@@ -72,7 +72,7 @@ class BackgroundTests {
         val sizePx = 100
         val testUrl = TestUrl.Blue
         val expectedColor = testUrl.color
-        val background = Background.Image(ThemeImageUrls(light = testUrl.toImageUrls()))
+        val background = Background.Image(ThemeImageUrls(light = testUrl.toImageUrls(size = sizePx)))
         setContent {
             val backgroundStyle = background.toBackgroundStyle()
             val sizeDp = with(LocalDensity.current) { sizePx.toDp() }
@@ -98,7 +98,7 @@ class BackgroundTests {
         val sizePx = 100
         val testUrl = TestUrl.Blue
         val expectedColor = testUrl.color
-        val background = Background.Image(ThemeImageUrls(light = testUrl.toImageUrls()))
+        val background = Background.Image(ThemeImageUrls(light = testUrl.toImageUrls(size = sizePx)))
         setContent {
             val backgroundStyle = background.toBackgroundStyle()
             val sizeDp = with(LocalDensity.current) { sizePx.toDp() }
@@ -134,12 +134,12 @@ class BackgroundTests {
         }
     }
 
-    private fun TestUrl.toImageUrls(): ImageUrls =
+    private fun TestUrl.toImageUrls(size: Int): ImageUrls =
         ImageUrls(
             original = URL(urlString),
             webp = URL(urlString),
             webpLowRes = URL(urlString),
-            width = 100u,
-            height = 100u,
+            width = size.toUInt(),
+            height = size.toUInt(),
         )
 }
