@@ -80,7 +80,7 @@ private fun PaywallData.validate(): Result<PaywallTemplate> {
 
             // Images are optional so just logging if they are missing
             tierIds.getMissingElements(config.imagesByTier?.keys)?.let {
-                Logger.w("Missing images for tiers $it")
+                Logger.w("Missing images for tier(s): ${it.joinToString(",")}")
             }
 
             // Step 3: Validate all tiers are in localizations
