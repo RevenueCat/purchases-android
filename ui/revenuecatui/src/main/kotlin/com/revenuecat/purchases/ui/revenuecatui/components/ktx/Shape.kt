@@ -1,3 +1,5 @@
+@file:JvmSynthetic
+
 package com.revenuecat.purchases.ui.revenuecatui.components.ktx
 
 import androidx.compose.foundation.shape.RoundedCornerShape

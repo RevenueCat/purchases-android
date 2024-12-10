@@ -154,7 +154,7 @@ internal class StyleFactory(
         variables: VariableDataProvider,
         locale: Locale,
     ): String {
-        val processedText by remember(packageContext) {
+        val processedText by remember(packageContext, variables, locale) {
             derivedStateOf {
                 packageContext.selectedPackage?.let { selectedPackage ->
                     val discount = discountPercentage(
