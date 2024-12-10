@@ -70,17 +70,17 @@ private fun PaywallData.validate(): Result<PaywallTemplate> {
                 return Result.failure(PaywallValidationError.MissingTiers)
             }
 
-            // Step 2: Validate all tiers is in colors and images
+            // Step 2: Validate all tiers is in colors
             val tierIds = tiers.map { it.id }.toSet()
             tierIds.getMissingElements(config.colorsByTier?.keys)?.let {
                 return Result.failure(
                     PaywallValidationError.MissingTierConfigurations(it),
                 )
             }
+
+            // Images are optional so just logging if they are missing
             tierIds.getMissingElements(config.imagesByTier?.keys)?.let {
-                return Result.failure(
-                    PaywallValidationError.MissingTierConfigurations(it),
-                )
+                Logger.w("Missing images for tiers $it")
             }
 
             // Step 3: Validate all tiers are in localizations
