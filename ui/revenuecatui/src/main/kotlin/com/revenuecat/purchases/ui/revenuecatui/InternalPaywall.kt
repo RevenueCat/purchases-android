@@ -53,7 +53,6 @@ import com.revenuecat.purchases.ui.revenuecatui.templates.Template4
 import com.revenuecat.purchases.ui.revenuecatui.templates.Template5
 import com.revenuecat.purchases.ui.revenuecatui.templates.Template7
 
-@Suppress("LongMethod")
 @Composable
 internal fun InternalPaywall(
     options: PaywallOptions,
