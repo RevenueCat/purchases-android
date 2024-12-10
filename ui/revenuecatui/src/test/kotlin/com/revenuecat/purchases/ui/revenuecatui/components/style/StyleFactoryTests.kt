@@ -13,7 +13,6 @@ import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState
 import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition
-import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.state.PackageContext
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvider
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockResourceProvider
@@ -65,11 +64,10 @@ class StyleFactoryTests {
     @Test
     fun `Should create a single TextComponentStyle for a single TextComponent`() = composeTestRule.setContent {
         // Arrange
+        val expectedColorScheme = ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb()))
         val textComponent = TextComponent(
             text = LOCALIZATION_KEY_TEXT_1,
-            color = ColorScheme(
-                light = ColorInfo.Hex(Color.Red.toArgb())
-            ),
+            color = expectedColorScheme,
         )
 
         // Act
@@ -79,7 +77,7 @@ class StyleFactoryTests {
         assertThat(result).isInstanceOf(Result.Success::class.java)
         val style = (result as Result.Success).value as TextComponentStyle
         assertThat(style.text).isEqualTo(localizationDictionary[LOCALIZATION_KEY_TEXT_1]!!.value)
-        assertThat(style.color).isEqualTo(ColorStyle.Solid(Color.Red))
+        assertThat(style.color).isEqualTo(expectedColorScheme)
     }
 
     @Test
