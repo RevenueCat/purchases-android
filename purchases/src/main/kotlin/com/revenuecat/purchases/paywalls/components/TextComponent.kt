@@ -25,7 +25,7 @@ import kotlinx.serialization.Serializable
 @SerialName("text")
 class TextComponent
 @Suppress("LongParameterList")
-internal constructor(
+constructor(
     @get:JvmSynthetic
     @SerialName("text_lid")
     val text: LocalizationKey,

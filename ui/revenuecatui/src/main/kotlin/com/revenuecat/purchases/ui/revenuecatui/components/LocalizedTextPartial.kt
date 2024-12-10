@@ -3,6 +3,10 @@ package com.revenuecat.purchases.ui.revenuecatui.components
 import com.revenuecat.purchases.paywalls.components.PartialTextComponent
 import com.revenuecat.purchases.paywalls.components.common.LocalizationDictionary
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.string
+import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
+import com.revenuecat.purchases.ui.revenuecatui.helpers.Result
+import com.revenuecat.purchases.ui.revenuecatui.helpers.map
+import com.revenuecat.purchases.ui.revenuecatui.helpers.orSuccessfullyNull
 import dev.drewhamilton.poko.Poko
 
 @Poko
@@ -21,16 +25,16 @@ internal class LocalizedTextPartial private constructor(
         operator fun invoke(
             from: PartialTextComponent,
             using: LocalizationDictionary,
-        ): Result<LocalizedTextPartial> {
-            val stringResult: Result<String?> = from.text?.let(using::string) ?: Result.success(null)
-
-            return stringResult.map { string ->
-                LocalizedTextPartial(
-                    text = string,
-                    partial = from,
-                )
-            }
-        }
+        ): Result<LocalizedTextPartial, PaywallValidationError> =
+            from.text
+                ?.let(using::string)
+                .orSuccessfullyNull()
+                .map { string: String? ->
+                    LocalizedTextPartial(
+                        text = string,
+                        partial = from,
+                    )
+                }
     }
 
     @JvmSynthetic

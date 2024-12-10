@@ -11,6 +11,9 @@ import com.revenuecat.purchases.paywalls.components.properties.HorizontalAlignme
 import com.revenuecat.purchases.paywalls.components.properties.Padding
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fixed
+import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
+import com.revenuecat.purchases.ui.revenuecatui.helpers.isError
+import com.revenuecat.purchases.ui.revenuecatui.helpers.isSuccess
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.junit.experimental.runners.Enclosed
@@ -450,7 +453,7 @@ internal class LocalizedTextPartialTests {
             )
 
             // Assert
-            assert(actualResult.isFailure)
+            assert(actualResult.isError)
         }
 
         @Test
