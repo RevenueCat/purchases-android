@@ -5,6 +5,7 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.mutableStateOf
 import com.revenuecat.purchases.Offering
+import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.ProcessedLocalizedConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
@@ -49,7 +50,7 @@ internal sealed interface PaywallState {
 
         data class Components(
             override val offering: Offering,
-            // TODO val data: PaywallComponentsData,
+            val data: PaywallComponentsData,
         ) : Loaded
     }
 }

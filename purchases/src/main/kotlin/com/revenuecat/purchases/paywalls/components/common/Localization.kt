@@ -16,7 +16,7 @@ import kotlinx.serialization.encoding.Encoder
 @InternalRevenueCatAPI
 @Serializable
 @JvmInline
-internal value class LocaleId(@get:JvmSynthetic val value: String)
+value class LocaleId(@get:JvmSynthetic val value: String)
 
 @InternalRevenueCatAPI
 @Serializable
