@@ -6,8 +6,10 @@ import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
+import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.validatedPaywall
-import kotlinx.serialization.decodeFromString
+import io.mockk.mockkObject
+import io.mockk.verify
 import kotlinx.serialization.json.Json
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
@@ -180,7 +182,7 @@ class PaywallDataValidationTest {
     }
 
     @Test
-    fun `Missing image tier in multi-tier config generate default paywall`() {
+    fun `Missing image tier in multi-tier config only logs a warning`() {
         val originalOffering = TestData.template7Offering
 
         val paywall = originalOffering.paywall!!.let { originalPaywall ->
@@ -193,17 +195,14 @@ class PaywallDataValidationTest {
             originalPaywall.copy(config = config)
         }
 
+        mockkObject(Logger)
+
         val offering = originalOffering.copy(paywall = paywall)
         val paywallValidationResult = getPaywallValidationResult(offering)
         verifyPackages(paywallValidationResult.displayablePaywall, originalOffering.paywall!!)
-        compareWithDefaultTemplate(
-            paywallValidationResult.displayablePaywall,
-            // Skipping because there are none but they will show in the paywall from createPackageConfiguration
-            skipPackageIds = true,
-        )
-        assertThat(paywallValidationResult.error).isEqualTo(
-            PaywallValidationError.MissingTierConfigurations(setOf("basic"))
-        )
+
+        assertThat(paywallValidationResult.error).isNull()
+        verify { Logger.w("Missing images for tier(s): basic") }
     }
 
     @Test
