@@ -2,13 +2,15 @@ package com.revenuecat.purchases.paywalls.components.common
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.utils.serializers.URLSerializer
+import dev.drewhamilton.poko.Poko
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import java.net.URL
 
 @InternalRevenueCatAPI
+@Poko
 @Serializable
-internal data class PaywallComponentsData(
+class PaywallComponentsData(
     @get:JvmSynthetic
     @SerialName("template_name")
     val templateName: String,

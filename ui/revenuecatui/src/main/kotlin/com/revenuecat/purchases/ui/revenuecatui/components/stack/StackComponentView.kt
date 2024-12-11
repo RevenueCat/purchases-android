@@ -28,8 +28,7 @@ import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fit
 import com.revenuecat.purchases.paywalls.components.properties.TwoDimensionalAlignment
 import com.revenuecat.purchases.paywalls.components.properties.VerticalAlignment
-import com.revenuecat.purchases.ui.revenuecatui.components.button.ButtonComponentView
-import com.revenuecat.purchases.ui.revenuecatui.components.image.ImageComponentView
+import com.revenuecat.purchases.ui.revenuecatui.components.ComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toAlignment
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toHorizontalAlignmentOrNull
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toHorizontalArrangement
@@ -43,11 +42,8 @@ import com.revenuecat.purchases.ui.revenuecatui.components.properties.Background
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BorderStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle.Solid
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ShadowStyle
-import com.revenuecat.purchases.ui.revenuecatui.components.style.ButtonComponentStyle
-import com.revenuecat.purchases.ui.revenuecatui.components.style.ImageComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
-import com.revenuecat.purchases.ui.revenuecatui.components.text.TextComponentView
 import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
 
 @Suppress("LongMethod")
@@ -69,16 +65,7 @@ internal fun StackComponentView(
         }
 
         val content: @Composable () -> Unit = remember(style.children) {
-            @Composable {
-                style.children.forEach { child ->
-                    when (child) {
-                        is StackComponentStyle -> StackComponentView(style = child)
-                        is TextComponentStyle -> TextComponentView(style = child)
-                        is ImageComponentStyle -> ImageComponentView(style = child)
-                        is ButtonComponentStyle -> ButtonComponentView(style = child)
-                    }
-                }
-            }
+            @Composable { style.children.forEach { child -> ComponentView(style = child) } }
         }
 
         // Show the right container composable depending on the dimension.

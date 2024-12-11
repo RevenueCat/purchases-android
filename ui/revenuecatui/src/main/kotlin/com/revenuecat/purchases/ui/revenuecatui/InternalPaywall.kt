@@ -32,6 +32,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.ui.revenuecatui.UIConstant.defaultAnimation
+import com.revenuecat.purchases.ui.revenuecatui.components.LoadedPaywallComponents
 import com.revenuecat.purchases.ui.revenuecatui.composables.CloseButton
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModel
@@ -53,6 +54,7 @@ import com.revenuecat.purchases.ui.revenuecatui.templates.Template4
 import com.revenuecat.purchases.ui.revenuecatui.templates.Template5
 import com.revenuecat.purchases.ui.revenuecatui.templates.Template7
 
+@Suppress("LongMethod")
 @Composable
 internal fun InternalPaywall(
     options: PaywallOptions,
@@ -90,6 +92,21 @@ internal fun InternalPaywall(
                 Logger.e(
                     "State is not loaded while transitioning animation. This may happen if state changes from " +
                         "being loaded to a different state. This should not happen.",
+                )
+            }
+        }
+
+        AnimatedVisibility(
+            visible = state is PaywallState.Loaded.Components,
+            enter = fadeIn(animationSpec = defaultAnimation()),
+            exit = fadeOut(animationSpec = defaultAnimation()),
+        ) {
+            if (state is PaywallState.Loaded.Components) {
+                LoadedPaywallComponents(state = state)
+            } else {
+                Logger.e(
+                    "State is not Loaded.Components while transitioning animation. This may happen if state changes " +
+                        "from being loaded to a different state. This should not happen.",
                 )
             }
         }
