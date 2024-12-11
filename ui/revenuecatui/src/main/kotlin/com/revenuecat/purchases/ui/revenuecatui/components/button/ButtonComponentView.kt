@@ -1,3 +1,5 @@
+@file:JvmSynthetic
+
 package com.revenuecat.purchases.ui.revenuecatui.components.button
 
 import androidx.compose.foundation.clickable
@@ -43,11 +45,11 @@ internal fun ButtonComponentView(
 @Preview
 @Composable
 private fun ButtonComponentView_Preview_Default() {
-    ButtonComponentView(previewButtonComponentViewStyle())
+    ButtonComponentView(previewButtonComponentStyle())
 }
 
 @Composable
-private fun previewButtonComponentViewStyle(
+private fun previewButtonComponentStyle(
     stackComponentStyle: StackComponentStyle = StackComponentStyle(
         visible = true,
         children = listOf(
