@@ -23,7 +23,7 @@ import kotlinx.serialization.Serializable
 @Poko
 @Serializable
 @SerialName("stack")
-class StackComponent internal constructor(
+class StackComponent(
     @get:JvmSynthetic
     val components: List<PaywallComponent>,
     @get:JvmSynthetic
