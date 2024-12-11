@@ -31,7 +31,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.testdata.templates.template
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.templates.template7
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.templates.template7CustomPackages
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ResourceProvider
-import com.revenuecat.purchases.ui.revenuecatui.helpers.toPaywallState
+import com.revenuecat.purchases.ui.revenuecatui.helpers.toLegacyPaywallState
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -441,7 +441,7 @@ internal class MockViewModel(
     }
 
     private val _state = MutableStateFlow(
-        offering.toPaywallState(
+        offering.toLegacyPaywallState(
             variableDataProvider = VariableDataProvider(resourceProvider),
             activelySubscribedProductIdentifiers = setOf(),
             nonSubscriptionProductIdentifiers = setOf(),
