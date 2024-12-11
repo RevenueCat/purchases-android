@@ -11,7 +11,7 @@ import kotlinx.serialization.Serializable
 @InternalRevenueCatAPI
 @Poko
 @Serializable
-class CornerRadiuses internal constructor(
+class CornerRadiuses(
     /**
      * The top-leading, or top-start, corner radius, in dp.
      */
