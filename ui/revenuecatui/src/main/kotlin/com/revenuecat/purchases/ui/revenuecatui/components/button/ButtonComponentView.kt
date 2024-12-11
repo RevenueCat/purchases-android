@@ -53,7 +53,7 @@ private fun previewButtonComponentViewStyle(
         children = listOf(
             TextComponentStyle(
                 visible = true,
-                text = "Hello World",
+                text = "Restore purchases",
                 color = ColorScheme(
                     light = ColorInfo.Hex(Color.Black.toArgb()),
                 ),
