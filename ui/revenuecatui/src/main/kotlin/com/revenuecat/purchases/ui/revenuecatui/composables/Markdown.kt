@@ -202,7 +202,7 @@ private fun MDParagraph(
         val styledText = buildAnnotatedString {
             pushStyle(
                 style
-                    .copy(fontWeight = fontWeight)
+                    .copy(fontWeight = fontWeight, fontSize = fontSize)
                     .toSpanStyle(),
             )
             appendMarkdownChildren(paragraph as Node, color, allowLinks)
