@@ -96,12 +96,12 @@ class StackComponentViewTests {
                 theme.setLight()
                 onNodeWithTag("stack")
                     .assertIsDisplayed()
-                    .assertPixelColorEquals(startX = 0, startY = 0, width = 4, height = 4, color = expectedLightColor)
+                    .assertPixelColorEquals(expectedLightColor)
 
                 theme.setDark()
                 onNodeWithTag("stack")
                     .assertIsDisplayed()
-                    .assertPixelColorEquals(startX = 0, startY = 0, width = 4, height = 4, color = expectedDarkColor)
+                    .assertPixelColorEquals(expectedDarkColor)
             }
         )
     }
