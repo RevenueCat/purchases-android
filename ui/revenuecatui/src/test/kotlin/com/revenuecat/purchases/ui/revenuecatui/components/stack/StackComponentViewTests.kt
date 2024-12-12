@@ -1,5 +1,9 @@
 package com.revenuecat.purchases.ui.revenuecatui.components.stack
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.requiredSize
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
@@ -15,9 +19,12 @@ import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.properties.Border
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
+import com.revenuecat.purchases.paywalls.components.properties.Shadow
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fixed
+import com.revenuecat.purchases.ui.revenuecatui.assertions.assertNoPixelColorEquals
 import com.revenuecat.purchases.ui.revenuecatui.assertions.assertPixelColorEquals
+import com.revenuecat.purchases.ui.revenuecatui.assertions.assertPixelColorPercentage
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState
 import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition
 import com.revenuecat.purchases.ui.revenuecatui.components.state.PackageContext
@@ -36,6 +43,8 @@ import org.robolectric.annotation.GraphicsMode
 import org.robolectric.shadows.ShadowPixelCopy
 import java.util.Locale
 
+@GraphicsMode(GraphicsMode.Mode.NATIVE)
+@Config(shadows = [ShadowPixelCopy::class], sdk = [26])
 @RunWith(AndroidJUnit4::class)
 class StackComponentViewTests {
 
@@ -63,8 +72,6 @@ class StackComponentViewTests {
         )
     }
 
-    @GraphicsMode(GraphicsMode.Mode.NATIVE)
-    @Config(shadows = [ShadowPixelCopy::class], sdk = [26])
     @Test
     fun `Should change background color based on theme`(): Unit = with(composeTestRule) {
         // Arrange
@@ -99,13 +106,13 @@ class StackComponentViewTests {
         )
     }
 
-    @GraphicsMode(GraphicsMode.Mode.NATIVE)
-    @Config(shadows = [ShadowPixelCopy::class], sdk = [26])
     @Test
     fun `Should change border color based on theme`(): Unit = with(composeTestRule) {
         // Arrange
         val sizeDp = 100
         val borderWidthDp = 10.0
+        var sizePx: Int? = null
+        var borderWidthPx: Int? = null
         val expectedLightColor = Color.Red
         val expectedDarkColor = Color.Yellow
         val expectedBackgroundColor = Color.White
@@ -121,8 +128,6 @@ class StackComponentViewTests {
                 width = borderWidthDp
             ),
         )
-        var borderWidthPx: Int? = null
-        var sizePx: Int? = null
 
         themeChangingTest(
             arrange = {
@@ -157,11 +162,67 @@ class StackComponentViewTests {
         )
     }
 
-    @GraphicsMode(GraphicsMode.Mode.NATIVE)
-    @Config(shadows = [ShadowPixelCopy::class], sdk = [26])
     @Test
     fun `Should change shadow color based on theme`(): Unit = with(composeTestRule) {
-        // TODO
+        // Arrange
+        val parentSizeDp = 200
+        val stackSizeDp = 100
+        val expectedLightColor = Color.Red
+        val expectedDarkColor = Color.Yellow
+        val expectedBackgroundColor = Color.White
+        val component = StackComponent(
+            components = emptyList(),
+            size = Size(Fixed(stackSizeDp.toUInt()), Fixed(stackSizeDp.toUInt())),
+            shadow = Shadow(
+                color = ColorScheme(
+                    light = ColorInfo.Hex(expectedLightColor.toArgb()),
+                    dark = ColorInfo.Hex(expectedDarkColor.toArgb()),
+                ),
+                radius = 5.0,
+                x = 10.0,
+                y = 10.0,
+            ),
+            backgroundColor = ColorScheme(light = ColorInfo.Hex(expectedBackgroundColor.toArgb())),
+        )
+
+        themeChangingTest(
+            arrange = {
+                // We don't want to recreate the entire tree every time the theme, or any other state, changes.
+                styleFactory.create(component).getOrThrow() as StackComponentStyle
+            },
+            act = {
+                // An outer box, because a shadow draws outside the Composable's bounds.
+                Box(
+                    modifier = Modifier
+                        .testTag(tag = "parent")
+                        .requiredSize(parentSizeDp.dp)
+                        .background(expectedBackgroundColor),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    StackComponentView(style = it, modifier = Modifier.testTag("stack"))
+                }
+            },
+            assert = { theme ->
+                onNodeWithTag("stack")
+                    .assertIsDisplayed()
+                    // No inner shadow, so the entire stack should be the same color.
+                    .assertPixelColorEquals(expectedBackgroundColor)
+
+                theme.setLight()
+                onNodeWithTag("parent")
+                    .assertIsDisplayed()
+                    // When the shadow is drawn, at least some pixels are the exact color we're looking for.
+                    .assertPixelColorPercentage(expectedLightColor) { it > 0f }
+                    .assertNoPixelColorEquals(expectedDarkColor)
+
+                theme.setDark()
+                onNodeWithTag("parent")
+                    .assertIsDisplayed()
+                    // When the shadow is drawn, at least some pixels are the exact color we're looking for.
+                    .assertPixelColorPercentage(expectedDarkColor) { it > 0f }
+                    .assertNoPixelColorEquals(expectedLightColor)
+            }
+        )
     }
 
     /**
