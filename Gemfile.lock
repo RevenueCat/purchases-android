@@ -1,6 +1,6 @@
 GIT
   remote: https://github.com/RevenueCat/fastlane-plugin-revenuecat_internal
-  revision: 3b1e7cfc41048ead742195d56ec1c3c0070357ea
+  revision: 4ee857918d749a48393c3eaef2d78eb4f6b873e9
   branch: main
   specs:
     fastlane-plugin-revenuecat_internal (0.1.0)
@@ -186,7 +186,7 @@ GEM
       signet (>= 0.16, < 2.a)
     highline (2.0.3)
     http-accept (1.7.0)
-    http-cookie (1.0.7)
+    http-cookie (1.0.8)
       domain_name (~> 0.5)
     httpclient (2.8.3)
     jmespath (1.6.2)
@@ -197,14 +197,14 @@ GEM
       rexml
     kramdown-parser-gfm (1.1.0)
       kramdown (~> 2.0)
-    logger (1.6.1)
+    logger (1.6.2)
     mime-types (3.6.0)
       logger
       mime-types-data (~> 3.2015)
-    mime-types-data (3.2024.1001)
+    mime-types-data (3.2024.1203)
     mini_magick (4.13.2)
     mini_mime (1.1.5)
-    mini_portile2 (2.8.7)
+    mini_portile2 (2.8.8)
     multi_json (1.15.0)
     multipart-post (2.4.1)
     nanaimo (0.3.0)
@@ -212,7 +212,7 @@ GEM
     naturally (2.2.1)
     netrc (0.11.0)
     nkf (0.2.0)
-    nokogiri (1.16.7)
+    nokogiri (1.17.1)
       mini_portile2 (~> 2.8.2)
       racc (~> 1.4)
     octokit (9.2.0)
