@@ -2,6 +2,7 @@
 
 package com.revenuecat.purchases.ui.revenuecatui.components.stack
 
+import android.content.res.Configuration
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -38,10 +39,10 @@ import com.revenuecat.purchases.ui.revenuecatui.components.modifier.background
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.border
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.shadow
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
-import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BorderStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle.Solid
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ShadowStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
@@ -53,12 +54,14 @@ internal fun StackComponentView(
     modifier: Modifier = Modifier,
 ) {
     if (style.visible) {
+        val backgroundColorStyle = style.backgroundColor?.let { rememberColorStyle(scheme = it) }
+
         // Modifier irrespective of dimension.
         val commonModifier = remember(style) {
             Modifier
                 .padding(style.margin)
                 .applyIfNotNull(style.shadow) { shadow(it, style.shape) }
-                .applyIfNotNull(style.background) { background(it, style.shape) }
+                .applyIfNotNull(backgroundColorStyle) { background(it, style.shape) }
                 .clip(style.shape)
                 .applyIfNotNull(style.border) { border(it, style.shape) }
                 .padding(style.padding)
@@ -104,7 +107,8 @@ internal fun StackComponentView(
     }
 }
 
-@Preview
+@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL)
+@Preview(uiMode = Configuration.UI_MODE_NIGHT_NO or Configuration.UI_MODE_TYPE_NORMAL)
 @Composable
 private fun StackComponentView_Preview_Vertical() {
     Box(
@@ -117,7 +121,10 @@ private fun StackComponentView_Preview_Vertical() {
                 dimension = Dimension.Vertical(alignment = HorizontalAlignment.CENTER, distribution = START),
                 size = Size(width = Fit, height = Fit),
                 spacing = 16.dp,
-                background = BackgroundStyle.Color(Solid(Color.Red)),
+                backgroundColor = ColorScheme(
+                    light = ColorInfo.Hex(Color.Red.toArgb()),
+                    dark = ColorInfo.Hex(Color.Yellow.toArgb()),
+                ),
                 padding = PaddingValues(all = 16.dp),
                 margin = PaddingValues(all = 16.dp),
                 shape = RoundedCornerShape(size = 20.dp),
@@ -128,7 +135,8 @@ private fun StackComponentView_Preview_Vertical() {
     }
 }
 
-@Preview
+@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL)
+@Preview(uiMode = Configuration.UI_MODE_NIGHT_NO or Configuration.UI_MODE_TYPE_NORMAL)
 @Composable
 private fun StackComponentView_Preview_Horizontal() {
     Box(
@@ -141,7 +149,10 @@ private fun StackComponentView_Preview_Horizontal() {
                 dimension = Dimension.Horizontal(alignment = VerticalAlignment.CENTER, distribution = START),
                 size = Size(width = Fit, height = Fit),
                 spacing = 16.dp,
-                background = BackgroundStyle.Color(Solid(Color.Red)),
+                backgroundColor = ColorScheme(
+                    light = ColorInfo.Hex(Color.Red.toArgb()),
+                    dark = ColorInfo.Hex(Color.Yellow.toArgb()),
+                ),
                 padding = PaddingValues(all = 16.dp),
                 margin = PaddingValues(all = 16.dp),
                 shape = RoundedCornerShape(size = 20.dp),
@@ -152,7 +163,9 @@ private fun StackComponentView_Preview_Horizontal() {
     }
 }
 
-@Preview
+@Suppress("LongMethod")
+@Preview(uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL)
+@Preview(uiMode = Configuration.UI_MODE_NIGHT_NO or Configuration.UI_MODE_TYPE_NORMAL)
 @Composable
 private fun StackComponentView_Preview_ZLayer() {
     Box(
@@ -175,6 +188,7 @@ private fun StackComponentView_Preview_ZLayer() {
                         horizontalAlignment = HorizontalAlignment.CENTER,
                         backgroundColor = ColorScheme(
                             light = ColorInfo.Hex(Color.Yellow.toArgb()),
+                            dark = ColorInfo.Hex(Color.Red.toArgb()),
                         ),
                         size = Size(width = Fit, height = Fit),
                         padding = Padding(top = 8.0, bottom = 8.0, leading = 8.0, trailing = 8.0),
@@ -202,7 +216,10 @@ private fun StackComponentView_Preview_ZLayer() {
                 dimension = Dimension.ZLayer(alignment = TwoDimensionalAlignment.BOTTOM_TRAILING),
                 size = Size(width = Fit, height = Fit),
                 spacing = 16.dp,
-                background = BackgroundStyle.Color(Solid(Color.Red)),
+                backgroundColor = ColorScheme(
+                    light = ColorInfo.Hex(Color.Red.toArgb()),
+                    dark = ColorInfo.Hex(Color.Yellow.toArgb()),
+                ),
                 padding = PaddingValues(all = 16.dp),
                 margin = PaddingValues(all = 16.dp),
                 shape = RoundedCornerShape(size = 20.dp),

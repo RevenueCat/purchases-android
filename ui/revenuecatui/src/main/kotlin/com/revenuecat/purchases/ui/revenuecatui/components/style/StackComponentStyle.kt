@@ -4,9 +4,9 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.Dp
+import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.Dimension
 import com.revenuecat.purchases.paywalls.components.properties.Size
-import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BorderStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ShadowStyle
 
@@ -24,7 +24,7 @@ internal class StackComponentStyle(
     @get:JvmSynthetic
     val spacing: Dp,
     @get:JvmSynthetic
-    val background: BackgroundStyle?,
+    val backgroundColor: ColorScheme?,
     @get:JvmSynthetic
     val padding: PaddingValues,
     @get:JvmSynthetic

@@ -22,7 +22,6 @@ import com.revenuecat.purchases.paywalls.components.properties.Padding
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fit
 import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
-import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BorderStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle.Solid
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ShadowStyle
@@ -75,7 +74,7 @@ private fun previewButtonComponentStyle(
         dimension = Dimension.Vertical(alignment = HorizontalAlignment.CENTER, distribution = START),
         size = Size(width = Fit, height = Fit),
         spacing = 16.dp,
-        background = BackgroundStyle.Color(Solid(Color.Red)),
+        backgroundColor = ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb())),
         padding = PaddingValues(all = 16.dp),
         margin = PaddingValues(all = 16.dp),
         shape = RoundedCornerShape(size = 20.dp),
