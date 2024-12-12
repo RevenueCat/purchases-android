@@ -87,6 +87,7 @@ internal fun LoadedPaywallComponents(
     ComponentView(
         style = style,
         modifier = modifier
+            .fillMaxSize()
             .background(background),
     )
 }
