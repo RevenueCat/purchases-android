@@ -16,6 +16,7 @@ import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
  * @property availablePackages Array of [Package] objects available for purchase.
  * @property metadata Offering metadata defined in RevenueCat dashboard.
  */
+@Suppress("UnsafeOptInUsageError")
 data class Offering
 @OptIn(InternalRevenueCatAPI::class)
 @JvmOverloads
