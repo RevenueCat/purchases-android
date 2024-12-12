@@ -26,6 +26,7 @@ import com.revenuecat.purchases.paywalls.components.properties.FontSize
 import com.revenuecat.purchases.paywalls.components.properties.FontWeight
 import com.revenuecat.purchases.paywalls.components.properties.HorizontalAlignment
 import com.revenuecat.purchases.paywalls.components.properties.Padding
+import com.revenuecat.purchases.paywalls.components.properties.Shadow
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fit
 import com.revenuecat.purchases.paywalls.components.properties.TwoDimensionalAlignment
@@ -40,10 +41,9 @@ import com.revenuecat.purchases.ui.revenuecatui.components.modifier.background
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.border
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.shadow
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
-import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle.Solid
-import com.revenuecat.purchases.ui.revenuecatui.components.properties.ShadowStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberBorderStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberColorStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberShadowStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
@@ -57,12 +57,13 @@ internal fun StackComponentView(
     if (style.visible) {
         val backgroundColorStyle = style.backgroundColor?.let { rememberColorStyle(scheme = it) }
         val borderStyle = style.border?.let { rememberBorderStyle(border = it) }
+        val shadowStyle = style.shadow?.let { rememberShadowStyle(shadow = it) }
 
         // Modifier irrespective of dimension.
         val commonModifier = remember(style) {
             Modifier
                 .padding(style.margin)
-                .applyIfNotNull(style.shadow) { shadow(it, style.shape) }
+                .applyIfNotNull(shadowStyle) { shadow(it, style.shape) }
                 .applyIfNotNull(backgroundColorStyle) { background(it, style.shape) }
                 .clip(style.shape)
                 .applyIfNotNull(borderStyle) { border(it, style.shape) }
@@ -131,7 +132,12 @@ private fun StackComponentView_Preview_Vertical() {
                 margin = PaddingValues(all = 16.dp),
                 shape = RoundedCornerShape(size = 20.dp),
                 border = Border(width = 2.0, color = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb()))),
-                shadow = ShadowStyle(color = Solid(Color.Black), radius = 10.dp, x = 0.dp, y = 3.dp),
+                shadow = Shadow(
+                    color = ColorScheme(ColorInfo.Hex(Color.Black.toArgb())),
+                    radius = 10.0,
+                    x = 0.0,
+                    y = 3.0,
+                ),
             ),
         )
     }
@@ -159,7 +165,12 @@ private fun StackComponentView_Preview_Horizontal() {
                 margin = PaddingValues(all = 16.dp),
                 shape = RoundedCornerShape(size = 20.dp),
                 border = Border(width = 2.0, color = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb()))),
-                shadow = ShadowStyle(color = Solid(Color.Black), radius = 30.dp, x = 0.dp, y = 5.dp),
+                shadow = Shadow(
+                    color = ColorScheme(ColorInfo.Hex(Color.Black.toArgb())),
+                    radius = 30.0,
+                    x = 0.0,
+                    y = 5.0,
+                ),
             ),
         )
     }
@@ -226,7 +237,12 @@ private fun StackComponentView_Preview_ZLayer() {
                 margin = PaddingValues(all = 16.dp),
                 shape = RoundedCornerShape(size = 20.dp),
                 border = Border(width = 2.0, color = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb()))),
-                shadow = ShadowStyle(color = Solid(Color.Black), radius = 20.dp, x = 5.dp, y = 5.dp),
+                shadow = Shadow(
+                    color = ColorScheme(ColorInfo.Hex(Color.Black.toArgb())),
+                    radius = 20.0,
+                    x = 5.0,
+                    y = 5.0,
+                ),
             ),
         )
     }

@@ -7,8 +7,8 @@ import androidx.compose.ui.unit.Dp
 import com.revenuecat.purchases.paywalls.components.properties.Border
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.Dimension
+import com.revenuecat.purchases.paywalls.components.properties.Shadow
 import com.revenuecat.purchases.paywalls.components.properties.Size
-import com.revenuecat.purchases.ui.revenuecatui.components.properties.ShadowStyle
 
 @Suppress("LongParameterList")
 @Immutable
@@ -34,5 +34,5 @@ internal class StackComponentStyle(
     @get:JvmSynthetic
     val border: Border?,
     @get:JvmSynthetic
-    val shadow: ShadowStyle?,
+    val shadow: Shadow?,
 ) : ComponentStyle
