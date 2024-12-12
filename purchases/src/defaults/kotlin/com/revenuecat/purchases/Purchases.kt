@@ -8,6 +8,7 @@ import android.net.Uri
 import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.PlatformInfo
+import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.infoLog
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.deeplinks.DeepLinkParser
@@ -834,8 +835,13 @@ class Purchases internal constructor(
         @ExperimentalPreviewRevenueCatPurchasesAPI
         @JvmStatic
         fun parseAsWebPurchaseRedemption(string: String): WebPurchaseRedemption? {
-            val uri = Uri.parse(string)
-            return DeepLinkParser.parseWebPurchaseRedemption(uri)
+            try {
+                val uri = Uri.parse(string)
+                return DeepLinkParser.parseWebPurchaseRedemption(uri)
+            } catch (@Suppress("TooGenericExceptionCaught") e: Throwable) {
+                errorLog("Error parsing URL: $string", e)
+                return null
+            }
         }
 
         /**
