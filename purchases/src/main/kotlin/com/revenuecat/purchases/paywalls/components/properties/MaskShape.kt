@@ -27,4 +27,8 @@ sealed interface MaskShape {
     @Serializable
     @SerialName("convex")
     object Convex : MaskShape
+
+    @Serializable
+    @SerialName("circle")
+    object Circle : MaskShape
 }

@@ -129,6 +129,31 @@ internal class ImageUrlsTests {
                         )
                     )
                 ),
+                arrayOf(
+                    "no width and height",
+                    Args(
+                        json = """
+                            {
+                              "light": {
+                                "heic": "https://assets.pawwalls.com/1151049_1732039548.heic",
+                                "heic_low_res": "https://assets.pawwalls.com/1151049_low_res_1732039548.heic",
+                                "original": "https://assets.pawwalls.com/1151049_1732039548.png",
+                                "webp": "https://assets.pawwalls.com/1151049_1732039548.webp",
+                                "webp_low_res": "https://assets.pawwalls.com/1151049_low_res_1732039548.webp"
+                              }
+                            }
+                        """.trimIndent(),
+                        expected = ThemeImageUrls(
+                            light = ImageUrls(
+                                original = URL("https://assets.pawwalls.com/1151049_1732039548.png"),
+                                webp = URL("https://assets.pawwalls.com/1151049_1732039548.webp"),
+                                webpLowRes = URL("https://assets.pawwalls.com/1151049_low_res_1732039548.webp"),
+                                width = null,
+                                height = null,
+                            ),
+                        )
+                    )
+                ),
             )
         }
 

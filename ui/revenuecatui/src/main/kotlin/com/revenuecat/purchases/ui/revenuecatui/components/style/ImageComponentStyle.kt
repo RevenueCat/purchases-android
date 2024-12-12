@@ -68,16 +68,20 @@ internal class ImageComponentStyle private constructor(
 
 private fun Size.adjustForImage(imageUrls: ImageUrls, density: Density): Size =
     Size(
-        width = when (width) {
-            is Fit -> Fixed(with(density) { imageUrls.width.toInt().toDp().value.toUInt() })
-            is Fill,
-            is Fixed,
-            -> width
-        },
-        height = when (height) {
-            is Fit -> Fixed(with(density) { imageUrls.height.toInt().toDp().value.toUInt() })
-            is Fill,
-            is Fixed,
-            -> height
-        },
+        width = imageUrls.width?.let { imageWidthPx ->
+            when (width) {
+                is Fit -> Fixed(with(density) { imageWidthPx.toInt().toDp().value.toUInt() })
+                is Fill,
+                is Fixed,
+                -> width
+            }
+        } ?: width,
+        height = imageUrls.height?.let { imageHeightPx ->
+            when (height) {
+                is Fit -> Fixed(with(density) { imageHeightPx.toInt().toDp().value.toUInt() })
+                is Fill,
+                is Fixed,
+                -> height
+            }
+        } ?: height,
     )
