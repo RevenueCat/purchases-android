@@ -33,7 +33,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvi
 import com.revenuecat.purchases.ui.revenuecatui.extensions.createDefault
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.helpers.isInPreviewMode
-import com.revenuecat.purchases.ui.revenuecatui.helpers.toPaywallState
+import com.revenuecat.purchases.ui.revenuecatui.helpers.toLegacyPaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.templates.Template2
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -62,7 +62,7 @@ internal fun LoadingPaywall(
         paywall = paywallData,
     )
 
-    val state = offering.toPaywallState(
+    val state = offering.toLegacyPaywallState(
         variableDataProvider = VariableDataProvider(
             resourceProvider,
             isInPreviewMode(),

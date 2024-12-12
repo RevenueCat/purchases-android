@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.common
 
 import androidx.annotation.VisibleForTesting
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.Package
@@ -8,6 +9,7 @@ import com.revenuecat.purchases.PackageType
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.paywalls.PaywallData
+import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
 import com.revenuecat.purchases.strings.OfferingStrings
 import com.revenuecat.purchases.utils.getNullableString
 import com.revenuecat.purchases.utils.optNullableInt
@@ -15,7 +17,6 @@ import com.revenuecat.purchases.utils.optNullableString
 import com.revenuecat.purchases.utils.replaceJsonNullWithKotlinNull
 import com.revenuecat.purchases.utils.toMap
 import com.revenuecat.purchases.withPresentedContext
-import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import org.json.JSONObject
 
@@ -90,6 +91,7 @@ internal abstract class OfferingParser {
         )
     }
 
+    @OptIn(InternalRevenueCatAPI::class)
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     fun createOffering(offeringJson: JSONObject, productsById: Map<String, List<StoreProduct>>): Offering? {
         val offeringIdentifier = offeringJson.getString("identifier")
@@ -117,6 +119,18 @@ internal abstract class OfferingParser {
             }
         }
 
+        val paywallComponentsDataJson = offeringJson.optJSONObject("paywall_components")
+
+        @Suppress("TooGenericExceptionCaught")
+        val paywallComponentsData: PaywallComponentsData? = paywallComponentsDataJson?.let {
+            try {
+                json.decodeFromString<PaywallComponentsData>(it.toString())
+            } catch (e: Throwable) {
+                errorLog("Error deserializing paywall components data", e)
+                null
+            }
+        }
+
         return if (availablePackages.isNotEmpty()) {
             Offering(
                 offeringIdentifier,
@@ -124,6 +138,7 @@ internal abstract class OfferingParser {
                 metadata,
                 availablePackages,
                 paywallData,
+                paywallComponentsData,
             )
         } else {
             null

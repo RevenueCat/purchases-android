@@ -27,9 +27,11 @@ import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvider
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
+import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallValidationResult
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ResourceProvider
-import com.revenuecat.purchases.ui.revenuecatui.helpers.toPaywallState
-import com.revenuecat.purchases.ui.revenuecatui.helpers.validatedPaywall
+import com.revenuecat.purchases.ui.revenuecatui.helpers.toComponentsPaywallState
+import com.revenuecat.purchases.ui.revenuecatui.helpers.toLegacyPaywallState
+import com.revenuecat.purchases.ui.revenuecatui.helpers.validatedLegacyPaywall
 import com.revenuecat.purchases.ui.revenuecatui.strings.PaywallValidationErrorStrings
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -371,28 +373,34 @@ internal class PaywallViewModelImpl(
         if (offering.availablePackages.isEmpty()) {
             return PaywallState.Error("No packages available")
         }
-        val (displayablePaywall, template, error) = offering.validatedPaywall(
-            colorScheme,
-            resourceProvider,
-        )
 
-        error?.let { validationError ->
+        val validationResult = offering.paywallComponents
+            // TODO Actually validate the PaywallComponentsData
+            ?.let { PaywallValidationResult.Components(displayablePaywall = it) }
+            ?: offering.validatedLegacyPaywall(colorScheme, resourceProvider)
+
+        validationResult.error?.let { validationError ->
             Logger.w(validationError.associatedErrorString(offering))
             Logger.w(PaywallValidationErrorStrings.DISPLAYING_DEFAULT)
         }
 
-        return offering.toPaywallState(
-            variableDataProvider = variableDataProvider,
-            activelySubscribedProductIdentifiers = customerInfo.activeSubscriptions,
-            nonSubscriptionProductIdentifiers = customerInfo.nonSubscriptionTransactions
-                .map { it.productIdentifier }
-                .toSet(),
-            mode = mode,
-            validatedPaywallData = displayablePaywall,
-            template = template,
-            shouldDisplayDismissButton = options.shouldDisplayDismissButton,
-            storefrontCountryCode = storefrontCountryCode,
-        )
+        return when (validationResult) {
+            is PaywallValidationResult.Legacy -> offering.toLegacyPaywallState(
+                variableDataProvider = variableDataProvider,
+                activelySubscribedProductIdentifiers = customerInfo.activeSubscriptions,
+                nonSubscriptionProductIdentifiers = customerInfo.nonSubscriptionTransactions
+                    .map { it.productIdentifier }
+                    .toSet(),
+                mode = mode,
+                validatedPaywallData = validationResult.displayablePaywall,
+                template = validationResult.template,
+                shouldDisplayDismissButton = options.shouldDisplayDismissButton,
+                storefrontCountryCode = storefrontCountryCode,
+            )
+            is PaywallValidationResult.Components -> offering.toComponentsPaywallState(
+                validatedPaywallData = validationResult.displayablePaywall,
+            )
+        }
     }
 
     /**

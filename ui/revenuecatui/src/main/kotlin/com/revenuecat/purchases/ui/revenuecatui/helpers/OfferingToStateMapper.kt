@@ -3,6 +3,7 @@ package com.revenuecat.purchases.ui.revenuecatui.helpers
 import androidx.compose.material3.ColorScheme
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.paywalls.PaywallData
+import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import com.revenuecat.purchases.ui.revenuecatui.composables.PaywallIconName
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
@@ -18,12 +19,12 @@ import com.revenuecat.purchases.ui.revenuecatui.extensions.defaultTemplate
 import kotlin.Result
 
 @Suppress("ReturnCount")
-internal fun Offering.validatedPaywall(
+internal fun Offering.validatedLegacyPaywall(
     currentColorScheme: ColorScheme,
     resourceProvider: ResourceProvider,
-): PaywallValidationResult {
+): PaywallValidationResult.Legacy {
     val paywallData = this.paywall
-        ?: return PaywallValidationResult(
+        ?: return PaywallValidationResult.Legacy(
             PaywallData.createDefault(
                 availablePackages,
                 currentColorScheme,
@@ -34,7 +35,7 @@ internal fun Offering.validatedPaywall(
         )
 
     val template = paywallData.validate().getOrElse {
-        return PaywallValidationResult(
+        return PaywallValidationResult.Legacy(
             PaywallData.createDefaultForIdentifiers(
                 paywallData.config.packageIds,
                 currentColorScheme,
@@ -44,7 +45,7 @@ internal fun Offering.validatedPaywall(
             it as PaywallValidationError,
         )
     }
-    return PaywallValidationResult(
+    return PaywallValidationResult.Legacy(
         paywallData,
         template,
     )
@@ -129,7 +130,7 @@ private fun PaywallData.LocalizedConfiguration.validate(): PaywallValidationErro
 }
 
 @Suppress("ReturnCount", "TooGenericExceptionCaught", "LongParameterList")
-internal fun Offering.toPaywallState(
+internal fun Offering.toLegacyPaywallState(
     variableDataProvider: VariableDataProvider,
     activelySubscribedProductIdentifiers: Set<String>,
     nonSubscriptionProductIdentifiers: Set<String>,
@@ -160,6 +161,12 @@ internal fun Offering.toPaywallState(
         shouldDisplayDismissButton = shouldDisplayDismissButton,
     )
 }
+
+internal fun Offering.toComponentsPaywallState(validatedPaywallData: PaywallComponentsData): PaywallState =
+    PaywallState.Loaded.Components(
+        offering = this,
+        data = validatedPaywallData,
+    )
 
 /**
  * Returns an error if any of the variables are invalid, or null if they're all valid

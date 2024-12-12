@@ -7,7 +7,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockResourceProvid
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
-import com.revenuecat.purchases.ui.revenuecatui.helpers.validatedPaywall
+import com.revenuecat.purchases.ui.revenuecatui.helpers.validatedLegacyPaywall
 import io.mockk.mockkObject
 import io.mockk.verify
 import kotlinx.serialization.json.Json
@@ -17,7 +17,7 @@ import org.junit.runner.RunWith
 import java.io.File
 
 @RunWith(AndroidJUnit4::class)
-class PaywallDataValidationTest {
+class LegacyPaywallDataValidationTest {
 
     @Test
     fun `Validate an offering without paywall`() {
@@ -231,7 +231,7 @@ class PaywallDataValidationTest {
         )
     }
 
-    private fun getPaywallValidationResult(offering: Offering) = offering.validatedPaywall(
+    private fun getPaywallValidationResult(offering: Offering) = offering.validatedLegacyPaywall(
         currentColorScheme = TestData.Constants.currentColorScheme,
         resourceProvider = MockResourceProvider()
     )
