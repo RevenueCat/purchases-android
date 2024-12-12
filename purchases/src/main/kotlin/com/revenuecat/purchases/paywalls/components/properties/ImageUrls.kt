@@ -22,9 +22,9 @@ class ImageUrls(
     @Serializable(with = URLSerializer::class)
     val webpLowRes: URL,
     @get:JvmSynthetic
-    val width: UInt,
+    val width: UInt? = null,
     @get:JvmSynthetic
-    val height: UInt,
+    val height: UInt? = null,
 )
 
 @InternalRevenueCatAPI
