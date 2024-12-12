@@ -134,6 +134,19 @@ private fun TextComponentView_Preview_CursiveFont() {
     )
 }
 
+@Preview
+@Composable
+private fun TextComponentView_Preview_FontSize() {
+    TextComponentView(
+        style = previewTextComponentStyle(
+            text = "Hello, world",
+            color = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb())),
+            fontSize = FontSize.HEADING_L,
+            size = Size(width = Fit, height = Fit),
+        ),
+    )
+}
+
 @Preview(name = "HorizontalAlignment")
 @Composable
 private fun TextComponentView_Preview_HorizontalAlignment() {
