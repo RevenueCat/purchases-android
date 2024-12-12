@@ -1511,6 +1511,28 @@ internal class PurchasesTest : BasePurchasesTest() {
         assertThat(receivedError).isEqualTo(expectedError)
     }
 
+    // region parseAsWebPurchaseRedemption
+
+    @Test
+    fun `parseAsWebPurchaseRedemption returns value if a valid web purchase redemption link`() {
+        val redemptionLink = Purchases.parseAsWebPurchaseRedemption("rc-1111://redeem_web_purchase?redemption_token=1234")
+        assertThat(redemptionLink).isNotNull
+    }
+
+    @Test
+    fun `parseAsWebPurchaseRedemption does not return value if not a web purchase redemption link`() {
+        val redemptionLink = Purchases.parseAsWebPurchaseRedemption("rc-1111://another_link?redemption_token=1234")
+        assertThat(redemptionLink).isNull()
+    }
+
+    @Test
+    fun `parseAsWebPurchaseRedemption does not return value if not a link`() {
+        val redemptionLink = Purchases.parseAsWebPurchaseRedemption("invalid_link")
+        assertThat(redemptionLink).isNull()
+    }
+
+    // endregion parseAsWebPurchaseRedemption
+
     // region redeemWebPurchase
 
     @Test
