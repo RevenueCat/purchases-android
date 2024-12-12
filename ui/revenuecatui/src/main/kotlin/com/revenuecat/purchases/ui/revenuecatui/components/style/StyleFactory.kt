@@ -23,7 +23,6 @@ import com.revenuecat.purchases.ui.revenuecatui.components.buildPresentedPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.string
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toShape
-import com.revenuecat.purchases.ui.revenuecatui.components.properties.toBorderStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.toShadowStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.state.PackageContext
 import com.revenuecat.purchases.ui.revenuecatui.components.toPresentedOverrides
@@ -99,7 +98,7 @@ internal class StyleFactory(
             padding = (partial?.padding ?: component.padding).toPaddingValues(),
             margin = (partial?.margin ?: component.margin).toPaddingValues(),
             shape = (partial?.shape ?: component.shape)?.toShape() ?: DEFAULT_SHAPE,
-            border = (partial?.border ?: component.border)?.toBorderStyle(),
+            border = (partial?.border ?: component.border),
             shadow = (partial?.shadow ?: component.shadow)?.toShadowStyle(),
         )
     }

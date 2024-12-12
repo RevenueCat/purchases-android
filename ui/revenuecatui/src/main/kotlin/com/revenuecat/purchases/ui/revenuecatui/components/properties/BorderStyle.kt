@@ -17,8 +17,10 @@ internal data class BorderStyle(
 
 @Composable
 @JvmSynthetic
-internal fun Border.toBorderStyle(): BorderStyle =
-    BorderStyle(
-        width = width.dp,
-        color = color.toColorStyle(),
+internal fun rememberBorderStyle(border: Border): BorderStyle {
+    val colorStyle = rememberColorStyle(border.color)
+    return BorderStyle(
+        width = border.width.dp,
+        color = colorStyle,
     )
+}

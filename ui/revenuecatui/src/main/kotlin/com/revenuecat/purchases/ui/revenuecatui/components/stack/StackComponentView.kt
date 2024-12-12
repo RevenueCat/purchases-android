@@ -17,6 +17,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.revenuecat.purchases.paywalls.components.properties.Border
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.Dimension
@@ -39,9 +40,9 @@ import com.revenuecat.purchases.ui.revenuecatui.components.modifier.background
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.border
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.shadow
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
-import com.revenuecat.purchases.ui.revenuecatui.components.properties.BorderStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle.Solid
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ShadowStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberBorderStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
@@ -55,6 +56,7 @@ internal fun StackComponentView(
 ) {
     if (style.visible) {
         val backgroundColorStyle = style.backgroundColor?.let { rememberColorStyle(scheme = it) }
+        val borderStyle = style.border?.let { rememberBorderStyle(border = it) }
 
         // Modifier irrespective of dimension.
         val commonModifier = remember(style) {
@@ -63,7 +65,7 @@ internal fun StackComponentView(
                 .applyIfNotNull(style.shadow) { shadow(it, style.shape) }
                 .applyIfNotNull(backgroundColorStyle) { background(it, style.shape) }
                 .clip(style.shape)
-                .applyIfNotNull(style.border) { border(it, style.shape) }
+                .applyIfNotNull(borderStyle) { border(it, style.shape) }
                 .padding(style.padding)
         }
 
@@ -128,7 +130,7 @@ private fun StackComponentView_Preview_Vertical() {
                 padding = PaddingValues(all = 16.dp),
                 margin = PaddingValues(all = 16.dp),
                 shape = RoundedCornerShape(size = 20.dp),
-                border = BorderStyle(width = 2.dp, color = Solid(Color.Blue)),
+                border = Border(width = 2.0, color = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb()))),
                 shadow = ShadowStyle(color = Solid(Color.Black), radius = 10.dp, x = 0.dp, y = 3.dp),
             ),
         )
@@ -156,7 +158,7 @@ private fun StackComponentView_Preview_Horizontal() {
                 padding = PaddingValues(all = 16.dp),
                 margin = PaddingValues(all = 16.dp),
                 shape = RoundedCornerShape(size = 20.dp),
-                border = BorderStyle(width = 2.dp, color = Solid(Color.Blue)),
+                border = Border(width = 2.0, color = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb()))),
                 shadow = ShadowStyle(color = Solid(Color.Black), radius = 30.dp, x = 0.dp, y = 5.dp),
             ),
         )
@@ -223,7 +225,7 @@ private fun StackComponentView_Preview_ZLayer() {
                 padding = PaddingValues(all = 16.dp),
                 margin = PaddingValues(all = 16.dp),
                 shape = RoundedCornerShape(size = 20.dp),
-                border = BorderStyle(width = 2.dp, color = Solid(Color.Blue)),
+                border = Border(width = 2.0, color = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb()))),
                 shadow = ShadowStyle(color = Solid(Color.Black), radius = 20.dp, x = 5.dp, y = 5.dp),
             ),
         )
