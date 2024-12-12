@@ -116,6 +116,7 @@ final class PurchasesAPI {
         final PurchasesConfiguration configuration = purchases.getCurrentConfiguration();
 
         final WebPurchaseRedemption webPurchaseRedemption1 = Purchases.parseAsWebPurchaseRedemption(intent);
+        final WebPurchaseRedemption webPurchaseRedemption2 = Purchases.parseAsWebPurchaseRedemption("");
     }
 
     static void check(final Purchases purchases, final Map<String, String> attributes) {
