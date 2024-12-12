@@ -31,6 +31,7 @@ import com.revenuecat.paywallstester.SamplePaywallsLoader
 import com.revenuecat.paywallstester.ui.screens.paywallfooter.SamplePaywall
 import com.revenuecat.paywallstester.ui.theme.bundledLobsterTwoFontFamily
 import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PurchasesError
@@ -94,6 +95,7 @@ private class TestAppPurchaseLogicCallbacks : PurchaseLogicWithCallback() {
     }
 }
 
+@OptIn(InternalRevenueCatAPI::class)
 @Suppress("LongMethod")
 @Composable
 fun PaywallsScreen(
@@ -132,39 +134,46 @@ fun PaywallsScreen(
                     emoji = "\uD83D\uDCF1",
                     label = "Full screen",
                 )
-                ButtonWithEmoji(
-                    onClick = {
-                        displayPaywallState = DisplayPaywallState.Footer(
-                            offering,
-                            condensed = false,
-                            purchaseLogic = myAppPurchaseLogic,
-                        )
-                    },
-                    emoji = "\uD83D\uDD3D",
-                    label = "Footer",
-                )
-                ButtonWithEmoji(
-                    onClick = {
-                        displayPaywallState = DisplayPaywallState.Footer(
-                            offering,
-                            condensed = true,
-                            purchaseLogic = myAppPurchaseLogic,
-                        )
-                    },
-                    emoji = "\uD83D\uDDDC️",
-                    label = "Condenser footer",
-                )
-                ButtonWithEmoji(
-                    onClick = {
-                        displayPaywallState = DisplayPaywallState.FullScreen(
-                            offering,
-                            CustomFontProvider(bundledLobsterTwoFontFamily),
-                            purchaseLogic = myAppPurchaseLogic,
-                        )
-                    },
-                    emoji = "\uD83C\uDD70️",
-                    label = "Custom font",
-                )
+                if (offering.paywallComponents == null) {
+                    ButtonWithEmoji(
+                        onClick = {
+                            displayPaywallState = DisplayPaywallState.Footer(
+                                offering,
+                                condensed = false,
+                                purchaseLogic = myAppPurchaseLogic,
+                            )
+                        },
+                        emoji = "\uD83D\uDD3D",
+                        label = "Footer",
+                    )
+                }
+                if (offering.paywallComponents == null) {
+                    ButtonWithEmoji(
+                        onClick = {
+                            displayPaywallState = DisplayPaywallState.Footer(
+                                offering,
+                                condensed = true,
+                                purchaseLogic = myAppPurchaseLogic,
+                            )
+                        },
+                        emoji = "\uD83D\uDDDC️",
+                        label = "Condenser footer",
+                    )
+                }
+                // Custom font is not yet supported by Paywalls V2.
+                if (offering.paywallComponents == null) {
+                    ButtonWithEmoji(
+                        onClick = {
+                            displayPaywallState = DisplayPaywallState.FullScreen(
+                                offering,
+                                CustomFontProvider(bundledLobsterTwoFontFamily),
+                                purchaseLogic = myAppPurchaseLogic,
+                            )
+                        },
+                        emoji = "\uD83C\uDD70️",
+                        label = "Custom font",
+                    )
+                }
             }
         }
     }

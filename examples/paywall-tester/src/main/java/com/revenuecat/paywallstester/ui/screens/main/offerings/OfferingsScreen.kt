@@ -33,6 +33,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.revenuecat.paywallstester.MainActivity
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.Purchases
@@ -84,6 +85,7 @@ private fun LoadingOfferingsScreen() {
     }
 }
 
+@OptIn(InternalRevenueCatAPI::class)
 @Suppress("LongMethod")
 @Composable
 private fun OfferingsListScreen(
@@ -138,11 +140,11 @@ private fun OfferingsListScreen(
                         Column {
                             Text(text = offering.identifier)
 
-                            offering.paywall?.let {
+                            offering.paywall?.also {
                                 Text("Template ${it.templateName}")
-                            } ?: run {
-                                Text("No paywall")
-                            }
+                            } ?: offering.paywallComponents?.also {
+                                Text("Components ${it.templateName}")
+                            } ?: Text("No paywall")
                         }
                     }
                     Divider()
