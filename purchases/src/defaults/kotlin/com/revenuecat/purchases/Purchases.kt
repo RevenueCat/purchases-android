@@ -4,9 +4,11 @@ import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.PlatformInfo
+import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.infoLog
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.deeplinks.DeepLinkParser
@@ -823,6 +825,23 @@ class Purchases internal constructor(
         fun parseAsWebPurchaseRedemption(intent: Intent): WebPurchaseRedemption? {
             val intentData = intent.data ?: return null
             return DeepLinkParser.parseWebPurchaseRedemption(intentData)
+        }
+
+        /**
+         * Given a url string, parses the link and returns a [WebPurchaseRedemption], which can
+         * be used to redeem a web purchase using [Purchases.redeemWebPurchase]
+         * @return A parsed version of the link or null if it's not a valid RevenueCat web purchase redemption link.
+         */
+        @ExperimentalPreviewRevenueCatPurchasesAPI
+        @JvmStatic
+        fun parseAsWebPurchaseRedemption(string: String): WebPurchaseRedemption? {
+            try {
+                val uri = Uri.parse(string)
+                return DeepLinkParser.parseWebPurchaseRedemption(uri)
+            } catch (@Suppress("TooGenericExceptionCaught") e: Throwable) {
+                errorLog("Error parsing URL: $string", e)
+                return null
+            }
         }
 
         /**
