@@ -3,25 +3,16 @@ package com.revenuecat.purchases.ui.revenuecatui.components.style
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.text.font.DeviceFontFamilyName
-import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.FontSize
-import com.revenuecat.purchases.paywalls.components.properties.HorizontalAlignment
-import com.revenuecat.purchases.paywalls.components.properties.Padding
 import com.revenuecat.purchases.paywalls.components.properties.Size
-import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toAlignment
-import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toFontWeight
-import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
-import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toTextAlign
-import com.revenuecat.purchases.paywalls.components.properties.FontWeight as RcFontWeight
 
 @Suppress("LongParameterList")
 @Immutable
-internal class TextComponentStyle private constructor(
+internal class TextComponentStyle(
     @get:JvmSynthetic
     val visible: Boolean,
     @get:JvmSynthetic
@@ -46,51 +37,4 @@ internal class TextComponentStyle private constructor(
     val padding: PaddingValues,
     @get:JvmSynthetic
     val margin: PaddingValues,
-) : ComponentStyle {
-
-    companion object {
-
-        @Suppress("LongParameterList")
-        @JvmSynthetic
-        operator fun invoke(
-            visible: Boolean,
-            text: String,
-            color: ColorScheme,
-            fontSize: FontSize,
-            fontWeight: RcFontWeight?,
-            fontFamily: String?,
-            textAlign: HorizontalAlignment,
-            horizontalAlignment: HorizontalAlignment,
-            backgroundColor: ColorScheme?,
-            size: Size,
-            padding: Padding,
-            margin: Padding,
-        ): TextComponentStyle {
-            val weight = fontWeight?.toFontWeight()
-
-            return TextComponentStyle(
-                visible = visible,
-                text = text,
-                color = color,
-                fontSize = fontSize,
-                fontWeight = weight,
-                fontFamily = fontFamily?.let { SystemFontFamily(it, weight) },
-                textAlign = textAlign.toTextAlign(),
-                horizontalAlignment = horizontalAlignment.toAlignment(),
-                backgroundColor = backgroundColor,
-                size = size,
-                padding = padding.toPaddingValues(),
-                margin = margin.toPaddingValues(),
-            )
-        }
-
-        @Suppress("FunctionName")
-        private fun SystemFontFamily(familyName: String, weight: FontWeight?): FontFamily =
-            FontFamily(
-                Font(
-                    familyName = DeviceFontFamilyName(familyName),
-                    weight = weight ?: FontWeight.Normal,
-                ),
-            )
-    }
-}
+) : ComponentStyle

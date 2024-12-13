@@ -23,6 +23,11 @@ import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fill
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fit
+import com.revenuecat.purchases.ui.revenuecatui.components.SystemFontFamily
+import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toAlignment
+import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toFontWeight
+import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
+import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toTextAlign
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toTextUnit
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.background
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
@@ -283,17 +288,20 @@ private fun previewTextComponentStyle(
     size: Size = Size(width = Fill, height = Fit),
     padding: Padding = zero,
     margin: Padding = zero,
-) = TextComponentStyle(
-    visible = visible,
-    text = text,
-    color = color,
-    fontSize = fontSize,
-    fontWeight = fontWeight,
-    fontFamily = fontFamily,
-    textAlign = textAlign,
-    horizontalAlignment = horizontalAlignment,
-    backgroundColor = backgroundColor,
-    size = size,
-    padding = padding,
-    margin = margin,
-)
+): TextComponentStyle {
+    val weight = fontWeight.toFontWeight()
+    return TextComponentStyle(
+        visible = visible,
+        text = text,
+        color = color,
+        fontSize = fontSize,
+        fontWeight = weight,
+        fontFamily = fontFamily?.let { SystemFontFamily(it, weight) },
+        textAlign = textAlign.toTextAlign(),
+        horizontalAlignment = horizontalAlignment.toAlignment(),
+        backgroundColor = backgroundColor,
+        size = size,
+        padding = padding.toPaddingValues(),
+        margin = margin.toPaddingValues(),
+    )
+}

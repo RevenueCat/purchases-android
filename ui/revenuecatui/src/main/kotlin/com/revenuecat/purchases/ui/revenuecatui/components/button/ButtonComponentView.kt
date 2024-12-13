@@ -24,6 +24,10 @@ import com.revenuecat.purchases.paywalls.components.properties.Shadow
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fit
 import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
+import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toAlignment
+import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toFontWeight
+import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
+import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toTextAlign
 import com.revenuecat.purchases.ui.revenuecatui.components.stack.StackComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ButtonComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
@@ -58,16 +62,16 @@ private fun previewButtonComponentStyle(
                     light = ColorInfo.Hex(Color.Black.toArgb()),
                 ),
                 fontSize = FontSize.BODY_M,
-                fontWeight = FontWeight.REGULAR,
+                fontWeight = FontWeight.REGULAR.toFontWeight(),
                 fontFamily = null,
-                textAlign = HorizontalAlignment.CENTER,
-                horizontalAlignment = HorizontalAlignment.CENTER,
+                textAlign = HorizontalAlignment.CENTER.toTextAlign(),
+                horizontalAlignment = HorizontalAlignment.CENTER.toAlignment(),
                 backgroundColor = ColorScheme(
                     light = ColorInfo.Hex(Color.Yellow.toArgb()),
                 ),
                 size = Size(width = Fit, height = Fit),
-                padding = Padding(top = 8.0, bottom = 8.0, leading = 8.0, trailing = 8.0),
-                margin = Padding(top = 0.0, bottom = 24.0, leading = 0.0, trailing = 24.0),
+                padding = Padding(top = 8.0, bottom = 8.0, leading = 8.0, trailing = 8.0).toPaddingValues(),
+                margin = Padding(top = 0.0, bottom = 24.0, leading = 0.0, trailing = 24.0).toPaddingValues(),
             ),
         ),
         dimension = Dimension.Vertical(alignment = HorizontalAlignment.CENTER, distribution = START),

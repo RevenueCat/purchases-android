@@ -19,10 +19,14 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState
 import com.revenuecat.purchases.ui.revenuecatui.components.LocalizedTextPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedStackPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition
+import com.revenuecat.purchases.ui.revenuecatui.components.SystemFontFamily
 import com.revenuecat.purchases.ui.revenuecatui.components.buildPresentedPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.string
+import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toAlignment
+import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toFontWeight
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toShape
+import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toTextAlign
 import com.revenuecat.purchases.ui.revenuecatui.components.state.PackageContext
 import com.revenuecat.purchases.ui.revenuecatui.components.toPresentedOverrides
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvider
@@ -118,6 +122,7 @@ internal class StyleFactory(
     ) { text, presentedPartial ->
         // Combine the text and PresentedPartial into a TextComponentStyle.
         val partial = presentedPartial?.partial
+        val weight = (partial?.fontWeight ?: component.fontWeight).toFontWeight()
 
         TextComponentStyle(
             visible = partial?.visible ?: true,
@@ -129,14 +134,14 @@ internal class StyleFactory(
             ),
             color = partial?.color ?: component.color,
             fontSize = partial?.fontSize ?: component.fontSize,
-            fontWeight = partial?.fontWeight ?: component.fontWeight,
-            fontFamily = partial?.fontName ?: component.fontName,
-            textAlign = partial?.horizontalAlignment ?: component.horizontalAlignment,
-            horizontalAlignment = partial?.horizontalAlignment ?: component.horizontalAlignment,
+            fontWeight = weight,
+            fontFamily = (partial?.fontName ?: component.fontName)?.let { SystemFontFamily(it, weight) },
+            textAlign = (partial?.horizontalAlignment ?: component.horizontalAlignment).toTextAlign(),
+            horizontalAlignment = (partial?.horizontalAlignment ?: component.horizontalAlignment).toAlignment(),
             backgroundColor = partial?.backgroundColor ?: component.backgroundColor,
             size = partial?.size ?: component.size,
-            padding = partial?.padding ?: component.padding,
-            margin = partial?.margin ?: component.margin,
+            padding = (partial?.padding ?: component.padding).toPaddingValues(),
+            margin = (partial?.margin ?: component.margin).toPaddingValues(),
         )
     }
 
