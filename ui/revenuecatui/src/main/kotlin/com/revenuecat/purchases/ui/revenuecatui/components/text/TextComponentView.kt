@@ -23,6 +23,7 @@ import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fill
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fit
+import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toTextUnit
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.background
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
@@ -61,7 +62,7 @@ internal fun TextComponentView(
                 .applyIfNotNull(backgroundColorStyle) { background(it) }
                 .padding(style.padding),
             color = color,
-            fontSize = style.fontSize,
+            fontSize = style.fontSize.toTextUnit(),
             fontWeight = style.fontWeight,
             fontFamily = style.fontFamily,
             horizontalAlignment = style.horizontalAlignment,

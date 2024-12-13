@@ -1,7 +1,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.components.style
 
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.font.DeviceFontFamilyName
@@ -9,7 +8,6 @@ import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.TextUnit
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.FontSize
 import com.revenuecat.purchases.paywalls.components.properties.HorizontalAlignment
@@ -19,7 +17,6 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toAlignment
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toFontWeight
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toTextAlign
-import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toTextUnit
 import com.revenuecat.purchases.paywalls.components.properties.FontWeight as RcFontWeight
 
 @Suppress("LongParameterList")
@@ -32,7 +29,7 @@ internal class TextComponentStyle private constructor(
     @get:JvmSynthetic
     val color: ColorScheme,
     @get:JvmSynthetic
-    val fontSize: TextUnit,
+    val fontSize: FontSize,
     @get:JvmSynthetic
     val fontWeight: FontWeight?,
     @get:JvmSynthetic
@@ -55,7 +52,6 @@ internal class TextComponentStyle private constructor(
 
         @Suppress("LongParameterList")
         @JvmSynthetic
-        @Composable
         operator fun invoke(
             visible: Boolean,
             text: String,
@@ -76,7 +72,7 @@ internal class TextComponentStyle private constructor(
                 visible = visible,
                 text = text,
                 color = color,
-                fontSize = fontSize.toTextUnit(),
+                fontSize = fontSize,
                 fontWeight = weight,
                 fontFamily = fontFamily?.let { SystemFontFamily(it, weight) },
                 textAlign = textAlign.toTextAlign(),
