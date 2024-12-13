@@ -164,6 +164,7 @@ private fun Template4MainContent(
                 text = localizedConfig.title,
                 color = colors.text1,
                 textFillMaxWidth = true,
+                applyFontSizeToParagraph = false,
                 modifier = Modifier.padding(horizontal = UIConstant.defaultHorizontalPadding),
             )
         }

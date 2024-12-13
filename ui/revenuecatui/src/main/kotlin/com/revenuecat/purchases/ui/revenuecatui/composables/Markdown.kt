@@ -66,6 +66,9 @@ private val parser = Parser.builder()
  * @param allowLinks If true, links will be decorated and clickable.
  * @param textFillMaxWidth If true, the text will fill the maximum width available. This was used by paywalls V1 and
  * left to avoid unintended UI changes.
+ * @param applyFontSizeToParagraph If true, the provided [fontSize] will be applied to the annotated string used to
+ * build a Markdown paragraph from the [text]. This was not the case in Paywalls V1, but is needed for Paywalls V2.
+ * (See `TextComponentViewTests` for more info.)
  */
 @SuppressWarnings("LongParameterList")
 @Composable
@@ -80,7 +83,9 @@ internal fun Markdown(
     horizontalAlignment: Alignment.Horizontal = Alignment.Start,
     textAlign: TextAlign? = null,
     allowLinks: Boolean = true,
-    textFillMaxWidth: Boolean = false, // This is to support V1 paywalls
+    // The below parameters are used to avoid unintended changes to V1 paywalls.
+    textFillMaxWidth: Boolean = false,
+    applyFontSizeToParagraph: Boolean = true,
 ) {
     val root = parser.parse(text) as Document
 
@@ -98,7 +103,18 @@ internal fun Markdown(
         horizontalAlignment = horizontalAlignment,
         modifier = modifier,
     ) {
-        MDDocument(root, color, style, fontSize, fontWeight, fontFamily, textAlign, allowLinks, textFillMaxWidth)
+        MDDocument(
+            root,
+            color,
+            style,
+            fontSize,
+            fontWeight,
+            fontFamily,
+            textAlign,
+            allowLinks,
+            textFillMaxWidth,
+            applyFontSizeToParagraph,
+        )
     }
 }
 
@@ -114,6 +130,7 @@ private fun MDDocument(
     textAlign: TextAlign?,
     allowLinks: Boolean,
     textFillMaxWidth: Boolean,
+    applyFontSizeToParagraph: Boolean,
 ) {
     MDBlockChildren(
         document,
@@ -125,6 +142,7 @@ private fun MDDocument(
         textAlign,
         allowLinks,
         textFillMaxWidth,
+        applyFontSizeToParagraph,
     )
 }
 
@@ -140,6 +158,7 @@ private fun MDHeading(
     textAlign: TextAlign?,
     allowLinks: Boolean,
     textFillMaxWidth: Boolean,
+    applyFontSizeToParagraph: Boolean,
     modifier: Modifier = Modifier,
 ) {
     val overriddenStyle = when (heading.level) {
@@ -161,6 +180,7 @@ private fun MDHeading(
                 textAlign,
                 allowLinks,
                 textFillMaxWidth,
+                applyFontSizeToParagraph,
             )
             return
         }
@@ -197,12 +217,16 @@ private fun MDParagraph(
     textAlign: TextAlign?,
     allowLinks: Boolean,
     textFillMaxWidth: Boolean,
+    applyFontSizeToParagraph: Boolean,
 ) {
     Box {
         val styledText = buildAnnotatedString {
             pushStyle(
                 style
-                    .copy(fontWeight = fontWeight, fontSize = fontSize)
+                    .copy(
+                        fontWeight = fontWeight,
+                        fontSize = if (applyFontSizeToParagraph) fontSize else style.fontSize,
+                    )
                     .toSpanStyle(),
             )
             appendMarkdownChildren(paragraph as Node, color, allowLinks)
@@ -419,6 +443,7 @@ private fun MDBlockChildren(
     textAlign: TextAlign?,
     allowLinks: Boolean,
     textFillMaxWidth: Boolean,
+    applyFontSizeToParagraph: Boolean,
 ) {
     var child = parent.firstChild
     while (child != null) {
@@ -434,6 +459,7 @@ private fun MDBlockChildren(
                 textAlign,
                 allowLinks,
                 textFillMaxWidth,
+                applyFontSizeToParagraph,
             )
             is Paragraph -> MDParagraph(
                 child,
@@ -445,6 +471,7 @@ private fun MDBlockChildren(
                 textAlign,
                 allowLinks,
                 textFillMaxWidth,
+                applyFontSizeToParagraph,
             )
             is FencedCodeBlock -> MDFencedCodeBlock(child)
             is BulletList -> MDBulletList(
