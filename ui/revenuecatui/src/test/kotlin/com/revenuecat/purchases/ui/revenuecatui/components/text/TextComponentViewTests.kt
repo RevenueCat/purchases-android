@@ -1,10 +1,16 @@
 package com.revenuecat.purchases.ui.revenuecatui.components.text
 
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.paywalls.components.TextComponent
@@ -12,6 +18,9 @@ import com.revenuecat.purchases.paywalls.components.common.LocalizationData
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
+import com.revenuecat.purchases.paywalls.components.properties.FontSize
+import com.revenuecat.purchases.paywalls.components.properties.Size
+import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fit
 import com.revenuecat.purchases.ui.revenuecatui.assertions.assertPixelColorEquals
 import com.revenuecat.purchases.ui.revenuecatui.assertions.assertTextColorEquals
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState
@@ -23,6 +32,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvi
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
 import com.revenuecat.purchases.ui.revenuecatui.helpers.themeChangingTest
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -133,6 +143,51 @@ class TextComponentViewTests {
                     .assertBackgroundColorEquals(expectedDarkColor)
             }
         )
+    }
+
+    /**
+     * There's some interplay between a Material3 theme and our Markdown component. If both of these are present in the
+     * Compose tree, the font size in the Markdown component did not have any effect. This is fixed in #1981.
+     * Unfortunately this bug does not show up in Compose Previews. Hence this test to protect against regressions.
+     */
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    @Config(shadows = [ShadowPixelCopy::class], sdk = [34])
+    @Test
+    fun `Should properly set the font size in a Material3 theme`(): Unit = with(composeTestRule) {
+        // Arrange
+        val textId = localizationDictionary.keys.first()
+        val color = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb()))
+        val size = Size(Fit, Fit)
+        setContent {
+            val largeTextStyle = styleFactory.create(
+                TextComponent(text = textId, color = color, fontSize = FontSize.HEADING_L, size = size)
+            ).getOrThrow() as TextComponentStyle
+            val smallTextStyle = styleFactory.create(
+                TextComponent(text = textId, color = color, fontSize = FontSize.BODY_S, size = size)
+            ).getOrThrow() as TextComponentStyle
+
+            // Act
+            MaterialTheme {
+                Column(modifier = Modifier.fillMaxSize()) {
+                    TextComponentView(style = largeTextStyle, modifier = Modifier.testTag("large"))
+                    TextComponentView(style = smallTextStyle, modifier = Modifier.testTag("small"))
+                }
+            }
+        }
+
+        // Assert
+        val largeSize = onNodeWithTag("large")
+            .assertIsDisplayed()
+            .fetchSemanticsNode()
+            .size
+
+        val smallSize = onNodeWithTag("small")
+            .assertIsDisplayed()
+            .fetchSemanticsNode()
+            .size
+
+        assertThat(largeSize.height).isGreaterThan(smallSize.height)
+        assertThat(largeSize.width).isGreaterThan(smallSize.width)
     }
 
     /**
