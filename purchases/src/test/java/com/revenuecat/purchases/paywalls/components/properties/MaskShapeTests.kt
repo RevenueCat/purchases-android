@@ -105,6 +105,18 @@ internal class MaskShapeTests(@Suppress("UNUSED_PARAMETER") name: String, privat
                     expected = MaskShape.Convex
                 )
             ),
+            arrayOf(
+                "circle",
+                Args(
+                    json = """
+                        {
+                          "type": "circle",
+                          "corners": null
+                        }
+                        """.trimIndent(),
+                    expected = MaskShape.Circle
+                )
+            ),
         )
     }
 
