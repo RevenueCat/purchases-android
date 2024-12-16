@@ -6,6 +6,7 @@ import dev.drewhamilton.poko.Poko
 internal sealed interface PaywallAction {
     object RestorePurchases : PaywallAction
     object NavigateBack : PaywallAction
+    object PurchasePackage : PaywallAction
 
     @Poko class NavigateTo(@get:JvmSynthetic val destination: ButtonComponent.Destination) : PaywallAction
 }
