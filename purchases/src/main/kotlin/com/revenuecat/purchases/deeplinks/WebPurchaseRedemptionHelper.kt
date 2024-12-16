@@ -3,7 +3,6 @@ package com.revenuecat.purchases.deeplinks
 import android.os.Handler
 import android.os.Looper
 import com.revenuecat.purchases.CustomerInfoUpdateHandler
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.WebPurchaseRedemption
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.debugLog
