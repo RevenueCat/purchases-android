@@ -61,14 +61,19 @@ internal sealed interface PaywallState {
             override val offering: Offering,
             val data: PaywallComponentsData,
             initialLocaleList: LocaleList = LocaleList.current,
+            initialIsEligibleForIntroOffer: Boolean = false,
         ) : Loaded {
             private var localeId by mutableStateOf(initialLocaleList.toLocaleId())
 
             val localizationDictionary by derivedStateOf { data.componentsLocalizations.getValue(localeId) }
             val locale by derivedStateOf { localeId.toLocale() }
 
-            fun update(localeList: FrameworkLocaleList) {
-                localeId = LocaleList(localeList.toLanguageTags()).toLocaleId()
+            var isEligibleForIntroOffer by mutableStateOf(initialIsEligibleForIntroOffer)
+                private set
+
+            fun update(localeList: FrameworkLocaleList? = null, isEligibleForIntroOffer: Boolean? = null) {
+                if (localeList != null) localeId = LocaleList(localeList.toLanguageTags()).toLocaleId()
+                if (isEligibleForIntroOffer != null) this.isEligibleForIntroOffer = isEligibleForIntroOffer
             }
 
             private fun LocaleList.toLocaleId(): LocaleId =
