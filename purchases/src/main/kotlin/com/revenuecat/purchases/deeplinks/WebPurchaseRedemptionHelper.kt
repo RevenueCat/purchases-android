@@ -12,7 +12,6 @@ import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsMa
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.interfaces.RedeemWebPurchaseListener
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 internal class WebPurchaseRedemptionHelper(
     private val backend: Backend,
     private val identityManager: IdentityManager,

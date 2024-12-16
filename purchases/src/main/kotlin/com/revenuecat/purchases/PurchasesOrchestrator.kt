@@ -247,7 +247,6 @@ internal class PurchasesOrchestrator(
         }
     }
 
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     fun redeemWebPurchase(
         webPurchaseRedemption: WebPurchaseRedemption,
         listener: RedeemWebPurchaseListener,
