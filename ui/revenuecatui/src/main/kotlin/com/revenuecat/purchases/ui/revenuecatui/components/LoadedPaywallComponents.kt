@@ -30,10 +30,21 @@ import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.CornerRadiuses
 import com.revenuecat.purchases.paywalls.components.properties.Dimension.Vertical
+import com.revenuecat.purchases.paywalls.components.properties.Dimension.ZLayer
+import com.revenuecat.purchases.paywalls.components.properties.FlexDistribution.END
 import com.revenuecat.purchases.paywalls.components.properties.FlexDistribution.START
+import com.revenuecat.purchases.paywalls.components.properties.FontSize
+import com.revenuecat.purchases.paywalls.components.properties.FontWeight
 import com.revenuecat.purchases.paywalls.components.properties.HorizontalAlignment.CENTER
+import com.revenuecat.purchases.paywalls.components.properties.HorizontalAlignment.LEADING
+import com.revenuecat.purchases.paywalls.components.properties.Padding
 import com.revenuecat.purchases.paywalls.components.properties.Shadow
 import com.revenuecat.purchases.paywalls.components.properties.Shape
+import com.revenuecat.purchases.paywalls.components.properties.Size
+import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fill
+import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fit
+import com.revenuecat.purchases.paywalls.components.properties.TwoDimensionalAlignment
+import com.revenuecat.purchases.paywalls.components.properties.TwoDimensionalAlignment.BOTTOM
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.background
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.toBackgroundStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.state.PackageContext
@@ -176,6 +187,179 @@ private fun LoadedPaywallComponents_Preview() {
                 componentsLocalizations = mapOf(
                     LocaleId("en_US") to mapOf(
                         LocalizationKey("hello-world") to LocalizationData.Text("Hello, world!"),
+                    ),
+                ),
+                defaultLocaleIdentifier = LocaleId("en_US"),
+            ),
+        ),
+        modifier = Modifier
+            .fillMaxSize(),
+    )
+}
+
+@Suppress("LongMethod")
+@Preview()
+@Composable
+private fun LoadedPaywallComponents_Preview_Bless() {
+    val textColor = ColorScheme(
+        light = ColorInfo.Hex(Color.Black.toArgb()),
+        dark = ColorInfo.Hex(Color.White.toArgb()),
+    )
+    val backgroundColor = ColorScheme(
+        light = ColorInfo.Hex(Color.White.toArgb()),
+        dark = ColorInfo.Hex(Color.Black.toArgb()),
+    )
+
+    LoadedPaywallComponents(
+        state = PaywallState.Loaded.Components(
+            offering = Offering(
+                identifier = "id",
+                serverDescription = "description",
+                metadata = emptyMap(),
+                availablePackages = emptyList(),
+                paywall = null,
+            ),
+            data = PaywallComponentsData(
+                templateName = "template",
+                assetBaseURL = URL("https://assets.pawwalls.com"),
+                componentsConfig = ComponentsConfig(
+                    base = PaywallComponentsConfig(
+                        stack = StackComponent(
+                            components = listOf(
+                                StackComponent(
+                                    components = emptyList(),
+                                    dimension = ZLayer(alignment = TwoDimensionalAlignment.CENTER),
+                                    size = Size(width = Fill, height = Fill),
+                                    backgroundColor = ColorScheme(
+                                        light = ColorInfo.Gradient.Linear(
+                                            degrees = 60f,
+                                            points = listOf(
+                                                ColorInfo.Gradient.Point(
+                                                    color = Color(red = 0xFF, green = 0xFF, blue = 0xFF, alpha = 0xFF)
+                                                        .toArgb(),
+                                                    percent = 0.4f,
+                                                ),
+                                                ColorInfo.Gradient.Point(
+                                                    color = Color(red = 5, green = 124, blue = 91).toArgb(),
+                                                    percent = 1f,
+                                                ),
+                                            ),
+                                        ),
+                                    ),
+                                ),
+                                StackComponent(
+                                    components = listOf(
+                                        TextComponent(
+                                            text = LocalizationKey("title"),
+                                            color = textColor,
+                                            fontWeight = FontWeight.SEMI_BOLD,
+                                            fontSize = FontSize.HEADING_L,
+                                            horizontalAlignment = LEADING,
+                                            size = Size(width = Fill, height = Fit),
+                                            margin = Padding(top = 0.0, bottom = 40.0, leading = 0.0, trailing = 0.0),
+                                        ),
+                                        TextComponent(
+                                            text = LocalizationKey("feature-1"),
+                                            color = textColor,
+                                            horizontalAlignment = LEADING,
+                                            size = Size(width = Fill, height = Fit),
+                                            margin = Padding(top = 8.0, bottom = 8.0, leading = 0.0, trailing = 0.0),
+                                        ),
+                                        TextComponent(
+                                            text = LocalizationKey("feature-2"),
+                                            color = textColor,
+                                            horizontalAlignment = LEADING,
+                                            size = Size(width = Fill, height = Fit),
+                                            margin = Padding(top = 8.0, bottom = 8.0, leading = 0.0, trailing = 0.0),
+                                        ),
+                                        TextComponent(
+                                            text = LocalizationKey("feature-3"),
+                                            color = textColor,
+                                            horizontalAlignment = LEADING,
+                                            size = Size(width = Fill, height = Fit),
+                                            margin = Padding(top = 8.0, bottom = 8.0, leading = 0.0, trailing = 0.0),
+                                        ),
+                                        TextComponent(
+                                            text = LocalizationKey("feature-4"),
+                                            color = textColor,
+                                            horizontalAlignment = LEADING,
+                                            size = Size(width = Fill, height = Fit),
+                                            margin = Padding(top = 8.0, bottom = 8.0, leading = 0.0, trailing = 0.0),
+                                        ),
+                                        TextComponent(
+                                            text = LocalizationKey("feature-5"),
+                                            color = textColor,
+                                            horizontalAlignment = LEADING,
+                                            size = Size(width = Fill, height = Fit),
+                                            margin = Padding(top = 8.0, bottom = 8.0, leading = 0.0, trailing = 0.0),
+                                        ),
+                                        TextComponent(
+                                            text = LocalizationKey("feature-6"),
+                                            color = textColor,
+                                            horizontalAlignment = LEADING,
+                                            size = Size(width = Fill, height = Fit),
+                                            margin = Padding(top = 8.0, bottom = 8.0, leading = 0.0, trailing = 0.0),
+                                        ),
+                                        TextComponent(
+                                            text = LocalizationKey("offer"),
+                                            color = textColor,
+                                            horizontalAlignment = LEADING,
+                                            size = Size(width = Fill, height = Fit),
+                                            margin = Padding(top = 48.0, bottom = 8.0, leading = 0.0, trailing = 0.0),
+                                        ),
+                                        StackComponent(
+                                            components = listOf(
+                                                TextComponent(
+                                                    text = LocalizationKey("cta"),
+                                                    color = ColorScheme(
+                                                        light = ColorInfo.Hex(Color.White.toArgb()),
+                                                    ),
+                                                    fontWeight = FontWeight.BOLD,
+                                                ),
+                                            ),
+                                            dimension = ZLayer(alignment = TwoDimensionalAlignment.CENTER),
+                                            size = Size(width = Fit, height = Fit),
+                                            backgroundColor = ColorScheme(
+                                                light = ColorInfo.Hex(Color(red = 5, green = 124, blue = 91).toArgb()),
+                                            ),
+                                            padding = Padding(top = 8.0, bottom = 8.0, leading = 32.0, trailing = 32.0),
+                                            margin = Padding(top = 8.0, bottom = 8.0, leading = 0.0, trailing = 0.0),
+                                            shape = Shape.Pill,
+                                        ),
+                                        TextComponent(
+                                            text = LocalizationKey("terms"),
+                                            color = textColor,
+                                        ),
+                                    ),
+                                    dimension = Vertical(alignment = LEADING, distribution = END),
+                                    size = Size(width = Fill, height = Fill),
+                                    padding = Padding(top = 16.0, bottom = 16.0, leading = 32.0, trailing = 32.0),
+                                ),
+                            ),
+                            dimension = ZLayer(alignment = BOTTOM),
+                            size = Size(width = Fill, height = Fill),
+                            backgroundColor = backgroundColor,
+                        ),
+                        background = Background.Color(backgroundColor),
+                        stickyFooter = null,
+                    ),
+                ),
+                componentsLocalizations = mapOf(
+                    LocaleId("en_US") to mapOf(
+                        LocalizationKey("title") to LocalizationData.Text("Unlock bless."),
+                        LocalizationKey("feature-1") to LocalizationData.Text("✓ Enjoy a 7 day trial"),
+                        LocalizationKey("feature-2") to LocalizationData.Text("✓ Change currencies"),
+                        LocalizationKey("feature-3") to LocalizationData.Text("✓ Access more trend charts"),
+                        LocalizationKey("feature-4") to LocalizationData.Text("✓ Create custom categories"),
+                        LocalizationKey("feature-5") to LocalizationData.Text("✓ Get a special premium icon"),
+                        LocalizationKey("feature-6") to LocalizationData.Text(
+                            "✓ Receive our love and gratitude for your support",
+                        ),
+                        LocalizationKey("offer") to LocalizationData.Text(
+                            "Try 7 days free, then $19.98/year. Cancel anytime.",
+                        ),
+                        LocalizationKey("cta") to LocalizationData.Text("Continue"),
+                        LocalizationKey("terms") to LocalizationData.Text("Privacy & Terms"),
                     ),
                 ),
                 defaultLocaleIdentifier = LocaleId("en_US"),

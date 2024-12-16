@@ -269,6 +269,7 @@ private fun Title(
         text = state.selectedLocalization.title,
         color = state.templateConfiguration.getCurrentColors().text1,
         textFillMaxWidth = true,
+        applyFontSizeToParagraph = false,
         modifier = childModifier,
     )
 }
@@ -286,6 +287,7 @@ private fun Subtitle(
         text = state.selectedLocalization.subtitle ?: "",
         color = state.templateConfiguration.getCurrentColors().text1,
         textFillMaxWidth = true,
+        applyFontSizeToParagraph = false,
         modifier = childModifier,
     )
 }

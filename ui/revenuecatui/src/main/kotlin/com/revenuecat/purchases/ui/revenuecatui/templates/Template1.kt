@@ -99,6 +99,7 @@ private fun ColumnScope.Template1MainContent(state: PaywallState.Loaded.Legacy) 
                 textAlign = TextAlign.Center,
                 color = colors.text1,
                 textFillMaxWidth = true,
+                applyFontSizeToParagraph = false,
                 modifier = Modifier
                     .padding(
                         horizontal = UIConstant.defaultHorizontalPadding,
@@ -116,6 +117,7 @@ private fun ColumnScope.Template1MainContent(state: PaywallState.Loaded.Legacy) 
                     fontWeight = FontWeight.Normal,
                     textAlign = TextAlign.Center,
                     textFillMaxWidth = true,
+                    applyFontSizeToParagraph = false,
                     modifier = Modifier
                         .padding(
                             horizontal = UIConstant.defaultHorizontalPadding,
