@@ -1,4 +1,4 @@
-package com.revenuecat.purchases.ui.revenuecatui.components.state
+package com.revenuecat.purchases.ui.revenuecatui.data
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
@@ -16,7 +16,6 @@ import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConf
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
-import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 import java.net.URL
