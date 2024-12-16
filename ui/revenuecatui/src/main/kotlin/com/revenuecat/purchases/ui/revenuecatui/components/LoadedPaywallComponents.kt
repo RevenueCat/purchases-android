@@ -162,7 +162,7 @@ private fun LoadedPaywallComponents_Preview() {
 }
 
 @Suppress("LongMethod")
-@Preview()
+@Preview
 @Composable
 private fun LoadedPaywallComponents_Preview_Bless() {
     val textColor = ColorScheme(
