@@ -1,9 +1,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.components.style
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.paywalls.components.ButtonComponent
@@ -30,7 +27,6 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toTextAlign
 import com.revenuecat.purchases.ui.revenuecatui.components.state.PackageContext
 import com.revenuecat.purchases.ui.revenuecatui.components.toPresentedOverrides
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvider
-import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableProcessor
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyList
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Result
@@ -106,7 +102,6 @@ internal class StyleFactory(
         )
     }
 
-    @Composable
     private fun createTextComponentStyle(
         component: TextComponent,
     ): Result<TextComponentStyle, NonEmptyList<PaywallValidationError>> = zipOrAccumulate(
@@ -126,12 +121,7 @@ internal class StyleFactory(
 
         TextComponentStyle(
             visible = partial?.visible ?: true,
-            text = rememberProcessedText(
-                originalText = presentedPartial?.text ?: text,
-                packageContext = packageContext,
-                locale = locale,
-                variables = variables,
-            ),
+            text = presentedPartial?.text ?: text,
             color = partial?.color ?: component.color,
             fontSize = partial?.fontSize ?: component.fontSize,
             fontWeight = weight,
@@ -143,52 +133,5 @@ internal class StyleFactory(
             padding = (partial?.padding ?: component.padding).toPaddingValues(),
             margin = (partial?.margin ?: component.margin).toPaddingValues(),
         )
-    }
-
-    /**
-     * Replaces any [variables] in the [originalText] with values based on the currently selected
-     * [package][PackageContext.selectedPackage] and [locale].
-     */
-    @Composable
-    private fun rememberProcessedText(
-        originalText: String,
-        packageContext: PackageContext,
-        variables: VariableDataProvider,
-        locale: Locale,
-    ): String {
-        val processedText by remember(packageContext, variables, locale) {
-            derivedStateOf {
-                packageContext.selectedPackage?.let { selectedPackage ->
-                    val discount = discountPercentage(
-                        pricePerMonthMicros = selectedPackage.product.pricePerMonth()?.amountMicros,
-                        mostExpensiveMicros = packageContext.variableContext.mostExpensivePricePerMonthMicros,
-                    )
-                    val variableContext: VariableProcessor.PackageContext = VariableProcessor.PackageContext(
-                        discountRelativeToMostExpensivePerMonth = discount,
-                        showZeroDecimalPlacePrices = packageContext.variableContext.showZeroDecimalPlacePrices,
-                    )
-                    VariableProcessor.processVariables(
-                        variableDataProvider = variables,
-                        context = variableContext,
-                        originalString = originalText,
-                        rcPackage = selectedPackage,
-                        locale = locale,
-                    )
-                } ?: originalText
-            }
-        }
-
-        return processedText
-    }
-
-    private fun discountPercentage(pricePerMonthMicros: Long?, mostExpensiveMicros: Long?): Double? {
-        if (pricePerMonthMicros == null ||
-            mostExpensiveMicros == null ||
-            mostExpensiveMicros <= pricePerMonthMicros
-        ) {
-            return null
-        }
-
-        return (mostExpensiveMicros - pricePerMonthMicros) / mostExpensiveMicros.toDouble()
     }
 }

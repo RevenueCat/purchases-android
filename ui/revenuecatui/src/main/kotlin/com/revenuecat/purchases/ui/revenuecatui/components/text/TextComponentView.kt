@@ -7,9 +7,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.intl.Locale
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
@@ -33,15 +38,26 @@ import com.revenuecat.purchases.ui.revenuecatui.components.modifier.background
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberColorStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.state.PackageContext
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.composables.Markdown
+import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvider
+import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableProcessor
 import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
+import com.revenuecat.purchases.ui.revenuecatui.helpers.toResourceProvider
 
 @Composable
 internal fun TextComponentView(
     style: TextComponentStyle,
     modifier: Modifier = Modifier,
+    // TODO Remove these default values
+    packageContext: PackageContext = PackageContext(null, PackageContext.VariableContext(emptyList())),
+    locale: Locale = Locale.current,
 ) {
+    val context = LocalContext.current
+    val variableDataProvider = remember { VariableDataProvider(context.toResourceProvider()) }
+    val text = rememberProcessedText(style.text, packageContext, variableDataProvider, locale)
+
     val colorStyle = rememberColorStyle(scheme = style.color)
     val backgroundColorStyle = style.backgroundColor?.let { rememberColorStyle(scheme = it) }
 
@@ -60,7 +76,7 @@ internal fun TextComponentView(
 
     if (style.visible) {
         Markdown(
-            text = style.text,
+            text = text,
             modifier = modifier
                 .size(style.size, horizontalAlignment = style.horizontalAlignment)
                 .padding(style.margin)
@@ -77,6 +93,49 @@ internal fun TextComponentView(
     }
 }
 
+@Composable
+private fun rememberProcessedText(
+    originalText: String,
+    packageContext: PackageContext,
+    variables: VariableDataProvider,
+    locale: Locale,
+): String {
+    val processedText by remember(packageContext, variables, locale) {
+        derivedStateOf {
+            packageContext.selectedPackage?.let { selectedPackage ->
+                val discount = discountPercentage(
+                    pricePerMonthMicros = selectedPackage.product.pricePerMonth()?.amountMicros,
+                    mostExpensiveMicros = packageContext.variableContext.mostExpensivePricePerMonthMicros,
+                )
+                val variableContext: VariableProcessor.PackageContext = VariableProcessor.PackageContext(
+                    discountRelativeToMostExpensivePerMonth = discount,
+                    showZeroDecimalPlacePrices = packageContext.variableContext.showZeroDecimalPlacePrices,
+                )
+                VariableProcessor.processVariables(
+                    variableDataProvider = variables,
+                    context = variableContext,
+                    originalString = originalText,
+                    rcPackage = selectedPackage,
+                    locale = java.util.Locale.forLanguageTag(locale.toLanguageTag()),
+                )
+            } ?: originalText
+        }
+    }
+
+    return processedText
+}
+
+private fun discountPercentage(pricePerMonthMicros: Long?, mostExpensiveMicros: Long?): Double? {
+    if (pricePerMonthMicros == null ||
+        mostExpensiveMicros == null ||
+        mostExpensiveMicros <= pricePerMonthMicros
+    ) {
+        return null
+    }
+
+    return (mostExpensiveMicros - pricePerMonthMicros) / mostExpensiveMicros.toDouble()
+}
+
 @Preview(name = "Default")
 @Composable
 private fun TextComponentView_Preview_Default() {
@@ -85,6 +144,8 @@ private fun TextComponentView_Preview_Default() {
             text = "Hello, world",
             color = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb())),
         ),
+        packageContext = previewPackageState(),
+        locale = Locale.current,
     )
 }
 
@@ -98,6 +159,8 @@ private fun TextComponentView_Preview_SerifFont() {
             fontFamily = "serif",
             size = Size(width = Fit, height = Fit),
         ),
+        packageContext = previewPackageState(),
+        locale = Locale.current,
     )
 }
 
@@ -111,6 +174,8 @@ private fun TextComponentView_Preview_SansSerifFont() {
             fontFamily = "sans-serif",
             size = Size(width = Fit, height = Fit),
         ),
+        packageContext = previewPackageState(),
+        locale = Locale.current,
     )
 }
 
@@ -124,6 +189,8 @@ private fun TextComponentView_Preview_MonospaceFont() {
             fontFamily = "monospace",
             size = Size(width = Fit, height = Fit),
         ),
+        packageContext = previewPackageState(),
+        locale = Locale.current,
     )
 }
 
@@ -137,6 +204,8 @@ private fun TextComponentView_Preview_CursiveFont() {
             fontFamily = "cursive",
             size = Size(width = Fit, height = Fit),
         ),
+        packageContext = previewPackageState(),
+        locale = Locale.current,
     )
 }
 
@@ -150,6 +219,8 @@ private fun TextComponentView_Preview_FontSize() {
             fontSize = FontSize.HEADING_L,
             size = Size(width = Fit, height = Fit),
         ),
+        packageContext = previewPackageState(),
+        locale = Locale.current,
     )
 }
 
@@ -163,8 +234,10 @@ private fun TextComponentView_Preview_HorizontalAlignment() {
             size = Size(width = Fit, height = Fit),
             horizontalAlignment = HorizontalAlignment.TRAILING,
         ),
+        packageContext = previewPackageState(),
         // Our width is Fit, but we are forced to be wider than our contents.
         modifier = Modifier.widthIn(min = 400.dp),
+        locale = Locale.current,
     )
 }
 
@@ -183,6 +256,8 @@ private fun TextComponentView_Preview_Customizations() {
             padding = Padding(top = 10.0, bottom = 10.0, leading = 20.0, trailing = 20.0),
             margin = Padding(top = 20.0, bottom = 20.0, leading = 10.0, trailing = 10.0),
         ),
+        packageContext = previewPackageState(),
+        locale = Locale.current,
     )
 }
 
@@ -195,6 +270,8 @@ private fun TextComponentView_Preview_Markdown() {
                 "Click [here](https://revenuecat.com)",
             color = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb())),
         ),
+        packageContext = previewPackageState(),
+        locale = Locale.current,
     )
 }
 
@@ -231,8 +308,9 @@ private fun TextComponentView_Preview_LinearGradient() {
             size = Size(width = SizeConstraint.Fixed(200.toUInt()), height = Fit),
             padding = Padding(top = 10.0, bottom = 10.0, leading = 20.0, trailing = 20.0),
             margin = Padding(top = 20.0, bottom = 20.0, leading = 10.0, trailing = 10.0),
-
         ),
+        packageContext = previewPackageState(),
+        locale = Locale.current,
     )
 }
 
@@ -268,8 +346,9 @@ private fun TextComponentView_Preview_RadialGradient() {
             size = Size(width = SizeConstraint.Fixed(200.toUInt()), height = Fit),
             padding = Padding(top = 10.0, bottom = 10.0, leading = 20.0, trailing = 20.0),
             margin = Padding(top = 20.0, bottom = 20.0, leading = 10.0, trailing = 10.0),
-
         ),
+        packageContext = previewPackageState(),
+        locale = Locale.current,
     )
 }
 
@@ -305,3 +384,12 @@ private fun previewTextComponentStyle(
         margin = margin.toPaddingValues(),
     )
 }
+
+private fun previewPackageState(): PackageContext =
+    PackageContext(
+        initialSelectedPackage = null,
+        initialVariableContext = PackageContext.VariableContext(
+            packages = emptyList(),
+            showZeroDecimalPlacePrices = true,
+        ),
+    )
