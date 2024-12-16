@@ -14,9 +14,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.intl.Locale
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.revenuecat.purchases.Offering
+import com.revenuecat.purchases.paywalls.components.StackComponent
+import com.revenuecat.purchases.paywalls.components.common.Background
+import com.revenuecat.purchases.paywalls.components.common.ComponentsConfig
+import com.revenuecat.purchases.paywalls.components.common.LocaleId
+import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConfig
+import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.FontSize
@@ -38,25 +44,28 @@ import com.revenuecat.purchases.ui.revenuecatui.components.modifier.background
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberColorStyle
-import com.revenuecat.purchases.ui.revenuecatui.components.state.PackageContext
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.composables.Markdown
+import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvider
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableProcessor
 import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toResourceProvider
+import java.net.URL
 
 @Composable
 internal fun TextComponentView(
     style: TextComponentStyle,
+    state: PaywallState.Loaded.Components,
     modifier: Modifier = Modifier,
-    // TODO Remove these default values
-    packageContext: PackageContext = PackageContext(null, PackageContext.VariableContext(emptyList())),
-    locale: Locale = Locale.current,
 ) {
     val context = LocalContext.current
     val variableDataProvider = remember { VariableDataProvider(context.toResourceProvider()) }
-    val text = rememberProcessedText(style.text, packageContext, variableDataProvider, locale)
+    val text = rememberProcessedText(
+        originalText = style.text,
+        variables = variableDataProvider,
+        state = state,
+    )
 
     val colorStyle = rememberColorStyle(scheme = style.color)
     val backgroundColorStyle = style.backgroundColor?.let { rememberColorStyle(scheme = it) }
@@ -96,27 +105,26 @@ internal fun TextComponentView(
 @Composable
 private fun rememberProcessedText(
     originalText: String,
-    packageContext: PackageContext,
     variables: VariableDataProvider,
-    locale: Locale,
+    state: PaywallState.Loaded.Components,
 ): String {
-    val processedText by remember(packageContext, variables, locale) {
+    val processedText by remember(originalText) {
         derivedStateOf {
-            packageContext.selectedPackage?.let { selectedPackage ->
+            state.selectedPackage?.let { selectedPackage ->
                 val discount = discountPercentage(
                     pricePerMonthMicros = selectedPackage.product.pricePerMonth()?.amountMicros,
-                    mostExpensiveMicros = packageContext.variableContext.mostExpensivePricePerMonthMicros,
+                    mostExpensiveMicros = state.mostExpensivePricePerMonthMicros,
                 )
                 val variableContext: VariableProcessor.PackageContext = VariableProcessor.PackageContext(
                     discountRelativeToMostExpensivePerMonth = discount,
-                    showZeroDecimalPlacePrices = packageContext.variableContext.showZeroDecimalPlacePrices,
+                    showZeroDecimalPlacePrices = state.showZeroDecimalPlacePrices,
                 )
                 VariableProcessor.processVariables(
                     variableDataProvider = variables,
                     context = variableContext,
                     originalString = originalText,
                     rcPackage = selectedPackage,
-                    locale = java.util.Locale.forLanguageTag(locale.toLanguageTag()),
+                    locale = java.util.Locale.forLanguageTag(state.locale.toLanguageTag()),
                 )
             } ?: originalText
         }
@@ -144,8 +152,7 @@ private fun TextComponentView_Preview_Default() {
             text = "Hello, world",
             color = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb())),
         ),
-        packageContext = previewPackageState(),
-        locale = Locale.current,
+        state = previewEmptyState(),
     )
 }
 
@@ -159,8 +166,7 @@ private fun TextComponentView_Preview_SerifFont() {
             fontFamily = "serif",
             size = Size(width = Fit, height = Fit),
         ),
-        packageContext = previewPackageState(),
-        locale = Locale.current,
+        state = previewEmptyState(),
     )
 }
 
@@ -174,8 +180,7 @@ private fun TextComponentView_Preview_SansSerifFont() {
             fontFamily = "sans-serif",
             size = Size(width = Fit, height = Fit),
         ),
-        packageContext = previewPackageState(),
-        locale = Locale.current,
+        state = previewEmptyState(),
     )
 }
 
@@ -189,8 +194,7 @@ private fun TextComponentView_Preview_MonospaceFont() {
             fontFamily = "monospace",
             size = Size(width = Fit, height = Fit),
         ),
-        packageContext = previewPackageState(),
-        locale = Locale.current,
+        state = previewEmptyState(),
     )
 }
 
@@ -204,8 +208,7 @@ private fun TextComponentView_Preview_CursiveFont() {
             fontFamily = "cursive",
             size = Size(width = Fit, height = Fit),
         ),
-        packageContext = previewPackageState(),
-        locale = Locale.current,
+        state = previewEmptyState(),
     )
 }
 
@@ -219,8 +222,7 @@ private fun TextComponentView_Preview_FontSize() {
             fontSize = FontSize.HEADING_L,
             size = Size(width = Fit, height = Fit),
         ),
-        packageContext = previewPackageState(),
-        locale = Locale.current,
+        state = previewEmptyState(),
     )
 }
 
@@ -234,10 +236,9 @@ private fun TextComponentView_Preview_HorizontalAlignment() {
             size = Size(width = Fit, height = Fit),
             horizontalAlignment = HorizontalAlignment.TRAILING,
         ),
-        packageContext = previewPackageState(),
+        state = previewEmptyState(),
         // Our width is Fit, but we are forced to be wider than our contents.
         modifier = Modifier.widthIn(min = 400.dp),
-        locale = Locale.current,
     )
 }
 
@@ -256,8 +257,7 @@ private fun TextComponentView_Preview_Customizations() {
             padding = Padding(top = 10.0, bottom = 10.0, leading = 20.0, trailing = 20.0),
             margin = Padding(top = 20.0, bottom = 20.0, leading = 10.0, trailing = 10.0),
         ),
-        packageContext = previewPackageState(),
-        locale = Locale.current,
+        state = previewEmptyState(),
     )
 }
 
@@ -270,8 +270,7 @@ private fun TextComponentView_Preview_Markdown() {
                 "Click [here](https://revenuecat.com)",
             color = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb())),
         ),
-        packageContext = previewPackageState(),
-        locale = Locale.current,
+        state = previewEmptyState(),
     )
 }
 
@@ -309,8 +308,7 @@ private fun TextComponentView_Preview_LinearGradient() {
             padding = Padding(top = 10.0, bottom = 10.0, leading = 20.0, trailing = 20.0),
             margin = Padding(top = 20.0, bottom = 20.0, leading = 10.0, trailing = 10.0),
         ),
-        packageContext = previewPackageState(),
-        locale = Locale.current,
+        state = previewEmptyState(),
     )
 }
 
@@ -347,8 +345,7 @@ private fun TextComponentView_Preview_RadialGradient() {
             padding = Padding(top = 10.0, bottom = 10.0, leading = 20.0, trailing = 20.0),
             margin = Padding(top = 20.0, bottom = 20.0, leading = 10.0, trailing = 10.0),
         ),
-        packageContext = previewPackageState(),
-        locale = Locale.current,
+        state = previewEmptyState(),
     )
 }
 
@@ -385,11 +382,28 @@ private fun previewTextComponentStyle(
     )
 }
 
-private fun previewPackageState(): PackageContext =
-    PackageContext(
-        initialSelectedPackage = null,
-        initialVariableContext = PackageContext.VariableContext(
-            packages = emptyList(),
-            showZeroDecimalPlacePrices = true,
+private fun previewEmptyState(): PaywallState.Loaded.Components {
+    val data = PaywallComponentsData(
+        templateName = "template",
+        assetBaseURL = URL("https://assets.pawwalls.com"),
+        componentsConfig = ComponentsConfig(
+            base = PaywallComponentsConfig(
+                // This would normally contain at least one TextComponent, but that's not needed for previews.
+                stack = StackComponent(components = emptyList()),
+                background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
+                stickyFooter = null,
+            ),
         ),
+        componentsLocalizations = emptyMap(),
+        defaultLocaleIdentifier = LocaleId("en_US"),
     )
+    val offering = Offering(
+        identifier = "identifier",
+        serverDescription = "serverDescription",
+        metadata = emptyMap(),
+        availablePackages = emptyList(),
+        paywallComponents = data,
+    )
+
+    return PaywallState.Loaded.Components(offering, data)
+}
