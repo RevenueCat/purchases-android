@@ -13,16 +13,12 @@ import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState
 import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition
-import com.revenuecat.purchases.ui.revenuecatui.components.state.PackageContext
-import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvider
-import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Result
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import java.util.Locale
 
 @RunWith(AndroidJUnit4::class)
 class StyleFactoryTests {
@@ -48,16 +44,7 @@ class StyleFactoryTests {
             windowSize = ScreenCondition.COMPACT,
             isEligibleForIntroOffer = true,
             componentState = ComponentViewState.DEFAULT,
-            packageContext = PackageContext(
-                initialSelectedPackage = null,
-                initialVariableContext = PackageContext.VariableContext(
-                    packages = emptyList(),
-                    showZeroDecimalPlacePrices = false
-                )
-            ),
             localizationDictionary = localizationDictionary,
-            locale = Locale.US,
-            variables = VariableDataProvider(MockResourceProvider())
         )
     }
 

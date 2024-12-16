@@ -24,9 +24,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toFontWeight
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toShape
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toTextAlign
-import com.revenuecat.purchases.ui.revenuecatui.components.state.PackageContext
 import com.revenuecat.purchases.ui.revenuecatui.components.toPresentedOverrides
-import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvider
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyList
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Result
@@ -36,17 +34,12 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.mapOrAccumulate
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyListOf
 import com.revenuecat.purchases.ui.revenuecatui.helpers.orSuccessfullyNull
 import com.revenuecat.purchases.ui.revenuecatui.helpers.zipOrAccumulate
-import java.util.Locale
 
-@Suppress("LongParameterList")
 internal class StyleFactory(
     private val windowSize: ScreenCondition,
     private val isEligibleForIntroOffer: Boolean,
     private val componentState: ComponentViewState,
-    private val packageContext: PackageContext,
     private val localizationDictionary: LocalizationDictionary,
-    private val locale: Locale,
-    private val variables: VariableDataProvider,
 ) {
 
     private companion object {
