@@ -11,6 +11,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.text.intl.Locale
 import androidx.compose.ui.text.intl.LocaleList
 import com.revenuecat.purchases.Offering
+import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.ProcessedLocalizedConfiguration
@@ -62,6 +63,7 @@ internal sealed interface PaywallState {
             val data: PaywallComponentsData,
             initialLocaleList: LocaleList = LocaleList.current,
             initialIsEligibleForIntroOffer: Boolean = false,
+            initialSelectedPackage: Package? = null,
         ) : Loaded {
             private var localeId by mutableStateOf(initialLocaleList.toLocaleId())
 
@@ -70,10 +72,20 @@ internal sealed interface PaywallState {
 
             var isEligibleForIntroOffer by mutableStateOf(initialIsEligibleForIntroOffer)
                 private set
+            var selectedPackage by mutableStateOf<Package?>(initialSelectedPackage)
+                private set
+
+            // TODO Actually determine this.
+            val showZeroDecimalPlacePrices: Boolean = true
+            val mostExpensivePricePerMonthMicros: Long? = offering.availablePackages.mostExpensivePricePerMonthMicros()
 
             fun update(localeList: FrameworkLocaleList? = null, isEligibleForIntroOffer: Boolean? = null) {
                 if (localeList != null) localeId = LocaleList(localeList.toLanguageTags()).toLocaleId()
                 if (isEligibleForIntroOffer != null) this.isEligibleForIntroOffer = isEligibleForIntroOffer
+            }
+
+            fun update(selectedPackage: Package?) {
+                this.selectedPackage = selectedPackage
             }
 
             private fun LocaleList.toLocaleId(): LocaleId =
@@ -87,6 +99,13 @@ internal sealed interface PaywallState {
 
             private fun Locale.toLocaleId(): LocaleId =
                 LocaleId(toLanguageTag().replace('-', '_'))
+
+            private fun List<Package>.mostExpensivePricePerMonthMicros(): Long? =
+                asSequence()
+                    .map { pkg -> pkg.product }
+                    .mapNotNull { product -> product.pricePerMonth() }
+                    .maxByOrNull { price -> price.amountMicros }
+                    ?.amountMicros
         }
     }
 }
