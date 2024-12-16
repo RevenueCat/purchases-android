@@ -3,13 +3,21 @@ package com.revenuecat.purchases.ui.revenuecatui.data
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.ReadOnlyComposable
+import androidx.compose.runtime.Stable
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.text.intl.Locale
+import androidx.compose.ui.text.intl.LocaleList
 import com.revenuecat.purchases.Offering
+import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.ProcessedLocalizedConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.isFullScreen
+import android.os.LocaleList as FrameworkLocaleList
 
 internal sealed interface PaywallState {
     object Loading : PaywallState
@@ -48,10 +56,33 @@ internal sealed interface PaywallState {
             }
         }
 
-        data class Components(
+        @Stable
+        class Components(
             override val offering: Offering,
             val data: PaywallComponentsData,
-        ) : Loaded
+            initialLocaleList: LocaleList = LocaleList.current,
+        ) : Loaded {
+            private var localeId by mutableStateOf(initialLocaleList.toLocaleId())
+
+            val localizationDictionary by derivedStateOf { data.componentsLocalizations.getValue(localeId) }
+            val locale by derivedStateOf { localeId.toLocale() }
+
+            fun update(localeList: FrameworkLocaleList) {
+                localeId = LocaleList(localeList.toLanguageTags()).toLocaleId()
+            }
+
+            private fun LocaleList.toLocaleId(): LocaleId =
+                // Configured locales take precedence over the default one.
+                map { it.toLocaleId() }.plus(data.defaultLocaleIdentifier)
+                    // Find the first locale we have a LocalizationDictionary for.
+                    .first { id -> data.componentsLocalizations.containsKey(id) }
+
+            private fun LocaleId.toLocale(): Locale =
+                Locale(value.replace('_', '-'))
+
+            private fun Locale.toLocaleId(): LocaleId =
+                LocaleId(toLanguageTag().replace('-', '_'))
+        }
     }
 }
 

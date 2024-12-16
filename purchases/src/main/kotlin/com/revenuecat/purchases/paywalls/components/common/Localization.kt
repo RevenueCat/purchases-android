@@ -13,6 +13,9 @@ import kotlinx.serialization.descriptors.buildSerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 
+/**
+ * @property value The language tag of this locale, with an underscore separating the language from the region.
+ */
 @InternalRevenueCatAPI
 @Serializable
 @JvmInline

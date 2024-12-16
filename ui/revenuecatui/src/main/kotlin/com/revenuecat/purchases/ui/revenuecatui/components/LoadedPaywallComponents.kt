@@ -3,7 +3,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.components
 
 import android.content.res.Configuration
-import android.os.LocaleList
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.Composable
@@ -50,7 +49,6 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.StyleFactory
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
 import java.net.URL
-import java.util.Locale
 
 @Composable
 internal fun LoadedPaywallComponents(
@@ -58,22 +56,17 @@ internal fun LoadedPaywallComponents(
     modifier: Modifier = Modifier,
 ) {
     val configuration = LocalConfiguration.current
-    // Configured locales take precedence over the default one.
-    val preferredIds = configuration.locales.mapToLocaleIds() + state.data.defaultLocaleIdentifier
-    // Find the first locale we have a LocalizationDictionary for.
-    val localeId = preferredIds.first { id -> state.data.componentsLocalizations.containsKey(id) }
-    val localizationDictionary = state.data.componentsLocalizations.getValue(localeId)
-    val locale = localeId.toLocale()
+    state.update(localeList = configuration.locales)
 
     val windowSizeClass: WindowSizeClass = currentWindowAdaptiveInfo().windowSizeClass
     val windowSize = ScreenCondition.from(windowSizeClass.windowWidthSizeClass)
 
-    val styleFactory = remember(locale, windowSize) {
+    val styleFactory = remember(state.locale, windowSize) {
         StyleFactory(
             windowSize = windowSize,
             isEligibleForIntroOffer = false,
             componentState = ComponentViewState.DEFAULT,
-            localizationDictionary = localizationDictionary,
+            localizationDictionary = state.localizationDictionary,
         )
     }
 
@@ -88,21 +81,6 @@ internal fun LoadedPaywallComponents(
             .background(background),
     )
 }
-
-private fun LocaleList.mapToLocaleIds(): List<LocaleId> {
-    val result = ArrayList<LocaleId>(size())
-    for (i in 0 until size()) {
-        val locale = get(i)
-        if (locale != null) result.add(locale.toLocaleId())
-    }
-    return result
-}
-
-private fun LocaleId.toLocale(): Locale =
-    Locale.forLanguageTag(value)
-
-private fun Locale.toLocaleId(): LocaleId =
-    LocaleId(toLanguageTag())
 
 @Suppress("LongMethod")
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_NO or Configuration.UI_MODE_TYPE_NORMAL)
