@@ -1,24 +1,13 @@
 package com.revenuecat.purchases.ui.revenuecatui.data
 
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.toArgb
-import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.TestStoreProduct
-import com.revenuecat.purchases.paywalls.components.StackComponent
-import com.revenuecat.purchases.paywalls.components.common.Background
-import com.revenuecat.purchases.paywalls.components.common.ComponentsConfig
-import com.revenuecat.purchases.paywalls.components.common.LocaleId
-import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConfig
-import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
-import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
-import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
+import com.revenuecat.purchases.ui.revenuecatui.helpers.FakePaywallState
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
-import java.net.URL
 import java.text.NumberFormat
 import java.util.Locale
 
@@ -30,7 +19,7 @@ class MostExpensivePricePerMonthMicrosTests {
         val packages = emptyList<Package>()
 
         // Act
-        val actual = PaywallState(packages).mostExpensivePricePerMonthMicros
+        val actual = FakePaywallState(packages = packages).mostExpensivePricePerMonthMicros
 
         // Assert
         assertThat(actual).isNull()
@@ -43,7 +32,7 @@ class MostExpensivePricePerMonthMicrosTests {
         val expected = 1_000_000L
 
         // Act
-        val actual = PaywallState(listOf(package1)).mostExpensivePricePerMonthMicros
+        val actual = FakePaywallState(package1).mostExpensivePricePerMonthMicros
 
         // Assert
         assertThat(actual).isEqualTo(expected)
@@ -58,7 +47,7 @@ class MostExpensivePricePerMonthMicrosTests {
         val expected = 2_000_000L
 
         // Act
-        val actual = PaywallState(listOf(package1, package2, package3)).mostExpensivePricePerMonthMicros
+        val actual = FakePaywallState(package1, package2, package3).mostExpensivePricePerMonthMicros
 
         // Assert
         assertThat(actual).isEqualTo(expected)
@@ -74,7 +63,7 @@ class MostExpensivePricePerMonthMicrosTests {
         val expected = weekly.product.pricePerMonth()?.amountMicros
         
         // Act
-        val actual = PaywallState(listOf(monthly, weekly, yearly)).mostExpensivePricePerMonthMicros
+        val actual = FakePaywallState(monthly, weekly, yearly).mostExpensivePricePerMonthMicros
 
         // Assert
         assertThat(actual).isEqualTo(expected)
@@ -88,7 +77,7 @@ class MostExpensivePricePerMonthMicrosTests {
         val expected = 1_000_000L
 
         // Act
-        val actual = PaywallState(listOf(package1, package2)).mostExpensivePricePerMonthMicros
+        val actual = FakePaywallState(package1, package2).mostExpensivePricePerMonthMicros
 
         // Assert
         assertThat(actual).isEqualTo(expected)
@@ -101,7 +90,7 @@ class MostExpensivePricePerMonthMicrosTests {
         val package2 = lifetimePackageWithPrice(2_000_000_000)
 
         // Act
-        val actual = PaywallState(listOf(package1, package2)).mostExpensivePricePerMonthMicros
+        val actual = FakePaywallState(package1, package2).mostExpensivePricePerMonthMicros
 
         // Assert
         assertThat(actual).isNull()
@@ -193,30 +182,4 @@ class MostExpensivePricePerMonthMicrosTests {
      */
     private fun formatMicrosToCurrency(micros: Long, locale: Locale = Locale.US): String =
         NumberFormat.getCurrencyInstance(locale).format(micros / 1_000_000.0)
-
-    @Suppress("TestFunctionName")
-    private fun PaywallState(packages: List<Package>): PaywallState.Loaded.Components {
-        val data = PaywallComponentsData(
-            templateName = "template",
-            assetBaseURL = URL("https://assets.pawwalls.com"),
-            componentsConfig = ComponentsConfig(
-                base = PaywallComponentsConfig(
-                    stack = StackComponent(components = emptyList()),
-                    background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
-                    stickyFooter = null,
-                ),
-            ),
-            componentsLocalizations = emptyMap(),
-            defaultLocaleIdentifier = LocaleId("en_US"),
-        )
-        val offering = Offering(
-            identifier = "identifier",
-            serverDescription = "serverDescription",
-            metadata = emptyMap(),
-            availablePackages = packages,
-            paywallComponents = data,
-        )
-
-        return PaywallState.Loaded.Components(offering, data)
-    }
 }
