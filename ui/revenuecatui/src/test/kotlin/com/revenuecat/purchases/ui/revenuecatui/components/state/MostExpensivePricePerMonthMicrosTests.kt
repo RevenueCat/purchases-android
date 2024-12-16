@@ -1,17 +1,29 @@
 package com.revenuecat.purchases.ui.revenuecatui.components.state
 
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
+import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PackageType
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.TestStoreProduct
-import com.revenuecat.purchases.ui.revenuecatui.components.state.PackageContext.VariableContext
+import com.revenuecat.purchases.paywalls.components.StackComponent
+import com.revenuecat.purchases.paywalls.components.common.Background
+import com.revenuecat.purchases.paywalls.components.common.ComponentsConfig
+import com.revenuecat.purchases.paywalls.components.common.LocaleId
+import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConfig
+import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
+import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
+import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
+import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
+import java.net.URL
 import java.text.NumberFormat
 import java.util.Locale
 
-class VariableContextTests {
+class MostExpensivePricePerMonthMicrosTests {
 
     @Test
     fun `mostExpensivePricePerMonthMicros should be null for empty package list`() {
@@ -19,7 +31,7 @@ class VariableContextTests {
         val packages = emptyList<Package>()
 
         // Act
-        val actual = VariableContext(packages).mostExpensivePricePerMonthMicros
+        val actual = PaywallState(packages).mostExpensivePricePerMonthMicros
 
         // Assert
         assertThat(actual).isNull()
@@ -32,7 +44,7 @@ class VariableContextTests {
         val expected = 1_000_000L
 
         // Act
-        val actual = VariableContext(listOf(package1)).mostExpensivePricePerMonthMicros
+        val actual = PaywallState(listOf(package1)).mostExpensivePricePerMonthMicros
 
         // Assert
         assertThat(actual).isEqualTo(expected)
@@ -47,7 +59,7 @@ class VariableContextTests {
         val expected = 2_000_000L
 
         // Act
-        val actual = VariableContext(listOf(package1, package2, package3)).mostExpensivePricePerMonthMicros
+        val actual = PaywallState(listOf(package1, package2, package3)).mostExpensivePricePerMonthMicros
 
         // Assert
         assertThat(actual).isEqualTo(expected)
@@ -63,7 +75,7 @@ class VariableContextTests {
         val expected = weekly.product.pricePerMonth()?.amountMicros
         
         // Act
-        val actual = VariableContext(listOf(monthly, weekly, yearly)).mostExpensivePricePerMonthMicros
+        val actual = PaywallState(listOf(monthly, weekly, yearly)).mostExpensivePricePerMonthMicros
 
         // Assert
         assertThat(actual).isEqualTo(expected)
@@ -77,7 +89,7 @@ class VariableContextTests {
         val expected = 1_000_000L
 
         // Act
-        val actual = VariableContext(listOf(package1, package2)).mostExpensivePricePerMonthMicros
+        val actual = PaywallState(listOf(package1, package2)).mostExpensivePricePerMonthMicros
 
         // Assert
         assertThat(actual).isEqualTo(expected)
@@ -90,7 +102,7 @@ class VariableContextTests {
         val package2 = lifetimePackageWithPrice(2_000_000_000)
 
         // Act
-        val actual = VariableContext(listOf(package1, package2)).mostExpensivePricePerMonthMicros
+        val actual = PaywallState(listOf(package1, package2)).mostExpensivePricePerMonthMicros
 
         // Assert
         assertThat(actual).isNull()
@@ -182,4 +194,30 @@ class VariableContextTests {
      */
     private fun formatMicrosToCurrency(micros: Long, locale: Locale = Locale.US): String =
         NumberFormat.getCurrencyInstance(locale).format(micros / 1_000_000.0)
+
+    @Suppress("TestFunctionName")
+    private fun PaywallState(packages: List<Package>): PaywallState.Loaded.Components {
+        val data = PaywallComponentsData(
+            templateName = "template",
+            assetBaseURL = URL("https://assets.pawwalls.com"),
+            componentsConfig = ComponentsConfig(
+                base = PaywallComponentsConfig(
+                    stack = StackComponent(components = emptyList()),
+                    background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
+                    stickyFooter = null,
+                ),
+            ),
+            componentsLocalizations = emptyMap(),
+            defaultLocaleIdentifier = LocaleId("en_US"),
+        )
+        val offering = Offering(
+            identifier = "identifier",
+            serverDescription = "serverDescription",
+            metadata = emptyMap(),
+            availablePackages = packages,
+            paywallComponents = data,
+        )
+
+        return PaywallState.Loaded.Components(offering, data)
+    }
 }
