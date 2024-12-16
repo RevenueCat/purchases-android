@@ -1,6 +1,5 @@
 package com.revenuecat.purchases.ui.revenuecatui.components.style
 
-import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.paywalls.components.ButtonComponent
@@ -47,7 +46,6 @@ internal class StyleFactory(
         private val DEFAULT_SHAPE = RectangleShape
     }
 
-    @Composable
     fun create(component: PaywallComponent): Result<ComponentStyle, NonEmptyList<PaywallValidationError>> =
         when (component) {
             is ButtonComponent -> TODO("ButtonComponentStyle is not yet implemented.")
@@ -59,7 +57,6 @@ internal class StyleFactory(
             is TextComponent -> createTextComponentStyle(component = component)
         }
 
-    @Composable
     private fun createStackComponentStyle(
         component: StackComponent,
     ): Result<StackComponentStyle, NonEmptyList<PaywallValidationError>> = zipOrAccumulate(
