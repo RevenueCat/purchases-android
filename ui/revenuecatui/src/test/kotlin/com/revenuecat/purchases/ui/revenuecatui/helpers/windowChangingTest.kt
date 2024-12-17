@@ -93,6 +93,8 @@ internal class WindowSizeController(private val composeTestRule: ComposeTestRule
 
 // Everything below is largely copied from:
 // https://cs.android.com/androidx/platform/frameworks/support/+/androidx-main:compose/ui/ui-test/src/commonMain/kotlin/androidx/compose/ui/test/DensityForcedSize.kt
+//
+// It is slightly modified to allow for size changes during tests.
 
 @Composable
 private fun DensityForcedSize(
