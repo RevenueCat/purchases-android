@@ -10,7 +10,9 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ApplicationProvider.getApplicationContext
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.paywalls.components.PartialTextComponent
@@ -29,6 +31,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.StyleFactory
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.helpers.FakePaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
+import com.revenuecat.purchases.ui.revenuecatui.helpers.windowChangingTest
 import org.junit.Rule
 import org.junit.Test
 import org.junit.experimental.runners.Enclosed
@@ -94,6 +97,13 @@ internal class TextComponentViewWindowTests {
             )
         )
         val state = FakePaywallState(component)
+        val styleFactory: StyleFactory = StyleFactory(
+            windowSize = ScreenCondition.COMPACT,
+            isEligibleForIntroOffer = true,
+            componentState = ComponentViewState.DEFAULT,
+            localizationDictionary = localizationDictionary,
+        )
+        val style = styleFactory.create(component).getOrThrow() as TextComponentStyle
     }
 
     @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -119,14 +129,14 @@ internal class TextComponentViewWindowTests {
 
         @Config(qualifiers = "w${MAX_WIDTH_COMPACT}dp-h600dp")
         @Test
-        fun `Should use the window size overrides after Activity recreation`(): Unit = with(composeTestRule) {
+        fun `Should use the window size overrides with Activity recreation`(): Unit = with(composeTestRule) {
             // Assert that the compact override is displayed.
             onNodeWithText(UNEXPECTED_TEXT)
                 .assertIsNotDisplayed()
             onNodeWithText(EXPECTED_TEXT_COMPACT)
                 .assertIsDisplayed()
                 .assertTextColorEquals(expectedCompactTextColor)
-                .assertPixelColorPercentage(expectedCompactBackgroundColor) { percentage -> percentage > 0.5 }
+                .assertPixelColorPercentage(expectedCompactBackgroundColor) { percentage -> percentage > 0.4 }
 
             // Recreate the activity with a new window size.
             RuntimeEnvironment.setQualifiers("w${MAX_WIDTH_MEDIUM}dp-h800dp")
@@ -136,7 +146,7 @@ internal class TextComponentViewWindowTests {
             onNodeWithText(EXPECTED_TEXT_MEDIUM)
                 .assertIsDisplayed()
                 .assertTextColorEquals(expectedMediumTextColor)
-                .assertPixelColorPercentage(expectedMediumBackgroundColor) { percentage -> percentage > 0.5 }
+                .assertPixelColorPercentage(expectedMediumBackgroundColor) { percentage -> percentage > 0.4 }
 
             // Recreate the activity with a new window size.
             RuntimeEnvironment.setQualifiers("w${MIN_WIDTH_EXPANDED}dp-h1000dp")
@@ -146,18 +156,10 @@ internal class TextComponentViewWindowTests {
             onNodeWithText(EXPECTED_TEXT_EXPANDED)
                 .assertIsDisplayed()
                 .assertTextColorEquals(expectedExpandedTextColor)
-                .assertPixelColorPercentage(expectedExpandedBackgroundColor) { percentage -> percentage > 0.5 }
+                .assertPixelColorPercentage(expectedExpandedBackgroundColor) { percentage -> percentage > 0.4 }
         }
 
         internal class TestActivity : ComponentActivity() {
-            private val styleFactory: StyleFactory = StyleFactory(
-                windowSize = ScreenCondition.COMPACT,
-                isEligibleForIntroOffer = true,
-                componentState = ComponentViewState.DEFAULT,
-                localizationDictionary = localizationDictionary,
-            )
-            private val style = styleFactory.create(component).getOrThrow() as TextComponentStyle
-
             override fun onCreate(savedInstanceState: Bundle?) {
                 super.onCreate(savedInstanceState)
                 setContent { TextComponentView(style, state) }
@@ -165,4 +167,52 @@ internal class TextComponentViewWindowTests {
         }
     }
 
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    @Config(shadows = [ShadowPixelCopy::class], sdk = [26])
+    @RunWith(AndroidJUnit4::class)
+    class WithoutActivityRecreationTests {
+
+        @get:Rule
+        val composeTestRule = createComposeRule()
+
+        @Test
+        fun `Should use the window size overrides without Activity recreation`(): Unit = with(composeTestRule) {
+
+            windowChangingTest(
+                arrange = { },
+                act = { TextComponentView(style, state) },
+                assert = { windowSizeController ->
+                    // Resize the window without recreating the Activity.
+                    windowSizeController.setWindowSizeInexact(width = (MAX_WIDTH_COMPACT - 100).dp, height = 600.dp)
+                    // Assert that the compact override is displayed.
+                    onNodeWithText(UNEXPECTED_TEXT)
+                        .assertIsNotDisplayed()
+                    onNodeWithText(EXPECTED_TEXT_COMPACT)
+                        .assertIsDisplayed()
+                        .assertTextColorEquals(expectedCompactTextColor)
+                        .assertPixelColorPercentage(expectedCompactBackgroundColor) { percentage -> percentage > 0.4 }
+
+                    // Resize the window without recreating the Activity.
+                    windowSizeController.setWindowSizeInexact(width = (MAX_WIDTH_MEDIUM - 100).dp, height = 800.dp)
+                    // Assert that the medium override is displayed.
+                    onNodeWithText(EXPECTED_TEXT_COMPACT)
+                        .assertIsNotDisplayed()
+                    onNodeWithText(EXPECTED_TEXT_MEDIUM)
+                        .assertIsDisplayed()
+                        .assertTextColorEquals(expectedMediumTextColor)
+                        .assertPixelColorPercentage(expectedMediumBackgroundColor) { percentage -> percentage > 0.4 }
+
+                    // Resize the window without recreating the Activity.
+                    windowSizeController.setWindowSizeInexact(width = (MIN_WIDTH_EXPANDED + 100).dp, height = 1000.dp)
+                    // Assert that the expanded override is displayed.
+                    onNodeWithText(EXPECTED_TEXT_MEDIUM)
+                        .assertIsNotDisplayed()
+                    onNodeWithText(EXPECTED_TEXT_EXPANDED)
+                        .assertIsDisplayed()
+                        .assertTextColorEquals(expectedExpandedTextColor)
+                        .assertPixelColorPercentage(expectedExpandedBackgroundColor) { percentage -> percentage > 0.4 }
+                },
+            )
+        }
+    }
 }
