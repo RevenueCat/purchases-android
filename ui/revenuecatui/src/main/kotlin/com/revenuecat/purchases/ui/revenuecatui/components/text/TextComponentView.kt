@@ -117,7 +117,7 @@ private fun rememberProcessedText(
     textState: TextComponentState,
     variables: VariableDataProvider,
 ): String {
-    val processedText by remember {
+    val processedText by remember(state, textState) {
         derivedStateOf {
             state.selectedPackage?.let { selectedPackage ->
                 val discount = discountPercentage(
