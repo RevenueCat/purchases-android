@@ -3,6 +3,11 @@ package com.revenuecat.purchases.ui.revenuecatui.components.text
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Switch
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
@@ -12,8 +17,12 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.paywalls.components.PartialTextComponent
 import com.revenuecat.purchases.paywalls.components.TextComponent
+import com.revenuecat.purchases.paywalls.components.common.ComponentOverrides
+import com.revenuecat.purchases.paywalls.components.common.ComponentStates
 import com.revenuecat.purchases.paywalls.components.common.LocalizationData
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
@@ -22,6 +31,7 @@ import com.revenuecat.purchases.paywalls.components.properties.FontSize
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fit
 import com.revenuecat.purchases.ui.revenuecatui.assertions.assertPixelColorEquals
+import com.revenuecat.purchases.ui.revenuecatui.assertions.assertPixelColorPercentage
 import com.revenuecat.purchases.ui.revenuecatui.assertions.assertTextColorEquals
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState
 import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition
@@ -45,8 +55,14 @@ class TextComponentViewTests {
     @get:Rule
     val composeTestRule = createComposeRule()
 
+    private val unselectedLocalizationKey = LocalizationKey("unselected key")
+    private val selectedLocalizationKey = LocalizationKey("selected key")
+    private val expectedTextUnselected = "unselected text"
+    private val expectedTextSelected = "selected text"
     private val localizationDictionary = mapOf(
         LocalizationKey("text1") to LocalizationData.Text("this is text 1"),
+        unselectedLocalizationKey to LocalizationData.Text(expectedTextUnselected),
+        selectedLocalizationKey to LocalizationData.Text(expectedTextSelected),
     )
     private lateinit var styleFactory: StyleFactory
 
@@ -179,6 +195,55 @@ class TextComponentViewTests {
         assertThat(largeSize.width).isGreaterThan(smallSize.width)
     }
 
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    @Config(shadows = [ShadowPixelCopy::class], sdk = [26])
+    @Test
+    fun `Should use the selected overrides`(): Unit = with(composeTestRule) {
+        // Arrange
+        val expectedUnselectedTextColor = Color.Black
+        val expectedSelectedTextColor = Color.White
+        val expectedUnselectedBackgroundColor = Color.Yellow
+        val expectedSelectedBackgroundColor = Color.Red
+        val component = TextComponent(
+            text = unselectedLocalizationKey,
+            color = ColorScheme(light = ColorInfo.Hex(expectedUnselectedTextColor.toArgb())),
+            backgroundColor = ColorScheme(ColorInfo.Hex(expectedUnselectedBackgroundColor.toArgb())),
+            overrides = ComponentOverrides(
+                states = ComponentStates(
+                    selected = PartialTextComponent(
+                        text = selectedLocalizationKey,
+                        color = ColorScheme(ColorInfo.Hex(expectedSelectedTextColor.toArgb())),
+                        backgroundColor = ColorScheme(ColorInfo.Hex(expectedSelectedBackgroundColor.toArgb())),
+                    ),
+                ),
+            )
+        )
+        val state = FakePaywallState(component)
+        val style = styleFactory.create(component).getOrThrow() as TextComponentStyle
+
+        // Act
+        setContent {
+            var selected by remember { mutableStateOf(false) }
+            TextComponentView(style = style, state = state, selected = selected)
+            Switch(checked = selected, onCheckedChange = { selected = it }, modifier = Modifier.testTag("switch"))
+        }
+
+        // Assert
+        onNodeWithText(expectedTextUnselected)
+            .assertIsDisplayed()
+            .assertTextColorEquals(expectedUnselectedTextColor)
+            .assertPixelColorPercentage(expectedUnselectedBackgroundColor) { percentage -> percentage > 0.4 }
+
+        // Change `selected` to true.
+        onNodeWithTag("switch")
+            .performClick()
+
+        onNodeWithText(expectedTextSelected)
+            .assertIsDisplayed()
+            .assertTextColorEquals(expectedSelectedTextColor)
+            .assertPixelColorPercentage(expectedSelectedBackgroundColor) { percentage -> percentage > 0.4 }
+    }
+
     /**
      * This is a very naive way of checking the background color: by just looking at the 16 top-left pixels. It works
      * for the particular test where it is used, because the color is solid and the text is transparent, but it
@@ -188,6 +253,4 @@ class TextComponentViewTests {
      */
     private fun SemanticsNodeInteraction.assertBackgroundColorEquals(color: Color): SemanticsNodeInteraction =
         assertPixelColorEquals(startX = 0, startY = 0, width = 4, height = 4, color = color)
-
-
 }
