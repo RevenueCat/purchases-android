@@ -9,6 +9,8 @@ import androidx.compose.ui.text.style.TextAlign
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.FontSize
 import com.revenuecat.purchases.paywalls.components.properties.Size
+import com.revenuecat.purchases.ui.revenuecatui.components.LocalizedTextPartial
+import com.revenuecat.purchases.ui.revenuecatui.components.PresentedOverrides
 
 @Suppress("LongParameterList")
 @Immutable
@@ -37,4 +39,6 @@ internal class TextComponentStyle(
     val padding: PaddingValues,
     @get:JvmSynthetic
     val margin: PaddingValues,
+    @get:JvmSynthetic
+    val overrides: PresentedOverrides<LocalizedTextPartial>?,
 ) : ComponentStyle
