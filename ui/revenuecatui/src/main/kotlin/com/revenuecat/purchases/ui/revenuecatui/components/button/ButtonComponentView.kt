@@ -47,13 +47,11 @@ internal fun ButtonComponentView(
     var isClickable by remember { mutableStateOf(true) }
     StackComponentView(
         style.stackComponentStyle,
-        modifier.conditional(isClickable) {
-            Modifier.clickable {
-                isClickable = false
-                coroutineScope.launch {
-                    style.actionHandler(style.action)
-                    isClickable = true
-                }
+        modifier.clickable(enabled = isClickable) {
+            isClickable = false
+            coroutineScope.launch {
+                style.actionHandler(style.action)
+                isClickable = true
             }
         },
     )
