@@ -807,7 +807,6 @@ class Purchases internal constructor(
      * Redeem a web purchase using a [WebPurchaseRedemption] object obtained
      * through [Intent.asWebPurchaseRedemption] or [Purchases.parseAsWebPurchaseRedemption].
      */
-    @ExperimentalPreviewRevenueCatPurchasesAPI
     fun redeemWebPurchase(webPurchaseRedemption: WebPurchaseRedemption, listener: RedeemWebPurchaseListener) {
         purchasesOrchestrator.redeemWebPurchase(webPurchaseRedemption, listener)
     }
@@ -820,7 +819,6 @@ class Purchases internal constructor(
          * be used to redeem a web purchase using [Purchases.redeemWebPurchase]
          * @return A parsed version of the link or null if it's not a valid RevenueCat web purchase redemption link.
          */
-        @ExperimentalPreviewRevenueCatPurchasesAPI
         @JvmStatic
         fun parseAsWebPurchaseRedemption(intent: Intent): WebPurchaseRedemption? {
             val intentData = intent.data ?: return null
@@ -832,7 +830,6 @@ class Purchases internal constructor(
          * be used to redeem a web purchase using [Purchases.redeemWebPurchase]
          * @return A parsed version of the link or null if it's not a valid RevenueCat web purchase redemption link.
          */
-        @ExperimentalPreviewRevenueCatPurchasesAPI
         @JvmStatic
         fun parseAsWebPurchaseRedemption(string: String): WebPurchaseRedemption? {
             try {

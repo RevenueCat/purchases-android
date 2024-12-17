@@ -6,6 +6,11 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
@@ -41,6 +46,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentS
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import java.net.URL
+import kotlinx.coroutines.launch
 
 @Composable
 internal fun ButtonComponentView(
@@ -48,10 +54,18 @@ internal fun ButtonComponentView(
     state: PaywallState.Loaded.Components,
     modifier: Modifier = Modifier,
 ) {
+    val coroutineScope = rememberCoroutineScope()
+    var isClickable by remember { mutableStateOf(true) }
     StackComponentView(
         style.stackComponentStyle,
         state,
-        modifier.clickable { style.actionHandler(style.action) },
+        modifier.clickable(enabled = isClickable) {
+            isClickable = false
+            coroutineScope.launch {
+                style.actionHandler(style.action)
+                isClickable = true
+            }
+        },
     )
 }
 

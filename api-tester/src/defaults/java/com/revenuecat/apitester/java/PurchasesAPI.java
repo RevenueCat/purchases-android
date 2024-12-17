@@ -31,7 +31,6 @@ import org.jetbrains.annotations.NotNull;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 
-@OptIn(markerClass = ExperimentalPreviewRevenueCatPurchasesAPI.class)
 @SuppressWarnings({"unused"})
 final class PurchasesAPI {
     static void check(

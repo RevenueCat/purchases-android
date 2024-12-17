@@ -1,13 +1,11 @@
 package com.revenuecat.purchases.interfaces
 
 import com.revenuecat.purchases.CustomerInfo
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.PurchasesError
 
 /**
  * Interface to handle the redemption of a RevenueCat Web purchase.
  */
-@ExperimentalPreviewRevenueCatPurchasesAPI
 fun interface RedeemWebPurchaseListener {
     /**
      * Result of the redemption of a RevenueCat Web purchase.
