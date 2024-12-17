@@ -7,7 +7,7 @@ import kotlinx.serialization.Serializable
 @InternalRevenueCatAPI
 @Poko
 @Serializable
-class Border internal constructor(
+class Border(
     @get:JvmSynthetic
     val color: ColorScheme,
     @get:JvmSynthetic

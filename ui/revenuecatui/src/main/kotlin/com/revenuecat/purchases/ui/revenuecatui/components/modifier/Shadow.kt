@@ -37,7 +37,7 @@ import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.Shadow
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ShadowStyle
-import com.revenuecat.purchases.ui.revenuecatui.components.properties.toShadowStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberShadowStyle
 
 @JvmSynthetic
 @Stable
@@ -87,14 +87,16 @@ private fun Shadow_Preview_Circle() {
             modifier = Modifier
                 .requiredSize(100.dp)
                 .shadow(
-                    shadow = Shadow(
-                        color = ColorScheme(
-                            light = ColorInfo.Hex(Color.Black.toArgb()),
+                    shadow = rememberShadowStyle(
+                        Shadow(
+                            color = ColorScheme(
+                                light = ColorInfo.Hex(Color.Black.toArgb()),
+                            ),
+                            x = 5.0,
+                            y = 5.0,
+                            radius = 0.0,
                         ),
-                        x = 5.0,
-                        y = 5.0,
-                        radius = 0.0,
-                    ).toShadowStyle(),
+                    ),
                     shape = shape,
                 )
                 .background(Color.Red, shape = shape),
@@ -116,14 +118,16 @@ private fun Shadow_Preview_Square() {
             modifier = Modifier
                 .requiredSize(100.dp)
                 .shadow(
-                    shadow = Shadow(
-                        color = ColorScheme(
-                            light = ColorInfo.Hex(Color.Black.toArgb()),
+                    shadow = rememberShadowStyle(
+                        Shadow(
+                            color = ColorScheme(
+                                light = ColorInfo.Hex(Color.Black.toArgb()),
+                            ),
+                            x = 10.0,
+                            y = 5.0,
+                            radius = 20.0,
                         ),
-                        x = 10.0,
-                        y = 5.0,
-                        radius = 20.0,
-                    ).toShadowStyle(),
+                    ),
                     shape = shape,
                 )
                 .background(Color.Red, shape = shape),
@@ -145,30 +149,32 @@ private fun Shadow_Preview_Gradient_CustomShape() {
             text = "GET UNLIMITED RGB",
             modifier = Modifier
                 .shadow(
-                    shadow = Shadow(
-                        color = ColorScheme(
-                            light = ColorInfo.Gradient.Linear(
-                                degrees = 0f,
-                                points = listOf(
-                                    ColorInfo.Gradient.Point(
-                                        color = Color.Red.toArgb(),
-                                        percent = 0.1f,
-                                    ),
-                                    ColorInfo.Gradient.Point(
-                                        color = Color.Green.toArgb(),
-                                        percent = 0.5f,
-                                    ),
-                                    ColorInfo.Gradient.Point(
-                                        color = Color.Blue.toArgb(),
-                                        percent = 0.9f,
+                    shadow = rememberShadowStyle(
+                        Shadow(
+                            color = ColorScheme(
+                                light = ColorInfo.Gradient.Linear(
+                                    degrees = 0f,
+                                    points = listOf(
+                                        ColorInfo.Gradient.Point(
+                                            color = Color.Red.toArgb(),
+                                            percent = 0.1f,
+                                        ),
+                                        ColorInfo.Gradient.Point(
+                                            color = Color.Green.toArgb(),
+                                            percent = 0.5f,
+                                        ),
+                                        ColorInfo.Gradient.Point(
+                                            color = Color.Blue.toArgb(),
+                                            percent = 0.9f,
+                                        ),
                                     ),
                                 ),
                             ),
+                            x = 0.0,
+                            y = 6.0,
+                            radius = 9.5,
                         ),
-                        x = 0.0,
-                        y = 6.0,
-                        radius = 9.5,
-                    ).toShadowStyle(),
+                    ),
                     shape = shape,
                 )
                 .background(Color.Black, shape = shape)
@@ -196,14 +202,16 @@ private fun Shadow_Preview_Margin() {
                 .padding(margin)
                 .requiredSize(width = 50.dp, height = 50.dp)
                 .shadow(
-                    shadow = Shadow(
-                        color = ColorScheme(
-                            light = ColorInfo.Hex(Color.Black.toArgb()),
+                    shadow = rememberShadowStyle(
+                        Shadow(
+                            color = ColorScheme(
+                                light = ColorInfo.Hex(Color.Black.toArgb()),
+                            ),
+                            x = 0.0,
+                            y = 5.0,
+                            radius = 20.0,
                         ),
-                        x = 0.0,
-                        y = 5.0,
-                        radius = 20.0,
-                    ).toShadowStyle(),
+                    ),
                     shape = shape,
                 )
                 .background(Color.Red, shape)
@@ -216,14 +224,16 @@ private fun Shadow_Preview_Margin() {
                 .padding(margin)
                 .requiredSize(width = 50.dp, height = 50.dp)
                 .shadow(
-                    shadow = Shadow(
-                        color = ColorScheme(
-                            light = ColorInfo.Hex(Color.Black.toArgb()),
+                    shadow = rememberShadowStyle(
+                        Shadow(
+                            color = ColorScheme(
+                                light = ColorInfo.Hex(Color.Black.toArgb()),
+                            ),
+                            x = 0.0,
+                            y = 5.0,
+                            radius = 20.0,
                         ),
-                        x = 0.0,
-                        y = 5.0,
-                        radius = 20.0,
-                    ).toShadowStyle(),
+                    ),
                     shape = shape,
                 )
                 .background(Color.Red, shape)

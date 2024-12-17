@@ -11,6 +11,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.revenuecat.purchases.paywalls.components.properties.Border
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.Dimension
@@ -19,13 +20,10 @@ import com.revenuecat.purchases.paywalls.components.properties.FontSize
 import com.revenuecat.purchases.paywalls.components.properties.FontWeight
 import com.revenuecat.purchases.paywalls.components.properties.HorizontalAlignment
 import com.revenuecat.purchases.paywalls.components.properties.Padding
+import com.revenuecat.purchases.paywalls.components.properties.Shadow
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fit
 import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
-import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyle
-import com.revenuecat.purchases.ui.revenuecatui.components.properties.BorderStyle
-import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle.Solid
-import com.revenuecat.purchases.ui.revenuecatui.components.properties.ShadowStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.stack.StackComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ButtonComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
@@ -75,12 +73,17 @@ private fun previewButtonComponentStyle(
         dimension = Dimension.Vertical(alignment = HorizontalAlignment.CENTER, distribution = START),
         size = Size(width = Fit, height = Fit),
         spacing = 16.dp,
-        background = BackgroundStyle.Color(Solid(Color.Red)),
+        backgroundColor = ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb())),
         padding = PaddingValues(all = 16.dp),
         margin = PaddingValues(all = 16.dp),
         shape = RoundedCornerShape(size = 20.dp),
-        border = BorderStyle(width = 2.dp, color = Solid(Color.Blue)),
-        shadow = ShadowStyle(color = Solid(Color.Black), radius = 10.dp, x = 0.dp, y = 3.dp),
+        border = Border(width = 2.0, color = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb()))),
+        shadow = Shadow(
+            color = ColorScheme(ColorInfo.Hex(Color.Black.toArgb())),
+            radius = 10.0,
+            x = 0.0,
+            y = 3.0,
+        ),
     ),
     action: PaywallAction = PaywallAction.RestorePurchases,
     actionHandler: (PaywallAction) -> Unit = {},

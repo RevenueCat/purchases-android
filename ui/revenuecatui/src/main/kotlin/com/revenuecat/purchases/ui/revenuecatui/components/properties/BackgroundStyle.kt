@@ -52,11 +52,6 @@ internal fun Background.toBackgroundStyle(): BackgroundStyle =
         }
     }
 
-@JvmSynthetic
-@Composable
-internal fun ColorScheme.toBackgroundStyle(): BackgroundStyle =
-    BackgroundStyle.Color(color = toColorStyle())
-
 @Preview
 @Composable
 private fun Background_Preview_ColorHex() {
