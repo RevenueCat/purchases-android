@@ -7,7 +7,6 @@ import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI;
 import com.revenuecat.purchases.PurchasesError;
 import com.revenuecat.purchases.interfaces.RedeemWebPurchaseListener;
 
-@OptIn(markerClass = ExperimentalPreviewRevenueCatPurchasesAPI.class)
 @SuppressWarnings({"unused"})
 final class RedeemWebPurchaseListenerAPI {
     static void checkListener(RedeemWebPurchaseListener listener,

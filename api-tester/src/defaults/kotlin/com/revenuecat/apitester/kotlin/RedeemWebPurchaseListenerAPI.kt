@@ -1,11 +1,9 @@
 package com.revenuecat.apitester.kotlin
 
 import com.revenuecat.purchases.CustomerInfo
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.interfaces.RedeemWebPurchaseListener
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Suppress("unused", "UNUSED_VARIABLE", "ReturnCount")
 private class RedeemWebPurchaseListenerAPI {
     fun checkListener(
