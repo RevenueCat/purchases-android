@@ -57,12 +57,18 @@ class TextComponentViewTests {
 
     private val unselectedLocalizationKey = LocalizationKey("unselected key")
     private val selectedLocalizationKey = LocalizationKey("selected key")
+    private val ineligibleLocalizationKey = LocalizationKey("ineligible key")
+    private val eligibleLocalizationKey = LocalizationKey("eligible key")
     private val expectedTextUnselected = "unselected text"
     private val expectedTextSelected = "selected text"
+    private val expectedTextIneligible = "ineligible text"
+    private val expectedTextEligible = "eligible text"
     private val localizationDictionary = mapOf(
         LocalizationKey("text1") to LocalizationData.Text("this is text 1"),
         unselectedLocalizationKey to LocalizationData.Text(expectedTextUnselected),
         selectedLocalizationKey to LocalizationData.Text(expectedTextSelected),
+        ineligibleLocalizationKey to LocalizationData.Text(expectedTextIneligible),
+        eligibleLocalizationKey to LocalizationData.Text(expectedTextEligible),
     )
     private lateinit var styleFactory: StyleFactory
 
@@ -242,6 +248,47 @@ class TextComponentViewTests {
             .assertIsDisplayed()
             .assertTextColorEquals(expectedSelectedTextColor)
             .assertPixelColorPercentage(expectedSelectedBackgroundColor) { percentage -> percentage > 0.4 }
+    }
+
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    @Config(shadows = [ShadowPixelCopy::class], sdk = [26])
+    @Test
+    fun `Should use the intro offer overrides`(): Unit = with(composeTestRule) {
+        // Arrange
+        val expectedIneligibleTextColor = Color.Black
+        val expectedEligibleTextColor = Color.White
+        val expectedIneligibleBackgroundColor = Color.Yellow
+        val expectedEligibleBackgroundColor = Color.Red
+        val component = TextComponent(
+            text = ineligibleLocalizationKey,
+            color = ColorScheme(light = ColorInfo.Hex(expectedIneligibleTextColor.toArgb())),
+            backgroundColor = ColorScheme(ColorInfo.Hex(expectedIneligibleBackgroundColor.toArgb())),
+            overrides = ComponentOverrides(
+                introOffer = PartialTextComponent(
+                    text = eligibleLocalizationKey,
+                    color = ColorScheme(ColorInfo.Hex(expectedEligibleTextColor.toArgb())),
+                    backgroundColor = ColorScheme(ColorInfo.Hex(expectedEligibleBackgroundColor.toArgb())),
+                ),
+            )
+        )
+        val state = FakePaywallState(component)
+        val style = styleFactory.create(component).getOrThrow() as TextComponentStyle
+
+        // Act
+        setContent { TextComponentView(style = style, state = state) }
+
+        // Assert
+        state.update(isEligibleForIntroOffer = false)
+        onNodeWithText(expectedTextIneligible)
+            .assertIsDisplayed()
+            .assertTextColorEquals(expectedIneligibleTextColor)
+            .assertPixelColorPercentage(expectedIneligibleBackgroundColor) { percentage -> percentage > 0.4 }
+
+        state.update(isEligibleForIntroOffer = true)
+        onNodeWithText(expectedTextEligible)
+            .assertIsDisplayed()
+            .assertTextColorEquals(expectedEligibleTextColor)
+            .assertPixelColorPercentage(expectedEligibleBackgroundColor) { percentage -> percentage > 0.4 }
     }
 
     /**
