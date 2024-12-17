@@ -25,11 +25,8 @@ import com.revenuecat.purchases.ui.revenuecatui.assertions.assertPixelColorEqual
 import com.revenuecat.purchases.ui.revenuecatui.assertions.assertTextColorEquals
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState
 import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition
-import com.revenuecat.purchases.ui.revenuecatui.components.state.PackageContext
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StyleFactory
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
-import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvider
-import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
 import com.revenuecat.purchases.ui.revenuecatui.helpers.themeChangingTest
 import org.assertj.core.api.Assertions.assertThat
@@ -40,7 +37,6 @@ import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 import org.robolectric.shadows.ShadowPixelCopy
-import java.util.Locale
 
 @RunWith(AndroidJUnit4::class)
 class TextComponentViewTests {
@@ -59,16 +55,7 @@ class TextComponentViewTests {
             windowSize = ScreenCondition.COMPACT,
             isEligibleForIntroOffer = true,
             componentState = ComponentViewState.DEFAULT,
-            packageContext = PackageContext(
-                initialSelectedPackage = null,
-                initialVariableContext = PackageContext.VariableContext(
-                    packages = emptyList(),
-                    showZeroDecimalPlacePrices = false
-                )
-            ),
             localizationDictionary = localizationDictionary,
-            locale = Locale.US,
-            variables = VariableDataProvider(MockResourceProvider())
         )
     }
 

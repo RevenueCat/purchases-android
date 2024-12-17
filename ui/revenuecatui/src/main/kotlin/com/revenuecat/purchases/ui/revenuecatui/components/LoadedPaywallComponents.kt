@@ -12,7 +12,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.window.core.layout.WindowSizeClass
 import com.revenuecat.purchases.Offering
@@ -47,12 +46,9 @@ import com.revenuecat.purchases.paywalls.components.properties.TwoDimensionalAli
 import com.revenuecat.purchases.paywalls.components.properties.TwoDimensionalAlignment.BOTTOM
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.background
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.toBackgroundStyle
-import com.revenuecat.purchases.ui.revenuecatui.components.state.PackageContext
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StyleFactory
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
-import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvider
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
-import com.revenuecat.purchases.ui.revenuecatui.helpers.toResourceProvider
 import java.net.URL
 import java.util.Locale
 
@@ -61,7 +57,6 @@ internal fun LoadedPaywallComponents(
     state: PaywallState.Loaded.Components,
     modifier: Modifier = Modifier,
 ) {
-    val context = LocalContext.current
     val configuration = LocalConfiguration.current
     // Configured locales take precedence over the default one.
     val preferredIds = configuration.locales.mapToLocaleIds() + state.data.defaultLocaleIdentifier
@@ -78,16 +73,7 @@ internal fun LoadedPaywallComponents(
             windowSize = windowSize,
             isEligibleForIntroOffer = false,
             componentState = ComponentViewState.DEFAULT,
-            packageContext = PackageContext(
-                initialSelectedPackage = null,
-                initialVariableContext = PackageContext.VariableContext(
-                    packages = state.offering.availablePackages,
-                    showZeroDecimalPlacePrices = true,
-                ),
-            ),
             localizationDictionary = localizationDictionary,
-            locale = locale,
-            variables = VariableDataProvider(context.toResourceProvider()),
         )
     }
 

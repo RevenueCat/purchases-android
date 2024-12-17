@@ -33,8 +33,11 @@ import com.revenuecat.purchases.paywalls.components.properties.TwoDimensionalAli
 import com.revenuecat.purchases.paywalls.components.properties.VerticalAlignment
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toAlignment
+import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toFontWeight
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toHorizontalAlignmentOrNull
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toHorizontalArrangement
+import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
+import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toTextAlign
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toVerticalAlignmentOrNull
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toVerticalArrangement
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.background
@@ -195,17 +198,17 @@ private fun StackComponentView_Preview_ZLayer() {
                             light = ColorInfo.Hex(Color.Black.toArgb()),
                         ),
                         fontSize = FontSize.BODY_M,
-                        fontWeight = FontWeight.REGULAR,
+                        fontWeight = FontWeight.REGULAR.toFontWeight(),
                         fontFamily = null,
-                        textAlign = HorizontalAlignment.CENTER,
-                        horizontalAlignment = HorizontalAlignment.CENTER,
+                        textAlign = HorizontalAlignment.CENTER.toTextAlign(),
+                        horizontalAlignment = HorizontalAlignment.CENTER.toAlignment(),
                         backgroundColor = ColorScheme(
                             light = ColorInfo.Hex(Color.Yellow.toArgb()),
                             dark = ColorInfo.Hex(Color.Red.toArgb()),
                         ),
                         size = Size(width = Fit, height = Fit),
-                        padding = Padding(top = 8.0, bottom = 8.0, leading = 8.0, trailing = 8.0),
-                        margin = Padding(top = 0.0, bottom = 24.0, leading = 0.0, trailing = 24.0),
+                        padding = Padding(top = 8.0, bottom = 8.0, leading = 8.0, trailing = 8.0).toPaddingValues(),
+                        margin = Padding(top = 0.0, bottom = 24.0, leading = 0.0, trailing = 24.0).toPaddingValues(),
                     ),
                     TextComponentStyle(
                         visible = true,
@@ -214,16 +217,16 @@ private fun StackComponentView_Preview_ZLayer() {
                             light = ColorInfo.Hex(Color.Black.toArgb()),
                         ),
                         fontSize = FontSize.BODY_M,
-                        fontWeight = FontWeight.REGULAR,
+                        fontWeight = FontWeight.REGULAR.toFontWeight(),
                         fontFamily = null,
-                        textAlign = HorizontalAlignment.CENTER,
-                        horizontalAlignment = HorizontalAlignment.CENTER,
+                        textAlign = HorizontalAlignment.CENTER.toTextAlign(),
+                        horizontalAlignment = HorizontalAlignment.CENTER.toAlignment(),
                         backgroundColor = ColorScheme(
                             light = ColorInfo.Hex(Color.Blue.toArgb()),
                         ),
                         size = Size(width = Fit, height = Fit),
-                        padding = Padding(top = 8.0, bottom = 8.0, leading = 8.0, trailing = 8.0),
-                        margin = Padding(top = 0.0, bottom = 0.0, leading = 0.0, trailing = 0.0),
+                        padding = Padding(top = 8.0, bottom = 8.0, leading = 8.0, trailing = 8.0).toPaddingValues(),
+                        margin = Padding(top = 0.0, bottom = 0.0, leading = 0.0, trailing = 0.0).toPaddingValues(),
                     ),
                 ),
                 dimension = Dimension.ZLayer(alignment = TwoDimensionalAlignment.BOTTOM_TRAILING),
@@ -257,16 +260,16 @@ private fun previewChildren() = listOf(
             light = ColorInfo.Hex(Color.Black.toArgb()),
         ),
         fontSize = FontSize.BODY_M,
-        fontWeight = FontWeight.REGULAR,
+        fontWeight = FontWeight.REGULAR.toFontWeight(),
         fontFamily = null,
-        textAlign = HorizontalAlignment.CENTER,
-        horizontalAlignment = HorizontalAlignment.CENTER,
+        textAlign = HorizontalAlignment.CENTER.toTextAlign(),
+        horizontalAlignment = HorizontalAlignment.CENTER.toAlignment(),
         backgroundColor = ColorScheme(
             light = ColorInfo.Hex(Color.Blue.toArgb()),
         ),
         size = Size(width = Fit, height = Fit),
-        padding = Padding(top = 8.0, bottom = 8.0, leading = 8.0, trailing = 8.0),
-        margin = Padding(top = 0.0, bottom = 0.0, leading = 0.0, trailing = 0.0),
+        padding = Padding(top = 8.0, bottom = 8.0, leading = 8.0, trailing = 8.0).toPaddingValues(),
+        margin = Padding(top = 0.0, bottom = 0.0, leading = 0.0, trailing = 0.0).toPaddingValues(),
     ),
     TextComponentStyle(
         visible = true,
@@ -275,15 +278,15 @@ private fun previewChildren() = listOf(
             light = ColorInfo.Hex(Color.Black.toArgb()),
         ),
         fontSize = FontSize.BODY_M,
-        fontWeight = FontWeight.REGULAR,
+        fontWeight = FontWeight.REGULAR.toFontWeight(),
         fontFamily = null,
-        textAlign = HorizontalAlignment.CENTER,
-        horizontalAlignment = HorizontalAlignment.CENTER,
+        textAlign = HorizontalAlignment.CENTER.toTextAlign(),
+        horizontalAlignment = HorizontalAlignment.CENTER.toAlignment(),
         backgroundColor = ColorScheme(
             light = ColorInfo.Hex(Color.Blue.toArgb()),
         ),
         size = Size(width = Fit, height = Fit),
-        padding = Padding(top = 8.0, bottom = 8.0, leading = 8.0, trailing = 8.0),
-        margin = Padding(top = 0.0, bottom = 0.0, leading = 0.0, trailing = 0.0),
+        padding = Padding(top = 8.0, bottom = 8.0, leading = 8.0, trailing = 8.0).toPaddingValues(),
+        margin = Padding(top = 0.0, bottom = 0.0, leading = 0.0, trailing = 0.0).toPaddingValues(),
     ),
 )
