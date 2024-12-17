@@ -11,7 +11,7 @@ internal class ButtonComponentStyle private constructor(
     @get:JvmSynthetic
     val action: PaywallAction,
     @get:JvmSynthetic
-    val actionHandler: (PaywallAction) -> Unit,
+    val actionHandler: suspend (PaywallAction) -> Unit,
 ) : ComponentStyle {
 
     companion object {
@@ -21,7 +21,7 @@ internal class ButtonComponentStyle private constructor(
         operator fun invoke(
             stackComponentStyle: StackComponentStyle,
             action: PaywallAction,
-            actionHandler: (PaywallAction) -> Unit,
+            actionHandler: suspend (PaywallAction) -> Unit,
         ): ButtonComponentStyle {
             return ButtonComponentStyle(
                 stackComponentStyle = stackComponentStyle,
