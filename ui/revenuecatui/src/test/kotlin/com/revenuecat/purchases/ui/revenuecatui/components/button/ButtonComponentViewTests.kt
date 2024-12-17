@@ -9,26 +9,28 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.paywalls.components.properties.Border
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.Dimension
 import com.revenuecat.purchases.paywalls.components.properties.FlexDistribution.START
 import com.revenuecat.purchases.paywalls.components.properties.FontSize
 import com.revenuecat.purchases.paywalls.components.properties.FontWeight
-import com.revenuecat.purchases.paywalls.components.properties.HorizontalAlignment
+import com.revenuecat.purchases.paywalls.components.properties.HorizontalAlignment.CENTER
 import com.revenuecat.purchases.paywalls.components.properties.Padding
+import com.revenuecat.purchases.paywalls.components.properties.Shadow
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fill
 import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
-import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyle
-import com.revenuecat.purchases.ui.revenuecatui.components.properties.BorderStyle
-import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle.Solid
-import com.revenuecat.purchases.ui.revenuecatui.components.properties.ShadowStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toAlignment
+import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toFontWeight
+import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
+import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toTextAlign
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ButtonComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.helpers.FakePaywallState
 import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.delay
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
@@ -57,27 +59,33 @@ class ButtonComponentViewTests {
                                 light = ColorInfo.Hex(Color.Black.toArgb()),
                             ),
                             fontSize = FontSize.BODY_M,
-                            fontWeight = FontWeight.REGULAR,
+                            fontWeight = FontWeight.REGULAR.toFontWeight(),
                             fontFamily = null,
-                            textAlign = HorizontalAlignment.CENTER,
-                            horizontalAlignment = HorizontalAlignment.CENTER,
+                            textAlign = CENTER.toTextAlign(),
+                            horizontalAlignment = CENTER.toAlignment(),
                             backgroundColor = ColorScheme(
                                 light = ColorInfo.Hex(Color.Yellow.toArgb()),
                             ),
                             size = Size(width = Fill, height = Fill),
-                            padding = Padding(top = 8.0, bottom = 8.0, leading = 8.0, trailing = 8.0),
-                            margin = Padding(top = 0.0, bottom = 24.0, leading = 0.0, trailing = 24.0),
+                            padding = Padding(top = 8.0, bottom = 8.0, leading = 8.0, trailing = 8.0).toPaddingValues(),
+                            margin = Padding(top = 0.0, bottom = 24.0, leading = 0.0, trailing = 24.0)
+                                .toPaddingValues(),
                         ),
                     ),
-                    dimension = Dimension.Vertical(alignment = HorizontalAlignment.CENTER, distribution = START),
+                    dimension = Dimension.Vertical(alignment = CENTER, distribution = START),
                     size = Size(width = Fill, height = Fill),
                     spacing = 16.dp,
-                    background = BackgroundStyle.Color(Solid(Color.Red)),
+                    backgroundColor = ColorScheme(ColorInfo.Hex(Color.Red.toArgb())),
                     padding = PaddingValues(all = 16.dp),
                     margin = PaddingValues(all = 16.dp),
                     shape = RoundedCornerShape(size = 20.dp),
-                    border = BorderStyle(width = 2.dp, color = Solid(Color.Blue)),
-                    shadow = ShadowStyle(color = Solid(Color.Black), radius = 10.dp, x = 0.dp, y = 3.dp),
+                    border = Border(width = 2.0, color = ColorScheme(ColorInfo.Hex(Color.Blue.toArgb()))),
+                    shadow = Shadow(
+                        color = ColorScheme(ColorInfo.Hex(Color.Black.toArgb())),
+                        radius = 10.0,
+                        x = 0.0,
+                        y = 3.0
+                    ),
                 ),
                 action = PaywallAction.PurchasePackage,
                 actionHandler = {
@@ -85,7 +93,7 @@ class ButtonComponentViewTests {
                     completable.await()
                 }
             )
-            ButtonComponentView(style = style)
+            ButtonComponentView(style = style, state = FakePaywallState())
         }
 
         val purchaseButton = composeTestRule.onNodeWithText("Purchase")
