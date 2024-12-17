@@ -45,8 +45,8 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.ButtonComponent
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
-import java.net.URL
 import kotlinx.coroutines.launch
+import java.net.URL
 
 @Composable
 internal fun ButtonComponentView(
