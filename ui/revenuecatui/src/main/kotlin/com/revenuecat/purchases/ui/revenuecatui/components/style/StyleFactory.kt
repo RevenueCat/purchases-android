@@ -53,8 +53,15 @@ internal class StyleFactory(
             is PackageComponent -> TODO("PackageComponentStyle is not yet implemented.")
             is PurchaseButtonComponent -> TODO("PurchaseButtonComponentStyle is not yet implemented.")
             is StackComponent -> createStackComponentStyle(component = component)
-            is StickyFooterComponent -> TODO("StickyFooterComponentStyle is not yet implemented.")
+            is StickyFooterComponent -> createStickyFooterComponentStyle(component = component)
             is TextComponent -> createTextComponentStyle(component = component)
+        }
+
+    fun createStickyFooterComponentStyle(
+        component: StickyFooterComponent,
+    ): Result<StickyFooterComponentStyle, NonEmptyList<PaywallValidationError>> =
+        createStackComponentStyle(component.stack).map {
+            StickyFooterComponentStyle(stackComponentStyle = it)
         }
 
     private fun createStackComponentStyle(

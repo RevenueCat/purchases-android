@@ -3,7 +3,10 @@
 package com.revenuecat.purchases.ui.revenuecatui.components
 
 import android.content.res.Configuration
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -45,6 +48,7 @@ import com.revenuecat.purchases.paywalls.components.properties.TwoDimensionalAli
 import com.revenuecat.purchases.paywalls.components.properties.TwoDimensionalAlignment.BOTTOM
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.background
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.toBackgroundStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.stickyfooter.StickyFooterComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StyleFactory
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
@@ -72,15 +76,28 @@ internal fun LoadedPaywallComponents(
 
     val config = state.data.componentsConfig.base
     val style = styleFactory.create(config.stack).getOrThrow()
+    val footerComponentStyle = config.stickyFooter?.let {
+        styleFactory.createStickyFooterComponentStyle(it).getOrThrow()
+    }
     val background = config.background.toBackgroundStyle()
 
-    ComponentView(
-        style = style,
-        state = state,
-        modifier = modifier
-            .fillMaxSize()
-            .background(background),
-    )
+    Column(modifier = modifier.background(background)) {
+        ComponentView(
+            style = style,
+            state = state,
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f),
+        )
+        footerComponentStyle?.let {
+            StickyFooterComponentView(
+                style = it,
+                state = state,
+                modifier = Modifier
+                    .fillMaxWidth(),
+            )
+        }
+    }
 }
 
 @Suppress("LongMethod")
@@ -122,7 +139,7 @@ private fun LoadedPaywallComponents_Preview() {
                             stack = StackComponent(
                                 components = listOf(
                                     TextComponent(
-                                        text = LocalizationKey("hello-world"),
+                                        text = LocalizationKey("sticky-footer"),
                                         color = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb())),
                                     ),
                                 ),
@@ -152,6 +169,7 @@ private fun LoadedPaywallComponents_Preview() {
                 componentsLocalizations = mapOf(
                     LocaleId("en_US") to mapOf(
                         LocalizationKey("hello-world") to LocalizationData.Text("Hello, world!"),
+                        LocalizationKey("sticky-footer") to LocalizationData.Text("Sticky Footer"),
                     ),
                 ),
                 defaultLocaleIdentifier = LocaleId("en_US"),
