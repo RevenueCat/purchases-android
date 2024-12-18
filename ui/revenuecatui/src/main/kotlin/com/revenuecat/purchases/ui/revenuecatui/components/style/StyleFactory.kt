@@ -16,7 +16,6 @@ import com.revenuecat.purchases.ui.revenuecatui.components.LocalizedTextPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedStackPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition
 import com.revenuecat.purchases.ui.revenuecatui.components.SystemFontFamily
-import com.revenuecat.purchases.ui.revenuecatui.components.buildPresentedPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.string
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toAlignment
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toFontWeight
@@ -69,25 +68,19 @@ internal class StyleFactory(
             .map { create(it) }
             .mapOrAccumulate { it },
     ) { presentedOverrides, children ->
-        // Combine them into our StackComponentStyle.
-        val partial = presentedOverrides?.buildPresentedPartial(
-            windowSize = windowSize,
-            isEligibleForIntroOffer = isEligibleForIntroOffer,
-            state = componentState,
-        )?.partial
-
         StackComponentStyle(
-            visible = partial?.visible ?: true,
+            visible = true,
             children = children,
-            dimension = partial?.dimension ?: component.dimension,
-            size = partial?.size ?: component.size,
-            spacing = (partial?.spacing ?: component.spacing ?: DEFAULT_SPACING).dp,
-            backgroundColor = partial?.backgroundColor ?: component.backgroundColor,
-            padding = (partial?.padding ?: component.padding).toPaddingValues(),
-            margin = (partial?.margin ?: component.margin).toPaddingValues(),
-            shape = (partial?.shape ?: component.shape)?.toShape() ?: DEFAULT_SHAPE,
-            border = partial?.border ?: component.border,
-            shadow = partial?.shadow ?: component.shadow,
+            dimension = component.dimension,
+            size = component.size,
+            spacing = (component.spacing ?: DEFAULT_SPACING).dp,
+            backgroundColor = component.backgroundColor,
+            padding = component.padding.toPaddingValues(),
+            margin = component.margin.toPaddingValues(),
+            shape = component.shape?.toShape() ?: DEFAULT_SHAPE,
+            border = component.border,
+            shadow = component.shadow,
+            overrides = presentedOverrides,
         )
     }
 
