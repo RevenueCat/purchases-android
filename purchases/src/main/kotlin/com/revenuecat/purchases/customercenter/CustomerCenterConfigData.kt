@@ -207,6 +207,7 @@ data class CustomerCenterConfigData(
                 val eligible: Boolean,
                 val title: String,
                 val subtitle: String,
+                @SerialName("product_mapping") val productMapping: Map<String, String>,
             ) : PathDetail()
 
             @Serializable
@@ -270,6 +271,9 @@ data class CustomerCenterConfigData(
 
     @Serializable
     data class Support(
-        @Serializable(with = EmptyStringToNullSerializer::class) val email: String? = null,
+        @Serializable(with = EmptyStringToNullSerializer::class) 
+        val email: String? = null,
+        @SerialName("should_warn_customer_to_update")
+        val shouldWarnCustomerToUpdate: Boolean? = null
     )
 }

@@ -23,6 +23,8 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCent
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterViewModel
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterViewModelFactory
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterViewModelImpl
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.ManageSubscriptionsView
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.NoSubscriptionsView
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesImpl
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesType
 
@@ -75,12 +77,29 @@ private fun CustomerCenterError(state: CustomerCenterState.Error) {
     Text("Error: ${state.error}")
 }
 
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Composable
 private fun CustomerCenterLoaded(state: CustomerCenterState.Success) {
-    // CustomerCenter WIP: Add proper success UI
-    Column {
-        Text("Customer Center config:", fontWeight = FontWeight.Bold, fontSize = 20.sp)
-        Text(state.customerCenterConfigDataString)
+    val configuration = state.customerCenterConfigData
+
+    when {
+        configuration.screens.containsKey(CustomerCenterConfigData.Screen.ScreenType.MANAGEMENT) -> {
+            val managementScreen = configuration.screens[CustomerCenterConfigData.Screen.ScreenType.MANAGEMENT]!!
+            ManageSubscriptionsView(
+                screen = managementScreen,
+                configuration = configuration
+            )
+        }
+        configuration.screens.containsKey(CustomerCenterConfigData.Screen.ScreenType.NO_ACTIVE) -> {
+            val noActiveScreen = configuration.screens[CustomerCenterConfigData.Screen.ScreenType.NO_ACTIVE]!!
+            ManageSubscriptionsView(
+                screen = noActiveScreen,
+                configuration = configuration
+            )
+        }
+        else -> {
+//            NoSubscriptionsView(configuration = configuration)
+        }
     }
 }
 
@@ -118,7 +137,7 @@ internal fun CustomerCenterErrorPreview() {
 internal fun CustomerCenterLoadedPreview() {
     InternalCustomerCenter(
         modifier = Modifier.fillMaxSize().padding(10.dp),
-        state = CustomerCenterState.Success(previewConfigData.toString()),
+        state = CustomerCenterState.Success(previewConfigData),
     )
 }
 
