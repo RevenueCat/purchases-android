@@ -26,7 +26,7 @@ internal class CustomerCenterViewModelImpl(
     override val state = flow {
         try {
             val customerCenterConfigData = purchases.awaitCustomerCenterConfigData()
-            emit(CustomerCenterState.Success(customerCenterConfigData.toString()))
+            emit(CustomerCenterState.Success(customerCenterConfigData))
         } catch (e: PurchasesException) {
             emit(CustomerCenterState.Error(e.error))
         }
