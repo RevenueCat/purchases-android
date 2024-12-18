@@ -81,7 +81,7 @@ internal fun StackComponentView(
         val shadowStyle = stackState.shadow?.let { rememberShadowStyle(shadow = it) }
 
         // Modifier irrespective of dimension.
-        val commonModifier = remember(style) {
+        val commonModifier = remember(stackState, backgroundColorStyle, borderStyle, shadowStyle) {
             Modifier
                 .padding(stackState.margin)
                 .applyIfNotNull(shadowStyle) { shadow(it, stackState.shape) }
