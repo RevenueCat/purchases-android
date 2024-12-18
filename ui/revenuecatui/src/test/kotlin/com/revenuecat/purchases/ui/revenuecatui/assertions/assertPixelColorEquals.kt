@@ -5,6 +5,7 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assert
+import androidx.compose.ui.unit.Dp
 import com.revenuecat.purchases.ui.revenuecatui.helpers.captureToImageCompat
 
 /**
@@ -39,6 +40,15 @@ internal fun SemanticsNodeInteraction.assertPixelColorEquals(
         width = widthToUse,
         height = heightToUse,
     )
+
+    pixels
+        .groupBy { color -> color }
+        .mapValues { (_, pixels) -> pixels.count() }
+        .also {
+            it.forEach { (color, count) ->
+                println("TESTING got $count pixel(s) of color ${Color(color)}")
+            }
+        }
 
     return assert(
         SemanticsMatcher("All pixels have color '$color'") {
@@ -159,7 +169,7 @@ internal fun SemanticsNodeInteraction.assertPixelColorPercentage(
     )
 
     return assert(
-        SemanticsMatcher("Assert count of pixels with color '$color'") {
+        SemanticsMatcher("Assert percentage of pixels with color '$color'") {
             val count = pixels
                 .groupBy { color -> color }
                 .mapValues { (_, pixels) -> pixels.count() }
@@ -172,6 +182,61 @@ internal fun SemanticsNodeInteraction.assertPixelColorPercentage(
     )
 }
 
+/**
+ * Asserts the border color of a rectangular element.
+ */
+internal fun SemanticsNodeInteraction.assertRectangularBorderColor(
+    borderWidth: Dp,
+    expectedBorderColor: Color,
+    expectedBackgroundColor: Color,
+): SemanticsNodeInteraction = run {
+
+    val node = fetchSemanticsNode()
+    // Compose seems to have a minimum border width of 2 px. See also Dp.Hairline.
+    val borderWidthPx = with(node.layoutInfo.density) { borderWidth.roundToPx() }.coerceAtLeast(2)
+    val size = node.size
+
+    // Top edge
+    assertPixelColorEquals(
+        startX = 0,
+        startY = 0,
+        width = size.width,
+        height = borderWidthPx,
+        color = expectedBorderColor
+    )
+        // Left edge
+        .assertPixelColorEquals(
+            startX = 0,
+            startY = 0,
+            width = borderWidthPx,
+            height = size.height,
+            color = expectedBorderColor
+        )
+        // Right edge
+        .assertPixelColorEquals(
+            startX = size.width - borderWidthPx,
+            startY = 0,
+            width = borderWidthPx,
+            height = size.height,
+            color = expectedBorderColor
+        )
+        // Bottom edge
+        .assertPixelColorEquals(
+            startX = 0,
+            startY = size.height - borderWidthPx,
+            width = size.width,
+            height = borderWidthPx,
+            color = expectedBorderColor
+        )
+        // Inner area
+        .assertPixelColorEquals(
+            startX = borderWidthPx,
+            startY = borderWidthPx,
+            width = size.width - borderWidthPx - borderWidthPx,
+            height = size.height - borderWidthPx - borderWidthPx,
+            color = expectedBackgroundColor
+        )
+}
 
 /**
  * When running on the JVM, make sure your test class or function has the following annotations. `sdk` has to be >= 26.

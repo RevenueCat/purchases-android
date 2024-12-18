@@ -7,9 +7,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
@@ -25,6 +23,7 @@ import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fi
 import com.revenuecat.purchases.ui.revenuecatui.assertions.assertNoPixelColorEquals
 import com.revenuecat.purchases.ui.revenuecatui.assertions.assertPixelColorEquals
 import com.revenuecat.purchases.ui.revenuecatui.assertions.assertPixelColorPercentage
+import com.revenuecat.purchases.ui.revenuecatui.assertions.assertRectangularBorderColor
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StyleFactory
 import com.revenuecat.purchases.ui.revenuecatui.helpers.FakePaywallState
@@ -87,8 +86,6 @@ class StackComponentViewTests {
         // Arrange
         val sizeDp = 100
         val borderWidthDp = 10.0
-        var sizePx: Int? = null
-        var borderWidthPx: Int? = null
         val expectedLightColor = Color.Red
         val expectedDarkColor = Color.Yellow
         val expectedBackgroundColor = Color.White
@@ -108,9 +105,6 @@ class StackComponentViewTests {
 
         themeChangingTest(
             arrange = {
-                // Use the Composable context to calculate px equivalents of our dp values.
-                borderWidthPx = with(LocalDensity.current) { borderWidthDp.dp.roundToPx() }
-                sizePx = with(LocalDensity.current) { sizeDp.dp.roundToPx() }
                 // We don't want to recreate the entire tree every time the theme, or any other state, changes.
                 styleFactory.create(component).getOrThrow() as StackComponentStyle
             },
@@ -119,9 +113,8 @@ class StackComponentViewTests {
                 theme.setLight()
                 onNodeWithTag("stack")
                     .assertIsDisplayed()
-                    .assertSquareBorderColor(
-                        sizePx = sizePx!!,
-                        borderWidthPx = borderWidthPx!!,
+                    .assertRectangularBorderColor(
+                        borderWidth = borderWidthDp.dp,
                         expectedBorderColor = expectedLightColor,
                         expectedBackgroundColor = expectedBackgroundColor,
                     )
@@ -129,9 +122,8 @@ class StackComponentViewTests {
                 theme.setDark()
                 onNodeWithTag("stack")
                     .assertIsDisplayed()
-                    .assertSquareBorderColor(
-                        sizePx = sizePx!!,
-                        borderWidthPx = borderWidthPx!!,
+                    .assertRectangularBorderColor(
+                        borderWidth = borderWidthDp.dp,
                         expectedBorderColor = expectedDarkColor,
                         expectedBackgroundColor = expectedBackgroundColor,
                     )
@@ -202,56 +194,4 @@ class StackComponentViewTests {
             }
         )
     }
-
-    /**
-     * Asserts the border color of a square element.
-     *
-     * @param sizePx The size (height & width) of the square element, in px.
-     */
-    private fun SemanticsNodeInteraction.assertSquareBorderColor(
-        sizePx: Int,
-        borderWidthPx: Int,
-        expectedBorderColor: Color,
-        expectedBackgroundColor: Color,
-    ): SemanticsNodeInteraction =
-        // Top edge
-        assertPixelColorEquals(
-            startX = 0,
-            startY = 0,
-            width = sizePx,
-            height = borderWidthPx,
-            color = expectedBorderColor
-        )
-            // Left edge
-            .assertPixelColorEquals(
-                startX = 0,
-                startY = 0,
-                width = borderWidthPx,
-                height = sizePx,
-                color = expectedBorderColor
-            )
-            // Right edge
-            .assertPixelColorEquals(
-                startX = sizePx - borderWidthPx,
-                startY = 0,
-                width = borderWidthPx,
-                height = sizePx,
-                color = expectedBorderColor
-            )
-            // Bottom edge
-            .assertPixelColorEquals(
-                startX = 0,
-                startY = sizePx - borderWidthPx,
-                width = sizePx,
-                height = borderWidthPx,
-                color = expectedBorderColor
-            )
-            // Inner area
-            .assertPixelColorEquals(
-                startX = borderWidthPx,
-                startY = borderWidthPx,
-                width = sizePx - borderWidthPx - borderWidthPx,
-                height = sizePx - borderWidthPx - borderWidthPx,
-                color = expectedBackgroundColor
-            )
 }
